@@ -1,0 +1,276 @@
+openapi: 3.0.2
+info:
+  title: OpenLineage
+  version: 0.0.1
+  description: OpenLineage is an open source **lineage and metadata collection API** for the data ecosystem.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+paths:
+  /namespaces/{namespace}:
+    parameters:
+      - $ref: '#/components/parameters/namespace'
+    put:
+      summary: Create/Update a namespace
+      description: Creates or updates a new namespace object. A namespace enables the contextual grouping of related
+        jobs and datasets. Namespaces must contain only letters (`a-z`, `A-Z`), numbers (`0-9`), or
+        underscores (`_`). A namespace is case-insensitive with a maximum length of `1024` characters.
+        Note jobs and datasets will be unique within a namespace, but not across namespaces.
+      tags:
+        - Namespaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Namespace'
+      responses:
+        '200':
+          description: OK
+
+  /namespaces/{namespace}/datasets/{dataset}:
+    parameters:
+      - $ref: '#/components/parameters/namespace'
+      - $ref: '#/components/parameters/dataset'
+    put:
+      summary: Create/Update a dataset
+      description: Creates or Updates a new dataset object.
+      tags:
+        - Datasets
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Dataset'
+      responses:
+        '200':
+          description: OK
+
+  /namespaces/{namespace}/jobs/{job}:
+    parameters:
+      - $ref: '#/components/parameters/namespace'
+      - $ref: '#/components/parameters/job'
+    put:
+      summary: Create/Update a job
+      description: Creates or Updates a new job object.
+      tags:
+        - Jobs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Job'
+      responses:
+        '200':
+          description: OK
+
+  /namespaces/{namespace}/jobs/{job}/runs/{runId}:
+    parameters:
+      - $ref: '#/components/parameters/namespace'
+      - $ref: '#/components/parameters/job'
+      - $ref: '#/components/parameters/runId'
+    post:
+      summary: Create a run
+      description: Creates a new run object for a job.
+      tags:
+        - Jobs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Run'
+      responses:
+        '201':
+          description: CREATED
+
+  /namespaces/{namespace}/jobs/{job}/runs/{id}/{transition}:
+    parameters:
+      - $ref: '#/components/parameters/namespace'
+      - $ref: '#/components/parameters/job'
+      - $ref: '#/components/parameters/runId'
+      - $ref: '#/components/parameters/transition'
+    post:
+      summary: transition a run to the next state
+      description: changes the run state according to the transition
+      tags:
+        - Jobs
+      responses:
+        '200':
+          description: OK
+
+components:
+  parameters:
+    namespace:
+      name: namespace
+      in: path
+      description: The name of the namespace.
+      required: true
+      schema:
+        type: string
+        maxLength: 1024
+        example: my-namespace
+
+    dataset:
+      name: dataset
+      in: path
+      description: The name of the dataset.
+      required: true
+      schema:
+        type: string
+        maxLength: 1024
+        example: my-dataset
+
+    job:
+      name: job
+      in: path
+      description: The name of the job.
+      required: true
+      schema:
+        type: string
+        maxLength: 1024
+        example: my-job
+
+    runId:
+      name: id
+      in: path
+      description: The ID of the run.
+      required: true
+      schema:
+        type: string
+        format: uuid
+        example: ea9badc5-7cb2-49af-9a9f-155771d3a797
+
+    transition:
+      name: transition
+      in: path
+      description: The name of the transition
+      required: true
+      schema:
+        type: enum
+        enum: [start, complete, fail, abort]
+
+  schemas:
+    Namespace:
+      type: object
+      properties:
+        name:
+          description: The name of the namespace.
+          type: string
+        ownerName:
+          description: The owner of the namespace.
+          type: string
+        description:
+          description: The description of the namespace.
+          type: string
+      example:
+        name: my-namespace
+        ownerName: me
+        description: My first namespace!
+
+    Dataset:
+      type: object
+      properties:
+        type:
+          description: The type of the dataset.
+          type: string
+        updatedAt:
+          description: An [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) timestamp representing the date/time the dataset was updated.
+          type: string
+          format: date-time
+        physicalDescriptor:
+          description: The URL pointing to the dataset
+          type: string
+        source:
+          description: The URL pointing to the source.
+          type: string
+        description:
+          description:  The description of the table.
+          type: string
+        runId:
+          description: The ID associated with the run modifying the table.
+          type: string
+      required:
+        - type
+      example:
+        type: DB_TABLE
+        physicalDescriptor: public.mytable
+        source: host:port/my-source
+        description: "My first dataset!"
+
+    Job:
+      type: object
+      properties:
+        type:
+          description: The type of the job.
+          type: string
+        updatedAt:
+          description: An [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) timestamp representing the date/time the job was updated.
+          type: string
+          format: date-time
+        inputs:
+          description: The set of **input** datasets.
+          type: array
+          items:
+            type: object
+            properties:
+              namespace:
+                type: string
+                description: The namespace of the **input** dataset.
+              name:
+                type: string
+                description: The name of the **input** dataset.
+          uniqueItems: true
+        outputs:
+          description: The set of **output** datasets.
+          type: array
+          items:
+            type: object
+            properties:
+              namespace:
+                type: string
+                description: The namespace of the **output** dataset.
+              name:
+                type: string
+                description: The name of the **output** dataset.
+          uniqueItems: true
+        location:
+          description: The URL of the job source code or artifact.
+          type: string
+          format: URL
+        context:
+          description: A key/value pair that must be of type `string`. A context can be used for getting additional details about the job.
+          type: object
+        description:
+          description: The description of the job.
+          type: string
+      example:
+        id:
+          namespace: my-namespace
+          name: my-job
+        type: BATCH
+        name: my-job
+        updatedAt: 2019-05-09T19:49:24.201361Z
+        namespace: my-namespace
+        inputs: [{namespace: my-namespace, name: my-dataset}]
+        outputs: [{namespace: my-namespace, name: my-dataset2}]
+        location: https://github.com/my-jobs/blob/124f6089ad4c5fcbb1d7b33cbb5d3a9521c5d32c
+        context: {'SQL': "SELECT * FROM mytable;"}
+        description: My first job!
+
+    Run:
+      type: object
+      properties:
+        nominalStartTime:
+          description: An [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) timestamp representing the nominal start time of the run.
+          type: string
+          format: date-time
+        nominalEndTime:
+          description: An [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) timestamp representing the nominal end time of the run.
+          type: string
+          format: date-time
+        args:
+          description: The arguments of the run.
+          type: object
+      example:
+        args: {'email': 'me@example.com', 'emailOnFailure': false, 'emailOnRetry': true, 'retries': 1}
+
+
