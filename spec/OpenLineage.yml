@@ -7,17 +7,18 @@ info:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
 paths:
-  /namespaces/{namespace}:
+  /namespaces/{namespaceName}:
     parameters:
-      - $ref: '#/components/parameters/namespace'
+      - $ref: '#/components/parameters/namespaceName'
     put:
       summary: Create/Update a namespace
       description: Creates or updates a new namespace object. A namespace enables the contextual grouping of related
         jobs and datasets. Namespaces must contain only letters (`a-z`, `A-Z`), numbers (`0-9`), or
         underscores (`_`). A namespace is case-insensitive with a maximum length of `1024` characters.
         Note jobs and datasets will be unique within a namespace, but not across namespaces.
+      operationId: putNamespace
       tags:
-        - Namespaces
+        - OpenLineage
       requestBody:
         content:
           application/json:
@@ -27,15 +28,16 @@ paths:
         '200':
           description: OK
 
-  /namespaces/{namespace}/datasets/{dataset}:
+  /namespaces/{namespaceName}/datasets/{datasetName}:
     parameters:
-      - $ref: '#/components/parameters/namespace'
-      - $ref: '#/components/parameters/dataset'
+      - $ref: '#/components/parameters/namespaceName'
+      - $ref: '#/components/parameters/datasetName'
     put:
       summary: Create/Update a dataset
       description: Creates or Updates a new dataset object.
+      operationId: putDataset
       tags:
-        - Datasets
+        - OpenLineage
       requestBody:
         content:
           application/json:
@@ -45,15 +47,16 @@ paths:
         '200':
           description: OK
 
-  /namespaces/{namespace}/jobs/{job}:
+  /namespaces/{namespaceName}/jobs/{jobName}:
     parameters:
-      - $ref: '#/components/parameters/namespace'
-      - $ref: '#/components/parameters/job'
+      - $ref: '#/components/parameters/namespaceName'
+      - $ref: '#/components/parameters/jobName'
     put:
       summary: Create/Update a job
       description: Creates or Updates a new job object.
+      operationId: putJob
       tags:
-        - Jobs
+        - OpenLineage
       requestBody:
         content:
           application/json:
@@ -63,16 +66,17 @@ paths:
         '200':
           description: OK
 
-  /namespaces/{namespace}/jobs/{job}/runs/{runId}:
+  /namespaces/{namespaceName}/jobs/{jobName}/runs/{runId}:
     parameters:
-      - $ref: '#/components/parameters/namespace'
-      - $ref: '#/components/parameters/job'
+      - $ref: '#/components/parameters/namespaceName'
+      - $ref: '#/components/parameters/jobName'
       - $ref: '#/components/parameters/runId'
     post:
       summary: Create a run
       description: Creates a new run object for a job.
+      operationId: createRun
       tags:
-        - Jobs
+        - OpenLineage
       requestBody:
         content:
           application/json:
@@ -82,25 +86,26 @@ paths:
         '201':
           description: CREATED
 
-  /namespaces/{namespace}/jobs/{job}/runs/{id}/{transition}:
+  /namespaces/{namespaceName}/jobs/{jobName}/runs/{id}/{transition}:
     parameters:
-      - $ref: '#/components/parameters/namespace'
-      - $ref: '#/components/parameters/job'
+      - $ref: '#/components/parameters/namespaceName'
+      - $ref: '#/components/parameters/jobName'
       - $ref: '#/components/parameters/runId'
       - $ref: '#/components/parameters/transition'
     post:
       summary: transition a run to the next state
       description: changes the run state according to the transition
+      operationId: transitionRun
       tags:
-        - Jobs
+        - OpenLineage
       responses:
         '200':
           description: OK
 
 components:
   parameters:
-    namespace:
-      name: namespace
+    namespaceName:
+      name: namespaceName
       in: path
       description: The name of the namespace.
       required: true
@@ -109,8 +114,8 @@ components:
         maxLength: 1024
         example: my-namespace
 
-    dataset:
-      name: dataset
+    datasetName:
+      name: datasetName
       in: path
       description: The name of the dataset.
       required: true
@@ -119,8 +124,8 @@ components:
         maxLength: 1024
         example: my-dataset
 
-    job:
-      name: job
+    jobName:
+      name: jobName
       in: path
       description: The name of the job.
       required: true
