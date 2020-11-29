@@ -7,275 +7,194 @@ info:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
 paths:
-  /namespaces/{namespaceName}:
-    parameters:
-      - $ref: '#/components/parameters/namespaceName'
-    put:
-      summary: Create/Update a namespace
-      description: Creates or updates a new namespace object. A namespace enables the contextual grouping of related
-        jobs and datasets. Namespaces must contain only letters (`a-z`, `A-Z`), numbers (`0-9`), or
-        underscores (`_`). A namespace is case-insensitive with a maximum length of `1024` characters.
-        Note jobs and datasets will be unique within a namespace, but not across namespaces.
-      operationId: putNamespace
-      tags:
-        - OpenLineage
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Namespace'
-      responses:
-        '200':
-          description: OK
-
-  /namespaces/{namespaceName}/datasets/{datasetName}:
-    parameters:
-      - $ref: '#/components/parameters/namespaceName'
-      - $ref: '#/components/parameters/datasetName'
-    put:
-      summary: Create/Update a dataset
-      description: Creates or Updates a new dataset object.
-      operationId: putDataset
-      tags:
-        - OpenLineage
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Dataset'
-      responses:
-        '200':
-          description: OK
-
-  /namespaces/{namespaceName}/jobs/{jobName}:
-    parameters:
-      - $ref: '#/components/parameters/namespaceName'
-      - $ref: '#/components/parameters/jobName'
-    put:
-      summary: Create/Update a job
-      description: Creates or Updates a new job object.
-      operationId: putJob
-      tags:
-        - OpenLineage
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Job'
-      responses:
-        '200':
-          description: OK
-
-  /namespaces/{namespaceName}/jobs/{jobName}/runs/{runId}:
-    parameters:
-      - $ref: '#/components/parameters/namespaceName'
-      - $ref: '#/components/parameters/jobName'
-      - $ref: '#/components/parameters/runId'
+  /runs:
     post:
-      summary: Create a run
-      description: Creates a new run object for a job.
-      operationId: createRun
+      summary: Updates the state of a run
+      description: Updates a run state for a job.
+      operationId: postRunStateUpdate
       tags:
         - OpenLineage
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Run'
-      responses:
-        '201':
-          description: CREATED
-
-  /namespaces/{namespaceName}/jobs/{jobName}/runs/{id}/{transition}:
-    parameters:
-      - $ref: '#/components/parameters/namespaceName'
-      - $ref: '#/components/parameters/jobName'
-      - $ref: '#/components/parameters/runId'
-      - $ref: '#/components/parameters/transition'
-    post:
-      summary: transition a run to the next state
-      description: changes the run state according to the transition
-      operationId: transitionRun
-      tags:
-        - OpenLineage
+              $ref: '#/components/schemas/RunStateUpdate'
       responses:
         '200':
           description: OK
 
 components:
-  parameters:
-    namespaceName:
-      name: namespaceName
-      in: path
-      description: The name of the namespace.
-      required: true
-      schema:
-        type: string
-        maxLength: 1024
-        example: my-namespace
-
-    datasetName:
-      name: datasetName
-      in: path
-      description: The name of the dataset.
-      required: true
-      schema:
-        type: string
-        maxLength: 1024
-        example: my-dataset
-
-    jobName:
-      name: jobName
-      in: path
-      description: The name of the job.
-      required: true
-      schema:
-        type: string
-        maxLength: 1024
-        example: my-job
-
-    runId:
-      name: id
-      in: path
-      description: The ID of the run.
-      required: true
-      schema:
-        type: string
-        format: uuid
-        example: ea9badc5-7cb2-49af-9a9f-155771d3a797
-
-    transition:
-      name: transition
-      in: path
-      description: The name of the transition
-      required: true
-      schema:
-        type: enum
-        enum: [start, complete, fail, abort]
-
   schemas:
-    Namespace:
-      type: object
-      properties:
-        name:
-          description: The name of the namespace.
-          type: string
-        ownerName:
-          description: The owner of the namespace.
-          type: string
-        description:
-          description: The description of the namespace.
-          type: string
-      example:
-        name: my-namespace
-        ownerName: me
-        description: My first namespace!
-
     Dataset:
       type: object
       properties:
-        type:
-          description: The type of the dataset.
-          type: string
-        updatedAt:
-          description: An [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) timestamp representing the date/time the dataset was updated.
-          type: string
-          format: date-time
-        physicalDescriptor:
-          description: The URL pointing to the dataset
-          type: string
-        source:
-          description: The URL pointing to the source.
-          type: string
+        name:
+          description: The unique name of the dataset
+          type: string # TODO: should this be a URN?
+          example: "instance.database.schema.table"
         description:
-          description:  The description of the table.
+          description: The description of the Dataset.
           type: string
-        runId:
-          description: The ID associated with the run modifying the table.
-          type: string
+          example: "canonical representation of entity Foo"
+        facets:
+          description: The facets for this dataset
+          type: object
+          properties:
+            schema:
+              $ref: '#/components/schemas/SchemaDatasetFacet'
+            dataSource:
+              $ref: '#/components/schemas/DatasourceDatasetFacet'
+          additionalProperties:
+            $ref: '#/components/schemas/CustomFacet'
       required:
-        - type
-      example:
-        type: DB_TABLE
-        physicalDescriptor: public.mytable
-        source: host:port/my-source
-        description: "My first dataset!"
+        - name
 
     Job:
       type: object
       properties:
-        type:
-          description: The type of the job.
+        namespace:
+          description: The namespace containing that job
           type: string
-        updatedAt:
-          description: An [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) timestamp representing the date/time the job was updated.
-          type: string
-          format: date-time
+          example: "my-scheduler-namespace"
+        name:
+          description: The unique name for that job within that namespace
+          type: string # TODO: should this be a URN?
+          example: "myjob.mytask"
         inputs:
           description: The set of **input** datasets.
           type: array
           items:
             type: object
             properties:
-              namespace:
-                type: string
-                description: The namespace of the **input** dataset.
-              name:
-                type: string
-                description: The name of the **input** dataset.
-          uniqueItems: true
+              dataset:
+                $ref: '#/components/schemas/Dataset'
+              facets:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/CustomFacet'
         outputs:
           description: The set of **output** datasets.
           type: array
           items:
             type: object
             properties:
-              namespace:
-                type: string
-                description: The namespace of the **output** dataset.
-              name:
-                type: string
-                description: The name of the **output** dataset.
-          uniqueItems: true
-        location:
-          description: The URL of the job source code or artifact.
-          type: string
-          format: URL
-        context:
-          description: A key/value pair that must be of type `string`. A context can be used for getting additional details about the job.
-          type: object
+              dataset:
+                $ref: '#/components/schemas/Dataset'
+              facets:
+                description: The **output** facets.
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/CustomFacet'
         description:
           description: The description of the job.
           type: string
-      example:
-        id:
-          namespace: my-namespace
-          name: my-job
-        type: BATCH
-        name: my-job
-        updatedAt: 2019-05-09T19:49:24.201361Z
-        namespace: my-namespace
-        inputs: [{namespace: my-namespace, name: my-dataset}]
-        outputs: [{namespace: my-namespace, name: my-dataset2}]
-        location: https://github.com/my-jobs/blob/124f6089ad4c5fcbb1d7b33cbb5d3a9521c5d32c
-        context: {'SQL': "SELECT * FROM mytable;"}
-        description: My first job!
+        facets:
+          description: The job facets.
+          type: object
+          properties:
+            sourceCodeLocation:
+              $ref: '#/components/schemas/SourceCodeLocationJobFacet'
+          additionalProperties:
+            $ref: '#/components/schemas/CustomFacet'
+      required:
+        - namespace
+        - name
 
-    Run:
+    RunStateUpdate:
+      type: object
+      properties:
+        id:
+          description: the unique identifier for that run
+          type: string
+          format: uuid
+        transition:
+          description: transitions the run state
+          type: string #TODO: add enum
+          example: 'START|COMPLETE|ABORT|FAIL'
+        transition-time:
+           type: string
+           format: date-time
+        job:
+          $ref: '#/components/schemas/Job'
+        facets:
+          description: The run facets.
+          type: object
+          properties:
+            nominalTime:
+              $ref: '#/components/schemas/NominalTimeRunFacet'
+          additionalProperties:
+            $ref: '#/components/schemas/CustomFacet'
+      required:
+        - id
+        - job
+        - transition
+
+    CustomFacet:
+      type: object
+      properties:
+        origin:
+          description: The name of the origin of this custom facet.
+          type: string
+        version:
+          description: The version of this custom facet.
+          type: string
+      additionalProperties: true
+      required:
+        - origin
+
+## Run Facets
+    NominalTimeRunFacet:
       type: object
       properties:
         nominalStartTime:
-          description: An [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) timestamp representing the nominal start time of the run.
+          description: An [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) timestamp representing the nominal start time of the run. AKA the schedule time
           type: string
           format: date-time
         nominalEndTime:
           description: An [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) timestamp representing the nominal end time of the run.
           type: string
           format: date-time
-        args:
-          description: The arguments of the run.
-          type: object
-      example:
-        args: {'email': 'me@example.com', 'emailOnFailure': false, 'emailOnRetry': true, 'retries': 1}
 
+## Job Facets
+    SourceCodeLocationJobFacet:
+      type: object
+      properties:
+        type:
+          type: string
+          example: git
+        url:
+          type: string
+          format: url
 
+## Dataset facets
+    SchemaDatasetFacet:
+      type: object
+      properties:
+        fields:
+          description: The fields of the table.
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                description: The name of the field.
+                type: string
+                example: column1
+              type:
+                description: The type of the field.
+                type: string
+                example: VARCHAR|INT|...
+              description:
+                description: The description of the field.
+                type: string
+            required:
+              - name
+              - type
+
+    DatasourceDatasetFacet:
+      type: object
+      properties:
+        name:
+          type: string
+        url:
+          type: string

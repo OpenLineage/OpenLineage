@@ -118,6 +118,7 @@ public class OpenLineageGenerator extends DefaultCodegen implements CodegenConfi
     typeMapping.put("DateTime", "java.util.Date");
     typeMapping.put("UUID", "java.util.UUID");
     typeMapping.put("string", "String");
+    typeMapping.put("object", "Object");
 
     importMapping.put("enum", "java.lang.String"); /// ???
     importMapping.put("string", "java.lang.String"); /// ???
