@@ -25,29 +25,35 @@ paths:
 
 components:
   schemas:
-    Dataset:
+    RunStateUpdate:
       type: object
       properties:
-        name:
-          description: The unique name of the dataset
-          type: string # TODO: should this be a URN?
-          example: "instance.database.schema.table"
-        description:
-          description: The description of the Dataset.
+        id:
+          description: the unique identifier for that run
           type: string
-          example: "canonical representation of entity Foo"
+          format: uuid
+        transition:
+          description: transitions the run state
+          type: string #TODO: add enum
+          example: 'START|COMPLETE|ABORT|FAIL'
+        transition-time:
+           type: string
+           format: date-time
+        job:
+          $ref: '#/components/schemas/Job'
         facets:
-          description: The facets for this dataset
+          description: The run facets.
           type: object
           properties:
-            schema:
-              $ref: '#/components/schemas/SchemaDatasetFacet'
-            dataSource:
-              $ref: '#/components/schemas/DatasourceDatasetFacet'
+            nominalTime:
+              $ref: '#/components/schemas/NominalTimeRunFacet'
           additionalProperties:
             $ref: '#/components/schemas/CustomFacet'
       required:
-        - name
+        - id
+        - job
+        - transition
+        - transition-time
 
     Job:
       type: object
@@ -100,34 +106,29 @@ components:
         - namespace
         - name
 
-    RunStateUpdate:
+    Dataset:
       type: object
       properties:
-        id:
-          description: the unique identifier for that run
+        name:
+          description: The unique name of the dataset
+          type: string # TODO: should this be a URN?
+          example: "instance.database.schema.table"
+        description:
+          description: The description of the Dataset.
           type: string
-          format: uuid
-        transition:
-          description: transitions the run state
-          type: string #TODO: add enum
-          example: 'START|COMPLETE|ABORT|FAIL'
-        transition-time:
-           type: string
-           format: date-time
-        job:
-          $ref: '#/components/schemas/Job'
+          example: "canonical representation of entity Foo"
         facets:
-          description: The run facets.
+          description: The facets for this dataset
           type: object
           properties:
-            nominalTime:
-              $ref: '#/components/schemas/NominalTimeRunFacet'
+            schema:
+              $ref: '#/components/schemas/SchemaDatasetFacet'
+            dataSource:
+              $ref: '#/components/schemas/DatasourceDatasetFacet'
           additionalProperties:
             $ref: '#/components/schemas/CustomFacet'
       required:
-        - id
-        - job
-        - transition
+        - name
 
     CustomFacet:
       type: object
