@@ -9,11 +9,11 @@ The details of that spec are explained bellow.
 
 ### Core Lineage Model
 
-**Job**: a process definition that consumes and produces datasets (defined as its inputs and outputs). It is identified by a unique name within a namespace (which is typicaly assigned to the scheduler starting the jobs). The *Job* evolves over time and this change is captured when the job runs.
+- **Job**: a process definition that consumes and produces datasets (defined as its inputs and outputs). It is identified by a unique name within a namespace (which is typicaly assigned to the scheduler starting the jobs). The *Job* evolves over time and this change is captured when the job runs.
 
-**Dataset**: an abstract representation of data. It has a unique name derived from its physical location (for example db.host.database.schema.table). Typicaly, a *Dataset* changes when a job writing to it completes.
+- **Dataset**: an abstract representation of data. It has a unique name derived from its physical location (for example db.host.database.schema.table). Typicaly, a *Dataset* changes when a job writing to it completes.
 
-**Run**: An instance of a running job with a start and completion (or failure) time. It is uniquely identified by a uuid.
+- **Run**: An instance of a running job with a start and completion (or failure) time. It is uniquely identified by a uuid.
 **Facet**: A piece of metadata attached to one of the entities defined above
 
 example:
@@ -62,16 +62,16 @@ A facet is an atomic piece of metadata identified by its name. This means that e
 
 #### Run Facets
 
-**nominalTime**: Captures the time this run is scheduled for. This is a typical usage for time based scheduled job. The job has a nominal schedule time that will be different from the actual time it is running at.
+- **nominalTime**: Captures the time this run is scheduled for. This is a typical usage for time based scheduled job. The job has a nominal schedule time that will be different from the actual time it is running at.
 
 #### Job Facets
 
-**sourceCodeLocation**: Captures the source code location and version (example: git sha) of the job.
+- **sourceCodeLocation**: Captures the source code location and version (example: git sha) of the job.
 
-**sql**: Capture the SQL query if this job is a SQL query.
+- **sql**: Capture the SQL query if this job is a SQL query.
 
 #### Dataset Facets
 
-**schema**: Captures the schema of the dataset
+- **schema**: Captures the schema of the dataset
 
-**dataSource**: Captures the Database instance containing this datasets (ex: Database schema. Object store bucket, ...)
+- **dataSource**: Captures the Database instance containing this datasets (ex: Database schema. Object store bucket, ...)
