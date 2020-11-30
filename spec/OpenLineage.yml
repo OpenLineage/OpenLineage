@@ -36,9 +36,15 @@ components:
           description: transitions the run state
           type: string #TODO: add enum
           example: 'START|COMPLETE|ABORT|FAIL'
-        transition-time:
+        transitionTime:
            type: string
            format: date-time
+        origin:
+          $ref: '#/components/schemas/Origin'
+        parentRunId:
+          description: the id of the parent run, iff this run was spawn from an other run (for example, the Dag run scheduling its tasks)
+          type: string
+          format: uuid
         job:
           $ref: '#/components/schemas/Job'
         facets:
@@ -70,27 +76,12 @@ components:
           description: The set of **input** datasets.
           type: array
           items:
-            type: object
-            properties:
-              dataset:
-                $ref: '#/components/schemas/Dataset'
-              facets:
-                type: object
-                additionalProperties:
-                  $ref: '#/components/schemas/CustomFacet'
+            $ref: '#/components/schemas/Dataset'
         outputs:
           description: The set of **output** datasets.
           type: array
           items:
-            type: object
-            properties:
-              dataset:
-                $ref: '#/components/schemas/Dataset'
-              facets:
-                description: The **output** facets.
-                type: object
-                additionalProperties:
-                  $ref: '#/components/schemas/CustomFacet'
+            $ref: '#/components/schemas/Dataset'
         description:
           description: The description of the job.
           type: string
@@ -100,6 +91,8 @@ components:
           properties:
             sourceCodeLocation:
               $ref: '#/components/schemas/SourceCodeLocationJobFacet'
+            sql:
+              $ref: '#/components/schemas/SQLJobFacet'
           additionalProperties:
             $ref: '#/components/schemas/CustomFacet'
       required:
@@ -130,6 +123,17 @@ components:
       required:
         - name
 
+    Origin:
+      type: object
+      properties:
+        name:
+          description: name of the project producing this metadata
+          type: string
+        version:
+          description: version of the project producing this metadata
+          type: string
+
+# Custom facets
     CustomFacet:
       type: object
       properties:
@@ -166,6 +170,13 @@ components:
         url:
           type: string
           format: url
+
+    SQLJobFacet:
+      type: object
+      properties:
+        query:
+          type: string
+          example: SELECT * FROM foo
 
 ## Dataset facets
     SchemaDatasetFacet:
