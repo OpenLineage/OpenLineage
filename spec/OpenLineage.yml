@@ -72,6 +72,21 @@ components:
           description: The unique name for that job within that namespace
           type: string # TODO: should this be a URN?
           example: "myjob.mytask"
+        description:
+          description: The description of the job.
+          type: string
+        parentJob:
+          description: The job that spawn this job if applicable
+          type: object
+          properties:
+            namespace:
+              description: The namespace containing that job
+              type: string #TODO: should it be the same namespace
+              example: "my-scheduler-namespace"
+            name:
+              description: The unique name for that job within that namespace
+              type: string # TODO: should this be a URN?
+              example: "myjob"
         inputs:
           description: The set of **input** datasets.
           type: array
@@ -82,9 +97,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Dataset'
-        description:
-          description: The description of the job.
-          type: string
         facets:
           description: The job facets.
           type: object
