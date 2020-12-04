@@ -20,17 +20,19 @@ example:
 Here is an example of a simple start run event not adding any facet information:
 ```
 {
- id: "1793529e-84f9-4740-9960-7b1f738bb2f0"
+ runId: "1793529e-84f9-4740-9960-7b1f738bb2f0"
+ jobId: {
+    namespace: "scheduler-instance",
+    name: "dag.task"
+ }
  transition: "start",
  transitionTime: "2020-11-30T00:01:23Z",
  job: {
-    namespace: "scheduler-instance",
-    name: "dag.task",
     inputs: [
-        { name: "db.instance.database.schema.table"}
+        { id:{ namespace: "db", name: "db.instance.database.schema.table"} }
     ],
     outputs: [
-        { name: "db.instance.database.schema.myoutput"}
+        { id: { namesapce: "db", name: "db.instance.database.schema.myoutput"} }
     ]
   }
 }
