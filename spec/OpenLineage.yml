@@ -18,75 +18,38 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RunStateUpdate'
+              $ref: '#/components/schemas/RunStateUpdates'
       responses:
         '200':
           description: OK
 
 components:
   schemas:
+    RunStateUpdates:
+      type: array
+      items:
+        $ref: '#/components/schemas/RunStateUpdate'
+
     RunStateUpdate:
       type: object
       properties:
-        id:
+        runId:
           description: the unique identifier for that run
           type: string
           format: uuid
+        jobId:
+          $ref: '#/components/schemas/JobId'
         transition:
           description: transitions the run state
           type: string #TODO: add enum
-          example: 'START|COMPLETE|ABORT|FAIL'
+          example: 'START|RUNNING|COMPLETE|ABORT|FAIL'
         transitionTime:
-           type: string
-           format: date-time
+          type: string
+          format: date-time
         origin:
           $ref: '#/components/schemas/Origin'
-        parentRunId:
-          description: the id of the parent run, iff this run was spawn from an other run (for example, the Dag run scheduling its tasks)
-          type: string
-          format: uuid
         job:
           $ref: '#/components/schemas/Job'
-        facets:
-          description: The run facets.
-          type: object
-          properties:
-            nominalTime:
-              $ref: '#/components/schemas/NominalTimeRunFacet'
-          additionalProperties:
-            $ref: '#/components/schemas/CustomFacet'
-      required:
-        - id
-        - job
-        - transition
-        - transition-time
-
-    Job:
-      type: object
-      properties:
-        namespace:
-          description: The namespace containing that job
-          type: string
-          example: "my-scheduler-namespace"
-        name:
-          description: The unique name for that job within that namespace
-          type: string # TODO: should this be a URN?
-          example: "myjob.mytask"
-        description:
-          description: The description of the job.
-          type: string
-        parentJob:
-          description: The job that spawn this job if applicable
-          type: object
-          properties:
-            namespace:
-              description: The namespace containing that job
-              type: string #TODO: should it be the same namespace
-              example: "my-scheduler-namespace"
-            name:
-              description: The unique name for that job within that namespace
-              type: string # TODO: should this be a URN?
-              example: "myjob"
         inputs:
           description: The set of **input** datasets.
           type: array
@@ -98,6 +61,29 @@ components:
           items:
             $ref: '#/components/schemas/Dataset'
         facets:
+          description: The run facets.
+          type: object
+          properties:
+            nominalTime:
+              $ref: '#/components/schemas/NominalTimeRunFacet'
+            parent:
+              $ref: '#/components/schemas/ParentRunFacet'
+          additionalProperties:
+            $ref: '#/components/schemas/CustomFacet'
+      required:
+        - runId
+        - jobId
+        - transition
+        - transition-time
+        - origin
+
+    Job:
+      type: object
+      properties:
+        description:
+          description: The description of the job.
+          type: string
+        facets:
           description: The job facets.
           type: object
           properties:
@@ -107,17 +93,12 @@ components:
               $ref: '#/components/schemas/SQLJobFacet'
           additionalProperties:
             $ref: '#/components/schemas/CustomFacet'
-      required:
-        - namespace
-        - name
 
     Dataset:
       type: object
       properties:
-        name:
-          description: The unique name of the dataset
-          type: string # TODO: should this be a URN?
-          example: "instance.database.schema.table"
+        datasetId:
+          $ref: '#/components/schemas/DatasetId'
         description:
           description: The description of the Dataset.
           type: string
@@ -133,9 +114,10 @@ components:
           additionalProperties:
             $ref: '#/components/schemas/CustomFacet'
       required:
-        - name
+        - datasetId
 
     Origin:
+      description: Origin producer of this facet
       type: object
       properties:
         name:
@@ -144,6 +126,40 @@ components:
         version:
           description: version of the project producing this metadata
           type: string
+      required:
+       - name
+
+    JobId:
+      description: The identifier of a job # TODO: should this be a URN?
+      type: object
+      properties:
+        namespace:
+          description: The namespace containing that job
+          type: string
+          example: "my-scheduler-namespace"
+        name:
+          description: The unique name for that job within that namespace
+          type: string
+          example: "myjob.mytask"
+      required:
+       - namespace
+       - name
+
+    DatasetId:
+      description: The identifier of a dataset # TODO: should this be a URN?
+      type: object
+      properties:
+        namespace:
+          description: The namespace containing that dataset
+          type: string
+          example: "my-datasource-namespace"
+        name:
+          description: The unique name for that dataset within that namespace
+          type: string
+          example: "instance.schema.table"
+      required:
+       - namespace
+       - name
 
 # Custom facets
     CustomFacet:
@@ -171,6 +187,16 @@ components:
           description: An [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) timestamp representing the nominal end time of the run.
           type: string
           format: date-time
+
+    ParentRunFacet:
+      description: the id of the parent run and job, iff this run was spawn from an other run (for example, the Dag run scheduling its tasks)
+      type: object
+      properties:
+        runId:
+          type: string
+          format: uuid
+        jobId:
+          $ref: '#/components/schemas/JobId'
 
 ## Job Facets
     SourceCodeLocationJobFacet:
