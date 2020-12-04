@@ -7,7 +7,7 @@ info:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
 paths:
-  /runs:
+  /events:
     post:
       summary: Updates the state of a run
       description: Updates a run state for a job.
