@@ -7,9 +7,9 @@ info:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
 paths:
-  /events:
+  /lineage:
     post:
-      summary: Updates the state of a run
+      summary: Send an event related to the state of a run
       description: Updates a run state for a job.
       operationId: postRunStateUpdate
       tags:
@@ -18,36 +18,27 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RunStateUpdates'
+              $ref: '#/components/schemas/RunStateUpdate'
       responses:
         '200':
           description: OK
 
 components:
   schemas:
-    RunStateUpdates:
-      type: array
-      items:
-        $ref: '#/components/schemas/RunStateUpdate'
-
     RunStateUpdate:
       type: object
       properties:
-        runId:
-          description: the unique identifier for that run
-          type: string
-          format: uuid
-        jobId:
-          $ref: '#/components/schemas/JobId'
         transition:
-          description: transitions the run state
-          type: string #TODO: add enum
-          example: 'START|RUNNING|COMPLETE|ABORT|FAIL'
-        transitionTime:
+          description: the current transition of the run state. It is required to issue 1 START event and 1 of [ COMPLETE, ABORT, FAIL ] event per run. Additional events with no transition can be added to the same run. For example to send additional metadata after the run is complete
+          type: string
+          enum: [START, COMPLETE, ABORT, FAIL]
+          example: 'START|COMPLETE|ABORT|FAIL'
+        eventTime:
+          description: the time the event occured at
           type: string
           format: date-time
-        origin:
-          $ref: '#/components/schemas/Origin'
+        run:
+          $ref: '#/components/schemas/Run'
         job:
           $ref: '#/components/schemas/Job'
         inputs:
@@ -60,6 +51,23 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Dataset'
+        producer:
+          description: URI identifying the producer of this metadata. For example this could be a git url with a given tag or sha
+          type: string
+          format: uri
+          example: https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client
+      required:
+        - run
+        - job
+        - eventTime
+        - producer
+
+    Run:
+      type: object
+      properties:
+        runId:
+          description: The id of the run, unique relative to the job
+          type: string
         facets:
           description: The run facets.
           type: object
@@ -72,65 +80,8 @@ components:
             $ref: '#/components/schemas/CustomFacet'
       required:
         - runId
-        - jobId
-        - transition
-        - transition-time
-        - origin
 
     Job:
-      type: object
-      properties:
-        description:
-          description: The description of the job.
-          type: string
-        facets:
-          description: The job facets.
-          type: object
-          properties:
-            sourceCodeLocation:
-              $ref: '#/components/schemas/SourceCodeLocationJobFacet'
-            sql:
-              $ref: '#/components/schemas/SQLJobFacet'
-          additionalProperties:
-            $ref: '#/components/schemas/CustomFacet'
-
-    Dataset:
-      type: object
-      properties:
-        datasetId:
-          $ref: '#/components/schemas/DatasetId'
-        description:
-          description: The description of the Dataset.
-          type: string
-          example: "canonical representation of entity Foo"
-        facets:
-          description: The facets for this dataset
-          type: object
-          properties:
-            schema:
-              $ref: '#/components/schemas/SchemaDatasetFacet'
-            dataSource:
-              $ref: '#/components/schemas/DatasourceDatasetFacet'
-          additionalProperties:
-            $ref: '#/components/schemas/CustomFacet'
-      required:
-        - datasetId
-
-    Origin:
-      description: Origin producer of this facet
-      type: object
-      properties:
-        name:
-          description: name of the project producing this metadata
-          type: string
-        version:
-          description: version of the project producing this metadata
-          type: string
-      required:
-       - name
-
-    JobId:
-      description: The identifier of a job # TODO: should this be a URN?
       type: object
       properties:
         namespace:
@@ -141,12 +92,23 @@ components:
           description: The unique name for that job within that namespace
           type: string
           example: "myjob.mytask"
+        facets:
+          description: The job facets.
+          type: object
+          properties:
+            documentation:
+              $ref: '#/components/schemas/DocumentationJobFacet'
+            sourceCodeLocation:
+              $ref: '#/components/schemas/SourceCodeLocationJobFacet'
+            sql:
+              $ref: '#/components/schemas/SQLJobFacet'
+          additionalProperties:
+            $ref: '#/components/schemas/CustomFacet'
       required:
-       - namespace
-       - name
+        - namespace
+        - name
 
-    DatasetId:
-      description: The identifier of a dataset # TODO: should this be a URN?
+    Dataset:
       type: object
       properties:
         namespace:
@@ -157,23 +119,35 @@ components:
           description: The unique name for that dataset within that namespace
           type: string
           example: "instance.schema.table"
+        facets:
+          description: The facets for this dataset
+          type: object
+          properties:
+            documentation:
+              $ref: '#/components/schemas/DocumentationDatasetFacet'
+            schema:
+              $ref: '#/components/schemas/SchemaDatasetFacet'
+            dataSource:
+              $ref: '#/components/schemas/DatasourceDatasetFacet'
+          additionalProperties:
+            $ref: '#/components/schemas/CustomFacet'
       required:
        - namespace
        - name
+
 
 # Custom facets
     CustomFacet:
       type: object
       properties:
-        origin:
-          description: The name of the origin of this custom facet.
+        schemaURL:
+          description: The URL to the corresponding version of the schema definition following a $ref URL Reference (see https://swagger.io/docs/specification/using-ref/)
           type: string
-        version:
-          description: The version of this custom facet.
-          type: string
+          format: uri
+          example: https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/spec/OpenLineage.yml#MyCustomJobFacet
       additionalProperties: true
       required:
-        - origin
+        - schemaURL
 
 ## Run Facets
     NominalTimeRunFacet:
@@ -187,18 +161,48 @@ components:
           description: An [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) timestamp representing the nominal end time of the run.
           type: string
           format: date-time
+      required:
+        - nominalStartTime
 
     ParentRunFacet:
       description: the id of the parent run and job, iff this run was spawn from an other run (for example, the Dag run scheduling its tasks)
       type: object
       properties:
-        runId:
-          type: string
-          format: uuid
-        jobId:
-          $ref: '#/components/schemas/JobId'
+        run:
+          type: object
+          properties:
+            runId:
+              type: string
+              format: uuid
+          required:
+            - runId
+        job:
+          properties:
+            namespace:
+              description: The namespace containing that job
+              type: string
+              example: "my-scheduler-namespace"
+            name:
+              description: The unique name for that job within that namespace
+              type: string
+              example: "myjob.mytask"
+          required:
+            - namespace
+            - name
+      required:
+        - run
+        - job
 
 ## Job Facets
+    DocumentationJobFacet:
+      type: object
+      properties:
+        description:
+          description: The description of the job.
+          type: string
+      required:
+        - description
+
     SourceCodeLocationJobFacet:
       type: object
       properties:
@@ -207,7 +211,8 @@ components:
           example: git
         url:
           type: string
-          format: url
+          format: uri
+
 
     SQLJobFacet:
       type: object
@@ -215,8 +220,20 @@ components:
         query:
           type: string
           example: SELECT * FROM foo
+      required:
+        - query
 
 ## Dataset facets
+    DocumentationDatasetFacet:
+      type: object
+      properties:
+        description:
+          description: The description of the dataset.
+          type: string
+          example: "canonical representation of entity Foo"
+      required:
+        - description
+
     SchemaDatasetFacet:
       type: object
       properties:
@@ -248,3 +265,4 @@ components:
           type: string
         url:
           type: string
+          format: uri
