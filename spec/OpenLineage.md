@@ -9,7 +9,7 @@ It allows extensions to the spec using `Custom Facets` as described in this docu
 
 ### Core Lineage Model
 
-![Open Lineage model](Open Lineage model.svg)
+![Open Lineage model](OpenLineageModel.svg)
 
 - **Run State Update**: and event describing an observed state of a job run. It is required to at least send one event for a START transition and a COMPLETE/FAIL/ABORT transition. Aditional events are optional.
 
