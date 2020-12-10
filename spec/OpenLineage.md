@@ -2,7 +2,7 @@
 
 ## Specification
 
-The specification for OpenLineage is formalized as an OpenAPI spec: [Openlineage.yml](Openlineage.yml)
+The specification for OpenLineage is formalized as an OpenAPI spec: [OpenLineage.yml](OpenLineage.yml)
 It allows extensions to the spec using `Custom Facets` as described in this document.
 
 ## Core concepts
