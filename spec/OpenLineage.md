@@ -2,44 +2,51 @@
 
 ## Specification
 
-The specification for OpenLineage is defined as an OpenAPI spec: [Openlineage.yml]
-The details of that spec are explained bellow.
+The specification for OpenLineage is formalized as an OpenAPI spec: [Openlineage.yml](Openlineage.yml)
+It allows extensions to the spec using `Custom Facets` as described in this document.
 
 ## Core concepts
 
 ### Core Lineage Model
 
+![Open Lineage model](Open Lineage model.svg)
+
+- **Run State Update**: and event describing an observed state of a job run. It is required to at least send one event for a START transition and a COMPLETE/FAIL/ABORT transition. Aditional events are optional.
+
 - **Job**: a process definition that consumes and produces datasets (defined as its inputs and outputs). It is identified by a unique name within a namespace (which is typicaly assigned to the scheduler starting the jobs). The *Job* evolves over time and this change is captured when the job runs.
 
-- **Dataset**: an abstract representation of data. It has a unique name derived from its physical location (for example db.host.database.schema.table). Typicaly, a *Dataset* changes when a job writing to it completes.
+- **Dataset**: an abstract representation of data. It has a unique name within a namespace derived from its physical location (for example db.host.database.schema.table). Typicaly, a *Dataset* changes when a job writing to it completes.
 
-- **Run**: An instance of a running job with a start and completion (or failure) time. It is uniquely identified by a uuid.
-**Facet**: A piece of metadata attached to one of the entities defined above
+- **Run**: An instance of a running job with a start and completion (or failure) time. It is uniquely identified by an id relative to its job definition.
+
+- **Facet**: A piece of metadata attached to one of the entities defined above.
 
 example:
 Here is an example of a simple start run event not adding any facet information:
 ```
 {
-  runId: "1793529e-84f9-4740-9960-7b1f738bb2f0"
-  jobId: {
-    namespace: "scheduler-instance",
-    name: "dag.task"
-  }
-  transition: "start",
-  transitionTime: "2020-11-30T00:01:23Z",
-  origin: {
-    name: "marquez-airflow",
-    version: "1.2.3"
-  }
-  job: {
-    description: "important job producing teh executive dashboard"
-  }
-  inputs: [
-    { datasetId:{ namespace: "db", name: "db.instance.database.schema.table"} }
+  "transition": "START",
+  "eventTime": "2020-12-09T23:37:31.081Z",
+  "run": {
+    "runId": "345",
+  },
+  "job": {
+    "namespace": "my-scheduler-namespace",
+    "name": "myjob.mytask",
+  },
+  "inputs": [
+    {
+      "namespace": "my-datasource-namespace",
+      "name": "instance.schema.table",
+    }
   ],
-  outputs: [
-    { datasetId: { namesapce: "db", name: "db.instance.database.schema.myoutput"} }
-  ]
+  "outputs": [
+    {
+      "namespace": "my-datasource-namespace",
+      "name": "instance.schema.output_table",
+    }
+  ],
+  "producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client"
 }
 ```
 
@@ -48,20 +55,20 @@ Here is an example of a simple start run event not adding any facet information:
 The OpenLineage API defines events to capture the lifecycle of a *Run* for a given *Job*.
 When a *job* is being *run*, we capture metadata by sending run events when the state of the job transitions to a different state.
 We might observe different aspects of the job run at different stages. This means that different metadata might be collected in each event during the lyfecycle of a run.
-All metadata is additive. for example, if more inputs or outputs are detected as the job is running we might send updates specifically for those datasets without re-emiting previously observed inputs or outputs.
+All metadata is additive. for example, if more inputs or outputs are detected as the job is running we might send additional events specifically for those datasets without re-emiting previously observed inputs or outputs.
 Example:
  - When the run starts, we collect the following Metadata:
     - Run Id
     - Job id
     - transition: START
-    - transition time
+    - event time
     - source location and version (ex: git sha)
     - If known: Job inputs and outputs. (input schema, ...)
  - When the run completes:
     - Run Id
     - Job id
     - transition: COMPLETE
-    - transition time
+    - event time
     - Output datasets schema (and other metadata).
 
 
@@ -73,8 +80,14 @@ Facets are pieces of metadata that can be attached to the core entities:
 - Job
 - Dataset
 
-A facet is an atomic piece of metadata identified by its name. This means that emiting a new facet whith the same name for the same entity replaces the previous facet instance for that entity entirely). It is defined as a JSON object that can be either part of the spec or custom facets defined in a different project. Custom facets must use a distinct prefix named after the project defining them to avoid colision with standard facets defined in the [OpenLineage.yml] OpenAPI spec. Custom facets can be promoted to the standard by including them in the spec.
+A facet is an atomic piece of metadata identified by its name. This means that emiting a new facet whith the same name for the same entity replaces the previous facet instance for that entity entirely). It is defined as a JSON object that can be either part of the spec or custom facets defined in a different project. 
 
+Custom facets must use a distinct prefix named after the project defining them to avoid colision with standard facets defined in the [OpenLineage.yml](OpenLineage.yml) OpenAPI spec. 
+They have a schemaURL field pointing to the corresponding version of the facet schema (as a [$ref URL location](https://swagger.io/docs/specification/using-ref/) ).
+
+Example: https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/spec/OpenLineage.yml#MyCustomJobFacet
+
+Custom facets can be promoted to the standard by including them in the spec.
 
 ### Standard Facets
 
