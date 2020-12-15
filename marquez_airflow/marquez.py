@@ -98,13 +98,13 @@ class Marquez:
             inputs = self._to_dataset_ids(step_dataset)
         return inputs
 
-    def complete_run(self, run_id):
+    def complete_run(self, run_id, at):
         self.get_or_create_marquez_client(). \
-            mark_job_run_as_completed(run_id=run_id)
+            mark_job_run_as_completed(run_id=run_id, at=at)
 
-    def fail_run(self, run_id):
+    def fail_run(self, run_id, at):
         self.get_or_create_marquez_client().mark_job_run_as_failed(
-            run_id=run_id)
+            run_id=run_id, at=at)
 
     def start_run(self, run_id, start):
         self.get_or_create_marquez_client() \

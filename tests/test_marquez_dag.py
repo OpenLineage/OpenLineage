@@ -204,7 +204,8 @@ def test_marquez_dag(mock_get_or_create_marquez_client, mock_uuid,
     )
 
     mock_marquez_client.mark_job_run_as_completed.assert_called_once_with(
-        run_id=run_id_completed
+        run_id=run_id_completed,
+        at=mock.ANY
     )
 
     # When a task run completes, the task outputs are also updated in order
@@ -215,7 +216,8 @@ def test_marquez_dag(mock_get_or_create_marquez_client, mock_uuid,
 
     dag.handle_callback(dagrun, success=False, session=session)
     mock_marquez_client.mark_job_run_as_failed.assert_called_once_with(
-        run_id=run_id_failed
+        run_id=run_id_failed,
+        at=mock.ANY
     )
 
     # Assert an attempt to version the outputs of a task is not made when
@@ -455,7 +457,8 @@ def test_marquez_dag_with_extractor(mock_get_or_create_marquez_client,
         kwargs['context'].get('extract') == 'extract'
 
     mock_marquez_client.mark_job_run_as_completed.assert_called_once_with(
-        run_id=run_id
+        run_id=run_id,
+        at=mock.ANY
     )
 
     # When a task run completes, the task outputs are also updated in order
@@ -676,7 +679,8 @@ def test_marquez_dag_with_extract_on_complete(
         kwargs['context'].get('extract_on_complete') == 'extract_on_complete'
 
     mock_marquez_client.mark_job_run_as_completed.assert_called_once_with(
-        run_id=run_id
+        run_id=run_id,
+        at=mock.ANY
     )
 
     # When a task run completes, the task outputs are also updated in order

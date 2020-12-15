@@ -169,9 +169,13 @@ class DAG(airflow.models.DAG, LoggingMixin):
                 self.log.debug(f'Setting task state: {ti.state}'
                                f' for {ti.task_id}')
                 if ti.state in {State.SUCCESS, State.SKIPPED}:
-                    self._marquez.complete_run(run_id)
+                    self._marquez.complete_run(
+                        run_id,
+                        DagUtils.to_iso_8601(ti.end_date))
                 else:
-                    self._marquez.fail_run(run_id)
+                    self._marquez.fail_run(
+                        run_id,
+                        DagUtils.to_iso_8601(ti.end_date))
 
     def _extract_metadata(self, dagrun, task, ti=None):
         extractor = self._get_extractor(task)
