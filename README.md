@@ -30,3 +30,9 @@ A configurable backend allows to choose what protocol to send the events to.
 
 ## Spec
 The [specification](spec/OpenLineage.md) is defined using OpenAPI and allows extension through custom facets.
+
+## Community
+- [Chat](https://OpenLineage.slack.com)
+- Twitter: [@OpenLineage](https://twitter.com/OpenLineage)
+- [mailing list](https://groups.google.com/g/openlineage)
+
