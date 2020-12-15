@@ -36,3 +36,6 @@ The [specification](spec/OpenLineage.md) is defined using OpenAPI and allows ext
 - Twitter: [@OpenLineage](https://twitter.com/OpenLineage)
 - [mailing list](https://groups.google.com/g/openlineage)
 
+## Talks
+ - [Metadata day 2020 Open Lineage lightning talk](https://www.youtube.com/watch?v=anlV5Er_BpM)
+
