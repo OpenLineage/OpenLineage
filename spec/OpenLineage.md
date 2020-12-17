@@ -80,12 +80,14 @@ Facets are pieces of metadata that can be attached to the core entities:
 - Job
 - Dataset
 
-A facet is an atomic piece of metadata identified by its name. This means that emiting a new facet whith the same name for the same entity replaces the previous facet instance for that entity entirely). It is defined as a JSON object that can be either part of the spec or custom facets defined in a different project. 
+A facet is an atomic piece of metadata identified by its name. This means that emiting a new facet whith the same name for the same entity replaces the previous facet instance for that entity entirely). It is defined as a JSON object that can be either part of the spec or custom facets defined in a different project.
 
-Custom facets must use a distinct prefix named after the project defining them to avoid colision with standard facets defined in the [OpenLineage.yml](OpenLineage.yml) OpenAPI spec. 
+Custom facets must use a distinct prefix named after the project defining them to avoid colision with standard facets defined in the [OpenLineage.yml](OpenLineage.yml) OpenAPI spec.
 They have a schemaURL field pointing to the corresponding version of the facet schema (as a [$ref URL location](https://swagger.io/docs/specification/using-ref/) ).
 
-Example: https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/spec/OpenLineage.yml#MyCustomJobFacet
+Example: https://github.com/OpenLineage/OpenLineage/blob/v1/spec/OpenLineage.yml#MyCustomJobFacet
+
+The versioned URL must be an immutable pointer to the version of the facet schema. For example, it should include a tag of a git sha and not a branch name. This should also be a canonical URL. There should be only one URL used for a given version of a schema.
 
 Custom facets can be promoted to the standard by including them in the spec.
 
@@ -95,7 +97,7 @@ Custom facets can be promoted to the standard by including them in the spec.
 
 - **nominalTime**: Captures the time this run is scheduled for. This is a typical usage for time based scheduled job. The job has a nominal schedule time that will be different from the actual time it is running at.
 
-- **parent**: Captures the parent job and Run when the run was spawn from a parent run.
+- **parent**: Captures the parent job and Run when the run was spawn from a parent run. For example in the case of Airflow, there's a run for the DAG that then spawns runs for individual tasks that would refer to the parent run as the DAG run. Similarly when a SparkOperator starts a Spark job, this creates a separate run that refers to the task run as its parent.
 
 #### Job Facets
 

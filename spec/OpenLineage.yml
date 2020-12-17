@@ -28,11 +28,11 @@ components:
     RunStateUpdate:
       type: object
       properties:
-        transition:
-          description: the current transition of the run state. It is required to issue 1 START event and 1 of [ COMPLETE, ABORT, FAIL ] event per run. Additional events with no transition can be added to the same run. For example to send additional metadata after the run is complete
+        eventType:
+          description: the current transition of the run state. It is required to issue 1 START event and 1 of [ COMPLETE, ABORT, FAIL ] event per run. Additional events with OTHER eventType can be added to the same run. For example to send additional metadata after the run is complete
           type: string
-          enum: [START, COMPLETE, ABORT, FAIL]
-          example: 'START|COMPLETE|ABORT|FAIL'
+          enum: [START, COMPLETE, ABORT, FAIL, OTHER]
+          example: 'START|COMPLETE|ABORT|FAIL|OTHER'
         eventTime:
           description: the time the event occured at
           type: string
@@ -135,134 +135,162 @@ components:
        - namespace
        - name
 
+# Base Facet
 
-# Custom facets
-    CustomFacet:
+    BaseFacet:
       type: object
       properties:
-        schemaURL:
+        _producer:
+          description: URI identifying the producer of this metadata. For example this could be a git url with a given tag or sha
+          type: string
+          format: uri
+          example: https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client
+        _schemaURL:
           description: The URL to the corresponding version of the schema definition following a $ref URL Reference (see https://swagger.io/docs/specification/using-ref/)
           type: string
           format: uri
           example: https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/spec/OpenLineage.yml#MyCustomJobFacet
-      additionalProperties: true
       required:
+        - producer
         - schemaURL
+
+# Custom facets
+    CustomFacet:
+      allOf:
+        - ref: '#/components/schemas/BaseFacet'
+        - type: object
+          properties:
+          additionalProperties: true
 
 ## Run Facets
     NominalTimeRunFacet:
-      type: object
-      properties:
-        nominalStartTime:
-          description: An [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) timestamp representing the nominal start time of the run. AKA the schedule time
-          type: string
-          format: date-time
-        nominalEndTime:
-          description: An [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) timestamp representing the nominal end time of the run.
-          type: string
-          format: date-time
-      required:
-        - nominalStartTime
+      allOf:
+        - ref: '#/components/schemas/BaseFacet'
+        - type: object
+          properties:
+            nominalStartTime:
+              description: An [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) timestamp representing the nominal start time of the run. AKA the schedule time
+              type: string
+              format: date-time
+            nominalEndTime:
+              description: An [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) timestamp representing the nominal end time of the run.
+              type: string
+              format: date-time
+          required:
+            - nominalStartTime
 
     ParentRunFacet:
       description: the id of the parent run and job, iff this run was spawn from an other run (for example, the Dag run scheduling its tasks)
-      type: object
-      properties:
-        run:
-          type: object
+      allOf:
+        - ref: '#/components/schemas/BaseFacet'
+        - type: object
           properties:
-            runId:
-              type: string
-              format: uuid
+            run:
+              type: object
+              properties:
+                runId:
+                  type: string
+                  format: uuid
+              required:
+                - runId
+            job:
+              properties:
+                namespace:
+                  description: The namespace containing that job
+                  type: string
+                  example: "my-scheduler-namespace"
+                name:
+                  description: The unique name for that job within that namespace
+                  type: string
+                  example: "myjob.mytask"
+              required:
+                - namespace
+                - name
           required:
-            - runId
-        job:
-          properties:
-            namespace:
-              description: The namespace containing that job
-              type: string
-              example: "my-scheduler-namespace"
-            name:
-              description: The unique name for that job within that namespace
-              type: string
-              example: "myjob.mytask"
-          required:
-            - namespace
-            - name
-      required:
-        - run
-        - job
+            - run
+            - job
 
 ## Job Facets
     DocumentationJobFacet:
-      type: object
-      properties:
-        description:
-          description: The description of the job.
-          type: string
-      required:
-        - description
+      allOf:
+        - ref: '#/components/schemas/BaseFacet'
+        - type: object
+          properties:
+            description:
+              description: The description of the job.
+              type: string
+          required:
+            - description
 
     SourceCodeLocationJobFacet:
-      type: object
-      properties:
-        type:
-          type: string
-          example: git
-        url:
-          type: string
-          format: uri
-
+      allOf:
+        - ref: '#/components/schemas/BaseFacet'
+        - type: object
+          properties:
+            type:
+              type: string
+              example: git
+            url:
+              type: string
+              format: uri
 
     SQLJobFacet:
-      type: object
-      properties:
-        query:
-          type: string
-          example: SELECT * FROM foo
-      required:
-        - query
+      allOf:
+        - ref: '#/components/schemas/BaseFacet'
+        - type: object
+          properties:
+            query:
+              type: string
+              example: SELECT * FROM foo
+          required:
+            - query
 
 ## Dataset facets
     DocumentationDatasetFacet:
-      type: object
-      properties:
-        description:
-          description: The description of the dataset.
-          type: string
-          example: "canonical representation of entity Foo"
-      required:
-        - description
+      allOf:
+        - ref: '#/components/schemas/BaseFacet'
+        - type: object
+          properties:
+            description:
+              description: The description of the dataset.
+              type: string
+              example: "canonical representation of entity Foo"
+          required:
+            - description
 
     SchemaDatasetFacet:
-      type: object
-      properties:
-        fields:
-          description: The fields of the table.
-          type: array
-          items:
-            type: object
-            properties:
-              name:
-                description: The name of the field.
-                type: string
-                example: column1
-              type:
-                description: The type of the field.
-                type: string
-                example: VARCHAR|INT|...
-              description:
-                description: The description of the field.
-                type: string
-            required:
-              - name
-              - type
+      allOf:
+        - ref: '#/components/schemas/BaseFacet'
+        - type: object
+          properties:
+            fields:
+              description: The fields of the table.
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    description: The name of the field.
+                    type: string
+                    example: column1
+                  type:
+                    description: The type of the field.
+                    type: string
+                    example: VARCHAR|INT|...
+                  description:
+                    description: The description of the field.
+                    type: string
+                required:
+                  - name
+                  - type
 
     DatasourceDatasetFacet:
-      type: object
-      properties:
-        name:
-          type: string
-        url:
-          type: string
-          format: uri
+      allOf:
+        - ref: '#/components/schemas/BaseFacet'
+        - type: object
+          properties:
+            name:
+              type: string
+            uri:
+              type: string
+              format: uri
