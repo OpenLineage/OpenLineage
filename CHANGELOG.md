@@ -1,6 +1,11 @@
 # Changelog
 
-## [Unreleased](https://github.com/MarquezProject/marquez-airflow/compare/0.3.8...HEAD)
+
+## 0.3.9 - 2020-12-16
+
+### Fixed
+
+* Fix task completion time to use airflow task end time instead of dag end time [@henneberger](https://github.com/henneberger)
 
 ## [0.3.8](https://github.com/MarquezProject/marquez-airflow/compare/0.3.7...0.3.8) - 2020-12-08
 
