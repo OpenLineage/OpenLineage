@@ -72,7 +72,8 @@ class BigQueryExtractor(BaseExtractor):
             bigquery_job_id = self._get_xcom_bigquery_job_id(task_instance)
             context['bigquery.job_id'] = bigquery_job_id
             if bigquery_job_id is None:
-                raise Exception("Xcom could not resolve BigQuery job id")
+                raise Exception("Xcom could not resolve BigQuery job id." +
+                                "Job may have failed.")
         except Exception as e:
             log.error(f"Cannot retrieve job details from BigQuery.Client. {e}",
                       exc_info=True)
@@ -115,6 +116,12 @@ class BigQueryExtractor(BaseExtractor):
         )]
 
     def _get_input_from_bq(self, job, context, source, client):
+        if not job._properties.get('statistics')\
+              or not job._properties.get('statistics').get('query')\
+              or not job._properties.get('statistics').get('query')\
+                  .get('referencedTables'):
+            return None
+
         bq_input_tables = job._properties.get('statistics')\
             .get('query')\
             .get('referencedTables')
@@ -142,6 +149,12 @@ class BigQueryExtractor(BaseExtractor):
             ]
 
     def _get_output_from_bq(self, job, source, client):
+        if not job._properties.get('configuration') or\
+              not job._properties.get('configuration').get('query') or\
+              not job._properties.get('configuration').get('query')\
+                  .get('destinationTable'):
+            return None
+
         bq_output_table = job._properties.get('configuration') \
             .get('query') \
             .get('destinationTable')
