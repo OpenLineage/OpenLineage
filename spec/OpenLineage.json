@@ -285,7 +285,6 @@
           ]
         }
       ],
-      "$schema": "http://json-schema.org/schema#",
       "type": "object"
     },
     "SourceCodeLocationJobFacet": {
@@ -327,7 +326,6 @@
           ]
         }
       ],
-      "$schema": "http://json-schema.org/schema#",
       "type": "object"
     },
     "DocumentationDatasetFacet": {
@@ -410,7 +408,6 @@
           }
         }
       ],
-      "$schema": "http://json-schema.org/schema#",
       "type": "object"
     }
   },
