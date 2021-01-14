@@ -86,7 +86,7 @@ A facet is an atomic piece of metadata identified by its name. This means that e
 Custom facets must use a distinct prefix named after the project defining them to avoid colision with standard facets defined in the [OpenLineage.yml](OpenLineage.yml) OpenAPI spec.
 They have a schemaURL field pointing to the corresponding version of the facet schema (as a [$ref URL location](https://swagger.io/docs/specification/using-ref/) ).
 
-Example: https://github.com/OpenLineage/OpenLineage/blob/v1/spec/OpenLineage.yml#MyCustomJobFacet
+Example: https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.yml#MyCustomJobFacet
 
 The versioned URL must be an immutable pointer to the version of the facet schema. For example, it should include a tag of a git sha and not a branch name. This should also be a canonical URL. There should be only one URL used for a given version of a schema.
 
