@@ -8,7 +8,7 @@ assignees: ''
 ---
 
 **Purpose:**
-This section gives the context of the proposal. It explains *why* this is needed
+This section gives the context of the proposal. It explains *why* this is needed.
 Please describe the corresponding use cases.
 
 **Proposed implementation**
