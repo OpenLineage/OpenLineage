@@ -156,6 +156,7 @@
         "name"
       ]
     },
+
     "BaseFacet": {
       "description": "all fields of the base facet are prefixed with _ to avoid name conflicts in facets",
       "type": "object",
@@ -178,6 +179,7 @@
         "_schemaURL"
       ]
     },
+
     "CustomFacet": {
       "description": "a Custom Facet is defined is a separate spec. field must not start with _",
       "type": "object",
@@ -191,6 +193,7 @@
         }
       ]
     },
+
     "NominalTimeRunFacet": {
       "allOf": [
         {
@@ -267,6 +270,7 @@
       ],
       "type": "object"
     },
+
     "DocumentationJobFacet": {
       "allOf": [
         {
@@ -328,6 +332,7 @@
       ],
       "type": "object"
     },
+
     "DocumentationDatasetFacet": {
       "allOf": [
         {
@@ -347,27 +352,6 @@
           ]
         }
       ],
-      "type": "object"
-    },
-    "DatasourceDatasetFacet": {
-      "allOf": [
-        {
-          "$ref": "#/definitions/BaseFacet"
-        },
-        {
-          "type": "object",
-          "properties": {
-            "name": {
-              "type": "string"
-            },
-            "uri": {
-              "type": "string",
-              "format": "uri"
-            }
-          }
-        }
-      ],
-      "$schema": "http://json-schema.org/schema#",
       "type": "object"
     },
     "SchemaDatasetFacet": {
@@ -408,6 +392,27 @@
           }
         }
       ],
+      "type": "object"
+    },
+    "DatasourceDatasetFacet": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/BaseFacet"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "uri": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        }
+      ],
+      "$schema": "http://json-schema.org/schema#",
       "type": "object"
     }
   },
