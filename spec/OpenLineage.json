@@ -244,6 +244,7 @@
               ]
             },
             "job": {
+              "type": "object",
               "properties": {
                 "namespace": {
                   "description": "The namespace containing that job",
