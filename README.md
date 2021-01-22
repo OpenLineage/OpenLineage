@@ -1,12 +1,5 @@
 # marquez-airflow
 
-[![CircleCI](https://circleci.com/gh/MarquezProject/marquez-airflow/tree/main.svg?style=shield)](https://circleci.com/gh/MarquezProject/marquez-airflow/tree/main)
-[![codecov](https://codecov.io/gh/MarquezProject/marquez-airflow/branch/main/graph/badge.svg)](https://codecov.io/gh/MarquezProject/marquez-airflow/branch/main)
-[![status](https://img.shields.io/badge/status-WIP-yellow.svg)](#status)
-[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/marquez-project/community)
-[![version](https://img.shields.io/pypi/v/marquez-airflow.svg)](https://pypi.python.org/pypi/marquez-airflow)
-[![license](https://img.shields.io/badge/license-Apache_2.0-blue.svg)](https://raw.githubusercontent.com/MarquezProject/marquez-airflow/main/LICENSE)
-
 A library that integrates [Airflow `DAGs`]() with [Marquez](https://github.com/MarquezProject/marquez) for automatic metadata collection.
 
 ## Features
@@ -27,10 +20,6 @@ A library that integrates [Airflow `DAGs`]() with [Marquez](https://github.com/M
 * SQL parser
 * Link to code builder (ex: **GitHub**)
 * Metadata extractors
-
-## Status
-
-This library is under active development with a rapidly evolving API and we'd love your help!
 
 ## Requirements
 
@@ -180,7 +169,3 @@ t2 = PostgresOperator(
 
 t1 >> t2
 ```
-
-## Contributing
-
-See [CONTRIBUTING.md](https://github.com/MarquezProject/marquez-airflow/blob/main/CONTRIBUTING.md) for more details about how to contribute.

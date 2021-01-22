@@ -18,10 +18,10 @@ set -e
 
 # Change working directory to integration
 project_root=$(git rev-parse --show-toplevel)
-cd "${project_root}"/tests/integration
+cd "${project_root}"/integrations/airflow/tests/integration
 
 REV=$(git rev-parse HEAD)
-MARQUEZ_AIRFLOW_LIB_WITH_REV="git+git://github.com/MarquezProject/marquez-airflow.git@${REV}#egg=marquez_airflow"
+MARQUEZ_AIRFLOW_LIB_WITH_REV="git+git://github.com/MarquezProject/marquez.git@${REV}#egg=marquez_airflow&subdirectory=integrations/airflow"
 
 # Add revision to requirements.txt
 echo "${MARQUEZ_AIRFLOW_LIB_WITH_REV}" > requirements.txt
