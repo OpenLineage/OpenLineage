@@ -11,7 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class Generator {
 
   public static void main(String[] args) throws JsonParseException, JsonMappingException, IOException {
-    File f = new File("/Users/julien/github/OpenLineage/OpenLineage/spec/OpenLineage.json");
+    File f = new File("../../spec/OpenLineage.json");
     ObjectMapper mapper = new ObjectMapper();
     JsonNode schema = mapper.readValue(f, JsonNode.class);
     TypeResolver typeResolver = new TypeResolver(schema);
