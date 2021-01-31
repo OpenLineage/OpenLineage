@@ -11,9 +11,13 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.databind.JsonNode;
 
 public class TypeResolver {
+  private static final Logger logger = LoggerFactory.getLogger(TypeResolver.class);
   private JsonNode rootSchema;
   private Map<String, ObjectType> types = new HashMap<>();
   private Set<String> referencedTypes = new HashSet<>();
@@ -25,7 +29,7 @@ public class TypeResolver {
     JsonNode jsonNode = rootSchema.get("oneOf");
     if (jsonNode.isArray()) {
       for (final JsonNode type : jsonNode) {
-        resolveType("RunEvent", null, type);
+        resolveType(new Schema("RunEvent", type));
       }
     }
   }
@@ -73,7 +77,7 @@ public class TypeResolver {
   public static class Field {
     private String name;
     private Type type;
-    private  String description;
+    private String description;
 
     public Field(String name, Type type, String description) {
       super();
@@ -88,7 +92,7 @@ public class TypeResolver {
 
     public Type getType() {
       return type;
-      }
+    }
 
     public String getDescription() {
       return description;
@@ -97,15 +101,19 @@ public class TypeResolver {
   }
 
   static class ObjectType implements Type {
-    private String name;
-    private List<Field> properties;
-    private Set<String> parents;
+    private final String name;
+    private final List<Field> properties;
+    private final Set<String> parents;
+    private final boolean hasAdditionalProperties;
+    private final Type additionalPropertiesType;
 
-    public ObjectType(String name, List<Field> properties, Set<String> parents) {
+    public ObjectType(String name, List<Field> properties, Set<String> parents, boolean hasAdditionalProperties, Type additionalPropertiesType) {
       super();
       this.name = name;
       this.properties = properties;
       this.parents = parents;
+      this.additionalPropertiesType = additionalPropertiesType;
+      this.hasAdditionalProperties = hasAdditionalProperties;
     }
     public boolean isObject() { return true; };
     @Override
@@ -123,6 +131,14 @@ public class TypeResolver {
 
     public Set<String> getParents() {
       return parents;
+    }
+
+    public boolean isHasAdditionalProperties() {
+      return hasAdditionalProperties;
+    }
+
+    public Type getAdditionalPropertiesType() {
+      return additionalPropertiesType;
     }
 
     @Override
@@ -158,8 +174,7 @@ public class TypeResolver {
   public static class Schema {
     String name;
     JsonNode schema;
-    boolean isPrimitive;
-    public Schema(String name, JsonNode schema, boolean isPrimitive) {
+    public Schema(String name, JsonNode schema) {
       super();
       this.name = name;
       this.schema = schema;
@@ -189,52 +204,77 @@ public class TypeResolver {
     }
 
     public Schema rename(String newName) {
-      return new Schema(newName, schema, isPrimitive);
+      return new Schema(newName, schema);
     }
 
   }
 
-  private ObjectType resolveObjectType(String parentName, String fieldName, Schema schema) {
-    //  comment("resolveObjectType " + parentName + "." + fieldName + " " + schema);
-    if (schema.getName() != null && types.containsKey(schema.getName())) {
-      return types.get(schema.getName());
-    }
-    String type = schema.getType();
-    Set<String> parents = new LinkedHashSet<String>();
-    List<Field> fields = new ArrayList<Field>();
-    if (type.equals("object")) {
-      if (schema.has("allOf")) {
-        JsonNode allOf = schema.get("allOf");
-        for (JsonNode oneOf : allOf) {
-          Type oneType = resolveType(schema.getName(), null, oneOf);
-          String baseName = oneType.asObject().name;
-          if (!baseName.contentEquals(schema.getName())) {
-            baseTypes.add(baseName);
-            parents.add(baseName);
-          }
-          fields.addAll(oneType.asObject().properties);
-        }
-      } else  if (schema.has("properties")) {
-        fields.addAll(resolveFields(schema));
-      } else {
-        throw new RuntimeException("Unknown type " + schema);
+  private ObjectType resolveObjectType(Schema schema) {
+    logger.error("// resolveObjectType " + schema);
+    try {
+      if (schema.getName() != null && types.containsKey(schema.getName())) {
+        return types.get(schema.getName());
       }
+      String type = schema.getType();
+      Set<String> parents = new LinkedHashSet<String>();
+      List<Field> fields = new ArrayList<Field>();
+      boolean hasAdditionalProperties = false;
+      Type additionalPropertiesType = null;
+      if (type.equals("object")) {
+        if (schema.has("allOf")) {
+          JsonNode allOf = schema.get("allOf");
+          for (JsonNode node : allOf) {
+            ObjectType oneType = resolveType(new Schema(schema.getName(), node)).asObject();
+            String baseName = oneType.asObject().name;
+            if (!baseName.contentEquals(schema.getName())) {
+              // base interface
+              baseTypes.add(baseName);
+              parents.add(baseName);
+            } else {
+              // actual type definition, possibly includes additional properties
+              if (oneType.hasAdditionalProperties) {
+                hasAdditionalProperties = true;
+                additionalPropertiesType = oneType.additionalPropertiesType;
+              }
+            }
+            fields.addAll(oneType.properties);
+          }
+        } else  if (schema.has("properties") || schema.has("additionalProperties")) {
+          fields.addAll(resolveFields(schema));
+          if (schema.has("additionalProperties")) {
+            hasAdditionalProperties = true;
+            JsonNode additionalProperties = schema.get("additionalProperties");
+            if (additionalProperties.isObject()) {
+              additionalPropertiesType = resolveType(new Schema(schema.getName() + "_additionalProperties", additionalProperties));
+            }
+          }
+        } else {
+          throw new RuntimeException("Unknown object type " + schema);
+        }
+      } else {
+        throw new RuntimeException("This should be and object: " + schema);
+      }
+      ObjectType result = new ObjectType(schema.getName(), fields, parents, hasAdditionalProperties, additionalPropertiesType);
+      if (schema.getName() != null) {
+        types.put(schema.getName(), result);
+      }
+      return result;
+    } catch (RuntimeException e) {
+      throw new RuntimeException("can't resolve object type " + schema, e);
     }
-    ObjectType result = new ObjectType(schema.getName(), fields, parents);
-    if (schema.getName() != null) {
-      types.put(schema.getName(), result);
-    }
-    return result;
   }
 
   private List<Field> resolveFields(Schema schema) {
-    //  comment("resolveFields " + schema);
+    logger.error("// resolveFields " + schema);
     List<Field> result = new ArrayList<Field>();
+    if (!schema.has("properties")) {
+      return result;
+    }
     JsonNode properties = schema.get("properties");
 
     for (Iterator<Entry<String, JsonNode>> fields = properties.fields(); fields.hasNext(); ) {
       Entry<String, JsonNode> field = fields.next();
-      Type fieldType = resolveType(schema.getName(), field.getKey(), field.getValue());
+      Type fieldType = resolveType(new Schema(schema.getName()+ titleCase(field.getKey()), field.getValue()));
       referencedTypes.add(fieldType.accept(new TypeVisitor<String>() {
         @Override
         public String visit(PrimitiveType primitiveType) {
@@ -258,30 +298,32 @@ public class TypeResolver {
     return result;
   }
 
-  private Type resolveType(String parentName, String fieldName, JsonNode typeNode) {
-    //  comment("resolveType " + parentName + "." + fieldName + " " + typeNode);
+  private Type resolveType(Schema typeNode) {
+    logger.error("// resolveType " + typeNode);
     try {
       if (typeNode.has("$ref")) {
-        String pointer = typeNode.get("$ref").asText().substring(1);
+        String absolutePointer = typeNode.get("$ref").asText();
+        if (!absolutePointer.startsWith("#")) {
+          throw new RuntimeException("For now we support only types in the same file (starting with #): " + absolutePointer);
+        }
+        String pointer = absolutePointer.substring(1);
         JsonNode ref = rootSchema.at(pointer);
         String name = lastPart(pointer);
-        Schema schema = new Schema(name, ref, false);
-        return resolveObjectType(parentName, fieldName, schema);
+        Schema schema = new Schema(name, ref);
+        return resolveObjectType(schema);
       } else if (typeNode.has("type")) {
         String fieldType = typeNode.get("type").asText();
         if (fieldType.equals("string")) {
-          return new PrimitiveType("String");
+          return new PrimitiveType(fieldType);
         } else if (fieldType.equals("object")) {
-          String name = fieldName == null ? parentName : parentName + titleCase(fieldName);
-          Schema schema = new Schema(name, typeNode, false);
-          return resolveObjectType(parentName, fieldName, schema);
+          return resolveObjectType(typeNode);
         } else if (fieldType.equals("array")) {
-          Type itemsType = resolveType(parentName, fieldName, typeNode.get("items"));
+          Type itemsType = resolveType(new Schema(typeNode.getName(), typeNode.getSchema().get("items")));
           return new ArrayType(itemsType);
         }
       }
     } catch (RuntimeException e) {
-      throw new RuntimeException("can't resolve type " + parentName+"."+fieldName + " = " + typeNode, e);
+      throw new RuntimeException("can't resolve type " + typeNode, e);
     }
     throw new RuntimeException("unknown schema " + typeNode);
   }

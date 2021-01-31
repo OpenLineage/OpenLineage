@@ -12,12 +12,11 @@ public class Generator {
 
   public static void main(String[] args) throws JsonParseException, JsonMappingException, IOException {
     File f = new File("../../spec/OpenLineage.json");
+    String baseURL = "https://raw.githubusercontent.com/OpenLineage/OpenLineage/jsonschema/spec/OpenLineage.json";
     ObjectMapper mapper = new ObjectMapper();
     JsonNode schema = mapper.readValue(f, JsonNode.class);
     TypeResolver typeResolver = new TypeResolver(schema);
-    new JavaGenerator(typeResolver).generate();
-    new JavaPoetGenerator(typeResolver).generate();
-
+    new JavaPoetGenerator(typeResolver, baseURL).generate();
   }
 
 
