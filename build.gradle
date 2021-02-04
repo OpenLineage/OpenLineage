@@ -1,0 +1,134 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import org.apache.tools.ant.filters.*
+
+plugins {
+    id 'maven-publish'
+    id 'signing'
+    id 'net.researchgate.release' version '2.8.1'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+dependencies {
+    implementation 'org.javassist:javassist:3.20.0-GA'
+    compileOnly 'org.apache.spark:spark-core_2.11:2.4.7'
+    compileOnly 'org.apache.spark:spark-sql_2.11:2.4.7'
+    implementation 'com.github.ok2c.hc5:hc5-async-json:0.2.1'
+    compileOnly 'org.projectlombok:lombok:1.18.16'
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.0.3'
+
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.12.0'
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.12.0'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.12.0'
+    testImplementation 'net.bytebuddy:byte-buddy-agent:1.10.19'
+    testImplementation 'net.bytebuddy:byte-buddy-dep:1.10.19'
+    testImplementation 'org.apache.spark:spark-core_2.11:2.4.7'
+    testImplementation 'org.apache.spark:spark-sql_2.11:2.4.7'
+    testImplementation 'org.mockito:mockito-core:3.6.28'
+    testImplementation 'junit:junit:4.13'
+
+    annotationProcessor "org.projectlombok:lombok:1.18.16"
+}
+
+release {
+    git {
+        requireBranch = 'main'
+    }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId = 'io.github.marquezproject'
+            artifactId = 'marquez-spark'
+
+            from components.java
+
+            artifact sourceJar
+            artifact javadocJar
+
+            pom {
+                name = 'marquez-java'
+                description = 'Java client for Marquez'
+                url = 'https://github.com/MarquezProject/marquez'
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'marquezproject'
+                        name = 'Marquez Project'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git://github.com/MarquezProject/marquez.git'
+                    developerConnection = 'scm:git:ssh://github.com:MarquezProject/marquez.git'
+                    url = 'https://github.com/MarquezProject/marquez'
+                }
+            }
+        }
+    }
+
+    processResources {
+        filter ReplaceTokens, tokens: [
+                "version": project.property("version")
+        ]
+    }
+
+    repositories {
+        maven {
+            url = 'https://oss.sonatype.org/service/local/staging/deploy/maven2'
+            credentials {
+                username = System.getenv('SONATYPE_NEXUS_USERNAME')
+                password = System.getenv('SONATYPE_NEXUS_PASSWORD')
+            }
+        }
+    }
+}
+
+signing {
+    required { isReleaseVersion }
+    sign publishing.publications.mavenJava
+}
+
+shadowJar {
+    classifier = ''
+    // avoid conflict with any client version of that lib
+    relocate 'com.github.ok2c.hc5', 'marquez.com.github.ok2c.hc5'
+    relocate 'org.apache.httpcomponents.client5', 'marquez.org.apache.httpcomponents.client5'
+    relocate 'javassist', 'marquez.javassist'
+    relocate 'com.fasterxml.jackson', 'marquez.com.fasterxml.jackson'
+
+    manifest {
+        attributes(
+                "Premain-Class": 'marquez.spark.agent.MarquezAgent',
+                "Agent-Class": 'marquez.spark.agent.MarquezAgent',
+                'Created-By': "Gradle ${gradle.gradleVersion}",
+                'Built-By': System.getProperty('user.name'),
+                'Build-Jdk': System.getProperty('java.version'),
+                'Implementation-Title': project.name,
+                'Implementation-Version': project.version
+        )
+    }
+
+    zip64 true
+}

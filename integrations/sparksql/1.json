@@ -1,0 +1,65 @@
+{
+  "eventType" : "START",
+  "eventTime" : "2021-01-01T00:00:00Z",
+  "run" : {
+    "runId" : "ea445b5c-22eb-457a-8007-01c7c52b6e54",
+    "facets" : {
+      "parent" : {
+        "_producer" : "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
+        "_schemaURL" : "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/spec/OpenLineage.yml#ParentRunFacet",
+        "run" : {
+          "runId" : "ea445b5c-22eb-457a-8007-01c7c52b6e54"
+        },
+        "job" : {
+          "namespace" : "ns_name",
+          "name" : "job_name"
+        }
+      },
+      "spark.logicalPlan" : {
+        "_producer" : "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
+        "_schemaURL" : "https://github.com/MarquezProject/marquez/blob/main/experimental/integrations/marquez-spark-agent/facets/spark-2.4/v1/logicalPlanFacet",
+        "type" : "org.apache.spark.sql.catalyst.plans.logical.Aggregate",
+        "name" : "Aggregate",
+        "children" : [ {
+          "type" : "org.apache.spark.sql.catalyst.plans.logical.TypedFilter",
+          "name" : "TypedFilter",
+          "children" : [ {
+            "type" : "org.apache.spark.sql.catalyst.plans.logical.Project",
+            "name" : "Project",
+            "children" : [ {
+              "org.apache.spark.sql.execution.datasources.LogicalRelation" : {
+                "relation" : {
+                  "location" : {
+                    "rootPaths" : [ {
+                      "name" : "data.txt",
+                      "uri" : "data.txt"
+                    } ]
+                  },
+                  "schema" : {
+                    "fields" : [ {
+                      "name" : "value",
+                      "type" : "string",
+                      "nullable" : true
+                    } ]
+                  }
+                }
+              },
+              "type" : "org.apache.spark.sql.execution.datasources.LogicalRelation",
+              "name" : "LogicalRelation"
+            } ]
+          } ]
+        } ]
+      }
+    }
+  },
+  "job" : {
+    "namespace" : "ns_name",
+    "name" : "job_name"
+  },
+  "inputs" : [ {
+    "namespace" : "gs.bucket",
+    "name" : "gs://bucket/data.txt"
+  } ],
+  "outputs" : [ ],
+  "producer" : "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client"
+}
