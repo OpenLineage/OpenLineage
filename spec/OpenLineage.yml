@@ -152,8 +152,8 @@ components:
           format: uri
           example: https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/spec/OpenLineage.yml#MyCustomJobFacet
       required:
-        - producer
-        - schemaURL
+        - _producer
+        - _schemaURL
 
 # Custom facets
     CustomFacet:
@@ -193,7 +193,6 @@ components:
               properties:
                 runId:
                   type: string
-                  format: uuid
               required:
                 - runId
             job:
