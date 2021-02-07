@@ -8,7 +8,7 @@
 
 plugins {
     // Apply the Java Gradle plugin development plugin to add support for developing Gradle plugins
-    id 'java-gradle-plugin'
+    id 'java'
 }
 
 repositories {
@@ -20,37 +20,10 @@ dependencies {
     compile group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.11.3'
     compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.11.3'
     compile group: 'com.squareup', name: 'javapoet', version: '1.13.0'
+    compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
+    compile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.25'
     
     // Use JUnit test framework for unit tests
     testImplementation 'junit:junit:4.13'
 }
 
-gradlePlugin {
-    // Define the plugin
-    plugins {
-        greeting {
-            id = 'io.openlineage.client.greeting'
-            implementationClass = 'io.openlineage.client.OpenlineageClientPlugin'
-        }
-    }
-}
-
-// Add a source set for the functional test suite
-sourceSets {
-    functionalTest {
-    }
-}
-
-gradlePlugin.testSourceSets(sourceSets.functionalTest)
-configurations.functionalTestImplementation.extendsFrom(configurations.testImplementation)
-
-// Add a task to run the functional tests
-tasks.register('functionalTest', Test) {
-    testClassesDirs = sourceSets.functionalTest.output.classesDirs
-    classpath = sourceSets.functionalTest.runtimeClasspath
-}
-
-tasks.named('check') {
-    // Run the functional tests as part of `check`
-    dependsOn(tasks.functionalTest)
-}

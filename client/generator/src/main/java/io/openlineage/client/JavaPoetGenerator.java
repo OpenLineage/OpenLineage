@@ -6,8 +6,10 @@ import static javax.lang.model.element.Modifier.PRIVATE;
 import static javax.lang.model.element.Modifier.PUBLIC;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -19,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
@@ -45,7 +48,7 @@ public class JavaPoetGenerator {
     this.baseURL = baseURL;
   }
 
-  public void generate() throws IOException {
+  public void generate(PrintWriter printWriter) throws IOException {
 
     TypeSpec.Builder builder = TypeSpec.classBuilder("OpenLineage")
         .addModifiers(Modifier.PUBLIC, Modifier.FINAL);
@@ -55,7 +58,7 @@ public class JavaPoetGenerator {
     JavaFile javaFile = JavaFile.builder("io.openlineage.client", openLineage)
         .build();
 
-    javaFile.writeTo(System.out);
+    javaFile.writeTo(printWriter);
   }
 
   private void generateTypes(TypeSpec.Builder builder) {
@@ -121,7 +124,8 @@ public class JavaPoetGenerator {
               FieldSpec.builder(additionalPropertiesType, fieldName, PUBLIC, FINAL)
               .addAnnotation(JsonAnySetter.class)
               .build());
-          constructor.addCode("this.$N = new HashMap<>();\n", fieldName);
+
+          constructor.addCode(CodeBlock.builder().addStatement("this.$N = new $T<>();\n", fieldName, HashMap.class).build());
 //          constructor.addParameter(
 //              ParameterSpec.builder(additionalPropertiesType, fieldName)
 //              .addAnnotation(JsonAnySetter.class)

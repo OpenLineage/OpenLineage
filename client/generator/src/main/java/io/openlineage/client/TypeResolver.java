@@ -210,7 +210,7 @@ public class TypeResolver {
   }
 
   private ObjectType resolveObjectType(Schema schema) {
-    logger.error("// resolveObjectType " + schema);
+    logger.info("resolveObjectType " + schema);
     try {
       if (schema.getName() != null && types.containsKey(schema.getName())) {
         return types.get(schema.getName());
@@ -265,7 +265,7 @@ public class TypeResolver {
   }
 
   private List<Field> resolveFields(Schema schema) {
-    logger.error("// resolveFields " + schema);
+    logger.info("resolveFields " + schema);
     List<Field> result = new ArrayList<Field>();
     if (!schema.has("properties")) {
       return result;
@@ -299,7 +299,7 @@ public class TypeResolver {
   }
 
   private Type resolveType(Schema typeNode) {
-    logger.error("// resolveType " + typeNode);
+    logger.info("resolveType " + typeNode);
     try {
       if (typeNode.has("$ref")) {
         String absolutePointer = typeNode.get("$ref").asText();
