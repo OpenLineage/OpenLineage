@@ -38,8 +38,14 @@ import io.openlineage.client.TypeResolver.PrimitiveType;
 import io.openlineage.client.TypeResolver.Type;
 import io.openlineage.client.TypeResolver.TypeVisitor;
 
+/**
+ * Generates a JavaClass with all the types as inner classes
+ */
 public class JavaPoetGenerator {
 
+  private static final String PACKAGE = "io.openlineage.client";
+  private static final String CONTAINER_CLASS_NAME = "OpenLineage";
+  private static final String CONTAINER_CLASS = PACKAGE + "." + CONTAINER_CLASS_NAME;
   private final TypeResolver typeResolver;
   private final String baseURL;
 
@@ -50,12 +56,12 @@ public class JavaPoetGenerator {
 
   public void generate(PrintWriter printWriter) throws IOException {
 
-    TypeSpec.Builder builder = TypeSpec.classBuilder("OpenLineage")
+    TypeSpec.Builder builder = TypeSpec.classBuilder(CONTAINER_CLASS_NAME)
         .addModifiers(Modifier.PUBLIC, Modifier.FINAL);
     generateTypes(builder);
     TypeSpec openLineage = builder.build();
 
-    JavaFile javaFile = JavaFile.builder("io.openlineage.client", openLineage)
+    JavaFile javaFile = JavaFile.builder(PACKAGE, openLineage)
         .build();
 
     javaFile.writeTo(printWriter);
@@ -80,11 +86,10 @@ public class JavaPoetGenerator {
         TypeSpec.Builder classBuilder = TypeSpec.classBuilder(type.getName())
             .addModifiers(Modifier.STATIC, Modifier.FINAL);
         for (String parent : type.getParents()) {
-          classBuilder.addSuperinterface(ClassName.get("io.openlineage.client.OpenLineage", parent));
+          classBuilder.addSuperinterface(ClassName.get(CONTAINER_CLASS, parent));
         }
         MethodSpec.Builder constructor = MethodSpec.constructorBuilder();
         constructor.addAnnotation(JsonCreator.class);
-//        AnnotationSpec.Builder propertyOrder = AnnotationSpec.builder(JsonPropertyOrder.class);
         List<String> fieldNames = new ArrayList<String>();
         for (Field f : type.getProperties()) {
           classBuilder.addField(getTypeName(f.getType()), f.getName(), PRIVATE, FINAL);
@@ -106,7 +111,6 @@ public class JavaPoetGenerator {
               .build();
           classBuilder.addMethod(getter);
         }
-//        propertyOrder.addMemberForValue("value", fieldNames);
          // additionalFields
         if (type.isHasAdditionalProperties()) {
           String fieldName = "additionalProperties";
@@ -126,12 +130,6 @@ public class JavaPoetGenerator {
               .build());
 
           constructor.addCode(CodeBlock.builder().addStatement("this.$N = new $T<>();\n", fieldName, HashMap.class).build());
-//          constructor.addParameter(
-//              ParameterSpec.builder(additionalPropertiesType, fieldName)
-//              .addAnnotation(JsonAnySetter.class)
-//              .build());
-//          constructor.addCode("this.$N = $N;\n", fieldName, fieldName);
-//          constructor.addJavadoc("@param $N additional properties\n", fieldName);
         }
         classBuilder.addMethod(constructor.build());
         TypeSpec clss = classBuilder.build();
@@ -164,7 +162,7 @@ public class JavaPoetGenerator {
 
       @Override
       public TypeName visit(ObjectType objectType) {
-        return ClassName.get("io.openlineage.client.OpenLineage", objectType.getName());
+        return ClassName.get(CONTAINER_CLASS, objectType.getName());
       }
 
       @Override
