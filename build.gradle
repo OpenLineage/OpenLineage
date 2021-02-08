@@ -57,8 +57,8 @@ publishing {
             artifact javadocJar
 
             pom {
-                name = 'marquez-java'
-                description = 'Java client for Marquez'
+                name = 'marquez-spark'
+                description = 'Spark support for Marquez'
                 url = 'https://github.com/MarquezProject/marquez'
                 licenses {
                     license {
