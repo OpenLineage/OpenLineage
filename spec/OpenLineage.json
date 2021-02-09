@@ -235,8 +235,7 @@
               "type": "object",
               "properties": {
                 "runId": {
-                  "type": "string",
-                  "format": "uuid"
+                  "type": "string"
                 }
               },
               "required": [
@@ -308,7 +307,10 @@
               "type": "string",
               "format": "uri"
             }
-          }
+          },
+          "required": [
+            "type", "url"
+          ]
         }
       ],
       "type": "object"
