@@ -35,7 +35,7 @@ The [specification](spec/OpenLineage.md) is defined using OpenAPI and allows ext
 - [Marquez](https://marquezproject.ai/): Marquez is an [LF AI & DATA](https://lfaidata.foundation/) project to collect, aggregate, and visualize a data ecosystem's metadata. It is the reference implementation of the OpenLineage API.
 
 ## Community
-- Slack: [OpenLineage.slack.com](https://join.slack.com/t/openlineage/shared_invite/zt-jpycgyt1-Gjmk27R0G9ogwKt8Q~HTfg)
+- Slack: [OpenLineage.slack.com](https://join.slack.com/t/openlineage/shared_invite/zt-lpl4r9gk-jQJORB~uH3ZPn9s~7~zQkg)
 - Twitter: [@OpenLineage](https://twitter.com/OpenLineage)
 - Gougle group: [openlineage@googlegroups.com](https://groups.google.com/g/openlineage)
 
