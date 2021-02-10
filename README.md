@@ -1,10 +1,29 @@
 # Marquez Spark Agent
+
 The Marquez Spark Agent uses jvm instrumentation to emit OpenLineage metadata to Marquez. 
 
+## Installation
+
+Maven:
+
+```xml
+<dependency>
+    <groupId>io.github.marquezproject</groupId>
+    <artifactId>marquez-spark</artifactId>
+    <version>0.12.0</version>
+</dependency>
+```
+
+or Gradle:
+
+```groovy
+implementation 'io.github.marquezproject:marquez-spark:0.12.0'
+```
 
 ## Getting started
 
 ### Dataproc
+
 Dataproc requires two things: a uri to the marquez java agent jar in the `files` parameter and 
 an additional spark property. Dataproc will copy the agent jar to the current working directory of the
 executor and the `-javaagent` parameter will load it on execution.
@@ -36,6 +55,7 @@ t1 = DataProcPySparkOperator(
 ```
 
 ## Arguments
+
 The java agent accepts an argument in the form of a uri. It includes the location of Marquez, the 
 namespace name, the job name, and a unique run id. The run id will be emitted as a parent run 
 facet.
