@@ -20,8 +20,10 @@ set -e
 project_root=$(git rev-parse --show-toplevel)
 cd "${project_root}"/integrations/airflow/tests/integration
 
-REV=$(git rev-parse HEAD)
-MARQUEZ_AIRFLOW_LIB_WITH_REV="git+git://github.com/MarquezProject/marquez.git@${REV}#egg=marquez_airflow&subdirectory=integrations/airflow"
+GIT_URL=$(git config --get remote.origin.url \
+		          | sed 's|git@github.com:|https://github.com/|')
+GIT_REV=$(git rev-parse HEAD)
+MARQUEZ_AIRFLOW_LIB_WITH_REV="git+${GIT_URL}@${GIT_REV}#egg=marquez_airflow&subdirectory=integrations/airflow"
 
 # Add revision to requirements.txt
 echo "${MARQUEZ_AIRFLOW_LIB_WITH_REV}" > requirements.txt
