@@ -34,8 +34,8 @@ import os
 ...
 job_name = 'job_name'
 
-jar = 'marquez-spark-0.11.4-rc.4.jar'
-files = [f"gs://bq-airflow-spark/{jar}"]
+jar = 'marquez-spark-0.12.0.jar'
+files = [f"https://repo1.maven.org/maven2/io/github/marquezproject/marquez-spark/0.12.0/marquez-spark-0.12.0.jar"]
 properties = {
   'spark.driver.extraJavaOptions':
     f"-javaagent:{jar}={os.environ.get('MARQUEZ_URL')}/api/v1/namespaces/{os.getenv('MARQUEZ_NAMESPACE', 'default')}/jobs/{job_name}/runs/{uuid4()}?api_key={os.environ.get('MARQUEZ_API_KEY')}"
