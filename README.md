@@ -68,6 +68,9 @@ For example:
 https://marquez.example.com:5000/api/v1/namespaces/foo/job/spark.submit_job/runs/a95858ad-f9b5-46d7-8f1c-ca9f58f68978"
 ```
 
+# Compatibility Notes
+Tested and compatible for Spark `2.4.7` only. Other spark versions may cause the spark agent to throw class loading exception errors.
+
 # Build
 
 ## Java 8
