@@ -73,7 +73,7 @@ public class JavaPoetGenerator {
 
       if (typeResolver.getBaseTypes().contains(type.getName())) {
         TypeSpec.Builder interfaceBuilder = TypeSpec.interfaceBuilder(type.getName())
-            .addModifiers(Modifier.STATIC);
+            .addModifiers(Modifier.STATIC, Modifier.PUBLIC);
         for (Field f : type.getProperties()) {
           MethodSpec getter = getter(f)
               .addModifiers(Modifier.ABSTRACT, Modifier.PUBLIC)
@@ -84,7 +84,7 @@ public class JavaPoetGenerator {
         builder.addType(intrfc);
       } else {
         TypeSpec.Builder classBuilder = TypeSpec.classBuilder(type.getName())
-            .addModifiers(Modifier.STATIC, Modifier.FINAL);
+            .addModifiers(Modifier.STATIC, Modifier.PUBLIC, Modifier.FINAL);
         for (String parent : type.getParents()) {
           classBuilder.addSuperinterface(ClassName.get(CONTAINER_CLASS, parent));
         }
@@ -118,7 +118,7 @@ public class JavaPoetGenerator {
           TypeName additionalPropertiesType = ParameterizedTypeName.get(ClassName.get(Map.class), ClassName.get(String.class), additionalPropertiesValueType);
           classBuilder.addMethod(MethodSpec
               .methodBuilder("get" + titleCase(fieldName))
-              .addJavadoc("additional properties")
+              .addJavadoc("@return additional properties")
               .returns(additionalPropertiesType)
               .addModifiers(Modifier.PUBLIC)
               .addCode("return $N;", fieldName)
@@ -144,7 +144,7 @@ public class JavaPoetGenerator {
         .methodBuilder("get" + titleCase(f.getName()))
         .returns(getTypeName(f.getType()));
     if (f.getDescription() != null) {
-      builder.addJavadoc("$N", f.getDescription());
+      builder.addJavadoc("@return $N", f.getDescription());
     }
     return builder;
   }
