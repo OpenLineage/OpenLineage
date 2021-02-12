@@ -11,14 +11,14 @@ paths:
     post:
       summary: Send an event related to the state of a run
       description: Updates a run state for a job.
-      operationId: postRunStateUpdate
+      operationId: postRunEvent
       tags:
         - OpenLineage
       requestBody:
         content:
           application/json:
             schema:
-              $ref: 'OpenLineage.json#/definitions/RunStateUpdate'
+              $ref: 'OpenLineage.json#/definitions/RunEvent'
       responses:
         '200':
           description: OK
