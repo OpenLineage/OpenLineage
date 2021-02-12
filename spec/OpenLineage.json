@@ -1,0 +1,426 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "definitions": {
+    "RunStateUpdate": {
+      "type": "object",
+      "properties": {
+        "eventType": {
+          "description": "the current transition of the run state. It is required to issue 1 START event and 1 of [ COMPLETE, ABORT, FAIL ] event per run. Additional events with OTHER eventType can be added to the same run. For example to send additional metadata after the run is complete",
+          "type": "string",
+          "enum": [
+            "START",
+            "COMPLETE",
+            "ABORT",
+            "FAIL",
+            "OTHER"
+          ],
+          "example": "START|COMPLETE|ABORT|FAIL|OTHER"
+        },
+        "eventTime": {
+          "description": "the time the event occured at",
+          "type": "string",
+          "format": "date-time"
+        },
+        "run": {
+          "$ref": "#/definitions/Run"
+        },
+        "job": {
+          "$ref": "#/definitions/Job"
+        },
+        "inputs": {
+          "description": "The set of **input** datasets.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Dataset"
+          }
+        },
+        "outputs": {
+          "description": "The set of **output** datasets.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Dataset"
+          }
+        },
+        "producer": {
+          "description": "URI identifying the producer of this metadata. For example this could be a git url with a given tag or sha",
+          "type": "string",
+          "format": "uri",
+          "example": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client"
+        }
+      },
+      "required": [
+        "run",
+        "job",
+        "eventTime",
+        "producer"
+      ]
+    },
+    "Run": {
+      "type": "object",
+      "properties": {
+        "runId": {
+          "description": "The id of the run, unique relative to the job",
+          "type": "string"
+        },
+        "facets": {
+          "description": "The run facets.",
+          "type": "object",
+          "properties": {
+            "nominalTime": {
+              "$ref": "#/definitions/NominalTimeRunFacet"
+            },
+            "parent": {
+              "$ref": "#/definitions/ParentRunFacet"
+            }
+          },
+          "additionalProperties": {
+            "$ref": "#/definitions/CustomFacet"
+          }
+        }
+      },
+      "required": [
+        "runId"
+      ]
+    },
+    "Job": {
+      "type": "object",
+      "properties": {
+        "namespace": {
+          "description": "The namespace containing that job",
+          "type": "string",
+          "example": "my-scheduler-namespace"
+        },
+        "name": {
+          "description": "The unique name for that job within that namespace",
+          "type": "string",
+          "example": "myjob.mytask"
+        },
+        "facets": {
+          "description": "The job facets.",
+          "type": "object",
+          "properties": {
+            "documentation": {
+              "$ref": "#/definitions/DocumentationJobFacet"
+            },
+            "sourceCodeLocation": {
+              "$ref": "#/definitions/SourceCodeLocationJobFacet"
+            },
+            "sql": {
+              "$ref": "#/definitions/SQLJobFacet"
+            }
+          },
+          "additionalProperties": {
+            "$ref": "#/definitions/CustomFacet"
+          }
+        }
+      },
+      "required": [
+        "namespace",
+        "name"
+      ]
+    },
+    "Dataset": {
+      "type": "object",
+      "properties": {
+        "namespace": {
+          "description": "The namespace containing that dataset",
+          "type": "string",
+          "example": "my-datasource-namespace"
+        },
+        "name": {
+          "description": "The unique name for that dataset within that namespace",
+          "type": "string",
+          "example": "instance.schema.table"
+        },
+        "facets": {
+          "description": "The facets for this dataset",
+          "type": "object",
+          "properties": {
+            "documentation": {
+              "$ref": "#/definitions/DocumentationDatasetFacet"
+            },
+            "schema": {
+              "$ref": "#/definitions/SchemaDatasetFacet"
+            },
+            "dataSource": {
+              "$ref": "#/definitions/DatasourceDatasetFacet"
+            }
+          },
+          "additionalProperties": {
+            "$ref": "#/definitions/CustomFacet"
+          }
+        }
+      },
+      "required": [
+        "namespace",
+        "name"
+      ]
+    },
+
+    "BaseFacet": {
+      "description": "all fields of the base facet are prefixed with _ to avoid name conflicts in facets",
+      "type": "object",
+      "properties": {
+        "_producer": {
+          "description": "URI identifying the producer of this metadata. For example this could be a git url with a given tag or sha",
+          "type": "string",
+          "format": "uri",
+          "example": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client"
+        },
+        "_schemaURL": {
+          "description": "The URL to the corresponding version of the schema definition following a $ref URL Reference (see https://swagger.io/docs/specification/using-ref/)",
+          "type": "string",
+          "format": "uri",
+          "example": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/spec/OpenLineage.yml#MyCustomJobFacet"
+        }
+      },
+      "required": [
+        "_producer",
+        "_schemaURL"
+      ]
+    },
+
+    "CustomFacet": {
+      "description": "a Custom Facet is defined is a separate spec. field must not start with _",
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/definitions/BaseFacet"
+        },
+        {
+          "type": "object",
+          "additionalProperties": true
+        }
+      ]
+    },
+
+    "NominalTimeRunFacet": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/BaseFacet"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "nominalStartTime": {
+              "description": "An [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) timestamp representing the nominal start time (included) of the run. AKA the schedule time",
+              "type": "string",
+              "format": "date-time",
+              "example": "2020-12-17T03:00:00.000Z"
+            },
+            "nominalEndTime": {
+              "description": "An [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) timestamp representing the nominal end time (excluded) of the run. (Should be the nominal start time of the next run)",
+              "type": "string",
+              "format": "date-time",
+              "example": "2020-12-17T04:00:00.000Z"
+            }
+          },
+          "required": [
+            "nominalStartTime"
+          ]
+        }
+      ],
+      "type": "object"
+    },
+    "ParentRunFacet": {
+      "description": "the id of the parent run and job, iff this run was spawn from an other run (for example, the Dag run scheduling its tasks)",
+      "allOf": [
+        {
+          "$ref": "#/definitions/BaseFacet"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "run": {
+              "type": "object",
+              "properties": {
+                "runId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "runId"
+              ]
+            },
+            "job": {
+              "type": "object",
+              "properties": {
+                "namespace": {
+                  "description": "The namespace containing that job",
+                  "type": "string",
+                  "example": "my-scheduler-namespace"
+                },
+                "name": {
+                  "description": "The unique name for that job within that namespace",
+                  "type": "string",
+                  "example": "myjob.mytask"
+                }
+              },
+              "required": [
+                "namespace",
+                "name"
+              ]
+            }
+          },
+          "required": [
+            "run",
+            "job"
+          ]
+        }
+      ],
+      "type": "object"
+    },
+
+    "DocumentationJobFacet": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/BaseFacet"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "description": {
+              "description": "The description of the job.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "description"
+          ]
+        }
+      ],
+      "type": "object"
+    },
+    "SourceCodeLocationJobFacet": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/BaseFacet"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "example": "git"
+            },
+            "url": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          "required": [
+            "type", "url"
+          ]
+        }
+      ],
+      "type": "object"
+    },
+    "SQLJobFacet": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/BaseFacet"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "example": "SELECT * FROM foo"
+            }
+          },
+          "required": [
+            "query"
+          ]
+        }
+      ],
+      "type": "object"
+    },
+
+    "DocumentationDatasetFacet": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/BaseFacet"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "description": {
+              "description": "The description of the dataset.",
+              "type": "string",
+              "example": "canonical representation of entity Foo"
+            }
+          },
+          "required": [
+            "description"
+          ]
+        }
+      ],
+      "type": "object"
+    },
+    "SchemaDatasetFacet": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/BaseFacet"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "fields": {
+              "description": "The fields of the table.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "description": "The name of the field.",
+                    "type": "string",
+                    "example": "column1"
+                  },
+                  "type": {
+                    "description": "The type of the field.",
+                    "type": "string",
+                    "example": "VARCHAR|INT|..."
+                  },
+                  "description": {
+                    "description": "The description of the field.",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name",
+                  "type"
+                ]
+              }
+            }
+          }
+        }
+      ],
+      "type": "object"
+    },
+    "DatasourceDatasetFacet": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/BaseFacet"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "uri": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        }
+      ],
+      "type": "object"
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/definitions/RunStateUpdate"
+    }
+  ]
+}
