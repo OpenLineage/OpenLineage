@@ -1,0 +1,49 @@
+plugins {
+    id "java"
+    id 'maven-publish'
+    id 'application'
+    id 'idea'
+    id 'eclipse'
+    id "org.openapi.generator" version "5.0.1"
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+ext {
+    jackson_version = "2.11.3"
+    jackson_databind_version = "2.11.3"
+}
+
+configurations {
+    codeGenerator
+}
+
+dependencies {
+    compile "com.fasterxml.jackson.core:jackson-core:$jackson_version"
+    compile "com.fasterxml.jackson.core:jackson-annotations:$jackson_version"
+    compile "com.fasterxml.jackson.core:jackson-databind:$jackson_databind_version"
+    codeGenerator project(':generator')
+    testImplementation 'junit:junit:4.13'
+}
+
+task generateCode(type: JavaExec) {
+    classpath configurations.codeGenerator
+    main = 'io.openlineage.client.Generator'
+}
+
+openApiGenerate {
+// openapi-generator generate -i spec/OpenLineage.yml -g html2 -o ../OpenLineage.github.io/
+    generatorName = "html2"
+    inputSpec = "$rootDir/../spec/OpenLineage.yml".toString()
+    outputDir = "$buildDir/docs".toString()
+}
+
+compileJava.dependsOn tasks.generateCode, tasks.openApiGenerate
