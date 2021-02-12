@@ -16,7 +16,7 @@ import io.openlineage.client.OpenLineage.Job;
 import io.openlineage.client.OpenLineage.JobFacets;
 import io.openlineage.client.OpenLineage.Run;
 import io.openlineage.client.OpenLineage.RunFacets;
-import io.openlineage.client.OpenLineage.RunStateUpdate;
+import io.openlineage.client.OpenLineage.RunEvent;
 
 public class OpenLineageTest {
 
@@ -33,12 +33,12 @@ public class OpenLineageTest {
     Job job = new Job(namespace, name, jobFacets);
     List<Dataset> inputs = Arrays.asList();
     List<Dataset> outputs = Arrays.asList();
-    OpenLineage.RunStateUpdate runStateUpdate = new OpenLineage.RunStateUpdate("START", "123", run, job, inputs, outputs, producer );
+    RunEvent runStateUpdate = new RunEvent("START", "123", run, job, inputs, outputs, producer );
 
     ObjectMapper mapper = new ObjectMapper();
     mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
     String json = mapper.writeValueAsString(runStateUpdate);
-    RunStateUpdate read = mapper.readValue(json, RunStateUpdate.class);
+    RunEvent read = mapper.readValue(json, RunEvent.class);
 
     assertEquals(producer,read.getProducer());
     assertEquals(runId,read.getRun().getRunId());
