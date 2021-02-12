@@ -1,9 +1,10 @@
 package io.openlineage.client;
 
+import static org.junit.Assert.assertEquals;
+
 import java.util.Arrays;
 import java.util.List;
 
-import org.junit.Assert;
 import org.junit.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -37,8 +38,17 @@ public class OpenLineageTest {
     ObjectMapper mapper = new ObjectMapper();
     mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
     String json = mapper.writeValueAsString(runStateUpdate);
-    System.out.println(json);
     RunStateUpdate read = mapper.readValue(json, RunStateUpdate.class);
-    Assert.assertEquals(json, mapper.writeValueAsString(read));
+
+    assertEquals(producer,read.getProducer());
+    assertEquals(runId,read.getRun().getRunId());
+    assertEquals(name,read.getJob().getName());
+    assertEquals(namespace,read.getJob().getNamespace());
+    assertEquals(runStateUpdate.getEventType(),read.getEventType());
+    assertEquals(runStateUpdate.getEventTime(),read.getEventTime());
+
+    assertEquals(json, mapper.writeValueAsString(read));
+
+
   }
 }

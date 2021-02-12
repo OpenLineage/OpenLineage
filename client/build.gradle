@@ -4,6 +4,7 @@ plugins {
     id 'application'
     id 'idea'
     id 'eclipse'
+    id "org.openapi.generator" version "5.0.1"
 }
 
 java {
@@ -38,4 +39,11 @@ task generateCode(type: JavaExec) {
     main = 'io.openlineage.client.Generator'
 }
 
-compileJava.dependsOn tasks.generateCode
+openApiGenerate {
+// openapi-generator generate -i spec/OpenLineage.yml -g html2 -o ../OpenLineage.github.io/
+    generatorName = "html2"
+    inputSpec = "$rootDir/../spec/OpenLineage.yml".toString()
+    outputDir = "$buildDir/docs".toString()
+}
+
+compileJava.dependsOn tasks.generateCode, tasks.openApiGenerate
