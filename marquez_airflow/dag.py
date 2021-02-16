@@ -15,7 +15,7 @@ from uuid import uuid4
 
 import airflow.models
 import time
-from airflow import LoggingMixin
+
 from airflow.contrib.operators.bigquery_operator import BigQueryOperator
 from airflow.operators.postgres_operator import PostgresOperator
 from airflow.utils.state import State
@@ -29,6 +29,15 @@ from marquez_airflow.utils import (
     add_airflow_info_to,
     DagUtils
 )
+
+# Handling of import of different airflow versions
+from airflow.version import version as AIRFLOW_VERSION
+from pkg_resources import parse_version
+if parse_version(AIRFLOW_VERSION) >= parse_version("1.10.11"):
+    from airflow import LoggingMixin
+else:
+    # Corrects path of import for Airflow versions below 1.10.11
+    from airflow.utils.log.logging_mixin import LoggingMixin
 
 from marquez_airflow.marquez import Marquez
 
