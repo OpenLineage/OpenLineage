@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2019-09/schema",
   "definitions": {
-    "RunStateUpdate": {
+    "RunEvent": {
       "type": "object",
       "properties": {
         "eventType": {
@@ -168,10 +168,10 @@
           "example": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client"
         },
         "_schemaURL": {
-          "description": "The URL to the corresponding version of the schema definition following a $ref URL Reference (see https://swagger.io/docs/specification/using-ref/)",
+          "description": "The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version of the schema definition for this facet",
           "type": "string",
           "format": "uri",
-          "example": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/spec/OpenLineage.yml#MyCustomJobFacet"
+          "example": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/0.0.1/spec/OpenLineage.json#/definitions/BaseFacet"
         }
       },
       "required": [
@@ -420,7 +420,7 @@
   },
   "oneOf": [
     {
-      "$ref": "#/definitions/RunStateUpdate"
+      "$ref": "#/definitions/RunEvent"
     }
   ]
 }
