@@ -58,6 +58,10 @@ public class JavaPoetGenerator {
 
     TypeSpec.Builder builder = TypeSpec.classBuilder(CONTAINER_CLASS_NAME)
         .addModifiers(Modifier.PUBLIC, Modifier.FINAL);
+    if (baseURL.equals("")) {
+      builder.addJavadoc("$S", "Warning: this class was generated from a local file and will not provide absolute _schemaURL fields in facets");
+
+    }
     generateTypes(builder);
     TypeSpec openLineage = builder.build();
 

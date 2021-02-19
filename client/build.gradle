@@ -45,9 +45,14 @@ def gitBranchName() {
 }
 
 task generateCode(type: JavaExec) {
+    description 'generate java code from spec. Use -PgenerateFromLocal to generate from the local file instead of the published version'
     classpath configurations.codeGenerator
     main = 'io.openlineage.client.Generator'
-    args gitBranchName()
+    if (project.hasProperty('generateFromLocal')) { 
+      args
+    } else { 
+      args "https://raw.githubusercontent.com/OpenLineage/OpenLineage/" + gitBranchName()  + "/spec/OpenLineage.json"
+    }
 }
 
 openApiGenerate {
