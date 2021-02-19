@@ -34,9 +34,20 @@ dependencies {
     testImplementation 'junit:junit:4.13'
 }
 
+
+def gitBranchName() {
+    def branch = "unknown_branch"
+    def proc = "git rev-parse --abbrev-ref HEAD".execute()
+    proc.in.eachLine { line -> branch = line }
+    proc.err.eachLine { line -> println line }
+    proc.waitFor()
+    branch
+}
+
 task generateCode(type: JavaExec) {
     classpath configurations.codeGenerator
     main = 'io.openlineage.client.Generator'
+    args gitBranchName()
 }
 
 openApiGenerate {
