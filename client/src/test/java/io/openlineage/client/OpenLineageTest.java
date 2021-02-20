@@ -11,12 +11,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
-import io.openlineage.client.OpenLineage.Dataset;
+import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.Job;
 import io.openlineage.client.OpenLineage.JobFacets;
+import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.Run;
-import io.openlineage.client.OpenLineage.RunFacets;
 import io.openlineage.client.OpenLineage.RunEvent;
+import io.openlineage.client.OpenLineage.RunFacets;
 
 public class OpenLineageTest {
 
@@ -31,8 +32,8 @@ public class OpenLineageTest {
     String namespace = "namespace";
     JobFacets jobFacets = new JobFacets(null, null, null);
     Job job = new Job(namespace, name, jobFacets);
-    List<Dataset> inputs = Arrays.asList();
-    List<Dataset> outputs = Arrays.asList();
+    List<InputDataset> inputs = Arrays.asList(new InputDataset("ins", "input", null, null));
+    List<OutputDataset> outputs = Arrays.asList(new OutputDataset("ons", "output", null, null));
     RunEvent runStateUpdate = new RunEvent("START", "123", run, job, inputs, outputs, producer );
 
     ObjectMapper mapper = new ObjectMapper();
@@ -46,6 +47,15 @@ public class OpenLineageTest {
     assertEquals(namespace,read.getJob().getNamespace());
     assertEquals(runStateUpdate.getEventType(),read.getEventType());
     assertEquals(runStateUpdate.getEventTime(),read.getEventTime());
+    assertEquals(1, runStateUpdate.getInputs().size());
+    InputDataset inputDataset = runStateUpdate.getInputs().get(0);
+    assertEquals("ins", inputDataset.getNamespace());
+    assertEquals("input", inputDataset.getName());
+    assertEquals(1, runStateUpdate.getOutputs().size());
+    OutputDataset outputDataset = runStateUpdate.getOutputs().get(0);
+    assertEquals("ons", outputDataset.getNamespace());
+    assertEquals("output", outputDataset.getName());
+
 
     assertEquals(json, mapper.writeValueAsString(read));
 

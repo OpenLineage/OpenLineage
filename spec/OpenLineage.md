@@ -2,8 +2,9 @@
 
 ## Specification
 
-The specification for OpenLineage is formalized as an OpenAPI spec: [OpenLineage.yml](OpenLineage.yml)
-published at: https://openlineage.github.io/
+The specification for OpenLineage is formalized as a JsonSchema [OpenLineage.json](OpenLineage.json).
+An OpenAPI spec is also provided for HTTP based implementations: [OpenLineage.yml](OpenLineage.yml)
+The documentation is published at: https://openlineage.github.io/
 It allows extensions to the spec using `Custom Facets` as described in this document.
 
 ## Core concepts
@@ -12,11 +13,11 @@ It allows extensions to the spec using `Custom Facets` as described in this docu
 
 ![Open Lineage model](OpenLineageModel.svg)
 
-- **Run State Update**: and event describing an observed state of a job run. It is required to at least send one event for a START transition and a COMPLETE/FAIL/ABORT transition. Aditional events are optional.
+- **Run Event**: and event describing an observed state of a job run. It is required to at least send one event for a START transition and a COMPLETE/FAIL/ABORT transition. Aditional events are optional.
 
 - **Job**: a process definition that consumes and produces datasets (defined as its inputs and outputs). It is identified by a unique name within a namespace (which is typicaly assigned to the scheduler starting the jobs). The *Job* evolves over time and this change is captured when the job runs.
 
-- **Dataset**: an abstract representation of data. It has a unique name within a namespace derived from its physical location (for example db.host.database.schema.table). Typicaly, a *Dataset* changes when a job writing to it completes.
+- **Dataset**: an abstract representation of data. It has a unique name within a namespace derived from its physical location (for example db.host.database.schema.table). Typicaly, a *Dataset* changes when a job writing to it completes. Similarly to the *Job* and *Run* distinction, metadata that is more static from run to run is captured in a DatasetFacet (for example, the schema that does not change every run), what changes every *Run* is captured as an *InputFacet* or an *OutputFacet* (for example, what subset of the data set was read or written, like a time partition).
 
 - **Run**: An instance of a running job with a start and completion (or failure) time. It is uniquely identified by an id relative to its job definition.
 
@@ -72,21 +73,19 @@ Example:
     - event time
     - Output datasets schema (and other metadata).
 
-
-
 ### Facets
 
 Facets are pieces of metadata that can be attached to the core entities:
 - Run
 - Job
-- Dataset
+- Dataset (Inputs or Outputs)
 
 A facet is an atomic piece of metadata identified by its name. This means that emiting a new facet whith the same name for the same entity replaces the previous facet instance for that entity entirely). It is defined as a JSON object that can be either part of the spec or custom facets defined in a different project.
 
-Custom facets must use a distinct prefix named after the project defining them to avoid colision with standard facets defined in the [OpenLineage.yml](OpenLineage.yml) OpenAPI spec.
-They have a schemaURL field pointing to the corresponding version of the facet schema (as a [$ref URL location](https://swagger.io/docs/specification/using-ref/) ).
+Custom facets must use a distinct prefix named after the project defining them to avoid colision with standard facets defined in the [OpenLineage.json](OpenLineage.json) spec.
+They have a \_schemaURL field pointing to the corresponding version of the facet schema (as a JSONPointer: [$ref URL location](https://swagger.io/docs/specification/using-ref/) ).
 
-Example: https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.yml#MyCustomJobFacet
+Example: https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/MyCustomJobFacet
 
 The versioned URL must be an immutable pointer to the version of the facet schema. For example, it should include a tag of a git sha and not a branch name. This should also be a canonical URL. There should be only one URL used for a given version of a schema.
 
@@ -111,3 +110,11 @@ Custom facets can be promoted to the standard by including them in the spec.
 - **schema**: Captures the schema of the dataset
 
 - **dataSource**: Captures the Database instance containing this datasets (ex: Database schema. Object store bucket, ...)
+
+#### Input Dataset Facets
+
+*Note: for now there no input facets defined*
+
+#### Output Dataset Facets
+
+*Note: for now there no output facets defined*

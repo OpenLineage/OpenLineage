@@ -31,14 +31,14 @@
           "description": "The set of **input** datasets.",
           "type": "array",
           "items": {
-            "$ref": "#/definitions/Dataset"
+            "$ref": "#/definitions/InputDataset"
           }
         },
         "outputs": {
           "description": "The set of **output** datasets.",
           "type": "array",
           "items": {
-            "$ref": "#/definitions/Dataset"
+            "$ref": "#/definitions/OutputDataset"
           }
         },
         "producer": {
@@ -117,6 +117,48 @@
       "required": [
         "namespace",
         "name"
+      ]
+    },
+    "InputDataset": {
+      "description": "An input dataset",
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/definitions/Dataset" },
+        {
+          "type": "object",
+          "properties": {
+            "inputFacets": {
+              "description": "The input facets for this dataset.",
+              "type": "object",
+              "properties": {
+              },
+              "additionalProperties": {
+                "$ref": "#/definitions/CustomFacet"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "OutputDataset": {
+      "description": "An output dataset",
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/definitions/Dataset" },
+        {
+          "type": "object",
+          "properties": {
+            "outputFacets": {
+              "description": "The output facets for this dataset",
+              "type": "object",
+              "properties": {
+              },
+              "additionalProperties": {
+                "$ref": "#/definitions/CustomFacet"
+              }
+            }
+          }
+        }
       ]
     },
     "Dataset": {
