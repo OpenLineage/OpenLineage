@@ -9,6 +9,8 @@ import static javax.lang.model.element.Modifier.STATIC;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.URI;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -63,11 +65,11 @@ public class JavaPoetGenerator {
 
     }
 
-    builder.addField(FieldSpec.builder(ClassName.get(String.class), "producer", PRIVATE, FINAL).build());
+    builder.addField(FieldSpec.builder(ClassName.get(URI.class), "producer", PRIVATE, FINAL).build());
     builder.addMethod(MethodSpec.constructorBuilder()
       .addModifiers(PUBLIC)
       .addParameter(
-        ParameterSpec.builder(ClassName.get(String.class), "producer").build()
+        ParameterSpec.builder(ClassName.get(URI.class), "producer").build()
       )
       .addCode("this.producer = producer;\n")
       .build());
@@ -115,7 +117,7 @@ public class JavaPoetGenerator {
           fieldNames.add(f.getName());
           if (f.getName().equals("_schemaURL")) {
             String schemaURL = baseURL + "#/definitions/" + type.getName();
-            constructor.addCode("this.$N = $S;\n", f.getName(), schemaURL);
+            constructor.addCode("this.$N = URI.create($S);\n", f.getName(), schemaURL);
           } else {
             constructor.addJavadoc("@param $N $N\n", f.getName(), f.getDescription() == null ? "the " + f.getName() : f.getDescription());
             constructor.addParameter(
@@ -188,6 +190,16 @@ public class JavaPoetGenerator {
       @Override
       public TypeName visit(PrimitiveType primitiveType) {
         if (primitiveType.getName().equals("string")) {
+          if (primitiveType.getFormat() != null) {
+            String format = primitiveType.getFormat();
+            if (format.equals("uri")) {
+              return ClassName.get(URI.class);
+            } else if (format.equals("date-time")) {
+              return ClassName.get(ZonedDateTime.class);
+            } else {
+              throw new RuntimeException("Unknown format: " + primitiveType.getFormat());
+            }
+          }
           return ClassName.get(String.class);
         }
         throw new RuntimeException("Unknown primitive: " + primitiveType.getName());
