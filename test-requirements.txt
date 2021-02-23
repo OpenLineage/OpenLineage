@@ -17,4 +17,4 @@ google-api-core
 google-api-python-client
 pandas-gbq>=0.13.2
 google-cloud-storage
-sqlparse==0.3.1
+sqlparse==0.4.1
