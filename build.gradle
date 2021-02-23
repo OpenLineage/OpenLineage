@@ -39,7 +39,7 @@ dependencies {
     testImplementation 'net.bytebuddy:byte-buddy-dep:1.10.21'
     testImplementation 'org.apache.spark:spark-core_2.11:2.4.7'
     testImplementation 'org.apache.spark:spark-sql_2.11:2.4.7'
-    testImplementation 'org.mockito:mockito-core:3.6.28'
+    testImplementation 'org.mockito:mockito-core:3.8.0'
     testImplementation 'junit:junit:4.13.2'
 
     annotationProcessor "org.projectlombok:lombok:1.18.16"
