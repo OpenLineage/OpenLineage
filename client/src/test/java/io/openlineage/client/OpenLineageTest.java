@@ -25,16 +25,17 @@ public class OpenLineageTest {
   public void jsonSerialization() throws JsonProcessingException {
 
     String producer = "producer";
+    OpenLineage ol = new OpenLineage(producer);
     String runId = "runId";
-    RunFacets runFacets = new RunFacets(null, null);
-    Run run = new Run(runId, runFacets);
+    RunFacets runFacets = ol.newRunFacets(null, null);
+    Run run = ol.newRun(runId, runFacets);
     String name = "jobName";
     String namespace = "namespace";
-    JobFacets jobFacets = new JobFacets(null, null, null);
-    Job job = new Job(namespace, name, jobFacets);
-    List<InputDataset> inputs = Arrays.asList(new InputDataset("ins", "input", null, null));
-    List<OutputDataset> outputs = Arrays.asList(new OutputDataset("ons", "output", null, null));
-    RunEvent runStateUpdate = new RunEvent("START", "123", run, job, inputs, outputs, producer );
+    JobFacets jobFacets = ol.newJobFacets(null, null, null);
+    Job job = ol.newJob(namespace, name, jobFacets);
+    List<InputDataset> inputs = Arrays.asList(ol.newInputDataset("ins", "input", null, null));
+    List<OutputDataset> outputs = Arrays.asList(ol.newOutputDataset("ons", "output", null, null));
+    RunEvent runStateUpdate = ol.newRunEvent("START", "123", run, job, inputs, outputs);
 
     ObjectMapper mapper = new ObjectMapper();
     mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
