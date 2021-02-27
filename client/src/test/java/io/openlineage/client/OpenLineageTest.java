@@ -128,7 +128,6 @@ public class OpenLineageTest {
 
 
     assertEquals(json, mapper.writeValueAsString(read));
-
-
   }
+
 }

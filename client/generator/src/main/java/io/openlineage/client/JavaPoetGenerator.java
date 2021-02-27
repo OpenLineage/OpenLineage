@@ -21,6 +21,9 @@ import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
@@ -122,6 +125,11 @@ public class JavaPoetGenerator {
           if (f.getName().equals("_schemaURL")) {
             String schemaURL = baseURL + "#/definitions/" + type.getName();
             constructor.addCode("this.$N = URI.create($S);\n", f.getName(), schemaURL);
+            String schema = generateAndValidateSchema(type);
+            classBuilder.addField(
+                FieldSpec.builder(ClassName.get(String.class), "__schema", PUBLIC, FINAL, STATIC)
+                .initializer("$S", schema).build());
+
           } else {
             if (!(f.getName().equals("_producer") || f.getName().equals("producer"))) {
               builderClassBuilder.addField(getTypeName(f.getType()), f.getName(), PRIVATE);
@@ -226,6 +234,63 @@ public class JavaPoetGenerator {
       }
     }
 
+  }
+
+  private String generateAndValidateSchema(ObjectType type) {
+    // generate self contained schema
+    String schema = generateSchema(type);
+    // verify that we can parse it and obtain the same schema back
+    ObjectMapper mapper = new ObjectMapper();
+    try {
+      TypeResolver typeResolver = new TypeResolver(mapper.readValue(schema, JsonNode.class));
+      String other = generateSchema(typeResolver.getRootTypes().get(0));
+      if (!other.equals(schema)) {
+        throw new RuntimeException("\n" + schema + "\n" + other);
+      }
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
+    return schema;
+  }
+
+  private String generateSchema(Type type) {
+    String schema = schema(type);
+    return "{ \"$schema\": \"https://json-schema.org/draft/2019-09/schema\", \"oneOf\": [" + schema + " ] }";
+  }
+
+  private String schema(Type type) {
+    return type.accept(new TypeVisitor<String>(){
+
+      @Override
+      public String visit(PrimitiveType primitiveType) {
+        return "{ \"type\" : \""+primitiveType.getName()+"\""
+            + (primitiveType.getFormat() != null ? ", \"format\" : \""+primitiveType.getFormat()+"\"" : "")
+            + "}";
+      }
+
+      @Override
+      public String visit(ObjectType objectType) {
+        return  "{ \"type\" : \"object\","
+            + "\"properties\": {"
+            + schema(objectType.getProperties())
+            + "}}";
+      }
+
+      private String schema(List<Field> properties) {
+        List<String> elements = new ArrayList<String>();
+        for (Field field : properties) {
+          elements.add("\"" + field.getName() + "\": " + field.getType().accept(this));
+        }
+        return String.join(", ", elements);
+      }
+
+      @Override
+      public String visit(ArrayType arrayType) {
+        return "{ \"type\" : \"array\""
+            + ", \"items\" : " + arrayType.getItems().accept(this)
+            + "}";
+      }
+    });
   }
 
   private Builder getter(Field f) {

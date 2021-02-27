@@ -22,6 +22,7 @@ public class TypeResolver {
   private Map<String, ObjectType> types = new HashMap<>();
   private Set<String> referencedTypes = new HashSet<>();
   private Set<String> baseTypes = new HashSet<>();
+  private List<Type> rootTypes = new ArrayList<>();
 
   public TypeResolver(JsonNode rootSchema) {
     super();
@@ -29,7 +30,7 @@ public class TypeResolver {
     JsonNode jsonNode = rootSchema.get("oneOf");
     if (jsonNode.isArray()) {
       for (final JsonNode type : jsonNode) {
-        resolveType(new Schema("RunEvent", type));
+        rootTypes.add(resolveType(new Schema("RunEvent", type)));
       }
     }
   }
@@ -350,6 +351,10 @@ public class TypeResolver {
 
   public Set<String> getBaseTypes() {
     return baseTypes;
+  }
+
+  public List<Type> getRootTypes() {
+    return rootTypes;
   }
 
 }
