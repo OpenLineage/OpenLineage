@@ -52,11 +52,13 @@ public class TypeResolver {
   }
 
   static class PrimitiveType implements Type {
-    private String name;
+    private final String name;
+    private final String format;
 
-    public PrimitiveType(String name) {
+    public PrimitiveType(String name, String format) {
       super();
       this.name = name;
+      this.format = format;
     }
 
     @Override
@@ -71,6 +73,10 @@ public class TypeResolver {
 
     public String getName() {
       return name;
+    }
+
+    public String getFormat() {
+      return format;
     }
   }
 
@@ -313,8 +319,9 @@ public class TypeResolver {
         return resolveObjectType(schema);
       } else if (typeNode.has("type")) {
         String fieldType = typeNode.get("type").asText();
+        String fieldFormat = typeNode.has("format") ? typeNode.get("format").asText() : null;
         if (fieldType.equals("string")) {
-          return new PrimitiveType(fieldType);
+          return new PrimitiveType(fieldType, fieldFormat);
         } else if (fieldType.equals("object")) {
           return resolveObjectType(typeNode);
         } else if (fieldType.equals("array")) {

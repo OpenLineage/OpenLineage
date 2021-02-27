@@ -2,14 +2,19 @@ package io.openlineage.client;
 
 import static org.junit.Assert.assertEquals;
 
+import java.net.URI;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Test;
 
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.Job;
@@ -23,11 +28,12 @@ public class OpenLineageTest {
 
   @Test
   public void jsonSerialization() throws JsonProcessingException {
+    ZonedDateTime now = ZonedDateTime.now(ZoneId.of("UTC"));
 
-    String producer = "producer";
+    URI producer = URI.create("producer");
     OpenLineage ol = new OpenLineage(producer);
     String runId = "runId";
-    RunFacets runFacets = ol.newRunFacets(null, null);
+    RunFacets runFacets = ol.newRunFacets(ol.newNominalTimeRunFacet(now, now), null);
     Run run = ol.newRun(runId, runFacets);
     String name = "jobName";
     String namespace = "namespace";
@@ -35,9 +41,12 @@ public class OpenLineageTest {
     Job job = ol.newJob(namespace, name, jobFacets);
     List<InputDataset> inputs = Arrays.asList(ol.newInputDataset("ins", "input", null, null));
     List<OutputDataset> outputs = Arrays.asList(ol.newOutputDataset("ons", "output", null, null));
-    RunEvent runStateUpdate = ol.newRunEvent("START", "123", run, job, inputs, outputs);
+    RunEvent runStateUpdate = ol.newRunEvent("START", now, run, job, inputs, outputs);
 
     ObjectMapper mapper = new ObjectMapper();
+    mapper.registerModule(new JavaTimeModule());
+    mapper.setSerializationInclusion(Include.NON_NULL);
+    mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
     String json = mapper.writeValueAsString(runStateUpdate);
     RunEvent read = mapper.readValue(json, RunEvent.class);
