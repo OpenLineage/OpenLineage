@@ -103,6 +103,8 @@ public class SparkSQLExecutionContext implements ExecutionContext {
       log.info("No execution info {}", queryExecution);
       return;
     }
+    log.debug("Traversing logical plan {}", queryExecution.logical().toJSON());
+    log.debug("Physical plan executed {}", queryExecution.executedPlan().toJSON());
     DatasetLogicalPlanTraverser.TraverserResult r =
         datasetLogicalPlanTraverser.build(
             queryExecution.logical(), marquezContext.getJobNamespace());

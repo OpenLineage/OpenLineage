@@ -86,6 +86,11 @@ public class SparkListener {
                   }
                   return null;
                 });
+    log.debug(
+        "Initialized OpenLineage listener with \nspark version: {}\njava.version: {}\nconfiguration: {}",
+        context.version(),
+        System.getProperty("java.version"),
+        context.conf());
     context.addSparkListener(listener);
   }
 
