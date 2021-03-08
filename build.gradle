@@ -34,7 +34,7 @@ dependencies {
 
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.12.1'
     implementation 'com.fasterxml.jackson.core:jackson-core:2.12.1'
-    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.12.2'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.12.1'
     testImplementation 'net.bytebuddy:byte-buddy-agent:1.10.21'
     testImplementation 'net.bytebuddy:byte-buddy-dep:1.10.21'
     testImplementation 'org.apache.spark:spark-core_2.11:2.4.7'
