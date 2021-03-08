@@ -32,7 +32,7 @@ dependencies {
     compileOnly 'org.projectlombok:lombok:1.18.18'
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.0.3'
 
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.12.1'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.12.2'
     implementation 'com.fasterxml.jackson.core:jackson-core:2.12.2'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.12.1'
     testImplementation 'net.bytebuddy:byte-buddy-agent:1.10.21'
