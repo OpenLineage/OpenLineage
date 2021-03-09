@@ -27,6 +27,8 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.SparkSession$;
+import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -46,6 +48,11 @@ public class LibraryTest {
         new StaticExecutionContextFactory(marquezContext));
   }
 
+  @After
+  public void tearDown() throws Exception {
+    SparkSession$.MODULE$.cleanupAnyExistingSession();
+  }
+
   @Test
   public void testSparkSql() throws IOException {
     reset(marquezContext);
@@ -62,7 +69,7 @@ public class LibraryTest {
             .getOrCreate();
 
     URL url = Resources.getResource("data.txt");
-    final Dataset<String> data = spark.read().textFile(url.getPath()).cache();
+    final Dataset<String> data = spark.read().textFile(url.getPath());
 
     final long numAs = data.filter(s -> s.contains("a")).count();
     final long numBs = data.filter(s -> s.contains("b")).count();
@@ -108,7 +115,7 @@ public class LibraryTest {
     textFile
         .flatMap(s -> Arrays.asList(s.split(" ")).iterator())
         .mapToPair(word -> new Tuple2<>(word, 1))
-        .reduceByKey((a, b) -> a + b)
+        .reduceByKey(Integer::sum)
         .count();
 
     sc.stop();
