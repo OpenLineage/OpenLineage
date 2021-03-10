@@ -58,15 +58,15 @@ public class JavaPoetGenerator {
 
   public void generate(PrintWriter printWriter) throws IOException {
 
-    TypeSpec.Builder builder = TypeSpec.classBuilder(CONTAINER_CLASS_NAME)
+    TypeSpec.Builder containerTypeBuilder = TypeSpec.classBuilder(CONTAINER_CLASS_NAME)
         .addModifiers(PUBLIC, FINAL);
     if (baseURL.equals("")) {
-      builder.addJavadoc("$S", "Warning: this class was generated from a local file and will not provide absolute _schemaURL fields in facets");
+      containerTypeBuilder.addJavadoc("$S", "Warning: this class was generated from a local file and will not provide absolute _schemaURL fields in facets");
 
     }
 
-    builder.addField(FieldSpec.builder(ClassName.get(URI.class), "producer", PRIVATE, FINAL).build());
-    builder.addMethod(MethodSpec.constructorBuilder()
+    containerTypeBuilder.addField(FieldSpec.builder(ClassName.get(URI.class), "producer", PRIVATE, FINAL).build());
+    containerTypeBuilder.addMethod(MethodSpec.constructorBuilder()
       .addModifiers(PUBLIC)
       .addParameter(
         ParameterSpec.builder(ClassName.get(URI.class), "producer").build()
@@ -74,8 +74,8 @@ public class JavaPoetGenerator {
       .addCode("this.producer = producer;\n")
       .build());
 
-    generateTypes(builder);
-    TypeSpec openLineage = builder.build();
+    generateTypes(containerTypeBuilder);
+    TypeSpec openLineage = containerTypeBuilder.build();
 
     JavaFile javaFile = JavaFile.builder(PACKAGE, openLineage)
         .build();
@@ -83,7 +83,7 @@ public class JavaPoetGenerator {
     javaFile.writeTo(printWriter);
   }
 
-  private void generateTypes(TypeSpec.Builder builder) {
+  private void generateTypes(TypeSpec.Builder containerTypeBuilder) {
     Collection<ObjectType> types = typeResolver.getTypes();
     for (ObjectType type : types) {
 
@@ -97,8 +97,12 @@ public class JavaPoetGenerator {
           interfaceBuilder.addMethod(getter);
         }
         TypeSpec intrfc = interfaceBuilder.build();
-        builder.addType(intrfc);
+        containerTypeBuilder.addType(intrfc);
       } else {
+        TypeSpec.Builder builderClassBuilder = TypeSpec.classBuilder(type.getName() + "Builder")
+            .addModifiers(PUBLIC, FINAL);
+        List<CodeBlock> builderParams = new ArrayList<>();
+
         TypeSpec.Builder classBuilder = TypeSpec.classBuilder(type.getName())
             .addModifiers(STATIC, PUBLIC, FINAL);
         for (String parent : type.getParents()) {
@@ -119,6 +123,20 @@ public class JavaPoetGenerator {
             String schemaURL = baseURL + "#/definitions/" + type.getName();
             constructor.addCode("this.$N = URI.create($S);\n", f.getName(), schemaURL);
           } else {
+            if (!(f.getName().equals("_producer") || f.getName().equals("producer"))) {
+              builderClassBuilder.addField(getTypeName(f.getType()), f.getName(), PRIVATE);
+              builderClassBuilder.addMethod(
+                  MethodSpec
+                  .methodBuilder("set" + titleCase(f.getName()))
+                  .addParameter(getTypeName(f.getType()), f.getName())
+                  .addJavadoc("@param $N $N\n", f.getName(), f.getDescription() == null ? "the " + f.getName() : f.getDescription())
+                  .addModifiers(PUBLIC)
+                  .returns(ClassName.get(CONTAINER_CLASS, type.getName() + "Builder"))
+                  .addJavadoc("@return this\n")
+                  .addCode("this.$N = $N;\n", f.getName(), f.getName())
+                  .addCode("return this;")
+                  .build());
+            }
             constructor.addJavadoc("@param $N $N\n", f.getName(), f.getDescription() == null ? "the " + f.getName() : f.getDescription());
             constructor.addParameter(
                 ParameterSpec.builder(getTypeName(f.getType()), f.getName())
@@ -127,10 +145,12 @@ public class JavaPoetGenerator {
             constructor.addCode("this.$N = $N;\n", f.getName(), f.getName());
             if (f.getName().equals("_producer") || f.getName().equals("producer")) {
               factoryParams.add(CodeBlock.of("this.producer"));
+              builderParams.add(CodeBlock.of("OpenLineage.this.producer"));
             } else {
               factory.addParameter(ParameterSpec.builder(getTypeName(f.getType()), f.getName()).build());
               factory.addJavadoc("@param $N $N\n", f.getName(), f.getDescription() == null ? "the " + f.getName() : f.getDescription());
               factoryParams.add(CodeBlock.of("$N", f.getName()));
+              builderParams.add(CodeBlock.of("$N", f.getName()));
             }
           }
           MethodSpec getter = getter(f)
@@ -143,7 +163,21 @@ public class JavaPoetGenerator {
         factory.addCode("return new $N(", type.getName());
         factory.addCode(CodeBlock.join(factoryParams, ", "));
         factory.addCode(");\n");
-        builder.addMethod(factory.build());
+        containerTypeBuilder.addMethod(factory.build());
+
+        containerTypeBuilder.addMethod(MethodSpec.methodBuilder("new" + type.getName() + "Builder")
+            .addModifiers(PUBLIC)
+            .returns(ClassName.get(CONTAINER_CLASS, type.getName() + "Builder"))
+            .addCode("return new $N();", type.getName() + "Builder")
+            .build());
+
+        Builder build = MethodSpec
+            .methodBuilder("build")
+            .addModifiers(PUBLIC)
+            .returns(getTypeName(type))
+            .addCode("var __result = new $N(", type.getName())
+            .addCode(CodeBlock.join(builderParams, ", "))
+            .addCode(");\n");
 
          // additionalFields
         if (type.isHasAdditionalProperties()) {
@@ -163,12 +197,32 @@ public class JavaPoetGenerator {
               .addAnnotation(JsonAnySetter.class)
               .build());
 
+          builderClassBuilder.addField(
+              FieldSpec.builder(additionalPropertiesType, fieldName, PRIVATE, FINAL)
+              .initializer("new $T<>()", HashMap.class)
+              .build());
+          builderClassBuilder.addMethod(MethodSpec
+              .methodBuilder("put")
+              .addModifiers(PUBLIC)
+              .addParameter(TypeName.get(String.class), "key")
+              .addParameter(additionalPropertiesValueType, "value")
+              .addCode("this.$N.put(key, value);", fieldName)
+              .build());
+
+          build.addCode("__result.getAdditionalProperties().putAll(additionalProperties);\n");
+
           constructor.addCode(CodeBlock.builder().addStatement("this.$N = new $T<>()", fieldName, HashMap.class).build());
         }
 
+
+        builderClassBuilder.addMethod(
+            build
+            .addCode("return __result;\n")
+            .build());
+
         classBuilder.addMethod(constructor.build());
-        TypeSpec clss = classBuilder.build();
-        builder.addType(clss);
+        containerTypeBuilder.addType(classBuilder.build());
+        containerTypeBuilder.addType(builderClassBuilder.build());
       }
     }
 
