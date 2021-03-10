@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-import org.apache.tools.ant.filters.*
+import org.apache.tools.ant.filters.ReplaceTokens
 
 plugins {
     id 'maven-publish'
@@ -40,9 +40,22 @@ dependencies {
     testImplementation 'org.apache.spark:spark-core_2.11:2.4.7'
     testImplementation 'org.apache.spark:spark-sql_2.11:2.4.7'
     testImplementation 'org.mockito:mockito-core:3.8.0'
-    testImplementation 'junit:junit:4.13.2'
+    testImplementation(platform('org.junit:junit-bom:5.7.1'))
+    testImplementation('org.junit.jupiter:junit-jupiter:5.7.1')
 
     annotationProcessor "org.projectlombok:lombok:1.18.16"
+}
+
+test {
+    useJUnitPlatform()
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = true
+    }
+    systemProperties = [
+            'junit.platform.output.capture.stdout': 'true',
+            'junit.platform.output.capture.stderr': 'true'
+    ]
 }
 
 publishing {

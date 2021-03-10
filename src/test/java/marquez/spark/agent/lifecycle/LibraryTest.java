@@ -17,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 import marquez.spark.agent.MarquezAgent;
 import marquez.spark.agent.MarquezContext;
 import marquez.spark.agent.client.LineageEvent;
@@ -28,9 +29,10 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.SparkSession$;
-import org.junit.After;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import scala.Tuple2;
@@ -38,7 +40,7 @@ import scala.Tuple2;
 public class LibraryTest {
   static MarquezContext marquezContext;
 
-  @BeforeClass
+  @BeforeAll
   public static void setUp() throws Exception {
     marquezContext = mock(MarquezContext.class);
     ByteBuddyAgent.install();
@@ -48,13 +50,13 @@ public class LibraryTest {
         new StaticExecutionContextFactory(marquezContext));
   }
 
-  @After
+  @AfterEach
   public void tearDown() throws Exception {
     SparkSession$.MODULE$.cleanupAnyExistingSession();
   }
 
-  @Test
-  public void testSparkSql() throws IOException {
+  @RepeatedTest(30)
+  public void testSparkSql() throws IOException, TimeoutException {
     reset(marquezContext);
     when(marquezContext.getJobNamespace()).thenReturn("ns_name");
     when(marquezContext.getJobName()).thenReturn("job_name");
@@ -75,6 +77,7 @@ public class LibraryTest {
     final long numBs = data.filter(s -> s.contains("b")).count();
 
     System.out.println("Lines with a: " + numAs + ", lines with b: " + numBs);
+    spark.sparkContext().listenerBus().waitUntilEmpty(1000);
     spark.stop();
 
     ArgumentCaptor<LineageEvent> lineageEvent = ArgumentCaptor.forClass(LineageEvent.class);

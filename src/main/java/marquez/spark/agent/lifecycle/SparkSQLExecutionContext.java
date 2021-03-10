@@ -29,6 +29,7 @@ import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 @Slf4j
 public class SparkSQLExecutionContext implements ExecutionContext {
   private final long executionId;
+  private final QueryExecution queryExecution;
 
   private MarquezContext marquezContext;
   private final LogicalPlanFacetTraverser logicalPlanFacetTraverser;
@@ -43,6 +44,7 @@ public class SparkSQLExecutionContext implements ExecutionContext {
     this.marquezContext = marquezContext;
     this.logicalPlanFacetTraverser = logicalPlanFacetTraverser;
     this.datasetLogicalPlanTraverser = datasetLogicalPlanTraverser;
+    this.queryExecution = SQLExecution.getQueryExecution(executionId);
   }
 
   public void start(SparkListenerSQLExecutionStart startEvent) {}
@@ -55,7 +57,6 @@ public class SparkSQLExecutionContext implements ExecutionContext {
   @Override
   public void start(SparkListenerJobStart jobStart) {
     log.info("Starting job as part of spark-sql:" + jobStart.jobId());
-    QueryExecution queryExecution = SQLExecution.getQueryExecution(executionId);
     if (queryExecution == null) {
       log.info("No execution info {}", queryExecution);
       return;
@@ -98,7 +99,6 @@ public class SparkSQLExecutionContext implements ExecutionContext {
   @Override
   public void end(SparkListenerJobEnd jobEnd) {
     log.info("Ending job as part of spark-sql:" + jobEnd.jobId());
-    QueryExecution queryExecution = SQLExecution.getQueryExecution(executionId);
     if (queryExecution == null) {
       log.info("No execution info {}", queryExecution);
       return;
