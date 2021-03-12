@@ -8,32 +8,34 @@ from airflow.utils.state import State
 _DAG_DEFAULT_OWNER = 'anonymous'
 _DAG_DEFAULT_NAMESPACE = 'default'
 
+_DAG_NAMESPACE = os.getenv(
+    'MARQUEZ_NAMESPACE', _DAG_DEFAULT_NAMESPACE
+)
+
 log = logging.getLogger(__name__)
 
 
 class Marquez:
-    _marquez_client = None
-    marquez_namespace = os.getenv('MARQUEZ_NAMESPACE',
-                                  _DAG_DEFAULT_NAMESPACE)
+    _client = None
 
     def get_or_create_marquez_client(self):
-        if not self._marquez_client:
-            self._marquez_client = Clients.new_write_only_client()
-        return self._marquez_client
+        if not self._client:
+            self._client = Clients.new_write_only_client()
+        return self._client
 
     def create_namespace(self):
         # TODO: Use 'anonymous' owner for now, but we may want to use
         # the 'owner' attribute defined via default_args for a DAG
         log.debug(
-            f"Creating namespace '{self.marquez_namespace}' with "
+            f"Creating namespace '{_DAG_NAMESPACE}' with "
             f"owner '{_DAG_DEFAULT_OWNER}'...")
         self.get_or_create_marquez_client() \
-            .create_namespace(self.marquez_namespace, _DAG_DEFAULT_OWNER)
+            .create_namespace(_DAG_NAMESPACE, _DAG_DEFAULT_OWNER)
 
     def create_run(self, run_id, step, run_args, start_time, end_time) -> str:
         marquez_client = self.get_or_create_marquez_client()
         marquez_client.create_job_run(
-            namespace_name=self.marquez_namespace,
+            namespace_name=_DAG_NAMESPACE,
             job_name=step.name,
             run_id=run_id,
             run_args=run_args,
@@ -64,7 +66,7 @@ class Marquez:
                     dataset_type=dataset.type,
                     physical_name=dataset.name,
                     source_name=dataset.source.name,
-                    namespace_name=self.marquez_namespace,
+                    namespace_name=_DAG_NAMESPACE,
                     fields=fields,
                     run_id=marquez_job_run_id)
 
@@ -79,7 +81,7 @@ class Marquez:
     def create_job(self, step, location, description, state=None, run_id=None):
         # Create a job to ensure it exists
         self.get_or_create_marquez_client().create_job(
-            namespace_name=self.marquez_namespace,
+            namespace_name=_DAG_NAMESPACE,
             job_name=step.name,
             job_type=JobType.BATCH,
             location=step.location or location,
@@ -115,6 +117,6 @@ class Marquez:
             return None
 
         return list(map(lambda ds: {
-            'namespace': self.marquez_namespace,
+            'namespace': _DAG_NAMESPACE,
             'name': ds.name
         }, datasets))

@@ -24,6 +24,7 @@ from airflow.utils.state import State
 
 from marquez_client.models import JobType, DatasetType
 
+from marquez_airflow.dag import _EXTRACTORS as _DAG_EXTRACTORS
 from marquez_airflow import DAG
 from marquez_airflow.extractors import (
     BaseExtractor, StepMetadata, Source, Dataset
@@ -339,7 +340,7 @@ def test_marquez_dag_with_extractor(mock_get_or_create_marquez_client,
     completed_task_location = get_location(task_will_complete.dag.fileloc)
 
     # Add the dummy extractor to the list for the task above
-    dag._extractors[task_will_complete.__class__] = TestFixtureDummyExtractor
+    _DAG_EXTRACTORS[task_will_complete.__class__] = TestFixtureDummyExtractor
 
     # --- pretend run the DAG
 
@@ -531,7 +532,7 @@ def test_marquez_dag_with_extract_on_complete(
     completed_task_location = get_location(task_will_complete.dag.fileloc)
 
     # Add the dummy extractor to the list for the task above
-    dag._extractors[task_will_complete.__class__] = \
+    _DAG_EXTRACTORS[task_will_complete.__class__] = \
         TestFixtureDummyExtractorOnComplete
 
     # Create DAG run and mark as running

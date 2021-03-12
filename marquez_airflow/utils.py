@@ -34,14 +34,6 @@ _NOMINAL_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
 
 class JobIdMapping:
-    _instance = None
-
-    def __new__(cls, *args, **kwargs):
-        if not cls._instance:
-            cls._instance = super(
-                JobIdMapping, cls).__new__(cls, *args, **kwargs)
-        return cls._instance
-
     @staticmethod
     def set(job_name, run_id, val):
         airflow.models.Variable.set(
