@@ -43,5 +43,5 @@ The [specification](spec/OpenLineage.md) is defined using OpenAPI and allows ext
  - [Metadata day 2020. Open Lineage lightning talk](https://www.youtube.com/watch?v=anlV5Er_BpM)
  - [Open Core Summit 2020. Observability for data pipelines. OpenLineage project launch](https://www.coss.community/coss/ocs-2020-breakout-julien-le-dem-3eh4)
  - [Data Driven NYC Feb 2021. Data Observability and Pipelines: OpenLineage and Marquez](https://mattturck.com/datakin/)
- - [Big Data Technology Warsaw Summit. Data lineage and Oservability with Marquez and OpenLineage](https://conference.bigdatatechwarsaw.eu/julien-le-dem/)
+ - [Big Data Technology Warsaw Summit. Data lineage and Observability with Marquez and OpenLineage](https://conference.bigdatatechwarsaw.eu/julien-le-dem/)
 
