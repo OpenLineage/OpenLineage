@@ -40,5 +40,8 @@ The [specification](spec/OpenLineage.md) is defined using OpenAPI and allows ext
 - Gougle group: [openlineage@googlegroups.com](https://groups.google.com/g/openlineage)
 
 ## Talks
- - [Metadata day 2020 Open Lineage lightning talk](https://www.youtube.com/watch?v=anlV5Er_BpM)
+ - [Metadata day 2020. Open Lineage lightning talk](https://www.youtube.com/watch?v=anlV5Er_BpM)
+ - [Open Core Summit 2020. Observability for data pipelines. OpenLineage project launch](https://www.coss.community/coss/ocs-2020-breakout-julien-le-dem-3eh4)
+ - [Data Driven NYC Feb 2021. Data Observability and Pipelines: OpenLineage and Marquez](https://mattturck.com/datakin/)
+ - [Big Data Technology Warsaw Summit.](https://conference.bigdatatechwarsaw.eu/julien-le-dem/)
 
