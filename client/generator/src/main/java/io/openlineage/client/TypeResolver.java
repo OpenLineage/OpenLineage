@@ -1,355 +1,320 @@
 package io.openlineage.client;
 
+
+import static java.util.Arrays.asList;
+
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import io.openlineage.client.SchemaParser.AllOfType;
+import io.openlineage.client.SchemaParser.ArrayType;
+import io.openlineage.client.SchemaParser.Field;
+import io.openlineage.client.SchemaParser.ObjectType;
+import io.openlineage.client.SchemaParser.OneOfType;
+import io.openlineage.client.SchemaParser.PrimitiveType;
+import io.openlineage.client.SchemaParser.RefType;
+import io.openlineage.client.SchemaParser.Type;
+import io.openlineage.client.SchemaParser.TypeVisitor;
+
 public class TypeResolver {
-  private static final Logger logger = LoggerFactory.getLogger(TypeResolver.class);
-  private JsonNode rootSchema;
-  private Map<String, ObjectType> types = new HashMap<>();
+
+  private Map<String, ObjectResolvedType> types = new HashMap<>();
   private Set<String> referencedTypes = new HashSet<>();
   private Set<String> baseTypes = new HashSet<>();
 
+  private ResolvedType rootResolvedType;
+
   public TypeResolver(JsonNode rootSchema) {
     super();
-    this.rootSchema = rootSchema;
-    JsonNode jsonNode = rootSchema.get("oneOf");
-    if (jsonNode.isArray()) {
-      for (final JsonNode type : jsonNode) {
-        resolveType(new Schema("RunEvent", type));
+    SchemaParser parser = new SchemaParser();
+    Type rootType = parser.parse(rootSchema);
+
+    TypeVisitor<ResolvedType> visitor = new TypeVisitor<ResolvedType>(){
+
+      String currentName = "";
+
+      @Override
+      public ResolvedType visit(PrimitiveType primitiveType) {
+        return new PrimitiveResolvedType(primitiveType);
       }
-    }
-  }
 
-  interface TypeVisitor<T> {
-
-    T visit(PrimitiveType primitiveType);
-
-    T visit(ObjectType objectType);
-
-    T visit(ArrayType arrayType);
-
-  }
-
-  interface Type {
-
-    <T> T accept(TypeVisitor<T> visitor);
-    default boolean isObject() { return false; };
-    default ObjectType asObject() { return (ObjectType) this; };
-  }
-
-  static class PrimitiveType implements Type {
-    private final String name;
-    private final String format;
-
-    public PrimitiveType(String name, String format) {
-      super();
-      this.name = name;
-      this.format = format;
-    }
-
-    @Override
-    public <T> T accept(TypeVisitor<T> visitor) {
-      return visitor.visit(this);
-    }
-
-    @Override
-    public String toString() {
-      return "PrimitiveType [name=" + name + "]";
-    }
-
-    public String getName() {
-      return name;
-    }
-
-    public String getFormat() {
-      return format;
-    }
-  }
-
-  public static class Field {
-    private String name;
-    private Type type;
-    private String description;
-
-    public Field(String name, Type type, String description) {
-      super();
-      this.name = name;
-      this.type = type;
-      this.description = description;
-    }
-
-    public String getName() {
-      return name;
-    }
-
-    public Type getType() {
-      return type;
-    }
-
-    public String getDescription() {
-      return description;
-    }
-
-  }
-
-  static class ObjectType implements Type {
-    private final String name;
-    private final List<Field> properties;
-    private final Set<String> parents;
-    private final boolean hasAdditionalProperties;
-    private final Type additionalPropertiesType;
-
-    public ObjectType(String name, List<Field> properties, Set<String> parents, boolean hasAdditionalProperties, Type additionalPropertiesType) {
-      super();
-      this.name = name;
-      this.properties = properties;
-      this.parents = parents;
-      this.additionalPropertiesType = additionalPropertiesType;
-      this.hasAdditionalProperties = hasAdditionalProperties;
-    }
-    public boolean isObject() { return true; };
-    @Override
-    public <T> T accept(TypeVisitor<T> visitor) {
-      return visitor.visit(this);
-    }
-
-    public String getName() {
-      return name;
-    }
-
-    public List<Field> getProperties() {
-      return properties;
-    }
-
-    public Set<String> getParents() {
-      return parents;
-    }
-
-    public boolean isHasAdditionalProperties() {
-      return hasAdditionalProperties;
-    }
-
-    public Type getAdditionalPropertiesType() {
-      return additionalPropertiesType;
-    }
-
-    @Override
-    public String toString() {
-      return "ObjectType [name=" + name + ", properties=" + properties + "]";
-    }
-
-  }
-
-  static class ArrayType implements Type {
-    private Type items;
-
-    public ArrayType(Type items) {
-      super();
-      this.items = items;
-    }
-
-    public Type getItems() {
-      return items;
-    }
-
-    @Override
-    public <T> T accept(TypeVisitor<T> visitor) {
-      return visitor.visit(this);
-    }
-    @Override
-    public String toString() {
-      return "ArrayType [items=" + items + "]";
-    }
-
-  }
-
-  public static class Schema {
-    String name;
-    JsonNode schema;
-    public Schema(String name, JsonNode schema) {
-      super();
-      this.name = name;
-      this.schema = schema;
-    }
-    public String getName() {
-      return name;
-    }
-    public JsonNode getSchema() {
-      return schema;
-    }
-    @Override
-    public String toString() {
-      return name + " " + schema;
-    }
-    public String getType() {
-      return schema.get("type").asText();
-    }
-    public boolean has(String fieldName) {
-      return schema.has(fieldName);
-    }
-    public JsonNode get(String fieldName) {
-      return schema.get(fieldName);
-    }
-
-    public boolean isObject() {
-      return schema.has("type") && schema.get("type").asText().equals("object");
-    }
-
-    public Schema rename(String newName) {
-      return new Schema(newName, schema);
-    }
-
-  }
-
-  private ObjectType resolveObjectType(Schema schema) {
-    logger.debug("resolveObjectType " + schema);
-    try {
-      if (schema.getName() != null && types.containsKey(schema.getName())) {
-        return types.get(schema.getName());
+      @Override
+      public ResolvedType visit(ObjectType objectType) {
+        List<Field> properties = objectType.getProperties();
+        List<ResolvedField> resolvedFields = new ArrayList<>(properties.size());
+        resolvedFields.addAll(resolveFields(properties));
+        ObjectResolvedType objectResolvedType = new ObjectResolvedType(asList(objectType), currentName, Collections.emptySet(), resolvedFields, objectType.hasAdditionalProperties(), visit(objectType.getAdditionalPropertiesType()));
+        types.put(objectResolvedType.getName(), objectResolvedType);
+        return objectResolvedType;
       }
-      String type = schema.getType();
-      Set<String> parents = new LinkedHashSet<String>();
-      List<Field> fields = new ArrayList<Field>();
-      boolean hasAdditionalProperties = false;
-      Type additionalPropertiesType = null;
-      if (type.equals("object")) {
-        if (schema.has("allOf")) {
-          JsonNode allOf = schema.get("allOf");
-          for (JsonNode node : allOf) {
-            ObjectType oneType = resolveType(new Schema(schema.getName(), node)).asObject();
-            String baseName = oneType.asObject().name;
-            if (!baseName.contentEquals(schema.getName())) {
-              // base interface
-              baseTypes.add(baseName);
-              parents.add(baseName);
-            } else {
-              // actual type definition, possibly includes additional properties
-              if (oneType.hasAdditionalProperties) {
-                hasAdditionalProperties = true;
-                additionalPropertiesType = oneType.additionalPropertiesType;
+
+      private List<ResolvedField> resolveFields(List<Field> properties) {
+        List<ResolvedField> resolvedFields = new ArrayList<>(properties.size());
+        String previousCurrentName = currentName;
+        for (Field property : properties) {
+          currentName = previousCurrentName + titleCase(property.getName());
+          ResolvedField resolvedField = new ResolvedField(property, visit(property.getType()));
+          resolvedFields.add(resolvedField);
+          referencedTypes.add(resolvedField.getType().accept(new ResolvedTypeVisitor<String>() {
+            @Override
+            public String visit(PrimitiveResolvedType primitiveType) {
+              return primitiveType.getName();
+            }
+
+            @Override
+            public String visit(ObjectResolvedType objectType) {
+              return objectType.getName();
+            }
+
+            @Override
+            public String visit(ArrayResolvedType arrayType) {
+              return visit(arrayType.items);
+            }
+
+          }));
+        }
+        currentName = previousCurrentName;
+        return resolvedFields;
+      }
+
+      @Override
+      public ResolvedType visit(ArrayType arrayType) {
+        return new ArrayResolvedType(arrayType, visit(arrayType.getItems()));
+      }
+
+      @Override
+      public ResolvedType visit(OneOfType oneOfType) {
+        List<Type> types = oneOfType.getTypes();
+        if (types.size() != 1) {
+          throw new UnsupportedOperationException("Only oneOf of size 1 accepted for now: " + types);
+        }
+        return visit(types.get(0));
+      }
+
+      @Override
+      public ResolvedType visit(AllOfType allOfType) {
+        List<Type> children = allOfType.getChildren();
+        List<ObjectType> castChildren = new ArrayList<>(children.size());
+        List<ResolvedField> combinedProperties = new ArrayList<>();
+        boolean additionalProperties = false;
+        ResolvedType additionalPropertiesType = null;
+        Set<String> parents = new LinkedHashSet<String>();
+        for (Type child : children) {
+          ObjectResolvedType resolvedChildType = (ObjectResolvedType) visit(child);
+          List<ObjectType> objectTypes = resolvedChildType.getObjectTypes();
+          if (!currentName.equals(resolvedChildType.getName())) {
+            // base interface
+            baseTypes.add(resolvedChildType.getName());
+            parents.add(resolvedChildType.getName());
+          }
+          castChildren.addAll(objectTypes);
+          combinedProperties.addAll(resolvedChildType.getProperties());
+          if (resolvedChildType.hasAdditionalProperties()) {
+            additionalProperties = true;
+            if (resolvedChildType.getAdditionalPropertiesType() != null) {
+              if (additionalPropertiesType == null) {
+                additionalPropertiesType = resolvedChildType.getAdditionalPropertiesType();
+              } else {
+                if (!additionalPropertiesType.equals(resolvedChildType.getAdditionalPropertiesType())) {
+                  throw new UnsupportedOperationException("can not combine different additionalProperties types in allOf " + children);
+                }
               }
             }
-            fields.addAll(oneType.properties);
           }
-        } else  if (schema.has("properties") || schema.has("additionalProperties")) {
-          fields.addAll(resolveFields(schema));
-          if (schema.has("additionalProperties")) {
-            hasAdditionalProperties = true;
-            JsonNode additionalProperties = schema.get("additionalProperties");
-            if (additionalProperties.isObject()) {
-              additionalPropertiesType = resolveType(new Schema(schema.getName() + "_additionalProperties", additionalProperties));
-            }
-          }
-        } else {
-          throw new RuntimeException("Unknown object type " + schema);
         }
-      } else {
-        throw new RuntimeException("This should be and object: " + schema);
+        ObjectResolvedType objectResolvedType = new ObjectResolvedType(castChildren, currentName, parents, combinedProperties, additionalProperties, additionalPropertiesType);
+        types.put(objectResolvedType.getName(), objectResolvedType);
+        return objectResolvedType;
       }
-      ObjectType result = new ObjectType(schema.getName(), fields, parents, hasAdditionalProperties, additionalPropertiesType);
-      if (schema.getName() != null) {
-        types.put(schema.getName(), result);
-      }
-      return result;
-    } catch (RuntimeException e) {
-      throw new RuntimeException("can't resolve object type " + schema, e);
-    }
-  }
 
-  private List<Field> resolveFields(Schema schema) {
-    logger.debug("resolveFields " + schema);
-    List<Field> result = new ArrayList<Field>();
-    if (!schema.has("properties")) {
-      return result;
-    }
-    JsonNode properties = schema.get("properties");
-
-    for (Iterator<Entry<String, JsonNode>> fields = properties.fields(); fields.hasNext(); ) {
-      Entry<String, JsonNode> field = fields.next();
-      Type fieldType = resolveType(new Schema(schema.getName()+ titleCase(field.getKey()), field.getValue()));
-      referencedTypes.add(fieldType.accept(new TypeVisitor<String>() {
-        @Override
-        public String visit(PrimitiveType primitiveType) {
-          return primitiveType.name;
-        }
-
-        @Override
-        public String visit(ObjectType objectType) {
-          return objectType.name;
-        }
-
-        @Override
-        public String visit(ArrayType arrayType) {
-          return arrayType.items.accept(this);
-        }
-
-      }));
-      String description = field.getValue().has("description") ? field.getValue().get("description").asText() : null;
-      result.add(new Field(field.getKey(), fieldType, description));
-    }
-    return result;
-  }
-
-  private Type resolveType(Schema typeNode) {
-    logger.debug("resolveType " + typeNode);
-    try {
-      if (typeNode.has("$ref")) {
-        String absolutePointer = typeNode.get("$ref").asText();
+      @Override
+      public ResolvedType visit(RefType refType) {
+        String absolutePointer = refType.getPointer();
         if (!absolutePointer.startsWith("#")) {
           throw new RuntimeException("For now we support only types in the same file (starting with #): " + absolutePointer);
         }
         String pointer = absolutePointer.substring(1);
         JsonNode ref = rootSchema.at(pointer);
-        String name = lastPart(pointer);
-        Schema schema = new Schema(name, ref);
-        return resolveObjectType(schema);
-      } else if (typeNode.has("type")) {
-        String fieldType = typeNode.get("type").asText();
-        String fieldFormat = typeNode.has("format") ? typeNode.get("format").asText() : null;
-        if (fieldType.equals("string")) {
-          return new PrimitiveType(fieldType, fieldFormat);
-        } else if (fieldType.equals("object")) {
-          return resolveObjectType(typeNode);
-        } else if (fieldType.equals("array")) {
-          Type itemsType = resolveType(new Schema(typeNode.getName(), typeNode.getSchema().get("items")));
-          return new ArrayType(itemsType);
+        String typeName = lastPart(pointer);
+        if (types.containsKey(typeName)) {
+          return types.get(typeName);
+        }
+        String previousCurrentName = currentName;
+        currentName = typeName;
+        try {
+          return visit(parser.parse(ref));
+        } finally {
+          currentName = previousCurrentName;
         }
       }
-    } catch (RuntimeException e) {
-      throw new RuntimeException("can't resolve type " + typeNode, e);
-    }
-    throw new RuntimeException("unknown schema " + typeNode);
+
+      private String lastPart(String pointer) {
+        int i = pointer.lastIndexOf("/");
+        return pointer.substring(i + 1);
+      }
+
+    };
+
+    this.rootResolvedType = rootType.accept(visitor);
   }
 
   public static String titleCase(String name) {
     return name.substring(0, 1).toUpperCase() + name.substring(1);
   }
 
-  private String lastPart(String pointer) {
-    int i = pointer.lastIndexOf("/");
-    return pointer.substring(i + 1);
-  }
-
-  public Collection<ObjectType> getTypes() {
+  public Collection<ObjectResolvedType> getTypes() {
     return types.values();
   }
 
   public Set<String> getBaseTypes() {
     return baseTypes;
+  }
+
+  public ResolvedType getRootResolvedType() {
+    return rootResolvedType;
+  }
+
+  interface ResolvedType {
+    <T> T accept(ResolvedTypeVisitor<T> visitor);
+  }
+
+  interface ResolvedTypeVisitor<T> {
+
+    T visit(PrimitiveResolvedType primitiveType);
+
+    T visit(ObjectResolvedType objectType);
+
+    T visit(ArrayResolvedType arrayType);
+
+    default T visit(ResolvedType type) {
+      return type == null ? null : type.accept(this);
+    }
+
+  }
+
+  static class PrimitiveResolvedType implements ResolvedType {
+
+    private PrimitiveType primitiveType;
+
+    public PrimitiveResolvedType(PrimitiveType primitiveType) {
+      this.primitiveType = primitiveType;
+    }
+
+    public String getName() {
+      return primitiveType.getName();
+    }
+
+    public String getFormat() {
+      return primitiveType.getFormat();
+    }
+
+    @Override
+    public <T> T accept(ResolvedTypeVisitor<T> visitor) {
+      return visitor.visit(this);
+    }
+
+  }
+
+  public static class ResolvedField {
+    private final Field field;
+    private final ResolvedType type;
+
+    public ResolvedField(Field field, ResolvedType type) {
+      super();
+      this.field = field;
+      this.type = type;
+    }
+
+    public String getName() {
+      return field.getName();
+    }
+
+    public String getDescription() {
+      return field.getDescription();
+    }
+
+    public ResolvedType getType() {
+      return type;
+    }
+
+  }
+
+  static class ObjectResolvedType implements ResolvedType {
+    private final List<ObjectType> objectTypes;
+    private final String name;
+    private final List<ResolvedField> properties;
+    private final boolean additionalProperties;
+    private final ResolvedType additionalPropertiesType;
+    private final Set<String> parents;
+
+    public ObjectResolvedType(List<ObjectType> objectTypes, String name, Set<String> parents, List<ResolvedField> properties, boolean additionalProperties, ResolvedType additionalPropertiesType) {
+      super();
+      this.objectTypes = objectTypes;
+      this.name = name;
+      this.parents = parents;
+      this.properties = properties;
+      this.additionalProperties = additionalProperties;
+      this.additionalPropertiesType = additionalPropertiesType;
+    }
+
+    public List<ObjectType> getObjectTypes() {
+      return objectTypes;
+    }
+
+    public String getName() {
+      return name;
+    }
+
+    public Set<String> getParents() {
+      return parents;
+    }
+
+    public List<ResolvedField> getProperties() {
+      return properties;
+    }
+
+    public boolean hasAdditionalProperties() {
+      return additionalProperties;
+    }
+
+    public ResolvedType getAdditionalPropertiesType() {
+      return additionalPropertiesType;
+    }
+
+    @Override
+    public <T> T accept(ResolvedTypeVisitor<T> visitor) {
+      return visitor.visit(this);
+    }
+
+  }
+
+  static class ArrayResolvedType implements ResolvedType {
+
+    private final ArrayType arrayType;
+    private final ResolvedType items;
+
+    public ArrayResolvedType(ArrayType arrayType, ResolvedType items) {
+      this.arrayType = arrayType;
+      this.items = items;
+    }
+
+    public ResolvedType getItems() {
+      return items;
+    }
+
+    @Override
+    public <T> T accept(ResolvedTypeVisitor<T> visitor) {
+      return visitor.visit(this);
+    }
   }
 
 }

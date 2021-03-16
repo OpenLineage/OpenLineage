@@ -33,12 +33,13 @@ import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 
-import io.openlineage.client.TypeResolver.ArrayType;
-import io.openlineage.client.TypeResolver.Field;
-import io.openlineage.client.TypeResolver.ObjectType;
-import io.openlineage.client.TypeResolver.PrimitiveType;
-import io.openlineage.client.TypeResolver.Type;
-import io.openlineage.client.TypeResolver.TypeVisitor;
+import io.openlineage.client.TypeResolver.ArrayResolvedType;
+import io.openlineage.client.TypeResolver.ObjectResolvedType;
+import io.openlineage.client.TypeResolver.PrimitiveResolvedType;
+import io.openlineage.client.TypeResolver.ResolvedField;
+import io.openlineage.client.TypeResolver.ResolvedType;
+import io.openlineage.client.TypeResolver.ResolvedTypeVisitor;
+
 
 /**
  * Generates a JavaClass with all the types as inner classes
@@ -84,13 +85,13 @@ public class JavaPoetGenerator {
   }
 
   private void generateTypes(TypeSpec.Builder containerTypeBuilder) {
-    Collection<ObjectType> types = typeResolver.getTypes();
-    for (ObjectType type : types) {
+    Collection<ObjectResolvedType> types = typeResolver.getTypes();
+    for (ObjectResolvedType type : types) {
 
       if (typeResolver.getBaseTypes().contains(type.getName())) {
         TypeSpec.Builder interfaceBuilder = TypeSpec.interfaceBuilder(type.getName())
             .addModifiers(STATIC, PUBLIC);
-        for (Field f : type.getProperties()) {
+        for (ResolvedField f : type.getProperties()) {
           MethodSpec getter = getter(f)
               .addModifiers(ABSTRACT, PUBLIC)
               .build();
@@ -116,7 +117,7 @@ public class JavaPoetGenerator {
             .addModifiers(PRIVATE);
         constructor.addAnnotation(JsonCreator.class);
         List<String> fieldNames = new ArrayList<String>();
-        for (Field f : type.getProperties()) {
+        for (ResolvedField f : type.getProperties()) {
           classBuilder.addField(getTypeName(f.getType()), f.getName(), PRIVATE, FINAL);
           fieldNames.add(f.getName());
           if (f.getName().equals("_schemaURL")) {
@@ -180,7 +181,7 @@ public class JavaPoetGenerator {
             .addCode(");\n");
 
          // additionalFields
-        if (type.isHasAdditionalProperties()) {
+        if (type.hasAdditionalProperties()) {
           String fieldName = "additionalProperties";
           TypeName additionalPropertiesValueType = type.getAdditionalPropertiesType() == null ? ClassName.get(Object.class) : getTypeName(type.getAdditionalPropertiesType());
           TypeName additionalPropertiesType = ParameterizedTypeName.get(ClassName.get(Map.class), ClassName.get(String.class), additionalPropertiesValueType);
@@ -228,7 +229,7 @@ public class JavaPoetGenerator {
 
   }
 
-  private Builder getter(Field f) {
+  private Builder getter(ResolvedField f) {
     Builder builder = MethodSpec
         .methodBuilder("get" + titleCase(f.getName()))
         .returns(getTypeName(f.getType()));
@@ -238,11 +239,11 @@ public class JavaPoetGenerator {
     return builder;
   }
 
-  public static TypeName getTypeName(Type type) {
-    return type.accept(new TypeVisitor<TypeName>(){
+  public static TypeName getTypeName(ResolvedType type) {
+    return type.accept(new ResolvedTypeVisitor<TypeName>(){
 
       @Override
-      public TypeName visit(PrimitiveType primitiveType) {
+      public TypeName visit(PrimitiveResolvedType primitiveType) {
         if (primitiveType.getName().equals("string")) {
           if (primitiveType.getFormat() != null) {
             String format = primitiveType.getFormat();
@@ -260,12 +261,12 @@ public class JavaPoetGenerator {
       }
 
       @Override
-      public TypeName visit(ObjectType objectType) {
+      public TypeName visit(ObjectResolvedType objectType) {
         return ClassName.get(CONTAINER_CLASS, objectType.getName());
       }
 
       @Override
-      public TypeName visit(ArrayType arrayType) {
+      public TypeName visit(ArrayResolvedType arrayType) {
         return ParameterizedTypeName.get(ClassName.get(List.class), getTypeName(arrayType.getItems()));
       }
     });
