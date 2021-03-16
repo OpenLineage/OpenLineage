@@ -23,7 +23,7 @@ A library that integrates [Airflow `DAGs`]() with [Marquez](https://github.com/M
 
 ## Requirements
 
- - [Python 3.5.0](https://www.python.org/downloads)+
+ - [Python 3.6.0](https://www.python.org/downloads)+
  - [Airflow 1.10.4](https://pypi.org/project/apache-airflow)+
 
 ## Installation

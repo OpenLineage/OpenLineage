@@ -38,6 +38,7 @@ NAME = "marquez-airflow"
 
 setup(
     name=NAME,
+    python_requires='>=3.6',
     version=get_version('marquez_airflow/version.py'),
     author="Marquez Team",
     author_email="",
