@@ -35,15 +35,15 @@ GitHub - https://github.com/OpenLineage/OpenLineage
 
 Yes - https://github.com/OpenLineage
 
-* Do you have the GH DCO app active in the repos? 
+*Do you have the GH DCO app active in the repos? 
 
 No
 
-* Issue tracker (GitHub, JIRA, etc)*
+*Issue tracker (GitHub, JIRA, etc)*
 
 GitHub https://github.com/OpenLineage/OpenLineage/issues
 
-* Collaboration tools* (mailing lists, wiki, IRC, Slack, Glitter, etc.) - Please confirm tools in use and state request for tools you'd like to use.
+*Collaboration tools* (mailing lists, wiki, IRC, Slack, Glitter, etc.) - Please confirm tools in use and state request for tools you'd like to use.
 
 Slack, google group : https://github.com/OpenLineage/OpenLineage/blob/main/README.md#community
 
@@ -65,51 +65,51 @@ Willy Lulciuc (Datakin)
 Zhamak (Thoughtworks)
 Michael Collado (Datakin)
 
-* Have the project defined the roles of contributor, committer, maintainer, etc.? Please document it in MAINTAINERS.md.
+*Have the project defined the roles of contributor, committer, maintainer, etc.? Please document it in MAINTAINERS.md.*
 
 Contribution Guide is in https://github.com/OpenLineage/OpenLineage/blob/main/CONTRIBUTING.md
 
 No further governance processes defined at this time.
 
-* Total number of contributors to the project including their affiliations.
+*Total number of contributors to the project including their affiliations.*
 
 Julien Le Dem: Datakin
 Daniel Henneberger: Datakin
 https://github.com/OpenLineage/OpenLineage/graphs/contributors
 
-* Does the project have a release methodology?* Please document it in RELEASES.md. 
+*Does the project have a release methodology?* Please document it in RELEASES.md. 
 
 No
 
-* Does the project have a code of conduct? If yes, please share the URL. If no, please created CODE_OF_CONDUCT.md and point to https://lfprojects.org/policies/code-of-conduct/. You can use conduct@lfai.foundation as email for contact on this topic.
+*Does the project have a code of conduct?* If yes, please share the URL. If no, please created CODE_OF_CONDUCT.md and point to https://lfprojects.org/policies/code-of-conduct/. You can use conduct@lfai.foundation as email for contact on this topic.
 
 No
 TODO: add https://www.contributor-covenant.org/
 
-* Did the project achieve any of the CII best practices badges? A different badge is required depending on the requested incubation level. 
+*Did the project achieve any of the CII best practices badges?* A different badge is required depending on the requested incubation level. 
 
 No
 
-* Do you have any specific infrastructure requests needed as part of hosting the project in the LF AI?*
+*Do you have any specific infrastructure requests needed as part of hosting the project in the LF AI?*
 
 Confluence wiki
 
-* Project website* - Do you have a web site? If CII best practices, did you reserve a domain, and would like you to have a website created? 
+*Project website* - Do you have a web site? If CII best practices, did you reserve a domain, and would like you to have a website created? 
 
 https://github.com/OpenLineage/OpenLineage
 http://openlineage.io/
 https://openlineage.github.io/
 
-* Project governance - Do you have a working governance model for the project? Please provide URL to where it is documented, typically GOVERNANCE.md.
+*Project governance* - Do you have a working governance model for the project? Please provide URL to where it is documented, typically GOVERNANCE.md.
 
 Currently have a contribution guide:
 https://github.com/OpenLineage/OpenLineage/blob/main/CONTRIBUTING.md
 
-* Social media accounts* - Do you have any Twitter/LinkedIn/Facebook/etc. project accounts? Please provide pointers. 
+*Social media accounts* - Do you have any Twitter/LinkedIn/Facebook/etc. project accounts? Please provide pointers. 
 
 Twitter: @OpenLineage
 
-* Existing sponsorship* (e.g., whether any organization has provided funding or other support to date, and a description of that support), if any.
+*Existing sponsorship* (e.g., whether any organization has provided funding or other support to date, and a description of that support), if any.
 
 None
 
