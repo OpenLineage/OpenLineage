@@ -4,6 +4,10 @@ import java.net.URI;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import marquez.spark.agent.MarquezContext;
+import marquez.spark.agent.lifecycle.plan.InputDatasetVisitors;
+import marquez.spark.agent.lifecycle.plan.OutputDatasetVisitors;
+import org.apache.spark.sql.SQLContext;
+import org.apache.spark.sql.execution.SQLExecution;
 
 /** Returns deterministic fields for contexts */
 public class StaticExecutionContextFactory extends ContextFactory {
@@ -31,12 +35,13 @@ public class StaticExecutionContextFactory extends ContextFactory {
 
   @Override
   public SparkSQLExecutionContext createSparkSQLExecutionContext(long executionId) {
+    SQLContext sqlContext = SQLExecution.getQueryExecution(executionId).sparkPlan().sqlContext();
+    InputDatasetVisitors inputDatasetVisitors = new InputDatasetVisitors(sqlContext);
+    OutputDatasetVisitors outputDatasetVisitors =
+        new OutputDatasetVisitors(sqlContext, inputDatasetVisitors);
     SparkSQLExecutionContext sparksql =
         new SparkSQLExecutionContext(
-            executionId,
-            marquezContext,
-            new StaticLogicalPlanTraverser(),
-            new StaticDatasetPlanTraverser()) {
+            executionId, marquezContext, outputDatasetVisitors.get(), inputDatasetVisitors.get()) {
           @Override
           public ZonedDateTime toZonedTime(long time) {
             return getZonedTime();
@@ -47,19 +52,5 @@ public class StaticExecutionContextFactory extends ContextFactory {
 
   private static ZonedDateTime getZonedTime() {
     return ZonedDateTime.of(2021, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
-  }
-
-  class StaticLogicalPlanTraverser extends LogicalPlanFacetTraverser {
-    @Override
-    protected Object visitPathUri(URI uri) {
-      return "data.txt";
-    }
-  }
-
-  class StaticDatasetPlanTraverser extends DatasetLogicalPlanTraverser {
-    @Override
-    protected URI visitPathUri(URI uri) {
-      return URI.create("gs://bucket/data.txt");
-    }
   }
 }

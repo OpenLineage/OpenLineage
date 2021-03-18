@@ -30,6 +30,16 @@ import org.apache.hc.core5.http.Message;
 
 @Slf4j
 public class OpenLineageClient {
+
+  public static final String OPEN_LINEAGE_CLIENT_URI =
+      "https://github.com/MarquezProject/marquez/tree/0.12.0/integrations/spark";
+  public static final String OPEN_LINEAGE_PARENT_FACET_URI =
+      "https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#ParentRunFacet";
+  public static final String OPEN_LINEAGE_DATASOURCE_FACET =
+      "https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#DatasourceDatasetFacet";
+  public static final String OPEN_LINEAGE_SCHEMA_FACET_URI =
+      "https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#SchemaDatasetFacet";
+
   private final CloseableHttpAsyncClient http;
   private final ExecutorService executorService;
   private final Optional<String> apiKey;

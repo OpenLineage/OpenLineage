@@ -2,6 +2,10 @@ package marquez.spark.agent.lifecycle;
 
 import lombok.AllArgsConstructor;
 import marquez.spark.agent.MarquezContext;
+import marquez.spark.agent.lifecycle.plan.InputDatasetVisitors;
+import marquez.spark.agent.lifecycle.plan.OutputDatasetVisitors;
+import org.apache.spark.sql.SQLContext;
+import org.apache.spark.sql.execution.SQLExecution;
 
 @AllArgsConstructor
 public class ContextFactory {
@@ -16,10 +20,11 @@ public class ContextFactory {
   }
 
   public SparkSQLExecutionContext createSparkSQLExecutionContext(long executionId) {
+    SQLContext sqlContext = SQLExecution.getQueryExecution(executionId).sparkPlan().sqlContext();
+    InputDatasetVisitors inputDatasetVisitors = new InputDatasetVisitors(sqlContext);
+    OutputDatasetVisitors outputDatasetVisitors =
+        new OutputDatasetVisitors(sqlContext, inputDatasetVisitors);
     return new SparkSQLExecutionContext(
-        executionId,
-        marquezContext,
-        new LogicalPlanFacetTraverser(),
-        new DatasetLogicalPlanTraverser());
+        executionId, marquezContext, outputDatasetVisitors.get(), inputDatasetVisitors.get());
   }
 }

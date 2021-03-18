@@ -9,6 +9,8 @@ import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.Resources;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -17,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import marquez.spark.agent.MarquezAgent;
 import marquez.spark.agent.MarquezContext;
@@ -26,6 +29,7 @@ import net.bytebuddy.agent.ByteBuddyAgent;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.FilterFunction;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.SparkSession$;
@@ -73,8 +77,8 @@ public class LibraryTest {
     URL url = Resources.getResource("data.txt");
     final Dataset<String> data = spark.read().textFile(url.getPath());
 
-    final long numAs = data.filter(s -> s.contains("a")).count();
-    final long numBs = data.filter(s -> s.contains("b")).count();
+    final long numAs = data.filter((FilterFunction<String>) s -> s.contains("a")).count();
+    final long numBs = data.filter((FilterFunction<String>) s -> s.contains("b")).count();
 
     System.out.println("Lines with a: " + numAs + ", lines with b: " + numBs);
     spark.sparkContext().listenerBus().waitUntilEmpty(1000);
@@ -88,19 +92,56 @@ public class LibraryTest {
 
     assertEquals(4, events.size());
 
+    ObjectMapper objectMapper = OpenLineageClient.getObjectMapper();
     for (int i = 0; i < events.size(); i++) {
       LineageEvent event = events.get(i);
-      String snapshot =
-          new String(
-              Files.readAllBytes(
-                  Paths.get(String.format("integrations/%s/%d.json", "sparksql", i + 1))));
+      Map<String, Object> snapshot =
+          objectMapper.readValue(
+              Paths.get(String.format("integrations/%s/%d.json", "sparksql", i + 1)).toFile(),
+              new TypeReference<Map<String, Object>>() {});
       assertEquals(
           snapshot,
-          OpenLineageClient.getObjectMapper()
-              .writerWithDefaultPrettyPrinter()
-              .writeValueAsString(event));
+          cleanSerializedMap(
+              objectMapper.readValue(
+                  objectMapper.writeValueAsString(event),
+                  new TypeReference<Map<String, Object>>() {})));
     }
     verifySerialization(events);
+  }
+
+  private Map<String, Object> cleanSerializedMap(Map<String, Object> map) {
+    // exprId and jvmId are not deterministic, so remove them from the maps to avoid failing
+    map.remove("exprId");
+    map.remove("resultId");
+
+    // timezone is different in CI than local
+    map.remove("timeZoneId");
+    if (map.containsKey("namespace") && map.get("namespace").equals("file")) {
+      map.put("name", "/path/to/data");
+    }
+    if (map.containsKey("uri") && ((String) map.get("uri")).startsWith("file:/")) {
+      map.put("uri", "file:/path/to/data");
+    }
+    map.forEach(
+        (k, v) -> {
+          if (v instanceof Map) {
+            cleanSerializedMap((Map<String, Object>) v);
+          } else if (v instanceof List) {
+            cleanSerializedList((List<?>) v);
+          }
+        });
+    return map;
+  }
+
+  private void cleanSerializedList(List<?> l) {
+    l.forEach(
+        i -> {
+          if (i instanceof Map) {
+            cleanSerializedMap((Map<String, Object>) i);
+          } else if (i instanceof List) {
+            cleanSerializedList((List<?>) i);
+          }
+        });
   }
 
   @Test
@@ -108,7 +149,7 @@ public class LibraryTest {
     reset(marquezContext);
     when(marquezContext.getJobNamespace()).thenReturn("ns_name");
     when(marquezContext.getJobName()).thenReturn("job_name");
-    when(marquezContext.getParentRunId()).thenReturn("ea445b5c-22eb-457a-8007-01c7c52b6e54");
+    when(marquezContext.getParentRunId()).thenReturn("8d99e33e-2a1c-4254-9600-18f23435fc3b");
 
     URL url = Resources.getResource("data.txt");
     SparkConf conf = new SparkConf().setAppName("Word Count").setMaster("local[*]");

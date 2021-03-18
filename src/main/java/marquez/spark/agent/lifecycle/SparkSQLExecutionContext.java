@@ -1,20 +1,23 @@
 package marquez.spark.agent.lifecycle;
 
-import java.net.URI;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import marquez.spark.agent.MarquezContext;
 import marquez.spark.agent.client.LineageEvent;
-import marquez.spark.agent.client.LineageEvent.JobLink;
+import marquez.spark.agent.client.LineageEvent.Dataset;
 import marquez.spark.agent.client.LineageEvent.ParentRunFacet;
 import marquez.spark.agent.client.LineageEvent.RunFacet;
-import marquez.spark.agent.client.LineageEvent.RunLink;
+import marquez.spark.agent.client.OpenLineageClient;
 import marquez.spark.agent.facets.ErrorFacet;
 import marquez.spark.agent.facets.LogicalPlanFacet;
+import marquez.spark.agent.lifecycle.plan.PlanUtils;
 import org.apache.spark.scheduler.ActiveJob;
 import org.apache.spark.scheduler.JobFailed;
 import org.apache.spark.scheduler.JobResult;
@@ -25,26 +28,31 @@ import org.apache.spark.sql.execution.QueryExecution;
 import org.apache.spark.sql.execution.SQLExecution;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
+import scala.PartialFunction;
+import scala.collection.JavaConversions;
 
 @Slf4j
 public class SparkSQLExecutionContext implements ExecutionContext {
+
   private final long executionId;
   private final QueryExecution queryExecution;
 
+  private final ObjectMapper objectMapper = OpenLineageClient.createMapper();
+
   private MarquezContext marquezContext;
-  private final LogicalPlanFacetTraverser logicalPlanFacetTraverser;
-  private final DatasetLogicalPlanTraverser datasetLogicalPlanTraverser;
+  private final List<PartialFunction<LogicalPlan, List<Dataset>>> outputDatasetSupplier;
+  private final List<PartialFunction<LogicalPlan, List<Dataset>>> inputDatasetSupplier;
 
   public SparkSQLExecutionContext(
       long executionId,
       MarquezContext marquezContext,
-      LogicalPlanFacetTraverser logicalPlanFacetTraverser,
-      DatasetLogicalPlanTraverser datasetLogicalPlanTraverser) {
+      List<PartialFunction<LogicalPlan, List<Dataset>>> outputDatasetSupplier,
+      List<PartialFunction<LogicalPlan, List<Dataset>>> inputDatasetSupplier) {
     this.executionId = executionId;
     this.marquezContext = marquezContext;
-    this.logicalPlanFacetTraverser = logicalPlanFacetTraverser;
-    this.datasetLogicalPlanTraverser = datasetLogicalPlanTraverser;
     this.queryExecution = SQLExecution.getQueryExecution(executionId);
+    this.outputDatasetSupplier = outputDatasetSupplier;
+    this.inputDatasetSupplier = inputDatasetSupplier;
   }
 
   public void start(SparkListenerSQLExecutionStart startEvent) {}
@@ -61,13 +69,18 @@ public class SparkSQLExecutionContext implements ExecutionContext {
       log.info("No execution info {}", queryExecution);
       return;
     }
-    DatasetLogicalPlanTraverser.TraverserResult result =
-        datasetLogicalPlanTraverser.build(
-            queryExecution.logical(), marquezContext.getJobNamespace());
+    List<Dataset> outputDatasets =
+        PlanUtils.applyFirst(outputDatasetSupplier, queryExecution.logical());
+    List<Dataset> inputDatasets =
+        JavaConversions.seqAsJavaList(
+                queryExecution.logical().collect(PlanUtils.merge(inputDatasetSupplier)))
+            .stream()
+            .flatMap(List::stream)
+            .collect(Collectors.toList());
     LineageEvent event =
         LineageEvent.builder()
-            .inputs(result.getInputDataset())
-            .outputs(result.getOutputDataset())
+            .inputs(inputDatasets)
+            .outputs(outputDatasets)
             .run(
                 buildRun(
                     buildRunFacets(
@@ -75,25 +88,17 @@ public class SparkSQLExecutionContext implements ExecutionContext {
             .job(buildJob())
             .eventTime(toZonedTime(jobStart.time()))
             .eventType("START")
-            .producer("https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client")
+            .producer(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI)
             .build();
 
     marquezContext.emit(event);
   }
 
   private ParentRunFacet buildParentFacet() {
-    return ParentRunFacet.builder()
-        ._producer(URI.create("https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client"))
-        ._schemaURL(
-            URI.create(
-                "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/spec/OpenLineage.yml#ParentRunFacet"))
-        .job(
-            JobLink.builder()
-                .name(marquezContext.getJobName())
-                .namespace(marquezContext.getJobNamespace())
-                .build())
-        .run(RunLink.builder().runId(marquezContext.getParentRunId()).build())
-        .build();
+    return PlanUtils.parentRunFacet(
+        marquezContext.getParentRunId(),
+        marquezContext.getJobName(),
+        marquezContext.getJobNamespace());
   }
 
   @Override
@@ -105,13 +110,18 @@ public class SparkSQLExecutionContext implements ExecutionContext {
     }
     log.debug("Traversing logical plan {}", queryExecution.logical().toJSON());
     log.debug("Physical plan executed {}", queryExecution.executedPlan().toJSON());
-    DatasetLogicalPlanTraverser.TraverserResult r =
-        datasetLogicalPlanTraverser.build(
-            queryExecution.logical(), marquezContext.getJobNamespace());
+    List<Dataset> outputDatasets =
+        PlanUtils.applyFirst(outputDatasetSupplier, queryExecution.logical());
+    List<Dataset> inputDatasets =
+        JavaConversions.seqAsJavaList(
+                queryExecution.logical().collect(PlanUtils.merge(inputDatasetSupplier)))
+            .stream()
+            .flatMap(List::stream)
+            .collect(Collectors.toList());
     LineageEvent event =
         LineageEvent.builder()
-            .inputs(r.getInputDataset())
-            .outputs(r.getOutputDataset())
+            .inputs(inputDatasets)
+            .outputs(outputDatasets)
             .run(
                 buildRun(
                     buildRunFacets(
@@ -121,7 +131,7 @@ public class SparkSQLExecutionContext implements ExecutionContext {
             .job(buildJob())
             .eventTime(toZonedTime(jobEnd.time()))
             .eventType(getEventType(jobEnd.jobResult()))
-            .producer("https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client")
+            .producer(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI)
             .build();
 
     marquezContext.emit(event);
@@ -156,8 +166,7 @@ public class SparkSQLExecutionContext implements ExecutionContext {
   }
 
   protected LogicalPlanFacet buildLogicalPlanFacet(LogicalPlan plan) {
-    Map<String, Object> planMap = logicalPlanFacetTraverser.visit(plan);
-    return LogicalPlanFacet.builder().plan(planMap).build();
+    return LogicalPlanFacet.builder().plan(plan).build();
   }
 
   protected ErrorFacet buildJobErrorFacet(JobResult jobResult) {

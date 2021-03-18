@@ -22,6 +22,7 @@ import marquez.spark.agent.client.DatasetParser.DatasetParseResult;
 import marquez.spark.agent.client.LineageEvent;
 import marquez.spark.agent.client.LineageEvent.Dataset;
 import marquez.spark.agent.client.LineageEvent.RunFacet;
+import marquez.spark.agent.client.OpenLineageClient;
 import marquez.spark.agent.facets.ErrorFacet;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -67,7 +68,7 @@ public class RddExecutionContext implements ExecutionContext {
             .job(buildJob())
             .eventTime(toZonedTime(jobStart.time()))
             .eventType("START")
-            .producer("https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client")
+            .producer(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI)
             .build();
 
     marquezContext.emit(event);
@@ -83,7 +84,7 @@ public class RddExecutionContext implements ExecutionContext {
             .job(buildJob())
             .eventTime(toZonedTime(jobEnd.time()))
             .eventType(getEventType(jobEnd.jobResult()))
-            .producer("https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client")
+            .producer(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI)
             .build();
 
     marquezContext.emit(event);

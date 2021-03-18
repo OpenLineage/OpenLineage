@@ -6,6 +6,7 @@ import java.net.URI;
 import lombok.Builder;
 import lombok.NonNull;
 import marquez.spark.agent.client.LineageEvent.BaseFacet;
+import marquez.spark.agent.client.OpenLineageClient;
 
 public class ErrorFacet extends BaseFacet {
   private final Exception exception;
@@ -13,10 +14,8 @@ public class ErrorFacet extends BaseFacet {
   @Builder
   public ErrorFacet(@NonNull Exception exception) {
     super(
-        URI.create("https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client"),
-        URI.create(
-            "https://github.com/MarquezProject/marquez/blob/main/experimental/integrations/"
-                + "marquez-spark-agent/facets/spark-2.4/v1/error-facet"));
+        URI.create(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI),
+        URI.create(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI + "/facets/spark-2.4/v1/error-facet"));
     this.exception = exception;
   }
 
