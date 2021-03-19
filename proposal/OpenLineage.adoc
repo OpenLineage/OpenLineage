@@ -55,14 +55,14 @@ JSON Schema 2019-09
 
 *Initial committers* (name, email, organization) and how long have they been working on project?
 
-Julien Le Dem, Datakin (Since Sept 2020)
-Mandy Chessell, IBM
+Julien Le Dem (Datakin)
+Mandy Chessell (IBM)
 Daniel Henneberger (Datakin)
-Drew Banin (fishtown analytics)
-James Campbell (superconductive)
+Drew Banin (Fishtown analytics)
+James Campbell (Superconductive)
 Ryan Blue (Netflix)
 Willy Lulciuc (Datakin)
-Zhamak (Thoughtworks)
+Zhamak Dehghani (Thoughtworks)
 Michael Collado (Datakin)
 
 *Have the project defined the roles of contributor, committer, maintainer, etc.? Please document it in MAINTAINERS.md.*
