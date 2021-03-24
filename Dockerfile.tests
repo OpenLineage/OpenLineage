@@ -1,0 +1,10 @@
+FROM python:3.6-slim
+RUN mkdir /app
+ADD setup.py /app
+ADD README.md /app
+COPY marquez_airflow /app/marquez_airflow
+COPY openlineage /app/openlineage
+WORKDIR /app
+RUN ls -la
+RUN pip wheel --wheel-dir=/app/wheel .
+RUN cp -R /app/wheel /whl
