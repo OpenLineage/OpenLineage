@@ -5,7 +5,7 @@ workflows:
   checkout-build-test:
     jobs:
       - gradle/test:
-          app_src_directory: client
+          app_src_directory: client/java
       - build-client-python:
           working_directory: ~/client/python
           docker:
