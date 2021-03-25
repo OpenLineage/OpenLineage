@@ -20,7 +20,7 @@ Lineage is a critical component in governing AI and Data projects.
 *Possible collaboration opportunities with current LF AI hosted projects*: (https://lfai.foundation/projects/)
 
 This standard is being developed in collaboration between the Marquez and Egeria projects.
-Additionally the Amundsen projecy is a candidate for implementing ingestion of OpenLineage events.
+Additionally the Amundsen project is a candidate for implementing ingestion of OpenLineage events.
 The following project are candidates to emit OpenLineage metadata: Acumos, AI Explainability/Fairness 360, Angel ML, Feast, ForestFlow, Horovod, Ludwig, Onnx, Pyro
 
 *License name, version, and URL to license text*
