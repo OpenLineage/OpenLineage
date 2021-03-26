@@ -77,7 +77,7 @@ public class JDBCRelationVisitor extends AbstractPartialFunction<LogicalPlan, Li
                               return "COMPLEX";
                             }
                           });
-              URI connectionUri = URI.create(relation.jdbcOptions().url());
+              URI connectionUri = URI.create(relation.jdbcOptions().url() + "/" + tableName);
               return Collections.singletonList(
                   PlanUtils.getDataset(connectionUri, relation.schema()));
             })
