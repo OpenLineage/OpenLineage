@@ -1,11 +1,11 @@
 package marquez.spark.agent.lifecycle.plan;
 
-import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 import marquez.spark.agent.client.LineageEvent.Dataset;
+import marquez.spark.agent.client.LineageEvent.DatasetFacet;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
@@ -77,9 +77,16 @@ public class JDBCRelationVisitor extends AbstractPartialFunction<LogicalPlan, Li
                               return "COMPLEX";
                             }
                           });
-              URI connectionUri = URI.create(relation.jdbcOptions().url() + "/" + tableName);
+              // strip the jdbc: prefix from the url. this leaves us with a url like
+              // postgresql://<hostname>:<port>/<database_name>?params
+              // we don't parse the URI here because different drivers use different connection
+              // formats that aren't always amenable to how Java parses URIs. E.g., the oracle
+              // driver format looks like oracle:<drivertype>:<user>/<password>@<database>
+              // whereas postgres, mysql, and sqlserver use the scheme://hostname:port/db format.
+              String url = relation.jdbcOptions().url().replaceFirst("jdbc:", "");
+              DatasetFacet datasetFacet = PlanUtils.datasetFacet(relation.schema(), url);
               return Collections.singletonList(
-                  PlanUtils.getDataset(connectionUri, relation.schema()));
+                  Dataset.builder().namespace(url).name(tableName).facets(datasetFacet).build());
             })
         .orElse(Collections.emptyList());
   }

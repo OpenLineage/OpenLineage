@@ -43,7 +43,7 @@ dependencies {
     testImplementation 'org.mockito:mockito-core:3.8.0'
     testImplementation(platform('org.junit:junit-bom:5.7.1'))
     testImplementation('org.junit.jupiter:junit-jupiter:5.7.1')
-
+    testImplementation 'org.postgresql:postgresql:42.2.19'
     annotationProcessor "org.projectlombok:lombok:1.18.16"
 }
 
