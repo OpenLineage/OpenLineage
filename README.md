@@ -109,7 +109,7 @@ When enabled, the library will:
 1. On DAG **start**, collect metadata for each task using an `Extractor` (the library defines a _default_ extractor to use otherwise)
 2. Collect task input / output metadata (`source`, `schema`, etc)
 3. Collect task run-level metadata (execution time, state, parameters, etc)
-4. On DAG **complete**, also mark the task as _complete_ in Marquez  
+4. On DAG **complete**, also mark the task as _complete_ in Marquez
 
 To enable logging, set the environment variable `MARQUEZ_LOG_LEVEL` to `DEBUG`, `INFO`, or `ERROR`:
 
@@ -131,7 +131,7 @@ default_args = {
     'start_date': days_ago(1),
     'email_on_failure': False,
     'email_on_retry': False,
-    'email': ['datascience@datakin.com']
+    'email': ['datascience@example.com']
 }
 
 dag = DAG(
