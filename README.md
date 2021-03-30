@@ -1,6 +1,6 @@
 # Marquez Spark Agent
 
-The Marquez Spark Agent uses jvm instrumentation to emit OpenLineage metadata to Marquez. 
+The Marquez Spark Agent uses jvm instrumentation to emit OpenLineage metadata to Marquez.
 
 ## Installation
 
@@ -10,21 +10,21 @@ Maven:
 <dependency>
     <groupId>io.github.marquezproject</groupId>
     <artifactId>marquez-spark</artifactId>
-    <version>0.12.2</version>
+    <version>0.13.0</version>
 </dependency>
 ```
 
 or Gradle:
 
 ```groovy
-implementation 'io.github.marquezproject:marquez-spark:0.12.2'
+implementation 'io.github.marquezproject:marquez-spark:0.13.0'
 ```
 
 ## Getting started
 
 ### Dataproc
 
-Dataproc requires two things: a uri to the marquez java agent jar in the `files` parameter and 
+Dataproc requires two things: a uri to the marquez java agent jar in the `files` parameter and
 an additional spark property. Dataproc will copy the agent jar to the current working directory of the
 executor and the `-javaagent` parameter will load it on execution.
 
@@ -34,8 +34,8 @@ import os
 ...
 job_name = 'job_name'
 
-jar = 'marquez-spark-0.12.2.jar'
-files = [f"https://repo1.maven.org/maven2/io/github/marquezproject/marquez-spark/0.12.2/marquez-spark-0.12.2.jar"]
+jar = 'marquez-spark-0.13.0.jar'
+files = [f"https://repo1.maven.org/maven2/io/github/marquezproject/marquez-spark/0.13.0/marquez-spark-0.13.0.jar"]
 properties = {
   'spark.driver.extraJavaOptions':
     f"-javaagent:{jar}={os.environ.get('MARQUEZ_URL')}/api/v1/namespaces/{os.getenv('MARQUEZ_NAMESPACE', 'default')}/jobs/{job_name}/runs/{uuid4()}?api_key={os.environ.get('MARQUEZ_API_KEY')}"
@@ -56,8 +56,8 @@ t1 = DataProcPySparkOperator(
 
 ## Arguments
 
-The java agent accepts an argument in the form of a uri. It includes the location of Marquez, the 
-namespace name, the job name, and a unique run id. The run id will be emitted as a parent run 
+The java agent accepts an argument in the form of a uri. It includes the location of Marquez, the
+namespace name, the job name, and a unique run id. The run id will be emitted as a parent run
 facet.
 ```
 {marquez_home}/api/v1/namespaces/{namespace}/job/{job_name}/runs/{run_uuid}?api_key={api_key}"
@@ -75,7 +75,7 @@ Tested and compatible for Spark `2.4.7` only. Other spark versions may cause the
 
 ## Java 8
 
-Testing requires a Java 8 JVM to test the scala spark components. 
+Testing requires a Java 8 JVM to test the scala spark components.
 
 `export JAVA_HOME=`/usr/libexec/java_home -v 1.8`
 
