@@ -99,7 +99,7 @@ services:
     # command: ["postgres", "-c", "log_statement=all"]
 
   postgres:
-    image: bitnami/postgresql:9.6.18
+    image: bitnami/postgresql:11.11.0
     ports:
       - "5432:5432"
     environment:
