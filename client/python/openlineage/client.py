@@ -73,5 +73,3 @@ class OpenLineageClient:
                 api_key=os.getenv("OPENLINEAGE_API_KEY", None)
             )
         )
-
-
