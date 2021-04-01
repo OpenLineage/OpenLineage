@@ -58,7 +58,7 @@ task generateCode(type: JavaExec) {
 openApiGenerate {
 // openapi-generator generate -i spec/OpenLineage.yml -g html2 -o ../OpenLineage.github.io/
     generatorName = "html2"
-    inputSpec = "$rootDir/../spec/OpenLineage.yml".toString()
+    inputSpec = "$rootDir/../../spec/OpenLineage.yml".toString()
     outputDir = "$buildDir/docs".toString()
 }
 
