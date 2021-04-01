@@ -45,7 +45,7 @@ def gitBranchName() {
 }
 
 task generateCode(type: JavaExec) {
-    description 'generate java code from spec. Use 1 to generate from the local file instead of the published version'
+    description 'generate java code from spec. Use -PgenerateFromLocal to generate from the local file instead of the published version'
     classpath configurations.codeGenerator
     main = 'io.openlineage.client.Generator'
     if (project.hasProperty('generateFromLocal')) { 
