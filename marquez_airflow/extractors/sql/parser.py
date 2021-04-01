@@ -11,116 +11,93 @@
 # limitations under the License.
 
 import logging
-import re
-from enum import Enum
 
 import sqlparse
+from sqlparse.sql import T
 from sqlparse.sql import TokenList
-from sqlparse.tokens import Literal, Name, Punctuation
+from sqlparse.tokens import Punctuation
+
+from marquez_airflow.models import DbTableName
+
 
 log = logging.getLogger(__name__)
 
 
-TABLE_REGEX = re.compile(
-    r'(((LEFT\s+|RIGHT\s+|FULL\s+)?(INNER\s+|OUTER\s+|STRAIGHT\s+)?'
-    r'|(CROSS\s+|NATURAL\s+)?)?JOIN$)|(FROM$)',
-    re.IGNORECASE | re.UNICODE)
+def _is_in_table(token):
+    return _match_on(token, [
+        'FROM',
+        'INNER JOIN',
+        'JOIN',
+        'FULL JOIN',
+        'FULL OUTER JOIN',
+        'LEFT JOIN',
+        'LEFT OUTER JOIN',
+        'RIGHT JOIN',
+        'RIGHT OUTER JOIN'
+    ])
 
 
-class State(Enum):
-    SEARCHING = 1
-    FINDING_TABLE = 2
-    BUILDING_TABLE = 3
-    FINDING_ALIAS = 4
-    BUILDING_ALIAS = 5
-    CHECKING_ALIAS = 6
+def _is_out_table(token):
+    return _match_on(token, ['INTO'])
+
+
+def _match_on(token, keywords):
+    return token.match(T.Keyword, values=keywords)
+
+
+def _get_table(tokens, idx):
+    idx, token = tokens.token_next(idx=idx)
+    token_list = token.flatten()
+    table_name = next(token_list).value
+    try:
+        # Determine if the table contains the schema
+        # separated by a dot (format: 'schema.table')
+        dot = next(token_list)
+        if dot.match(Punctuation, '.'):
+            table_name += dot.value
+            table_name += next(token_list).value
+    except StopIteration:
+        pass
+    return idx, DbTableName(table_name)
+
+
+class SqlMeta:
+    # TODO: Only a single output table may exist, we'll want to rename
+    # SqlMeta.out_tables -> SqlMeta.out_table
+    def __init__(self, in_tables: [DbTableName], out_tables: [DbTableName]):
+        self.in_tables = in_tables
+        self.out_tables = out_tables
 
 
 class SqlParser:
+    """
+    This class parses a SQL statement.
+    """
 
     @staticmethod
-    def is_table_keyword(t):
-        return t.is_keyword and TABLE_REGEX.match(t.normalized)
+    def parse(sql: str) -> SqlMeta:
+        if sql is None:
+            raise ValueError("A sql statement must be provided.")
 
-    @staticmethod
-    def get_tables(statement):
+        # Tokenize the SQL statement
+        statements = sqlparse.parse(sql)
 
-        aliases = []
-        tables = []
+        # We assume only one statement in SQL
+        tokens = TokenList(statements[0].tokens)
+        log.debug(f"Successfully tokenized sql statement: {tokens}")
 
-        parsed = sqlparse.parse(statement)
-        if not parsed or len(parsed) == 0:
-            return set()
+        in_tables = []
+        out_tables = []
 
-        # flatten the identifiers
-        tokens = [t for t in TokenList(parsed[0].tokens).flatten()]
+        idx, token = tokens.token_next_by(t=T.Keyword)
+        while token:
+            if _is_in_table(token):
+                idx, in_table = _get_table(tokens, idx)
+                in_tables.append(in_table)
+            elif _is_out_table(token):
+                idx, out_table = _get_table(tokens, idx)
+                out_tables.append(out_table)
 
-        curr_name = ''
-        alias_candidate = ''
-        last_non_whitespace = None
+            idx, token = tokens.token_next_by(t=T.Keyword, idx=idx)
 
-        _state = State.SEARCHING
-        for t in tokens:
-
-            if _state == State.SEARCHING:
-                if SqlParser.is_table_keyword(t):
-                    _state = State.FINDING_TABLE
-                if (t.is_keyword and t.normalized == 'AS'
-                        and last_non_whitespace.ttype is Name):
-                    alias_candidate = last_non_whitespace
-                    _state = State.CHECKING_ALIAS
-
-            elif _state == State.FINDING_TABLE:
-                if t.ttype is Name or t.ttype is Literal.String.Symbol:
-                    curr_name += t.value
-                    _state = State.BUILDING_TABLE
-                elif t.ttype is Punctuation or t.is_keyword:
-                    _state = State.SEARCHING
-
-            elif _state == State.BUILDING_TABLE:
-                if t.ttype is Name or t.ttype is Literal.String.Symbol or (
-                        t.value == '.'):
-                    curr_name += t.value
-                else:
-                    if curr_name not in tables:
-                        tables.append(curr_name)
-                    curr_name = ''
-                    if t.is_whitespace:
-                        _state = State.FINDING_ALIAS
-                    else:
-                        _state = State.SEARCHING
-
-            elif _state == State.FINDING_ALIAS:
-                if t.ttype is Name:
-                    curr_name += t.value
-                    _state = State.BUILDING_ALIAS
-                elif SqlParser.is_table_keyword(t):
-                    _state = State.FINDING_TABLE
-                elif t.ttype is Punctuation or t.is_keyword:
-                    _state = State.SEARCHING
-
-            elif _state == State.BUILDING_ALIAS:
-                if t.ttype is Name or t.value == '.':
-                    curr_name += t.value
-                else:
-                    aliases.append(curr_name)
-                    curr_name = ''
-                    if SqlParser.is_table_keyword(t):
-                        _state = State.FINDING_TABLE
-                    else:
-                        _state = State.SEARCHING
-
-            elif _state == State.CHECKING_ALIAS:
-                if SqlParser.is_table_keyword(t):
-                    _state = State.FINDING_TABLE
-                elif not t.is_whitespace:
-                    if t.value == '(':
-                        aliases.append(alias_candidate.value)
-                    _state = State.SEARCHING
-
-            if not t.is_whitespace:
-                last_non_whitespace = t
-
-        # Naive way to get rid of aliases
-        tables = [t for t in tables if t.split('.')[0] not in aliases]
-        return tables
+        return SqlMeta(in_tables, out_tables)

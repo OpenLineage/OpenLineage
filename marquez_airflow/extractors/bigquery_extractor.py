@@ -28,7 +28,7 @@ from marquez_airflow.models import (
     DbTableSchema,
     DbColumn
 )
-from marquez_airflow.extractors.sql.experimental.parser import SqlParser
+from marquez_airflow.extractors.sql import SqlParser
 from marquez_airflow.utils import (
     get_job_name
 )

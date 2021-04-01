@@ -13,7 +13,7 @@
 import logging
 
 from marquez_airflow.models import DbTableName
-from marquez_airflow.extractors.sql.experimental.parser import SqlParser
+from marquez_airflow.extractors.sql import SqlParser
 
 log = logging.getLogger(__name__)
 

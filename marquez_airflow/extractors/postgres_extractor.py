@@ -22,8 +22,8 @@ from marquez_airflow.models import (
     DbColumn
 )
 from marquez_airflow.utils import get_connection_uri
-from marquez_airflow.extractors.sql.experimental import SqlMeta
-from marquez_airflow.extractors.sql.experimental.parser import SqlParser
+from marquez_airflow.extractors.sql import SqlMeta
+from marquez_airflow.extractors.sql import SqlParser
 from marquez_airflow.extractors import (
     BaseExtractor,
     StepMetadata,
