@@ -37,7 +37,7 @@ dependencies {
 
 def gitBranchName() {
     def branch = "unknown_branch"
-    def proc = "git rev-parse --abbrev-ref HEAD".execute()
+    def proc = "git rev-parse HEAD".execute()
     proc.in.eachLine { line -> branch = line }
     proc.err.eachLine { line -> println line }
     proc.waitFor()
@@ -58,7 +58,7 @@ task generateCode(type: JavaExec) {
 openApiGenerate {
 // openapi-generator generate -i spec/OpenLineage.yml -g html2 -o ../OpenLineage.github.io/
     generatorName = "html2"
-    inputSpec = "$rootDir/../spec/OpenLineage.yml".toString()
+    inputSpec = "$rootDir/../../spec/OpenLineage.yml".toString()
     outputDir = "$buildDir/docs".toString()
 }
 
