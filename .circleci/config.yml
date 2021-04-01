@@ -5,5 +5,13 @@ workflows:
   checkout-build-test:
     jobs:
       - gradle/test:
-          app_src_directory: client
-
+          app_src_directory: client/java
+      - build-client-python:
+          working_directory: ~/client/python
+          docker:
+            - image: circleci/python:3.6
+          steps:
+            - run: pip install --user  -r test-requirements.txt
+            - run: python -m flake8 --extend-ignore=F401
+            - run: python -m pytest --cov=openlineage tests/
+            - run: bash <(curl -s https://codecov.io/bash)

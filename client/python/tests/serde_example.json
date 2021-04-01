@@ -1,0 +1,23 @@
+{
+	"eventTime": "2020-02-01",
+	"eventType": "START",
+	"run": {
+		"facets": {
+			"nominalTime": {
+				"_producer": "openlineage-python",
+				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/NominalTimeRunFacet",
+				"nominalEndTime": "2020-01-02",
+				"nominalStartTime": "2020-01-01"
+			}
+		},
+		"runId": "1500100900"
+	},
+	"job": {
+		"namespace":  "openlineage",
+		"name":  "name",
+		"facets": {}
+	},
+	"inputs": [],
+	"outputs": [],
+	"producer": "openlineage-python"
+}
