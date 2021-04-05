@@ -31,6 +31,6 @@ public class InsertIntoHadoopFsRelationVisitor
         PlanUtils.getDataset(
             outputPath,
             namespace,
-            PlanUtils.datasetFacet(command.schema(), namespace, outputStats)));
+            PlanUtils.datasetFacet(command.query().schema(), namespace, outputStats)));
   }
 }

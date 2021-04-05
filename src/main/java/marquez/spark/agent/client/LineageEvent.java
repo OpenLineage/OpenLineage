@@ -357,6 +357,7 @@ public class LineageEvent {
   @Getter
   @Setter
   @ToString
+  @EqualsAndHashCode(callSuper = false)
   @JsonIgnoreProperties(ignoreUnknown = true)
   public static class SchemaDatasetFacet extends BaseFacet {
 
@@ -376,6 +377,7 @@ public class LineageEvent {
   @Setter
   @Getter
   @ToString
+  @EqualsAndHashCode
   @JsonIgnoreProperties(ignoreUnknown = true)
   public static class SchemaField {
 

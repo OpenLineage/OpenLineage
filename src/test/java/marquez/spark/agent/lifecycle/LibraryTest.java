@@ -1,10 +1,9 @@
 package marquez.spark.agent.lifecycle;
 
+import static marquez.spark.agent.SparkAgentTestExtension.marquezContext;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
@@ -21,11 +20,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
-import marquez.spark.agent.MarquezAgent;
-import marquez.spark.agent.MarquezContext;
+import marquez.spark.agent.SparkAgentTestExtension;
 import marquez.spark.agent.client.LineageEvent;
 import marquez.spark.agent.client.OpenLineageClient;
-import net.bytebuddy.agent.ByteBuddyAgent;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -34,25 +31,15 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.SparkSession$;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import scala.Tuple2;
 
+@ExtendWith(SparkAgentTestExtension.class)
 public class LibraryTest {
-  static MarquezContext marquezContext;
-
-  @BeforeAll
-  public static void setUp() throws Exception {
-    marquezContext = mock(MarquezContext.class);
-    ByteBuddyAgent.install();
-    MarquezAgent.premain(
-        "/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54",
-        ByteBuddyAgent.getInstrumentation(),
-        new StaticExecutionContextFactory(marquezContext));
-  }
 
   @AfterEach
   public void tearDown() throws Exception {
@@ -61,7 +48,6 @@ public class LibraryTest {
 
   @RepeatedTest(30)
   public void testSparkSql() throws IOException, TimeoutException {
-    reset(marquezContext);
     when(marquezContext.getJobNamespace()).thenReturn("ns_name");
     when(marquezContext.getJobName()).thenReturn("job_name");
     when(marquezContext.getParentRunId()).thenReturn("ea445b5c-22eb-457a-8007-01c7c52b6e54");
@@ -146,7 +132,6 @@ public class LibraryTest {
 
   @Test
   public void testRdd() throws IOException {
-    reset(marquezContext);
     when(marquezContext.getJobNamespace()).thenReturn("ns_name");
     when(marquezContext.getJobName()).thenReturn("job_name");
     when(marquezContext.getParentRunId()).thenReturn("8d99e33e-2a1c-4254-9600-18f23435fc3b");

@@ -28,13 +28,15 @@ public class OutputDatasetVisitors
   @Override
   public List<PartialFunction<LogicalPlan, List<Dataset>>> get() {
     List<PartialFunction<LogicalPlan, List<Dataset>>> list = new ArrayList();
+    List<PartialFunction<LogicalPlan, List<Dataset>>> providers = datasetProviders.get();
+
     list.add(new InsertIntoDataSourceDirVisitor());
-    list.add(new InsertIntoDataSourceVisitor(datasetProviders.get()));
+    list.add(new InsertIntoDataSourceVisitor(providers));
     list.add(new InsertIntoHadoopFsRelationVisitor());
+    list.add(new SaveIntoDataSourceCommandVisitor(sqlContext, providers));
     list.add(new JDBCRelationVisitor(sqlContext));
-    if (BigQueryNodeVisitor.hasBigQueryClasses()) {
-      list.add(new BigQueryNodeVisitor(sqlContext));
-    }
+    list.add(new DatasetSourceVisitor());
+    list.add(new AppendDataVisitor(providers));
     return list;
   }
 }

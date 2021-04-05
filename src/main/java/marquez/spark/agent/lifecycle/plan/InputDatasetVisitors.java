@@ -26,9 +26,7 @@ public class InputDatasetVisitors
     List<PartialFunction<LogicalPlan, List<Dataset>>> list = new ArrayList<>();
     list.add(new HadoopFsRelationVisitor(sqlContext.sparkContext()));
     list.add(new JDBCRelationVisitor(sqlContext));
-    if (BigQueryNodeVisitor.hasBigQueryClasses()) {
-      list.add(new BigQueryNodeVisitor(sqlContext));
-    }
+    list.add(new DatasetSourceVisitor());
     return list;
   }
 }

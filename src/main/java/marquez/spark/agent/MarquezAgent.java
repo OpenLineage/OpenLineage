@@ -5,6 +5,7 @@ import java.net.URISyntaxException;
 import lombok.extern.slf4j.Slf4j;
 import marquez.spark.agent.lifecycle.ContextFactory;
 import marquez.spark.agent.transformers.ActiveJobTransformer;
+import marquez.spark.agent.transformers.BigQueryRelationTransformer;
 import marquez.spark.agent.transformers.PairRDDFunctionsTransformer;
 import marquez.spark.agent.transformers.SparkContextTransformer;
 
@@ -39,6 +40,7 @@ public class MarquezAgent {
     inst.addTransformer(new ActiveJobTransformer());
     inst.addTransformer(new SparkContextTransformer());
     inst.addTransformer(new PairRDDFunctionsTransformer());
+    inst.addTransformer(new BigQueryRelationTransformer());
   }
 
   private static void addShutDownHook() {

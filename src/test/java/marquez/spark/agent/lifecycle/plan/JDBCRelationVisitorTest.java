@@ -3,6 +3,7 @@ package marquez.spark.agent.lifecycle.plan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
+import marquez.spark.agent.SparkAgentTestExtension;
 import marquez.spark.agent.client.LineageEvent.Dataset;
 import org.apache.spark.Partition;
 import org.apache.spark.sql.SparkSession;
@@ -16,6 +17,7 @@ import org.apache.spark.sql.types.StringType$;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.postgresql.Driver;
@@ -24,6 +26,7 @@ import scala.Tuple2;
 import scala.collection.Seq$;
 import scala.collection.immutable.Map$;
 
+@ExtendWith(SparkAgentTestExtension.class)
 class JDBCRelationVisitorTest {
 
   @AfterEach
