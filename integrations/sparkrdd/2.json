@@ -7,7 +7,7 @@
   },
   "job" : {
     "namespace" : "ns_name",
-    "name" : "job_name"
+    "name" : "word_count"
   },
   "inputs" : [ {
     "namespace" : "gs.bucket",

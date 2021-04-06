@@ -11,7 +11,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +31,8 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.spark.Dependency;
+import org.apache.spark.SparkContext;
+import org.apache.spark.SparkContext$;
 import org.apache.spark.rdd.HadoopRDD;
 import org.apache.spark.rdd.NewHadoopRDD;
 import org.apache.spark.rdd.RDD;
@@ -39,15 +43,28 @@ import org.apache.spark.scheduler.ResultStage;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.scheduler.Stage;
+import scala.runtime.AbstractFunction0;
 
 @Slf4j
 public class RddExecutionContext implements ExecutionContext {
   private final MarquezContext marquezContext;
+  private final Optional<SparkContext> sparkContextOption;
   private List<URI> inputs;
   private List<URI> outputs;
 
   public RddExecutionContext(int jobId, MarquezContext marquezContext) {
     this.marquezContext = marquezContext;
+    sparkContextOption =
+        Optional.ofNullable(
+            SparkContext$.MODULE$
+                .getActive()
+                .getOrElse(
+                    new AbstractFunction0<SparkContext>() {
+                      @Override
+                      public SparkContext apply() {
+                        return null;
+                      }
+                    }));
   }
 
   @Override
@@ -115,9 +132,15 @@ public class RddExecutionContext implements ExecutionContext {
   }
 
   protected LineageEvent.Job buildJob() {
+    String jobName =
+        sparkContextOption
+            .map(
+                ctx ->
+                    ctx.appName().replaceAll(CAMEL_TO_SNAKE_CASE, "_$1").toLowerCase(Locale.ROOT))
+            .orElse("unknown");
     return LineageEvent.Job.builder()
         .namespace(marquezContext.getJobNamespace())
-        .name(marquezContext.getJobName())
+        .name(jobName)
         .build();
   }
 

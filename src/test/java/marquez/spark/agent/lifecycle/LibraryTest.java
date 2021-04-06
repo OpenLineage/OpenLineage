@@ -100,6 +100,10 @@ public class LibraryTest {
     map.remove("exprId");
     map.remove("resultId");
 
+    if (map.containsKey("facets") && map.containsKey("runId")) {
+      map.put("runId", "fake_run_id");
+    }
+
     // timezone is different in CI than local
     map.remove("timeZoneId");
     if (map.containsKey("namespace") && map.get("namespace").equals("file")) {
