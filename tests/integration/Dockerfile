@@ -25,7 +25,7 @@ USER 1001
 FROM marquez-airflow-base:latest AS integration
 COPY integration-requirements.txt integration-requirements.txt
 COPY integration.py integration.py
-RUN pip install --user -r integration-requirements.txt
+RUN pip install --use-deprecated=legacy-resolver --user -r integration-requirements.txt
 COPY docker/entrypoint.sh entrypoint.sh
 COPY docker/wait-for-it.sh wait-for-it.sh
 ENTRYPOINT ["/entrypoint.sh"]

@@ -10,21 +10,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
-
-log = logging.getLogger(__name__)
-
-
-class MockIdMapping:
-
-    mapping = None
-
-    def __init__(self):
-        log.debug("MockIdMapping.init()")
-        self.mapping = {}
-
-    def set(self, key, value):
-        self.mapping[key] = value
-
-    def pop(self, key, _session):
-        return self.mapping.pop(key)
+DEFAULT_TIMEOUT_MS = 10000
+DEFAULT_NAMESPACE_NAME = 'default'
+DEFAULT_MARQUEZ_BACKEND = 'http'
+DEFAULT_MARQUEZ_URL = 'http://localhost:5000'
+DEFAULT_PRODUCER = "marquez-airflow"  # TODO: mechanism for setting producer

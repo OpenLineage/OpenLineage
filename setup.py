@@ -48,7 +48,8 @@ setup(
     url="https://github.com/MarquezProject/marquez-airflow",
     packages=find_packages(),
     install_requires=[
-        "marquez-python==0.13.1",
+        "attrs==20.3.0",
+        "requests==2.25.1",
         "sqlparse==0.4.1"
     ]
 )

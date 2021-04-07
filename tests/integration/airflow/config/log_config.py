@@ -224,6 +224,6 @@ if REMOTE_LOGGING:
         LOGGING_CONFIG['handlers'].update(ELASTIC_REMOTE_HANDLERS)
     else:
         raise AirflowException(
-            "Incorrect remote log configuration. Please check the configuration of option 'host' in "
-            "section 'elasticsearch' if you are using Elasticsearch. In the other case, "
+            "Incorrect remote log configuration. Please check the configuration of option 'host' "
+            "in section 'elasticsearch' if you are using Elasticsearch. In the other case, "
             "'remote_base_log_folder' option in 'core' section.")

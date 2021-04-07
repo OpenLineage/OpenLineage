@@ -23,10 +23,8 @@ from marquez_airflow.models import (
     DbTableSchema,
     DbColumn
 )
-from marquez_airflow.extractors import Source, Dataset
+from marquez_airflow.extractors import Source, Dataset, DatasetType
 from marquez_airflow.extractors.postgres_extractor import PostgresExtractor
-
-from marquez_client.models import DatasetType
 
 CONN_ID = 'food_delivery_db'
 CONN_URI = 'postgres://localhost:5432/food_delivery'
@@ -123,10 +121,7 @@ def test_extract(mock_get_table_schemas):
     # Set the environment variable for the connection
     os.environ[f"AIRFLOW_CONN_{CONN_ID.upper()}"] = CONN_URI
 
-    # NOTE: When extracting operator metadata, only a single StepMetadata
-    # object is returned. We'll want to cleanup the Extractor interface to
-    # not return an array.
-    step_metadata = PostgresExtractor(TASK).extract()[0]
+    step_metadata = PostgresExtractor(TASK).extract()
 
     assert step_metadata.name == f"{DAG_ID}.{TASK_ID}"
     assert step_metadata.inputs == expected_inputs

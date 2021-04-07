@@ -54,8 +54,8 @@ class BigQueryExtractor(BaseExtractor):
             name=conn_id,
             connection_url=_BIGQUERY_CONN_URL)
 
-    def extract(self) -> [StepMetadata]:
-        return []
+    def extract(self) -> StepMetadata:
+        return None
 
     def _bq_table_name(self, bq_table):
         project = bq_table.get('projectId')
@@ -63,7 +63,7 @@ class BigQueryExtractor(BaseExtractor):
         table = bq_table.get('tableId')
         return f"{project}.{dataset}.{table}"
 
-    def extract_on_complete(self, task_instance) -> [StepMetadata]:
+    def extract_on_complete(self, task_instance) -> StepMetadata:
         log.debug(f"extract_on_complete({task_instance})")
         context = self.parse_sql_context()
         source = self._source()
@@ -79,12 +79,12 @@ class BigQueryExtractor(BaseExtractor):
                       exc_info=True)
             context['bigquery.extractor.client_error'] = \
                 f"{e}: {traceback.format_exc()}"
-            return [StepMetadata(
+            return StepMetadata(
                 name=get_job_name(task=self.operator),
                 context=context,
                 inputs=None,
                 outputs=None
-            )]
+            )
 
         inputs = None
         outputs = None
@@ -108,12 +108,12 @@ class BigQueryExtractor(BaseExtractor):
             context['bigquery.extractor.error'] = \
                 f"{e}: {traceback.format_exc()}"
 
-        return [StepMetadata(
+        return StepMetadata(
             name=get_job_name(task=self.operator),
             inputs=inputs,
             outputs=outputs,
             context=context
-        )]
+        )
 
     def _get_input_from_bq(self, job, context, source, client):
         if not job._properties.get('statistics')\

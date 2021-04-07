@@ -1,9 +1,15 @@
 import os
 import logging
-from marquez_client import Clients
-from marquez_airflow.extractors import (Dataset, Source)
-from marquez_client.models import JobType
-from airflow.utils.state import State
+from typing import Optional
+
+from marquez_airflow.extractors import Dataset, StepMetadata
+from marquez_airflow.version import VERSION as MARQUEZ_AIRFLOW_VERSION
+
+from openlineage.client import OpenLineageClient
+from openlineage.facet import DocumentationJobFacet, SourceCodeLocationJobFacet, SqlJobFacet, \
+    DocumentationDatasetFacet, SchemaDatasetFacet, SchemaField, DataSourceDatasetFacet, \
+    NominalTimeRunFacet, ParentRunFacet
+from openlineage.run import Dataset as OpenLineageDataset, RunEvent, RunState, Run, Job
 
 _DAG_DEFAULT_OWNER = 'anonymous'
 _DAG_DEFAULT_NAMESPACE = 'default'
@@ -15,108 +21,206 @@ _DAG_NAMESPACE = os.getenv(
 log = logging.getLogger(__name__)
 
 
-class Marquez:
+class MarquezAdapter:
+    """
+    Adapter for translating Airflow metadata to OpenLineage events,
+    instead of directly creating them from Airflow code.
+    """
     _client = None
 
-    def get_or_create_marquez_client(self):
+    def get_or_create_openlineage_client(self) -> OpenLineageClient:
         if not self._client:
-            self._client = Clients.new_write_only_client()
+            self._client = OpenLineageClient.from_environment()
         return self._client
 
-    def create_namespace(self):
-        # TODO: Use 'anonymous' owner for now, but we may want to use
-        # the 'owner' attribute defined via default_args for a DAG
-        log.debug(
-            f"Creating namespace '{_DAG_NAMESPACE}' with "
-            f"owner '{_DAG_DEFAULT_OWNER}'...")
-        self.get_or_create_marquez_client() \
-            .create_namespace(_DAG_NAMESPACE, _DAG_DEFAULT_OWNER)
+    def start_task(
+            self,
+            run_id: str,
+            job_name: str,
+            job_description: str,
+            event_time: str,
+            parent_run_id: Optional[str],
+            code_location: Optional[str],
+            nominal_start_time: str,
+            nominal_end_time: str,
+            step: Optional[StepMetadata],
+    ) -> str:
+        """
+        Emits openlineage event of type START
+        :param run_id: globally unique identifier of task in dag run
+        :param job_name: globally unique identifier of task in dag
+        :param job_description: user provided description of job
+        :param event_time:
+        :param parent_run_id: identifier of job spawning this task
+        :param code_location: file path or URL of DAG file
+        :param nominal_start_time: scheduled time of dag run
+        :param nominal_end_time: following schedule of dag run
+        :param step: metadata container with information extracted from operator
+        :return:
+        """
+        sql = None
+        if step:
+            sql = step.context.get('sql', None)
 
-    def create_run(self, run_id, step, run_args, start_time, end_time) -> str:
-        marquez_client = self.get_or_create_marquez_client()
-        marquez_client.create_job_run(
-            namespace_name=_DAG_NAMESPACE,
-            job_name=step.name,
-            run_id=run_id,
-            run_args=run_args,
-            nominal_start_time=start_time,
-            nominal_end_time=end_time)
-        return run_id
+        event = RunEvent(
+            eventType=RunState.START,
+            eventTime=event_time,
+            run=self._build_run(
+                run_id, parent_run_id, job_name, nominal_start_time, nominal_end_time
+            ),
+            job=self._build_job(
+                job_name, job_description, code_location, sql
+            ),
+            producer=f"marquez-airflow/{MARQUEZ_AIRFLOW_VERSION}",
+            inputs=[
+                self.map_airflow_dataset(dataset) for dataset in step.inputs
+            ] if step else None,
+            outputs=[
+                self.map_airflow_dataset(dataset) for dataset in step.outputs
+            ] if step else None
+        )
+        self.get_or_create_openlineage_client().emit(event)
+        return event.run.runId
 
-    def create_datasets(self, datasets, marquez_job_run_id=None):
-        client = self.get_or_create_marquez_client()
-        for dataset in datasets:
-            if isinstance(dataset, Dataset):
-                self.create_source(dataset.source)
-                # NOTE: The client expects a dict when capturing
-                # fields for a dataset. Below we translate a field
-                # object into a dict for compatibility. Work is currently
-                # in progress to make this step unnecessary (see:
-                # https://github.com/MarquezProject/marquez-python/pull/89)
-                fields = []
-                for field in dataset.fields:
-                    fields.append({
-                        'name': field.name,
-                        'type': field.type,
-                        'tags': field.tags,
-                        'description': field.description
-                    })
-                client.create_dataset(
-                    dataset_name=dataset.name,
-                    dataset_type=dataset.type,
-                    physical_name=dataset.name,
-                    source_name=dataset.source.name,
-                    namespace_name=_DAG_NAMESPACE,
-                    fields=fields,
-                    run_id=marquez_job_run_id)
+    def complete_task(
+        self,
+        run_id: str,
+        job_name: str,
+        end_time: str,
+        step: StepMetadata
+    ):
+        """
+        Emits openlineage event of type COMPLETE
+        :param run_id: globally unique identifier of task in dag run
+        :param job_name: globally unique identifier of task between dags
+        :param end_time: time of task completion
+        :param step: metadata container with information extracted from operator
+        """
+        event = RunEvent(
+            eventType=RunState.COMPLETE,
+            eventTime=end_time,
+            run=self._build_run(
+                run_id
+            ),
+            job=self._build_job(
+                job_name
+            ),
+            inputs=[
+                self.map_airflow_dataset(dataset) for dataset in step.inputs
+            ],
+            outputs=[
+                self.map_airflow_dataset(dataset) for dataset in step.outputs
+            ],
+            producer=f"marquez-airflow/{MARQUEZ_AIRFLOW_VERSION}"
+        )
+        self.get_or_create_openlineage_client().emit(event)
 
-    def create_source(self, source):
-        if isinstance(source, Source):
-            client = self.get_or_create_marquez_client()
-            client.create_source(
-                source.name,
-                source.type,
-                source.connection_url)
+    def fail_task(
+        self,
+        run_id: str,
+        job_name: str,
+        end_time: str,
+        step: StepMetadata
+    ):
+        """
+        Emits openlineage event of type FAIL
+        :param run_id: globally unique identifier of task in dag run
+        :param job_name: globally unique identifier of task between dags
+        :param end_time: time of task completion
+        :param step: metadata container with information extracted from operator
+        """
+        event = RunEvent(
+            eventType=RunState.FAIL,
+            eventTime=end_time,
+            run=self._build_run(
+                run_id
+            ),
+            job=self._build_job(
+                job_name
+            ),
+            inputs=[
+                self.map_airflow_dataset(dataset) for dataset in step.inputs
+            ],
+            outputs=[
+                self.map_airflow_dataset(dataset) for dataset in step.outputs
+            ],
+            producer=f"marquez-airflow/{MARQUEZ_AIRFLOW_VERSION}"
+        )
+        self.get_or_create_openlineage_client().emit(event)
 
-    def create_job(self, step, location, description, state=None, run_id=None):
-        # Create a job to ensure it exists
-        self.get_or_create_marquez_client().create_job(
-            namespace_name=_DAG_NAMESPACE,
-            job_name=step.name,
-            job_type=JobType.BATCH,
-            location=step.location or location,
-            input_dataset=self._register_dataset(step.inputs),
-            output_dataset=self._register_dataset(step.outputs, run_id)
-            if state in {State.SUCCESS, State.SKIPPED}
-            else self._register_dataset(step.outputs),
-            context=step.context or {},
-            description=description,
-            run_id=run_id)
+    @staticmethod
+    def _build_run(
+            run_id: str,
+            parent_run_id: Optional[str] = None,
+            job_name: Optional[str] = None,
+            nominal_start_time: Optional[str] = None,
+            nominal_end_time: Optional[str] = None
+    ) -> Run:
+        facets = {}
+        if nominal_start_time:
+            facets.update({
+                "nominalTime": NominalTimeRunFacet(nominal_start_time, nominal_end_time)
+            })
+        if parent_run_id:
+            facets.update({"parentRun": ParentRunFacet.create(
+                parent_run_id,
+                _DAG_NAMESPACE,
+                job_name
+            )})
 
-    def _register_dataset(self, step_dataset, run_id=None):
-        inputs = None
-        if step_dataset:
-            self.create_datasets(step_dataset, run_id)
-            inputs = self._to_dataset_ids(step_dataset)
-        return inputs
+        return Run(run_id, facets)
 
-    def complete_run(self, run_id, at):
-        self.get_or_create_marquez_client(). \
-            mark_job_run_as_completed(run_id=run_id, at=at)
+    @staticmethod
+    def _build_job(
+            job_name: str,
+            job_description: Optional[str] = None,
+            code_location: Optional[str] = None,
+            sql: Optional[str] = None
+    ):
+        facets = {}
 
-    def fail_run(self, run_id, at):
-        self.get_or_create_marquez_client().mark_job_run_as_failed(
-            run_id=run_id, at=at)
+        if job_description:
+            facets.update({
+                "documentation": DocumentationJobFacet(job_description)
+            })
+        if code_location:
+            facets.update({
+                "sourceCodeLocation": SourceCodeLocationJobFacet("", code_location)
+            })
+        if sql:
+            facets.update({
+                "sql": SqlJobFacet(sql)
+            })
 
-    def start_run(self, run_id, start):
-        self.get_or_create_marquez_client() \
-            .mark_job_run_as_started(run_id, start)
+        return Job(_DAG_NAMESPACE, job_name, facets)
 
-    def _to_dataset_ids(self, datasets):
-        if not datasets:
-            return None
+    @staticmethod
+    def map_airflow_dataset(dataset: Dataset) -> OpenLineageDataset:
+        facets = {
+            "dataSource": DataSourceDatasetFacet(
+                dataset.source.name,
+                dataset.source.connection_url
+            )
+        }
+        if dataset.description:
+            facets.update({
+                "documentation": DocumentationDatasetFacet(
+                    description=dataset.description
+                )
+            })
 
-        return list(map(lambda ds: {
-            'namespace': _DAG_NAMESPACE,
-            'name': ds.name
-        }, datasets))
+        if dataset.fields is not None and len(dataset.fields):
+            facets.update({
+                "schema": SchemaDatasetFacet(
+                    fields=[
+                        SchemaField(field.name, field.type, field.description)
+                        for field in dataset.fields
+                    ]
+                )
+            })
+
+        return OpenLineageDataset(
+            namespace=_DAG_NAMESPACE,
+            name=dataset.name,
+            facets=facets
+        )

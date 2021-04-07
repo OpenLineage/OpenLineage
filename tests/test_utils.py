@@ -14,15 +14,10 @@ import os
 from unittest import mock
 
 from airflow.models import Connection
-from airflow.operators.dummy_operator import DummyOperator
-
-from marquez_airflow.extractors import StepMetadata
-from marquez_airflow.version import VERSION as MARQUEZ_AIRFLOW_VERSION
 from marquez_airflow.utils import (
     url_to_https,
     get_location,
     get_connection_uri,
-    add_airflow_info_to
 )
 
 AIRFLOW_VERSION = '1.10.12'
@@ -36,28 +31,13 @@ def test_get_connection_uri(mock_get_connection):
         conn_id=AIRFLOW_CONN_ID,
         uri=AIRFLOW_CONN_URI
     )
-    assert get_connection_uri(AIRFLOW_CONN_ID) == \
-        AIRFLOW_CONN_URI
+    assert get_connection_uri(AIRFLOW_CONN_ID) == AIRFLOW_CONN_URI
 
 
 def test_get_connection_uri_from_env():
     # Set the environment variable as AIRFLOW_CONN_<conn_id>
     os.environ[f"AIRFLOW_CONN_{AIRFLOW_CONN_ID.upper()}"] = AIRFLOW_CONN_URI
     assert get_connection_uri(AIRFLOW_CONN_ID) == AIRFLOW_CONN_URI
-
-
-def test_add_airflow_info_to():
-    task = DummyOperator(task_id='test.task')
-    steps_metadata = [StepMetadata(name='test.task')]
-
-    add_airflow_info_to(task, steps_metadata)
-    for step_metadata in steps_metadata:
-        assert step_metadata.context['airflow.operator'] == \
-            'airflow.operators.dummy_operator.DummyOperator'
-        assert step_metadata.context['airflow.version'] == AIRFLOW_VERSION
-        assert step_metadata.context['airflow.task_info'] is not None
-        assert step_metadata.context['marquez_airflow.version'] == \
-            MARQUEZ_AIRFLOW_VERSION
 
 
 def test_get_location_no_file_path():

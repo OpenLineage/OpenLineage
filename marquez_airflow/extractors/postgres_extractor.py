@@ -46,7 +46,7 @@ class PostgresExtractor(BaseExtractor):
     def __init__(self, operator):
         super().__init__(operator)
 
-    def extract(self) -> [StepMetadata]:
+    def extract(self) -> StepMetadata:
         # (1) Parse sql statement to obtain input / output tables.
         sql_meta: SqlMeta = SqlParser.parse(self.operator.sql)
 
@@ -81,14 +81,14 @@ class PostgresExtractor(BaseExtractor):
             )
         ]
 
-        return [StepMetadata(
+        return StepMetadata(
             name=f"{self.operator.dag_id}.{self.operator.task_id}",
             inputs=inputs,
             outputs=outputs,
             context={
                 'sql': self.operator.sql
             }
-        )]
+        )
 
     def _get_table_schemas(
             self, table_names: [DbTableName]

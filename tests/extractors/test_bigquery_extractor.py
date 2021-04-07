@@ -58,6 +58,7 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
         mock_client.return_value \
             .get_table.side_effect = [table_details, out_details]
 
+        # To make sure hasattr "sees" close and calls it
         mock_client.return_value.close.return_value
 
         mock.seal(mock_hook)
@@ -79,31 +80,31 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
 
         bq_extractor = BigQueryExtractor(task)
         steps_meta_extract = bq_extractor.extract()
-        assert steps_meta_extract == []
+        assert steps_meta_extract is None
 
         task_instance.run()
 
-        steps_meta = bq_extractor.extract_on_complete(task_instance)
-        assert steps_meta[0].context['bigquery.job_properties'] \
+        step_meta = bq_extractor.extract_on_complete(task_instance)
+        assert step_meta.context['bigquery.job_properties'] \
             == json.dumps(job_details)
         mock_client.return_value \
             .get_job.assert_called_once_with(job_id=bq_job_id)
 
-        assert steps_meta[0].inputs is not None
-        assert len(steps_meta[0].inputs) == 1
-        assert steps_meta[0].inputs[0].name == \
+        assert step_meta.inputs is not None
+        assert len(step_meta.inputs) == 1
+        assert step_meta.inputs[0].name == \
             'bigquery-public-data.usa_names.usa_1910_2013'
 
-        assert steps_meta[0].inputs[0].fields is not None
-        assert len(steps_meta[0].inputs[0].fields) == 5
-        assert steps_meta[0].outputs is not None
-        assert len(steps_meta[0].outputs) == 1
-        assert steps_meta[0].outputs[0].fields is not None
-        assert len(steps_meta[0].outputs[0].fields) == 2
-        assert steps_meta[0].outputs[0].name == \
+        assert step_meta.inputs[0].fields is not None
+        assert len(step_meta.inputs[0].fields) == 5
+        assert step_meta.outputs is not None
+        assert len(step_meta.outputs) == 1
+        assert step_meta.outputs[0].fields is not None
+        assert len(step_meta.outputs[0].fields) == 2
+        assert step_meta.outputs[0].name == \
             'bq-airflow-marquez.new_dataset.output_table'
-        assert steps_meta[0].context['sql'] == task.sql
-        assert steps_meta[0].context['bigquery.job_id'] == bq_job_id
+        assert step_meta.context['sql'] == task.sql
+        assert step_meta.context['bigquery.job_id'] == bq_job_id
 
         mock_client.return_value.close.assert_called()
 
@@ -137,6 +138,7 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
         mock_client.return_value \
             .get_job.side_effects = [Exception("bq error")]
 
+        # To make sure hasattr "sees" close and calls it
         mock_client.return_value.close.return_value
 
         mock.seal(mock_hook)
@@ -159,21 +161,21 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
         bq_extractor = BigQueryExtractor(task)
 
         steps_meta_extract = bq_extractor.extract()
-        assert steps_meta_extract == []
+        assert steps_meta_extract is None
 
         task_instance.run()
 
-        steps_meta = bq_extractor.extract_on_complete(task_instance)
-        assert steps_meta[0].context['bigquery.extractor.error'] is not None
+        step_meta = bq_extractor.extract_on_complete(task_instance)
+        assert step_meta.context['bigquery.extractor.error'] is not None
         mock_client.return_value \
             .get_job.assert_called_once_with(job_id=bq_job_id)
 
-        assert steps_meta[0].inputs is not None
-        assert len(steps_meta[0].inputs) == 0
-        assert steps_meta[0].outputs is not None
-        assert len(steps_meta[0].outputs) == 0
+        assert step_meta.inputs is not None
+        assert len(step_meta.inputs) == 0
+        assert step_meta.outputs is not None
+        assert len(step_meta.outputs) == 0
 
-        assert steps_meta[0].context['sql'] == task.sql
+        assert step_meta.context['sql'] == task.sql
 
         mock_client.return_value.close.assert_called()
 
@@ -188,7 +190,7 @@ class TestBigQueryExtractor(unittest.TestCase):
     def test_extract(self):
         log.info("test_extractor")
         steps_meta_extract = BigQueryExtractor(self.task).extract()
-        assert steps_meta_extract == []
+        assert steps_meta_extract is None
 
     @mock.patch("airflow.models.TaskInstance.xcom_pull")
     def test_get_xcom_bigquery_job_id(self, mock_xcom_pull):

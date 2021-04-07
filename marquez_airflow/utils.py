@@ -22,10 +22,10 @@ from airflow.version import version as AIRFLOW_VERSION
 
 try:
     # Import from pendulum 1.x version
-    from pendulum import Pendulum
+    from pendulum import Pendulum, from_timestamp
 except ImportError:
     # Import for Pendulum 2.x version
-    from pendulum import DateTime as Pendulum
+    from pendulum import DateTime as Pendulum, from_timestamp
 
 from marquez_airflow.version import VERSION as MARQUEZ_AIRFLOW_VERSION
 
@@ -34,24 +34,27 @@ _NOMINAL_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
 
 class JobIdMapping:
+    # job_name here is marquez job name - aka combination of dag_id and task_id
+
     @staticmethod
-    def set(job_name, run_id, val):
+    def set(job_name: str, dag_run_id: str, task_run_id: str):
         airflow.models.Variable.set(
-            JobIdMapping.make_key(job_name, run_id),
-            json.dumps(val))
+            JobIdMapping.make_key(job_name, dag_run_id),
+            json.dumps(task_run_id)
+        )
 
     @staticmethod
-    def pop(job_name, run_id, session):
-        return JobIdMapping.get(job_name, run_id, session, delete=True)
+    def pop(job_name, dag_run_id, session):
+        return JobIdMapping.get(job_name, dag_run_id, session, delete=True)
 
     @staticmethod
-    def get(job_name, run_id, session, delete=False):
-        key = JobIdMapping.make_key(job_name, run_id)
+    def get(job_name, dag_run_id, session, delete=False):
+        key = JobIdMapping.make_key(job_name, dag_run_id)
         if session:
             q = session.query(airflow.models.Variable).filter(
                 airflow.models.Variable.key == key)
             if not q.first():
-                return
+                return None
             else:
                 val = q.first().val
                 if delete:
@@ -147,23 +150,20 @@ def get_job_name(task):
     return f'{task.dag_id}.{task.task_id}'
 
 
-def add_airflow_info_to(task, steps_metadata):
-    log.debug(f"add_airflow_info_to({task}, {steps_metadata})")
+def add_airflow_info_to(task, step_metadata):
+    log.debug(f"add_airflow_info_to({task}, {step_metadata})")
 
-    for step_metadata in steps_metadata:
-        # Add operator info
-        operator = \
-            f'{task.__class__.__module__}.{task.__class__.__name__}'
+    # Add operator info
+    operator = f'{task.__class__.__module__}.{task.__class__.__name__}'
 
-        step_metadata.context['airflow.operator'] = operator
-        step_metadata.context['airflow.task_info'] = str(task.__dict__)
+    step_metadata.context['airflow.operator'] = operator
+    step_metadata.context['airflow.task_info'] = str(task.__dict__)
 
-        # Add version info
-        step_metadata.context['airflow.version'] = AIRFLOW_VERSION
-        step_metadata.context['marquez_airflow.version'] = \
-            MARQUEZ_AIRFLOW_VERSION
+    # Add version info
+    step_metadata.context['airflow.version'] = AIRFLOW_VERSION
+    step_metadata.context['marquez_airflow.version'] = MARQUEZ_AIRFLOW_VERSION
 
-    return steps_metadata
+    return step_metadata
 
 
 class DagUtils:
@@ -198,6 +198,9 @@ class DagUtils:
     def to_iso_8601(dt):
         if not dt:
             return None
+        if isinstance(dt, int):
+            dt = from_timestamp(dt/1000.0)
+
         if isinstance(dt, Pendulum):
             return dt.format(_NOMINAL_TIME_FORMAT)
         else:

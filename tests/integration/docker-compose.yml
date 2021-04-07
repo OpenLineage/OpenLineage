@@ -79,6 +79,7 @@ services:
       - AIRFLOW__CORE__LOGGING_CONFIG_CLASS=log_config.LOGGING_CONFIG
       - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=false
       - MARQUEZ_NAMESPACE=food_delivery
+      - MARQUEZ_URL=http://marquez:5000
       - MARQUEZ_LOG_LEVEL=DEBUG
     volumes:
       - ./airflow/dags:/opt/bitnami/airflow/dags
