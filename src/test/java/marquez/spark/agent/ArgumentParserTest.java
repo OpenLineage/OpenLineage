@@ -1,22 +1,17 @@
 package marquez.spark.agent;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
 public class ArgumentParserTest {
-  @Parameters(name = "{0}")
   public static Collection<Object[]> data() {
     List<Object[]> pass = new ArrayList<>();
     pass.add(
@@ -66,32 +61,17 @@ public class ArgumentParserTest {
     return pass;
   }
 
-  @Parameter(value = 0)
-  public String input;
-
-  @Parameter(value = 1)
-  public String host;
-
-  @Parameter(value = 2)
-  public String version;
-
-  @Parameter(value = 3)
-  public String namespace;
-
-  @Parameter(value = 4)
-  public String jobName;
-
-  @Parameter(value = 5)
-  public String runId;
-
-  @Parameter(value = 6)
-  public boolean randomUuid;
-
-  @Parameter(value = 7)
-  public Optional<String> apiKey;
-
-  @Test
-  public void testArgument() {
+  @ParameterizedTest
+  @MethodSource("data")
+  public void testArgument(
+      String input,
+      String host,
+      String version,
+      String namespace,
+      String jobName,
+      String runId,
+      boolean randomUuid,
+      Optional<String> apiKey) {
     ArgumentParser parser = ArgumentParser.parse(input);
     assertEquals(host, parser.getHost());
     assertEquals(version, parser.getVersion());
