@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -9,47 +11,49 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-import codecs
-import os
+#
+# -*- coding: utf-8 -*-
 
 from setuptools import find_packages, setup
 
+with open("README.md") as readme_file:
+    readme = readme_file.read()
 
-def read(rel_path):
-    here = os.path.abspath(os.path.dirname(__file__))
-    with codecs.open(os.path.join(here, rel_path), 'r') as fp:
-        return fp.read()
+requirements = [
+    "attrs==19.3",
+    "requests==2.25.1",
+    "sqlparse==0.4.1",
+]
 
-
-def get_version(rel_path):
-    for line in read(rel_path).splitlines():
-        if line.startswith('VERSION'):
-            delim = '"' if '"' in line else "'"
-            return line.split(delim)[1]
-    else:
-        raise RuntimeError("Unable to find version string.")
-
-
-with open("README.md", "r") as f:
-    long_description = f.read()
-
-NAME = "marquez-airflow"
+extras_require = {
+    "tests": [
+        "pytest",
+        "pytest-cov",
+        "mock",
+        "flake8",
+        "SQLAlchemy==1.3.24",       # must be set to 1.3.* for airflow tests compatibility
+        "Flask-SQLAlchemy==2.4.4",  # must be set to 2.4.* for airflow tests compatibility
+        "pandas-gbq==0.14.1",       # must be set to 0.14.* for airflow tests compatibility
+        "apache-airflow==1.10.12",
+        "apache-airflow[gcp_api]==1.10.12",
+        "apache-airflow[google]==1.10.12",
+        "apache-airflow[postgres]==1.10.12",
+    ],
+}
+extras_require["dev"] = set(sum(extras_require.values(), []))
 
 setup(
-    name=NAME,
-    python_requires='>=3.6',
-    version=get_version('marquez_airflow/version.py'),
-    author="Marquez Team",
-    author_email="",
+    name="marquez-airflow",
+    version="0.13.1",
     description="Marquez integration with Airflow",
-    long_description=long_description,
+    long_description=readme,
     long_description_content_type="text/markdown",
-    url="https://github.com/MarquezProject/marquez-airflow",
+    author="Marquez Project",
     packages=find_packages(),
-    install_requires=[
-        "attrs==20.3.0",
-        "requests==2.25.1",
-        "sqlparse==0.4.1"
-    ]
+    include_package_data=True,
+    install_requires=requirements,
+    extras_require=extras_require,
+    python_requires=">=3.6",
+    zip_safe=False,
+    keywords="marquez",
 )

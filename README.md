@@ -42,7 +42,7 @@ $ python3 setup.py install
 
 ## Configuration
 
-The library depends on a _backend_. A `Backend` is configurable and lets the library know where to write dataset and job metadata.
+The library depends on a _backend_. A `Backend` is configurable and lets the library know where to write dataset, job, and run metadata.
 
 ### Backends
 
@@ -50,13 +50,13 @@ The library depends on a _backend_. A `Backend` is configurable and lets the lib
 * `FILE`: Write metadata to a file (as `json`) under `/tmp/marquez`
 * `LOG`: Simply just logs the metadata to the console
 
-By default, the `HTTP` backend will be used (see next section). To override the default backend and write metadata to a file, use `MARQUEZ_BACKEND`:
+By default, the `HTTP` backend will be used (see next sections on configuration). To override the default backend and write metadata to a file, use `MARQUEZ_BACKEND`:
 
 ```
 MARQUEZ_BACKEND=FILE
 ```
 
-> **Note:** Metadata will be written to `/tmp/marquez/client.requests.log`, but can be overridden with `MARQUEZ_FILE`.
+> **Note:** Metadata will be written to `/tmp/marquez/client.requests.log`, but the location can be overridden with `MARQUEZ_FILE`.
 
 ### `HTTP` Backend Authentication
 
@@ -64,10 +64,10 @@ The `HTTP` backend supports using API keys to authenticate requests via `Bearer`
 
 ```
 MARQUEZ_BACKEND=HTTP
-MARQUEZ_API_KEY=[API_KEY]
+MARQUEZ_API_KEY=[YOUR_API_KEY]
 ```
 
-### Pointing to your Marquez service
+### `HTTP` Backend Environment Variables
 
 `marquez-airflow` needs to know where to talk to the Marquez server API.  You can set these using environment variables to be read by your Airflow service.
 
@@ -93,8 +93,6 @@ If you do nothing, Marquez will receive the `Job` and the `Run` from your DAGs, 
 
 It's important to understand the inputs and outputs are lists and relate directly to the `Dataset` object in Marquez.  Datasets also include a source which relates directly to the `Source` object in Marquez.
 
-*A PostgresExtractor is currently in progress.  When that's merged, it will represent a good example of how to write custom extractors*
-
 ## Usage
 
 To begin collecting Airflow DAG metadata with Marquez, use:
@@ -117,55 +115,22 @@ To enable logging, set the environment variable `MARQUEZ_LOG_LEVEL` to `DEBUG`, 
 $ export MARQUEZ_LOG_LEVEL=INFO
 ```
 
-## Example
+## Development
 
-```python
-from datetime import datetime
-from marquez_airflow import DAG
-from airflow.operators.postgres_operator import PostgresOperator
-from airflow.utils.dates import days_ago
+To install all dependencies for _local_ development:
 
-default_args = {
-    'owner': 'datascience',
-    'depends_on_past': False,
-    'start_date': days_ago(1),
-    'email_on_failure': False,
-    'email_on_retry': False,
-    'email': ['datascience@example.com']
-}
+```bash
+$ pip3 install -e .[dev]
+```
 
-dag = DAG(
-    'orders_popular_day_of_week',
-    schedule_interval='@weekly',
-    default_args=default_args,
-    description='Determines the popular day of week orders are placed.'
-)
+To run the entire test suite, you'll first want to initialize the Airflow database:
 
-t1 = PostgresOperator(
-    task_id='if_not_exists',
-    postgres_conn_id='food_delivery_db',
-    sql='''
-    CREATE TABLE IF NOT EXISTS popular_orders_day_of_week (
-      order_day_of_week VARCHAR(64) NOT NULL,
-      order_placed_on   TIMESTAMP NOT NULL,
-      orders_placed     INTEGER NOT NULL
-    );''',
-    dag=dag
-)
+```bash
+$ airflow initdb
+```
 
-t2 = PostgresOperator(
-    task_id='insert',
-    postgres_conn_id='food_delivery_db',
-    sql='''
-    INSERT INTO popular_orders_day_of_week (order_day_of_week, order_placed_on, orders_placed)
-      SELECT EXTRACT(ISODOW FROM order_placed_on) AS order_day_of_week,
-             order_placed_on,
-             COUNT(*) AS orders_placed
-        FROM top_delivery_times
-       GROUP BY order_placed_on;
-    ''',
-    dag=dag
-)
+Then, run the test suite with:
 
-t1 >> t2
+```bash
+$ pytest
 ```
