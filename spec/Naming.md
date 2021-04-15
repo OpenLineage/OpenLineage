@@ -67,7 +67,7 @@ Identifier :
    * Scheme = bigquery
    * Authority = 
  * Unique name: {project id}.{dataset name}.{table name}
-   * URI =   bigquery:{database}.{schema}.{table}
+   * URI =   bigquery:{project id}.{schema}.{table}
 
 ### Distributed file systems/blob stores
 #### GCS
@@ -107,8 +107,6 @@ Identifier :
    * Authority = {namenode host}:{namenode port}
  * Unique name: {path}
    * URI =   hdfs://{namenode host}:{namenode port}{path}
-
-### Hive
 
 ## Schedulers
 ### Airflow
