@@ -36,6 +36,7 @@ The [specification](spec/OpenLineage.md) is defined using OpenAPI and allows ext
   - [OpenLineage collection implementation](https://github.com/MarquezProject/marquez/blob/main/api/src/main/java/marquez/api/OpenLineageResource.java)
   - [Spark integration](https://github.com/MarquezProject/marquez/tree/main/integrations/spark)
   - [Airflow integration](https://github.com/MarquezProject/marquez/tree/main/integrations/airflow)  
+- [Egeria](https://https://egeria.odpi.org/): Egeria Open Metadata and Governance. A metadata bus.
 
 ## Community
 - Slack: [OpenLineage.slack.com](http://bit.ly/OpenLineageSlack)
