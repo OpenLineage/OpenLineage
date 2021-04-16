@@ -64,6 +64,7 @@ Ryan Blue (Netflix)
 Willy Lulciuc (Datakin)
 Zhamak Dehghani (Thoughtworks)
 Michael Collado (Datakin)
+Maciej Obuchowski (GetInData)
 
 *Have the project defined the roles of contributor, committer, maintainer, etc.? Please document it in MAINTAINERS.md.*
 
