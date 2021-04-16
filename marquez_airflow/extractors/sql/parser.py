@@ -11,14 +11,13 @@
 # limitations under the License.
 
 import logging
+from typing import List, Tuple
 
 import sqlparse
-from sqlparse.sql import T
-from sqlparse.sql import TokenList
+from sqlparse.sql import T, TokenList, Parenthesis, Identifier, IdentifierList
 from sqlparse.tokens import Punctuation
 
 from marquez_airflow.models import DbTableName
-
 
 log = logging.getLogger(__name__)
 
@@ -45,26 +44,44 @@ def _match_on(token, keywords):
     return token.match(T.Keyword, values=keywords)
 
 
-def _get_table(tokens, idx):
+def _get_tables(tokens, idx) -> Tuple[int, List[DbTableName]]:
+    # Extract table identified by preceding SQL keyword at '_is_in_table'
+    def parse_ident(ident: Identifier) -> str:
+        # Extract table name from possible schema.table naming
+        token_list = ident.flatten()
+        table_name = next(token_list).value
+        try:
+            # Determine if the table contains the schema
+            # separated by a dot (format: 'schema.table')
+            dot = next(token_list)
+            if dot.match(Punctuation, '.'):
+                table_name += dot.value
+                table_name += next(token_list).value
+        except StopIteration:
+            pass
+        return table_name
+
     idx, token = tokens.token_next(idx=idx)
-    token_list = token.flatten()
-    table_name = next(token_list).value
-    try:
-        # Determine if the table contains the schema
-        # separated by a dot (format: 'schema.table')
-        dot = next(token_list)
-        if dot.match(Punctuation, '.'):
-            table_name += dot.value
-            table_name += next(token_list).value
-    except StopIteration:
-        pass
-    return idx, DbTableName(table_name)
+    tables = []
+    if isinstance(token, IdentifierList):
+        # Handle "comma separated joins" as opposed to explicit JOIN keyword
+        gidx = 0
+        tables.append(parse_ident(token.token_first(skip_ws=True, skip_cm=True)))
+        gidx, punc = token.token_next(gidx, skip_ws=True, skip_cm=True)
+        while punc and punc.value == ',':
+            gidx, name = token.token_next(gidx, skip_ws=True, skip_cm=True)
+            tables.append(parse_ident(name))
+            gidx, punc = token.token_next(gidx)
+    else:
+        tables.append(parse_ident(token))
+
+    return idx, [DbTableName(table) for table in tables]
 
 
 class SqlMeta:
     # TODO: Only a single output table may exist, we'll want to rename
     # SqlMeta.out_tables -> SqlMeta.out_table
-    def __init__(self, in_tables: [DbTableName], out_tables: [DbTableName]):
+    def __init__(self, in_tables: List[DbTableName], out_tables: List[DbTableName]):
         self.in_tables = in_tables
         self.out_tables = out_tables
 
@@ -74,8 +91,13 @@ class SqlParser:
     This class parses a SQL statement.
     """
 
-    @staticmethod
-    def parse(sql: str) -> SqlMeta:
+    def __init__(self):
+        self.ctes = set()
+        self.intables = set()
+        self.outtables = set()
+
+    @classmethod
+    def parse(cls, sql: str) -> SqlMeta:
         if sql is None:
             raise ValueError("A sql statement must be provided.")
 
@@ -85,19 +107,58 @@ class SqlParser:
         # We assume only one statement in SQL
         tokens = TokenList(statements[0].tokens)
         log.debug(f"Successfully tokenized sql statement: {tokens}")
+        parser = cls()
+        return parser.recurse(tokens)
 
-        in_tables = []
-        out_tables = []
-
+    def recurse(self, tokens: TokenList):
+        in_tables, out_tables = set(), set()
         idx, token = tokens.token_next_by(t=T.Keyword)
         while token:
-            if _is_in_table(token):
-                idx, in_table = _get_table(tokens, idx)
-                in_tables.append(in_table)
+
+            # Main parser switch
+            if self.is_cte(token):
+                cte_name, cte_intables = self.parse_cte(idx, tokens)
+                for intable in cte_intables:
+                    if intable not in self.ctes:
+                        in_tables.add(intable)
+            elif _is_in_table(token):
+                idx, extracted_tables = _get_tables(tokens, idx)
+                for table in extracted_tables:
+                    if table.name not in self.ctes:
+                        in_tables.add(table)
             elif _is_out_table(token):
-                idx, out_table = _get_table(tokens, idx)
-                out_tables.append(out_table)
+                idx, extracted_tables = _get_tables(tokens, idx)
+                out_tables.add(extracted_tables[0])  # assuming only one out_table
 
             idx, token = tokens.token_next_by(t=T.Keyword, idx=idx)
 
-        return SqlMeta(in_tables, out_tables)
+        return SqlMeta(list(in_tables), list(out_tables))
+
+    def is_cte(self, token: T):
+        return token.match(T.Keyword.CTE, values=['WITH'])
+
+    def parse_cte(self, idx, tokens: TokenList):
+        gidx, group = tokens.token_next(idx, skip_ws=True, skip_cm=True)
+
+        # handle recursive keyword
+        if group.match(T.Keyword, values=['RECURSIVE']):
+            gidx, group = tokens.token_next(gidx, skip_ws=True, skip_cm=True)
+
+        if not group.is_group:
+            return [], None
+
+        # get CTE name
+        offset = 1
+        cte_name = group.token_first(skip_ws=True, skip_cm=True)
+        self.ctes.add(cte_name.value)
+
+        # AS keyword
+        offset, as_keyword = group.token_next(offset, skip_ws=True, skip_cm=True)
+        if not as_keyword.match(T.Keyword, values=['AS']):
+            raise RuntimeError(f"CTE does not have AS keyword at index {gidx}")
+
+        offset, parens = group.token_next(offset, skip_ws=True, skip_cm=True)
+        if isinstance(parens, Parenthesis) or parens.is_group:
+            # Parse CTE using recursion.
+            return cte_name.value, self.recurse(TokenList(parens.tokens)).in_tables
+        raise RuntimeError(f"Parens {parens} are not Parenthesis at index {gidx}")

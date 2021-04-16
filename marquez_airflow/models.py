@@ -72,6 +72,9 @@ class DbTableName:
             )
         )
 
+    def __hash__(self):
+        return hash((self.database, self.schema, self.name, self.qualified_name))
+
     def __eq__(self, other):
         return self.database == other.database and \
                self.schema == other.schema and \
