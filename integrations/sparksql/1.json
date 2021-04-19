@@ -30,7 +30,8 @@
                   "num-children": 1,
                   "child": 0,
                   "name": "count",
-                  "qualifier": []
+                  "qualifier": [],
+                  "explicitMetadata": {}
                 },
                 {
                   "class": "org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression",
@@ -56,6 +57,12 @@
                 }
               ]
             ],
+            "child": 0
+          },
+          {
+            "class": "org.apache.spark.sql.catalyst.plans.logical.Project",
+            "num-children": 1,
+            "projectList": [],
             "child": 0
           },
           {
@@ -86,12 +93,6 @@
                 "returnNullable": false
               },
               {
-                "class": "org.apache.spark.sql.catalyst.expressions.Cast",
-                "num-children": 1,
-                "child": 0,
-                "dataType": "string"
-              },
-              {
                 "class": "org.apache.spark.sql.catalyst.expressions.AttributeReference",
                 "num-children": 0,
                 "name": "value",
@@ -100,24 +101,6 @@
                 "metadata": {},
                 "qualifier": []
               }
-            ],
-            "child": 0
-          },
-          {
-            "class": "org.apache.spark.sql.catalyst.plans.logical.Project",
-            "num-children": 1,
-            "projectList": [
-              [
-                {
-                  "class": "org.apache.spark.sql.catalyst.expressions.AttributeReference",
-                  "num-children": 0,
-                  "name": "value",
-                  "dataType": "string",
-                  "nullable": true,
-                  "metadata": {},
-                  "qualifier": []
-                }
-              ]
             ],
             "child": 0
           },

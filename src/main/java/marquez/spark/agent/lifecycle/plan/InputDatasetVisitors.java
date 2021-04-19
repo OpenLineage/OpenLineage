@@ -27,6 +27,7 @@ public class InputDatasetVisitors
     list.add(new HadoopFsRelationVisitor(sqlContext.sparkContext()));
     list.add(new JDBCRelationVisitor(sqlContext));
     list.add(new DatasetSourceVisitor());
+    list.add(new CommandPlanVisitor(new ArrayList<>(list)));
     return list;
   }
 }

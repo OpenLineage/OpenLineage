@@ -27,6 +27,9 @@ public class InsertIntoDataSourceDirVisitor
     OutputStatisticsFacet outputStats = PlanUtils.getOutputStats(command.metrics());
     // URI is required by the InsertIntoDataSourceDirCommand
     URI outputPath = command.storage().locationUri().get();
+    if (outputPath.getScheme() == null) {
+      outputPath = URI.create("file://" + outputPath);
+    }
     String namespace = PlanUtils.namespaceUri(outputPath);
     return Collections.singletonList(
         PlanUtils.getDataset(

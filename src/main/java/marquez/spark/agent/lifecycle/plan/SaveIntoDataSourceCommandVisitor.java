@@ -1,12 +1,19 @@
 package marquez.spark.agent.lifecycle.plan;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMap.Builder;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import marquez.spark.agent.client.LineageEvent.Dataset;
+import marquez.spark.agent.facets.OutputStatisticsFacet;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.SaveIntoDataSourceCommand;
 import org.apache.spark.sql.sources.BaseRelation;
+import org.apache.spark.sql.sources.RelationProvider;
 import org.apache.spark.sql.sources.SchemaRelationProvider;
 import scala.Option;
 import scala.PartialFunction;
@@ -31,18 +38,40 @@ public class SaveIntoDataSourceCommandVisitor
   @Override
   public boolean isDefinedAt(LogicalPlan x) {
     return x instanceof SaveIntoDataSourceCommand
-        && ((SaveIntoDataSourceCommand) x).dataSource() instanceof SchemaRelationProvider;
+        && (((SaveIntoDataSourceCommand) x).dataSource() instanceof SchemaRelationProvider
+            || ((SaveIntoDataSourceCommand) x).dataSource() instanceof RelationProvider);
   }
 
   @Override
   public List<Dataset> apply(LogicalPlan x) {
-    SchemaRelationProvider p =
-        (SchemaRelationProvider) ((SaveIntoDataSourceCommand) x).dataSource();
-    BaseRelation relation =
-        p.createRelation(sqlContext, ((SaveIntoDataSourceCommand) x).options(), x.schema());
-    return PlanUtils.applyFirst(
-        relationVisitors,
-        new LogicalRelation(
-            relation, relation.schema().toAttributes(), Option.empty(), x.isStreaming()));
+    OutputStatisticsFacet outputStats =
+        PlanUtils.getOutputStats(((SaveIntoDataSourceCommand) x).metrics());
+    BaseRelation relation;
+    if (((SaveIntoDataSourceCommand) x).dataSource() instanceof RelationProvider) {
+      RelationProvider p = (RelationProvider) ((SaveIntoDataSourceCommand) x).dataSource();
+      relation = p.createRelation(sqlContext, ((SaveIntoDataSourceCommand) x).options());
+    } else {
+      SchemaRelationProvider p =
+          (SchemaRelationProvider) ((SaveIntoDataSourceCommand) x).dataSource();
+      relation =
+          p.createRelation(sqlContext, ((SaveIntoDataSourceCommand) x).options(), x.schema());
+    }
+    return Optional.ofNullable(
+            PlanUtils.applyFirst(
+                relationVisitors,
+                new LogicalRelation(
+                    relation, relation.schema().toAttributes(), Option.empty(), x.isStreaming())))
+        .orElse(Collections.emptyList()).stream()
+        // constructed datasets don't include the output stats, so add that facet here
+        .peek(
+            ds -> {
+              Builder<String, Object> facetsMap =
+                  ImmutableMap.<String, Object>builder().put("stats", outputStats);
+              if (ds.getFacets().getAdditionalFacets() != null) {
+                facetsMap.putAll(ds.getFacets().getAdditionalFacets());
+              }
+              ds.getFacets().setAdditional(facetsMap.build());
+            })
+        .collect(Collectors.toList());
   }
 }

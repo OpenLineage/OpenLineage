@@ -2,10 +2,12 @@ package marquez.spark.agent.lifecycle;
 
 import static marquez.spark.agent.SparkAgentTestExtension.marquezContext;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
@@ -21,9 +23,15 @@ import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.conn
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Binder;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Module;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Provides;
+import com.google.common.collect.ImmutableMap;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 import marquez.spark.agent.SparkAgentTestExtension;
@@ -39,6 +47,8 @@ import org.apache.spark.sql.types.LongType$;
 import org.apache.spark.sql.types.StringType$;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
+import org.codehaus.jackson.JsonGenerator;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,6 +63,9 @@ public class SparkReadWriteIntegTest {
   @BeforeEach
   public void setUp() {
     Mockito.reset(MockBigQueryRelationProvider.BIG_QUERY);
+    when(marquezContext.getParentRunId()).thenReturn(UUID.randomUUID().toString());
+    when(marquezContext.getJobName()).thenReturn("ParentJob");
+    when(marquezContext.getJobNamespace()).thenReturn("Namespace");
   }
 
   @AfterEach
@@ -115,10 +128,6 @@ public class SparkReadWriteIntegTest {
                         .setNumRows(1000L)
                         .build()));
 
-    when(marquezContext.getParentRunId()).thenReturn(UUID.randomUUID().toString());
-    when(marquezContext.getJobName()).thenReturn("ParentJob");
-    when(marquezContext.getJobNamespace()).thenReturn("Namespace");
-
     Dataset<Row> df =
         spark
             .read()
@@ -152,5 +161,127 @@ public class SparkReadWriteIntegTest {
     assertThat(
         output.getFacets().getAdditionalFacets().get("stats"),
         instanceOf(OutputStatisticsFacet.class));
+  }
+
+  @Test
+  public void testReadFromFileWriteToJdbc(@TempDir Path writeDir)
+      throws InterruptedException, TimeoutException, IOException {
+    Path testFile = writeTestDataToFile(writeDir);
+
+    final SparkSession spark =
+        SparkSession.builder()
+            .master("local[*]")
+            .appName("Word Count")
+            .config("spark.driver.host", "127.0.0.1")
+            .config("spark.driver.bindAddress", "127.0.0.1")
+            .getOrCreate();
+    Dataset<Row> df = spark.read().json("file://" + testFile.toAbsolutePath().toString());
+
+    Path sqliteFile = writeDir.resolve("sqlite/database");
+    sqliteFile.getParent().toFile().mkdir();
+    String tableName = "data_table";
+    df.filter("age > 16")
+        .write()
+        .jdbc(
+            "jdbc:sqlite:" + sqliteFile.toAbsolutePath().toUri().toString(),
+            tableName,
+            new Properties());
+
+    // wait for event processing to complete
+    StaticExecutionContextFactory.waitForExecutionEnd();
+
+    ArgumentCaptor<LineageEvent> lineageEvent = ArgumentCaptor.forClass(LineageEvent.class);
+
+    // FIXME- the DataFrame -> RDD conversion in the JDBCRelationProvider causes two different sets
+    // of job execution events. Both end up triggering the open lineage event creation
+    // see https://github.com/MarquezProject/marquez/issues/1197
+    Mockito.verify(marquezContext, times(4)).emit(lineageEvent.capture());
+    List<LineageEvent> events = lineageEvent.getAllValues();
+    Optional<LineageEvent> completionEvent =
+        events.stream()
+            .filter(e -> e.getEventType().equals("COMPLETE") && !e.getInputs().isEmpty())
+            .findFirst();
+    assertTrue(completionEvent.isPresent());
+    LineageEvent event = completionEvent.get();
+    List<LineageEvent.Dataset> inputs = event.getInputs();
+    assertEquals(1, inputs.size());
+    assertEquals("file", inputs.get(0).getNamespace());
+    assertEquals(testFile.toAbsolutePath().getParent().toString(), inputs.get(0).getName());
+
+    List<LineageEvent.Dataset> outputs = event.getOutputs();
+    assertEquals(1, outputs.size());
+    LineageEvent.Dataset output = outputs.get(0);
+    assertEquals("sqlite:" + sqliteFile.toAbsolutePath().toUri(), output.getNamespace());
+    assertEquals(tableName, output.getName());
+    assertNotNull(output.getFacets().getAdditionalFacets());
+
+    assertThat(output.getFacets().getAdditionalFacets(), hasKey("stats"));
+    assertThat(
+        output.getFacets().getAdditionalFacets().get("stats"),
+        instanceOf(OutputStatisticsFacet.class));
+
+    // SaveIntoDataSourceCommand doesn't accurately report stats :(
+    assertThat(
+        ((OutputStatisticsFacet) output.getFacets().getAdditionalFacets().get("stats"))
+            .getRowCount(),
+        equalTo(0L));
+  }
+
+  private Path writeTestDataToFile(Path writeDir) throws IOException {
+    writeDir.toFile().mkdirs();
+    Random random = new Random();
+    Path testFile = writeDir.resolve("json/testdata.json");
+    testFile.getParent().toFile().mkdir();
+    boolean fileCreated = testFile.toFile().createNewFile();
+    if (!fileCreated) {
+      throw new RuntimeException("Unable to create json input file");
+    }
+    ObjectMapper mapper = new ObjectMapper();
+    try (FileOutputStream writer = new FileOutputStream(testFile.toFile());
+        JsonGenerator jsonWriter = mapper.getJsonFactory().createJsonGenerator(writer)) {
+      for (int i = 0; i < 20; i++) {
+        ImmutableMap<String, Object> map =
+            ImmutableMap.of("name", UUID.randomUUID().toString(), "age", random.nextInt(100));
+        mapper.writeValue(jsonWriter, map);
+      }
+    }
+    return testFile;
+  }
+
+  @Test
+  public void testInsertIntoDataSourceDirVisitor(@TempDir Path tempDir)
+      throws IOException, InterruptedException, TimeoutException {
+    Path testFile = writeTestDataToFile(tempDir);
+    final SparkSession spark =
+        SparkSession.builder()
+            .master("local[*]")
+            .appName("Word Count")
+            .config("spark.driver.host", "127.0.0.1")
+            .config("spark.driver.bindAddress", "127.0.0.1")
+            .getOrCreate();
+    Path parquetDir = tempDir.resolve("parquet").toAbsolutePath();
+    spark.read().json("file://" + testFile.toAbsolutePath()).createOrReplaceTempView("testdata");
+    spark.sql(
+        "INSERT OVERWRITE DIRECTORY '"
+            + parquetDir
+            + "'\n"
+            + "USING parquet\n"
+            + "SELECT * FROM testdata");
+    // wait for event processing to complete
+    StaticExecutionContextFactory.waitForExecutionEnd();
+
+    ArgumentCaptor<LineageEvent> lineageEvent = ArgumentCaptor.forClass(LineageEvent.class);
+    Mockito.verify(marquezContext, times(4)).emit(lineageEvent.capture());
+    List<LineageEvent> events = lineageEvent.getAllValues();
+    Optional<LineageEvent> completionEvent =
+        events.stream()
+            .filter(e -> e.getEventType().equals("COMPLETE") && !e.getInputs().isEmpty())
+            .findFirst();
+    assertTrue(completionEvent.isPresent());
+    LineageEvent event = completionEvent.get();
+    List<LineageEvent.Dataset> inputs = event.getInputs();
+    assertEquals(1, inputs.size());
+    assertEquals("file", inputs.get(0).getNamespace());
+    assertEquals(testFile.toAbsolutePath().getParent().toString(), inputs.get(0).getName());
   }
 }

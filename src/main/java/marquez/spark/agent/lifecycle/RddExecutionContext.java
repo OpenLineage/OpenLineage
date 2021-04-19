@@ -23,9 +23,11 @@ import marquez.spark.agent.client.DatasetParser;
 import marquez.spark.agent.client.DatasetParser.DatasetParseResult;
 import marquez.spark.agent.client.LineageEvent;
 import marquez.spark.agent.client.LineageEvent.Dataset;
+import marquez.spark.agent.client.LineageEvent.ParentRunFacet;
 import marquez.spark.agent.client.LineageEvent.RunFacet;
 import marquez.spark.agent.client.OpenLineageClient;
 import marquez.spark.agent.facets.ErrorFacet;
+import marquez.spark.agent.lifecycle.plan.PlanUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.JobConf;
@@ -121,7 +123,14 @@ public class RddExecutionContext implements ExecutionContext {
     if (jobError != null) {
       additionalFacets.put("spark.exception", jobError);
     }
-    return RunFacet.builder().additional(additionalFacets).build();
+    return RunFacet.builder().parent(buildParentFacet()).additional(additionalFacets).build();
+  }
+
+  private ParentRunFacet buildParentFacet() {
+    return PlanUtils.parentRunFacet(
+        marquezContext.getParentRunId(),
+        marquezContext.getJobName(),
+        marquezContext.getJobNamespace());
   }
 
   protected ErrorFacet buildJobErrorFacet(JobResult jobResult) {

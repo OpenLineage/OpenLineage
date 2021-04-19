@@ -3,10 +3,12 @@ package marquez.spark.agent.facets;
 import com.fasterxml.jackson.annotation.JsonRawValue;
 import java.net.URI;
 import lombok.Builder;
+import lombok.ToString;
 import marquez.spark.agent.client.LineageEvent.BaseFacet;
 import marquez.spark.agent.client.OpenLineageClient;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 
+@ToString
 public class LogicalPlanFacet extends BaseFacet {
   private final LogicalPlan plan;
 

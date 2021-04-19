@@ -3,6 +3,8 @@ package marquez.spark.agent.lifecycle;
 import java.net.URI;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.Collections;
+import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -59,39 +61,50 @@ public class StaticExecutionContextFactory extends ContextFactory {
 
   @Override
   public SparkSQLExecutionContext createSparkSQLExecutionContext(long executionId) {
-    SQLContext sqlContext = SQLExecution.getQueryExecution(executionId).sparkPlan().sqlContext();
-    InputDatasetVisitors inputDatasetVisitors = new InputDatasetVisitors(sqlContext);
-    OutputDatasetVisitors outputDatasetVisitors =
-        new OutputDatasetVisitors(sqlContext, inputDatasetVisitors);
-    SparkSQLExecutionContext sparksql =
-        new SparkSQLExecutionContext(
-            executionId, marquezContext, outputDatasetVisitors.get(), inputDatasetVisitors.get()) {
-          @Override
-          public ZonedDateTime toZonedTime(long time) {
-            return getZonedTime();
-          }
+    return Optional.ofNullable(SQLExecution.getQueryExecution(executionId))
+        .map(
+            qe -> {
+              SQLContext sqlContext = qe.sparkPlan().sqlContext();
+              InputDatasetVisitors inputDatasetVisitors = new InputDatasetVisitors(sqlContext);
+              OutputDatasetVisitors outputDatasetVisitors =
+                  new OutputDatasetVisitors(sqlContext, inputDatasetVisitors);
+              SparkSQLExecutionContext sparksql =
+                  new SparkSQLExecutionContext(
+                      executionId,
+                      marquezContext,
+                      outputDatasetVisitors.get(),
+                      inputDatasetVisitors.get()) {
+                    @Override
+                    public ZonedDateTime toZonedTime(long time) {
+                      return getZonedTime();
+                    }
 
-          @Override
-          public void start(SparkListenerSQLExecutionStart startEvent) {
-            try {
-              semaphore.acquire();
-            } catch (InterruptedException e) {
-              throw new RuntimeException("Unable to acquire semaphore", e);
-            }
-            super.start(startEvent);
-          }
+                    @Override
+                    public void start(SparkListenerSQLExecutionStart startEvent) {
+                      try {
+                        semaphore.acquire();
+                      } catch (InterruptedException e) {
+                        throw new RuntimeException("Unable to acquire semaphore", e);
+                      }
+                      super.start(startEvent);
+                    }
 
-          @Override
-          public void end(SparkListenerSQLExecutionEnd endEvent) {
-            try {
-              super.end(endEvent);
-            } finally {
-              // ALWAYS release the permit
-              semaphore.release();
-            }
-          }
-        };
-    return sparksql;
+                    @Override
+                    public void end(SparkListenerSQLExecutionEnd endEvent) {
+                      try {
+                        super.end(endEvent);
+                      } finally {
+                        // ALWAYS release the permit
+                        semaphore.release();
+                      }
+                    }
+                  };
+              return sparksql;
+            })
+        .orElseGet(
+            () ->
+                new SparkSQLExecutionContext(
+                    executionId, marquezContext, Collections.emptyList(), Collections.emptyList()));
   }
 
   private static ZonedDateTime getZonedTime() {

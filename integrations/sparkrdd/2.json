@@ -3,7 +3,19 @@
   "eventTime" : "2021-01-01T00:00:00Z",
   "run" : {
     "runId" : "8d99e33e-2a1c-4254-9600-18f23435fc3b",
-    "facets" : { }
+    "facets" : {
+      "parent" : {
+        "_producer" : "https://github.com/MarquezProject/marquez/tree/0.12.0/integrations/spark",
+        "_schemaURL" : "https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#ParentRunFacet",
+        "run" : {
+          "runId" : "8d99e33e-2a1c-4254-9600-18f23435fc3b"
+        },
+        "job" : {
+          "namespace" : "ns_name",
+          "name" : "job_name"
+        }
+      }
+    }
   },
   "job" : {
     "namespace" : "ns_name",
