@@ -52,6 +52,7 @@ Slack, google group : https://github.com/OpenLineage/OpenLineage/blob/main/READM
 Java V11
 Jackson 2.12.0
 JSON Schema 2019-09
+Python 3.6
 
 *Initial committers* (name, email, organization) and how long have they been working on project?
 
