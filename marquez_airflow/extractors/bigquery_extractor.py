@@ -224,7 +224,7 @@ class BigQueryExtractor(BaseExtractor):
             'sql': self.operator.sql,
         }
         try:
-            sql_meta = SqlParser.parse(self.operator.sql)
+            sql_meta = SqlParser.parse(self.operator.sql, None)
             log.debug(f"bigquery sql parsed and obtained meta: {sql_meta}")
             context['bigquery.sql.parsed.inputs'] = json.dumps(
                 [in_table.name for in_table in sql_meta.in_tables]

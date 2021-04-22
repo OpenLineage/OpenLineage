@@ -11,7 +11,7 @@
 # limitations under the License.
 
 import logging
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 import sqlparse
 from sqlparse.sql import T, TokenList, Parenthesis, Identifier, IdentifierList
@@ -44,7 +44,11 @@ def _match_on(token, keywords):
     return token.match(T.Keyword, values=keywords)
 
 
-def _get_tables(tokens, idx) -> Tuple[int, List[DbTableName]]:
+def _get_tables(
+        tokens,
+        idx,
+        default_schema: Optional[str] = None
+) -> Tuple[int, List[DbTableName]]:
     # Extract table identified by preceding SQL keyword at '_is_in_table'
     def parse_ident(ident: Identifier) -> str:
         # Extract table name from possible schema.table naming
@@ -57,8 +61,11 @@ def _get_tables(tokens, idx) -> Tuple[int, List[DbTableName]]:
             if dot.match(Punctuation, '.'):
                 table_name += dot.value
                 table_name += next(token_list).value
+            elif default_schema:
+                table_name = f'{default_schema}.{table_name}'
         except StopIteration:
-            pass
+            if default_schema:
+                table_name = f'{default_schema}.{table_name}'
         return table_name
 
     idx, token = tokens.token_next(idx=idx)
@@ -91,13 +98,15 @@ class SqlParser:
     This class parses a SQL statement.
     """
 
-    def __init__(self):
+    def __init__(self, default_schema: Optional[str] = None):
+        # In some cases like bigquery we can always get schema/dataset ID from client
+        self.default_schema = default_schema
         self.ctes = set()
         self.intables = set()
         self.outtables = set()
 
     @classmethod
-    def parse(cls, sql: str) -> SqlMeta:
+    def parse(cls, sql: str, default_schema: Optional[str] = None) -> SqlMeta:
         if sql is None:
             raise ValueError("A sql statement must be provided.")
 
@@ -107,10 +116,10 @@ class SqlParser:
         # We assume only one statement in SQL
         tokens = TokenList(statements[0].tokens)
         log.debug(f"Successfully tokenized sql statement: {tokens}")
-        parser = cls()
+        parser = cls(default_schema)
         return parser.recurse(tokens)
 
-    def recurse(self, tokens: TokenList):
+    def recurse(self, tokens: TokenList) -> SqlMeta:
         in_tables, out_tables = set(), set()
         idx, token = tokens.token_next_by(t=T.Keyword)
         while token:
@@ -122,12 +131,12 @@ class SqlParser:
                     if intable not in self.ctes:
                         in_tables.add(intable)
             elif _is_in_table(token):
-                idx, extracted_tables = _get_tables(tokens, idx)
+                idx, extracted_tables = _get_tables(tokens, idx, self.default_schema)
                 for table in extracted_tables:
                     if table.name not in self.ctes:
                         in_tables.add(table)
             elif _is_out_table(token):
-                idx, extracted_tables = _get_tables(tokens, idx)
+                idx, extracted_tables = _get_tables(tokens, idx, self.default_schema)
                 out_tables.add(extracted_tables[0])  # assuming only one out_table
 
             idx, token = tokens.token_next_by(t=T.Keyword, idx=idx)

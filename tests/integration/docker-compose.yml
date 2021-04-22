@@ -31,6 +31,7 @@ services:
       - MARQUEZ_NAMESPACE=food_delivery
       - MARQUEZ_LOG_LEVEL=DEBUG
     volumes:
+      - ./airflow/logs:/opt/airflow/logs
       - ./airflow/dags:/opt/bitnami/airflow/dags
       - ./airflow/config/log_config.py:/opt/bitnami/airflow/config/log_config.py
       - ./requirements.txt:/bitnami/python/requirements.txt
@@ -58,6 +59,7 @@ services:
       - MARQUEZ_URL=http://marquez:5000
       - MARQUEZ_NAMESPACE=food_delivery
     volumes:
+      - ./airflow/logs:/opt/airflow/logs
       - ./airflow/dags:/opt/bitnami/airflow/dags
       - ./airflow/config/log_config.py:/opt/bitnami/airflow/config/log_config.py
       - ./requirements.txt:/bitnami/python/requirements.txt
@@ -82,6 +84,7 @@ services:
       - MARQUEZ_URL=http://marquez:5000
       - MARQUEZ_LOG_LEVEL=DEBUG
     volumes:
+      - ./airflow/logs:/opt/airflow/logs
       - ./airflow/dags:/opt/bitnami/airflow/dags
       - ./airflow/config/log_config.py:/opt/bitnami/airflow/config/log_config.py
       - ./requirements.txt:/bitnami/python/requirements.txt
