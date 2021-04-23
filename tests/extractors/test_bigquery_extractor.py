@@ -23,7 +23,10 @@ from airflow.contrib.operators.bigquery_operator import BigQueryOperator
 from airflow.models import TaskInstance, DAG
 from airflow.utils.state import State
 
-from marquez_airflow.extractors.bigquery_extractor import BigQueryExtractor
+from marquez_airflow.extractors.bigquery_extractor import BigQueryExtractor, \
+    BigQueryStaticticsRunFacet, \
+    get_from_nullable_chain, \
+    BigQueryErrorRunFacet, BigQueryStatisticsDatasetFacet
 
 log = logging.getLogger(__name__)
 
@@ -85,8 +88,6 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
         task_instance.run()
 
         step_meta = bq_extractor.extract_on_complete(task_instance)
-        assert step_meta.context['bigquery.job_properties'] \
-            == json.dumps(job_details)
         mock_client.return_value \
             .get_job.assert_called_once_with(job_id=bq_job_id)
 
@@ -96,6 +97,8 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
             'bigquery-public-data.usa_names.usa_1910_2013'
 
         assert step_meta.inputs[0].fields is not None
+        assert step_meta.inputs[0].source.connection_url == \
+               'bigquery:bigquery-public-data.usa_names.usa_1910_2013'
         assert len(step_meta.inputs[0].fields) == 5
         assert step_meta.outputs is not None
         assert len(step_meta.outputs) == 1
@@ -103,8 +106,18 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
         assert len(step_meta.outputs[0].fields) == 2
         assert step_meta.outputs[0].name == \
             'bq-airflow-marquez.new_dataset.output_table'
-        assert step_meta.context['sql'] == task.sql
-        assert step_meta.context['bigquery.job_id'] == bq_job_id
+
+        assert BigQueryStatisticsDatasetFacet(
+            rowCount=20,
+            size=321
+        ) == step_meta.outputs[0].custom_facets['stats']
+
+        assert len(step_meta.run_facets) == 1
+        assert BigQueryStaticticsRunFacet(
+            cached=False,
+            billedBytes=111149056,
+            properties=json.dumps(job_details)
+        ) == step_meta.run_facets['bigQuery_statistics']
 
         mock_client.return_value.close.assert_called()
 
@@ -124,6 +137,55 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
         details = json.loads(f.read())
         f.close()
         return details
+
+    @mock.patch('airflow.contrib.operators.bigquery_operator.BigQueryHook')
+    @mock.patch('google.cloud.bigquery.Client')
+    def test_extract_cached(self, mock_client, mock_hook):
+        bq_job_id = "foo.bq.job_id"
+
+        mock_hook.return_value \
+            .get_conn.return_value \
+            .cursor.return_value \
+            .run_query.return_value = bq_job_id
+
+        job_details = self.read_file_json(
+            "tests/extractors/cached_job_details.json"
+        )
+
+        mock_client.return_value.get_job.return_value._properties = job_details
+        # To make sure hasattr "sees" close and calls it
+        mock_client.return_value.close.return_value
+
+        mock.seal(mock_hook)
+        mock.seal(mock_client)
+
+        dag = DAG(dag_id='TestBigQueryExtractorE2E')
+        task = BigQueryOperator(
+            sql='select first_name, last_name from customers;',
+            task_id="task_id",
+            project_id="project_id",
+            dag_id="dag_id",
+            dag=dag,
+            start_date=timezone.datetime(2016, 2, 1, 0, 0, 0)
+        )
+
+        task_instance = TaskInstance(
+            task=task,
+            execution_date=datetime.utcnow().replace(tzinfo=pytz.utc))
+
+        bq_extractor = BigQueryExtractor(task)
+        steps_meta_extract = bq_extractor.extract()
+        assert steps_meta_extract is None
+
+        task_instance.run()
+
+        step_meta = bq_extractor.extract_on_complete(task_instance)
+        assert step_meta.inputs is not None
+        assert step_meta.outputs is not None
+
+        assert len(step_meta.run_facets) == 1
+        assert step_meta.run_facets['bigQuery_statistics'] \
+               == BigQueryStaticticsRunFacet(cached=True)
 
     @mock.patch('airflow.contrib.operators.bigquery_operator.BigQueryHook')
     @mock.patch('google.cloud.bigquery.Client')
@@ -166,16 +228,16 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
         task_instance.run()
 
         step_meta = bq_extractor.extract_on_complete(task_instance)
-        assert step_meta.context['bigquery.extractor.error'] is not None
-        mock_client.return_value \
-            .get_job.assert_called_once_with(job_id=bq_job_id)
+
+        assert step_meta.run_facets['bigQuery_error'] == BigQueryErrorRunFacet(
+            clientError=mock.ANY
+        )
+        mock_client.return_value.get_job.assert_called_once_with(job_id=bq_job_id)
 
         assert step_meta.inputs is not None
         assert len(step_meta.inputs) == 0
         assert step_meta.outputs is not None
         assert len(step_meta.outputs) == 0
-
-        assert step_meta.context['sql'] == task.sql
 
         mock_client.return_value.close.assert_called()
 
@@ -198,6 +260,17 @@ class TestBigQueryExtractor(unittest.TestCase):
 
         mock_xcom_pull.assert_called_once_with(
             task_ids=self.ti.task_id, key='job_id')
+
+    def test_nullable_chain_fails(self):
+        x = {"first": {"second": {}}}
+        assert get_from_nullable_chain(x, ['first', 'second', 'third']) is None
+
+    def test_nullable_chain_works(self):
+        x = {"first": {"second": {"third": 42}}}
+        assert get_from_nullable_chain(x, ['first', 'second', 'third']) == 42
+
+        x = {"first": {"second": {"third": 42, "fourth": {"empty": 56}}}}
+        assert get_from_nullable_chain(x, ['first', 'second', 'third']) == 42
 
     @staticmethod
     def _get_ti(task):

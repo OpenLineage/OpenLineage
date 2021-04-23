@@ -16,6 +16,7 @@ import airflow.models
 import time
 
 from airflow.contrib.operators.bigquery_operator import BigQueryOperator
+from airflow.models import DagRun
 from airflow.operators.postgres_operator import PostgresOperator
 from airflow.utils.state import State
 
@@ -25,7 +26,8 @@ from marquez_airflow.extractors.postgres_extractor import PostgresExtractor
 from marquez_airflow.utils import (
     JobIdMapping,
     get_location,
-    DagUtils
+    DagUtils,
+    get_custom_facets
 )
 
 # Handling of import of different airflow versions
@@ -64,6 +66,7 @@ class DAG(airflow.models.DAG, LoggingMixin):
         try:
             self._register_dagrun(
                 dagrun,
+                kwargs.get('external_trigger', False),
                 DagUtils.get_execution_date(**kwargs)
             )
         except Exception as e:
@@ -78,7 +81,7 @@ class DAG(airflow.models.DAG, LoggingMixin):
     # tasks can be safely marked as started as well.
     # Doing it other way would require to hook up to
     # scheduler, where tasks are actually started
-    def _register_dagrun(self, dagrun, execution_date):
+    def _register_dagrun(self, dagrun: DagRun, is_external_trigger: bool, execution_date: str):
         self.log.debug(f"self.task_dict: {self.task_dict}")
         # Register each task in the DAG
         for task_id, task in self.task_dict.items():
@@ -94,11 +97,12 @@ class DAG(airflow.models.DAG, LoggingMixin):
                     job_name,
                     self.description,
                     DagUtils.to_iso_8601(self._now_ms()),
-                    None,  # TODO: add parent hierarchy
+                    dagrun.run_id,
                     self._get_location(task),
                     DagUtils.get_start_time(execution_date),
                     DagUtils.get_end_time(execution_date, self.following_schedule(execution_date)),
-                    step
+                    step,
+                    {**step.run_facets, **get_custom_facets(task, is_external_trigger)}
                 )
 
                 JobIdMapping.set(
@@ -158,15 +162,16 @@ class DAG(airflow.models.DAG, LoggingMixin):
                 job_name,
                 self.description,
                 DagUtils.to_iso_8601(task_instance.start_date),
-                None,  # TODO: add parent hierarchy
+                dagrun.run_id,
                 self._get_location(task),
                 DagUtils.to_iso_8601(task_instance.start_date),
                 DagUtils.to_iso_8601(task_instance.end_date),
                 step,
+                {**step.run_facets, **get_custom_facets(task, False)}
             )
 
             if not task_run_id:
-                self.log.warn('Could not emit lineage')
+                self.log.warning('Could not emit lineage')
 
         self.log.debug(f'Setting task state: {task_instance.state}'
                        f' for {task_instance.task_id}')

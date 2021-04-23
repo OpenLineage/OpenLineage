@@ -10,13 +10,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from enum import Enum
-from typing import List, Union
+from typing import List, Union, Type, Optional, Dict
 from abc import ABC, abstractmethod
 
 from airflow import LoggingMixin
 from airflow.models import BaseOperator
 
 from marquez_airflow.models import DbTableSchema, DbColumn
+from openlineage.facet import BaseFacet
 
 
 class DatasetType(Enum):
@@ -45,11 +46,14 @@ class Source:
 
 class Field:
     def __init__(self, name: str, type: str,
-                 tags: List[str] = [], description: str = None):
+                 tags: List[str] = None, description: str = None):
         self.name = name
         self.type = type
         self.tags = tags
         self.description = description
+
+        if self.tags is None:
+            self.tags = []
 
     @staticmethod
     def from_column(column: DbColumn):
@@ -72,14 +76,18 @@ class Field:
 
 class Dataset:
     def __init__(self, source: Source, name: str, type: DatasetType,
-                 fields=None, description=None):
+                 fields: List[Field] = None, description: Optional[str] = None,
+                 custom_facets: Dict[str, Type[BaseFacet]] = None):
         if fields is None:
             fields = []
+        if custom_facets is None:
+            custom_facets = {}
         self.source = source
         self.name = name
         self.type = type
         self.fields = fields
         self.description = description
+        self.custom_facets = custom_facets
 
     @staticmethod
     def from_table(source: Source, table_name: str,
@@ -136,7 +144,8 @@ class StepMetadata:
             location=None,
             inputs: List[Dataset] = None,
             outputs: List[Dataset] = None,
-            context=None
+            context=None,
+            run_facets: Dict[str, BaseFacet] = None
     ):
         # TODO: Define a common way across extractors to build the
         # job name for an operator
@@ -145,6 +154,7 @@ class StepMetadata:
         self.inputs = inputs
         self.outputs = outputs
         self.context = context
+        self.run_facets = run_facets
 
         if not inputs:
             self.inputs = []
@@ -152,6 +162,8 @@ class StepMetadata:
             self.outputs = []
         if not context:
             self.context = {}
+        if not run_facets:
+            self.run_facets = {}
 
     def __repr__(self):
         return "name: {}\t inputs: {} \t outputs: {}".format(
@@ -161,8 +173,8 @@ class StepMetadata:
 
 
 class BaseExtractor(ABC, LoggingMixin):
-    operator: BaseOperator = None
-    operator_class = None
+    operator_class: Type[BaseOperator] = None
+    operator: operator_class = None
 
     def __init__(self, operator):
         self.operator = operator

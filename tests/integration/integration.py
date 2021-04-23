@@ -183,7 +183,6 @@ def check_jobs_meta():
     # TODO: waiting for backend fix
     # assert if_not_exists_job['context']['sql'] is not None
     # assert if_not_exists_job['description'] == DAG_DESCRIPTION
-
     # TODO: no airflow context data yet
     # assert if_not_exists_job['context']['airflow.operator'] == \
     #        'airflow.operators.postgres_operator.PostgresOperator'

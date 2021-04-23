@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/schema#",
+  "definitions": {
+    "BigQueryStatisticsRunFacet": {
+      "allOf": [
+        {
+          "$ref": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/BaseFacet"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "cached": {
+              "type": "boolean"
+            },
+            "billedBytes": {
+              "type": "int",
+              "example": 321
+            },
+            "properties": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "cached"
+          ]
+        }
+      ],
+      "type": "object"
+    }
+  }
+}

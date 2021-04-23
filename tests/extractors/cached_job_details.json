@@ -1,0 +1,41 @@
+{
+    "configuration": {
+        "jobType": "QUERY",
+        "query": {
+            "destinationTable": {
+                "datasetId": "_3db94bc5bd6c409458d99623c999b9e47a898ca9",
+                "projectId": "test",
+                "tableId": "anonbbf6a8444a4f3044cdb8f179e10e4c34c95a866b"
+            },
+            "priority": "INTERACTIVE",
+            "query": "\n        SELECT name, SUM(number) as total_people\n        FROM `bigquery-public-data.usa_names.usa_1910_2013`\n        WHERE state = 'TX'\n        GROUP BY name, state\n        ORDER BY total_people DESC\n        LIMIT 20\n    ",
+            "useLegacySql": false,
+            "writeDisposition": "WRITE_TRUNCATE"
+        }
+    },
+    "etag": "LCS0kVuN4hTbZoEoKHlfLw==",
+    "id": "test:US.4653ac23-e802-4860-9d20-faac0d270582",
+    "jobReference": {
+        "jobId": "4653ac23-e802-4860-9d20-faac0d270582",
+        "location": "US",
+        "projectId": "test"
+    },
+    "kind": "bigquery#job",
+    "selfLink": "https://bigquery.googleapis.com/bigquery/v2/projects/test/jobs/4653ac23-e802-4860-9d20-faac0d270582?location=US",
+    "statistics": {
+        "creationTime": 1616711902093.0,
+        "endTime": 1616711902378.0,
+        "query": {
+            "cacheHit": true,
+            "statementType": "SELECT",
+            "totalBytesBilled": "0",
+            "totalBytesProcessed": "0"
+        },
+        "startTime": 1616711902361.0,
+        "totalBytesProcessed": "0"
+    },
+    "status": {
+        "state": "DONE"
+    },
+    "user_email": "random@example.com"
+}

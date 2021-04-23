@@ -40,14 +40,14 @@ class ParentRunFacet(BaseFacet):
     job: Dict = attr.ib()
 
     @classmethod
-    def create(cls, runId: str, namespace: str, name: str):
+    def create(cls, runId: str, namespace: str, job_name: str):
         return cls(
             run={
                 "runId": runId
             },
             job={
                 "namespace": namespace,
-                "name": name
+                "name": job_name
             }
         )
 
