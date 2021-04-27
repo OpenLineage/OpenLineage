@@ -90,9 +90,9 @@ The versioned URL must be an immutable pointer to the version of the facet schem
 
 Custom facets can be promoted to the standard by including them in the spec.
 
-#### Naming
+#### Custom Facet Naming
 
-Naming of custom facets should follow pattern `{prefix}{name}{entity}Facet`. 
+Naming of custom facets should follow pattern `{prefix}{name}{entity}Facet` PascalCased.  
 Prefix must be distinct identifier named after the project defining them to avoid colision with standard facets defined in the [OpenLineage.json](OpenLineage.json) spec.
 Entity is the core entity for which the facet is attached.
 
