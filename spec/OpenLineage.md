@@ -80,7 +80,7 @@ Facets are pieces of metadata that can be attached to the core entities:
 - Job
 - Dataset (Inputs or Outputs)
 
-A facet is an atomic piece of metadata identified by its name. This means that emiting a new facet whith the same name for the same entity replaces the previous facet instance for that entity entirely). It is defined as a JSON object that can be either part of the spec or custom facets defined in a different project.
+A facet is an atomic piece of metadata identified by its name. This means that emiting a new facet with the same name for the same entity replaces the previous facet instance for that entity entirely). It is defined as a JSON object that can be either part of the spec or custom facets defined in a different project.
 
 Custom facets must use a distinct prefix named after the project defining them to avoid colision with standard facets defined in the [OpenLineage.json](OpenLineage.json) spec.
 They have a \_schemaURL field pointing to the corresponding version of the facet schema (as a JSONPointer: [$ref URL location](https://swagger.io/docs/specification/using-ref/) ).
