@@ -113,8 +113,8 @@ Custom facets can be promoted to the standard by including them in the spec.
 
 #### Input Dataset Facets
 
-*Note: for now there no input facets defined*
+*Note: for now there are no input facets defined*
 
 #### Output Dataset Facets
 
-*Note: for now there no output facets defined*
+*Note: for now there are no output facets defined*
