@@ -44,7 +44,7 @@ extras_require["dev"] = set(sum(extras_require.values(), []))
 
 setup(
     name="marquez-airflow",
-    version="0.13.1",
+    version="0.14.0",
     description="Marquez integration with Airflow",
     long_description=readme,
     long_description_content_type="text/markdown",
