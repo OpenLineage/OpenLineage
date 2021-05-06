@@ -20,7 +20,7 @@ with open("README.md") as readme_file:
     readme = readme_file.read()
 
 requirements = [
-    "attrs==19.3",
+    "attrs>=19.3",
     "requests>=2.24.0",
     "sqlparse==0.4.1",
 ]
