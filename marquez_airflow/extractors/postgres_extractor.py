@@ -42,7 +42,6 @@ _UDT_NAME = 4
 class PostgresExtractor(BaseExtractor):
     operator_class = PostgresOperator
     default_schema = 'public'
-    source_type = 'POSTGRESQL'
 
     def __init__(self, operator):
         super().__init__(operator)
@@ -54,9 +53,9 @@ class PostgresExtractor(BaseExtractor):
         # (2) Default all inputs / outputs to current connection.
         # NOTE: We'll want to look into adding support for the `database`
         # property that is used to override the one defined in the connection.
-        conn_id = self._conn_id()
+        conn_id = self.operator.postgres_conn_id
         source = Source(
-            type=self.source_type,
+            type='POSTGRESQL',
             name=conn_id,
             connection_url=get_connection_uri(conn_id))
 
@@ -91,26 +90,6 @@ class PostgresExtractor(BaseExtractor):
             }
         )
 
-    def _conn_id(self):
-        return self.operator.postgres_conn_id
-
-    def _information_schema_query(self, table_names: str) -> str:
-        return f"""
-        SELECT table_schema,
-        table_name,
-        column_name,
-        ordinal_position,
-        udt_name
-        FROM information_schema.columns
-        WHERE table_name IN ({table_names});
-        """
-
-    def _get_hook(self):
-        return PostgresHook(
-            postgres_conn_id=self.operator.postgres_conn_id,
-            schema=self.operator.database
-        )
-
     def _get_table_schemas(
             self, table_names: [DbTableName]
     ) -> [DbTableSchema]:
@@ -122,14 +101,23 @@ class PostgresExtractor(BaseExtractor):
         # Keeps tack of the schema by table.
         schemas_by_table = {}
 
-        hook = self._get_hook()
+        hook = PostgresHook(
+            postgres_conn_id=self.operator.postgres_conn_id,
+            schema=self.operator.database
+        )
         with closing(hook.get_conn()) as conn:
             with closing(conn.cursor()) as cursor:
-                table_names_as_str = ",".join(map(
-                    lambda name: f"'{name.name}'", table_names
-                ))
+                table_names_as_list = ",".join([f"'{name.name}'" for name in table_names])
                 cursor.execute(
-                    self._information_schema_query(table_names_as_str)
+                    f"""
+                    SELECT table_schema,
+                           table_name,
+                           column_name,
+                           ordinal_position,
+                           udt_name
+                      FROM information_schema.columns
+                     WHERE table_name IN ({table_names_as_list});
+                    """
                 )
                 for row in cursor.fetchall():
                     table_schema_name: str = row[_TABLE_SCHEMA]
@@ -142,11 +130,13 @@ class PostgresExtractor(BaseExtractor):
 
                     # Attempt to get table schema
                     table_key: str = f"{table_schema_name}.{table_name}"
-                    table_schema: Optional[DbTableSchema] = schemas_by_table.get(table_key)
+                    table_schema: Optional[DbTableSchema] = \
+                        schemas_by_table.get(table_key)
 
                     if table_schema:
                         # Add column to existing table schema.
-                        schemas_by_table[table_key].columns.append(table_column)
+                        schemas_by_table[table_key]. \
+                            columns.append(table_column)
                     else:
                         # Create new table schema with column.
                         schemas_by_table[table_key] = DbTableSchema(
