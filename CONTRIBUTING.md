@@ -1,4 +1,14 @@
-# Contributing Guide
+# Contributing  to OpenLineage
+
+This project welcomes contributors from any organization or background, provided they are
+willing to follow the simple processes outlined below, as well as adhere to the 
+[Code of Conduct](CODE_OF_CONDUCT.md).
+
+## Joining the community
+
+The community collaborates primarily through  `GitHub` and the instance messaging tool, `Slack`.
+There is also a mailing list.
+See how to join [here](https://github.com/OpenLineage/OpenLineage#community)
 
 ## Reporting an Issue
 
@@ -6,9 +16,17 @@ Please use the [issues][issues] section of the OpenLineage repository and search
 
 In the case of bugs, please provide steps to reproduce it and tag your issue with "bug"
 
-## Creating Pull Requests
+## Contributing to the project
 
+### Creating Pull Requests
 Before sending a Pull Request with significant changes, please use the [issue tracker][issues] to discuss the potential improvements you want to make.
+
+OpenLineage uses [GitHub's fork and pull model](https://help.github.com/articles/about-collaborative-development-models/)
+to create a contribution.
+
+Every contribution is signed to say that the contributor has the rights to make the contribution and
+agrees with the [Developer Certificate of Origin (DCO)](why-the-dco.md)
+
 
 ## Proposing changes
 
