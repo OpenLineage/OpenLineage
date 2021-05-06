@@ -82,7 +82,6 @@ Facets are pieces of metadata that can be attached to the core entities:
 
 A facet is an atomic piece of metadata identified by its name. This means that emiting a new facet whith the same name for the same entity replaces the previous facet instance for that entity entirely). It is defined as a JSON object that can be either part of the spec or custom facets defined in a different project.
 
-Custom facets must use a distinct prefix named after the project defining them to avoid colision with standard facets defined in the [OpenLineage.json](OpenLineage.json) spec.
 They have a \_schemaURL field pointing to the corresponding version of the facet schema (as a JSONPointer: [$ref URL location](https://swagger.io/docs/specification/using-ref/) ).
 
 Example: https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/MyCustomJobFacet
@@ -90,6 +89,16 @@ Example: https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/Ope
 The versioned URL must be an immutable pointer to the version of the facet schema. For example, it should include a tag of a git sha and not a branch name. This should also be a canonical URL. There should be only one URL used for a given version of a schema.
 
 Custom facets can be promoted to the standard by including them in the spec.
+
+#### Custom Facet Naming
+
+Naming of custom facets should follow pattern `{prefix}{name}{entity}Facet` PascalCased.  
+Prefix must be distinct identifier named after the project defining them to avoid colision with standard facets defined in the [OpenLineage.json](OpenLineage.json) spec.
+Entity is the core entity for which the facet is attached.
+
+When attached to core entity, the key should follow pattern `{prefix}_{name}`, where both prefix and name follow snakeCase pattern. 
+
+Example of valid name is `BigQueryStatisticsJobFacet` and it's key `bigQuery_statistics`.
 
 ### Standard Facets
 
