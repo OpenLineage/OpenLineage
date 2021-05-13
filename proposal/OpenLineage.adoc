@@ -59,7 +59,6 @@ Python 3.6
 Julien Le Dem (Datakin)
 Mandy Chessell (IBM)
 Daniel Henneberger (Datakin)
-Drew Banin (Fishtown analytics)
 James Campbell (Superconductive)
 Ryan Blue (Netflix)
 Willy Lulciuc (Datakin)
