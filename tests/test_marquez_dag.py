@@ -35,7 +35,7 @@ from marquez_airflow.models import (
     DbColumn
 )
 from marquez_airflow.utils import get_location, get_job_name
-from marquez_airflow.version import VERSION as MARQUEZ_AIRFLOW_VERSION
+from marquez_airflow import __version__ as MARQUEZ_AIRFLOW_VERSION
 
 from uuid import UUID
 

@@ -17,7 +17,7 @@ import psycopg2
 from airflow.utils.state import State as DagState
 from airflow.version import version as AIRFLOW_VERSION
 
-from marquez_airflow.version import VERSION as MARQUEZ_AIRFLOW_VERSION
+from marquez_airflow import __version__ as MARQUEZ_AIRFLOW_VERSION
 from marquez_client import MarquezClient
 from marquez_client.models import (
     DatasetType,

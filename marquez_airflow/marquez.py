@@ -3,7 +3,7 @@ import logging
 from typing import Optional, Dict, Type
 
 from marquez_airflow.extractors import Dataset, StepMetadata
-from marquez_airflow.version import VERSION as MARQUEZ_AIRFLOW_VERSION
+from marquez_airflow import __version__ as MARQUEZ_AIRFLOW_VERSION
 
 from openlineage.client import OpenLineageClient
 from openlineage.facet import DocumentationJobFacet, SourceCodeLocationJobFacet, SqlJobFacet, \

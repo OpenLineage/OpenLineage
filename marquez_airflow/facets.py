@@ -1,7 +1,7 @@
 import attr
 
 from airflow.version import version as AIRFLOW_VERSION
-from marquez_airflow.version import VERSION as MARQUEZ_AIRFLOW_VERSION
+from marquez_airflow import __version__ as MARQUEZ_AIRFLOW_VERSION
 
 from openlineage.facet import BaseFacet
 
