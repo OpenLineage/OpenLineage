@@ -77,5 +77,8 @@ def test_schema_field_default():
     assert Serde.to_json(facet.SchemaField(name='asdf', type='int4')) == \
            '{"name": "asdf", "type": "int4"}'
 
-    assert Serde.to_json(facet.SchemaField(name='asdf', type='int4', description='primary key')) == \
-           '{"description": "primary key", "name": "asdf", "type": "int4"}'
+    assert Serde.to_json(facet.SchemaField(
+        name='asdf',
+        type='int4',
+        description='primary key')
+    ) == '{"description": "primary key", "name": "asdf", "type": "int4"}'
