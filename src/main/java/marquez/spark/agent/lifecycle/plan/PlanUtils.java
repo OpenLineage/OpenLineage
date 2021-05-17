@@ -1,10 +1,12 @@
 package marquez.spark.agent.lifecycle.plan;
 
 import com.google.common.collect.ImmutableMap;
+import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 import marquez.spark.agent.client.LineageEvent.Dataset;
 import marquez.spark.agent.client.LineageEvent.DatasetFacet;
 import marquez.spark.agent.client.LineageEvent.DatasourceDatasetFacet;
@@ -15,6 +17,8 @@ import marquez.spark.agent.client.LineageEvent.SchemaDatasetFacet;
 import marquez.spark.agent.client.LineageEvent.SchemaField;
 import marquez.spark.agent.client.OpenLineageClient;
 import marquez.spark.agent.facets.OutputStatisticsFacet;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.apache.spark.sql.execution.metric.SQLMetric;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
@@ -27,6 +31,7 @@ import scala.runtime.AbstractFunction0;
  * Utility functions for traversing a {@link
  * org.apache.spark.sql.catalyst.plans.logical.LogicalPlan}.
  */
+@Slf4j
 public class PlanUtils {
 
   /**
@@ -208,5 +213,18 @@ public class PlanUtils {
                 })
             .value();
     return new OutputStatisticsFacet(rowCount, outputBytes);
+  }
+
+  static Path getDirectoryPath(Path p, Configuration hadoopConf) {
+    try {
+      if (p.getFileSystem(hadoopConf).getFileStatus(p).isFile()) {
+        return p.getParent();
+      } else {
+        return p;
+      }
+    } catch (IOException e) {
+      log.warn("Unable to get file system for path ", e);
+      return p;
+    }
   }
 }

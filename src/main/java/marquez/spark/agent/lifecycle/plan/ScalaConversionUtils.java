@@ -3,10 +3,13 @@ package marquez.spark.agent.lifecycle.plan;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import scala.Option;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
+import scala.collection.Seq$;
+import scala.collection.mutable.Builder;
 import scala.runtime.AbstractFunction0;
 
 /** Simple conversion utilities for dealing with Scala types */
@@ -64,5 +67,14 @@ public class ScalaConversionUtils {
                 return null;
               }
             }));
+  }
+
+  public static <T> Collector<T, ?, Seq<T>> toSeq() {
+    return Collector.of(
+        Seq$.MODULE$::newBuilder,
+        Builder::$plus$eq,
+        (Builder<T, Seq<T>> a, Builder<T, Seq<T>> b) ->
+            (Builder<T, Seq<T>>) a.$plus$plus$eq(b.result()),
+        Builder::result);
   }
 }

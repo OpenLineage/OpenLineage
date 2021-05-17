@@ -65,7 +65,8 @@ public class StaticExecutionContextFactory extends ContextFactory {
         .map(
             qe -> {
               SQLContext sqlContext = qe.sparkPlan().sqlContext();
-              InputDatasetVisitors inputDatasetVisitors = new InputDatasetVisitors(sqlContext);
+              InputDatasetVisitors inputDatasetVisitors =
+                  new InputDatasetVisitors(sqlContext, marquezContext);
               OutputDatasetVisitors outputDatasetVisitors =
                   new OutputDatasetVisitors(sqlContext, inputDatasetVisitors);
               SparkSQLExecutionContext sparksql =

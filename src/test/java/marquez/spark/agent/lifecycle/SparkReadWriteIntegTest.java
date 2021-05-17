@@ -1,14 +1,12 @@
 package marquez.spark.agent.lifecycle;
 
 import static marquez.spark.agent.SparkAgentTestExtension.marquezContext;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasKey;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
@@ -38,12 +36,20 @@ import marquez.spark.agent.SparkAgentTestExtension;
 import marquez.spark.agent.client.LineageEvent;
 import marquez.spark.agent.facets.OutputStatisticsFacet;
 import marquez.spark.agent.lifecycle.plan.PlanUtils;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapred.FileInputFormat;
+import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.TextInputFormat;
+import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.SparkSession$;
 import org.apache.spark.sql.catalyst.expressions.GenericRow;
+import org.apache.spark.sql.types.IntegerType$;
 import org.apache.spark.sql.types.LongType$;
+import org.apache.spark.sql.types.Metadata;
 import org.apache.spark.sql.types.StringType$;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
@@ -56,13 +62,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import scala.Tuple2;
+import scala.collection.immutable.HashMap;
 
 @ExtendWith(SparkAgentTestExtension.class)
 public class SparkReadWriteIntegTest {
 
   @BeforeEach
   public void setUp() {
-    Mockito.reset(MockBigQueryRelationProvider.BIG_QUERY);
+    reset(MockBigQueryRelationProvider.BIG_QUERY);
     when(marquezContext.getParentRunId()).thenReturn(UUID.randomUUID().toString());
     when(marquezContext.getJobName()).thenReturn("ParentJob");
     when(marquezContext.getJobNamespace()).thenReturn("Namespace");
@@ -157,10 +165,10 @@ public class SparkReadWriteIntegTest {
     assertEquals(PlanUtils.schemaFacet(tableSchema), output.getFacets().getSchema());
     assertNotNull(output.getFacets().getAdditionalFacets());
 
-    assertThat(output.getFacets().getAdditionalFacets(), hasKey("stats"));
-    assertThat(
-        output.getFacets().getAdditionalFacets().get("stats"),
-        instanceOf(OutputStatisticsFacet.class));
+    assertThat(output.getFacets().getAdditionalFacets())
+        .containsKey("stats")
+        .extractingByKey("stats")
+        .isInstanceOf(OutputStatisticsFacet.class);
   }
 
   @Test
@@ -215,16 +223,12 @@ public class SparkReadWriteIntegTest {
     assertEquals(tableName, output.getName());
     assertNotNull(output.getFacets().getAdditionalFacets());
 
-    assertThat(output.getFacets().getAdditionalFacets(), hasKey("stats"));
-    assertThat(
-        output.getFacets().getAdditionalFacets().get("stats"),
-        instanceOf(OutputStatisticsFacet.class));
-
-    // SaveIntoDataSourceCommand doesn't accurately report stats :(
-    assertThat(
-        ((OutputStatisticsFacet) output.getFacets().getAdditionalFacets().get("stats"))
-            .getRowCount(),
-        equalTo(0L));
+    assertThat(output.getFacets().getAdditionalFacets())
+        .containsKey("stats")
+        .extractingByKey("stats")
+        .isInstanceOf(OutputStatisticsFacet.class)
+        // SaveIntoDataSourceCommand doesn't accurately report stats :(
+        .hasFieldOrPropertyWithValue("rowCount", 0L);
   }
 
   private Path writeTestDataToFile(Path writeDir) throws IOException {
@@ -283,5 +287,65 @@ public class SparkReadWriteIntegTest {
     assertEquals(1, inputs.size());
     assertEquals("file", inputs.get(0).getNamespace());
     assertEquals(testFile.toAbsolutePath().getParent().toString(), inputs.get(0).getName());
+  }
+
+  @Test
+  public void testWithLogicalRdd(@TempDir Path tmpDir)
+      throws InterruptedException, TimeoutException {
+    SparkSession session = SparkSession.builder().master("local").getOrCreate();
+    StructType schema =
+        new StructType(
+            new StructField[] {
+              new StructField("anInt", IntegerType$.MODULE$, false, new Metadata(new HashMap<>())),
+              new StructField("aString", StringType$.MODULE$, false, new Metadata(new HashMap<>()))
+            });
+    String csvPath = tmpDir.toAbsolutePath() + "/csv_data";
+    String csvUri = "file://" + csvPath;
+    session
+        .createDataFrame(
+            Arrays.asList(
+                new GenericRow(new Object[] {1, "seven"}),
+                new GenericRow(new Object[] {6, "one"}),
+                new GenericRow(new Object[] {72, "fourteen"}),
+                new GenericRow(new Object[] {99, "sixteen"})),
+            schema)
+        .write()
+        .csv(csvUri);
+
+    reset(marquezContext); // reset to start counting now
+    when(marquezContext.getJobNamespace()).thenReturn("theNamespace");
+    when(marquezContext.getJobName()).thenReturn("theParentJob");
+    when(marquezContext.getParentRunId()).thenReturn("ABCD");
+    JobConf conf = new JobConf();
+    FileInputFormat.addInputPath(conf, new org.apache.hadoop.fs.Path(csvUri));
+    JavaRDD<Tuple2<LongWritable, Text>> csvRdd =
+        session
+            .sparkContext()
+            .hadoopRDD(conf, TextInputFormat.class, LongWritable.class, Text.class, 1)
+            .toJavaRDD();
+    JavaRDD<Row> splitDf =
+        csvRdd
+            .map(t -> new String(t._2.getBytes()).split(","))
+            .map(arr -> new GenericRow(new Object[] {Integer.parseInt(arr[0]), arr[1]}));
+    Dataset<Row> df = session.createDataFrame(splitDf, schema);
+    String outputPath = tmpDir.toAbsolutePath() + "/output_data";
+    String jsonPath = "file://" + outputPath;
+    df.write().json(jsonPath);
+    // wait for event processing to complete
+    StaticExecutionContextFactory.waitForExecutionEnd();
+
+    ArgumentCaptor<LineageEvent> lineageEvent = ArgumentCaptor.forClass(LineageEvent.class);
+    Mockito.verify(marquezContext, times(2)).emit(lineageEvent.capture());
+    LineageEvent completeEvent = lineageEvent.getAllValues().get(1);
+    assertThat(completeEvent).hasFieldOrPropertyWithValue("eventType", "COMPLETE");
+    assertThat(completeEvent.getInputs())
+        .singleElement()
+        .hasFieldOrPropertyWithValue("name", csvPath)
+        .hasFieldOrPropertyWithValue("namespace", "file");
+
+    assertThat(completeEvent.getOutputs())
+        .singleElement()
+        .hasFieldOrPropertyWithValue("name", outputPath)
+        .hasFieldOrPropertyWithValue("namespace", "file");
   }
 }
