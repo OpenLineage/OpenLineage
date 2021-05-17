@@ -71,3 +71,11 @@ def test_nominal_time_facet_does_not_require_end_time():
     assert Serde.to_json(facet.NominalTimeRunFacet(
         nominalStartTime='2020-01-01',
     )) == get_sorted_json("nominal_time_without_end.json")
+
+
+def test_schema_field_default():
+    assert Serde.to_json(facet.SchemaField(name='asdf', type='int4')) == \
+           '{"name": "asdf", "type": "int4"}'
+
+    assert Serde.to_json(facet.SchemaField(name='asdf', type='int4', description='primary key')) == \
+           '{"description": "primary key", "name": "asdf", "type": "int4"}'
