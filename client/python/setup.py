@@ -15,7 +15,6 @@ import os
 import re
 import subprocess
 
-import pkg_resources
 from setuptools import find_packages, setup
 
 
