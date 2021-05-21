@@ -36,7 +36,7 @@ def get_version(rel_path):
     tag = execute_git(None, ['tag', '--points-at', 'HEAD'])
 
     if tag:
-        if re.match(r'^[0-9]+(\.[0-9]+){2}(rc[0-9]+)?$', tag):
+        if re.match(r'^[0-9]+(\.[0-9]+){2}(-?rc[0-9]+)?$', tag):
             return tag
 
     for line in read(rel_path).splitlines():
