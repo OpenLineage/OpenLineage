@@ -12,6 +12,8 @@
 
 import codecs
 import os
+import re
+import subprocess
 
 from setuptools import find_packages, setup
 
@@ -22,7 +24,21 @@ def read(rel_path):
         return fp.read()
 
 
+def execute_git(cwd, params):
+    p = subprocess.Popen(['git'] + params,
+                         cwd=cwd, stdout=subprocess.PIPE, stderr=None)
+    p.wait(timeout=0.5)
+    out, err = p.communicate()
+    return out.decode('utf8').strip()
+
+
 def get_version(rel_path):
+    tag = execute_git(None, ['tag', '--points-at', 'HEAD'])
+
+    if tag:
+        if re.match(r'^[0-9]+(\.[0-9]+){2}(rc[0-9]+)?$', tag):
+            return tag
+
     for line in read(rel_path).splitlines():
         if line.startswith('VERSION'):
             delim = '"' if '"' in line else "'"
@@ -48,7 +64,7 @@ setup(
     url="https://github.com/OpenLineage/OpenLineage",
     packages=find_packages(),
     install_requires=[
-        "attrs==20.3.0",
-        "requests==2.25.1"
+        "attrs>=20.3.0",
+        "requests>=2.25.1"
     ]
 )
