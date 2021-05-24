@@ -19,7 +19,7 @@ repositories {
 }
 
 ext {
-    jackson_version = "2.12.0"
+    jackson_version = "2.12.3"
     isReleaseVersion = !version.endsWith('SNAPSHOT')
 }
 
@@ -28,10 +28,10 @@ configurations {
 }
 
 dependencies {
-    compile "com.fasterxml.jackson.core:jackson-core:$jackson_version"
-    compile "com.fasterxml.jackson.core:jackson-annotations:$jackson_version"
-    compile "com.fasterxml.jackson.core:jackson-databind:$jackson_version"
-    compile "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jackson_version"
+    implementation "com.fasterxml.jackson.core:jackson-core:$jackson_version"
+    implementation "com.fasterxml.jackson.core:jackson-annotations:$jackson_version"
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jackson_version"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jackson_version"
     codeGenerator project(':generator')
     testImplementation 'junit:junit:4.13'
 }
