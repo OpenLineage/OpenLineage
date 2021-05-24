@@ -63,7 +63,7 @@ jobs:
           # Get, then decode the GPG private key used to sign *.jar
           # export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
           # Publish *.jar
-          ./gradlew publish
+          gradle publish
 
 workflows:
   checkout-build-test:
