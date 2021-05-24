@@ -82,4 +82,4 @@ workflows:
             - build-client-python
       - release-java:
           context: release
-#          <<: *only-on-release
+          <<: *only-on-release
