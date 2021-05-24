@@ -58,7 +58,7 @@ jobs:
     docker:
       - image: cimg/openjdk:11.0
     steps:
-      - checkout
+      - *checkout_project_root
       - run: |
           # Get, then decode the GPG private key used to sign *.jar
           # export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
