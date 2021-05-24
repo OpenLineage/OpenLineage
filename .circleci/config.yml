@@ -59,7 +59,6 @@ jobs:
       - image: cimg/openjdk:11.0
     steps:
       - checkout
-      - run: ./.circleci/get-jdk11.sh
       - run: |
           # Get, then decode the GPG private key used to sign *.jar
           # export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
@@ -82,5 +81,5 @@ workflows:
           requires:
             - build-client-python
       - release-java:
-          <<: *only-on-release
+#          <<: *only-on-release
           context: release
