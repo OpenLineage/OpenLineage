@@ -87,9 +87,9 @@ publishing {
             artifact javadocJar
 
             pom {
-                name = 'marquez-java'
-                description = 'Java client for Marquez'
-                url = 'https://github.com/MarquezProject/marquez'
+                name = 'openlineage-java'
+                description = 'Java library for OpenLineage'
+                url = 'https://github.com/OpenLineage/OpenLineage'
                 licenses {
                     license {
                         name = 'The Apache License, Version 2.0'
@@ -98,14 +98,14 @@ publishing {
                 }
                 developers {
                     developer {
-                        id = 'marquezproject'
-                        name = 'Marquez Project'
+                        id = 'openlineage'
+                        name = 'OpenLineage Project'
                     }
                 }
                 scm {
-                    connection = 'scm:git:git://github.com/MarquezProject/marquez.git'
-                    developerConnection = 'scm:git:ssh://github.com:MarquezProject/marquez.git'
-                    url = 'https://github.com/MarquezProject/marquez'
+                    connection = 'scm:git:git://github.com/OpenLineage/OpenLineage.git'
+                    developerConnection = 'scm:git:ssh://github.com:OpenLineage/OpenLineage.git'
+                    url = 'https://github.com/OpenLineage/OpenLineage'
                 }
             }
         }

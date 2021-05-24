@@ -81,5 +81,5 @@ workflows:
           requires:
             - build-client-python
       - release-java:
-#          <<: *only-on-release
           context: release
+#          <<: *only-on-release
