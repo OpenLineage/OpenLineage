@@ -54,7 +54,7 @@ jobs:
       - run: python -m twine upload --non-interactive --verbose --repository pypi dist/*
 
   release-java:
-    working_directory: ~/openlineage/clients/java
+    working_directory: ~/openlineage/client/java
     docker:
       - image: cimg/openjdk:11.0
     steps:
