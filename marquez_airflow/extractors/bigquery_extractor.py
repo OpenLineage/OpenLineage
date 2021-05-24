@@ -13,7 +13,7 @@
 import json
 import logging
 import traceback
-from typing import Optional, Any, List, Dict, Tuple
+from typing import Optional, Tuple
 
 from airflow.contrib.operators.bigquery_operator import BigQueryOperator
 from google.cloud import bigquery
@@ -33,7 +33,7 @@ from marquez_airflow.models import (
 from marquez_airflow.extractors.sql import SqlParser
 from marquez_airflow.schema import GITHUB_LOCATION
 from marquez_airflow.utils import (
-    get_job_name
+    get_job_name, get_from_nullable_chain
 )
 
 # BIGQUERY DAGs doesn't use this.
@@ -43,35 +43,6 @@ from openlineage.facet import BaseFacet
 _BIGQUERY_CONN_URL = 'bigquery:{}'
 
 log = logging.getLogger(__name__)
-
-
-def get_from_nullable_chain(source: Dict[str, Any], chain: List[str]) -> Optional[Any]:
-    """
-    Get object from nested structure of dictionaries, where it's not guaranteed that
-    all keys in the nested structure exist.
-    Intended to replace chain of `dict.get()` statements.
-
-    Example usage:
-    if not job._properties.get('statistics')\
-        or not job._properties.get('statistics').get('query')\
-        or not job._properties.get('statistics').get('query')\
-            .get('referencedTables'):
-        return None
-    result = job._properties.get('statistics').get('query')\
-            .get('referencedTables')
-
-    becomes:
-    result = get_from_nullable_chain(properties, ['statistics', 'query', 'queryPlan'])
-    if not result:
-        return None
-    """
-    chain.reverse()
-    try:
-        while chain:
-            source = source.get(chain.pop())
-        return source
-    except AttributeError:
-        return
 
 
 @attr.s

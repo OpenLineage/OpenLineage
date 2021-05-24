@@ -9,20 +9,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import List, Union
+from typing import List, Union, Optional
 from uuid import uuid4
 
 import airflow.models
 import time
 
-from airflow.contrib.operators.bigquery_operator import BigQueryOperator
 from airflow.models import DagRun
-from airflow.operators.postgres_operator import PostgresOperator
 from airflow.utils.state import State
 
-from marquez_airflow.extractors import StepMetadata
-from marquez_airflow.extractors.bigquery_extractor import BigQueryExtractor
-from marquez_airflow.extractors.postgres_extractor import PostgresExtractor
+from marquez_airflow.extractors import StepMetadata, BaseExtractor
+from marquez_airflow.extractors.extractors import Extractors
 from marquez_airflow.utils import (
     JobIdMapping,
     get_location,
@@ -43,20 +40,27 @@ from marquez_airflow.marquez import MarquezAdapter
 
 _MARQUEZ = MarquezAdapter()
 
-# TODO: Manually define operator->extractor mappings for now,
-# but we'll want to encapsulate this logic in an 'Extractors' class
-# with more convenient methods (ex: 'Extractors.extractor_for_task()')
-_EXTRACTORS = {
-    PostgresOperator: PostgresExtractor,
-    BigQueryOperator: BigQueryExtractor
-    # Append new extractors here
-}
-
 
 class DAG(airflow.models.DAG, LoggingMixin):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, extractor_mapper=None, **kwargs):
         self.log.debug("marquez-airflow dag starting")
         super().__init__(*args, **kwargs)
+        self.extractors = {}
+
+        if extractor_mapper:
+            self.extractor_mapper = extractor_mapper
+        else:
+            self.extractor_mapper = Extractors()
+
+    def add_task(self, task):
+        super().add_task(task)
+
+        # Purpose: some extractors, called patchers need to hook up to internal components of
+        # operator to extract necessary data. The hooking up is done on instantiation
+        # of extractor via patch() method. That's why extractor is created here.
+        patcher = self.extractor_mapper.get_patcher_class(task.__class__)
+        if patcher:
+            self.extractors[task.task_id] = patcher(task)
 
     def create_dagrun(self, *args, **kwargs):
         # run Airflow's create_dagrun() first
@@ -199,8 +203,8 @@ class DAG(airflow.models.DAG, LoggingMixin):
         if extractor:
             try:
                 self.log.debug(
-                    f'Using extractor {extractor.__name__} {task_info}')
-                step = self._extract(extractor, task, task_instance)
+                    f'Using extractor {extractor.__class__.__name__} {task_info}')
+                step = self._extract(extractor, task_instance)
 
                 if isinstance(step, StepMetadata):
                     return step
@@ -213,7 +217,7 @@ class DAG(airflow.models.DAG, LoggingMixin):
                         )
                     elif len(step) >= 1:
                         self.log.warning(
-                            f'Extractor {extractor.__name__} {task_info} '
+                            f'Extractor {extractor.__class__.__name__} {task_info} '
                             f'returned more then one StepMetadata instance: {step} '
                             f'will drop steps except for first!'
                         )
@@ -231,18 +235,24 @@ class DAG(airflow.models.DAG, LoggingMixin):
             name=self._marquez_job_name(self.dag_id, task.task_id)
         )
 
-    def _extract(self, extractor, task, task_instance) -> Union[StepMetadata, List[StepMetadata]]:
+    def _extract(self, extractor, task_instance) -> \
+            Union[Optional[StepMetadata], List[StepMetadata]]:
         if task_instance:
-            step = extractor(task).extract_on_complete(task_instance)
+            step = extractor.extract_on_complete(task_instance)
             if step:
                 return step
 
-        return extractor(task).extract()
+        return extractor.extract()
 
-    def _get_extractor(self, task):
-        extractor = _EXTRACTORS.get(task.__class__)
+    def _get_extractor(self, task) -> Optional[BaseExtractor]:
+        if task.task_id in self.extractors:
+            return self.extractors[task.task_id]
+        extractor = self.extractor_mapper.get_extractor_class(task.__class__)
         self.log.debug(f'extractor for {task.__class__} is {extractor}')
-        return extractor
+        if extractor:
+            self.extractors[task.task_id] = extractor(task)
+            return self.extractors[task.task_id]
+        return None
 
     def _timed_log_message(self, start_time):
         return f'airflow_dag_id={self.dag_id} ' \

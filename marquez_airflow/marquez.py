@@ -98,6 +98,10 @@ class MarquezAdapter:
         :param end_time: time of task completion
         :param step: metadata container with information extracted from operator
         """
+        sql = None
+        if step:
+            sql = step.context.get('sql', None)
+
         event = RunEvent(
             eventType=RunState.COMPLETE,
             eventTime=end_time,
@@ -105,7 +109,7 @@ class MarquezAdapter:
                 run_id
             ),
             job=self._build_job(
-                job_name
+                job_name, sql=sql
             ),
             inputs=[
                 self.map_airflow_dataset(dataset) for dataset in step.inputs

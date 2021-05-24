@@ -2,6 +2,7 @@ import attr
 
 from airflow.version import version as AIRFLOW_VERSION
 from marquez_airflow import __version__ as MARQUEZ_AIRFLOW_VERSION
+from typing import Optional, Dict
 
 from openlineage.facet import BaseFacet
 
@@ -26,3 +27,20 @@ class AirflowVersionRunFacet(BaseFacet):
 @attr.s
 class AirflowRunArgsRunFacet(BaseFacet):
     externalTrigger: bool = attr.ib(default=False)
+
+
+@attr.s
+class ColumnMetric:
+    nullCount: Optional[int] = attr.ib(default=None)
+    distinctCount: Optional[int] = attr.ib(default=None)
+    average: Optional[float] = attr.ib(default=None)
+    min: Optional[float] = attr.ib(default=None)
+    max: Optional[float] = attr.ib(default=None)
+    quantiles: Optional[Dict[str, float]] = attr.ib(default=None)
+
+
+@attr.s
+class DataQualityDatasetFacet(BaseFacet):
+    rowCount: Optional[int] = attr.ib(default=None)
+    bytes: Optional[int] = attr.ib(default=None)
+    columnMetrics: Dict[str, ColumnMetric] = attr.ib(factory=dict)

@@ -14,6 +14,7 @@ import logging
 import os
 import subprocess
 import json
+from typing import Dict, Any, List, Optional
 
 import airflow
 from airflow.models import Connection
@@ -190,3 +191,34 @@ class DagUtils:
             return dt.format(_NOMINAL_TIME_FORMAT)
         else:
             return dt.strftime(_NOMINAL_TIME_FORMAT)
+
+
+def get_from_nullable_chain(source: Dict[str, Any], chain: List[str]) -> Optional[Any]:
+    """
+    Get object from nested structure of dictionaries, where it's not guaranteed that
+    all keys in the nested structure exist.
+    Intended to replace chain of `dict.get()` statements.
+    Example usage:
+    if not job._properties.get('statistics')\
+        or not job._properties.get('statistics').get('query')\
+        or not job._properties.get('statistics').get('query')\
+            .get('referencedTables'):
+        return None
+    result = job._properties.get('statistics').get('query')\
+            .get('referencedTables')
+    becomes:
+    result = get_from_nullable_chain(properties, ['statistics', 'query', 'queryPlan'])
+    if not result:
+        return None
+    """
+    chain.reverse()
+    try:
+        while chain:
+            next_key = chain.pop()
+            if isinstance(source, dict):
+                source = source.get(next_key)
+            else:
+                source = getattr(source, next_key)
+        return source
+    except AttributeError:
+        return

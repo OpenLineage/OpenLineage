@@ -9,6 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import functools
 
 import pytest
 import mock
@@ -23,11 +24,11 @@ from airflow.utils import timezone
 from airflow.utils.state import State
 from airflow.version import version as AIRFLOW_VERSION
 
-from marquez_airflow.dag import _EXTRACTORS as _DAG_EXTRACTORS
 from marquez_airflow import DAG
 from marquez_airflow.extractors import (
     BaseExtractor, StepMetadata, Source, Dataset
 )
+from marquez_airflow.extractors.extractors import Extractors
 from marquez_airflow.facets import AirflowRunArgsRunFacet, AirflowVersionRunFacet
 from marquez_airflow.models import (
     DbTableName,
@@ -40,7 +41,8 @@ from marquez_airflow import __version__ as MARQUEZ_AIRFLOW_VERSION
 from uuid import UUID
 
 from openlineage.facet import NominalTimeRunFacet, SourceCodeLocationJobFacet, \
-    DocumentationJobFacet, DataSourceDatasetFacet, SchemaDatasetFacet, SchemaField, ParentRunFacet
+    DocumentationJobFacet, DataSourceDatasetFacet, SchemaDatasetFacet, \
+    SchemaField, ParentRunFacet, SqlJobFacet
 from openlineage.run import RunEvent, RunState, Job, Run, Dataset as OpenLineageDataset
 
 log = logging.getLogger(__name__)
@@ -313,12 +315,18 @@ def test_marquez_dag_with_extractor(
         session=None):
 
     # --- test setup
+
+    # Add the dummy extractor to the list for the task above
+    extractor_mapper = Extractors()
+    extractor_mapper.extractors[TestFixtureDummyOperator] = TestFixtureDummyExtractor
+
     dag_id = 'test_marquez_dag_with_extractor'
     dag = DAG(
         dag_id,
         schedule_interval='@daily',
         default_args=DAG_DEFAULT_ARGS,
-        description=DAG_DESCRIPTION
+        description=DAG_DESCRIPTION,
+        extractor_mapper=extractor_mapper
     )
 
     dag_run_id = 'test_marquez_dag_with_extractor_run_id'
@@ -335,9 +343,6 @@ def test_marquez_dag_with_extractor(
         dag=dag
     )
     completed_task_location = get_location(task_will_complete.dag.fileloc)
-
-    # Add the dummy extractor to the list for the task above
-    _DAG_EXTRACTORS[task_will_complete.__class__] = TestFixtureDummyExtractor
 
     # --- pretend run the DAG
 
@@ -430,12 +435,18 @@ def test_marquez_dag_with_extract_on_complete(
         session=None):
 
     # --- test setup
+
+    # Add the dummy extractor to the list for the task above
+    extractor_mapper = Extractors()
+    extractor_mapper.extractors[TestFixtureDummyOperator] = TestFixtureDummyExtractorOnComplete
+
     dag_id = 'test_marquez_dag_with_extractor_on_complete'
     dag = DAG(
         dag_id,
         schedule_interval='@daily',
         default_args=DAG_DEFAULT_ARGS,
-        description=DAG_DESCRIPTION
+        description=DAG_DESCRIPTION,
+        extractor_mapper=extractor_mapper
     )
 
     dag_run_id = 'test_marquez_dag_with_extractor_run_id'
@@ -451,10 +462,6 @@ def test_marquez_dag_with_extract_on_complete(
         dag=dag
     )
     completed_task_location = get_location(task_will_complete.dag.fileloc)
-
-    # Add the dummy extractor to the list for the task above
-    _DAG_EXTRACTORS[task_will_complete.__class__] = \
-        TestFixtureDummyExtractorOnComplete
 
     # Create DAG run and mark as running
     dagrun = dag.create_dagrun(
@@ -585,12 +592,19 @@ def test_marquez_dag_with_extractor_returning_two_steps(
         session=None):
 
     # --- test setup
+
+    # Add the dummy extractor to the list for the task above
+    extractor_mapper = Extractors()
+    extractor_mapper.extractors[TestFixtureDummyOperator] = \
+        TestFixtureDummyExtractorWithMultipleSteps
+
     dag_id = 'test_marquez_dag_with_extractor_returning_two_steps'
     dag = DAG(
         dag_id,
         schedule_interval='@daily',
         default_args=DAG_DEFAULT_ARGS,
-        description=DAG_DESCRIPTION
+        description=DAG_DESCRIPTION,
+        extractor_mapper=extractor_mapper
     )
 
     dag_run_id = 'test_marquez_dag_with_extractor_returning_two_steps_run_id'
@@ -607,9 +621,6 @@ def test_marquez_dag_with_extractor_returning_two_steps(
         dag=dag
     )
     completed_task_location = get_location(task_will_complete.dag.fileloc)
-
-    # Add the dummy extractor to the list for the task above
-    _DAG_EXTRACTORS[task_will_complete.__class__] = TestFixtureDummyExtractorWithMultipleSteps
 
     # --- pretend run the DAG
 
@@ -741,3 +752,162 @@ def test_marquez_dag_adds_custom_facets(
             inputs=[],
             outputs=[]
     ))
+
+
+class TestFixtureHookingDummyOperator(DummyOperator):
+
+    @apply_defaults
+    def __init__(self, *args, result=None, **kwargs):
+        super(TestFixtureHookingDummyOperator, self).__init__(*args, **kwargs)
+        self.result = result
+
+    def execute(self, context):
+        return self.result
+
+
+def wrap_callback(f):
+    @functools.wraps(f)
+    def wrapper(self, *args, **kwargs):
+        result = f(self, *args, **kwargs)
+        self._extractor.store_result(result)
+        return result
+    return wrapper
+
+
+TestFixtureHookingDummyOperator.execute = wrap_callback(TestFixtureHookingDummyOperator.execute)
+
+
+class TestFixtureHookingDummyExtractor(BaseExtractor):
+    operator_class = TestFixtureHookingDummyOperator
+    source = Source(
+        type="DummySource",
+        name="dummy_source_name",
+        connection_url="http://dummy/source/url")
+
+    def __init__(self, operator):
+        super().__init__(operator)
+        self.operator._extractor = self
+        self.result = None
+
+    def store_result(self, result):
+        self.result = result
+
+    def extract(self) -> StepMetadata:
+        return None
+
+    def extract_on_complete(self, task_instance) -> StepMetadata:
+        return StepMetadata(
+            name=get_job_name(task=self.operator),
+            inputs=[],
+            outputs=[],
+            context={
+                "sql": self.result
+            }
+        )
+
+
+# tests a simple workflow with default custom facet mechanism
+# test the lifecycle including with extractors
+@mock.patch('marquez_airflow.dag.get_custom_facets')
+@mock.patch('marquez_airflow.marquez.MarquezAdapter.get_or_create_openlineage_client')
+@mock.patch('marquez_airflow.dag.JobIdMapping')
+@provide_session
+def test_marquez_dag_with_hooking_operator(
+        job_id_mapping,
+        mock_get_or_create_openlineage_client,
+        get_custom_facets,
+        clear_db_airflow_dags,
+        session=None):
+
+    # --- test setup
+
+    # Add the dummy extractor to the list for the task above
+    extractor_mapper = Extractors()
+    extractor_mapper.extractors[TestFixtureHookingDummyOperator] = TestFixtureHookingDummyExtractor
+
+    dag_id = 'test_marquez_dag_with_extractor_returning_two_steps'
+    dag = DAG(
+        dag_id,
+        schedule_interval='@daily',
+        default_args=DAG_DEFAULT_ARGS,
+        description=DAG_DESCRIPTION,
+        extractor_mapper=extractor_mapper
+    )
+
+    dag_run_id = 'test_marquez_dag_with_extractor_returning_two_steps_run_id'
+    run_id = f"{dag_run_id}.{TASK_ID_COMPLETED}"
+
+    # Mock the marquez client method calls
+    mock_marquez_client = mock.Mock()
+    mock_get_or_create_openlineage_client.return_value = mock_marquez_client
+    get_custom_facets.return_value = {}
+
+    query = "select * from employees"
+
+    # Add task that will be marked as completed
+    task_will_complete = TestFixtureHookingDummyOperator(
+        task_id=TASK_ID_COMPLETED,
+        result=query,
+        dag=dag
+    )
+    completed_task_location = get_location(task_will_complete.dag.fileloc)
+
+    # --- pretend run the DAG
+
+    # Create DAG run and mark as running
+    dagrun = dag.create_dagrun(
+        run_id=dag_run_id,
+        execution_date=DEFAULT_DATE,
+        state=State.RUNNING)
+
+    # --- Asserts that the job starting triggers openlineage event
+
+    start_time = '2016-01-01T00:00:00.000000Z'
+    end_time = '2016-01-02T00:00:00.000000Z'
+
+    mock_marquez_client.emit.assert_called_once_with(
+        RunEvent(
+            RunState.START,
+            mock.ANY,
+            Run(run_id, {
+                "nominalTime": NominalTimeRunFacet(start_time, end_time),
+                "parentRun": ParentRunFacet.create(
+                    runId=dag_run_id,
+                    namespace=DAG_NAMESPACE,
+                    job_name=f"{dag_id}.{TASK_ID_COMPLETED}"
+                )
+            }),
+            Job("default", f"{dag_id}.{TASK_ID_COMPLETED}", {
+                "documentation": DocumentationJobFacet(DAG_DESCRIPTION),
+                "sourceCodeLocation": SourceCodeLocationJobFacet("", completed_task_location)
+            }),
+            PRODUCER,
+            [],
+            []
+        )
+    )
+
+    mock_marquez_client.reset_mock()
+
+    # --- Pretend complete the task
+    job_id_mapping.pop.return_value = run_id
+
+    task_will_complete.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE)
+
+    dag.handle_callback(dagrun, success=True, session=session)
+
+    # --- Assert that the openlineage call is done
+
+    mock_marquez_client.emit.assert_called_once_with(
+        RunEvent(
+            RunState.COMPLETE,
+            mock.ANY,
+            Run(run_id),
+            Job("default", f"{dag_id}.{TASK_ID_COMPLETED}", {
+                "sql": SqlJobFacet(query)
+            }),
+            PRODUCER,
+            [],
+            []
+        )
+    )
