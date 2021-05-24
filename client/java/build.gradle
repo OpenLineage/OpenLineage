@@ -1,7 +1,8 @@
 plugins {
-    id "java"
+    id 'java'
+    id 'java-library'
     id 'maven-publish'
-    id 'application'
+    id 'signing'
     id 'idea'
     id 'eclipse'
     id "org.openapi.generator" version "5.0.1"
@@ -19,6 +20,7 @@ repositories {
 
 ext {
     jackson_version = "2.12.0"
+    isReleaseVersion = !version.endsWith('SNAPSHOT')
 }
 
 configurations {
@@ -33,7 +35,6 @@ dependencies {
     codeGenerator project(':generator')
     testImplementation 'junit:junit:4.13'
 }
-
 
 def gitBranchName() {
     def branch = "unknown_branch"
@@ -62,4 +63,81 @@ openApiGenerate {
     outputDir = "$buildDir/docs".toString()
 }
 
+task sourceJar(type: Jar) {
+    classifier 'sources'
+    from sourceSets.main.allJava
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier 'javadoc'
+    from javadoc.destinationDir
+}
+
 compileJava.dependsOn tasks.generateCode, tasks.openApiGenerate
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId = 'io.openlineage'
+            artifactId = 'openlineage-java'
+
+            from components.java
+
+            artifact sourceJar
+            artifact javadocJar
+
+            pom {
+                name = 'marquez-java'
+                description = 'Java client for Marquez'
+                url = 'https://github.com/MarquezProject/marquez'
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'marquezproject'
+                        name = 'Marquez Project'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git://github.com/MarquezProject/marquez.git'
+                    developerConnection = 'scm:git:ssh://github.com:MarquezProject/marquez.git'
+                    url = 'https://github.com/MarquezProject/marquez'
+                }
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            url = 'https://oss.sonatype.org/service/local/staging/deploy/maven2'
+            credentials {
+                username = System.getenv('SONATYPE_USER')
+                password = System.getenv('SONATYPE_PASSWORD')
+            }
+        }
+    }
+}
+
+signing {
+    required { isReleaseVersion }
+    def signingKey = findProperty("signingKey")
+    def signingPassword = findProperty("signingPassword")
+    useInMemoryPgpKeys(signingKey, signingPassword)
+    sign publishing.publications.mavenJava
+}
+
+jar {
+    manifest {
+        attributes(
+                'Created-By': "Gradle ${gradle.gradleVersion}",
+                'Built-By': System.getProperty('user.name'),
+                'Build-Jdk': System.getProperty('java.version'),
+                'Implementation-Title': project.name,
+                'Implementation-Version': project.version
+        )
+    }
+}
