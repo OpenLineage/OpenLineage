@@ -20,7 +20,7 @@ repositories {
 
 ext {
     jackson_version = "2.12.3"
-    isReleaseVersion = true
+    isReleaseVersion = !version.endsWith('SNAPSHOT')
 }
 
 configurations {
@@ -109,6 +109,12 @@ publishing {
                 }
             }
         }
+    }
+
+    processResources {
+        filter ReplaceTokens, tokens: [
+                "version": project.property("version")
+        ]
     }
 
     repositories {
