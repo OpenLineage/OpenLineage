@@ -20,7 +20,7 @@ repositories {
 
 ext {
     jackson_version = "2.12.3"
-    isReleaseVersion = !version.endsWith('SNAPSHOT')
+    isReleaseVersion = true
 }
 
 configurations {
@@ -49,9 +49,9 @@ task generateCode(type: JavaExec) {
     description 'generate java code from spec. Use -PgenerateFromLocal to generate from the local file instead of the published version'
     classpath configurations.codeGenerator
     main = 'io.openlineage.client.Generator'
-    if (project.hasProperty('generateFromLocal')) { 
+    if (project.hasProperty('generateFromLocal')) {
       args
-    } else { 
+    } else {
       args "https://raw.githubusercontent.com/OpenLineage/OpenLineage/" + gitBranchName()  + "/spec/OpenLineage.json"
     }
 }
