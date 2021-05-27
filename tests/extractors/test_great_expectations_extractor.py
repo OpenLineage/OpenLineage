@@ -9,14 +9,14 @@ Run test:
     python3 -m unittest test.operators.test_operators.TestGreatExpectationsOperator
 
 """
-from pathlib import Path
 import logging
 import os
+from pathlib import Path
 
-from marquez_airflow.extractors.great_expectations_extractor import GreatExpectationsExtractor
-
-from great_expectations_provider.operators.great_expectations import GreatExpectationsOperator
-
+from great_expectations_provider.operators.great_expectations import \
+  GreatExpectationsOperator
+from marquez_airflow.extractors.great_expectations_extractor import \
+  GreatExpectationsExtractor
 from marquez_airflow.facets import DataQualityDatasetFacet, ColumnMetric
 from openlineage.run import Serde
 
@@ -58,7 +58,8 @@ def test_great_expectations_operator_batch_kwargs_success():
                 distinctCount=3
             ),
             'total_amount': ColumnMetric(
-                average=15.724231000000003,
+                sum=157242.31000000003,
+                count=10000,
                 min=-52.8,
                 max=3004.8,
                 quantiles={"0": -52.8, "0.333": 9.3, "0.6667": 14.16, "1": 3004.8}

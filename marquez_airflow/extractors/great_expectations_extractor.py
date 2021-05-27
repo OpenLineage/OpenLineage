@@ -9,20 +9,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import attr
 import functools
 import logging
 from collections import defaultdict
-
-import attr
-from typing import Optional, Any, Dict
-
-from marquez_airflow.facets import DataQualityDatasetFacet, ColumnMetric
-from marquez_airflow.utils import get_from_nullable_chain, get_job_name
-
 from marquez_airflow.extractors import (
     BaseExtractor,
     StepMetadata, Dataset, Source, DatasetType,
 )
+from marquez_airflow.facets import DataQualityDatasetFacet, ColumnMetric
+from marquez_airflow.utils import get_from_nullable_chain, get_job_name
+from typing import Optional, Any, Dict
 
 
 def wrap_callback(f):
@@ -253,16 +250,31 @@ class ValuesDistinctExpectationParser(ColumnExpectationsParser):
         )
 
 
-class ValuesAverageExpectationParser(ColumnExpectationsParser):
+class ValuesSumExpectationParser(ColumnExpectationsParser):
     expectation_key = 'expect_column_sum_to_be_between'
 
     @staticmethod
     def parse_expectation_result(expectation_result: dict) -> ExpectationsParserResult:
         sum = get_from_nullable_chain(expectation_result, ['result', 'observed_value'])
+        return ExpectationsParserResult(
+            'sum',
+            sum,
+            get_from_nullable_chain(
+                expectation_result,
+                ['expectation_config', 'kwargs', 'column']
+            )
+        )
+
+
+class ValuesCountExpectationParser(ColumnExpectationsParser):
+    expectation_key = 'expect_column_sum_to_be_between'
+
+    @staticmethod
+    def parse_expectation_result(expectation_result: dict) -> ExpectationsParserResult:
         count = get_from_nullable_chain(expectation_result, ['result', 'element_count'])
         return ExpectationsParserResult(
-            'average',
-            sum / count,
+            'count',
+            count,
             get_from_nullable_chain(
                 expectation_result,
                 ['expectation_config', 'kwargs', 'column']
@@ -336,7 +348,8 @@ _COLUMN_EXPECTATIONS_PARSER = [
     ValuesMinExpectationParser,
     ValuesMaxExpectationParser,
     ValuesQuantileExpectationParser,
-    ValuesAverageExpectationParser
+    ValuesSumExpectationParser,
+    ValuesCountExpectationParser
 ]
 
 if _has_great_expectations:
