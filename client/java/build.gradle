@@ -1,15 +1,32 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import org.apache.tools.ant.filters.*
+
 plugins {
-    id "java"
+    id 'java'
+    id 'java-library'
     id 'maven-publish'
-    id 'application'
+    id 'signing'
     id 'idea'
     id 'eclipse'
     id "org.openapi.generator" version "5.0.1"
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 repositories {
@@ -18,7 +35,8 @@ repositories {
 }
 
 ext {
-    jackson_version = "2.12.0"
+    jackson_version = "2.12.3"
+    isReleaseVersion = !version.endsWith('SNAPSHOT')
 }
 
 configurations {
@@ -26,14 +44,13 @@ configurations {
 }
 
 dependencies {
-    compile "com.fasterxml.jackson.core:jackson-core:$jackson_version"
-    compile "com.fasterxml.jackson.core:jackson-annotations:$jackson_version"
-    compile "com.fasterxml.jackson.core:jackson-databind:$jackson_version"
-    compile "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jackson_version"
+    implementation "com.fasterxml.jackson.core:jackson-core:$jackson_version"
+    implementation "com.fasterxml.jackson.core:jackson-annotations:$jackson_version"
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jackson_version"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jackson_version"
     codeGenerator project(':generator')
-    testImplementation 'junit:junit:4.13'
+    testImplementation 'junit:junit:4.13.2'
 }
-
 
 def gitBranchName() {
     def branch = "unknown_branch"
@@ -48,9 +65,9 @@ task generateCode(type: JavaExec) {
     description 'generate java code from spec. Use -PgenerateFromLocal to generate from the local file instead of the published version'
     classpath configurations.codeGenerator
     main = 'io.openlineage.client.Generator'
-    if (project.hasProperty('generateFromLocal')) { 
+    if (project.hasProperty('generateFromLocal')) {
       args
-    } else { 
+    } else {
       args "https://raw.githubusercontent.com/OpenLineage/OpenLineage/" + gitBranchName()  + "/spec/OpenLineage.json"
     }
 }
@@ -62,4 +79,87 @@ openApiGenerate {
     outputDir = "$buildDir/docs".toString()
 }
 
+task sourceJar(type: Jar) {
+    classifier 'sources'
+    from sourceSets.main.allJava
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier 'javadoc'
+    from javadoc.destinationDir
+}
+
 compileJava.dependsOn tasks.generateCode, tasks.openApiGenerate
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId = 'io.openlineage'
+            artifactId = 'openlineage-java'
+
+            from components.java
+
+            artifact sourceJar
+            artifact javadocJar
+
+            pom {
+                name = 'openlineage-java'
+                description = 'Java library for OpenLineage'
+                url = 'https://github.com/OpenLineage/OpenLineage'
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'openlineage'
+                        name = 'OpenLineage Project'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git://github.com/OpenLineage/OpenLineage.git'
+                    developerConnection = 'scm:git:ssh://github.com:OpenLineage/OpenLineage.git'
+                    url = 'https://github.com/OpenLineage/OpenLineage'
+                }
+            }
+        }
+    }
+
+    processResources {
+        filter ReplaceTokens, tokens: [
+                "version": project.property("version")
+        ]
+    }
+
+    repositories {
+        maven {
+            url = 'https://oss.sonatype.org/service/local/staging/deploy/maven2'
+            credentials {
+                username = System.getenv('SONATYPE_USER')
+                password = System.getenv('SONATYPE_PASSWORD')
+            }
+        }
+    }
+}
+
+signing {
+    required { isReleaseVersion }
+    def signingKey = findProperty("signingKey")
+    def signingPassword = findProperty("signingPassword")
+    useInMemoryPgpKeys(signingKey, signingPassword)
+    sign publishing.publications.mavenJava
+}
+
+jar {
+    manifest {
+        attributes(
+                'Created-By': "Gradle ${gradle.gradleVersion}",
+                'Built-By': System.getProperty('user.name'),
+                'Build-Jdk': System.getProperty('java.version'),
+                'Implementation-Title': project.name,
+                'Implementation-Version': project.version
+        )
+    }
+}

@@ -53,6 +53,18 @@ jobs:
       - run: pip install wheel twine
       - run: python -m twine upload --non-interactive --verbose --repository pypi dist/*
 
+  release-java:
+    working_directory: ~/openlineage/client/java
+    docker:
+      - image: cimg/openjdk:11.0
+    steps:
+      - *checkout_project_root
+      - run: |
+          # Get, then decode the GPG private key used to sign *.jar
+          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
+          # Publish *.jar
+          gradle publish
+
 workflows:
   checkout-build-test:
     jobs:
@@ -68,3 +80,6 @@ workflows:
           context: release
           requires:
             - build-client-python
+      - release-java:
+          context: release
+          <<: *only-on-release

@@ -176,7 +176,7 @@ public class JavaPoetGenerator {
             .methodBuilder("build")
             .addModifiers(PUBLIC)
             .returns(getTypeName(type))
-            .addCode("var __result = new $N(", type.getName())
+            .addCode("$N __result = new $N(", type.getName(), type.getName())
             .addCode(CodeBlock.join(builderParams, ", "))
             .addCode(");\n");
 
