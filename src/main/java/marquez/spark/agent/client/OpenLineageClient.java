@@ -12,9 +12,11 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.ok2c.hc5.json.http.JsonRequestProducers;
 import com.ok2c.hc5.json.http.JsonResponseConsumers;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.net.URI;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -31,8 +33,7 @@ import org.apache.hc.core5.http.Message;
 @Slf4j
 public class OpenLineageClient {
 
-  public static final String OPEN_LINEAGE_CLIENT_URI =
-      "https://github.com/MarquezProject/marquez/tree/0.12.0/integrations/spark";
+  public static final String OPEN_LINEAGE_CLIENT_URI = getUri();
   public static final String OPEN_LINEAGE_PARENT_FACET_URI =
       "https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#ParentRunFacet";
   public static final String OPEN_LINEAGE_DATASOURCE_FACET =
@@ -168,6 +169,22 @@ public class OpenLineageClient {
 
   protected static String getUserAgent() {
     return "openlineage-java" + "/1.0";
+  }
+
+  private static String getUri() {
+    return String.format(
+        "https://github.com/MarquezProject/marquez/tree/%s/integrations/spark", getVersion());
+  }
+
+  private static String getVersion() {
+    try {
+      Properties properties = new Properties();
+      InputStream is = OpenLineageClient.class.getResourceAsStream("version.properties");
+      properties.load(is);
+      return properties.getProperty("version");
+    } catch (IOException exception) {
+      return "main";
+    }
   }
 
   private <T> TypeReference<T> getTypeReference(Class<T> clazz) {

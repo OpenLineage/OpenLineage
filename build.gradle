@@ -13,6 +13,7 @@
  */
 
 import org.apache.tools.ant.filters.ReplaceTokens
+import groovy.io.FileType
 
 plugins {
     id 'maven-publish'
@@ -148,4 +149,33 @@ shadowJar {
     }
 
     zip64 true
+}
+
+task createVersionProperties(dependsOn: processResources) {
+    doLast {
+        File dir = new File("$buildDir/resources/main/marquez/spark/agent/client/")
+        dir.mkdirs();
+        new File("$buildDir/resources/main/marquez/spark/agent/client/version.properties").withWriter { w ->
+            Properties p = new Properties()
+            p['version'] = project.version.toString()
+            p.store w, null
+        }
+    }
+}
+
+task bumpVersionTestFiles() {
+    doLast {
+        def dir = new File(project.projectDir.path + '/integrations')
+        dir.eachFileRecurse (FileType.FILES) { file ->
+            ant.replace(file: file, token: "\$VERSION", value: project.version.toString())
+        }
+    }
+}
+
+classes {
+    dependsOn createVersionProperties
+}
+
+test {
+    dependsOn bumpVersionTestFiles
 }
