@@ -105,3 +105,9 @@ def test_serde_nested_nulls():
         ],
         optional=3
     )) == '{"nested": [{"value": 41}], "optional": 3}'
+
+    assert Serde.to_json(NestingObject(
+        nested=[
+            NestedObject()
+        ]
+    )) == '{"nested": []}'
