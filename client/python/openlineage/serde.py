@@ -30,7 +30,8 @@ class Serde:
     @classmethod
     def remove_nulls(cls, obj):
         if isinstance(obj, Dict):
-            return dict(filter(lambda x: x[1] is not None,
+            return dict(filter(
+                lambda x: x[1] is not None,
                 {k: cls.remove_nulls(v) for k, v in obj.items()}.items()
             ))
         if isinstance(obj, List):
