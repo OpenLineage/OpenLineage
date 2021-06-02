@@ -12,7 +12,9 @@
 
 import json
 import os
+from typing import Optional, List
 
+import attr
 import pytest
 
 from openlineage.serde import Serde
@@ -82,3 +84,24 @@ def test_schema_field_default():
         type='int4',
         description='primary key')
     ) == '{"description": "primary key", "name": "asdf", "type": "int4"}'
+
+
+@attr.s
+class NestedObject:
+    value: Optional[int] = attr.ib(default=None)
+
+
+@attr.s
+class NestingObject:
+    nested: List[NestedObject] = attr.ib()
+    optional: Optional[int] = attr.ib(default=None)
+
+
+def test_serde_nested_nulls():
+    assert Serde.to_json(NestingObject(
+        nested=[
+            NestedObject(),
+            NestedObject(41)
+        ],
+        optional=3
+    )) == '{"nested": [{"value": 41}], "optional": 3}'

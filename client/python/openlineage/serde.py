@@ -12,6 +12,7 @@
 
 import json
 from enum import Enum
+from typing import List, Dict
 
 import attr
 
@@ -26,8 +27,20 @@ class EventEncoder(json.JSONEncoder):
 
 
 class Serde:
-    @staticmethod
-    def to_json(obj):
-        serialized = attr.asdict(obj)
-        without_nulls = {k: v for k, v in serialized.items() if v is not None}
+    @classmethod
+    def remove_nulls(cls, obj):
+        if isinstance(obj, Dict):
+            return dict(filter(lambda x: x[1] is not None,
+                {k: cls.remove_nulls(v) for k, v in obj.items()}.items()
+            ))
+        if isinstance(obj, List):
+            return list(filter(lambda x: x is not None and x != {}, [
+                cls.remove_nulls(v) for v in obj if v is not None
+            ]))
+        return obj
+
+    @classmethod
+    def to_json(cls, obj):
+        dicted = attr.asdict(obj)
+        without_nulls = cls.remove_nulls(dicted)
         return json.dumps(without_nulls, cls=EventEncoder, sort_keys=True)
