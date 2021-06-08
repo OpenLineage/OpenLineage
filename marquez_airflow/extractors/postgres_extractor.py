@@ -15,20 +15,19 @@ from typing import Optional
 from airflow.hooks.postgres_hook import PostgresHook
 from airflow.operators.postgres_operator import PostgresOperator
 
-from marquez_airflow.models import (
+from marquez.models import (
     DbTableName,
     DbTableSchema,
     DbColumn
 )
 from marquez_airflow.utils import get_connection_uri
-from marquez_airflow.extractors.sql import SqlMeta
-from marquez_airflow.extractors.sql import SqlParser
-from marquez_airflow.extractors import (
+from marquez.sql import SqlMeta, SqlParser
+from marquez_airflow.extractors.base import (
     BaseExtractor,
-    StepMetadata,
-    Source,
-    Dataset
+    StepMetadata
 )
+from marquez.dataset import Source, Dataset
+
 
 _TABLE_SCHEMA = 0
 _TABLE_NAME = 1

@@ -2,14 +2,13 @@ import os
 import logging
 from typing import Optional, Dict, Type
 
-from marquez_airflow.extractors import Dataset, StepMetadata
+from marquez_airflow.extractors import StepMetadata
 from marquez_airflow import __version__ as MARQUEZ_AIRFLOW_VERSION
 
 from openlineage.client import OpenLineageClient
 from openlineage.facet import DocumentationJobFacet, SourceCodeLocationJobFacet, SqlJobFacet, \
-    DocumentationDatasetFacet, SchemaDatasetFacet, SchemaField, DataSourceDatasetFacet, \
     NominalTimeRunFacet, ParentRunFacet, BaseFacet
-from openlineage.run import Dataset as OpenLineageDataset, RunEvent, RunState, Run, Job
+from openlineage.run import RunEvent, RunState, Run, Job
 
 _DAG_DEFAULT_OWNER = 'anonymous'
 _DAG_DEFAULT_NAMESPACE = 'default'
@@ -75,10 +74,10 @@ class MarquezAdapter:
             ),
             producer=f"marquez-airflow/{MARQUEZ_AIRFLOW_VERSION}",
             inputs=[
-                self.map_airflow_dataset(dataset) for dataset in step.inputs
+                dataset.to_openlineage_dataset(_DAG_NAMESPACE) for dataset in step.inputs
             ] if step else None,
             outputs=[
-                self.map_airflow_dataset(dataset) for dataset in step.outputs
+                dataset.to_openlineage_dataset(_DAG_NAMESPACE) for dataset in step.outputs
             ] if step else None
         )
         self.get_or_create_openlineage_client().emit(event)
@@ -112,10 +111,10 @@ class MarquezAdapter:
                 job_name, sql=sql
             ),
             inputs=[
-                self.map_airflow_dataset(dataset) for dataset in step.inputs
+                dataset.to_openlineage_dataset(_DAG_NAMESPACE) for dataset in step.inputs
             ],
             outputs=[
-                self.map_airflow_dataset(dataset) for dataset in step.outputs
+                dataset.to_openlineage_dataset(_DAG_NAMESPACE) for dataset in step.outputs
             ],
             producer=f"marquez-airflow/{MARQUEZ_AIRFLOW_VERSION}"
         )
@@ -145,10 +144,10 @@ class MarquezAdapter:
                 job_name
             ),
             inputs=[
-                self.map_airflow_dataset(dataset) for dataset in step.inputs
+                dataset.to_openlineage_dataset(_DAG_NAMESPACE) for dataset in step.inputs
             ],
             outputs=[
-                self.map_airflow_dataset(dataset) for dataset in step.outputs
+                dataset.to_openlineage_dataset(_DAG_NAMESPACE) for dataset in step.outputs
             ],
             producer=f"marquez-airflow/{MARQUEZ_AIRFLOW_VERSION}"
         )
@@ -203,37 +202,3 @@ class MarquezAdapter:
             })
 
         return Job(_DAG_NAMESPACE, job_name, facets)
-
-    @staticmethod
-    def map_airflow_dataset(dataset: Dataset) -> OpenLineageDataset:
-        facets = {
-            "dataSource": DataSourceDatasetFacet(
-                dataset.source.name,
-                dataset.source.connection_url
-            )
-        }
-        if dataset.description:
-            facets.update({
-                "documentation": DocumentationDatasetFacet(
-                    description=dataset.description
-                )
-            })
-
-        if dataset.fields is not None and len(dataset.fields):
-            facets.update({
-                "schema": SchemaDatasetFacet(
-                    fields=[
-                        SchemaField(field.name, field.type, field.description)
-                        for field in dataset.fields
-                    ]
-                )
-            })
-
-        if dataset.custom_facets:
-            facets.update(dataset.custom_facets)
-
-        return OpenLineageDataset(
-            namespace=_DAG_NAMESPACE,
-            name=dataset.name,
-            facets=facets
-        )

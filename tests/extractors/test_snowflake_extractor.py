@@ -18,12 +18,12 @@ from airflow.contrib.operators.snowflake_operator import SnowflakeOperator
 from airflow.utils.dates import days_ago
 
 from marquez_airflow import DAG
-from marquez_airflow.models import (
+from marquez.models import (
     DbTableName,
     DbTableSchema,
     DbColumn
 )
-from marquez_airflow.extractors import Source, Dataset, DatasetType
+from marquez.dataset import Source, Dataset, DatasetType
 from marquez_airflow.extractors.snowflake_extractor import SnowflakeExtractor
 
 CONN_ID = 'food_delivery_db'

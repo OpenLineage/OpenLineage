@@ -26,10 +26,11 @@ if [[ "$(docker images -q marquez-airflow-base:latest 2> /dev/null)" == "" ]]; t
 fi
 
 # maybe overkill
-MARQUEZ_AIRFLOW_WHL=$(docker run marquez-airflow-base:latest sh -c "ls /whl/marquez_airflow*")
+MARQUEZ_AIRFLOW_WHL=$(docker run marquez-airflow-base:latest sh -c "ls /whl/marquez*")
+MARQUEZ_AIRFLOW_WHL_ALL=$(docker run marquez-airflow-base:latest sh -c "ls /whl/*")
 
 # Add revision to requirements.txt
-echo "${MARQUEZ_AIRFLOW_WHL}" > requirements.txt
+echo "${MARQUEZ_AIRFLOW_WHL_ALL}" > requirements.txt
 
 # Add revision to integration-requirements.txt
 cat > integration-requirements.txt <<EOL
@@ -48,6 +49,7 @@ google-api-python-client>=1.12.2
 pandas-gbq>=0.13.2
 google-cloud-storage>=1.31.2
 retrying==1.3.3
+snowflake-connector-python==2.4.3
 marquez-python
 ${MARQUEZ_AIRFLOW_WHL}
 EOL

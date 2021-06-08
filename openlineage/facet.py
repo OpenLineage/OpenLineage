@@ -1,5 +1,5 @@
 import os
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import attr
 
@@ -97,7 +97,7 @@ class DocumentationDatasetFacet(BaseFacet):
 class SchemaField:
     name: str = attr.ib()
     type: str = attr.ib()
-    description: str = attr.ib(default="")
+    description: Optional[str] = attr.ib(default=None)
 
 
 @attr.s

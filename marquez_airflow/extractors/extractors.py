@@ -1,14 +1,17 @@
 from typing import Type, Optional
-from marquez_airflow.extractors import BaseExtractor
+
+from marquez_airflow.extractors.base import BaseExtractor
 from marquez_airflow.extractors.bigquery_extractor import BigQueryExtractor
 from marquez_airflow.extractors.great_expectations_extractor import GreatExpectationsExtractor
 from marquez_airflow.extractors.postgres_extractor import PostgresExtractor
+from marquez_airflow.extractors.snowflake_extractor import SnowflakeExtractor
 
 
 _extractors = [
     PostgresExtractor,
     BigQueryExtractor,
-    GreatExpectationsExtractor
+    GreatExpectationsExtractor,
+    SnowflakeExtractor
 ]
 
 _patchers = [

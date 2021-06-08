@@ -26,17 +26,18 @@ from airflow.version import version as AIRFLOW_VERSION
 
 from marquez_airflow import DAG
 from marquez_airflow.extractors import (
-    BaseExtractor, StepMetadata, Source, Dataset
+    BaseExtractor, StepMetadata
 )
 from marquez_airflow.extractors.extractors import Extractors
 from marquez_airflow.facets import AirflowRunArgsRunFacet, AirflowVersionRunFacet
-from marquez_airflow.models import (
+from marquez_airflow.utils import get_location, get_job_name
+from marquez_airflow import __version__ as MARQUEZ_AIRFLOW_VERSION
+from marquez.models import (
     DbTableName,
     DbTableSchema,
     DbColumn
 )
-from marquez_airflow.utils import get_location, get_job_name
-from marquez_airflow import __version__ as MARQUEZ_AIRFLOW_VERSION
+from marquez.dataset import Source, Dataset
 
 from uuid import UUID
 
