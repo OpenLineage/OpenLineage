@@ -9,42 +9,42 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import datetime
 import functools
-
-import pytest
-import mock
 import logging
+from uuid import UUID
 
+import mock
+import pytest
 from airflow.models import (TaskInstance, DagRun)
 from airflow.operators.dummy_operator import DummyOperator
-from airflow.utils.decorators import apply_defaults
-from airflow.utils.db import provide_session
-from airflow.utils.dates import days_ago
+from airflow.operators.python_operator import PythonOperator
 from airflow.utils import timezone
+from airflow.utils.dates import days_ago
+from airflow.utils.db import provide_session
+from airflow.utils.decorators import apply_defaults
 from airflow.utils.state import State
 from airflow.version import version as AIRFLOW_VERSION
-
-from marquez_airflow import DAG
-from marquez_airflow.extractors import (
-    BaseExtractor, StepMetadata
-)
-from marquez_airflow.extractors.extractors import Extractors
-from marquez_airflow.facets import AirflowRunArgsRunFacet, AirflowVersionRunFacet
-from marquez_airflow.utils import get_location, get_job_name
-from marquez_airflow import __version__ as MARQUEZ_AIRFLOW_VERSION
+from marquez.dataset import Source, Dataset
 from marquez.models import (
     DbTableName,
     DbTableSchema,
     DbColumn
 )
-from marquez.dataset import Source, Dataset
-
-from uuid import UUID
-
+from marquez_airflow import DAG
+from marquez_airflow import __version__ as MARQUEZ_AIRFLOW_VERSION
+from marquez_airflow.extractors import (
+    BaseExtractor, StepMetadata
+)
+from marquez_airflow.extractors.extractors import Extractors
+from marquez_airflow.facets import AirflowRunArgsRunFacet, \
+    AirflowVersionRunFacet
+from marquez_airflow.utils import get_location, get_job_name, new_lineage_run_id
 from openlineage.facet import NominalTimeRunFacet, SourceCodeLocationJobFacet, \
     DocumentationJobFacet, DataSourceDatasetFacet, SchemaDatasetFacet, \
     SchemaField, ParentRunFacet, SqlJobFacet
-from openlineage.run import RunEvent, RunState, Job, Run, Dataset as OpenLineageDataset
+from openlineage.run import RunEvent, RunState, Job, Run, \
+    Dataset as OpenLineageDataset
 
 log = logging.getLogger(__name__)
 
@@ -86,24 +86,28 @@ def clear_db_airflow_dags(session=None):
 
 
 @provide_session
-def test_new_run_id(clear_db_airflow_dags, session=None):
-    dag = DAG(
-        DAG_ID,
-        schedule_interval='@daily',
-        default_args=DAG_DEFAULT_ARGS,
-        description=DAG_DESCRIPTION
-    )
-    run_id = dag.new_run_id()
+def test_new_lineage_run_id(clear_db_airflow_dags, session=None):
+    run_id = new_lineage_run_id("dag_id", "task_id")
     assert UUID(run_id).version == 4
 
 
+def run_id_mock(*args):
+    """
+    Generates a deterministic run_id so that asserting executed calls is easier
+    :param args:
+    :return:
+    """
+    return f"{args[0]}.{args[1]}"
+
+
 # tests a simple workflow with default extraction mechanism
+@mock.patch('marquez_airflow.dag.new_lineage_run_id')
 @mock.patch('marquez_airflow.dag.get_custom_facets')
 @mock.patch('marquez_airflow.marquez.MarquezAdapter.get_or_create_openlineage_client')
 @mock.patch('marquez_airflow.dag.JobIdMapping')
 @provide_session
 def test_marquez_dag(job_id_mapping, mock_get_or_create_openlineage_client,
-                     get_custom_facets, clear_db_airflow_dags, session=None):
+                     get_custom_facets, new_lineage_run_id, clear_db_airflow_dags, session=None):
     dag = DAG(
         DAG_ID,
         schedule_interval='@daily',
@@ -116,6 +120,7 @@ def test_marquez_dag(job_id_mapping, mock_get_or_create_openlineage_client,
     run_id_completed = f"{DAG_RUN_ID}.{TASK_ID_COMPLETED}"
     run_id_failed = f"{DAG_RUN_ID}.{TASK_ID_FAILED}"
     get_custom_facets.return_value = {}
+    new_lineage_run_id.side_effect = run_id_mock
 
     # (2) Add task that will be marked as completed
     task_will_complete = DummyOperator(
@@ -221,6 +226,47 @@ def test_marquez_dag(job_id_mapping, mock_get_or_create_openlineage_client,
     mock_marquez_client.emit.assert_has_calls(emit_calls)
 
 
+@mock.patch('marquez_airflow.marquez.MarquezAdapter.get_or_create_openlineage_client')
+@provide_session
+def test_lineage_run_id(mock_get_or_create_openlineage_client, session=None):
+    mock_marquez_client = mock.Mock()
+    mock_get_or_create_openlineage_client.return_value = mock_marquez_client
+
+    dag = DAG(
+        "test_lineage_run_id",
+        schedule_interval="@daily",
+        default_args=DAG_DEFAULT_ARGS,
+        description="test dag"
+    )
+
+    class Collector:
+
+        def update_task_id(self, tid):
+            self.task_id = tid
+            print(f"Got task id {self.task_id}")
+
+    collector = Collector()
+    t1 = PythonOperator(
+        task_id='show_template',
+        python_callable=collector.update_task_id,
+        op_args=['{{ lineage_run_id(run_id, task) }}'],
+        provide_context=False,
+        dag=dag
+    )
+
+    dag.clear()
+    today = datetime.datetime.now()
+    dagrun = dag.create_dagrun(
+        run_id="test_dag_run",
+        execution_date=timezone.datetime(today.year, month=today.month, day=today.day),
+        state=State.RUNNING,
+        session=session)
+    ti = dagrun.get_task_instance(t1.task_id)
+    ti.task = t1
+    ti.run()
+    assert collector.task_id != ""
+
+
 class TestFixtureDummyOperator(DummyOperator):
 
     @apply_defaults
@@ -304,6 +350,7 @@ class TestFixtureDummyExtractorOnComplete(BaseExtractor):
 
 
 # test the lifecycle including with extractors
+@mock.patch('marquez_airflow.dag.new_lineage_run_id')
 @mock.patch('marquez_airflow.dag.get_custom_facets')
 @mock.patch('marquez_airflow.marquez.MarquezAdapter.get_or_create_openlineage_client')
 @mock.patch('marquez_airflow.dag.JobIdMapping')
@@ -312,6 +359,7 @@ def test_marquez_dag_with_extractor(
         job_id_mapping,
         mock_get_or_create_openlineage_client,
         get_custom_facets,
+        new_lineage_run_id,
         clear_db_airflow_dags,
         session=None):
 
@@ -337,6 +385,7 @@ def test_marquez_dag_with_extractor(
     mock_marquez_client = mock.Mock()
     mock_get_or_create_openlineage_client.return_value = mock_marquez_client
     get_custom_facets.return_value = {}
+    new_lineage_run_id.side_effect = run_id_mock
 
     # Add task that will be marked as completed
     task_will_complete = TestFixtureDummyOperator(
@@ -424,6 +473,7 @@ def test_marquez_dag_with_extractor(
     )
 
 
+@mock.patch('marquez_airflow.dag.new_lineage_run_id')
 @mock.patch('marquez_airflow.dag.get_custom_facets')
 @mock.patch('marquez_airflow.marquez.MarquezAdapter.get_or_create_openlineage_client')
 @mock.patch('marquez_airflow.dag.JobIdMapping')
@@ -432,6 +482,7 @@ def test_marquez_dag_with_extract_on_complete(
         job_id_mapping,
         mock_get_or_create_openlineage_client,
         get_custom_facets,
+        new_lineage_run_id,
         clear_db_airflow_dags,
         session=None):
 
@@ -456,6 +507,7 @@ def test_marquez_dag_with_extract_on_complete(
     mock_marquez_client = mock.Mock()
     mock_get_or_create_openlineage_client.return_value = mock_marquez_client
     get_custom_facets.return_value = {}
+    new_lineage_run_id.side_effect = run_id_mock
 
     # Add task that will be marked as completed
     task_will_complete = TestFixtureDummyOperator(
@@ -581,6 +633,7 @@ class TestFixtureDummyExtractorWithMultipleSteps(BaseExtractor):
 
 
 # test the lifecycle including with extractors
+@mock.patch('marquez_airflow.dag.new_lineage_run_id')
 @mock.patch('marquez_airflow.dag.get_custom_facets')
 @mock.patch('marquez_airflow.marquez.MarquezAdapter.get_or_create_openlineage_client')
 @mock.patch('marquez_airflow.dag.JobIdMapping')
@@ -589,6 +642,7 @@ def test_marquez_dag_with_extractor_returning_two_steps(
         job_id_mapping,
         mock_get_or_create_openlineage_client,
         get_custom_facets,
+        new_lineage_run_id,
         clear_db_airflow_dags,
         session=None):
 
@@ -615,6 +669,7 @@ def test_marquez_dag_with_extractor_returning_two_steps(
     mock_marquez_client = mock.Mock()
     mock_get_or_create_openlineage_client.return_value = mock_marquez_client
     get_custom_facets.return_value = {}
+    new_lineage_run_id.side_effect = run_id_mock
 
     # Add task that will be marked as completed
     task_will_complete = TestFixtureDummyOperator(
@@ -693,9 +748,11 @@ def test_marquez_dag_with_extractor_returning_two_steps(
 
 
 # tests a simple workflow with default custom facet mechanism
+@mock.patch('marquez_airflow.dag.new_lineage_run_id')
 @mock.patch('marquez_airflow.marquez.MarquezAdapter.get_or_create_openlineage_client')
 def test_marquez_dag_adds_custom_facets(
         mock_get_or_create_openlineage_client,
+        new_lineage_run_id,
         clear_db_airflow_dags,
 ):
 
@@ -709,6 +766,7 @@ def test_marquez_dag_adds_custom_facets(
     mock_openlineage_client = mock.Mock()
     mock_get_or_create_openlineage_client.return_value = mock_openlineage_client
     run_id_completed = f"{DAG_RUN_ID}.{TASK_ID_COMPLETED}"
+    new_lineage_run_id.side_effect = run_id_mock
 
     # Add task that will be marked as completed
     task_will_complete = DummyOperator(
@@ -809,6 +867,7 @@ class TestFixtureHookingDummyExtractor(BaseExtractor):
 
 # tests a simple workflow with default custom facet mechanism
 # test the lifecycle including with extractors
+@mock.patch('marquez_airflow.dag.new_lineage_run_id')
 @mock.patch('marquez_airflow.dag.get_custom_facets')
 @mock.patch('marquez_airflow.marquez.MarquezAdapter.get_or_create_openlineage_client')
 @mock.patch('marquez_airflow.dag.JobIdMapping')
@@ -817,6 +876,7 @@ def test_marquez_dag_with_hooking_operator(
         job_id_mapping,
         mock_get_or_create_openlineage_client,
         get_custom_facets,
+        new_lineage_run_id,
         clear_db_airflow_dags,
         session=None):
 
@@ -842,6 +902,7 @@ def test_marquez_dag_with_hooking_operator(
     mock_marquez_client = mock.Mock()
     mock_get_or_create_openlineage_client.return_value = mock_marquez_client
     get_custom_facets.return_value = {}
+    new_lineage_run_id.side_effect = run_id_mock
 
     query = "select * from employees"
 

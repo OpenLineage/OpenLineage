@@ -115,12 +115,38 @@ To enable logging, set the environment variable `MARQUEZ_LOG_LEVEL` to `DEBUG`, 
 $ export MARQUEZ_LOG_LEVEL=INFO
 ```
 
+## Triggering Child Jobs
+Commonly, Airflow DAGs will trigger processes on remote systems, such as an Apache Spark or Apache 
+Beam job. Those systems may have their own OpenLineage integration and report their own
+job runs and dataset inputs/outputs. To propagate the job hierarchy, tasks must send their own run 
+id so that the downstream process can report the [ParentRunFacet](https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#/definitions/ParentRunFacet)
+with the proper run id.
+
+The `lineage_run_id` macro exists to inject the run id of a given task into the arguments sent to a
+remote processing job's Airflow operator. The macro requires the DAG run_id and the task to access
+the generated run id for that task. For example, a Spark job can be triggered using the
+`DataProcPySparkOperator` with the correct parent run id using the following configuration:
+```python
+t1 = DataProcPySparkOperator(
+    task_id=job_name,
+    #required pyspark configuration,
+    job_name=job_name,
+    dataproc_pyspark_properties={
+      'spark.driver.extraJavaOptions':
+        f"-javaagent:{jar}={os.environ.get('MARQUEZ_URL')}/api/v1/namespaces/{os.getenv('MARQUEZ_NAMESPACE', 'default')}/jobs/{job_name}/runs/{{{{lineage_run_id(run_id, task)}}}}?api_key={os.environ.get('MARQUEZ_API_KEY')}"
+    dag=dag)
+```
 ## Development
 
 To install all dependencies for _local_ development:
 
 ```bash
+# Bash
 $ pip3 install -e .[dev]
+```
+```zsh
+# escape the brackets in zsh
+$ pip3 install -e .\[dev\]
 ```
 
 To run the entire test suite, you'll first want to initialize the Airflow database:
