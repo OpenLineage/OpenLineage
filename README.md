@@ -29,18 +29,14 @@ an additional spark property. Dataproc will copy the agent jar to the current wo
 executor and the `-javaagent` parameter will load it on execution.
 
 ```python
-from uuid import uuid4
 import os
 ...
 job_name = 'job_name'
 
-jar = 'marquez-spark-0.15.0.jar'
-files = [f"https://repo1.maven.org/maven2/io/github/marquezproject/marquez-spark/0.15.0/marquez-spark-0.15.0.jar"]
-properties = {
-  'spark.driver.extraJavaOptions':
-    f"-javaagent:{jar}={os.environ.get('MARQUEZ_URL')}/api/v1/namespaces/{os.getenv('MARQUEZ_NAMESPACE', 'default')}/jobs/{job_name}/runs/{uuid4()}?api_key={os.environ.get('MARQUEZ_API_KEY')}"
-}
+jar = 'marquez-spark-0.15.1-SNAPSHOT.jar'
+files = [f"https://repo1.maven.org/maven2/io/github/marquezproject/marquez-spark/0.15.1-SNAPSHOT/marquez-spark-0.15.1-SNAPSHOT.jar"]
 
+# Using the lineage_run_id macro in the airflow integration
 t1 = DataProcPySparkOperator(
     task_id=job_name,
     gcp_conn_id='google_cloud_default',
@@ -49,7 +45,9 @@ t1 = DataProcPySparkOperator(
     region='us-west1',
     main='gs://bucket/your-prog.py',
     job_name=job_name,
-    dataproc_pyspark_properties=properties,
+    dataproc_pyspark_properties={
+      'spark.driver.extraJavaOptions':
+        f"-javaagent:{jar}={os.environ.get('MARQUEZ_URL')}/api/v1/namespaces/{os.getenv('MARQUEZ_NAMESPACE', 'default')}/jobs/{job_name}/runs/{{{{lineage_run_id(run_id, task)}}}}?api_key={os.environ.get('MARQUEZ_API_KEY')}"
     files=files,
     dag=dag)
 ```
