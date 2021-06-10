@@ -127,10 +127,15 @@ public class RddExecutionContext implements ExecutionContext {
   }
 
   private ParentRunFacet buildParentFacet() {
-    return PlanUtils.parentRunFacet(
-        marquezContext.getParentRunId(),
-        marquezContext.getJobName(),
-        marquezContext.getJobNamespace());
+    if (marquezContext.getParentRunId() != null
+        && marquezContext.getParentRunId().trim().length() > 0) {
+      return PlanUtils.parentRunFacet(
+          marquezContext.getParentRunId(),
+          marquezContext.getJobName(),
+          marquezContext.getJobNamespace());
+    } else {
+      return null;
+    }
   }
 
   protected ErrorFacet buildJobErrorFacet(JobResult jobResult) {

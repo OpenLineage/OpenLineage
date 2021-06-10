@@ -3,14 +3,18 @@ package marquez.spark.agent.lifecycle.plan;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import scala.Function0;
+import scala.Function1;
 import scala.Option;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
 import scala.collection.Seq$;
 import scala.collection.mutable.Builder;
 import scala.runtime.AbstractFunction0;
+import scala.runtime.AbstractFunction1;
 
 /** Simple conversion utilities for dealing with Scala types */
 public class ScalaConversionUtils {
@@ -76,5 +80,38 @@ public class ScalaConversionUtils {
         (Builder<T, Seq<T>> a, Builder<T, Seq<T>> b) ->
             (Builder<T, Seq<T>>) a.$plus$plus$eq(b.result()),
         Builder::result);
+  }
+
+  /**
+   * Convert a {@link Supplier} to a Scala {@link Function0}
+   *
+   * @param supplier
+   * @param <T>
+   * @return
+   */
+  public static <T> Function0<T> toScalaFn(Supplier<T> supplier) {
+    return new AbstractFunction0<T>() {
+      @Override
+      public T apply() {
+        return supplier.get();
+      }
+    };
+  }
+
+  /**
+   * Convert a {@link Function} to a Scala {@link scala.Function1}
+   *
+   * @param fn
+   * @param <T>
+   * @param <R>
+   * @return
+   */
+  public static <T, R> Function1<T, R> toScalaFn(Function<T, R> fn) {
+    return new AbstractFunction1<T, R>() {
+      @Override
+      public R apply(T arg) {
+        return fn.apply(arg);
+      }
+    };
   }
 }

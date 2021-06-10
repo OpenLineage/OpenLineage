@@ -1,11 +1,15 @@
 package marquez.spark.agent;
 
+import static marquez.spark.agent.lifecycle.plan.ScalaConversionUtils.asJavaOptional;
+import static marquez.spark.agent.lifecycle.plan.ScalaConversionUtils.toScalaFn;
+
 import java.lang.reflect.Field;
-import java.lang.reflect.Proxy;
+import java.net.URISyntaxException;
 import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.WeakHashMap;
 import lombok.extern.slf4j.Slf4j;
 import marquez.spark.agent.client.LineageEvent;
@@ -17,25 +21,37 @@ import marquez.spark.agent.facets.ErrorFacet;
 import marquez.spark.agent.lifecycle.ContextFactory;
 import marquez.spark.agent.lifecycle.ExecutionContext;
 import marquez.spark.agent.lifecycle.SparkSQLExecutionContext;
-import marquez.spark.agent.transformers.ActiveJobTransformer;
 import marquez.spark.agent.transformers.PairRDDFunctionsTransformer;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
+import org.apache.spark.SparkContext$;
+import org.apache.spark.SparkEnv;
+import org.apache.spark.SparkEnv$;
 import org.apache.spark.rdd.PairRDDFunctions;
 import org.apache.spark.rdd.RDD;
-import org.apache.spark.scheduler.ActiveJob;
-import org.apache.spark.scheduler.SparkListenerInterface;
+import org.apache.spark.scheduler.SparkListenerApplicationStart;
+import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
+import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 
 @Slf4j
-public class SparkListener {
+public class SparkListener extends org.apache.spark.scheduler.SparkListener {
+
   private static final Map<Long, SparkSQLExecutionContext> sparkSqlExecutionRegistry =
       Collections.synchronizedMap(new HashMap<>());
   private static final Map<Integer, ExecutionContext> rddExecutionRegistry =
       Collections.synchronizedMap(new HashMap<>());
+  public static final String SPARK_CONF_URL_KEY = "openlineage.url";
+  public static final String SPARK_CONF_HOST_KEY = "openlineage.host";
+  public static final String SPARK_CONF_API_VERSION_KEY = "openlineage.version";
+  public static final String SPARK_CONF_NAMESPACE_KEY = "openlineage.namespace";
+  public static final String SPARK_CONF_JOB_NAME_KEY = "openlineage.jobName";
+  public static final String SPARK_CONF_PARENT_RUN_ID_KEY = "openlineage.parentRunId";
+  public static final String SPARK_CONF_API_KEY = "openlineage.apiKey";
   private static WeakHashMap<RDD<?>, Configuration> outputs = new WeakHashMap<>();
   private static ContextFactory contextFactory;
 
@@ -55,70 +71,13 @@ public class SparkListener {
   @SuppressWarnings("unused")
   public static void instrument(SparkContext context) {
     log.info("Initializing OpenLineage SparkContext listener...");
-    Class<?>[] interfaces = {SparkListenerInterface.class};
-    SparkListenerInterface listener =
-        (SparkListenerInterface)
-            Proxy.newProxyInstance(
-                SparkListener.class.getClassLoader(),
-                interfaces,
-                (proxy, method, args) -> {
-                  try {
-                    if (args.length == 1 && args[0] != null) {
-                      Object arg = args[0];
-                      if (method.getName().equals("onJobStart")
-                          && arg instanceof SparkListenerJobStart) {
-                        // rdd execution context
-                        jobStarted((SparkListenerJobStart) args[0]);
-                      } else if (method.getName().equals("onJobEnd")
-                          && arg instanceof SparkListenerJobEnd) {
-                        jobEnded((SparkListenerJobEnd) arg);
-                      } else if (method.getName().equals("onOtherEvent")
-                          && arg instanceof SparkListenerSQLExecutionStart) {
-                        // spark sql
-                        sparkSQLExecStart((SparkListenerSQLExecutionStart) arg);
-                      } else if (method.getName().equals("onOtherEvent")
-                          && arg instanceof SparkListenerSQLExecutionEnd) {
-                        sparkSQLExecEnd((SparkListenerSQLExecutionEnd) arg);
-                      }
-                    }
-                  } catch (Exception e) {
-                    log.error("Could not run OpenLineage SparkContext listener proxy function", e);
-                    emitError(e);
-                  }
-                  return null;
-                });
+    SparkListener listener = new SparkListener();
     log.debug(
         "Initialized OpenLineage listener with \nspark version: {}\njava.version: {}\nconfiguration: {}",
         context.version(),
         System.getProperty("java.version"),
         context.conf());
     context.addSparkListener(listener);
-  }
-
-  /**
-   * Entry point for ActiveJobTransformer
-   *
-   * <p>Called through the agent to register every new job and get access to the RDDs
-   *
-   * @see ActiveJobTransformer
-   */
-  @SuppressWarnings("unused")
-  public static void registerActiveJob(ActiveJob activeJob) {
-    try {
-      log.info("Initializing OpenLineage ActiveJob listener...");
-      String executionIdProp = activeJob.properties().getProperty("spark.sql.execution.id");
-      ExecutionContext context;
-      if (executionIdProp != null) {
-        long executionId = Long.parseLong(executionIdProp);
-        context = getExecutionContext(activeJob.jobId(), executionId);
-      } else {
-        context = getExecutionContext(activeJob.jobId());
-      }
-      context.setActiveJob(activeJob);
-    } catch (Exception e) {
-      log.error("Could not initialize OpenLineage ActiveJob listener", e);
-      emitError(e);
-    }
   }
 
   /**
@@ -153,6 +112,15 @@ public class SparkListener {
     }
   }
 
+  @Override
+  public void onOtherEvent(SparkListenerEvent event) {
+    if (event instanceof SparkListenerSQLExecutionStart) {
+      sparkSQLExecStart((SparkListenerSQLExecutionStart) event);
+    } else if (event instanceof SparkListenerSQLExecutionEnd) {
+      sparkSQLExecEnd((SparkListenerSQLExecutionEnd) event);
+    }
+  }
+
   /** called by the SparkListener when a spark-sql (Dataset api) execution starts */
   private static void sparkSQLExecStart(SparkListenerSQLExecutionStart startEvent) {
     SparkSQLExecutionContext context = getSparkSQLExecutionContext(startEvent.executionId());
@@ -168,13 +136,31 @@ public class SparkListener {
   }
 
   /** called by the SparkListener when a job starts */
-  private static void jobStarted(SparkListenerJobStart jobStart) {
-    ExecutionContext context = getExecutionContext(jobStart.jobId());
-    context.start(jobStart);
+  @Override
+  public void onJobStart(SparkListenerJobStart jobStart) {
+    asJavaOptional(
+            SparkSession.getActiveSession()
+                .map(toScalaFn(sess -> sess.sparkContext()))
+                .orElse(toScalaFn(() -> SparkContext$.MODULE$.getActive())))
+        .flatMap(ctx -> asJavaOptional(ctx.dagScheduler().jobIdToActiveJob().get(jobStart.jobId())))
+        .ifPresent(
+            job -> {
+              String executionIdProp = job.properties().getProperty("spark.sql.execution.id");
+              ExecutionContext context;
+              if (executionIdProp != null) {
+                long executionId = Long.parseLong(executionIdProp);
+                context = getExecutionContext(job.jobId(), executionId);
+              } else {
+                context = getExecutionContext(job.jobId());
+              }
+              context.setActiveJob(job);
+              context.start(jobStart);
+            });
   }
 
   /** called by the SparkListener when a job ends */
-  private static void jobEnded(SparkListenerJobEnd jobEnd) {
+  @Override
+  public void onJobEnd(SparkListenerJobEnd jobEnd) {
     ExecutionContext context = rddExecutionRegistry.remove(jobEnd.jobId());
     context.end(jobEnd);
   }
@@ -245,5 +231,44 @@ public class SparkListener {
   public static void close() {
     clear();
     SparkListener.contextFactory.close();
+  }
+
+  /**
+   * Check the {@link SparkConf} for open lineage configuration.
+   *
+   * @param applicationStart
+   */
+  @Override
+  public void onApplicationStart(SparkListenerApplicationStart applicationStart) {
+    if (contextFactory != null) {
+      return;
+    }
+    SparkEnv sparkEnv = SparkEnv$.MODULE$.get();
+    if (sparkEnv != null) {
+      try {
+        ArgumentParser args = parseConf(sparkEnv.conf());
+        contextFactory = new ContextFactory(new MarquezContext(args));
+      } catch (URISyntaxException e) {
+        log.error("Unable to parse open lineage endpoint. Lineage events will not be collected", e);
+      }
+    } else {
+      log.warn(
+          "Open lineage listener instantiated, but no configuration could be found. "
+              + "Lineage events will not be collected");
+    }
+  }
+
+  private ArgumentParser parseConf(SparkConf conf) {
+    if (conf.contains(SPARK_CONF_URL_KEY)) {
+      return ArgumentParser.parse(conf.get(SPARK_CONF_URL_KEY));
+    } else {
+      String host = conf.get(SPARK_CONF_HOST_KEY);
+      String version = conf.get(SPARK_CONF_API_VERSION_KEY, "1");
+      String namespace = conf.get(SPARK_CONF_NAMESPACE_KEY, "default");
+      String jobName = conf.get(SPARK_CONF_JOB_NAME_KEY, conf.getAppId());
+      String runId = conf.get(SPARK_CONF_PARENT_RUN_ID_KEY, "");
+      Optional<String> apiKey = Optional.ofNullable(conf.get(SPARK_CONF_API_KEY));
+      return new ArgumentParser(host, version, namespace, jobName, runId, apiKey);
+    }
   }
 }
