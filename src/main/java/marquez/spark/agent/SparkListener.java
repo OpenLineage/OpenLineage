@@ -49,7 +49,7 @@ public class SparkListener extends org.apache.spark.scheduler.SparkListener {
   public static final String SPARK_CONF_HOST_KEY = "openlineage.host";
   public static final String SPARK_CONF_API_VERSION_KEY = "openlineage.version";
   public static final String SPARK_CONF_NAMESPACE_KEY = "openlineage.namespace";
-  public static final String SPARK_CONF_JOB_NAME_KEY = "openlineage.jobName";
+  public static final String SPARK_CONF_JOB_NAME_KEY = "openlineage.parentJobName";
   public static final String SPARK_CONF_PARENT_RUN_ID_KEY = "openlineage.parentRunId";
   public static final String SPARK_CONF_API_KEY = "openlineage.apiKey";
   private static WeakHashMap<RDD<?>, Configuration> outputs = new WeakHashMap<>();
@@ -203,7 +203,7 @@ public class SparkListener extends org.apache.spark.scheduler.SparkListener {
                 .build())
         .job(
             Job.builder()
-                .name(contextFactory.marquezContext.getJobName())
+                .name(contextFactory.marquezContext.getParentJobName())
                 .namespace(contextFactory.marquezContext.getJobNamespace())
                 .build())
         .producer(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI)

@@ -103,7 +103,7 @@ public class SparkSQLExecutionContext implements ExecutionContext {
   private ParentRunFacet buildParentFacet() {
     return PlanUtils.parentRunFacet(
         marquezContext.getParentRunId(),
-        marquezContext.getJobName(),
+        marquezContext.getParentJobName(),
         marquezContext.getJobNamespace());
   }
 

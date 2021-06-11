@@ -131,7 +131,7 @@ public class RddExecutionContext implements ExecutionContext {
         && marquezContext.getParentRunId().trim().length() > 0) {
       return PlanUtils.parentRunFacet(
           marquezContext.getParentRunId(),
-          marquezContext.getJobName(),
+          marquezContext.getParentJobName(),
           marquezContext.getJobNamespace());
     } else {
       return null;

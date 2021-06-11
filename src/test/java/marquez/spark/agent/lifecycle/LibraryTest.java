@@ -49,7 +49,7 @@ public class LibraryTest {
   @RepeatedTest(30)
   public void testSparkSql() throws IOException, TimeoutException {
     when(marquezContext.getJobNamespace()).thenReturn("ns_name");
-    when(marquezContext.getJobName()).thenReturn("job_name");
+    when(marquezContext.getParentJobName()).thenReturn("job_name");
     when(marquezContext.getParentRunId()).thenReturn("ea445b5c-22eb-457a-8007-01c7c52b6e54");
 
     final SparkSession spark =
@@ -137,7 +137,7 @@ public class LibraryTest {
   @Test
   public void testRdd() throws IOException {
     when(marquezContext.getJobNamespace()).thenReturn("ns_name");
-    when(marquezContext.getJobName()).thenReturn("job_name");
+    when(marquezContext.getParentJobName()).thenReturn("job_name");
     when(marquezContext.getParentRunId()).thenReturn("8d99e33e-2a1c-4254-9600-18f23435fc3b");
 
     URL url = Resources.getResource("data.txt");

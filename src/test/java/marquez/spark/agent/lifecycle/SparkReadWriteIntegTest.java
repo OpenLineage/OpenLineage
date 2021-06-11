@@ -72,7 +72,7 @@ public class SparkReadWriteIntegTest {
   public void setUp() {
     reset(MockBigQueryRelationProvider.BIG_QUERY);
     when(marquezContext.getParentRunId()).thenReturn(UUID.randomUUID().toString());
-    when(marquezContext.getJobName()).thenReturn("ParentJob");
+    when(marquezContext.getParentJobName()).thenReturn("ParentJob");
     when(marquezContext.getJobNamespace()).thenReturn("Namespace");
   }
 
@@ -314,7 +314,7 @@ public class SparkReadWriteIntegTest {
 
     reset(marquezContext); // reset to start counting now
     when(marquezContext.getJobNamespace()).thenReturn("theNamespace");
-    when(marquezContext.getJobName()).thenReturn("theParentJob");
+    when(marquezContext.getParentJobName()).thenReturn("theParentJob");
     when(marquezContext.getParentRunId()).thenReturn("ABCD");
     JobConf conf = new JobConf();
     FileInputFormat.addInputPath(conf, new org.apache.hadoop.fs.Path(csvUri));

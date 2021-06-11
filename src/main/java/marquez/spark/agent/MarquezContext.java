@@ -17,7 +17,7 @@ public class MarquezContext {
   @Getter private OpenLineageClient client;
   @Getter private URI lineageURI;
   @Getter private String jobNamespace;
-  @Getter private String jobName;
+  @Getter private String parentJobName;
   @Getter private String parentRunId;
 
   private final ObjectMapper mapper = OpenLineageClient.createMapper();
@@ -27,7 +27,7 @@ public class MarquezContext {
     this.lineageURI =
         new URI(String.format("%s/api/%s/lineage", argument.getHost(), argument.getVersion()));
     this.jobNamespace = argument.getNamespace();
-    this.jobName = argument.getJobName();
+    this.parentJobName = argument.getJobName();
     this.parentRunId = argument.getRunId();
     log.info(
         String.format("Init MarquezContext: Args: %s URI: %s", argument, lineageURI.toString()));
