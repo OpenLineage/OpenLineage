@@ -9,12 +9,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import attr
 import functools
 import logging
 from collections import defaultdict
 
-from typing import Optional, Any, Dict
+import attr
+from typing import Optional, Any, Dict, List
+
+from openlineage.facet import BaseFacet
 
 from marquez_airflow.extractors.base import BaseExtractor, StepMetadata
 from marquez_airflow.facets import DataQualityDatasetFacet, ColumnMetric
@@ -58,6 +60,25 @@ class ExpectationsParserResult:
     column_id: Optional[str] = attr.ib(default=None)
 
 
+@attr.s
+class GreatExpectationsAssertion:
+    expectationType: str = attr.ib()
+    success: bool = attr.ib()
+    columnId: Optional[str] = attr.ib(default=None)
+
+
+@attr.s
+class GreatExpectationsAssertionsDatasetFacet(BaseFacet):
+    """
+    This facet represents passed/failed status of asserted expectations on dataset
+    """
+    assertions: List[GreatExpectationsAssertion] = attr.ib()
+
+    @staticmethod
+    def _get_schema() -> str:
+        return "https://github.com/MarquezProject/marquez/tree/main/integrations/airflow/marquez_airflow/extractors/ge-assertions-dataset-facet.json"  # noqa
+
+
 class GreatExpectationsExtractorImpl(BaseExtractor):
     """
     Great Expectations extractor extracts validation data from CheckpointResult object and
@@ -83,6 +104,10 @@ class GreatExpectationsExtractorImpl(BaseExtractor):
             if not data_quality_facet:
                 return None
 
+            assertions_facet = self.parse_assertions(validation_result)
+            if not assertions_facet:
+                return None
+
             batch_kwargs = get_from_nullable_chain(
                 validation_result,
                 ['meta', 'batch_kwargs']
@@ -99,7 +124,8 @@ class GreatExpectationsExtractorImpl(BaseExtractor):
                 name=name,
                 type=DatasetType.DB_TABLE,
                 custom_facets={
-                    'dataQuality': data_quality_facet
+                    'dataQuality': data_quality_facet,
+                    'greatExpectations_assertions': assertions_facet
                 }
             )
 
@@ -132,6 +158,26 @@ class GreatExpectationsExtractorImpl(BaseExtractor):
             for key in facet_data['columnMetrics'].keys():
                 facet_data['columnMetrics'][key] = ColumnMetric(**facet_data['columnMetrics'][key])
             return DataQualityDatasetFacet(**facet_data)
+        except ValueError:
+            log.exception(
+                "Great Expectations's CheckpointResult object does not have expected key"
+            )
+        return None
+
+    def parse_assertions(self, validation_result: Dict) -> \
+            Optional[GreatExpectationsAssertionsDatasetFacet]:
+        assertions = []
+
+        try:
+            expectations_results = validation_result['results']
+            for expectation in expectations_results:
+                assertions.append(GreatExpectationsAssertion(
+                    expectationType=expectation['expectation_config']['expectation_type'],
+                    success=expectation['success'],
+                    columnId=expectation['expectation_config']['kwargs'].get('column', None)
+                ))
+
+            return GreatExpectationsAssertionsDatasetFacet(assertions)
         except ValueError:
             log.exception(
                 "Great Expectations's CheckpointResult object does not have expected key"

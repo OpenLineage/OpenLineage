@@ -16,7 +16,7 @@ from pathlib import Path
 from great_expectations_provider.operators.great_expectations import \
   GreatExpectationsOperator
 from marquez_airflow.extractors.great_expectations_extractor import \
-  GreatExpectationsExtractor
+    GreatExpectationsExtractor, GreatExpectationsAssertionsDatasetFacet, GreatExpectationsAssertion
 from marquez_airflow.facets import DataQualityDatasetFacet, ColumnMetric
 from openlineage.run import Serde
 
@@ -48,8 +48,6 @@ def test_great_expectations_operator_batch_kwargs_success():
     result = operator.execute({})
     step = extractor.extract_on_complete(None)
 
-    log.info(result)
-
     expected_dq = DataQualityDatasetFacet(
         rowCount=10000,
         columnMetrics={
@@ -67,6 +65,57 @@ def test_great_expectations_operator_batch_kwargs_success():
         }
     )
 
+    expected_assertions = GreatExpectationsAssertionsDatasetFacet(
+        assertions=[
+            GreatExpectationsAssertion(
+                expectationType='expect_table_row_count_to_be_between',
+                success=True
+            ),
+            GreatExpectationsAssertion(
+                expectationType='expect_column_values_to_not_be_null',
+                success=True,
+                columnId='vendor_id'
+            ),
+            GreatExpectationsAssertion(
+                expectationType='expect_column_distinct_values_to_be_in_set',
+                success=True,
+                columnId='vendor_id'
+            ),
+            GreatExpectationsAssertion(
+                expectationType='expect_column_unique_value_count_to_be_between',
+                success=True,
+                columnId='vendor_id'
+            ),
+            GreatExpectationsAssertion(
+                expectationType='expect_column_min_to_be_between',
+                success=True,
+                columnId='total_amount'
+            ),
+            GreatExpectationsAssertion(
+                expectationType='expect_column_max_to_be_between',
+                success=True,
+                columnId='total_amount'
+            ),
+            GreatExpectationsAssertion(
+                expectationType='expect_column_sum_to_be_between',
+                success=True,
+                columnId='total_amount'
+            ),
+            GreatExpectationsAssertion(
+                expectationType='expect_column_quantile_values_to_be_between',
+                success=True,
+                columnId='total_amount'
+            ),
+            GreatExpectationsAssertion(
+                expectationType='expect_column_distinct_values_to_be_in_set',
+                success=True,
+                columnId='passenger_count'
+            )
+        ]
+    )
+
     assert Serde.to_json(step.inputs[0].custom_facets['dataQuality']) == \
            Serde.to_json(expected_dq)
+    assert step.inputs[0].custom_facets['greatExpectations_assertions'] == expected_assertions
+
     assert result['success']
