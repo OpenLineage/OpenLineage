@@ -23,6 +23,7 @@ requirements = [
     "attrs>=19.3",
     "requests>=2.24.0",
     "sqlparse==0.4.1",
+    "marquez-integration-common==0.15.1",
 ]
 
 extras_require = {
