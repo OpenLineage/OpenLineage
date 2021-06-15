@@ -23,7 +23,7 @@ requirements = [
     "attrs>=19.3",
     "requests>=2.24.0",
     "sqlparse==0.4.1",
-    "marquez-integration-common==0.15.2rc1",
+    "marquez-integration-common==0.15.2rc2",
 ]
 
 extras_require = {
@@ -47,7 +47,7 @@ extras_require["dev"] = set(sum(extras_require.values(), []))
 
 setup(
     name="marquez-airflow",
-    version="0.15.2rc1",
+    version="0.15.2rc2",
     description="Marquez integration with Airflow",
     long_description=readme,
     long_description_content_type="text/markdown",
