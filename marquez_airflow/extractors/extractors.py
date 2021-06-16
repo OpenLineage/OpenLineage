@@ -31,14 +31,14 @@ class Extractors:
             extractor.operator_class: extractor
             for extractor
             in _extractors
-            if hasattr(extractor, 'operator_class')
+            if getattr(extractor, 'operator_class', None) is not None
         }
 
         self.patchers = {
             extractor.operator_class: extractor
             for extractor
             in _patchers
-            if hasattr(extractor, 'operator_class')
+            if getattr(extractor, 'operator_class', None) is not None
         }
 
     def get_extractor_class(self, clazz: Type) -> Optional[Type[BaseExtractor]]:

@@ -1,9 +1,25 @@
-from airflow.contrib.operators.snowflake_operator import SnowflakeOperator
+import logging
+
 from marquez_airflow.extractors.postgres_extractor import PostgresExtractor
+
+log = logging.getLogger(__file__)
+
+
+# Snowflake is optional dependency.
+def try_load_operator():
+    try:
+        from airflow.contrib.operators.snowflake_operator import SnowflakeOperator
+        return SnowflakeOperator
+    except Exception:
+        log.warn('Did not find snowflake_operator library or failed to import it')
+        return None
+
+
+Operator = try_load_operator()
 
 
 class SnowflakeExtractor(PostgresExtractor):
-    operator_class = SnowflakeOperator
+    operator_class = Operator
     source_type = 'SNOWFLAKE'
 
     def __init__(self, operator):

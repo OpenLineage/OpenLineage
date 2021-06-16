@@ -15,16 +15,17 @@ import logging
 import traceback
 from typing import Optional
 
-from airflow.contrib.operators.bigquery_operator import BigQueryOperator
 import attr
 
+from airflow.models import BaseOperator
+
 from marquez.provider.bigquery import BigQueryDatasetsProvider, BigQueryErrorRunFacet
+from marquez.sql import SqlParser
 
 from marquez_airflow.extractors.base import (
     BaseExtractor,
     StepMetadata
 )
-from marquez.sql import SqlParser
 from marquez_airflow.utils import get_job_name
 
 _BIGQUERY_CONN_URL = 'bigquery:{}'
@@ -41,10 +42,22 @@ class SqlContext:
     parser_error: Optional[str] = attr.ib(default=None)
 
 
-class BigQueryExtractor(BaseExtractor):
-    operator_class = BigQueryOperator
+def try_load_operator():
+    try:
+        from airflow.contrib.operators.bigquery_operator import BigQueryOperator
+        return BigQueryOperator
+    except Exception:
+        log.warn('Did not find bigquery_operator library or failed to import it')
+        return None
 
-    def __init__(self, operator: BigQueryOperator):
+
+Operator = try_load_operator()
+
+
+class BigQueryExtractor(BaseExtractor):
+    operator_class = Operator
+
+    def __init__(self, operator: BaseOperator):
         super().__init__(operator)
 
     def extract(self) -> Optional[StepMetadata]:
