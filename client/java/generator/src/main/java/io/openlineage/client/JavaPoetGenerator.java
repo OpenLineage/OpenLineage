@@ -253,7 +253,7 @@ public class JavaPoetGenerator {
             } else if (format.equals("date-time")) {
               return ClassName.get(ZonedDateTime.class);
             } else if (format.equals("uuid")) {
-            return ClassName.get(UUID.class);
+              return ClassName.get(UUID.class);
             } else {
               throw new RuntimeException("Unknown format: " + primitiveType.getFormat());
             }
