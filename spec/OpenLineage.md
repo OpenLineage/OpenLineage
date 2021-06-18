@@ -19,7 +19,7 @@ It allows extensions to the spec using `Custom Facets` as described in this docu
 
 - **Dataset**: an abstract representation of data. It has a unique name within a namespace derived from its physical location (for example db.host.database.schema.table). Typically, a *Dataset* changes when a job writing to it completes. Similarly to the *Job* and *Run* distinction, metadata that is more static from run to run is captured in a DatasetFacet (for example, the schema that does not change every run), what changes every *Run* is captured as an *InputFacet* or an *OutputFacet* (for example, what subset of the data set was read or written, like a time partition).
 
-- **Run**: An instance of a running job with a start and completion (or failure) time. It is uniquely identified by an id relative to its job definition.
+- **Run**: An instance of a running job with a start and completion (or failure) time. A run is identified by a globally unique ID relative to its job definition. A run ID **must** be an [UUID](https://datatracker.ietf.org/doc/html/rfc4122).
 
 - **Facet**: A piece of metadata attached to one of the entities defined above.
 
@@ -30,7 +30,7 @@ Here is an example of a simple start run event not adding any facet information:
   "transition": "START",
   "eventTime": "2020-12-09T23:37:31.081Z",
   "run": {
-    "runId": "345",
+    "runId": "3b452093-782c-4ef2-9c0c-aafe2aa6f34d",
   },
   "job": {
     "namespace": "my-scheduler-namespace",

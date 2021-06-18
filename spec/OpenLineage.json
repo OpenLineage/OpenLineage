@@ -59,7 +59,7 @@
       "type": "object",
       "properties": {
         "runId": {
-          "description": "The id of the run, unique relative to the job",
+          "description": "The globally unique ID of the run associated with the job.",
           "type": "string",
           "format": "uuid"
         },
@@ -278,6 +278,7 @@
               "type": "object",
               "properties": {
                 "runId": {
+                  "description": "The globally unique ID of the run associated with the job.",
                   "type": "string",
                   "format": "uuid"
                 }
