@@ -16,6 +16,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
@@ -251,6 +252,8 @@ public class JavaPoetGenerator {
               return ClassName.get(URI.class);
             } else if (format.equals("date-time")) {
               return ClassName.get(ZonedDateTime.class);
+            } else if (format.equals("uuid")) {
+              return ClassName.get(UUID.class);
             } else {
               throw new RuntimeException("Unknown format: " + primitiveType.getFormat());
             }

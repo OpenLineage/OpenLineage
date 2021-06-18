@@ -59,8 +59,9 @@
       "type": "object",
       "properties": {
         "runId": {
-          "description": "The id of the run, unique relative to the job",
-          "type": "string"
+          "description": "The globally unique ID of the run associated with the job.",
+          "type": "string",
+          "format": "uuid"
         },
         "facets": {
           "description": "The run facets.",
@@ -277,7 +278,9 @@
               "type": "object",
               "properties": {
                 "runId": {
-                  "type": "string"
+                  "description": "The globally unique ID of the run associated with the job.",
+                  "type": "string",
+                  "format": "uuid"
                 }
               },
               "required": [

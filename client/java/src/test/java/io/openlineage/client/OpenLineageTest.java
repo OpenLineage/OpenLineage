@@ -7,6 +7,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 import org.junit.Test;
 
@@ -32,7 +33,7 @@ public class OpenLineageTest {
 
     URI producer = URI.create("producer");
     OpenLineage ol = new OpenLineage(producer);
-    String runId = "runId";
+    UUID runId = UUID.randomUUID();
     RunFacets runFacets = ol.newRunFacets(ol.newNominalTimeRunFacet(now, now), null);
     Run run = ol.newRun(runId, runFacets);
     String name = "jobName";
@@ -78,7 +79,7 @@ public class OpenLineageTest {
 
     URI producer = URI.create("producer");
     OpenLineage ol = new OpenLineage(producer);
-    String runId = "runId";
+    UUID runId = UUID.randomUUID();
     RunFacets runFacets =
         ol.newRunFacetsBuilder()
         .setNominalTime(
