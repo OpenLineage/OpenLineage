@@ -33,7 +33,7 @@ def test_full_core_event_serializes_properly():
         eventType=run.RunState.START,
         eventTime='2020-02-01',
         run=run.Run(
-            runId='1500100900',
+            runId='69f4acab-b87d-4fc0-b27b-8ea950370ff3',
             facets={
                 "nominalTime": facet.NominalTimeRunFacet(
                     nominalStartTime='2020-01-01',
@@ -54,12 +54,23 @@ def test_full_core_event_serializes_properly():
     assert Serde.to_json(runEvent) == get_sorted_json('serde_example.json')
 
 
+def test_run_id_uuid_check():
+    # does not throw when passed uuid
+    run.Run(runId='69f4acab-b87d-4fc0-b27b-8ea950370ff3')
+
+    with pytest.raises(ValueError):
+        run.Run(
+            runId='1500100900',
+            facets={}
+        )
+
+
 def test_run_event_type_validated():
     with pytest.raises(ValueError):
         run.RunEvent(
             "asdf",
             "2020-02-01",
-            run.Run("1500", {}),
+            run.Run("69f4acab-b87d-4fc0-b27b-8ea950370ff3", {}),
             run.Job("default", "name"),
             "producer"
         )

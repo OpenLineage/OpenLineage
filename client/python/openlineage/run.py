@@ -13,6 +13,7 @@
 from typing import Dict, List, Optional
 from enum import Enum
 
+import uuid
 import attr
 
 from openlineage.facet import NominalTimeRunFacet, ParentRunFacet
@@ -36,6 +37,10 @@ _RUN_FACETS = [
 class Run:
     runId: str = attr.ib()
     facets: Dict = attr.ib(factory=dict)
+
+    @runId.validator
+    def check(self, attribute, value):
+        uuid.UUID(value)
 
 
 @attr.s
