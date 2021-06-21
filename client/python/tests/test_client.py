@@ -50,7 +50,7 @@ def test_client_sends_proper_json_with_minimal_event():
         RunEvent(
             RunState.START,
             "2020-01-01",
-            Run("1"),
+            Run("69f4acab-b87d-4fc0-b27b-8ea950370ff3"),
             Job("openlineage", "job"),
             "producer"
         )
@@ -60,7 +60,8 @@ def test_client_sends_proper_json_with_minimal_event():
         "http://example.com/api/v1/lineage",
         '{"eventTime": "2020-01-01", "eventType": "START", "inputs": [], "job": '
         '{"facets": {}, "name": "job", "namespace": "openlineage"}, "outputs": [], '
-        '"producer": "producer", "run": {"facets": {}, "runId": "1"}}',
+        '"producer": "producer", "run": {"facets": {}, "runId": '
+        '"69f4acab-b87d-4fc0-b27b-8ea950370ff3"}}',
         timeout=5.0,
         verify=True
     )
