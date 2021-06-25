@@ -32,21 +32,21 @@ ext {
 }
 
 dependencies {
-    implementation 'org.javassist:javassist:3.27.0-GA'
-    implementation 'com.github.ok2c.hc5:hc5-async-json:0.2.1'
-    implementation 'org.apache.httpcomponents.client5:httpclient5:5.0.3'
+    implementation 'org.javassist:javassist:3.28.0-GA'
+    implementation 'com.github.ok2c.hc5:hc5-async-json:0.2.2'
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.1'
     implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
     implementation "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
     compileOnly "org.apache.spark:spark-core_2.11:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
 
-    testImplementation 'com.google.cloud.spark:spark-bigquery-with-dependencies_2.11:0.19.1'
+    testImplementation 'com.google.cloud.spark:spark-bigquery-with-dependencies_2.11:0.20.0'
     testImplementation "net.bytebuddy:byte-buddy-agent:${bytebuddyVersion}"
     testImplementation "net.bytebuddy:byte-buddy-dep:${bytebuddyVersion}"
     testImplementation "org.apache.spark:spark-core_2.11:${sparkVersion}"
     testImplementation "org.apache.spark:spark-sql_2.11:${sparkVersion}"
-    testImplementation platform('org.junit:junit-bom:5.7.1')
+    testImplementation platform('org.junit:junit-bom:5.7.2')
     testImplementation "org.postgresql:postgresql:${postgresqlVersion}"
     testImplementation 'org.hamcrest:hamcrest-library:2.2'
     testImplementation('org.xerial:sqlite-jdbc:3.34.0')
