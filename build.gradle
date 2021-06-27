@@ -49,7 +49,7 @@ dependencies {
     testImplementation platform('org.junit:junit-bom:5.7.2')
     testImplementation "org.postgresql:postgresql:${postgresqlVersion}"
     testImplementation 'org.hamcrest:hamcrest-library:2.2'
-    testImplementation('org.xerial:sqlite-jdbc:3.34.0')
+    testImplementation('org.xerial:sqlite-jdbc:3.36.0')
     testAnnotationProcessor "org.projectlombok:lombok:1.18.16"
 }
 
