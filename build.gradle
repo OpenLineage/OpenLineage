@@ -41,7 +41,7 @@ dependencies {
     compileOnly "org.apache.spark:spark-core_2.11:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
 
-    testImplementation 'com.google.cloud.spark:spark-bigquery-with-dependencies_2.11:0.20.0'
+    testImplementation 'com.google.cloud.spark:spark-bigquery-with-dependencies_2.11:0.21.1'
     testImplementation "net.bytebuddy:byte-buddy-agent:${bytebuddyVersion}"
     testImplementation "net.bytebuddy:byte-buddy-dep:${bytebuddyVersion}"
     testImplementation "org.apache.spark:spark-core_2.11:${sparkVersion}"
