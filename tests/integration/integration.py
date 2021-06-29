@@ -9,18 +9,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import json
 import logging
 
 import psycopg2
 
 from airflow.utils.state import State as DagState
-from airflow.version import version as AIRFLOW_VERSION
 
-from marquez_airflow import __version__ as MARQUEZ_AIRFLOW_VERSION
 from marquez_client import MarquezClient
 from marquez_client.models import (
-    DatasetType,
     JobType,
     RunState
 )
@@ -40,14 +36,15 @@ IF_NOT_EXISTS_TASK_ID = 'if_not_exists'
 INSERT_TASK_ID = 'insert'
 
 # SOURCE
-SOURCE_NAME = 'food_delivery_db'
+SOURCE_NAME = 'postgres://postgres:5432'
 CONNECTION_URL = \
     'postgres://food_delivery:food_delivery@postgres:5432/food_delivery'
+CONNECTION_URL_WITHOUT_USERPASS = 'postgres://postgres:5432/food_delivery'
 
 # DATASETS
-IN_TABLE_NAME = 'public.top_delivery_times'
+IN_TABLE_NAME = 'food_delivery.public.top_delivery_times'
 IN_TABLE_PHYSICAL_NAME = IN_TABLE_NAME
-OUT_TABLE_NAME = 'public.popular_orders_day_of_week'
+OUT_TABLE_NAME = 'food_delivery.public.popular_orders_day_of_week'
 OUT_TABLE_PHYSICAL_NAME = OUT_TABLE_NAME
 OUT_TABLE_FIELDS = [
     {
@@ -120,23 +117,22 @@ def check_source_meta():
     source = client.get_source(SOURCE_NAME)
     assert source['type'] == 'POSTGRESQL'
     assert source['name'] == SOURCE_NAME
-    assert source['connectionUrl'] == CONNECTION_URL
+    assert source['connectionUrl'] == CONNECTION_URL_WITHOUT_USERPASS
     assert source['description'] is None
 
 
 def check_datasets_meta():
     in_table = client.get_dataset(
-        namespace_name=NAMESPACE_NAME,
+        namespace_name=SOURCE_NAME,
         dataset_name=IN_TABLE_NAME
     )
     assert in_table['id'] == {
-        'namespace': NAMESPACE_NAME,
+        'namespace': SOURCE_NAME,
         'name': IN_TABLE_NAME
     }
-    assert in_table['type'] == DatasetType.DB_TABLE.value
     assert in_table['name'] == IN_TABLE_NAME
     assert in_table['physicalName'] == IN_TABLE_PHYSICAL_NAME
-    assert in_table['namespace'] == NAMESPACE_NAME
+    assert in_table['namespace'] == SOURCE_NAME
     assert in_table['sourceName'] == SOURCE_NAME
     assert len(in_table['fields']) == 0
     assert len(in_table['tags']) == 0
@@ -144,18 +140,17 @@ def check_datasets_meta():
     assert in_table['description'] is None
 
     out_table = client.get_dataset(
-        namespace_name=NAMESPACE_NAME,
+        namespace_name=SOURCE_NAME,
         dataset_name=OUT_TABLE_NAME
     )
 
     assert out_table['id'] == {
-        'namespace': NAMESPACE_NAME,
+        'namespace': SOURCE_NAME,
         'name': OUT_TABLE_NAME
     }
-    assert out_table['type'] == DatasetType.DB_TABLE.value
     assert out_table['name'] == OUT_TABLE_NAME
     assert out_table['physicalName'] == OUT_TABLE_PHYSICAL_NAME
-    assert out_table['namespace'] == NAMESPACE_NAME
+    assert out_table['namespace'] == SOURCE_NAME
     assert out_table['sourceName'] == SOURCE_NAME
     assert out_table['fields'] == OUT_TABLE_FIELDS
     assert len(out_table['tags']) == 0
@@ -203,11 +198,11 @@ def check_jobs_meta():
     assert insert_job['type'] == JobType.BATCH.value
     assert insert_job['namespace'] == NAMESPACE_NAME
     assert insert_job['inputs'] == [{
-        'namespace': NAMESPACE_NAME,
+        'namespace': SOURCE_NAME,
         'name': IN_TABLE_NAME
     }]
     assert insert_job['outputs'] == [{
-        'namespace': NAMESPACE_NAME,
+        'namespace': SOURCE_NAME,
         'name': OUT_TABLE_NAME
     }]
     assert insert_job['location'] is None

@@ -258,9 +258,9 @@ class DAG(airflow.models.DAG, LoggingMixin):
                     return step[0]
 
             except Exception as e:
-                self.log.error(
+                self.log.exception(
                     f'Failed to extract metadata {e} {task_info}',
-                    exc_info=True)
+                )
         else:
             self.log.warning(
                 f'Unable to find an extractor. {task_info}')

@@ -14,6 +14,7 @@ import os
 import mock
 
 from airflow.hooks.postgres_hook import PostgresHook
+from airflow.models import Connection
 from airflow.operators.postgres_operator import PostgresOperator
 from airflow.utils.dates import days_ago
 
@@ -23,12 +24,14 @@ from marquez.models import (
     DbTableSchema,
     DbColumn
 )
-from marquez.dataset import Source, Dataset, DatasetType
+from marquez.dataset import Source, Dataset
 from marquez_airflow.extractors.postgres_extractor import PostgresExtractor
 
 CONN_ID = 'food_delivery_db'
-CONN_URI = 'postgres://localhost:5432/food_delivery'
+CONN_URI = 'postgres://user:pass@localhost:5432/food_delivery'
+CONN_URI_WITHOUT_USERPASS = 'postgres://localhost:5432/food_delivery'
 
+DB_NAME = 'food_delivery'
 DB_SCHEMA_NAME = 'public'
 DB_TABLE_NAME = DbTableName('discounts')
 DB_TABLE_COLUMNS = [
@@ -92,24 +95,34 @@ TASK = PostgresOperator(
     task_id=TASK_ID,
     postgres_conn_id=CONN_ID,
     sql=SQL,
-    dag=DAG
+    dag=DAG,
+    database=DB_NAME
 )
 
 
-@mock.patch('marquez_airflow.extractors.postgres_extractor.\
-PostgresExtractor._get_table_schemas')
-def test_extract(mock_get_table_schemas):
+@mock.patch('marquez_airflow.extractors.postgres_extractor.PostgresExtractor._get_table_schemas')
+@mock.patch('marquez_airflow.extractors.postgres_extractor.get_connection')
+def test_extract(get_connection, mock_get_table_schemas):
     mock_get_table_schemas.side_effect = \
         [[DB_TABLE_SCHEMA], NO_DB_TABLE_SCHEMA]
 
+    conn = Connection(
+        conn_id=CONN_ID,
+        conn_type='postgres',
+        host='localhost',
+        port='5432',
+        schema='food_delivery'
+    )
+
+    get_connection.return_value = conn
+
     expected_inputs = [
         Dataset(
-            type=DatasetType.DB_TABLE,
-            name=f"{DB_SCHEMA_NAME}.{DB_TABLE_NAME.name}",
+            name=f"{DB_NAME}.{DB_SCHEMA_NAME}.{DB_TABLE_NAME.name}",
             source=Source(
-                type='POSTGRESQL',
-                name=CONN_ID,
-                connection_url=CONN_URI
+                scheme='postgres',
+                authority='localhost:5432',
+                connection_url=CONN_URI_WITHOUT_USERPASS
             ),
             fields=[]
         )]
@@ -120,6 +133,40 @@ def test_extract(mock_get_table_schemas):
 
     # Set the environment variable for the connection
     os.environ[f"AIRFLOW_CONN_{CONN_ID.upper()}"] = CONN_URI
+
+    step_metadata = PostgresExtractor(TASK).extract()
+
+    assert step_metadata.name == f"{DAG_ID}.{TASK_ID}"
+    assert step_metadata.inputs == expected_inputs
+    assert step_metadata.outputs == []
+    assert step_metadata.context == expected_context
+
+
+@mock.patch('marquez_airflow.extractors.postgres_extractor.PostgresExtractor._get_table_schemas')
+@mock.patch('marquez_airflow.extractors.postgres_extractor.get_connection')
+def test_extract_authority_uri(get_connection, mock_get_table_schemas):
+
+    mock_get_table_schemas.side_effect = \
+        [[DB_TABLE_SCHEMA], NO_DB_TABLE_SCHEMA]
+
+    conn = Connection()
+    conn.parse_from_uri(CONN_URI)
+    get_connection.return_value = conn
+
+    expected_inputs = [
+        Dataset(
+            name=f"{DB_NAME}.{DB_SCHEMA_NAME}.{DB_TABLE_NAME.name}",
+            source=Source(
+                scheme='postgres',
+                authority='localhost:5432',
+                connection_url=CONN_URI_WITHOUT_USERPASS
+            ),
+            fields=[]
+        )]
+
+    expected_context = {
+        'sql': SQL,
+    }
 
     step_metadata = PostgresExtractor(TASK).extract()
 

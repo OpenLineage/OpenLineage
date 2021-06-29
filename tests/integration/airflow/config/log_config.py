@@ -28,7 +28,7 @@ from airflow.utils.file import mkdirs
 # in this file instead of from airflow.cfg. Currently
 # there are other log format and level configurations in
 # settings.py and cli.py. Please see AIRFLOW-1455.
-LOG_LEVEL = conf.get('core', 'LOGGING_LEVEL').upper()
+LOG_LEVEL = 'INFO'  # conf.get('core', 'LOGGING_LEVEL').upper()
 
 
 # Flask appbuilder's info level log is very verbose,

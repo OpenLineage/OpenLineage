@@ -11,14 +11,17 @@ Run test:
 """
 import logging
 import os
+import pytest
 from pathlib import Path
 
-from great_expectations_provider.operators.great_expectations import \
-  GreatExpectationsOperator
 from marquez_airflow.extractors.great_expectations_extractor import \
-    GreatExpectationsExtractor, GreatExpectationsAssertionsDatasetFacet, GreatExpectationsAssertion
+    GreatExpectationsAssertionsDatasetFacet, GreatExpectationsAssertion, \
+    GreatExpectationsExtractor, set_dataset_info
+
+from great_expectations_provider.operators.great_expectations import GreatExpectationsOperator
+
 from marquez_airflow.facets import DataQualityDatasetFacet, ColumnMetric
-from openlineage.run import Serde
+from openlineage.serde import Serde
 
 log = logging.getLogger(__name__)
 
@@ -118,4 +121,52 @@ def test_great_expectations_operator_batch_kwargs_success():
            Serde.to_json(expected_dq)
     assert step.inputs[0].custom_facets['greatExpectations_assertions'] == expected_assertions
 
+    assert result['success']
+
+
+@pytest.mark.parametrize('namespace,scheme,authority', [
+    ('postgres://localhost:5432', 'postgres', 'localhost:5432'),
+    ('bigquery:', 'bigquery', ''),
+    ('s3://bucket', "s3", 'bucket')
+])
+def test_great_expectations_operator_with_provided_namespace_success(namespace, scheme, authority):
+    operator = GreatExpectationsOperator(
+        task_id='ge_batch_kwargs_pass',
+        expectation_suite_name='taxi.demo',
+        batch_kwargs={
+            'path': data_file,
+            'datasource': 'data__dir'
+        },
+        data_context_root_dir=ge_root_dir,
+        fail_task_on_validation_failure=False
+    )
+
+    set_dataset_info(operator, namespace, 'schema.table')
+
+    extractor = GreatExpectationsExtractor(operator)
+    result = operator.execute({})
+    step = extractor.extract_on_complete(None)
+
+    expected_dq = DataQualityDatasetFacet(
+        rowCount=10000,
+        columnMetrics={
+            'vendor_id': ColumnMetric(
+                nullCount=0,
+                distinctCount=3
+            ),
+            'total_amount': ColumnMetric(
+                sum=157242.31000000003,
+                count=10000,
+                min=-52.8,
+                max=3004.8,
+                quantiles={"0": -52.8, "0.333": 9.3, "0.6667": 14.16, "1": 3004.8}
+            )
+        }
+    )
+
+    assert Serde.to_json(step.inputs[0].custom_facets['dataQuality']) == \
+           Serde.to_json(expected_dq)
+    assert step.inputs[0].source.scheme == scheme
+    assert step.inputs[0].source.authority == authority
+    assert step.inputs[0].name == 'schema.table'
     assert result['success']

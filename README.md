@@ -23,8 +23,8 @@ A library that integrates [Airflow `DAGs`]() with [Marquez](https://github.com/M
 
 ## Requirements
 
- - [Python 3.6.0](https://www.python.org/downloads)+
- - [Airflow 1.10.4](https://pypi.org/project/apache-airflow)+
+- [Python 3.6.0](https://www.python.org/downloads)+
+- [Airflow 1.10.4](https://pypi.org/project/apache-airflow)+
 
 ## Installation
 
@@ -42,40 +42,27 @@ $ python3 setup.py install
 
 ## Configuration
 
-The library depends on a _backend_. A `Backend` is configurable and lets the library know where to write dataset, job, and run metadata.
-
-### Backends
-
-* `HTTP`: Write metadata to Marquez
-* `FILE`: Write metadata to a file (as `json`) under `/tmp/marquez`
-* `LOG`: Simply just logs the metadata to the console
-
-By default, the `HTTP` backend will be used (see next sections on configuration). To override the default backend and write metadata to a file, use `MARQUEZ_BACKEND`:
-
-```
-MARQUEZ_BACKEND=FILE
-```
-
-> **Note:** Metadata will be written to `/tmp/marquez/client.requests.log`, but the location can be overridden with `MARQUEZ_FILE`.
-
-### `HTTP` Backend Authentication
-
-The `HTTP` backend supports using API keys to authenticate requests via `Bearer` auth. To include a key when making an API request, use `MARQUEZ_API_KEY`:
-
-```
-MARQUEZ_BACKEND=HTTP
-MARQUEZ_API_KEY=[YOUR_API_KEY]
-```
 
 ### `HTTP` Backend Environment Variables
 
-`marquez-airflow` needs to know where to talk to the Marquez server API.  You can set these using environment variables to be read by your Airflow service.
+`marquez-airflow` uses OpenLineage client to push data to Marquez.
 
-You will also need to set the namespace if you are using something other than the `default` namespace.
+OpenLineage client depends on environment variables:
+
+* `OPENLINEAGE_URL` - point to service which will consume OpenLineage events
+* `OPENLINEAGE_PRODUCER` - name of producer that client will send along with your events. This will be dropped in future versions.
+* `OPENLINEAGE_API_KEY` - set if consumer of OpenLineage events requires `Bearer` authentication key
+
+For backwards compatibility, `marquez-airflow` also support configuration via
+`MARQUEZ_URL` and `MARQUEZ_API_KEY` variables.
 
 ```
-MARQUEZ_BACKEND=HTTP
 MARQUEZ_URL=http://my_hosted_marquez.example.com:5000
+```
+
+You will also need to set the job namespace if you are using something other than the `default` namespace.
+
+```
 MARQUEZ_NAMESPACE=my_special_ns
 ```
 
@@ -92,6 +79,11 @@ If you do nothing, Marquez will receive the `Job` and the `Run` from your DAGs, 
 5. Context : The Airflow context for the task
 
 It's important to understand the inputs and outputs are lists and relate directly to the `Dataset` object in Marquez.  Datasets also include a source which relates directly to the `Source` object in Marquez.
+
+#### Great Expectations
+
+`great_expectations` extractor requires more care than that. For technical reasons, you need to manually provide dataset
+name and namespace for dataset provided to great expectations operator by calling function `marquez_airflow.extractors.great_expectations_extractor.set_dataset_info`.
 
 ## Usage
 
@@ -116,9 +108,9 @@ $ export MARQUEZ_LOG_LEVEL=INFO
 ```
 
 ## Triggering Child Jobs
-Commonly, Airflow DAGs will trigger processes on remote systems, such as an Apache Spark or Apache 
+Commonly, Airflow DAGs will trigger processes on remote systems, such as an Apache Spark or Apache
 Beam job. Those systems may have their own OpenLineage integration and report their own
-job runs and dataset inputs/outputs. To propagate the job hierarchy, tasks must send their own run 
+job runs and dataset inputs/outputs. To propagate the job hierarchy, tasks must send their own run
 id so that the downstream process can report the [ParentRunFacet](https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#/definitions/ParentRunFacet)
 with the proper run id.
 
@@ -132,9 +124,9 @@ t1 = DataProcPySparkOperator(
     #required pyspark configuration,
     job_name=job_name,
     dataproc_pyspark_properties={
-      'spark.driver.extraJavaOptions':
-        f"-javaagent:{jar}={os.environ.get('MARQUEZ_URL')}/api/v1/namespaces/{os.getenv('MARQUEZ_NAMESPACE', 'default')}/jobs/{job_name}/runs/{{{{lineage_run_id(run_id, task)}}}}?api_key={os.environ.get('MARQUEZ_API_KEY')}"
-    dag=dag)
+        'spark.driver.extraJavaOptions':
+            f"-javaagent:{jar}={os.environ.get('MARQUEZ_URL')}/api/v1/namespaces/{os.getenv('MARQUEZ_NAMESPACE', 'default')}/jobs/{job_name}/runs/{{{{lineage_run_id(run_id, task)}}}}?api_key={os.environ.get('MARQUEZ_API_KEY')}"
+        dag=dag)
 ```
 ## Development
 

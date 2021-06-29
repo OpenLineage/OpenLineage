@@ -5,7 +5,6 @@ ADD airflow/README.md /app
 COPY common /tmp/marquez-integration-common
 RUN cd /tmp/marquez-integration-common && pip wheel --wheel-dir=/tmp/marquez-integration-common/wheel .
 COPY airflow/marquez_airflow /app/marquez_airflow
-COPY airflow/openlineage /app/openlineage
 WORKDIR /app
 RUN ls -la
 RUN pip wheel --wheel-dir=/app/wheel -e /tmp/marquez-integration-common .[tests]

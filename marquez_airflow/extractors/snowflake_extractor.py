@@ -1,6 +1,7 @@
 import logging
 
 from marquez_airflow.extractors.postgres_extractor import PostgresExtractor
+from marquez_airflow.utils import get_connection_uri, get_connection  # noqa
 
 log = logging.getLogger(__file__)
 
@@ -36,8 +37,20 @@ class SnowflakeExtractor(PostgresExtractor):
          WHERE table_name IN ({table_names});
         """
 
+    def _get_scheme(self):
+        return 'snowflake'
+
+    def _get_database(self) -> str:
+        return self.operator.get_hook()._get_conn_params()['database']
+
+    def _get_authority(self) -> str:
+        return self.operator.get_hook()._get_conn_params()['account']
+
     def _get_hook(self):
         return self.operator.get_hook()
 
     def _conn_id(self):
         return self.operator.snowflake_conn_id
+
+    def _get_connection_uri(self):
+        return get_connection_uri(self.conn)

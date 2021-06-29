@@ -15,6 +15,7 @@ import logging
 import os
 import subprocess
 from uuid import uuid4
+from urllib.parse import urlparse, urlunparse
 
 import airflow
 from airflow.models import Connection
@@ -124,22 +125,44 @@ def execute_git(cwd, params):
     return out.decode('utf8').strip()
 
 
-def get_connection_uri(conn_id):
+def get_connection_uri(conn: Connection):
     """
     Return the connection URI for the given ID. We first attempt to lookup
     the connection URI via AIRFLOW_CONN_<conn_id>, else fallback on querying
     the Airflow's connection table.
     """
-    conn_uri = os.environ.get('AIRFLOW_CONN_' + conn_id.upper())
-    log.debug(conn_uri)
-    return conn_uri or _get_connection(conn_id).get_uri()
+
+    conn_uri = conn.get_uri()
+    parsed = urlparse(conn_uri)
+
+    # Remove username and password
+    parsed = parsed._replace(netloc=f'{parsed.hostname}:{parsed.port}')
+    return urlunparse(parsed)
+
+
+def get_normalized_postgres_connection_uri(conn: Connection):
+    """
+    URIs starting with postgresql:// and postgres:// are both valid
+    PostgreSQL connection strings. This function normalizes it to
+    postgres:// as canonical name according to OpenLineage spec.
+    """
+    uri = get_connection_uri(conn)
+    if uri.startswith('postgresql'):
+        uri = uri.replace('postgresql', 'postgres', 1)
+    return uri
 
 
 @provide_session
-def _get_connection(conn_id, session=None):
+def get_connection(conn_id, session=None) -> Connection:
     # TODO: We may want to throw an exception if the connection
     # does not exist (ex: AirflowConnectionException). The connection
     # URI is required when collecting metadata for a data source.
+    conn_uri = os.environ.get('AIRFLOW_CONN_' + conn_id.upper())
+    if conn_uri:
+        conn = Connection()
+        conn.parse_from_uri(conn_uri)
+        return conn
+
     return (session
             .query(Connection)
             .filter(Connection.conn_id == conn_id)
