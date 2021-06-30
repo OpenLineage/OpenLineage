@@ -140,17 +140,17 @@ class TestOpenLineageBQAdapterAcquire(BaseTestOpenLineageBQAdapter):
             producer=PRODUCER,
             inputs=[
                 Dataset(
-                    namespace='bigquery:',
+                    namespace='bigquery',
                     name='speedy-vim-308516.dbt_test1.test_second_dbt_model'
                 ),
                 Dataset(
-                    namespace='bigquery:',
+                    namespace='bigquery',
                     name='speedy-vim-308516.dbt_test1.test_second_parallel_dbt_model'
                 )
             ],
             outputs=[
                 Dataset(
-                    namespace='bigquery:',
+                    namespace='bigquery',
                     name='speedy-vim-308516.dbt_test1.test_third_dbt_model'
                 )
             ]

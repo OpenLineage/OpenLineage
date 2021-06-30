@@ -126,13 +126,13 @@ class OpenLineageBigQueryConnectionManager(BigQueryConnectionManager):
             producer=PRODUCER,
             inputs=sorted([
                 Dataset(
-                    namespace='bigquery:',
+                    namespace='bigquery',
                     name=relation,
                     facets={}
                 ) for relation in inputs
             ], key=lambda x: x.name),
             outputs=[
-                Dataset(namespace='bigquery:', name=output_relation_name)
+                Dataset(namespace='bigquery', name=output_relation_name)
             ]
         ))
         return run_id
