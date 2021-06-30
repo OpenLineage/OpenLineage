@@ -32,6 +32,9 @@ public class InputDatasetVisitors
     list.add(new DatasetSourceVisitor());
     list.add(new LogicalRDDVisitor());
     list.add(new CommandPlanVisitor(new ArrayList<>(list)));
+    if (BigQueryNodeVisitor.hasBigQueryClasses()) {
+      list.add(new BigQueryNodeVisitor(sqlContext));
+    }
     return list;
   }
 }
