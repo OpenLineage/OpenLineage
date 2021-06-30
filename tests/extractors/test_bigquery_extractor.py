@@ -97,10 +97,8 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
             'bigquery-public-data.usa_names.usa_1910_2013'
 
         assert step_meta.inputs[0].fields is not None
-        assert step_meta.inputs[0].source.name == \
-               'bigquery:'
-        assert step_meta.inputs[0].source.connection_url == \
-               'bigquery:'
+        assert step_meta.inputs[0].source.name == 'bigquery'
+        assert step_meta.inputs[0].source.connection_url == 'bigquery'
         assert len(step_meta.inputs[0].fields) == 5
         assert step_meta.outputs is not None
         assert len(step_meta.outputs) == 1

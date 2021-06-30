@@ -126,7 +126,7 @@ def test_great_expectations_operator_batch_kwargs_success():
 
 @pytest.mark.parametrize('namespace,scheme,authority', [
     ('postgres://localhost:5432', 'postgres', 'localhost:5432'),
-    ('bigquery:', 'bigquery', ''),
+    ('bigquery', 'bigquery', None),
     ('s3://bucket', "s3", 'bucket')
 ])
 def test_great_expectations_operator_with_provided_namespace_success(namespace, scheme, authority):

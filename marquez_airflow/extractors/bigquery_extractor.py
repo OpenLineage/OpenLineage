@@ -28,7 +28,7 @@ from marquez_airflow.extractors.base import (
 )
 from marquez_airflow.utils import get_job_name
 
-_BIGQUERY_CONN_URL = 'bigquery:{}'
+_BIGQUERY_CONN_URL = 'bigquery'
 
 log = logging.getLogger(__name__)
 

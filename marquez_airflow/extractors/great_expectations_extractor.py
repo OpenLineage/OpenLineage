@@ -46,7 +46,7 @@ try:
 except Exception:
     # Create placeholder for GreatExpectationsOperator
     GreatExpectationsOperator = None
-    log.exception('Did not find great_expectations_provider library or failed to import it')
+    log.warning('Did not find great_expectations_provider library or failed to import it')
     _has_great_expectations = False
 
 
@@ -147,6 +147,8 @@ class GreatExpectationsExtractorImpl(BaseExtractor):
                     scheme, authority = namespace.split('://')
                 elif ':' in namespace:
                     scheme, authority = namespace.split(':')
+                else:
+                    scheme = namespace
             else:
                 name = batch_kwargs.get('datasource', None)
                 path = batch_kwargs.get('path', None)
