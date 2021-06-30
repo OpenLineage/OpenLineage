@@ -1,0 +1,80 @@
+{
+    "alias": "test_third_dbt_model",
+    "build_path": "target/compiled/dbt_openlineage_test/models/example/test_third_dbt_model.sql",
+    "checksum": {
+        "checksum": "e3a6a46f7588f42712f49e9c41feeca702a23b1566a654ae95122bae69c15654",
+        "name": "sha256"
+    },
+    "columns": {
+        "id": {
+            "description": "The primary key of first parallel model",
+            "meta": {},
+            "name": "id",
+            "tags": []
+        },
+        "second_id": {
+            "description": "The primary key of second parallel model",
+            "meta": {},
+            "name": "second_id",
+            "tags": []
+        }
+    },
+    "compiled": true,
+    "compiled_sql": "select first.id as id, second.id as second_id from `speedy-vim-308516`.`dbt_test1`.`test_second_dbt_model` as first join `speedy-vim-308516`.`dbt_test1`.`test_second_parallel_dbt_model` as second on first.id = second.id",
+    "config": {
+        "column_types": {},
+        "enabled": true,
+        "materialized": "table",
+        "persist_docs": {},
+        "post-hook": [],
+        "pre-hook": [],
+        "quoting": {},
+        "tags": [],
+        "vars": {}
+    },
+    "database": "speedy-vim-308516",
+    "deferred": false,
+    "depends_on": {
+        "macros": [],
+        "nodes": [
+            "model.dbt_openlineage_test.test_second_dbt_model",
+            "model.dbt_openlineage_test.test_second_parallel_dbt_model"
+        ]
+    },
+    "description": "A starter dbt model",
+    "docs": {
+        "show": true
+    },
+    "extra_ctes": [],
+    "extra_ctes_injected": true,
+    "fqn": [
+        "dbt_openlineage_test",
+        "example",
+        "test_third_dbt_model"
+    ],
+    "meta": {},
+    "name": "test_third_dbt_model",
+    "original_file_path": "models/example/test_third_dbt_model.sql",
+    "package_name": "dbt_openlineage_test",
+    "patch_path": "models/example/schema.yml",
+    "path": "example/test_third_dbt_model.sql",
+    "raw_sql": "{{ config(materialized='table') }}\n\nselect first.id as id, second.id as second_id \nfrom {{ ref('test_second_dbt_model') }} as first\njoin {{ ref('test_second_parallel_dbt_model') }} as second\non first.id = second.id",
+    "refs": [
+        [
+            "test_second_dbt_model"
+        ],
+        [
+            "test_second_parallel_dbt_model"
+        ]
+    ],
+    "relation_name": "`speedy-vim-308516`.`dbt_test1`.`test_third_dbt_model`",
+    "resource_type": "model",
+    "root_path": "/home/dbt/code/dbt-test",
+    "schema": "dbt_test1",
+    "sources": [],
+    "tags": [],
+    "unique_id": "model.dbt_openlineage_test.test_third_dbt_model",
+    "unrendered_config": {
+        "materialized": "table"
+    }
+}
