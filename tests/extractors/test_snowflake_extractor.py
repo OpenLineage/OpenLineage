@@ -11,7 +11,7 @@
 # limitations under the License.
 
 import os
-import mock
+from unittest import mock
 
 from airflow.contrib.operators.snowflake_operator import SnowflakeOperator
 from airflow.models import Connection

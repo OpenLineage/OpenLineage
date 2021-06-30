@@ -11,15 +11,19 @@
 # limitations under the License.
 
 import logging
-
-from marquez_airflow.utils import execute_git
+import subprocess
 
 log = logging.getLogger(__name__)
 
 
-def execute_git_mock(*args, **kwargs):
+def execute_git_mock(cwd, params):
     # just mock the git revision
     log.debug("execute_git_mock()")
-    if len(args) == 2 and len(args[1]) > 0 and args[1][0] == 'rev-list':
+    if len(cwd) > 0 and params[0] == 'rev-list':
         return 'abcd1234'
-    return execute_git(*args, **kwargs)
+
+    p = subprocess.Popen(['git'] + params,
+                         cwd=cwd, stdout=subprocess.PIPE, stderr=None)
+    p.wait(timeout=0.5)
+    out, err = p.communicate()
+    return out.decode('utf8').strip()

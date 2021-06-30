@@ -2,8 +2,8 @@ import os
 import logging
 from typing import Optional, Dict, Type
 
-from marquez_airflow.extractors import StepMetadata
 from marquez_airflow import __version__ as MARQUEZ_AIRFLOW_VERSION
+from marquez_airflow.extractors import StepMetadata
 
 from openlineage.client import OpenLineageClient, OpenLineageClientOptions
 from openlineage.facet import DocumentationJobFacet, SourceCodeLocationJobFacet, SqlJobFacet, \

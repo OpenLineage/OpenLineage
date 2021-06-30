@@ -55,7 +55,6 @@ services:
       - AIRFLOW_CONN_FOOD_DELIVERY_DB=postgres://food_delivery:food_delivery@postgres:5432/food_delivery
       - AIRFLOW__CORE__LOGGING_CONFIG_CLASS=log_config.LOGGING_CONFIG
       - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=false
-      - MARQUEZ_BACKEND=http
       - MARQUEZ_URL=http://marquez:5000
       - MARQUEZ_NAMESPACE=food_delivery
     volumes:
