@@ -46,7 +46,7 @@ extras_require["dev"] = set(sum(extras_require.values(), []))
 
 setup(
     name="marquez-dbt-snowflake",
-    version="0.15.2",
+    version="0.16.0rc1",
     description="The Marquez Snowflake adapter plugin for dbt (data build tool)",
     long_description=readme,
     author='Marquez Project',

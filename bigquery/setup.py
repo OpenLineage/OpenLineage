@@ -45,7 +45,7 @@ extras_require["dev"] = set(sum(extras_require.values(), []))
 
 setup(
     name="marquez-dbt-bigquery",
-    version="0.15.2",
+    version="0.16.0rc1",
     description="The Marquez BigQuery adapter plugin for dbt (data build tool)",
     long_description=readme,
     long_description_content_type="text/markdown",
