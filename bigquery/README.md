@@ -14,8 +14,9 @@ sqlparse>=0.3.1
 
 ## Installation
 
-`pip install openlineage-dbt-bigquery`
-
+```
+$ pip install marquez-dbt-bigquery
+``
 
 ## Configuration
 

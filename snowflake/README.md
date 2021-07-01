@@ -14,8 +14,9 @@ sqlparse>=0.3.1
 
 ## Installation
 
-`pip install openlineage-dbt-snowflake`
-
+```
+$ pip install marquez-dbt-snowflake
+```
 
 ## Configuration
 
