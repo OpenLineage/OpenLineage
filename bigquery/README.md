@@ -16,7 +16,7 @@ sqlparse>=0.3.1
 
 ```
 $ pip install marquez-dbt-bigquery
-``
+```
 
 ## Configuration
 
