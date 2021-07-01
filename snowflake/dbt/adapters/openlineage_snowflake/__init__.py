@@ -6,7 +6,7 @@ from dbt.adapters.openlineage_snowflake.impl import OpenLineageSnowflakeAdapter
 from dbt.include import openlineage_snowflake
 
 __author__ = """Marquez Project"""
-__version__ = '0.15.2'
+__version__ = "0.15.2"
 
 # Caution: this plugin is experimental. More information in README.md
 
