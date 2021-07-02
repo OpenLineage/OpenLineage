@@ -14,7 +14,7 @@
 #
 # -*- coding: utf-8 -*-
 
-from setuptools import find_packages, setup
+from setuptools import find_namespace_packages, setup
 
 with open("README.md") as readme_file:
     readme = readme_file.read()
@@ -51,7 +51,7 @@ setup(
     long_description=readme,
     long_description_content_type="text/markdown",
     author='Marquez Project',
-    packages=find_packages(),
+    packages=find_namespace_packages(include=['dbt', 'dbt.*']),
     package_data=data,
     include_package_data=True,
     install_requires=requirements,
