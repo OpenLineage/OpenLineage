@@ -19,6 +19,8 @@ from setuptools import find_namespace_packages, setup
 with open("README.md") as readme_file:
     readme = readme_file.read()
 
+__version__ = "0.16.0"
+
 data = {
     "dbt": [
         "include/openlineage_bigquery/macros/*.sql",
@@ -30,6 +32,7 @@ requirements = [
     "dbt-core>=0.20.0b1",
     "dbt-bigquery>=0.20.0b1",
     "sqlparse>=0.3.1",
+    f"marquez-integration-common=={__version__}",
     "openlineage-python==0.0.1rc6"
 ]
 
@@ -45,7 +48,7 @@ extras_require["dev"] = set(sum(extras_require.values(), []))
 
 setup(
     name="marquez-dbt-bigquery",
-    version="0.16.0",
+    version=__version__,
     description="The Marquez BigQuery adapter plugin for dbt (data build tool)",
     long_description=readme,
     long_description_content_type="text/markdown",
