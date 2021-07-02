@@ -49,6 +49,7 @@ setup(
     version="0.16.0rc1",
     description="The Marquez Snowflake adapter plugin for dbt (data build tool)",
     long_description=readme,
+    long_description_content_type="text/markdown",
     author='Marquez Project',
     packages=find_packages(),
     package_data=data,
