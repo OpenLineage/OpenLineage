@@ -6,7 +6,7 @@ from dbt.adapters.openlineage_bigquery.impl import OpenLineageBigQueryAdapter
 from dbt.include import openlineage_bigquery
 
 __author__ = """Marquez Project"""
-__version__ = "0.16.0rc1"
+__version__ = "0.16.0"
 
 # Caution: this plugin is experimental. More information in README.md
 
