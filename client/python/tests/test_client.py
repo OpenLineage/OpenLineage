@@ -14,8 +14,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from openlineage.client import OpenLineageClient
-from openlineage.run import RunEvent, RunState, Run, Job
+from openlineage.client.client import OpenLineageClient
+from openlineage.client.run import RunEvent, RunState, Run, Job
 
 
 def test_client_fails_with_wrong_event_type():

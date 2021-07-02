@@ -17,8 +17,8 @@ from typing import Optional, List
 import attr
 import pytest
 
-from openlineage.serde import Serde
-from openlineage import run, facet
+from openlineage.client.serde import Serde
+from openlineage.client import run, facet
 
 
 def get_sorted_json(file_name: str) -> str:

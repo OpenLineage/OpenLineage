@@ -42,17 +42,6 @@ jobs:
             - ./dist/*.tar.gz
             - ./dist/*.whl
 
-  release-client-python:
-    working_directory: ~/openlineage
-    docker:
-      - image: circleci/python:3.6
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - run: pip install wheel twine
-      - run: python -m twine upload --non-interactive --verbose --repository pypi dist/*
-
   release-java:
     working_directory: ~/openlineage/client/java
     docker:
@@ -65,21 +54,61 @@ jobs:
           # Publish *.jar
           gradle publish
 
+  test-integration-common:
+    working_directory: ~/openlineage/integration/common
+    docker:
+      - image: circleci/python:3.6
+    steps:
+      - *checkout_project_root
+      - run: pip install -e ../../client/python
+      - run: pip install -e .[dev]
+      - run: flake8
+      - run: pytest --cov=openlineage tests/
+      - run: bash <(curl -s https://codecov.io/bash)
+
+  build-integration-common:
+    working_directory: ~/openlineage/integration/common
+    docker:
+      - image: circleci/python:3.6
+    steps:
+      - *checkout_project_root
+      - run: python setup.py sdist bdist_wheel
+      - persist_to_workspace:
+          root: .
+          paths:
+            - ./dist/*.whl
+            - ./dist/*.tar.gz
+
+  release-python:
+    working_directory: ~/openlineage
+    docker:
+      - image: circleci/python:3.6
+    steps:
+      - *checkout_project_root
+      - attach_workspace:
+          at: .
+      - run: pip install wheel twine
+      - run: python -m twine upload --non-interactive --verbose --repository pypi dist/*
+
 workflows:
   checkout-build-test:
     jobs:
       - gradle/test:
           app_src_directory: client/java
       - test-client-python
+      - test-integration-common
   release:
     jobs:
       - build-client-python:
           <<: *only-on-release
-      - release-client-python:
+      - build-integration-common:
+          <<: *only-on-release
+      - release-java:
+          <<: *only-on-release
+          context: release
+      - release-python:
           <<: *only-on-release
           context: release
           requires:
             - build-client-python
-      - release-java:
-          context: release
-          <<: *only-on-release
+            - build-integration-common

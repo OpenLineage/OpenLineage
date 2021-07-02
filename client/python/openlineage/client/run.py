@@ -16,7 +16,7 @@ from enum import Enum
 import uuid
 import attr
 
-from openlineage.facet import NominalTimeRunFacet, ParentRunFacet
+from openlineage.client.facet import NominalTimeRunFacet, ParentRunFacet
 
 
 class RunState(Enum):
