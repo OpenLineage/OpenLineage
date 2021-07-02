@@ -13,7 +13,7 @@
 # -*- coding: utf-8 -*-
 
 __author__ = """Marquez Project"""
-__version__ = "0.16.0rc1"
+__version__ = "0.16.0"
 __all__ = ["DAG"]
 
 from marquez_airflow.dag import DAG
