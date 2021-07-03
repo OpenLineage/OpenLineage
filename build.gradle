@@ -40,7 +40,7 @@ dependencies {
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
     compileOnly "org.apache.spark:spark-core_2.11:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
-    compileOnly 'com.google.cloud.spark:spark-bigquery_2.11:0.19.1'
+    compileOnly 'com.google.cloud.spark:spark-bigquery_2.11:0.21.1'
 
     testImplementation 'com.google.cloud.spark:spark-bigquery-with-dependencies_2.11:0.21.1'
     testImplementation "net.bytebuddy:byte-buddy-agent:${bytebuddyVersion}"
