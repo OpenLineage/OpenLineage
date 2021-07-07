@@ -1,0 +1,365 @@
+{
+	"metadata": {
+		"dbt_schema_version": "https://schemas.getdbt.com/dbt/manifest/v2.json",
+		"dbt_version": "0.20.0",
+		"generated_at": "2021-07-28T12:09:44.429897Z",
+		"invocation_id": "8c814240-637d-4a36-937e-43787f5c79e0",
+		"env": {},
+		"project_id": "dc5b36ac8a5ba619cc093366efe36d3d",
+		"user_id": "7bae5953-769e-4aa1-81f6-55a82ac4d4d4",
+		"send_anonymous_usage_stats": true,
+		"adapter_type": "bigquery"
+	},
+	"nodes": {
+		"model.dbt_bigquery_test.test_third_dbt_model": {
+			"raw_sql": "{{ config(materialized='table') }}\n\nselect first.id as id, second.id as second_id \nfrom {{ ref('test_second_dbt_model') }} as first\njoin {{ ref('test_second_parallel_dbt_model') }} as second\non first.id = second.id",
+			"resource_type": "model",
+			"depends_on": {
+				"macros": [],
+				"nodes": ["model.dbt_bigquery_test.test_second_dbt_model", "model.dbt_bigquery_test.test_second_parallel_dbt_model"]
+			},
+			"config": {
+				"enabled": true,
+				"materialized": "table",
+				"persist_docs": {},
+				"vars": {},
+				"quoting": {},
+				"column_types": {},
+				"alias": null,
+				"schema": null,
+				"database": null,
+				"tags": [],
+				"full_refresh": null,
+				"post-hook": [],
+				"pre-hook": []
+			},
+			"database": "speedy-vim-308516",
+			"schema": "dbt_test1",
+			"fqn": ["dbt_bigquery_test", "example", "test_third_dbt_model"],
+			"unique_id": "model.dbt_bigquery_test.test_third_dbt_model",
+			"package_name": "dbt_bigquery_test",
+			"root_path": "/home/mobuchowski/code/dbt-test",
+			"path": "example/test_third_dbt_model.sql",
+			"original_file_path": "models/example/test_third_dbt_model.sql",
+			"name": "test_third_dbt_model",
+			"alias": "test_third_dbt_model",
+			"checksum": {
+				"name": "sha256",
+				"checksum": "e3a6a46f7588f42712f49e9c41feeca702a23b1566a654ae95122bae69c15654"
+			},
+			"tags": [],
+			"refs": [
+				["test_second_dbt_model"],
+				["test_second_parallel_dbt_model"]
+			],
+			"sources": [],
+			"description": "A starter dbt model",
+			"columns": {
+				"id": {
+					"name": "id",
+					"description": "The primary key of first parallel model",
+					"meta": {},
+					"data_type": null,
+					"quote": null,
+					"tags": []
+				},
+				"second_id": {
+					"name": "second_id",
+					"description": "The primary key of second parallel model",
+					"meta": {},
+					"data_type": null,
+					"quote": null,
+					"tags": []
+				}
+			},
+			"meta": {},
+			"docs": {
+				"show": true
+			},
+			"patch_path": "dbt_bigquery_test://models/example/schema.yml",
+			"compiled_path": null,
+			"build_path": null,
+			"deferred": false,
+			"unrendered_config": {
+				"materialized": "table"
+			},
+			"created_at": 1627474184
+		},
+		"model.dbt_bigquery_test.test_second_parallel_dbt_model": {
+			"raw_sql": "select *\nfrom {{ source('dbt_test1', 'source_table') }}\nwhere id = 1\nbork bork fail",
+			"compiled": true,
+			"resource_type": "model",
+			"depends_on": {
+				"macros": ["macro.dbt.create_or_replace_view"],
+				"nodes": ["source.dbt_bigquery_test.dbt_test1.source_table"]
+			},
+			"config": {
+				"enabled": true,
+				"materialized": "view",
+				"persist_docs": {},
+				"vars": {},
+				"quoting": {},
+				"column_types": {},
+				"alias": null,
+				"schema": null,
+				"database": null,
+				"tags": [],
+				"full_refresh": null,
+				"post-hook": [],
+				"pre-hook": []
+			},
+			"database": "speedy-vim-308516",
+			"schema": "dbt_test1",
+			"fqn": ["dbt_bigquery_test", "example", "test_second_parallel_dbt_model"],
+			"unique_id": "model.dbt_bigquery_test.test_second_parallel_dbt_model",
+			"package_name": "dbt_bigquery_test",
+			"root_path": "/home/mobuchowski/code/dbt-test",
+			"path": "example/test_second_parallel_dbt_model.sql",
+			"original_file_path": "models/example/test_second_parallel_dbt_model.sql",
+			"name": "test_second_parallel_dbt_model",
+			"alias": "test_second_parallel_dbt_model",
+			"checksum": {
+				"name": "sha256",
+				"checksum": "93bb3d22d248345423d0aa934ab4b3cc89fce04c14bc44469eb6989edec9e11e"
+			},
+			"tags": [],
+			"refs": [],
+			"sources": [
+				["dbt_test1", "source_table"]
+			],
+			"description": "A starter dbt model",
+			"columns": {
+				"id": {
+					"name": "id",
+					"description": "The primary key for this table",
+					"meta": {},
+					"data_type": null,
+					"quote": null,
+					"tags": []
+				}
+			},
+			"meta": {},
+			"docs": {
+				"show": true
+			},
+			"patch_path": "dbt_bigquery_test://models/example/schema.yml",
+			"compiled_path": "target/compiled/dbt_bigquery_test/models/example/test_second_parallel_dbt_model.sql",
+			"build_path": "target/run/dbt_bigquery_test/models/example/test_second_parallel_dbt_model.sql",
+			"deferred": false,
+			"unrendered_config": {},
+			"created_at": 1627474184,
+			"compiled_sql": "select *\nfrom `speedy-vim-308516`.`dbt_test1`.`source_table`\nwhere id = 1\nbork bork fail",
+			"extra_ctes_injected": true,
+			"extra_ctes": [],
+			"relation_name": "`speedy-vim-308516`.`dbt_test1`.`test_second_parallel_dbt_model`"
+		},
+		"model.dbt_bigquery_test.test_second_dbt_model": {
+			"raw_sql": "select *\nfrom {{ ref('test_first_dbt_model') }}\nwhere id = 1",
+			"compiled": true,
+			"resource_type": "model",
+			"depends_on": {
+				"macros": ["macro.dbt.create_or_replace_view", "macro.dbt.persist_docs"],
+				"nodes": ["model.dbt_bigquery_test.test_first_dbt_model"]
+			},
+			"config": {
+				"enabled": true,
+				"materialized": "view",
+				"persist_docs": {},
+				"vars": {},
+				"quoting": {},
+				"column_types": {},
+				"alias": null,
+				"schema": null,
+				"database": null,
+				"tags": [],
+				"full_refresh": null,
+				"post-hook": [],
+				"pre-hook": []
+			},
+			"database": "speedy-vim-308516",
+			"schema": "dbt_test1",
+			"fqn": ["dbt_bigquery_test", "example", "test_second_dbt_model"],
+			"unique_id": "model.dbt_bigquery_test.test_second_dbt_model",
+			"package_name": "dbt_bigquery_test",
+			"root_path": "/home/mobuchowski/code/dbt-test",
+			"path": "example/test_second_dbt_model.sql",
+			"original_file_path": "models/example/test_second_dbt_model.sql",
+			"name": "test_second_dbt_model",
+			"alias": "test_second_dbt_model",
+			"checksum": {
+				"name": "sha256",
+				"checksum": "7f0490b21e22d862b7af0547c60ac186464da8a89df7961821d972d83f246374"
+			},
+			"tags": [],
+			"refs": [
+				["test_first_dbt_model"]
+			],
+			"sources": [],
+			"description": "A starter dbt model",
+			"columns": {
+				"id": {
+					"name": "id",
+					"description": "The primary key for this table",
+					"meta": {},
+					"data_type": null,
+					"quote": null,
+					"tags": []
+				}
+			},
+			"meta": {},
+			"docs": {
+				"show": true
+			},
+			"patch_path": "dbt_bigquery_test://models/example/schema.yml",
+			"compiled_path": "target/compiled/dbt_bigquery_test/models/example/test_second_dbt_model.sql",
+			"build_path": "target/run/dbt_bigquery_test/models/example/test_second_dbt_model.sql",
+			"deferred": false,
+			"unrendered_config": {},
+			"created_at": 1627474184,
+			"compiled_sql": "select *\nfrom `speedy-vim-308516`.`dbt_test1`.`test_first_dbt_model`\nwhere id = 1",
+			"extra_ctes_injected": true,
+			"extra_ctes": [],
+			"relation_name": "`speedy-vim-308516`.`dbt_test1`.`test_second_dbt_model`"
+		},
+		"model.dbt_bigquery_test.test_first_dbt_model": {
+			"raw_sql": "{{ config(materialized='table') }}\n\nwith source_data as (\n\n    select 1 as id\n    union all\n    select null as id\n\n)\n\nselect *\nfrom source_data",
+			"compiled": true,
+			"resource_type": "model",
+			"depends_on": {
+				"macros": ["macro.dbt.run_hooks", "macro.dbt.statement", "macro.dbt.persist_docs"],
+				"nodes": []
+			},
+			"config": {
+				"enabled": true,
+				"materialized": "table",
+				"persist_docs": {},
+				"vars": {},
+				"quoting": {},
+				"column_types": {},
+				"alias": null,
+				"schema": null,
+				"database": null,
+				"tags": [],
+				"full_refresh": null,
+				"post-hook": [],
+				"pre-hook": []
+			},
+			"database": "speedy-vim-308516",
+			"schema": "dbt_test1",
+			"fqn": ["dbt_bigquery_test", "example", "test_first_dbt_model"],
+			"unique_id": "model.dbt_bigquery_test.test_first_dbt_model",
+			"package_name": "dbt_bigquery_test",
+			"root_path": "/home/mobuchowski/code/dbt-test",
+			"path": "example/test_first_dbt_model.sql",
+			"original_file_path": "models/example/test_first_dbt_model.sql",
+			"name": "test_first_dbt_model",
+			"alias": "test_first_dbt_model",
+			"checksum": {
+				"name": "sha256",
+				"checksum": "6e490037516beb53db65ff1ffe187863f8a1c7dbc9e6ee25f40f01ea9221776b"
+			},
+			"tags": [],
+			"refs": [],
+			"sources": [],
+			"description": "A starter dbt model",
+			"columns": {
+				"id": {
+					"name": "id",
+					"description": "The primary key for this table",
+					"meta": {},
+					"data_type": null,
+					"quote": null,
+					"tags": []
+				}
+			},
+			"meta": {},
+			"docs": {
+				"show": true
+			},
+			"patch_path": "dbt_bigquery_test://models/example/schema.yml",
+			"compiled_path": "target/compiled/dbt_bigquery_test/models/example/test_first_dbt_model.sql",
+			"build_path": "target/run/dbt_bigquery_test/models/example/test_first_dbt_model.sql",
+			"deferred": false,
+			"unrendered_config": {
+				"materialized": "table"
+			},
+			"created_at": 1627474184,
+			"compiled_sql": "\n\nwith source_data as (\n\n    select 1 as id\n    union all\n    select null as id\n\n)\n\nselect *\nfrom source_data",
+			"extra_ctes_injected": true,
+			"extra_ctes": [],
+			"relation_name": "`speedy-vim-308516`.`dbt_test1`.`test_first_dbt_model`"
+		}
+	},
+	"macros": {},
+	"sources": {
+		"source.dbt_bigquery_test.dbt_test1.source_table": {
+			"fqn": ["dbt_bigquery_test", "example", "dbt_test1", "source_table"],
+			"database": "speedy-vim-308516",
+			"schema": "dbt_test1",
+			"unique_id": "source.dbt_bigquery_test.dbt_test1.source_table",
+			"package_name": "dbt_bigquery_test",
+			"root_path": "/home/mobuchowski/code/dbt-test",
+			"path": "models/example/schema.yml",
+			"original_file_path": "models/example/schema.yml",
+			"name": "source_table",
+			"source_name": "dbt_test1",
+			"source_description": "",
+			"loader": "",
+			"identifier": "source_table",
+			"resource_type": "source",
+			"quoting": {
+				"database": null,
+				"schema": null,
+				"identifier": null,
+				"column": null
+			},
+			"loaded_at_field": null,
+			"freshness": {
+				"warn_after": null,
+				"error_after": null,
+				"filter": null
+			},
+			"external": null,
+			"description": "",
+			"columns": {},
+			"meta": {},
+			"source_meta": {},
+			"tags": [],
+			"config": {
+				"enabled": true
+			},
+			"patch_path": null,
+			"unrendered_config": {},
+			"relation_name": "`speedy-vim-308516`.`dbt_test1`.`source_table`",
+			"created_at": 1627474185
+		}
+	},
+	"docs": {
+		"dbt.__overview__": {
+			"unique_id": "dbt.__overview__",
+			"package_name": "dbt",
+			"root_path": "/home/mobuchowski/tools/pyenv/versions/3.9.2/lib/python3.9/site-packages/dbt/include/global_project",
+			"path": "overview.md",
+			"original_file_path": "docs/overview.md",
+			"name": "__overview__",
+			"block_contents": "### Welcome!\n\nWelcome to the auto-generated documentation for your dbt project!\n\n### Navigation\n\nYou can use the `Project` and `Database` navigation tabs on the left side of the window to explore the models\nin your project.\n\n#### Project Tab\nThe `Project` tab mirrors the directory structure of your dbt project. In this tab, you can see all of the\nmodels defined in your dbt project, as well as models imported from dbt packages.\n\n#### Database Tab\nThe `Database` tab also exposes your models, but in a format that looks more like a database explorer. This view\nshows relations (tables and views) grouped into database schemas. Note that ephemeral models are _not_ shown\nin this interface, as they do not exist in the database.\n\n### Graph Exploration\nYou can click the blue icon on the bottom-right corner of the page to view the lineage graph of your models.\n\nOn model pages, you'll see the immediate parents and children of the model you're exploring. By clicking the `Expand`\nbutton at the top-right of this lineage pane, you'll be able to see all of the models that are used to build,\nor are built from, the model you're exploring.\n\nOnce expanded, you'll be able to use the `--models` and `--exclude` model selection syntax to filter the\nmodels in the graph. For more information on model selection, check out the [dbt docs](https://docs.getdbt.com/docs/model-selection-syntax).\n\nNote that you can also right-click on models to interactively filter and explore the graph.\n\n---\n\n### More information\n\n- [What is dbt](https://docs.getdbt.com/docs/overview)?\n- Read the [dbt viewpoint](https://docs.getdbt.com/docs/viewpoint)\n- [Installation](https://docs.getdbt.com/docs/installation)\n- Join the [chat](https://community.getdbt.com/) on Slack for live questions and support."
+		}
+	},
+	"exposures": {},
+	"selectors": {},
+	"disabled": [],
+	"parent_map": {
+		"model.dbt_bigquery_test.test_third_dbt_model": ["model.dbt_bigquery_test.test_second_dbt_model", "model.dbt_bigquery_test.test_second_parallel_dbt_model"],
+		"model.dbt_bigquery_test.test_second_parallel_dbt_model": ["source.dbt_bigquery_test.dbt_test1.source_table"],
+		"model.dbt_bigquery_test.test_second_dbt_model": ["model.dbt_bigquery_test.test_first_dbt_model"],
+		"model.dbt_bigquery_test.test_first_dbt_model": [],
+		"source.dbt_bigquery_test.dbt_test1.source_table": []
+	},
+	"child_map": {
+		"model.dbt_bigquery_test.test_third_dbt_model": ["test.dbt_bigquery_test.not_null_test_third_dbt_model_id.ee37a1e1fb", "test.dbt_bigquery_test.not_null_test_third_dbt_model_second_id.808ed9e604", "test.dbt_bigquery_test.unique_test_third_dbt_model_id.66d6711da6", "test.dbt_bigquery_test.unique_test_third_dbt_model_second_id.f3c38f3b89"],
+		"model.dbt_bigquery_test.test_second_parallel_dbt_model": ["model.dbt_bigquery_test.test_third_dbt_model", "test.dbt_bigquery_test.not_null_test_second_parallel_dbt_model_id.92c37ea38b", "test.dbt_bigquery_test.unique_test_second_parallel_dbt_model_id.d59ed1725f"],
+		"model.dbt_bigquery_test.test_second_dbt_model": ["model.dbt_bigquery_test.test_third_dbt_model", "test.dbt_bigquery_test.not_null_test_second_dbt_model_id.6458075b2a", "test.dbt_bigquery_test.unique_test_second_dbt_model_id.ba8cd8dfe1"],
+		"model.dbt_bigquery_test.test_first_dbt_model": ["model.dbt_bigquery_test.test_second_dbt_model", "test.dbt_bigquery_test.not_null_test_first_dbt_model_id.a8c5d0180a", "test.dbt_bigquery_test.unique_test_first_dbt_model_id.1f3ee5c4a1"],
+		"source.dbt_bigquery_test.dbt_test1.source_table": ["model.dbt_bigquery_test.test_second_parallel_dbt_model"]
+	}
+}
