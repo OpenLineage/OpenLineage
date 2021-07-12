@@ -311,6 +311,7 @@ public class SparkReadWriteIntegTest {
             schema)
         .write()
         .csv(csvUri);
+    StaticExecutionContextFactory.waitForExecutionEnd();
 
     reset(marquezContext); // reset to start counting now
     when(marquezContext.getJobNamespace()).thenReturn("theNamespace");

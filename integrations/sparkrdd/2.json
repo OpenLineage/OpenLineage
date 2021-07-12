@@ -19,7 +19,7 @@
   },
   "job" : {
     "namespace" : "ns_name",
-    "name" : "word_count"
+    "name" : "word_count.shuffled_map_partitions_hadoop"
   },
   "inputs" : [ {
     "namespace" : "gs.bucket",

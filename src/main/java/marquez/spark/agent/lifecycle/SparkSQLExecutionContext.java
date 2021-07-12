@@ -97,6 +97,7 @@ public class SparkSQLExecutionContext implements ExecutionContext {
             .producer(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI)
             .build();
 
+    log.debug("Posting event for start {}: {}", jobStart, event);
     marquezContext.emit(event);
   }
 
@@ -142,6 +143,7 @@ public class SparkSQLExecutionContext implements ExecutionContext {
             .producer(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI)
             .build();
 
+    log.debug("Posting event for start {}: {}", jobEnd, event);
     marquezContext.emit(event);
   }
 

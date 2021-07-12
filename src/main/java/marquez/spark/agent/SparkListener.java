@@ -262,13 +262,23 @@ public class SparkListener extends org.apache.spark.scheduler.SparkListener {
     if (conf.contains(SPARK_CONF_URL_KEY)) {
       return ArgumentParser.parse(conf.get(SPARK_CONF_URL_KEY));
     } else {
-      String host = conf.get(SPARK_CONF_HOST_KEY);
-      String version = conf.get(SPARK_CONF_API_VERSION_KEY, "1");
-      String namespace = conf.get(SPARK_CONF_NAMESPACE_KEY, "default");
-      String jobName = conf.get(SPARK_CONF_JOB_NAME_KEY, conf.getAppId());
-      String runId = conf.get(SPARK_CONF_PARENT_RUN_ID_KEY, "");
-      Optional<String> apiKey = Optional.ofNullable(conf.get(SPARK_CONF_API_KEY));
+      String host = findSparkConfigKey(conf, SPARK_CONF_HOST_KEY, "");
+      String version = findSparkConfigKey(conf, SPARK_CONF_API_VERSION_KEY, "v1");
+      String namespace = findSparkConfigKey(conf, SPARK_CONF_NAMESPACE_KEY, "default");
+      String jobName = findSparkConfigKey(conf, SPARK_CONF_JOB_NAME_KEY, conf.getAppId());
+      String runId = findSparkConfigKey(conf, SPARK_CONF_PARENT_RUN_ID_KEY, "");
+      Optional<String> apiKey =
+          Optional.ofNullable(findSparkConfigKey(conf, SPARK_CONF_API_KEY, ""))
+              .filter(str -> !str.isEmpty());
       return new ArgumentParser(host, version, namespace, jobName, runId, apiKey);
+    }
+  }
+
+  private String findSparkConfigKey(SparkConf conf, String name, String defaultValue) {
+    if (!conf.contains(name)) {
+      return conf.get("spark." + name, defaultValue);
+    } else {
+      return conf.get(name);
     }
   }
 }

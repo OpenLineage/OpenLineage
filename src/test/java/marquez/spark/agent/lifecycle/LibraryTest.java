@@ -1,6 +1,7 @@
 package marquez.spark.agent.lifecycle;
 
 import static marquez.spark.agent.SparkAgentTestExtension.marquezContext;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -20,6 +21,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import marquez.spark.agent.SparkAgentTestExtension;
 import marquez.spark.agent.client.LineageEvent;
 import marquez.spark.agent.client.OpenLineageClient;
@@ -60,7 +63,7 @@ public class LibraryTest {
             .config("spark.driver.bindAddress", "127.0.0.1")
             .getOrCreate();
 
-    URL url = Resources.getResource("data.txt");
+    URL url = Resources.getResource("test_data/data.txt");
     final Dataset<String> data = spark.read().textFile(url.getPath());
 
     final long numAs = data.filter((FilterFunction<String>) s -> s.contains("a")).count();
@@ -140,7 +143,7 @@ public class LibraryTest {
     when(marquezContext.getParentJobName()).thenReturn("job_name");
     when(marquezContext.getParentRunId()).thenReturn("8d99e33e-2a1c-4254-9600-18f23435fc3b");
 
-    URL url = Resources.getResource("data.txt");
+    URL url = Resources.getResource("test_data/data.txt");
     SparkConf conf = new SparkConf().setAppName("Word Count").setMaster("local[*]");
     JavaSparkContext sc = new JavaSparkContext(conf);
     JavaRDD<String> textFile = sc.textFile(url.getPath());
@@ -174,6 +177,19 @@ public class LibraryTest {
     }
 
     verifySerialization(events);
+  }
+
+  @Test
+  public void testRDDName() {
+    SparkConf conf = new SparkConf().setAppName("Word Count").setMaster("local[*]");
+    JavaSparkContext sc = new JavaSparkContext(conf);
+    JavaRDD<Integer> numbers =
+        sc.parallelize(IntStream.range(1, 100).mapToObj(Integer::new).collect(Collectors.toList()));
+    numbers.setName("numbers");
+    JavaRDD<String> transformed =
+        numbers.filter(n -> n > 10 && n < 90).map(i -> i * i).map(String::valueOf);
+    String s = RddExecutionContext.nameRDD(transformed.rdd());
+    assertThat(s).isEqualTo("map_partitions_numbers");
   }
 
   private void verifySerialization(List<LineageEvent> events) throws JsonProcessingException {
