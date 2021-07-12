@@ -42,7 +42,7 @@ class RunMeta:
 
 
 BQ_QUERY_JOB_SPLIT = '-----Query Job SQL Follows-----'
-PRODUCER = "marquez-dbt-snowflake/0.16.0"
+PRODUCER = "marquez-dbt-snowflake/0.16.1rc1"
 
 
 class OpenLineageSnowflakeConnectionManager(SnowflakeConnectionManager):
