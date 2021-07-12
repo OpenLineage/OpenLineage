@@ -10,14 +10,14 @@ Maven:
 <dependency>
     <groupId>io.github.marquezproject</groupId>
     <artifactId>marquez-spark</artifactId>
-    <version>0.16.0</version>
+    <version>0.16.1-rc.1</version>
 </dependency>
 ```
 
 or Gradle:
 
 ```groovy
-implementation 'io.github.marquezproject:marquez-spark:0.16.0
+implementation 'io.github.marquezproject:marquez-spark:0.16.1-rc.1
 ```
 
 ## Getting started
@@ -52,7 +52,7 @@ from pyspark.sql import SparkSession
 
 spark = (SparkSession.builder.master('local')
          .appName('sample_spark')
-         .config('spark.jars.packages', 'io.github.marquezproject:marquez-spark:0.16.0
+         .config('spark.jars.packages', 'io.github.marquezproject:marquez-spark:0.16.1-rc.1
          .config('spark.extraListeners', 'marquez.spark.agent.SparkListener')
          .config('spark.openlineage.url', 'http://marquez:5000/api/v1/namespaces/spark_integration/')
          .getOrCreate())
@@ -123,7 +123,7 @@ t1 = DataProcPySparkOperator(
     job_name=job_name,
     dataproc_pyspark_properties={
       "spark.extraListeners": "marquez.spark.agent.SparkListener",
-      "spark.jars.packages": "io.github.marquezproject:marquez-spark:0.16.0
+      "spark.jars.packages": "io.github.marquezproject:marquez-spark:0.16.1-rc.1
       "spark.openlineage.url": f"{marquez_url}/api/v1/namespaces/{marquez_namespace}/jobs/dump_orders_to_gcs/runs/{{{{task_run_id(run_id, task)}}}}?api_key={api_key}"
     },
     dag=dag)
@@ -156,7 +156,7 @@ t1 = DataprocClusterCreateOperator(
     init_actions_uris=['gs://dataproc-initialization-actions/cloud-sql-proxy/cloud-sql-proxy.sh'],
     properties={
       "spark.extraListeners": "marquez.spark.agent.SparkListener",
-      "spark.jars.packages": "io.github.marquezproject:marquez-spark:0.16.0
+      "spark.jars.packages": "io.github.marquezproject:marquez-spark:0.16.1-rc.1
       "spark.openlineage.url": "{marquez_url}/api/v1/namespaces/{marquez_namespace}/?api_key={api_key}"
     },
     dag=dag)
