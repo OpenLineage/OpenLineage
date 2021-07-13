@@ -25,6 +25,8 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+**/*.python_version
+**/*.python-version
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -48,7 +50,7 @@ coverage.xml
 *.cover
 *.py,cover
 .hypothesis/
-.pytest_cache/
+**/*.pytest_cache
 cover/
 
 # Translations
@@ -136,3 +138,6 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+.gradle
+.idea

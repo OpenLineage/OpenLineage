@@ -1,0 +1,185 @@
+{
+  "data_asset_type": "Dataset",
+  "expectation_suite_name": "taxi.demo",
+  "expectations": [
+    {
+      "expectation_type": "expect_table_row_count_to_be_between",
+      "kwargs": {
+        "max_value": 11000,
+        "min_value": 9000
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "vendor_id"
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_min_to_be_between",
+      "kwargs": {
+        "column": "total_amount",
+        "min_value": -100,
+        "max_value": 0
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_max_to_be_between",
+      "kwargs": {
+        "column": "total_amount",
+        "min_value": 20,
+        "max_value": 5000
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_sum_to_be_between",
+      "kwargs": {
+        "column": "total_amount",
+        "min_value": 100000,
+        "max_value": 200000
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_quantile_values_to_be_between",
+      "kwargs": {
+        "column": "total_amount",
+        "quantile_ranges": {
+          "quantiles": [0, 0.333, 0.6667, 1],
+          "value_ranges": [[-100,0], [0,10], [10,20], [20,5000]]
+        }
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_distinct_values_to_be_in_set",
+      "kwargs": {
+        "column": "vendor_id",
+        "value_set": [
+          1,
+          2,
+          4
+        ]
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_distinct_values_to_be_in_set",
+      "kwargs": {
+        "column": "passenger_count",
+        "value_set": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_unique_value_count_to_be_between",
+      "kwargs": {
+        "column": "vendor_id",
+        "min_value": 1,
+        "max_value": 10
+      },
+      "meta": {}
+    }
+  ],
+  "meta": {
+    "BasicSuiteBuilderProfiler": {
+      "batch_kwargs": {
+        "data_asset_name": "yellow_tripdata_sample_2019-01",
+        "datasource": "data__dir",
+        "path": "/Users/sam/code/great_expectations_airflow/examples/great_expectations/../data/yellow_tripdata_sample_2019-01.csv"
+      },
+      "created_at": 1604611203.263398,
+      "created_by": "BasicSuiteBuilderProfiler"
+    },
+    "citations": [
+      {
+        "batch_kwargs": {
+          "data_asset_name": "yellow_tripdata_sample_2019-01",
+          "datasource": "data__dir",
+          "path": "/Users/sam/code/great_expectations_airflow/examples/great_expectations/../data/yellow_tripdata_sample_2019-01.csv"
+        },
+        "batch_markers": {
+          "ge_load_time": "20201105T212003.084019Z",
+          "pandas_data_fingerprint": "bbb50ee4b76ccdcb57e861fb52f535d9"
+        },
+        "batch_parameters": null,
+        "citation_date": "20201105T212003.285659Z",
+        "comment": "BasicSuiteBuilderProfiler added a citation based on the current batch."
+      }
+    ],
+    "columns": {
+      "congestion_surcharge": {
+        "description": ""
+      },
+      "dropoff_datetime": {
+        "description": ""
+      },
+      "dropoff_location_id": {
+        "description": ""
+      },
+      "extra": {
+        "description": ""
+      },
+      "fare_amount": {
+        "description": ""
+      },
+      "improvement_surcharge": {
+        "description": ""
+      },
+      "mta_tax": {
+        "description": ""
+      },
+      "passenger_count": {
+        "description": ""
+      },
+      "payment_type": {
+        "description": ""
+      },
+      "pickup_datetime": {
+        "description": ""
+      },
+      "pickup_location_id": {
+        "description": ""
+      },
+      "rate_code_id": {
+        "description": ""
+      },
+      "store_and_fwd_flag": {
+        "description": ""
+      },
+      "tip_amount": {
+        "description": ""
+      },
+      "tolls_amount": {
+        "description": ""
+      },
+      "total_amount": {
+        "description": ""
+      },
+      "trip_distance": {
+        "description": ""
+      },
+      "vendor_id": {
+        "description": ""
+      }
+    },
+    "great_expectations_version": "0.12.4",
+    "notes": {
+      "content": [
+        "#### This is an _example_ suite\n\n- This suite was made by quickly glancing at 1000 rows of your data.\n- This is **not a production suite**. It is meant to show examples of expectations.\n- Because this suite was auto-generated using a very basic profiler that does not know your data like you do, many of the expectations may not be meaningful.\n"
+      ],
+      "format": "markdown"
+    }
+  }
+}
