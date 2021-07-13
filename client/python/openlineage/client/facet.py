@@ -15,7 +15,7 @@ from typing import Dict, List, Optional
 
 import attr
 
-from openlineage.constants import DEFAULT_PRODUCER
+from openlineage.client.constants import DEFAULT_PRODUCER
 
 
 PRODUCER = os.getenv("OPENLINEAGE_PRODUCER", DEFAULT_PRODUCER)

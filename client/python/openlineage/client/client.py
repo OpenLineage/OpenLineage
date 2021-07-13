@@ -17,9 +17,9 @@ import attr
 from requests import Session
 from requests.adapters import HTTPAdapter
 
-from openlineage import constants
-from openlineage.run import RunEvent
-from openlineage.serde import Serde
+from openlineage.client import constants
+from openlineage.client.run import RunEvent
+from openlineage.client.serde import Serde
 
 
 @attr.s
