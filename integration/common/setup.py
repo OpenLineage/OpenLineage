@@ -22,7 +22,7 @@ with open("README.md") as readme_file:
 __version__ = "0.0.1"
 
 requirements = [
-    "attrs>=19.3.0",
+    "attrs>=20.3.0",
     f"openlineage-python=={__version__}",
     "sqlparse>=0.3.1"
 ]
@@ -36,7 +36,8 @@ extras_require = {
         "google-crc32c>=1.1.2"
     ],
     "dbt": [
-        "dbt-core>=0.19.1"
+        "dbt-core>=0.19.1",
+        "pyyaml>=5.3.1"
     ],
     "tests": [
         "pytest",

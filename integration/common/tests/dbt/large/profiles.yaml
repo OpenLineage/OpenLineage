@@ -1,0 +1,12 @@
+snowflake:
+    target: dev
+    outputs:
+        dev:
+            type: snowflake
+            account: ASDF1234.eu-central-1
+            user: test
+            password: password
+            role: sysadmin
+            database: DEMO_DB
+            warehouse: COMPUTE_WH
+            schema: public

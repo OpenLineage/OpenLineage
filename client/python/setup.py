@@ -64,7 +64,7 @@ setup(
     url="https://github.com/OpenLineage/OpenLineage",
     packages=find_packages(),
     install_requires=[
-        "attrs>=19.3.0",
+        "attrs>=20.3.0",
         "requests>=2.20.0"
     ]
 )
