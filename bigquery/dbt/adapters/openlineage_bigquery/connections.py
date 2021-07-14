@@ -47,7 +47,7 @@ class RunMeta:
 
 
 BQ_QUERY_JOB_SPLIT = '-----Query Job SQL Follows-----'
-PRODUCER = "marquez-dbt-bigquery/0.16.1rc1"
+PRODUCER = "marquez-dbt-bigquery/0.16.1"
 
 
 class OpenLineageBigQueryConnectionManager(BigQueryConnectionManager):
