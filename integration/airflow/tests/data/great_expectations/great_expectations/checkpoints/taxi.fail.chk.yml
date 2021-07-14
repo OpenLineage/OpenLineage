@@ -1,0 +1,25 @@
+# This checkpoint was created by the command `great_expectations checkpoint new`.
+#
+# A checkpoint is a list of one or more batches paired with one or more
+# Expectation Suites and a configurable Validation Operator.
+#
+# It can be run with the `great_expectations checkpoint run` command.
+# You can edit this file to add batches of data and expectation suites.
+#
+# For more details please see
+# https://docs.greatexpectations.io/en/latest/guides/how_to_guides/validation/how_to_add_validations_data_or_suites_to_a_checkpoint.html
+validation_operator_name: action_list_operator
+# Batches are a list of batch_kwargs paired with a list of one or more suite
+# names. A checkpoint can have one or more batches. This makes deploying
+# Great Expectations in your pipelines easy!
+batches:
+  - batch_kwargs:
+      # Note this path is designed to integrate with an Astronomer Airflow project where the top-level
+      # data and great_expectations directories live in `/include`. Changes will need to be made to this path
+      # if you are running in a separate context.
+      path: /usr/local/airflow/include/data/yellow_tripdata_sample_2019-02.csv
+      datasource: data__dir
+      data_asset_name: yellow_tripdata_sample_2019-02
+    expectation_suite_names: # one or more suites may validate against a single batch
+      - taxi.demo
+      - taxi.demo_file

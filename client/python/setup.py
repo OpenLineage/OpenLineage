@@ -15,7 +15,7 @@ import os
 import re
 import subprocess
 
-from setuptools import find_packages, setup
+from setuptools import setup, find_namespace_packages
 
 
 def read(rel_path):
@@ -62,7 +62,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/OpenLineage/OpenLineage",
-    packages=find_packages(),
+    packages=find_namespace_packages(include=['openlineage.*']),
     install_requires=[
         "attrs>=19.3.0",
         "requests>=2.20.0"

@@ -1,0 +1,441 @@
+{
+    "evaluation_parameters": null,
+    "run_id": {
+        "run_name": "20210426T122353.250664Z",
+        "run_time": "2021-04-26T12:23:53.250664+00:00"
+    },
+    "run_results": {
+        "ValidationResultIdentifier::taxi/demo/20210426T122353.250664Z/20210426T122353.250664Z/f6faf580c44968853d50cc942ab89192": {
+            "actions_results": {
+                "store_evaluation_params": {
+                    "class": "StoreEvaluationParametersAction"
+                },
+                "store_validation_result": {
+                    "class": "StoreValidationResultAction"
+                },
+                "update_data_docs": {
+                    "class": "UpdateDataDocsAction"
+                }
+            },
+            "validation_result": {
+                "evaluation_parameters": {},
+                "meta": {
+                    "batch_kwargs": {
+                        "datasource": "data__dir",
+                        "path": "/home/example/code/openlineage/integrations/airflow/tests/data/great_expectations/data/yellow_tripdata_sample_2019-01.csv"
+                    },
+                    "batch_markers": {
+                        "ge_load_time": "20210426T122353.161668Z",
+                        "pandas_data_fingerprint": "bbb50ee4b76ccdcb57e861fb52f535d9"
+                    },
+                    "batch_parameters": null,
+                    "expectation_suite_name": "taxi.demo",
+                    "great_expectations_version": "0.13.17",
+                    "run_id": {
+                        "run_name": "20210426T122353.250664Z",
+                        "run_time": "2021-04-26T12:23:53.250664+00:00"
+                    },
+                    "validation_time": "20210426T122353.265369Z"
+                },
+                "results": [
+                    {
+                        "exception_info": {
+                            "exception_message": null,
+                            "exception_traceback": null,
+                            "raised_exception": false
+                        },
+                        "expectation_config": {
+                            "expectation_type": "expect_table_row_count_to_be_between",
+                            "kwargs": {
+                                "max_value": 11000,
+                                "min_value": 9000,
+                                "result_format": {
+                                    "partial_unexpected_count": 20,
+                                    "result_format": "SUMMARY"
+                                }
+                            },
+                            "meta": {}
+                        },
+                        "meta": {},
+                        "result": {
+                            "observed_value": 10000
+                        },
+                        "success": true
+                    },
+                    {
+                        "exception_info": {
+                            "exception_message": null,
+                            "exception_traceback": null,
+                            "raised_exception": false
+                        },
+                        "expectation_config": {
+                            "expectation_type": "expect_column_values_to_not_be_null",
+                            "kwargs": {
+                                "column": "vendor_id",
+                                "result_format": {
+                                    "partial_unexpected_count": 20,
+                                    "result_format": "SUMMARY"
+                                }
+                            },
+                            "meta": {}
+                        },
+                        "meta": {},
+                        "result": {
+                            "element_count": 10000,
+                            "partial_unexpected_list": [],
+                            "unexpected_count": 0,
+                            "unexpected_percent": 0.0,
+                            "unexpected_percent_total": 0.0
+                        },
+                        "success": true
+                    },
+                    {
+                        "exception_info": {
+                            "exception_message": null,
+                            "exception_traceback": null,
+                            "raised_exception": false
+                        },
+                        "expectation_config": {
+                            "expectation_type": "expect_column_distinct_values_to_be_in_set",
+                            "kwargs": {
+                                "column": "vendor_id",
+                                "result_format": {
+                                    "partial_unexpected_count": 20,
+                                    "result_format": "SUMMARY"
+                                },
+                                "value_set": [
+                                    1,
+                                    2,
+                                    4
+                                ]
+                            },
+                            "meta": {}
+                        },
+                        "meta": {},
+                        "result": {
+                            "details": {
+                                "value_counts": [
+                                    {
+                                        "count": 3754,
+                                        "value": 1
+                                    },
+                                    {
+                                        "count": 6150,
+                                        "value": 2
+                                    },
+                                    {
+                                        "count": 96,
+                                        "value": 4
+                                    }
+                                ]
+                            },
+                            "element_count": 10000,
+                            "missing_count": null,
+                            "missing_percent": null,
+                            "observed_value": [
+                                1,
+                                2,
+                                4
+                            ]
+                        },
+                        "success": true
+                    },
+                    {
+                        "exception_info": {
+                            "exception_message": null,
+                            "exception_traceback": null,
+                            "raised_exception": false
+                        },
+                        "expectation_config": {
+                            "expectation_type": "expect_column_unique_value_count_to_be_between",
+                            "kwargs": {
+                                "column": "vendor_id",
+                                "max_value": 10,
+                                "min_value": 1,
+                                "result_format": {
+                                    "partial_unexpected_count": 20,
+                                    "result_format": "SUMMARY"
+                                }
+                            },
+                            "meta": {}
+                        },
+                        "meta": {},
+                        "result": {
+                            "element_count": 10000,
+                            "missing_count": null,
+                            "missing_percent": null,
+                            "observed_value": 3
+                        },
+                        "success": true
+                    },
+                    {
+                        "exception_info": {
+                            "exception_message": null,
+                            "exception_traceback": null,
+                            "raised_exception": false
+                        },
+                        "expectation_config": {
+                            "expectation_type": "expect_column_min_to_be_between",
+                            "kwargs": {
+                                "column": "total_amount",
+                                "max_value": 0,
+                                "min_value": -100,
+                                "result_format": {
+                                    "partial_unexpected_count": 20,
+                                    "result_format": "SUMMARY"
+                                }
+                            },
+                            "meta": {}
+                        },
+                        "meta": {},
+                        "result": {
+                            "element_count": 10000,
+                            "missing_count": null,
+                            "missing_percent": null,
+                            "observed_value": -52.8
+                        },
+                        "success": true
+                    },
+                    {
+                        "exception_info": {
+                            "exception_message": null,
+                            "exception_traceback": null,
+                            "raised_exception": false
+                        },
+                        "expectation_config": {
+                            "expectation_type": "expect_column_max_to_be_between",
+                            "kwargs": {
+                                "column": "total_amount",
+                                "max_value": 5000,
+                                "min_value": 20,
+                                "result_format": {
+                                    "partial_unexpected_count": 20,
+                                    "result_format": "SUMMARY"
+                                }
+                            },
+                            "meta": {}
+                        },
+                        "meta": {},
+                        "result": {
+                            "element_count": 10000,
+                            "missing_count": null,
+                            "missing_percent": null,
+                            "observed_value": 3004.8
+                        },
+                        "success": true
+                    },
+                    {
+                        "exception_info": {
+                            "exception_message": null,
+                            "exception_traceback": null,
+                            "raised_exception": false
+                        },
+                        "expectation_config": {
+                            "expectation_type": "expect_column_sum_to_be_between",
+                            "kwargs": {
+                                "column": "total_amount",
+                                "max_value": 200000,
+                                "min_value": 100000,
+                                "result_format": {
+                                    "partial_unexpected_count": 20,
+                                    "result_format": "SUMMARY"
+                                }
+                            },
+                            "meta": {}
+                        },
+                        "meta": {},
+                        "result": {
+                            "element_count": 10000,
+                            "missing_count": null,
+                            "missing_percent": null,
+                            "observed_value": 157242.31000000003
+                        },
+                        "success": true
+                    },
+                    {
+                        "exception_info": {
+                            "exception_message": null,
+                            "exception_traceback": null,
+                            "raised_exception": false
+                        },
+                        "expectation_config": {
+                            "expectation_type": "expect_column_quantile_values_to_be_between",
+                            "kwargs": {
+                                "column": "total_amount",
+                                "quantile_ranges": {
+                                    "quantiles": [
+                                        0,
+                                        0.333,
+                                        0.6667,
+                                        1
+                                    ],
+                                    "value_ranges": [
+                                        [
+                                            -100,
+                                            0
+                                        ],
+                                        [
+                                            0,
+                                            10
+                                        ],
+                                        [
+                                            10,
+                                            20
+                                        ],
+                                        [
+                                            20,
+                                            5000
+                                        ]
+                                    ]
+                                },
+                                "result_format": {
+                                    "partial_unexpected_count": 20,
+                                    "result_format": "SUMMARY"
+                                }
+                            },
+                            "meta": {}
+                        },
+                        "meta": {},
+                        "result": {
+                            "details": {
+                                "success_details": [
+                                    true,
+                                    true,
+                                    true,
+                                    true
+                                ]
+                            },
+                            "element_count": 10000,
+                            "missing_count": null,
+                            "missing_percent": null,
+                            "observed_value": {
+                                "quantiles": [
+                                    0,
+                                    0.333,
+                                    0.6667,
+                                    1
+                                ],
+                                "values": [
+                                    -52.8,
+                                    9.3,
+                                    14.16,
+                                    3004.8
+                                ]
+                            }
+                        },
+                        "success": true
+                    },
+                    {
+                        "exception_info": {
+                            "exception_message": null,
+                            "exception_traceback": null,
+                            "raised_exception": false
+                        },
+                        "expectation_config": {
+                            "expectation_type": "expect_column_distinct_values_to_be_in_set",
+                            "kwargs": {
+                                "column": "passenger_count",
+                                "result_format": {
+                                    "partial_unexpected_count": 20,
+                                    "result_format": "SUMMARY"
+                                },
+                                "value_set": [
+                                    1,
+                                    2,
+                                    3,
+                                    4,
+                                    5,
+                                    6
+                                ]
+                            },
+                            "meta": {}
+                        },
+                        "meta": {},
+                        "result": {
+                            "details": {
+                                "value_counts": [
+                                    {
+                                        "count": 7299,
+                                        "value": 1
+                                    },
+                                    {
+                                        "count": 1458,
+                                        "value": 2
+                                    },
+                                    {
+                                        "count": 390,
+                                        "value": 3
+                                    },
+                                    {
+                                        "count": 186,
+                                        "value": 4
+                                    },
+                                    {
+                                        "count": 415,
+                                        "value": 5
+                                    },
+                                    {
+                                        "count": 252,
+                                        "value": 6
+                                    }
+                                ]
+                            },
+                            "element_count": 10000,
+                            "missing_count": null,
+                            "missing_percent": null,
+                            "observed_value": [
+                                1,
+                                2,
+                                3,
+                                4,
+                                5,
+                                6
+                            ]
+                        },
+                        "success": true
+                    }
+                ],
+                "statistics": {
+                    "evaluated_expectations": 9,
+                    "success_percent": 100.0,
+                    "successful_expectations": 9,
+                    "unsuccessful_expectations": 0
+                },
+                "success": true
+            }
+        }
+    },
+    "success": true,
+    "validation_operator_config": {
+        "class_name": "ActionListValidationOperator",
+        "kwargs": {
+            "action_list": [
+                {
+                    "action": {
+                        "class_name": "StoreValidationResultAction"
+                    },
+                    "name": "store_validation_result"
+                },
+                {
+                    "action": {
+                        "class_name": "StoreEvaluationParametersAction"
+                    },
+                    "name": "store_evaluation_params"
+                },
+                {
+                    "action": {
+                        "class_name": "UpdateDataDocsAction",
+                        "site_names": []
+                    },
+                    "name": "update_data_docs"
+                }
+            ],
+            "result_format": {
+                "partial_unexpected_count": 20,
+                "result_format": "SUMMARY"
+            }
+        },
+        "module_name": "great_expectations.validation_operators",
+        "name": "default-action-list-validation-operator"
+    }
+}
