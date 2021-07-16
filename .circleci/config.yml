@@ -55,7 +55,7 @@ jobs:
           gradle publish
 
   build-integration-spark:
-    working_directory: ~/OpenLineage/integration/spark
+    working_directory: ~/openLineage/integration/spark
     docker:
       - image: circleci/openjdk:8-jdk
     steps:
