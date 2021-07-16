@@ -1,0 +1,9 @@
+version: "3.7"
+services:
+  notebook:
+    image: jupyter/pyspark-notebook
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./docker/notebooks:/home/jovyan/notebooks
+      - ./build:/home/jovyan/openlineage
