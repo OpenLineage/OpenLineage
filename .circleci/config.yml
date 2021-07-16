@@ -64,6 +64,8 @@ jobs:
           keys:
             - v1-integration-spark-{{ .Branch }}-{{ .Revision }}
             - v1-integration-spark-{{ .Branch }}
+      - run: pwd && ls
+      - run: cd ./integration/spark/ && ls
       - run: ./integration/spark/gradlew --no-daemon --stacktrace build
       - run:
           when: on_fail
