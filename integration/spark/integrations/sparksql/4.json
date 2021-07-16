@@ -1,0 +1,176 @@
+{
+  "eventType": "COMPLETE",
+  "eventTime": "2021-01-01T00:00:00Z",
+  "run": {
+    "runId": "fake_run_id",
+    "facets": {
+      "parent": {
+        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integrations/spark",
+        "_schemaURL": "https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#ParentRunFacet",
+        "run": {
+          "runId": "ea445b5c-22eb-457a-8007-01c7c52b6e54"
+        },
+        "job": {
+          "namespace": "ns_name",
+          "name": "job_name"
+        }
+      },
+      "spark.logicalPlan": {
+        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integrations/spark",
+        "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integrations/spark/facets/spark-2.4/v1/logicalPlanFacet",
+        "plan": [
+          {
+            "class": "org.apache.spark.sql.catalyst.plans.logical.Aggregate",
+            "num-children": 1,
+            "groupingExpressions": [],
+            "aggregateExpressions": [
+              [
+                {
+                  "class": "org.apache.spark.sql.catalyst.expressions.Alias",
+                  "num-children": 1,
+                  "child": 0,
+                  "name": "count",
+                  "qualifier": []
+                },
+                {
+                  "class": "org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression",
+                  "num-children": 1,
+                  "aggregateFunction": 0,
+                  "mode": {
+                    "object": "org.apache.spark.sql.catalyst.expressions.aggregate.Complete$"
+                  },
+                  "isDistinct": false
+                },
+                {
+                  "class": "org.apache.spark.sql.catalyst.expressions.aggregate.Count",
+                  "num-children": 1,
+                  "children": [
+                    0
+                  ]
+                },
+                {
+                  "class": "org.apache.spark.sql.catalyst.expressions.Literal",
+                  "num-children": 0,
+                  "value": "1",
+                  "dataType": "integer"
+                }
+              ]
+            ],
+            "child": 0
+          },
+          {
+            "class": "org.apache.spark.sql.catalyst.plans.logical.TypedFilter",
+            "num-children": 1,
+            "func": null,
+            "argumentClass": "java.lang.String",
+            "argumentSchema": {
+              "type": "struct",
+              "fields": [
+                {
+                  "name": "value",
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {}
+                }
+              ]
+            },
+            "deserializer": [
+              {
+                "class": "org.apache.spark.sql.catalyst.expressions.objects.Invoke",
+                "num-children": 1,
+                "targetObject": 0,
+                "functionName": "toString",
+                "dataType": "object",
+                "arguments": [],
+                "propagateNull": true,
+                "returnNullable": false
+              },
+              {
+                "class": "org.apache.spark.sql.catalyst.expressions.Cast",
+                "num-children": 1,
+                "child": 0,
+                "dataType": "string"
+              },
+              {
+                "class": "org.apache.spark.sql.catalyst.expressions.AttributeReference",
+                "num-children": 0,
+                "name": "value",
+                "dataType": "string",
+                "nullable": true,
+                "metadata": {},
+                "qualifier": []
+              }
+            ],
+            "child": 0
+          },
+          {
+            "class": "org.apache.spark.sql.catalyst.plans.logical.Project",
+            "num-children": 1,
+            "projectList": [
+              [
+                {
+                  "class": "org.apache.spark.sql.catalyst.expressions.AttributeReference",
+                  "num-children": 0,
+                  "name": "value",
+                  "dataType": "string",
+                  "nullable": true,
+                  "metadata": {},
+                  "qualifier": []
+                }
+              ]
+            ],
+            "child": 0
+          },
+          {
+            "class": "org.apache.spark.sql.execution.datasources.LogicalRelation",
+            "num-children": 0,
+            "relation": null,
+            "output": [
+              [
+                {
+                  "class": "org.apache.spark.sql.catalyst.expressions.AttributeReference",
+                  "num-children": 0,
+                  "name": "value",
+                  "dataType": "string",
+                  "nullable": true,
+                  "metadata": {},
+                  "qualifier": []
+                }
+              ]
+            ],
+            "isStreaming": false
+          }
+        ]
+      }
+    }
+  },
+  "job": {
+    "namespace": "ns_name",
+    "name": "word_count.hash_aggregate"
+  },
+  "inputs": [
+    {
+      "namespace": "file",
+      "name": "/path/to/data",
+      "facets": {
+        "schema": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integrations/spark",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#SchemaDatasetFacet",
+          "fields": [
+            {
+              "name": "value",
+              "type": "string"
+            }
+          ]
+        },
+        "dataSource": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integrations/spark",
+          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#DatasourceDatasetFacet",
+          "uri": "file",
+          "name": "file"
+        }
+      }
+    }
+  ],
+  "producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integrations/spark"
+}
