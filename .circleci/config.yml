@@ -56,7 +56,7 @@ jobs:
 
 
   build-integration-spark:
-    working_directory: ~/OpenLineage/integration/spark
+    working_directory: ~/openlineage/integration/spark
     docker:
       - image: circleci/openjdk:8-jdk
     steps:
@@ -79,6 +79,10 @@ jobs:
           key: v1-integration-spark-{{ .Branch }}-{{ .Revision }}
           paths:
             - ~/.gradle
+      - persist_to_workspace:
+          root: .
+          paths:
+            - ./build/libs/*.jar
 
   test-integration-common:
     working_directory: ~/openlineage/integration/common
