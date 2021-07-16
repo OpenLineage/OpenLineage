@@ -64,7 +64,7 @@ jobs:
           keys:
             - v1-integration-spark-{{ .Branch }}-{{ .Revision }}
             - v1-integration-spark-{{ .Branch }}
-      - run: ls
+      - run: ./integration/spark/gradlew --no-daemon --stacktrace build
       - run:
           when: on_fail
           command: cat integration/spark/build/test-results/test/TEST-*.xml
