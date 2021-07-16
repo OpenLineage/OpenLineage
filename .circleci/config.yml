@@ -64,6 +64,7 @@ jobs:
           keys:
             - v1-integration-spark-{{ .Branch }}-{{ .Revision }}
             - v1-integration-spark-{{ .Branch }}
+      - run: ./integration/spark/gradlew --no-daemon tasks --all
       - run: less ./integration/spark/build.gradle
       - run: ./integration/spark/gradlew --no-daemon --stacktrace build
       - run:
