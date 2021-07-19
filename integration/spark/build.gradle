@@ -89,6 +89,8 @@ dependencies {
     testImplementation('org.xerial:sqlite-jdbc:3.34.0')
     testImplementation "org.testcontainers:junit-jupiter:${testcontainersVersion}"
     testImplementation "org.testcontainers:postgresql:${testcontainersVersion}"
+    testImplementation "org.testcontainers:mockserver:${testcontainersVersion}"
+    testImplementation 'io.github.arkinator:mockserver-client-java:5.11.3'
     testCompile "org.assertj:assertj-core:${assertjVersion}"
     testCompile "org.junit.jupiter:junit-jupiter:${junit5Version}"
     testCompile "org.mockito:mockito-core:${mockitoVersion}"
@@ -135,7 +137,6 @@ tasks.register("integrationTests", Test) {
     systemProperties = [
             'junit.platform.output.capture.stdout': 'true',
             'junit.platform.output.capture.stderr': 'true',
-            'marquez.image.tag': project.getProperty('marquez.image.tag'),
             'spark.version': project.getProperty('spark.version'),
             'openlineage.spark.jar': "${archivesBaseName}-${project.version}.jar"
     ]

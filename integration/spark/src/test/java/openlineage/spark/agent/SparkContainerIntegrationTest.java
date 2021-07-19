@@ -1,27 +1,28 @@
 package openlineage.spark.agent;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static java.nio.file.Files.readAllBytes;
+import static org.mockserver.model.HttpRequest.request;
+import static org.mockserver.model.JsonBody.json;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
+
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.conn.PoolingClientConnectionManager;
+
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.mockserver.client.MockServerClient;
+import org.mockserver.matchers.MatchType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.MockServerContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -34,16 +35,17 @@ import org.testcontainers.utility.DockerImageName;
 public class SparkContainerIntegrationTest {
 
   private static final Network network = Network.newNetwork();
-  @Container private static final PostgreSQLContainer<?> postgres = makePostgresContainer();
-  @Container private static final GenericContainer<?> marquez = makeMarquezContainer();
+  @Container
+  private static final PostgreSQLContainer<?> postgres = makePostgresContainer();
+  @Container
+  private static final MockServerContainer openLineageClientMockContainer = makeMockServerContainer();
   private static GenericContainer<?> pyspark;
-  private static HttpHost marquezHost;
-  private static DefaultHttpClient httpClient;
+  private static MockServerClient mockServerClient;
 
   @BeforeAll
   public static void setup() {
-    marquezHost = new HttpHost(marquez.getHost(), marquez.getFirstMappedPort());
-    httpClient = new DefaultHttpClient(new PoolingClientConnectionManager());
+    mockServerClient = new MockServerClient(openLineageClientMockContainer.getHost(), openLineageClientMockContainer.getServerPort());
+    mockServerClient.when(request("/api/v1/lineage")).respond(org.mockserver.model.HttpResponse.response().withStatusCode(200));
   }
 
   @AfterEach
@@ -60,7 +62,7 @@ public class SparkContainerIntegrationTest {
       logger.error("Unable to shut down postgres container", e2);
     }
     try {
-      marquez.stop();
+      openLineageClientMockContainer.stop();
     } catch (Exception e2) {
       logger.error("Unable to shut down marquez container", e2);
     }
@@ -88,20 +90,13 @@ public class SparkContainerIntegrationTest {
                 "MARQUEZ_DB", "marquez",
                 "MARQUEZ_USER", "marquez",
                 "MARQUEZ_PASSWORD", "marquez"))
-        .withFileSystemBind("../../docker/init-db.sh", "/docker-entrypoint-initdb.d/init-db.sh");
+        .withFileSystemBind("./docker/init-db.sh", "/docker-entrypoint-initdb.d/init-db.sh");
   }
 
-  private static GenericContainer<?> makeMarquezContainer() {
-    return new GenericContainer<>(
-            DockerImageName.parse(
-                "marquezproject/marquez:" + System.getProperty("marquez.image.tag")))
+  private static MockServerContainer makeMockServerContainer() {
+    return new MockServerContainer(DockerImageName.parse("jamesdbloom/mockserver:mockserver-5.11.2"))
         .withNetwork(network)
-        .withNetworkAliases("marquez")
-        .withExposedPorts(5000)
-        .waitingFor(Wait.forHttp("/api/v1/namespaces"))
-        .withStartupTimeout(Duration.of(2, ChronoUnit.MINUTES))
-        .withLogConsumer(SparkContainerIntegrationTest::consumeOutput)
-        .dependsOn(postgres);
+        .withNetworkAliases("openlineageclient");
   }
 
   private static GenericContainer<?> makePysparkContainer(String... command) {
@@ -114,7 +109,7 @@ public class SparkContainerIntegrationTest {
         .withFileSystemBind("build/libs", "/opt/libs")
         .withLogConsumer(SparkContainerIntegrationTest::consumeOutput)
         .withStartupTimeout(Duration.of(2, ChronoUnit.MINUTES))
-        .dependsOn(marquez)
+        .dependsOn(openLineageClientMockContainer)
         .withReuse(true)
         .withCommand(command);
   }
@@ -144,30 +139,25 @@ public class SparkContainerIntegrationTest {
             "--master",
             "local",
             "--conf",
-            "spark.openlineage.host=http://marquez:5000",
+            "spark.openlineage.host=" + "http://openlineageclient:1080",
             "--conf",
             "spark.openlineage.namespace=testPysparkWordCountWithCliArgs",
             "--conf",
             "spark.extraListeners=" + OpenLineageSparkListener.class.getName(),
             "--jars",
-            "/opt/libs/" + System.getProperty("marquez.spark.jar"),
+            "/opt/libs/" + System.getProperty("openlineage.spark.jar"),
             "/opt/spark_scripts/spark_word_count.py");
     pyspark.setWaitStrategy(Wait.forLogMessage(".*ShutdownHookManager: Shutdown hook called.*", 1));
     pyspark.start();
 
-    HttpResponse response =
-        httpClient.execute(
-            marquezHost, new HttpGet("/api/v1/namespaces/testPysparkWordCountWithCliArgs/jobs"));
-    assertThat(response.getStatusLine().getStatusCode()).isEqualTo(200);
-    JsonNode jsonNode = new ObjectMapper().readTree(response.getEntity().getContent());
-    assertThat(jsonNode).matches(j -> ((JsonNode) j).has("jobs"), "Has jobs key");
-    assertThat(jsonNode.get("jobs"))
-        .matches(j -> ((JsonNode) j).isArray())
-        .hasSize(1)
-        .first()
-        .extracting(j -> j.get("name").textValue())
-        .isEqualTo(
-            "open_lineage_integration_word_count.execute_insert_into_hadoop_fs_relation_command");
+
+    Path eventFolder = Paths.get("integrations/container/");
+    String startEvent = new String(readAllBytes(eventFolder.resolve("pysparkWordCountWithCliArgsStartEvent.json")));
+    String completeEvent = new String(readAllBytes(eventFolder.resolve("pysparkWordCountWithCliArgsCompleteEvent.json")));
+    mockServerClient.verify(
+        request().withPath("/api/v1/lineage").withBody(json(startEvent, MatchType.ONLY_MATCHING_FIELDS)),
+        request().withPath("/api/v1/lineage").withBody(json(completeEvent, MatchType.ONLY_MATCHING_FIELDS))
+    );
   }
 
   @Test
@@ -177,33 +167,27 @@ public class SparkContainerIntegrationTest {
             "--master",
             "local",
             "--conf",
-            "spark.openlineage.host=http://marquez:5000",
+            "spark.openlineage.host=" + "http://openlineageclient:1080",
             "--conf",
             "spark.openlineage.namespace=testPysparkRddToTable",
             "--conf",
             "spark.extraListeners=" + OpenLineageSparkListener.class.getName(),
             "--jars",
-            "/opt/libs/" + System.getProperty("marquez.spark.jar"),
+            "/opt/libs/" + System.getProperty("openlineage.spark.jar"),
             "/opt/spark_scripts/spark_rdd_to_table.py");
     pyspark.setWaitStrategy(Wait.forLogMessage(".*ShutdownHookManager: Shutdown hook called.*", 1));
     pyspark.start();
 
-    HttpResponse response =
-        httpClient.execute(
-            marquezHost, new HttpGet("/api/v1/namespaces/testPysparkRddToTable/jobs"));
-    assertThat(response.getStatusLine().getStatusCode()).isEqualTo(200);
-    JsonNode jsonNode = new ObjectMapper().readTree(response.getEntity().getContent());
-    assertThat(jsonNode).matches(j -> ((JsonNode) j).has("jobs"), "Has jobs key");
-    assertThat(jsonNode.get("jobs"))
-        .matches(j -> ((JsonNode) j).isArray())
-        .hasSize(2)
-        .map(j -> j.get("name").textValue())
-        .containsAll(
-            Arrays.asList(
-                "spark_rdd_to_table.map_partitions_python_list_of_random_words_and_numbers",
-                "spark_rdd_to_table.execute_insert_into_hadoop_fs_relation_command"));
-    for (JsonNode n : jsonNode.get("jobs")) {
-      assertThat(n.get("outputs")).hasSize(1);
-    }
+    Path eventFolder = Paths.get("integrations/container/");
+    String startCsvEvent = new String(readAllBytes(eventFolder.resolve("pysparkRddToCsvStartEvent.json")));
+    String completeCsvEvent = new String(readAllBytes(eventFolder.resolve("pysparkRddToCsvCompleteEvent.json")));
+    String startTableEvent = new String(readAllBytes(eventFolder.resolve("pysparkRddToTableStartEvent.json")));
+    String completeTableEvent = new String(readAllBytes(eventFolder.resolve("pysparkRddToTableCompleteEvent.json")));
+    mockServerClient.verify(
+        request().withPath("/api/v1/lineage").withBody(json(startCsvEvent, MatchType.ONLY_MATCHING_FIELDS)),
+        request().withPath("/api/v1/lineage").withBody(json(completeCsvEvent, MatchType.ONLY_MATCHING_FIELDS)),
+        request().withPath("/api/v1/lineage").withBody(json(startTableEvent, MatchType.ONLY_MATCHING_FIELDS)),
+        request().withPath("/api/v1/lineage").withBody(json(completeTableEvent, MatchType.ONLY_MATCHING_FIELDS))
+    );
   }
 }
