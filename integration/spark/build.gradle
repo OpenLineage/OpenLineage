@@ -90,7 +90,9 @@ dependencies {
     testImplementation "org.testcontainers:junit-jupiter:${testcontainersVersion}"
     testImplementation "org.testcontainers:postgresql:${testcontainersVersion}"
     testImplementation "org.testcontainers:mockserver:${testcontainersVersion}"
-    testImplementation 'io.github.arkinator:mockserver-client-java:5.11.3'
+    testImplementation('io.github.arkinator:mockserver-client-java:5.11.3') {
+        exclude group: 'com.google.guava', module: 'guava'
+    }
     testCompile "org.assertj:assertj-core:${assertjVersion}"
     testCompile "org.junit.jupiter:junit-jupiter:${junit5Version}"
     testCompile "org.mockito:mockito-core:${mockitoVersion}"
@@ -113,7 +115,6 @@ test {
     useJUnitPlatform {
         excludeTags 'integration-test'
     }
-    useJUnitPlatform()
     forkEvery 1
     maxParallelForks 3
     testLogging {
@@ -126,7 +127,7 @@ test {
     ]
 }
 
-tasks.register("integrationTests", Test) {
+task integrationTest(type: Test) {
     useJUnitPlatform {
         includeTags "integration-test"
     }
@@ -140,7 +141,7 @@ tasks.register("integrationTests", Test) {
             'spark.version': project.getProperty('spark.version'),
             'openlineage.spark.jar': "${archivesBaseName}-${project.version}.jar"
     ]
-    mustRunAfter shadowJar
+    dependsOn shadowJar
 }
 
 spotless {
