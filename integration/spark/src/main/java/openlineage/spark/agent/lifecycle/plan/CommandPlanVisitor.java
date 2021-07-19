@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
 import openlineage.spark.agent.client.LineageEvent;
 import org.apache.spark.sql.catalyst.plans.logical.InsertIntoDir;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -20,10 +19,12 @@ import scala.runtime.AbstractPartialFunction;
  * normally by calling {@link LogicalPlan#collect(PartialFunction)}, but children that aren't
  * exposed get skipped in the collect call, so we need to root them out here.
  */
-public class CommandPlanVisitor extends AbstractPartialFunction<LogicalPlan, List<LineageEvent.Dataset>> {
+public class CommandPlanVisitor
+    extends AbstractPartialFunction<LogicalPlan, List<LineageEvent.Dataset>> {
   private final PartialFunction<LogicalPlan, List<LineageEvent.Dataset>> inputVisitors;
 
-  public CommandPlanVisitor(List<PartialFunction<LogicalPlan, List<LineageEvent.Dataset>>> inputVisitors) {
+  public CommandPlanVisitor(
+      List<PartialFunction<LogicalPlan, List<LineageEvent.Dataset>>> inputVisitors) {
     this.inputVisitors = PlanUtils.merge(inputVisitors);
   }
 

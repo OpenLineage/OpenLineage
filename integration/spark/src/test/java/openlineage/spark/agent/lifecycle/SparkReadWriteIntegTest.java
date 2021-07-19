@@ -70,9 +70,12 @@ public class SparkReadWriteIntegTest {
   @BeforeEach
   public void setUp() {
     reset(MockBigQueryRelationProvider.BIG_QUERY);
-    when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentRunId()).thenReturn(UUID.randomUUID().toString());
-    when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentJobName()).thenReturn("ParentJob");
-    when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getJobNamespace()).thenReturn("Namespace");
+    when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentRunId())
+        .thenReturn(UUID.randomUUID().toString());
+    when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentJobName())
+        .thenReturn("ParentJob");
+    when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getJobNamespace())
+        .thenReturn("Namespace");
   }
 
   @AfterEach
@@ -149,7 +152,8 @@ public class SparkReadWriteIntegTest {
     StaticExecutionContextFactory.waitForExecutionEnd();
 
     ArgumentCaptor<LineageEvent> lineageEvent = ArgumentCaptor.forClass(LineageEvent.class);
-    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(2)).emit(lineageEvent.capture());
+    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(2))
+        .emit(lineageEvent.capture());
     List<LineageEvent> events = lineageEvent.getAllValues();
     List<LineageEvent.Dataset> inputs = events.get(1).getInputs();
     assertEquals(1, inputs.size());
@@ -202,7 +206,8 @@ public class SparkReadWriteIntegTest {
     // FIXME- the DataFrame -> RDD conversion in the JDBCRelationProvider causes two different sets
     // of job execution events. Both end up triggering the open lineage event creation
     // see https://github.com/MarquezProject/marquez/issues/1197
-    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(4)).emit(lineageEvent.capture());
+    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(4))
+        .emit(lineageEvent.capture());
     List<LineageEvent> events = lineageEvent.getAllValues();
     Optional<LineageEvent> completionEvent =
         events.stream()
@@ -274,7 +279,8 @@ public class SparkReadWriteIntegTest {
     StaticExecutionContextFactory.waitForExecutionEnd();
 
     ArgumentCaptor<LineageEvent> lineageEvent = ArgumentCaptor.forClass(LineageEvent.class);
-    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(4)).emit(lineageEvent.capture());
+    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(4))
+        .emit(lineageEvent.capture());
     List<LineageEvent> events = lineageEvent.getAllValues();
     Optional<LineageEvent> completionEvent =
         events.stream()
@@ -313,8 +319,10 @@ public class SparkReadWriteIntegTest {
     StaticExecutionContextFactory.waitForExecutionEnd();
 
     reset(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT); // reset to start counting now
-    when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getJobNamespace()).thenReturn("theNamespace");
-    when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentJobName()).thenReturn("theParentJob");
+    when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getJobNamespace())
+        .thenReturn("theNamespace");
+    when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentJobName())
+        .thenReturn("theParentJob");
     when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentRunId()).thenReturn("ABCD");
     JobConf conf = new JobConf();
     FileInputFormat.addInputPath(conf, new org.apache.hadoop.fs.Path(csvUri));
@@ -335,7 +343,8 @@ public class SparkReadWriteIntegTest {
     StaticExecutionContextFactory.waitForExecutionEnd();
 
     ArgumentCaptor<LineageEvent> lineageEvent = ArgumentCaptor.forClass(LineageEvent.class);
-    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(2)).emit(lineageEvent.capture());
+    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(2))
+        .emit(lineageEvent.capture());
     LineageEvent completeEvent = lineageEvent.getAllValues().get(1);
     assertThat(completeEvent).hasFieldOrPropertyWithValue("eventType", "COMPLETE");
     assertThat(completeEvent.getInputs())

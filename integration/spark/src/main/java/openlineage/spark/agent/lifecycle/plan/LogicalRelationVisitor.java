@@ -23,29 +23,32 @@ import scala.runtime.AbstractPartialFunction;
  * exact dataset information.
  *
  * <p>For {@link HadoopFsRelation}s, it is assumed that a single directory maps to a single {@link
- * LineageEvent.Dataset}. Any files referenced are replaced by their parent directory and all files in a given
- * directory are assumed to belong to the same {@link LineageEvent.Dataset}. Directory partitioning is currently
- * not addressed.
+ * LineageEvent.Dataset}. Any files referenced are replaced by their parent directory and all files
+ * in a given directory are assumed to belong to the same {@link LineageEvent.Dataset}. Directory
+ * partitioning is currently not addressed.
  *
- * <p>For {@link JDBCRelation}s, {@link LineageEvent.Dataset} naming expects the namespace to be the JDBC
- * connection URL (schema and authority only) and the table name to be the <code>&lt;database&gt;
+ * <p>For {@link JDBCRelation}s, {@link LineageEvent.Dataset} naming expects the namespace to be the
+ * JDBC connection URL (schema and authority only) and the table name to be the <code>
+ * &lt;database&gt;
  * </code>.<code>&lt;tableName&gt;</code>.
  *
  * <p>{@link org.apache.spark.sql.catalyst.catalog.CatalogTable}s, if present, can be used to
- * describe the {@link LineageEvent.Dataset} if its {@link org.apache.spark.sql.sources.BaseRelation} is unknown.
+ * describe the {@link LineageEvent.Dataset} if its {@link
+ * org.apache.spark.sql.sources.BaseRelation} is unknown.
  *
  * <p>If the {@link org.apache.spark.sql.sources.BaseRelation} is unknown, we send back a {@link
- * LineageEvent.Dataset} named for the node name in the logical plan. This helps track what nodes are yet
- * unknown, while hopefully avoiding gaps in the lineage coverage by providing what information we
- * have about the dataset.
+ * LineageEvent.Dataset} named for the node name in the logical plan. This helps track what nodes
+ * are yet unknown, while hopefully avoiding gaps in the lineage coverage by providing what
+ * information we have about the dataset.
  *
  * <p>TODO If a user specifies the {@link JDBCOptions#JDBC_QUERY_STRING()} option, we do not parse
- * the sql to determine the specific tables used. Since we return a List of {@link LineageEvent.Dataset}s, we can
- * parse the sql and determine each table referenced to return a complete list of datasets
- * referenced.
+ * the sql to determine the specific tables used. Since we return a List of {@link
+ * LineageEvent.Dataset}s, we can parse the sql and determine each table referenced to return a
+ * complete list of datasets referenced.
  */
 @Slf4j
-public class LogicalRelationVisitor extends AbstractPartialFunction<LogicalPlan, List<LineageEvent.Dataset>> {
+public class LogicalRelationVisitor
+    extends AbstractPartialFunction<LogicalPlan, List<LineageEvent.Dataset>> {
   private final SparkContext context;
   private final String jobNamespace;
 

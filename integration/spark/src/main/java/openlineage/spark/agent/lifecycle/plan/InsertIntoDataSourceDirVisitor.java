@@ -3,9 +3,8 @@ package openlineage.spark.agent.lifecycle.plan;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
-
-import openlineage.spark.agent.facets.OutputStatisticsFacet;
 import openlineage.spark.agent.client.LineageEvent;
+import openlineage.spark.agent.facets.OutputStatisticsFacet;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.command.InsertIntoDataSourceDirCommand;
 import scala.runtime.AbstractPartialFunction;

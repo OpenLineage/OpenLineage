@@ -5,7 +5,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Stack;
 import java.util.stream.Collectors;
-
 import openlineage.spark.agent.client.LineageEvent;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -24,7 +23,8 @@ import scala.runtime.AbstractPartialFunction;
  * org.apache.spark.sql.execution.datasources.HadoopFsRelation}, but works with {@link RDD}s that
  * are converted to {@link org.apache.spark.sql.Dataset}s.
  */
-public class LogicalRDDVisitor extends AbstractPartialFunction<LogicalPlan, List<LineageEvent.Dataset>> {
+public class LogicalRDDVisitor
+    extends AbstractPartialFunction<LogicalPlan, List<LineageEvent.Dataset>> {
 
   @Override
   public boolean isDefinedAt(LogicalPlan x) {

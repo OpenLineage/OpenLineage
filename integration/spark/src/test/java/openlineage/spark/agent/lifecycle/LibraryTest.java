@@ -50,9 +50,12 @@ public class LibraryTest {
 
   @RepeatedTest(30)
   public void testSparkSql() throws IOException, TimeoutException {
-    when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getJobNamespace()).thenReturn("ns_name");
-    when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentJobName()).thenReturn("job_name");
-    when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentRunId()).thenReturn("ea445b5c-22eb-457a-8007-01c7c52b6e54");
+    when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getJobNamespace())
+        .thenReturn("ns_name");
+    when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentJobName())
+        .thenReturn("job_name");
+    when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentRunId())
+        .thenReturn("ea445b5c-22eb-457a-8007-01c7c52b6e54");
 
     final SparkSession spark =
         SparkSession.builder()
@@ -73,7 +76,8 @@ public class LibraryTest {
     spark.stop();
 
     ArgumentCaptor<LineageEvent> lineageEvent = ArgumentCaptor.forClass(LineageEvent.class);
-    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(4)).emit(lineageEvent.capture());
+    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(4))
+        .emit(lineageEvent.capture());
     List<LineageEvent> events = lineageEvent.getAllValues();
 
     updateSnapshots("sparksql", events);
@@ -138,9 +142,12 @@ public class LibraryTest {
 
   @Test
   public void testRdd() throws IOException {
-    when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getJobNamespace()).thenReturn("ns_name");
-    when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentJobName()).thenReturn("job_name");
-    when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentRunId()).thenReturn("8d99e33e-2a1c-4254-9600-18f23435fc3b");
+    when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getJobNamespace())
+        .thenReturn("ns_name");
+    when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentJobName())
+        .thenReturn("job_name");
+    when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentRunId())
+        .thenReturn("8d99e33e-2a1c-4254-9600-18f23435fc3b");
 
     URL url = Resources.getResource("test_data/data.txt");
     SparkConf conf = new SparkConf().setAppName("Word Count").setMaster("local[*]");
@@ -156,7 +163,8 @@ public class LibraryTest {
     sc.stop();
 
     ArgumentCaptor<LineageEvent> lineageEvent = ArgumentCaptor.forClass(LineageEvent.class);
-    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(2)).emit(lineageEvent.capture());
+    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(2))
+        .emit(lineageEvent.capture());
     List<LineageEvent> events = lineageEvent.getAllValues();
     assertEquals(2, events.size());
 

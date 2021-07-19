@@ -6,9 +6,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
-import openlineage.spark.agent.facets.OutputStatisticsFacet;
 import openlineage.spark.agent.client.LineageEvent;
+import openlineage.spark.agent.facets.OutputStatisticsFacet;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
@@ -22,8 +21,9 @@ import scala.runtime.AbstractPartialFunction;
 
 /**
  * {@link LogicalPlan} visitor that matches an {@link SaveIntoDataSourceCommand} and extracts the
- * output {@link LineageEvent.Dataset} being written. Since the output datasource is a {@link BaseRelation}, we
- * wrap it with an artificial {@link LogicalRelation} so we can delegate to other plan visitors.
+ * output {@link LineageEvent.Dataset} being written. Since the output datasource is a {@link
+ * BaseRelation}, we wrap it with an artificial {@link LogicalRelation} so we can delegate to other
+ * plan visitors.
  */
 public class SaveIntoDataSourceCommandVisitor
     extends AbstractPartialFunction<LogicalPlan, List<LineageEvent.Dataset>> {
@@ -31,7 +31,8 @@ public class SaveIntoDataSourceCommandVisitor
   private final List<PartialFunction<LogicalPlan, List<LineageEvent.Dataset>>> relationVisitors;
 
   public SaveIntoDataSourceCommandVisitor(
-      SQLContext sqlContext, List<PartialFunction<LogicalPlan, List<LineageEvent.Dataset>>> relationVisitors) {
+      SQLContext sqlContext,
+      List<PartialFunction<LogicalPlan, List<LineageEvent.Dataset>>> relationVisitors) {
     this.sqlContext = sqlContext;
     this.relationVisitors = relationVisitors;
   }

@@ -3,7 +3,6 @@ package openlineage.spark.agent.lifecycle.plan;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-
 import openlineage.spark.agent.client.LineageEvent;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
@@ -26,7 +25,8 @@ import scala.runtime.AbstractPartialFunction;
  * and/or {@link org.apache.spark.sql.sources.v2.writer.DataSourceWriter} instances to {@link
  * DatasetSource}s.
  */
-public class DatasetSourceVisitor extends AbstractPartialFunction<LogicalPlan, List<LineageEvent.Dataset>> {
+public class DatasetSourceVisitor
+    extends AbstractPartialFunction<LogicalPlan, List<LineageEvent.Dataset>> {
 
   @Override
   public boolean isDefinedAt(LogicalPlan x) {

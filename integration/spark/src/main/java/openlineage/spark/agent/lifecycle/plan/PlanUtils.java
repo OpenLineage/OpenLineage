@@ -7,9 +7,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
+import openlineage.spark.agent.client.LineageEvent;
 import openlineage.spark.agent.client.OpenLineageClient;
 import openlineage.spark.agent.facets.OutputStatisticsFacet;
-import openlineage.spark.agent.client.LineageEvent;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.sql.execution.metric.SQLMetric;
@@ -76,7 +76,11 @@ public class PlanUtils {
   private static List<LineageEvent.SchemaField> transformFields(StructField[] fields) {
     List<LineageEvent.SchemaField> list = new ArrayList<>();
     for (StructField field : fields) {
-      list.add(LineageEvent.SchemaField.builder().name(field.name()).type(field.dataType().typeName()).build());
+      list.add(
+          LineageEvent.SchemaField.builder()
+              .name(field.name())
+              .type(field.dataType().typeName())
+              .build());
     }
     return list;
   }
@@ -88,8 +92,8 @@ public class PlanUtils {
   }
 
   /**
-   * Given a {@link URI}, construct a valid {@link LineageEvent.Dataset} following the expected naming
-   * conventions.
+   * Given a {@link URI}, construct a valid {@link LineageEvent.Dataset} following the expected
+   * naming conventions.
    *
    * @param outputPath
    * @param schema
@@ -102,14 +106,16 @@ public class PlanUtils {
   }
 
   /**
-   * Construct a dataset given a {@link URI}, namespace, and preconstructed {@link LineageEvent.DatasetFacet}.
+   * Construct a dataset given a {@link URI}, namespace, and preconstructed {@link
+   * LineageEvent.DatasetFacet}.
    *
    * @param outputPath
    * @param namespace
    * @param datasetFacet
    * @return
    */
-  public static LineageEvent.Dataset getDataset(URI outputPath, String namespace, LineageEvent.DatasetFacet datasetFacet) {
+  public static LineageEvent.Dataset getDataset(
+      URI outputPath, String namespace, LineageEvent.DatasetFacet datasetFacet) {
     return LineageEvent.Dataset.builder()
         .namespace(namespace)
         .name(outputPath.getPath())
@@ -165,7 +171,8 @@ public class PlanUtils {
   }
 
   /**
-   * Construct a {@link LineageEvent.ParentRunFacet} given the parent job's runId, job name, and namespace.
+   * Construct a {@link LineageEvent.ParentRunFacet} given the parent job's runId, job name, and
+   * namespace.
    *
    * @param runId
    * @param parentJob

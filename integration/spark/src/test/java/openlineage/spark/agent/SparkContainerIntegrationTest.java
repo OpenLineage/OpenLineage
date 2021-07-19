@@ -5,13 +5,11 @@ import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.JsonBody.json;
 
 import com.google.common.collect.ImmutableMap;
-
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -35,17 +33,24 @@ import org.testcontainers.utility.DockerImageName;
 public class SparkContainerIntegrationTest {
 
   private static final Network network = Network.newNetwork();
+  @Container private static final PostgreSQLContainer<?> postgres = makePostgresContainer();
+
   @Container
-  private static final PostgreSQLContainer<?> postgres = makePostgresContainer();
-  @Container
-  private static final MockServerContainer openLineageClientMockContainer = makeMockServerContainer();
+  private static final MockServerContainer openLineageClientMockContainer =
+      makeMockServerContainer();
+
   private static GenericContainer<?> pyspark;
   private static MockServerClient mockServerClient;
 
   @BeforeAll
   public static void setup() {
-    mockServerClient = new MockServerClient(openLineageClientMockContainer.getHost(), openLineageClientMockContainer.getServerPort());
-    mockServerClient.when(request("/api/v1/lineage")).respond(org.mockserver.model.HttpResponse.response().withStatusCode(200));
+    mockServerClient =
+        new MockServerClient(
+            openLineageClientMockContainer.getHost(),
+            openLineageClientMockContainer.getServerPort());
+    mockServerClient
+        .when(request("/api/v1/lineage"))
+        .respond(org.mockserver.model.HttpResponse.response().withStatusCode(200));
   }
 
   @AfterEach
@@ -94,7 +99,8 @@ public class SparkContainerIntegrationTest {
   }
 
   private static MockServerContainer makeMockServerContainer() {
-    return new MockServerContainer(DockerImageName.parse("jamesdbloom/mockserver:mockserver-5.11.2"))
+    return new MockServerContainer(
+            DockerImageName.parse("jamesdbloom/mockserver:mockserver-5.11.2"))
         .withNetwork(network)
         .withNetworkAliases("openlineageclient");
   }
@@ -150,14 +156,19 @@ public class SparkContainerIntegrationTest {
     pyspark.setWaitStrategy(Wait.forLogMessage(".*ShutdownHookManager: Shutdown hook called.*", 1));
     pyspark.start();
 
-
     Path eventFolder = Paths.get("integrations/container/");
-    String startEvent = new String(readAllBytes(eventFolder.resolve("pysparkWordCountWithCliArgsStartEvent.json")));
-    String completeEvent = new String(readAllBytes(eventFolder.resolve("pysparkWordCountWithCliArgsCompleteEvent.json")));
+    String startEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkWordCountWithCliArgsStartEvent.json")));
+    String completeEvent =
+        new String(
+            readAllBytes(eventFolder.resolve("pysparkWordCountWithCliArgsCompleteEvent.json")));
     mockServerClient.verify(
-        request().withPath("/api/v1/lineage").withBody(json(startEvent, MatchType.ONLY_MATCHING_FIELDS)),
-        request().withPath("/api/v1/lineage").withBody(json(completeEvent, MatchType.ONLY_MATCHING_FIELDS))
-    );
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(startEvent, MatchType.ONLY_MATCHING_FIELDS)),
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(completeEvent, MatchType.ONLY_MATCHING_FIELDS)));
   }
 
   @Test
@@ -179,15 +190,26 @@ public class SparkContainerIntegrationTest {
     pyspark.start();
 
     Path eventFolder = Paths.get("integrations/container/");
-    String startCsvEvent = new String(readAllBytes(eventFolder.resolve("pysparkRddToCsvStartEvent.json")));
-    String completeCsvEvent = new String(readAllBytes(eventFolder.resolve("pysparkRddToCsvCompleteEvent.json")));
-    String startTableEvent = new String(readAllBytes(eventFolder.resolve("pysparkRddToTableStartEvent.json")));
-    String completeTableEvent = new String(readAllBytes(eventFolder.resolve("pysparkRddToTableCompleteEvent.json")));
+    String startCsvEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkRddToCsvStartEvent.json")));
+    String completeCsvEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkRddToCsvCompleteEvent.json")));
+    String startTableEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkRddToTableStartEvent.json")));
+    String completeTableEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkRddToTableCompleteEvent.json")));
     mockServerClient.verify(
-        request().withPath("/api/v1/lineage").withBody(json(startCsvEvent, MatchType.ONLY_MATCHING_FIELDS)),
-        request().withPath("/api/v1/lineage").withBody(json(completeCsvEvent, MatchType.ONLY_MATCHING_FIELDS)),
-        request().withPath("/api/v1/lineage").withBody(json(startTableEvent, MatchType.ONLY_MATCHING_FIELDS)),
-        request().withPath("/api/v1/lineage").withBody(json(completeTableEvent, MatchType.ONLY_MATCHING_FIELDS))
-    );
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(startCsvEvent, MatchType.ONLY_MATCHING_FIELDS)),
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(completeCsvEvent, MatchType.ONLY_MATCHING_FIELDS)),
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(startTableEvent, MatchType.ONLY_MATCHING_FIELDS)),
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(completeTableEvent, MatchType.ONLY_MATCHING_FIELDS)));
   }
 }

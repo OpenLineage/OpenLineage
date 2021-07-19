@@ -2,7 +2,6 @@ package openlineage.spark.agent.lifecycle.plan;
 
 import java.util.Collections;
 import java.util.List;
-
 import openlineage.spark.agent.client.LineageEvent;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.sql.SQLContext;
@@ -15,7 +14,8 @@ import scala.runtime.AbstractPartialFunction;
  * {@link LogicalPlan} visitor that matches an {@link InsertIntoDir} and extracts the output {@link
  * LineageEvent.Dataset} being written.
  */
-public class InsertIntoDirVisitor extends AbstractPartialFunction<LogicalPlan, List<LineageEvent.Dataset>> {
+public class InsertIntoDirVisitor
+    extends AbstractPartialFunction<LogicalPlan, List<LineageEvent.Dataset>> {
   private final SQLContext sqlContext;
 
   public InsertIntoDirVisitor(SQLContext sqlContext) {

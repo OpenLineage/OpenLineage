@@ -11,10 +11,12 @@ import scala.runtime.AbstractPartialFunction;
  * {@link LogicalPlan} visitor that matches an {@link AppendData} commands and extracts the output
  * {@link LineageEvent.Dataset} being written.
  */
-public class AppendDataVisitor extends AbstractPartialFunction<LogicalPlan, List<LineageEvent.Dataset>> {
+public class AppendDataVisitor
+    extends AbstractPartialFunction<LogicalPlan, List<LineageEvent.Dataset>> {
   private final List<PartialFunction<LogicalPlan, List<LineageEvent.Dataset>>> outputVisitors;
 
-  public AppendDataVisitor(List<PartialFunction<LogicalPlan, List<LineageEvent.Dataset>>> outputVisitors) {
+  public AppendDataVisitor(
+      List<PartialFunction<LogicalPlan, List<LineageEvent.Dataset>>> outputVisitors) {
     this.outputVisitors = outputVisitors;
   }
 

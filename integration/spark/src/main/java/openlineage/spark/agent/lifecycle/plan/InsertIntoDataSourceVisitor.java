@@ -4,9 +4,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import openlineage.spark.agent.facets.OutputStatisticsFacet;
 import openlineage.spark.agent.client.LineageEvent;
+import openlineage.spark.agent.facets.OutputStatisticsFacet;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.InsertIntoDataSourceCommand;
 import scala.PartialFunction;

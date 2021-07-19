@@ -26,10 +26,10 @@ public class StaticExecutionContextFactory extends ContextFactory {
   }
 
   /**
-   * The {@link OpenLineageSparkListener} is invoked by a {@link
-   * org.apache.spark.util.ListenerBus} on a separate thread. In order for the tests to know that
-   * the listener events have been processed, they can invoke this method which will wait up to one
-   * second for the processing to complete. After that
+   * The {@link OpenLineageSparkListener} is invoked by a {@link org.apache.spark.util.ListenerBus}
+   * on a separate thread. In order for the tests to know that the listener events have been
+   * processed, they can invoke this method which will wait up to one second for the processing to
+   * complete. After that
    *
    * @throws InterruptedException
    */

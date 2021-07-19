@@ -16,14 +16,13 @@ import openlineage.spark.agent.client.LineageEvent;
 public interface DatasetSource {
 
   /**
-   * @return the {@link LineageEvent.Dataset#namespace} that will be
-   *     reported to the OpenLineage service
+   * @return the {@link LineageEvent.Dataset#namespace} that will be reported to the OpenLineage
+   *     service
    */
   String namespace();
 
   /**
-   * @return the {@link LineageEvent.Dataset#name} that will be reported
-   *     to the OpenLineage service
+   * @return the {@link LineageEvent.Dataset#name} that will be reported to the OpenLineage service
    */
   String name();
 }
