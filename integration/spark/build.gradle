@@ -1,0 +1,207 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import org.apache.tools.ant.filters.ReplaceTokens
+import groovy.io.FileType
+
+plugins {
+    id 'maven-publish'
+    id 'signing'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+ext {
+    bytebuddyVersion = '1.11.6'
+    sparkVersion = '2.4.8'
+    jacksonVersion = '2.12.4'
+    testcontainersVersion = '1.15.3'
+}
+
+dependencies {
+    implementation 'org.javassist:javassist:3.28.0-GA'
+    implementation 'com.github.ok2c.hc5:hc5-async-json:0.2.2'
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.1'
+    implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+    implementation "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
+    compileOnly "org.apache.spark:spark-core_2.11:${sparkVersion}"
+    compileOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
+    compileOnly 'com.google.cloud.spark:spark-bigquery_2.11:0.21.1'
+
+    testImplementation 'com.google.cloud.spark:spark-bigquery-with-dependencies_2.11:0.21.1'
+    testImplementation "net.bytebuddy:byte-buddy-agent:${bytebuddyVersion}"
+    testImplementation "net.bytebuddy:byte-buddy-dep:${bytebuddyVersion}"
+    testImplementation "org.apache.spark:spark-core_2.11:${sparkVersion}"
+    testImplementation "org.apache.spark:spark-sql_2.11:${sparkVersion}"
+    testImplementation platform('org.junit:junit-bom:5.7.2')
+    testImplementation "org.postgresql:postgresql:${postgresqlVersion}"
+    testImplementation 'org.hamcrest:hamcrest-library:2.2'
+    testImplementation('org.xerial:sqlite-jdbc:3.36.0.1')
+    testImplementation "org.testcontainers:junit-jupiter:${testcontainersVersion}"
+    testImplementation "org.testcontainers:postgresql:${testcontainersVersion}"
+    testAnnotationProcessor "org.projectlombok:lombok:1.18.16"
+}
+
+test {
+    useJUnitPlatform {
+        excludeTags 'integration-test'
+    }
+    forkEvery 1
+    maxParallelForks 3
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = true
+    }
+    systemProperties = [
+            'junit.platform.output.capture.stdout': 'true',
+            'junit.platform.output.capture.stderr': 'true'
+    ]
+}
+
+tasks.register("integrationTests", Test) {
+    useJUnitPlatform {
+        includeTags "integration-test"
+    }
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = true
+    }
+    systemProperties = [
+            'junit.platform.output.capture.stdout': 'true',
+            'junit.platform.output.capture.stderr': 'true',
+            'marquez.image.tag': project.getProperty('marquez.image.tag'),
+            'spark.version': project.getProperty('spark.version'),
+            'marquez.spark.jar': jar.archiveFile.get().asFile.name
+    ]
+    mustRunAfter shadowJar
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId = 'io.github.marquezproject'
+            artifactId = 'marquez-spark'
+
+            from components.java
+
+            artifact sourceJar
+            artifact javadocJar
+
+            pom {
+                name = 'marquez-spark'
+                description = 'Spark support for Marquez'
+                url = 'https://github.com/MarquezProject/marquez'
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'marquezproject'
+                        name = 'Marquez Project'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git://github.com/MarquezProject/marquez.git'
+                    developerConnection = 'scm:git:ssh://github.com:MarquezProject/marquez.git'
+                    url = 'https://github.com/MarquezProject/marquez'
+                }
+            }
+        }
+    }
+
+    processResources {
+        filter ReplaceTokens, tokens: [
+                "version": project.property("version")
+        ]
+    }
+
+    repositories {
+        maven {
+            url = 'https://oss.sonatype.org/service/local/staging/deploy/maven2'
+            credentials {
+                username = System.getenv('SONATYPE_NEXUS_USERNAME')
+                password = System.getenv('SONATYPE_NEXUS_PASSWORD')
+            }
+        }
+    }
+}
+
+signing {
+    required { isReleaseVersion }
+    def signingKey = findProperty("signingKey")
+    def signingPassword = findProperty("signingPassword")
+    useInMemoryPgpKeys(signingKey, signingPassword)
+    sign publishing.publications.mavenJava
+}
+
+shadowJar {
+    classifier = ''
+    // avoid conflict with any client version of that lib
+    relocate 'com.github.ok2c.hc5', 'marquez.com.github.ok2c.hc5'
+    relocate 'com.ok2c.hc5.json', 'marquez.com.ok2c.hc5.json'
+    relocate 'org.apache.httpcomponents.client5', 'marquez.org.apache.httpcomponents.client5'
+    relocate 'javassist', 'marquez.javassist'
+    relocate 'com.fasterxml.jackson', 'marquez.com.fasterxml.jackson'
+    relocate 'org.apache.hc.client5', 'marquez.org.apache.hc.client5'
+
+    manifest {
+        attributes(
+                "Premain-Class": 'marquez.spark.agent.MarquezAgent',
+                "Agent-Class": 'marquez.spark.agent.MarquezAgent',
+                'Created-By': "Gradle ${gradle.gradleVersion}",
+                'Built-By': System.getProperty('user.name'),
+                'Build-Jdk': System.getProperty('java.version'),
+                'Implementation-Title': project.name,
+                'Implementation-Version': project.version
+        )
+    }
+
+    zip64 true
+}
+
+task createVersionProperties(dependsOn: processResources) {
+    doLast {
+        File dir = new File("$buildDir/resources/main/marquez/spark/agent/client/")
+        dir.mkdirs();
+        new File("$buildDir/resources/main/marquez/spark/agent/client/version.properties").withWriter { w ->
+            Properties p = new Properties()
+            p['version'] = project.version.toString()
+            p.store w, null
+        }
+    }
+}
+
+task bumpVersionTestFiles() {
+    doLast {
+        def dir = new File(project.projectDir.path + '/integrations')
+        dir.eachFileRecurse (FileType.FILES) { file ->
+            ant.replace(file: file, token: "\$VERSION", value: project.version.toString())
+        }
+    }
+}
+
+classes {
+    dependsOn createVersionProperties
+}
+
+test {
+    dependsOn bumpVersionTestFiles
+}
