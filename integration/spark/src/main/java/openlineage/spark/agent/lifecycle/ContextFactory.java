@@ -21,8 +21,7 @@ public class ContextFactory {
 
   public SparkSQLExecutionContext createSparkSQLExecutionContext(long executionId) {
     SQLContext sqlContext = SQLExecution.getQueryExecution(executionId).sparkPlan().sqlContext();
-    InputDatasetVisitors inputDatasetVisitors =
-        new InputDatasetVisitors(sqlContext, sparkContext);
+    InputDatasetVisitors inputDatasetVisitors = new InputDatasetVisitors(sqlContext, sparkContext);
     OutputDatasetVisitors outputDatasetVisitors =
         new OutputDatasetVisitors(sqlContext, inputDatasetVisitors);
     return new SparkSQLExecutionContext(

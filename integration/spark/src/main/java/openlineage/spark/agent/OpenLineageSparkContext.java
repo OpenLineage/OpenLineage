@@ -8,8 +8,8 @@ import java.util.concurrent.ForkJoinPool;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import openlineage.spark.agent.client.LineageEvent;
-import openlineage.spark.agent.client.OpenLineageHttpException;
 import openlineage.spark.agent.client.OpenLineageClient;
+import openlineage.spark.agent.client.OpenLineageHttpException;
 import openlineage.spark.agent.client.ResponseMessage;
 
 @Slf4j
@@ -30,7 +30,8 @@ public class OpenLineageSparkContext {
     this.parentJobName = argument.getJobName();
     this.parentRunId = argument.getRunId();
     log.info(
-        String.format("Init OpenLineageSparkContext: Args: %s URI: %s", argument, lineageURI.toString()));
+        String.format(
+            "Init OpenLineageSparkContext: Args: %s URI: %s", argument, lineageURI.toString()));
   }
 
   public void emit(LineageEvent event) {

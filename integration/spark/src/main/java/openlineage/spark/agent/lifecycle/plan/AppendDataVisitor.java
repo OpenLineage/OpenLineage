@@ -1,7 +1,6 @@
 package openlineage.spark.agent.lifecycle.plan;
 
 import java.util.List;
-
 import openlineage.spark.agent.client.LineageEvent;
 import org.apache.spark.sql.catalyst.plans.logical.AppendData;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
