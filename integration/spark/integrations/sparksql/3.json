@@ -5,7 +5,7 @@
     "runId": "fake_run_id",
     "facets": {
       "parent": {
-        "_producer": "https://github.com/MarquezProject/marquez/tree/$VERSION/integrations/spark",
+        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
         "_schemaURL": "https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#ParentRunFacet",
         "run": {
           "runId": "ea445b5c-22eb-457a-8007-01c7c52b6e54"
@@ -16,8 +16,8 @@
         }
       },
       "spark.logicalPlan": {
-        "_producer": "https://github.com/MarquezProject/marquez/tree/$VERSION/integrations/spark",
-        "_schemaURL": "https://github.com/MarquezProject/marquez/tree/$VERSION/integrations/spark/facets/spark-2.4/v1/logicalPlanFacet",
+        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
+        "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark/facets/spark-2.4/v1/logicalPlanFacet",
         "plan": [
           {
             "class": "org.apache.spark.sql.catalyst.plans.logical.Aggregate",
@@ -137,7 +137,7 @@
       "name": "/path/to/data",
       "facets": {
         "schema": {
-          "_producer": "https://github.com/MarquezProject/marquez/tree/$VERSION/integrations/spark",
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
           "_schemaURL": "https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#SchemaDatasetFacet",
           "fields": [
             {
@@ -147,7 +147,7 @@
           ]
         },
         "dataSource": {
-          "_producer": "https://github.com/MarquezProject/marquez/tree/$VERSION/integrations/spark",
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
           "_schemaURL": "https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#DatasourceDatasetFacet",
           "uri": "file",
           "name": "file"
@@ -155,5 +155,5 @@
       }
     }
   ],
-  "producer": "https://github.com/MarquezProject/marquez/tree/$VERSION/integrations/spark"
+  "producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark"
 }

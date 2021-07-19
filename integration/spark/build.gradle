@@ -15,27 +15,62 @@
 import org.apache.tools.ant.filters.ReplaceTokens
 import groovy.io.FileType
 
+buildscript {
+    repositories {
+        maven {
+            url 'https://plugins.gradle.org/m2/'
+        }
+    }
+    dependencies {
+        classpath 'com.adarshr:gradle-test-logger-plugin:2.1.1'
+        classpath 'com.github.jengelman.gradle.plugins:shadow:6.1.0'
+        classpath 'com.diffplug.spotless:spotless-plugin-gradle:5.12.1'
+    }
+}
+
 plugins {
     id 'maven-publish'
     id 'signing'
 }
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+apply plugin: 'jacoco'
+apply plugin: 'java'
+apply plugin: 'java-library'
+apply plugin: 'com.adarshr.test-logger'
+apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: "com.diffplug.spotless"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
 }
 
+archivesBaseName='openlineage-spark'
+
 ext {
-    bytebuddyVersion = '1.11.6'
-    sparkVersion = '2.4.8'
-    jacksonVersion = '2.12.4'
+    assertjVersion = '3.20.2'
+    junit5Version = '5.7.2'
+    bytebuddyVersion = '1.10.21'
+    sparkVersion = '2.4.7'
+    jacksonVersion = '2.12.2'
+    postgresqlVersion = '42.2.19'
+    lombokVersion = '1.18.20'
+    mockitoVersion = '3.11.2'
     testcontainersVersion = '1.15.3'
 }
 
 dependencies {
-    implementation 'org.javassist:javassist:3.28.0-GA'
-    implementation 'com.github.ok2c.hc5:hc5-async-json:0.2.2'
-    implementation 'org.apache.httpcomponents.client5:httpclient5:5.1'
+    compileOnly "org.projectlombok:lombok:${lombokVersion}"
+    annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+
+    implementation 'org.javassist:javassist:3.27.0-GA'
+    implementation 'com.github.ok2c.hc5:hc5-async-json:0.2.1'
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.0.3'
     implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
     implementation "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
@@ -43,24 +78,40 @@ dependencies {
     compileOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
     compileOnly 'com.google.cloud.spark:spark-bigquery_2.11:0.21.1'
 
-    testImplementation 'com.google.cloud.spark:spark-bigquery-with-dependencies_2.11:0.21.1'
+    testImplementation 'com.google.cloud.spark:spark-bigquery-with-dependencies_2.11:0.19.1'
     testImplementation "net.bytebuddy:byte-buddy-agent:${bytebuddyVersion}"
     testImplementation "net.bytebuddy:byte-buddy-dep:${bytebuddyVersion}"
     testImplementation "org.apache.spark:spark-core_2.11:${sparkVersion}"
     testImplementation "org.apache.spark:spark-sql_2.11:${sparkVersion}"
-    testImplementation platform('org.junit:junit-bom:5.7.2')
+    testImplementation platform('org.junit:junit-bom:5.7.1')
     testImplementation "org.postgresql:postgresql:${postgresqlVersion}"
     testImplementation 'org.hamcrest:hamcrest-library:2.2'
-    testImplementation('org.xerial:sqlite-jdbc:3.36.0.1')
+    testImplementation('org.xerial:sqlite-jdbc:3.34.0')
     testImplementation "org.testcontainers:junit-jupiter:${testcontainersVersion}"
     testImplementation "org.testcontainers:postgresql:${testcontainersVersion}"
-    testAnnotationProcessor "org.projectlombok:lombok:1.18.16"
+    testCompile "org.assertj:assertj-core:${assertjVersion}"
+    testCompile "org.junit.jupiter:junit-jupiter:${junit5Version}"
+    testCompile "org.mockito:mockito-core:${mockitoVersion}"
+    testCompile "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
+    testCompileOnly "org.projectlombok:lombok:${lombokVersion}"
+    testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+}
+
+task sourceJar(type: Jar) {
+    classifier 'sources'
+    from sourceSets.main.allJava
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier 'javadoc'
+    from javadoc.destinationDir
 }
 
 test {
     useJUnitPlatform {
         excludeTags 'integration-test'
     }
+    useJUnitPlatform()
     forkEvery 1
     maxParallelForks 3
     testLogging {
@@ -86,16 +137,48 @@ tasks.register("integrationTests", Test) {
             'junit.platform.output.capture.stderr': 'true',
             'marquez.image.tag': project.getProperty('marquez.image.tag'),
             'spark.version': project.getProperty('spark.version'),
-            'marquez.spark.jar': jar.archiveFile.get().asFile.name
+            'openlineage.spark.jar': "${archivesBaseName}-${project.version}.jar"
     ]
     mustRunAfter shadowJar
+}
+
+spotless {
+    def disallowWildcardImports = {
+        String text = it
+        def regex = ~/import .*\.\*;/
+        def m = regex.matcher(text)
+        if (m.find()) {
+            throw new AssertionError("Wildcard imports disallowed - ${m.findAll()}")
+        }
+    }
+    java {
+        googleJavaFormat()
+        removeUnusedImports()
+        custom 'disallowWildcardImports', disallowWildcardImports
+    }
+}
+
+def reportsDir = "${buildDir}/reports";
+def coverageDir = "${reportsDir}/coverage";
+
+jacoco {
+    toolVersion = '0.8.5'
+    reportsDir = file(coverageDir)
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled = true
+        html.enabled = true
+        html.destination = file(coverageDir)
+    }
 }
 
 publishing {
     publications {
         mavenJava(MavenPublication) {
-            groupId = 'io.github.marquezproject'
-            artifactId = 'marquez-spark'
+            groupId = 'io.openlineage'
+            artifactId = 'openlineage-spark'
 
             from components.java
 
@@ -103,9 +186,9 @@ publishing {
             artifact javadocJar
 
             pom {
-                name = 'marquez-spark'
-                description = 'Spark support for Marquez'
-                url = 'https://github.com/MarquezProject/marquez'
+                name = 'openlineage-spark'
+                description = 'Java library for OpenLineage'
+                url = 'https://github.com/OpenLineage/OpenLineage'
                 licenses {
                     license {
                         name = 'The Apache License, Version 2.0'
@@ -114,14 +197,14 @@ publishing {
                 }
                 developers {
                     developer {
-                        id = 'marquezproject'
-                        name = 'Marquez Project'
+                        id = 'openlineage'
+                        name = 'OpenLineage Project'
                     }
                 }
                 scm {
-                    connection = 'scm:git:git://github.com/MarquezProject/marquez.git'
-                    developerConnection = 'scm:git:ssh://github.com:MarquezProject/marquez.git'
-                    url = 'https://github.com/MarquezProject/marquez'
+                    connection = 'scm:git:git://github.com/OpenLineage/OpenLineage.git'
+                    developerConnection = 'scm:git:ssh://github.com:OpenLineage/OpenLineage.git'
+                    url = 'https://github.com/OpenLineage/OpenLineage'
                 }
             }
         }
@@ -155,17 +238,15 @@ signing {
 shadowJar {
     classifier = ''
     // avoid conflict with any client version of that lib
-    relocate 'com.github.ok2c.hc5', 'marquez.com.github.ok2c.hc5'
-    relocate 'com.ok2c.hc5.json', 'marquez.com.ok2c.hc5.json'
-    relocate 'org.apache.httpcomponents.client5', 'marquez.org.apache.httpcomponents.client5'
-    relocate 'javassist', 'marquez.javassist'
-    relocate 'com.fasterxml.jackson', 'marquez.com.fasterxml.jackson'
-    relocate 'org.apache.hc.client5', 'marquez.org.apache.hc.client5'
+    relocate 'com.github.ok2c.hc5', 'openlinage.com.github.ok2c.hc5'
+    relocate 'org.apache.httpcomponents.client5', 'openlineage.org.apache.httpcomponents.client5'
+    relocate 'javassist', 'openlineage.javassist'
+    relocate 'com.fasterxml.jackson', 'openlineage.com.fasterxml.jackson'
 
     manifest {
         attributes(
-                "Premain-Class": 'marquez.spark.agent.MarquezAgent',
-                "Agent-Class": 'marquez.spark.agent.MarquezAgent',
+                "Premain-Class": 'openlineage.spark.agent.SparkAgent',
+                "Agent-Class": 'openlineage.spark.agent.SparkAgent',
                 'Created-By': "Gradle ${gradle.gradleVersion}",
                 'Built-By': System.getProperty('user.name'),
                 'Build-Jdk': System.getProperty('java.version'),
@@ -173,15 +254,18 @@ shadowJar {
                 'Implementation-Version': project.version
         )
     }
-
     zip64 true
+}
+
+assemble {
+    dependsOn shadowJar
 }
 
 task createVersionProperties(dependsOn: processResources) {
     doLast {
-        File dir = new File("$buildDir/resources/main/marquez/spark/agent/client/")
+        File dir = new File("$buildDir/resources/main/openlineage/spark/agent/client/")
         dir.mkdirs();
-        new File("$buildDir/resources/main/marquez/spark/agent/client/version.properties").withWriter { w ->
+        new File("$buildDir/resources/main/openlineage/spark/agent/client/version.properties").withWriter { w ->
             Properties p = new Properties()
             p['version'] = project.version.toString()
             p.store w, null

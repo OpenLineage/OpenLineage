@@ -6,8 +6,4 @@ services:
       - "8888:8888"
     volumes:
       - ./docker/notebooks:/home/jovyan/notebooks
-      - ./integrations/spark/build:/home/jovyan/marquezlib
-    links:
-      - "api:marquez"
-    depends_on:
-      - api
+      - ./build:/home/jovyan/openlineage
