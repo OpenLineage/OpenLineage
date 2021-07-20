@@ -90,8 +90,8 @@ dependencies {
     testImplementation "org.testcontainers:junit-jupiter:${testcontainersVersion}"
     testImplementation "org.testcontainers:postgresql:${testcontainersVersion}"
     testImplementation "org.testcontainers:mockserver:${testcontainersVersion}"
-    testImplementation('io.github.arkinator:mockserver-client-java:5.11.3') {
-        exclude group: 'com.google.guava', module: 'guava'
+    testImplementation('org.mock-server:mockserver-client-java:5.11.2') {
+         exclude group: 'com.google.guava', module: 'guava'
     }
     testCompile "org.assertj:assertj-core:${assertjVersion}"
     testCompile "org.junit.jupiter:junit-jupiter:${junit5Version}"
