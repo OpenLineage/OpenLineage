@@ -4,7 +4,6 @@ import static java.nio.file.Files.readAllBytes;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.JsonBody.json;
 
-import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -22,7 +21,6 @@ import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.MockServerContainer;
 import org.testcontainers.containers.Network;
-import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -33,7 +31,6 @@ import org.testcontainers.utility.DockerImageName;
 public class SparkContainerIntegrationTest {
 
   private static final Network network = Network.newNetwork();
-  @Container private static final PostgreSQLContainer<?> postgres = makePostgresContainer();
 
   @Container
   private static final MockServerContainer openLineageClientMockContainer =
@@ -50,7 +47,7 @@ public class SparkContainerIntegrationTest {
             openLineageClientMockContainer.getServerPort());
     mockServerClient
         .when(request("/api/v1/lineage"))
-        .respond(org.mockserver.model.HttpResponse.response().withStatusCode(200));
+        .respond(org.mockserver.model.HttpResponse.response().withStatusCode(201));
   }
 
   @AfterEach
@@ -62,14 +59,9 @@ public class SparkContainerIntegrationTest {
   public static void tearDown() {
     Logger logger = LoggerFactory.getLogger(SparkContainerIntegrationTest.class);
     try {
-      postgres.stop();
-    } catch (Exception e2) {
-      logger.error("Unable to shut down postgres container", e2);
-    }
-    try {
       openLineageClientMockContainer.stop();
     } catch (Exception e2) {
-      logger.error("Unable to shut down marquez container", e2);
+      logger.error("Unable to shut down openlineage client container", e2);
     }
     try {
       pyspark.stop();
@@ -77,25 +69,6 @@ public class SparkContainerIntegrationTest {
       logger.error("Unable to shut down pyspark container", e2);
     }
     network.close();
-  }
-
-  private static PostgreSQLContainer<?> makePostgresContainer() {
-    return new PostgreSQLContainer<>(DockerImageName.parse("postgres:11.8"))
-        .withNetwork(network)
-        .withNetworkAliases("postgres")
-        .withDatabaseName("postgres")
-        .withUsername("postgres")
-        .withPassword("password")
-        .withLogConsumer(SparkContainerIntegrationTest::consumeOutput)
-        .withStartupTimeout(Duration.of(2, ChronoUnit.MINUTES))
-        .withEnv(
-            ImmutableMap.of(
-                "POSTGRES_USER", "postgres",
-                "POSTGRES_PASSWORD", "password",
-                "MARQUEZ_DB", "marquez",
-                "MARQUEZ_USER", "marquez",
-                "MARQUEZ_PASSWORD", "marquez"))
-        .withFileSystemBind("./docker/init-db.sh", "/docker-entrypoint-initdb.d/init-db.sh");
   }
 
   private static MockServerContainer makeMockServerContainer() {

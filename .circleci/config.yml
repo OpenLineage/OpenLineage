@@ -152,7 +152,9 @@ workflows:
       - test-client-python
       - test-integration-common
       - build-integration-spark
-      - integration-test-spark
+      - integration-test-spark:
+          requires:
+            - build-integration-spark
   release:
     jobs:
       - build-client-python:

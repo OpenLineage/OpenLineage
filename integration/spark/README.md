@@ -24,11 +24,11 @@ implementation 'io.openlineage:openlineage-spark:0.1.0'
 
 ### Quickstart
 The fastest way to get started testing Spark and OpenLineage is to use the docker-compose files included
-in the project. From the spark integration directory ($OPENLINEAGE_ROOT/integrations/spark) execute
+in the project. From the spark integration directory ($OPENLINEAGE_ROOT/integration/spark) execute
 ```bash
 docker-compose up
 ```
-This will start a Jupyter Spark notebook on localhost:8888. On startup, the notebook container logs will show a list of URLs
+This will start Marquez as an Openlineage client and Jupyter Spark notebook on localhost:8888. On startup, the notebook container logs will show a list of URLs
 including an access token, such as
 ```bash
 notebook_1  |     To access the notebook, open this file in a browser:
@@ -41,7 +41,7 @@ Copy the URL with the localhost IP and paste into your browser window to begin c
 Spark notebook (see the [https://jupyter-docker-stacks.readthedocs.io/en/latest/](docs) for info on
 using the Jupyter docker image).
 
-#OpenLineageSparkListener as a plain Spark Listener
+# OpenLineageSparkListener as a plain Spark Listener
 The SparkListener can be referenced as a plain Spark Listener implementation.
 
 Create a new notebook and paste the following into the first cell:
@@ -52,7 +52,7 @@ spark = (SparkSession.builder.master('local')
          .appName('sample_spark')
          .config('spark.jars.packages', 'io.github.openlineage:openlineage-spark-0.1-SNAPSHOT.jar'
          .config('spark.extraListeners', 'openlineage.spark.agent.OpenLineageSparkListener')
-         .config('openlineage.url', 'http://marquez:5000/api/v1/namespaces/spark_integration/')
+         .config('spark.openlineage.url', 'http://{openlineage.client.host}/api/v1/namespaces/spark_integration/')
          .getOrCreate())
 ```
 To use the local jar, you can build it with
@@ -72,11 +72,11 @@ spark = (SparkSession.builder.master('local').appName('rdd_to_dataframe')
              .config('spark.jars', file)
              .config('spark.jars.packages', 'org.postgresql:postgresql:42.2.+')
              .config('spark.extraListeners', 'openlineage.spark.agent.OpenLineageSparkListener')
-             .config('spark.openlineage.url', 'http://marquez:5000/api/v1/namespaces/spark_integration/')
+             .config('spark.openlineage.url', 'http://{openlineage.client.host}/api/v1/namespaces/spark_integration/')
              .getOrCreate())
 ```
 
-#OpenLineageSparkListener as a java agent
+# OpenLineageSparkListener as a java agent
 Configuring SparkListener as a java agent that needs to be added to
 the JVM startup parameters. Setup in a pyspark notebook looks like the following:
 
@@ -87,7 +87,7 @@ file = "/home/jovyan/openlineage/libs/openlineage-spark-0.1-SNAPSHOT.jar"
 
 spark = (SparkSession.builder.master('local').appName('rdd_to_dataframe')
          .config('spark.driver.extraJavaOptions',
-                 f"-javaagent:{file}=http://marquez:5000/api/v1/namespaces/spark_integration/")
+                 f"-javaagent:{file}=http://{openlineage.client.host}/api/v1/namespaces/spark_integration/")
          .config('spark.jars.packages', 'org.postgresql:postgresql:42.2.+')
          .config('spark.sql.repl.eagerEval.enabled', 'true')
          .getOrCreate())
@@ -98,7 +98,7 @@ node of the cluster and its location referenced in the `spark.driver.extraJavaOp
 
 ### Spark Listener
 The SparkListener reads its configuration from SparkConf parameters. These can be specified on the
-command line (e.g., `--conf "spark.openlineage.url=http://marquez:5000/api/v1/namespaces/my_namespace/job/the_job"`)
+command line (e.g., `--conf "spark.openlineage.url=http://{openlineage.client.host}/api/v1/namespaces/my_namespace/job/the_job"`)
 or from the `conf/spark-defaults.conf` file. The following parameters can be specified
 | Parameter | Definition | Example |
 | spark.openlineage.host | The hostname of the OpenLineage API server where events should be reported | http://localhost:5000 |
@@ -109,20 +109,17 @@ or from the `conf/spark-defaults.conf` file. The following parameters can be spe
 | spark.openlineage.apiKey | An API key to be used when sending events to the OpenLineage server | abcdefghijk |
 
 ### Java Agent
-The java agent accepts an argument in the form of a uri. It includes the location of Marquez, the
+The java agent accepts an argument in the form of a uri. It includes the location of OpenLineage client, the
 namespace name, the parent job name, and a parent run id. The run id will be emitted as a parent run
 facet.
 ```
-{marquez_home}/api/v1/namespaces/{namespace}/job/{job_name}/runs/{run_uuid}?api_key={api_key}"
+{openlineage.client.host}/api/v1/namespaces/{namespace}/job/{job_name}/runs/{run_uuid}?api_key={api_key}"
 
 ```
 For example:
 ```
-https://marquez.example.com:5000/api/v1/namespaces/foo/job/spark.submit_job/runs/a95858ad-f9b5-46d7-8f1c-ca9f58f68978"
+https://openlineage.client.host/api/v1/namespaces/foo/job/spark.submit_job/runs/a95858ad-f9b5-46d7-8f1c-ca9f58f68978"
 ```
-
-# Compatibility Notes
-Tested and compatible for Spark `2.4.7` only.
 
 # Build
 
@@ -138,6 +135,12 @@ To run the tests, from the current directory run:
 
 ```sh
 ./gradlew test
+```
+
+To run the integration tests, from the current directory run:
+
+```sh
+./gradlew integrationTest
 ```
 
 ## Build spark agent jar

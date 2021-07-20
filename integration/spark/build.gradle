@@ -250,7 +250,7 @@ signing {
 shadowJar {
     classifier = ''
     // avoid conflict with any client version of that lib
-    relocate 'com.github.ok2c.hc5', 'openlinage.com.github.ok2c.hc5'
+    relocate 'com.github.ok2c.hc5', 'openlineage.com.github.ok2c.hc5'
     relocate 'org.apache.httpcomponents.client5', 'openlineage.org.apache.httpcomponents.client5'
     relocate 'javassist', 'openlineage.javassist'
     relocate 'com.fasterxml.jackson', 'openlineage.com.fasterxml.jackson'
