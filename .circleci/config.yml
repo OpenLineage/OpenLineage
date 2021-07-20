@@ -59,16 +59,16 @@ jobs:
     docker:
       - image: circleci/openjdk:8-jdk
     steps:
-      - checkout
+      - *checkout_project_root
       - restore_cache:
           keys:
             - v1-integration-spark-{{ .Branch }}-{{ .Revision }}
             - v1-integration-spark-{{ .Branch }}
-      - run: ./integration/spark/gradlew -p integration/spark/ --no-daemon --stacktrace build
+      - run: ./gradlew --no-daemon --stacktrace build
       - run:
           when: on_fail
           command: cat integration/spark/build/test-results/test/TEST-*.xml
-      - run: ./integration/spark/gradlew -p integration/spark/ --no-daemon jacocoTestReport
+      - run: ./gradlew --no-daemon jacocoTestReport
       - store_test_results:
           path: integration/spark/build/test-results/test
       - store_artifacts:
@@ -111,18 +111,18 @@ jobs:
       TESTCONTAINERS_RYUK_DISABLED: "true"
       JDK8_HOME: /usr/lib/jvm/java-8-openjdk-amd64
     steps:
-      - checkout
+      - *checkout_project_root
       - restore_cache:
           keys:
             - v1-integration-spark-{{ .Branch }}-{{ .Revision }}
             - v1-integration-spark-{{ .Branch }}
       - attach_workspace:
           at: .
-      - run: ./integration/spark/gradlew -p integration/spark/ --no-daemon --stacktrace integrationTest
+      - run: ./gradlew --no-daemon --stacktrace integrationTest
       - run:
           when: on_fail
           command: cat integration/spark/build/test-results/integrationTests/TEST-*.xml
-      - run: ./integration/spark/gradlew -p integration/spark/ --no-daemon jacocoTestReport
+      - run: ./gradlew --no-daemon jacocoTestReport
       - store_test_results:
           path: integration/spark/build/test-results/integrationTests
       - store_artifacts:
