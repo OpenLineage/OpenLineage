@@ -62,6 +62,7 @@ ext {
     lombokVersion = '1.18.20'
     mockitoVersion = '3.11.2'
     testcontainersVersion = '1.15.3'
+    isReleaseVersion = !version.endsWith('SNAPSHOT')
 }
 
 dependencies {
