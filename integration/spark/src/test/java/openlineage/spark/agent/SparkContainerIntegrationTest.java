@@ -118,7 +118,8 @@ public class SparkContainerIntegrationTest {
             "--master",
             "local",
             "--conf",
-            "spark.openlineage.url=" + "http://openlineageclient:1080/api/v1/namespaces/testPysparkWordCountWithCliArgs",
+            "spark.openlineage.url="
+                + "http://openlineageclient:1080/api/v1/namespaces/testPysparkWordCountWithCliArgs",
             "--conf",
             "spark.extraListeners=" + OpenLineageSparkListener.class.getName(),
             "--jars",

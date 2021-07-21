@@ -1,5 +1,6 @@
 package openlineage.spark.agent;
 
+import static openlineage.spark.agent.ArgumentParser.DEFAULTS;
 import static openlineage.spark.agent.lifecycle.plan.ScalaConversionUtils.asJavaOptional;
 import static openlineage.spark.agent.lifecycle.plan.ScalaConversionUtils.toScalaFn;
 
@@ -263,13 +264,14 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     if (url.isPresent()) {
       return ArgumentParser.parse(url.get());
     } else {
-      String host = findSparkConfigKey(conf, SPARK_CONF_HOST_KEY, ArgumentParser.DEFAULTS.getHost());
-      String version = findSparkConfigKey(conf, SPARK_CONF_API_VERSION_KEY, ArgumentParser.DEFAULTS.getVersion());
-      String namespace = findSparkConfigKey(conf, SPARK_CONF_NAMESPACE_KEY, ArgumentParser.DEFAULTS.getNamespace());
-      String jobName = findSparkConfigKey(conf, SPARK_CONF_JOB_NAME_KEY, ArgumentParser.DEFAULTS.getJobName());
-      String runId = findSparkConfigKey(conf, SPARK_CONF_PARENT_RUN_ID_KEY, ArgumentParser.DEFAULTS.getRunId());
-      Optional<String> apiKey = findSparkConfigKey(conf, SPARK_CONF_API_KEY)
-          .filter(str -> !str.isEmpty());
+      String host = findSparkConfigKey(conf, SPARK_CONF_HOST_KEY, DEFAULTS.getHost());
+      String version = findSparkConfigKey(conf, SPARK_CONF_API_VERSION_KEY, DEFAULTS.getVersion());
+      String namespace =
+          findSparkConfigKey(conf, SPARK_CONF_NAMESPACE_KEY, DEFAULTS.getNamespace());
+      String jobName = findSparkConfigKey(conf, SPARK_CONF_JOB_NAME_KEY, DEFAULTS.getJobName());
+      String runId = findSparkConfigKey(conf, SPARK_CONF_PARENT_RUN_ID_KEY, DEFAULTS.getRunId());
+      Optional<String> apiKey =
+          findSparkConfigKey(conf, SPARK_CONF_API_KEY).filter(str -> !str.isEmpty());
       return new ArgumentParser(host, version, namespace, jobName, runId, apiKey);
     }
   }
@@ -279,6 +281,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   }
 
   private Optional<String> findSparkConfigKey(SparkConf conf, String name) {
-    return asJavaOptional(conf.getOption(name).getOrElse(toScalaFn(() -> conf.getOption("spark." + name))));
+    return asJavaOptional(
+        conf.getOption(name).getOrElse(toScalaFn(() -> conf.getOption("spark." + name))));
   }
 }

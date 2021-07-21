@@ -46,8 +46,7 @@ public class ArgumentParser {
         String.format(
             "%s/api/%s/namespaces/%s/jobs/%s/runs/%s", host, version, namespace, jobName, runId));
 
-    return new ArgumentParser(
-        host, version, namespace, jobName, runId, apiKey);
+    return new ArgumentParser(host, version, namespace, jobName, runId, apiKey);
   }
 
   public static UUID getRandomUuid() {
@@ -55,7 +54,8 @@ public class ArgumentParser {
   }
 
   private static Optional<String> getApiKey(List<NameValuePair> nameValuePairList) {
-    return Optional.ofNullable(getNamedParameter(nameValuePairList, "api_key")).filter(StringUtils::isNoneBlank);
+    return Optional.ofNullable(getNamedParameter(nameValuePairList, "api_key"))
+        .filter(StringUtils::isNoneBlank);
   }
 
   protected static String getNamedParameter(List<NameValuePair> nameValuePairList, String param) {
@@ -80,5 +80,4 @@ public class ArgumentParser {
   private static ArgumentParser getDefaultArguments() {
     return new ArgumentParser("", "v1", "default", "default", "", Optional.empty());
   }
-
 }
