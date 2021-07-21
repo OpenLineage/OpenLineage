@@ -10,6 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.core5.http.NameValuePair;
 import org.apache.hc.core5.net.URLEncodedUtils;
 
@@ -18,6 +19,8 @@ import org.apache.hc.core5.net.URLEncodedUtils;
 @Getter
 @ToString
 public class ArgumentParser {
+  public static final ArgumentParser DEFAULTS = getDefaultArguments();
+
   private final String host;
   private final String version;
   private final String namespace;
@@ -25,38 +28,34 @@ public class ArgumentParser {
   private final String runId;
   private final Optional<String> apiKey;
 
-  public static ArgumentParser parse(String agentArgs) {
-    URI uri = URI.create(agentArgs);
+  public static ArgumentParser parse(String clientUrl) {
+    URI uri = URI.create(clientUrl);
     String host = uri.getScheme() + "://" + uri.getAuthority();
 
     String path = uri.getPath();
     String[] elements = path.split("/");
-    String version = get(elements, "api", 1, "default");
-    String namespace = get(elements, "namespaces", 3, "default");
-    String jobName = get(elements, "jobs", 5, "default");
-    String runId = get(elements, "runs", 7, getRandomUuid().toString());
+    String version = get(elements, "api", 1, DEFAULTS.getVersion());
+    String namespace = get(elements, "namespaces", 3, DEFAULTS.getNamespace());
+    String jobName = get(elements, "jobs", 5, DEFAULTS.getJobName());
+    String runId = get(elements, "runs", 7, DEFAULTS.getRunId());
 
     List<NameValuePair> nameValuePairList = URLEncodedUtils.parse(uri, StandardCharsets.UTF_8);
-    String apiKey = getApiKey(nameValuePairList);
+    Optional<String> apiKey = getApiKey(nameValuePairList);
 
     log.info(
         String.format(
             "%s/api/%s/namespaces/%s/jobs/%s/runs/%s", host, version, namespace, jobName, runId));
 
     return new ArgumentParser(
-        host, version, namespace, jobName, runId, Optional.ofNullable(apiKey));
+        host, version, namespace, jobName, runId, apiKey);
   }
 
   public static UUID getRandomUuid() {
     return UUID.randomUUID();
   }
 
-  private static String getApiKey(List<NameValuePair> nameValuePairList) {
-    String apiKey;
-    if ((apiKey = getNamedParameter(nameValuePairList, "api_key")) != null) {
-      return apiKey.isEmpty() ? null : apiKey;
-    }
-    return null;
+  private static Optional<String> getApiKey(List<NameValuePair> nameValuePairList) {
+    return Optional.ofNullable(getNamedParameter(nameValuePairList, "api_key")).filter(StringUtils::isNoneBlank);
   }
 
   protected static String getNamedParameter(List<NameValuePair> nameValuePairList, String param) {
@@ -77,4 +76,9 @@ public class ArgumentParser {
       return defaultValue;
     }
   }
+
+  private static ArgumentParser getDefaultArguments() {
+    return new ArgumentParser("", "v1", "default", "default", "", Optional.empty());
+  }
+
 }

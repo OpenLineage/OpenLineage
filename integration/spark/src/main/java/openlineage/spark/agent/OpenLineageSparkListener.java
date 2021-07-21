@@ -259,26 +259,26 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   }
 
   private ArgumentParser parseConf(SparkConf conf) {
-    if (conf.contains(SPARK_CONF_URL_KEY)) {
-      return ArgumentParser.parse(conf.get(SPARK_CONF_URL_KEY));
+    Optional<String> url = findSparkConfigKey(conf, SPARK_CONF_URL_KEY);
+    if (url.isPresent()) {
+      return ArgumentParser.parse(url.get());
     } else {
-      String host = findSparkConfigKey(conf, SPARK_CONF_HOST_KEY, "");
-      String version = findSparkConfigKey(conf, SPARK_CONF_API_VERSION_KEY, "v1");
-      String namespace = findSparkConfigKey(conf, SPARK_CONF_NAMESPACE_KEY, "default");
-      String jobName = findSparkConfigKey(conf, SPARK_CONF_JOB_NAME_KEY, conf.getAppId());
-      String runId = findSparkConfigKey(conf, SPARK_CONF_PARENT_RUN_ID_KEY, "");
-      Optional<String> apiKey =
-          Optional.ofNullable(findSparkConfigKey(conf, SPARK_CONF_API_KEY, ""))
-              .filter(str -> !str.isEmpty());
+      String host = findSparkConfigKey(conf, SPARK_CONF_HOST_KEY, ArgumentParser.DEFAULTS.getHost());
+      String version = findSparkConfigKey(conf, SPARK_CONF_API_VERSION_KEY, ArgumentParser.DEFAULTS.getVersion());
+      String namespace = findSparkConfigKey(conf, SPARK_CONF_NAMESPACE_KEY, ArgumentParser.DEFAULTS.getNamespace());
+      String jobName = findSparkConfigKey(conf, SPARK_CONF_JOB_NAME_KEY, ArgumentParser.DEFAULTS.getJobName());
+      String runId = findSparkConfigKey(conf, SPARK_CONF_PARENT_RUN_ID_KEY, ArgumentParser.DEFAULTS.getRunId());
+      Optional<String> apiKey = findSparkConfigKey(conf, SPARK_CONF_API_KEY)
+          .filter(str -> !str.isEmpty());
       return new ArgumentParser(host, version, namespace, jobName, runId, apiKey);
     }
   }
 
   private String findSparkConfigKey(SparkConf conf, String name, String defaultValue) {
-    if (!conf.contains(name)) {
-      return conf.get("spark." + name, defaultValue);
-    } else {
-      return conf.get(name);
-    }
+    return findSparkConfigKey(conf, name).orElse(defaultValue);
+  }
+
+  private Optional<String> findSparkConfigKey(SparkConf conf, String name) {
+    return asJavaOptional(conf.getOption(name).getOrElse(toScalaFn(() -> conf.getOption("spark." + name))));
   }
 }
