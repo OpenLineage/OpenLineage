@@ -36,7 +36,7 @@ The [specification](spec/OpenLineage.md) is defined using OpenAPI and allows ext
 ## Related projects
 - [Marquez](https://marquezproject.ai/): Marquez is an [LF AI & DATA](https://lfaidata.foundation/) project to collect, aggregate, and visualize a data ecosystem's metadata. It is the reference implementation of the OpenLineage API.
   - [OpenLineage collection implementation](https://github.com/MarquezProject/marquez/blob/main/api/src/main/java/marquez/api/OpenLineageResource.java)
-  - [Spark integration](https://github.com/MarquezProject/marquez/tree/main/integrations/spark)
+  - [Spark integration](https://github.com/OpenLineage/OpenLineage/tree/main/integration/spark)
   - [Airflow integration](https://github.com/MarquezProject/marquez/tree/main/integrations/airflow)  
 - [Egeria](https://egeria.odpi.org/): Egeria Open Metadata and Governance. A metadata bus.
 

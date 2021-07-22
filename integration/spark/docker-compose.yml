@@ -1,0 +1,44 @@
+version: "3.7"
+services:
+  notebook:
+    image: jupyter/pyspark-notebook
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./docker/notebooks:/home/jovyan/notebooks
+      - ./build:/home/jovyan/openlineage
+    links:
+      - "api:marquez"
+    depends_on:
+      - api
+
+# Marquez as an OpenLineage Client
+  api:
+    image: marquezproject/marquez
+    container_name: marquez-api
+    ports:
+      - "5000:5000"
+      - "5001:5001"
+    volumes:
+      - ./docker/wait-for-it.sh:/usr/src/app/wait-for-it.sh
+    links:
+      - "db:postgres"
+    depends_on:
+      - db
+    entrypoint: [ "./wait-for-it.sh", "db:5432", "--", "./entrypoint.sh" ]
+
+  db:
+    image: postgres:12.1
+    container_name: marquez-db
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - MARQUEZ_DB=marquez
+      - MARQUEZ_USER=marquez
+      - MARQUEZ_PASSWORD=marquez
+    volumes:
+      - ./docker/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+    # Enables SQL statement logging (see: https://www.postgresql.org/docs/12/runtime-config-logging.html#GUC-LOG-STATEMENT)
+    # command: ["postgres", "-c", "log_statement=all"]
