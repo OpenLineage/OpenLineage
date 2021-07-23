@@ -238,7 +238,7 @@ publishing {
                     password = System.getenv('SONATYPE_PASSWORD')
                 }
             } else {
-                url = System.getenv('ARTIFACTORY_ENDPOINT')
+                url = 'https://datakin.jfrog.io/artifactory/maven-public-libs-snapshot'
                 credentials {
                     username = System.getenv('ARTIFACTORY_USERNAME')
                     password = System.getenv('ARTIFACTORY_PASSWORD')
