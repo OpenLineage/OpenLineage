@@ -16,6 +16,10 @@ only-on-release: &only-on-release
     branches:
       ignore: /.*/
 
+only-on-snapshot: &only-on-snapshot
+  filters:
+    branches:
+      only: /.*/
 
 jobs:
   test-client-python:
@@ -42,7 +46,7 @@ jobs:
             - ./dist/*.tar.gz
             - ./dist/*.whl
 
-  release-java:
+  release-java-client:
     working_directory: ~/openlineage/client/java
     docker:
       - image: cimg/openjdk:11.0
@@ -53,6 +57,18 @@ jobs:
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
           # Publish *.jar
           gradle publish
+
+  release-integration-spark:
+    working_directory: ~/openlineage/integration/spark
+    docker:
+      - image: circleci/openjdk:8-jdk
+    steps:
+      - *checkout_project_root
+      - run: |
+          # Get, then decode the GPG private key used to sign *.jar
+          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
+          # Publish *.jar
+          ./gradlew publish
 
   build-integration-spark:
     working_directory: ~/openlineage/integration/spark
@@ -145,7 +161,7 @@ jobs:
       - run: python -m twine upload --non-interactive --verbose --repository pypi dist/*
 
 workflows:
-  checkout-build-test:
+  openlineage-build:
     jobs:
       - gradle/test:
           app_src_directory: client/java
@@ -161,11 +177,33 @@ workflows:
           <<: *only-on-release
       - build-integration-common:
           <<: *only-on-release
-      - release-java:
+      - release-java-client:
+          <<: *only-on-release
+          context: release
+      - release-integration-spark:
           <<: *only-on-release
           context: release
       - release-python:
           <<: *only-on-release
+          context: release
+          requires:
+            - build-client-python
+            - build-integration-common
+
+  publish-snapshot:
+    jobs:
+      - build-client-python:
+          <<: *only-on-snapshot
+      - build-integration-common:
+          <<: *only-on-snapshot
+      - release-java-client:
+          <<: *only-on-snapshot
+          context: release
+      - release-integration-spark:
+          <<: *only-on-snapshot
+          context: release
+      - release-python:
+          <<: *only-on-snapshot
           context: release
           requires:
             - build-client-python

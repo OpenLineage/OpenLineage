@@ -231,10 +231,10 @@ publishing {
 
     repositories {
         maven {
-            url = 'https://oss.sonatype.org/service/local/staging/deploy/maven2'
+            url = isReleaseVersion ? 'https://oss.sonatype.org/service/local/staging/deploy/maven2' : System.getenv('ARTIFACTORY_ENDPOINT')
             credentials {
-                username = System.getenv('SONATYPE_NEXUS_USERNAME')
-                password = System.getenv('SONATYPE_NEXUS_PASSWORD')
+                username = System.getenv('ARTIFACTORY_USERNAME')
+                password = System.getenv('ARTIFACTORY_PASSWORD')
             }
         }
     }
