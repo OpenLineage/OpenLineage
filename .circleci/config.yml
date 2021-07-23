@@ -56,7 +56,7 @@ jobs:
           # Get, then decode the GPG private key used to sign *.jar
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
           # Publish *.jar
-          gradle publish
+          ./gradlew publish
 
   release-integration-spark:
     working_directory: ~/openlineage/integration/spark
