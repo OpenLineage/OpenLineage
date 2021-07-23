@@ -202,9 +202,3 @@ workflows:
       - release-integration-spark:
           <<: *only-on-snapshot
           context: release
-      - release-python:
-          <<: *only-on-snapshot
-          context: release
-          requires:
-            - build-client-python
-            - build-integration-common
