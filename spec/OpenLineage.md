@@ -13,7 +13,7 @@ It allows extensions to the spec using `Custom Facets` as described in this docu
 
 ![Open Lineage model](OpenLineageModel.svg)
 
-- **Run Event**: and event describing an observed state of a job run. It is required to at least send one event for a START transition and a COMPLETE/FAIL/ABORT transition. Additional events are optional.
+- **Run Event**: an event describing an observed state of a job run. It is required to at least send one event for a START transition and a COMPLETE/FAIL/ABORT transition. Additional events are optional.
 
 - **Job**: a process definition that consumes and produces datasets (defined as its inputs and outputs). It is identified by a unique name within a namespace (which is typically assigned to the scheduler starting the jobs). The *Job* evolves over time and this change is captured when the job runs.
 
