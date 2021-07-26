@@ -29,8 +29,8 @@ data = {
 }
 
 requirements = [
-    "dbt-core>=0.20.0b1",
-    "dbt-snowflake>=0.20.0b1",
+    "dbt-core>=0.20.0",
+    "dbt-snowflake>=0.20.0",
     "sqlparse>=0.3.1",
     f"marquez-integration-common=={__version__}",
     "openlineage-python>=0.0.1rc6"
