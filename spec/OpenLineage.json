@@ -346,11 +346,37 @@
           "properties": {
             "type": {
               "type": "string",
-              "example": "git"
+              "description": "the source control system",
+              "examples": [ "git", "svn" ]
             },
             "url": {
               "type": "string",
-              "format": "uri"
+              "description": "the full http URL to locate the file",
+              "format": "uri",
+              "example": "https://github.com/MarquezProject/marquez-airflow-quickstart/blob/693e35482bc2e526ced2b5f9f76ef83dec6ec691/dags/dummy_example.py"
+            },
+            "repoUrl": {
+              "type": "string",
+              "description": "the URL to the repository",
+              "examples": [ "git@github.com:{org}/{repo}.git or https://github.com/{org}/{repo}.git", "svn://<your_ip>/<repository_name>" ]
+            },
+            "path": {
+              "type": "string",
+              "description": "the path in the repo containing the source files",
+              "example": "path/to/my/dags"
+            },
+            "version": {
+              "type": "string",
+              "description": "the current version deployed (not a branch name, the actual unique version)",
+              "examples": [ "git: the git sha", "Svn: the revision number"]
+            },
+            "tag": {
+              "type": "string",
+              "description": "optional tag name"
+            },
+            "branch": {
+              "type": "string",
+              "description": "optional branch name"
             }
           },
           "required": [
