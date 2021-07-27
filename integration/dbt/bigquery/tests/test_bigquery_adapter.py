@@ -8,8 +8,8 @@ from dbt.adapters.base.query_headers import MacroQueryStringSetter
 from dbt.adapters.openlineage_bigquery import OpenLineageBigQueryAdapter
 from dbt.adapters.openlineage_bigquery import Plugin as OpenLineagePlugin
 from dbt.adapters.openlineage_bigquery.connections import PRODUCER
-from openlineage.facet import SourceCodeLocationJobFacet, SqlJobFacet
-from openlineage.run import RunEvent, RunState, Job, Run, Dataset
+from openlineage.client.facet import SourceCodeLocationJobFacet, SqlJobFacet
+from openlineage.client.facet import RunEvent, RunState, Job, Run, Dataset
 
 from .utils import config_from_parts_or_dicts, inject_adapter
 
