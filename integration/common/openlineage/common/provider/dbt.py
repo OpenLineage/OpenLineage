@@ -34,6 +34,9 @@ class DbtEvents:
     completes: List[RunEvent] = attr.ib()
     fails: List[RunEvent] = attr.ib()
 
+    def events(self):
+        return self.starts + self.completes + self.fails
+
 
 @attr.s
 class DbtRunResult:
@@ -43,7 +46,7 @@ class DbtRunResult:
 
 
 class DbtArtifactProcessor:
-    def __init__(self, project: str = 'dbt_project.yaml', skip_errors: bool = False):
+    def __init__(self, project: str = 'dbt_project.yml', skip_errors: bool = False):
         self.dir = os.path.abspath(os.path.dirname(project))
         self.project = self.load_yaml(project)
         self.namespace = ""
@@ -112,7 +115,7 @@ class DbtArtifactProcessor:
     @staticmethod
     def load_yaml(path: str) -> Dict:
         with open(path, 'r') as f:
-            return yaml.load(f)
+            return yaml.load(f, Loader=yaml.FullLoader)
 
     def parse_artifacts(self, manifest: Dict, run_results: Dict) -> List[DbtRun]:
         nodes = {}
@@ -131,7 +134,7 @@ class DbtArtifactProcessor:
                     return timing['started_at'], timing['completed_at']
                 except IndexError:
                     # Run failed: there is no timing data
-                    timing = datetime.datetime.now().isoformat()
+                    timing = datetime.datetime.now(datetime.timezone.utc).isoformat()
                     return timing, timing
 
             started_at, completed_at = get_timings(run['timing'])
@@ -240,9 +243,7 @@ class DbtArtifactProcessor:
                     uri=self.namespace
                 ),
                 'schema': SchemaDatasetFacet(
-                    fields=[SchemaField(
-                        name=field['name'], type=field['data_type']
-                    ) for field in node['columns'].values()]
+                    fields=self.extract_fields(node['columns'].values())
                 )
             }
         else:
@@ -252,6 +253,17 @@ class DbtArtifactProcessor:
             name=f"{node['database']}.{node['schema']}.{node['name']}",
             facets=has_facets
         )
+
+    def extract_fields(self, columns: List[Dict]) -> List[SchemaField]:
+        fields = []
+        for field in columns:
+            type = None
+            if 'data_type' in field and field['data_type'] is not None:
+                type = field['data_type']
+            fields.append(SchemaField(
+                name=field['name'], type=type
+            ))
+        return fields
 
     def extract_namespace(self, profile: Dict):
         if profile['type'] == 'snowflake':
