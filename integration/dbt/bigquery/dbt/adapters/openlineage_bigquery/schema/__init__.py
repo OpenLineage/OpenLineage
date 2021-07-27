@@ -10,4 +10,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-GITHUB_LOCATION = "https://github.com/MarquezProject/marquez/blob/main/integrations/dbt/bigquery/dbt/adapters/openlineage_bigquery/provider/schema/"  # noqa: E501
+GITHUB_LOCATION = "https://github.com/OpenLineage/OpenLineage/blob/main/integration/dbt/bigquery/dbt/adapters/openlineage_bigquery/schema/"  # noqa: E501
