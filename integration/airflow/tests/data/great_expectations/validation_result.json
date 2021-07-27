@@ -22,7 +22,7 @@
                 "meta": {
                     "batch_kwargs": {
                         "datasource": "data__dir",
-                        "path": "/home/mobuchowski/code/marquez/integrations/airflow/tests/data/great_expectations/data/yellow_tripdata_sample_2019-01.csv"
+                        "path": "/home/example/code/openlineage/integrations/airflow/tests/data/great_expectations/data/yellow_tripdata_sample_2019-01.csv"
                     },
                     "batch_markers": {
                         "ge_load_time": "20210426T122353.161668Z",

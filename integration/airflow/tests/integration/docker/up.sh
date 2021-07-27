@@ -18,19 +18,19 @@ set -e
 
 # Change working directory to integration
 project_root=$(git rev-parse --show-toplevel)
-cd "${project_root}"/integrations/airflow/tests/integration
+cd "${project_root}"/integration/airflow/tests/integration
 
-if [[ "$(docker images -q marquez-airflow-base:latest 2> /dev/null)" == "" ]]; then
-  echo "Please run 'docker build -f Dockerfile.tests -t marquez-airflow-base .' at base folder"
+if [[ "$(docker images -q openlineage-airflow-base:latest 2> /dev/null)" == "" ]]; then
+  echo "Please run 'docker build -f Dockerfile.tests -t openlineage-airflow-base .' at base folder"
   exit 1
 fi
 
 # maybe overkill
-MARQUEZ_AIRFLOW_WHL=$(docker run marquez-airflow-base:latest sh -c "ls /whl/marquez*")
-MARQUEZ_AIRFLOW_WHL_ALL=$(docker run marquez-airflow-base:latest sh -c "ls /whl/*")
+OPENLINEAGE_AIRFLOW_WHL=$(docker run openlineage-airflow-base:latest sh -c "ls /whl/openlineage*")
+OPENLINEAGE_AIRFLOW_WHL_ALL=$(docker run openlineage-airflow-base:latest sh -c "ls /whl/*")
 
 # Add revision to requirements.txt
-echo "${MARQUEZ_AIRFLOW_WHL_ALL}" > requirements.txt
+echo "${OPENLINEAGE_AIRFLOW_WHL}" > requirements.txt
 
 # Add revision to integration-requirements.txt
 cat > integration-requirements.txt <<EOL
@@ -51,7 +51,7 @@ google-cloud-storage>=1.31.2
 retrying==1.3.3
 snowflake-connector-python==2.4.3
 marquez-python
-${MARQUEZ_AIRFLOW_WHL}
+${OPENLINEAGE_AIRFLOW_WHL}
 EOL
 
 docker-compose up --build --force-recreate --exit-code-from integration

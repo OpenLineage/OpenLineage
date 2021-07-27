@@ -28,8 +28,7 @@ services:
       - AIRFLOW_CONN_FOOD_DELIVERY_DB=postgres://food_delivery:food_delivery@postgres:5432/food_delivery
       - AIRFLOW__CORE__LOGGING_CONFIG_CLASS=log_config.LOGGING_CONFIG
       - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=false
-      - MARQUEZ_NAMESPACE=food_delivery
-      - MARQUEZ_LOG_LEVEL=DEBUG
+      - OPENLINEAGE_NAMESPACE=food_delivery
     volumes:
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/dags:/opt/bitnami/airflow/dags
@@ -55,8 +54,8 @@ services:
       - AIRFLOW_CONN_FOOD_DELIVERY_DB=postgres://food_delivery:food_delivery@postgres:5432/food_delivery
       - AIRFLOW__CORE__LOGGING_CONFIG_CLASS=log_config.LOGGING_CONFIG
       - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=false
-      - MARQUEZ_URL=http://marquez:5000
-      - MARQUEZ_NAMESPACE=food_delivery
+      - OPENLINEAGE_URL=http://marquez:5000
+      - OPENLINEAGE_NAMESPACE=food_delivery
     volumes:
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/dags:/opt/bitnami/airflow/dags
@@ -79,9 +78,8 @@ services:
       - AIRFLOW_CONN_FOOD_DELIVERY_DB=postgres://food_delivery:food_delivery@postgres:5432/food_delivery
       - AIRFLOW__CORE__LOGGING_CONFIG_CLASS=log_config.LOGGING_CONFIG
       - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=false
-      - MARQUEZ_NAMESPACE=food_delivery
-      - MARQUEZ_URL=http://marquez:5000
-      - MARQUEZ_LOG_LEVEL=DEBUG
+      - OPENLINEAGE_NAMESPACE=food_delivery
+      - OPENLINEAGE_URL=http://marquez:5000
     volumes:
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/dags:/opt/bitnami/airflow/dags

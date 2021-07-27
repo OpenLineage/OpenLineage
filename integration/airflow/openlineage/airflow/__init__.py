@@ -12,8 +12,8 @@
 #
 # -*- coding: utf-8 -*-
 
-__author__ = """Marquez Project"""
-__version__ = "0.16.1"
+__author__ = """OpenLineage"""
+__version__ = "0.0.1"
 __all__ = ["DAG"]
 
-from marquez_airflow.dag import DAG
+from openlineage.airflow.dag import DAG

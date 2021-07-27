@@ -1,7 +1,7 @@
 import attr
 from airflow.version import version as AIRFLOW_VERSION
-from marquez_airflow import __version__ as MARQUEZ_AIRFLOW_VERSION
-from openlineage.facet import BaseFacet
+from openlineage.airflow import __version__ as OPENLINEAGE_AIRFLOW_VERSION
+from openlineage.client.facet import BaseFacet
 from typing import Optional, Dict
 
 
@@ -10,7 +10,7 @@ class AirflowVersionRunFacet(BaseFacet):
     operator: str = attr.ib()
     taskInfo: str = attr.ib()
     airflowVersion: str = attr.ib()
-    marquezAirflowVersion: str = attr.ib()
+    openlineageAirflowVersion: str = attr.ib()
 
     @classmethod
     def from_task(cls, task):
@@ -18,7 +18,7 @@ class AirflowVersionRunFacet(BaseFacet):
             f'{task.__class__.__module__}.{task.__class__.__name__}',
             str(task.__dict__),
             AIRFLOW_VERSION,
-            MARQUEZ_AIRFLOW_VERSION
+            OPENLINEAGE_AIRFLOW_VERSION
         )
 
 
@@ -46,4 +46,4 @@ class DataQualityDatasetFacet(BaseFacet):
 
     @staticmethod
     def _get_schema() -> str:
-        return "https://github.com/MarquezProject/marquez/tree/main/integrations/airflow/marquez_airflow/data-quality-dataset-facet.json"  # noqa
+        return "https://github.com/OpenLineage/OpenLineage/tree/main/integration/airflow/openlineage/airflow/data-quality-dataset-facet.json"  # noqa

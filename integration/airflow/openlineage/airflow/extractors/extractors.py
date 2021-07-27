@@ -1,10 +1,10 @@
 from typing import Type, Optional
 
-from marquez_airflow.extractors.base import BaseExtractor
-from marquez_airflow.extractors.bigquery_extractor import BigQueryExtractor
-from marquez_airflow.extractors.great_expectations_extractor import GreatExpectationsExtractor
-from marquez_airflow.extractors.postgres_extractor import PostgresExtractor
-from marquez_airflow.extractors.snowflake_extractor import SnowflakeExtractor
+from openlineage.airflow.extractors.base import BaseExtractor
+from openlineage.airflow.extractors.bigquery_extractor import BigQueryExtractor
+from openlineage.airflow.extractors.great_expectations_extractor import GreatExpectationsExtractor
+from openlineage.airflow.extractors.postgres_extractor import PostgresExtractor
+from openlineage.airflow.extractors.snowflake_extractor import SnowflakeExtractor
 
 
 _extractors = [

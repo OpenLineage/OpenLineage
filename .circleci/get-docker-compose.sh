@@ -1,3 +1,5 @@
+#!/bin/bash
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -9,8 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
+# Usage: $ ./get-docker-compose.sh
 
-from marquez_airflow.extractors.extractors import Extractors
-from marquez_airflow.extractors.base import BaseExtractor, StepMetadata
+set -e
 
-__all__ = [Extractors, BaseExtractor, StepMetadata]
+curl -L https://github.com/docker/compose/releases/download/1.25.3/docker-compose-`uname -s`-`uname -m` > ~/docker-compose
+chmod +x ~/docker-compose
+sudo mv ~/docker-compose /usr/local/bin/docker-compose
+docker-compose --version
+
+echo "DONE!"

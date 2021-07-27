@@ -20,8 +20,7 @@ from urllib.parse import urlparse, urlunparse
 import airflow
 from airflow.models import Connection
 from airflow.utils.db import provide_session
-from marquez_airflow.facets import AirflowVersionRunFacet, \
-    AirflowRunArgsRunFacet
+from openlineage.airflow.facets import AirflowVersionRunFacet, AirflowRunArgsRunFacet
 
 try:
     # Import from pendulum 1.x version
@@ -35,7 +34,7 @@ _NOMINAL_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
 
 class JobIdMapping:
-    # job_name here is marquez job name - aka combination of dag_id and task_id
+    # job_name here is OL job name - aka combination of dag_id and task_id
 
     @staticmethod
     def set(job_name: str, dag_run_id: str, task_run_id: str):
@@ -66,7 +65,7 @@ class JobIdMapping:
 
     @staticmethod
     def make_key(job_name, run_id):
-        return "marquez_id_mapping-{}-{}".format(job_name, run_id)
+        return "openlineage_id_mapping-{}-{}".format(job_name, run_id)
 
 
 def url_to_https(url) -> str:

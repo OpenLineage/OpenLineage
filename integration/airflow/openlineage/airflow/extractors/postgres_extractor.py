@@ -16,18 +16,18 @@ from urllib.parse import urlparse
 from airflow.hooks.postgres_hook import PostgresHook
 from airflow.operators.postgres_operator import PostgresOperator
 
-from marquez.models import (
+from openlineage.airflow.utils import get_normalized_postgres_connection_uri, get_connection
+from openlineage.airflow.extractors.base import (
+    BaseExtractor,
+    StepMetadata
+)
+from openlineage.common.models import (
     DbTableName,
     DbTableSchema,
     DbColumn
 )
-from marquez_airflow.utils import get_normalized_postgres_connection_uri, get_connection
-from marquez.sql import SqlMeta, SqlParser
-from marquez_airflow.extractors.base import (
-    BaseExtractor,
-    StepMetadata
-)
-from marquez.dataset import Source, Dataset
+from openlineage.common.sql import SqlMeta, SqlParser
+from openlineage.common.dataset import Source, Dataset
 
 _TABLE_SCHEMA = 0
 _TABLE_NAME = 1

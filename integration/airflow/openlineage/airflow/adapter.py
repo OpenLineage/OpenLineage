@@ -2,25 +2,29 @@ import os
 import logging
 from typing import Optional, Dict, Type
 
-from marquez_airflow import __version__ as MARQUEZ_AIRFLOW_VERSION
-from marquez_airflow.extractors import StepMetadata
+from openlineage.airflow import __version__ as OPENLINEAGE_AIRFLOW_VERSION
+from openlineage.airflow.extractors import StepMetadata
 
 from openlineage.client import OpenLineageClient, OpenLineageClientOptions
-from openlineage.facet import DocumentationJobFacet, SourceCodeLocationJobFacet, SqlJobFacet, \
-    NominalTimeRunFacet, ParentRunFacet, BaseFacet
-from openlineage.run import RunEvent, RunState, Run, Job
+from openlineage.client.facet import DocumentationJobFacet, SourceCodeLocationJobFacet, \
+    SqlJobFacet, NominalTimeRunFacet, ParentRunFacet, BaseFacet
+from openlineage.client.run import RunEvent, RunState, Run, Job
 
 _DAG_DEFAULT_OWNER = 'anonymous'
 _DAG_DEFAULT_NAMESPACE = 'default'
 
-_DAG_NAMESPACE = os.getenv(
-    'MARQUEZ_NAMESPACE', _DAG_DEFAULT_NAMESPACE
-)
+_DAG_NAMESPACE = os.getenv('OPENLINEAGE_NAMESPACE', None)
+if not _DAG_NAMESPACE:
+    _DAG_NAMESPACE = os.getenv(
+        'MARQUEZ_NAMESPACE', _DAG_DEFAULT_NAMESPACE
+    )
+
+_PRODUCER = f"openlineage-airflow/{OPENLINEAGE_AIRFLOW_VERSION}"
 
 log = logging.getLogger(__name__)
 
 
-class MarquezAdapter:
+class OpenLineageAdapter:
     """
     Adapter for translating Airflow metadata to OpenLineage events,
     instead of directly creating them from Airflow code.
@@ -29,6 +33,8 @@ class MarquezAdapter:
 
     def get_or_create_openlineage_client(self) -> OpenLineageClient:
         if not self._client:
+
+            # Backcomp with Marquez integration
             marquez_url = os.getenv('MARQUEZ_URL')
             marquez_api_key = os.getenv('MARQUEZ_API_KEY')
             if marquez_url:
@@ -79,7 +85,7 @@ class MarquezAdapter:
             job=self._build_job(
                 job_name, job_description, code_location, sql
             ),
-            producer=f"marquez-airflow/{MARQUEZ_AIRFLOW_VERSION}",
+            producer=_PRODUCER,
             inputs=[
                 dataset.to_openlineage_dataset() for dataset in step.inputs
             ] if step else None,
@@ -123,7 +129,7 @@ class MarquezAdapter:
             outputs=[
                 dataset.to_openlineage_dataset() for dataset in step.outputs
             ],
-            producer=f"marquez-airflow/{MARQUEZ_AIRFLOW_VERSION}"
+            producer=_PRODUCER
         )
         self.get_or_create_openlineage_client().emit(event)
 
@@ -156,7 +162,7 @@ class MarquezAdapter:
             outputs=[
                 dataset.to_openlineage_dataset() for dataset in step.outputs
             ],
-            producer=f"marquez-airflow/{MARQUEZ_AIRFLOW_VERSION}"
+            producer=_PRODUCER
         )
         self.get_or_create_openlineage_client().emit(event)
 

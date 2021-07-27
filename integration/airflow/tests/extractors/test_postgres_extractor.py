@@ -18,14 +18,14 @@ from airflow.models import Connection
 from airflow.operators.postgres_operator import PostgresOperator
 from airflow.utils.dates import days_ago
 
-from marquez_airflow import DAG
-from marquez.models import (
+from openlineage.airflow import DAG
+from openlineage.common.models import (
     DbTableName,
     DbTableSchema,
     DbColumn
 )
-from marquez.dataset import Source, Dataset
-from marquez_airflow.extractors.postgres_extractor import PostgresExtractor
+from openlineage.common.dataset import Source, Dataset
+from openlineage.airflow.extractors.postgres_extractor import PostgresExtractor
 
 CONN_ID = 'food_delivery_db'
 CONN_URI = 'postgres://user:pass@localhost:5432/food_delivery'
@@ -100,8 +100,8 @@ TASK = PostgresOperator(
 )
 
 
-@mock.patch('marquez_airflow.extractors.postgres_extractor.PostgresExtractor._get_table_schemas')
-@mock.patch('marquez_airflow.extractors.postgres_extractor.get_connection')
+@mock.patch('openlineage.airflow.extractors.postgres_extractor.PostgresExtractor._get_table_schemas')  # noqa
+@mock.patch('openlineage.airflow.extractors.postgres_extractor.get_connection')
 def test_extract(get_connection, mock_get_table_schemas):
     mock_get_table_schemas.side_effect = \
         [[DB_TABLE_SCHEMA], NO_DB_TABLE_SCHEMA]
@@ -142,8 +142,8 @@ def test_extract(get_connection, mock_get_table_schemas):
     assert step_metadata.context == expected_context
 
 
-@mock.patch('marquez_airflow.extractors.postgres_extractor.PostgresExtractor._get_table_schemas')
-@mock.patch('marquez_airflow.extractors.postgres_extractor.get_connection')
+@mock.patch('openlineage.airflow.extractors.postgres_extractor.PostgresExtractor._get_table_schemas')  # noqa
+@mock.patch('openlineage.airflow.extractors.postgres_extractor.get_connection')
 def test_extract_authority_uri(get_connection, mock_get_table_schemas):
 
     mock_get_table_schemas.side_effect = \

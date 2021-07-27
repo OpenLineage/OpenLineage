@@ -12,6 +12,7 @@
 import datetime
 import functools
 import logging
+import uuid
 from uuid import UUID
 
 import mock
@@ -25,25 +26,25 @@ from airflow.utils.db import provide_session
 from airflow.utils.decorators import apply_defaults
 from airflow.utils.state import State
 from airflow.version import version as AIRFLOW_VERSION
-from marquez.dataset import Source, Dataset
-from marquez.models import (
+from openlineage.common.dataset import Source, Dataset
+from openlineage.common.models import (
     DbTableName,
     DbTableSchema,
     DbColumn
 )
-from marquez_airflow import DAG
-from marquez_airflow import __version__ as MARQUEZ_AIRFLOW_VERSION
-from marquez_airflow.extractors import (
+from openlineage.airflow import DAG
+from openlineage.airflow import __version__ as OPENLINEAGE_AIRFLOW_VERSION
+from openlineage.airflow.extractors import (
     BaseExtractor, StepMetadata
 )
-from marquez_airflow.extractors.extractors import Extractors
-from marquez_airflow.facets import AirflowRunArgsRunFacet, \
+from openlineage.airflow.extractors.extractors import Extractors
+from openlineage.airflow.facets import AirflowRunArgsRunFacet, \
     AirflowVersionRunFacet
-from marquez_airflow.utils import get_location, get_job_name, new_lineage_run_id
-from openlineage.facet import NominalTimeRunFacet, SourceCodeLocationJobFacet, \
+from openlineage.airflow.utils import get_location, get_job_name, new_lineage_run_id
+from openlineage.client.facet import NominalTimeRunFacet, SourceCodeLocationJobFacet, \
     DocumentationJobFacet, DataSourceDatasetFacet, SchemaDatasetFacet, \
     SchemaField, ParentRunFacet, SqlJobFacet
-from openlineage.run import RunEvent, RunState, Job, Run, \
+from openlineage.client.run import RunEvent, RunState, Job, Run, \
     Dataset as OpenLineageDataset
 
 log = logging.getLogger(__name__)
@@ -61,7 +62,7 @@ DAG_RUN_ARGS = {'external_trigger': False}
 DAG_NAMESPACE = 'default'
 DAG_OWNER = 'anonymous'
 DAG_DESCRIPTION = \
-    'A simple DAG to test the marquez.DAG metadata extraction flow.'
+    'A simple DAG to test the openlineage.DAG metadata extraction flow.'
 
 DAG_DEFAULT_ARGS = {
     'owner': DAG_OWNER,
@@ -75,7 +76,7 @@ DAG_DEFAULT_ARGS = {
 TASK_ID_COMPLETED = 'test_task_completed'
 TASK_ID_FAILED = 'test_task_failed'
 
-PRODUCER = f"marquez-airflow/{MARQUEZ_AIRFLOW_VERSION}"
+PRODUCER = f"openlineage-airflow/{OPENLINEAGE_AIRFLOW_VERSION}"
 
 
 @pytest.fixture
@@ -91,36 +92,40 @@ def test_new_lineage_run_id(clear_db_airflow_dags, session=None):
     assert UUID(run_id).version == 4
 
 
-def run_id_mock(*args):
-    """
-    Generates a deterministic run_id so that asserting executed calls is easier
-    :param args:
-    :return:
-    """
-    return f"{args[0]}.{args[1]}"
-
-
 # tests a simple workflow with default extraction mechanism
-@mock.patch('marquez_airflow.dag.new_lineage_run_id')
-@mock.patch('marquez_airflow.dag.get_custom_facets')
-@mock.patch('marquez_airflow.marquez.MarquezAdapter.get_or_create_openlineage_client')
-@mock.patch('marquez_airflow.dag.JobIdMapping')
+@mock.patch('openlineage.airflow.dag.new_lineage_run_id')
+@mock.patch('openlineage.airflow.dag.get_custom_facets')
+@mock.patch('openlineage.airflow.adapter.OpenLineageAdapter.get_or_create_openlineage_client')
+@mock.patch('openlineage.airflow.dag.JobIdMapping')
 @provide_session
-def test_marquez_dag(job_id_mapping, mock_get_or_create_openlineage_client,
-                     get_custom_facets, new_lineage_run_id, clear_db_airflow_dags, session=None):
+def test_openlineage_dag(
+        job_id_mapping,
+        mock_get_or_create_openlineage_client,
+        get_custom_facets,
+        new_lineage_run_id,
+        clear_db_airflow_dags,
+        session=None
+):
     dag = DAG(
         DAG_ID,
         schedule_interval='@daily',
         default_args=DAG_DEFAULT_ARGS,
         description=DAG_DESCRIPTION
     )
-    # (1) Mock the marquez client method calls
-    mock_marquez_client = mock.Mock()
-    mock_get_or_create_openlineage_client.return_value = mock_marquez_client
-    run_id_completed = f"{DAG_RUN_ID}.{TASK_ID_COMPLETED}"
-    run_id_failed = f"{DAG_RUN_ID}.{TASK_ID_FAILED}"
+    # (1) Mock the openlineage client method calls
+    mock_ol_client = mock.Mock()
+    mock_get_or_create_openlineage_client.return_value = mock_ol_client
+
+    run_id_completed = str(uuid.uuid4())
+    run_id_failed = str(uuid.uuid4())
+
+    job_id_completed = f"{DAG_ID}.{TASK_ID_COMPLETED}"
+    job_id_failed = f"{DAG_ID}.{TASK_ID_FAILED}"
+
     get_custom_facets.return_value = {}
-    new_lineage_run_id.side_effect = run_id_mock
+    new_lineage_run_id.side_effect = [
+        run_id_completed, run_id_failed, run_id_completed, run_id_failed
+    ]
 
     # (2) Add task that will be marked as completed
     task_will_complete = DummyOperator(
@@ -155,10 +160,10 @@ def test_marquez_dag(job_id_mapping, mock_get_or_create_openlineage_client,
                 "parentRun": ParentRunFacet.create(
                     runId=DAG_RUN_ID,
                     namespace=DAG_NAMESPACE,
-                    name=f"{DAG_ID}.{TASK_ID_COMPLETED}"
+                    name=job_id_completed
                 )
             }),
-            job=Job("default", f"{DAG_ID}.{TASK_ID_COMPLETED}", {
+            job=Job("default", job_id_completed, {
                 "documentation": DocumentationJobFacet(DAG_DESCRIPTION),
                 "sourceCodeLocation": SourceCodeLocationJobFacet("", completed_task_location)
             }),
@@ -174,10 +179,10 @@ def test_marquez_dag(job_id_mapping, mock_get_or_create_openlineage_client,
                 "parentRun": ParentRunFacet.create(
                     runId=DAG_RUN_ID,
                     namespace=DAG_NAMESPACE,
-                    name=f"{DAG_ID}.{TASK_ID_FAILED}"
+                    name=job_id_failed
                 )
             }),
-            job=Job("default", f"{DAG_ID}.{TASK_ID_FAILED}", {
+            job=Job("default", job_id_failed, {
                 "documentation": DocumentationJobFacet(DAG_DESCRIPTION),
                 "sourceCodeLocation": SourceCodeLocationJobFacet("", failed_task_location)
             }),
@@ -187,8 +192,8 @@ def test_marquez_dag(job_id_mapping, mock_get_or_create_openlineage_client,
         ))
     ]
     log.info(
-        f"{ [name for name, args, kwargs in mock_marquez_client.mock_calls]}")
-    mock_marquez_client.emit.assert_has_calls(emit_calls)
+        f"{ [name for name, args, kwargs in mock_ol_client.mock_calls]}")
+    mock_ol_client.emit.assert_has_calls(emit_calls)
 
     # (5) Start task that will be marked as completed
     task_will_complete.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE)
@@ -208,7 +213,7 @@ def test_marquez_dag(job_id_mapping, mock_get_or_create_openlineage_client,
             eventType=RunState.COMPLETE,
             eventTime=mock.ANY,
             run=Run(run_id_completed),
-            job=Job("default", f"{DAG_ID}.{TASK_ID_COMPLETED}"),
+            job=Job("default", job_id_completed),
             producer=PRODUCER,
             inputs=[],
             outputs=[]
@@ -217,20 +222,20 @@ def test_marquez_dag(job_id_mapping, mock_get_or_create_openlineage_client,
             eventType=RunState.FAIL,
             eventTime=mock.ANY,
             run=Run(run_id_failed),
-            job=Job("default", f"{DAG_ID}.{TASK_ID_FAILED}"),
+            job=Job("default", job_id_failed),
             producer=PRODUCER,
             inputs=[],
             outputs=[]
         ))
     ]
-    mock_marquez_client.emit.assert_has_calls(emit_calls)
+    mock_ol_client.emit.assert_has_calls(emit_calls)
 
 
-@mock.patch('marquez_airflow.marquez.MarquezAdapter.get_or_create_openlineage_client')
+@mock.patch('openlineage.airflow.adapter.OpenLineageAdapter.get_or_create_openlineage_client')
 @provide_session
 def test_lineage_run_id(mock_get_or_create_openlineage_client, session=None):
-    mock_marquez_client = mock.Mock()
-    mock_get_or_create_openlineage_client.return_value = mock_marquez_client
+    mock_openlineage_client = mock.Mock()
+    mock_get_or_create_openlineage_client.return_value = mock_openlineage_client
 
     dag = DAG(
         "test_lineage_run_id",
@@ -352,12 +357,12 @@ class TestFixtureDummyExtractorOnComplete(BaseExtractor):
 
 
 # test the lifecycle including with extractors
-@mock.patch('marquez_airflow.dag.new_lineage_run_id')
-@mock.patch('marquez_airflow.dag.get_custom_facets')
-@mock.patch('marquez_airflow.marquez.MarquezAdapter.get_or_create_openlineage_client')
-@mock.patch('marquez_airflow.dag.JobIdMapping')
+@mock.patch('openlineage.airflow.dag.new_lineage_run_id')
+@mock.patch('openlineage.airflow.dag.get_custom_facets')
+@mock.patch('openlineage.airflow.adapter.OpenLineageAdapter.get_or_create_openlineage_client')
+@mock.patch('openlineage.airflow.dag.JobIdMapping')
 @provide_session
-def test_marquez_dag_with_extractor(
+def test_openlineage_dag_with_extractor(
         job_id_mapping,
         mock_get_or_create_openlineage_client,
         get_custom_facets,
@@ -371,7 +376,7 @@ def test_marquez_dag_with_extractor(
     extractor_mapper = Extractors()
     extractor_mapper.extractors[TestFixtureDummyOperator] = TestFixtureDummyExtractor
 
-    dag_id = 'test_marquez_dag_with_extractor'
+    dag_id = 'test_openlineage_dag_with_extractor'
     dag = DAG(
         dag_id,
         schedule_interval='@daily',
@@ -380,14 +385,15 @@ def test_marquez_dag_with_extractor(
         extractor_mapper=extractor_mapper
     )
 
-    dag_run_id = 'test_marquez_dag_with_extractor_run_id'
+    dag_run_id = 'test_openlineage_dag_with_extractor_run_id'
 
-    run_id = f"{dag_run_id}.{TASK_ID_COMPLETED}"
-    # Mock the marquez client method calls
-    mock_marquez_client = mock.Mock()
-    mock_get_or_create_openlineage_client.return_value = mock_marquez_client
+    run_id = str(uuid.uuid4())
+    job_id = f"{dag_id}.{TASK_ID_COMPLETED}"
+    # Mock the openlineage client method calls
+    mock_openlineage_client = mock.Mock()
+    mock_get_or_create_openlineage_client.return_value = mock_openlineage_client
     get_custom_facets.return_value = {}
-    new_lineage_run_id.side_effect = run_id_mock
+    new_lineage_run_id.return_value = run_id
 
     # Add task that will be marked as completed
     task_will_complete = TestFixtureDummyOperator(
@@ -409,7 +415,7 @@ def test_marquez_dag_with_extractor(
     start_time = '2016-01-01T00:00:00.000000Z'
     end_time = '2016-01-02T00:00:00.000000Z'
 
-    mock_marquez_client.emit.assert_called_once_with(
+    mock_openlineage_client.emit.assert_called_once_with(
         RunEvent(
             RunState.START,
             mock.ANY,
@@ -418,10 +424,10 @@ def test_marquez_dag_with_extractor(
                 "parentRun": ParentRunFacet.create(
                     runId=dag_run_id,
                     namespace=DAG_NAMESPACE,
-                    name=f"{dag_id}.{TASK_ID_COMPLETED}"
+                    name=job_id
                 )
             }),
-            Job("default", f"{dag_id}.{TASK_ID_COMPLETED}", {
+            Job("default", job_id, {
                 "documentation": DocumentationJobFacet(DAG_DESCRIPTION),
                 "sourceCodeLocation": SourceCodeLocationJobFacet("", completed_task_location)
             }),
@@ -441,7 +447,7 @@ def test_marquez_dag_with_extractor(
         )
     )
 
-    mock_marquez_client.reset_mock()
+    mock_openlineage_client.reset_mock()
 
     # --- Pretend complete the task
     job_id_mapping.pop.return_value = run_id
@@ -452,12 +458,12 @@ def test_marquez_dag_with_extractor(
 
     # --- Assert that the openlineage call is done
 
-    mock_marquez_client.emit.assert_called_once_with(
+    mock_openlineage_client.emit.assert_called_once_with(
         RunEvent(
             RunState.COMPLETE,
             mock.ANY,
             Run(run_id),
-            Job("default", f"{dag_id}.{TASK_ID_COMPLETED}"),
+            Job("default", job_id),
             PRODUCER,
             [OpenLineageDataset('dummy://localhost:1234', 'extract_input1', {
                 "dataSource": DataSourceDatasetFacet(
@@ -475,12 +481,12 @@ def test_marquez_dag_with_extractor(
     )
 
 
-@mock.patch('marquez_airflow.dag.new_lineage_run_id')
-@mock.patch('marquez_airflow.dag.get_custom_facets')
-@mock.patch('marquez_airflow.marquez.MarquezAdapter.get_or_create_openlineage_client')
-@mock.patch('marquez_airflow.dag.JobIdMapping')
+@mock.patch('openlineage.airflow.dag.new_lineage_run_id')
+@mock.patch('openlineage.airflow.dag.get_custom_facets')
+@mock.patch('openlineage.airflow.adapter.OpenLineageAdapter.get_or_create_openlineage_client')
+@mock.patch('openlineage.airflow.dag.JobIdMapping')
 @provide_session
-def test_marquez_dag_with_extract_on_complete(
+def test_openlineage_dag_with_extract_on_complete(
         job_id_mapping,
         mock_get_or_create_openlineage_client,
         get_custom_facets,
@@ -494,7 +500,7 @@ def test_marquez_dag_with_extract_on_complete(
     extractor_mapper = Extractors()
     extractor_mapper.extractors[TestFixtureDummyOperator] = TestFixtureDummyExtractorOnComplete
 
-    dag_id = 'test_marquez_dag_with_extractor_on_complete'
+    dag_id = 'test_openlineage_dag_with_extractor_on_complete'
     dag = DAG(
         dag_id,
         schedule_interval='@daily',
@@ -503,13 +509,15 @@ def test_marquez_dag_with_extract_on_complete(
         extractor_mapper=extractor_mapper
     )
 
-    dag_run_id = 'test_marquez_dag_with_extractor_run_id'
-    run_id = f"{dag_run_id}.{TASK_ID_COMPLETED}"
-    # Mock the marquez client method calls
-    mock_marquez_client = mock.Mock()
-    mock_get_or_create_openlineage_client.return_value = mock_marquez_client
+    dag_run_id = 'test_openlineage_dag_with_extractor_run_id'
+
+    run_id = str(uuid.uuid4())
+    job_id = f"{dag_id}.{TASK_ID_COMPLETED}"
+    # Mock the openlineage client method calls
+    mock_openlineage_client = mock.Mock()
+    mock_get_or_create_openlineage_client.return_value = mock_openlineage_client
     get_custom_facets.return_value = {}
-    new_lineage_run_id.side_effect = run_id_mock
+    new_lineage_run_id.return_value = run_id
 
     # Add task that will be marked as completed
     task_will_complete = TestFixtureDummyOperator(
@@ -527,7 +535,7 @@ def test_marquez_dag_with_extract_on_complete(
     start_time = '2016-01-01T00:00:00.000000Z'
     end_time = '2016-01-02T00:00:00.000000Z'
 
-    mock_marquez_client.emit.assert_has_calls([
+    mock_openlineage_client.emit.assert_has_calls([
         mock.call(RunEvent(
             eventType=RunState.START,
             eventTime=mock.ANY,
@@ -536,10 +544,10 @@ def test_marquez_dag_with_extract_on_complete(
                 "parentRun": ParentRunFacet.create(
                     runId=dag_run_id,
                     namespace=DAG_NAMESPACE,
-                    name=f"{dag_id}.{TASK_ID_COMPLETED}"
+                    name=job_id
                 )
             }),
-            job=Job("default",  f"{dag_id}.{TASK_ID_COMPLETED}", {
+            job=Job("default",  job_id, {
                 "documentation": DocumentationJobFacet(DAG_DESCRIPTION),
                 "sourceCodeLocation": SourceCodeLocationJobFacet("", completed_task_location)
             }),
@@ -549,7 +557,7 @@ def test_marquez_dag_with_extract_on_complete(
         ))
     ])
 
-    mock_marquez_client.reset_mock()
+    mock_openlineage_client.reset_mock()
 
     # --- Pretend complete the task
     job_id_mapping.pop.return_value = run_id
@@ -558,12 +566,12 @@ def test_marquez_dag_with_extract_on_complete(
 
     dag.handle_callback(dagrun, success=True, session=session)
 
-    mock_marquez_client.emit.assert_has_calls([
+    mock_openlineage_client.emit.assert_has_calls([
         mock.call(RunEvent(
             eventType=RunState.COMPLETE,
             eventTime=mock.ANY,
             run=Run(run_id),
-            job=Job("default", f"{dag_id}.{TASK_ID_COMPLETED}"),
+            job=Job("default", job_id),
             producer=PRODUCER,
             inputs=[OpenLineageDataset(
                 namespace='dummy://localhost:1234',
@@ -636,12 +644,12 @@ class TestFixtureDummyExtractorWithMultipleSteps(BaseExtractor):
 
 
 # test the lifecycle including with extractors
-@mock.patch('marquez_airflow.dag.new_lineage_run_id')
-@mock.patch('marquez_airflow.dag.get_custom_facets')
-@mock.patch('marquez_airflow.marquez.MarquezAdapter.get_or_create_openlineage_client')
-@mock.patch('marquez_airflow.dag.JobIdMapping')
+@mock.patch('openlineage.airflow.dag.new_lineage_run_id')
+@mock.patch('openlineage.airflow.dag.get_custom_facets')
+@mock.patch('openlineage.airflow.adapter.OpenLineageAdapter.get_or_create_openlineage_client')
+@mock.patch('openlineage.airflow.dag.JobIdMapping')
 @provide_session
-def test_marquez_dag_with_extractor_returning_two_steps(
+def test_openlineage_dag_with_extractor_returning_two_steps(
         job_id_mapping,
         mock_get_or_create_openlineage_client,
         get_custom_facets,
@@ -656,7 +664,7 @@ def test_marquez_dag_with_extractor_returning_two_steps(
     extractor_mapper.extractors[TestFixtureDummyOperator] = \
         TestFixtureDummyExtractorWithMultipleSteps
 
-    dag_id = 'test_marquez_dag_with_extractor_returning_two_steps'
+    dag_id = 'test_openlineage_dag_with_extractor_returning_two_steps'
     dag = DAG(
         dag_id,
         schedule_interval='@daily',
@@ -665,14 +673,16 @@ def test_marquez_dag_with_extractor_returning_two_steps(
         extractor_mapper=extractor_mapper
     )
 
-    dag_run_id = 'test_marquez_dag_with_extractor_returning_two_steps_run_id'
-    run_id = f"{dag_run_id}.{TASK_ID_COMPLETED}"
+    dag_run_id = 'test_openlineage_dag_with_extractor_returning_two_steps_run_id'
 
-    # Mock the marquez client method calls
-    mock_marquez_client = mock.Mock()
-    mock_get_or_create_openlineage_client.return_value = mock_marquez_client
+    run_id = str(uuid.uuid4())
+    job_id = f"{dag_id}.{TASK_ID_COMPLETED}"
+
+    # Mock the openlineage client method calls
+    mock_openlineage_client = mock.Mock()
+    mock_get_or_create_openlineage_client.return_value = mock_openlineage_client
     get_custom_facets.return_value = {}
-    new_lineage_run_id.side_effect = run_id_mock
+    new_lineage_run_id.side_effect = lambda x, y: run_id
 
     # Add task that will be marked as completed
     task_will_complete = TestFixtureDummyOperator(
@@ -682,6 +692,7 @@ def test_marquez_dag_with_extractor_returning_two_steps(
     completed_task_location = get_location(task_will_complete.dag.fileloc)
 
     # --- pretend run the DAG
+    job_id_mapping.pop.return_value = run_id
 
     # Create DAG run and mark as running
     dagrun = dag.create_dagrun(
@@ -694,7 +705,7 @@ def test_marquez_dag_with_extractor_returning_two_steps(
     start_time = '2016-01-01T00:00:00.000000Z'
     end_time = '2016-01-02T00:00:00.000000Z'
 
-    mock_marquez_client.emit.assert_called_once_with(
+    mock_openlineage_client.emit.assert_called_once_with(
         RunEvent(
             RunState.START,
             mock.ANY,
@@ -703,10 +714,10 @@ def test_marquez_dag_with_extractor_returning_two_steps(
                 "parentRun": ParentRunFacet.create(
                     runId=dag_run_id,
                     namespace=DAG_NAMESPACE,
-                    name=f"{dag_id}.{TASK_ID_COMPLETED}"
+                    name=job_id
                 )
             }),
-            Job("default", f"{dag_id}.{TASK_ID_COMPLETED}", {
+            Job("default", job_id, {
                 "documentation": DocumentationJobFacet(DAG_DESCRIPTION),
                 "sourceCodeLocation": SourceCodeLocationJobFacet("", completed_task_location)
             }),
@@ -721,10 +732,10 @@ def test_marquez_dag_with_extractor_returning_two_steps(
         )
     )
 
-    mock_marquez_client.reset_mock()
+    mock_openlineage_client.reset_mock()
 
     # --- Pretend complete the task
-    job_id_mapping.pop.return_value = run_id
+    new_lineage_run_id.return_value = run_id
 
     task_will_complete.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE)
 
@@ -732,12 +743,12 @@ def test_marquez_dag_with_extractor_returning_two_steps(
 
     # --- Assert that the openlineage call is done
 
-    mock_marquez_client.emit.assert_called_once_with(
+    mock_openlineage_client.emit.assert_called_once_with(
         RunEvent(
             RunState.COMPLETE,
             mock.ANY,
             Run(run_id),
-            Job("default", f"{dag_id}.{TASK_ID_COMPLETED}"),
+            Job("default", job_id),
             PRODUCER,
             [OpenLineageDataset('dummy://localhost:1234', 'extract_input1', {
                 "dataSource": DataSourceDatasetFacet(
@@ -751,9 +762,9 @@ def test_marquez_dag_with_extractor_returning_two_steps(
 
 
 # tests a simple workflow with default custom facet mechanism
-@mock.patch('marquez_airflow.dag.new_lineage_run_id')
-@mock.patch('marquez_airflow.marquez.MarquezAdapter.get_or_create_openlineage_client')
-def test_marquez_dag_adds_custom_facets(
+@mock.patch('openlineage.airflow.dag.new_lineage_run_id')
+@mock.patch('openlineage.airflow.adapter.OpenLineageAdapter.get_or_create_openlineage_client')
+def test_openlineage_dag_adds_custom_facets(
         mock_get_or_create_openlineage_client,
         new_lineage_run_id,
         clear_db_airflow_dags,
@@ -765,11 +776,14 @@ def test_marquez_dag_adds_custom_facets(
         default_args=DAG_DEFAULT_ARGS,
         description=DAG_DESCRIPTION
     )
-    # Mock the marquez client method calls
+    # Mock the openlineage client method calls
     mock_openlineage_client = mock.Mock()
     mock_get_or_create_openlineage_client.return_value = mock_openlineage_client
-    run_id_completed = f"{DAG_RUN_ID}.{TASK_ID_COMPLETED}"
-    new_lineage_run_id.side_effect = run_id_mock
+
+    run_id = str(uuid.uuid4())
+    job_id = f"{DAG_ID}.{TASK_ID_COMPLETED}"
+
+    new_lineage_run_id.return_value = run_id
 
     # Add task that will be marked as completed
     task_will_complete = DummyOperator(
@@ -791,22 +805,22 @@ def test_marquez_dag_adds_custom_facets(
     mock_openlineage_client.emit.assert_called_once_with(RunEvent(
             eventType=RunState.START,
             eventTime=mock.ANY,
-            run=Run(run_id_completed, {
+            run=Run(run_id, {
                 "nominalTime": NominalTimeRunFacet(start_time, end_time),
                 "parentRun": ParentRunFacet.create(
                     runId=DAG_RUN_ID,
                     namespace=DAG_NAMESPACE,
-                    name=f"{DAG_ID}.{TASK_ID_COMPLETED}"
+                    name=job_id
                 ),
                 "airflow_runArgs": AirflowRunArgsRunFacet(False),
                 "airflow_version": AirflowVersionRunFacet(
                     operator="airflow.operators.dummy_operator.DummyOperator",
                     taskInfo=mock.ANY,
                     airflowVersion=AIRFLOW_VERSION,
-                    marquezAirflowVersion=MARQUEZ_AIRFLOW_VERSION
+                    openlineageAirflowVersion=OPENLINEAGE_AIRFLOW_VERSION
                 )
             }),
-            job=Job("default", f"{DAG_ID}.{TASK_ID_COMPLETED}", {
+            job=Job("default", job_id, {
                 "documentation": DocumentationJobFacet(DAG_DESCRIPTION),
                 "sourceCodeLocation": SourceCodeLocationJobFacet("", completed_task_location)
             }),
@@ -870,12 +884,12 @@ class TestFixtureHookingDummyExtractor(BaseExtractor):
 
 # tests a simple workflow with default custom facet mechanism
 # test the lifecycle including with extractors
-@mock.patch('marquez_airflow.dag.new_lineage_run_id')
-@mock.patch('marquez_airflow.dag.get_custom_facets')
-@mock.patch('marquez_airflow.marquez.MarquezAdapter.get_or_create_openlineage_client')
-@mock.patch('marquez_airflow.dag.JobIdMapping')
+@mock.patch('openlineage.airflow.dag.new_lineage_run_id')
+@mock.patch('openlineage.airflow.dag.get_custom_facets')
+@mock.patch('openlineage.airflow.adapter.OpenLineageAdapter.get_or_create_openlineage_client')
+@mock.patch('openlineage.airflow.dag.JobIdMapping')
 @provide_session
-def test_marquez_dag_with_hooking_operator(
+def test_openlineage_dag_with_hooking_operator(
         job_id_mapping,
         mock_get_or_create_openlineage_client,
         get_custom_facets,
@@ -889,7 +903,7 @@ def test_marquez_dag_with_hooking_operator(
     extractor_mapper = Extractors()
     extractor_mapper.extractors[TestFixtureHookingDummyOperator] = TestFixtureHookingDummyExtractor
 
-    dag_id = 'test_marquez_dag_with_extractor_returning_two_steps'
+    dag_id = 'test_openlineage_dag_with_extractor_returning_two_steps'
     dag = DAG(
         dag_id,
         schedule_interval='@daily',
@@ -898,14 +912,16 @@ def test_marquez_dag_with_hooking_operator(
         extractor_mapper=extractor_mapper
     )
 
-    dag_run_id = 'test_marquez_dag_with_extractor_returning_two_steps_run_id'
-    run_id = f"{dag_run_id}.{TASK_ID_COMPLETED}"
+    dag_run_id = 'test_openlineage_dag_with_extractor_returning_two_steps_run_id'
 
-    # Mock the marquez client method calls
-    mock_marquez_client = mock.Mock()
-    mock_get_or_create_openlineage_client.return_value = mock_marquez_client
+    run_id = str(uuid.uuid4())
+    job_id = f"{dag_id}.{TASK_ID_COMPLETED}"
+
+    # Mock the openlineage client method calls
+    mock_openlineage_client = mock.Mock()
+    mock_get_or_create_openlineage_client.return_value = mock_openlineage_client
     get_custom_facets.return_value = {}
-    new_lineage_run_id.side_effect = run_id_mock
+    new_lineage_run_id.return_value = run_id
 
     query = "select * from employees"
 
@@ -930,7 +946,7 @@ def test_marquez_dag_with_hooking_operator(
     start_time = '2016-01-01T00:00:00.000000Z'
     end_time = '2016-01-02T00:00:00.000000Z'
 
-    mock_marquez_client.emit.assert_called_once_with(
+    mock_openlineage_client.emit.assert_called_once_with(
         RunEvent(
             RunState.START,
             mock.ANY,
@@ -939,10 +955,10 @@ def test_marquez_dag_with_hooking_operator(
                 "parentRun": ParentRunFacet.create(
                     runId=dag_run_id,
                     namespace=DAG_NAMESPACE,
-                    name=f"{dag_id}.{TASK_ID_COMPLETED}"
+                    name=job_id
                 )
             }),
-            Job("default", f"{dag_id}.{TASK_ID_COMPLETED}", {
+            Job("default", job_id, {
                 "documentation": DocumentationJobFacet(DAG_DESCRIPTION),
                 "sourceCodeLocation": SourceCodeLocationJobFacet("", completed_task_location)
             }),
@@ -952,7 +968,7 @@ def test_marquez_dag_with_hooking_operator(
         )
     )
 
-    mock_marquez_client.reset_mock()
+    mock_openlineage_client.reset_mock()
 
     # --- Pretend complete the task
     job_id_mapping.pop.return_value = run_id
@@ -963,12 +979,12 @@ def test_marquez_dag_with_hooking_operator(
 
     # --- Assert that the openlineage call is done
 
-    mock_marquez_client.emit.assert_called_once_with(
+    mock_openlineage_client.emit.assert_called_once_with(
         RunEvent(
             RunState.COMPLETE,
             mock.ANY,
             Run(run_id),
-            Job("default", f"{dag_id}.{TASK_ID_COMPLETED}", {
+            Job("default", job_id, {
                 "sql": SqlJobFacet(query)
             }),
             PRODUCER,

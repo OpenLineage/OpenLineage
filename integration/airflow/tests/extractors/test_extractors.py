@@ -3,7 +3,7 @@ from airflow.contrib.operators.snowflake_operator import SnowflakeOperator
 from airflow.operators.postgres_operator import PostgresOperator
 from great_expectations_provider.operators.great_expectations import GreatExpectationsOperator
 
-from marquez_airflow.extractors import Extractors
+from openlineage.airflow.extractors import Extractors
 
 
 def test_all_extractors():

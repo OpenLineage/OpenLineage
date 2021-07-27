@@ -19,14 +19,14 @@ import attr
 
 from airflow.models import BaseOperator
 
-from marquez.provider.bigquery import BigQueryDatasetsProvider, BigQueryErrorRunFacet
-from marquez.sql import SqlParser
+from openlineage.common.provider.bigquery import BigQueryDatasetsProvider, BigQueryErrorRunFacet
+from openlineage.common.sql import SqlParser
 
-from marquez_airflow.extractors.base import (
+from openlineage.airflow.extractors.base import (
     BaseExtractor,
     StepMetadata
 )
-from marquez_airflow.utils import get_job_name
+from openlineage.airflow.utils import get_job_name
 
 _BIGQUERY_CONN_URL = 'bigquery'
 

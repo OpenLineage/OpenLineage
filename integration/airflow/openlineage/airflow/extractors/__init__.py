@@ -10,23 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
-from datetime import datetime
+from openlineage.airflow.extractors.extractors import Extractors
+from openlineage.airflow.extractors.base import BaseExtractor, StepMetadata
 
-from airflow.operators.dummy_operator import DummyOperator
-from openlineage.airflow import DAG
-
-log = logging.getLogger(__name__)
-
-dag = DAG(dag_id='test_dummy_dag',
-          description='Test dummy DAG',
-          schedule_interval='*/2 * * * *',
-          start_date=datetime(2020, 1, 8),
-          catchup=False,
-          max_active_runs=1)
-log.debug("dag created.")
-
-dummy_task = DummyOperator(
-    task_id='test_dummy',
-    dag=dag
-)
+__all__ = [Extractors, BaseExtractor, StepMetadata]

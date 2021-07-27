@@ -17,14 +17,14 @@ from airflow.contrib.operators.snowflake_operator import SnowflakeOperator
 from airflow.models import Connection
 from airflow.utils.dates import days_ago
 
-from marquez_airflow import DAG
-from marquez.models import (
+from openlineage.common.models import (
     DbTableName,
     DbTableSchema,
     DbColumn
 )
-from marquez.dataset import Source, Dataset
-from marquez_airflow.extractors.snowflake_extractor import SnowflakeExtractor
+from openlineage.common.dataset import Source, Dataset
+from openlineage.airflow import DAG
+from openlineage.airflow.extractors.snowflake_extractor import SnowflakeExtractor
 
 CONN_ID = 'food_delivery_db'
 CONN_URI = 'snowflake://localhost:5432/food_delivery'
@@ -96,8 +96,8 @@ TASK = SnowflakeOperator(
 )
 
 
-@mock.patch('marquez_airflow.extractors.snowflake_extractor.SnowflakeExtractor._get_table_schemas')
-@mock.patch('marquez_airflow.extractors.postgres_extractor.get_connection')
+@mock.patch('openlineage.airflow.extractors.snowflake_extractor.SnowflakeExtractor._get_table_schemas')  # noqa
+@mock.patch('openlineage.airflow.extractors.postgres_extractor.get_connection')
 def test_extract(get_connection, mock_get_table_schemas):
     mock_get_table_schemas.side_effect = \
         [[DB_TABLE_SCHEMA], NO_DB_TABLE_SCHEMA]

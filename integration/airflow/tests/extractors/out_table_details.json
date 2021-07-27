@@ -1,10 +1,10 @@
 {
     "kind": "bigquery#table",
     "etag": "/xPW+XqH9yYTFhR/MQSm+Q==",
-    "id": "bq-airflow-marquez:new_dataset.output_table_3",
-    "selfLink": "https://bigquery.googleapis.com/bigquery/v2/projects/bq-airflow-marquez/datasets/new_dataset/tables/output_table_3",
+    "id": "bq-airflow-openlineage:new_dataset.output_table_3",
+    "selfLink": "https://bigquery.googleapis.com/bigquery/v2/projects/bq-airflow-openlineage/datasets/new_dataset/tables/output_table_3",
     "tableReference": {
-        "projectId": "bq-airflow-marquez",
+        "projectId": "bq-airflow-openlineage",
         "datasetId": "new_dataset",
         "tableId": "output_table"
     },

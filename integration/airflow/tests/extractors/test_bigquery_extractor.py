@@ -23,10 +23,10 @@ from airflow.contrib.operators.bigquery_operator import BigQueryOperator
 from airflow.models import TaskInstance, DAG
 from airflow.utils.state import State
 
-from marquez_airflow.extractors.bigquery_extractor import BigQueryExtractor
-from marquez.provider.bigquery import BigQueryJobRunFacet, BigQueryStatisticsDatasetFacet, \
-    BigQueryErrorRunFacet
-from marquez.utils import get_from_nullable_chain
+from openlineage.airflow.extractors.bigquery_extractor import BigQueryExtractor
+from openlineage.common.provider.bigquery import BigQueryJobRunFacet, \
+    BigQueryStatisticsDatasetFacet, BigQueryErrorRunFacet
+from openlineage.common.utils import get_from_nullable_chain
 
 log = logging.getLogger(__name__)
 
@@ -105,7 +105,7 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
         assert step_meta.outputs[0].fields is not None
         assert len(step_meta.outputs[0].fields) == 2
         assert step_meta.outputs[0].name == \
-            'bq-airflow-marquez.new_dataset.output_table'
+            'bq-airflow-openlineage.new_dataset.output_table'
 
         assert BigQueryStatisticsDatasetFacet(
             rowCount=20,

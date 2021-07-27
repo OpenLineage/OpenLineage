@@ -2,11 +2,14 @@ FROM python:3.6-slim
 RUN mkdir /app
 ADD airflow/setup.py /app
 ADD airflow/README.md /app
-COPY common /tmp/marquez-integration-common
-RUN cd /tmp/marquez-integration-common && pip wheel --wheel-dir=/tmp/marquez-integration-common/wheel .
-COPY airflow/marquez_airflow /app/marquez_airflow
+COPY python /tmp/openlineage-client-python
+COPY common /tmp/openlineage-integration-common
+RUN cd /tmp/openlineage-client-python && pip wheel --no-deps --wheel-dir=/tmp/openlineage-client-python/wheel .
+RUN cd /tmp/openlineage-integration-common && pip wheel --no-deps --wheel-dir=/tmp/openlineage-integration-common/wheel .
+COPY airflow/openlineage/airflow /app/openlineage/airflow
 WORKDIR /app
-RUN ls -la
-RUN pip wheel --wheel-dir=/app/wheel -e /tmp/marquez-integration-common .[tests]
+RUN ls -halt /tmp/openlineage-client-python/wheel
+RUN pip wheel --no-deps --wheel-dir=/app/wheel -e /tmp/openlineage-client-python .[tests]
+RUN pip wheel --no-deps --wheel-dir=/app/wheel -e /tmp/openlineage-integration-common .[tests]
 RUN cp -R /app/wheel /whl
-RUN cp /tmp/marquez-integration-common/wheel/marquez_integration_common* /whl
+RUN cp /tmp/openlineage-integration-common/wheel/openlineage_integration_common* /whl

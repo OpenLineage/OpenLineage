@@ -1,14 +1,14 @@
 {
    "kind": "bigquery#job",
    "etag": "vd2aBaVVX6a4bUJW13+Tqg==",
-   "id": "bq-airflow-marquez:US.job_IDnbVW6NACdFDkermznYm9o4mcVH",
-   "selfLink": "https://bigquery.googleapis.com/bigquery/v2/projects/bq-airflow-marquez/jobs/job_IDnbVW6NACdFDkermznYm9o4mcVH?location=US",
-   "user_email": "svc-bq-airflow-marquez@bq-airflow-marquez.iam.gserviceaccount.com",
+   "id": "bq-airflow-openlineage:US.job_IDnbVW6NACdFDkermznYm9o4mcVH",
+   "selfLink": "https://bigquery.googleapis.com/bigquery/v2/projects/bq-airflow-openlineage/jobs/job_IDnbVW6NACdFDkermznYm9o4mcVH?location=US",
+   "user_email": "svc-bq-airflow-openlineage@bq-airflow-openlineage.iam.gserviceaccount.com",
    "configuration": {
       "query": {
          "query": "\n        SELECT name, SUM(number) as total_people\n        FROM `bigquery-public-data.usa_names.usa_1910_2013`\n        WHERE state = 'TX'\n        GROUP BY name, state\n        ORDER BY total_people DESC\n        LIMIT 20\n    ",
          "destinationTable": {
-            "projectId": "bq-airflow-marquez",
+            "projectId": "bq-airflow-openlineage",
             "datasetId": "new_dataset",
             "tableId": "output_table"
          },
@@ -21,7 +21,7 @@
       "jobType": "QUERY"
    },
    "jobReference": {
-      "projectId": "bq-airflow-marquez",
+      "projectId": "bq-airflow-openlineage",
       "jobId": "job_IDnbVW6NACdFDkermznYm9o4mcVH",
       "location": "US"
    },

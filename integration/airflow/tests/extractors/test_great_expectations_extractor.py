@@ -14,14 +14,14 @@ import os
 import pytest
 from pathlib import Path
 
-from marquez_airflow.extractors.great_expectations_extractor import \
+from openlineage.airflow.extractors.great_expectations_extractor import \
     GreatExpectationsAssertionsDatasetFacet, GreatExpectationsAssertion, \
     GreatExpectationsExtractor, set_dataset_info
 
 from great_expectations_provider.operators.great_expectations import GreatExpectationsOperator
 
-from marquez_airflow.facets import DataQualityDatasetFacet, ColumnMetric
-from openlineage.serde import Serde
+from openlineage.airflow.facets import DataQualityDatasetFacet, ColumnMetric
+from openlineage.client.serde import Serde
 
 log = logging.getLogger(__name__)
 

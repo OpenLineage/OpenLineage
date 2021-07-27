@@ -18,9 +18,9 @@ from airflow.utils.db import provide_session
 from airflow.utils.state import State
 # Handling of import of different airflow versions
 from airflow.version import version as AIRFLOW_VERSION
-from marquez_airflow.extractors import StepMetadata, BaseExtractor
-from marquez_airflow.extractors.extractors import Extractors
-from marquez_airflow.utils import (
+from openlineage.airflow.extractors import StepMetadata, BaseExtractor
+from openlineage.airflow.extractors.extractors import Extractors
+from openlineage.airflow.utils import (
     JobIdMapping,
     get_location,
     DagUtils,
@@ -29,15 +29,18 @@ from marquez_airflow.utils import (
 )
 from pkg_resources import parse_version
 
-if parse_version(AIRFLOW_VERSION) >= parse_version("1.10.11"):
+if parse_version(AIRFLOW_VERSION) >= parse_version("2.0.0"):
+    # Corrects path of import for Airflow versions below 1.10.11
+    from airflow.utils.log.logging_mixin import LoggingMixin
+elif parse_version(AIRFLOW_VERSION) >= parse_version("1.10.11"):
     from airflow import LoggingMixin
 else:
     # Corrects path of import for Airflow versions below 1.10.11
     from airflow.utils.log.logging_mixin import LoggingMixin
 
-from marquez_airflow.marquez import MarquezAdapter
+from openlineage.airflow.adapter import OpenLineageAdapter
 
-_MARQUEZ = MarquezAdapter()
+_ADAPTER = OpenLineageAdapter()
 
 
 @provide_session
@@ -60,7 +63,7 @@ def lineage_run_id(run_id, task, session=None):
     :param session:
     :return:
     """
-    name = DAG._marquez_job_name(task.dag_id, task.task_id)
+    name = DAG._openlineage_job_name(task.dag_id, task.task_id)
     ids = JobIdMapping.get(name, run_id, session)
     if ids is None:
         return ""
@@ -72,7 +75,7 @@ def lineage_run_id(run_id, task, session=None):
 
 class DAG(airflow.models.DAG, LoggingMixin):
     def __init__(self, *args, extractor_mapper=None, **kwargs):
-        self.log.debug("marquez-airflow dag starting")
+        self.log.info("openlineage-airflow dag starting")
         macros = {}
         if kwargs.__contains__("user_defined_macros"):
             macros = kwargs["user_defined_macros"]
@@ -127,10 +130,10 @@ class DAG(airflow.models.DAG, LoggingMixin):
             try:
                 step = self._extract_metadata(dagrun, task)
 
-                job_name = self._marquez_job_name(self.dag_id, task.task_id)
+                job_name = self._openlineage_job_name(self.dag_id, task.task_id)
                 run_id = new_lineage_run_id(dagrun.run_id, task_id)
 
-                task_run_id = _MARQUEZ.start_task(
+                task_run_id = _ADAPTER.start_task(
                     run_id,
                     job_name,
                     self.description,
@@ -188,14 +191,14 @@ class DAG(airflow.models.DAG, LoggingMixin):
         # Note: task_run_id could be missing if it was removed from airflow
         # or the job could not be registered.
         task_run_id = JobIdMapping.pop(
-            self._marquez_job_name_from_task_instance(task_instance), dagrun.run_id, session)
+            self._openlineage_job_name_from_task_instance(task_instance), dagrun.run_id, session)
         step = self._extract_metadata(dagrun, task, task_instance)
 
-        job_name = self._marquez_job_name(self.dag_id, task.task_id)
+        job_name = self._openlineage_job_name(self.dag_id, task.task_id)
         run_id = new_lineage_run_id(dagrun.run_id, task.task_id)
 
         if not task_run_id:
-            task_run_id = _MARQUEZ.start_task(
+            task_run_id = _ADAPTER.start_task(
                 run_id,
                 job_name,
                 self.description,
@@ -214,14 +217,14 @@ class DAG(airflow.models.DAG, LoggingMixin):
         self.log.debug(f'Setting task state: {task_instance.state}'
                        f' for {task_instance.task_id}')
         if task_instance.state in {State.SUCCESS, State.SKIPPED}:
-            _MARQUEZ.complete_task(
+            _ADAPTER.complete_task(
                 task_run_id,
                 job_name,
                 DagUtils.to_iso_8601(task_instance.end_date),
                 step
             )
         else:
-            _MARQUEZ.fail_task(
+            _ADAPTER.fail_task(
                 task_run_id,
                 job_name,
                 DagUtils.to_iso_8601(task_instance.end_date),
@@ -247,7 +250,7 @@ class DAG(airflow.models.DAG, LoggingMixin):
                 if isinstance(step, list):
                     if len(step) == 0:
                         return StepMetadata(
-                            name=self._marquez_job_name(self.dag_id, task.task_id)
+                            name=self._openlineage_job_name(self.dag_id, task.task_id)
                         )
                     elif len(step) >= 1:
                         self.log.warning(
@@ -266,7 +269,7 @@ class DAG(airflow.models.DAG, LoggingMixin):
                 f'Unable to find an extractor. {task_info}')
 
         return StepMetadata(
-            name=self._marquez_job_name(self.dag_id, task.task_id)
+            name=self._openlineage_job_name(self.dag_id, task.task_id)
         )
 
     def _extract(self, extractor, task_instance) -> \
@@ -303,11 +306,11 @@ class DAG(airflow.models.DAG, LoggingMixin):
             return None
 
     @staticmethod
-    def _marquez_job_name_from_task_instance(task_instance):
-        return DAG._marquez_job_name(task_instance.dag_id, task_instance.task_id)
+    def _openlineage_job_name_from_task_instance(task_instance):
+        return DAG._openlineage_job_name(task_instance.dag_id, task_instance.task_id)
 
     @staticmethod
-    def _marquez_job_name(dag_id: str, task_id: str) -> str:
+    def _openlineage_job_name(dag_id: str, task_id: str) -> str:
         return f'{dag_id}.{task_id}'
 
     @staticmethod

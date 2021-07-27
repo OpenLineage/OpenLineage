@@ -14,17 +14,20 @@
 #
 # -*- coding: utf-8 -*-
 
-from setuptools import find_packages, setup
+from setuptools import setup, find_namespace_packages
 
 with open("README.md") as readme_file:
     readme = readme_file.read()
 
 
+__version__ = '0.0.1'
+
 requirements = [
     "attrs>=19.3",
     "requests>=2.20.0",
     "sqlparse>=0.3.1",
-    "marquez-integration-common==0.16.1",
+    f"openlineage-integration-common=={__version__}",
+    f"openlineage-python=={__version__}",
 ]
 
 
@@ -48,17 +51,17 @@ extras_require = {
 extras_require["dev"] = set(sum(extras_require.values(), []))
 
 setup(
-    name="marquez-airflow",
-    version="0.16.1",
-    description="Marquez integration with Airflow",
+    name="openlineage-airflow",
+    version=__version__,
+    description="OpenLineage integration with Airflow",
     long_description=readme,
     long_description_content_type="text/markdown",
-    author="Marquez Project",
-    packages=find_packages(),
+    author="OpenLineage",
+    packages=find_namespace_packages(include=['openlineage.*']),
     include_package_data=True,
     install_requires=requirements,
     extras_require=extras_require,
     python_requires=">=3.6",
     zip_safe=False,
-    keywords="marquez",
+    keywords="openlineage",
 )

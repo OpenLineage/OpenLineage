@@ -1,6 +1,6 @@
-# marquez-airflow
+# OpenLineage Airflow Integration
 
-A library that integrates [Airflow `DAGs`]() with [Marquez](https://github.com/MarquezProject/marquez) for automatic metadata collection.
+A library that integrates [Airflow `DAGs`]() with [OpenLineage](https://openlineage.io) for automatic metadata collection.
 
 ## Features
 
@@ -24,15 +24,15 @@ A library that integrates [Airflow `DAGs`]() with [Marquez](https://github.com/M
 ## Requirements
 
 - [Python 3.6.0](https://www.python.org/downloads)+
-- [Airflow 1.10.4](https://pypi.org/project/apache-airflow)+
+- [Airflow 1.10.12+](https://pypi.org/project/apache-airflow)+
 
 ## Installation
 
 ```bash
-$ pip3 install marquez-airflow
+$ pip3 install openlineage-airflow
 ```
 
-> **Note:** You can also add `marquez-airflow` to your `requirements.txt` for Airflow.
+> **Note:** You can also add `openlineage-airflow` to your `requirements.txt` for Airflow.
 
 To install from source, run:
 
@@ -45,32 +45,28 @@ $ python3 setup.py install
 
 ### `HTTP` Backend Environment Variables
 
-`marquez-airflow` uses OpenLineage client to push data to Marquez.
+`openlineage-airflow` uses OpenLineage client to push data to OpenLineage backend.
 
 OpenLineage client depends on environment variables:
 
 * `OPENLINEAGE_URL` - point to service which will consume OpenLineage events
 * `OPENLINEAGE_PRODUCER` - name of producer that client will send along with your events. This will be dropped in future versions.
 * `OPENLINEAGE_API_KEY` - set if consumer of OpenLineage events requires `Bearer` authentication key
+* `OPENLINEAGE_NAMESPACE` - set if you are using something other than the `default` namespace for job namespace.
 
-For backwards compatibility, `marquez-airflow` also support configuration via
-`MARQUEZ_URL` and `MARQUEZ_API_KEY` variables.
+For backwards compatibility, `openlineage-airflow` also support configuration via
+`MARQUEZ_URL`, `MARQUEZ_NAMESPACE` and `MARQUEZ_API_KEY` variables.
 
 ```
 MARQUEZ_URL=http://my_hosted_marquez.example.com:5000
-```
-
-You will also need to set the job namespace if you are using something other than the `default` namespace.
-
-```
 MARQUEZ_NAMESPACE=my_special_ns
 ```
 
 ### Extractors : Sending the correct data from your DAGs
 
-If you do nothing, Marquez will receive the `Job` and the `Run` from your DAGs, but sources and datasets will not be sent.
+If you do nothing, OpenLineage backend will receive the `Job` and the `Run` from your DAGs, but sources and datasets will not be sent.
 
-`marquez-airflow` allows you to do more than that by building "Extractors".  Extractors are in the process of changing right now, but they basically take a task and extract:
+`openlineage-airflow` allows you to do more than that by building "Extractors".  Extractors are in the process of changing right now, but they basically take a task and extract:
 
 1. Name : The name of the task
 2. Location : Location of the code for the task
@@ -78,20 +74,18 @@ If you do nothing, Marquez will receive the `Job` and the `Run` from your DAGs, 
 4. Outputs : List of output datasets
 5. Context : The Airflow context for the task
 
-It's important to understand the inputs and outputs are lists and relate directly to the `Dataset` object in Marquez.  Datasets also include a source which relates directly to the `Source` object in Marquez.
-
 #### Great Expectations
 
 `great_expectations` extractor requires more care than that. For technical reasons, you need to manually provide dataset
-name and namespace for dataset provided to great expectations operator by calling function `marquez_airflow.extractors.great_expectations_extractor.set_dataset_info`.
+name and namespace for dataset provided to great expectations operator by calling function `openlineage.airflow.extractors.great_expectations_extractor.set_dataset_info`.
 
 ## Usage
 
-To begin collecting Airflow DAG metadata with Marquez, use:
+To begin collecting Airflow DAG metadata with OpenLineage, use:
 
 ```diff
 - from airflow import DAG
-+ from marquez_airflow import DAG
++ from openlineage.airflow import DAG
 ```
 
 When enabled, the library will:
@@ -99,13 +93,7 @@ When enabled, the library will:
 1. On DAG **start**, collect metadata for each task using an `Extractor` (the library defines a _default_ extractor to use otherwise)
 2. Collect task input / output metadata (`source`, `schema`, etc)
 3. Collect task run-level metadata (execution time, state, parameters, etc)
-4. On DAG **complete**, also mark the task as _complete_ in Marquez
-
-To enable logging, set the environment variable `MARQUEZ_LOG_LEVEL` to `DEBUG`, `INFO`, or `ERROR`:
-
-```
-$ export MARQUEZ_LOG_LEVEL=INFO
-```
+4. On DAG **complete**, also mark the task as _complete_ in OpenLineage
 
 ## Triggering Child Jobs
 Commonly, Airflow DAGs will trigger processes on remote systems, such as an Apache Spark or Apache
@@ -125,7 +113,7 @@ t1 = DataProcPySparkOperator(
     job_name=job_name,
     dataproc_pyspark_properties={
         'spark.driver.extraJavaOptions':
-            f"-javaagent:{jar}={os.environ.get('MARQUEZ_URL')}/api/v1/namespaces/{os.getenv('MARQUEZ_NAMESPACE', 'default')}/jobs/{job_name}/runs/{{{{lineage_run_id(run_id, task)}}}}?api_key={os.environ.get('MARQUEZ_API_KEY')}"
+            f"-javaagent:{jar}={os.environ.get('OPENLINEAGE_URL')}/api/v1/namespaces/{os.getenv('OPENLINEAGE_NAMESPACE', 'default')}/jobs/{job_name}/runs/{{{{lineage_run_id(run_id, task)}}}}?api_key={os.environ.get('OPENLINEAGE_API_KEY')}"
         dag=dag)
 ```
 ## Development

@@ -12,7 +12,7 @@
 import os
 
 from airflow.models import Connection
-from marquez_airflow.utils import (
+from openlineage.airflow.utils import (
     url_to_https,
     get_location,
     get_connection_uri,

@@ -1,4 +1,4 @@
-FROM marquez-airflow-base:latest AS build
+FROM openlineage-airflow-base:latest AS build
 
 FROM bitnami/airflow-scheduler:1.10.12 AS scheduler
 COPY --from=build /app/wheel /whl
@@ -22,7 +22,7 @@ RUN apt-get update && \
     apt-get install -y git
 USER 1001
 
-FROM marquez-airflow-base:latest AS integration
+FROM openlineage-airflow-base:latest AS integration
 COPY integration-requirements.txt integration-requirements.txt
 COPY integration.py integration.py
 RUN pip install --use-deprecated=legacy-resolver --user -r integration-requirements.txt

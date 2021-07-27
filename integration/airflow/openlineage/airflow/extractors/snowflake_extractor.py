@@ -1,7 +1,7 @@
 import logging
 
-from marquez_airflow.extractors.postgres_extractor import PostgresExtractor
-from marquez_airflow.utils import get_connection_uri, get_connection  # noqa
+from openlineage.airflow.extractors.postgres_extractor import PostgresExtractor
+from openlineage.airflow.utils import get_connection_uri, get_connection  # noqa
 
 log = logging.getLogger(__file__)
 

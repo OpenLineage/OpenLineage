@@ -16,13 +16,13 @@ from collections import defaultdict
 import attr
 from typing import Optional, Any, Dict, List
 
-from openlineage.facet import BaseFacet
+from openlineage.client.facet import BaseFacet
 
-from marquez_airflow.extractors.base import BaseExtractor, StepMetadata
-from marquez_airflow.facets import DataQualityDatasetFacet, ColumnMetric
-from marquez_airflow.utils import get_job_name
-from marquez.dataset import Source, Dataset
-from marquez.utils import get_from_nullable_chain
+from openlineage.airflow.extractors.base import BaseExtractor, StepMetadata
+from openlineage.airflow.facets import DataQualityDatasetFacet, ColumnMetric
+from openlineage.airflow.utils import get_job_name
+from openlineage.common.dataset import Source, Dataset
+from openlineage.common.utils import get_from_nullable_chain
 
 
 def wrap_callback(f):
@@ -76,7 +76,7 @@ class GreatExpectationsAssertionsDatasetFacet(BaseFacet):
 
     @staticmethod
     def _get_schema() -> str:
-        return "https://github.com/MarquezProject/marquez/tree/main/integrations/airflow/marquez_airflow/extractors/ge-assertions-dataset-facet.json"  # noqa
+        return "https://github.com/OpenLineage/OpenLineage/tree/main/integration/airflow/openlineage/airflow/extractors/ge-assertions-dataset-facet.json"  # noqa
 
 
 def set_dataset_info(operator: GreatExpectationsOperator, namespace: str, name: str):

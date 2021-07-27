@@ -1,11 +1,21 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Type, Union, Optional
+from pkg_resources import parse_version
 
-from airflow import LoggingMixin
 from airflow.models import BaseOperator
-from openlineage.facet import BaseFacet
+from airflow.version import version as AIRFLOW_VERSION
 
-from marquez.dataset import Dataset
+from openlineage.client.facet import BaseFacet
+from openlineage.common.dataset import Dataset
+
+if parse_version(AIRFLOW_VERSION) >= parse_version("2.0.0"):
+    # Corrects path of import for Airflow versions below 1.10.11
+    from airflow.utils.log.logging_mixin import LoggingMixin
+elif parse_version(AIRFLOW_VERSION) >= parse_version("1.10.11"):
+    from airflow import LoggingMixin
+else:
+    # Corrects path of import for Airflow versions below 1.10.11
+    from airflow.utils.log.logging_mixin import LoggingMixin
 
 
 class StepMetadata:
@@ -73,13 +83,4 @@ class BaseExtractor(ABC, LoggingMixin):
 
     def extract_on_complete(self, task_instance) -> \
             Union[Optional[StepMetadata], List[StepMetadata]]:
-        # TODO: This method allows for the partial updating of task
-        # metadata on completion. Marquez currently doesn't support
-        # partial updates within the context of a DAG run, but this feature
-        # will soon be supported:
-        # https://github.com/MarquezProject/marquez/issues/816
-        #
-        # Also, we'll want to revisit the metadata extraction flow,
-        # but for now, return an empty set as the default behavior
-        # as not all extractors need to handle partial metadata updates.
         return self.extract()
