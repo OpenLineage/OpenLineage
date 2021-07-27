@@ -47,6 +47,14 @@ jobs:
           paths:
             - ./dist/*.tar.gz
             - ./dist/*.whl
+  build-java-client:
+    working_directory: ~/openlineage/client/java
+    docker:
+      - image: cimg/openjdk:11.0
+    steps:
+      - *checkout_project_root
+      - run: |
+          ./gradlew --no-daemon --stacktrace build
 
   release-java-client:
     working_directory: ~/openlineage/client/java
@@ -170,9 +178,25 @@ workflows:
       - test-client-python
       - test-integration-common
       - build-integration-spark
+      - build-java-client
       - integration-test-spark:
           requires:
             - build-integration-spark
+
+      #publish snapshots
+      - release-java-client:
+          name: publish-java-client-snapshot
+          <<: *only-on-main-without-release-tag
+          context: release
+          requires:
+            - build-java-client
+      - release-integration-spark:
+          name: publish-integration-spark-snapshot
+          <<: *only-on-main-without-release-tag
+          context: release
+          requires:
+            - integration-test-spark
+
   release:
     jobs:
       - build-client-python:
@@ -191,12 +215,3 @@ workflows:
           requires:
             - build-client-python
             - build-integration-common
-
-  publish-snapshot:
-    jobs:
-      - release-java-client:
-          <<: *only-on-main-without-release-tag
-          context: release
-      - release-integration-spark:
-          <<: *only-on-main-without-release-tag
-          context: release
