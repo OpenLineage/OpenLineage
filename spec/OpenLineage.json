@@ -153,6 +153,9 @@
               "description": "The output facets for this dataset",
               "type": "object",
               "properties": {
+                "outputStatistics": {
+                  "$ref": "#/definitions/OutputStatisticsOutputDatasetFacet"
+                }
               },
               "additionalProperties": {
                 "$ref": "#/definitions/CustomFacet"
@@ -380,7 +383,29 @@
       ],
       "type": "object"
     },
-
+    "OutputStatisticsOutputDatasetFacet": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/BaseFacet"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "rowCount": {
+              "description": "The number of rows written to the dataset",
+              "type": "integer"
+            },
+            "size": {
+              "description": "The size in mb written to the dataset",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "rowCount"
+          ]
+        }
+      ]
+    },
     "DocumentationDatasetFacet": {
       "allOf": [
         {

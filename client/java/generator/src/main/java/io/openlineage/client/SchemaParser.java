@@ -20,7 +20,7 @@ public class SchemaParser {
         return new RefType(pointer);
       } else if (typeJson.has("type")) {
         String typeName = typeJson.get("type").asText();
-        if (typeName.equals("string")) {
+        if (typeName.equals("string") || typeName.equals("integer") || typeName.equals("number") || typeName.equals("boolean")) {
           return new PrimitiveType(typeName, typeJson.has("format") ? typeJson.get("format").asText() : null);
         } else if (typeName.equals("object") && (typeJson.has("properties") || typeJson.has("additionalProperties"))) {
           List<Field> fields = new ArrayList<Field>();

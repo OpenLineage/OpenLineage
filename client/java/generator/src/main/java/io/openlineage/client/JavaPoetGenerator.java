@@ -259,6 +259,8 @@ public class JavaPoetGenerator {
             }
           }
           return ClassName.get(String.class);
+        } else if (primitiveType.getName().equals("integer")) {
+          return TypeName.LONG;
         }
         throw new RuntimeException("Unknown primitive: " + primitiveType.getName());
       }
