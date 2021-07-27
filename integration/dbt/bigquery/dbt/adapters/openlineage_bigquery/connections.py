@@ -19,8 +19,8 @@ from dbt.utils import format_bytes, format_rows_number
 from openlineage.common.provider.bigquery import BigQueryDatasetsProvider
 from openlineage.common.sql.parser import SqlParser
 from openlineage.client import OpenLineageClientOptions, OpenLineageClient
-from openlineage.facet import SourceCodeLocationJobFacet, SqlJobFacet
-from openlineage.run import RunEvent, RunState, Run, Job, Dataset
+from openlineage.client.facet import SourceCodeLocationJobFacet, SqlJobFacet
+from openlineage.client.run import RunEvent, RunState, Run, Job, Dataset
 import requests
 
 
