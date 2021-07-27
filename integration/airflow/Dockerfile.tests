@@ -1,0 +1,12 @@
+FROM python:3.6-slim
+RUN mkdir /app
+ADD airflow/setup.py /app
+ADD airflow/README.md /app
+COPY common /tmp/marquez-integration-common
+RUN cd /tmp/marquez-integration-common && pip wheel --wheel-dir=/tmp/marquez-integration-common/wheel .
+COPY airflow/marquez_airflow /app/marquez_airflow
+WORKDIR /app
+RUN ls -la
+RUN pip wheel --wheel-dir=/app/wheel -e /tmp/marquez-integration-common .[tests]
+RUN cp -R /app/wheel /whl
+RUN cp /tmp/marquez-integration-common/wheel/marquez_integration_common* /whl
