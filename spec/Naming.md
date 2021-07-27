@@ -131,8 +131,8 @@ Example:
    - Namespace: the namespace is assigned to the airflow instance. Ex: airflow-staging, airflow-prod
    - Job: each task in a DAG is a job. name: {dag name}.{task name}
  - Spark:
-   - Namespace: If there’s a parent job, it uses its namespace otherwise the namespace is provided as a configuration as in airflow.
-   - Spark app job name: the spark.app.name (this might not be unique)
+   - Namespace: the namespace is provided as a configuration parameter as in airflow. If there's a parent job, we use the same namespace, otherwise it is provided by configuration.
+   - Spark app job name: the spark.app.name
    - Spark action job name: {spark.app.name}.{node.name}
 
 ### Parent job run: a nested hierarchy of Jobs
@@ -140,7 +140,7 @@ Example:
 It is often the case that jobs are part of a nested hierarchy.
 For example an Airflow DAG contains tasks. An instance of the DAG is finished when all of the tasks are finished. Similarly a Spark job can spawn multiple actions each of them running independently. Additionally, a Spark job can be launched by an Airflow task within a DAG.
 
-Since what we care about is identifying the job as rooted in a recurring schedule, we want to capture that connection and make sure that we treat the same application logic triggered at different schedules as different jobs.
+Since what we care about is identifying the job as rooted in a recurring schedule, we want to capture that connection and make sure that we treat the same application logic triggered at different schedules as different jobs. For example: if an Airflow DAG runs individual tasks per partition (for example market segments) using the same underlying job logic, they will be tracked as separate jobs.
 
 To capture this, a run event provides a `ParentRun` facet, referring to the parent `Job` and `Run`. This allows tracking a recurring job from the root of the schedule it is running for. 
 
