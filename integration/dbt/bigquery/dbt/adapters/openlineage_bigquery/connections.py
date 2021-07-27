@@ -16,8 +16,8 @@ from dbt.exceptions import DatabaseException, RuntimeException
 from dbt.logger import GLOBAL_LOGGER as logger
 from dbt.utils import format_bytes, format_rows_number
 
-from marquez.provider.bigquery import BigQueryDatasetsProvider
-from marquez.sql import SqlParser
+from openlineage.common.provider.bigquery import BigQueryDatasetsProvider
+from openlineage.common.sql.parser import SqlParser
 from openlineage.client import OpenLineageClientOptions, OpenLineageClient
 from openlineage.facet import SourceCodeLocationJobFacet, SqlJobFacet
 from openlineage.run import RunEvent, RunState, Run, Job, Dataset
@@ -47,7 +47,7 @@ class RunMeta:
 
 
 BQ_QUERY_JOB_SPLIT = '-----Query Job SQL Follows-----'
-PRODUCER = "marquez-dbt-bigquery/0.16.1"
+PRODUCER = "openlineage-dbt-bigquery/0.0.1"
 
 
 class OpenLineageBigQueryConnectionManager(BigQueryConnectionManager):

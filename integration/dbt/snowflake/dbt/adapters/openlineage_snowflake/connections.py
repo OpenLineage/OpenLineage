@@ -9,7 +9,7 @@ from dbt.adapters.snowflake import SnowflakeCredentials, SnowflakeConnectionMana
 from dbt.exceptions import DatabaseException, FailedToConnectException, RuntimeException
 from dbt.logger import GLOBAL_LOGGER as logger
 
-from marquez.sql import SqlParser
+from openlineage.common.sql.parser import SqlParser
 from openlineage.client import OpenLineageClientOptions, OpenLineageClient
 from openlineage.facet import SourceCodeLocationJobFacet, SqlJobFacet
 from openlineage.run import RunEvent, RunState, Run, Job, Dataset
@@ -42,7 +42,7 @@ class RunMeta:
 
 
 BQ_QUERY_JOB_SPLIT = '-----Query Job SQL Follows-----'
-PRODUCER = "marquez-dbt-snowflake/0.16.1"
+PRODUCER = "openlineage-dbt-snowflake/0.0.1"
 
 
 class OpenLineageSnowflakeConnectionManager(SnowflakeConnectionManager):
