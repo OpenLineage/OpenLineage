@@ -358,7 +358,7 @@
             "repoUrl": {
               "type": "string",
               "description": "the URL to the repository",
-              "examples": [ "git@github.com:{org}/{repo}.git or https://github.com/{org}/{repo}.git", "svn://<your_ip>/<repository_name>" ]
+              "example": "git@github.com:{org}/{repo}.git or https://github.com/{org}/{repo}.git|svn://<your_ip>/<repository_name>"
             },
             "path": {
               "type": "string",
@@ -368,7 +368,7 @@
             "version": {
               "type": "string",
               "description": "the current version deployed (not a branch name, the actual unique version)",
-              "examples": [ "git: the git sha", "Svn: the revision number"]
+              "example": "git: the git sha | Svn: the revision number"
             },
             "tag": {
               "type": "string",
