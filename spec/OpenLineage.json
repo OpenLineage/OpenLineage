@@ -347,7 +347,7 @@
             "type": {
               "type": "string",
               "description": "the source control system",
-              "examples": [ "git", "svn" ]
+              "example":"git|svn"
             },
             "url": {
               "type": "string",
