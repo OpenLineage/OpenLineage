@@ -34,7 +34,6 @@ requirements = [
     "dbt-snowflake>=0.20.0",
     "sqlparse>=0.3.1",
     f"openlineage-integration-common=={__version__}",
-    "openlineage-python>=0.0.1rc6"
 ]
 
 extras_require = {
