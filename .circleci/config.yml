@@ -7,6 +7,8 @@ checkout_project_root: &checkout_project_root
   checkout:
     path: ~/openlineage
 
+install_integration_common: &install_integration_common
+  run: (cd ~/openlineage/integration/common && pip install . --user)
 
 # Only trigger CI job on release (=X.Y.Z) with possible (rcX)
 only-on-release: &only-on-release
@@ -15,7 +17,6 @@ only-on-release: &only-on-release
       only: /^[0-9]+(\.[0-9]+){2}(-?rc[0-9]+)?$/
     branches:
       ignore: /.*/
-
 
 jobs:
   test-client-python:
@@ -104,6 +105,58 @@ jobs:
             - ./dist/*.whl
             - ./dist/*.tar.gz
 
+  test-integration-dbt-bigquery:
+    working_directory: ~/openlineage/integration/dbt/bigquery
+    docker:
+      - image: circleci/python:3.6
+    steps:
+      - *checkout_project_root
+      - *install_integration_common
+      - run: pip install -e .[dev]
+      - run: flake8
+      - run: pytest --cov=dbt tests/
+      - run: bash <(curl -s https://codecov.io/bash)
+
+  build-integration-dbt-bigquery:
+    working_directory: ~/openlineage/integration/dbt/bigquery
+    docker:
+      - image: circleci/python:3.6
+    steps:
+      - *checkout_project_root
+      - *install_integration_common
+      - run: python setup.py sdist bdist_wheel
+      - persist_to_workspace:
+          root: .
+          paths:
+            - ./dist/*.whl
+            - ./dist/*.tar.gz
+
+  test-integration-dbt-snowflake:
+    working_directory: ~/openlineage/integration/dbt/snowflake
+    docker:
+      - image: circleci/python:3.6
+    steps:
+      - *checkout_project_root
+      - *install_integration_common
+      - run: pip install -e .[dev]
+      - run: flake8
+      - run: pytest --cov=dbt tests/
+      - run: bash <(curl -s https://codecov.io/bash)
+
+  build-integration-dbt-snowflake:
+    working_directory: ~/openlineage/integration/dbt/snowflake
+    docker:
+      - image: circleci/python:3.6
+    steps:
+      - *checkout_project_root
+      - *install_integration_common
+      - run: python setup.py sdist bdist_wheel
+      - persist_to_workspace:
+          root: .
+          paths:
+            - ./dist/*.whl
+            - ./dist/*.tar.gz
+
   integration-test-spark:
     working_directory: ~/openlineage/integration/spark
     machine: true
@@ -161,6 +214,10 @@ workflows:
           <<: *only-on-release
       - build-integration-common:
           <<: *only-on-release
+      - build-integration-dbt-bigquery:
+          <<: *only-on-release
+      - build-integration-dbt-snowflake:
+          <<: *only-on-release
       - release-java:
           <<: *only-on-release
           context: release
@@ -170,3 +227,5 @@ workflows:
           requires:
             - build-client-python
             - build-integration-common
+            - build-integration-dbt-bigquery
+            - build-integration-dbt-snowflake
