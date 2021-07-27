@@ -204,6 +204,8 @@ workflows:
           app_src_directory: client/java
       - test-client-python
       - test-integration-common
+      - test-integration-dbt-bigquery
+      - test-integration-dbt-snowflake
       - build-integration-spark
       - integration-test-spark:
           requires:
