@@ -33,7 +33,7 @@ requirements = [
     "dbt-core>=0.20.0",
     "dbt-bigquery>=0.20.0",
     "sqlparse>=0.3.1",
-    f"marquez-integration-common=={__version__}",
+    f"openlineage-integration-common=={__version__}",
     "openlineage-python==0.0.1rc6"
 ]
 
@@ -48,12 +48,12 @@ extras_require = {
 extras_require["dev"] = set(sum(extras_require.values(), []))
 
 setup(
-    name="marquez-dbt-bigquery",
+    name="openlineage-dbt-bigquery",
     version=__version__,
-    description="The Marquez BigQuery adapter plugin for dbt (data build tool)",
+    description="The OpenLineage BigQuery adapter plugin for dbt (data build tool)",
     long_description=readme,
     long_description_content_type="text/markdown",
-    author="Marquez Project",
+    author="OpenLineage",
     packages=find_namespace_packages(include=['dbt', 'dbt.*']),
     package_data=data,
     include_package_data=True,
@@ -61,5 +61,5 @@ setup(
     extras_require=extras_require,
     python_requires=">=3.6",
     zip_safe=False,
-    keywords="marquez"
+    keywords="openlineage"
 )

@@ -1,4 +1,4 @@
-# dbt-bigquery-openlineage
+# openlineage-dbt-bigquery
 
 Plugin for [dbt](https://github.com/fishtown-analytics/dbt) (data build tool) for automatic metadata and lineage collection.
 
@@ -15,7 +15,7 @@ sqlparse>=0.3.1
 ## Installation
 
 ```
-$ pip install marquez-dbt-bigquery
+$ pip install openlineage-dbt-bigquery
 ```
 
 ## Configuration

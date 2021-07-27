@@ -1,4 +1,4 @@
-# dbt-snowflake-openlineage
+# openlineage-dbt-snowflake
 
 Plugin for [dbt](https://github.com/fishtown-analytics/dbt) (data build tool) for automatic metadata and lineage collection.
 
@@ -15,7 +15,7 @@ sqlparse>=0.3.1
 ## Installation
 
 ```
-$ pip install marquez-dbt-snowflake
+$ pip install openlineage-dbt-snowflake
 ```
 
 ## Configuration

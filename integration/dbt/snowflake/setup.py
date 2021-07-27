@@ -33,7 +33,7 @@ requirements = [
     "dbt-core>=0.20.0",
     "dbt-snowflake>=0.20.0",
     "sqlparse>=0.3.1",
-    f"marquez-integration-common=={__version__}",
+    f"openlineage-integration-common=={__version__}",
     "openlineage-python>=0.0.1rc6"
 ]
 
@@ -49,12 +49,12 @@ extras_require["dev"] = set(sum(extras_require.values(), []))
 
 
 setup(
-    name="marquez-dbt-snowflake",
+    name="openlineage-dbt-snowflake",
     version=__version__,
-    description="The Marquez Snowflake adapter plugin for dbt (data build tool)",
+    description="The OpenLineage Snowflake adapter plugin for dbt (data build tool)",
     long_description=readme,
     long_description_content_type="text/markdown",
-    author='Marquez Project',
+    author='OpenLineage',
     packages=find_namespace_packages(include=['dbt', 'dbt.*']),
     package_data=data,
     include_package_data=True,
@@ -62,5 +62,5 @@ setup(
     extras_require=extras_require,
     python_requires=">=3.6",
     zip_safe=False,
-    keywords="marquez"
+    keywords="openlineage"
 )
