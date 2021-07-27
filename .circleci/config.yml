@@ -8,6 +8,14 @@ checkout_project_root: &checkout_project_root
     path: ~/openlineage
 
 
+install_integration_common: &install_integration_common
+  run: (cd ~/openlineage/integration/common && pip install . --user)
+
+
+install_python_client: &install_python_client
+  run: (cd ~/openlineage/client/python && pip install . --user)
+
+
 # Only trigger CI job on release (=X.Y.Z) with possible (rcX)
 only-on-release: &only-on-release
   filters:
@@ -85,7 +93,7 @@ jobs:
       - image: circleci/python:3.6
     steps:
       - *checkout_project_root
-      - run: pip install -e ../../client/python
+      - *install_python_client
       - run: pip install -e .[dev]
       - run: flake8
       - run: pytest --cov=openlineage tests/
@@ -133,6 +141,44 @@ jobs:
           paths:
             - ~/.gradle
 
+  test-integration-airflow:
+    working_directory: ~/openlineage/integration/airflow
+    docker:
+      - image: circleci/python:3.6
+    steps:
+      - *checkout_project_root
+      - *install_python_client
+      - *install_integration_common
+      - run: pip install -e .[dev]
+      - run: flake8 --exclude integration
+      - run: airflow initdb
+      - run: pytest --cov=openlineage tests/
+      - run: bash <(curl -s https://codecov.io/bash)
+
+  build-integration-airflow:
+    working_directory: ~/openlineage/integration/airflow
+    docker:
+      - image: circleci/python:3.6
+    steps:
+      - *checkout_project_root
+      - *install_integration_common
+      - run: python setup.py sdist bdist_wheel
+      - persist_to_workspace:
+          root: .
+          paths:
+            - ./dist/*.whl
+            - ./dist/*.tar.gz
+
+  integration-test-airflow:
+    working_directory: ~/openlineage/integration/
+    machine: true
+    steps:
+      - *checkout_project_root
+      - run: ../.circleci/get-docker-compose.sh
+      - run: cp -r ../client/python python
+      - run: docker build -f airflow/Dockerfile.tests -t openlineage-airflow-base .
+      - run: ./airflow/tests/integration/docker/up.sh
+
   release-python:
     working_directory: ~/openlineage
     docker:
@@ -155,11 +201,17 @@ workflows:
       - integration-test-spark:
           requires:
             - build-integration-spark
+      - test-integration-airflow
+      - integration-test-airflow:
+          requires:
+            - test-integration-airflow
   release:
     jobs:
       - build-client-python:
           <<: *only-on-release
       - build-integration-common:
+          <<: *only-on-release
+      - build-integration-airflow:
           <<: *only-on-release
       - release-java:
           <<: *only-on-release
