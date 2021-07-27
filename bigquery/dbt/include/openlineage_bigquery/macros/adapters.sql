@@ -39,7 +39,7 @@
   {%- do return(options) -%}
 {%- endmacro -%}
 
-{% macro openlineage__create_table_as(temporary, relation, sql) -%}
+{% macro openlineage_bigquery__create_table_as(temporary, relation, sql) -%}
   {%- set raw_partition_by = config.get('partition_by', none) -%}
   {%- set raw_cluster_by = config.get('cluster_by', none) -%}
   {%- set sql_header = config.get('sql_header', none) -%}
@@ -58,7 +58,7 @@
 
 {%- endmacro -%}
 
-{% macro openlineage__create_view_as(relation, sql) -%}
+{% macro openlineage_bigquery__create_view_as(relation, sql) -%}
   {%- set sql_header = config.get('sql_header', none) -%}
 
   {{ sql_header if sql_header is not none }}
@@ -69,66 +69,66 @@
 
 {% endmacro %}
 
-{% macro openlineage__create_schema(relation) -%}
+{% macro openlineage_bigquery__create_schema(relation) -%}
   {{ adapter.create_schema(relation) }}
 {% endmacro %}
 
-{% macro openlineage__drop_schema(relation) -%}
+{% macro openlineage_bigquery__drop_schema(relation) -%}
   {{ adapter.drop_schema(relation) }}
 {% endmacro %}
 
-{% macro openlineage__drop_relation(relation) -%}
+{% macro openlineage_bigquery__drop_relation(relation) -%}
   {% call statement('drop_relation') -%}
     drop {{ relation.type }} if exists {{ relation }}
   {%- endcall %}
 {% endmacro %}
 
-{% macro openlineage__get_columns_in_relation(relation) -%}
+{% macro openlineage_bigquery__get_columns_in_relation(relation) -%}
   {{ return(adapter.get_columns_in_relation(relation)) }}
 {% endmacro %}
 
 
-{% macro openlineage__list_relations_without_caching(schema_relation) -%}
+{% macro openlineage_bigquery__list_relations_without_caching(schema_relation) -%}
   {{ return(adapter.list_relations_without_caching(schema_relation)) }}
 {%- endmacro %}
 
 
-{% macro openlineage__current_timestamp() -%}
+{% macro openlineage_bigquery__current_timestamp() -%}
   CURRENT_TIMESTAMP()
 {%- endmacro %}
 
 
-{% macro openlineage__snapshot_string_as_time(timestamp) -%}
+{% macro openlineage_bigquery__snapshot_string_as_time(timestamp) -%}
     {%- set result = 'TIMESTAMP("' ~ timestamp ~ '")' -%}
     {{ return(result) }}
 {%- endmacro %}
 
 
-{% macro openlineage__list_schemas(database) -%}
+{% macro openlineage_bigquery__list_schemas(database) -%}
   {{ return(adapter.list_schemas(database)) }}
 {% endmacro %}
 
 
-{% macro openlineage__check_schema_exists(information_schema, schema) %}
+{% macro openlineage_bigquery__check_schema_exists(information_schema, schema) %}
   {{ return(adapter.check_schema_exists(information_schema.database, schema)) }}
 {% endmacro %}
 
 {#-- relation-level macro is not implemented. This is handled in the CTAs statement #}
-{% macro openlineage__persist_docs(relation, model, for_relation, for_columns) -%}
+{% macro openlineage_bigquery__persist_docs(relation, model, for_relation, for_columns) -%}
   {% if for_columns and config.persist_column_docs() and model.columns %}
     {% do alter_column_comment(relation, model.columns) %}
   {% endif %}
 {% endmacro %}
 
-{% macro openlineage__alter_column_comment(relation, column_dict) -%}
+{% macro openlineage_bigquery__alter_column_comment(relation, column_dict) -%}
   {% do adapter.update_columns(relation, column_dict) %}
 {% endmacro %}
 
-{% macro openlineage__rename_relation(from_relation, to_relation) -%}
+{% macro openlineage_bigquery__rename_relation(from_relation, to_relation) -%}
   {% do adapter.rename_relation(from_relation, to_relation) %}
 {% endmacro %}
 
-{% macro openlineage__alter_column_type(relation, column_name, new_column_type) -%}
+{% macro openlineage_bigquery__alter_column_type(relation, column_name, new_column_type) -%}
   {#
     Changing a column's data type using a query requires you to scan the entire table.
     The query charges can be significant if the table is very large.

@@ -24,6 +24,7 @@ __version__ = "0.16.1"
 data = {
     "dbt": [
         "include/openlineage_bigquery/macros/*.sql",
+        "include/openlineage_bigquery/macros/materializations/*.sql",
         "include/openlineage_bigquery/dbt_project.yml",
     ]
 }

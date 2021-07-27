@@ -24,6 +24,7 @@ __version__ = "0.16.1"
 data = {
     'dbt': [
         'include/openlineage_snowflake/macros/*.sql',
+        'include/openlineage_snowflake/macros/materializations/*.sql',
         'include/openlineage_snowflake/dbt_project.yml',
     ]
 }

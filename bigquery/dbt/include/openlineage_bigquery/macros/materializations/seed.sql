@@ -1,13 +1,13 @@
 
-{% macro openlineage__create_csv_table(model, agate_table) %}
+{% macro openlineage_bigquery__create_csv_table(model, agate_table) %}
     -- no-op
 {% endmacro %}
 
-{% macro openlineage__reset_csv_table(model, full_refresh, old_relation, agate_table) %}
+{% macro openlineage_bigquery__reset_csv_table(model, full_refresh, old_relation, agate_table) %}
     {{ adapter.drop_relation(old_relation) }}
 {% endmacro %}
 
-{% macro openlineage__load_csv_rows(model, agate_table) %}
+{% macro openlineage_bigquery__load_csv_rows(model, agate_table) %}
 
   {%- set column_override = model['config'].get('column_types', {}) -%}
   {{ adapter.load_dataframe(model['database'], model['schema'], model['alias'],
