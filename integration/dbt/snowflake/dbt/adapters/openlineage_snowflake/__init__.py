@@ -5,8 +5,8 @@ from dbt.adapters.openlineage_snowflake.connections import OpenLineageSnowflakeC
 from dbt.adapters.openlineage_snowflake.impl import OpenLineageSnowflakeAdapter
 from dbt.include import openlineage_snowflake
 
-__author__ = """Marquez Project"""
-__version__ = "0.16.1"
+__author__ = """OpenLineage"""
+__version__ = "0.0.1"
 
 # Caution: this plugin is experimental. More information in README.md
 
