@@ -440,6 +440,42 @@
         }
       ]
     },
+    "DataQualityDatasetFacet": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/BaseFacet"
+        },
+        {
+          "type": "object",
+          "required": ["columnMetrics"],
+          "properties": {
+            "rowCount": {"type":  "int"},
+            "bytes": {"type":  "int"},
+            "columnMetrics": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "properties": {
+                  "nullCount": {"type": "integer"},
+                  "distinctCount": {"type":  "integer"},
+                  "sum": {"type":  "number"},
+                  "count": {"type":  "number"},
+                  "min": {"type": "number"},
+                  "max": {"type":  "number"},
+                  "quantiles": {
+                    "type": "object",
+                    "patternProperties": {
+                      "\\d+": {"type":  "number"}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "type": "object"
+    },
     "DocumentationDatasetFacet": {
       "allOf": [
         {
