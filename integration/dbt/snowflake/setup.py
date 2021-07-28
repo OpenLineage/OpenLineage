@@ -55,7 +55,7 @@ setup(
     long_description=readme,
     long_description_content_type="text/markdown",
     author='OpenLineage',
-    packages=find_namespace_packages(include=['dbt', 'dbt.*']),
+    packages=find_namespace_packages(include=['dbt', 'dbt.*', 'openlineage.*']),
     package_data=data,
     include_package_data=True,
     install_requires=requirements,

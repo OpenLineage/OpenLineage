@@ -9,7 +9,7 @@ from dbt.adapters.openlineage_bigquery import OpenLineageBigQueryAdapter
 from dbt.adapters.openlineage_bigquery import Plugin as OpenLineagePlugin
 from dbt.adapters.openlineage_bigquery.connections import PRODUCER
 from openlineage.client.facet import SourceCodeLocationJobFacet, SqlJobFacet
-from openlineage.client.facet import RunEvent, RunState, Job, Run, Dataset
+from openlineage.client.run import RunEvent, RunState, Job, Run, Dataset
 
 from .utils import config_from_parts_or_dicts, inject_adapter
 
