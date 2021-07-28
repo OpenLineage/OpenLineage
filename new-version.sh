@@ -27,7 +27,7 @@ set -e
 usage() {
   echo "Usage: ./$(basename -- "${0}") --release-version RELEASE_VERSION --next-version NEXT_VERSION"
   echo
-  echo "A script used to release Marquez"
+  echo "A script used to release OpenLineage"
   echo
   echo "Examples:"
   echo "  # Bump version ('-SNAPSHOT' will automatically be appended to '0.0.2')"
@@ -146,7 +146,7 @@ sed -i  "s/<version>.*/<version>${RELEASE_VERSION}<\/version>/g" ./integration/s
 sed -i  "s/openlineage-spark:.*/openlineage-spark:${RELEASE_VERSION}/g" ./integration/spark/README.md
 
 # (5) Bundle openAPI docs
-redoc-cli bundle spec/OpenLineage.yml -o docs/OpenLineage.html  --title "Marquez API Reference"
+redoc-cli bundle spec/OpenLineage.yml -o docs/OpenLineage.html  --title "OpenLineage API Reference"
 
 # (6) Prepare release commit
 git commit -sam "Prepare for release ${RELEASE_VERSION}"
