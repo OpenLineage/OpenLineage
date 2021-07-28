@@ -17,6 +17,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
+import io.openlineage.client.OpenLineage.DataQualityInputDatasetFacet;
+import io.openlineage.client.OpenLineage.DataQualityInputDatasetFacetColumnMetricsAdditional;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.Job;
 import io.openlineage.client.OpenLineage.JobFacets;
@@ -93,12 +95,30 @@ public class OpenLineageTest {
     String namespace = "namespace";
     JobFacets jobFacets = ol.newJobFacetsBuilder().build();
     Job job = ol.newJobBuilder().namespace(namespace).name(name).facets(jobFacets).build();
-    List<InputDataset> inputs = Arrays.asList(ol.newInputDatasetBuilder().namespace("ins").name("input").build());
+
+    List<InputDataset> inputs = Arrays.asList(ol.newInputDatasetBuilder().namespace("ins").name("input")
+        .inputFacets(
+            ol.newInputDatasetInputFacetsBuilder().dataQuality(
+                ol.newDataQualityInputDatasetFacetBuilder()
+                  .rowCount(10L)
+                  .bytes(20L)
+                  .columnMetrics(
+                      ol.newDataQualityInputDatasetFacetColumnMetricsBuilder()
+                        .put("mycol",
+                            ol.newDataQualityInputDatasetFacetColumnMetricsAdditionalBuilder()
+                            .count(10D).distinctCount(10L).max(30D).min(5D).nullCount(1L).sum(3000D).quantiles(
+                                ol.newDataQualityInputDatasetFacetColumnMetricsAdditionalQuantilesBuilder().put("25", 52D).build())
+                            .build())
+                        .build())
+                .build()
+            ).build())
+        .build());
     List<OutputDataset> outputs = Arrays.asList(ol.newOutputDatasetBuilder().namespace("ons").name("output")
         .outputFacets(
             ol.newOutputDatasetOutputFacetsBuilder()
-                .outputStatistics(ol.newOutputStatisticsOutputDatasetFacet(10, 20)).build())
+                .outputStatistics(ol.newOutputStatisticsOutputDatasetFacet(10L, 20L)).build())
         .build());
+
     RunEvent runStateUpdate = ol.newRunEventBuilder()
         .eventType("START")
         .eventTime(now)
@@ -126,12 +146,25 @@ public class OpenLineageTest {
     InputDataset inputDataset = runStateUpdate.getInputs().get(0);
     assertEquals("ins", inputDataset.getNamespace());
     assertEquals("input", inputDataset.getName());
+
+    DataQualityInputDatasetFacet dq = inputDataset.getInputFacets().getDataQuality();
+    assertEquals((Long)10L, dq.getRowCount());
+    assertEquals((Long)20L, dq.getBytes());
+    DataQualityInputDatasetFacetColumnMetricsAdditional colMetrics = dq.getColumnMetrics().getAdditionalProperties().get("mycol");
+    assertEquals((Double)10D, colMetrics.getCount());
+    assertEquals((Long)10L, colMetrics.getDistinctCount());
+    assertEquals((Double)30D, colMetrics.getMax());
+    assertEquals((Double)5D, colMetrics.getMin());
+    assertEquals((Long)1L, colMetrics.getNullCount());
+    assertEquals((Double)3000D, colMetrics.getSum());
+    assertEquals((Double)52D, colMetrics.getQuantiles().getAdditionalProperties().get("25"));
+
     assertEquals(1, runStateUpdate.getOutputs().size());
     OutputDataset outputDataset = runStateUpdate.getOutputs().get(0);
     assertEquals("ons", outputDataset.getNamespace());
     assertEquals("output", outputDataset.getName());
-    assertEquals(10, outputDataset.getOutputFacets().getOutputStatistics().getRowCount());
-    assertEquals(20, outputDataset.getOutputFacets().getOutputStatistics().getSize());
+    assertEquals((Long)10L, outputDataset.getOutputFacets().getOutputStatistics().getRowCount());
+    assertEquals((Long)20L, outputDataset.getOutputFacets().getOutputStatistics().getSize());
 
     assertEquals(json, mapper.writeValueAsString(read));
 

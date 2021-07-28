@@ -452,8 +452,8 @@
           "type": "object",
           "required": ["columnMetrics"],
           "properties": {
-            "rowCount": {"type":  "int"},
-            "bytes": {"type":  "int"},
+            "rowCount": {"type":  "integer"},
+            "bytes": {"type":  "integer"},
             "columnMetrics": {
               "type": "object",
               "additionalProperties": {
