@@ -140,6 +140,9 @@
               "description": "The input facets for this dataset.",
               "type": "object",
               "properties": {
+                "dataQuality" : {
+                  "$ref": "#/definitions/DataQualityInputDatasetFacet"
+                }
               },
               "additionalProperties": {
                 "$ref": "#/definitions/CustomFacet"
@@ -440,7 +443,7 @@
         }
       ]
     },
-    "DataQualityDatasetFacet": {
+    "DataQualityInputDatasetFacet": {
       "allOf": [
         {
           "$ref": "#/definitions/BaseFacet"
