@@ -80,7 +80,11 @@ public class SchemaParser {
     T visit(RefType refType);
 
     default T visit(Type type) {
-      return type == null ? null : type.accept(this);
+      try {
+        return type == null ? null : type.accept(this);
+      } catch (RuntimeException e) {
+        throw new RuntimeException("Error while visiting " + type, e);
+      }
     }
 
   }
@@ -108,6 +112,11 @@ public class SchemaParser {
     @Override
     public <T> T accept(TypeVisitor<T> visitor) {
       return visitor.visit(this);
+    }
+
+    @Override
+    public String toString() {
+      return "RefType:" + pointer;
     }
 
   }

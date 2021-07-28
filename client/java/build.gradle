@@ -21,7 +21,7 @@ plugins {
     id 'signing'
     id 'idea'
     id 'eclipse'
-    id "org.openapi.generator" version "5.0.1"
+    id "org.openapi.generator" version "5.2.0"
 }
 
 java {
@@ -65,11 +65,16 @@ task generateCode(type: JavaExec) {
     description 'generate java code from spec. Use -PgenerateFromLocal to generate from the local file instead of the published version'
     classpath configurations.codeGenerator
     main = 'io.openlineage.client.Generator'
+    def rootUrl
     if (project.hasProperty('generateFromLocal')) {
-      args "file:$rootDir/../../spec/OpenLineage.json".toString()
+      rootUrl = "file:$rootDir/../../spec/".toString()
     } else {
-      args "https://raw.githubusercontent.com/OpenLineage/OpenLineage/" + gitBranchName()  + "/spec/OpenLineage.json"
+      rootUrl = "https://raw.githubusercontent.com/OpenLineage/OpenLineage/" + gitBranchName()  + "/spec/"
     }
+    args rootUrl + "OpenLineage.json"
+    args rootUrl + "RunFacets.json"
+    args rootUrl + "JobFacets.json"
+    args rootUrl + "DatasetFacets.json"
 }
 
 openApiGenerate {

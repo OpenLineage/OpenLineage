@@ -1,0 +1,98 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$defs": {
+        "documentation": {
+            "allOf": [
+                {
+                    "$ref": "OpenLineage.json#/definitions/DatasetFacet"
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "description": {
+                            "description": "The description of the dataset.",
+                            "type": "string",
+                            "example": "canonical representation of entity Foo"
+                        }
+                    },
+                    "required": [
+                        "description"
+                    ]
+                }
+            ],
+            "type": "object"
+        },
+        "schema": {
+            "allOf": [
+                {
+                    "$ref": "OpenLineage.json#/definitions/DatasetFacet"
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "fields": {
+                            "description": "The fields of the table.",
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "description": "The name of the field.",
+                                        "type": "string",
+                                        "example": "column1"
+                                    },
+                                    "type": {
+                                        "description": "The type of the field.",
+                                        "type": "string",
+                                        "example": "VARCHAR|INT|..."
+                                    },
+                                    "description": {
+                                        "description": "The description of the field.",
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "name",
+                                    "type"
+                                ]
+                            }
+                        }
+                    }
+                }
+            ],
+            "type": "object"
+        },
+        "datasource": {
+            "allOf": [
+                {
+                    "$ref": "OpenLineage.json#/definitions/DatasetFacet"
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "name": {
+                            "type": "string"
+                        },
+                        "uri": {
+                            "type": "string",
+                            "format": "uri"
+                        }
+                    }
+                }
+            ],
+            "type": "object"
+        }
+    },
+    "type": "object",
+    "properties" : {
+        "documentation": {
+            "$ref": "#/$defs/documentation"
+        },
+        "schema": {
+            "$ref": "#/$defs/schema"
+        },
+        "datasource": {
+            "$ref": "#/$defs/datasource"
+        }
+    }
+}
