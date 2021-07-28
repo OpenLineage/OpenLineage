@@ -36,7 +36,8 @@ extras_require = {
         "google-crc32c>=1.1.2"
     ],
     "dbt": [
-        "dbt-core>=0.19.1"
+        "dbt-core>=0.19.1",
+        "pyyaml>=5.3.1"
     ],
     "tests": [
         "pytest",

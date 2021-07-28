@@ -1,0 +1,81 @@
+{
+	"metadata": {
+		"dbt_schema_version": "https://schemas.getdbt.com/dbt/run-results/v2.json",
+		"dbt_version": "0.20.0",
+		"generated_at": "2021-07-28T12:09:48.781634Z",
+		"invocation_id": "8c814240-637d-4a36-937e-43787f5c79e0",
+		"env": {}
+	},
+	"results": [{
+		"status": "error",
+		"timing": [],
+		"thread_id": "Thread-2",
+		"execution_time": 0.8196823596954346,
+		"adapter_response": {},
+		"message": "Database Error in model test_second_parallel_dbt_model (models/example/test_second_parallel_dbt_model.sql)\n  Syntax error: Expected end of input but got identifier \"bork\" at [9:1]\n  compiled SQL at target/run/dbt_bigquery_test/models/example/test_second_parallel_dbt_model.sql",
+		"failures": null,
+		"unique_id": "model.dbt_bigquery_test.test_second_parallel_dbt_model"
+	}, {
+		"status": "success",
+		"timing": [{
+			"name": "compile",
+			"started_at": "2021-07-28T12:09:46.041017Z",
+			"completed_at": "2021-07-28T12:09:46.095428Z"
+		}, {
+			"name": "execute",
+			"started_at": "2021-07-28T12:09:46.095543Z",
+			"completed_at": "2021-07-28T12:09:47.994760Z"
+		}],
+		"thread_id": "Thread-1",
+		"execution_time": 1.9547359943389893,
+		"adapter_response": {
+			"_message": "CREATE TABLE (2.0 rows, 0.0 Bytes processed)",
+			"code": "CREATE TABLE",
+			"rows_affected": 2,
+			"bytes_processed": 0
+		},
+		"message": "CREATE TABLE (2.0 rows, 0.0 Bytes processed)",
+		"failures": null,
+		"unique_id": "model.dbt_bigquery_test.test_first_dbt_model"
+	}, {
+		"status": "success",
+		"timing": [{
+			"name": "compile",
+			"started_at": "2021-07-28T12:09:47.997025Z",
+			"completed_at": "2021-07-28T12:09:48.001376Z"
+		}, {
+			"name": "execute",
+			"started_at": "2021-07-28T12:09:48.001746Z",
+			"completed_at": "2021-07-28T12:09:48.778721Z"
+		}],
+		"thread_id": "Thread-2",
+		"execution_time": 0.7823269367218018,
+		"adapter_response": {
+			"_message": "OK",
+			"code": "CREATE VIEW"
+		},
+		"message": "OK",
+		"failures": null,
+		"unique_id": "model.dbt_bigquery_test.test_second_dbt_model"
+	}, {
+		"status": "skipped",
+		"timing": [],
+		"thread_id": "Thread-1",
+		"execution_time": 0.0,
+		"adapter_response": {},
+		"message": null,
+		"failures": null,
+		"unique_id": "model.dbt_bigquery_test.test_third_dbt_model"
+	}],
+	"elapsed_time": 3.732327938079834,
+	"args": {
+		"log_format": "default",
+		"write_json": true,
+		"use_experimental_parser": false,
+		"profiles_dir": "./tests/dbt/fail",
+		"use_cache": true,
+		"version_check": true,
+		"which": "run",
+		"rpc_method": "run"
+	}
+}

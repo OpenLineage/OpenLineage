@@ -1,0 +1,205 @@
+[{
+	"eventType": "START",
+	"eventTime": "2021-07-28T15:51:07.253587",
+	"run": {
+		"runId": "6edf42ed-d8d0-454a-b819-d09b9067ff99",
+		"facets": {}
+	},
+	"job": {
+		"namespace": "bigquery",
+		"name": "model.dbt_bigquery_test.test_second_parallel_dbt_model",
+		"facets": {}
+	},
+	"producer": "openlineage-dbt/0.0.1",
+	"inputs": [{
+		"namespace": "bigquery",
+		"name": "speedy-vim-308516.dbt_test1.source_table",
+		"facets": {}
+	}],
+	"outputs": [{
+		"namespace": "bigquery",
+		"name": "speedy-vim-308516.dbt_test1.test_second_parallel_dbt_model",
+		"facets": {}
+	}]
+}, {
+	"eventType": "START",
+	"eventTime": "2021-07-28T12:09:46.095543Z",
+	"run": {
+		"runId": "1a69c0a7-04bb-408b-980e-cbbfb1831ef7",
+		"facets": {}
+	},
+	"job": {
+		"namespace": "bigquery",
+		"name": "model.dbt_bigquery_test.test_first_dbt_model",
+		"facets": {}
+	},
+	"producer": "openlineage-dbt/0.0.1",
+	"inputs": [],
+	"outputs": [{
+		"namespace": "bigquery",
+		"name": "speedy-vim-308516.dbt_test1.test_first_dbt_model",
+		"facets": {}
+	}]
+}, {
+	"eventType": "START",
+	"eventTime": "2021-07-28T12:09:48.001746Z",
+	"run": {
+		"runId": "f99310b4-339a-4381-ad3e-c1b95c24ff11",
+		"facets": {}
+	},
+	"job": {
+		"namespace": "bigquery",
+		"name": "model.dbt_bigquery_test.test_second_dbt_model",
+		"facets": {}
+	},
+	"producer": "openlineage-dbt/0.0.1",
+	"inputs": [{
+		"namespace": "bigquery",
+		"name": "speedy-vim-308516.dbt_test1.test_first_dbt_model",
+		"facets": {}
+	}],
+	"outputs": [{
+		"namespace": "bigquery",
+		"name": "speedy-vim-308516.dbt_test1.test_second_dbt_model",
+		"facets": {}
+	}]
+}, {
+	"eventType": "COMPLETE",
+	"eventTime": "2021-07-28T12:09:47.994760Z",
+	"run": {
+		"runId": "1a69c0a7-04bb-408b-980e-cbbfb1831ef7",
+		"facets": {}
+	},
+	"job": {
+		"namespace": "bigquery",
+		"name": "model.dbt_bigquery_test.test_first_dbt_model",
+		"facets": {
+			"sql": {
+				"_producer": "openlineage-python",
+				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SqlJobFacet",
+				"query": "\n\nwith source_data as (\n\n    select 1 as id\n    union all\n    select null as id\n\n)\n\nselect *\nfrom source_data"
+			}
+		}
+	},
+	"producer": "openlineage-dbt/0.0.1",
+	"inputs": [],
+	"outputs": [{
+		"namespace": "bigquery",
+		"name": "speedy-vim-308516.dbt_test1.test_first_dbt_model",
+		"facets": {
+			"dataSource": {
+				"_producer": "openlineage-python",
+				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
+				"name": "bigquery",
+				"uri": "bigquery"
+			},
+			"schema": {
+				"_producer": "openlineage-python",
+				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
+				"fields": [{
+					"name": "id",
+					"type": null,
+					"description": null
+				}]
+			}
+		}
+	}]
+}, {
+	"eventType": "COMPLETE",
+	"eventTime": "2021-07-28T12:09:48.778721Z",
+	"run": {
+		"runId": "f99310b4-339a-4381-ad3e-c1b95c24ff11",
+		"facets": {}
+	},
+	"job": {
+		"namespace": "bigquery",
+		"name": "model.dbt_bigquery_test.test_second_dbt_model",
+		"facets": {
+			"sql": {
+				"_producer": "openlineage-python",
+				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SqlJobFacet",
+				"query": "select *\nfrom `speedy-vim-308516`.`dbt_test1`.`test_first_dbt_model`\nwhere id = 1"
+			}
+		}
+	},
+	"producer": "openlineage-dbt/0.0.1",
+	"inputs": [{
+		"namespace": "bigquery",
+		"name": "speedy-vim-308516.dbt_test1.test_first_dbt_model",
+		"facets": {
+			"dataSource": {
+				"_producer": "openlineage-python",
+				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
+				"name": "bigquery",
+				"uri": "bigquery"
+			},
+			"schema": {
+				"_producer": "openlineage-python",
+				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
+				"fields": [{
+					"name": "id",
+					"type": null,
+					"description": null
+				}]
+			}
+		}
+	}],
+	"outputs": [{
+		"namespace": "bigquery",
+		"name": "speedy-vim-308516.dbt_test1.test_second_dbt_model",
+		"facets": {
+			"dataSource": {
+				"_producer": "openlineage-python",
+				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
+				"name": "bigquery",
+				"uri": "bigquery"
+			},
+			"schema": {
+				"_producer": "openlineage-python",
+				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
+				"fields": [{
+					"name": "id",
+					"type": null,
+					"description": null
+				}]
+			}
+		}
+	}]
+}, {
+	"eventType": "FAIL",
+	"eventTime": "2021-07-28T15:51:07.253587",
+	"run": {
+		"runId": "6edf42ed-d8d0-454a-b819-d09b9067ff99",
+		"facets": {}
+	},
+	"job": {
+		"namespace": "bigquery",
+		"name": "model.dbt_bigquery_test.test_second_parallel_dbt_model",
+		"facets": {
+			"sql": {
+				"_producer": "openlineage-python",
+				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SqlJobFacet",
+				"query": "select *\nfrom `speedy-vim-308516`.`dbt_test1`.`source_table`\nwhere id = 1\nbork bork fail"
+			}
+		}
+	},
+	"producer": "openlineage-dbt/0.0.1",
+	"inputs": [{
+		"namespace": "bigquery",
+		"name": "speedy-vim-308516.dbt_test1.source_table",
+		"facets": {
+			"dataSource": {
+				"_producer": "openlineage-python",
+				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
+				"name": "bigquery",
+				"uri": "bigquery"
+			},
+			"schema": {
+				"_producer": "openlineage-python",
+				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
+				"fields": []
+			}
+		}
+	}],
+	"outputs": []
+}]

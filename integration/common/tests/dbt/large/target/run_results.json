@@ -1,0 +1,126 @@
+{
+	"metadata": {
+		"dbt_schema_version": "https://schemas.getdbt.com/dbt/run-results/v2.json",
+		"dbt_version": "0.20.0rc2",
+		"generated_at": "2021-07-05T11:43:26.134009Z",
+		"invocation_id": "ebb384bf-f2f3-4303-bb1b-98b1daa6d2d4",
+		"env": {}
+	},
+	"results": [{
+		"status": "success",
+		"timing": [{
+			"name": "compile",
+			"started_at": "2021-07-05T11:43:14.752733Z",
+			"completed_at": "2021-07-05T11:43:14.756125Z"
+		}, {
+			"name": "execute",
+			"started_at": "2021-07-05T11:43:14.756283Z",
+			"completed_at": "2021-07-05T11:43:16.146647Z"
+		}],
+		"thread_id": "Thread-1",
+		"execution_time": 1.5134623050689697,
+		"adapter_response": {
+			"_message": "SUCCESS 1",
+			"code": "SUCCESS",
+			"rows_affected": 1
+		},
+		"message": "SUCCESS 1",
+		"failures": null,
+		"unique_id": "model.jaffle_shop.stg_orders"
+	}, {
+		"status": "success",
+		"timing": [{
+			"name": "compile",
+			"started_at": "2021-07-05T11:43:16.267161Z",
+			"completed_at": "2021-07-05T11:43:16.270995Z"
+		}, {
+			"name": "execute",
+			"started_at": "2021-07-05T11:43:16.271247Z",
+			"completed_at": "2021-07-05T11:43:17.218104Z"
+		}],
+		"thread_id": "Thread-1",
+		"execution_time": 1.0679519176483154,
+		"adapter_response": {
+			"_message": "SUCCESS 1",
+			"code": "SUCCESS",
+			"rows_affected": 1
+		},
+		"message": "SUCCESS 1",
+		"failures": null,
+		"unique_id": "model.jaffle_shop.stg_payments"
+	}, {
+		"status": "success",
+		"timing": [{
+			"name": "compile",
+			"started_at": "2021-07-05T11:43:17.336143Z",
+			"completed_at": "2021-07-05T11:43:17.338653Z"
+		}, {
+			"name": "execute",
+			"started_at": "2021-07-05T11:43:17.338870Z",
+			"completed_at": "2021-07-05T11:43:18.375002Z"
+		}],
+		"thread_id": "Thread-1",
+		"execution_time": 1.151458501815796,
+		"adapter_response": {
+			"_message": "SUCCESS 1",
+			"code": "SUCCESS",
+			"rows_affected": 1
+		},
+		"message": "SUCCESS 1",
+		"failures": null,
+		"unique_id": "model.jaffle_shop.stg_customers"
+	}, {
+		"status": "success",
+		"timing": [{
+			"name": "compile",
+			"started_at": "2021-07-05T11:43:18.489684Z",
+			"completed_at": "2021-07-05T11:43:18.498060Z"
+		}, {
+			"name": "execute",
+			"started_at": "2021-07-05T11:43:18.498280Z",
+			"completed_at": "2021-07-05T11:43:21.900891Z"
+		}],
+		"thread_id": "Thread-1",
+		"execution_time": 3.539695978164673,
+		"adapter_response": {
+			"_message": "SUCCESS 1",
+			"code": "SUCCESS",
+			"rows_affected": 1
+		},
+		"message": "SUCCESS 1",
+		"failures": null,
+		"unique_id": "model.jaffle_shop.orders"
+	}, {
+		"status": "success",
+		"timing": [{
+			"name": "compile",
+			"started_at": "2021-07-05T11:43:22.030881Z",
+			"completed_at": "2021-07-05T11:43:22.037396Z"
+		}, {
+			"name": "execute",
+			"started_at": "2021-07-05T11:43:22.037678Z",
+			"completed_at": "2021-07-05T11:43:24.406553Z"
+		}],
+		"thread_id": "Thread-1",
+		"execution_time": 2.5174121856689453,
+		"adapter_response": {
+			"_message": "SUCCESS 1",
+			"code": "SUCCESS",
+			"rows_affected": 1
+		},
+		"message": "SUCCESS 1",
+		"failures": null,
+		"unique_id": "model.jaffle_shop.customers"
+	}],
+	"elapsed_time": 16.22612500190735,
+	"args": {
+		"log_format": "default",
+		"write_json": true,
+		"use_experimental_parser": false,
+		"profiles_dir": "./tests/dbt/large",
+		"use_cache": true,
+		"version_check": true,
+		"which": "run",
+		"rpc_method": "run"
+	}
+}
