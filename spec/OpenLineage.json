@@ -17,7 +17,7 @@
                     "example": "START|COMPLETE|ABORT|FAIL|OTHER"
                 },
                 "eventTime": {
-                    "description": "the time the event occured at",
+                    "description": "the time the event occurred at",
                     "type": "string",
                     "format": "date-time"
                 },

@@ -94,95 +94,18 @@ public class JavaPoetGenerator {
     Collection<ObjectResolvedType> types = typeResolver.getTypes();
     for (ObjectResolvedType type : types) {
       if (type.getName().length() == 0 || !type.getContainer().equals(containerClassName)) {
+        // we're limiting ourselves to the types in the container we are generating
         continue;
       }
       if (typeResolver.getBaseTypes().contains(type.getName())) { // interfaces
-        TypeSpec.Builder interfaceBuilder = TypeSpec.interfaceBuilder(type.getName())
-            .addModifiers(STATIC, PUBLIC);
-
-        ///////////////////////////////
-
-        // Default implementation to deserialize
-        if (type.getName().endsWith("Facet") && !type.getName().equals("BaseFacet")) {
-          interfaceBuilder.addAnnotation(AnnotationSpec.builder(JsonDeserialize.class)
-              .addMember("as", CodeBlock.of("Default" + type.getName() + ".class"))
-              .build());
-
-          TypeSpec.Builder classBuilder = TypeSpec.classBuilder("Default" + type.getName())
-              .addModifiers(STATIC, PRIVATE, FINAL);
-          classBuilder.addSuperinterface(ClassName.get(PACKAGE, containerClassName, type.getName()));
-
-          MethodSpec.Builder constructor = MethodSpec.constructorBuilder()
-              .addModifiers(PRIVATE);
-          constructor.addAnnotation(JsonCreator.class);
-          List<String> fieldNames = new ArrayList<String>();
-          for (ResolvedField f : type.getProperties()) {
-            classBuilder.addField(getTypeName(f.getType()), f.getName(), PRIVATE, FINAL);
-            fieldNames.add(f.getName());
-            if (f.getName().equals("_schemaURL")) {
-              String schemaURL = baseURL + "#/$defs/" + type.getName();
-              constructor.addCode("this.$N = URI.create($S);\n", f.getName(), schemaURL);
-            } else {
-              constructor.addJavadoc("@param $N $N\n", f.getName(), f.getDescription() == null ? "the " + f.getName() : f.getDescription());
-              constructor.addParameter(
-                  ParameterSpec.builder(getTypeName(f.getType()), f.getName())
-                  .addAnnotation(AnnotationSpec.builder(JsonProperty.class).addMember("value", "$S", f.getName()).build())
-                  .build());
-              constructor.addCode("this.$N = $N;\n", f.getName(), f.getName());
-            }
-            MethodSpec getter = getter(f)
-                .addModifiers(PUBLIC)
-                .addCode("return $N;", f.getName())
-                .build();
-            classBuilder.addMethod(getter);
-          }
-
-          // additionalFields
-          if (type.hasAdditionalProperties()) {
-            String fieldName = "additionalProperties";
-            TypeName additionalPropertiesValueType = type.getAdditionalPropertiesType() == null ? ClassName.get(Object.class) : getTypeName(type.getAdditionalPropertiesType());
-            TypeName additionalPropertiesType = ParameterizedTypeName.get(ClassName.get(Map.class), ClassName.get(String.class), additionalPropertiesValueType);
-            classBuilder.addMethod(MethodSpec
-                .methodBuilder("get" + titleCase(fieldName))
-                .addJavadoc("@return additional properties")
-                .returns(additionalPropertiesType)
-                .addModifiers(PUBLIC)
-                .addCode("return $N;", fieldName)
-                .addAnnotation(AnnotationSpec.builder(JsonAnyGetter.class).build())
-                .build());
-            classBuilder.addField(
-                FieldSpec.builder(additionalPropertiesType, fieldName, PRIVATE, FINAL)
-                .addAnnotation(JsonAnySetter.class)
-                .build());
-
-            constructor.addCode(CodeBlock.builder().addStatement("this.$N = new $T<>()", fieldName, LinkedHashMap.class).build());
-          }
-          classBuilder.addMethod(constructor.build());
-          containerTypeBuilder.addType(classBuilder.build());
-        }
-        ///////////////////////////////
-
-        for (ResolvedField f : type.getProperties()) {
-          MethodSpec getter = getter(f)
-              .addModifiers(ABSTRACT, PUBLIC)
-              .build();
-          interfaceBuilder.addMethod(getter);
-        }
-        if (type.hasAdditionalProperties()) {
-          String fieldName = "additionalProperties";
-          TypeName additionalPropertiesValueType = type.getAdditionalPropertiesType() == null ? ClassName.get(Object.class) : getTypeName(type.getAdditionalPropertiesType());
-          TypeName additionalPropertiesType = ParameterizedTypeName.get(ClassName.get(Map.class), ClassName.get(String.class), additionalPropertiesValueType);
-          interfaceBuilder.addMethod(MethodSpec
-              .methodBuilder("get" + titleCase(fieldName))
-              .addJavadoc("@return additional properties")
-              .returns(additionalPropertiesType)
-              .addModifiers(PUBLIC, ABSTRACT)
-              .build());
-        }
-        TypeSpec intrfc = interfaceBuilder.build();
-
-        containerTypeBuilder.addType(intrfc);
+        generateInterface(containerTypeBuilder, type);
       } else { // concrete types
+        // We generate:
+        // A data class
+        // A factory method
+        // A builder class
+
+
         TypeSpec.Builder builderClassBuilder = TypeSpec.classBuilder(type.getName() + "Builder")
             .addModifiers(PUBLIC, FINAL);
         List<CodeBlock> builderParams = new ArrayList<>();
@@ -206,36 +129,23 @@ public class JavaPoetGenerator {
         for (ResolvedField f : type.getProperties()) {
           classBuilder.addField(getTypeName(f.getType()), f.getName(), PRIVATE, FINAL);
           fieldNames.add(f.getName());
-          if (f.getName().equals("_schemaURL")) {
-            String schemaURL = baseURL + "#/$defs/" + type.getName();
-            constructor.addCode("this.$N = URI.create($S);\n", f.getName(), schemaURL);
+          if (isSchemaURL(f)) {
+            setSchemaURLField(type, constructor, f);
           } else {
-            if (!(f.getName().equals("_producer") || f.getName().equals("producer"))) {
+            if (!isProducerField(f)) {
               builderClassBuilder.addField(getTypeName(f.getType()), f.getName(), PRIVATE);
-              builderClassBuilder.addMethod(
-                  MethodSpec
-                  .methodBuilder("set" + titleCase(f.getName()))
-                  .addParameter(getTypeName(f.getType()), f.getName())
-                  .addJavadoc("@param $N $N\n", f.getName(), f.getDescription() == null ? "the " + f.getName() : f.getDescription())
-                  .addModifiers(PUBLIC)
-                  .returns(ClassName.get(containerClass, type.getName() + "Builder"))
-                  .addJavadoc("@return this\n")
-                  .addCode("this.$N = $N;\n", f.getName(), f.getName())
-                  .addCode("return this;")
-                  .build());
+              Builder setterBuilder = MethodSpec.methodBuilder("set" + titleCase(f.getName())).addModifiers(PUBLIC);
+              addParameterFromField(setterBuilder, f, null);
+              setterBuilder.addCode("this.$N = $N;\n", f.getName(), f.getName());
+              returnThis(setterBuilder, type.getName() + "Builder");
+              builderClassBuilder.addMethod(setterBuilder.build());
             }
-            constructor.addJavadoc("@param $N $N\n", f.getName(), f.getDescription() == null ? "the " + f.getName() : f.getDescription());
-            constructor.addParameter(
-                ParameterSpec.builder(getTypeName(f.getType()), f.getName())
-                .addAnnotation(AnnotationSpec.builder(JsonProperty.class).addMember("value", "$S", f.getName()).build())
-                .build());
-            constructor.addCode("this.$N = $N;\n", f.getName(), f.getName());
-            if (f.getName().equals("_producer") || f.getName().equals("producer")) {
+            addConstructorParameter(constructor, f);
+            if (isProducerField(f)) {
               factoryParams.add(CodeBlock.of("this.producer"));
               builderParams.add(CodeBlock.of(containerClassName + ".this.producer"));
             } else {
-              factory.addParameter(ParameterSpec.builder(getTypeName(f.getType()), f.getName()).build());
-              factory.addJavadoc("@param $N $N\n", f.getName(), f.getDescription() == null ? "the " + f.getName() : f.getDescription());
+              addParameterFromField(factory, f, null);
               factoryParams.add(CodeBlock.of("$N", f.getName()));
               builderParams.add(CodeBlock.of("$N", f.getName()));
             }
@@ -268,46 +178,33 @@ public class JavaPoetGenerator {
 
          // additionalFields
         if (type.hasAdditionalProperties()) {
+          addAdditionalProperties(type, classBuilder, constructor);
+          TypeName additionalPropertiesValueType = getAdditionalPropertiesValueType(type);
+          TypeName additionalPropertiesType = getAdditionalPropertiesType(additionalPropertiesValueType);
           String fieldName = "additionalProperties";
-          TypeName additionalPropertiesValueType = type.getAdditionalPropertiesType() == null ? ClassName.get(Object.class) : getTypeName(type.getAdditionalPropertiesType());
-          TypeName additionalPropertiesType = ParameterizedTypeName.get(ClassName.get(Map.class), ClassName.get(String.class), additionalPropertiesValueType);
-          classBuilder.addMethod(MethodSpec
-              .methodBuilder("get" + titleCase(fieldName))
-              .addJavadoc("@return additional properties")
-              .returns(additionalPropertiesType)
-              .addModifiers(PUBLIC)
-              .addCode("return $N;", fieldName)
-              .addAnnotation(AnnotationSpec.builder(JsonAnyGetter.class).build())
-              .build());
-          classBuilder.addField(
-              FieldSpec.builder(additionalPropertiesType, fieldName, PRIVATE, FINAL)
-              .addAnnotation(JsonAnySetter.class)
-              .build());
 
           builderClassBuilder.addField(
               FieldSpec.builder(additionalPropertiesType, fieldName, PRIVATE, FINAL)
               .initializer("new $T<>()", HashMap.class)
               .build());
-          builderClassBuilder.addMethod(MethodSpec
+          Builder putBuilder = MethodSpec
               .methodBuilder("put")
               .addModifiers(PUBLIC)
               .addParameter(TypeName.get(String.class), "key")
+              .addJavadoc("@param key the field name\n")
               .addParameter(additionalPropertiesValueType, "value")
-              .returns(ClassName.get(containerClass, type.getName() + "Builder"))
-              .addJavadoc("@return this\n")
-              .addCode("this.$N.put(key, value);", fieldName)
-              .addCode("return this;")
-              .build());
-
+              .addJavadoc("@param value the value\n")
+              .addCode("this.$N.put(key, value);", fieldName);
+          returnThis(putBuilder, type.getName() + "Builder");
+          builderClassBuilder.addMethod(putBuilder.build());
           build.addCode("__result.getAdditionalProperties().putAll(additionalProperties);\n");
-
-          constructor.addCode(CodeBlock.builder().addStatement("this.$N = new $T<>()", fieldName, HashMap.class).build());
         }
 
 
         builderClassBuilder.addMethod(
             build
             .addCode("return __result;\n")
+            .addJavadoc("@return a new $N", type.getName())
             .build());
 
         classBuilder.addMethod(constructor.build());
@@ -316,6 +213,138 @@ public class JavaPoetGenerator {
       }
     }
 
+  }
+
+  private void generateInterface(TypeSpec.Builder containerTypeBuilder, ObjectResolvedType type) {
+    TypeSpec.Builder interfaceBuilder = TypeSpec.interfaceBuilder(type.getName())
+        .addModifiers(STATIC, PUBLIC);
+
+    ///////////////////////////////////////////
+    // Default implementation to deserialize //
+    ///////////////////////////////////////////
+    if (type.getName().endsWith("Facet") && !type.getName().equals("BaseFacet")) {
+      // adding the annotation to the interface to have a default implementation
+      interfaceBuilder.addAnnotation(AnnotationSpec.builder(JsonDeserialize.class)
+          .addMember("as", CodeBlock.of("Default" + type.getName() + ".class"))
+          .build());
+
+      TypeSpec.Builder classBuilder = TypeSpec.classBuilder("Default" + type.getName())
+          .addModifiers(STATIC, PRIVATE, FINAL);
+      classBuilder.addSuperinterface(ClassName.get(PACKAGE, containerClassName, type.getName()));
+
+      MethodSpec.Builder constructor = MethodSpec.constructorBuilder()
+          .addModifiers(PRIVATE);
+      constructor.addAnnotation(JsonCreator.class);
+      List<String> fieldNames = new ArrayList<String>();
+      for (ResolvedField f : type.getProperties()) {
+        classBuilder.addField(getTypeName(f.getType()), f.getName(), PRIVATE, FINAL);
+        fieldNames.add(f.getName());
+        if (isSchemaURL(f)) {
+          setSchemaURLField(type, constructor, f);
+        } else {
+          addConstructorParameter(constructor, f);
+        }
+        MethodSpec getter = getter(f)
+            .addModifiers(PUBLIC)
+            .addCode("return $N;", f.getName())
+            .build();
+        classBuilder.addMethod(getter);
+      }
+
+      // additionalFields
+      if (type.hasAdditionalProperties()) {
+        addAdditionalProperties(type, classBuilder, constructor);
+      }
+      classBuilder.addMethod(constructor.build());
+      containerTypeBuilder.addType(classBuilder.build());
+    }
+    ///////////////////////////////
+
+    for (ResolvedField f : type.getProperties()) {
+      MethodSpec getter = getter(f)
+          .addModifiers(ABSTRACT, PUBLIC)
+          .build();
+      interfaceBuilder.addMethod(getter);
+    }
+    if (type.hasAdditionalProperties()) {
+      String fieldName = "additionalProperties";
+      TypeName additionalPropertiesValueType = getAdditionalPropertiesValueType(type);
+      TypeName additionalPropertiesType = getAdditionalPropertiesType(additionalPropertiesValueType);
+      interfaceBuilder.addMethod(MethodSpec
+          .methodBuilder("get" + titleCase(fieldName))
+          .addJavadoc("@return additional properties")
+          .returns(additionalPropertiesType)
+          .addModifiers(PUBLIC, ABSTRACT)
+          .build());
+    }
+    TypeSpec intrfc = interfaceBuilder.build();
+
+    containerTypeBuilder.addType(intrfc);
+  }
+
+  private void returnThis(Builder methodBuilder, String typeName) {
+    methodBuilder.returns(ClassName.get(containerClass, typeName))
+      .addJavadoc("@return this\n")
+      .addCode("return this;");
+  }
+
+  private void addParameterFromField(MethodSpec.Builder factory, ResolvedField f, AnnotationSpec annotationSpec) {
+    com.squareup.javapoet.ParameterSpec.Builder paramSpecBuilder = ParameterSpec.builder(getTypeName(f.getType()), f.getName());
+    if (annotationSpec != null) {
+      paramSpecBuilder.addAnnotation(annotationSpec);
+    }
+    factory.addParameter(paramSpecBuilder.build());
+
+    factory.addJavadoc("@param $N $N\n", f.getName(), f.getDescription() == null ? "the " + f.getName() : f.getDescription());
+  }
+
+  private ParameterizedTypeName getAdditionalPropertiesType(
+      TypeName additionalPropertiesValueType) {
+    return ParameterizedTypeName.get(ClassName.get(Map.class), ClassName.get(String.class), additionalPropertiesValueType);
+  }
+
+  private TypeName getAdditionalPropertiesValueType(ObjectResolvedType type) {
+    return type.getAdditionalPropertiesType() == null ? ClassName.get(Object.class) : getTypeName(type.getAdditionalPropertiesType());
+  }
+
+  private void addAdditionalProperties(
+      ObjectResolvedType type, TypeSpec.Builder classBuilder, MethodSpec.Builder constructor) {
+    String fieldName = "additionalProperties";
+    TypeName additionalPropertiesValueType = getAdditionalPropertiesValueType(type);
+    TypeName additionalPropertiesType = getAdditionalPropertiesType(additionalPropertiesValueType);
+    classBuilder.addMethod(MethodSpec
+        .methodBuilder("get" + titleCase(fieldName))
+        .addJavadoc("@return additional properties")
+        .returns(additionalPropertiesType)
+        .addModifiers(PUBLIC)
+        .addCode("return $N;", fieldName)
+        .addAnnotation(AnnotationSpec.builder(JsonAnyGetter.class).build())
+        .build());
+    classBuilder.addField(
+        FieldSpec.builder(additionalPropertiesType, fieldName, PRIVATE, FINAL)
+        .addAnnotation(JsonAnySetter.class)
+        .build());
+
+    constructor.addCode(CodeBlock.builder().addStatement("this.$N = new $T<>()", fieldName, LinkedHashMap.class).build());
+  }
+
+  private boolean isProducerField(ResolvedField f) {
+    return f.getName().equals("_producer") || f.getName().equals("producer");
+  }
+
+  private void addConstructorParameter(MethodSpec.Builder constructor, ResolvedField f) {
+    addParameterFromField(constructor, f, AnnotationSpec.builder(JsonProperty.class).addMember("value", "$S", f.getName()).build());
+    constructor.addCode("this.$N = $N;\n", f.getName(), f.getName());
+  }
+
+  private boolean isSchemaURL(ResolvedField f) {
+    return f.getName().equals("_schemaURL");
+  }
+
+  private void setSchemaURLField(
+      ObjectResolvedType type, MethodSpec.Builder constructor, ResolvedField f) {
+    String schemaURL = baseURL + "#/$defs/" + type.getName();
+    constructor.addCode("this.$N = URI.create($S);\n", f.getName(), schemaURL);
   }
 
   private Builder getter(ResolvedField f) {
