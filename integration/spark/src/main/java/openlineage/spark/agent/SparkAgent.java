@@ -17,7 +17,7 @@ public class SparkAgent {
       premain(
           agentArgs,
           inst,
-          new ContextFactory(new OpenLineageSparkContext(ArgumentParser.parse(agentArgs))));
+          new ContextFactory(new OpenLineageContext(ArgumentParser.parse(agentArgs))));
     } catch (URISyntaxException e) {
       log.error("Could not find openlineage client url", e);
     }

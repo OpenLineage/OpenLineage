@@ -22,8 +22,8 @@ import org.mockito.Mockito;
  * extension and ends up running before other Spark tests, those subsequent tests will fail.
  */
 public class SparkAgentTestExtension implements BeforeAllCallback, BeforeEachCallback {
-  public static final OpenLineageSparkContext OPEN_LINEAGE_SPARK_CONTEXT =
-      mock(OpenLineageSparkContext.class);
+  public static final OpenLineageContext OPEN_LINEAGE_SPARK_CONTEXT =
+      mock(OpenLineageContext.class);
 
   @Override
   public void beforeAll(ExtensionContext context) throws Exception {

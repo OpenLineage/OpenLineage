@@ -1,7 +1,7 @@
 package openlineage.spark.agent.lifecycle;
 
 import lombok.AllArgsConstructor;
-import openlineage.spark.agent.OpenLineageSparkContext;
+import openlineage.spark.agent.OpenLineageContext;
 import openlineage.spark.agent.lifecycle.plan.InputDatasetVisitors;
 import openlineage.spark.agent.lifecycle.plan.OutputDatasetVisitors;
 import org.apache.spark.sql.SQLContext;
@@ -9,7 +9,7 @@ import org.apache.spark.sql.execution.SQLExecution;
 
 @AllArgsConstructor
 public class ContextFactory {
-  public final OpenLineageSparkContext sparkContext;
+  public final OpenLineageContext sparkContext;
 
   public void close() {
     sparkContext.close();

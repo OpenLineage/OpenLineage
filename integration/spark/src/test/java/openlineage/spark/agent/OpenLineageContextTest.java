@@ -6,12 +6,12 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import org.junit.jupiter.api.Test;
 
-public class OpenLineageSparkContextTest {
+public class OpenLineageContextTest {
 
   @Test
   public void testLineageUri() throws URISyntaxException {
-    OpenLineageSparkContext ctx =
-        new OpenLineageSparkContext(
+    OpenLineageContext ctx =
+        new OpenLineageContext(
             ArgumentParser.parse(
                 "https://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/"
                     + "ea445b5c-22eb-457a-8007-01c7c52b6e54?api_key=abc"));
