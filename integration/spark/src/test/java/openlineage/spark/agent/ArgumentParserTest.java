@@ -1,13 +1,11 @@
 package openlineage.spark.agent;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -70,26 +68,18 @@ public class ArgumentParserTest {
       String namespace,
       String jobName,
       String runId,
-      boolean randomUuid,
+      boolean defaultRunId,
       Optional<String> apiKey) {
     ArgumentParser parser = ArgumentParser.parse(input);
     assertEquals(host, parser.getHost());
     assertEquals(version, parser.getVersion());
     assertEquals(namespace, parser.getNamespace());
     assertEquals(jobName, parser.getJobName());
-    if (randomUuid) {
-      getUuidOrFail(parser.getRunId());
+    if (defaultRunId) {
+      assertEquals("", parser.getRunId());
     } else {
       assertEquals(runId, parser.getRunId());
     }
     assertEquals(apiKey, parser.getApiKey());
-  }
-
-  private void getUuidOrFail(String uuid) {
-    try {
-      UUID.fromString(uuid);
-    } catch (Exception e) {
-      fail("Run id is not a uuid");
-    }
   }
 }

@@ -28,16 +28,8 @@ public class Generator {
    */
   public static void main(String[] args) throws JsonParseException, JsonMappingException, IOException {
     String baseURL = singleArg(args);
-    InputStream input;
-    if (baseURL == null) {
-      String localSpec = "../spec/OpenLineage.json";
-      logger.info("Generating from local file: " + localSpec);
-      baseURL = "";
-      input = new FileInputStream(localSpec);
-    } else {
-      logger.info("Generating from URL: " + baseURL);
-      input = new URL(baseURL).openStream();
-    }
+    logger.info("Generating from URL: " + baseURL);
+    InputStream input = new URL(baseURL).openStream();
     try {
       File output = new File("src/main/java/io/openlineage/client/OpenLineage.java");
       generate(baseURL, input, output);
@@ -47,12 +39,10 @@ public class Generator {
   }
 
   private static String singleArg(String[] args) {
-    if (args.length == 0) {
-      return null;
-    } else if (args.length == 1) {
+    if (args.length == 1) {
       return args[0];
     } else {
-      throw new IllegalArgumentException("the argument should be the base URL, got several arguments instead: " + Arrays.toString(args));
+      throw new IllegalArgumentException("the argument should be the base URL, got invalid arguments instead: " + Arrays.toString(args));
     }
   }
 

@@ -1,0 +1,15 @@
+FROM python:3.6-slim
+RUN mkdir /app
+ADD airflow/setup.py /app
+ADD airflow/README.md /app
+COPY python /tmp/openlineage-client-python
+COPY common /tmp/openlineage-integration-common
+RUN cd /tmp/openlineage-client-python && pip wheel --no-deps --wheel-dir=/tmp/openlineage-client-python/wheel .
+RUN cd /tmp/openlineage-integration-common && pip wheel --no-deps --wheel-dir=/tmp/openlineage-integration-common/wheel .
+COPY airflow/openlineage/airflow /app/openlineage/airflow
+WORKDIR /app
+RUN ls -halt /tmp/openlineage-client-python/wheel
+RUN pip wheel --no-deps --wheel-dir=/app/wheel -e /tmp/openlineage-client-python .[tests]
+RUN pip wheel --no-deps --wheel-dir=/app/wheel -e /tmp/openlineage-integration-common .[tests]
+RUN cp -R /app/wheel /whl
+RUN cp /tmp/openlineage-integration-common/wheel/openlineage_integration_common* /whl
