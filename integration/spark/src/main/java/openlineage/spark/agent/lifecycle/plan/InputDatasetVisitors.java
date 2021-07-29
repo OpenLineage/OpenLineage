@@ -3,7 +3,7 @@ package openlineage.spark.agent.lifecycle.plan;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
-import openlineage.spark.agent.OpenLineageSparkContext;
+import openlineage.spark.agent.OpenLineageContext;
 import openlineage.spark.agent.client.LineageEvent;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -17,9 +17,9 @@ import scala.PartialFunction;
 public class InputDatasetVisitors
     implements Supplier<List<PartialFunction<LogicalPlan, List<LineageEvent.Dataset>>>> {
   private final SQLContext sqlContext;
-  private OpenLineageSparkContext sparkContext;
+  private OpenLineageContext sparkContext;
 
-  public InputDatasetVisitors(SQLContext sqlContext, OpenLineageSparkContext sparkContext) {
+  public InputDatasetVisitors(SQLContext sqlContext, OpenLineageContext sparkContext) {
     this.sqlContext = sqlContext;
     this.sparkContext = sparkContext;
   }

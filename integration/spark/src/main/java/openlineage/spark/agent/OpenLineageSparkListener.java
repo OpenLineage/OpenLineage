@@ -248,7 +248,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     if (sparkEnv != null) {
       try {
         ArgumentParser args = parseConf(sparkEnv.conf());
-        contextFactory = new ContextFactory(new OpenLineageSparkContext(args));
+        contextFactory = new ContextFactory(new OpenLineageContext(args));
       } catch (URISyntaxException e) {
         log.error("Unable to parse open lineage endpoint. Lineage events will not be collected", e);
       }

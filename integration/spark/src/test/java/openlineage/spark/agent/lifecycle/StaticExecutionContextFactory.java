@@ -8,7 +8,7 @@ import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import openlineage.spark.agent.OpenLineageSparkContext;
+import openlineage.spark.agent.OpenLineageContext;
 import openlineage.spark.agent.OpenLineageSparkListener;
 import openlineage.spark.agent.lifecycle.plan.InputDatasetVisitors;
 import openlineage.spark.agent.lifecycle.plan.OutputDatasetVisitors;
@@ -21,7 +21,7 @@ import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 public class StaticExecutionContextFactory extends ContextFactory {
   public static final Semaphore semaphore = new Semaphore(1);
 
-  public StaticExecutionContextFactory(OpenLineageSparkContext sparkContext) {
+  public StaticExecutionContextFactory(OpenLineageContext sparkContext) {
     super(sparkContext);
   }
 

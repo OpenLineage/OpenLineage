@@ -20,7 +20,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import openlineage.spark.agent.OpenLineageSparkContext;
+import openlineage.spark.agent.OpenLineageContext;
 import openlineage.spark.agent.OpenLineageSparkListener;
 import openlineage.spark.agent.client.DatasetParser;
 import openlineage.spark.agent.client.DatasetParser.DatasetParseResult;
@@ -62,13 +62,13 @@ import scala.runtime.AbstractFunction0;
 
 @Slf4j
 public class RddExecutionContext implements ExecutionContext {
-  private final OpenLineageSparkContext sparkContext;
+  private final OpenLineageContext sparkContext;
   private final Optional<SparkContext> sparkContextOption;
   private List<URI> inputs;
   private List<URI> outputs;
   private String jobSuffix;
 
-  public RddExecutionContext(int jobId, OpenLineageSparkContext sparkContext) {
+  public RddExecutionContext(int jobId, OpenLineageContext sparkContext) {
     this.sparkContext = sparkContext;
     sparkContextOption =
         Optional.ofNullable(

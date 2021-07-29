@@ -13,7 +13,7 @@ import openlineage.spark.agent.client.OpenLineageHttpException;
 import openlineage.spark.agent.client.ResponseMessage;
 
 @Slf4j
-public class OpenLineageSparkContext {
+public class OpenLineageContext {
   @Getter private OpenLineageClient client;
   @Getter private URI lineageURI;
   @Getter private String jobNamespace;
@@ -22,7 +22,7 @@ public class OpenLineageSparkContext {
 
   private final ObjectMapper mapper = OpenLineageClient.createMapper();
 
-  public OpenLineageSparkContext(ArgumentParser argument) throws URISyntaxException {
+  public OpenLineageContext(ArgumentParser argument) throws URISyntaxException {
     this.client = OpenLineageClient.create(argument.getApiKey(), ForkJoinPool.commonPool());
     this.lineageURI =
         new URI(String.format("%s/api/%s/lineage", argument.getHost(), argument.getVersion()));
@@ -31,7 +31,7 @@ public class OpenLineageSparkContext {
     this.parentRunId = argument.getRunId();
     log.info(
         String.format(
-            "Init OpenLineageSparkContext: Args: %s URI: %s", argument, lineageURI.toString()));
+            "Init OpenLineageContext: Args: %s URI: %s", argument, lineageURI.toString()));
   }
 
   public void emit(LineageEvent event) {

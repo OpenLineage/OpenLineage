@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import openlineage.spark.agent.OpenLineageSparkContext;
+import openlineage.spark.agent.OpenLineageContext;
 import openlineage.spark.agent.client.LineageEvent;
 import openlineage.spark.agent.client.LineageEvent.Dataset;
 import openlineage.spark.agent.client.LineageEvent.Job;
@@ -43,13 +43,13 @@ public class SparkSQLExecutionContext implements ExecutionContext {
   private final QueryExecution queryExecution;
   private final UUID runUuid = UUID.randomUUID();
 
-  private OpenLineageSparkContext sparkContext;
+  private OpenLineageContext sparkContext;
   private final List<PartialFunction<LogicalPlan, List<Dataset>>> outputDatasetSupplier;
   private final List<PartialFunction<LogicalPlan, List<Dataset>>> inputDatasetSupplier;
 
   public SparkSQLExecutionContext(
       long executionId,
-      OpenLineageSparkContext sparkContext,
+      OpenLineageContext sparkContext,
       List<PartialFunction<LogicalPlan, List<Dataset>>> outputDatasetSupplier,
       List<PartialFunction<LogicalPlan, List<Dataset>>> inputDatasetSupplier) {
     this.executionId = executionId;
