@@ -17,31 +17,27 @@ from typing import List, Dict
 import attr
 
 
-class EventEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, Enum):
-            return obj.value
-        if obj is None:
-            return
-        return super().default(obj)
-
-
 class Serde:
     @classmethod
-    def remove_nulls(cls, obj):
+    def remove_nulls_and_enums(cls, obj):
+        if isinstance(obj, Enum):
+            return obj.value
         if isinstance(obj, Dict):
             return dict(filter(
                 lambda x: x[1] is not None,
-                {k: cls.remove_nulls(v) for k, v in obj.items()}.items()
+                {k: cls.remove_nulls_and_enums(v) for k, v in obj.items()}.items()
             ))
         if isinstance(obj, List):
             return list(filter(lambda x: x is not None and x != {}, [
-                cls.remove_nulls(v) for v in obj if v is not None
+                cls.remove_nulls_and_enums(v) for v in obj if v is not None
             ]))
         return obj
 
     @classmethod
-    def to_json(cls, obj):
+    def to_dict(cls, obj):
         dicted = attr.asdict(obj)
-        without_nulls = cls.remove_nulls(dicted)
-        return json.dumps(without_nulls, cls=EventEncoder, sort_keys=True)
+        return cls.remove_nulls_and_enums(dicted)
+
+    @classmethod
+    def to_json(cls, obj):
+        return json.dumps(cls.to_dict(obj), sort_keys=True)
