@@ -1,5 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openlineage.io/spec/0-0-1/OpenLineage.json",
   "definitions": {
     "RunEvent": {
       "type": "object",
@@ -46,13 +47,20 @@
           "type": "string",
           "format": "uri",
           "example": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client"
+        },
+        "schemaURL": {
+          "description": "The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version of the schema definition for this RunEvent",
+          "type": "string",
+          "format": "uri",
+          "example": "https://openlineage.io/spec/0-0-1/OpenLineage.json"
         }
       },
       "required": [
         "run",
         "job",
         "eventTime",
-        "producer"
+        "producer",
+        "schemaURL"
       ]
     },
     "Run": {
@@ -214,7 +222,7 @@
           "description": "The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version of the schema definition for this facet",
           "type": "string",
           "format": "uri",
-          "example": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/0.0.1/spec/OpenLineage.json#/definitions/BaseFacet"
+          "example": "https://openlineage.io/spec/0-0-1/OpenLineage.json#/definitions/BaseFacet"
         }
       },
       "required": [
