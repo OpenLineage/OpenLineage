@@ -15,10 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+# This script was inspired by the new-release.sh from Marquez (https://github.com/MarquezProject/marquez/blob/main/new-version.sh)
+#
 # Requirements:
 #   * You're on the 'main' branch
 #   * You've installed 'bump2version'
-#   * You've installed 'redoc-cli'
 #
 # Usage: $ ./new-version.sh --release-version RELEASE_VERSION --next-version NEXT_VERSION
 
@@ -60,12 +61,6 @@ cd "${project_root}"
 # Verify bump2version is installed
 if [[ ! $(type -P bump2version) ]]; then
   echo "bump2version not installed! Please see https://github.com/c4urself/bump2version#installation"
-  exit 1;
-fi
-
-# Verify redoc-cli is installed
-if [[ ! $(type -P redoc-cli) ]]; then
-  echo "redoc-cli not installed! Please see https://www.npmjs.com/package/redoc-cli"
   exit 1;
 fi
 
@@ -140,26 +135,22 @@ done
 sed -i  "s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/spark/gradle.properties
 sed -i  "s/^version=.*/version=${RELEASE_VERSION}/g" ./client/java/gradle.properties
 
-# (4) Bump version in docs
-sed -i  "s/^  version:.*/  version: ${RELEASE_VERSION}/g" ./spec/OpenLineage.yml
+# (3) Bump version in docs
 sed -i  "s/<version>.*/<version>${RELEASE_VERSION}<\/version>/g" ./integration/spark/README.md
 sed -i  "s/openlineage-spark:.*/openlineage-spark:${RELEASE_VERSION}/g" ./integration/spark/README.md
 
-# (5) Bundle openAPI docs
-redoc-cli bundle spec/OpenLineage.yml -o docs/OpenLineage.html  --title "OpenLineage API Reference"
-
-# (6) Prepare release commit
+# (4) Prepare release commit
 git commit -sam "Prepare for release ${RELEASE_VERSION}"
 
-# (7) Pull latest tags, then prepare release tag
+# (5) Pull latest tags, then prepare release tag
 git fetch --all --tags
 git tag -a "${RELEASE_VERSION}" -m "openalineage ${RELEASE_VERSION}"
 
-# (8) Prepare next development version
+# (6) Prepare next development version
 sed -i  "s/^version=.*/version=${NEXT_VERSION}/g" integration/spark/gradle.properties
 sed -i  "s/^version=.*/version=${NEXT_VERSION}/g" client/java/gradle.properties
 
-# (9) Prepare next development version commit
+# (7) Prepare next development version commit
 git commit -sam "Prepare next development version"
 
 if [[ ! ${PUSH} = "false" ]]; then
