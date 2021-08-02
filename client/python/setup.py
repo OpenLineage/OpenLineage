@@ -10,15 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import codecs
-import os
-import re
-import subprocess
-
 from setuptools import setup, find_namespace_packages
 
-
-__version__ = "0.0.1"
+__version__ = '0.0.1'
 
 with open("README.md", "r") as f:
     long_description = f.read()

@@ -54,7 +54,7 @@ def test_dbt_parse_large_event(mock_uuid):
 @mock.patch('uuid.uuid4')
 @mock.patch('datetime.datetime')
 def test_dbt_parse_failed_event(mock_datetime, mock_uuid):
-    mock_datetime.now.return_value.isoformat.return_value = '2021-07-28T15:51:07.253587'
+    mock_datetime.now.return_value.isoformat.return_value = '2021-07-28T13:10:51.245287+00:00'
     mock_uuid.side_effect = [
         '6edf42ed-d8d0-454a-b819-d09b9067ff99',
         '1a69c0a7-04bb-408b-980e-cbbfb1831ef7',
