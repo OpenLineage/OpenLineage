@@ -231,19 +231,14 @@ publishing {
 
     repositories {
         maven {
-            if (isReleaseVersion) {
-                url = 'https://oss.sonatype.org/service/local/staging/deploy/maven2'
-                credentials {
-                    username = System.getenv('SONATYPE_USER')
-                    password = System.getenv('SONATYPE_PASSWORD')
-                }
-            } else {
-                url = 'https://datakin.jfrog.io/artifactory/maven-public-libs-snapshot'
-                credentials {
-                    username = System.getenv('ARTIFACTORY_USERNAME')
-                    password = System.getenv('ARTIFACTORY_PASSWORD')
-                }
+            url = isReleaseVersion ? 'https://oss.sonatype.org/service/local/staging/deploy/maven2' :
+                    'https://datakin.jfrog.io/artifactory/maven-public-libs-snapshot'
+            credentials {
+                username = System.getenv('PUBLISH_USERNAME')
+                password = System.getenv('PUBLISH_PASSWORD')
             }
+            project.logger.info("USER ${System.getenv('PUBLISH_USERNAME')}")
+            project.logger.info("PASS ${System.getenv('PUBLISH_PASSWORD')}")
         }
     }
 }

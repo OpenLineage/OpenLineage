@@ -29,7 +29,7 @@ only-on-main-without-release-tag: &only-on-main-without-release-tag
     tags:
       ignore: /^[0-9]+(\.[0-9]+){2}(-?rc[0-9]+)?$/
     branches:
-      only: main
+      only: /.*/
 
 jobs:
   test-client-python:
@@ -237,13 +237,13 @@ workflows:
       - release-java-client:
           name: publish-java-client-snapshot
           <<: *only-on-main-without-release-tag
-          context: release
+          context: snapshot
           requires:
             - build-java-client
       - release-integration-spark:
           name: publish-integration-spark-snapshot
           <<: *only-on-main-without-release-tag
-          context: release
+          context: snapshot
           requires:
             - integration-test-spark
 
