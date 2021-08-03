@@ -1,6 +1,6 @@
 [{
 	"eventType": "START",
-	"eventTime": "2021-07-28T15:51:07.253587",
+	"eventTime": "2021-07-28T13:10:51.245287+00:00",
 	"run": {
 		"runId": "6edf42ed-d8d0-454a-b819-d09b9067ff99",
 		"facets": {}
@@ -167,7 +167,7 @@
 	}]
 }, {
 	"eventType": "FAIL",
-	"eventTime": "2021-07-28T15:51:07.253587",
+	"eventTime": "2021-07-28T13:10:51.245287+00:00",
 	"run": {
 		"runId": "6edf42ed-d8d0-454a-b819-d09b9067ff99",
 		"facets": {}
