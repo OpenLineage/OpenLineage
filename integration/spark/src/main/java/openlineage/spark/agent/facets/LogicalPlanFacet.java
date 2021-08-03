@@ -1,23 +1,20 @@
 package openlineage.spark.agent.facets;
 
 import com.fasterxml.jackson.annotation.JsonRawValue;
+import io.openlineage.client.OpenLineage;
 import java.net.URI;
 import lombok.Builder;
 import lombok.ToString;
-import openlineage.spark.agent.client.LineageEvent.BaseFacet;
 import openlineage.spark.agent.client.OpenLineageClient;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 
 @ToString
-public class LogicalPlanFacet extends BaseFacet {
+public class LogicalPlanFacet extends OpenLineage.CustomFacet {
   private final LogicalPlan plan;
 
   @Builder
   public LogicalPlanFacet(LogicalPlan plan) {
-    super(
-        URI.create(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI),
-        URI.create(
-            OpenLineageClient.OPEN_LINEAGE_CLIENT_URI + "/facets/spark-2.4/v1/logicalPlanFacet"));
+    super(URI.create(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI));
     this.plan = plan;
   }
 

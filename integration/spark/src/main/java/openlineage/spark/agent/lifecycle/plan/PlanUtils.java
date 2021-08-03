@@ -1,13 +1,14 @@
 package openlineage.spark.agent.lifecycle.plan;
 
-import com.google.common.collect.ImmutableMap;
+import io.openlineage.client.OpenLineage;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
-import openlineage.spark.agent.client.LineageEvent;
 import openlineage.spark.agent.client.OpenLineageClient;
 import openlineage.spark.agent.facets.OutputStatisticsFacet;
 import org.apache.hadoop.conf.Configuration;
@@ -60,24 +61,23 @@ public class PlanUtils {
   }
 
   /**
-   * Given a schema, construct a valid {@link LineageEvent.SchemaDatasetFacet}.
+   * Given a schema, construct a valid {@link OpenLineage.SchemaDatasetFacet}.
    *
    * @param structType
    * @return
    */
-  public static LineageEvent.SchemaDatasetFacet schemaFacet(StructType structType) {
-    return LineageEvent.SchemaDatasetFacet.builder()
-        ._producer(URI.create(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
-        ._schemaURL(URI.create(OpenLineageClient.OPEN_LINEAGE_SCHEMA_FACET_URI))
+  public static OpenLineage.SchemaDatasetFacet schemaFacet(StructType structType) {
+    return new OpenLineage(URI.create(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
+        .newSchemaDatasetFacetBuilder()
         .fields(transformFields(structType.fields()))
         .build();
   }
 
-  private static List<LineageEvent.SchemaField> transformFields(StructField[] fields) {
-    List<LineageEvent.SchemaField> list = new ArrayList<>();
+  private static List<OpenLineage.SchemaDatasetFacetFields> transformFields(StructField[] fields) {
+    List<OpenLineage.SchemaDatasetFacetFields> list = new ArrayList<>();
     for (StructField field : fields) {
       list.add(
-          LineageEvent.SchemaField.builder()
+          new OpenLineage.SchemaDatasetFacetFieldsBuilder()
               .name(field.name())
               .type(field.dataType().typeName())
               .build());
@@ -92,31 +92,31 @@ public class PlanUtils {
   }
 
   /**
-   * Given a {@link URI}, construct a valid {@link LineageEvent.Dataset} following the expected
+   * Given a {@link URI}, construct a valid {@link OpenLineage.Dataset} following the expected
    * naming conventions.
    *
    * @param outputPath
    * @param schema
    * @return
    */
-  public static LineageEvent.Dataset getDataset(URI outputPath, StructType schema) {
+  public static OpenLineage.Dataset getDataset(URI outputPath, StructType schema) {
     String namespace = namespaceUri(outputPath);
-    LineageEvent.DatasetFacet datasetFacet = datasetFacet(schema, namespace);
+    OpenLineage.DatasetFacets datasetFacet = datasetFacet(schema, namespace);
     return getDataset(outputPath, namespace, datasetFacet);
   }
 
   /**
    * Construct a dataset given a {@link URI}, namespace, and preconstructed {@link
-   * LineageEvent.DatasetFacet}.
+   * OpenLineage.DatasetFacets}.
    *
    * @param outputPath
    * @param namespace
    * @param datasetFacet
    * @return
    */
-  public static LineageEvent.Dataset getDataset(
-      URI outputPath, String namespace, LineageEvent.DatasetFacet datasetFacet) {
-    return LineageEvent.Dataset.builder()
+  public static OpenLineage.Dataset getDataset(
+      URI outputPath, String namespace, OpenLineage.DatasetFacets datasetFacet) {
+    return new OpenLineage.InputDatasetBuilder()
         .namespace(namespace)
         .name(outputPath.getPath())
         .facets(datasetFacet)
@@ -124,21 +124,21 @@ public class PlanUtils {
   }
 
   /**
-   * Construct a {@link LineageEvent.DatasetFacet} given a schema and a namespace.
+   * Construct a {@link OpenLineage.DatasetFacets} given a schema and a namespace.
    *
    * @param schema
    * @param namespaceUri
    * @return
    */
-  public static LineageEvent.DatasetFacet datasetFacet(StructType schema, String namespaceUri) {
-    return LineageEvent.DatasetFacet.builder()
+  public static OpenLineage.DatasetFacets datasetFacet(StructType schema, String namespaceUri) {
+    return new OpenLineage.DatasetFacetsBuilder()
         .schema(schemaFacet(schema))
         .dataSource(datasourceFacet(namespaceUri))
         .build();
   }
 
   /**
-   * Construct a {@link LineageEvent.DatasetFacet} given a schema, a namespace, and an {@link
+   * Construct a {@link OpenLineage.DatasetFacets} given a schema, a namespace, and an {@link
    * OutputStatisticsFacet}.
    *
    * @param schema
@@ -146,32 +146,33 @@ public class PlanUtils {
    * @param outputStats
    * @return
    */
-  public static LineageEvent.DatasetFacet datasetFacet(
+  public static OpenLineage.DatasetFacets datasetFacet(
       StructType schema, String namespaceUri, OutputStatisticsFacet outputStats) {
-    return LineageEvent.DatasetFacet.builder()
-        .schema(schemaFacet(schema))
-        .dataSource(datasourceFacet(namespaceUri))
-        .additional(ImmutableMap.of("stats", outputStats))
-        .build();
+    OpenLineage.DatasetFacetsBuilder builder =
+        new OpenLineage.DatasetFacetsBuilder()
+            .schema(schemaFacet(schema))
+            .dataSource(datasourceFacet(namespaceUri));
+
+    builder.put("stats", outputStats);
+    return builder.build();
   }
 
   /**
-   * Construct a {@link LineageEvent.DatasourceDatasetFacet} given a namespace for the datasource.
+   * Construct a {@link OpenLineage.DatasourceDatasetFacet} given a namespace for the datasource.
    *
    * @param namespaceUri
    * @return
    */
-  public static LineageEvent.DatasourceDatasetFacet datasourceFacet(String namespaceUri) {
-    return LineageEvent.DatasourceDatasetFacet.builder()
-        ._producer(URI.create(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
-        ._schemaURL(URI.create(OpenLineageClient.OPEN_LINEAGE_DATASOURCE_FACET))
-        .uri(namespaceUri)
+  public static OpenLineage.DatasourceDatasetFacet datasourceFacet(String namespaceUri) {
+    return new OpenLineage(URI.create(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
+        .newDatasourceDatasetFacetBuilder()
+        .uri(URI.create(namespaceUri))
         .name(namespaceUri)
         .build();
   }
 
   /**
-   * Construct a {@link LineageEvent.ParentRunFacet} given the parent job's runId, job name, and
+   * Construct a {@link OpenLineage.ParentRunFacet} given the parent job's runId, job name, and
    * namespace.
    *
    * @param runId
@@ -179,13 +180,19 @@ public class PlanUtils {
    * @param parentJobNamespace
    * @return
    */
-  public static LineageEvent.ParentRunFacet parentRunFacet(
+  public static OpenLineage.ParentRunFacet parentRunFacet(
       String runId, String parentJob, String parentJobNamespace) {
-    return LineageEvent.ParentRunFacet.builder()
-        ._producer(URI.create(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
-        ._schemaURL(URI.create(OpenLineageClient.OPEN_LINEAGE_PARENT_FACET_URI))
-        .run(LineageEvent.RunLink.builder().runId(runId).build())
-        .job(LineageEvent.JobLink.builder().name(parentJob).namespace(parentJobNamespace).build())
+    return new OpenLineage(URI.create(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
+        .newParentRunFacetBuilder()
+        .run(
+            new OpenLineage.ParentRunFacetRunBuilder()
+                .runId(convertToUUID.apply(runId).orElse(UUID.randomUUID()))
+                .build())
+        .job(
+            new OpenLineage.ParentRunFacetJobBuilder()
+                .name(parentJob)
+                .namespace(parentJobNamespace)
+                .build())
         .build();
   }
 
@@ -226,5 +233,17 @@ public class PlanUtils {
       log.warn("Unable to get file system for path ", e);
       return p;
     }
+  }
+
+  public static final Function<String, Optional<UUID>> convertToUUID = tryConvert(UUID::fromString);
+
+  private static <T, R> Function<T, Optional<R>> tryConvert(Function<T, R> func) {
+    return (t) -> {
+      try {
+        return Optional.ofNullable(func.apply(t));
+      } catch (Exception e) {
+        return Optional.empty();
+      }
+    };
   }
 }

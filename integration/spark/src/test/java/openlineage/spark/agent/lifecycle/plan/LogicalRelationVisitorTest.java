@@ -3,10 +3,11 @@ package openlineage.spark.agent.lifecycle.plan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.openlineage.client.OpenLineage;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 import openlineage.spark.agent.SparkAgentTestExtension;
-import openlineage.spark.agent.client.LineageEvent;
 import org.apache.spark.Partition;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
@@ -71,7 +72,7 @@ class LogicalRelationVisitorTest {
                     .$plus$eq(Tuple2.apply("driver", Driver.class.getName()))
                     .result()),
             session);
-    List<LineageEvent.Dataset> datasets =
+    List<OpenLineage.Dataset> datasets =
         visitor.apply(
             new LogicalRelation(
                 relation,
@@ -89,10 +90,10 @@ class LogicalRelationVisitorTest {
                 Option.empty(),
                 false));
     assertEquals(1, datasets.size());
-    LineageEvent.Dataset ds = datasets.get(0);
+    OpenLineage.Dataset ds = datasets.get(0);
     assertEquals(connectionUri, ds.getNamespace());
     assertEquals(sparkTableName, ds.getName());
-    assertEquals(connectionUri, ds.getFacets().getDataSource().getUri());
+    assertEquals(URI.create(connectionUri), ds.getFacets().getDataSource().getUri());
     assertEquals(connectionUri, ds.getFacets().getDataSource().getName());
   }
 
@@ -117,13 +118,14 @@ class LogicalRelationVisitorTest {
         new LogicalRelation(
             consoleRelation, consoleRelation.schema().toAttributes(), Option.empty(), false);
     assertTrue(visitor.isDefinedAt(logicalRelation));
-    List<LineageEvent.Dataset> datasets = visitor.apply(logicalRelation);
+    List<OpenLineage.Dataset> datasets = visitor.apply(logicalRelation);
     Assertions.assertThat(datasets)
         .isNotEmpty()
         .hasSize(1)
         .first()
         .hasFieldOrPropertyWithValue("name", "ConsoleRelation_struct<num:int,word:string,fl:float>")
         .extracting("facets")
+        .extracting("documentation")
         .extracting("description")
         .asString()
         .startsWith("Relation[num#6,word#7,fl#8] ConsoleRelation(");

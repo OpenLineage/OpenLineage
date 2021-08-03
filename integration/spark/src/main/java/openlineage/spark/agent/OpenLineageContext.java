@@ -2,12 +2,12 @@ package openlineage.spark.agent;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.openlineage.client.OpenLineage;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.concurrent.ForkJoinPool;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import openlineage.spark.agent.client.LineageEvent;
 import openlineage.spark.agent.client.OpenLineageClient;
 import openlineage.spark.agent.client.OpenLineageHttpException;
 import openlineage.spark.agent.client.ResponseMessage;
@@ -34,7 +34,7 @@ public class OpenLineageContext {
             "Init OpenLineageContext: Args: %s URI: %s", argument, lineageURI.toString()));
   }
 
-  public void emit(LineageEvent event) {
+  public void emit(OpenLineage.RunEvent event) {
     try {
       // Todo: move to async client
       log.debug("Posting LineageEvent {}", event);

@@ -2,6 +2,7 @@ package openlineage.spark.agent.lifecycle;
 
 import static scala.collection.JavaConversions.asJavaCollection;
 
+import io.openlineage.client.OpenLineage;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
@@ -12,22 +13,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import openlineage.spark.agent.OpenLineageContext;
 import openlineage.spark.agent.OpenLineageSparkListener;
 import openlineage.spark.agent.client.DatasetParser;
 import openlineage.spark.agent.client.DatasetParser.DatasetParseResult;
-import openlineage.spark.agent.client.LineageEvent;
-import openlineage.spark.agent.client.LineageEvent.Dataset;
-import openlineage.spark.agent.client.LineageEvent.ParentRunFacet;
-import openlineage.spark.agent.client.LineageEvent.RunFacet;
 import openlineage.spark.agent.client.OpenLineageClient;
 import openlineage.spark.agent.facets.ErrorFacet;
 import openlineage.spark.agent.lifecycle.plan.PlanUtils;
@@ -153,15 +149,22 @@ public class RddExecutionContext implements ExecutionContext {
 
   @Override
   public void start(SparkListenerJobStart jobStart) {
-    LineageEvent event =
-        LineageEvent.builder()
-            .inputs(buildInputs(inputs))
-            .outputs(buildOutputs(outputs))
-            .run(buildRun(buildRunFacets(null)))
-            .job(buildJob(jobStart.jobId()))
+    OpenLineage ol = new OpenLineage(URI.create(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI));
+    OpenLineage.RunEvent event =
+        ol.newRunEventBuilder()
             .eventTime(toZonedTime(jobStart.time()))
             .eventType("START")
-            .producer(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI)
+            .inputs(buildInputs(inputs))
+            .outputs(buildOutputs(outputs))
+            .run(
+                ol.newRunBuilder()
+                    .runId(
+                        PlanUtils.convertToUUID
+                            .apply(sparkContext.getParentRunId())
+                            .orElse(UUID.randomUUID()))
+                    .facets(buildRunFacets(null))
+                    .build())
+            .job(buildJob(jobStart.jobId()))
             .build();
 
     log.debug("Posting event for start {}: {}", jobStart, event);
@@ -170,15 +173,22 @@ public class RddExecutionContext implements ExecutionContext {
 
   @Override
   public void end(SparkListenerJobEnd jobEnd) {
-    LineageEvent event =
-        LineageEvent.builder()
-            .inputs(buildInputs(inputs))
-            .outputs(buildOutputs(outputs))
-            .run(buildRun(buildRunFacets(buildJobErrorFacet(jobEnd.jobResult()))))
-            .job(buildJob(jobEnd.jobId()))
+    OpenLineage ol = new OpenLineage(URI.create(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI));
+    OpenLineage.RunEvent event =
+        ol.newRunEventBuilder()
             .eventTime(toZonedTime(jobEnd.time()))
             .eventType(getEventType(jobEnd.jobResult()))
-            .producer(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI)
+            .inputs(buildInputs(inputs))
+            .outputs(buildOutputs(outputs))
+            .run(
+                ol.newRunBuilder()
+                    .runId(
+                        PlanUtils.convertToUUID
+                            .apply(sparkContext.getParentRunId())
+                            .orElse(UUID.randomUUID()))
+                    .facets(buildRunFacets(buildJobErrorFacet(jobEnd.jobResult())))
+                    .build())
+            .job(buildJob(jobEnd.jobId()))
             .build();
 
     log.debug("Posting event for end {}: {}", jobEnd, event);
@@ -190,19 +200,16 @@ public class RddExecutionContext implements ExecutionContext {
     return ZonedDateTime.ofInstant(i, ZoneOffset.UTC);
   }
 
-  protected LineageEvent.Run buildRun(RunFacet facets) {
-    return LineageEvent.Run.builder().runId(sparkContext.getParentRunId()).facets(facets).build();
-  }
-
-  protected RunFacet buildRunFacets(ErrorFacet jobError) {
-    Map<String, Object> additionalFacets = new HashMap<>();
+  protected OpenLineage.RunFacets buildRunFacets(ErrorFacet jobError) {
+    OpenLineage.RunFacetsBuilder builder =
+        new OpenLineage.RunFacetsBuilder().parent(buildParentFacet());
     if (jobError != null) {
-      additionalFacets.put("spark.exception", jobError);
+      builder.put("spark.exception", jobError);
     }
-    return RunFacet.builder().parent(buildParentFacet()).additional(additionalFacets).build();
+    return builder.build();
   }
 
-  private ParentRunFacet buildParentFacet() {
+  private OpenLineage.ParentRunFacet buildParentFacet() {
     if (sparkContext.getParentRunId() != null
         && sparkContext.getParentRunId().trim().length() > 0) {
       return PlanUtils.parentRunFacet(
@@ -221,29 +228,38 @@ public class RddExecutionContext implements ExecutionContext {
     return null;
   }
 
-  protected LineageEvent.Job buildJob(int jobId) {
+  protected OpenLineage.Job buildJob(int jobId) {
     String suffix = jobSuffix;
     if (jobSuffix == null) {
       suffix = String.valueOf(jobId);
     }
     String jobName = sparkContextOption.map(SparkContext::appName).orElse("unknown") + "." + suffix;
-    return LineageEvent.Job.builder()
+    return new OpenLineage.JobBuilder()
         .namespace(sparkContext.getJobNamespace())
         .name(jobName.replaceAll(CAMEL_TO_SNAKE_CASE, "_$1").toLowerCase(Locale.ROOT))
         .build();
   }
 
-  protected List<Dataset> buildOutputs(List<URI> outputs) {
-    return outputs.stream().map(this::buildDataset).collect(Collectors.toList());
+  protected List<OpenLineage.OutputDataset> buildOutputs(List<URI> outputs) {
+    return outputs.stream()
+        .map(this::buildDataset)
+        .map(SparkSQLExecutionContext::convertToOutput)
+        .collect(Collectors.toList());
   }
 
-  protected Dataset buildDataset(URI uri) {
+  protected OpenLineage.Dataset buildDataset(URI uri) {
     DatasetParseResult result = DatasetParser.parse(uri);
-    return Dataset.builder().name(result.getName()).namespace(result.getNamespace()).build();
+    return new OpenLineage.InputDatasetBuilder()
+        .name(result.getName())
+        .namespace(result.getNamespace())
+        .build();
   }
 
-  protected List<Dataset> buildInputs(List<URI> inputs) {
-    return inputs.stream().map(this::buildDataset).collect(Collectors.toList());
+  protected List<OpenLineage.InputDataset> buildInputs(List<URI> inputs) {
+    return inputs.stream()
+        .map(this::buildDataset)
+        .map(SparkSQLExecutionContext::convertToInput)
+        .collect(Collectors.toList());
   }
 
   protected List<URI> findOutputs(RDD<?> rdd, Configuration config) {

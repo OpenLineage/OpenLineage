@@ -1,9 +1,9 @@
 package openlineage.spark.agent.lifecycle.plan;
 
+import io.openlineage.client.OpenLineage;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import openlineage.spark.agent.client.LineageEvent;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
@@ -26,7 +26,7 @@ import scala.runtime.AbstractPartialFunction;
  * DatasetSource}s.
  */
 public class DatasetSourceVisitor
-    extends AbstractPartialFunction<LogicalPlan, List<LineageEvent.Dataset>> {
+    extends AbstractPartialFunction<LogicalPlan, List<OpenLineage.Dataset>> {
 
   @Override
   public boolean isDefinedAt(LogicalPlan x) {
@@ -61,12 +61,12 @@ public class DatasetSourceVisitor
   }
 
   @Override
-  public List<LineageEvent.Dataset> apply(LogicalPlan x) {
+  public List<OpenLineage.Dataset> apply(LogicalPlan x) {
     DatasetSource datasetSource =
         findDatasetSource(x)
             .orElseThrow(() -> new RuntimeException("Couldn't find DatasetSource in plan " + x));
     return Collections.singletonList(
-        LineageEvent.Dataset.builder()
+        new OpenLineage.InputDatasetBuilder()
             .name(datasetSource.name())
             .namespace(datasetSource.namespace())
             .facets(PlanUtils.datasetFacet(x.schema(), datasetSource.namespace()))

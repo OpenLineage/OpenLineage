@@ -1,10 +1,10 @@
 package openlineage.spark.agent.facets;
 
+import io.openlineage.client.OpenLineage;
 import java.net.URI;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
-import openlineage.spark.agent.client.LineageEvent;
 import openlineage.spark.agent.client.OpenLineageClient;
 
 /**
@@ -13,17 +13,13 @@ import openlineage.spark.agent.client.OpenLineageClient;
  */
 @EqualsAndHashCode(callSuper = true)
 @Value
-public class OutputStatisticsFacet extends LineageEvent.BaseFacet {
+public class OutputStatisticsFacet extends OpenLineage.CustomFacet {
   long rowCount;
   long size;
 
   @Builder
   public OutputStatisticsFacet(long rowCount, long size) {
-    super(
-        URI.create(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI),
-        URI.create(
-            OpenLineageClient.OPEN_LINEAGE_CLIENT_URI
-                + "/facets/spark-2.4/v1/outputStatisticsFacet"));
+    super(URI.create(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI));
     this.rowCount = rowCount;
     this.size = size;
   }

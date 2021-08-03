@@ -1,21 +1,16 @@
 package openlineage.spark.agent.lifecycle;
 
+import io.openlineage.client.OpenLineage;
+import java.net.URI;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import openlineage.spark.agent.OpenLineageContext;
-import openlineage.spark.agent.client.LineageEvent;
-import openlineage.spark.agent.client.LineageEvent.Dataset;
-import openlineage.spark.agent.client.LineageEvent.Job;
-import openlineage.spark.agent.client.LineageEvent.ParentRunFacet;
-import openlineage.spark.agent.client.LineageEvent.RunFacet;
 import openlineage.spark.agent.client.OpenLineageClient;
 import openlineage.spark.agent.facets.ErrorFacet;
 import openlineage.spark.agent.facets.LogicalPlanFacet;
@@ -44,14 +39,14 @@ public class SparkSQLExecutionContext implements ExecutionContext {
   private final UUID runUuid = UUID.randomUUID();
 
   private OpenLineageContext sparkContext;
-  private final List<PartialFunction<LogicalPlan, List<Dataset>>> outputDatasetSupplier;
-  private final List<PartialFunction<LogicalPlan, List<Dataset>>> inputDatasetSupplier;
+  private final List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> outputDatasetSupplier;
+  private final List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> inputDatasetSupplier;
 
   public SparkSQLExecutionContext(
       long executionId,
       OpenLineageContext sparkContext,
-      List<PartialFunction<LogicalPlan, List<Dataset>>> outputDatasetSupplier,
-      List<PartialFunction<LogicalPlan, List<Dataset>>> inputDatasetSupplier) {
+      List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> outputDatasetSupplier,
+      List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> inputDatasetSupplier) {
     this.executionId = executionId;
     this.sparkContext = sparkContext;
     this.queryExecution = SQLExecution.getQueryExecution(executionId);
@@ -73,18 +68,25 @@ public class SparkSQLExecutionContext implements ExecutionContext {
       log.info("No execution info {}", queryExecution);
       return;
     }
-    List<Dataset> outputDatasets =
+    List<OpenLineage.Dataset> outputDatasets =
         PlanUtils.applyFirst(outputDatasetSupplier, queryExecution.optimizedPlan());
-    List<Dataset> inputDatasets =
-        JavaConversions.seqAsJavaList(
-                queryExecution.optimizedPlan().collect(PlanUtils.merge(inputDatasetSupplier)))
-            .stream()
-            .flatMap(List::stream)
-            .collect(Collectors.toList());
-    LineageEvent event =
-        LineageEvent.builder()
-            .inputs(inputDatasets)
-            .outputs(outputDatasets)
+    List<OpenLineage.Dataset> inputDatasets = getInputDatasets();
+
+    OpenLineage ol = new OpenLineage(URI.create(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI));
+    OpenLineage.RunEvent event =
+        ol.newRunEventBuilder()
+            .eventTime(toZonedTime(jobStart.time()))
+            .eventType("START")
+            .inputs(
+                inputDatasets.stream()
+                    .map(SparkSQLExecutionContext::convertToInput)
+                    .collect(Collectors.toList()))
+            .outputs(
+                outputDatasets == null
+                    ? null
+                    : outputDatasets.stream()
+                        .map(SparkSQLExecutionContext::convertToOutput)
+                        .collect(Collectors.toList()))
             .run(
                 buildRun(
                     buildRunFacets(
@@ -92,20 +94,41 @@ public class SparkSQLExecutionContext implements ExecutionContext {
                         null,
                         buildParentFacet())))
             .job(buildJob(queryExecution))
-            .eventTime(toZonedTime(jobStart.time()))
-            .eventType("START")
-            .producer(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI)
             .build();
 
     log.debug("Posting event for start {}: {}", jobStart, event);
     sparkContext.emit(event);
   }
 
-  private ParentRunFacet buildParentFacet() {
+  private List<OpenLineage.Dataset> getInputDatasets() {
+    return JavaConversions.seqAsJavaList(
+            queryExecution.optimizedPlan().collect(PlanUtils.merge(inputDatasetSupplier)))
+        .stream()
+        .flatMap(List::stream)
+        .collect(Collectors.toList());
+  }
+
+  private OpenLineage.ParentRunFacet buildParentFacet() {
     return PlanUtils.parentRunFacet(
         sparkContext.getParentRunId(),
         sparkContext.getParentJobName(),
         sparkContext.getJobNamespace());
+  }
+
+  static OpenLineage.InputDataset convertToInput(OpenLineage.Dataset dataset) {
+    return new OpenLineage.InputDatasetBuilder()
+        .namespace(dataset.getNamespace())
+        .name(dataset.getName())
+        .facets(dataset.getFacets())
+        .build();
+  }
+
+  static OpenLineage.OutputDataset convertToOutput(OpenLineage.Dataset dataset) {
+    return new OpenLineage.OutputDatasetBuilder()
+        .namespace(dataset.getNamespace())
+        .name(dataset.getName())
+        .facets(dataset.getFacets())
+        .build();
   }
 
   @Override
@@ -119,18 +142,25 @@ public class SparkSQLExecutionContext implements ExecutionContext {
       log.debug("Traversing optimized plan {}", queryExecution.optimizedPlan().toJSON());
       log.debug("Physical plan executed {}", queryExecution.executedPlan().toJSON());
     }
-    List<Dataset> outputDatasets =
+    List<OpenLineage.Dataset> outputDatasets =
         PlanUtils.applyFirst(outputDatasetSupplier, queryExecution.optimizedPlan());
-    List<Dataset> inputDatasets =
-        JavaConversions.seqAsJavaList(
-                queryExecution.optimizedPlan().collect(PlanUtils.merge(inputDatasetSupplier)))
-            .stream()
-            .flatMap(List::stream)
-            .collect(Collectors.toList());
-    LineageEvent event =
-        LineageEvent.builder()
-            .inputs(inputDatasets)
-            .outputs(outputDatasets)
+    List<OpenLineage.Dataset> inputDatasets = getInputDatasets();
+
+    OpenLineage ol = new OpenLineage(URI.create(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI));
+    OpenLineage.RunEvent event =
+        ol.newRunEventBuilder()
+            .eventTime(toZonedTime(jobEnd.time()))
+            .eventType(getEventType(jobEnd.jobResult()))
+            .inputs(
+                inputDatasets.stream()
+                    .map(SparkSQLExecutionContext::convertToInput)
+                    .collect(Collectors.toList()))
+            .outputs(
+                outputDatasets == null
+                    ? null
+                    : outputDatasets.stream()
+                        .map(SparkSQLExecutionContext::convertToOutput)
+                        .collect(Collectors.toList()))
             .run(
                 buildRun(
                     buildRunFacets(
@@ -138,9 +168,6 @@ public class SparkSQLExecutionContext implements ExecutionContext {
                         buildJobErrorFacet(jobEnd.jobResult()),
                         buildParentFacet())))
             .job(buildJob(queryExecution))
-            .eventTime(toZonedTime(jobEnd.time()))
-            .eventType(getEventType(jobEnd.jobResult()))
-            .producer(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI)
             .build();
 
     log.debug("Posting event for start {}: {}", jobEnd, event);
@@ -159,20 +186,23 @@ public class SparkSQLExecutionContext implements ExecutionContext {
     return "FAIL";
   }
 
-  protected LineageEvent.Run buildRun(RunFacet facets) {
-    return LineageEvent.Run.builder().runId(runUuid.toString()).facets(facets).build();
+  protected OpenLineage.Run buildRun(OpenLineage.RunFacets facets) {
+    return new OpenLineage.RunBuilder().runId(runUuid).facets(facets).build();
   }
 
-  protected RunFacet buildRunFacets(
-      LogicalPlanFacet logicalPlanFacet, ErrorFacet jobError, ParentRunFacet parentRunFacet) {
-    Map<String, Object> additionalFacets = new HashMap<>();
+  protected OpenLineage.RunFacets buildRunFacets(
+      LogicalPlanFacet logicalPlanFacet,
+      ErrorFacet jobError,
+      OpenLineage.ParentRunFacet parentRunFacet) {
+    OpenLineage.RunFacetsBuilder builder =
+        new OpenLineage.RunFacetsBuilder().parent(parentRunFacet);
     if (logicalPlanFacet != null) {
-      additionalFacets.put("spark.logicalPlan", logicalPlanFacet);
+      builder.put("spark.logicalPlan", logicalPlanFacet);
     }
     if (jobError != null) {
-      additionalFacets.put("spark.exception", jobError);
+      builder.put("spark.exception", jobError);
     }
-    return RunFacet.builder().parent(parentRunFacet).additional(additionalFacets).build();
+    return builder.build();
   }
 
   protected LogicalPlanFacet buildLogicalPlanFacet(LogicalPlan plan) {
@@ -186,7 +216,7 @@ public class SparkSQLExecutionContext implements ExecutionContext {
     return null;
   }
 
-  protected LineageEvent.Job buildJob(QueryExecution queryExecution) {
+  protected OpenLineage.Job buildJob(QueryExecution queryExecution) {
     SparkContext sparkContext = queryExecution.executedPlan().sparkContext();
     SparkPlan node = queryExecution.executedPlan();
 
@@ -194,7 +224,7 @@ public class SparkSQLExecutionContext implements ExecutionContext {
     if (node instanceof WholeStageCodegenExec) {
       node = ((WholeStageCodegenExec) node).child();
     }
-    return Job.builder()
+    return new OpenLineage.JobBuilder()
         .namespace(this.sparkContext.getJobNamespace())
         .name(
             sparkContext.appName().replaceAll(CAMEL_TO_SNAKE_CASE, "_$1").toLowerCase(Locale.ROOT)

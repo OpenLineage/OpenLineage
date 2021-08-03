@@ -21,6 +21,7 @@ import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Binder;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Module;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Provides;
 import com.google.common.collect.ImmutableMap;
+import io.openlineage.client.OpenLineage;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -32,7 +33,6 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 import openlineage.spark.agent.SparkAgentTestExtension;
-import openlineage.spark.agent.client.LineageEvent;
 import openlineage.spark.agent.facets.OutputStatisticsFacet;
 import openlineage.spark.agent.lifecycle.plan.PlanUtils;
 import org.apache.hadoop.io.LongWritable;
@@ -151,24 +151,27 @@ public class SparkReadWriteIntegTest {
     // wait for event processing to complete
     StaticExecutionContextFactory.waitForExecutionEnd();
 
-    ArgumentCaptor<LineageEvent> lineageEvent = ArgumentCaptor.forClass(LineageEvent.class);
+    ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
+        ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
     Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(2))
         .emit(lineageEvent.capture());
-    List<LineageEvent> events = lineageEvent.getAllValues();
-    List<LineageEvent.Dataset> inputs = events.get(1).getInputs();
+    List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
+    List<OpenLineage.InputDataset> inputs = events.get(1).getInputs();
     assertEquals(1, inputs.size());
     assertEquals("bigquery", inputs.get(0).getNamespace());
     assertEquals(BigQueryUtil.friendlyTableName(tableId), inputs.get(0).getName());
 
-    List<LineageEvent.Dataset> outputs = events.get(1).getOutputs();
+    List<OpenLineage.OutputDataset> outputs = events.get(1).getOutputs();
     assertEquals(1, outputs.size());
-    LineageEvent.Dataset output = outputs.get(0);
+    OpenLineage.OutputDataset output = outputs.get(0);
     assertEquals("file", output.getNamespace());
     assertEquals(outputDir, output.getName());
-    assertEquals(PlanUtils.schemaFacet(tableSchema), output.getFacets().getSchema());
-    assertNotNull(output.getFacets().getAdditionalFacets());
+    OpenLineage.SchemaDatasetFacet schemaDatasetFacet = PlanUtils.schemaFacet(tableSchema);
+    assertThat(output.getFacets().getSchema()).usingRecursiveComparison().isEqualTo(schemaDatasetFacet);
 
-    assertThat(output.getFacets().getAdditionalFacets())
+    assertNotNull(output.getFacets().getAdditionalProperties());
+
+    assertThat(output.getFacets().getAdditionalProperties())
         .containsKey("stats")
         .extractingByKey("stats")
         .isInstanceOf(OutputStatisticsFacet.class);
@@ -201,33 +204,34 @@ public class SparkReadWriteIntegTest {
     // wait for event processing to complete
     StaticExecutionContextFactory.waitForExecutionEnd();
 
-    ArgumentCaptor<LineageEvent> lineageEvent = ArgumentCaptor.forClass(LineageEvent.class);
+    ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
+        ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
 
     // FIXME- the DataFrame -> RDD conversion in the JDBCRelationProvider causes two different sets
     // of job execution events. Both end up triggering the open lineage event creation
     // see https://github.com/MarquezProject/marquez/issues/1197
     Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(4))
         .emit(lineageEvent.capture());
-    List<LineageEvent> events = lineageEvent.getAllValues();
-    Optional<LineageEvent> completionEvent =
+    List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
+    Optional<OpenLineage.RunEvent> completionEvent =
         events.stream()
             .filter(e -> e.getEventType().equals("COMPLETE") && !e.getInputs().isEmpty())
             .findFirst();
     assertTrue(completionEvent.isPresent());
-    LineageEvent event = completionEvent.get();
-    List<LineageEvent.Dataset> inputs = event.getInputs();
+    OpenLineage.RunEvent event = completionEvent.get();
+    List<OpenLineage.InputDataset> inputs = event.getInputs();
     assertEquals(1, inputs.size());
     assertEquals("file", inputs.get(0).getNamespace());
     assertEquals(testFile.toAbsolutePath().getParent().toString(), inputs.get(0).getName());
 
-    List<LineageEvent.Dataset> outputs = event.getOutputs();
+    List<OpenLineage.OutputDataset> outputs = event.getOutputs();
     assertEquals(1, outputs.size());
-    LineageEvent.Dataset output = outputs.get(0);
+    OpenLineage.OutputDataset output = outputs.get(0);
     assertEquals("sqlite:" + sqliteFile.toAbsolutePath().toUri(), output.getNamespace());
     assertEquals(tableName, output.getName());
-    assertNotNull(output.getFacets().getAdditionalFacets());
+    assertNotNull(output.getFacets().getAdditionalProperties());
 
-    assertThat(output.getFacets().getAdditionalFacets())
+    assertThat(output.getFacets().getAdditionalProperties())
         .containsKey("stats")
         .extractingByKey("stats")
         .isInstanceOf(OutputStatisticsFacet.class)
@@ -278,17 +282,19 @@ public class SparkReadWriteIntegTest {
     // wait for event processing to complete
     StaticExecutionContextFactory.waitForExecutionEnd();
 
-    ArgumentCaptor<LineageEvent> lineageEvent = ArgumentCaptor.forClass(LineageEvent.class);
+    ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
+        ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+
     Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(4))
         .emit(lineageEvent.capture());
-    List<LineageEvent> events = lineageEvent.getAllValues();
-    Optional<LineageEvent> completionEvent =
+    List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
+    Optional<OpenLineage.RunEvent> completionEvent =
         events.stream()
             .filter(e -> e.getEventType().equals("COMPLETE") && !e.getInputs().isEmpty())
             .findFirst();
     assertTrue(completionEvent.isPresent());
-    LineageEvent event = completionEvent.get();
-    List<LineageEvent.Dataset> inputs = event.getInputs();
+    OpenLineage.RunEvent event = completionEvent.get();
+    List<OpenLineage.InputDataset> inputs = event.getInputs();
     assertEquals(1, inputs.size());
     assertEquals("file", inputs.get(0).getNamespace());
     assertEquals(testFile.toAbsolutePath().getParent().toString(), inputs.get(0).getName());
@@ -342,10 +348,11 @@ public class SparkReadWriteIntegTest {
     // wait for event processing to complete
     StaticExecutionContextFactory.waitForExecutionEnd();
 
-    ArgumentCaptor<LineageEvent> lineageEvent = ArgumentCaptor.forClass(LineageEvent.class);
+    ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
+        ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
     Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(2))
         .emit(lineageEvent.capture());
-    LineageEvent completeEvent = lineageEvent.getAllValues().get(1);
+    OpenLineage.RunEvent completeEvent = lineageEvent.getAllValues().get(1);
     assertThat(completeEvent).hasFieldOrPropertyWithValue("eventType", "COMPLETE");
     assertThat(completeEvent.getInputs())
         .singleElement()

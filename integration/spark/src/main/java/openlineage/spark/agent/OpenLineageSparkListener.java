@@ -1,24 +1,23 @@
 package openlineage.spark.agent;
 
 import static openlineage.spark.agent.ArgumentParser.DEFAULTS;
+import static openlineage.spark.agent.lifecycle.plan.PlanUtils.convertToUUID;
 import static openlineage.spark.agent.lifecycle.plan.ScalaConversionUtils.asJavaOptional;
 import static openlineage.spark.agent.lifecycle.plan.ScalaConversionUtils.toScalaFn;
 
+import io.openlineage.client.OpenLineage;
 import java.lang.reflect.Field;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.WeakHashMap;
 import lombok.extern.slf4j.Slf4j;
-import openlineage.spark.agent.client.LineageEvent;
-import openlineage.spark.agent.client.LineageEvent.Job;
-import openlineage.spark.agent.client.LineageEvent.Run;
-import openlineage.spark.agent.client.LineageEvent.RunFacet;
 import openlineage.spark.agent.client.OpenLineageClient;
-import openlineage.spark.agent.facets.ErrorFacet;
 import openlineage.spark.agent.lifecycle.ContextFactory;
 import openlineage.spark.agent.lifecycle.ExecutionContext;
 import openlineage.spark.agent.lifecycle.SparkSQLExecutionContext;
@@ -187,39 +186,38 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   }
 
   public static void emitError(Exception e) {
+    OpenLineage ol = new OpenLineage(URI.create(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI));
     try {
-      contextFactory.sparkContext.emit(buildErrorLineageEvent(buildRunFacet(buildErrorFacet(e))));
+      contextFactory.sparkContext.emit(buildErrorLineageEvent(ol, errorRunFacet(e, ol)));
     } catch (Exception ex) {
       log.error("Could not emit open lineage on error", e);
     }
   }
 
-  public static LineageEvent buildErrorLineageEvent(RunFacet runFacet) {
-    return LineageEvent.builder()
+  private static OpenLineage.RunFacets errorRunFacet(Exception e, OpenLineage ol) {
+    OpenLineage.CustomFacetBuilder errorFacet = ol.newCustomFacetBuilder();
+    errorFacet.put("exception", e);
+    errorFacet.build();
+
+    OpenLineage.RunFacetsBuilder runFacetsBuilder = ol.newRunFacetsBuilder();
+    runFacetsBuilder.put("lineage.error", errorFacet.build());
+    runFacetsBuilder.build();
+    return runFacetsBuilder.build();
+  }
+
+  public static OpenLineage.RunEvent buildErrorLineageEvent(
+      OpenLineage ol, OpenLineage.RunFacets runFacets) {
+    UUID runId =
+        convertToUUID.apply(contextFactory.sparkContext.getParentRunId()).orElse(UUID.randomUUID());
+    return ol.newRunEventBuilder()
         .eventTime(ZonedDateTime.now())
-        .run(
-            Run.builder()
-                .runId(contextFactory.sparkContext.getParentRunId())
-                .facets(runFacet)
-                .build())
+        .run(ol.newRun(runId, runFacets))
         .job(
-            Job.builder()
-                .name(contextFactory.sparkContext.getParentJobName())
+            ol.newJobBuilder()
                 .namespace(contextFactory.sparkContext.getJobNamespace())
+                .name(contextFactory.sparkContext.getParentJobName())
                 .build())
-        .producer(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI)
         .build();
-  }
-
-  public static RunFacet buildRunFacet(ErrorFacet errorFacet) {
-    Map<String, Object> facets = new HashMap<>();
-    facets.put("lineage.error", errorFacet);
-
-    return RunFacet.builder().additional(facets).build();
-  }
-
-  public static ErrorFacet buildErrorFacet(Exception e) {
-    return ErrorFacet.builder().exception(e).build();
   }
 
   private static void clear() {

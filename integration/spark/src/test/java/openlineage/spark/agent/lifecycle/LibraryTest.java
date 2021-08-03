@@ -11,6 +11,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.Resources;
+import io.openlineage.client.OpenLineage;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
@@ -23,7 +24,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import openlineage.spark.agent.SparkAgentTestExtension;
-import openlineage.spark.agent.client.LineageEvent;
 import openlineage.spark.agent.client.OpenLineageClient;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
@@ -75,10 +75,11 @@ public class LibraryTest {
     spark.sparkContext().listenerBus().waitUntilEmpty(1000);
     spark.stop();
 
-    ArgumentCaptor<LineageEvent> lineageEvent = ArgumentCaptor.forClass(LineageEvent.class);
+    ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
+        ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
     Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(4))
         .emit(lineageEvent.capture());
-    List<LineageEvent> events = lineageEvent.getAllValues();
+    List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
 
     updateSnapshots("sparksql", events);
 
@@ -86,7 +87,7 @@ public class LibraryTest {
 
     ObjectMapper objectMapper = OpenLineageClient.getObjectMapper();
     for (int i = 0; i < events.size(); i++) {
-      LineageEvent event = events.get(i);
+      OpenLineage.RunEvent event = events.get(i);
       Map<String, Object> snapshot =
           objectMapper.readValue(
               Paths.get(String.format("integrations/%s/%d.json", "sparksql", i + 1)).toFile(),
@@ -162,16 +163,17 @@ public class LibraryTest {
 
     sc.stop();
 
-    ArgumentCaptor<LineageEvent> lineageEvent = ArgumentCaptor.forClass(LineageEvent.class);
+    ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
+        ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
     Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(2))
         .emit(lineageEvent.capture());
-    List<LineageEvent> events = lineageEvent.getAllValues();
+    List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
     assertEquals(2, events.size());
 
     updateSnapshots("sparkrdd", events);
 
     for (int i = 0; i < events.size(); i++) {
-      LineageEvent event = events.get(i);
+      OpenLineage.RunEvent event = events.get(i);
       String snapshot =
           new String(
               Files.readAllBytes(
@@ -199,17 +201,18 @@ public class LibraryTest {
     assertThat(s).isEqualTo("map_partitions_numbers");
   }
 
-  private void verifySerialization(List<LineageEvent> events) throws JsonProcessingException {
-    for (LineageEvent event : events) {
+  private void verifySerialization(List<OpenLineage.RunEvent> events)
+      throws JsonProcessingException {
+    for (OpenLineage.RunEvent event : events) {
       assertNotNull(
           "Event can serialize", OpenLineageClient.getObjectMapper().writeValueAsString(event));
     }
   }
 
-  private void updateSnapshots(String prefix, List<LineageEvent> events) {
+  private void updateSnapshots(String prefix, List<OpenLineage.RunEvent> events) {
     if (System.getenv().containsKey("UPDATE_SNAPSHOT")) {
       for (int i = 0; i < events.size(); i++) {
-        LineageEvent event = events.get(i);
+        OpenLineage.RunEvent event = events.get(i);
         try {
           String url = String.format("integrations/%s/%d.json", prefix, i + 1);
           FileWriter myWriter = new FileWriter(url);
