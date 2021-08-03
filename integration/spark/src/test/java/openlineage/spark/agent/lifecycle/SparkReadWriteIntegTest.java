@@ -167,7 +167,9 @@ public class SparkReadWriteIntegTest {
     assertEquals("file", output.getNamespace());
     assertEquals(outputDir, output.getName());
     OpenLineage.SchemaDatasetFacet schemaDatasetFacet = PlanUtils.schemaFacet(tableSchema);
-    assertThat(output.getFacets().getSchema()).usingRecursiveComparison().isEqualTo(schemaDatasetFacet);
+    assertThat(output.getFacets().getSchema())
+        .usingRecursiveComparison()
+        .isEqualTo(schemaDatasetFacet);
 
     assertNotNull(output.getFacets().getAdditionalProperties());
 
