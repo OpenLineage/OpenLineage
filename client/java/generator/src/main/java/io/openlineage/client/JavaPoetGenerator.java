@@ -55,6 +55,9 @@ public class JavaPoetGenerator {
 
   public JavaPoetGenerator(TypeResolver typeResolver, String baseURL) {
     this.typeResolver = typeResolver;
+    if (baseURL == null || baseURL.equals("")) {
+      throw new RuntimeException("missing baseURL");
+    }
     this.baseURL = baseURL;
   }
 
@@ -62,10 +65,6 @@ public class JavaPoetGenerator {
 
     TypeSpec.Builder containerTypeBuilder = TypeSpec.classBuilder(CONTAINER_CLASS_NAME)
         .addModifiers(PUBLIC, FINAL);
-    if (baseURL.equals("")) {
-      containerTypeBuilder.addJavadoc("$S", "Warning: this class was generated from a local file and will not provide absolute _schemaURL fields in facets");
-
-    }
 
     containerTypeBuilder.addField(FieldSpec.builder(ClassName.get(URI.class), "producer", PRIVATE, FINAL).build());
     containerTypeBuilder.addMethod(MethodSpec.constructorBuilder()
@@ -120,7 +119,7 @@ public class JavaPoetGenerator {
     constructor.addAnnotation(JsonCreator.class);
 
     for (ResolvedField f : type.getProperties()) {
-      if (f.getName().equals("_schemaURL")) {
+      if (f.getName().equals("_schemaURL") || f.getName().equals("schemaURL")) {
         String schemaURL = baseURL + "#/definitions/" + type.getName();
         constructor.addCode("this.$N = URI.create($S);\n", f.getName(), schemaURL);
       } else {
