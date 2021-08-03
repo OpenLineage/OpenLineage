@@ -396,7 +396,7 @@
               "type": "integer"
             },
             "size": {
-              "description": "The size in mb written to the dataset",
+              "description": "The size in bytes written to the dataset",
               "type": "integer"
             }
           },
