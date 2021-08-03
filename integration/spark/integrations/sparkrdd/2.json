@@ -13,7 +13,7 @@
           "namespace" : "ns_name",
           "name" : "job_name"
         },
-        "_schemaURL" : "https://raw.githubusercontent.com/OpenLineage/OpenLineage/0a6be73d855e9bd5e1c61453190343b17ca1082d/spec/OpenLineage.json#/definitions/ParentRunFacet"
+        "_schemaURL" : "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/ParentRunFacet"
       }
     }
   },
