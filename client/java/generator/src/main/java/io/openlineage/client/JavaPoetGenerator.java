@@ -65,15 +65,14 @@ public class JavaPoetGenerator {
 
     TypeSpec.Builder containerTypeBuilder = TypeSpec.classBuilder(CONTAINER_CLASS_NAME)
         .addModifiers(PUBLIC, FINAL);
-
     containerTypeBuilder.addField(FieldSpec.builder(ClassName.get(URI.class), "producer", PRIVATE, FINAL).build());
     containerTypeBuilder.addMethod(MethodSpec.constructorBuilder()
-      .addModifiers(PUBLIC)
-      .addParameter(
-        ParameterSpec.builder(ClassName.get(URI.class), "producer").build()
-      )
-      .addCode("this.producer = producer;\n")
-      .build());
+        .addModifiers(PUBLIC)
+        .addParameter(
+            ParameterSpec.builder(ClassName.get(URI.class), "producer").build()
+        )
+        .addCode("this.producer = producer;\n")
+        .build());
 
     generateTypes(containerTypeBuilder);
     TypeSpec openLineage = containerTypeBuilder.build();
@@ -119,7 +118,7 @@ public class JavaPoetGenerator {
     constructor.addAnnotation(JsonCreator.class);
 
     for (ResolvedField f : type.getProperties()) {
-      if (f.getName().equals("_schemaURL") || f.getName().equals("schemaURL")) {
+      if (isASchemaUrlField(f)) {
         String schemaURL = baseURL + "#/definitions/" + type.getName();
         constructor.addCode("this.$N = URI.create($S);\n", f.getName(), schemaURL);
       } else {
@@ -187,7 +186,7 @@ public class JavaPoetGenerator {
         .anyMatch(this::isAProducerField);
     if (!producerFiledExist) builderClassBuilder.addModifiers(STATIC);
 
-    type.getProperties().stream().filter(f -> !f.getName().equals("_schemaURL")).forEach(f -> {
+    type.getProperties().stream().filter(f -> !isASchemaUrlField(f)).forEach(f -> {
       if (!(isAProducerField(f))) {
         builderClassBuilder.addField(getTypeName(f.getType()), f.getName(), PRIVATE);
         builderClassBuilder.addMethod(
@@ -229,13 +228,13 @@ public class JavaPoetGenerator {
 
   private Builder builderBuildMethod(ObjectResolvedType type) {
     List<CodeBlock> builderParams = new ArrayList<>();
-    type.getProperties().stream().filter(f -> !f.getName().equals("_schemaURL")).forEach(f -> {
-          if (isAProducerField(f)) {
-            builderParams.add(CodeBlock.of("OpenLineage.this.producer"));
-          } else {
-            builderParams.add(CodeBlock.of("$N", f.getName()));
-          }
-        });
+    type.getProperties().stream().filter(f -> !isASchemaUrlField(f)).forEach(f -> {
+      if (isAProducerField(f)) {
+        builderParams.add(CodeBlock.of("OpenLineage.this.producer"));
+      } else {
+        builderParams.add(CodeBlock.of("$N", f.getName()));
+      }
+    });
 
     Builder build = MethodSpec
         .methodBuilder("build")
@@ -259,7 +258,7 @@ public class JavaPoetGenerator {
 
     List<CodeBlock> factoryParams = new ArrayList<>();
 
-    type.getProperties().stream().filter(f -> !f.getName().equals("_schemaURL")).forEach(f -> {
+    type.getProperties().stream().filter(f -> !isASchemaUrlField(f)).forEach(f -> {
       if (isAProducerField(f)) {
         factoryParams.add(CodeBlock.of("this.producer"));
       } else {
@@ -292,6 +291,10 @@ public class JavaPoetGenerator {
     return f.getName().equals("_producer") || f.getName().equals("producer");
   }
 
+  private boolean isASchemaUrlField(ResolvedField f) {
+    return f.getName().equals("_schemaURL") || f.getName().equals("schemaURL");
+  }
+
   private Builder getter(ResolvedField f) {
     Builder builder = MethodSpec
         .methodBuilder("get" + titleCase(f.getName()))
@@ -303,7 +306,7 @@ public class JavaPoetGenerator {
   }
 
   public static TypeName getTypeName(ResolvedType type) {
-    return type.accept(new ResolvedTypeVisitor<TypeName>(){
+    return type.accept(new ResolvedTypeVisitor<TypeName>() {
 
       @Override
       public TypeName visit(PrimitiveResolvedType primitiveType) {
