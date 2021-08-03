@@ -82,26 +82,26 @@ public class OpenLineageTest {
     UUID runId = UUID.randomUUID();
     RunFacets runFacets =
         ol.newRunFacetsBuilder()
-        .setNominalTime(
+        .nominalTime(
             ol.newNominalTimeRunFacetBuilder()
-            .setNominalEndTime(now)
-            .setNominalEndTime(now)
+            .nominalEndTime(now)
+            .nominalEndTime(now)
             .build())
         .build();
-    Run run = ol.newRunBuilder().setRunId(runId).setFacets(runFacets).build();
+    Run run = ol.newRunBuilder().runId(runId).facets(runFacets).build();
     String name = "jobName";
     String namespace = "namespace";
     JobFacets jobFacets = ol.newJobFacetsBuilder().build();
-    Job job = ol.newJobBuilder().setNamespace(namespace).setName(name).setFacets(jobFacets).build();
-    List<InputDataset> inputs = Arrays.asList(ol.newInputDatasetBuilder().setNamespace("ins").setName("input").build());
-    List<OutputDataset> outputs = Arrays.asList(ol.newOutputDatasetBuilder().setNamespace("ons").setName("output").build());
+    Job job = ol.newJobBuilder().namespace(namespace).name(name).facets(jobFacets).build();
+    List<InputDataset> inputs = Arrays.asList(ol.newInputDatasetBuilder().namespace("ins").name("input").build());
+    List<OutputDataset> outputs = Arrays.asList(ol.newOutputDatasetBuilder().namespace("ons").name("output").build());
     RunEvent runStateUpdate = ol.newRunEventBuilder()
-        .setEventType("START")
-        .setEventTime(now)
-        .setRun(run)
-        .setJob(job)
-        .setInputs(inputs)
-        .setOutputs(outputs)
+        .eventType("START")
+        .eventTime(now)
+        .run(run)
+        .job(job)
+        .inputs(inputs)
+        .outputs(outputs)
         .build();
 
     ObjectMapper mapper = new ObjectMapper();
