@@ -94,7 +94,11 @@ public class OpenLineageTest {
     JobFacets jobFacets = ol.newJobFacetsBuilder().build();
     Job job = ol.newJobBuilder().setNamespace(namespace).setName(name).setFacets(jobFacets).build();
     List<InputDataset> inputs = Arrays.asList(ol.newInputDatasetBuilder().setNamespace("ins").setName("input").build());
-    List<OutputDataset> outputs = Arrays.asList(ol.newOutputDatasetBuilder().setNamespace("ons").setName("output").build());
+    List<OutputDataset> outputs = Arrays.asList(ol.newOutputDatasetBuilder().setNamespace("ons").setName("output")
+        .setOutputFacets(
+            ol.newOutputDatasetOutputFacetsBuilder()
+              .setOutputStatistics(ol.newOutputStatisticsOutputDatasetFacet(10, 20)).build())
+            .build());
     RunEvent runStateUpdate = ol.newRunEventBuilder()
         .setEventType("START")
         .setEventTime(now)
@@ -126,7 +130,8 @@ public class OpenLineageTest {
     OutputDataset outputDataset = runStateUpdate.getOutputs().get(0);
     assertEquals("ons", outputDataset.getNamespace());
     assertEquals("output", outputDataset.getName());
-
+    assertEquals(10, outputDataset.getOutputFacets().getOutputStatistics().getRowCount());
+    assertEquals(20, outputDataset.getOutputFacets().getOutputStatistics().getSize());
 
     assertEquals(json, mapper.writeValueAsString(read));
 
