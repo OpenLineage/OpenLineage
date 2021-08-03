@@ -140,8 +140,8 @@
               "description": "The input facets for this dataset.",
               "type": "object",
               "properties": {
-                "dataQuality" : {
-                  "$ref": "#/definitions/DataQualityInputDatasetFacet"
+                "dataQualityMetrics" : {
+                  "$ref": "#/definitions/DataQualityMetricsInputDatasetFacet"
                 }
               },
               "additionalProperties": {
@@ -443,7 +443,7 @@
         }
       ]
     },
-    "DataQualityInputDatasetFacet": {
+    "DataQualityMetricsInputDatasetFacet": {
       "allOf": [
         {
           "$ref": "#/definitions/BaseFacet"
@@ -467,9 +467,7 @@
                   "max": {"type":  "number"},
                   "quantiles": {
                     "type": "object",
-                    "patternProperties": {
-                      "\\d+": {"type":  "number"}
-                    }
+                    "additionalProperties": {"type":  "number"}
                   }
                 }
               }
