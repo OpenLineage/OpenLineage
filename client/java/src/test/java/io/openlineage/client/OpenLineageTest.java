@@ -82,19 +82,23 @@ public class OpenLineageTest {
     UUID runId = UUID.randomUUID();
     RunFacets runFacets =
         ol.newRunFacetsBuilder()
-        .nominalTime(
-            ol.newNominalTimeRunFacetBuilder()
-            .nominalEndTime(now)
-            .nominalEndTime(now)
-            .build())
-        .build();
+            .nominalTime(
+                ol.newNominalTimeRunFacetBuilder()
+                    .nominalEndTime(now)
+                    .nominalEndTime(now)
+                    .build())
+            .build();
     Run run = ol.newRunBuilder().runId(runId).facets(runFacets).build();
     String name = "jobName";
     String namespace = "namespace";
     JobFacets jobFacets = ol.newJobFacetsBuilder().build();
     Job job = ol.newJobBuilder().namespace(namespace).name(name).facets(jobFacets).build();
     List<InputDataset> inputs = Arrays.asList(ol.newInputDatasetBuilder().namespace("ins").name("input").build());
-    List<OutputDataset> outputs = Arrays.asList(ol.newOutputDatasetBuilder().namespace("ons").name("output").build());
+    List<OutputDataset> outputs = Arrays.asList(ol.newOutputDatasetBuilder().namespace("ons").name("output")
+        .outputFacets(
+            ol.newOutputDatasetOutputFacetsBuilder()
+                .outputStatistics(ol.newOutputStatisticsOutputDatasetFacet(10, 20)).build())
+        .build());
     RunEvent runStateUpdate = ol.newRunEventBuilder()
         .eventType("START")
         .eventTime(now)
@@ -126,7 +130,8 @@ public class OpenLineageTest {
     OutputDataset outputDataset = runStateUpdate.getOutputs().get(0);
     assertEquals("ons", outputDataset.getNamespace());
     assertEquals("output", outputDataset.getName());
-
+    assertEquals(10, outputDataset.getOutputFacets().getOutputStatistics().getRowCount());
+    assertEquals(20, outputDataset.getOutputFacets().getOutputStatistics().getSize());
 
     assertEquals(json, mapper.writeValueAsString(read));
 
