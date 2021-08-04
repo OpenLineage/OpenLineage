@@ -54,7 +54,7 @@ dependencies {
 
 def gitBranchName() {
     def branch = "unknown_branch"
-    def proc = "git rev-parse HEAD".execute()
+    def proc = "git rev-parse --abbrev-ref HEAD".execute()
     proc.in.eachLine { line -> branch = line }
     proc.err.eachLine { line -> println line }
     proc.waitFor()
