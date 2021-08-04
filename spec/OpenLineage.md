@@ -15,7 +15,7 @@ It allows extensions to the spec using `Custom Facets` as described in this docu
 
 - **Run Event**: an event describing an observed state of a job run. It is required to at least send one event for a START transition and a COMPLETE/FAIL/ABORT transition. Additional events are optional.
 
-- **Job**: a process definition that consumes and produces datasets (defined as its inputs and outputs). It is [identified by a unique name within a namespace](](Naming.md#Jobs) (which is assigned to the scheduler starting the jobs). The *Job* evolves over time and this change is captured when the job runs.
+- **Job**: a process definition that consumes and produces datasets (defined as its inputs and outputs). It is [identified by a unique name within a namespace](Naming.md#Jobs) (which is assigned to the scheduler starting the jobs). The *Job* evolves over time and this change is captured when the job runs.
 
 - **Dataset**: an abstract representation of data. It has a [unique name within the datasource namespace](Naming.md#Datasets) derived from its physical location (for example db.host.database.schema.table). Typically, a *Dataset* changes when a job writing to it completes. Similarly to the *Job* and *Run* distinction, metadata that is more static from run to run is captured in a DatasetFacet (for example, the schema that does not change every run), what changes every *Run* is captured as an *InputFacet* or an *OutputFacet* (for example, what subset of the data set was read or written, like a time partition).
 

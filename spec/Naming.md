@@ -142,9 +142,7 @@ For example an Airflow DAG contains tasks. An instance of the DAG is finished wh
 
 Since what we care about is identifying the job as rooted in a recurring schedule, we want to capture that connection and make sure that we treat the same application logic triggered at different schedules as different jobs. For example: if an Airflow DAG runs individual tasks per partition (for example market segments) using the same underlying job logic, they will be tracked as separate jobs.
 
-To capture this, a run event provides a `ParentRun` facet, referring to the parent `Job` and `Run`. This allows tracking a recurring job from the root of the schedule it is running for.
-
-https://github.com/OpenLineage/OpenLineage/tree/main/spec/OpenLineage.json#L279-L328
+To capture this, a run event provides [a `ParentRun` facet](https://github.com/OpenLineage/OpenLineage/tree/main/spec/OpenLineage.json#L279-L328), referring to the parent `Job` and `Run`. This allows tracking a recurring job from the root of the schedule it is running for.
 
 Example:
 ```json
