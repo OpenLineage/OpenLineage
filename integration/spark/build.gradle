@@ -231,10 +231,11 @@ publishing {
 
     repositories {
         maven {
-            url = 'https://oss.sonatype.org/service/local/staging/deploy/maven2'
+            url = isReleaseVersion ? 'https://oss.sonatype.org/service/local/staging/deploy/maven2' :
+                    'https://datakin.jfrog.io/artifactory/maven-public-libs-snapshot'
             credentials {
-                username = System.getenv('SONATYPE_NEXUS_USERNAME')
-                password = System.getenv('SONATYPE_NEXUS_PASSWORD')
+                username = System.getenv('RELEASE_USERNAME')
+                password = System.getenv('RELEASE_PASSWORD')
             }
         }
     }

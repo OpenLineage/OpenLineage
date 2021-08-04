@@ -24,6 +24,12 @@ only-on-release: &only-on-release
     branches:
       ignore: /.*/
 
+only-on-main-without-release-tag: &only-on-main-without-release-tag
+  filters:
+    tags:
+      ignore: /^[0-9]+(\.[0-9]+){2}(-?rc[0-9]+)?$/
+    branches:
+      only: main
 
 jobs:
   test-client-python:
@@ -49,8 +55,16 @@ jobs:
           paths:
             - ./dist/*.tar.gz
             - ./dist/*.whl
+  build-java-client:
+    working_directory: ~/openlineage/client/java
+    docker:
+      - image: cimg/openjdk:11.0
+    steps:
+      - *checkout_project_root
+      - run: |
+          ./gradlew --no-daemon --stacktrace build
 
-  release-java:
+  release-java-client:
     working_directory: ~/openlineage/client/java
     docker:
       - image: cimg/openjdk:11.0
@@ -59,8 +73,52 @@ jobs:
       - run: |
           # Get, then decode the GPG private key used to sign *.jar
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
+          export RELEASE_PASSWORD=$(echo $SONATYPE_PASSWORD)
+          export RELEASE_USERNAME=$(echo $SONATYPE_USER)
           # Publish *.jar
-          gradle publish
+          ./gradlew publish
+
+  publish-snapshot-java-client:
+    working_directory: ~/openlineage/client/java
+    docker:
+      - image: cimg/openjdk:11.0
+    steps:
+      - *checkout_project_root
+      - run: |
+          # Get, then decode the GPG private key used to sign *.jar
+          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
+          export RELEASE_PASSWORD=$(echo $ARTIFACTORY_PASSWORD)
+          export RELEASE_USERNAME=$(echo $ARTIFACTORY_USERNAME)
+          # Publish *.jar
+          ./gradlew publish
+
+  release-integration-spark:
+    working_directory: ~/openlineage/integration/spark
+    docker:
+      - image: circleci/openjdk:8-jdk
+    steps:
+      - *checkout_project_root
+      - run: |
+          # Get, then decode the GPG private key used to sign *.jar
+          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
+          export RELEASE_PASSWORD=$(echo $SONATYPE_PASSWORD)
+          export RELEASE_USERNAME=$(echo $SONATYPE_USER)
+          # Publish *.jar
+          ./gradlew publish
+
+  publish-snapshot-integration-spark:
+    working_directory: ~/openlineage/integration/spark
+    docker:
+      - image: circleci/openjdk:8-jdk
+    steps:
+      - *checkout_project_root
+      - run: |
+          # Get, then decode the GPG private key used to sign *.jar
+          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
+          export RELEASE_PASSWORD=$(echo $ARTIFACTORY_PASSWORD)
+          export RELEASE_USERNAME=$(echo $ARTIFACTORY_USERNAME)
+          # Publish *.jar
+          ./gradlew publish
 
   build-integration-spark:
     working_directory: ~/openlineage/integration/spark
@@ -191,13 +249,14 @@ jobs:
       - run: python -m twine upload --non-interactive --verbose --repository pypi dist/*
 
 workflows:
-  checkout-build-test:
+  openlineage-build:
     jobs:
       - gradle/test:
           app_src_directory: client/java
       - test-client-python
       - test-integration-common
       - build-integration-spark
+      - build-java-client
       - integration-test-spark:
           requires:
             - build-integration-spark
@@ -205,6 +264,19 @@ workflows:
       - integration-test-airflow:
           requires:
             - test-integration-airflow
+
+      #publish snapshots
+      - publish-snapshot-java-client:
+          <<: *only-on-main-without-release-tag
+          context: release
+          requires:
+            - build-java-client
+      - publish-snapshot-integration-spark:
+          <<: *only-on-main-without-release-tag
+          context: release
+          requires:
+            - integration-test-spark
+
   release:
     jobs:
       - build-client-python:
@@ -213,7 +285,10 @@ workflows:
           <<: *only-on-release
       - build-integration-airflow:
           <<: *only-on-release
-      - release-java:
+      - release-java-client:
+          <<: *only-on-release
+          context: release
+      - release-integration-spark:
           <<: *only-on-release
           context: release
       - release-python:
