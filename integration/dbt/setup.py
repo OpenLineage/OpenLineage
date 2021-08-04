@@ -23,8 +23,9 @@ from setuptools import setup
 __version__ = '0.0.1'
 
 requirements = [
-    "attrs>=20.3.0",
+    "attrs>=19.3.0",
     "requests>=2.20.0",
+    "pyyaml>=5.3.1",
     f"openlineage-python=={__version__}",
 ]
 
