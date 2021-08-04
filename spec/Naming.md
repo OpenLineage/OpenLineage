@@ -1,15 +1,15 @@
 # Naming
 
-We define the unique name strategy per datasource to ensure it is followed uniformly independently from the type of job consuming and producing data.
-The namespace for a dataset is the unique name for its datasource.
-For jobs it is the scheduler.
+We define the unique name strategy per resource to ensure it is followed uniformly independently from who is producing metadata and we can connect lineage from various sources.
 
-## Datasets:
+Both Jobs and Datasets are in their own namespaces. Job namespaces are related to their scheduler. The namespace for a dataset is the unique name for its datasource.
+
+## Datasets
 The namespace and name of a datasource can be combined to form a URI (scheme:[//authority]path)
 * Namespace = scheme:[//authority] (the datasource)
 * Name = path (the datasets)
 
-### Data warehouses/data bases.
+### Data warehouses/data bases
 Datasets are called tables. Tables are organised in databases and schemas.
 #### Postgres:
 Datasource hierarchy:
@@ -117,12 +117,12 @@ The `Job` identifier is composed of a `Namespace` and a `Name`. The job name is 
 
 The core property we want to identify about a `Job` is how it changes over time. Different schedules of the same logic applied to different datasets (possibly with different parameters) are different jobs. The notion of a `job` is tied to a recurring schedule with specific inputs and outputs. It could be an incremental update or a full reprocess or even a streaming job.
  
-If the same code artifact (for example a spark jar or a templated SQL query) is used in the context of different schedules with different input or outputs then they are different jobs. 
+If the same code artifact (for example a spark jar or a templated SQL query) is used in the context of different schedules with different input or outputs then they are different jobs.
 We are interested first in how they affect the datasets they produce.
 
 ### Job Namespace and constructing job names
 
-Jobs have a `name` that is unique to them in their `namespace` by construction. 
+Jobs have a `name` that is unique to them in their `namespace` by construction.
 
 The Namespace is the root of the naming hierarchy. The job name is constructed to identify the job within that namespace.
 
@@ -142,18 +142,20 @@ For example an Airflow DAG contains tasks. An instance of the DAG is finished wh
 
 Since what we care about is identifying the job as rooted in a recurring schedule, we want to capture that connection and make sure that we treat the same application logic triggered at different schedules as different jobs. For example: if an Airflow DAG runs individual tasks per partition (for example market segments) using the same underlying job logic, they will be tracked as separate jobs.
 
-To capture this, a run event provides a `ParentRun` facet, referring to the parent `Job` and `Run`. This allows tracking a recurring job from the root of the schedule it is running for. 
+To capture this, a run event provides a `ParentRun` facet, referring to the parent `Job` and `Run`. This allows tracking a recurring job from the root of the schedule it is running for.
 
-https://github.com/OpenLineage/OpenLineage/blob/9445948e41b1880a349cb45ea31f2d6f65225ee0/spec/OpenLineage.json#L268-L317
+https://github.com/OpenLineage/OpenLineage/tree/main/spec/OpenLineage.json#L279-L328
 
 Example:
+```json
 {
   "run": {
-    "runId": “uuid”
-  }
+    "runId": "run_uuid"
+  },
   "job": {
-    "namespace": “ns”
-    "name": “name”
+    "namespace": "job_namespace",
+    "name": "job_name"
   }
 }
 
+```
