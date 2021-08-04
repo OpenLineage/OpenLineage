@@ -127,5 +127,5 @@ Example of valid name is `BigQueryStatisticsJobFacet` and it's key `bigQuery_sta
 *Note: for now there no input facets defined*
 
 #### Output Dataset Facets
+- **outputStatistics**: Captures the size of the output written to a dataset (row count and byte size).
 
-*Note: for now there no output facets defined*
