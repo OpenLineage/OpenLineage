@@ -10,7 +10,7 @@
 		"name": "model.jaffle_shop.stg_orders",
 		"facets": {}
 	},
-	"producer": "openlineage-dbt/0.0.1",
+	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 	"inputs": [],
 	"outputs": [{
 		"namespace": "snowflake://ASDF1234.eu-central-1",
@@ -29,7 +29,7 @@
 		"name": "model.jaffle_shop.stg_payments",
 		"facets": {}
 	},
-	"producer": "openlineage-dbt/0.0.1",
+	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 	"inputs": [],
 	"outputs": [{
 		"namespace": "snowflake://ASDF1234.eu-central-1",
@@ -48,7 +48,7 @@
 		"name": "model.jaffle_shop.stg_customers",
 		"facets": {}
 	},
-	"producer": "openlineage-dbt/0.0.1",
+	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 	"inputs": [],
 	"outputs": [{
 		"namespace": "snowflake://ASDF1234.eu-central-1",
@@ -67,7 +67,7 @@
 		"name": "model.jaffle_shop.orders",
 		"facets": {}
 	},
-	"producer": "openlineage-dbt/0.0.1",
+	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 	"inputs": [{
 		"namespace": "snowflake://ASDF1234.eu-central-1",
 		"name": "DEMO_DB.public.stg_orders",
@@ -94,7 +94,7 @@
 		"name": "model.jaffle_shop.customers",
 		"facets": {}
 	},
-	"producer": "openlineage-dbt/0.0.1",
+	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 	"inputs": [{
 		"namespace": "snowflake://ASDF1234.eu-central-1",
 		"name": "DEMO_DB.public.stg_customers",
@@ -125,26 +125,26 @@
 		"name": "model.jaffle_shop.stg_orders",
 		"facets": {
 			"sql": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SqlJobFacet",
 				"query": "with source as (\n    select * from DEMO_DB.public.raw_orders\n\n),\n\nrenamed as (\n\n    select\n        id as order_id,\n        user_id as customer_id,\n        order_date,\n        status\n\n    from source\n\n)\n\nselect * from renamed"
 			}
 		}
 	},
-	"producer": "openlineage-dbt/0.0.1",
+	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 	"inputs": [],
 	"outputs": [{
 		"namespace": "snowflake://ASDF1234.eu-central-1",
 		"name": "DEMO_DB.public.stg_orders",
 		"facets": {
 			"dataSource": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
 				"name": "snowflake://ASDF1234.eu-central-1",
 				"uri": "snowflake://ASDF1234.eu-central-1"
 			},
 			"schema": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "order_id",
@@ -170,26 +170,26 @@
 		"name": "model.jaffle_shop.stg_payments",
 		"facets": {
 			"sql": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SqlJobFacet",
 				"query": "with source as (\n    select * from DEMO_DB.public.raw_payments\n\n),\n\nrenamed as (\n\n    select\n        id as payment_id,\n        order_id,\n        payment_method,\n\n        --`amount` is currently stored in cents, so we convert it to dollars\n        amount / 100 as amount\n\n    from source\n\n)\n\nselect * from renamed"
 			}
 		}
 	},
-	"producer": "openlineage-dbt/0.0.1",
+	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 	"inputs": [],
 	"outputs": [{
 		"namespace": "snowflake://ASDF1234.eu-central-1",
 		"name": "DEMO_DB.public.stg_payments",
 		"facets": {
 			"dataSource": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
 				"name": "snowflake://ASDF1234.eu-central-1",
 				"uri": "snowflake://ASDF1234.eu-central-1"
 			},
 			"schema": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "payment_id",
@@ -215,26 +215,26 @@
 		"name": "model.jaffle_shop.stg_customers",
 		"facets": {
 			"sql": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SqlJobFacet",
 				"query": "with source as (\n    select * from DEMO_DB.public.raw_customers\n\n),\n\nrenamed as (\n\n    select\n        id as customer_id,\n        first_name,\n        last_name\n\n    from source\n\n)\n\nselect * from renamed"
 			}
 		}
 	},
-	"producer": "openlineage-dbt/0.0.1",
+	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 	"inputs": [],
 	"outputs": [{
 		"namespace": "snowflake://ASDF1234.eu-central-1",
 		"name": "DEMO_DB.public.stg_customers",
 		"facets": {
 			"dataSource": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
 				"name": "snowflake://ASDF1234.eu-central-1",
 				"uri": "snowflake://ASDF1234.eu-central-1"
 			},
 			"schema": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "customer_id",
@@ -256,25 +256,25 @@
 		"name": "model.jaffle_shop.orders",
 		"facets": {
 			"sql": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SqlJobFacet",
 				"query": "\n\nwith orders as (\n\n    select * from DEMO_DB.public.stg_orders\n\n),\n\npayments as (\n\n    select * from DEMO_DB.public.stg_payments\n\n),\n\norder_payments as (\n\n    select\n        order_id,\n\n        sum(case when payment_method = 'credit_card' then amount else 0 end) as credit_card_amount,\n        sum(case when payment_method = 'coupon' then amount else 0 end) as coupon_amount,\n        sum(case when payment_method = 'bank_transfer' then amount else 0 end) as bank_transfer_amount,\n        sum(case when payment_method = 'gift_card' then amount else 0 end) as gift_card_amount,\n        sum(amount) as total_amount\n\n    from payments\n\n    group by 1\n\n),\n\nfinal as (\n\n    select\n        orders.order_id,\n        orders.customer_id,\n        orders.order_date,\n        orders.status,\n\n        order_payments.credit_card_amount,\n\n        order_payments.coupon_amount,\n\n        order_payments.bank_transfer_amount,\n\n        order_payments.gift_card_amount,\n\n        order_payments.total_amount as amount\n\n    from orders\n\n    left join order_payments using (order_id)\n\n)\n\nselect * from final"
 			}
 		}
 	},
-	"producer": "openlineage-dbt/0.0.1",
+	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 	"inputs": [{
 		"namespace": "snowflake://ASDF1234.eu-central-1",
 		"name": "DEMO_DB.public.stg_orders",
 		"facets": {
 			"dataSource": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
 				"name": "snowflake://ASDF1234.eu-central-1",
 				"uri": "snowflake://ASDF1234.eu-central-1"
 			},
 			"schema": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "order_id",
@@ -292,13 +292,13 @@
 		"name": "DEMO_DB.public.stg_payments",
 		"facets": {
 			"dataSource": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
 				"name": "snowflake://ASDF1234.eu-central-1",
 				"uri": "snowflake://ASDF1234.eu-central-1"
 			},
 			"schema": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "payment_id",
@@ -317,13 +317,13 @@
 		"name": "DEMO_DB.public.orders",
 		"facets": {
 			"dataSource": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
 				"name": "snowflake://ASDF1234.eu-central-1",
 				"uri": "snowflake://ASDF1234.eu-central-1"
 			},
 			"schema": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "order_id",
@@ -377,25 +377,25 @@
 		"name": "model.jaffle_shop.customers",
 		"facets": {
 			"sql": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SqlJobFacet",
 				"query": "with customers as (\n\n    select * from DEMO_DB.public.stg_customers\n\n),\n\norders as (\n\n    select * from DEMO_DB.public.stg_orders\n\n),\n\npayments as (\n\n    select * from DEMO_DB.public.stg_payments\n\n),\n\ncustomer_orders as (\n\n        select\n        customer_id,\n\n        min(order_date) as first_order,\n        max(order_date) as most_recent_order,\n        count(order_id) as number_of_orders\n    from orders\n\n    group by 1\n\n),\n\ncustomer_payments as (\n\n    select\n        orders.customer_id,\n        sum(amount) as total_amount\n\n    from payments\n\n    left join orders using (order_id)\n\n    group by 1\n\n),\n\nfinal as (\n\n    select\n        customers.customer_id,\n        customers.first_name,\n        customers.last_name,\n        customer_orders.first_order,\n        customer_orders.most_recent_order,\n        customer_orders.number_of_orders,\n        customer_payments.total_amount as customer_lifetime_value\n\n    from customers\n\n    left join customer_orders using (customer_id)\n\n    left join customer_payments using (customer_id)\n\n)\n\nselect * from final"
 			}
 		}
 	},
-	"producer": "openlineage-dbt/0.0.1",
+	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 	"inputs": [{
 		"namespace": "snowflake://ASDF1234.eu-central-1",
 		"name": "DEMO_DB.public.stg_customers",
 		"facets": {
 			"dataSource": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
 				"name": "snowflake://ASDF1234.eu-central-1",
 				"uri": "snowflake://ASDF1234.eu-central-1"
 			},
 			"schema": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "customer_id",
@@ -409,13 +409,13 @@
 		"name": "DEMO_DB.public.stg_orders",
 		"facets": {
 			"dataSource": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
 				"name": "snowflake://ASDF1234.eu-central-1",
 				"uri": "snowflake://ASDF1234.eu-central-1"
 			},
 			"schema": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "order_id",
@@ -433,13 +433,13 @@
 		"name": "DEMO_DB.public.stg_payments",
 		"facets": {
 			"dataSource": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
 				"name": "snowflake://ASDF1234.eu-central-1",
 				"uri": "snowflake://ASDF1234.eu-central-1"
 			},
 			"schema": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "payment_id",
@@ -458,13 +458,13 @@
 		"name": "DEMO_DB.public.customers",
 		"facets": {
 			"dataSource": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
 				"name": "snowflake://ASDF1234.eu-central-1",
 				"uri": "snowflake://ASDF1234.eu-central-1"
 			},
 			"schema": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "customer_id",

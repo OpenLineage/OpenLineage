@@ -5,6 +5,11 @@ import sys
 from openlineage.common.provider.dbt import DbtArtifactProcessor
 from openlineage.client.client import OpenLineageClient
 
+__version__ = '0.0.1'
+
+PRODUCER = f'https://github.com/OpenLineage/OpenLineage/tree/{__version__}/integration/dbt'
+
+
 def main():
     process = subprocess.Popen(
         ["dbt"] + sys.argv[1:],
@@ -18,7 +23,7 @@ def main():
         return
 
     client = OpenLineageClient.from_environment()
-    processor = DbtArtifactProcessor()
+    processor = DbtArtifactProcessor(PRODUCER)
     events = processor.parse().events()
 
     for event in events:

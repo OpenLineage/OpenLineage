@@ -10,7 +10,7 @@
 		"name": "model.dbt_bigquery_test.test_second_parallel_dbt_model",
 		"facets": {}
 	},
-	"producer": "openlineage-dbt/0.0.1",
+	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 	"inputs": [{
 		"namespace": "bigquery",
 		"name": "speedy-vim-308516.dbt_test1.source_table",
@@ -33,7 +33,7 @@
 		"name": "model.dbt_bigquery_test.test_first_dbt_model",
 		"facets": {}
 	},
-	"producer": "openlineage-dbt/0.0.1",
+	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 	"inputs": [],
 	"outputs": [{
 		"namespace": "bigquery",
@@ -52,7 +52,7 @@
 		"name": "model.dbt_bigquery_test.test_second_dbt_model",
 		"facets": {}
 	},
-	"producer": "openlineage-dbt/0.0.1",
+	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 	"inputs": [{
 		"namespace": "bigquery",
 		"name": "speedy-vim-308516.dbt_test1.test_first_dbt_model",
@@ -75,26 +75,26 @@
 		"name": "model.dbt_bigquery_test.test_first_dbt_model",
 		"facets": {
 			"sql": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SqlJobFacet",
 				"query": "\n\nwith source_data as (\n\n    select 1 as id\n    union all\n    select null as id\n\n)\n\nselect *\nfrom source_data"
 			}
 		}
 	},
-	"producer": "openlineage-dbt/0.0.1",
+	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 	"inputs": [],
 	"outputs": [{
 		"namespace": "bigquery",
 		"name": "speedy-vim-308516.dbt_test1.test_first_dbt_model",
 		"facets": {
 			"dataSource": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
 				"name": "bigquery",
 				"uri": "bigquery"
 			},
 			"schema": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "id",
@@ -116,25 +116,25 @@
 		"name": "model.dbt_bigquery_test.test_second_dbt_model",
 		"facets": {
 			"sql": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SqlJobFacet",
 				"query": "select *\nfrom `speedy-vim-308516`.`dbt_test1`.`test_first_dbt_model`\nwhere id = 1"
 			}
 		}
 	},
-	"producer": "openlineage-dbt/0.0.1",
+	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 	"inputs": [{
 		"namespace": "bigquery",
 		"name": "speedy-vim-308516.dbt_test1.test_first_dbt_model",
 		"facets": {
 			"dataSource": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
 				"name": "bigquery",
 				"uri": "bigquery"
 			},
 			"schema": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "id",
@@ -149,13 +149,13 @@
 		"name": "speedy-vim-308516.dbt_test1.test_second_dbt_model",
 		"facets": {
 			"dataSource": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
 				"name": "bigquery",
 				"uri": "bigquery"
 			},
 			"schema": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "id",
@@ -177,25 +177,25 @@
 		"name": "model.dbt_bigquery_test.test_second_parallel_dbt_model",
 		"facets": {
 			"sql": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SqlJobFacet",
 				"query": "select *\nfrom `speedy-vim-308516`.`dbt_test1`.`source_table`\nwhere id = 1\nbork bork fail"
 			}
 		}
 	},
-	"producer": "openlineage-dbt/0.0.1",
+	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 	"inputs": [{
 		"namespace": "bigquery",
 		"name": "speedy-vim-308516.dbt_test1.source_table",
 		"facets": {
 			"dataSource": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
 				"name": "bigquery",
 				"uri": "bigquery"
 			},
 			"schema": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": []
 			}

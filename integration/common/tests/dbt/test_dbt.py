@@ -3,8 +3,15 @@ from enum import Enum
 from unittest import mock
 
 import attr
+import pytest
 
 from openlineage.common.provider.dbt import DbtArtifactProcessor
+from openlineage.client import set_producer
+
+
+@pytest.fixture(scope='session', autouse=True)
+def setup_producer():
+    set_producer('https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt')
 
 
 def serialize(inst, field, value):
@@ -19,7 +26,10 @@ def test_dbt_parse_small_event(mock_uuid):
         '6edf42ed-d8d0-454a-b819-d09b9067ff99',
     ]
 
-    processor = DbtArtifactProcessor('tests/dbt/small/dbt_project.yml')
+    processor = DbtArtifactProcessor(
+        'https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt',
+        'tests/dbt/small/dbt_project.yml'
+    )
     dbt_events = processor.parse()
     events = [
         attr.asdict(event, value_serializer=serialize)
@@ -40,7 +50,10 @@ def test_dbt_parse_large_event(mock_uuid):
         'ae0a988e-72ad-4caf-8223-fe9dcb923a3f'
     ]
 
-    processor = DbtArtifactProcessor('tests/dbt/large/dbt_project.yml')
+    processor = DbtArtifactProcessor(
+        'https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt',
+        'tests/dbt/large/dbt_project.yml'
+    )
     dbt_events = processor.parse()
     events = [
         attr.asdict(event, value_serializer=serialize)
@@ -63,7 +76,10 @@ def test_dbt_parse_failed_event(mock_datetime, mock_uuid):
         'ae0a988e-72ad-4caf-8223-fe9dcb923a3f'
     ]
 
-    processor = DbtArtifactProcessor('tests/dbt/fail/dbt_project.yml')
+    processor = DbtArtifactProcessor(
+        'https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt',
+        'tests/dbt/fail/dbt_project.yml'
+    )
     dbt_events = processor.parse()
     events = [
         attr.asdict(event, value_serializer=serialize)
