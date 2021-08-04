@@ -23,8 +23,8 @@ from setuptools import setup
 __version__ = '0.0.1'
 
 requirements = [
-    "pyyaml>=5.3.1",
-    f"openlineage-python=={__version__}",
+    f"sqlparse>=0.2.3,<0.4",
+    f"openlineage-integration-common[dbt]=={__version__}",
 ]
 
 
