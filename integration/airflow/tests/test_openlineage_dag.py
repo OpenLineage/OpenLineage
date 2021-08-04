@@ -43,7 +43,7 @@ from openlineage.airflow.facets import AirflowRunArgsRunFacet, \
 from openlineage.airflow.utils import get_location, get_job_name, new_lineage_run_id
 from openlineage.client.facet import NominalTimeRunFacet, SourceCodeLocationJobFacet, \
     DocumentationJobFacet, DataSourceDatasetFacet, SchemaDatasetFacet, \
-    SchemaField, ParentRunFacet, SqlJobFacet
+    SchemaField, ParentRunFacet, SqlJobFacet, set_producer
 from openlineage.client.run import RunEvent, RunState, Job, Run, \
     Dataset as OpenLineageDataset
 
@@ -76,7 +76,14 @@ DAG_DEFAULT_ARGS = {
 TASK_ID_COMPLETED = 'test_task_completed'
 TASK_ID_FAILED = 'test_task_failed'
 
-PRODUCER = f"openlineage-airflow/{OPENLINEAGE_AIRFLOW_VERSION}"
+
+PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/" \
+            f"{OPENLINEAGE_AIRFLOW_VERSION}/integration/airflow"
+
+
+@pytest.fixture(scope='session', autouse=True)
+def setup_producer():
+    set_producer(PRODUCER)
 
 
 @pytest.fixture

@@ -18,8 +18,14 @@ import attr
 from openlineage.client.constants import DEFAULT_PRODUCER
 
 
-PRODUCER = os.getenv("OPENLINEAGE_PRODUCER", DEFAULT_PRODUCER)
 SCHEMA_URI = "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json"
+
+PRODUCER = DEFAULT_PRODUCER
+
+
+def set_producer(producer):
+    global PRODUCER
+    PRODUCER = producer
 
 
 @attr.s

@@ -18,7 +18,12 @@ import attr
 import pytest
 
 from openlineage.client.serde import Serde
-from openlineage.client import run, facet
+from openlineage.client import run, facet, set_producer
+
+
+@pytest.fixture(scope='session', autouse=True)
+def setup_producer():
+    set_producer('https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python')
 
 
 def get_sorted_json(file_name: str) -> str:
@@ -48,7 +53,7 @@ def test_full_core_event_serializes_properly():
         ),
         inputs=[],
         outputs=[],
-        producer="openlineage-python"
+        producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python"
     )
 
     assert Serde.to_json(runEvent) == get_sorted_json('serde_example.json')

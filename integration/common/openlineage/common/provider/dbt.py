@@ -9,11 +9,8 @@ import attr
 
 from openlineage.client.facet import DataSourceDatasetFacet, SchemaDatasetFacet, SchemaField, \
     SqlJobFacet
-from openlineage.common import __version__
 from openlineage.client.run import RunEvent, RunState, Run, Job, Dataset
 from openlineage.common.utils import get_from_nullable_chain
-
-PRODUCER = f"openlineage-dbt/{__version__}"
 
 
 @attr.s
@@ -46,7 +43,8 @@ class DbtRunResult:
 
 
 class DbtArtifactProcessor:
-    def __init__(self, project: str = 'dbt_project.yml', skip_errors: bool = False):
+    def __init__(self, producer: str, project: str = 'dbt_project.yml', skip_errors: bool = False):
+        self.producer = producer
         self.dir = os.path.abspath(os.path.dirname(project))
         self.project = self.load_yaml(project)
         self.namespace = ""
@@ -183,7 +181,7 @@ class DbtArtifactProcessor:
                 namespace=self.namespace,
                 name=run.job_name
             ),
-            producer=PRODUCER,
+            producer=self.producer,
             inputs=[self.node_to_dataset(node) for node in run.inputs],
             outputs=[self.node_to_dataset(run.output)]
         )
@@ -204,7 +202,7 @@ class DbtArtifactProcessor:
                             'sql': SqlJobFacet(run.output['compiled_sql'])
                         }
                     ),
-                    producer=PRODUCER,
+                    producer=self.producer,
                     inputs=[self.node_to_dataset(node, has_facets=True) for node in run.inputs],
                     outputs=[self.node_to_dataset(run.output, has_facets=True)]
                 )
@@ -225,7 +223,7 @@ class DbtArtifactProcessor:
                             'sql': SqlJobFacet(run.output['compiled_sql'])
                         }
                     ),
-                    producer=PRODUCER,
+                    producer=self.producer,
                     inputs=[self.node_to_dataset(node, has_facets=True) for node in run.inputs],
                     outputs=[]
                 )
