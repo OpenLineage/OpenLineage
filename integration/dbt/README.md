@@ -42,3 +42,5 @@ OpenLineage client depends on environment variables:
 ## Usage
 
 To begin collecting dbt metadata with OpenLineage, replace `dbt run` with `dbt-ol run`.
+
+Additional table and column level metadata will be available if `catalog.json`, result of running `dbt docs generate` will be found in target directory.
