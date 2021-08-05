@@ -219,6 +219,22 @@ jobs:
       - image: circleci/python:3.6
     steps:
       - *checkout_project_root
+      - *install_python_client
+      - *install_integration_common
+      - run: python setup.py sdist bdist_wheel
+      - persist_to_workspace:
+          root: .
+          paths:
+            - ./dist/*.whl
+            - ./dist/*.tar.gz
+
+  build-integration-dbt:
+    working_directory: ~/openlineage/integration/dbt
+    docker:
+      - image: circleci/python:3.6
+    steps:
+      - *checkout_project_root
+      - *install_python_client
       - *install_integration_common
       - run: python setup.py sdist bdist_wheel
       - persist_to_workspace:
@@ -285,15 +301,18 @@ workflows:
           <<: *only-on-release
       - build-integration-airflow:
           <<: *only-on-release
-      - release-java-client:
+      - build-integration-dbt:
           <<: *only-on-release
-          context: release
-      - release-integration-spark:
-          <<: *only-on-release
-          context: release
+#      - release-java-client:
+#          <<: *only-on-release
+#          context: release
+#      - release-integration-spark:
+#          <<: *only-on-release
+#          context: release
       - release-python:
           <<: *only-on-release
           context: release
           requires:
-            - build-client-python
-            - build-integration-common
+            - build-integration-dbt
+#            - build-client-python
+#            - build-integration-common

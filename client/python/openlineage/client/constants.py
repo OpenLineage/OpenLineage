@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-__version__ = "__version__ = "0.0.1""
+__version__ = "0.0.1rc8"
 
 DEFAULT_TIMEOUT_MS = 10000
 DEFAULT_NAMESPACE_NAME = 'default'

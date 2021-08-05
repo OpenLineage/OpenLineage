@@ -13,7 +13,7 @@
 # -*- coding: utf-8 -*-
 
 __author__ = """OpenLineage"""
-__version__ = "__version__ = "0.0.1rc7""
+__version__ = "0.0.1rc8"
 __all__ = ["DAG"]
 
 from openlineage.airflow.dag import DAG
