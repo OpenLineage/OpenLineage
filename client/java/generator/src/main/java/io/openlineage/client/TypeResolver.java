@@ -52,8 +52,16 @@ public class TypeResolver {
         List<Field> properties = objectType.getProperties();
         List<ResolvedField> resolvedFields = new ArrayList<>(properties.size());
         resolvedFields.addAll(resolveFields(properties));
-        ObjectResolvedType objectResolvedType = new ObjectResolvedType(asList(objectType), currentName, Collections.emptySet(), resolvedFields, objectType.hasAdditionalProperties(), visit(objectType.getAdditionalPropertiesType()));
-        types.put(objectResolvedType.getName(), objectResolvedType);
+        ObjectResolvedType objectResolvedType = new ObjectResolvedType(
+            asList(objectType),
+            currentName,
+            Collections.emptySet(),
+            resolvedFields,
+            objectType.hasAdditionalProperties(),
+            visit(currentName + "Additional", objectType.getAdditionalPropertiesType()));
+        if (types.put(objectResolvedType.getName(), objectResolvedType) != null) {
+          throw new RuntimeException("Duplicated type: " + objectResolvedType.getName());
+        };
         return objectResolvedType;
       }
 
@@ -148,18 +156,22 @@ public class TypeResolver {
         if (types.containsKey(typeName)) {
           return types.get(typeName);
         }
-        String previousCurrentName = currentName;
-        currentName = typeName;
-        try {
-          return visit(parser.parse(ref));
-        } finally {
-          currentName = previousCurrentName;
-        }
+        return visit(typeName, parser.parse(ref));
       }
 
       private String lastPart(String pointer) {
         int i = pointer.lastIndexOf("/");
         return pointer.substring(i + 1);
+      }
+
+      ResolvedType visit(String name, Type type) {
+        String previousCurrentName = currentName;
+        currentName = name;
+        try {
+          return visit(type);
+        } finally {
+          currentName = previousCurrentName;
+        }
       }
 
     };

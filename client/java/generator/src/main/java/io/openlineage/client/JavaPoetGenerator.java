@@ -215,9 +215,12 @@ public class JavaPoetGenerator {
       builderClassBuilder.addMethod(MethodSpec
           .methodBuilder("put")
           .addModifiers(PUBLIC)
+          .returns(ClassName.get(CONTAINER_CLASS, type.getName() + "Builder"))
+          .addJavadoc("@return this\n")
           .addParameter(TypeName.get(String.class), "key")
           .addParameter(additionalPropertiesValueType, "value")
           .addCode("this.$N.put(key, value);", fieldName)
+          .addCode("return this;", fieldName)
           .build());
     }
 
@@ -310,7 +313,11 @@ public class JavaPoetGenerator {
 
       @Override
       public TypeName visit(PrimitiveResolvedType primitiveType) {
-        if (primitiveType.getName().equals("string")) {
+        if (primitiveType.getName().equals("integer")) {
+          return ClassName.get(Long.class);
+        } else if (primitiveType.getName().equals("number")) {
+          return ClassName.get(Double.class);
+        } else if (primitiveType.getName().equals("string")) {
           if (primitiveType.getFormat() != null) {
             String format = primitiveType.getFormat();
             if (format.equals("uri")) {
@@ -324,8 +331,6 @@ public class JavaPoetGenerator {
             }
           }
           return ClassName.get(String.class);
-        } else if (primitiveType.getName().equals("integer")) {
-          return TypeName.LONG;
         }
         throw new RuntimeException("Unknown primitive: " + primitiveType.getName());
       }
