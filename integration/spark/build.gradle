@@ -36,6 +36,9 @@ plugins {
 repositories {
     mavenLocal()
     mavenCentral()
+    maven {
+        url = 'https://datakin.jfrog.io/artifactory/maven-public-libs-snapshot'
+    }
 }
 
 apply plugin: 'jacoco'
