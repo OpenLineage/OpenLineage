@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://openlineage.io/spec/0-0-1/OpenLineage.json",
+  "$id": "https://openlineage.io/spec/1-0-0/OpenLineage.json",
   "definitions": {
     "RunEvent": {
       "type": "object",

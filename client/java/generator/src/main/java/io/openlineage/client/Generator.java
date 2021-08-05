@@ -1,7 +1,7 @@
 package io.openlineage.client;
 
 import java.io.File;
-import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
@@ -55,6 +55,18 @@ public class Generator {
     try {
       ObjectMapper mapper = new ObjectMapper();
       JsonNode schema = mapper.readValue(input, JsonNode.class);
+      if (schema.has("$id") && schema.get("$id").isTextual()) {
+        baseURL = schema.get("$id").asText();
+        try {
+          InputStream openStream = new URL(baseURL).openStream();
+          JsonNode published = mapper.readValue(openStream, JsonNode.class);
+          if (!published.equals(schema)) {
+            throw new RuntimeException("You must increment the version when modifying the schema");
+          }
+        } catch (FileNotFoundException e) {
+          logger.warn("This version of the spec is not published yet: " + e.toString());
+        }
+      }
       TypeResolver typeResolver = new TypeResolver(schema);
       try (PrintWriter printWriter = new PrintWriter(output)) {
         new JavaPoetGenerator(typeResolver, baseURL).generate(printWriter);
