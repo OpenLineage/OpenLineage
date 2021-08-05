@@ -56,13 +56,19 @@ public class Generator {
       ObjectMapper mapper = new ObjectMapper();
       JsonNode schema = mapper.readValue(input, JsonNode.class);
       if (schema.has("$id") && schema.get("$id").isTextual()) {
-        baseURL = schema.get("$id").asText();
+        String idURL = schema.get("$id").asText();
         try {
-          InputStream openStream = new URL(baseURL).openStream();
-          JsonNode published = mapper.readValue(openStream, JsonNode.class);
-          if (!published.equals(schema)) {
-            throw new RuntimeException("You must increment the version when modifying the schema");
+          InputStream openStream = new URL(idURL).openStream();
+          JsonNode published;
+          try {
+            published = mapper.readValue(openStream, JsonNode.class);
+          } finally {
+            openStream.close();
           }
+          if (!published.equals(schema)) {
+            throw new RuntimeException("You must increment the version when modifying the schema. The current schema at " + baseURL + " has the $id " + idURL + " but the version at that URL does not match.");
+          }
+          baseURL = idURL;
         } catch (FileNotFoundException e) {
           logger.warn("This version of the spec is not published yet: " + e.toString());
         }
@@ -71,6 +77,8 @@ public class Generator {
       try (PrintWriter printWriter = new PrintWriter(output)) {
         new JavaPoetGenerator(typeResolver, baseURL).generate(printWriter);
       }
+    } catch (RuntimeException e) {
+      throw e;
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
