@@ -21,6 +21,7 @@ with open("README.md") as readme_file:
 
 
 __version__ = "__version__ = "0.0.1rc7""
+__version__ = "__version__ = "0.0.1rc7""
 
 requirements = [
     "attrs>=19.3",
