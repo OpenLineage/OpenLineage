@@ -155,5 +155,6 @@
       }
     }
   ],
-  "producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark"
+  "producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
+  "schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/RunEvent"
 }
