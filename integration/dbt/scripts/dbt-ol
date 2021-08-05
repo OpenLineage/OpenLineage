@@ -5,7 +5,7 @@ import sys
 from openlineage.common.provider.dbt import DbtArtifactProcessor
 from openlineage.client.client import OpenLineageClient
 
-__version__ = "0.0.1rc7"
+__version__ = "__version__ = "0.0.1rc7""
 
 PRODUCER = f'https://github.com/OpenLineage/OpenLineage/tree/{__version__}/integration/dbt'
 
