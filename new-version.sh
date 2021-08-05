@@ -59,26 +59,26 @@ project_root=$(git rev-parse --show-toplevel)
 cd "${project_root}"
 
 # Verify bump2version is installed
-if [[ ! $(type -P bump2version) ]]; then
-  echo "bump2version not installed! Please see https://github.com/c4urself/bump2version#installation"
-  exit 1;
-fi
+#if [[ ! $(type -P bump2version) ]]; then
+#  echo "bump2version not installed! Please see https://github.com/c4urself/bump2version#installation"
+#  exit 1;
+#fi
 
 branch=$(git symbolic-ref --short HEAD)
-if [[ "${branch}" != "main" ]]; then
-  echo "error: you may only release on 'main'!"
-  exit 1;
-fi
+#if [[ "${branch}" != "main" ]]; then
+#  echo "error: you may only release on 'main'!"
+#  exit 1;
+#fi
 
 if [[ $# -eq 0 ]] ; then
   usage
 fi
 
 # Ensure no unstaged changes are present in working directory
-if [[ -n "$(git status --porcelain --untracked-files=no)" ]] ; then
-  echo "error: you have unstaged changes in your working directory!"
-  exit 1;
-fi
+#if [[ -n "$(git status --porcelain --untracked-files=no)" ]] ; then
+#  echo "error: you have unstaged changes in your working directory!"
+#  exit 1;
+#fi
 
 while [ $# -gt 0 ]; do
   case $1 in
@@ -126,7 +126,7 @@ if [[ "${RELEASE_VERSION}" == *-rc.? ]]; then
 fi
 
 # (1) Bump python module versions
-PYTHON_MODULES=(client/python/ integration/common/ integration/airflow/)
+PYTHON_MODULES=(client/python/ integration/common/ integration/airflow/ integration/dbt/)
 for PYTHON_MODULE in "${PYTHON_MODULES[@]}"; do
   (cd "${PYTHON_MODULE}" && bump2version manual --new-version "${PYTHON_RELEASE_VERSION}" --allow-dirty)
 done
