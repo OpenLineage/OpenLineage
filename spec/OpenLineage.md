@@ -124,7 +124,7 @@ Example of valid name is `BigQueryStatisticsJobFacet` and it's key `bigQuery_sta
 
 #### Input Dataset Facets
 
-*Note: for now there no input facets defined*
+- **dataQualityMetrics**: Captures dataset level and column level data quality metrics when scanning a dataset whith a DataQuality library (row count, byte size, null count, distinct count, average, min, max, quantiles).
 
 #### Output Dataset Facets
 - **outputStatistics**: Captures the size of the output written to a dataset (row count and byte size).
