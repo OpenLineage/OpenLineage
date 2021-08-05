@@ -1,4 +1,3 @@
-import importlib
 import os
 
 from typing import Type, Optional
@@ -8,7 +7,7 @@ from openlineage.airflow.extractors.bigquery_extractor import BigQueryExtractor
 from openlineage.airflow.extractors.great_expectations_extractor import GreatExpectationsExtractor
 from openlineage.airflow.extractors.postgres_extractor import PostgresExtractor
 from openlineage.airflow.extractors.snowflake_extractor import SnowflakeExtractor
-
+from openlineage.airflow.utils import import_from_string
 
 _extractors = [
     PostgresExtractor,
@@ -48,10 +47,7 @@ class Extractors:
         for key, value in os.environ.items():
             if key.startswith("OPENLINEAGE_EXTRACTOR_"):
                 operator = key[22:]
-                parts = value.split('.')
-                module = '.'.join(parts[:-1])
-                extractor = importlib.import_module(module)
-                self.extractors[operator] = getattr(extractor, parts[-1])
+                self.extractors[operator] = import_from_string(value)
 
     def add_extractor(self, operator: str, extractor: Type):
         self.extractors[operator] = extractor
