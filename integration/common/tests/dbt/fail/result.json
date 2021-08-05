@@ -19,7 +19,8 @@
 	"outputs": [{
 		"namespace": "bigquery",
 		"name": "speedy-vim-308516.dbt_test1.test_second_parallel_dbt_model",
-		"facets": {}
+		"facets": {},
+		"outputFacets": {}
 	}]
 }, {
 	"eventType": "START",
@@ -38,7 +39,8 @@
 	"outputs": [{
 		"namespace": "bigquery",
 		"name": "speedy-vim-308516.dbt_test1.test_first_dbt_model",
-		"facets": {}
+		"facets": {},
+		"outputFacets": {}
 	}]
 }, {
 	"eventType": "START",
@@ -61,7 +63,8 @@
 	"outputs": [{
 		"namespace": "bigquery",
 		"name": "speedy-vim-308516.dbt_test1.test_second_dbt_model",
-		"facets": {}
+		"facets": {},
+		"outputFacets": {}
 	}]
 }, {
 	"eventType": "COMPLETE",
@@ -102,7 +105,8 @@
 					"description": null
 				}]
 			}
-		}
+		},
+		"outputFacets": {}
 	}]
 }, {
 	"eventType": "COMPLETE",
@@ -163,7 +167,8 @@
 					"description": null
 				}]
 			}
-		}
+		},
+		"outputFacets": {}
 	}]
 }, {
 	"eventType": "FAIL",

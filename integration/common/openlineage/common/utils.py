@@ -42,3 +42,11 @@ def get_from_nullable_chain(source: Dict[str, Any], chain: List[str]) -> Optiona
         return source
     except AttributeError:
         return
+
+
+def get_from_multiple_chains(source: Dict[str, Any], chains: List[List[str]]) -> Optional[Any]:
+    for chain in chains:
+        result = get_from_nullable_chain(source, chain)
+        if result:
+            return result
+    return None

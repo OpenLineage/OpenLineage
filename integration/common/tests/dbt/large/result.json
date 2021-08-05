@@ -15,7 +15,8 @@
 	"outputs": [{
 		"namespace": "snowflake://ASDF1234.eu-central-1",
 		"name": "DEMO_DB.public.stg_orders",
-		"facets": {}
+		"facets": {},
+		"outputFacets": {}
 	}]
 }, {
 	"eventType": "START",
@@ -34,7 +35,8 @@
 	"outputs": [{
 		"namespace": "snowflake://ASDF1234.eu-central-1",
 		"name": "DEMO_DB.public.stg_payments",
-		"facets": {}
+		"facets": {},
+		"outputFacets": {}
 	}]
 }, {
 	"eventType": "START",
@@ -53,7 +55,8 @@
 	"outputs": [{
 		"namespace": "snowflake://ASDF1234.eu-central-1",
 		"name": "DEMO_DB.public.stg_customers",
-		"facets": {}
+		"facets": {},
+		"outputFacets": {}
 	}]
 }, {
 	"eventType": "START",
@@ -80,7 +83,8 @@
 	"outputs": [{
 		"namespace": "snowflake://ASDF1234.eu-central-1",
 		"name": "DEMO_DB.public.orders",
-		"facets": {}
+		"facets": {},
+		"outputFacets": {}
 	}]
 }, {
 	"eventType": "START",
@@ -111,7 +115,8 @@
 	"outputs": [{
 		"namespace": "snowflake://ASDF1234.eu-central-1",
 		"name": "DEMO_DB.public.customers",
-		"facets": {}
+		"facets": {},
+		"outputFacets": {}
 	}]
 }, {
 	"eventType": "COMPLETE",
@@ -156,7 +161,8 @@
 					"description": null
 				}]
 			}
-		}
+		},
+		"outputFacets": {}
 	}]
 }, {
 	"eventType": "COMPLETE",
@@ -201,7 +207,8 @@
 					"description": null
 				}]
 			}
-		}
+		},
+		"outputFacets": {}
 	}]
 }, {
 	"eventType": "COMPLETE",
@@ -242,7 +249,8 @@
 					"description": null
 				}]
 			}
-		}
+		},
+		"outputFacets": {}
 	}]
 }, {
 	"eventType": "COMPLETE",
@@ -363,7 +371,8 @@
 					"description": null
 				}]
 			}
-		}
+		},
+		"outputFacets": {}
 	}]
 }, {
 	"eventType": "COMPLETE",
@@ -496,6 +505,7 @@
 					"description": null
 				}]
 			}
-		}
+		},
+		"outputFacets": {}
 	}]
 }]

@@ -8,15 +8,16 @@ from typing import List, Tuple, Dict, Optional
 import attr
 
 from openlineage.client.facet import DataSourceDatasetFacet, SchemaDatasetFacet, SchemaField, \
-    SqlJobFacet
-from openlineage.client.run import RunEvent, RunState, Run, Job, Dataset
-from openlineage.common.utils import get_from_nullable_chain
+    SqlJobFacet, OutputStatisticsOutputDatasetFacet
+from openlineage.client.run import RunEvent, RunState, Run, Job, Dataset, OutputDataset
+from openlineage.common.utils import get_from_nullable_chain, get_from_multiple_chains
 
 
 @attr.s
 class ModelNode:
     metadata_node: Dict = attr.ib()
     catalog_node: Optional[Dict] = attr.ib(default=None)
+
 
 @attr.s
 class DbtRun:
@@ -128,10 +129,10 @@ class DbtArtifactProcessor:
             return yaml.load(f, Loader=yaml.FullLoader)
 
     def parse_artifacts(
-        self,
-        manifest: Dict,
-        run_results: Dict,
-        catalog: Optional[Dict]
+            self,
+            manifest: Dict,
+            run_results: Dict,
+            catalog: Optional[Dict]
     ) -> List[DbtRun]:
         nodes = {}
         runs = []
@@ -205,7 +206,7 @@ class DbtArtifactProcessor:
             ),
             producer=self.producer,
             inputs=[self.node_to_dataset(node) for node in run.inputs],
-            outputs=[self.node_to_dataset(run.output)]
+            outputs=[self.node_to_output_dataset(run.output)]
         )
 
         if run.status == 'success':
@@ -226,7 +227,7 @@ class DbtArtifactProcessor:
                     ),
                     producer=self.producer,
                     inputs=[self.node_to_dataset(node, has_facets=True) for node in run.inputs],
-                    outputs=[self.node_to_dataset(run.output, has_facets=True)]
+                    outputs=[self.node_to_output_dataset(run.output, has_facets=True)]
                 )
             )
         elif run.status == 'error':
@@ -255,9 +256,11 @@ class DbtArtifactProcessor:
             raise ValueError(f"Run status was {run.status}, "
                              f"should be in ['success', 'skipped', 'skipped']")
 
-    def node_to_dataset(self, node: ModelNode, has_facets: bool = False) -> Dataset:
+    def extract_dataset_data(
+            self, node: ModelNode, has_facets: bool = False
+    ) -> Tuple[str, str, Dict]:
         if has_facets:
-            has_facets = {
+            facets = {
                 'dataSource': DataSourceDatasetFacet(
                     name=self.namespace,
                     uri=self.namespace
@@ -267,17 +270,54 @@ class DbtArtifactProcessor:
                 )
             }
             if node.catalog_node:
-                has_facets['schema'] = SchemaDatasetFacet(
-                        fields=self.extract_catalog_fields(node.catalog_node['columns'].values())
+                facets['schema'] = SchemaDatasetFacet(
+                    fields=self.extract_catalog_fields(node.catalog_node['columns'].values())
                 )
         else:
-            has_facets = {}
+            facets = {}
+        return (
+            self.namespace,
+            f"{node.metadata_node['database']}."
+            f"{node.metadata_node['schema']}."
+            f"{node.metadata_node['name']}",
+            facets
+        )
+
+    def node_to_dataset(self, node: ModelNode, has_facets: bool = False) -> Dataset:
         return Dataset(
-            namespace=self.namespace,
-            name=f"{node.metadata_node['database']}."
-                 f"{node.metadata_node['schema']}."
-                 f"{node.metadata_node['name']}",
-            facets=has_facets
+            *self.extract_dataset_data(node, has_facets)
+        )
+
+    def node_to_output_dataset(self, node: ModelNode, has_facets: bool = False) -> OutputDataset:
+        name, namespace, facets = self.extract_dataset_data(node, has_facets)
+        output_facets = {}
+        if has_facets and node.catalog_node:
+            bytes = get_from_multiple_chains(
+                node.catalog_node,
+                [
+                    ['stats', 'num_bytes', 'value'],  # bigquery
+                    ['stats', 'bytes', 'value']  # snowflake
+                ]
+            )
+            rows = get_from_multiple_chains(
+                node.catalog_node,
+                [
+                    ['stats', 'num_rows', 'value'],  # bigquery
+                    ['stats', 'row_count', 'value']  # snowflake
+                ]
+            )
+
+            if bytes:
+                bytes = int(bytes)
+            if rows:
+                rows = int(rows)
+
+                output_facets['outputStatistics'] = OutputStatisticsOutputDatasetFacet(
+                    rowCount=rows,
+                    size=bytes
+                )
+        return OutputDataset(
+            name, namespace, facets, output_facets
         )
 
     @staticmethod

@@ -135,3 +135,13 @@ class DataSourceDatasetFacet(BaseFacet):
     @staticmethod
     def _get_schema() -> str:
         return SCHEMA_URI + "#/definitions/DataSourceDatasetFacet"
+
+
+@attr.s
+class OutputStatisticsOutputDatasetFacet(BaseFacet):
+    rowCount: int = attr.ib()
+    size: Optional[int] = attr.ib(default=None)
+
+    @staticmethod
+    def _get_schema() -> str:
+        return SCHEMA_URI + "#/definitions/OutputStatisticsOutputDatasetFacet"
