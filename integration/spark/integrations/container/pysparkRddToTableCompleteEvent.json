@@ -24,7 +24,7 @@
     "facets" : {
       "schema" : {
         "_producer" : "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
-        "_schemaURL" : "https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#SchemaDatasetFacet",
+        "_schemaURL" : "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
         "fields" : [ {
           "name" : "name",
           "type" : "string"
@@ -35,7 +35,7 @@
       },
       "dataSource" : {
         "_producer" : "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
-        "_schemaURL" : "https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#DatasourceDatasetFacet",
+        "_schemaURL" : "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DatasourceDatasetFacet",
         "name" : "file",
         "uri" : "file"
       }
@@ -47,7 +47,7 @@
     "facets" : {
       "schema" : {
         "_producer" : "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
-        "_schemaURL" : "https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#SchemaDatasetFacet",
+        "_schemaURL" : "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
         "fields" : [ {
           "name" : "name",
           "type" : "string"
@@ -58,13 +58,13 @@
       },
       "dataSource" : {
         "_producer" : "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
-        "_schemaURL" : "https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#DatasourceDatasetFacet",
+        "_schemaURL" : "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DatasourceDatasetFacet",
         "name" : "file",
         "uri" : "file"
       },
       "stats" : {
         "_producer" : "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
-        "_schemaURL" : "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark/facets/spark-2.4/v1/outputStatisticsFacet",
+        "_schemaURL" : "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/CustomFacet",
         "rowCount" : 0,
         "size" : 0
       }
