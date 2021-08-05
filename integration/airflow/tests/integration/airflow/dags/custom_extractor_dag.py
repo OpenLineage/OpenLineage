@@ -2,12 +2,18 @@ import os
 
 from airflow.operators.bash_operator import BashOperator
 from airflow.utils.dates import days_ago
-
-os.environ["OPENLINEAGE_EXTRACTOR_BashOperator"] = 'custom_extractor.BashExtractor'
-from openlineage.airflow import DAG
 from openlineage.client import set_producer
 
+os.environ["OPENLINEAGE_EXTRACTOR_BashOperator"] = 'custom_extractor.BashExtractor'
 set_producer("https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow")
+
+from airflow.version import version as AIRFLOW_VERSION
+from pkg_resources import parse_version
+if parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"):
+    from openlineage.airflow import DAG
+else:
+    from airflow import DAG
+
 
 default_args = {
     'owner': 'datascience',

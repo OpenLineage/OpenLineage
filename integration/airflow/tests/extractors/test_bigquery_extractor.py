@@ -14,16 +14,17 @@ import json
 import logging
 import random
 import unittest
+import uuid
 from datetime import datetime
 
 import mock
 import pytz
 from airflow.utils import timezone
-from airflow.contrib.operators.bigquery_operator import BigQueryOperator
 from airflow.models import TaskInstance, DAG
 from airflow.utils.state import State
 
 from openlineage.airflow.extractors.bigquery_extractor import BigQueryExtractor
+from openlineage.airflow.utils import safe_import_airflow, choose_based_on_version
 from openlineage.client.facet import OutputStatisticsOutputDatasetFacet
 from openlineage.common.provider.bigquery import BigQueryJobRunFacet, \
     BigQueryStatisticsDatasetFacet, BigQueryErrorRunFacet
@@ -32,12 +33,21 @@ from openlineage.common.utils import get_from_nullable_chain
 log = logging.getLogger(__name__)
 
 
+BigQueryExecuteQueryOperator = safe_import_airflow(
+    airflow_1_path="airflow.contrib.operators.bigquery_operator.BigQueryOperator",
+    airflow_2_path="airflow.providers.google.cloud.operators.bigquery.BigQueryExecuteQueryOperator"
+)
+
+
 class TestBigQueryExtractorE2E(unittest.TestCase):
     def setUp(self):
         log.debug("TestBigQueryExtractorE2E.setup(): ")
 
-    @mock.patch('airflow.contrib.operators.bigquery_operator.BigQueryHook')
-    @mock.patch('google.cloud.bigquery.Client')
+    @mock.patch(choose_based_on_version(
+        airflow_1_version="airflow.contrib.operators.bigquery_operator.BigQueryHook",
+        airflow_2_version='airflow.providers.google.cloud.operators.bigquery.BigQueryHook'
+    ))
+    @mock.patch('openlineage.common.provider.bigquery.Client')
     def test_extract(self, mock_client, mock_hook):
         log.info("test_extractor")
 
@@ -49,6 +59,9 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
             "tests/extractors/out_table_details.json")
 
         bq_job_id = "foo.bq.job_id"
+
+        mock_hook.return_value \
+            .run_query.return_value = bq_job_id
 
         mock_hook.return_value \
             .get_conn.return_value \
@@ -65,22 +78,26 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
         # To make sure hasattr "sees" close and calls it
         mock_client.return_value.close.return_value
 
-        mock.seal(mock_hook)
-        mock.seal(mock_client)
-
+        execution_date = datetime.utcnow().replace(tzinfo=pytz.utc)
         dag = DAG(dag_id='TestBigQueryExtractorE2E')
-        task = BigQueryOperator(
-            sql='select first_name, last_name from customers;',
+        dag.create_dagrun(
+            run_id=str(uuid.uuid4()),
+            state=State.QUEUED,
+            execution_date=execution_date
+        )
+
+        task = BigQueryExecuteQueryOperator(
+            sql='select first_name, last_name from dataset.customers;',
             task_id="task_id",
-            project_id="project_id",
-            dag_id="dag_id",
             dag=dag,
-            start_date=timezone.datetime(2016, 2, 1, 0, 0, 0)
+            start_date=timezone.datetime(2016, 2, 1, 0, 0, 0),
+            do_xcom_push=False
         )
 
         task_instance = TaskInstance(
             task=task,
-            execution_date=datetime.utcnow().replace(tzinfo=pytz.utc))
+            execution_date=execution_date
+        )
 
         bq_extractor = BigQueryExtractor(task)
         task_meta_extract = bq_extractor.extract()
@@ -144,10 +161,16 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
         f.close()
         return details
 
-    @mock.patch('airflow.contrib.operators.bigquery_operator.BigQueryHook')
-    @mock.patch('google.cloud.bigquery.Client')
+    @mock.patch(choose_based_on_version(
+        airflow_1_version="airflow.contrib.operators.bigquery_operator.BigQueryHook",
+        airflow_2_version='airflow.providers.google.cloud.operators.bigquery.BigQueryHook'
+    ))
+    @mock.patch('openlineage.common.provider.bigquery.Client')
     def test_extract_cached(self, mock_client, mock_hook):
         bq_job_id = "foo.bq.job_id"
+
+        mock_hook.return_value \
+            .run_query.return_value = bq_job_id
 
         mock_hook.return_value \
             .get_conn.return_value \
@@ -158,26 +181,34 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
             "tests/extractors/cached_job_details.json"
         )
 
-        mock_client.return_value.get_job.return_value._properties = job_details
+        mock_client.return_value \
+            .get_job.return_value \
+            ._properties = job_details
         # To make sure hasattr "sees" close and calls it
         mock_client.return_value.close.return_value
 
-        mock.seal(mock_hook)
         mock.seal(mock_client)
 
+        execution_date = datetime.utcnow().replace(tzinfo=pytz.utc)
         dag = DAG(dag_id='TestBigQueryExtractorE2E')
-        task = BigQueryOperator(
-            sql='select first_name, last_name from customers;',
+        dag.create_dagrun(
+            run_id=str(uuid.uuid4()),
+            state=State.QUEUED,
+            execution_date=execution_date
+        )
+
+        task = BigQueryExecuteQueryOperator(
+            sql='select first_name, last_name from dataset.customers;',
             task_id="task_id",
-            project_id="project_id",
-            dag_id="dag_id",
             dag=dag,
-            start_date=timezone.datetime(2016, 2, 1, 0, 0, 0)
+            start_date=timezone.datetime(2016, 2, 1, 0, 0, 0),
+            do_xcom_push=False
         )
 
         task_instance = TaskInstance(
             task=task,
-            execution_date=datetime.utcnow().replace(tzinfo=pytz.utc))
+            execution_date=execution_date
+        )
 
         bq_extractor = BigQueryExtractor(task)
         tasks_meta_extract = bq_extractor.extract()
@@ -193,10 +224,16 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
         assert task_meta.run_facets['bigQuery_job'] \
                == BigQueryJobRunFacet(cached=True)
 
-    @mock.patch('airflow.contrib.operators.bigquery_operator.BigQueryHook')
-    @mock.patch('google.cloud.bigquery.Client')
+    @mock.patch(choose_based_on_version(
+        airflow_1_version="airflow.contrib.operators.bigquery_operator.BigQueryHook",
+        airflow_2_version='airflow.providers.google.cloud.operators.bigquery.BigQueryHook'
+    ))
+    @mock.patch('openlineage.common.provider.bigquery.Client')
     def test_extract_error(self, mock_client, mock_hook):
         bq_job_id = "foo.bq.job_id"
+
+        mock_hook.return_value \
+            .run_query.return_value = bq_job_id
 
         mock_hook.return_value \
             .get_conn.return_value \
@@ -210,21 +247,27 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
         mock_client.return_value.close.return_value
 
         mock.seal(mock_hook)
-        mock.seal(mock_client)
 
+        execution_date = datetime.utcnow().replace(tzinfo=pytz.utc)
         dag = DAG(dag_id='TestBigQueryExtractorE2E')
-        task = BigQueryOperator(
-            sql='select first_name, last_name from customers;',
+        dag.create_dagrun(
+            run_id=str(uuid.uuid4()),
+            state=State.QUEUED,
+            execution_date=execution_date
+        )
+
+        task = BigQueryExecuteQueryOperator(
+            sql='select first_name, last_name from dataset.customers;',
             task_id="task_id",
-            project_id="project_id",
-            dag_id="dag_id",
             dag=dag,
-            start_date=timezone.datetime(2016, 2, 1, 0, 0, 0)
+            start_date=timezone.datetime(2016, 2, 1, 0, 0, 0),
+            do_xcom_push=False
         )
 
         task_instance = TaskInstance(
             task=task,
-            execution_date=datetime.utcnow().replace(tzinfo=pytz.utc))
+            execution_date=execution_date
+        )
 
         bq_extractor = BigQueryExtractor(task)
 
@@ -302,11 +345,9 @@ class TestBigQueryExtractor(unittest.TestCase):
     @staticmethod
     def _get_bigquery_task():
         dag = DAG(dag_id='TestBigQueryExtractorE2E')
-        task = BigQueryOperator(
-            sql='select first_name, last_name from customers;',
+        task = BigQueryExecuteQueryOperator(
+            sql='select first_name, last_name from dataset.customers;',
             task_id="task_id",
-            project_id="project_id",
-            dag_id="dag_id",
             dag=dag,
             start_date=timezone.datetime(2016, 2, 1, 0, 0, 0)
         )

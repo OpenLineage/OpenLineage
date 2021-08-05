@@ -17,7 +17,7 @@ import attr
 
 from typing import Tuple, Optional, Dict, List
 
-from google.cloud import bigquery
+from google.cloud.bigquery import Client
 
 from openlineage.common.dataset import Dataset, Source
 from openlineage.common.models import DbTableSchema, DbColumn, DbTableName
@@ -92,12 +92,12 @@ class BigQueryFacets:
 class BigQueryDatasetsProvider:
     def __init__(
         self,
-        client: Optional[bigquery.Client] = None,
+        client: Optional[Client] = None,
         logger: Optional[logging.Logger] = None
     ):
         self.client = client
         if client is None:
-            self.client = bigquery.Client()
+            self.client = Client()
         self.logger = logger
         if logger is None:
             self.logger = logging.getLogger(__name__)

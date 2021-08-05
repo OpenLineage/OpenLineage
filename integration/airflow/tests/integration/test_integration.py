@@ -71,6 +71,8 @@ def match(expected, request):
                 log.error(f"For list of key {k}, length of lists does"
                           f" not match: {len(v)} {len(request[k])}\n{expected}\n{request}")
                 return False
+            if not all([match(x, y) for x, y in zip(v, request[k])]):
+                return False
 
             # Try to resolve case where we have wrongly sorted lists by looking at name attr
             # If name is not present then assume that lists are sorted
@@ -89,7 +91,7 @@ def match(expected, request):
                     if not match(x, request[k][i]):
                         return False
         elif v != request[k]:
-            log.error(f"For key {k}, value {v} not exquals {request[k]}"
+            log.error(f"For key {k}, value {v} not in event {request[k]}"
                       f"\nExpected {expected}, request {request}")
             return False
     return True
@@ -134,6 +136,7 @@ def setup_db():
 
 
 def test_integration(dag_id, request_path):
+    log.info(f"Checking dag {dag_id}")
     # (1) Wait for DAG to complete
     wait_for_dag(dag_id)
     # (2) Read expected events
@@ -149,8 +152,8 @@ def test_integration(dag_id, request_path):
 
 if __name__ == '__main__':
     setup_db()
-    test_integration('great_expectations_validation', 'requests/great_expectations.json')
     test_integration('postgres_orders_popular_day_of_week', 'requests/postgres.json')
+    test_integration('great_expectations_validation', 'requests/great_expectations.json')
     test_integration('bigquery_orders_popular_day_of_week', 'requests/bigquery.json')
     test_integration('dbt_dag', 'requests/dbt.json')
     test_integration('custom_extractor', 'requests/custom_extractor.json')
