@@ -10,13 +10,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-
+import pendulum
+import datetime
 from airflow.models import Connection
+
 from openlineage.airflow.utils import (
     url_to_https,
     get_location,
     get_connection_uri,
-    get_normalized_postgres_connection_uri, get_connection
+    get_normalized_postgres_connection_uri,
+    get_connection,
+    DagUtils
 )
 
 AIRFLOW_VERSION = '1.10.12'
@@ -62,3 +66,22 @@ def test_get_location_no_file_path():
 def test_url_to_https_no_url():
     assert url_to_https(None) is None
     assert url_to_https("") is None
+
+
+def test_datetime_to_iso_8601():
+    dt = datetime.datetime.utcfromtimestamp(1500100900)
+    assert "2017-07-15T06:41:40.000000Z" == DagUtils.to_iso_8601(dt)
+
+    dt = datetime.datetime(2021, 8, 6, 2, 5, 1)
+    assert "2021-08-06T02:05:01.000000Z" == DagUtils.to_iso_8601(dt)
+
+
+def test_pendulum_to_iso_8601():
+    dt = pendulum.from_timestamp(1500100900)
+    assert "2017-07-15T06:41:40.000000Z" == DagUtils.to_iso_8601(dt)
+
+    dt = pendulum.datetime(2021, 8, 6, 2, 5, 1)
+    assert "2021-08-06T02:05:01.000000Z" == DagUtils.to_iso_8601(dt)
+
+    tz = pendulum.timezone("America/Los_Angeles")
+    assert "2021-08-05T19:05:01.000000Z" == DagUtils.to_iso_8601(tz.convert(dt))
