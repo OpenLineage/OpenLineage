@@ -52,24 +52,11 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
 }
 
-def gitBranchName() {
-    def branch = "unknown_branch"
-    def proc = "git rev-parse --abbrev-ref HEAD".execute()
-    proc.in.eachLine { line -> branch = line }
-    proc.err.eachLine { line -> println line }
-    proc.waitFor()
-    branch
-}
-
 task generateCode(type: JavaExec) {
-    description 'generate java code from spec. Use -PgenerateFromLocal to generate from the local file instead of the published version'
+    description 'generate java code from spec.'
     classpath configurations.codeGenerator
     main = 'io.openlineage.client.Generator'
-    if (project.hasProperty('generateFromLocal')) {
-        args "file:$rootDir/../../spec/OpenLineage.json".toString()
-    } else {
-        args "https://raw.githubusercontent.com/OpenLineage/OpenLineage/" + gitBranchName() + "/spec/OpenLineage.json"
-    }
+    args "file:$rootDir/../../spec/OpenLineage.json".toString()
 }
 
 openApiGenerate {
