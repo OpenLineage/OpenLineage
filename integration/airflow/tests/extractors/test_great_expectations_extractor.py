@@ -77,42 +77,42 @@ def test_great_expectations_operator_batch_kwargs_success():
             GreatExpectationsAssertion(
                 expectationType='expect_column_values_to_not_be_null',
                 success=True,
-                columnId='vendor_id'
+                column='vendor_id'
             ),
             GreatExpectationsAssertion(
                 expectationType='expect_column_distinct_values_to_be_in_set',
                 success=True,
-                columnId='vendor_id'
+                column='vendor_id'
             ),
             GreatExpectationsAssertion(
                 expectationType='expect_column_unique_value_count_to_be_between',
                 success=True,
-                columnId='vendor_id'
+                column='vendor_id'
             ),
             GreatExpectationsAssertion(
                 expectationType='expect_column_min_to_be_between',
                 success=True,
-                columnId='total_amount'
+                column='total_amount'
             ),
             GreatExpectationsAssertion(
                 expectationType='expect_column_max_to_be_between',
                 success=True,
-                columnId='total_amount'
+                column='total_amount'
             ),
             GreatExpectationsAssertion(
                 expectationType='expect_column_sum_to_be_between',
                 success=True,
-                columnId='total_amount'
+                column='total_amount'
             ),
             GreatExpectationsAssertion(
                 expectationType='expect_column_quantile_values_to_be_between',
                 success=True,
-                columnId='total_amount'
+                column='total_amount'
             ),
             GreatExpectationsAssertion(
                 expectationType='expect_column_distinct_values_to_be_in_set',
                 success=True,
-                columnId='passenger_count'
+                column='passenger_count'
             )
         ]
     )

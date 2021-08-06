@@ -17,7 +17,7 @@
                 "properties": {
                   "expectationType": {"type": "string"},
                   "success": {"type":  "bool"},
-                  "columnId": {"type":  "str"}
+                  "column": {"type":  "str"}
                 },
                 "required": ["expectationType", "success"]
               }
