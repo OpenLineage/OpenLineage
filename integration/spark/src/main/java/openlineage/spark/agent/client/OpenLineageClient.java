@@ -35,7 +35,7 @@ public class OpenLineageClient {
 
   public static final String OPEN_LINEAGE_CLIENT_URI = getUri();
   public static final String OPEN_LINEAGE_PARENT_FACET_URI =
-      "https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#ParentRunFacet";
+      "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/ParentRunFacet";
   public static final String OPEN_LINEAGE_DATASOURCE_FACET =
       "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DatasourceDatasetFacet";
   public static final String OPEN_LINEAGE_SCHEMA_FACET_URI =

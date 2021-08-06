@@ -1,12 +1,11 @@
 {
   "eventType" : "START",
   "run" : {
-    "runId" : "",
     "facets" : { }
   },
-  "job" : {
-    "namespace" : "testPysparkRddToTable",
-    "name" : "spark_rdd_to_table.map_partitions_python_list_of_random_words_and_numbers"
+  "job": {
+    "namespace": "testPysparkRddToTable",
+    "name": "spark_rdd_to_table.map_partitions_python_list_of_random_words_and_numbers"
   },
   "inputs" : [ ],
   "outputs" : [ {
