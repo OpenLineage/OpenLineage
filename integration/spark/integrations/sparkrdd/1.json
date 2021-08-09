@@ -2,7 +2,7 @@
   "eventType" : "START",
   "eventTime" : "2021-01-01T00:00:00Z",
   "run" : {
-    "runId" : "8d99e33e-2a1c-4254-9600-18f23435fc3b",
+    "runId" : "fake_run_id",
     "facets" : {
       "parent" : {
         "_producer" : "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",

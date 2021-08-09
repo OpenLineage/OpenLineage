@@ -18,8 +18,11 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -43,6 +46,8 @@ import scala.Tuple2;
 @ExtendWith(SparkAgentTestExtension.class)
 public class LibraryTest {
 
+  private final TypeReference<Map<String, Object>> mapTypeReference = new TypeReference<Map<String, Object>>() {};
+
   @AfterEach
   public void tearDown() throws Exception {
     SparkSession$.MODULE$.cleanupAnyExistingSession();
@@ -55,7 +60,7 @@ public class LibraryTest {
     when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentJobName())
         .thenReturn("job_name");
     when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentRunId())
-        .thenReturn("ea445b5c-22eb-457a-8007-01c7c52b6e54");
+        .thenReturn(Optional.of(UUID.fromString("ea445b5c-22eb-457a-8007-01c7c52b6e54")));
 
     final SparkSession spark =
         SparkSession.builder()
@@ -91,13 +96,13 @@ public class LibraryTest {
       Map<String, Object> snapshot =
           objectMapper.readValue(
               Paths.get(String.format("integrations/%s/%d.json", "sparksql", i + 1)).toFile(),
-              new TypeReference<Map<String, Object>>() {});
+              mapTypeReference);
       assertEquals(
           snapshot,
           cleanSerializedMap(
               objectMapper.readValue(
                   objectMapper.writeValueAsString(event),
-                  new TypeReference<Map<String, Object>>() {})));
+                  mapTypeReference)));
     }
     verifySerialization(events);
   }
@@ -148,7 +153,7 @@ public class LibraryTest {
     when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentJobName())
         .thenReturn("job_name");
     when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentRunId())
-        .thenReturn("8d99e33e-2a1c-4254-9600-18f23435fc3b");
+        .thenReturn(Optional.of(UUID.fromString("8d99e33e-2a1c-4254-9600-18f23435fc3b")));
 
     URL url = Resources.getResource("test_data/data.txt");
     SparkConf conf = new SparkConf().setAppName("Word Count").setMaster("local[*]");
@@ -178,11 +183,15 @@ public class LibraryTest {
           new String(
               Files.readAllBytes(
                   Paths.get(String.format("integrations/%s/%d.json", "sparkrdd", i + 1))));
+
+      Map<String, Object> eventFields = OpenLineageClient.getObjectMapper()
+          .convertValue(event, mapTypeReference);
+      ((Map<String, Object>) eventFields.get("run")).replace("runId", "fake_run_id");
+
       assertEquals(
-          snapshot,
-          OpenLineageClient.getObjectMapper()
-              .writerWithDefaultPrettyPrinter()
-              .writeValueAsString(event));
+          OpenLineageClient.getObjectMapper().readValue(snapshot, mapTypeReference),
+          eventFields
+      );
     }
 
     verifySerialization(events);
