@@ -1,7 +1,7 @@
 import attr
 from airflow.version import version as AIRFLOW_VERSION
 from openlineage.airflow import __version__ as OPENLINEAGE_AIRFLOW_VERSION
-from openlineage.client.facet import BaseFacet
+from openlineage.client.facet import BaseFacet, DataQualityMetricsInputDatasetFacet
 from typing import Optional, Dict
 
 
@@ -43,6 +43,13 @@ class DataQualityDatasetFacet(BaseFacet):
     rowCount: Optional[int] = attr.ib(default=None)
     bytes: Optional[int] = attr.ib(default=None)
     columnMetrics: Dict[str, ColumnMetric] = attr.ib(factory=dict)
+
+    def to_openlineage(self) -> DataQualityMetricsInputDatasetFacet:
+        return DataQualityMetricsInputDatasetFacet(
+            rowCount=self.rowCount,
+            bytes=self.bytes,
+            columnMetrics=self.columnMetrics
+        )
 
     @staticmethod
     def _get_schema() -> str:
