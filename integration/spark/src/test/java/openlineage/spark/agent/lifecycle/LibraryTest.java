@@ -18,7 +18,6 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -46,7 +45,8 @@ import scala.Tuple2;
 @ExtendWith(SparkAgentTestExtension.class)
 public class LibraryTest {
 
-  private final TypeReference<Map<String, Object>> mapTypeReference = new TypeReference<Map<String, Object>>() {};
+  private final TypeReference<Map<String, Object>> mapTypeReference =
+      new TypeReference<Map<String, Object>>() {};
 
   @AfterEach
   public void tearDown() throws Exception {
@@ -100,9 +100,7 @@ public class LibraryTest {
       assertEquals(
           snapshot,
           cleanSerializedMap(
-              objectMapper.readValue(
-                  objectMapper.writeValueAsString(event),
-                  mapTypeReference)));
+              objectMapper.readValue(objectMapper.writeValueAsString(event), mapTypeReference)));
     }
     verifySerialization(events);
   }
@@ -184,14 +182,12 @@ public class LibraryTest {
               Files.readAllBytes(
                   Paths.get(String.format("integrations/%s/%d.json", "sparkrdd", i + 1))));
 
-      Map<String, Object> eventFields = OpenLineageClient.getObjectMapper()
-          .convertValue(event, mapTypeReference);
+      Map<String, Object> eventFields =
+          OpenLineageClient.getObjectMapper().convertValue(event, mapTypeReference);
       ((Map<String, Object>) eventFields.get("run")).replace("runId", "fake_run_id");
 
       assertEquals(
-          OpenLineageClient.getObjectMapper().readValue(snapshot, mapTypeReference),
-          eventFields
-      );
+          OpenLineageClient.getObjectMapper().readValue(snapshot, mapTypeReference), eventFields);
     }
 
     verifySerialization(events);

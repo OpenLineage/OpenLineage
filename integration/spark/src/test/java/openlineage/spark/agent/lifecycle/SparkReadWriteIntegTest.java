@@ -71,7 +71,7 @@ public class SparkReadWriteIntegTest {
   public void setUp() {
     reset(MockBigQueryRelationProvider.BIG_QUERY);
     when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentRunId())
-        .thenReturn(UUID.randomUUID().toString());
+        .thenReturn(Optional.of(UUID.randomUUID()));
     when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentJobName())
         .thenReturn("ParentJob");
     when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getJobNamespace())
@@ -331,7 +331,8 @@ public class SparkReadWriteIntegTest {
         .thenReturn("theNamespace");
     when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentJobName())
         .thenReturn("theParentJob");
-    when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentRunId()).thenReturn("ABCD");
+    when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentRunId())
+        .thenReturn(Optional.of(UUID.randomUUID()));
     JobConf conf = new JobConf();
     FileInputFormat.addInputPath(conf, new org.apache.hadoop.fs.Path(csvUri));
     JavaRDD<Tuple2<LongWritable, Text>> csvRdd =

@@ -60,6 +60,7 @@ import scala.runtime.AbstractFunction0;
 public class RddExecutionContext implements ExecutionContext {
   private final OpenLineageContext sparkContext;
   private final Optional<SparkContext> sparkContextOption;
+  private final UUID runId = UUID.randomUUID();
   private List<URI> inputs;
   private List<URI> outputs;
   private String jobSuffix;
@@ -156,14 +157,7 @@ public class RddExecutionContext implements ExecutionContext {
             .eventType("START")
             .inputs(buildInputs(inputs))
             .outputs(buildOutputs(outputs))
-            .run(
-                ol.newRunBuilder()
-                    .runId(
-                        PlanUtils.convertToUUID
-                            .apply(sparkContext.getParentRunId())
-                            .orElse(UUID.randomUUID()))
-                    .facets(buildRunFacets(null))
-                    .build())
+            .run(ol.newRunBuilder().runId(runId).facets(buildRunFacets(null)).build())
             .job(buildJob(jobStart.jobId()))
             .build();
 
@@ -182,10 +176,7 @@ public class RddExecutionContext implements ExecutionContext {
             .outputs(buildOutputs(outputs))
             .run(
                 ol.newRunBuilder()
-                    .runId(
-                        PlanUtils.convertToUUID
-                            .apply(sparkContext.getParentRunId())
-                            .orElse(UUID.randomUUID()))
+                    .runId(runId)
                     .facets(buildRunFacets(buildJobErrorFacet(jobEnd.jobResult())))
                     .build())
             .job(buildJob(jobEnd.jobId()))
@@ -201,24 +192,21 @@ public class RddExecutionContext implements ExecutionContext {
   }
 
   protected OpenLineage.RunFacets buildRunFacets(ErrorFacet jobError) {
-    OpenLineage.RunFacetsBuilder builder =
-        new OpenLineage.RunFacetsBuilder().parent(buildParentFacet());
+    OpenLineage.RunFacetsBuilder builder = new OpenLineage.RunFacetsBuilder();
+    buildParentFacet().ifPresent(builder::parent);
     if (jobError != null) {
       builder.put("spark.exception", jobError);
     }
     return builder.build();
   }
 
-  private OpenLineage.ParentRunFacet buildParentFacet() {
-    if (sparkContext.getParentRunId() != null
-        && sparkContext.getParentRunId().trim().length() > 0) {
-      return PlanUtils.parentRunFacet(
-          sparkContext.getParentRunId(),
-          sparkContext.getParentJobName(),
-          sparkContext.getJobNamespace());
-    } else {
-      return null;
-    }
+  private Optional<OpenLineage.ParentRunFacet> buildParentFacet() {
+    return sparkContext
+        .getParentRunId()
+        .map(
+            runId ->
+                PlanUtils.parentRunFacet(
+                    runId, sparkContext.getParentJobName(), sparkContext.getJobNamespace()));
   }
 
   protected ErrorFacet buildJobErrorFacet(JobResult jobResult) {

@@ -1,7 +1,6 @@
 package openlineage.spark.agent;
 
 import static openlineage.spark.agent.ArgumentParser.DEFAULTS;
-import static openlineage.spark.agent.lifecycle.plan.PlanUtils.convertToUUID;
 import static openlineage.spark.agent.lifecycle.plan.ScalaConversionUtils.asJavaOptional;
 import static openlineage.spark.agent.lifecycle.plan.ScalaConversionUtils.toScalaFn;
 
@@ -197,21 +196,18 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   private static OpenLineage.RunFacets errorRunFacet(Exception e, OpenLineage ol) {
     OpenLineage.CustomFacetBuilder errorFacet = ol.newCustomFacetBuilder();
     errorFacet.put("exception", e);
-    errorFacet.build();
 
     OpenLineage.RunFacetsBuilder runFacetsBuilder = ol.newRunFacetsBuilder();
     runFacetsBuilder.put("lineage.error", errorFacet.build());
-    runFacetsBuilder.build();
     return runFacetsBuilder.build();
   }
 
   public static OpenLineage.RunEvent buildErrorLineageEvent(
       OpenLineage ol, OpenLineage.RunFacets runFacets) {
-    UUID runId =
-        convertToUUID.apply(contextFactory.sparkContext.getParentRunId()).orElse(UUID.randomUUID());
     return ol.newRunEventBuilder()
         .eventTime(ZonedDateTime.now())
-        .run(ol.newRun(runId, runFacets))
+        // TODO: what UUID should be here, cause we don't have ExecutionContext here?
+        .run(ol.newRun(UUID.randomUUID(), runFacets))
         .job(
             ol.newJobBuilder()
                 .namespace(contextFactory.sparkContext.getJobNamespace())
@@ -267,7 +263,8 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       String namespace =
           findSparkConfigKey(conf, SPARK_CONF_NAMESPACE_KEY, DEFAULTS.getNamespace());
       String jobName = findSparkConfigKey(conf, SPARK_CONF_JOB_NAME_KEY, DEFAULTS.getJobName());
-      String runId = findSparkConfigKey(conf, SPARK_CONF_PARENT_RUN_ID_KEY, DEFAULTS.getRunId());
+      String runId =
+          findSparkConfigKey(conf, SPARK_CONF_PARENT_RUN_ID_KEY, DEFAULTS.getParentRunId());
       Optional<String> apiKey =
           findSparkConfigKey(conf, SPARK_CONF_API_KEY).filter(str -> !str.isEmpty());
       return new ArgumentParser(host, version, namespace, jobName, runId, apiKey);

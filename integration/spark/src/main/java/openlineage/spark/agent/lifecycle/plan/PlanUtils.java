@@ -172,22 +172,19 @@ public class PlanUtils {
   }
 
   /**
-   * Construct a {@link OpenLineage.ParentRunFacet} given the parent job's runId, job name, and
-   * namespace.
+   * Construct a {@link OpenLineage.ParentRunFacet} given the parent job's parentRunId, job name,
+   * and namespace.
    *
-   * @param runId
+   * @param parentRunId
    * @param parentJob
    * @param parentJobNamespace
    * @return
    */
   public static OpenLineage.ParentRunFacet parentRunFacet(
-      String runId, String parentJob, String parentJobNamespace) {
+      UUID parentRunId, String parentJob, String parentJobNamespace) {
     return new OpenLineage(URI.create(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
         .newParentRunFacetBuilder()
-        .run(
-            new OpenLineage.ParentRunFacetRunBuilder()
-                .runId(convertToUUID.apply(runId).orElse(UUID.randomUUID()))
-                .build())
+        .run(new OpenLineage.ParentRunFacetRunBuilder().runId(parentRunId).build())
         .job(
             new OpenLineage.ParentRunFacetJobBuilder()
                 .name(parentJob)

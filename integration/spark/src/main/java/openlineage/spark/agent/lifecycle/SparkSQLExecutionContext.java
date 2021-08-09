@@ -7,6 +7,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -108,11 +109,13 @@ public class SparkSQLExecutionContext implements ExecutionContext {
         .collect(Collectors.toList());
   }
 
-  private OpenLineage.ParentRunFacet buildParentFacet() {
-    return PlanUtils.parentRunFacet(
-        sparkContext.getParentRunId(),
-        sparkContext.getParentJobName(),
-        sparkContext.getJobNamespace());
+  private Optional<OpenLineage.ParentRunFacet> buildParentFacet() {
+    return sparkContext
+        .getParentRunId()
+        .map(
+            runId ->
+                PlanUtils.parentRunFacet(
+                    runId, sparkContext.getParentJobName(), sparkContext.getJobNamespace()));
   }
 
   static OpenLineage.InputDataset convertToInput(OpenLineage.Dataset dataset) {
@@ -193,9 +196,10 @@ public class SparkSQLExecutionContext implements ExecutionContext {
   protected OpenLineage.RunFacets buildRunFacets(
       LogicalPlanFacet logicalPlanFacet,
       ErrorFacet jobError,
-      OpenLineage.ParentRunFacet parentRunFacet) {
-    OpenLineage.RunFacetsBuilder builder =
-        new OpenLineage.RunFacetsBuilder().parent(parentRunFacet);
+      Optional<OpenLineage.ParentRunFacet> parentRunFacet) {
+    OpenLineage.RunFacetsBuilder builder = new OpenLineage.RunFacetsBuilder();
+    parentRunFacet.ifPresent(builder::parent);
+
     if (logicalPlanFacet != null) {
       builder.put("spark.logicalPlan", logicalPlanFacet);
     }
