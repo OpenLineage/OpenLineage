@@ -22,7 +22,7 @@ public class SchemaParser {
         String typeName = typeJson.get("type").asText();
         if (typeName.equals("string") || typeName.equals("integer") || typeName.equals("number") || typeName.equals("boolean")) {
           return new PrimitiveType(typeName, typeJson.has("format") ? typeJson.get("format").asText() : null);
-        } else if (typeName.equals("object") && (typeJson.has("properties") || typeJson.has("additionalProperties"))) {
+        } else if (typeName.equals("object") && (typeJson.has("properties") || typeJson.has("additionalProperties") || typeJson.has("patternProperties"))) {
           List<Field> fields = new ArrayList<Field>();
           boolean hasAdditionalProperties = false;
           Type additionalPropertiesType = null;
@@ -40,6 +40,17 @@ public class SchemaParser {
             JsonNode additionalProperties = typeJson.get("additionalProperties");
             if (additionalProperties.isObject()) {
               additionalPropertiesType = parse(additionalProperties);
+            }
+          } else if (typeJson.has("patternProperties")) {
+            hasAdditionalProperties = true;
+            JsonNode patternProperties = typeJson.get("patternProperties");
+            if (patternProperties.isObject()) {
+              Iterator<Entry<String, JsonNode>> patternFields = patternProperties.fields();
+              Entry<String, JsonNode> patternField = patternFields.hasNext() ? patternFields.next() : null;
+              if (patternField == null || patternFields.hasNext() || !patternField.getValue().isObject()) {
+                throw new RuntimeException("can't parse type " + patternProperties);
+              }
+              additionalPropertiesType = parse(patternField.getValue());
             }
           }
           return new ObjectType(fields, hasAdditionalProperties, additionalPropertiesType);

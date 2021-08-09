@@ -64,7 +64,7 @@ class ExpectationsParserResult:
 class GreatExpectationsAssertion:
     expectationType: str = attr.ib()
     success: bool = attr.ib()
-    columnId: Optional[str] = attr.ib(default=None)
+    column: Optional[str] = attr.ib(default=None)
 
 
 @attr.s
@@ -211,7 +211,7 @@ class GreatExpectationsExtractorImpl(BaseExtractor):
                 assertions.append(GreatExpectationsAssertion(
                     expectationType=expectation['expectation_config']['expectation_type'],
                     success=expectation['success'],
-                    columnId=expectation['expectation_config']['kwargs'].get('column', None)
+                    column=expectation['expectation_config']['kwargs'].get('column', None)
                 ))
 
             return GreatExpectationsAssertionsDatasetFacet(assertions)

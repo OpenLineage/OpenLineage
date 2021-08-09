@@ -50,7 +50,6 @@ $ python3 setup.py install
 OpenLineage client depends on environment variables:
 
 * `OPENLINEAGE_URL` - point to service which will consume OpenLineage events
-* `OPENLINEAGE_PRODUCER` - name of producer that client will send along with your events. This will be dropped in future versions.
 * `OPENLINEAGE_API_KEY` - set if consumer of OpenLineage events requires `Bearer` authentication key
 * `OPENLINEAGE_NAMESPACE` - set if you are using something other than the `default` namespace for job namespace.
 
