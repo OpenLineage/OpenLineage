@@ -1,11 +1,11 @@
-package openlineage.spark.agent.lifecycle.plan;
+package openlineage.spark.agent.lifecycle.plan.visitor;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import io.openlineage.client.OpenLineage;
 import java.util.List;
 import java.util.stream.Collectors;
-import openlineage.spark.agent.facets.OutputStatisticsFacet;
+import openlineage.spark.agent.lifecycle.plan.PlanUtils;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.InsertIntoDataSourceCommand;
 import scala.PartialFunction;
@@ -31,8 +31,7 @@ public class InsertIntoDataSourceVisitor
 
   @Override
   public List<OpenLineage.Dataset> apply(LogicalPlan x) {
-    OutputStatisticsFacet outputStats =
-        PlanUtils.getOutputStats(((InsertIntoDataSourceCommand) x).metrics());
+
     return PlanUtils.applyFirst(
             datasetProviders, ((InsertIntoDataSourceCommand) x).logicalRelation())
         .stream()
@@ -40,7 +39,7 @@ public class InsertIntoDataSourceVisitor
         .peek(
             ds -> {
               Builder<String, OpenLineage.CustomFacet> facetsMap =
-                  ImmutableMap.<String, OpenLineage.CustomFacet>builder().put("stats", outputStats);
+                  ImmutableMap.<String, OpenLineage.CustomFacet>builder();
               if (ds.getFacets().getAdditionalProperties() != null) {
                 facetsMap.putAll(ds.getFacets().getAdditionalProperties());
               }

@@ -40,14 +40,16 @@ public class SparkSQLExecutionContext implements ExecutionContext {
   private final UUID runUuid = UUID.randomUUID();
 
   private OpenLineageContext sparkContext;
-  private final List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> outputDatasetSupplier;
-  private final List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> inputDatasetSupplier;
+  private final List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>>
+      outputDatasetSupplier;
+  private final List<PartialFunction<LogicalPlan, List<OpenLineage.InputDataset>>>
+      inputDatasetSupplier;
 
   public SparkSQLExecutionContext(
       long executionId,
       OpenLineageContext sparkContext,
-      List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> outputDatasetSupplier,
-      List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> inputDatasetSupplier) {
+      List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>> outputDatasetSupplier,
+      List<PartialFunction<LogicalPlan, List<OpenLineage.InputDataset>>> inputDatasetSupplier) {
     this.executionId = executionId;
     this.sparkContext = sparkContext;
     this.queryExecution = SQLExecution.getQueryExecution(executionId);
@@ -69,25 +71,17 @@ public class SparkSQLExecutionContext implements ExecutionContext {
       log.info("No execution info {}", queryExecution);
       return;
     }
-    List<OpenLineage.Dataset> outputDatasets =
+    List<OpenLineage.OutputDataset> outputDatasets =
         PlanUtils.applyFirst(outputDatasetSupplier, queryExecution.optimizedPlan());
-    List<OpenLineage.Dataset> inputDatasets = getInputDatasets();
+    List<OpenLineage.InputDataset> inputDatasets = getInputDatasets();
 
     OpenLineage ol = new OpenLineage(URI.create(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI));
     OpenLineage.RunEvent event =
         ol.newRunEventBuilder()
             .eventTime(toZonedTime(jobStart.time()))
             .eventType("START")
-            .inputs(
-                inputDatasets.stream()
-                    .map(SparkSQLExecutionContext::convertToInput)
-                    .collect(Collectors.toList()))
-            .outputs(
-                outputDatasets == null
-                    ? null
-                    : outputDatasets.stream()
-                        .map(SparkSQLExecutionContext::convertToOutput)
-                        .collect(Collectors.toList()))
+            .inputs(inputDatasets)
+            .outputs(outputDatasets)
             .run(
                 buildRun(
                     buildRunFacets(
@@ -101,7 +95,7 @@ public class SparkSQLExecutionContext implements ExecutionContext {
     sparkContext.emit(event);
   }
 
-  private List<OpenLineage.Dataset> getInputDatasets() {
+  private List<OpenLineage.InputDataset> getInputDatasets() {
     return JavaConversions.seqAsJavaList(
             queryExecution.optimizedPlan().collect(PlanUtils.merge(inputDatasetSupplier)))
         .stream()
@@ -145,25 +139,17 @@ public class SparkSQLExecutionContext implements ExecutionContext {
       log.debug("Traversing optimized plan {}", queryExecution.optimizedPlan().toJSON());
       log.debug("Physical plan executed {}", queryExecution.executedPlan().toJSON());
     }
-    List<OpenLineage.Dataset> outputDatasets =
+    List<OpenLineage.OutputDataset> outputDatasets =
         PlanUtils.applyFirst(outputDatasetSupplier, queryExecution.optimizedPlan());
-    List<OpenLineage.Dataset> inputDatasets = getInputDatasets();
+    List<OpenLineage.InputDataset> inputDatasets = getInputDatasets();
 
     OpenLineage ol = new OpenLineage(URI.create(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI));
     OpenLineage.RunEvent event =
         ol.newRunEventBuilder()
             .eventTime(toZonedTime(jobEnd.time()))
             .eventType(getEventType(jobEnd.jobResult()))
-            .inputs(
-                inputDatasets.stream()
-                    .map(SparkSQLExecutionContext::convertToInput)
-                    .collect(Collectors.toList()))
-            .outputs(
-                outputDatasets == null
-                    ? null
-                    : outputDatasets.stream()
-                        .map(SparkSQLExecutionContext::convertToOutput)
-                        .collect(Collectors.toList()))
+            .inputs(inputDatasets)
+            .outputs(outputDatasets)
             .run(
                 buildRun(
                     buildRunFacets(

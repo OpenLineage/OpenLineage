@@ -4,6 +4,15 @@ import io.openlineage.client.OpenLineage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
+import openlineage.spark.agent.lifecycle.plan.visitor.AppendDataVisitor;
+import openlineage.spark.agent.lifecycle.plan.visitor.DatasetSourceVisitor;
+import openlineage.spark.agent.lifecycle.plan.visitor.InsertIntoDataSourceDirVisitor;
+import openlineage.spark.agent.lifecycle.plan.visitor.InsertIntoDataSourceVisitor;
+import openlineage.spark.agent.lifecycle.plan.visitor.InsertIntoDirVisitor;
+import openlineage.spark.agent.lifecycle.plan.visitor.InsertIntoHadoopFsRelationVisitor;
+import openlineage.spark.agent.lifecycle.plan.visitor.SaveIntoDataSourceCommandVisitor;
+import openlineage.spark.agent.lifecycle.plan.wrapper.OutputDatasetVisitor;
+import openlineage.spark.agent.lifecycle.plan.wrapper.OutputDatasetWithMetadataVisitor;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import scala.PartialFunction;
@@ -14,7 +23,7 @@ import scala.PartialFunction;
  * {@link ClassNotFoundException}s during plan traversal.
  */
 public class OutputDatasetVisitors
-    implements Supplier<List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>>> {
+    implements Supplier<List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>>> {
   private final SQLContext sqlContext;
   private final Supplier<List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>>>
       datasetProviders;
@@ -27,18 +36,21 @@ public class OutputDatasetVisitors
   }
 
   @Override
-  public List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> get() {
-    List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> list = new ArrayList();
+  public List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>> get() {
+    List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>> list = new ArrayList<>();
     List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> providers =
         datasetProviders.get();
 
-    list.add(new InsertIntoDataSourceDirVisitor());
-    list.add(new InsertIntoDataSourceVisitor(providers));
-    list.add(new InsertIntoHadoopFsRelationVisitor());
-    list.add(new SaveIntoDataSourceCommandVisitor(sqlContext, providers));
-    list.add(new DatasetSourceVisitor());
-    list.add(new AppendDataVisitor(providers));
-    list.add(new InsertIntoDirVisitor(sqlContext));
+    list.add(new OutputDatasetWithMetadataVisitor(new InsertIntoDataSourceDirVisitor()));
+    list.add(new OutputDatasetWithMetadataVisitor(new InsertIntoDataSourceVisitor(providers)));
+    list.add(new OutputDatasetWithMetadataVisitor(new InsertIntoHadoopFsRelationVisitor()));
+    list.add(
+        new OutputDatasetWithMetadataVisitor(
+            new SaveIntoDataSourceCommandVisitor(sqlContext, providers)));
+    list.add(new OutputDatasetVisitor(new DatasetSourceVisitor()));
+    list.add(new OutputDatasetVisitor(new AppendDataVisitor(providers)));
+    list.add(new OutputDatasetVisitor(new InsertIntoDirVisitor(sqlContext)));
+
     return list;
   }
 }

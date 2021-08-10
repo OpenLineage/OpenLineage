@@ -1,4 +1,4 @@
-package openlineage.spark.agent.lifecycle.plan;
+package openlineage.spark.agent.lifecycle.plan.visitor;
 
 import io.openlineage.client.OpenLineage;
 import java.net.URI;
@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import openlineage.spark.agent.client.OpenLineageClient;
+import openlineage.spark.agent.lifecycle.plan.PlanUtils;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -64,7 +65,7 @@ public class LogicalRelationVisitor
     return x instanceof LogicalRelation
         &&
         // ignore DatasetSources since they're handled by the DatasetSourceVisitor
-        !(((LogicalRelation) x).relation() instanceof DatasetSource);
+        !(((LogicalRelation) x).relation() instanceof DatasetSourceVisitor.DatasetSource);
   }
 
   @Override

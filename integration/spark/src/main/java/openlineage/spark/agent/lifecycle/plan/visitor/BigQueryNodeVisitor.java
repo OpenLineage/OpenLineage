@@ -1,4 +1,4 @@
-package openlineage.spark.agent.lifecycle.plan;
+package openlineage.spark.agent.lifecycle.plan.visitor;
 
 import com.google.cloud.spark.bigquery.BigQueryRelation;
 import com.google.cloud.spark.bigquery.BigQueryRelationProvider;
@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
+import openlineage.spark.agent.lifecycle.plan.PlanUtils;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;

@@ -1,11 +1,10 @@
 package openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
-import openlineage.spark.agent.OpenLineageContext;
-import org.apache.spark.sql.SQLContext;
+import java.util.stream.Collectors;
+import openlineage.spark.agent.lifecycle.plan.wrapper.InputDatasetVisitor;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import scala.PartialFunction;
 
@@ -15,25 +14,15 @@ import scala.PartialFunction;
  * {@link ClassNotFoundException}s during plan traversal.
  */
 public class InputDatasetVisitors
-    implements Supplier<List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>>> {
-  private final SQLContext sqlContext;
-  private OpenLineageContext sparkContext;
+    implements Supplier<List<PartialFunction<LogicalPlan, List<OpenLineage.InputDataset>>>> {
+  private Supplier<List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>>> commonVisitors;
 
-  public InputDatasetVisitors(SQLContext sqlContext, OpenLineageContext sparkContext) {
-    this.sqlContext = sqlContext;
-    this.sparkContext = sparkContext;
+  public InputDatasetVisitors(CommonDatasetVisitors commonDatasetVisitors) {
+    this.commonVisitors = commonDatasetVisitors;
   }
 
   @Override
-  public List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> get() {
-    List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> list = new ArrayList<>();
-    list.add(new LogicalRelationVisitor(sqlContext.sparkContext(), sparkContext.getJobNamespace()));
-    list.add(new DatasetSourceVisitor());
-    list.add(new LogicalRDDVisitor());
-    list.add(new CommandPlanVisitor(new ArrayList<>(list)));
-    if (BigQueryNodeVisitor.hasBigQueryClasses()) {
-      list.add(new BigQueryNodeVisitor(sqlContext));
-    }
-    return list;
+  public List<PartialFunction<LogicalPlan, List<OpenLineage.InputDataset>>> get() {
+    return commonVisitors.get().stream().map(InputDatasetVisitor::new).collect(Collectors.toList());
   }
 }

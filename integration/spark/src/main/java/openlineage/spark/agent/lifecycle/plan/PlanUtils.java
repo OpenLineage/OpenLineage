@@ -7,10 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
 import openlineage.spark.agent.client.OpenLineageClient;
-import openlineage.spark.agent.facets.OutputStatisticsFacet;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.sql.execution.metric.SQLMetric;
@@ -138,26 +136,6 @@ public class PlanUtils {
   }
 
   /**
-   * Construct a {@link OpenLineage.DatasetFacets} given a schema, a namespace, and an {@link
-   * OutputStatisticsFacet}.
-   *
-   * @param schema
-   * @param namespaceUri
-   * @param outputStats
-   * @return
-   */
-  public static OpenLineage.DatasetFacets datasetFacet(
-      StructType schema, String namespaceUri, OutputStatisticsFacet outputStats) {
-    OpenLineage.DatasetFacetsBuilder builder =
-        new OpenLineage.DatasetFacetsBuilder()
-            .schema(schemaFacet(schema))
-            .dataSource(datasourceFacet(namespaceUri));
-
-    builder.put("stats", outputStats);
-    return builder.build();
-  }
-
-  /**
    * Construct a {@link OpenLineage.DatasourceDatasetFacet} given a namespace for the datasource.
    *
    * @param namespaceUri
@@ -193,7 +171,8 @@ public class PlanUtils {
         .build();
   }
 
-  public static OutputStatisticsFacet getOutputStats(Map<String, SQLMetric> metrics) {
+  public static OpenLineage.OutputStatisticsOutputDatasetFacet getOutputStats(
+      OpenLineage ol, Map<String, SQLMetric> metrics) {
     long rowCount =
         metrics
             .getOrElse(
@@ -216,10 +195,10 @@ public class PlanUtils {
                   }
                 })
             .value();
-    return new OutputStatisticsFacet(rowCount, outputBytes);
+    return ol.newOutputStatisticsOutputDatasetFacet(rowCount, outputBytes);
   }
 
-  static Path getDirectoryPath(Path p, Configuration hadoopConf) {
+  public static Path getDirectoryPath(Path p, Configuration hadoopConf) {
     try {
       if (p.getFileSystem(hadoopConf).getFileStatus(p).isFile()) {
         return p.getParent();
@@ -230,17 +209,5 @@ public class PlanUtils {
       log.warn("Unable to get file system for path ", e);
       return p;
     }
-  }
-
-  public static final Function<String, Optional<UUID>> convertToUUID = tryConvert(UUID::fromString);
-
-  private static <T, R> Function<T, Optional<R>> tryConvert(Function<T, R> func) {
-    return (t) -> {
-      try {
-        return Optional.ofNullable(func.apply(t));
-      } catch (Exception e) {
-        return Optional.empty();
-      }
-    };
   }
 }

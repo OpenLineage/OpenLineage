@@ -8,6 +8,7 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 import openlineage.spark.agent.SparkAgentTestExtension;
+import openlineage.spark.agent.lifecycle.plan.visitor.LogicalRelationVisitor;
 import org.apache.spark.Partition;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;

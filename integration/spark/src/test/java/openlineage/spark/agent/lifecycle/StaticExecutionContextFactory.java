@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import openlineage.spark.agent.OpenLineageContext;
 import openlineage.spark.agent.OpenLineageSparkListener;
+import openlineage.spark.agent.lifecycle.plan.CommonDatasetVisitors;
 import openlineage.spark.agent.lifecycle.plan.InputDatasetVisitors;
 import openlineage.spark.agent.lifecycle.plan.OutputDatasetVisitors;
 import org.apache.spark.sql.SQLContext;
@@ -66,10 +67,12 @@ public class StaticExecutionContextFactory extends ContextFactory {
         .map(
             qe -> {
               SQLContext sqlContext = qe.sparkPlan().sqlContext();
+              CommonDatasetVisitors commonDatasetVisitors =
+                  new CommonDatasetVisitors(sqlContext, sparkContext);
               InputDatasetVisitors inputDatasetVisitors =
-                  new InputDatasetVisitors(sqlContext, sparkContext);
+                  new InputDatasetVisitors(commonDatasetVisitors);
               OutputDatasetVisitors outputDatasetVisitors =
-                  new OutputDatasetVisitors(sqlContext, inputDatasetVisitors);
+                  new OutputDatasetVisitors(sqlContext, commonDatasetVisitors);
               SparkSQLExecutionContext sparksql =
                   new SparkSQLExecutionContext(
                       executionId,

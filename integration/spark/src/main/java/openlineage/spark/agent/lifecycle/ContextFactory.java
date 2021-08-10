@@ -2,6 +2,7 @@ package openlineage.spark.agent.lifecycle;
 
 import lombok.AllArgsConstructor;
 import openlineage.spark.agent.OpenLineageContext;
+import openlineage.spark.agent.lifecycle.plan.CommonDatasetVisitors;
 import openlineage.spark.agent.lifecycle.plan.InputDatasetVisitors;
 import openlineage.spark.agent.lifecycle.plan.OutputDatasetVisitors;
 import org.apache.spark.sql.SQLContext;
@@ -21,9 +22,11 @@ public class ContextFactory {
 
   public SparkSQLExecutionContext createSparkSQLExecutionContext(long executionId) {
     SQLContext sqlContext = SQLExecution.getQueryExecution(executionId).sparkPlan().sqlContext();
-    InputDatasetVisitors inputDatasetVisitors = new InputDatasetVisitors(sqlContext, sparkContext);
+    CommonDatasetVisitors commonDatasetVisitors =
+        new CommonDatasetVisitors(sqlContext, sparkContext);
+    InputDatasetVisitors inputDatasetVisitors = new InputDatasetVisitors(commonDatasetVisitors);
     OutputDatasetVisitors outputDatasetVisitors =
-        new OutputDatasetVisitors(sqlContext, inputDatasetVisitors);
+        new OutputDatasetVisitors(sqlContext, commonDatasetVisitors);
     return new SparkSQLExecutionContext(
         executionId, sparkContext, outputDatasetVisitors.get(), inputDatasetVisitors.get());
   }

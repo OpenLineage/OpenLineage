@@ -1,4 +1,4 @@
-package openlineage.spark.agent.lifecycle.plan;
+package openlineage.spark.agent.lifecycle.plan.visitor;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
@@ -7,7 +7,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import openlineage.spark.agent.facets.OutputStatisticsFacet;
+import openlineage.spark.agent.lifecycle.plan.PlanUtils;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
@@ -46,8 +46,6 @@ public class SaveIntoDataSourceCommandVisitor
 
   @Override
   public List<OpenLineage.Dataset> apply(LogicalPlan x) {
-    OutputStatisticsFacet outputStats =
-        PlanUtils.getOutputStats(((SaveIntoDataSourceCommand) x).metrics());
     BaseRelation relation;
     if (((SaveIntoDataSourceCommand) x).dataSource() instanceof RelationProvider) {
       RelationProvider p = (RelationProvider) ((SaveIntoDataSourceCommand) x).dataSource();
@@ -68,7 +66,7 @@ public class SaveIntoDataSourceCommandVisitor
         .peek(
             ds -> {
               Builder<String, OpenLineage.CustomFacet> facetsMap =
-                  ImmutableMap.<String, OpenLineage.CustomFacet>builder().put("stats", outputStats);
+                  ImmutableMap.<String, OpenLineage.CustomFacet>builder();
               if (ds.getFacets().getAdditionalProperties() != null) {
                 facetsMap.putAll(ds.getFacets().getAdditionalProperties());
               }
