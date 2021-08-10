@@ -15,7 +15,7 @@ from typing import List, Optional, Dict
 from openlineage.common.models import DbTableSchema, DbColumn
 from openlineage.client.facet import BaseFacet, DataSourceDatasetFacet, \
     DocumentationDatasetFacet, SchemaDatasetFacet, SchemaField
-from openlineage.client.run import Dataset as OpenLineageDataset
+from openlineage.client.run import Dataset as OpenLineageDataset, InputDataset, OutputDataset
 
 
 class Source:
@@ -87,17 +87,25 @@ class Dataset:
             source: Source,
             name: str, fields: List[Field] = None,
             description: Optional[str] = None,
-            custom_facets: Dict[str, BaseFacet] = None
+            custom_facets: Dict[str, BaseFacet] = None,
+            input_facets: Dict[str, BaseFacet] = None,
+            output_facets: Dict[str, BaseFacet] = None
     ):
         if fields is None:
             fields = []
         if custom_facets is None:
             custom_facets = {}
+        if input_facets is None:
+            input_facets = {}
+        if output_facets is None:
+            output_facets = {}
         self.source = source
         self.name = name
         self.fields = fields
         self.description = description
         self.custom_facets = custom_facets
+        self.input_facets = input_facets
+        self.output_facets = output_facets
 
     @staticmethod
     def from_table(source: Source,
@@ -182,6 +190,21 @@ class Dataset:
 
         if self.custom_facets:
             facets.update(self.custom_facets)
+
+        if len(self.input_facets):
+            return InputDataset(
+                namespace=self.source.name,
+                name=self.name,
+                facets=facets,
+                inputFacets=self.input_facets
+            )
+        if len(self.output_facets):
+            return OutputDataset(
+                namespace=self.source.name,
+                name=self.name,
+                facets=facets,
+                outputFacets=self.output_facets
+            )
 
         return OpenLineageDataset(
             namespace=self.source.name,

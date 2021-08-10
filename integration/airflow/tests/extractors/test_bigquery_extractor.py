@@ -24,6 +24,7 @@ from airflow.models import TaskInstance, DAG
 from airflow.utils.state import State
 
 from openlineage.airflow.extractors.bigquery_extractor import BigQueryExtractor
+from openlineage.client.facet import OutputStatisticsOutputDatasetFacet
 from openlineage.common.provider.bigquery import BigQueryJobRunFacet, \
     BigQueryStatisticsDatasetFacet, BigQueryErrorRunFacet
 from openlineage.common.utils import get_from_nullable_chain
@@ -111,6 +112,11 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
             rowCount=20,
             size=321
         ) == step_meta.outputs[0].custom_facets['stats']
+
+        assert OutputStatisticsOutputDatasetFacet(
+            rowCount=20,
+            size=321
+        ) == step_meta.outputs[0].output_facets['outputStatistics']
 
         assert len(step_meta.run_facets) == 1
         assert BigQueryJobRunFacet(
