@@ -170,6 +170,19 @@ jobs:
             - ./dist/*.whl
             - ./dist/*.tar.gz
 
+  build-integration-dbt:
+    working_directory: ~/openlineage/integration/dbt
+    docker:
+      - image: circleci/python:3.6
+    steps:
+      - *checkout_project_root
+      - run: python setup.py sdist bdist_wheel
+      - persist_to_workspace:
+          root: .
+          paths:
+            - ./dist/*.whl
+            - ./dist/*.tar.gz
+
   integration-test-spark:
     working_directory: ~/openlineage/integration/spark
     machine: true
@@ -285,6 +298,8 @@ workflows:
           <<: *only-on-release
       - build-integration-airflow:
           <<: *only-on-release
+      - build-integration-dbt:
+          <<: *only-on-release
       - release-java-client:
           <<: *only-on-release
           context: release
@@ -297,3 +312,4 @@ workflows:
           requires:
             - build-client-python
             - build-integration-common
+            - build-integration-dbt
