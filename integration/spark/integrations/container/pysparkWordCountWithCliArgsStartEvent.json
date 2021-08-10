@@ -56,12 +56,14 @@
           "name": "file",
           "uri": "file",
           "_schemaURL": "https://openlineage.io/spec/1-0-0/OpenLineage.json#/definitions/DatasourceDatasetFacet"
-        },
-        "stats": {
+        }
+      },
+      "outputFacets": {
+        "outputStatistics": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
-          "_schemaURL": "https://openlineage.io/spec/1-0-0/OpenLineage.json#/definitions/CustomFacet",
           "rowCount": 0,
-          "size": 0
+          "size": 0,
+          "_schemaURL": "https://openlineage.io/spec/1-0-0/OpenLineage.json#/definitions/OutputStatisticsOutputDatasetFacet"
         }
       }
     }
