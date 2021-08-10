@@ -82,19 +82,21 @@ public class LogicalRelationVisitor
       // make a best attempt at capturing the dataset information
       log.warn("Don't know how to extract dataset from unknown relation {}", logRel.relation());
       return Collections.singletonList(
-          ol.newInputDatasetBuilder()
-              .namespace(jobNamespace)
-              .name(
-                  logRel.relation().getClass().getSimpleName()
-                      + "_"
-                      + logRel.relation().schema().catalogString())
-              .facets(
-                  ol.newDatasetFacetsBuilder()
-                      .documentation(ol.newDocumentationDatasetFacet(logRel.simpleString()))
-                      .schema(PlanUtils.schemaFacet(logRel.schema()))
-                      .build())
-              .build());
+          PlanUtils.getDataset(getDatasetName(logRel), jobNamespace, getDatasetFacet(ol, logRel)));
     }
+  }
+
+  private OpenLineage.DatasetFacets getDatasetFacet(OpenLineage ol, LogicalRelation logRel) {
+    return ol.newDatasetFacetsBuilder()
+        .documentation(ol.newDocumentationDatasetFacet(logRel.simpleString()))
+        .schema(PlanUtils.schemaFacet(logRel.schema()))
+        .build();
+  }
+
+  private String getDatasetName(LogicalRelation logRel) {
+    return logRel.relation().getClass().getSimpleName()
+        + "_"
+        + logRel.relation().schema().catalogString();
   }
 
   private List<OpenLineage.Dataset> handleCatalogTable(LogicalRelation logRel) {
@@ -142,11 +144,6 @@ public class LogicalRelationVisitor
     // whereas postgres, mysql, and sqlserver use the scheme://hostname:port/db format.
     String url = relation.jdbcOptions().url().replaceFirst("jdbc:", "");
     OpenLineage.DatasetFacets datasetFacet = PlanUtils.datasetFacet(relation.schema(), url);
-    return Collections.singletonList(
-        new OpenLineage.InputDatasetBuilder()
-            .namespace(url)
-            .name(tableName)
-            .facets(datasetFacet)
-            .build());
+    return Collections.singletonList(PlanUtils.getDataset(tableName, url, datasetFacet));
   }
 }

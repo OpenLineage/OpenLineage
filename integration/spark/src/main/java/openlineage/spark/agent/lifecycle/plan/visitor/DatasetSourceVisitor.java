@@ -67,11 +67,10 @@ public class DatasetSourceVisitor
         findDatasetSource(x)
             .orElseThrow(() -> new RuntimeException("Couldn't find DatasetSource in plan " + x));
     return Collections.singletonList(
-        new OpenLineage.InputDatasetBuilder()
-            .name(datasetSource.name())
-            .namespace(datasetSource.namespace())
-            .facets(PlanUtils.datasetFacet(x.schema(), datasetSource.namespace()))
-            .build());
+        PlanUtils.getDataset(
+            datasetSource.name(),
+            datasetSource.namespace(),
+            PlanUtils.datasetFacet(x.schema(), datasetSource.namespace())));
   }
 
   /**

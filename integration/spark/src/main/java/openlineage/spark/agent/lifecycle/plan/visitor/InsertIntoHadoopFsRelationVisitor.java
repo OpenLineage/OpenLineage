@@ -28,6 +28,8 @@ public class InsertIntoHadoopFsRelationVisitor
     String namespace = PlanUtils.namespaceUri(outputPath);
     return Collections.singletonList(
         PlanUtils.getDataset(
-            outputPath, namespace, PlanUtils.datasetFacet(command.query().schema(), namespace)));
+            outputPath.getPath(),
+            namespace,
+            PlanUtils.datasetFacet(command.query().schema(), namespace)));
   }
 }

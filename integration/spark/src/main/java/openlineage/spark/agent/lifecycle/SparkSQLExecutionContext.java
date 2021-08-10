@@ -112,22 +112,6 @@ public class SparkSQLExecutionContext implements ExecutionContext {
                     runId, sparkContext.getParentJobName(), sparkContext.getJobNamespace()));
   }
 
-  static OpenLineage.InputDataset convertToInput(OpenLineage.Dataset dataset) {
-    return new OpenLineage.InputDatasetBuilder()
-        .namespace(dataset.getNamespace())
-        .name(dataset.getName())
-        .facets(dataset.getFacets())
-        .build();
-  }
-
-  static OpenLineage.OutputDataset convertToOutput(OpenLineage.Dataset dataset) {
-    return new OpenLineage.OutputDatasetBuilder()
-        .namespace(dataset.getNamespace())
-        .name(dataset.getName())
-        .facets(dataset.getFacets())
-        .build();
-  }
-
   @Override
   public void end(SparkListenerJobEnd jobEnd) {
     log.info("Ending job as part of spark-sql:" + jobEnd.jobId());

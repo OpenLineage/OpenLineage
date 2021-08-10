@@ -32,6 +32,6 @@ public class InsertIntoDataSourceDirVisitor
     String namespace = PlanUtils.namespaceUri(outputPath);
     return Collections.singletonList(
         PlanUtils.getDataset(
-            outputPath, namespace, PlanUtils.datasetFacet(command.schema(), namespace)));
+            outputPath.getPath(), namespace, PlanUtils.datasetFacet(command.schema(), namespace)));
   }
 }

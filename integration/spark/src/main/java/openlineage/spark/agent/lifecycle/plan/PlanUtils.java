@@ -100,25 +100,36 @@ public class PlanUtils {
   public static OpenLineage.Dataset getDataset(URI outputPath, StructType schema) {
     String namespace = namespaceUri(outputPath);
     OpenLineage.DatasetFacets datasetFacet = datasetFacet(schema, namespace);
-    return getDataset(outputPath, namespace, datasetFacet);
+    return getDataset(outputPath.getPath(), namespace, datasetFacet);
   }
 
   /**
    * Construct a dataset given a {@link URI}, namespace, and preconstructed {@link
    * OpenLineage.DatasetFacets}.
    *
-   * @param outputPath
+   * @param name
    * @param namespace
    * @param datasetFacet
    * @return
    */
   public static OpenLineage.Dataset getDataset(
-      URI outputPath, String namespace, OpenLineage.DatasetFacets datasetFacet) {
-    return new OpenLineage.InputDatasetBuilder()
-        .namespace(namespace)
-        .name(outputPath.getPath())
-        .facets(datasetFacet)
-        .build();
+      String name, String namespace, OpenLineage.DatasetFacets datasetFacet) {
+    return new OpenLineage.Dataset() {
+      @Override
+      public String getNamespace() {
+        return namespace;
+      }
+
+      @Override
+      public String getName() {
+        return name;
+      }
+
+      @Override
+      public OpenLineage.DatasetFacets getFacets() {
+        return datasetFacet;
+      }
+    };
   }
 
   /**

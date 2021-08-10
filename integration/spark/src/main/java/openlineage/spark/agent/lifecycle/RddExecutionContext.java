@@ -229,13 +229,10 @@ public class RddExecutionContext implements ExecutionContext {
   }
 
   protected List<OpenLineage.OutputDataset> buildOutputs(List<URI> outputs) {
-    return outputs.stream()
-        .map(this::buildDataset)
-        .map(SparkSQLExecutionContext::convertToOutput)
-        .collect(Collectors.toList());
+    return outputs.stream().map(this::buildOutputDataset).collect(Collectors.toList());
   }
 
-  protected OpenLineage.Dataset buildDataset(URI uri) {
+  protected OpenLineage.InputDataset buildInputDataset(URI uri) {
     DatasetParseResult result = DatasetParser.parse(uri);
     return new OpenLineage.InputDatasetBuilder()
         .name(result.getName())
@@ -243,11 +240,16 @@ public class RddExecutionContext implements ExecutionContext {
         .build();
   }
 
+  protected OpenLineage.OutputDataset buildOutputDataset(URI uri) {
+    DatasetParseResult result = DatasetParser.parse(uri);
+    return new OpenLineage.OutputDatasetBuilder()
+        .name(result.getName())
+        .namespace(result.getNamespace())
+        .build();
+  }
+
   protected List<OpenLineage.InputDataset> buildInputs(List<URI> inputs) {
-    return inputs.stream()
-        .map(this::buildDataset)
-        .map(SparkSQLExecutionContext::convertToInput)
-        .collect(Collectors.toList());
+    return inputs.stream().map(this::buildInputDataset).collect(Collectors.toList());
   }
 
   protected List<URI> findOutputs(RDD<?> rdd, Configuration config) {
