@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import openlineage.spark.agent.client.OpenLineageClient;
+import openlineage.spark.agent.facets.OutputStatisticsFacet;
 import openlineage.spark.agent.lifecycle.plan.PlanUtils;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.command.DataWritingCommand;
@@ -59,16 +60,32 @@ public class OutputDatasetWithMetadataVisitor
 
     return visitor.apply(x).stream()
         .map(
-            dataset ->
-                ol.newOutputDatasetBuilder()
-                    .name(dataset.getName())
-                    .facets(dataset.getFacets())
-                    .namespace(dataset.getNamespace())
-                    .outputFacets(
-                        new OpenLineage.OutputDatasetOutputFacetsBuilder()
-                            .outputStatistics(outputStats)
-                            .build())
-                    .build())
+            dataset -> {
+              OpenLineage.DatasetFacets datasetFacets = dataset.getFacets();
+              OpenLineage.OutputDatasetOutputFacets outputFacet =
+                  new OpenLineage.OutputDatasetOutputFacetsBuilder()
+                      .outputStatistics(outputStats)
+                      .build();
+              // For backward compatibility, include the original "stats" facet in the dataset
+              // custom facets.
+              // This facet is deprecated and will be removed in a future release of the OpenLineage
+              // Spark integration.
+              if (!datasetFacets.getAdditionalProperties().containsKey("stats")) {
+                datasetFacets
+                    .getAdditionalProperties()
+                    .put(
+                        "stats",
+                        new OutputStatisticsFacet(
+                            outputFacet.getOutputStatistics().getRowCount(),
+                            outputFacet.getOutputStatistics().getSize()));
+              }
+              return ol.newOutputDatasetBuilder()
+                  .name(dataset.getName())
+                  .facets(datasetFacets)
+                  .namespace(dataset.getNamespace())
+                  .outputFacets(outputFacet)
+                  .build();
+            })
         .collect(Collectors.toList());
   }
 }
