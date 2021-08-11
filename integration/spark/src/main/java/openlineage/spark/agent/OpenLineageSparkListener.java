@@ -13,7 +13,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.WeakHashMap;
 import lombok.extern.slf4j.Slf4j;
 import openlineage.spark.agent.client.OpenLineageClient;
@@ -206,8 +205,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       OpenLineage ol, OpenLineage.RunFacets runFacets) {
     return ol.newRunEventBuilder()
         .eventTime(ZonedDateTime.now())
-        // TODO: what UUID should be here, cause we don't have ExecutionContext here?
-        .run(ol.newRun(UUID.randomUUID(), runFacets))
+        .run(ol.newRun(contextFactory.sparkContext.getParentRunId().orElse(null), runFacets))
         .job(
             ol.newJobBuilder()
                 .namespace(contextFactory.sparkContext.getJobNamespace())

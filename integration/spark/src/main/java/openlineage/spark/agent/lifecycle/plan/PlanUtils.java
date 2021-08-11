@@ -104,8 +104,8 @@ public class PlanUtils {
   }
 
   /**
-   * Construct a dataset given a {@link URI}, namespace, and preconstructed {@link
-   * OpenLineage.DatasetFacets}.
+   * Construct a dataset {@link OpenLineage.Dataset} given a name, namespace, and preconstructed
+   * {@link OpenLineage.DatasetFacets}.
    *
    * @param name
    * @param namespace

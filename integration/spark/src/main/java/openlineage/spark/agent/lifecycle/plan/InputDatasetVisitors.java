@@ -15,14 +15,15 @@ import scala.PartialFunction;
  */
 public class InputDatasetVisitors
     implements Supplier<List<PartialFunction<LogicalPlan, List<OpenLineage.InputDataset>>>> {
-  private Supplier<List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>>> commonVisitors;
+  private List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> commonVisitors;
 
-  public InputDatasetVisitors(CommonDatasetVisitors commonDatasetVisitors) {
+  public InputDatasetVisitors(
+      List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> commonDatasetVisitors) {
     this.commonVisitors = commonDatasetVisitors;
   }
 
   @Override
   public List<PartialFunction<LogicalPlan, List<OpenLineage.InputDataset>>> get() {
-    return commonVisitors.get().stream().map(InputDatasetVisitor::new).collect(Collectors.toList());
+    return commonVisitors.stream().map(InputDatasetVisitor::new).collect(Collectors.toList());
   }
 }

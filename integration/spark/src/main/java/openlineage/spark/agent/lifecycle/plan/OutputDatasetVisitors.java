@@ -4,13 +4,6 @@ import io.openlineage.client.OpenLineage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
-import openlineage.spark.agent.lifecycle.plan.visitor.AppendDataVisitor;
-import openlineage.spark.agent.lifecycle.plan.visitor.DatasetSourceVisitor;
-import openlineage.spark.agent.lifecycle.plan.visitor.InsertIntoDataSourceDirVisitor;
-import openlineage.spark.agent.lifecycle.plan.visitor.InsertIntoDataSourceVisitor;
-import openlineage.spark.agent.lifecycle.plan.visitor.InsertIntoDirVisitor;
-import openlineage.spark.agent.lifecycle.plan.visitor.InsertIntoHadoopFsRelationVisitor;
-import openlineage.spark.agent.lifecycle.plan.visitor.SaveIntoDataSourceCommandVisitor;
 import openlineage.spark.agent.lifecycle.plan.wrapper.OutputDatasetVisitor;
 import openlineage.spark.agent.lifecycle.plan.wrapper.OutputDatasetWithMetadataVisitor;
 import org.apache.spark.sql.SQLContext;
@@ -25,12 +18,11 @@ import scala.PartialFunction;
 public class OutputDatasetVisitors
     implements Supplier<List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>>> {
   private final SQLContext sqlContext;
-  private final Supplier<List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>>>
-      datasetProviders;
+  private final List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> datasetProviders;
 
   public OutputDatasetVisitors(
       SQLContext sqlContext,
-      Supplier<List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>>> datasetProviders) {
+      List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> datasetProviders) {
     this.sqlContext = sqlContext;
     this.datasetProviders = datasetProviders;
   }
@@ -38,17 +30,16 @@ public class OutputDatasetVisitors
   @Override
   public List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>> get() {
     List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>> list = new ArrayList<>();
-    List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> providers =
-        datasetProviders.get();
 
     list.add(new OutputDatasetWithMetadataVisitor(new InsertIntoDataSourceDirVisitor()));
-    list.add(new OutputDatasetWithMetadataVisitor(new InsertIntoDataSourceVisitor(providers)));
+    list.add(
+        new OutputDatasetWithMetadataVisitor(new InsertIntoDataSourceVisitor(datasetProviders)));
     list.add(new OutputDatasetWithMetadataVisitor(new InsertIntoHadoopFsRelationVisitor()));
     list.add(
         new OutputDatasetWithMetadataVisitor(
-            new SaveIntoDataSourceCommandVisitor(sqlContext, providers)));
+            new SaveIntoDataSourceCommandVisitor(sqlContext, datasetProviders)));
     list.add(new OutputDatasetVisitor(new DatasetSourceVisitor()));
-    list.add(new OutputDatasetVisitor(new AppendDataVisitor(providers)));
+    list.add(new OutputDatasetVisitor(new AppendDataVisitor(datasetProviders)));
     list.add(new OutputDatasetVisitor(new InsertIntoDirVisitor(sqlContext)));
 
     return list;

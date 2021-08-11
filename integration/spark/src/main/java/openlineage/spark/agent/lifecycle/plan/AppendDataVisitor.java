@@ -1,8 +1,7 @@
-package openlineage.spark.agent.lifecycle.plan.visitor;
+package openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
 import java.util.List;
-import openlineage.spark.agent.lifecycle.plan.PlanUtils;
 import org.apache.spark.sql.catalyst.plans.logical.AppendData;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import scala.PartialFunction;

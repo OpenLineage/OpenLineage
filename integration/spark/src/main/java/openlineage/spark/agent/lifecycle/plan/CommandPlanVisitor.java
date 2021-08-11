@@ -1,12 +1,10 @@
-package openlineage.spark.agent.lifecycle.plan.visitor;
+package openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import openlineage.spark.agent.lifecycle.plan.PlanUtils;
-import openlineage.spark.agent.lifecycle.plan.ScalaConversionUtils;
 import org.apache.spark.sql.catalyst.plans.logical.InsertIntoDir;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.command.InsertIntoDataSourceDirCommand;

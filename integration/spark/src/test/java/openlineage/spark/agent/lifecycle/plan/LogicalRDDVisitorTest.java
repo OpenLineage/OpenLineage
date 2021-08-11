@@ -6,7 +6,6 @@ import io.openlineage.client.OpenLineage;
 import java.nio.file.Path;
 import java.util.List;
 import openlineage.spark.agent.SparkAgentTestExtension;
-import openlineage.spark.agent.lifecycle.plan.visitor.LogicalRDDVisitor;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.FileInputFormat;

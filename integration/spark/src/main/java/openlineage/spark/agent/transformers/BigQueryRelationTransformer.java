@@ -9,16 +9,17 @@ import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.CtMethod;
 import lombok.extern.slf4j.Slf4j;
-import openlineage.spark.agent.lifecycle.plan.visitor.DatasetSourceVisitor;
+import openlineage.spark.agent.lifecycle.plan.DatasetSource;
+import openlineage.spark.agent.lifecycle.plan.DatasetSourceVisitor;
 
 /**
  * {@link ClassFileTransformer} that rewrites both the {@link
  * com.google.cloud.spark.bigquery.BigQueryRelation} class as well as the v2 {@link
  * com.google.cloud.spark.bigquery.v2.BigQueryDataSourceReader} class to implement the {@link
- * DatasetSourceVisitor.DatasetSource} interface by introducing the {@link
- * DatasetSourceVisitor.DatasetSource#name()} method, returning the fully qualified table name
+ * DatasetSource} interface by introducing the {@link
+ * DatasetSource#name()} method, returning the fully qualified table name
  * (&lt;projectId&gt;.&lt;dataset&gt;.&lt;table&gt;), and the {@link
- * DatasetSourceVisitor.DatasetSource#namespace()} method, returning the literal string "bigquery".
+ * DatasetSource#namespace()} method, returning the literal string "bigquery".
  */
 @Slf4j
 public class BigQueryRelationTransformer implements ClassFileTransformer {
@@ -84,8 +85,7 @@ public class BigQueryRelationTransformer implements ClassFileTransformer {
       } else {
         interfaces = Arrays.copyOf(interfaces, interfaces.length + 1);
       }
-      interfaces[interfaces.length - 1] =
-          ClassPool.getDefault().get(DatasetSourceVisitor.DatasetSource.class.getName());
+      interfaces[interfaces.length - 1] = ClassPool.getDefault().get(DatasetSource.class.getName());
 
       ctClass.setInterfaces(interfaces);
       ctClass.addMethod(CtMethod.make(nameMethod, ctClass));

@@ -1,4 +1,4 @@
-package openlineage.spark.agent.lifecycle.plan.visitor;
+package openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
 import java.util.ArrayList;
@@ -6,8 +6,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Stack;
 import java.util.stream.Collectors;
-import openlineage.spark.agent.lifecycle.plan.PlanUtils;
-import openlineage.spark.agent.lifecycle.plan.ScalaConversionUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.FileInputFormat;
