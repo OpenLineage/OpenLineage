@@ -2,10 +2,10 @@ package openlineage.spark.agent.lifecycle.plan;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.openlineage.client.OpenLineage;
 import java.nio.file.Path;
 import java.util.List;
 import openlineage.spark.agent.SparkAgentTestExtension;
-import openlineage.spark.agent.client.LineageEvent;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.FileInputFormat;
@@ -78,7 +78,7 @@ class LogicalRDDVisitorTest {
             false,
             session);
     assertThat(visitor.isDefinedAt(logicalRDD)).isTrue();
-    List<LineageEvent.Dataset> datasets = visitor.apply(logicalRDD);
+    List<OpenLineage.Dataset> datasets = visitor.apply(logicalRDD);
     assertThat(datasets)
         .singleElement()
         .hasFieldOrPropertyWithValue("name", "/path/to/data")

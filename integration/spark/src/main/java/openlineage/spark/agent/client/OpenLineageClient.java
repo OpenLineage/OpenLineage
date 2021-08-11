@@ -35,11 +35,11 @@ public class OpenLineageClient {
 
   public static final String OPEN_LINEAGE_CLIENT_URI = getUri();
   public static final String OPEN_LINEAGE_PARENT_FACET_URI =
-      "https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#ParentRunFacet";
+      "https://openlineage.io/spec/1-0-0/OpenLineage.json#/definitions/ParentRunFacet";
   public static final String OPEN_LINEAGE_DATASOURCE_FACET =
-      "https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#DatasourceDatasetFacet";
+      "https://openlineage.io/spec/1-0-0/OpenLineage.json#/definitions/DatasourceDatasetFacet";
   public static final String OPEN_LINEAGE_SCHEMA_FACET_URI =
-      "https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#SchemaDatasetFacet";
+      "https://openlineage.io/spec/1-0-0/OpenLineage.json#/definitions/SchemaDatasetFacet";
 
   private final CloseableHttpAsyncClient http;
   private final ExecutorService executorService;

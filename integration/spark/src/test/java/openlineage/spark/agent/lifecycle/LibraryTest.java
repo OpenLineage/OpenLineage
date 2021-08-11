@@ -11,6 +11,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.Resources;
+import io.openlineage.client.OpenLineage;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
@@ -19,11 +20,12 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import openlineage.spark.agent.SparkAgentTestExtension;
-import openlineage.spark.agent.client.LineageEvent;
 import openlineage.spark.agent.client.OpenLineageClient;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
@@ -43,6 +45,9 @@ import scala.Tuple2;
 @ExtendWith(SparkAgentTestExtension.class)
 public class LibraryTest {
 
+  private final TypeReference<Map<String, Object>> mapTypeReference =
+      new TypeReference<Map<String, Object>>() {};
+
   @AfterEach
   public void tearDown() throws Exception {
     SparkSession$.MODULE$.cleanupAnyExistingSession();
@@ -55,7 +60,7 @@ public class LibraryTest {
     when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentJobName())
         .thenReturn("job_name");
     when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentRunId())
-        .thenReturn("ea445b5c-22eb-457a-8007-01c7c52b6e54");
+        .thenReturn(Optional.of(UUID.fromString("ea445b5c-22eb-457a-8007-01c7c52b6e54")));
 
     final SparkSession spark =
         SparkSession.builder()
@@ -75,10 +80,11 @@ public class LibraryTest {
     spark.sparkContext().listenerBus().waitUntilEmpty(1000);
     spark.stop();
 
-    ArgumentCaptor<LineageEvent> lineageEvent = ArgumentCaptor.forClass(LineageEvent.class);
+    ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
+        ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
     Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(4))
         .emit(lineageEvent.capture());
-    List<LineageEvent> events = lineageEvent.getAllValues();
+    List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
 
     updateSnapshots("sparksql", events);
 
@@ -86,17 +92,15 @@ public class LibraryTest {
 
     ObjectMapper objectMapper = OpenLineageClient.getObjectMapper();
     for (int i = 0; i < events.size(); i++) {
-      LineageEvent event = events.get(i);
+      OpenLineage.RunEvent event = events.get(i);
       Map<String, Object> snapshot =
           objectMapper.readValue(
               Paths.get(String.format("integrations/%s/%d.json", "sparksql", i + 1)).toFile(),
-              new TypeReference<Map<String, Object>>() {});
+              mapTypeReference);
       assertEquals(
           snapshot,
           cleanSerializedMap(
-              objectMapper.readValue(
-                  objectMapper.writeValueAsString(event),
-                  new TypeReference<Map<String, Object>>() {})));
+              objectMapper.readValue(objectMapper.writeValueAsString(event), mapTypeReference)));
     }
     verifySerialization(events);
   }
@@ -147,7 +151,7 @@ public class LibraryTest {
     when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentJobName())
         .thenReturn("job_name");
     when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentRunId())
-        .thenReturn("8d99e33e-2a1c-4254-9600-18f23435fc3b");
+        .thenReturn(Optional.of(UUID.fromString("8d99e33e-2a1c-4254-9600-18f23435fc3b")));
 
     URL url = Resources.getResource("test_data/data.txt");
     SparkConf conf = new SparkConf().setAppName("Word Count").setMaster("local[*]");
@@ -162,25 +166,28 @@ public class LibraryTest {
 
     sc.stop();
 
-    ArgumentCaptor<LineageEvent> lineageEvent = ArgumentCaptor.forClass(LineageEvent.class);
+    ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
+        ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
     Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(2))
         .emit(lineageEvent.capture());
-    List<LineageEvent> events = lineageEvent.getAllValues();
+    List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
     assertEquals(2, events.size());
 
     updateSnapshots("sparkrdd", events);
 
     for (int i = 0; i < events.size(); i++) {
-      LineageEvent event = events.get(i);
+      OpenLineage.RunEvent event = events.get(i);
       String snapshot =
           new String(
               Files.readAllBytes(
                   Paths.get(String.format("integrations/%s/%d.json", "sparkrdd", i + 1))));
+
+      Map<String, Object> eventFields =
+          OpenLineageClient.getObjectMapper().convertValue(event, mapTypeReference);
+      ((Map<String, Object>) eventFields.get("run")).replace("runId", "fake_run_id");
+
       assertEquals(
-          snapshot,
-          OpenLineageClient.getObjectMapper()
-              .writerWithDefaultPrettyPrinter()
-              .writeValueAsString(event));
+          OpenLineageClient.getObjectMapper().readValue(snapshot, mapTypeReference), eventFields);
     }
 
     verifySerialization(events);
@@ -199,17 +206,18 @@ public class LibraryTest {
     assertThat(s).isEqualTo("map_partitions_numbers");
   }
 
-  private void verifySerialization(List<LineageEvent> events) throws JsonProcessingException {
-    for (LineageEvent event : events) {
+  private void verifySerialization(List<OpenLineage.RunEvent> events)
+      throws JsonProcessingException {
+    for (OpenLineage.RunEvent event : events) {
       assertNotNull(
           "Event can serialize", OpenLineageClient.getObjectMapper().writeValueAsString(event));
     }
   }
 
-  private void updateSnapshots(String prefix, List<LineageEvent> events) {
+  private void updateSnapshots(String prefix, List<OpenLineage.RunEvent> events) {
     if (System.getenv().containsKey("UPDATE_SNAPSHOT")) {
       for (int i = 0; i < events.size(); i++) {
-        LineageEvent event = events.get(i);
+        OpenLineage.RunEvent event = events.get(i);
         try {
           String url = String.format("integrations/%s/%d.json", prefix, i + 1);
           FileWriter myWriter = new FileWriter(url);

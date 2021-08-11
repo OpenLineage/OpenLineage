@@ -2,12 +2,11 @@ package openlineage.spark.agent.lifecycle.plan;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
+import io.openlineage.client.OpenLineage;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import openlineage.spark.agent.client.LineageEvent;
-import openlineage.spark.agent.facets.OutputStatisticsFacet;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
@@ -21,18 +20,18 @@ import scala.runtime.AbstractPartialFunction;
 
 /**
  * {@link LogicalPlan} visitor that matches an {@link SaveIntoDataSourceCommand} and extracts the
- * output {@link LineageEvent.Dataset} being written. Since the output datasource is a {@link
+ * output {@link OpenLineage.Dataset} being written. Since the output datasource is a {@link
  * BaseRelation}, we wrap it with an artificial {@link LogicalRelation} so we can delegate to other
  * plan visitors.
  */
 public class SaveIntoDataSourceCommandVisitor
-    extends AbstractPartialFunction<LogicalPlan, List<LineageEvent.Dataset>> {
+    extends AbstractPartialFunction<LogicalPlan, List<OpenLineage.Dataset>> {
   private final SQLContext sqlContext;
-  private final List<PartialFunction<LogicalPlan, List<LineageEvent.Dataset>>> relationVisitors;
+  private final List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> relationVisitors;
 
   public SaveIntoDataSourceCommandVisitor(
       SQLContext sqlContext,
-      List<PartialFunction<LogicalPlan, List<LineageEvent.Dataset>>> relationVisitors) {
+      List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> relationVisitors) {
     this.sqlContext = sqlContext;
     this.relationVisitors = relationVisitors;
   }
@@ -45,9 +44,7 @@ public class SaveIntoDataSourceCommandVisitor
   }
 
   @Override
-  public List<LineageEvent.Dataset> apply(LogicalPlan x) {
-    OutputStatisticsFacet outputStats =
-        PlanUtils.getOutputStats(((SaveIntoDataSourceCommand) x).metrics());
+  public List<OpenLineage.Dataset> apply(LogicalPlan x) {
     BaseRelation relation;
     if (((SaveIntoDataSourceCommand) x).dataSource() instanceof RelationProvider) {
       RelationProvider p = (RelationProvider) ((SaveIntoDataSourceCommand) x).dataSource();
@@ -67,12 +64,12 @@ public class SaveIntoDataSourceCommandVisitor
         // constructed datasets don't include the output stats, so add that facet here
         .peek(
             ds -> {
-              Builder<String, Object> facetsMap =
-                  ImmutableMap.<String, Object>builder().put("stats", outputStats);
-              if (ds.getFacets().getAdditionalFacets() != null) {
-                facetsMap.putAll(ds.getFacets().getAdditionalFacets());
+              Builder<String, OpenLineage.CustomFacet> facetsMap =
+                  ImmutableMap.<String, OpenLineage.CustomFacet>builder();
+              if (ds.getFacets().getAdditionalProperties() != null) {
+                facetsMap.putAll(ds.getFacets().getAdditionalProperties());
               }
-              ds.getFacets().setAdditional(facetsMap.build());
+              ds.getFacets().getAdditionalProperties().putAll(facetsMap.build());
             })
         .collect(Collectors.toList());
   }

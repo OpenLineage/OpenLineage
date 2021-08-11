@@ -2,12 +2,12 @@ package openlineage.spark.agent.lifecycle.plan;
 
 import com.google.cloud.spark.bigquery.BigQueryRelation;
 import com.google.cloud.spark.bigquery.BigQueryRelationProvider;
+import io.openlineage.client.OpenLineage;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
-import openlineage.spark.agent.client.LineageEvent.Dataset;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
@@ -18,11 +18,13 @@ import scala.runtime.AbstractPartialFunction;
 /**
  * {@link LogicalPlan} visitor that matches {@link BigQueryRelation}s or {@link
  * SaveIntoDataSourceCommand}s that use a {@link BigQueryRelationProvider}. This function extracts a
- * {@link Dataset} from the BigQuery table referenced by the relation. The convention used for
- * naming is a URI of <code>bigquery://&lt;projectId&gt;.&lt;.datasetId&gt;.&lt;tableName&gt;</code>
- * . The namespace for bigquery tables is always <code>bigquery</code> and the name is the FQN.
+ * {@link OpenLineage.Dataset} from the BigQuery table referenced by the relation. The convention
+ * used for naming is a URI of <code>
+ * bigquery://&lt;projectId&gt;.&lt;.datasetId&gt;.&lt;tableName&gt;</code> . The namespace for
+ * bigquery tables is always <code>bigquery</code> and the name is the FQN.
  */
-public class BigQueryNodeVisitor extends AbstractPartialFunction<LogicalPlan, List<Dataset>> {
+public class BigQueryNodeVisitor
+    extends AbstractPartialFunction<LogicalPlan, List<OpenLineage.Dataset>> {
   private final SQLContext sqlContext;
 
   public BigQueryNodeVisitor(SQLContext sqlContext) {
@@ -69,7 +71,7 @@ public class BigQueryNodeVisitor extends AbstractPartialFunction<LogicalPlan, Li
   }
 
   @Override
-  public List<Dataset> apply(LogicalPlan x) {
+  public List<OpenLineage.Dataset> apply(LogicalPlan x) {
     return bigQuerySupplier(x)
         .map(
             s -> {

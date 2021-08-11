@@ -2,16 +2,6 @@
   "eventType": "COMPLETE",
   "run": {
     "facets": {
-      "parent": {
-        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
-        "_schemaURL": "https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#ParentRunFacet",
-        "run": {
-          "runId": ""
-        },
-        "job": {
-          "namespace": "testPysparkWordCountWithCliArgs",
-        }
-      }
     }
   },
   "job": {
@@ -25,19 +15,19 @@
       "facets": {
         "schema": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
-          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#SchemaDatasetFacet",
           "fields": [
             {
               "name": "value",
               "type": "string"
             }
-          ]
+          ],
+          "_schemaURL": "https://openlineage.io/spec/1-0-0/OpenLineage.json#/definitions/SchemaDatasetFacet"
         },
         "dataSource": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
-          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#DatasourceDatasetFacet",
           "name": "file",
-          "uri": "file"
+          "uri": "file",
+          "_schemaURL": "https://openlineage.io/spec/1-0-0/OpenLineage.json#/definitions/DatasourceDatasetFacet"
         }
       }
     }
@@ -49,7 +39,6 @@
       "facets": {
         "schema": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
-          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#SchemaDatasetFacet",
           "fields": [
             {
               "name": "value",
@@ -59,22 +48,26 @@
               "name": "count",
               "type": "long"
             }
-          ]
+          ],
+          "_schemaURL": "https://openlineage.io/spec/1-0-0/OpenLineage.json#/definitions/SchemaDatasetFacet"
         },
         "dataSource": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
-          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#DatasourceDatasetFacet",
           "name": "file",
-          "uri": "file"
-        },
-        "stats": {
+          "uri": "file",
+          "_schemaURL": "https://openlineage.io/spec/1-0-0/OpenLineage.json#/definitions/DatasourceDatasetFacet"
+        }
+      },
+      "outputFacets": {
+        "outputStatistics": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
-          "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark/facets/spark-2.4/v1/outputStatisticsFacet",
           "rowCount": 0,
-          "size": 0
+          "size": 0,
+          "_schemaURL": "https://openlineage.io/spec/1-0-0/OpenLineage.json#/definitions/OutputStatisticsOutputDatasetFacet"
         }
       }
     }
   ],
-  "producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark"
+  "producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
+  "schemaURL": "https://openlineage.io/spec/1-0-0/OpenLineage.json#/definitions/RunEvent"
 }
