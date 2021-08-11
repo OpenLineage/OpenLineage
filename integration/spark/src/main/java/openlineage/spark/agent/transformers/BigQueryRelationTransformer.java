@@ -10,15 +10,13 @@ import javassist.CtClass;
 import javassist.CtMethod;
 import lombok.extern.slf4j.Slf4j;
 import openlineage.spark.agent.lifecycle.plan.DatasetSource;
-import openlineage.spark.agent.lifecycle.plan.DatasetSourceVisitor;
 
 /**
  * {@link ClassFileTransformer} that rewrites both the {@link
  * com.google.cloud.spark.bigquery.BigQueryRelation} class as well as the v2 {@link
  * com.google.cloud.spark.bigquery.v2.BigQueryDataSourceReader} class to implement the {@link
- * DatasetSource} interface by introducing the {@link
- * DatasetSource#name()} method, returning the fully qualified table name
- * (&lt;projectId&gt;.&lt;dataset&gt;.&lt;table&gt;), and the {@link
+ * DatasetSource} interface by introducing the {@link DatasetSource#name()} method, returning the
+ * fully qualified table name (&lt;projectId&gt;.&lt;dataset&gt;.&lt;table&gt;), and the {@link
  * DatasetSource#namespace()} method, returning the literal string "bigquery".
  */
 @Slf4j
