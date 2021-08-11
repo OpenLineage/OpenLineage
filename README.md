@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./doc/openlineage-logo.png" width="300px" />
+  <img src="./doc/openlineage-logo.png" width="375px" />
 </p>
 
 ## Badges
