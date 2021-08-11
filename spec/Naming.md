@@ -111,7 +111,7 @@ Identifier :
 ## Jobs
 ### Context
 
-A `Job` is a recurring data transformation with Inputs and outputs. Each instance is captured as a `Run` with corresponding metadata.
+A `Job` is a recurring data transformation with Inputs and outputs. Each execution is captured as a `Run` with corresponding metadata.
 A `Run` event identifies the `Job` it is an instance of by providing the job’s unique identifier.
 The `Job` identifier is composed of a `Namespace` and a `Name`. The job name is unique within that namespace.
 
@@ -142,7 +142,8 @@ For example an Airflow DAG contains tasks. An instance of the DAG is finished wh
 
 Since what we care about is identifying the job as rooted in a recurring schedule, we want to capture that connection and make sure that we treat the same application logic triggered at different schedules as different jobs. For example: if an Airflow DAG runs individual tasks per partition (for example market segments) using the same underlying job logic, they will be tracked as separate jobs.
 
-To capture this, a run event provides [a `ParentRun` facet](https://github.com/OpenLineage/OpenLineage/tree/main/spec/OpenLineage.json#L279-L328), referring to the parent `Job` and `Run`. This allows tracking a recurring job from the root of the schedule it is running for.
+To capture this, a run event provides [a `ParentRun` facet](https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#L282-L331), referring to the parent `Job` and `Run`. This allows tracking a recurring job from the root of the schedule it is running for.
+If there's a parent job, we use the same namespace, otherwise it is provided by configuration.
 
 Example:
 ```json
