@@ -1,4 +1,4 @@
-[![status](https://img.shields.io/badge/status-WIP-yellow.svg)](#status)
+[![status](https://img.shields.io/badge/status-active-brightgreen.svg)](#status)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/4888/badge)](https://bestpractices.coreinfrastructure.org/projects/4888)
 
 # OpenLineage
