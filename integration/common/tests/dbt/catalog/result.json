@@ -54,7 +54,11 @@
 			"schema": {
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
-				"fields": []
+				"fields": [{
+					"name": "id",
+					"type": "INT64",
+					"description": null
+				}]
 			}
 		}
 	}],
@@ -73,11 +77,18 @@
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "id",
-					"type": null,
+					"type": "INT64",
 					"description": null
 				}]
 			}
 		},
-		"outputFacets": {}
+		"outputFacets": {
+			"outputStatistics": {
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/OutputStatisticsOutputDatasetFacet",
+				"rowCount": 1,
+				"size": 16
+			}
+		}
 	}]
 }]

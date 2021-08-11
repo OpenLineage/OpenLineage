@@ -58,6 +58,16 @@ class Dataset:
 
 
 @attr.s
+class InputDataset(Dataset):
+    inputFacets: Dict = attr.ib(factory=dict)
+
+
+@attr.s
+class OutputDataset(Dataset):
+    outputFacets: Dict = attr.ib(factory=dict)
+
+
+@attr.s
 class RunEvent:
     eventType: RunState = attr.ib(validator=attr.validators.in_(RunState))
     eventTime: str = attr.ib()  # TODO: validate dates

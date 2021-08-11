@@ -135,3 +135,35 @@ class DataSourceDatasetFacet(BaseFacet):
     @staticmethod
     def _get_schema() -> str:
         return SCHEMA_URI + "#/definitions/DataSourceDatasetFacet"
+
+
+@attr.s
+class OutputStatisticsOutputDatasetFacet(BaseFacet):
+    rowCount: int = attr.ib()
+    size: Optional[int] = attr.ib(default=None)
+
+    @staticmethod
+    def _get_schema() -> str:
+        return SCHEMA_URI + "#/definitions/OutputStatisticsOutputDatasetFacet"
+
+
+@attr.s
+class ColumnMetric:
+    nullCount: Optional[int] = attr.ib(default=None)
+    distinctCount: Optional[int] = attr.ib(default=None)
+    sum: Optional[float] = attr.ib(default=None)
+    count: Optional[int] = attr.ib(default=None)
+    min: Optional[float] = attr.ib(default=None)
+    max: Optional[float] = attr.ib(default=None)
+    quantiles: Optional[Dict[str, float]] = attr.ib(default=None)
+
+
+@attr.s
+class DataQualityMetricsInputDatasetFacet(BaseFacet):
+    rowCount: Optional[int] = attr.ib(default=None)
+    bytes: Optional[int] = attr.ib(default=None)
+    columnMetrics: Dict[str, ColumnMetric] = attr.ib(factory=dict)
+
+    @staticmethod
+    def _get_schema() -> str:
+        return SCHEMA_URI + "#/definitions/DataQualityMetricsInputDatasetFacet"

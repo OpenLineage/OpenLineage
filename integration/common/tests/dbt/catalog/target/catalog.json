@@ -1,0 +1,98 @@
+{
+	"metadata": {
+		"dbt_schema_version": "https://schemas.getdbt.com/dbt/catalog/v1.json",
+		"dbt_version": "0.20.0",
+		"generated_at": "2021-08-02T09:21:26.854116Z",
+		"invocation_id": "4a1602fe-2a65-494b-97fc-c9fd71b5b2c9",
+		"env": {}
+	},
+	"nodes": {
+		"model.dbt_test.test_model": {
+			"metadata": {
+				"type": "table",
+				"schema": "dbt_test1",
+				"name": "test_model",
+				"database": "speedy-vim-308516",
+				"comment": null,
+				"owner": null
+			},
+			"columns": {
+				"id": {
+					"type": "INT64",
+					"index": 1,
+					"name": "id",
+					"comment": null
+				}
+			},
+			"stats": {
+				"num_bytes": {
+					"id": "num_bytes",
+					"label": "Approximate Size",
+					"value": 16.0,
+					"include": true,
+					"description": "Approximate size of table as reported by BigQuery"
+				},
+				"num_rows": {
+					"id": "num_rows",
+					"label": "# Rows",
+					"value": 1.0,
+					"include": true,
+					"description": "Approximate count of rows in this table"
+				},
+				"has_stats": {
+					"id": "has_stats",
+					"label": "Has Stats?",
+					"value": true,
+					"include": false,
+					"description": "Indicates whether there are statistics for this table"
+				}
+			},
+			"unique_id": "model.dbt_test.test_model"
+		}
+	},
+	"sources": {
+		"source.dbt_test.dbt_test1.source_table": {
+			"metadata": {
+				"type": "table",
+				"schema": "dbt_test1",
+				"name": "source_table",
+				"database": "speedy-vim-308516",
+				"comment": null,
+				"owner": null
+			},
+			"columns": {
+				"id": {
+					"type": "INT64",
+					"index": 1,
+					"name": "id",
+					"comment": null
+				}
+			},
+			"stats": {
+				"num_bytes": {
+					"id": "num_bytes",
+					"label": "Approximate Size",
+					"value": 22.0,
+					"include": true,
+					"description": "Approximate size of table as reported by BigQuery"
+				},
+				"num_rows": {
+					"id": "num_rows",
+					"label": "# Rows",
+					"value": 2.0,
+					"include": true,
+					"description": "Approximate count of rows in this table"
+				},
+				"has_stats": {
+					"id": "has_stats",
+					"label": "Has Stats?",
+					"value": true,
+					"include": false,
+					"description": "Indicates whether there are statistics for this table"
+				}
+			},
+			"unique_id": "source.dbt_test.dbt_test1.source_table"
+		}
+	},
+	"errors": null
+}

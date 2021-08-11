@@ -21,6 +21,7 @@ from openlineage.airflow.extractors.great_expectations_extractor import \
 from great_expectations_provider.operators.great_expectations import GreatExpectationsOperator
 
 from openlineage.airflow.facets import DataQualityDatasetFacet, ColumnMetric
+from openlineage.client.facet import DataQualityMetricsInputDatasetFacet
 from openlineage.client.serde import Serde
 
 log = logging.getLogger(__name__)
@@ -66,6 +67,12 @@ def test_great_expectations_operator_batch_kwargs_success():
                 quantiles={"0": -52.8, "0.333": 9.3, "0.6667": 14.16, "1": 3004.8}
             )
         }
+    )
+
+    ol_dq_metrics = DataQualityMetricsInputDatasetFacet(
+        rowCount=expected_dq.rowCount,
+        bytes=expected_dq.bytes,
+        columnMetrics=expected_dq.columnMetrics
     )
 
     expected_assertions = GreatExpectationsAssertionsDatasetFacet(
@@ -119,6 +126,8 @@ def test_great_expectations_operator_batch_kwargs_success():
 
     assert Serde.to_json(step.inputs[0].custom_facets['dataQuality']) == \
            Serde.to_json(expected_dq)
+    assert Serde.to_json(step.inputs[0].input_facets['dataQualityMetrics']) == \
+           Serde.to_json(ol_dq_metrics)
     assert step.inputs[0].custom_facets['greatExpectations_assertions'] == expected_assertions
 
     assert result['success']
@@ -164,8 +173,16 @@ def test_great_expectations_operator_with_provided_namespace_success(namespace, 
         }
     )
 
+    ol_dq_metrics = DataQualityMetricsInputDatasetFacet(
+        rowCount=expected_dq.rowCount,
+        bytes=expected_dq.bytes,
+        columnMetrics=expected_dq.columnMetrics
+    )
+
     assert Serde.to_json(step.inputs[0].custom_facets['dataQuality']) == \
            Serde.to_json(expected_dq)
+    assert Serde.to_json(step.inputs[0].input_facets['dataQualityMetrics']) == \
+           Serde.to_json(ol_dq_metrics)
     assert step.inputs[0].source.scheme == scheme
     assert step.inputs[0].source.authority == authority
     assert step.inputs[0].name == 'schema.table'

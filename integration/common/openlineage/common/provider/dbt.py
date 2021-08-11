@@ -8,9 +8,15 @@ from typing import List, Tuple, Dict, Optional
 import attr
 
 from openlineage.client.facet import DataSourceDatasetFacet, SchemaDatasetFacet, SchemaField, \
-    SqlJobFacet
-from openlineage.client.run import RunEvent, RunState, Run, Job, Dataset
-from openlineage.common.utils import get_from_nullable_chain
+    SqlJobFacet, OutputStatisticsOutputDatasetFacet
+from openlineage.client.run import RunEvent, RunState, Run, Job, Dataset, OutputDataset
+from openlineage.common.utils import get_from_nullable_chain, get_from_multiple_chains
+
+
+@attr.s
+class ModelNode:
+    metadata_node: Dict = attr.ib()
+    catalog_node: Optional[Dict] = attr.ib(default=None)
 
 
 @attr.s
@@ -18,8 +24,8 @@ class DbtRun:
     started_at: str = attr.ib()
     completed_at: str = attr.ib()
     status: str = attr.ib()
-    inputs: List[Dict] = attr.ib()
-    output: Dict = attr.ib()
+    inputs: List[ModelNode] = attr.ib()
+    output: ModelNode = attr.ib()
     job_name: str = attr.ib()
     namespace: str = attr.ib()
     run_id: str = attr.ib(factory=lambda: str(uuid.uuid4()))
@@ -60,6 +66,9 @@ class DbtArtifactProcessor:
         run_result = self.load_run_results(
             os.path.join(self.dir, self.project['target-path'], 'run_results.json')
         )
+        catalog = self.load_catalog(
+            os.path.join(self.dir, self.project['target-path'], 'catalog.json')
+        )
 
         profile_dir = run_result['args']['profiles_dir']
 
@@ -74,7 +83,7 @@ class DbtArtifactProcessor:
 
         self.extract_namespace(profile)
 
-        runs = self.parse_artifacts(manifest, run_result)
+        runs = self.parse_artifacts(manifest, run_result, catalog)
 
         start_events, complete_events, fail_events = [], [], []
         for run in runs:
@@ -89,33 +98,42 @@ class DbtArtifactProcessor:
         return DbtEvents(start_events, complete_events, fail_events)
 
     @staticmethod
-    def load_manifest(path: str) -> Dict:
+    def load_metadata(path: str, desired_schema_version: str) -> Dict:
         with open(path, 'r') as f:
-            manifest = json.load(f)
-            schema_version = get_from_nullable_chain(manifest, ['metadata', 'dbt_schema_version'])
-            if schema_version != "https://schemas.getdbt.com/dbt/manifest/v2.json":
+            metadata = json.load(f)
+            schema_version = get_from_nullable_chain(metadata, ['metadata', 'dbt_schema_version'])
+            if schema_version != desired_schema_version:
                 # Maybe we should accept it and throw exception only if it substantially differs
-                raise ValueError(f"Wrong version of dbt metadata manifest: {schema_version}")
-            return manifest
+                raise ValueError(f"Wrong version of dbt metadata: {schema_version}, "
+                                 f"should be {desired_schema_version}")
+            return metadata
 
-    @staticmethod
-    def load_run_results(path: str) -> Dict:
-        with open(path, 'r') as f:
-            run_results = json.load(f)
-            schema_version = get_from_nullable_chain(
-                run_results, ['metadata', 'dbt_schema_version']
-            )
-            if schema_version != "https://schemas.getdbt.com/dbt/run-results/v2.json":
-                # Maybe we should accept it and throw exception only if it substantially differs
-                raise ValueError(f"Wrong version of dbt run_results manifest: {schema_version}")
-            return run_results
+    @classmethod
+    def load_manifest(cls, path: str) -> Dict:
+        return cls.load_metadata(path, "https://schemas.getdbt.com/dbt/manifest/v2.json")
+
+    @classmethod
+    def load_run_results(cls, path: str) -> Dict:
+        return cls.load_metadata(path, "https://schemas.getdbt.com/dbt/run-results/v2.json")
+
+    @classmethod
+    def load_catalog(cls, path: str) -> Optional[Dict]:
+        try:
+            return cls.load_metadata(path, "https://schemas.getdbt.com/dbt/catalog/v1.json")
+        except FileNotFoundError:
+            return None
 
     @staticmethod
     def load_yaml(path: str) -> Dict:
         with open(path, 'r') as f:
             return yaml.load(f, Loader=yaml.FullLoader)
 
-    def parse_artifacts(self, manifest: Dict, run_results: Dict) -> List[DbtRun]:
+    def parse_artifacts(
+            self,
+            manifest: Dict,
+            run_results: Dict,
+            catalog: Optional[Dict]
+    ) -> List[DbtRun]:
         nodes = {}
         runs = []
 
@@ -136,24 +154,29 @@ class DbtArtifactProcessor:
                     return timing, timing
 
             started_at, completed_at = get_timings(run['timing'])
-            inputs = [
-                nodes[node]
-                for node
-                in manifest['parent_map'][run['unique_id']]
-                if node.startswith('model.')
-            ] + [
-                manifest['sources'][source]
-                for source
-                in manifest['parent_map'][run['unique_id']]
-                if source.startswith('source.')
-            ]
+
+            inputs = []
+            for node in manifest['parent_map'][run['unique_id']]:
+                if node.startswith('model.'):
+                    inputs.append(ModelNode(
+                        nodes[node],
+                        get_from_nullable_chain(catalog, ['nodes', node])
+                    ))
+                elif node.startswith('source.'):
+                    inputs.append(ModelNode(
+                        manifest['sources'][node],
+                        get_from_nullable_chain(catalog, ['sources', node])
+                    ))
 
             runs.append(DbtRun(
                 started_at,
                 completed_at,
                 run['status'],
                 inputs,
-                nodes[run['unique_id']],
+                ModelNode(
+                    nodes[run['unique_id']],
+                    get_from_nullable_chain(catalog, ['nodes', run['unique_id']])
+                ),
                 run['unique_id'],
                 self.namespace
             ))
@@ -183,7 +206,7 @@ class DbtArtifactProcessor:
             ),
             producer=self.producer,
             inputs=[self.node_to_dataset(node) for node in run.inputs],
-            outputs=[self.node_to_dataset(run.output)]
+            outputs=[self.node_to_output_dataset(run.output)]
         )
 
         if run.status == 'success':
@@ -199,12 +222,12 @@ class DbtArtifactProcessor:
                         namespace=self.namespace,
                         name=run.job_name,
                         facets={
-                            'sql': SqlJobFacet(run.output['compiled_sql'])
+                            'sql': SqlJobFacet(run.output.metadata_node['compiled_sql'])
                         }
                     ),
                     producer=self.producer,
                     inputs=[self.node_to_dataset(node, has_facets=True) for node in run.inputs],
-                    outputs=[self.node_to_dataset(run.output, has_facets=True)]
+                    outputs=[self.node_to_output_dataset(run.output, has_facets=True)]
                 )
             )
         elif run.status == 'error':
@@ -220,7 +243,7 @@ class DbtArtifactProcessor:
                         namespace=self.namespace,
                         name=run.job_name,
                         facets={
-                            'sql': SqlJobFacet(run.output['compiled_sql'])
+                            'sql': SqlJobFacet(run.output.metadata_node['compiled_sql'])
                         }
                     ),
                     producer=self.producer,
@@ -233,26 +256,72 @@ class DbtArtifactProcessor:
             raise ValueError(f"Run status was {run.status}, "
                              f"should be in ['success', 'skipped', 'skipped']")
 
-    def node_to_dataset(self, node: Dict, has_facets: bool = False) -> Dataset:
+    def extract_dataset_data(
+            self, node: ModelNode, has_facets: bool = False
+    ) -> Tuple[str, str, Dict]:
         if has_facets:
-            has_facets = {
+            facets = {
                 'dataSource': DataSourceDatasetFacet(
                     name=self.namespace,
                     uri=self.namespace
                 ),
                 'schema': SchemaDatasetFacet(
-                    fields=self.extract_fields(node['columns'].values())
+                    fields=self.extract_metadata_fields(node.metadata_node['columns'].values())
                 )
             }
+            if node.catalog_node:
+                facets['schema'] = SchemaDatasetFacet(
+                    fields=self.extract_catalog_fields(node.catalog_node['columns'].values())
+                )
         else:
-            has_facets = {}
-        return Dataset(
-            namespace=self.namespace,
-            name=f"{node['database']}.{node['schema']}.{node['name']}",
-            facets=has_facets
+            facets = {}
+        return (
+            self.namespace,
+            f"{node.metadata_node['database']}."
+            f"{node.metadata_node['schema']}."
+            f"{node.metadata_node['name']}",
+            facets
         )
 
-    def extract_fields(self, columns: List[Dict]) -> List[SchemaField]:
+    def node_to_dataset(self, node: ModelNode, has_facets: bool = False) -> Dataset:
+        return Dataset(
+            *self.extract_dataset_data(node, has_facets)
+        )
+
+    def node_to_output_dataset(self, node: ModelNode, has_facets: bool = False) -> OutputDataset:
+        name, namespace, facets = self.extract_dataset_data(node, has_facets)
+        output_facets = {}
+        if has_facets and node.catalog_node:
+            bytes = get_from_multiple_chains(
+                node.catalog_node,
+                [
+                    ['stats', 'num_bytes', 'value'],  # bigquery
+                    ['stats', 'bytes', 'value']  # snowflake
+                ]
+            )
+            rows = get_from_multiple_chains(
+                node.catalog_node,
+                [
+                    ['stats', 'num_rows', 'value'],  # bigquery
+                    ['stats', 'row_count', 'value']  # snowflake
+                ]
+            )
+
+            if bytes:
+                bytes = int(bytes)
+            if rows:
+                rows = int(rows)
+
+                output_facets['outputStatistics'] = OutputStatisticsOutputDatasetFacet(
+                    rowCount=rows,
+                    size=bytes
+                )
+        return OutputDataset(
+            name, namespace, facets, output_facets
+        )
+
+    @staticmethod
+    def extract_metadata_fields(columns: List[Dict]) -> List[SchemaField]:
         fields = []
         for field in columns:
             type = None
@@ -260,6 +329,20 @@ class DbtArtifactProcessor:
                 type = field['data_type']
             fields.append(SchemaField(
                 name=field['name'], type=type
+            ))
+        return fields
+
+    @staticmethod
+    def extract_catalog_fields(columns: List[Dict]) -> List[SchemaField]:
+        fields = []
+        for field in columns:
+            type, description = None, None
+            if 'type' in field and field['type'] is not None:
+                type = field['type']
+            if 'column' in field and field['column'] is not None:
+                description = field['column']
+            fields.append(SchemaField(
+                name=field['name'], type=type, description=description
             ))
         return fields
 

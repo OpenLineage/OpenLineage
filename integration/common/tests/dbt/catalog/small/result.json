@@ -19,8 +19,7 @@
 	"outputs": [{
 		"namespace": "bigquery",
 		"name": "speedy-vim-308516.dbt_test1.test_model",
-		"facets": {},
-		"outputFacets": {}
+		"facets": {}
 	}]
 }, {
 	"eventType": "COMPLETE",
@@ -77,7 +76,6 @@
 					"description": null
 				}]
 			}
-		},
-		"outputFacets": {}
+		}
 	}]
 }]

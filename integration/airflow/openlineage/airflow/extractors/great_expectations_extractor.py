@@ -163,6 +163,9 @@ class GreatExpectationsExtractorImpl(BaseExtractor):
                 custom_facets={
                     'dataQuality': data_quality_facet,
                     'greatExpectations_assertions': assertions_facet
+                },
+                input_facets={
+                    'dataQualityMetrics': data_quality_facet.to_openlineage()
                 }
             )
 
