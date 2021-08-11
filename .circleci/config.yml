@@ -359,4 +359,5 @@ workflows:
           requires:
             - build-client-python
             - build-integration-common
+            - build-integration-airflow
             - build-integration-dbt
