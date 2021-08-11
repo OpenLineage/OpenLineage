@@ -1,5 +1,6 @@
 <p align="center">
   <img src="./doc/openlineage-logo.png" width="375px" />
+  <img src="./doc/lfaidata-project-badge-sandbox-black.png" width="115px" />
 </p>
 
 ## Badges
@@ -18,10 +19,6 @@ The core lineage model is extensible by defining specific facets to enrich those
 ## Status
 
 OpenLineage is an [LF AI & Data Foundation](https://lfaidata.foundation/projects/openlineage) sandbox project under active development and we'd love your help!
-
-<p align="center">
-  <img src="./doc/lfaidata-project-badge-sandbox-black.png" width="250px" />
-</p>
 
 ## Problem
  ![Problem](doc/problem.png)
