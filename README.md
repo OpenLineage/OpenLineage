@@ -1,3 +1,4 @@
+[![status](https://img.shields.io/badge/status-WIP-yellow.svg)](#status)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/4888/badge)](https://bestpractices.coreinfrastructure.org/projects/4888)
 
 # OpenLineage
@@ -6,6 +7,14 @@
 OpenLineage is an Open standard for metadata and lineage collection designed to instrument jobs as they are running.
 It defines a generic model of run, job, and dataset entities identified using consistent naming strategies.
 The core lineage model is extensible by defining specific facets to enrich those entities.
+
+## Status
+
+OpenLineage is an [LF AI & Data Foundation](https://lfaidata.foundation/projects/openlineage) sandbox project under active development and we'd love your help!
+
+<p align="center">
+  <img src="./doc/lfaidata-project-badge-sandbox-black.png" width="270px" />
+</p>
 
 ## Problem
  ![Problem](doc/problem.png)
