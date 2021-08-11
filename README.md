@@ -1,7 +1,14 @@
-[![status](https://img.shields.io/badge/status-active-brightgreen.svg)](#status)
-[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/4888/badge)](https://bestpractices.coreinfrastructure.org/projects/4888)
+<p align="center">
+  <img src="./doc/openlineage-logo.png" width="375px" />
+</p>
 
-# OpenLineage
+## Badges
+
+[![CircleCI](https://circleci.com/gh/OpenLineage/OpenLineage/tree/main.svg?style=shield)](https://circleci.com/gh/OpenLineage/OpenLineage/tree/main)
+[![status](https://img.shields.io/badge/status-active-brightgreen.svg)](#status)
+[![Slack](https://img.shields.io/badge/slack-chat-blue.svg)](http://bit.ly/OpenLineageSlack)
+[![license](https://img.shields.io/badge/license-Apache_2.0-blue.svg)](https://github.com/OpenLineage/OpenLineage/blob/main/LICENSE)
+[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/4888/badge)](https://bestpractices.coreinfrastructure.org/projects/4888)
 
 ## Overview
 OpenLineage is an Open standard for metadata and lineage collection designed to instrument jobs as they are running.
