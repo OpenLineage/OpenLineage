@@ -1,15 +1,15 @@
 # Naming
 
-We define the unique name strategy per datasource to ensure it is followed uniformly independently from the type of job consuming and producing data.
-The namespace for a dataset is the unique name for its datasource.
-For jobs it is the scheduler.
+We define the unique name strategy per resource to ensure it is followed uniformly independently from who is producing metadata and we can connect lineage from various sources.
 
-## Datasets:
+Both Jobs and Datasets are in their own namespaces. Job namespaces are related to their scheduler. The namespace for a dataset is the unique name for its datasource.
+
+## Datasets
 The namespace and name of a datasource can be combined to form a URI (scheme:[//authority]path)
 * Namespace = scheme:[//authority] (the datasource)
 * Name = path (the datasets)
 
-### Data warehouses/data bases.
+### Data warehouses/data bases
 Datasets are called tables. Tables are organised in databases and schemas.
 #### Postgres:
 Datasource hierarchy:
@@ -108,13 +108,53 @@ Identifier :
  * Unique name: {path}
    * URI =   hdfs://{namenode host}:{namenode port}{path}
 
-## Schedulers
-### Airflow
+## Jobs
+### Context
 
-Naming hierarchy:
- * job => workspace/DAG
- * Task => unique within the job
+A `Job` is a recurring data transformation with Inputs and outputs. Each execution is captured as a `Run` with corresponding metadata.
+A `Run` event identifies the `Job` it is an instance of by providing the job’s unique identifier.
+The `Job` identifier is composed of a `Namespace` and a `Name`. The job name is unique within that namespace.
 
-Identifier :
- * Namespace: {scheduler namespace}
- * Unique name: {job}.{task}
+The core property we want to identify about a `Job` is how it changes over time. Different schedules of the same logic applied to different datasets (possibly with different parameters) are different jobs. The notion of a `job` is tied to a recurring schedule with specific inputs and outputs. It could be an incremental update or a full reprocess or even a streaming job.
+ 
+If the same code artifact (for example a spark jar or a templated SQL query) is used in the context of different schedules with different input or outputs then they are different jobs.
+We are interested first in how they affect the datasets they produce.
+
+### Job Namespace and constructing job names
+
+Jobs have a `name` that is unique to them in their `namespace` by construction.
+
+The Namespace is the root of the naming hierarchy. The job name is constructed to identify the job within that namespace.
+
+Example:
+ - Airflow:
+   - Namespace: the namespace is assigned to the airflow instance. Ex: airflow-staging, airflow-prod
+   - Job: each task in a DAG is a job. name: {dag name}.{task name}
+ - Spark:
+   - Namespace: the namespace is provided as a configuration parameter as in airflow. If there's a parent job, we use the same namespace, otherwise it is provided by configuration.
+   - Spark app job name: the spark.app.name
+   - Spark action job name: {spark.app.name}.{node.name}
+
+### Parent job run: a nested hierarchy of Jobs
+
+It is often the case that jobs are part of a nested hierarchy.
+For example an Airflow DAG contains tasks. An instance of the DAG is finished when all of the tasks are finished. Similarly a Spark job can spawn multiple actions each of them running independently. Additionally, a Spark job can be launched by an Airflow task within a DAG.
+
+Since what we care about is identifying the job as rooted in a recurring schedule, we want to capture that connection and make sure that we treat the same application logic triggered at different schedules as different jobs. For example: if an Airflow DAG runs individual tasks per partition (for example market segments) using the same underlying job logic, they will be tracked as separate jobs.
+
+To capture this, a run event provides [a `ParentRun` facet](https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#L282-L331), referring to the parent `Job` and `Run`. This allows tracking a recurring job from the root of the schedule it is running for.
+If there's a parent job, we use the same namespace, otherwise it is provided by configuration.
+
+Example:
+```json
+{
+  "run": {
+    "runId": "run_uuid"
+  },
+  "job": {
+    "namespace": "job_namespace",
+    "name": "job_name"
+  }
+}
+
+```
