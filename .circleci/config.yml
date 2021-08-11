@@ -250,6 +250,17 @@ jobs:
       - run: docker build -f airflow/Dockerfile.tests -t openlineage-airflow-base .
       - run: ./airflow/tests/integration/docker/up.sh
 
+  publish-snapshot-python:
+    working_directory: ~/openlineage
+    docker:
+      - image: circleci/python:3.6
+    steps:
+      - *checkout_project_root
+      - attach_workspace:
+          at: .
+      - run: pip install wheel twine
+      - run: python -m twine upload --non-interactive --verbose -u $ARTIFACTORY_USERNAME -p $ARTIFACTORY_PASSWORD --repository-url https://datakin.jfrog.io/artifactory/api/pypi/pypi-public-libs-release dist/*
+
   release-python:
     working_directory: ~/openlineage
     docker:
@@ -293,13 +304,28 @@ workflows:
   release:
     jobs:
       - build-client-python:
-          <<: *only-on-release
+          filters:
+              branches:
+                only: main
       - build-integration-common:
-          <<: *only-on-release
+          filters:
+            branches:
+              only: main
       - build-integration-airflow:
-          <<: *only-on-release
+          filters:
+            branches:
+              only: main
       - build-integration-dbt:
-          <<: *only-on-release
+          filters:
+            branches:
+              only: main
+      - publish-snapshot-python:
+          <<: *only-on-main-without-release-tag
+          context: release
+          requires:
+            - build-client-python
+            - build-integration-common
+            - build-integration-dbt
       - release-java-client:
           <<: *only-on-release
           context: release
