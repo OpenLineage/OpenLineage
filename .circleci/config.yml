@@ -15,7 +15,6 @@ install_integration_common: &install_integration_common
 install_python_client: &install_python_client
   run: (cd ~/openlineage/client/python && pip install . --user)
 
-
 # Only trigger CI job on release (=X.Y.Z) with possible (rcX)
 only-on-release: &only-on-release
   filters:
@@ -47,9 +46,13 @@ jobs:
     working_directory: ~/openlineage/client/python
     docker:
       - image: circleci/python:3.6
+    parameters:
+      build_tag:
+        default: ""
+        type: string
     steps:
       - *checkout_project_root
-      - run: python setup.py bdist_wheel
+      - run: python setup.py egg_info -b << parameters.build_tag >> bdist_wheel
       - persist_to_workspace:
           root: .
           paths:
@@ -159,11 +162,15 @@ jobs:
 
   build-integration-common:
     working_directory: ~/openlineage/integration/common
+    parameters:
+      build_tag:
+        default: ""
+        type: string
     docker:
       - image: circleci/python:3.6
     steps:
       - *checkout_project_root
-      - run: python setup.py sdist bdist_wheel
+      - run: python setup.py egg_info -b << parameters.build_tag >> sdist bdist_wheel
       - persist_to_workspace:
           root: .
           paths:
@@ -172,11 +179,15 @@ jobs:
 
   build-integration-dbt:
     working_directory: ~/openlineage/integration/dbt
+    parameters:
+      build_tag:
+        default: ""
+        type: string
     docker:
       - image: circleci/python:3.6
     steps:
       - *checkout_project_root
-      - run: python setup.py sdist bdist_wheel
+      - run: python setup.py egg_info -b << parameters.build_tag >> sdist bdist_wheel
       - persist_to_workspace:
           root: .
           paths:
@@ -228,12 +239,16 @@ jobs:
 
   build-integration-airflow:
     working_directory: ~/openlineage/integration/airflow
+    parameters:
+      build_tag:
+        default: ""
+        type: string
     docker:
       - image: circleci/python:3.6
     steps:
       - *checkout_project_root
       - *install_integration_common
-      - run: python setup.py sdist bdist_wheel
+      - run: python setup.py egg_info -b << parameters.build_tag >> sdist bdist_wheel
       - persist_to_workspace:
           root: .
           paths:
@@ -301,31 +316,37 @@ workflows:
           requires:
             - integration-test-spark
 
-  release:
-    jobs:
       - build-client-python:
-          filters:
-              branches:
-                only: main
+          <<: *only-on-main-without-release-tag
+          build_tag: .dev${CIRCLE_BUILD_NUM}
       - build-integration-common:
-          filters:
-            branches:
-              only: main
+          <<: *only-on-main-without-release-tag
+          build_tag: .dev${CIRCLE_BUILD_NUM}
       - build-integration-airflow:
-          filters:
-            branches:
-              only: main
+          <<: *only-on-main-without-release-tag
+          build_tag: .dev${CIRCLE_BUILD_NUM}
       - build-integration-dbt:
-          filters:
-            branches:
-              only: main
+          <<: *only-on-main-without-release-tag
+          build_tag: .dev${CIRCLE_BUILD_NUM}
       - publish-snapshot-python:
           <<: *only-on-main-without-release-tag
           context: release
           requires:
             - build-client-python
             - build-integration-common
+            - build-integration-airflow
             - build-integration-dbt
+
+  release:
+    jobs:
+      - build-client-python:
+          <<: *only-on-release
+      - build-integration-common:
+          <<: *only-on-release
+      - build-integration-airflow:
+          <<: *only-on-release
+      - build-integration-dbt:
+          <<: *only-on-release
       - release-java-client:
           <<: *only-on-release
           context: release
