@@ -13,7 +13,7 @@ The core lineage model is extensible by defining specific facets to enrich those
 OpenLineage is an [LF AI & Data Foundation](https://lfaidata.foundation/projects/openlineage) sandbox project under active development and we'd love your help!
 
 <p align="center">
-  <img src="./doc/lfaidata-project-badge-sandbox-black.png" width="270px" />
+  <img src="./doc/lfaidata-project-badge-sandbox-black.png" width="275px" />
 </p>
 
 ## Problem
