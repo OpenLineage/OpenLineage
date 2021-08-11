@@ -24,9 +24,54 @@ Before sending a Pull Request with significant changes, please use the [issue tr
 OpenLineage uses [GitHub's fork and pull model](https://help.github.com/articles/about-collaborative-development-models/)
 to create a contribution.
 
-Every contribution is signed to say that the contributor has the rights to make the contribution and
+Every contribution is [signed](#sign-your-work) to say that the contributor has the rights to make the contribution and
 agrees with the [Developer Certificate of Origin (DCO)](why-the-dco.md)
 
+To ensure your pull request is accepted, follow these guidelines:
+
+* All changes should be accompanied by tests
+* Do your best to have a [well-formed commit message](https://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html) for your change
+* Do your best to have a [well-formed](https://frontside.com/blog/2020-7-reasons-for-good-pull-request-descriptions) pull request description for your change
+* [Keep diffs small](https://kurtisnusbaum.medium.com/stacked-diffs-keeping-phabricator-diffs-small-d9964f4dcfa6) and self-contained
+* If your change fixes a bug, please [link the issue](https://help.github.com/articles/closing-issues-using-keywords) in your pull request description
+* Your pull request title should be of the form `[COMPONENT] Your title`, where `COMPONENT` is one of `DBT`, `AIRFLOW`, `SPARK`, etc.
+
+### Branching
+
+* Use a _group_ at the beginning of your branch names:
+
+  ```
+  feature  Add or expand a feature
+  bug      Fix a bug
+  ```
+
+  _For example_:
+
+  ```
+  feature/my-cool-new-feature
+  bug/my-bug-fix
+  bug/my-other-bug-fix
+  ```
+
+* Choose _short_ and _descriptive_ branch names
+* Use dashes (`-`) to separate _words_ in branch names
+* Use _lowercase_ in branch names
+
+### Sign Your Work
+
+The _sign-off_ is a simple line at the end of the message for a commit. All commits needs to be signed. Your signature certifies that you wrote the patch or otherwise have the right to contribute the material (see [Developer Certificate of Origin](https://developercertificate.org)):
+
+```
+This is my commit message
+
+Signed-off-by: Remedios Moscote <remedios.moscote@buendía.com>
+```
+
+Git has a [`-s`](https://git-scm.com/docs/git-commit#Documentation/git-commit.txt---signoff) command line option to append this automatically to your commit message:
+
+```bash
+$ git commit -s -m "This is my commit message"
+```
 
 ## Proposing changes
 
