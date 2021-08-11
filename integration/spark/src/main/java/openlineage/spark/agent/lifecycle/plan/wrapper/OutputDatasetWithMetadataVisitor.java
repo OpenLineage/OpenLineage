@@ -16,6 +16,14 @@ import scala.PartialFunction;
 import scala.collection.Map;
 import scala.runtime.AbstractPartialFunction;
 
+/**
+ * Like the {@link OutputDatasetVisitor}, this is a wrapper around {@link LogicalPlan} visitors that
+ * converts found {@link io.openlineage.client.OpenLineage.Dataset}s into {@link
+ * io.openlineage.client.OpenLineage.OutputDataset}s and also finds output metrics from the plan in
+ * order to construct and link the {@link
+ * io.openlineage.client.OpenLineage.OutputStatisticsOutputDatasetFacet} for the written {@link
+ * io.openlineage.client.OpenLineage.Dataset}
+ */
 public class OutputDatasetWithMetadataVisitor
     extends AbstractPartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>> {
 

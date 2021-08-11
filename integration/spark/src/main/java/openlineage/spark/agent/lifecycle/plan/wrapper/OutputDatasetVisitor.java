@@ -7,6 +7,12 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import scala.PartialFunction;
 import scala.runtime.AbstractPartialFunction;
 
+/**
+ * Wrapper around {@link LogicalPlan} visitors that converts found {@link
+ * io.openlineage.client.OpenLineage.Dataset}s into {@link
+ * io.openlineage.client.OpenLineage.OutputDataset}s and may apply output-specific facets to the
+ * returned {@link io.openlineage.client.OpenLineage.OutputDataset}.
+ */
 public class OutputDatasetVisitor
     extends AbstractPartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>> {
 
