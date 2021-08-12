@@ -6,7 +6,7 @@
 
 OpenLineage is an _Open Standard_ for lineage metadata collection designed to record metadata for a job in execution. The initial public release includes:
 
-* **An inital specification.** The the inital version [`1-0-0`](https://openlineage.io/spec/1-0-0/OpenLineage.json) of the OpenLineage specification that defines the core model and facets.
+* **An inital specification.** The the inital version [`1-0-0`](https://openlineage.io/spec/1-0-0/OpenLineage.json) of the OpenLineage specification defines the core model and facets.
 * **Integrations** that collect lineage metadata as OpenLineage events:
   * [`Apache Airflow`](https://github.com/OpenLineage/OpenLineage/tree/main/integration/airflow) with support for BigQuery, Great Expectations, Postgres, Redshift, Snowflake
   * [`Apache Spark`](https://github.com/OpenLineage/OpenLineage/tree/main/integration/spark)
