@@ -12,7 +12,7 @@
 
 from setuptools import setup, find_namespace_packages
 
-__version__ = "0.0.1"
+__version__ = "0.1.0"
 
 with open("README.md", "r") as f:
     long_description = f.read()
