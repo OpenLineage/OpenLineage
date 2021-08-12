@@ -8,7 +8,7 @@ assignees: ''
 ---
 
 **Integration target:**
-please add a URL to the framework/project product to integrate with
+please add a URL to the framework/project/product to integrate with
 
 **Proposed implementation**
 If there is a proposed implementation:
