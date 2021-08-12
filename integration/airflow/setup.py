@@ -19,7 +19,6 @@ from setuptools import setup, find_namespace_packages
 with open("README.md") as readme_file:
     readme = readme_file.read()
 
-
 __version__ = "0.1.0rc1"
 
 requirements = [
@@ -29,7 +28,6 @@ requirements = [
     f"openlineage-integration-common=={__version__}",
     f"openlineage-python=={__version__}",
 ]
-
 
 extras_require = {
     "tests": [

@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -9,29 +11,36 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
+# -*- coding: utf-8 -*-
 
 from setuptools import setup, find_namespace_packages
 
-__version__ = "0.1.0"
+with open("README.md") as readme_file:
+    readme = readme_file.read()
 
-with open("README.md", "r") as f:
-    long_description = f.read()
+requirements = [
+    "attrs>=19.3.0",
+    "requests>=2.20.0",
+]
 
-NAME = "openlineage-python"
+extras_require = {
+    "tests": ["pytest", "pytest-cov", "mock", "flake8", "requests"],
+}
+extras_require["dev"] = set(sum(extras_require.values(), []))
 
 setup(
-    name=NAME,
-    python_requires='>=3.6',
-    version=__version__,
-    author="OpenLineage",
-    author_email="",
-    description="OpenLineage python client",
-    long_description=long_description,
+    name="openlineage-python",
+    version="0.1.0rc1",
+    description="OpenLineage Python Client",
+    long_description=readme,
     long_description_content_type="text/markdown",
-    url="https://github.com/OpenLineage/OpenLineage",
+    author="OpenLineage",
     packages=find_namespace_packages(include=['openlineage.*']),
-    install_requires=[
-        "attrs>=19.3.0",
-        "requests>=2.20.0"
-    ]
+    include_package_data=True,
+    install_requires=requirements,
+    extras_require=extras_require,
+    python_requires=">=3.6",
+    zip_safe=False,
+    keywords="openlineage",
 )
