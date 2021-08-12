@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# This script was inspired by the new-release.sh from Marquez (https://github.com/MarquezProject/marquez/blob/main/new-version.sh)
+# NOTE: This script was inspired by https://github.com/MarquezProject/marquez/blob/main/new-version.sh
 #
 # Requirements:
 #   * You're on the 'main' branch
@@ -25,12 +25,15 @@
 
 set -e
 
+title() {
+  echo -e "\033[1m${1}\033[0m"
+}
+
 usage() {
   echo "Usage: ./$(basename -- "${0}") --release-version RELEASE_VERSION --next-version NEXT_VERSION"
-  echo
   echo "A script used to release OpenLineage"
   echo
-  echo "Examples:"
+  title "EXAMPLES:"
   echo "  # Bump version ('-SNAPSHOT' will automatically be appended to '0.0.2')"
   echo "  $ ./new-version.sh -r 0.0.1 -n 0.0.2"
   echo
@@ -41,12 +44,14 @@ usage() {
   echo "  $ ./new-version.sh -r 0.0.1-rc.1 -n 0.0.2-rc.2"
   echo
   echo "  # Bump release candidate without push"
-  echo "  $ ./new-version.sh -r 0.0.1-rc.1 -n 0.0.2-rc.2 -p false"
+  echo "  $ ./new-version.sh -r 0.0.1-rc.1 -n 0.0.2-rc.2 -p"
   echo
-  echo "Arguments:"
-  echo "  -r, --release-version string       the release version (ex: X.Y.Z, X.Y.Z-rc.*)"
-  echo "  -n, --next-version string          the next version (ex: X.Y.Z, X.Y.Z-SNAPSHOT)"
-  echo "  -p, --push boolean (true|false)    should push to main. Default value is true"
+  title "ARGUMENTS:"
+  echo "  -r, --release-version string     the release version (ex: X.Y.Z, X.Y.Z-rc.*)"
+  echo "  -n, --next-version string        the next version (ex: X.Y.Z, X.Y.Z-SNAPSHOT)"
+  echo
+  title "FLAGS:"
+  echo "  -p, --no-push     local changes are not automatically pushed to the remote repository"
   exit 1
 }
 
@@ -56,7 +61,7 @@ readonly SEMVER_REGEX="^[0-9]+(\.[0-9]+){2}((-rc\.[0-9]+)?|(-SNAPSHOT)?)$" # X.Y
 
 # Change working directory to project root
 project_root=$(git rev-parse --show-toplevel)
-cd "${project_root}"
+cd "${project_root}/"
 
 # Verify bump2version is installed
 if [[ ! $(type -P bump2version) ]]; then
@@ -64,37 +69,25 @@ if [[ ! $(type -P bump2version) ]]; then
   exit 1;
 fi
 
-branch=$(git symbolic-ref --short HEAD)
-if [[ "${branch}" != "main" ]]; then
-  echo "error: you may only release on 'main'!"
-  exit 1;
-fi
-
 if [[ $# -eq 0 ]] ; then
   usage
 fi
 
-# Ensure no unstaged changes are present in working directory
-if [[ -n "$(git status --porcelain --untracked-files=no)" ]] ; then
-  echo "error: you have unstaged changes in your working directory!"
-  exit 1;
-fi
-
+PUSH="true"
 while [ $# -gt 0 ]; do
   case $1 in
-    '--release-version'|-r)
+    -r|--release-version)
        shift
        RELEASE_VERSION="${1}"
        ;;
-    '--next-version'|-n)
+    -n|--next-version)
        shift
        NEXT_VERSION="${1}"
        ;;
-    '--push'|-p)
-       shift
-       PUSH="${1}"
+    -p|--no-push)
+       PUSH="false"
        ;;
-    '--help'|-h)
+    -h|--help)
        usage
        ;;
     *) exit 1
@@ -102,6 +95,18 @@ while [ $# -gt 0 ]; do
   esac
   shift
 done
+
+branch=$(git symbolic-ref --short HEAD)
+if [[ "${branch}" != "main" ]]; then
+  echo "error: you may only release on 'main'!"
+  exit 1;
+fi
+
+# Ensure no unstaged changes are present in working directory
+if [[ -n "$(git status --porcelain --untracked-files=no)" ]] ; then
+  echo "error: you have unstaged changes in your working directory!"
+  exit 1;
+fi
 
 # Append '-SNAPSHOT' to 'NEXT_VERSION' if not a release candidate, or missing
 if [[ ! "${NEXT_VERSION}" == *-rc.? &&
@@ -132,32 +137,32 @@ for PYTHON_MODULE in "${PYTHON_MODULES[@]}"; do
 done
 
 # (2) Bump java module versions
-sed -i  "s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/spark/gradle.properties
-sed -i  "s/^version=.*/version=${RELEASE_VERSION}/g" ./client/java/gradle.properties
+sed -i "" "s/^version=.*/version=${RELEASE_VERSION}/g" ./client/java/gradle.properties
+sed -i "" "s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/spark/gradle.properties
 
 # (3) Bump version in docs
-sed -i  "s/<version>.*/<version>${RELEASE_VERSION}<\/version>/g" ./integration/spark/README.md
-sed -i  "s/openlineage-spark:.*/openlineage-spark:${RELEASE_VERSION}/g" ./integration/spark/README.md
+sed -i "" "s/<version>.*/<version>${RELEASE_VERSION}<\/version>/g" ./integration/spark/README.md
+sed -i "" "s/openlineage-spark:.*/openlineage-spark:${RELEASE_VERSION}/g" ./integration/spark/README.md
 
 # (4) Prepare release commit
 git commit -sam "Prepare for release ${RELEASE_VERSION}"
 
 # (5) Pull latest tags, then prepare release tag
 git fetch --all --tags
-git tag -a "${RELEASE_VERSION}" -m "openalineage ${RELEASE_VERSION}"
+git tag -a "${RELEASE_VERSION}" -m "openlineage ${RELEASE_VERSION}"
 
 # (6) Prepare next development version
-sed -i  "s/^version=.*/version=${NEXT_VERSION}/g" integration/spark/gradle.properties
-sed -i  "s/^version=.*/version=${NEXT_VERSION}/g" client/java/gradle.properties
+sed -i  "" "s/^version=.*/version=${NEXT_VERSION}/g" integration/spark/gradle.properties
+sed -i  "" "s/^version=.*/version=${NEXT_VERSION}/g" client/java/gradle.properties
 
 # (7) Prepare next development version commit
 git commit -sam "Prepare next development version"
 
+# (8) Push commits and tag
 if [[ ! ${PUSH} = "false" ]]; then
-  # (10) Push commits and tag
   git push origin main && git push origin "${RELEASE_VERSION}"
 else
-  echo "Push operation skipped. You can do it manually via command 'git push origin main && git push origin "${RELEASE_VERSION}"'"
+  echo "...skipping push; to push manually, use 'git push origin main && git push origin "${RELEASE_VERSION}"'"
 fi
 
 echo "DONE!"

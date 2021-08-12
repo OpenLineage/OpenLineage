@@ -288,7 +288,7 @@ jobs:
       - run: python -m twine upload --non-interactive --verbose --repository pypi dist/*
 
 workflows:
-  openlineage-build:
+  openlineage:
     jobs:
       - gradle/test:
           app_src_directory: client/java
