@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -9,8 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
+# -*- coding: utf-8 -*-
 
-from setuptools import find_namespace_packages, setup
+from setuptools import setup, find_namespace_packages
 
 with open("README.md") as readme_file:
     readme = readme_file.read()
@@ -21,7 +25,7 @@ requirements = [
 ]
 
 extras_require = {
-    "tests": ["pytest", "pytest-cov", "mock", "flake8"],
+    "tests": ["pytest", "pytest-cov", "mock", "flake8", "requests"],
 }
 extras_require["dev"] = set(sum(extras_require.values(), []))
 
@@ -38,5 +42,5 @@ setup(
     extras_require=extras_require,
     python_requires=">=3.6",
     zip_safe=False,
-    keywords="marquez",
+    keywords="openlineage",
 )
