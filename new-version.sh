@@ -44,7 +44,7 @@ usage() {
   echo "  $ ./new-version.sh -r 0.0.1-rc.1 -n 0.0.2-rc.2"
   echo
   echo "  # Bump release candidate without push"
-  echo "  $ ./new-version.sh -r 0.0.1-rc.1 -n 0.0.2-rc.2 --no-push"
+  echo "  $ ./new-version.sh -r 0.0.1-rc.1 -n 0.0.2-rc.2 -p"
   echo
   title "ARGUMENTS:"
   echo "  -r, --release-version string     the release version (ex: X.Y.Z, X.Y.Z-rc.*)"
@@ -76,18 +76,18 @@ fi
 PUSH="true"
 while [ $# -gt 0 ]; do
   case $1 in
-    --release-version|-r)
+    -r|--release-version)
        shift
        RELEASE_VERSION="${1}"
        ;;
-    --next-version|-n)
+    -n|--next-version)
        shift
        NEXT_VERSION="${1}"
        ;;
-    --no-push|-p)
+    -p|--no-push)
        PUSH="false"
        ;;
-    --help|-h)
+    -h|--help)
        usage
        ;;
     *) exit 1
