@@ -24,7 +24,7 @@ __version__ = "0.1.0rc1"
 requirements = [
     "attrs>=19.3.0",
     f"openlineage-python=={__version__}",
-    "sqlparse>=0.3.1"
+    "sqlparse>=0.3.1",
 ]
 
 extras_require = {
