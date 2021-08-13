@@ -15,6 +15,7 @@
 import org.apache.tools.ant.filters.*
 
 plugins {
+    id 'jacoco'
     id 'java'
     id 'java-library'
     id 'maven-publish'
@@ -149,5 +150,21 @@ jar {
                 'Implementation-Title': project.name,
                 'Implementation-Version': project.version
         )
+    }
+}
+
+def reportsDir = "${buildDir}/reports";
+def coverageDir = "${reportsDir}/coverage";
+
+jacoco {
+    toolVersion = '0.8.5'
+    reportsDir = file(coverageDir)
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled = true
+        html.enabled = true
+        html.destination = file(coverageDir)
     }
 }
