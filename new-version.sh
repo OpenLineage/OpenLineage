@@ -55,9 +55,10 @@ usage() {
   exit 1
 }
 
-readonly SEMVER_REGEX="^[0-9]+(\.[0-9]+){2}((-rc\.[0-9]+)?|(-SNAPSHOT)?)$" # X.Y.Z
-                                                                           # X.Y.Z-rc.*
-                                                                           # X.Y.Z-SNAPSHOT
+readonly SEMVER_REGEX="^[0-9]+(\.[0-9]+){2}((-rc\.[0-9]+)?(-SNAPSHOT)?)$" # X.Y.Z
+                                                                          # X.Y.Z-rc.*
+                                                                          # X.Y.Z-rc.*-SNAPSHOT
+                                                                          # X.Y.Z-SNAPSHOT
 
 # Change working directory to project root
 project_root=$(git rev-parse --show-toplevel)
@@ -108,8 +109,9 @@ if [[ -n "$(git status --porcelain --untracked-files=no)" ]] ; then
   exit 1;
 fi
 
-# Append '-SNAPSHOT' to 'NEXT_VERSION' if not a release candidate, or missing
-if [[ ! "${NEXT_VERSION}" == *-rc.? &&
+# Append '-SNAPSHOT' to 'NEXT_VERSION' if a release candidate, or missing
+# (ex: '-SNAPSHOT' will be appended to X.Y.Z or X.Y.Z-rc.N)
+if [[ "${NEXT_VERSION}" == *-rc.? &&
       ! "${NEXT_VERSION}" == *-SNAPSHOT ]]; then
   NEXT_VERSION="${NEXT_VERSION}-SNAPSHOT"
 fi
