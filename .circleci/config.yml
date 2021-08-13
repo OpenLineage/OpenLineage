@@ -11,7 +11,7 @@ install_python_client: &install_python_client
 install_integration_common: &install_integration_common
   run: (cd ~/openlineage/integration/common && pip install . --user)
 
-only_main: &only_main
+only_on_main: &only_on_main
   filters:
     branches:
       only: main
@@ -297,7 +297,7 @@ workflows:
     jobs:
       - build-client-java
       - publish-snapshot-client-java:
-          <<: *only_main
+          <<: *only_on_main
           context: release
           requires:
             - build-client-java
@@ -306,37 +306,37 @@ workflows:
           requires:
             - build-integration-spark
       - publish-snapshot-integration-spark:
-          <<: *only_main
+          <<: *only_on_main
           context: release
           requires:
             - integration-test-spark
       - test-client-python
       - build-client-python:
-          <<: *only_main
+          <<: *only_on_main
           build_tag: .dev${CIRCLE_BUILD_NUM}
           requires:
             - test-client-python
       - test-integration-common
       - build-integration-common:
-          <<: *only_main
+          <<: *only_on_main
           build_tag: .dev${CIRCLE_BUILD_NUM}
           requires:
             - test-integration-common
       - test-integration-airflow
       - integration-test-airflow:
-          <<: *only_main
+          <<: *only_on_main
           requires:
             - test-integration-airflow
       - build-integration-airflow:
-          <<: *only_main
+          <<: *only_on_main
           build_tag: .dev${CIRCLE_BUILD_NUM}
           requires:
             - integration-test-airflow
       - build-integration-dbt:
-          <<: *only_main
+          <<: *only_on_main
           build_tag: .dev${CIRCLE_BUILD_NUM}
       - publish-snapshot-python:
-          <<: *only_main
+          <<: *only_on_main
           context: release
           requires:
             - build-client-python
