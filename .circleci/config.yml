@@ -52,7 +52,7 @@ jobs:
         type: string
     steps:
       - *checkout_project_root
-      - run: python setup.py egg_info -b << parameters.build_tag >> sdist bdist_wheel
+      - run: python setup.py egg_info -b "<< parameters.build_tag >>" sdist bdist_wheel
       - persist_to_workspace:
           root: .
           paths:
@@ -182,7 +182,7 @@ jobs:
     <<: *param_build_tag
     steps:
       - *checkout_project_root
-      - run: python setup.py egg_info -b << parameters.build_tag >> sdist bdist_wheel
+      - run: python setup.py egg_info -b "<< parameters.build_tag >>" sdist bdist_wheel
       - persist_to_workspace:
           root: .
           paths:
@@ -196,7 +196,7 @@ jobs:
     <<: *param_build_tag
     steps:
       - *checkout_project_root
-      - run: python setup.py egg_info -b << parameters.build_tag >> sdist bdist_wheel
+      - run: python setup.py egg_info -b "<< parameters.build_tag >>" sdist bdist_wheel
       - persist_to_workspace:
           root: .
           paths:
@@ -253,7 +253,7 @@ jobs:
       - *checkout_project_root
       - *install_python_client
       - *install_integration_common
-      - run: python setup.py egg_info -b << parameters.build_tag >> sdist bdist_wheel
+      - run: python setup.py egg_info -b "<< parameters.build_tag >>" sdist bdist_wheel
       - persist_to_workspace:
           root: .
           paths:
