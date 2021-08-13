@@ -52,7 +52,7 @@ jobs:
         type: string
     steps:
       - *checkout_project_root
-      - run: python setup.py egg_info -b << parameters.build_tag >> bdist_wheel
+      - run: python setup.py egg_info -b << parameters.build_tag >> sdist bdist_wheel
       - persist_to_workspace:
           root: .
           paths:
