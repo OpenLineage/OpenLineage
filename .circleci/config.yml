@@ -205,7 +205,7 @@ jobs:
             - ./dist/*.whl
             - ./dist/*.tar.gz
 
-  integration-test-spark:
+  integration-test-integration-spark:
     working_directory: ~/openlineage/integration/spark
     machine: true
     environment:
@@ -262,7 +262,7 @@ jobs:
             - ./dist/*.whl
             - ./dist/*.tar.gz
 
-  integration-test-airflow:
+  integration-test-integration-airflow:
     working_directory: ~/openlineage/integration/
     machine: true
     steps:
@@ -304,14 +304,14 @@ workflows:
           requires:
             - build-client-java
       - build-integration-spark
-      - integration-test-spark:
+      - integration-test-integration-spark:
           requires:
             - build-integration-spark
       - publish-snapshot-integration-spark:
           <<: *only_on_main
           context: release
           requires:
-            - integration-test-spark
+            - integration-test-integration-spark
       - unit-test-client-python
       - build-client-python:
           <<: *only_on_main
@@ -325,7 +325,7 @@ workflows:
           requires:
             - unit-test-integration-common
       - unit-test-integration-airflow
-      - integration-test-airflow:
+      - integration-test-integration-airflow:
           <<: *only_on_main
           requires:
             - unit-test-integration-airflow
@@ -333,7 +333,7 @@ workflows:
           <<: *only_on_main
           build_tag: .dev${CIRCLE_BUILD_NUM}
           requires:
-            - integration-test-airflow
+            - integration-test-integration-airflow
       - build-integration-dbt:
           <<: *only_on_main
           build_tag: .dev${CIRCLE_BUILD_NUM}
