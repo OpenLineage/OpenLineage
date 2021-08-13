@@ -148,6 +148,8 @@ jobs:
           keys:
             - v1-integration-spark-{{ .Branch }}-{{ .Revision }}
             - v1-integration-spark-{{ .Branch }}
+      - attach_workspace:
+          at: .
       - run: ./gradlew --no-daemon --stacktrace build
       - run:
           when: on_fail
