@@ -31,7 +31,7 @@ param_build_tag: &param_build_tag
         type: string
 
 jobs:
-  test-client-python:
+  unit-test-client-python:
     working_directory: ~/openlineage/client/python
     docker:
       - image: circleci/python:3.6
@@ -163,7 +163,7 @@ jobs:
           paths:
             - ~/.gradle
 
-  test-integration-common:
+  unit-test-integration-common:
     working_directory: ~/openlineage/integration/common
     docker:
       - image: circleci/python:3.6
@@ -230,7 +230,7 @@ jobs:
           paths:
             - ~/.gradle
 
-  test-integration-airflow:
+  unit-test-integration-airflow:
     working_directory: ~/openlineage/integration/airflow
     docker:
       - image: circleci/python:3.6
@@ -310,23 +310,23 @@ workflows:
           context: release
           requires:
             - integration-test-spark
-      - test-client-python
+      - unit-test-client-python
       - build-client-python:
           <<: *only_on_main
           build_tag: .dev${CIRCLE_BUILD_NUM}
           requires:
-            - test-client-python
-      - test-integration-common
+            - unit-test-client-python
+      - unit-test-integration-common
       - build-integration-common:
           <<: *only_on_main
           build_tag: .dev${CIRCLE_BUILD_NUM}
           requires:
-            - test-integration-common
-      - test-integration-airflow
+            - unit-test-integration-common
+      - unit-test-integration-airflow
       - integration-test-airflow:
           <<: *only_on_main
           requires:
-            - test-integration-airflow
+            - unit-test-integration-airflow
       - build-integration-airflow:
           <<: *only_on_main
           build_tag: .dev${CIRCLE_BUILD_NUM}
