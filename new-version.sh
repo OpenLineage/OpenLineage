@@ -111,7 +111,7 @@ fi
 
 # Append '-SNAPSHOT' to 'NEXT_VERSION' if a release candidate, or missing
 # (ex: '-SNAPSHOT' will be appended to X.Y.Z or X.Y.Z-rc.N)
-if [[ "${NEXT_VERSION}" == *-rc.? &&
+if [[ "${NEXT_VERSION}" == *-rc.? ||
       ! "${NEXT_VERSION}" == *-SNAPSHOT ]]; then
   NEXT_VERSION="${NEXT_VERSION}-SNAPSHOT"
 fi
