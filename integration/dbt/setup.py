@@ -19,7 +19,7 @@ from setuptools import setup
 with open("README.md") as readme_file:
      readme = readme_file.read()
 
-__version__ = "0.1.0rc3"
+__version__ = "0.1.0rc4"
 
 requirements = [
     f"sqlparse>=0.2.3,<0.4",
