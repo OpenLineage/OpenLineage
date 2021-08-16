@@ -6,7 +6,6 @@ import static openlineage.spark.agent.lifecycle.plan.ScalaConversionUtils.toScal
 
 import io.openlineage.client.OpenLineage;
 import java.lang.reflect.Field;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.ZonedDateTime;
 import java.util.Collections;
@@ -184,7 +183,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   }
 
   public static void emitError(Exception e) {
-    OpenLineage ol = new OpenLineage(URI.create(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI));
+    OpenLineage ol = new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
     try {
       contextFactory.sparkContext.emit(buildErrorLineageEvent(ol, errorRunFacet(e, ol)));
     } catch (Exception ex) {

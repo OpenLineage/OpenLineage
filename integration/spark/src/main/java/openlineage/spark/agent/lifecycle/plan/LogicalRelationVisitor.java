@@ -1,7 +1,6 @@
 package openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
-import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -69,7 +68,7 @@ public class LogicalRelationVisitor
 
   @Override
   public List<OpenLineage.Dataset> apply(LogicalPlan x) {
-    OpenLineage ol = new OpenLineage(URI.create(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI));
+    OpenLineage ol = new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
     LogicalRelation logRel = (LogicalRelation) x;
     if (logRel.relation() instanceof HadoopFsRelation) {
       return handleHadoopFsRelation((LogicalRelation) x);

@@ -2,7 +2,6 @@ package openlineage.spark.agent.facets;
 
 import com.fasterxml.jackson.annotation.JsonRawValue;
 import io.openlineage.client.OpenLineage;
-import java.net.URI;
 import lombok.Builder;
 import lombok.ToString;
 import openlineage.spark.agent.client.OpenLineageClient;
@@ -14,7 +13,7 @@ public class LogicalPlanFacet extends OpenLineage.CustomFacet {
 
   @Builder
   public LogicalPlanFacet(LogicalPlan plan) {
-    super(URI.create(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI));
+    super(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
     this.plan = plan;
   }
 

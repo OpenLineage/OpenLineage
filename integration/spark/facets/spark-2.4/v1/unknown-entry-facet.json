@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/schema#",
+  "definitions": {
+    "Run": {
+      "properties": {
+        "facets": {
+          "properties": {
+            "spark_unknown": {
+              "type": "object",
+              "properties": {
+                "_producer": {
+                  "type": "string"
+                },
+                "_schemaURL": {
+                  "type": "string"
+                },
+                "output": {
+                  "type": "object"
+                },
+                "inputs": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
