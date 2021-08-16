@@ -15,19 +15,56 @@
                   "type": "string"
                 },
                 "output": {
-                  "type": "object"
+                  "$ref": "#/definitions/FacetEntry"
                 },
                 "inputs": {
                   "type": "array",
                   "items": {
-                    "type": "object"
+                    "$ref": "#/definitions/FacetEntry"
                   }
                 }
-              }
+              },
+              "additionalProperties": false
             }
           }
         }
       }
+    },
+    "FacetEntry": {
+      "type": "object",
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "inputAttributes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AttributeField"
+          }
+        },
+        "outputAttributes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AttributeField"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "AttributeField": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "metadata": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
     }
   }
 }
