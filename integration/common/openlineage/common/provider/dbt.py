@@ -53,7 +53,8 @@ class DbtArtifactProcessor:
         self.producer = producer
         self.dir = os.path.abspath(os.path.dirname(project))
         self.project = self.load_yaml(project)
-        self.namespace = ""
+        self.job_namespace = self.extract_job_namespace()
+        self.dataset_namespace = ""
         self.skip_errors = skip_errors
 
     def parse(self, target: Optional[str] = None) -> DbtEvents:
@@ -177,8 +178,8 @@ class DbtArtifactProcessor:
                     nodes[run['unique_id']],
                     get_from_nullable_chain(catalog, ['nodes', run['unique_id']])
                 ),
-                run['unique_id'],
-                self.namespace
+                self.removeprefix(run['unique_id'], 'model.'),
+                self.dataset_namespace
             ))
         return runs
 
@@ -201,7 +202,7 @@ class DbtArtifactProcessor:
                 runId=run.run_id
             ),
             job=Job(
-                namespace=self.namespace,
+                namespace=self.job_namespace,
                 name=run.job_name
             ),
             producer=self.producer,
@@ -219,7 +220,7 @@ class DbtArtifactProcessor:
                         runId=run.run_id
                     ),
                     job=Job(
-                        namespace=self.namespace,
+                        namespace=self.job_namespace,
                         name=run.job_name,
                         facets={
                             'sql': SqlJobFacet(run.output.metadata_node['compiled_sql'])
@@ -240,7 +241,7 @@ class DbtArtifactProcessor:
                         runId=run.run_id
                     ),
                     job=Job(
-                        namespace=self.namespace,
+                        namespace=self.job_namespace,
                         name=run.job_name,
                         facets={
                             'sql': SqlJobFacet(run.output.metadata_node['compiled_sql'])
@@ -262,8 +263,8 @@ class DbtArtifactProcessor:
         if has_facets:
             facets = {
                 'dataSource': DataSourceDatasetFacet(
-                    name=self.namespace,
-                    uri=self.namespace
+                    name=self.dataset_namespace,
+                    uri=self.dataset_namespace
                 ),
                 'schema': SchemaDatasetFacet(
                     fields=self.extract_metadata_fields(node.metadata_node['columns'].values())
@@ -276,7 +277,7 @@ class DbtArtifactProcessor:
         else:
             facets = {}
         return (
-            self.namespace,
+            self.dataset_namespace,
             f"{node.metadata_node['database']}."
             f"{node.metadata_node['schema']}."
             f"{node.metadata_node['name']}",
@@ -348,11 +349,22 @@ class DbtArtifactProcessor:
 
     def extract_namespace(self, profile: Dict):
         if profile['type'] == 'snowflake':
-            self.namespace = f"snowflake://{profile['account']}"
+            self.dataset_namespace = f"snowflake://{profile['account']}"
         elif profile['type'] == 'bigquery':
-            self.namespace = "bigquery"
+            self.dataset_namespace = "bigquery"
         else:
             raise NotImplementedError(
                 f"Only 'snowflake' and 'bigquery' adapters are supported right now. "
                 f"Passed {profile['type']}"
             )
+
+    @staticmethod
+    def extract_job_namespace() -> str:
+        return os.environ.get('OPENLINEAGE_NAMESPACE', 'default')
+
+    @staticmethod
+    def removeprefix(string: str, prefix: str) -> str:
+        if string.startswith(prefix):
+            return string[len(prefix):]
+        else:
+            return string[:]

@@ -23,7 +23,7 @@ def main():
         return
 
     client = OpenLineageClient.from_environment()
-    processor = DbtArtifactProcessor(PRODUCER)
+    processor = DbtArtifactProcessor(producer=PRODUCER)
     events = processor.parse().events()
 
     for event in events:
