@@ -17,7 +17,7 @@ Maven:
 or Gradle:
 
 ```groovy
-implementation 'io.openlineage:openlineage-spark:0.1.0'
+implementation 'io.openlineage:openlineage-spark:0.1.0
 ```
 
 ## Getting started
