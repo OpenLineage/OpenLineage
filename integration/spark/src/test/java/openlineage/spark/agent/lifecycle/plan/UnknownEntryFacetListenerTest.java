@@ -1,5 +1,7 @@
 package openlineage.spark.agent.lifecycle.plan;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import openlineage.spark.agent.facets.UnknownEntryFacet;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
@@ -11,8 +13,6 @@ import org.apache.spark.sql.types.Metadata$;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import scala.collection.immutable.Seq$;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 class UnknownEntryFacetListenerTest {
 

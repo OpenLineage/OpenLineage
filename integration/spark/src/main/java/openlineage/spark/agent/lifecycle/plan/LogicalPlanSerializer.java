@@ -14,14 +14,9 @@ import com.fasterxml.jackson.module.scala.DefaultScalaModule$;
 import org.apache.spark.Partition;
 import org.apache.spark.api.python.PythonRDD;
 import org.apache.spark.rdd.RDD;
-import org.apache.spark.sql.catalyst.expressions.Expression;
-import org.apache.spark.sql.catalyst.expressions.NamedExpression;
-import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression;
-import org.apache.spark.sql.catalyst.plans.logical.Aggregate;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.trees.TreeNode;
 import org.apache.spark.sql.sources.BaseRelation;
-import scala.collection.Seq;
 
 public class LogicalPlanSerializer {
   private final ObjectMapper mapper;
@@ -41,17 +36,18 @@ public class LogicalPlanSerializer {
     mapper.addMixIn(ClassLoader.class, IgnoredType.class);
     mapper.addMixIn(BaseRelation.class, TypeInfoMixin.class);
     mapper.addMixIn(BaseRelation.class, TypeInfoMixin.class);
-    mapper.setMixInResolver(new ClassIntrospector.MixInResolver(){
-      @Override
-      public Class<?> findMixInClassFor(Class<?> cls) {
-        return ChildMixIn.class;
-      }
+    mapper.setMixInResolver(
+        new ClassIntrospector.MixInResolver() {
+          @Override
+          public Class<?> findMixInClassFor(Class<?> cls) {
+            return ChildMixIn.class;
+          }
 
-      @Override
-      public ClassIntrospector.MixInResolver copy() {
-        return this;
-      }
-    });
+          @Override
+          public ClassIntrospector.MixInResolver copy() {
+            return this;
+          }
+        });
     try {
       Class<?> c = getClass().getClassLoader().loadClass("java.lang.Module");
       mapper.addMixIn(c, IgnoredType.class);
@@ -75,8 +71,7 @@ public class LogicalPlanSerializer {
   public static class TypeInfoMixin {}
 
   @JsonIgnoreProperties({"child", "containsChild", "canonicalized"})
-  abstract class ChildMixIn {
-  }
+  abstract class ChildMixIn {}
 
   public static class PythonRDDMixin {
     @JsonIgnore private PythonRDDMixin asJavaRDD;
