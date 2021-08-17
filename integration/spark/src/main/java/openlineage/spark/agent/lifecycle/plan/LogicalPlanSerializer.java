@@ -11,6 +11,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.introspect.ClassIntrospector;
 import com.fasterxml.jackson.module.scala.DefaultScalaModule$;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.Partition;
 import org.apache.spark.api.python.PythonRDD;
 import org.apache.spark.rdd.RDD;
@@ -18,6 +19,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.trees.TreeNode;
 import org.apache.spark.sql.sources.BaseRelation;
 
+@Slf4j
 public class LogicalPlanSerializer {
   private final ObjectMapper mapper;
   private static final LogicalPlanSerializer instance = new LogicalPlanSerializer();
@@ -28,7 +30,11 @@ public class LogicalPlanSerializer {
 
   private LogicalPlanSerializer() {
     mapper = new ObjectMapper();
-    mapper.registerModule(DefaultScalaModule$.MODULE$);
+    try {
+      mapper.registerModule(DefaultScalaModule$.MODULE$);
+    } catch (Throwable t) {
+      log.warn("Can't register jackson scala module for serializing LogicalPlan");
+    }
 
     mapper.addMixIn(PythonRDD.class, PythonRDDMixin.class);
     mapper.addMixIn(RDD.class, RDDMixin.class);
@@ -59,7 +65,7 @@ public class LogicalPlanSerializer {
   public String serialize(LogicalPlan x) {
     try {
       return mapper.writeValueAsString(x);
-    } catch (JsonProcessingException e) {
+    } catch (Throwable e) {
       return "Unable to serialize {}: " + e.getMessage();
     }
   }
