@@ -24,7 +24,7 @@ Before sending a Pull Request with significant changes, please use the [issue tr
 OpenLineage uses [GitHub's fork and pull model](https://help.github.com/articles/about-collaborative-development-models/)
 to create a contribution.
 
-Every contribution is [signed](#sign-your-work) to say that the contributor has the rights to make the contribution and
+Make sure to [sign-off](https://github.com/OpenLineage/OpenLineage/blob/main/why-the-dco.md) your work to say that the contributor has the rights to make the contribution and
 agrees with the [Developer Certificate of Origin (DCO)](why-the-dco.md)
 
 To ensure your pull request is accepted, follow these guidelines:
@@ -57,22 +57,6 @@ To ensure your pull request is accepted, follow these guidelines:
 * Choose _short_ and _descriptive_ branch names
 * Use dashes (`-`) to separate _words_ in branch names
 * Use _lowercase_ in branch names
-
-### Sign Your Work
-
-The _sign-off_ is a simple line at the end of the message for a commit. All commits needs to be signed. Your signature certifies that you wrote the patch or otherwise have the right to contribute the material (see [Developer Certificate of Origin](https://developercertificate.org)):
-
-```
-This is my commit message
-
-Signed-off-by: Remedios Moscote <remedios.moscote@buendía.com>
-```
-
-Git has a [`-s`](https://git-scm.com/docs/git-commit#Documentation/git-commit.txt---signoff) command line option to append this automatically to your commit message:
-
-```bash
-$ git commit -s -m "This is my commit message"
-```
 
 ## Proposing changes
 
