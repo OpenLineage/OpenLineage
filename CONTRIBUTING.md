@@ -34,8 +34,8 @@ To ensure your pull request is accepted, follow these guidelines:
 * Do your best to have a [well-formed](https://frontside.com/blog/2020-7-reasons-for-good-pull-request-descriptions) pull request description for your change
 * [Keep diffs small](https://kurtisnusbaum.medium.com/stacked-diffs-keeping-phabricator-diffs-small-d9964f4dcfa6) and self-contained
 * If your change fixes a bug, please [link the issue](https://help.github.com/articles/closing-issues-using-keywords) in your pull request description
-* Your pull request title should be of the form `[CATEGORY][COMPONENT] Your title`, where `CATEGORY` is either `INTEGRATION` or `PROPOSAL`,
-  and `COMPONENT` is one of `DBT`, `AIRFLOW`, `SPARK`, etc.
+* Your pull request title should be of the form `[CATEGORY][COMPONENT] Your title`, where `CATEGORY` is either `PROPOSAL`, or `INTEGRATION`,
+  and `COMPONENT` is one of `AIRFLOW`, `DBT`, `SPARK`, etc.
 
 ### Branching
 
