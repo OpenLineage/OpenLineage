@@ -7,6 +7,8 @@ from openlineage.client.client import OpenLineageClient
 
 __version__ = "0.1.0"
 
+from openlineage.common.utils import parse_single_arg
+
 PRODUCER = f'https://github.com/OpenLineage/OpenLineage/tree/{__version__}/integration/dbt'
 
 
@@ -22,8 +24,18 @@ def main():
     if len(sys.argv) < 2 or sys.argv[1] != 'run':
         return
 
+    args = sys.argv[2:]
+    target = parse_single_arg(args, ['-t', '--target'])
+    project_dir = parse_single_arg(args, ['--project-dir'])
+    profile_name = parse_single_arg(args, ['--profile'])
+
     client = OpenLineageClient.from_environment()
-    processor = DbtArtifactProcessor(producer=PRODUCER)
+    processor = DbtArtifactProcessor(
+        producer=PRODUCER,
+        target=target,
+        project_dir=project_dir,
+        profile_name=profile_name
+    )
     events = processor.parse().events()
 
     for event in events:

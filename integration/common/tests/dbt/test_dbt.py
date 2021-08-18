@@ -29,8 +29,8 @@ def test_dbt_parse_small_event(mock_uuid):
     ]
 
     processor = DbtArtifactProcessor(
-        'https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt',
-        'tests/dbt/small/dbt_project.yml'
+        producer='https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt',
+        project_dir='tests/dbt/small'
     )
     dbt_events = processor.parse()
     events = [
@@ -49,8 +49,8 @@ def test_dbt_parse_catalog_event(mock_uuid):
     ]
 
     processor = DbtArtifactProcessor(
-        'https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt',
-        'tests/dbt/catalog/dbt_project.yml'
+        producer='https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt',
+        project_dir='tests/dbt/catalog'
     )
     dbt_events = processor.parse()
     events = [
@@ -73,8 +73,8 @@ def test_dbt_parse_large_event(mock_uuid):
     ]
 
     processor = DbtArtifactProcessor(
-        'https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt',
-        'tests/dbt/large/dbt_project.yml'
+        producer='https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt',
+        project_dir='tests/dbt/large'
     )
     dbt_events = processor.parse()
     events = [
@@ -99,8 +99,8 @@ def test_dbt_parse_failed_event(mock_datetime, mock_uuid):
     ]
 
     processor = DbtArtifactProcessor(
-        'https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt',
-        'tests/dbt/fail/dbt_project.yml'
+        producer='https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt',
+        project_dir='tests/dbt/fail'
     )
     dbt_events = processor.parse()
     events = [
