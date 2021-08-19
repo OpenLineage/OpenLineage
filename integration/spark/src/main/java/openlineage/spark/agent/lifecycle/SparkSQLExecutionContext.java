@@ -81,10 +81,12 @@ public class SparkSQLExecutionContext implements ExecutionContext {
     }
     PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>> outputVisitor =
         merge(outputDatasetSupplier);
-    PlanTraversal<LogicalPlan, List<OpenLineage.OutputDataset>> planTraversal = getPlanTraversal(outputVisitor);
+    PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>> planTraversal =
+        getPlanTraversal(outputVisitor);
     List<OpenLineage.OutputDataset> outputDatasets =
-        planTraversal.isDefinedAt(queryExecution.optimizedPlan()) ?
-            planTraversal.apply(queryExecution.optimizedPlan()): Collections.emptyList();
+        planTraversal.isDefinedAt(queryExecution.optimizedPlan())
+            ? planTraversal.apply(queryExecution.optimizedPlan())
+            : Collections.emptyList();
 
     List<InputDataset> inputDatasets = getInputDatasets();
     Optional<UnknownEntryFacet> unknownFacet =
@@ -152,10 +154,12 @@ public class SparkSQLExecutionContext implements ExecutionContext {
     }
     PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>> outputVisitor =
         merge(outputDatasetSupplier);
-    PlanTraversal<LogicalPlan, List<OpenLineage.OutputDataset>> planTraversal = getPlanTraversal(outputVisitor);
+    PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>> planTraversal =
+        getPlanTraversal(outputVisitor);
     List<OpenLineage.OutputDataset> outputDatasets =
-        planTraversal.isDefinedAt(queryExecution.optimizedPlan()) ?
-            planTraversal.apply(queryExecution.optimizedPlan()): Collections.emptyList();
+        planTraversal.isDefinedAt(queryExecution.optimizedPlan())
+            ? planTraversal.apply(queryExecution.optimizedPlan())
+            : Collections.emptyList();
 
     List<InputDataset> inputDatasets = getInputDatasets();
     Optional<UnknownEntryFacet> unknownFacet =
