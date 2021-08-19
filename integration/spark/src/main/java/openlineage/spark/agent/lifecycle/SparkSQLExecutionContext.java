@@ -7,6 +7,7 @@ import io.openlineage.client.OpenLineage.InputDataset;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -80,11 +81,13 @@ public class SparkSQLExecutionContext implements ExecutionContext {
     }
     PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>> outputVisitor =
         merge(outputDatasetSupplier);
+    PlanTraversal<LogicalPlan, List<OpenLineage.OutputDataset>> planTraversal = getPlanTraversal(outputVisitor);
     List<OpenLineage.OutputDataset> outputDatasets =
-        getPlanTraversal(outputVisitor).apply(queryExecution.optimizedPlan());
+        planTraversal.isDefinedAt(queryExecution.optimizedPlan()) ?
+            planTraversal.apply(queryExecution.optimizedPlan()): Collections.emptyList();
 
     List<InputDataset> inputDatasets = getInputDatasets();
-    UnknownEntryFacet unknownFacet =
+    Optional<UnknownEntryFacet> unknownFacet =
         unknownEntryFacetListener.build(queryExecution.optimizedPlan());
 
     OpenLineage ol = new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
@@ -149,11 +152,13 @@ public class SparkSQLExecutionContext implements ExecutionContext {
     }
     PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>> outputVisitor =
         merge(outputDatasetSupplier);
+    PlanTraversal<LogicalPlan, List<OpenLineage.OutputDataset>> planTraversal = getPlanTraversal(outputVisitor);
     List<OpenLineage.OutputDataset> outputDatasets =
-        getPlanTraversal(outputVisitor).apply(queryExecution.optimizedPlan());
+        planTraversal.isDefinedAt(queryExecution.optimizedPlan()) ?
+            planTraversal.apply(queryExecution.optimizedPlan()): Collections.emptyList();
 
     List<InputDataset> inputDatasets = getInputDatasets();
-    UnknownEntryFacet unknownFacet =
+    Optional<UnknownEntryFacet> unknownFacet =
         unknownEntryFacetListener.build(queryExecution.optimizedPlan());
 
     OpenLineage ol = new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
@@ -196,19 +201,17 @@ public class SparkSQLExecutionContext implements ExecutionContext {
   protected OpenLineage.RunFacets buildRunFacets(
       LogicalPlanFacet logicalPlanFacet,
       ErrorFacet jobError,
-      UnknownEntryFacet unknownEntryFacet,
+      Optional<UnknownEntryFacet> unknownEntryFacet,
       Optional<OpenLineage.ParentRunFacet> parentRunFacet) {
     OpenLineage.RunFacetsBuilder builder = new OpenLineage.RunFacetsBuilder();
     parentRunFacet.ifPresent(builder::parent);
+    unknownEntryFacet.ifPresent(f -> builder.put("spark_unknown", f));
 
     if (logicalPlanFacet != null) {
       builder.put("spark.logicalPlan", logicalPlanFacet);
     }
     if (jobError != null) {
       builder.put("spark.exception", jobError);
-    }
-    if (unknownEntryFacet != null) {
-      builder.put("spark_unknown", unknownEntryFacet);
     }
     return builder.build();
   }

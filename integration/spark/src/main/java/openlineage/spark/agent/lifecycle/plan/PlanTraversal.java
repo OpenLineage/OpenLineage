@@ -15,12 +15,9 @@ public class PlanTraversal<T, R> extends AbstractPartialFunction<T, R> {
 
   @Override
   public R apply(T element) {
-    if (processor.isDefinedAt(element)) {
-      R res = processor.apply(element);
-      visitedNodeListeners.forEach(c -> c.accept(element));
-      return res;
-    }
-    return null;
+    R res = processor.apply(element);
+    visitedNodeListeners.forEach(c -> c.accept(element));
+    return res;
   }
 
   @Override

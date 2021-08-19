@@ -45,8 +45,9 @@ class PlanTraversalTest {
             .visitedNodeListener(processedAggregator)
             .build();
 
-    String processedResult = planTraversal.apply("test");
-    String unProcessedResult = planTraversal.apply("testString");
+    String processedResult = planTraversal.isDefinedAt("test") ? planTraversal.apply("test") : null;
+    String unProcessedResult =
+        planTraversal.isDefinedAt("testString") ? planTraversal.apply("testString") : null;
 
     assertThat(processedResult).isEqualTo("test4");
     assertThat(unProcessedResult).isNull();
@@ -60,8 +61,9 @@ class PlanTraversalTest {
             .processor(new StringLengthPartialFunction(4))
             .build();
 
-    String processedResult = planTraversal.apply("test");
-    String unProcessedResult = planTraversal.apply("testString");
+    String processedResult = planTraversal.isDefinedAt("test") ? planTraversal.apply("test") : null;
+    String unProcessedResult =
+        planTraversal.isDefinedAt("testString") ? planTraversal.apply("testString") : null;
 
     assertThat(processedResult).isEqualTo("test4");
     assertThat(unProcessedResult).isNull();

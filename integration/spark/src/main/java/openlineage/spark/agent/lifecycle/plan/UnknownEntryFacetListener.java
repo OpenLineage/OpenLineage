@@ -9,6 +9,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import openlineage.spark.agent.facets.UnknownEntryFacet;
@@ -19,6 +20,11 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.types.DataType;
 import scala.collection.JavaConversions;
 
+/**
+ * Listener which is used in {@link PlanTraversal}. Holds an information about visited nodes in
+ * {@link LogicalPlan} Using {@link LogicalPlanSerializer} serialize unvisited leaves and root and
+ * build a facet
+ */
 public class UnknownEntryFacetListener implements Consumer<LogicalPlan> {
 
   private final Map<LogicalPlan, Object> visitedNodes = new IdentityHashMap<>();
@@ -29,14 +35,16 @@ public class UnknownEntryFacetListener implements Consumer<LogicalPlan> {
     visitedNodes.put(logicalPlan, null);
   }
 
-  public UnknownEntryFacet build(LogicalPlan root) {
+  public Optional<UnknownEntryFacet> build(LogicalPlan root) {
     FacetEntry output = mapEntry(root);
     List<FacetEntry> inputs =
         seqAsJavaList(root.collectLeaves()).stream()
             .map(this::mapEntry)
             .filter(Objects::nonNull)
             .collect(Collectors.toList());
-    return output == null && inputs.isEmpty() ? null : new UnknownEntryFacet(output, inputs);
+    return output == null && inputs.isEmpty()
+        ? Optional.empty()
+        : Optional.of(new UnknownEntryFacet(output, inputs));
   }
 
   private FacetEntry mapEntry(LogicalPlan x) {

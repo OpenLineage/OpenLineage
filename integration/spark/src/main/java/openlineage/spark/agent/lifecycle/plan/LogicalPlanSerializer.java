@@ -18,6 +18,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.trees.TreeNode;
 import org.apache.spark.sql.sources.BaseRelation;
 
+/** {@link LogicalPlan} serializer which serialize {@link LogicalPlan} to JSON string */
 @Slf4j
 public class LogicalPlanSerializer {
   private final ObjectMapper mapper;
@@ -75,6 +76,11 @@ public class LogicalPlanSerializer {
   @JsonTypeInfo(use = Id.CLASS)
   public static class TypeInfoMixin {}
 
+  /**
+   * 'canonicalized' field is ignored due to recursive call and {@link StackOverflowError} 'child'
+   * and 'containsChild' fields ignored cause we don't need them for the root node in {@link
+   * LogicalPlan} and leaf nodes don't have child nodes in {@link LogicalPlan}
+   */
   @JsonIgnoreProperties({"child", "containsChild", "canonicalized"})
   abstract class ChildMixIn {}
 

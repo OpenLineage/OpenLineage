@@ -2,6 +2,7 @@ package openlineage.spark.agent.lifecycle.plan;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Optional;
 import openlineage.spark.agent.facets.UnknownEntryFacet;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
@@ -35,7 +36,7 @@ class UnknownEntryFacetListenerTest {
         new Project(
             Seq$.MODULE$.<NamedExpression>newBuilder().$plus$eq(reference).result(), logicalPlan);
 
-    UnknownEntryFacet facet = underTest.build(project);
+    UnknownEntryFacet facet = underTest.build(project).get();
 
     assertThat(facet.getOutput().getInputAttributes())
         .hasSize(1)
@@ -89,7 +90,7 @@ class UnknownEntryFacetListenerTest {
     underTest.accept(project);
     underTest.accept(logicalPlan);
 
-    UnknownEntryFacet facet = underTest.build(project);
-    assertThat(facet).isNull();
+    Optional<UnknownEntryFacet> facet = underTest.build(project);
+    assertThat(facet.isPresent()).isFalse();
   }
 }
