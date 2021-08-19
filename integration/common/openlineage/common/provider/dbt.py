@@ -181,16 +181,20 @@ class DbtArtifactProcessor:
                         get_from_nullable_chain(catalog, ['sources', node])
                     ))
 
+            output_node = nodes[run['unique_id']]
+
             runs.append(DbtRun(
                 started_at,
                 completed_at,
                 run['status'],
                 inputs,
                 ModelNode(
-                    nodes[run['unique_id']],
+                    output_node,
                     get_from_nullable_chain(catalog, ['nodes', run['unique_id']])
                 ),
-                self.removeprefix(run['unique_id'], 'model.'),
+                f"{output_node['database']}."
+                f"{output_node['schema']}."
+                f"{self.removeprefix(run['unique_id'], 'model.')}",
                 self.dataset_namespace
             ))
         return runs

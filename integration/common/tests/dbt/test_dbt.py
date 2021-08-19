@@ -43,6 +43,27 @@ def test_dbt_parse_small_event(mock_uuid):
 
 
 @mock.patch('uuid.uuid4')
+def test_dbt_parse_event_with_profiles(mock_uuid):
+    mock_uuid.side_effect = [
+        '6edf42ed-d8d0-454a-b819-d09b9067ff99',
+    ]
+
+    processor = DbtArtifactProcessor(
+        producer='https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt',
+        project_dir='tests/dbt/profiles',
+        target='prod'
+    )
+    dbt_events = processor.parse()
+    events = [
+        attr.asdict(event, value_serializer=serialize)
+        for event
+        in dbt_events.starts + dbt_events.completes + dbt_events.fails
+    ]
+    with open('tests/dbt/profiles/result.json', 'r') as f:
+        assert events == json.load(f)
+
+
+@mock.patch('uuid.uuid4')
 def test_dbt_parse_catalog_event(mock_uuid):
     mock_uuid.side_effect = [
         '6edf42ed-d8d0-454a-b819-d09b9067ff99',

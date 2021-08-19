@@ -7,7 +7,7 @@
 	},
 	"job": {
 		"namespace": "test-namespace",
-		"name": "jaffle_shop.stg_orders",
+		"name": "DEMO_DB.public.jaffle_shop.stg_orders",
 		"facets": {}
 	},
 	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -27,7 +27,7 @@
 	},
 	"job": {
 		"namespace": "test-namespace",
-		"name": "jaffle_shop.stg_payments",
+		"name": "DEMO_DB.public.jaffle_shop.stg_payments",
 		"facets": {}
 	},
 	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -47,7 +47,7 @@
 	},
 	"job": {
 		"namespace": "test-namespace",
-		"name": "jaffle_shop.stg_customers",
+		"name": "DEMO_DB.public.jaffle_shop.stg_customers",
 		"facets": {}
 	},
 	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -67,7 +67,7 @@
 	},
 	"job": {
 		"namespace": "test-namespace",
-		"name": "jaffle_shop.orders",
+		"name": "DEMO_DB.public.jaffle_shop.orders",
 		"facets": {}
 	},
 	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -95,7 +95,7 @@
 	},
 	"job": {
 		"namespace": "test-namespace",
-		"name": "jaffle_shop.customers",
+		"name": "DEMO_DB.public.jaffle_shop.customers",
 		"facets": {}
 	},
 	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -127,7 +127,7 @@
 	},
 	"job": {
 		"namespace": "test-namespace",
-		"name": "jaffle_shop.stg_orders",
+		"name": "DEMO_DB.public.jaffle_shop.stg_orders",
 		"facets": {
 			"sql": {
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -173,7 +173,7 @@
 	},
 	"job": {
 		"namespace": "test-namespace",
-		"name": "jaffle_shop.stg_payments",
+		"name": "DEMO_DB.public.jaffle_shop.stg_payments",
 		"facets": {
 			"sql": {
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -219,7 +219,7 @@
 	},
 	"job": {
 		"namespace": "test-namespace",
-		"name": "jaffle_shop.stg_customers",
+		"name": "DEMO_DB.public.jaffle_shop.stg_customers",
 		"facets": {
 			"sql": {
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -261,7 +261,7 @@
 	},
 	"job": {
 		"namespace": "test-namespace",
-		"name": "jaffle_shop.orders",
+		"name": "DEMO_DB.public.jaffle_shop.orders",
 		"facets": {
 			"sql": {
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -383,7 +383,7 @@
 	},
 	"job": {
 		"namespace": "test-namespace",
-		"name": "jaffle_shop.customers",
+		"name": "DEMO_DB.public.jaffle_shop.customers",
 		"facets": {
 			"sql": {
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
