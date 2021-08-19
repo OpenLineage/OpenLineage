@@ -1,11 +1,27 @@
-[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/4888/badge)](https://bestpractices.coreinfrastructure.org/projects/4888)
+<div align="center">
+  <img src="./doc/openlineage-logo.png" width="375px" />
+  <a href="https://lfaidata.foundation/projects">
+      <img src="./doc/lfaidata-project-badge-sandbox-black.png" width="115px" />
+  </a>
+</div>
 
-# OpenLineage
+## Badges
+
+[![CircleCI](https://circleci.com/gh/OpenLineage/OpenLineage/tree/main.svg?style=shield)](https://circleci.com/gh/OpenLineage/OpenLineage/tree/main)
+[![status](https://img.shields.io/badge/status-active-brightgreen.svg)](#status)
+[![Slack](https://img.shields.io/badge/slack-chat-blue.svg)](http://bit.ly/OpenLineageSlack)
+[![license](https://img.shields.io/badge/license-Apache_2.0-blue.svg)](https://github.com/OpenLineage/OpenLineage/blob/main/LICENSE)
+[![maven](https://img.shields.io/maven-central/v/io.openlineage/openlineage-java.svg)](https://search.maven.org/search?q=g:io.openlineage)
+[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/4888/badge)](https://bestpractices.coreinfrastructure.org/projects/4888)
 
 ## Overview
 OpenLineage is an Open standard for metadata and lineage collection designed to instrument jobs as they are running.
 It defines a generic model of run, job, and dataset entities identified using consistent naming strategies.
 The core lineage model is extensible by defining specific facets to enrich those entities.
+
+## Status
+
+OpenLineage is an [LF AI & Data Foundation](https://lfaidata.foundation/projects/openlineage) sandbox project under active development and we'd love your help!
 
 ## Problem
  ![Problem](doc/problem.png)

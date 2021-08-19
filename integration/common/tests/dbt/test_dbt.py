@@ -4,6 +4,7 @@ from unittest import mock
 
 import attr
 import pytest
+import os
 
 from openlineage.common.provider.dbt import DbtArtifactProcessor
 from openlineage.client import set_producer
@@ -12,6 +13,7 @@ from openlineage.client import set_producer
 @pytest.fixture(scope='session', autouse=True)
 def setup_producer():
     set_producer('https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt')
+    os.environ['OPENLINEAGE_NAMESPACE'] = 'test-namespace'
 
 
 def serialize(inst, field, value):

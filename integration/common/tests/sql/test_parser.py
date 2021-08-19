@@ -300,3 +300,22 @@ def test_bigquery_escaping():
         "public"
     )
     assert sql_meta.in_tables == [DbTableName('speedy-vim-308516.dbt_test1.source_table')]
+
+
+def test_parse_multi_statement():
+    sql_meta = SqlParser.parse(
+        """
+        DROP TABLE IF EXISTS schema1.table1;
+        CREATE TABLE schema1.table1(
+          col0 VARCHAR(64),
+          col1 VARCHAR(64)
+        )
+        DISTKEY(a)
+        INTERLEAVED SORTKEY(col0,col1);
+        INSERT INTO schema1.table1(col0, col1)
+          SELECT col0, col1
+            FROM schema0.table0;
+        """
+    )
+    assert sql_meta.in_tables == [DbTableName('schema0.table0')]
+    assert sql_meta.out_tables == [DbTableName('schema1.table1')]

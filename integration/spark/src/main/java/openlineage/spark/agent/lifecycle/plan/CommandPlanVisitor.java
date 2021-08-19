@@ -1,10 +1,10 @@
 package openlineage.spark.agent.lifecycle.plan;
 
+import io.openlineage.client.OpenLineage;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import openlineage.spark.agent.client.LineageEvent;
 import org.apache.spark.sql.catalyst.plans.logical.InsertIntoDir;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.command.InsertIntoDataSourceDirCommand;
@@ -20,11 +20,11 @@ import scala.runtime.AbstractPartialFunction;
  * exposed get skipped in the collect call, so we need to root them out here.
  */
 public class CommandPlanVisitor
-    extends AbstractPartialFunction<LogicalPlan, List<LineageEvent.Dataset>> {
-  private final PartialFunction<LogicalPlan, List<LineageEvent.Dataset>> inputVisitors;
+    extends AbstractPartialFunction<LogicalPlan, List<OpenLineage.Dataset>> {
+  private final PartialFunction<LogicalPlan, List<OpenLineage.Dataset>> inputVisitors;
 
   public CommandPlanVisitor(
-      List<PartialFunction<LogicalPlan, List<LineageEvent.Dataset>>> inputVisitors) {
+      List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> inputVisitors) {
     this.inputVisitors = PlanUtils.merge(inputVisitors);
   }
 
@@ -37,7 +37,7 @@ public class CommandPlanVisitor
   }
 
   @Override
-  public List<LineageEvent.Dataset> apply(LogicalPlan x) {
+  public List<OpenLineage.Dataset> apply(LogicalPlan x) {
     Optional<LogicalPlan> input = getInput(x);
     return input
         .map(

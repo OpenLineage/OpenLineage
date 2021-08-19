@@ -1,74 +1,77 @@
 {
-  "eventType" : "COMPLETE",
-  "run" : {
-    "facets" : {
-      "parent" : {
-        "_producer" : "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
-        "_schemaURL" : "https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#ParentRunFacet",
-        "run" : {
-          "runId" : ""
+  "eventType": "COMPLETE",
+  "run": {
+    "facets": {
+    }
+  },
+  "job": {
+    "namespace": "testPysparkRddToTable",
+    "name": "spark_rdd_to_table.execute_insert_into_hadoop_fs_relation_command"
+  },
+  "inputs": [
+    {
+      "namespace": "file",
+      "name": "/test_data/rdd_to_csv_output",
+      "facets": {
+        "schema": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
+          "fields": [
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "age",
+              "type": "integer"
+            }
+          ],
+          "_schemaURL": "https://openlineage.io/spec/1-0-0/OpenLineage.json#/definitions/SchemaDatasetFacet"
         },
-        "job" : {
-          "namespace" : "testPysparkRddToTable"
+        "dataSource": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
+          "name": "file",
+          "uri": "file",
+          "_schemaURL": "https://openlineage.io/spec/1-0-0/OpenLineage.json#/definitions/DatasourceDatasetFacet"
         }
       }
     }
-  },
-  "job" : {
-    "namespace" : "testPysparkRddToTable",
-    "name" : "spark_rdd_to_table.execute_insert_into_hadoop_fs_relation_command"
-  },
-  "inputs" : [ {
-    "namespace" : "file",
-    "name" : "/test_data/rdd_to_csv_output",
-    "facets" : {
-      "schema" : {
-        "_producer" : "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
-        "_schemaURL" : "https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#SchemaDatasetFacet",
-        "fields" : [ {
-          "name" : "name",
-          "type" : "string"
-        }, {
-          "name" : "age",
-          "type" : "integer"
-        } ]
+  ],
+  "outputs": [
+    {
+      "namespace": "file",
+      "name": "/test_data/rdd_to_table",
+      "facets": {
+        "schema": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
+          "fields": [
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "age",
+              "type": "integer"
+            }
+          ],
+          "_schemaURL": "https://openlineage.io/spec/1-0-0/OpenLineage.json#/definitions/SchemaDatasetFacet"
+        },
+        "dataSource": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
+          "name": "file",
+          "uri": "file",
+          "_schemaURL": "https://openlineage.io/spec/1-0-0/OpenLineage.json#/definitions/DatasourceDatasetFacet"
+        }
       },
-      "dataSource" : {
-        "_producer" : "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
-        "_schemaURL" : "https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#DatasourceDatasetFacet",
-        "name" : "file",
-        "uri" : "file"
+      "outputFacets": {
+        "outputStatistics": {
+          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
+          "rowCount": 0,
+          "size": 0,
+          "_schemaURL": "https://openlineage.io/spec/1-0-0/OpenLineage.json#/definitions/OutputStatisticsOutputDatasetFacet"
+        }
       }
     }
-  } ],
-  "outputs" : [ {
-    "namespace" : "file",
-    "name" : "/test_data/rdd_to_table",
-    "facets" : {
-      "schema" : {
-        "_producer" : "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
-        "_schemaURL" : "https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#SchemaDatasetFacet",
-        "fields" : [ {
-          "name" : "name",
-          "type" : "string"
-        }, {
-          "name" : "age",
-          "type" : "integer"
-        } ]
-      },
-      "dataSource" : {
-        "_producer" : "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
-        "_schemaURL" : "https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#DatasourceDatasetFacet",
-        "name" : "file",
-        "uri" : "file"
-      },
-      "stats" : {
-        "_producer" : "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
-        "_schemaURL" : "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark/facets/spark-2.4/v1/outputStatisticsFacet",
-        "rowCount" : 0,
-        "size" : 0
-      }
-    }
-  } ],
-  "producer" : "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark"
+  ],
+  "producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
+  "schemaURL": "https://openlineage.io/spec/1-0-0/OpenLineage.json#/definitions/RunEvent"
 }

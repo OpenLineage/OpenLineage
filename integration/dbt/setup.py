@@ -16,11 +16,10 @@
 
 from setuptools import setup
 
-# with open("README.md") as readme_file:
-#     readme = readme_file.read()
+with open("README.md") as readme_file:
+     readme = readme_file.read()
 
-
-__version__ = '0.0.1'
+__version__ = "0.1.0"
 
 requirements = [
     f"sqlparse>=0.2.3,<0.4",
@@ -42,6 +41,8 @@ setup(
     name="openlineage-dbt",
     version=__version__,
     description="OpenLineage integration with dbt",
+    long_description=readme,
+    long_description_content_type="text/markdown",
     author="OpenLineage",
     scripts=['scripts/dbt-ol'],
     include_package_data=True,

@@ -25,7 +25,7 @@ public class ArgumentParser {
   private final String version;
   private final String namespace;
   private final String jobName;
-  private final String runId;
+  private final String parentRunId;
   private final Optional<String> apiKey;
 
   public static ArgumentParser parse(String clientUrl) {
@@ -37,7 +37,7 @@ public class ArgumentParser {
     String version = get(elements, "api", 1, DEFAULTS.getVersion());
     String namespace = get(elements, "namespaces", 3, DEFAULTS.getNamespace());
     String jobName = get(elements, "jobs", 5, DEFAULTS.getJobName());
-    String runId = get(elements, "runs", 7, DEFAULTS.getRunId());
+    String runId = get(elements, "runs", 7, DEFAULTS.getParentRunId());
 
     List<NameValuePair> nameValuePairList = URLEncodedUtils.parse(uri, StandardCharsets.UTF_8);
     Optional<String> apiKey = getApiKey(nameValuePairList);
@@ -78,6 +78,6 @@ public class ArgumentParser {
   }
 
   private static ArgumentParser getDefaultArguments() {
-    return new ArgumentParser("", "v1", "default", "default", "", Optional.empty());
+    return new ArgumentParser("", "v1", "default", "default", null, Optional.empty());
   }
 }

@@ -1,6 +1,7 @@
 package openlineage.spark.agent;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -76,9 +77,9 @@ public class ArgumentParserTest {
     assertEquals(namespace, parser.getNamespace());
     assertEquals(jobName, parser.getJobName());
     if (defaultRunId) {
-      assertEquals("", parser.getRunId());
+      assertNull(parser.getParentRunId());
     } else {
-      assertEquals(runId, parser.getRunId());
+      assertEquals(runId, parser.getParentRunId());
     }
     assertEquals(apiKey, parser.getApiKey());
   }

@@ -4,7 +4,9 @@ import static openlineage.spark.agent.ArgumentParser.DEFAULTS;
 import static openlineage.spark.agent.lifecycle.plan.ScalaConversionUtils.asJavaOptional;
 import static openlineage.spark.agent.lifecycle.plan.ScalaConversionUtils.toScalaFn;
 
+import io.openlineage.client.OpenLineage;
 import java.lang.reflect.Field;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.ZonedDateTime;
 import java.util.Collections;
@@ -13,12 +15,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.WeakHashMap;
 import lombok.extern.slf4j.Slf4j;
-import openlineage.spark.agent.client.LineageEvent;
-import openlineage.spark.agent.client.LineageEvent.Job;
-import openlineage.spark.agent.client.LineageEvent.Run;
-import openlineage.spark.agent.client.LineageEvent.RunFacet;
 import openlineage.spark.agent.client.OpenLineageClient;
-import openlineage.spark.agent.facets.ErrorFacet;
 import openlineage.spark.agent.lifecycle.ContextFactory;
 import openlineage.spark.agent.lifecycle.ExecutionContext;
 import openlineage.spark.agent.lifecycle.SparkSQLExecutionContext;
@@ -187,39 +184,34 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   }
 
   public static void emitError(Exception e) {
+    OpenLineage ol = new OpenLineage(URI.create(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI));
     try {
-      contextFactory.sparkContext.emit(buildErrorLineageEvent(buildRunFacet(buildErrorFacet(e))));
+      contextFactory.sparkContext.emit(buildErrorLineageEvent(ol, errorRunFacet(e, ol)));
     } catch (Exception ex) {
       log.error("Could not emit open lineage on error", e);
     }
   }
 
-  public static LineageEvent buildErrorLineageEvent(RunFacet runFacet) {
-    return LineageEvent.builder()
+  private static OpenLineage.RunFacets errorRunFacet(Exception e, OpenLineage ol) {
+    OpenLineage.CustomFacetBuilder errorFacet = ol.newCustomFacetBuilder();
+    errorFacet.put("exception", e);
+
+    OpenLineage.RunFacetsBuilder runFacetsBuilder = ol.newRunFacetsBuilder();
+    runFacetsBuilder.put("lineage.error", errorFacet.build());
+    return runFacetsBuilder.build();
+  }
+
+  public static OpenLineage.RunEvent buildErrorLineageEvent(
+      OpenLineage ol, OpenLineage.RunFacets runFacets) {
+    return ol.newRunEventBuilder()
         .eventTime(ZonedDateTime.now())
-        .run(
-            Run.builder()
-                .runId(contextFactory.sparkContext.getParentRunId())
-                .facets(runFacet)
-                .build())
+        .run(ol.newRun(contextFactory.sparkContext.getParentRunId().orElse(null), runFacets))
         .job(
-            Job.builder()
-                .name(contextFactory.sparkContext.getParentJobName())
+            ol.newJobBuilder()
                 .namespace(contextFactory.sparkContext.getJobNamespace())
+                .name(contextFactory.sparkContext.getParentJobName())
                 .build())
-        .producer(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI)
         .build();
-  }
-
-  public static RunFacet buildRunFacet(ErrorFacet errorFacet) {
-    Map<String, Object> facets = new HashMap<>();
-    facets.put("lineage.error", errorFacet);
-
-    return RunFacet.builder().additional(facets).build();
-  }
-
-  public static ErrorFacet buildErrorFacet(Exception e) {
-    return ErrorFacet.builder().exception(e).build();
   }
 
   private static void clear() {
@@ -269,7 +261,8 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       String namespace =
           findSparkConfigKey(conf, SPARK_CONF_NAMESPACE_KEY, DEFAULTS.getNamespace());
       String jobName = findSparkConfigKey(conf, SPARK_CONF_JOB_NAME_KEY, DEFAULTS.getJobName());
-      String runId = findSparkConfigKey(conf, SPARK_CONF_PARENT_RUN_ID_KEY, DEFAULTS.getRunId());
+      String runId =
+          findSparkConfigKey(conf, SPARK_CONF_PARENT_RUN_ID_KEY, DEFAULTS.getParentRunId());
       Optional<String> apiKey =
           findSparkConfigKey(conf, SPARK_CONF_API_KEY).filter(str -> !str.isEmpty());
       return new ArgumentParser(host, version, namespace, jobName, runId, apiKey);
