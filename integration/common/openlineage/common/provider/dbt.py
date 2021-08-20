@@ -49,15 +49,24 @@ class DbtRunResult:
 
 
 class DbtArtifactProcessor:
-    def __init__(self, producer: str, project: str = 'dbt_project.yml', skip_errors: bool = False):
+    def __init__(
+        self,
+        producer: str,
+        project_dir: Optional[str] = None,
+        profile_name: Optional[str] = None,
+        target: Optional[str] = None,
+        skip_errors: bool = False
+    ):
         self.producer = producer
-        self.dir = os.path.abspath(os.path.dirname(project))
-        self.project = self.load_yaml(project)
+        self.dir = os.path.abspath(project_dir)
+        self.profile_name = profile_name
+        self.target = target
+        self.project = self.load_yaml(os.path.join(project_dir, 'dbt_project.yml'))
         self.job_namespace = self.extract_job_namespace()
         self.dataset_namespace = ""
         self.skip_errors = skip_errors
 
-    def parse(self, target: Optional[str] = None) -> DbtEvents:
+    def parse(self) -> DbtEvents:
         """
             Parse dbt manifest and run_result and produce OpenLineage events.
         """
@@ -73,14 +82,17 @@ class DbtArtifactProcessor:
 
         profile_dir = run_result['args']['profiles_dir']
 
+        if not self.profile_name:
+            self.profile_name = self.project['profile']
+
         profile = self.load_yaml(
             os.path.join(profile_dir, 'profiles.yml')
-        )[self.project['profile']]
+        )[self.profile_name]
 
-        if target:
-            profile = profile['outputs'][target]
-        else:
-            profile = profile['outputs'][profile['target']]
+        if not self.target:
+            self.target = profile['target']
+
+        profile = profile['outputs'][self.target]
 
         self.extract_namespace(profile)
 
@@ -169,16 +181,20 @@ class DbtArtifactProcessor:
                         get_from_nullable_chain(catalog, ['sources', node])
                     ))
 
+            output_node = nodes[run['unique_id']]
+
             runs.append(DbtRun(
                 started_at,
                 completed_at,
                 run['status'],
                 inputs,
                 ModelNode(
-                    nodes[run['unique_id']],
+                    output_node,
                     get_from_nullable_chain(catalog, ['nodes', run['unique_id']])
                 ),
-                self.removeprefix(run['unique_id'], 'model.'),
+                f"{output_node['database']}."
+                f"{output_node['schema']}."
+                f"{self.removeprefix(run['unique_id'], 'model.')}",
                 self.dataset_namespace
             ))
         return runs
