@@ -7,6 +7,13 @@ import lombok.Singular;
 import scala.PartialFunction;
 import scala.runtime.AbstractPartialFunction;
 
+/**
+ * {@link org.apache.spark.sql.catalyst.plans.logical.LogicalPlan} visitor whose sole purpose is to
+ * send visited nodes to a list of node {@link Consumer}s that need to track plan nodes.
+ *
+ * @param <T>
+ * @param <R>
+ */
 @Builder
 public class PlanTraversal<T, R> extends AbstractPartialFunction<T, R> {
 

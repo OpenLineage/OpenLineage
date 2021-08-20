@@ -18,7 +18,15 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.trees.TreeNode;
 import org.apache.spark.sql.sources.BaseRelation;
 
-/** {@link LogicalPlan} serializer which serialize {@link LogicalPlan} to JSON string */
+/**
+ * {@link LogicalPlan} serializer which serialize {@link LogicalPlan} to JSON string. This
+ * serializer relies on Jackson's {@link com.fasterxml.jackson.module.scala.DefaultScalaModule},
+ * which is scala-version specific. Currently, we depend on the Scala 2.11 version of the jar,
+ * making this code incompatible with Spark 3 or other other Spark installations compiled with Scala
+ * 2.12 or higher. In such cases, we'll fail to load the Jackson module, but will continue to
+ * attempt serialization of the {@link LogicalPlan}. If serialization fails, the exception message
+ * and stacktrace will be reported.
+ */
 @Slf4j
 public class LogicalPlanSerializer {
   private final ObjectMapper mapper;
