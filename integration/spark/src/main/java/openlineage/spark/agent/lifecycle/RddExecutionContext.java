@@ -150,7 +150,7 @@ public class RddExecutionContext implements ExecutionContext {
 
   @Override
   public void start(SparkListenerJobStart jobStart) {
-    OpenLineage ol = new OpenLineage(URI.create(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI));
+    OpenLineage ol = new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
     OpenLineage.RunEvent event =
         ol.newRunEventBuilder()
             .eventTime(toZonedTime(jobStart.time()))
@@ -167,7 +167,7 @@ public class RddExecutionContext implements ExecutionContext {
 
   @Override
   public void end(SparkListenerJobEnd jobEnd) {
-    OpenLineage ol = new OpenLineage(URI.create(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI));
+    OpenLineage ol = new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
     OpenLineage.RunEvent event =
         ol.newRunEventBuilder()
             .eventTime(toZonedTime(jobEnd.time()))

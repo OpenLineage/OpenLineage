@@ -55,7 +55,7 @@ public class PlanUtils {
    * @return
    */
   public static <T, R> PartialFunction<T, R> merge(List<PartialFunction<T, R>> fns) {
-    return fns.stream().reduce((a, b) -> a.orElse(b)).orElse(PartialFunction$.MODULE$.empty());
+    return fns.stream().reduce(PartialFunction::orElse).orElse(PartialFunction$.MODULE$.empty());
   }
 
   /**
@@ -65,7 +65,7 @@ public class PlanUtils {
    * @return
    */
   public static OpenLineage.SchemaDatasetFacet schemaFacet(StructType structType) {
-    return new OpenLineage(URI.create(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
+    return new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI)
         .newSchemaDatasetFacetBuilder()
         .fields(transformFields(structType.fields()))
         .build();
@@ -153,7 +153,7 @@ public class PlanUtils {
    * @return
    */
   public static OpenLineage.DatasourceDatasetFacet datasourceFacet(String namespaceUri) {
-    return new OpenLineage(URI.create(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
+    return new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI)
         .newDatasourceDatasetFacetBuilder()
         .uri(URI.create(namespaceUri))
         .name(namespaceUri)
@@ -171,7 +171,7 @@ public class PlanUtils {
    */
   public static OpenLineage.ParentRunFacet parentRunFacet(
       UUID parentRunId, String parentJob, String parentJobNamespace) {
-    return new OpenLineage(URI.create(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
+    return new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI)
         .newParentRunFacetBuilder()
         .run(new OpenLineage.ParentRunFacetRunBuilder().runId(parentRunId).build())
         .job(

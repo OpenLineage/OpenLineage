@@ -33,7 +33,7 @@ import org.apache.hc.core5.http.Message;
 @Slf4j
 public class OpenLineageClient {
 
-  public static final String OPEN_LINEAGE_CLIENT_URI = getUri();
+  public static final URI OPEN_LINEAGE_CLIENT_URI = getUri();
   public static final String OPEN_LINEAGE_PARENT_FACET_URI =
       "https://openlineage.io/spec/1-0-0/OpenLineage.json#/definitions/ParentRunFacet";
   public static final String OPEN_LINEAGE_DATASOURCE_FACET =
@@ -171,9 +171,10 @@ public class OpenLineageClient {
     return "openlineage-java" + "/1.0";
   }
 
-  private static String getUri() {
-    return String.format(
-        "https://github.com/OpenLineage/OpenLineage/tree/%s/integration/spark", getVersion());
+  private static URI getUri() {
+    return URI.create(
+        String.format(
+            "https://github.com/OpenLineage/OpenLineage/tree/%s/integration/spark", getVersion()));
   }
 
   private static String getVersion() {

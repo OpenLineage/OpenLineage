@@ -2,7 +2,6 @@ package openlineage.spark.agent.lifecycle.plan.wrapper;
 
 import com.google.common.collect.ImmutableMap;
 import io.openlineage.client.OpenLineage;
-import java.net.URI;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -47,7 +46,7 @@ public class OutputDatasetWithMetadataVisitor
 
   @Override
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
-    OpenLineage ol = new OpenLineage(URI.create(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI));
+    OpenLineage ol = new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
 
     Map<String, SQLMetric> metrics =
         statisticsCommands.entrySet().stream()

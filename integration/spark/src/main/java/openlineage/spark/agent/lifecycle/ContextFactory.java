@@ -38,6 +38,7 @@ public class ContextFactory {
     InputDatasetVisitors inputDatasetVisitors = new InputDatasetVisitors(commonDatasetVisitors);
     OutputDatasetVisitors outputDatasetVisitors =
         new OutputDatasetVisitors(sqlContext, commonDatasetVisitors);
+
     return new SparkSQLExecutionContext(
         executionId, sparkContext, outputDatasetVisitors.get(), inputDatasetVisitors.get());
   }

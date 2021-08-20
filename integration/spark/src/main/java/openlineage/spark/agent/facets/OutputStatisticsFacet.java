@@ -25,7 +25,7 @@ public class OutputStatisticsFacet extends OpenLineage.CustomFacet {
 
   @Builder
   public OutputStatisticsFacet(long rowCount, long size) {
-    super(URI.create(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI));
+    super(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
     this.rowCount = rowCount;
     this.size = size;
   }
