@@ -21,9 +21,17 @@ import org.apache.spark.sql.types.DataType;
 import scala.collection.JavaConversions;
 
 /**
- * Listener which is used in {@link PlanTraversal}. Holds an information about visited nodes in
- * {@link LogicalPlan} Using {@link LogicalPlanSerializer} serialize unvisited leaves and root and
- * build a facet
+ * Listener which is used in {@link PlanTraversal}. Holds information about visited nodes in {@link
+ * LogicalPlan}, using {@link LogicalPlanSerializer} serialize unvisited leaves and root and build
+ * an {@link UnknownEntryFacet} for the sake of tracking leaf and root nodes (inputs and outputs)
+ * that don't yet have a function defined for collecting {@link
+ * io.openlineage.client.OpenLineage.Dataset} attributes. In this way, OpenLineage data collectors
+ * can gain some visibility into gaps in coverage of the Spark plans being visited. Even though the
+ * {@link openlineage.spark.agent.facets.LogicalPlanFacet} collects the entire plan for the run, it
+ * relies on the {@link LogicalPlan#toJSON()} traversal, which only visits {@link
+ * LogicalPlan#children()}, which omits other fields present in the nodes. An example includes the
+ * {@link org.apache.spark.sql.execution.LogicalRDD}, which encapsulates {@link
+ * org.apache.spark.rdd.RDD}s, which may point to parseable data sources.
  */
 public class UnknownEntryFacetListener implements Consumer<LogicalPlan> {
 
