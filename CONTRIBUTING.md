@@ -24,9 +24,39 @@ Before sending a Pull Request with significant changes, please use the [issue tr
 OpenLineage uses [GitHub's fork and pull model](https://help.github.com/articles/about-collaborative-development-models/)
 to create a contribution.
 
-Every contribution is signed to say that the contributor has the rights to make the contribution and
+Make sure to [sign-off](https://github.com/OpenLineage/OpenLineage/blob/main/why-the-dco.md) your work to say that the contributor has the rights to make the contribution and
 agrees with the [Developer Certificate of Origin (DCO)](why-the-dco.md)
 
+To ensure your pull request is accepted, follow these guidelines:
+
+* All changes should be accompanied by tests
+* Do your best to have a [well-formed commit message](https://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html) for your change
+* Do your best to have a [well-formed](https://frontside.com/blog/2020-7-reasons-for-good-pull-request-descriptions) pull request description for your change
+* [Keep diffs small](https://kurtisnusbaum.medium.com/stacked-diffs-keeping-phabricator-diffs-small-d9964f4dcfa6) and self-contained
+* If your change fixes a bug, please [link the issue](https://help.github.com/articles/closing-issues-using-keywords) in your pull request description
+* Your pull request title should be of the form `[CATEGORY][COMPONENT] Your title`, where `CATEGORY` is either `PROPOSAL`, or `INTEGRATION`,
+  and `COMPONENT` is one of `AIRFLOW`, `DBT`, `SPARK`, etc.
+
+### Branching
+
+* Use a _group_ at the beginning of your branch names:
+
+  ```
+  feature  Add or expand a feature
+  bug      Fix a bug
+  ```
+
+  _For example_:
+
+  ```
+  feature/my-cool-new-feature
+  bug/my-bug-fix
+  bug/my-other-bug-fix
+  ```
+
+* Choose _short_ and _descriptive_ branch names
+* Use dashes (`-`) to separate _words_ in branch names
+* Use _lowercase_ in branch names
 
 ## Proposing changes
 
