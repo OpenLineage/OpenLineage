@@ -126,10 +126,7 @@ task bumpVersionTestFiles() {
     }
 }
 
-test {
-    useJUnitPlatform {
-        excludeTags 'integration-test'
-    }
+def commonTestConfiguration = {
     forkEvery 1
     maxParallelForks 3
     testLogging {
@@ -140,21 +137,35 @@ test {
             'junit.platform.output.capture.stdout': 'true',
             'junit.platform.output.capture.stderr': 'true'
     ]
+}
+
+test {
+    configure commonTestConfiguration
+    useJUnitPlatform {
+        excludeTags 'integration-test'
+    }
     dependsOn bumpVersionTestFiles
 }
 
 task integrationTest(type: Test) {
+    configure commonTestConfiguration
     useJUnitPlatform {
         includeTags "integration-test"
     }
-    testLogging {
-        events "passed", "skipped", "failed"
-        showStandardStreams = true
+    systemProperties = [
+            'spark.version'        : project.getProperty('spark.version'),
+            'openlineage.spark.jar': "${archivesBaseName}-${project.version}.jar"
+    ]
+    dependsOn bumpVersionTestFiles, shadowJar
+}
+
+task integrationTestSpark3(type: Test) {
+    configure commonTestConfiguration
+    useJUnitPlatform {
+        includeTags "integration-test"
     }
     systemProperties = [
-            'junit.platform.output.capture.stdout': 'true',
-            'junit.platform.output.capture.stderr': 'true',
-            'spark.version': project.getProperty('spark.version'),
+            'spark.version'        : '3.1',
             'openlineage.spark.jar': "${archivesBaseName}-${project.version}.jar"
     ]
     dependsOn bumpVersionTestFiles, shadowJar
