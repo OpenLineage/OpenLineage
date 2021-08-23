@@ -10,14 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import time
+import copy
 from typing import List, Union, Optional
 
 import airflow.models
 from airflow.models import DagRun
-from airflow.utils.db import provide_session
+from airflow.utils.db import create_session
 from airflow.utils.state import State
-# Handling of import of different airflow versions
-from airflow.version import version as AIRFLOW_VERSION
 from openlineage.airflow.extractors import StepMetadata, BaseExtractor
 from openlineage.airflow.extractors.extractors import Extractors
 from openlineage.airflow.utils import (
@@ -27,24 +26,15 @@ from openlineage.airflow.utils import (
     get_custom_facets,
     new_lineage_run_id
 )
-from pkg_resources import parse_version
-
-if parse_version(AIRFLOW_VERSION) >= parse_version("2.0.0"):
-    # Corrects path of import for Airflow versions below 1.10.11
-    from airflow.utils.log.logging_mixin import LoggingMixin
-elif parse_version(AIRFLOW_VERSION) >= parse_version("1.10.11"):
-    from airflow import LoggingMixin
-else:
-    # Corrects path of import for Airflow versions below 1.10.11
-    from airflow.utils.log.logging_mixin import LoggingMixin
 
 from openlineage.airflow.adapter import OpenLineageAdapter
 
 _ADAPTER = OpenLineageAdapter()
+extractor_mapper = Extractors()
+extractors = {}
 
 
-@provide_session
-def lineage_run_id(run_id, task, session=None):
+def lineage_run_id(run_id, task):
     """
     Macro function which returns the generated run id for a given task. This
     can be used to forward the run id from a task to a child run so the job
@@ -60,21 +50,21 @@ def lineage_run_id(run_id, task, session=None):
 
     :param run_id:
     :param task:
-    :param session:
     :return:
     """
-    name = DAG._openlineage_job_name(task.dag_id, task.task_id)
-    ids = JobIdMapping.get(name, run_id, session)
-    if ids is None:
-        return ""
-    elif isinstance(ids, list):
-        return "" if len(ids) == 0 else ids[0]
-    else:
-        return str(ids)
+    with create_session() as session:
+        name = DAG._openlineage_job_name(task.dag_id, task.task_id)
+        ids = JobIdMapping.get(name, run_id, session)
+        if ids is None:
+            return ""
+        elif isinstance(ids, list):
+            return "" if len(ids) == 0 else ids[0]
+        else:
+            return str(ids)
 
 
-class DAG(airflow.models.DAG, LoggingMixin):
-    def __init__(self, *args, extractor_mapper=None, **kwargs):
+class DAG(airflow.models.DAG):
+    def __init__(self, *args, **kwargs):
         self.log.info("openlineage-airflow dag starting")
         macros = {}
         if kwargs.__contains__("user_defined_macros"):
@@ -82,12 +72,6 @@ class DAG(airflow.models.DAG, LoggingMixin):
         macros["lineage_run_id"] = lineage_run_id
         kwargs["user_defined_macros"] = macros
         super().__init__(*args, **kwargs)
-        self.extractors = {}
-
-        if extractor_mapper:
-            self.extractor_mapper = extractor_mapper
-        else:
-            self.extractor_mapper = Extractors()
 
     def add_task(self, task):
         super().add_task(task)
@@ -95,9 +79,9 @@ class DAG(airflow.models.DAG, LoggingMixin):
         # Purpose: some extractors, called patchers need to hook up to internal components of
         # operator to extract necessary data. The hooking up is done on instantiation
         # of extractor via patch() method. That's why extractor is created here.
-        patcher = self.extractor_mapper.get_patcher_class(task.__class__)
+        patcher = extractor_mapper.get_patcher_class(task.__class__)
         if patcher:
-            self.extractors[task.task_id] = patcher(task)
+            extractors[task.task_id] = patcher(task)
 
     def create_dagrun(self, *args, **kwargs):
         # run Airflow's create_dagrun() first
@@ -231,6 +215,31 @@ class DAG(airflow.models.DAG, LoggingMixin):
                 step
             )
 
+    def __deepcopy__(self, memo):
+        """
+        Override __deepcopy__ to avoid copying the _log property,
+        which causes failure when pickling
+
+        :param memo:
+        :return:
+        """
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in list(self.__dict__.items()):
+            if k not in ('user_defined_macros', 'user_defined_filters', 'params', '_log'):
+                try:
+                    deepcopy = copy.deepcopy(v, memo)
+                    setattr(result, k, deepcopy)
+                except TypeError as e:
+                    self.log.error(f"Unable to copy property{k}")
+                    raise RuntimeError(f"Unable to copy property{k}") from e
+
+        result.user_defined_macros = self.user_defined_macros
+        result.user_defined_filters = self.user_defined_filters
+        result.params = self.params
+        return result
+
     def _extract_metadata(self, dagrun, task, task_instance=None) -> StepMetadata:
         extractor = self._get_extractor(task)
         task_info = f'task_type={task.__class__.__name__} ' \
@@ -244,6 +253,7 @@ class DAG(airflow.models.DAG, LoggingMixin):
                 step = self._extract(extractor, task_instance)
 
                 if isinstance(step, StepMetadata):
+                    self.log.info(f"Found step metadata for operation {task.task_id}: {step}")
                     return step
 
                 # Compatibility with custom extractors
@@ -258,6 +268,7 @@ class DAG(airflow.models.DAG, LoggingMixin):
                             f'returned more then one StepMetadata instance: {step} '
                             f'will drop steps except for first!'
                         )
+                    self.log.info(f"Found step metadata for operation {task.task_id}: {step[0]}")
                     return step[0]
 
             except Exception as e:
@@ -282,13 +293,13 @@ class DAG(airflow.models.DAG, LoggingMixin):
         return extractor.extract()
 
     def _get_extractor(self, task) -> Optional[BaseExtractor]:
-        if task.task_id in self.extractors:
-            return self.extractors[task.task_id]
-        extractor = self.extractor_mapper.get_extractor_class(task.__class__)
+        if task.task_id in extractors:
+            return extractors[task.task_id]
+        extractor = extractor_mapper.get_extractor_class(task.__class__)
         self.log.debug(f'extractor for {task.__class__} is {extractor}')
         if extractor:
-            self.extractors[task.task_id] = extractor(task)
-            return self.extractors[task.task_id]
+            extractors[task.task_id] = extractor(task)
+            return extractors[task.task_id]
         return None
 
     def _timed_log_message(self, start_time):
