@@ -6,7 +6,7 @@
 		"facets": {}
 	},
 	"job": {
-		"namespace": "test-namespace",
+		"namespace": "bigquery",
 		"name": "speedy-vim-308516.dbt_test1.dbt_bigquery_test.test_second_parallel_dbt_model",
 		"facets": {}
 	},
@@ -30,7 +30,7 @@
 		"facets": {}
 	},
 	"job": {
-		"namespace": "test-namespace",
+		"namespace": "bigquery",
 		"name": "speedy-vim-308516.dbt_test1.dbt_bigquery_test.test_first_dbt_model",
 		"facets": {}
 	},
@@ -50,7 +50,7 @@
 		"facets": {}
 	},
 	"job": {
-		"namespace": "test-namespace",
+		"namespace": "bigquery",
 		"name": "speedy-vim-308516.dbt_test1.dbt_bigquery_test.test_second_dbt_model",
 		"facets": {}
 	},
@@ -74,7 +74,7 @@
 		"facets": {}
 	},
 	"job": {
-		"namespace": "test-namespace",
+		"namespace": "bigquery",
 		"name": "speedy-vim-308516.dbt_test1.dbt_bigquery_test.test_first_dbt_model",
 		"facets": {
 			"sql": {
@@ -116,7 +116,7 @@
 		"facets": {}
 	},
 	"job": {
-		"namespace": "test-namespace",
+		"namespace": "bigquery",
 		"name": "speedy-vim-308516.dbt_test1.dbt_bigquery_test.test_second_dbt_model",
 		"facets": {
 			"sql": {
@@ -178,7 +178,7 @@
 		"facets": {}
 	},
 	"job": {
-		"namespace": "test-namespace",
+		"namespace": "bigquery",
 		"name": "speedy-vim-308516.dbt_test1.dbt_bigquery_test.test_second_parallel_dbt_model",
 		"facets": {
 			"sql": {
