@@ -6,7 +6,7 @@
 		"facets": {}
 	},
 	"job": {
-		"namespace": "test-namespace",
+		"namespace": "snowflake://ASDF1234.eu-central-1",
 		"name": "DEMO_DB.public.jaffle_shop.stg_orders",
 		"facets": {}
 	},
@@ -26,7 +26,7 @@
 		"facets": {}
 	},
 	"job": {
-		"namespace": "test-namespace",
+		"namespace": "snowflake://ASDF1234.eu-central-1",
 		"name": "DEMO_DB.public.jaffle_shop.stg_payments",
 		"facets": {}
 	},
@@ -46,7 +46,7 @@
 		"facets": {}
 	},
 	"job": {
-		"namespace": "test-namespace",
+		"namespace": "snowflake://ASDF1234.eu-central-1",
 		"name": "DEMO_DB.public.jaffle_shop.stg_customers",
 		"facets": {}
 	},
@@ -66,7 +66,7 @@
 		"facets": {}
 	},
 	"job": {
-		"namespace": "test-namespace",
+		"namespace": "snowflake://ASDF1234.eu-central-1",
 		"name": "DEMO_DB.public.jaffle_shop.orders",
 		"facets": {}
 	},
@@ -94,7 +94,7 @@
 		"facets": {}
 	},
 	"job": {
-		"namespace": "test-namespace",
+		"namespace": "snowflake://ASDF1234.eu-central-1",
 		"name": "DEMO_DB.public.jaffle_shop.customers",
 		"facets": {}
 	},
@@ -126,7 +126,7 @@
 		"facets": {}
 	},
 	"job": {
-		"namespace": "test-namespace",
+		"namespace": "snowflake://ASDF1234.eu-central-1",
 		"name": "DEMO_DB.public.jaffle_shop.stg_orders",
 		"facets": {
 			"sql": {
@@ -172,7 +172,7 @@
 		"facets": {}
 	},
 	"job": {
-		"namespace": "test-namespace",
+		"namespace": "snowflake://ASDF1234.eu-central-1",
 		"name": "DEMO_DB.public.jaffle_shop.stg_payments",
 		"facets": {
 			"sql": {
@@ -218,7 +218,7 @@
 		"facets": {}
 	},
 	"job": {
-		"namespace": "test-namespace",
+		"namespace": "snowflake://ASDF1234.eu-central-1",
 		"name": "DEMO_DB.public.jaffle_shop.stg_customers",
 		"facets": {
 			"sql": {
@@ -260,7 +260,7 @@
 		"facets": {}
 	},
 	"job": {
-		"namespace": "test-namespace",
+		"namespace": "snowflake://ASDF1234.eu-central-1",
 		"name": "DEMO_DB.public.jaffle_shop.orders",
 		"facets": {
 			"sql": {
@@ -382,7 +382,7 @@
 		"facets": {}
 	},
 	"job": {
-		"namespace": "test-namespace",
+		"namespace": "snowflake://ASDF1234.eu-central-1",
 		"name": "DEMO_DB.public.jaffle_shop.customers",
 		"facets": {
 			"sql": {

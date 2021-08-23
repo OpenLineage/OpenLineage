@@ -6,7 +6,7 @@
 		"facets": {}
 	},
 	"job": {
-		"namespace": "test-namespace",
+		"namespace": "bigquery",
 		"name": "speedy-vim-308516.dbt_test1.dbt_test.test_model",
 		"facets": {}
 	},
@@ -30,7 +30,7 @@
 		"facets": {}
 	},
 	"job": {
-		"namespace": "test-namespace",
+		"namespace": "bigquery",
 		"name": "speedy-vim-308516.dbt_test1.dbt_test.test_model",
 		"facets": {
 			"sql": {
