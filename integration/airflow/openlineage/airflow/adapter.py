@@ -42,6 +42,7 @@ class OpenLineageAdapter:
             marquez_url = os.getenv('MARQUEZ_URL')
             marquez_api_key = os.getenv('MARQUEZ_API_KEY')
             if marquez_url:
+                log.info(f"Sending lineage events to {marquez_url}")
                 self._client = OpenLineageClient(marquez_url, OpenLineageClientOptions(
                     api_key=marquez_api_key
                 ))
