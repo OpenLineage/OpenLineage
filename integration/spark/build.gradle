@@ -14,6 +14,7 @@
 
 import org.apache.tools.ant.filters.ReplaceTokens
 import groovy.io.FileType
+import org.gradle.api.tasks.compile.JavaCompile
 
 buildscript {
     repositories {
@@ -39,6 +40,11 @@ repositories {
     maven {
         url = 'https://datakin.jfrog.io/artifactory/maven-public-libs-snapshot'
     }
+}
+
+configurations {
+    spark3
+    lombok
 }
 
 apply plugin: 'jacoco'
@@ -116,7 +122,24 @@ dependencies {
         testRuntimeOnly "org.apache.spark:spark-core_2.11:${sparkVersion}"
         testRuntimeOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
     }
+    spark3 "org.projectlombok:lombok:${lombokVersion}"
+    spark3 "io.openlineage:openlineage-spark:${version}"
+    spark3 'io.openlineage:openlineage-java:0.0.1-SNAPSHOT'
+    spark3 "com.fasterxml.jackson.module:jackson-module-scala_2.12:${jacksonVersion}"
+    spark3 "com.google.cloud.spark:spark-bigquery_2.12:0.21.1"
+    spark3 "com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:0.21.1"
+    spark3 "org.apache.spark:spark-core_2.12:${spark3Version}"
+    spark3 "org.apache.spark:spark-sql_2.12:${spark3Version}"
+
+    lombok  "org.projectlombok:lombok:${lombokVersion}"
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+}
+
+task compileSpark3(type: JavaCompile) {
+    source = files("src/spark3/java/io/openlineage/spark3/agent/lifecycle/plan/LogicalRelationVisitor.java")
+    classpath = configurations.spark3
+    destinationDir = file('build/classes/java/main/')
+    options.annotationProcessorPath =  configurations.lombok
 }
 
 task sourceJar(type: Jar) {
