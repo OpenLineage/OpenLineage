@@ -62,7 +62,7 @@ class DbtArtifactProcessor:
         self.profile_name = profile_name
         self.target = target
         self.project = self.load_yaml(os.path.join(project_dir, 'dbt_project.yml'))
-        self.job_namespace = self.extract_job_namespace()
+        self.job_namespace = ""
         self.dataset_namespace = ""
         self.skip_errors = skip_errors
 
@@ -94,7 +94,8 @@ class DbtArtifactProcessor:
 
         profile = profile['outputs'][self.target]
 
-        self.extract_namespace(profile)
+        self.extract_dataset_namespace(profile)
+        self.extract_job_namespace(profile)
 
         runs = self.parse_artifacts(manifest, run_result, catalog)
 
@@ -363,20 +364,25 @@ class DbtArtifactProcessor:
             ))
         return fields
 
-    def extract_namespace(self, profile: Dict):
+    def extract_dataset_namespace(self, profile: Dict):
+        self.dataset_namespace = self.extract_namespace(profile)
+
+    def extract_job_namespace(self, profile: Dict):
+        self.job_namespace = os.environ.get(
+            'OPENLINEAGE_NAMESPACE',
+            self.extract_namespace(profile)
+        )
+
+    def extract_namespace(self, profile: Dict) -> str:
         if profile['type'] == 'snowflake':
-            self.dataset_namespace = f"snowflake://{profile['account']}"
+            return f"snowflake://{profile['account']}"
         elif profile['type'] == 'bigquery':
-            self.dataset_namespace = "bigquery"
+            return "bigquery"
         else:
             raise NotImplementedError(
                 f"Only 'snowflake' and 'bigquery' adapters are supported right now. "
                 f"Passed {profile['type']}"
             )
-
-    @staticmethod
-    def extract_job_namespace() -> str:
-        return os.environ.get('OPENLINEAGE_NAMESPACE', 'default')
 
     @staticmethod
     def removeprefix(string: str, prefix: str) -> str:

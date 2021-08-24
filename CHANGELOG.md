@@ -1,6 +1,28 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.1.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.2.0...HEAD)
+
+## [0.2.0](https://github.com/OpenLineage/OpenLineage/releases/tag/0.2.0) - 2021-08-23
+
+### Added
+
+* Parse dbt command line arguments when invoking `dbt-ol` [@mobuchowski](https://github.com/mobuchowski). For example:
+
+  ```
+  $ dbt-ol run --project-dir path/to/dir
+  ```
+
+* Set `UnknownFacet` for spark (captures metadata about unvisited nodes from spark plan not yet supported) [@OleksandrDvornik](https://github.com/OleksandrDvornik)
+
+### Changed
+
+* Remove `model` from dbt job name [@mobuchowski](https://github.com/mobuchowski)
+* Default dbt job namespace to output dataset namespace [@mobuchowski](https://github.com/mobuchowski)
+* Rename `openlineage.spark.*` to `io.openlineage.spark.*` [@OleksandrDvornik](https://github.com/OleksandrDvornik)
+
+### Fixed
+
+* Remove instance references to extractors from DAG and avoid copying log property for serializability [@collado-mike](https://github.com/collado-mike)
 
 ## [0.1.0](https://github.com/OpenLineage/OpenLineage/releases/tag/0.1.0) - 2021-08-12
 

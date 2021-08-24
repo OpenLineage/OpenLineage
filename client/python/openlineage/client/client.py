@@ -11,6 +11,7 @@
 # limitations under the License.
 
 import os
+import logging
 from urllib.parse import urljoin, urlparse
 
 import attr
@@ -28,6 +29,9 @@ class OpenLineageClientOptions:
     verify: bool = attr.ib(default=True)
     api_key: str = attr.ib(default=None)
     adapter: HTTPAdapter = attr.ib(default=None)
+
+
+log = logging.getLogger(__name__)
 
 
 class OpenLineageClient:
@@ -52,6 +56,8 @@ class OpenLineageClient:
 
     def emit(self, event: RunEvent):
         data = Serde.to_json(event)
+        if log.isEnabledFor(logging.DEBUG):
+            log.debug(f"Sending openlineage event {event}")
         self.session.post(
             urljoin(self.url, 'api/v1/lineage'),
             data,
@@ -66,8 +72,11 @@ class OpenLineageClient:
 
     @classmethod
     def from_environment(cls):
+        server_url = os.getenv("OPENLINEAGE_URL", constants.DEFAULT_OPENLINEAGE_URL)
+        if server_url:
+            log.info(f"Constructing openlineage client to send events to {server_url}")
         return OpenLineageClient(
-            url=os.getenv("OPENLINEAGE_URL", constants.DEFAULT_OPENLINEAGE_URL),
+            url=server_url,
             options=OpenLineageClientOptions(
                 timeout=constants.DEFAULT_TIMEOUT_MS / 1000,
                 api_key=os.getenv("OPENLINEAGE_API_KEY", None)

@@ -275,8 +275,8 @@ shadowJar {
 
     manifest {
         attributes(
-                "Premain-Class": 'openlineage.spark.agent.SparkAgent',
-                "Agent-Class": 'openlineage.spark.agent.SparkAgent',
+                "Premain-Class": 'io.openlineage.spark.agent.SparkAgent',
+                "Agent-Class": 'io.openlineage.spark.agent.SparkAgent',
                 'Created-By': "Gradle ${gradle.gradleVersion}",
                 'Built-By': System.getProperty('user.name'),
                 'Build-Jdk': System.getProperty('java.version'),
@@ -293,9 +293,9 @@ assemble {
 
 task createVersionProperties(dependsOn: processResources) {
     doLast {
-        File dir = new File("$buildDir/resources/main/openlineage/spark/agent/client/")
+        File dir = new File("$buildDir/resources/main/io/openlineage/spark/agent/client/")
         dir.mkdirs();
-        new File("$buildDir/resources/main/openlineage/spark/agent/client/version.properties").withWriter { w ->
+        new File("$buildDir/resources/main/io/openlineage/spark/agent/client/version.properties").withWriter { w ->
             Properties p = new Properties()
             p['version'] = project.version.toString()
             p.store w, null
