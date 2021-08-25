@@ -36,7 +36,7 @@ def main():
     )
     process.wait()
 
-    if len(sys.argv) < 2 or sys.argv[1] != 'run':
+    if len(sys.argv) < 2 or sys.argv[1] not in ['run', 'test']:
         return
 
     # If run_result has modification time before dbt command
@@ -56,6 +56,7 @@ def main():
     for event in events:
         client.emit(event)
     print(f"Emitted {len(events)} openlineage events")
+
 
 if __name__ == '__main__':
     main()
