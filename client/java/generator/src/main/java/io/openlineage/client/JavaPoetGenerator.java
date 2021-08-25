@@ -317,6 +317,8 @@ public class JavaPoetGenerator {
           return ClassName.get(Long.class);
         } else if (primitiveType.getName().equals("number")) {
           return ClassName.get(Double.class);
+        } else if (primitiveType.getName().equals("boolean")) {
+          return ClassName.get(Boolean.class);
         } else if (primitiveType.getName().equals("string")) {
           if (primitiveType.getFormat() != null) {
             String format = primitiveType.getFormat();
