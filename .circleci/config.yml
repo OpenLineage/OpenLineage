@@ -1,5 +1,8 @@
 version: 2.1
 
+orbs:
+  gcp-cli: circleci/gcp-cli@2.2.0
+
 checkout_project_root: &checkout_project_root
   # Override checkout path to project root (see: https://circleci.com/docs/2.0/configuration-reference/#checkout)
   checkout:
@@ -243,7 +246,7 @@ jobs:
       - run: pip install -e .[dev]
       - run: flake8 --exclude integration
       - run: airflow initdb
-      - run: pytest --cov=openlineage tests/
+      - run: pytest --cov=openlineage --ignore tests/integration tests/
       - run: bash <(curl -s https://codecov.io/bash)
 
   build-integration-airflow:
@@ -267,6 +270,8 @@ jobs:
     machine: true
     steps:
       - *checkout_project_root
+      - gcp-cli/install
+      - gcp-cli/initialize
       - run: ../.circleci/get-docker-compose.sh
       - run: cp -r ../client/python python
       - run: docker build -f airflow/Dockerfile.tests -t openlineage-airflow-base .
@@ -326,8 +331,11 @@ workflows:
             - unit-test-integration-common
       - unit-test-integration-airflow
       - integration-test-integration-airflow:
+          context: integration-tests
           requires:
             - unit-test-integration-airflow
+            - unit-test-integration-common
+            - unit-test-client-python
       - build-integration-airflow:
           <<: *only_on_main
           build_tag: .dev${CIRCLE_BUILD_NUM}

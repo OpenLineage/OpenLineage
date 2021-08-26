@@ -2,6 +2,10 @@ from openlineage.airflow import DAG
 from airflow.operators.postgres_operator import PostgresOperator
 from airflow.utils.dates import days_ago
 
+from openlineage.client import set_producer
+
+set_producer("https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow")
+
 default_args = {
     'owner': 'datascience',
     'depends_on_past': False,
@@ -12,14 +16,14 @@ default_args = {
 }
 
 dag = DAG(
-    'orders_popular_day_of_week',
+    'postgres_orders_popular_day_of_week',
     schedule_interval='@once',
     default_args=default_args,
     description='Determines the popular day of week orders are placed.'
 )
 
 t1 = PostgresOperator(
-    task_id='if_not_exists',
+    task_id='postgres_if_not_exists',
     postgres_conn_id='food_delivery_db',
     sql='''
     CREATE TABLE IF NOT EXISTS popular_orders_day_of_week (
@@ -31,7 +35,7 @@ t1 = PostgresOperator(
 )
 
 t2 = PostgresOperator(
-    task_id='insert',
+    task_id='postgres_insert',
     postgres_conn_id='food_delivery_db',
     sql='''
     INSERT INTO popular_orders_day_of_week (order_day_of_week, order_placed_on,orders_placed)
