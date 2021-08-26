@@ -326,7 +326,6 @@ workflows:
             - unit-test-integration-common
       - unit-test-integration-airflow
       - integration-test-integration-airflow:
-          <<: *only_on_main
           requires:
             - unit-test-integration-airflow
       - build-integration-airflow:
