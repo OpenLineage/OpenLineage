@@ -52,7 +52,7 @@ class DbtArtifactProcessor:
     def __init__(
         self,
         producer: str,
-        project_dir: Optional[str] = None,
+        project_dir: str,
         profile_name: Optional[str] = None,
         target: Optional[str] = None,
         skip_errors: bool = False
