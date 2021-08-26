@@ -26,7 +26,7 @@ def main():
 
     args = sys.argv[2:]
     target = parse_single_arg(args, ['-t', '--target'])
-    project_dir = parse_single_arg(args, ['--project-dir'])
+    project_dir = parse_single_arg(args, ['--project-dir'], default='./')
     profile_name = parse_single_arg(args, ['--profile'])
 
     client = OpenLineageClient.from_environment()
