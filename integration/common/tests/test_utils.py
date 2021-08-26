@@ -43,3 +43,8 @@ def test_parse_single_arg_equals():
 
 def test_parse_single_arg_gets_first_key():
     assert parse_single_arg(['dbt', 'run', '--target=prod', '-t=a'], ['-t', '--target']) == 'a'
+
+
+def test_parse_single_arg_default():
+    assert parse_single_arg(['dbt', 'run'], ['-t', '--target']) is None
+    assert parse_single_arg(['dbt', 'run'], ['-t', '--target'], default='prod') == 'prod'

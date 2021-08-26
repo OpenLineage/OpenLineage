@@ -52,7 +52,7 @@ def get_from_multiple_chains(source: Dict[str, Any], chains: List[List[str]]) ->
     return None
 
 
-def parse_single_arg(args, keys: List[str]) -> Optional[str]:
+def parse_single_arg(args, keys: List[str], default=None) -> Optional[str]:
     """
     In provided argument list, find first key that has value and return that value.
     Values can be passed either as one argument {key}={value}, or two: {key} {value}
@@ -63,4 +63,4 @@ def parse_single_arg(args, keys: List[str]) -> Optional[str]:
                 return args[i+1]
             if arg.startswith(f"{key}="):
                 return arg.split("=", 1)[1]
-    return None
+    return default
