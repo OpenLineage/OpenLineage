@@ -73,9 +73,10 @@ LOGGING_CONFIG = {
             'stream': 'sys.stdout'
         },
         'task': {
-            'class': 'airflow.utils.log.logging_mixin.RedirectStdHandler',
-            'formatter': 'airflow_coloured',
-            'stream': 'sys.stdout'
+            'class': 'airflow.utils.log.file_task_handler.FileTaskHandler',
+            'formatter': 'airflow',
+            'base_log_folder': os.path.expanduser(BASE_LOG_FOLDER),
+            'filename_template': FILENAME_TEMPLATE,
         },
         'processor': {
             'class': 'airflow.utils.log.file_processor_handler.FileProcessorHandler',
