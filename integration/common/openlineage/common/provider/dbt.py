@@ -58,10 +58,10 @@ class DbtArtifactProcessor:
         skip_errors: bool = False
     ):
         self.producer = producer
-        self.dir = os.path.abspath(project_dir)
+        self.dir = os.path.abspath(os.getcwd() if project_dir is None else project_dir)
         self.profile_name = profile_name
         self.target = target
-        self.project = self.load_yaml(os.path.join(project_dir, 'dbt_project.yml'))
+        self.project = self.load_yaml(os.path.join(self.dir, 'dbt_project.yml'))
         self.job_namespace = ""
         self.dataset_namespace = ""
         self.skip_errors = skip_errors
