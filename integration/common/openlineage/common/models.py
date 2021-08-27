@@ -9,6 +9,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from typing import Optional, Dict
+
+import attr
+from openlineage.client.facet import BaseFacet, DataQualityMetricsInputDatasetFacet
 
 
 class DbColumn:
@@ -112,3 +116,32 @@ class DbTableSchema:
     def __repr__(self):
         return f"DbTableSchema({self.schema_name!r},{self.table_name!r}, \
                                {self.columns!r})"
+
+
+@attr.s
+class ColumnMetric:
+    nullCount: Optional[int] = attr.ib(default=None)
+    distinctCount: Optional[int] = attr.ib(default=None)
+    sum: Optional[float] = attr.ib(default=None)
+    count: Optional[int] = attr.ib(default=None)
+    min: Optional[float] = attr.ib(default=None)
+    max: Optional[float] = attr.ib(default=None)
+    quantiles: Optional[Dict[str, float]] = attr.ib(default=None)
+
+
+@attr.s
+class DataQualityDatasetFacet(BaseFacet):
+    rowCount: Optional[int] = attr.ib(default=None)
+    bytes: Optional[int] = attr.ib(default=None)
+    columnMetrics: Dict[str, ColumnMetric] = attr.ib(factory=dict)
+
+    def to_openlineage(self) -> DataQualityMetricsInputDatasetFacet:
+        return DataQualityMetricsInputDatasetFacet(
+            rowCount=self.rowCount,
+            bytes=self.bytes,
+            columnMetrics=self.columnMetrics
+        )
+
+    @staticmethod
+    def _get_schema() -> str:
+        return "https://github.com/OpenLineage/OpenLineage/tree/main/integration/airflow/openlineage/airflow/data-quality-dataset-facet.json"  # noqa

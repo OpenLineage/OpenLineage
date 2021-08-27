@@ -39,11 +39,16 @@ extras_require = {
         "dbt-core>=0.20.0",
         "pyyaml>=5.3.1"
     ],
+    "great_expectations": [
+        "great_expectations==0.13.26",
+        "sqlalchemy>=1.3.24"
+    ],
     "tests": [
         "pytest",
         "pytest-cov",
         "mock",
-        "flake8"
+        "flake8",
+        "pandas"
     ],
 }
 extras_require["dev"] = set(sum(extras_require.values(), []))

@@ -1,0 +1,192 @@
+import json
+import os
+import sqlite3
+import tempfile
+
+import pandas
+import pytest
+from great_expectations.core import ExpectationSuiteValidationResult, \
+    ExpectationValidationResult, ExpectationConfiguration
+from great_expectations.data_context import BaseDataContext
+from great_expectations.data_context.types.base import DataContextConfig, \
+    FilesystemStoreBackendDefaults
+from great_expectations.dataset import SqlAlchemyDataset, PandasDataset
+from openlineage.client.facet import SchemaField
+from sqlalchemy import create_engine
+
+from openlineage.common.provider.great_expectations import OpenLineageValidationAction
+from openlineage.common.provider.great_expectations.results import GreatExpectationsAssertion
+
+project_config = DataContextConfig(
+    datasources={
+        "food_delivery_db": {
+            "data_asset_type": {
+                "module_name": "great_expectations.dataset",
+                "class_name": "SqlAlchemyDataset"
+            },
+            "class_name": "SqlAlchemyDatasource",
+            "module_name": "great_expectations.datasource",
+            "credentials": {
+                "url": "bigquery://openlineage/food_delivery"
+            },
+        },
+        "gcs": {
+            "data_asset_type": {
+                "class_name": "PandasDataset",
+                "module_name": "great_expectations.dataset"
+            },
+            "class_name": "PandasDatasource",
+            "module_name": "great_expectations.datasource",
+        }
+    },
+    validation_operators={
+        'action_list_operator': {
+            'class_name': "ActionListValidationOperator",
+            'action_list': [{
+                "name": "openlineage",
+                "action": {
+                    "class_name": "OpenLineageValidationAction",
+                    "module_name": "openlineage.common.provider.great_expectations.action"
+                }
+            }]
+        }
+    },
+    anonymous_usage_statistics={'enabled': False}
+)
+
+TABLE_NAME = "test_data"
+
+# Common validation results
+table_result = ExpectationValidationResult(success=True,
+                                           expectation_config=ExpectationConfiguration(
+                                               expectation_type='expect_table_row_count_to_equal',
+                                               kwargs={'value': 10}),
+                                           result={"observed_value": 10})
+column_result = ExpectationValidationResult(success=True,
+                                            expectation_config=ExpectationConfiguration(
+                                                expectation_type='expect_column_sum_to_be_between',
+                                                kwargs={'column': 'size', 'min_value': 0,
+                                                        'max_value': 100}
+                                            ),
+                                            result={'observed_value': 60})
+result_suite = ExpectationSuiteValidationResult(success=True, meta={'batch_kwargs': {}},
+                                                results=[table_result, column_result])
+
+
+@pytest.fixture(scope='session')
+def test_db_file():
+    fd, file = tempfile.mkstemp()
+    conn = sqlite3.connect(file)
+    cursor = conn.cursor()
+    cursor.execute(
+        f'CREATE TABLE {TABLE_NAME} (name text, birthdate text, address text, size integer)')
+    yield file
+    os.remove(file)
+
+
+def test_dataset_from_sql_source(test_db_file, tmpdir):
+    connection_url = f'sqlite:///{test_db_file}'
+    engine = create_engine(connection_url)
+
+    ds = SqlAlchemyDataset(table_name=TABLE_NAME, engine=engine)
+
+    store_defaults = FilesystemStoreBackendDefaults(root_directory=tmpdir)
+    project_config.stores = store_defaults.stores
+    project_config.expectations_store_name = store_defaults.expectations_store_name
+    project_config.validations_store_name = store_defaults.validations_store_name
+    project_config.checkpoint_store_name = store_defaults.checkpoint_store_name
+
+    ctx = BaseDataContext(project_config=project_config)
+    action = OpenLineageValidationAction(ctx,
+                                         openlineage_host='http://localhost:5000',
+                                         openlineage_namespace='test_ns',
+                                         job_name='test_job')
+    datasets = action._fetch_datasets_from_sql_source(ds, result_suite)
+    assert datasets is not None
+    assert len(datasets) == 1
+    input_ds = datasets[0]
+    assert input_ds.name == TABLE_NAME
+    assert input_ds.namespace == "sqlite"
+
+    assert "dataSource" in input_ds.facets
+    assert input_ds.facets["dataSource"].name == "sqlite"
+    assert input_ds.facets["dataSource"].uri == "sqlite:/" + test_db_file
+
+    assert 'schema' in input_ds.facets
+    assert len(input_ds.facets['schema'].fields) == 4
+    assert all(f in input_ds.facets['schema'].fields
+               for f in [SchemaField('name', 'TEXT'),
+                         SchemaField('birthdate', 'TEXT'),
+                         SchemaField('address', 'TEXT'),
+                         SchemaField('size', 'INTEGER')])
+
+    assert len(input_ds.inputFacets) == 3
+    assert all(k in input_ds.inputFacets for k in
+               ['dataQuality', 'greatExpectations_assertions', 'dataQualityMetrics'])
+    assert input_ds.inputFacets['dataQuality'].rowCount == 10
+    assert 'size' in input_ds.inputFacets['dataQuality'].columnMetrics
+    assert input_ds.inputFacets['dataQuality'].columnMetrics['size'].sum == 60
+
+    assert len(input_ds.inputFacets['greatExpectations_assertions'].assertions) == 2
+    assert all(a in input_ds.inputFacets['greatExpectations_assertions'].assertions
+               for a in [GreatExpectationsAssertion('expect_table_row_count_to_equal', True),
+                         GreatExpectationsAssertion('expect_column_sum_to_be_between', True,
+                                                    'size')])
+
+
+def test_dataset_from_pandas_source(tmpdir):
+    data_file = tmpdir + '/data.json'
+    json_data = [
+        {"name": "my name", "birthdate": "2020-10-01", "address": "1234 Main st", "size": 12},
+        {"name": "your name", "birthdate": "2020-06-01", "address": "1313 Mockingbird Ln",
+         "size": 12}
+    ]
+    with open(data_file, mode='w') as out:
+        json.dump(json_data, out)
+
+    store_defaults = FilesystemStoreBackendDefaults(root_directory=tmpdir)
+    project_config.stores = store_defaults.stores
+    project_config.expectations_store_name = store_defaults.expectations_store_name
+    project_config.validations_store_name = store_defaults.validations_store_name
+    project_config.checkpoint_store_name = store_defaults.checkpoint_store_name
+
+    ctx = BaseDataContext(project_config=project_config)
+    pd_dataset = PandasDataset(pandas.read_json(data_file),
+                               **{'batch_kwargs': {'path': 'gcs://my_bucket/path/to/my/data'},
+                                  'data_context': ctx})
+    action = OpenLineageValidationAction(ctx,
+                                         openlineage_host='http://localhost:5000',
+                                         openlineage_namespace='test_ns',
+                                         job_name='test_job')
+
+    datasets = action._fetch_datasets_from_pandas_source(pd_dataset,
+                                                         validation_result_suite=result_suite)
+    assert len(datasets) == 1
+    input_ds = datasets[0]
+    assert input_ds.name == '/path/to/my/data'
+    assert input_ds.namespace == "gcs://my_bucket"
+
+    assert "dataSource" in input_ds.facets
+    assert input_ds.facets["dataSource"].name == "gcs://my_bucket"
+    assert input_ds.facets["dataSource"].uri == 'gcs://my_bucket'
+
+    assert 'schema' in input_ds.facets
+    assert len(input_ds.facets['schema'].fields) == 4
+    assert all(f in input_ds.facets['schema'].fields
+               for f in [SchemaField('name', 'object'),
+                         SchemaField('birthdate', 'object'),
+                         SchemaField('address', 'object'),
+                         SchemaField('size', 'int64')])
+
+    assert len(input_ds.inputFacets) == 3
+    assert all(k in input_ds.inputFacets for k in
+               ['dataQuality', 'greatExpectations_assertions', 'dataQualityMetrics'])
+    assert input_ds.inputFacets['dataQuality'].rowCount == 10
+    assert 'size' in input_ds.inputFacets['dataQuality'].columnMetrics
+    assert input_ds.inputFacets['dataQuality'].columnMetrics['size'].sum == 60
+
+    assert len(input_ds.inputFacets['greatExpectations_assertions'].assertions) == 2
+    assert all(a in input_ds.inputFacets['greatExpectations_assertions'].assertions
+               for a in [GreatExpectationsAssertion('expect_table_row_count_to_equal', True),
+                         GreatExpectationsAssertion('expect_column_sum_to_be_between', True,
+                                                    'size')])
