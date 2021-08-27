@@ -150,7 +150,7 @@ class BigQueryDatasetsProvider:
 
         if not stages:
             if get_from_nullable_chain(properties, ['statistics', 'query', 'statementType']) \
-                    == 'CREATE_VIEW':
+                    in ['CREATE_VIEW', 'CREATE_TABLE', 'ALTER_TABLE']:
                 return BigQueryJobRunFacet(cached=False), None
 
             # we're probably getting cached results
