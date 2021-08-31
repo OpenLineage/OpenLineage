@@ -134,6 +134,71 @@ def test_dataset_from_sql_source(test_db_file, tmpdir):
                                                     'size')])
 
 
+def test_dataset_from_custom_sql(test_db_file, tmpdir):
+    connection_url = f'sqlite:///{test_db_file}'
+    engine = create_engine(connection_url)
+    engine.execute("""CREATE TABLE join_table (name text, workplace text, position text)""")
+    custom_sql = f"""SELECT * FROM {TABLE_NAME} t INNER JOIN join_table j ON t.name=j.name"""
+
+    # note the batch_kwarg key is 'query', but the constructor arg is 'custom_sql'
+    ds = SqlAlchemyDataset(engine=engine,
+                           custom_sql=custom_sql,
+                           batch_kwargs={'query': custom_sql})
+
+    store_defaults = FilesystemStoreBackendDefaults(root_directory=tmpdir)
+    project_config.stores = store_defaults.stores
+    project_config.expectations_store_name = store_defaults.expectations_store_name
+    project_config.validations_store_name = store_defaults.validations_store_name
+    project_config.checkpoint_store_name = store_defaults.checkpoint_store_name
+
+    ctx = BaseDataContext(project_config=project_config)
+    action = OpenLineageValidationAction(ctx,
+                                         openlineage_host='http://localhost:5000',
+                                         openlineage_namespace='test_ns',
+                                         job_name='test_job')
+    datasets = action._fetch_datasets_from_sql_source(ds, result_suite)
+    assert datasets is not None
+    assert len(datasets) == 2
+    assert all(name in [TABLE_NAME, 'join_table'] for name in [ds.name for ds in datasets])
+
+    input_ds = next(ds for ds in datasets if ds.name == TABLE_NAME)
+
+    assert "dataSource" in input_ds.facets
+    assert input_ds.facets["dataSource"].name == "sqlite"
+    assert input_ds.facets["dataSource"].uri == "sqlite:/" + test_db_file
+
+    assert 'schema' in input_ds.facets
+    assert len(input_ds.facets['schema'].fields) == 4
+    assert all(f in input_ds.facets['schema'].fields
+               for f in [SchemaField('name', 'TEXT'),
+                         SchemaField('birthdate', 'TEXT'),
+                         SchemaField('address', 'TEXT'),
+                         SchemaField('size', 'INTEGER')])
+    assert len(input_ds.inputFacets) == 3
+    assert all(k in input_ds.inputFacets for k in
+               ['dataQuality', 'greatExpectations_assertions', 'dataQualityMetrics'])
+    assert input_ds.inputFacets['dataQuality'].rowCount == 10
+    assert 'size' in input_ds.inputFacets['dataQuality'].columnMetrics
+    assert input_ds.inputFacets['dataQuality'].columnMetrics['size'].sum == 60
+
+    assert len(input_ds.inputFacets['greatExpectations_assertions'].assertions) == 2
+    assert all(a in input_ds.inputFacets['greatExpectations_assertions'].assertions
+               for a in [GreatExpectationsAssertion('expect_table_row_count_to_equal', True),
+                         GreatExpectationsAssertion('expect_column_sum_to_be_between', True,
+                                                    'size')])
+
+    input_ds = next(ds for ds in datasets if ds.name == 'join_table')
+    assert 'schema' in input_ds.facets
+    assert len(input_ds.facets['schema'].fields) == 3
+    assert all(f in input_ds.facets['schema'].fields
+               for f in [SchemaField('name', 'TEXT'),
+                         SchemaField('workplace', 'TEXT'),
+                         SchemaField('position', 'TEXT')])
+    assert len(input_ds.inputFacets) == 3
+    assert all(k in input_ds.inputFacets for k in
+               ['dataQuality', 'greatExpectations_assertions', 'dataQualityMetrics'])
+
+
 def test_dataset_from_pandas_source(tmpdir):
     data_file = tmpdir + '/data.json'
     json_data = [
