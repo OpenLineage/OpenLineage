@@ -1,12 +1,13 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Type, Union, Optional
+
+from openlineage.client.run import Dataset
 from pkg_resources import parse_version
 
 from airflow.models import BaseOperator
 from airflow.version import version as AIRFLOW_VERSION
 
 from openlineage.client.facet import BaseFacet
-from openlineage.common.dataset import Dataset
 
 if parse_version(AIRFLOW_VERSION) >= parse_version("2.0.0"):
     # Corrects path of import for Airflow versions below 1.10.11

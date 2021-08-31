@@ -299,10 +299,10 @@ class TestFixtureDummyExtractor(BaseExtractor):
 
     def extract(self) -> StepMetadata:
         inputs = [
-            Dataset.from_table(self.source, "extract_input1")
+            Dataset.from_table(self.source, "extract_input1").to_openlineage_dataset()
         ]
         outputs = [
-            Dataset.from_table(self.source, "extract_output1")
+            Dataset.from_table(self.source, "extract_output1").to_openlineage_dataset()
         ]
         return StepMetadata(
             name=get_job_name(task=self.operator),
@@ -348,10 +348,10 @@ class TestFixtureDummyExtractorOnComplete(BaseExtractor):
                     description='',
                     ordinal_position=2
                 )]
-            ))
+            )).to_openlineage_dataset()
         ]
         outputs = [
-            Dataset.from_table(self.source, "extract_on_complete_output1")
+            Dataset.from_table(self.source, "extract_on_complete_output1").to_openlineage_dataset()
         ]
         return StepMetadata(
             name=get_job_name(task=self.operator),
@@ -622,10 +622,10 @@ class TestFixtureDummyExtractorWithMultipleSteps(BaseExtractor):
 
     def extract(self) -> [StepMetadata]:
         inputs = [
-            Dataset.from_table(self.source, "extract_input1")
+            Dataset.from_table(self.source, "extract_input1").to_openlineage_dataset()
         ]
         outputs = [
-            Dataset.from_table(self.source, "extract_output1")
+            Dataset.from_table(self.source, "extract_output1").to_openlineage_dataset()
         ]
         return [StepMetadata(
             name=get_job_name(task=self.operator),

@@ -92,8 +92,8 @@ class PostgresExtractor(BaseExtractor):
 
         return StepMetadata(
             name=f"{self.operator.dag_id}.{self.operator.task_id}",
-            inputs=inputs,
-            outputs=outputs,
+            inputs=[ds.to_openlineage_dataset() for ds in inputs],
+            outputs=[ds.to_openlineage_dataset() for ds in outputs],
             context={
                 'sql': self.operator.sql
             }
