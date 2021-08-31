@@ -2,7 +2,7 @@
 name: Integration
 about: Propose a new integration
 title: "[INTEGRATION]"
-labels: proposal
+labels: integration
 assignees: ''
 
 ---
