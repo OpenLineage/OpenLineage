@@ -10,16 +10,16 @@ from great_expectations.checkpoint import ValidationAction
 from great_expectations.core import ExpectationSuiteValidationResult
 from great_expectations.data_context.types.resource_identifiers import ValidationResultIdentifier
 from great_expectations.dataset import SqlAlchemyDataset, PandasDataset, Dataset as GEDataset
+
 from openlineage.client import OpenLineageClient, OpenLineageClientOptions
 from openlineage.client.facet import ParentRunFacet, DocumentationJobFacet, \
-    SourceCodeLocationJobFacet
+    SourceCodeLocationJobFacet, DataQualityMetricsInputDatasetFacet, ColumnMetric
 from openlineage.client.run import RunEvent, RunState, Run, Job
 from sqlalchemy import MetaData, Table
 from sqlalchemy.engine import Connection
 
 from openlineage.common.dataset import Dataset, Source, Field
 from openlineage.common.dataset import Dataset as OLDataset
-from openlineage.common.models import ColumnMetric, DataQualityDatasetFacet
 from openlineage.common.provider.great_expectations.facets import \
     GreatExpectationsAssertionsDatasetFacet, \
     GreatExpectationsRunFacet
@@ -64,7 +64,8 @@ class OpenLineageValidationAction(ValidationAction):
                  job_name=None,
                  job_description=None,
                  code_location=None,
-                 openlineage_run_id=None):
+                 openlineage_run_id=None,
+                 do_publish=True):
         super().__init__(data_context)
         if openlineage_host is not None:
             self.openlineage_client = OpenLineageClient(openlineage_host,
@@ -86,6 +87,7 @@ class OpenLineageValidationAction(ValidationAction):
         self.job_name = job_name
         self.job_description = job_description
         self.code_location = code_location
+        self.do_publish = do_publish
         self.log = logging.getLogger(self.__class__.__module__ + '.' + self.__class__.__name__)
 
     def _run(self, validation_result_suite: ExpectationSuiteValidationResult,
@@ -128,7 +130,8 @@ class OpenLineageValidationAction(ValidationAction):
             outputs=[],
             producer="https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/common/openlineage/provider/great_expectations" # noqa
         )
-        self.openlineage_client.emit(run_event)
+        if self.do_publish:
+            self.openlineage_client.emit(run_event)
         return run_event
 
     def _fetch_datasets_from_pandas_source(self, data_asset: PandasDataset,
@@ -256,7 +259,7 @@ class OpenLineageValidationAction(ValidationAction):
             return {
                 'dataQuality': data_quality_facet,
                 'greatExpectations_assertions': assertions_facet,
-                'dataQualityMetrics': data_quality_facet.to_openlineage()
+                'dataQualityMetrics': data_quality_facet
             }
 
         except ValueError:
@@ -264,7 +267,7 @@ class OpenLineageValidationAction(ValidationAction):
         return None
 
     def parse_data_quality_facet(self, validation_result: ExpectationSuiteValidationResult) \
-            -> Optional[DataQualityDatasetFacet]:
+            -> Optional[DataQualityMetricsInputDatasetFacet]:
         """
         Parse the validation result and extract a DataQualityDatasetFacet
         :param validation_result:
@@ -292,7 +295,7 @@ class OpenLineageValidationAction(ValidationAction):
 
             for key in facet_data['columnMetrics'].keys():
                 facet_data['columnMetrics'][key] = ColumnMetric(**facet_data['columnMetrics'][key])
-            return DataQualityDatasetFacet(**facet_data)
+            return DataQualityMetricsInputDatasetFacet(**facet_data)
         except ValueError:
             self.log.exception(
                 "Great Expectations's CheckpointResult object does not have expected key"
