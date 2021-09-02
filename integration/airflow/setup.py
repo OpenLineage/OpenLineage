@@ -43,7 +43,7 @@ extras_require = {
         "apache-airflow[gcp_api]==1.10.12",
         "apache-airflow[google]==1.10.12",
         "apache-airflow[postgres]==1.10.12",
-        "airflow-provider-great-expectations==0.0.6",
+        "airflow-provider-great-expectations==0.0.6"
     ],
 }
 extras_require["dev"] = set(sum(extras_require.values(), []))
