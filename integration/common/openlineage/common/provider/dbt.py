@@ -66,19 +66,19 @@ class DbtArtifactProcessor:
         self.dataset_namespace = ""
         self.skip_errors = skip_errors
 
+        self.manifest_path = os.path.join(self.dir, self.project['target-path'], 'manifest.json')
+        self.run_result_path = os.path.join(
+            self.dir, self.project['target-path'], 'run_results.json'
+        )
+        self.catalog_path = os.path.join(self.dir, self.project['target-path'], 'catalog.json')
+
     def parse(self) -> DbtEvents:
         """
             Parse dbt manifest and run_result and produce OpenLineage events.
         """
-        manifest = self.load_manifest(
-            os.path.join(self.dir, self.project['target-path'], 'manifest.json')
-        )
-        run_result = self.load_run_results(
-            os.path.join(self.dir, self.project['target-path'], 'run_results.json')
-        )
-        catalog = self.load_catalog(
-            os.path.join(self.dir, self.project['target-path'], 'catalog.json')
-        )
+        manifest = self.load_manifest(self.manifest_path)
+        run_result = self.load_run_results(self.run_result_path)
+        catalog = self.load_catalog(self.catalog_path)
 
         profile_dir = run_result['args']['profiles_dir']
 

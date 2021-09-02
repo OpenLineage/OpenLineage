@@ -21,13 +21,7 @@ import airflow
 from airflow.models import Connection
 from airflow.utils.db import provide_session
 from openlineage.airflow.facets import AirflowVersionRunFacet, AirflowRunArgsRunFacet
-
-try:
-    # Import from pendulum 1.x version
-    from pendulum import Pendulum, from_timestamp
-except ImportError:
-    # Import for Pendulum 2.x version
-    from pendulum import DateTime as Pendulum, from_timestamp
+from pendulum import from_timestamp
 
 log = logging.getLogger(__name__)
 _NOMINAL_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
@@ -213,7 +207,4 @@ class DagUtils:
         if isinstance(dt, int):
             dt = from_timestamp(dt/1000.0)
 
-        if isinstance(dt, Pendulum):
-            return dt.format(_NOMINAL_TIME_FORMAT)
-        else:
-            return dt.strftime(_NOMINAL_TIME_FORMAT)
+        return dt.strftime(_NOMINAL_TIME_FORMAT)
