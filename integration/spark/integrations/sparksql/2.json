@@ -15,6 +15,76 @@
           "name": "job_name"
         }
       },
+      "spark_unknown": {
+        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
+        "_schemaURL": "https://openlineage.io/spec/1-0-0/OpenLineage.json#/definitions/CustomFacet",
+        "output": {
+          "description": {
+            "groupingExpressions": [],
+            "aggregateExpressions": [
+              {
+                "name": "count",
+                "qualifier": [],
+                "explicitMetadata": {
+                  "map": {}
+                },
+                "origin": {
+                  "line": null,
+                  "startPosition": null
+                },
+                "deterministic": true,
+                "resolved": true
+              }
+            ],
+            "origin": {
+              "line": null,
+              "startPosition": null
+            },
+            "schema": [
+              {
+                "name": "count",
+                "dataType": {
+                  "numeric": {},
+                  "integral": {},
+                  "ordering": {}
+                },
+                "nullable": false,
+                "metadata": {
+                  "map": {}
+                },
+                "comment": null
+              }
+            ],
+            "allAttributes": {
+              "attrs": []
+            },
+            "resolved": true,
+            "constraints": [
+              {
+                "origin": {
+                  "line": null,
+                  "startPosition": null
+                },
+                "deterministic": true,
+                "resolved": true
+              }
+            ],
+            "statsCache": null,
+            "traceEnabled": false,
+            "streaming": false,
+            "canonicalizedPlan": false
+          },
+          "inputAttributes": [],
+          "outputAttributes": [
+            {
+              "name": "count",
+              "type": "long",
+              "metadata": {}
+            }
+          ]
+        },
+        "inputs": []
+      },
       "spark.logicalPlan": {
         "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
         "_schemaURL": "https://openlineage.io/spec/1-0-0/OpenLineage.json#/definitions/CustomFacet",
@@ -172,6 +242,7 @@
       }
     }
   ],
+  "outputs": [],
   "producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
   "schemaURL": "https://openlineage.io/spec/1-0-0/OpenLineage.json#/definitions/RunEvent"
 }

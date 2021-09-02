@@ -1,0 +1,23 @@
+bigquery:
+    target: dev
+    outputs:
+        dev:
+            type: bigquery
+            method: service-account
+            keyfile: /home/example/.gcp/bq-key.json
+            project: speedy-vim-308516
+            dataset: dbt_test1
+            threads: 2
+            timeout_seconds: 300
+            location: EU
+            priority: interactive
+        prod:
+            type: bigquery
+            method: service-account
+            keyfile: /home/example/.gcp/bq-key.json
+            project: speedy-vim-308516
+            dataset: dbt_prod1
+            threads: 2
+            timeout_seconds: 300
+            location: EU
+            priority: interactive

@@ -49,40 +49,53 @@ class DbtRunResult:
 
 
 class DbtArtifactProcessor:
-    def __init__(self, producer: str, project: str = 'dbt_project.yml', skip_errors: bool = False):
+    def __init__(
+        self,
+        producer: str,
+        project_dir: str,
+        profile_name: Optional[str] = None,
+        target: Optional[str] = None,
+        skip_errors: bool = False
+    ):
         self.producer = producer
-        self.dir = os.path.abspath(os.path.dirname(project))
-        self.project = self.load_yaml(project)
-        self.job_namespace = self.extract_job_namespace()
+        self.dir = os.path.abspath(project_dir)
+        self.profile_name = profile_name
+        self.target = target
+        self.project = self.load_yaml(os.path.join(project_dir, 'dbt_project.yml'))
+        self.job_namespace = ""
         self.dataset_namespace = ""
         self.skip_errors = skip_errors
 
-    def parse(self, target: Optional[str] = None) -> DbtEvents:
+        self.manifest_path = os.path.join(self.dir, self.project['target-path'], 'manifest.json')
+        self.run_result_path = os.path.join(
+            self.dir, self.project['target-path'], 'run_results.json'
+        )
+        self.catalog_path = os.path.join(self.dir, self.project['target-path'], 'catalog.json')
+
+    def parse(self) -> DbtEvents:
         """
             Parse dbt manifest and run_result and produce OpenLineage events.
         """
-        manifest = self.load_manifest(
-            os.path.join(self.dir, self.project['target-path'], 'manifest.json')
-        )
-        run_result = self.load_run_results(
-            os.path.join(self.dir, self.project['target-path'], 'run_results.json')
-        )
-        catalog = self.load_catalog(
-            os.path.join(self.dir, self.project['target-path'], 'catalog.json')
-        )
+        manifest = self.load_manifest(self.manifest_path)
+        run_result = self.load_run_results(self.run_result_path)
+        catalog = self.load_catalog(self.catalog_path)
 
         profile_dir = run_result['args']['profiles_dir']
 
+        if not self.profile_name:
+            self.profile_name = self.project['profile']
+
         profile = self.load_yaml(
             os.path.join(profile_dir, 'profiles.yml')
-        )[self.project['profile']]
+        )[self.profile_name]
 
-        if target:
-            profile = profile['outputs'][target]
-        else:
-            profile = profile['outputs'][profile['target']]
+        if not self.target:
+            self.target = profile['target']
 
-        self.extract_namespace(profile)
+        profile = profile['outputs'][self.target]
+
+        self.extract_dataset_namespace(profile)
+        self.extract_job_namespace(profile)
 
         runs = self.parse_artifacts(manifest, run_result, catalog)
 
@@ -169,16 +182,20 @@ class DbtArtifactProcessor:
                         get_from_nullable_chain(catalog, ['sources', node])
                     ))
 
+            output_node = nodes[run['unique_id']]
+
             runs.append(DbtRun(
                 started_at,
                 completed_at,
                 run['status'],
                 inputs,
                 ModelNode(
-                    nodes[run['unique_id']],
+                    output_node,
                     get_from_nullable_chain(catalog, ['nodes', run['unique_id']])
                 ),
-                self.removeprefix(run['unique_id'], 'model.'),
+                f"{output_node['database']}."
+                f"{output_node['schema']}."
+                f"{self.removeprefix(run['unique_id'], 'model.')}",
                 self.dataset_namespace
             ))
         return runs
@@ -347,20 +364,25 @@ class DbtArtifactProcessor:
             ))
         return fields
 
-    def extract_namespace(self, profile: Dict):
+    def extract_dataset_namespace(self, profile: Dict):
+        self.dataset_namespace = self.extract_namespace(profile)
+
+    def extract_job_namespace(self, profile: Dict):
+        self.job_namespace = os.environ.get(
+            'OPENLINEAGE_NAMESPACE',
+            self.extract_namespace(profile)
+        )
+
+    def extract_namespace(self, profile: Dict) -> str:
         if profile['type'] == 'snowflake':
-            self.dataset_namespace = f"snowflake://{profile['account']}"
+            return f"snowflake://{profile['account']}"
         elif profile['type'] == 'bigquery':
-            self.dataset_namespace = "bigquery"
+            return "bigquery"
         else:
             raise NotImplementedError(
                 f"Only 'snowflake' and 'bigquery' adapters are supported right now. "
                 f"Passed {profile['type']}"
             )
-
-    @staticmethod
-    def extract_job_namespace() -> str:
-        return os.environ.get('OPENLINEAGE_NAMESPACE', 'default')
 
     @staticmethod
     def removeprefix(string: str, prefix: str) -> str:

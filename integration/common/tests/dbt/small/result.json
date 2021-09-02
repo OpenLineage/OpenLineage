@@ -6,8 +6,8 @@
 		"facets": {}
 	},
 	"job": {
-		"namespace": "test-namespace",
-		"name": "dbt_test.test_model",
+		"namespace": "bigquery",
+		"name": "speedy-vim-308516.dbt_test1.dbt_test.test_model",
 		"facets": {}
 	},
 	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -30,8 +30,8 @@
 		"facets": {}
 	},
 	"job": {
-		"namespace": "test-namespace",
-		"name": "dbt_test.test_model",
+		"namespace": "bigquery",
+		"name": "speedy-vim-308516.dbt_test1.dbt_test.test_model",
 		"facets": {
 			"sql": {
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",

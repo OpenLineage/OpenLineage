@@ -6,8 +6,8 @@
 		"facets": {}
 	},
 	"job": {
-		"namespace": "test-namespace",
-		"name": "dbt_bigquery_test.test_second_parallel_dbt_model",
+		"namespace": "bigquery",
+		"name": "speedy-vim-308516.dbt_test1.dbt_bigquery_test.test_second_parallel_dbt_model",
 		"facets": {}
 	},
 	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -30,8 +30,8 @@
 		"facets": {}
 	},
 	"job": {
-		"namespace": "test-namespace",
-		"name": "dbt_bigquery_test.test_first_dbt_model",
+		"namespace": "bigquery",
+		"name": "speedy-vim-308516.dbt_test1.dbt_bigquery_test.test_first_dbt_model",
 		"facets": {}
 	},
 	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -50,8 +50,8 @@
 		"facets": {}
 	},
 	"job": {
-		"namespace": "test-namespace",
-		"name": "dbt_bigquery_test.test_second_dbt_model",
+		"namespace": "bigquery",
+		"name": "speedy-vim-308516.dbt_test1.dbt_bigquery_test.test_second_dbt_model",
 		"facets": {}
 	},
 	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -74,8 +74,8 @@
 		"facets": {}
 	},
 	"job": {
-		"namespace": "test-namespace",
-		"name": "dbt_bigquery_test.test_first_dbt_model",
+		"namespace": "bigquery",
+		"name": "speedy-vim-308516.dbt_test1.dbt_bigquery_test.test_first_dbt_model",
 		"facets": {
 			"sql": {
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -116,8 +116,8 @@
 		"facets": {}
 	},
 	"job": {
-		"namespace": "test-namespace",
-		"name": "dbt_bigquery_test.test_second_dbt_model",
+		"namespace": "bigquery",
+		"name": "speedy-vim-308516.dbt_test1.dbt_bigquery_test.test_second_dbt_model",
 		"facets": {
 			"sql": {
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -178,8 +178,8 @@
 		"facets": {}
 	},
 	"job": {
-		"namespace": "test-namespace",
-		"name": "dbt_bigquery_test.test_second_parallel_dbt_model",
+		"namespace": "bigquery",
+		"name": "speedy-vim-308516.dbt_test1.dbt_bigquery_test.test_second_parallel_dbt_model",
 		"facets": {
 			"sql": {
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
