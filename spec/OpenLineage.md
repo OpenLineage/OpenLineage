@@ -13,7 +13,7 @@ It allows extensions to the spec using `Custom Facets` as described in this docu
 
 ![Open Lineage model](OpenLineageModel.svg)
 
-- **Run Event**: an event describing an observed state of a job run. It is required to at least send one event for a START transition and a COMPLETE/FAIL/ABORT transition. Additional events are optional.
+- **Run Event**: an event describing an observed state of a job run. It is required to at least send a START event and a COMPLETE/FAIL/ABORT event. Additional events are optional.
 
 - **Job**: a process definition that consumes and produces datasets (defined as its inputs and outputs). It is [identified by a unique name within a namespace](Naming.md#Jobs) (which is assigned to the scheduler starting the jobs). The *Job* evolves over time and this change is captured when the job runs.
 
@@ -27,7 +27,7 @@ example:
 Here is an example of a simple start run event not adding any facet information:
 ```
 {
-  "transition": "START",
+  "eventType": "START",
   "eventTime": "2020-12-09T23:37:31.081Z",
   "run": {
     "runId": "3b452093-782c-4ef2-9c0c-aafe2aa6f34d",
@@ -48,7 +48,8 @@ Here is an example of a simple start run event not adding any facet information:
       "name": "instance.schema.output_table",
     }
   ],
-  "producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client"
+  "producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
+  "schemaURL": "https://openlineage.io/spec/1-0-0/OpenLineage.json#/definitions/RunEvent"
 }
 ```
 
@@ -62,14 +63,14 @@ Example:
  - When the run starts, we collect the following Metadata:
     - Run Id
     - Job id
-    - transition: START
+    - eventType: START
     - event time
     - source location and version (ex: git sha)
     - If known: Job inputs and outputs. (input schema, ...)
  - When the run completes:
     - Run Id
     - Job id
-    - transition: COMPLETE
+    - eventType: COMPLETE
     - event time
     - Output datasets schema (and other metadata).
 
