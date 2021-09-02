@@ -13,9 +13,9 @@
 from typing import Dict, Any, List, Optional
 
 
-def get_from_nullable_chain(source: Dict[str, Any], chain: List[str]) -> Optional[Any]:
+def get_from_nullable_chain(source: Any, chain: List[str]) -> Optional[Any]:
     """
-    Get object from nested structure of dictionaries, where it's not guaranteed that
+    Get object from nested structure of objects, where it's not guaranteed that
     all keys in the nested structure exist.
     Intended to replace chain of `dict.get()` statements.
     Example usage:
