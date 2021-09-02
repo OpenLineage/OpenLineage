@@ -1,0 +1,79 @@
+{
+  "data_asset_type": "Dataset",
+  "expectation_suite_name": "expectations",
+  "expectations": [
+    {
+      "expectation_type": "expect_table_row_count_to_be_between",
+      "kwargs": {
+        "max_value": 20,
+        "min_value": 5
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "user_id"
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_values_to_not_be_null",
+      "kwargs": {
+        "column": "counterparty_id"
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_min_to_be_between",
+      "kwargs": {
+        "column": "amount",
+        "min_value": 0,
+        "max_value": 200
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_max_to_be_between",
+      "kwargs": {
+        "column": "amount",
+        "min_value": 500,
+        "max_value": 5000
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_sum_to_be_between",
+      "kwargs": {
+        "column": "amount",
+        "min_value": 1000,
+        "max_value": 200000
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_distinct_values_to_be_in_set",
+      "kwargs": {
+        "column": "currency",
+        "value_set": [
+          "USD",
+          "GBP"
+        ]
+      },
+      "meta": {}
+    },
+    {
+      "expectation_type": "expect_column_unique_value_count_to_be_between",
+      "kwargs": {
+        "column": "user_id",
+        "min_value": 1,
+        "max_value": 10
+      },
+      "meta": {}
+    }
+  ],
+  "meta": {
+    "great_expectations_version": "0.13.24",
+    "notes": {}
+  }
+}

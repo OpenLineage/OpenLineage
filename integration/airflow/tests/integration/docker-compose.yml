@@ -37,6 +37,7 @@ services:
       - ./airflow/config/log_config.py:/opt/bitnami/airflow/config/log_config.py
       - ./requirements.txt:/bitnami/python/requirements.txt
       - ./gcloud:/opt/config/gcloud
+      - ./data:/opt/data
     depends_on:
       - airflow_scheduler
       - airflow_worker
@@ -67,6 +68,7 @@ services:
       - ./airflow/config/log_config.py:/opt/bitnami/airflow/config/log_config.py
       - ./requirements.txt:/bitnami/python/requirements.txt
       - ./gcloud:/opt/config/gcloud
+      - ./data:/opt/data
     depends_on:
       - airflow_worker
 
@@ -94,6 +96,7 @@ services:
       - ./airflow/config/log_config.py:/opt/bitnami/airflow/config/log_config.py
       - ./requirements.txt:/bitnami/python/requirements.txt
       - ./gcloud:/opt/config/gcloud
+      - ./data:/opt/data
 
   backend:
     build:
