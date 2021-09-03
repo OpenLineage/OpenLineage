@@ -167,3 +167,22 @@ class DataQualityMetricsInputDatasetFacet(BaseFacet):
     @staticmethod
     def _get_schema() -> str:
         return SCHEMA_URI + "#/definitions/DataQualityMetricsInputDatasetFacet"
+
+
+@attr.s
+class Assertion:
+    assertion: str = attr.ib()
+    success: bool = attr.ib()
+    column: Optional[str] = attr.ib(default=None)
+
+
+@attr.s
+class DataQualityAssertionsDatasetFacet(BaseFacet):
+    """
+    This facet represents of asserted expectations on dataset or it's column
+    """
+    assertions: List[Assertion] = attr.ib()
+
+    @staticmethod
+    def _get_schema() -> str:
+        return "#/definitions/DataQualityAssertionsDatasetFacet"  # noqa
