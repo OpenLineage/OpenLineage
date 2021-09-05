@@ -19,8 +19,7 @@ from setuptools import setup, find_namespace_packages
 with open("README.md") as readme_file:
     readme = readme_file.read()
 
-
-__version__ = '0.0.1'
+__version__ = "0.2.1"
 
 requirements = [
     "attrs>=19.3",
@@ -29,7 +28,6 @@ requirements = [
     f"openlineage-integration-common=={__version__}",
     f"openlineage-python=={__version__}",
 ]
-
 
 extras_require = {
     "tests": [
@@ -45,7 +43,7 @@ extras_require = {
         "apache-airflow[gcp_api]==1.10.12",
         "apache-airflow[google]==1.10.12",
         "apache-airflow[postgres]==1.10.12",
-        "airflow-provider-great-expectations==0.0.6",
+        "airflow-provider-great-expectations==0.0.6"
     ],
 }
 extras_require["dev"] = set(sum(extras_require.values(), []))

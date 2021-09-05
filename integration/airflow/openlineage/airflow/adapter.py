@@ -5,7 +5,7 @@ from typing import Optional, Dict, Type
 from openlineage.airflow import __version__ as OPENLINEAGE_AIRFLOW_VERSION
 from openlineage.airflow.extractors import StepMetadata
 
-from openlineage.client import OpenLineageClient, OpenLineageClientOptions
+from openlineage.client import OpenLineageClient, OpenLineageClientOptions, set_producer
 from openlineage.client.facet import DocumentationJobFacet, SourceCodeLocationJobFacet, \
     SqlJobFacet, NominalTimeRunFacet, ParentRunFacet, BaseFacet
 from openlineage.client.run import RunEvent, RunState, Run, Job
@@ -19,7 +19,11 @@ if not _DAG_NAMESPACE:
         'MARQUEZ_NAMESPACE', _DAG_DEFAULT_NAMESPACE
     )
 
-_PRODUCER = f"openlineage-airflow/{OPENLINEAGE_AIRFLOW_VERSION}"
+_PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/" \
+            f"{OPENLINEAGE_AIRFLOW_VERSION}/integration/airflow"
+
+set_producer(_PRODUCER)
+
 
 log = logging.getLogger(__name__)
 
@@ -38,6 +42,7 @@ class OpenLineageAdapter:
             marquez_url = os.getenv('MARQUEZ_URL')
             marquez_api_key = os.getenv('MARQUEZ_API_KEY')
             if marquez_url:
+                log.info(f"Sending lineage events to {marquez_url}")
                 self._client = OpenLineageClient(marquez_url, OpenLineageClientOptions(
                     api_key=marquez_api_key
                 ))
@@ -85,13 +90,13 @@ class OpenLineageAdapter:
             job=self._build_job(
                 job_name, job_description, code_location, sql
             ),
-            producer=_PRODUCER,
             inputs=[
                 dataset.to_openlineage_dataset() for dataset in step.inputs
             ] if step else None,
             outputs=[
                 dataset.to_openlineage_dataset() for dataset in step.outputs
-            ] if step else None
+            ] if step else None,
+            producer=_PRODUCER
         )
         self.get_or_create_openlineage_client().emit(event)
         return event.run.runId

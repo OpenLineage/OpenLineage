@@ -23,8 +23,7 @@ from openlineage.common.dataset import Dataset, Source
 from openlineage.common.models import DbTableSchema, DbColumn, DbTableName
 from openlineage.common.schema import GITHUB_LOCATION
 from openlineage.common.utils import get_from_nullable_chain
-from openlineage.client.facet import BaseFacet
-
+from openlineage.client.facet import BaseFacet, OutputStatisticsOutputDatasetFacet
 
 _BIGQUERY_CONN_URL = 'bigquery'
 
@@ -72,6 +71,12 @@ class BigQueryStatisticsDatasetFacet(BaseFacet):
     rowCount: int = attr.ib()
     size: int = attr.ib()
 
+    def to_openlineage(self) -> OutputStatisticsOutputDatasetFacet:
+        return OutputStatisticsOutputDatasetFacet(
+            rowCount=self.rowCount,
+            size=self.size
+        )
+
     @staticmethod
     def _get_schema() -> str:
         return GITHUB_LOCATION + "bq-statistics-dataset-facet.json"
@@ -113,9 +118,12 @@ class BigQueryDatasetsProvider:
                 })
                 inputs = self._get_input_from_bq(props)
                 output = self._get_output_from_bq(props)
-                if output:
+                if output and dataset_stat_facet:
                     output.custom_facets.update({
                         "stats": dataset_stat_facet
+                    })
+                    output.output_facets.update({
+                        'outputStatistics': dataset_stat_facet.to_openlineage()
                     })
 
             finally:
@@ -142,7 +150,7 @@ class BigQueryDatasetsProvider:
 
         if not stages:
             if get_from_nullable_chain(properties, ['statistics', 'query', 'statementType']) \
-                    == 'CREATE_VIEW':
+                    in ['CREATE_VIEW', 'CREATE_TABLE', 'ALTER_TABLE']:
                 return BigQueryJobRunFacet(cached=False), None
 
             # we're probably getting cached results

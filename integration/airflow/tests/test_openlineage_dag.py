@@ -16,6 +16,7 @@ import uuid
 from uuid import UUID
 
 import mock
+import openlineage.airflow.dag
 import pytest
 from airflow.models import (TaskInstance, DagRun)
 from airflow.operators.dummy_operator import DummyOperator
@@ -37,13 +38,12 @@ from openlineage.airflow import __version__ as OPENLINEAGE_AIRFLOW_VERSION
 from openlineage.airflow.extractors import (
     BaseExtractor, StepMetadata
 )
-from openlineage.airflow.extractors.extractors import Extractors
 from openlineage.airflow.facets import AirflowRunArgsRunFacet, \
     AirflowVersionRunFacet
 from openlineage.airflow.utils import get_location, get_job_name, new_lineage_run_id
 from openlineage.client.facet import NominalTimeRunFacet, SourceCodeLocationJobFacet, \
     DocumentationJobFacet, DataSourceDatasetFacet, SchemaDatasetFacet, \
-    SchemaField, ParentRunFacet, SqlJobFacet
+    SchemaField, ParentRunFacet, SqlJobFacet, set_producer
 from openlineage.client.run import RunEvent, RunState, Job, Run, \
     Dataset as OpenLineageDataset
 
@@ -76,7 +76,14 @@ DAG_DEFAULT_ARGS = {
 TASK_ID_COMPLETED = 'test_task_completed'
 TASK_ID_FAILED = 'test_task_failed'
 
-PRODUCER = f"openlineage-airflow/{OPENLINEAGE_AIRFLOW_VERSION}"
+
+PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/" \
+            f"{OPENLINEAGE_AIRFLOW_VERSION}/integration/airflow"
+
+
+@pytest.fixture(scope='session', autouse=True)
+def setup_producer():
+    set_producer(PRODUCER)
 
 
 @pytest.fixture
@@ -373,16 +380,15 @@ def test_openlineage_dag_with_extractor(
     # --- test setup
 
     # Add the dummy extractor to the list for the task above
-    extractor_mapper = Extractors()
-    extractor_mapper.extractors[TestFixtureDummyOperator] = TestFixtureDummyExtractor
+    openlineage.airflow.dag.extractor_mapper.extractors[TestFixtureDummyOperator] = \
+        TestFixtureDummyExtractor
 
     dag_id = 'test_openlineage_dag_with_extractor'
     dag = DAG(
         dag_id,
         schedule_interval='@daily',
         default_args=DAG_DEFAULT_ARGS,
-        description=DAG_DESCRIPTION,
-        extractor_mapper=extractor_mapper
+        description=DAG_DESCRIPTION
     )
 
     dag_run_id = 'test_openlineage_dag_with_extractor_run_id'
@@ -497,16 +503,16 @@ def test_openlineage_dag_with_extract_on_complete(
     # --- test setup
 
     # Add the dummy extractor to the list for the task above
-    extractor_mapper = Extractors()
-    extractor_mapper.extractors[TestFixtureDummyOperator] = TestFixtureDummyExtractorOnComplete
+    openlineage.airflow.dag.extractors.clear()
+    openlineage.airflow.dag.extractor_mapper.extractors[TestFixtureDummyOperator] = \
+        TestFixtureDummyExtractorOnComplete
 
     dag_id = 'test_openlineage_dag_with_extractor_on_complete'
     dag = DAG(
         dag_id,
         schedule_interval='@daily',
         default_args=DAG_DEFAULT_ARGS,
-        description=DAG_DESCRIPTION,
-        extractor_mapper=extractor_mapper
+        description=DAG_DESCRIPTION
     )
 
     dag_run_id = 'test_openlineage_dag_with_extractor_run_id'
@@ -660,8 +666,8 @@ def test_openlineage_dag_with_extractor_returning_two_steps(
     # --- test setup
 
     # Add the dummy extractor to the list for the task above
-    extractor_mapper = Extractors()
-    extractor_mapper.extractors[TestFixtureDummyOperator] = \
+    openlineage.airflow.dag.extractors.clear()
+    openlineage.airflow.dag.extractor_mapper.extractors[TestFixtureDummyOperator] = \
         TestFixtureDummyExtractorWithMultipleSteps
 
     dag_id = 'test_openlineage_dag_with_extractor_returning_two_steps'
@@ -669,8 +675,7 @@ def test_openlineage_dag_with_extractor_returning_two_steps(
         dag_id,
         schedule_interval='@daily',
         default_args=DAG_DEFAULT_ARGS,
-        description=DAG_DESCRIPTION,
-        extractor_mapper=extractor_mapper
+        description=DAG_DESCRIPTION
     )
 
     dag_run_id = 'test_openlineage_dag_with_extractor_returning_two_steps_run_id'
@@ -769,6 +774,8 @@ def test_openlineage_dag_adds_custom_facets(
         new_lineage_run_id,
         clear_db_airflow_dags,
 ):
+    openlineage.airflow.dag.extractors.clear()
+    openlineage.airflow.dag.extractor_mapper.extractors.pop(TestFixtureDummyOperator, None)
 
     dag = DAG(
         DAG_ID,
@@ -900,16 +907,16 @@ def test_openlineage_dag_with_hooking_operator(
     # --- test setup
 
     # Add the dummy extractor to the list for the task above
-    extractor_mapper = Extractors()
-    extractor_mapper.extractors[TestFixtureHookingDummyOperator] = TestFixtureHookingDummyExtractor
+    openlineage.airflow.dag.extractors.clear()
+    openlineage.airflow.dag.extractor_mapper.extractors[TestFixtureHookingDummyOperator] = \
+        TestFixtureHookingDummyExtractor
 
     dag_id = 'test_openlineage_dag_with_extractor_returning_two_steps'
     dag = DAG(
         dag_id,
         schedule_interval='@daily',
         default_args=DAG_DEFAULT_ARGS,
-        description=DAG_DESCRIPTION,
-        extractor_mapper=extractor_mapper
+        description=DAG_DESCRIPTION
     )
 
     dag_run_id = 'test_openlineage_dag_with_extractor_returning_two_steps_run_id'

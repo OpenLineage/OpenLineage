@@ -18,15 +18,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
+import io.openlineage.client.OpenLineage.DataQualityMetricsInputDatasetFacet;
+import io.openlineage.client.OpenLineage.DataQualityMetricsInputDatasetFacetColumnMetricsAdditional;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.Job;
 import io.openlineage.client.OpenLineage.JobFacets;
+import io.openlineage.client.OpenLineage.NominalTimeRunFacet;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.Run;
 import io.openlineage.client.OpenLineage.RunEvent;
-import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.client.OpenLineage.RunFacets;
-import io.openlineage.client.RunFacets.NominalTime;
 
 public class OpenLineageTest {
 
@@ -45,14 +46,12 @@ public class OpenLineageTest {
 
     URI producer = URI.create("producer");
     OpenLineage ol = new OpenLineage(producer);
-    io.openlineage.client.RunFacets rf = new io.openlineage.client.RunFacets(producer);
     UUID runId = UUID.randomUUID();
-    RunFacets runFacets = ol.newRunFacets();
-    runFacets.getAdditionalProperties().put("nominalTime", rf.newNominalTime(now, now));
+    RunFacets runFacets = ol.newRunFacetsBuilder().nominalTime(ol.newNominalTimeRunFacet(now, now)).build();
     Run run = ol.newRun(runId, runFacets);
     String name = "jobName";
     String namespace = "namespace";
-    JobFacets jobFacets = ol.newJobFacets();
+    JobFacets jobFacets = ol.newJobFacetsBuilder().build();
     Job job = ol.newJob(namespace, name, jobFacets);
     List<InputDataset> inputs = Arrays.asList(ol.newInputDataset("ins", "input", null, null));
     List<OutputDataset> outputs = Arrays.asList(ol.newOutputDataset("ons", "output", null, null));
@@ -69,8 +68,7 @@ public class OpenLineageTest {
     assertEquals(runStateUpdate.getEventType(),read.getEventType());
     assertEquals(runStateUpdate.getEventTime(),read.getEventTime());
     assertEquals(1, runStateUpdate.getInputs().size());
-    RunFacet nominalTimeBasic = runStateUpdate.getRun().getFacets().getAdditionalProperties().get("nominalTime");
-    NominalTime nominalTime = mapper.readValue(mapper.writeValueAsString(nominalTimeBasic), NominalTime.class);
+    NominalTimeRunFacet nominalTime = runStateUpdate.getRun().getFacets().getNominalTime();
     assertEquals(now, nominalTime.getNominalStartTime());
     assertEquals(now, nominalTime.getNominalEndTime());
     InputDataset inputDataset = runStateUpdate.getInputs().get(0);
@@ -94,30 +92,51 @@ public class OpenLineageTest {
 
     URI producer = URI.create("producer");
     OpenLineage ol = new OpenLineage(producer);
-    io.openlineage.client.RunFacets rf = new io.openlineage.client.RunFacets(producer);
     UUID runId = UUID.randomUUID();
     RunFacets runFacets =
         ol.newRunFacetsBuilder()
         .put("nominalTime",
-            rf.newNominalTimeBuilder()
-            .setNominalEndTime(now)
-            .setNominalEndTime(now)
+            ol.newNominalTimeRunFacetBuilder()
+            .nominalEndTime(now)
+            .nominalEndTime(now)
             .build())
         .build();
-    Run run = ol.newRunBuilder().setRunId(runId).setFacets(runFacets).build();
+    Run run = ol.newRunBuilder().runId(runId).facets(runFacets).build();
     String name = "jobName";
     String namespace = "namespace";
     JobFacets jobFacets = ol.newJobFacetsBuilder().build();
-    Job job = ol.newJobBuilder().setNamespace(namespace).setName(name).setFacets(jobFacets).build();
-    List<InputDataset> inputs = Arrays.asList(ol.newInputDatasetBuilder().setNamespace("ins").setName("input").build());
-    List<OutputDataset> outputs = Arrays.asList(ol.newOutputDatasetBuilder().setNamespace("ons").setName("output").build());
+    Job job = ol.newJobBuilder().namespace(namespace).name(name).facets(jobFacets).build();
+
+    List<InputDataset> inputs = Arrays.asList(ol.newInputDatasetBuilder().namespace("ins").name("input")
+        .inputFacets(
+            ol.newInputDatasetInputFacetsBuilder().dataQualityMetrics(
+                ol.newDataQualityMetricsInputDatasetFacetBuilder()
+                  .rowCount(10L)
+                  .bytes(20L)
+                  .columnMetrics(
+                      ol.newDataQualityMetricsInputDatasetFacetColumnMetricsBuilder()
+                        .put("mycol",
+                            ol.newDataQualityMetricsInputDatasetFacetColumnMetricsAdditionalBuilder()
+                            .count(10D).distinctCount(10L).max(30D).min(5D).nullCount(1L).sum(3000D).quantiles(
+                                ol.newDataQualityMetricsInputDatasetFacetColumnMetricsAdditionalQuantilesBuilder().put("25", 52D).build())
+                            .build())
+                        .build())
+                .build()
+            ).build())
+        .build());
+    List<OutputDataset> outputs = Arrays.asList(ol.newOutputDatasetBuilder().namespace("ons").name("output")
+        .outputFacets(
+            ol.newOutputDatasetOutputFacetsBuilder()
+                .outputStatistics(ol.newOutputStatisticsOutputDatasetFacet(10L, 20L)).build())
+        .build());
+
     RunEvent runStateUpdate = ol.newRunEventBuilder()
-        .setEventType("START")
-        .setEventTime(now)
-        .setRun(run)
-        .setJob(job)
-        .setInputs(inputs)
-        .setOutputs(outputs)
+        .eventType("START")
+        .eventTime(now)
+        .run(run)
+        .job(job)
+        .inputs(inputs)
+        .outputs(outputs)
         .build();
 
     ObjectMapper mapper = new ObjectMapper();
@@ -138,11 +157,30 @@ public class OpenLineageTest {
     InputDataset inputDataset = runStateUpdate.getInputs().get(0);
     assertEquals("ins", inputDataset.getNamespace());
     assertEquals("input", inputDataset.getName());
+
+    DataQualityMetricsInputDatasetFacet dq = inputDataset.getInputFacets().getDataQualityMetrics();
+    assertEquals((Long)10L, dq.getRowCount());
+    assertEquals((Long)20L, dq.getBytes());
+    DataQualityMetricsInputDatasetFacetColumnMetricsAdditional colMetrics = dq.getColumnMetrics().getAdditionalProperties().get("mycol");
+    assertEquals((Double)10D, colMetrics.getCount());
+    assertEquals((Long)10L, colMetrics.getDistinctCount());
+    assertEquals((Double)30D, colMetrics.getMax());
+    assertEquals((Double)5D, colMetrics.getMin());
+    assertEquals((Long)1L, colMetrics.getNullCount());
+    assertEquals((Double)3000D, colMetrics.getSum());
+    assertEquals((Double)52D, colMetrics.getQuantiles().getAdditionalProperties().get("25"));
+
     assertEquals(1, runStateUpdate.getOutputs().size());
     OutputDataset outputDataset = runStateUpdate.getOutputs().get(0);
     assertEquals("ons", outputDataset.getNamespace());
     assertEquals("output", outputDataset.getName());
 
     assertEquals(roundTrip(json), roundTrip(mapper.writeValueAsString(read)));
+    assertEquals((Long)10L, outputDataset.getOutputFacets().getOutputStatistics().getRowCount());
+    assertEquals((Long)20L, outputDataset.getOutputFacets().getOutputStatistics().getSize());
+
+    assertEquals(json, mapper.writeValueAsString(read));
+
+
   }
 }

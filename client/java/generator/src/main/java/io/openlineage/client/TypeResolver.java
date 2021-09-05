@@ -62,9 +62,18 @@ public class TypeResolver {
           List<Field> properties = objectType.getProperties();
           List<ResolvedField> resolvedFields = new ArrayList<>(properties.size());
           resolvedFields.addAll(resolveFields(properties));
-          ObjectResolvedType objectResolvedType = new ObjectResolvedType(container, asList(objectType), currentName, Collections.emptySet(), resolvedFields, objectType.hasAdditionalProperties(), visit(objectType.getAdditionalPropertiesType()));
+          ObjectResolvedType objectResolvedType = new ObjectResolvedType(
+              container,
+              asList(objectType),
+              currentName,
+              Collections.emptySet(),
+              resolvedFields,
+              objectType.hasAdditionalProperties(),
+              visit(currentName + "Additional", objectType.getAdditionalPropertiesType()));
           String key = container + "." + objectResolvedType.getName();
-          types.put(key, objectResolvedType);
+          if (types.put(key, objectResolvedType) != null) {
+            throw new RuntimeException("Duplicated type: " + objectResolvedType.getName());
+          };
           return objectResolvedType;
         }
 
@@ -170,18 +179,25 @@ public class TypeResolver {
           }
 
           final JsonNode ref = rootSchema.at(pointer);
-          String previousCurrentName = currentName;
-          currentName = typeName;
-          try {
-            return visit(parser.parse(ref));
-          } finally {
-            currentName = previousCurrentName;
+          if (ref.isMissingNode()) {
+            throw new RuntimeException("ref " + pointer + " not found in " + rootSchema);
           }
+          return visit(typeName, parser.parse(ref));
         }
 
         private String lastPart(String pointer) {
           int i = pointer.lastIndexOf("/");
           return pointer.substring(i + 1);
+        }
+
+        ResolvedType visit(String name, Type type) {
+          String previousCurrentName = currentName;
+          currentName = name;
+          try {
+            return visit(type);
+          } finally {
+            currentName = previousCurrentName;
+          }
         }
 
       };
@@ -230,8 +246,22 @@ public class TypeResolver {
     T visit(ArrayResolvedType arrayType);
 
     default T visit(ResolvedType type) {
-      return type == null ? null : type.accept(this);
+      try {
+        return type == null ? null : type.accept(this);
+      } catch (RuntimeException e) {
+        throw new RuntimeException("Exception while visiting " + type, e);
+      }
     }
+
+  }
+
+  public static class DefaultResolvedTypeVisitor<T> implements ResolvedTypeVisitor<T> {
+
+    public T visit(PrimitiveResolvedType primitiveType) { return null; }
+
+    public T visit(ObjectResolvedType objectType) { return null; }
+
+    public T visit(ArrayResolvedType arrayType) { return null; }
 
   }
 
@@ -280,7 +310,12 @@ public class TypeResolver {
       return type;
     }
 
+    @Override
+    public String toString() {
+      return "ResolvedField{name: " + field.getName() + ", type: " + type +  "}";
+    }
   }
+
 
   static class ObjectResolvedType implements ResolvedType {
     private String container;
@@ -336,6 +371,11 @@ public class TypeResolver {
     @Override
     public <T> T accept(ResolvedTypeVisitor<T> visitor) {
       return visitor.visit(this);
+    }
+
+    @Override
+    public String toString() {
+      return "ObjectResolvedType{" + name + "}";
     }
 
   }

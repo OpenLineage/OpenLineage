@@ -86,6 +86,11 @@ LOGGING_CONFIG = {
         }
     },
     'loggers': {
+        'openlineage.airflow': {
+            'handler': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
         'airflow.processor': {
             'handlers': ['processor'],
             'level': LOG_LEVEL,

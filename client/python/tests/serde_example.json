@@ -4,7 +4,7 @@
 	"run": {
 		"facets": {
 			"nominalTime": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/NominalTimeRunFacet",
 				"nominalEndTime": "2020-01-02",
 				"nominalStartTime": "2020-01-01"
@@ -19,5 +19,5 @@
 	},
 	"inputs": [],
 	"outputs": [],
-	"producer": "openlineage-python"
+	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python"
 }

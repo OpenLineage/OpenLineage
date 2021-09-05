@@ -15,6 +15,7 @@
 import org.apache.tools.ant.filters.*
 
 plugins {
+    id 'jacoco'
     id 'java'
     id 'java-library'
     id 'maven-publish'
@@ -52,29 +53,17 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
 }
 
-def gitBranchName() {
-    def branch = "unknown_branch"
-    def proc = "git rev-parse HEAD".execute()
-    proc.in.eachLine { line -> branch = line }
-    proc.err.eachLine { line -> println line }
-    proc.waitFor()
-    branch
-}
-
 task generateCode(type: JavaExec) {
-    description 'generate java code from spec. Use -PgenerateFromLocal to generate from the local file instead of the published version'
+    description 'generate java code from spec.'
     classpath configurations.codeGenerator
     main = 'io.openlineage.client.Generator'
-    def rootUrl
-    if (project.hasProperty('generateFromLocal')) {
-      rootUrl = "file:$rootDir/../../spec/".toString()
-    } else {
-      rootUrl = "https://raw.githubusercontent.com/OpenLineage/OpenLineage/" + gitBranchName()  + "/spec/"
-    }
+    def rootUrl = "file:$rootDir/../../spec/".toString()
     args rootUrl + "OpenLineage.json"
     args rootUrl + "RunFacets.json"
     args rootUrl + "JobFacets.json"
     args rootUrl + "DatasetFacets.json"
+    args rootUrl + "InputDatasetFacets.json"
+    args rootUrl + "OutputDatasetFacets.json"
 }
 
 openApiGenerate {
@@ -140,10 +129,11 @@ publishing {
 
     repositories {
         maven {
-            url = 'https://oss.sonatype.org/service/local/staging/deploy/maven2'
+            url = isReleaseVersion ? 'https://oss.sonatype.org/service/local/staging/deploy/maven2' :
+                    'https://datakin.jfrog.io/artifactory/maven-public-libs-snapshot'
             credentials {
-                username = System.getenv('SONATYPE_USER')
-                password = System.getenv('SONATYPE_PASSWORD')
+                username = System.getenv('RELEASE_USERNAME')
+                password = System.getenv('RELEASE_PASSWORD')
             }
         }
     }
@@ -166,5 +156,21 @@ jar {
                 'Implementation-Title': project.name,
                 'Implementation-Version': project.version
         )
+    }
+}
+
+def reportsDir = "${buildDir}/reports";
+def coverageDir = "${reportsDir}/coverage";
+
+jacoco {
+    toolVersion = '0.8.5'
+    reportsDir = file(coverageDir)
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled = true
+        html.enabled = true
+        html.destination = file(coverageDir)
     }
 }

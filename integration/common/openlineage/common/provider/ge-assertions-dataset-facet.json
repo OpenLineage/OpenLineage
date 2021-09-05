@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/schema#",
+  "definitions": {
+    "GreatExpectationsAssertionsDatasetFacet": {
+      "allOf": [
+        {
+          "$ref": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/BaseFacet"
+        },
+        {
+          "type": "object",
+          "required": ["assertions"],
+          "properties": {
+            "assertions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "expectationType": {"type": "string"},
+                  "success": {"type":  "bool"},
+                  "column": {"type":  "str"}
+                },
+                "required": ["expectationType", "success"]
+              }
+            }
+          }
+        }
+      ],
+      "type": "object"
+    }
+  }
+}

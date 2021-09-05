@@ -1,0 +1,61 @@
+#!/usr/bin/env python
+import subprocess
+import sys
+import time
+import os
+
+from openlineage.common.provider.dbt import DbtArtifactProcessor
+from openlineage.client.client import OpenLineageClient
+
+__version__ = "0.2.1"
+
+from openlineage.common.utils import parse_single_arg
+
+PRODUCER = f'https://github.com/OpenLineage/OpenLineage/tree/{__version__}/integration/dbt'
+
+
+def main():
+    args = sys.argv[2:]
+    target = parse_single_arg(args, ['-t', '--target'])
+    project_dir = parse_single_arg(args, ['--project-dir'], default='./')
+    profile_name = parse_single_arg(args, ['--profile'])
+
+    client = OpenLineageClient.from_environment()
+    processor = DbtArtifactProcessor(
+        producer=PRODUCER,
+        target=target,
+        project_dir=project_dir,
+        profile_name=profile_name
+    )
+
+    pre_run_time = time.time()
+    process = subprocess.Popen(
+        ["dbt"] + sys.argv[1:],
+        stdout=sys.stdout,
+        stderr=sys.stderr
+    )
+    process.wait()
+
+    if len(sys.argv) < 2 or sys.argv[1] != 'run':
+        return
+
+    # If run_result has modification time before dbt command
+    # or does not exist, do not emit dbt events.
+    try:
+        if os.stat(processor.run_result_path).st_mtime < pre_run_time:
+            print(f"OpenLineage events not emittled: run_result file "
+                  f"({processor.run_result_path}) was not modified by dbt")
+            return
+    except FileNotFoundError:
+        print(f"OpenLineage events not emittled:"
+              f"did not find run_result file ({processor.run_result_path})")
+        return
+
+    events = processor.parse().events()
+
+    for event in events:
+        client.emit(event)
+    print(f"Emitted {len(events)} openlineage events")
+
+if __name__ == '__main__':
+    main()

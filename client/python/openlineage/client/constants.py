@@ -10,7 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+__version__ = "0.2.1"
+
 DEFAULT_TIMEOUT_MS = 10000
 DEFAULT_NAMESPACE_NAME = 'default'
 DEFAULT_OPENLINEAGE_URL = 'http://localhost:5000'
-DEFAULT_PRODUCER = "openlineage-python"
+DEFAULT_PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/{__version__}/client/python"

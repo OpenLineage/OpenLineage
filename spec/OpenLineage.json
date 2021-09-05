@@ -244,5 +244,9 @@
             ]
         }
     },
-    "$ref": "#/definitions/RunEvent"
+    "oneOf": [
+        {
+            "$ref": "#/definitions/RunEvent"
+        }
+    ]
 }

@@ -10,14 +10,14 @@ Maven:
 <dependency>
     <groupId>io.openlineage</groupId>
     <artifactId>openlineage-spark</artifactId>
-    <version>0.1.0</version>
+    <version>0.2.1</version>
 </dependency>
 ```
 
 or Gradle:
 
 ```groovy
-implementation 'io.openlineage:openlineage-spark:0.1.0'
+implementation 'io.openlineage:openlineage-spark:0.2.1
 ```
 
 ## Getting started
@@ -50,8 +50,8 @@ from pyspark.sql import SparkSession
 
 spark = (SparkSession.builder.master('local')
          .appName('sample_spark')
-         .config('spark.jars.packages', 'io.github.openlineage:openlineage-spark-0.1-SNAPSHOT.jar'
-         .config('spark.extraListeners', 'openlineage.spark.agent.OpenLineageSparkListener')
+         .config('spark.jars.packages', 'io.openlineage:openlineage-spark:0.2.1
+         .config('spark.extraListeners', 'io.openlineage.spark.agent.OpenLineageSparkListener')
          .config('spark.openlineage.url', 'http://{openlineage.client.host}/api/v1/namespaces/spark_integration/')
          .getOrCreate())
 ```
@@ -66,12 +66,12 @@ container):
 ```python
 from pyspark.sql import SparkSession
 
-file = "/home/jovyan/openlineage/libs/openlineage-spark-0.1-SNAPSHOT.jar"
+file = "/home/jovyan/openlineage/libs/openlineage-spark-0.2.0-SNAPSHOT.jar"
 
 spark = (SparkSession.builder.master('local').appName('rdd_to_dataframe')
              .config('spark.jars', file)
              .config('spark.jars.packages', 'org.postgresql:postgresql:42.2.+')
-             .config('spark.extraListeners', 'openlineage.spark.agent.OpenLineageSparkListener')
+             .config('spark.extraListeners', 'io.openlineage.spark.agent.OpenLineageSparkListener')
              .config('spark.openlineage.url', 'http://{openlineage.client.host}/api/v1/namespaces/spark_integration/')
              .getOrCreate())
 ```
@@ -83,7 +83,7 @@ the JVM startup parameters. Setup in a pyspark notebook looks like the following
 ```python
 from pyspark.sql import SparkSession
 
-file = "/home/jovyan/openlineage/libs/openlineage-spark-0.1-SNAPSHOT.jar"
+file = "/home/jovyan/openlineage/libs/openlineage-spark-0.2.0-SNAPSHOT.jar"
 
 spark = (SparkSession.builder.master('local').appName('rdd_to_dataframe')
          .config('spark.driver.extraJavaOptions',

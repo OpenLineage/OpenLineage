@@ -36,6 +36,9 @@ plugins {
 repositories {
     mavenLocal()
     mavenCentral()
+    maven {
+        url = 'https://datakin.jfrog.io/artifactory/maven-public-libs-snapshot'
+    }
 }
 
 apply plugin: 'jacoco'
@@ -69,12 +72,14 @@ dependencies {
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
+    implementation 'io.openlineage:openlineage-java:0.0.1-SNAPSHOT'
     implementation 'org.javassist:javassist:3.27.0-GA'
     implementation 'com.github.ok2c.hc5:hc5-async-json:0.2.1'
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.0.3'
     implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
     implementation "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
+    implementation "com.fasterxml.jackson.module:jackson-module-scala_2.11:${jacksonVersion}"
     compileOnly "org.apache.spark:spark-core_2.11:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
     compileOnly 'com.google.cloud.spark:spark-bigquery_2.11:0.21.1'
@@ -231,10 +236,11 @@ publishing {
 
     repositories {
         maven {
-            url = 'https://oss.sonatype.org/service/local/staging/deploy/maven2'
+            url = isReleaseVersion ? 'https://oss.sonatype.org/service/local/staging/deploy/maven2' :
+                    'https://datakin.jfrog.io/artifactory/maven-public-libs-snapshot'
             credentials {
-                username = System.getenv('SONATYPE_NEXUS_USERNAME')
-                password = System.getenv('SONATYPE_NEXUS_PASSWORD')
+                username = System.getenv('RELEASE_USERNAME')
+                password = System.getenv('RELEASE_PASSWORD')
             }
         }
     }
@@ -258,8 +264,8 @@ shadowJar {
 
     manifest {
         attributes(
-                "Premain-Class": 'openlineage.spark.agent.SparkAgent',
-                "Agent-Class": 'openlineage.spark.agent.SparkAgent',
+                "Premain-Class": 'io.openlineage.spark.agent.SparkAgent',
+                "Agent-Class": 'io.openlineage.spark.agent.SparkAgent',
                 'Created-By': "Gradle ${gradle.gradleVersion}",
                 'Built-By': System.getProperty('user.name'),
                 'Build-Jdk': System.getProperty('java.version'),
@@ -276,9 +282,9 @@ assemble {
 
 task createVersionProperties(dependsOn: processResources) {
     doLast {
-        File dir = new File("$buildDir/resources/main/openlineage/spark/agent/client/")
+        File dir = new File("$buildDir/resources/main/io/openlineage/spark/agent/client/")
         dir.mkdirs();
-        new File("$buildDir/resources/main/openlineage/spark/agent/client/version.properties").withWriter { w ->
+        new File("$buildDir/resources/main/io/openlineage/spark/agent/client/version.properties").withWriter { w ->
             Properties p = new Properties()
             p['version'] = project.version.toString()
             p.store w, null

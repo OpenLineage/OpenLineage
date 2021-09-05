@@ -8,8 +8,8 @@ services:
       - ./docker/wait-for-it.sh:/wait-for-it.sh
     depends_on:
       - airflow
-      - marquez
-    entrypoint: ["./wait-for-it.sh", "marquez:5000", "--", "./entrypoint.sh"]
+      - backend
+    entrypoint: ["./wait-for-it.sh", "backend:5000", "--", "./entrypoint.sh"]
 
   airflow:
     build:
@@ -54,7 +54,7 @@ services:
       - AIRFLOW_CONN_FOOD_DELIVERY_DB=postgres://food_delivery:food_delivery@postgres:5432/food_delivery
       - AIRFLOW__CORE__LOGGING_CONFIG_CLASS=log_config.LOGGING_CONFIG
       - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=false
-      - OPENLINEAGE_URL=http://marquez:5000
+      - OPENLINEAGE_URL=http://backend:5000
       - OPENLINEAGE_NAMESPACE=food_delivery
     volumes:
       - ./airflow/logs:/opt/airflow/logs
@@ -79,25 +79,20 @@ services:
       - AIRFLOW__CORE__LOGGING_CONFIG_CLASS=log_config.LOGGING_CONFIG
       - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=false
       - OPENLINEAGE_NAMESPACE=food_delivery
-      - OPENLINEAGE_URL=http://marquez:5000
+      - OPENLINEAGE_URL=http://backend:5000
     volumes:
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/dags:/opt/bitnami/airflow/dags
       - ./airflow/config/log_config.py:/opt/bitnami/airflow/config/log_config.py
       - ./requirements.txt:/bitnami/python/requirements.txt
 
-  marquez:
-    image: marquezproject/marquez:latest
-    ports:
-      - "5000:5000"
-      - "5001:5001"
-    volumes:
-      - ./docker/wait-for-it.sh:/usr/src/app/wait-for-it.sh
-    depends_on:
-      - postgres
-    entrypoint: ["./wait-for-it.sh", "postgres:5432", "--", "./entrypoint.sh"]
-    # Enables SQL statement logging (see: https://www.postgresql.org/docs/12/runtime-config-logging.html#GUC-LOG-STATEMENT)
-    # command: ["postgres", "-c", "log_statement=all"]
+  backend:
+    build:
+      context: server
+      dockerfile: Dockerfile
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_RUN_PORT=5000
 
   postgres:
     image: bitnami/postgresql:12.1.0
@@ -109,9 +104,6 @@ services:
       - AIRFLOW_USER=airflow
       - AIRFLOW_PASSWORD=airflow
       - AIRFLOW_DB=airflow
-      - MARQUEZ_USER=marquez
-      - MARQUEZ_PASSWORD=marquez
-      - MARQUEZ_DB=marquez
       - FOOD_DELIVERY_USER=food_delivery
       - FOOD_DELIVERY_PASSWORD=food_delivery
       - FOOD_DELIVERY_DB=food_delivery

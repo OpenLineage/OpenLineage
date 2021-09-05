@@ -50,7 +50,6 @@ pandas-gbq>=0.13.2
 google-cloud-storage>=1.31.2
 retrying==1.3.3
 snowflake-connector-python==2.4.3
-marquez-python
 ${OPENLINEAGE_AIRFLOW_WHL}
 EOL
 

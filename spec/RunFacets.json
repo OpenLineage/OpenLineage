@@ -1,7 +1,7 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$defs": {
-        "nominalTime": {
+        "NominalTimeRunFacet": {
             "allOf": [
                 {
                     "$ref": "OpenLineage.json#/definitions/RunFacet"
@@ -29,7 +29,7 @@
             ],
             "type": "object"
         },
-        "parent": {
+        "ParentRunFacet": {
             "description": "the id of the parent run and job, iff this run was spawn from an other run (for example, the Dag run scheduling its tasks)",
             "allOf": [
                 {
@@ -83,10 +83,10 @@
     "type": "object",
     "properties" : {
         "nominalTime": {
-            "$ref": "#/$defs/nominalTime"
+            "$ref": "#/$defs/NominalTimeRunFacet"
         },
         "parent": {
-            "$ref": "#/$defs/parent"
+            "$ref": "#/$defs/ParentRunFacet"
         }
     }
 }

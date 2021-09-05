@@ -1,0 +1,118 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$defs":{
+    "DataQualityAssertionsInputDatasetFacet":{
+      "description":"list of tests performed on dataset or dataset columns, and their results",
+      "allOf":[
+        {
+          "$ref":"OpenLineage.json#/definitions/InputDatasetFacet"
+        },
+        {
+          "type":"object",
+          "required":[
+            "assertions"
+          ],
+          "properties":{
+            "assertions":{
+              "type":"array",
+              "items":{
+                "type":"object",
+                "properties":{
+                  "assertion":{
+                    "type":"string",
+                    "description":"Type of expectation test that dataset is subjected to",
+                    "example":"not_null"
+                  },
+                  "success":{
+                    "type":"boolean"
+                  },
+                  "column":{
+                    "type":"string",
+                    "description":"Column that expectation is testing. It should match the name provided in SchemaDatasetFacet. If column field is empty, then expectation refers to whole dataset.",
+                    "example":"id"
+                  }
+                },
+                "required":[
+                  "assertion",
+                  "success"
+                ]
+              }
+            }
+          }
+        }
+      ],
+      "type":"object"
+    },
+    "DataQualityMetricsInputDatasetFacet":{
+      "allOf":[
+        {
+          "$ref":"OpenLineage.json#/definitions/InputDatasetFacet"
+        },
+        {
+          "type":"object",
+          "required":[
+            "columnMetrics"
+          ],
+          "properties":{
+            "rowCount":{
+              "description":"The number of rows evaluated",
+              "type":"integer"
+            },
+            "bytes":{
+              "description":"The size in bytes",
+              "type":"integer"
+            },
+            "columnMetrics":{
+              "description":"The property key is the column name",
+              "type":"object",
+              "additionalProperties":{
+                "type":"object",
+                "properties":{
+                  "nullCount":{
+                    "description":"The number of null values in this column for the rows evaluated",
+                    "type":"integer"
+                  },
+                  "distinctCount":{
+                    "description":"The number of distinct values in this column for the rows evaluated",
+                    "type":"integer"
+                  },
+                  "sum":{
+                    "description":"The total sum of values in this column for the rows evaluated",
+                    "type":"number"
+                  },
+                  "count":{
+                    "description":"The number of values in this column",
+                    "type":"number"
+                  },
+                  "min":{
+                    "type":"number"
+                  },
+                  "max":{
+                    "type":"number"
+                  },
+                  "quantiles":{
+                    "description":"The property key is the quantile. Examples: 0.1 0.25 0.5 0.75 1",
+                    "type":"object",
+                    "additionalProperties":{
+                      "type":"number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ],
+      "type":"object"
+    }
+  },
+  "type":"object",
+  "properties":{
+    "dataQualityMetrics":{
+      "$ref":"#/$defs/DataQualityMetricsInputDatasetFacet"
+    },
+    "dataQualityAssertions":{
+      "$ref":"#/$defs/DataQualityAssertionsInputDatasetFacet"
+    }
+  }
+}
