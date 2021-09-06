@@ -168,7 +168,24 @@ def test_integration_bigquery():
         sys.exit(1)
 
 
+def test_integration_great_expectations():
+    DAG_ID = 'great_expectations_validation'
+
+    # (1) Wait for DAG to complete
+    wait_for_dag(DAG_ID)
+    # (2) Read expected events
+    with open('requests/great_expectations.json', 'r') as f:
+        expected_requests = json.load(f)
+
+    time.sleep(10)
+
+    # (3) Verify events emitted
+    if not check_events_emitted(expected_requests):
+        sys.exit(1)
+
+
 if __name__ == '__main__':
+    setup_db()
+    test_integration_great_expectations()
     test_integration_postgres()
     test_integration_bigquery()
-
