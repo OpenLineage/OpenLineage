@@ -96,7 +96,10 @@ class BigQueryExtractor(BaseExtractor):
             name=get_job_name(task=self.operator),
             inputs=inputs,
             outputs=[output] if output else [],
-            run_facets=run_facets
+            run_facets=run_facets,
+            context={
+                "sql": context.sql
+            }
         )
 
     def _get_xcom_bigquery_job_id(self, task_instance):

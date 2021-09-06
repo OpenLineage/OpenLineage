@@ -9,16 +9,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import logging
-import time
 import json
+import logging
 import sys
-
-import requests
 import psycopg2
-
-from airflow.utils.state import State as DagState
-
+import time
+import requests
 from retrying import retry
 
 
@@ -30,11 +26,6 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-NAMESPACE_NAME = 'food_delivery'
-
-# AIRFLOW
-DAG_ID = 'orders_popular_day_of_week'
-
 airflow_db_conn = None
 
 
@@ -42,9 +33,9 @@ airflow_db_conn = None
     wait_exponential_multiplier=1000,
     wait_exponential_max=10000
 )
-def wait_for_dag():
+def wait_for_dag(dag_id):
     log.info(
-        f"Waiting for DAG '{DAG_ID}'..."
+        f"Waiting for DAG '{dag_id}'..."
     )
 
     cur = airflow_db_conn.cursor()
@@ -52,17 +43,16 @@ def wait_for_dag():
         f"""
         SELECT dag_id, state
           FROM dag_run
-         WHERE dag_id = '{DAG_ID}';
+         WHERE dag_id = '{dag_id}';
         """
     )
     row = cur.fetchone()
-    dag_id = row[0]
-    dag_state = row[1]
+    dag_id, state = row
 
     cur.close()
 
-    log.info(f"DAG '{dag_id}' state set to '{dag_state}'.")
-    if dag_state != DagState.SUCCESS:
+    log.info(f"DAG '{dag_id}' state set to '{state}'.")
+    if state != "success":
         raise Exception('Retry!')
 
 
@@ -77,13 +67,28 @@ def match(expected, request):
         elif isinstance(v, list):
             if len(v) != len(request[k]):
                 log.error(f"For list of key {k}, length of lists does"
-                             f" not match: {len(v)} {len(request[k])}")
+                          f" not match: {len(v)} {len(request[k])}\n{expected}\n{request}")
                 return False
-            if not all([match(x, y) for x, y in zip(v, request[k])]):
-                return False
+
+            # Try to resolve case where we have wrongly sorted lists by looking at name attr
+            # If name is not present then assume that lists are sorted
+            for i, x in enumerate(v):
+                if 'name' in x:
+                    matched = False
+                    for y in request[k]:
+                        if 'name' in y and x['name'] == y['name']:
+                            if not match(x, y):
+                                return False
+                            matched = True
+                            break
+                    if not matched:
+                        return False
+                else:
+                    if not match(x, request[k][i]):
+                        return False
         elif v != request[k]:
-            log.error(f"For key {k}, value {v} not in event {request[k]}"
-                         f"\nExpected {expected}, request {request}")
+            log.error(f"For key {k}, value {v} not exquals {request[k]}"
+                      f"\nExpected {expected}, request {request}")
             return False
     return True
 
@@ -100,23 +105,19 @@ def check_matches(expected_requests, received_requests):
                 break
         if not is_compared:
             log.info(f"not found event comparable to {expected['eventType']} "
-                        f"- {expected['job']['name']}")
+                     f"- {expected['job']['name']}")
             return False
     return True
 
 
-def check_events_emitted():
-
-    with open('expected_requests.json', 'r') as f:
-        expected_requests = json.load(f)
-
+def check_events_emitted(expected_requests):
     time.sleep(20)
-    # Service in ./server does the checking
+    # Service in ./server captures requests and serves them
     r = requests.get('http://backend:5000/api/v1/lineage', timeout=5)
     r.raise_for_status()
     received_requests = r.json()
 
-    check_matches(expected_requests, received_requests)
+    return check_matches(expected_requests, received_requests)
 
 
 def setup_db():
@@ -131,14 +132,43 @@ def setup_db():
     airflow_db_conn.autocommit = True
 
 
-def main():
+def clear_db():
+    requests.post('http://backend:5000/clear', timeout=5)
+
+
+def test_integration_postgres():
+    DAG_ID = 'postgres_orders_popular_day_of_week'
+
     # (0) Give db time to start
     setup_db()
     # (1) Wait for DAG to complete
-    wait_for_dag()
-    # (2) Verify events emitted
-    check_events_emitted()
+    wait_for_dag(DAG_ID)
+    # (2) Read expected events
+    with open('requests/postgres.json', 'r') as f:
+        expected_requests = json.load(f)
+
+    # (3) Verify events emitted
+    if not check_events_emitted(expected_requests):
+        sys.exit(1)
 
 
-if __name__ == "__main__":
-    main()
+def test_integration_bigquery():
+    DAG_ID = 'bigquery_orders_popular_day_of_week'
+
+    # (0) Give db time to start
+    setup_db()
+    # (1) Wait for DAG to complete
+    wait_for_dag(DAG_ID)
+    # (2) Read expected events
+    with open('requests/bigquery.json', 'r') as f:
+        expected_requests = json.load(f)
+
+    # (3) Verify events emitted
+    if not check_events_emitted(expected_requests):
+        sys.exit(1)
+
+
+if __name__ == '__main__':
+    test_integration_postgres()
+    test_integration_bigquery()
+
