@@ -36,7 +36,11 @@ OPENLINEAGE_AIRFLOW_WHL=$(docker run openlineage-airflow-base:latest sh -c "ls /
 OPENLINEAGE_AIRFLOW_WHL_ALL=$(docker run openlineage-airflow-base:latest sh -c "ls /whl/*")
 
 # Add revision to requirements.txt
-echo "${OPENLINEAGE_AIRFLOW_WHL}" > requirements.txt
+cat > requirements.txt <<EOL
+airflow-provider-great-expectations==0.0.8
+${OPENLINEAGE_AIRFLOW_WHL}
+EOL
+
 
 # Add revision to integration-requirements.txt
 cat > integration-requirements.txt <<EOL
