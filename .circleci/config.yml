@@ -236,7 +236,7 @@ jobs:
             - ~/.gradle
 
   test-integration-spark-v3:
-    working_directory: ~/openlineage/integration/spark3
+    working_directory: ~/openlineage/integration/spark
     machine: true
     environment:
       TESTCONTAINERS_RYUK_DISABLED: "true"
