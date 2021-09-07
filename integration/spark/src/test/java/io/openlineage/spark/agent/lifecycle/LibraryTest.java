@@ -14,6 +14,7 @@ import com.google.common.io.Resources;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.client.OpenLineageClient;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
@@ -94,9 +95,7 @@ public class LibraryTest {
     for (int i = 0; i < events.size(); i++) {
       OpenLineage.RunEvent event = events.get(i);
       Map<String, Object> snapshot =
-          objectMapper.readValue(
-              Paths.get(String.format("integrations/%s/%d.json", "sparksql", i + 1)).toFile(),
-              mapTypeReference);
+          objectMapper.readValue(getSparkSqlTestData(i), mapTypeReference);
       assertEquals(
           snapshot,
           cleanSerializedMap(
@@ -105,10 +104,19 @@ public class LibraryTest {
     verifySerialization(events);
   }
 
+  private File getSparkSqlTestData(int i) {
+    String spark3Path = System.getProperty("spark.version").startsWith("3") ? "spark3/" : "";
+    return Paths.get(String.format("integrations/%s/%d.json", spark3Path + "sparksql", i + 1))
+        .toFile();
+  }
+
   private Map<String, Object> cleanSerializedMap(Map<String, Object> map) {
     // exprId and jvmId are not deterministic, so remove them from the maps to avoid failing
     map.remove("exprId");
     map.remove("resultId");
+    // spark-3 new field in AggregateExpression class
+    map.remove("nonInheritableMetadataKeys");
+    map.remove("validConstraints");
 
     if (map.containsKey("facets") && map.containsKey("runId")) {
       map.put("runId", "fake_run_id");

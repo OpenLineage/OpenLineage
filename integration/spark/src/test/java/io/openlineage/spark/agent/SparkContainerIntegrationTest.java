@@ -128,7 +128,8 @@ public class SparkContainerIntegrationTest {
     pyspark.setWaitStrategy(Wait.forLogMessage(".*ShutdownHookManager: Shutdown hook called.*", 1));
     pyspark.start();
 
-    Path eventFolder = Paths.get("integrations/container/");
+    String sparkPath = System.getProperty("spark.version").startsWith("3") ? "spark3/" : "";
+    Path eventFolder = Paths.get(String.format("integrations/%scontainer/", sparkPath));
     String startEvent =
         new String(readAllBytes(eventFolder.resolve("pysparkWordCountWithCliArgsStartEvent.json")));
     String completeEvent =
@@ -161,7 +162,8 @@ public class SparkContainerIntegrationTest {
     pyspark.setWaitStrategy(Wait.forLogMessage(".*ShutdownHookManager: Shutdown hook called.*", 1));
     pyspark.start();
 
-    Path eventFolder = Paths.get("integrations/container/");
+    String sparkPath = System.getProperty("spark.version").startsWith("3") ? "spark3/" : "";
+    Path eventFolder = Paths.get(String.format("integrations/%scontainer/", sparkPath));
     String startCsvEvent =
         new String(readAllBytes(eventFolder.resolve("pysparkRddToCsvStartEvent.json")));
     String completeCsvEvent =

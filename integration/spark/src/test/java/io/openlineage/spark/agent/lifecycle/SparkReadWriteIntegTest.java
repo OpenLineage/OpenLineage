@@ -98,8 +98,8 @@ public class SparkReadWriteIntegTest {
     StructType tableSchema =
         new StructType(
             new StructField[] {
-              new StructField("name", StringType$.MODULE$, false, null),
-              new StructField("age", LongType$.MODULE$, false, null)
+              new StructField("name", StringType$.MODULE$, false, Metadata.empty()),
+              new StructField("age", LongType$.MODULE$, false, Metadata.empty())
             });
 
     MockBigQueryRelationProvider.INJECTOR.setTestModule(

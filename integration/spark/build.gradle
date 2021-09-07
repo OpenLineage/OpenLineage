@@ -60,6 +60,7 @@ ext {
     junit5Version = '5.7.2'
     bytebuddyVersion = '1.10.21'
     sparkVersion = '2.4.7'
+    spark3Version = '3.1.0'
     jacksonVersion = '2.12.2'
     postgresqlVersion = '42.2.19'
     lombokVersion = '1.18.20'
@@ -79,16 +80,13 @@ dependencies {
     implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
     implementation "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
-    implementation "com.fasterxml.jackson.module:jackson-module-scala_2.11:${jacksonVersion}"
+    compileOnly "com.fasterxml.jackson.module:jackson-module-scala_2.11:${jacksonVersion}"
     compileOnly "org.apache.spark:spark-core_2.11:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
     compileOnly 'com.google.cloud.spark:spark-bigquery_2.11:0.21.1'
 
-    testImplementation 'com.google.cloud.spark:spark-bigquery-with-dependencies_2.11:0.19.1'
     testImplementation "net.bytebuddy:byte-buddy-agent:${bytebuddyVersion}"
     testImplementation "net.bytebuddy:byte-buddy-dep:${bytebuddyVersion}"
-    testImplementation "org.apache.spark:spark-core_2.11:${sparkVersion}"
-    testImplementation "org.apache.spark:spark-sql_2.11:${sparkVersion}"
     testImplementation platform('org.junit:junit-bom:5.7.1')
     testImplementation "org.postgresql:postgresql:${postgresqlVersion}"
     testImplementation 'org.hamcrest:hamcrest-library:2.2'
@@ -104,6 +102,20 @@ dependencies {
     testCompile "org.mockito:mockito-core:${mockitoVersion}"
     testCompile "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
     testCompileOnly "org.projectlombok:lombok:${lombokVersion}"
+    testCompileOnly "org.apache.spark:spark-core_2.11:${sparkVersion}"
+    testCompileOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
+    testCompileOnly 'com.google.cloud.spark:spark-bigquery-with-dependencies_2.11:0.21.1'
+    if (project.getProperty('spark.version').startsWith('3')) {
+        runtimeOnly "com.fasterxml.jackson.module:jackson-module-scala_2.12:${jacksonVersion}"
+        testRuntimeOnly 'com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:0.21.1'
+        testRuntimeOnly "org.apache.spark:spark-core_2.12:${spark3Version}"
+        testRuntimeOnly "org.apache.spark:spark-sql_2.12:${spark3Version}"
+    } else {
+        runtimeOnly "com.fasterxml.jackson.module:jackson-module-scala_2.11:${jacksonVersion}"
+        testRuntimeOnly 'com.google.cloud.spark:spark-bigquery-with-dependencies_2.11:0.21.1'
+        testRuntimeOnly "org.apache.spark:spark-core_2.11:${sparkVersion}"
+        testRuntimeOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
+    }
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 }
 
@@ -126,10 +138,7 @@ task bumpVersionTestFiles() {
     }
 }
 
-test {
-    useJUnitPlatform {
-        excludeTags 'integration-test'
-    }
+def commonTestConfiguration = {
     forkEvery 1
     maxParallelForks 3
     testLogging {
@@ -138,24 +147,35 @@ test {
     }
     systemProperties = [
             'junit.platform.output.capture.stdout': 'true',
-            'junit.platform.output.capture.stderr': 'true'
+            'junit.platform.output.capture.stderr': 'true',
+            'spark.version'                       : project.getProperty('spark.version'),
+            'openlineage.spark.jar': "${archivesBaseName}-${project.version}.jar"
     ]
+}
+
+test {
+    configure commonTestConfiguration
+    useJUnitPlatform {
+        excludeTags 'integration-test'
+    }
     dependsOn bumpVersionTestFiles
 }
 
 task integrationTest(type: Test) {
+    configure commonTestConfiguration
     useJUnitPlatform {
         includeTags "integration-test"
     }
-    testLogging {
-        events "passed", "skipped", "failed"
-        showStandardStreams = true
+    dependsOn bumpVersionTestFiles, shadowJar
+}
+
+task integrationTestSpark3(type: Test) {
+    configure commonTestConfiguration
+    useJUnitPlatform {
+        includeTags "integration-test"
     }
     systemProperties = [
-            'junit.platform.output.capture.stdout': 'true',
-            'junit.platform.output.capture.stderr': 'true',
-            'spark.version': project.getProperty('spark.version'),
-            'openlineage.spark.jar': "${archivesBaseName}-${project.version}.jar"
+            'spark.version'        : '3.1',
     ]
     dependsOn bumpVersionTestFiles, shadowJar
 }
