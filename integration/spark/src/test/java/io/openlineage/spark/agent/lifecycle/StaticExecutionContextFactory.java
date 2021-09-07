@@ -44,7 +44,7 @@ public class StaticExecutionContextFactory extends ContextFactory {
    * @throws InterruptedException
    */
   public static void waitForExecutionEnd() throws InterruptedException, TimeoutException {
-    boolean acquired = semaphore.tryAcquire(1, TimeUnit.SECONDS);
+    boolean acquired = semaphore.tryAcquire(3, TimeUnit.SECONDS);
     if (!acquired) {
       throw new TimeoutException(
           "Unable to acquire permit within expected timeout- "
