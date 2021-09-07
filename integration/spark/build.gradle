@@ -63,6 +63,7 @@ ext {
     jacksonModuleScalaVersion = '2.6.7.1'
     jacksonDatatypeVersion = '2.6.7'
     jacksonDatabindVersion = '2.6.7.3'
+    spark3Version = '3.1.0'
     postgresqlVersion = '42.2.19'
     lombokVersion = '1.18.20'
     mockitoVersion = '3.11.2'
@@ -114,6 +115,20 @@ dependencies {
     testCompile "org.mockito:mockito-core:${mockitoVersion}"
     testCompile "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
     testCompileOnly "org.projectlombok:lombok:${lombokVersion}"
+    testCompileOnly "org.apache.spark:spark-core_2.11:${sparkVersion}"
+    testCompileOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
+    testCompileOnly 'com.google.cloud.spark:spark-bigquery-with-dependencies_2.11:0.21.1'
+    if (project.getProperty('spark.version').startsWith('3')) {
+        runtimeOnly "com.fasterxml.jackson.module:jackson-module-scala_2.12:${jacksonVersion}"
+        testRuntimeOnly 'com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:0.21.1'
+        testRuntimeOnly "org.apache.spark:spark-core_2.12:${spark3Version}"
+        testRuntimeOnly "org.apache.spark:spark-sql_2.12:${spark3Version}"
+    } else {
+        runtimeOnly "com.fasterxml.jackson.module:jackson-module-scala_2.11:${jacksonVersion}"
+        testRuntimeOnly 'com.google.cloud.spark:spark-bigquery-with-dependencies_2.11:0.21.1'
+        testRuntimeOnly "org.apache.spark:spark-core_2.11:${sparkVersion}"
+        testRuntimeOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
+    }
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 }
 
@@ -127,10 +142,7 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     from javadoc.destinationDir
 }
 
-test {
-    useJUnitPlatform {
-        excludeTags 'integration-test'
-    }
+def commonTestConfiguration = {
     forkEvery 1
     maxParallelForks 3
     testLogging {
@@ -139,23 +151,34 @@ test {
     }
     systemProperties = [
             'junit.platform.output.capture.stdout': 'true',
-            'junit.platform.output.capture.stderr': 'true'
+            'junit.platform.output.capture.stderr': 'true',
+            'spark.version'                       : project.getProperty('spark.version'),
+            'openlineage.spark.jar': "${archivesBaseName}-${project.version}.jar"
     ]
 }
 
+test {
+    configure commonTestConfiguration
+    useJUnitPlatform {
+        excludeTags 'integration-test'
+    }
+}
+
 task integrationTest(type: Test) {
+    configure commonTestConfiguration
     useJUnitPlatform {
         includeTags "integration-test"
     }
-    testLogging {
-        events "passed", "skipped", "failed"
-        showStandardStreams = true
+    dependsOn shadowJar
+}
+
+task integrationTestSpark3(type: Test) {
+    configure commonTestConfiguration
+    useJUnitPlatform {
+        includeTags "integration-test"
     }
     systemProperties = [
-            'junit.platform.output.capture.stdout': 'true',
-            'junit.platform.output.capture.stderr': 'true',
-            'spark.version': project.getProperty('spark.version'),
-            'openlineage.spark.jar': "${archivesBaseName}-${project.version}.jar"
+            'spark.version'        : '3.1',
     ]
     dependsOn shadowJar
 }
