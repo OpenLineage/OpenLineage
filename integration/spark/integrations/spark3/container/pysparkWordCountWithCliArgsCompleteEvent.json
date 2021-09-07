@@ -1,5 +1,5 @@
 {
-  "eventType": "START",
+  "eventType": "COMPLETE",
   "run": {
     "facets": {
     }
@@ -61,7 +61,7 @@
           "_producer" : "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
           "_schemaURL" : "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark/facets/spark-2.4/v1/output-statistics-facet.json",
           "rowCount" : 0,
-          "size" : 0,
+          "size" : -1,
           "status" : "DEPRECATED"
         }
       },
@@ -69,12 +69,12 @@
         "outputStatistics": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
           "rowCount": 0,
-          "size": 0,
+          "size": -1,
           "_schemaURL": "https://openlineage.io/spec/1-0-0/OpenLineage.json#/definitions/OutputStatisticsOutputDatasetFacet"
         }
       }
     }
   ],
   "producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
-  "schemaURL" : "https://openlineage.io/spec/1-0-0/OpenLineage.json#/definitions/RunEvent"
+  "schemaURL": "https://openlineage.io/spec/1-0-0/OpenLineage.json#/definitions/RunEvent"
 }
