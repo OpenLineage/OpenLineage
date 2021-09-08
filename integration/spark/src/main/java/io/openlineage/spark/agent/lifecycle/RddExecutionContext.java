@@ -93,10 +93,14 @@ public class RddExecutionContext implements ExecutionContext {
         Field f = getConfigField(fn);
         f.setAccessible(true);
 
-        HadoopMapRedWriteConfigUtil configUtil = Optional.of(f.get(fn))
-            .filter(HadoopMapRedWriteConfigUtil.class::isInstance)
-            .map(HadoopMapRedWriteConfigUtil.class::cast)
-            .orElseThrow(() -> new NoSuchFieldException("Field is not instance of HadoopMapRedWriteConfigUtil"));
+        HadoopMapRedWriteConfigUtil configUtil =
+            Optional.of(f.get(fn))
+                .filter(HadoopMapRedWriteConfigUtil.class::isInstance)
+                .map(HadoopMapRedWriteConfigUtil.class::cast)
+                .orElseThrow(
+                    () ->
+                        new NoSuchFieldException(
+                            "Field is not instance of HadoopMapRedWriteConfigUtil"));
 
         Field confField = HadoopMapRedWriteConfigUtil.class.getDeclaredField("conf");
         confField.setAccessible(true);
