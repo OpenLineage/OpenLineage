@@ -125,7 +125,7 @@ def test_extract(get_connection, mock_get_table_schemas):
                 connection_url=CONN_URI_WITHOUT_USERPASS
             ),
             fields=[]
-        )]
+        ).to_openlineage_dataset()]
 
     expected_context = {
         'sql': SQL,
@@ -162,7 +162,7 @@ def test_extract_authority_uri(get_connection, mock_get_table_schemas):
                 connection_url=CONN_URI_WITHOUT_USERPASS
             ),
             fields=[]
-        )]
+        ).to_openlineage_dataset()]
 
     expected_context = {
         'sql': SQL,

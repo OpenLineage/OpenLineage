@@ -90,12 +90,8 @@ class OpenLineageAdapter:
             job=self._build_job(
                 job_name, job_description, code_location, sql
             ),
-            inputs=[
-                dataset.to_openlineage_dataset() for dataset in step.inputs
-            ] if step else None,
-            outputs=[
-                dataset.to_openlineage_dataset() for dataset in step.outputs
-            ] if step else None,
+            inputs=step.inputs if step else None,
+            outputs=step.outputs if step else None,
             producer=_PRODUCER
         )
         self.get_or_create_openlineage_client().emit(event)
@@ -128,12 +124,8 @@ class OpenLineageAdapter:
             job=self._build_job(
                 job_name, sql=sql
             ),
-            inputs=[
-                dataset.to_openlineage_dataset() for dataset in step.inputs
-            ],
-            outputs=[
-                dataset.to_openlineage_dataset() for dataset in step.outputs
-            ],
+            inputs=step.inputs,
+            outputs=step.outputs,
             producer=_PRODUCER
         )
         self.get_or_create_openlineage_client().emit(event)
@@ -161,12 +153,8 @@ class OpenLineageAdapter:
             job=self._build_job(
                 job_name
             ),
-            inputs=[
-                dataset.to_openlineage_dataset() for dataset in step.inputs
-            ],
-            outputs=[
-                dataset.to_openlineage_dataset() for dataset in step.outputs
-            ],
+            inputs=step.inputs,
+            outputs=step.outputs,
             producer=_PRODUCER
         )
         self.get_or_create_openlineage_client().emit(event)
