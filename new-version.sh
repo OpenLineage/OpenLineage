@@ -167,6 +167,7 @@ fi
 
 sed -i  "" "s/^version=.*/version=${NEXT_VERSION}/g" integration/spark/gradle.properties
 sed -i  "" "s/^version=.*/version=${NEXT_VERSION}/g" client/java/gradle.properties
+echo "version ${NEXT_VERSION}" > integration/spark/src/test/resources/io/openlineage/spark/agent/client/version.properties
 
 # (7) Prepare next development version commit
 git commit -sam "Prepare next development version"
