@@ -117,15 +117,6 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     from javadoc.destinationDir
 }
 
-task bumpVersionTestFiles() {
-    doLast {
-        def dir = new File(project.projectDir.path + '/integrations')
-        dir.eachFileRecurse (FileType.FILES) { file ->
-            ant.replace(file: file, token: "\$VERSION", value: project.version.toString())
-        }
-    }
-}
-
 test {
     useJUnitPlatform {
         excludeTags 'integration-test'
@@ -140,7 +131,6 @@ test {
             'junit.platform.output.capture.stdout': 'true',
             'junit.platform.output.capture.stderr': 'true'
     ]
-    dependsOn bumpVersionTestFiles
 }
 
 task integrationTest(type: Test) {
@@ -157,7 +147,7 @@ task integrationTest(type: Test) {
             'spark.version': project.getProperty('spark.version'),
             'openlineage.spark.jar': "${archivesBaseName}-${project.version}.jar"
     ]
-    dependsOn bumpVersionTestFiles, shadowJar
+    dependsOn shadowJar
 }
 
 spotless {
