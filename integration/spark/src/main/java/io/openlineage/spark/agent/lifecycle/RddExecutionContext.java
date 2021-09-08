@@ -90,7 +90,7 @@ public class RddExecutionContext implements ExecutionContext {
     if (activeJob.finalStage() instanceof ResultStage) {
       Function2<TaskContext, Iterator<?>, ?> fn = ((ResultStage) activeJob.finalStage()).func();
       try {
-        Field f = fn.getClass().getDeclaredField("config$1");
+        Field f = getConfigField(fn);
         f.setAccessible(true);
 
         HadoopMapRedWriteConfigUtil configUtil = (HadoopMapRedWriteConfigUtil) f.get(fn);
@@ -106,6 +106,15 @@ public class RddExecutionContext implements ExecutionContext {
       jc = OpenLineageSparkListener.getConfigForRDD(finalRDD);
     }
     this.outputs = findOutputs(finalRDD, jc);
+  }
+
+  private Field getConfigField(Function2<TaskContext, Iterator<?>, ?> fn)
+      throws NoSuchFieldException {
+    try {
+      return fn.getClass().getDeclaredField("config$1");
+    } catch (NoSuchFieldException e) {
+      return fn.getClass().getDeclaredField("arg$1");
+    }
   }
 
   static String nameRDD(RDD<?> rdd) {
