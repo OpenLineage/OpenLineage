@@ -17,7 +17,7 @@ Maven:
 or Gradle:
 
 ```groovy
-implementation 'io.openlineage:openlineage-spark:0.2.1
+implementation 'io.openlineage:openlineage-spark:0.2.1'
 ```
 
 ## Getting started
@@ -50,7 +50,7 @@ from pyspark.sql import SparkSession
 
 spark = (SparkSession.builder.master('local')
          .appName('sample_spark')
-         .config('spark.jars.packages', 'io.openlineage:openlineage-spark:0.2.1
+         .config('spark.jars.packages', 'io.openlineage:openlineage-spark:0.2.1')
          .config('spark.extraListeners', 'io.openlineage.spark.agent.OpenLineageSparkListener')
          .config('spark.openlineage.url', 'http://{openlineage.client.host}/api/v1/namespaces/spark_integration/')
          .getOrCreate())
@@ -66,7 +66,7 @@ container):
 ```python
 from pyspark.sql import SparkSession
 
-file = "/home/jovyan/openlineage/libs/openlineage-spark-0.2.0-SNAPSHOT.jar"
+file = "/home/jovyan/openlineage/libs/openlineage-spark-0.2.1-SNAPSHOT.jar"
 
 spark = (SparkSession.builder.master('local').appName('rdd_to_dataframe')
              .config('spark.jars', file)
