@@ -13,7 +13,7 @@
           "namespace" : "ns_name",
           "name" : "job_name"
         },
-        "_schemaURL" : "https://openlineage.io/spec/1-0-0/OpenLineage.json#/definitions/ParentRunFacet"
+        "_schemaURL" : "https://openlineage.io/spec/1-0-1/OpenLineage.json#/definitions/ParentRunFacet"
       }
     }
   },
@@ -27,5 +27,5 @@
   } ],
   "outputs" : [ ],
   "producer" : "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
-  "schemaURL" : "https://openlineage.io/spec/1-0-0/OpenLineage.json#/definitions/RunEvent"
+  "schemaURL" : "https://openlineage.io/spec/1-0-1/OpenLineage.json#/definitions/RunEvent"
 }
