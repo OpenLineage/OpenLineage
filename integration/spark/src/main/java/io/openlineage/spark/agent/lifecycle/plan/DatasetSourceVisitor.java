@@ -1,15 +1,20 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+
+import org.apache.spark.sql.connector.catalog.Table;
+import org.apache.spark.sql.connector.catalog.TableProvider;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import org.apache.spark.sql.execution.datasources.v2.WriteToDataSourceV2;
-import org.apache.spark.sql.sources.v2.DataSourceV2;
-import org.apache.spark.sql.sources.v2.reader.DataSourceReader;
+// import org.apache.spark.sql.sources.v2.DataSourceV2;
+// import org.apache.spark.sql.sources.v2.reader.DataSourceReader;
 import scala.runtime.AbstractPartialFunction;
 
 /**
@@ -25,6 +30,7 @@ import scala.runtime.AbstractPartialFunction;
  * and/or {@link org.apache.spark.sql.sources.v2.writer.DataSourceWriter} instances to {@link
  * DatasetSource}s.
  */
+@Slf4j
 public class DatasetSourceVisitor
     extends AbstractPartialFunction<LogicalPlan, List<OpenLineage.Dataset>> {
 
@@ -34,6 +40,7 @@ public class DatasetSourceVisitor
   }
 
   private Optional<DatasetSource> findDatasetSource(LogicalPlan plan) {
+    log.info("CALLED WITH " + plan.getClass().getName());
     if (plan instanceof LogicalRelation) {
       if (((LogicalRelation) plan).relation() instanceof DatasetSource) {
         return Optional.of((DatasetSource) ((LogicalRelation) plan).relation());
@@ -43,20 +50,31 @@ public class DatasetSourceVisitor
       // WriteToDataSourceV2 LogicalPlan below.
     } else if (plan instanceof DataSourceV2Relation) {
       DataSourceV2Relation relation = (DataSourceV2Relation) plan;
-      DataSourceV2 source = relation.source();
-      DataSourceV2Relation dataSourceV2Relation =
-          DataSourceV2Relation.create(
-              source, relation.options(), relation.tableIdent(), relation.userSpecifiedSchema());
-      DataSourceReader reader = dataSourceV2Relation.newReader();
-      if (reader instanceof DatasetSource) {
-        return Optional.of((DatasetSource) dataSourceV2Relation);
-      }
+      log.error("Failed to find method DataSourceV2Relation.source() - probably using Spark 3");
+      Table table = relation.table();
+      log.error("TABLE");
+      log.error(table.properties().toString());
+      return Optional.of(new DatasetSource(){
+        public String namespace() {
+          String format = table.properties().getOrDefault("provider", "unknown");
+          String location = table.properties().getOrDefault("location", "unknown");
+          // On GCS: format=iceberg/parquet, (...) location=gs://test-bucket-ol/spark-wh/database/table 
+          return String.format("%s://%s", format, location);
+        }
+
+        public String name() {
+          return table.name();
+        }
+      });
+
+        // return Optional.empty();
+    }
 
       // Check the WriteToDataSourceV2's writer
-    } else if (plan instanceof WriteToDataSourceV2
-        && ((WriteToDataSourceV2) plan).writer() instanceof DatasetSource) {
-      return Optional.of((DatasetSource) ((WriteToDataSourceV2) plan).writer());
-    }
+    // } else if (plan instanceof WriteToDataSourceV2
+    //     && ((WriteToDataSourceV2) plan).writer() instanceof DatasetSource) {
+    //   return Optional.of((DatasetSource) ((WriteToDataSourceV2) plan).writer());
+    // }
     return Optional.empty();
   }
 

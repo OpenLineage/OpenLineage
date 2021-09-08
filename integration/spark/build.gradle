@@ -60,6 +60,7 @@ ext {
     junit5Version = '5.7.2'
     bytebuddyVersion = '1.10.21'
     sparkVersion = '2.4.7'
+    spark3Version = '3.1.2'
     jacksonVersion = '2.12.2'
     postgresqlVersion = '42.2.19'
     lombokVersion = '1.18.20'
@@ -80,15 +81,11 @@ dependencies {
     implementation "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
     implementation "com.fasterxml.jackson.module:jackson-module-scala_2.11:${jacksonVersion}"
-    compileOnly "org.apache.spark:spark-core_2.11:${sparkVersion}"
-    compileOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
-    compileOnly 'com.google.cloud.spark:spark-bigquery_2.11:0.21.1'
+    implementation "com.google.guava:guava:30.1.1-jre"
 
     testImplementation 'com.google.cloud.spark:spark-bigquery-with-dependencies_2.11:0.19.1'
     testImplementation "net.bytebuddy:byte-buddy-agent:${bytebuddyVersion}"
     testImplementation "net.bytebuddy:byte-buddy-dep:${bytebuddyVersion}"
-    testImplementation "org.apache.spark:spark-core_2.11:${sparkVersion}"
-    testImplementation "org.apache.spark:spark-sql_2.11:${sparkVersion}"
     testImplementation platform('org.junit:junit-bom:5.7.1')
     testImplementation "org.postgresql:postgresql:${postgresqlVersion}"
     testImplementation 'org.hamcrest:hamcrest-library:2.2'
@@ -104,6 +101,31 @@ dependencies {
     testCompile "org.mockito:mockito-core:${mockitoVersion}"
     testCompile "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
     testCompileOnly "org.projectlombok:lombok:${lombokVersion}"
+    if (project.getProperty('spark.version').startsWith('3')) {
+        compileOnly "com.fasterxml.jackson.module:jackson-module-scala_2.12:${jacksonVersion}"
+        compileOnly "org.apache.spark:spark-core_2.12:${spark3Version}"
+        compileOnly "org.apache.spark:spark-sql_2.12:${spark3Version}"
+        compileOnly 'com.google.cloud.spark:spark-bigquery_2.12:0.21.1'
+        runtimeOnly "com.fasterxml.jackson.module:jackson-module-scala_2.12:${jacksonVersion}"
+        testCompileOnly "org.apache.spark:spark-core_2.12:${spark3Version}"
+        testCompileOnly "org.apache.spark:spark-sql_2.12:${spark3Version}"
+        testCompileOnly 'com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:0.21.1'
+        testRuntimeOnly 'com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:0.21.1'
+        testRuntimeOnly "org.apache.spark:spark-core_2.12:${spark3Version}"
+        testRuntimeOnly "org.apache.spark:spark-sql_2.12:${spark3Version}"
+    } else {
+        compileOnly "com.fasterxml.jackson.module:jackson-module-scala_2.11:${jacksonVersion}"
+        compileOnly "org.apache.spark:spark-core_2.11:${sparkVersion}"
+        compileOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
+        compileOnly 'com.google.cloud.spark:spark-bigquery_2.11:0.21.1'
+        runtimeOnly "com.fasterxml.jackson.module:jackson-module-scala_2.11:${jacksonVersion}"
+        testCompileOnly "org.apache.spark:spark-core_2.11:${sparkVersion}"
+        testCompileOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
+        testCompileOnly 'com.google.cloud.spark:spark-bigquery-with-dependencies_2.11:0.21.1'
+        testRuntimeOnly 'com.google.cloud.spark:spark-bigquery-with-dependencies_2.11:0.21.1'
+        testRuntimeOnly "org.apache.spark:spark-core_2.11:${sparkVersion}"
+        testRuntimeOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
+    }
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 }
 

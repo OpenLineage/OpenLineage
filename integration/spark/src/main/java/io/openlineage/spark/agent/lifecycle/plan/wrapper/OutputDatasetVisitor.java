@@ -1,6 +1,8 @@
 package io.openlineage.spark.agent.lifecycle.plan.wrapper;
 
 import io.openlineage.client.OpenLineage;
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -13,6 +15,7 @@ import scala.runtime.AbstractPartialFunction;
  * io.openlineage.client.OpenLineage.OutputDataset}s and may apply output-specific facets to the
  * returned {@link io.openlineage.client.OpenLineage.OutputDataset}.
  */
+@Slf4j
 public class OutputDatasetVisitor
     extends AbstractPartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>> {
 
@@ -29,7 +32,9 @@ public class OutputDatasetVisitor
 
   @Override
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
+    log.error(this.visitor.getClass().getName());
     return visitor.apply(x).stream()
+        .filter(a -> a != null)
         .map(
             dataset ->
                 new OpenLineage.OutputDatasetBuilder()

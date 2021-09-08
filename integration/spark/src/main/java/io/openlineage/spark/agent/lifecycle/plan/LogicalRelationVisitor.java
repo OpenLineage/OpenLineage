@@ -87,7 +87,7 @@ public class LogicalRelationVisitor
 
   private OpenLineage.DatasetFacets getDatasetFacet(OpenLineage ol, LogicalRelation logRel) {
     return ol.newDatasetFacetsBuilder()
-        .documentation(ol.newDocumentationDatasetFacet(logRel.simpleString()))
+        .documentation(ol.newDocumentationDatasetFacet(logRel.toString()))
         .schema(PlanUtils.schemaFacet(logRel.schema()))
         .build();
   }
