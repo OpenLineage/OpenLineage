@@ -1,6 +1,16 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.2.1...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.2.2...HEAD)
+
+## [0.2.2](https://github.com/OpenLineage/OpenLineage/releases/tag/0.2.2) - 2021-09-08
+
+### Added
+* Implement OpenLineageValidationAction for Great Expectations [@collado-mike](https://github.com/collado-mike)
+* facet: add expectations assertions facet [@mobuchowski](https://github.com/mobuchowski)
+
+### Fixed
+* airflow: pendulum formatting fix, add tests [@mobuchowski](https://github.com/mobuchowski)
+* dbt: do not emit events if run_result file was not updated [@mobuchowski](https://github.com/mobuchowski)
 
 ## [0.2.1](https://github.com/OpenLineage/OpenLineage/releases/tag/0.2.1) - 2021-08-27
 
