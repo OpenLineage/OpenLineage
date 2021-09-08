@@ -72,7 +72,7 @@ dependencies {
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
-    implementation 'io.openlineage:openlineage-java:0.0.1-SNAPSHOT'
+    implementation "io.openlineage:openlineage-java:${project.version}"
     implementation 'org.javassist:javassist:3.27.0-GA'
     implementation 'com.github.ok2c.hc5:hc5-async-json:0.2.1'
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.0.3'
