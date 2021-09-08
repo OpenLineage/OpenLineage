@@ -174,9 +174,7 @@ task integrationTestSpark3(type: Test) {
     useJUnitPlatform {
         includeTags "integration-test"
     }
-    systemProperties = [
-            'spark.version'        : '3.1',
-    ]
+    systemProperty('spark.version', '3.1')
     dependsOn bumpVersionTestFiles, shadowJar
 }
 
