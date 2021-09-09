@@ -6,10 +6,9 @@ import io.openlineage.spark.agent.OpenLineageSparkListener;
 import io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.CommandPlanVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.DatasetSourceVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.InputDatasetVisitors;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRDDVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRelationVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.OutputDatasetVisitors;
+
 import java.net.URI;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;

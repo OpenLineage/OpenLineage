@@ -9,9 +9,8 @@ import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.facets.ErrorFacet;
 import io.openlineage.spark.agent.facets.LogicalPlanFacet;
 import io.openlineage.spark.agent.facets.UnknownEntryFacet;
-import io.openlineage.spark.agent.lifecycle.plan.PlanTraversal;
 import io.openlineage.spark.agent.lifecycle.plan.PlanUtils;
-import io.openlineage.spark.agent.lifecycle.plan.UnknownEntryFacetListener;
+
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;

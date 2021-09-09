@@ -1,4 +1,4 @@
-package io.openlineage.spark.agent.lifecycle.plan;
+package io.openlineage.spark.agent.lifecycle;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -15,7 +15,7 @@ import scala.runtime.AbstractPartialFunction;
  * @param <R>
  */
 @Builder
-public class PlanTraversal<T, R> extends AbstractPartialFunction<T, R> {
+class PlanTraversal<T, R> extends AbstractPartialFunction<T, R> {
 
   PartialFunction<T, R> processor;
   @Singular List<Consumer<T>> visitedNodeListeners;

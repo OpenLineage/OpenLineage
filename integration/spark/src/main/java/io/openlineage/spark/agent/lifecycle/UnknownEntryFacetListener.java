@@ -1,4 +1,4 @@
-package io.openlineage.spark.agent.lifecycle.plan;
+package io.openlineage.spark.agent.lifecycle;
 
 import static java.util.Optional.ofNullable;
 import static scala.collection.JavaConversions.mapAsJavaMap;
@@ -14,6 +14,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.AttributeSet;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -33,7 +34,7 @@ import scala.collection.JavaConversions;
  * org.apache.spark.sql.execution.LogicalRDD}, which encapsulates {@link org.apache.spark.rdd.RDD}s,
  * which may point to parseable data sources.
  */
-public class UnknownEntryFacetListener implements Consumer<LogicalPlan> {
+class UnknownEntryFacetListener implements Consumer<LogicalPlan> {
 
   private final Map<LogicalPlan, Object> visitedNodes = new IdentityHashMap<>();
   private final LogicalPlanSerializer planSerializer = LogicalPlanSerializer.getInstance();

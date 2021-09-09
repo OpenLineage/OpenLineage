@@ -1,10 +1,12 @@
-package io.openlineage.spark.agent.lifecycle.plan;
+package io.openlineage.spark.agent.lifecycle;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+
+import io.openlineage.spark.agent.lifecycle.PlanTraversal;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import scala.runtime.AbstractPartialFunction;
