@@ -14,7 +14,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.AttributeSet;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;

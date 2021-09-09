@@ -4,8 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.openlineage.spark.agent.facets.UnknownEntryFacet;
 import java.util.Optional;
-
-import io.openlineage.spark.agent.lifecycle.UnknownEntryFacetListener;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.expressions.NamedExpression;

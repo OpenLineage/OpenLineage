@@ -5,6 +5,8 @@ import io.openlineage.spark.agent.client.OpenLineageClient;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import io.openlineage.spark.agent.util.PlanUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.nio.file.Path;
 import java.util.List;
 import org.apache.hadoop.io.LongWritable;

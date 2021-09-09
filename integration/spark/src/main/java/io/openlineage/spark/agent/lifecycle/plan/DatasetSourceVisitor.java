@@ -4,6 +4,8 @@ import io.openlineage.client.OpenLineage;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+
+import io.openlineage.spark.agent.util.PlanUtils;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;

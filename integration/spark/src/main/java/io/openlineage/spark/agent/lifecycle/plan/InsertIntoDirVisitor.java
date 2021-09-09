@@ -3,6 +3,9 @@ package io.openlineage.spark.agent.lifecycle.plan;
 import io.openlineage.client.OpenLineage;
 import java.util.Collections;
 import java.util.List;
+
+import io.openlineage.spark.agent.util.PlanUtils;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.catalyst.catalog.CatalogStorageFormat;

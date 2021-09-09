@@ -8,7 +8,6 @@ import io.openlineage.spark.agent.lifecycle.plan.CommandPlanVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.DatasetSourceVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRDDVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRelationVisitor;
-
 import java.net.URI;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;

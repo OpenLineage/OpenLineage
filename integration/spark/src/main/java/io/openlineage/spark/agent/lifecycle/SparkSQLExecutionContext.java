@@ -1,6 +1,6 @@
 package io.openlineage.spark.agent.lifecycle;
 
-import static io.openlineage.spark.agent.lifecycle.plan.PlanUtils.merge;
+import static io.openlineage.spark.agent.util.PlanUtils.merge;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
@@ -9,8 +9,7 @@ import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.facets.ErrorFacet;
 import io.openlineage.spark.agent.facets.LogicalPlanFacet;
 import io.openlineage.spark.agent.facets.UnknownEntryFacet;
-import io.openlineage.spark.agent.lifecycle.plan.PlanUtils;
-
+import io.openlineage.spark.agent.util.PlanUtils;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;

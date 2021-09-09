@@ -4,6 +4,8 @@ import io.openlineage.client.OpenLineage;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
+
+import io.openlineage.spark.agent.util.PlanUtils;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.InsertIntoHadoopFsRelationCommand;
 import scala.runtime.AbstractPartialFunction;
