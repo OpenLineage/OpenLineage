@@ -3,31 +3,23 @@ package io.openlineage.spark.agent.lifecycle.plan;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.util.PlanUtils;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import io.openlineage.spark.agent.util.PlanUtils;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.InsertIntoDataSourceCommand;
 import scala.PartialFunction;
-import scala.runtime.AbstractPartialFunction;
 
 /**
  * {@link LogicalPlan} visitor that matches an {@link InsertIntoDataSourceCommand} and extracts the
  * output {@link OpenLineage.Dataset} being written.
  */
-public class InsertIntoDataSourceVisitor
-    extends AbstractPartialFunction<LogicalPlan, List<OpenLineage.Dataset>> {
+public class InsertIntoDataSourceVisitor extends QueryPlanVisitor<InsertIntoDataSourceCommand> {
   private final List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> datasetProviders;
 
   public InsertIntoDataSourceVisitor(
       List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> datasetProviders) {
     this.datasetProviders = datasetProviders;
-  }
-
-  @Override
-  public boolean isDefinedAt(LogicalPlan x) {
-    return x instanceof InsertIntoDataSourceCommand;
   }
 
   @Override

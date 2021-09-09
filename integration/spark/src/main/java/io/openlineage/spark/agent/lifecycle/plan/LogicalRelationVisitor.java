@@ -2,11 +2,10 @@ package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.client.OpenLineageClient;
+import io.openlineage.spark.agent.util.PlanUtils;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import io.openlineage.spark.agent.util.PlanUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
@@ -17,7 +16,6 @@ import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 import scala.collection.JavaConversions;
 import scala.runtime.AbstractFunction0;
-import scala.runtime.AbstractPartialFunction;
 
 /**
  * {@link LogicalPlan} visitor that attempts to extract a {@link OpenLineage.Dataset} from a {@link
@@ -50,8 +48,7 @@ import scala.runtime.AbstractPartialFunction;
  * complete list of datasets referenced.
  */
 @Slf4j
-public class LogicalRelationVisitor
-    extends AbstractPartialFunction<LogicalPlan, List<OpenLineage.Dataset>> {
+public class LogicalRelationVisitor extends QueryPlanVisitor<LogicalRelation> {
   private final SparkContext context;
   private final String jobNamespace;
 

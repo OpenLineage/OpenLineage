@@ -3,19 +3,17 @@ package io.openlineage.spark.agent.lifecycle.plan;
 import com.google.cloud.spark.bigquery.BigQueryRelation;
 import com.google.cloud.spark.bigquery.BigQueryRelationProvider;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.util.PlanUtils;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
-
-import io.openlineage.spark.agent.util.PlanUtils;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.SaveIntoDataSourceCommand;
 import org.apache.spark.sql.sources.CreatableRelationProvider;
-import scala.runtime.AbstractPartialFunction;
 
 /**
  * {@link LogicalPlan} visitor that matches {@link BigQueryRelation}s or {@link
@@ -25,8 +23,7 @@ import scala.runtime.AbstractPartialFunction;
  * bigquery://&lt;projectId&gt;.&lt;.datasetId&gt;.&lt;tableName&gt;</code> . The namespace for
  * bigquery tables is always <code>bigquery</code> and the name is the FQN.
  */
-public class BigQueryNodeVisitor
-    extends AbstractPartialFunction<LogicalPlan, List<OpenLineage.Dataset>> {
+public class BigQueryNodeVisitor extends QueryPlanVisitor<LogicalPlan> {
   private final SQLContext sqlContext;
 
   public BigQueryNodeVisitor(SQLContext sqlContext) {
