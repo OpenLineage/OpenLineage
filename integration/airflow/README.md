@@ -75,8 +75,44 @@ If you do nothing, OpenLineage backend will receive the `Job` and the `Run` from
 
 #### Great Expectations
 
-`great_expectations` extractor requires more care than that. For technical reasons, you need to manually provide dataset
-name and namespace for dataset provided to great expectations operator by calling function `openlineage.airflow.extractors.great_expectations_extractor.set_dataset_info`.
+Great Expectations integration works by providing OpenLineageValidationAction. You need to include it into your `action_list` in `great_expectations.yml`.
+
+The following example illustrates example change in default configuration: 
+```diff
+validation_operators:
+  action_list_operator:
+    # To learn how to configure sending Slack notifications during evaluation
+    # (and other customizations), read: https://docs.greatexpectations.io/en/latest/autoapi/great_expectations/validation_operators/index.html#great_expectations.validation_operators.ActionListValidationOperator
+    class_name: ActionListValidationOperator
+    action_list:
+      - name: store_validation_result
+        action:
+          class_name: StoreValidationResultAction
+      - name: store_evaluation_params
+        action:
+          class_name: StoreEvaluationParametersAction
+      - name: update_data_docs
+        action:
+          class_name: UpdateDataDocsAction
++     - name: openlineage
++       action:
++         class_name: OpenLineageValidationAction
++         module_name: openlineage.common.provider.great_expectations.action
+      # - name: send_slack_notification_on_validation_result
+      #   action:
+      #     class_name: SlackNotificationAction
+      #     # put the actual webhook URL in the uncommitted/config_variables.yml file
+      #     slack_webhook: ${validation_notification_slack_webhook}
+      #     notify_on: all # possible values: "all", "failure", "success"
+      #     renderer:
+      #       module_name: great_expectations.render.renderer.slack_renderer
+      #       class_name: SlackRenderer
+```
+
+If you're using `GreatExpectationsOperator`, you need to set `validation_operator_name` to operator that includes OpenLineageValidationAction.
+Setting it in `great_expectations.yml` files isn't enough - the operator overrides it with default name if it's not provided.
+
+To see example of working configuration, you can see [DAG](https://github.com/OpenLineage/OpenLineage/blob/main/integration/airflow/tests/integration/airflow/dags/greatexpectations_dag.py) and [Great Expectations configuration](https://github.com/OpenLineage/OpenLineage/tree/main/integration/airflow/tests/integration/data/great_expectations) in integration tests.
 
 ## Usage
 
