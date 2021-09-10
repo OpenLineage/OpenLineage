@@ -10,6 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import time
+import os
 import copy
 from typing import Optional
 
@@ -27,7 +28,13 @@ from openlineage.airflow.utils import (
     new_lineage_run_id
 )
 
-from openlineage.airflow.adapter import OpenLineageAdapter
+from openlineage.airflow.adapter import OpenLineageAdapter, _DAG_DEFAULT_NAMESPACE
+
+_DAG_NAMESPACE = os.getenv('OPENLINEAGE_NAMESPACE', None)
+if not _DAG_NAMESPACE:
+    _DAG_NAMESPACE = os.getenv(
+        'MARQUEZ_NAMESPACE', _DAG_DEFAULT_NAMESPACE
+    )
 
 _ADAPTER = OpenLineageAdapter()
 extractor_mapper = Extractors()
@@ -43,7 +50,7 @@ def lineage_run_id(run_id, task):
     PythonOperator(
         task_id='render_template',
         python_callable=my_task_function,
-        op_args=['{{ task_run_id(run_id, task) }}'], # task_run_id macro invoked
+        op_args=['{{ lineage_run_id(run_id, task) }}'], # lineage_run_id macro invoked
         provide_context=False,
         dag=dag
     )
@@ -53,7 +60,7 @@ def lineage_run_id(run_id, task):
     :return:
     """
     with create_session() as session:
-        name = DAG._openlineage_job_name(task.dag_id, task.task_id)
+        name = openlineage_job_name(task.dag_id, task.task_id)
         ids = JobIdMapping.get(name, run_id, session)
         if ids is None:
             return ""
@@ -63,6 +70,41 @@ def lineage_run_id(run_id, task):
             return str(ids)
 
 
+def lineage_parent_id(run_id, task):
+    """
+    Macro function which returns the generated job and run id for a given task. This
+    can be used to forward the ids from a task to a child run so the job
+    hierarchy is preserved. Child run can create ParentRunFacet from those ids.
+    Invoke as a jinja template, e.g.
+
+    PythonOperator(
+        task_id='render_template',
+        python_callable=my_task_function,
+        op_args=['{{ lineage_parent_id(run_id, task) }}'], # lineage_run_id macro invoked
+        provide_context=False,
+        dag=dag
+    )
+
+    :param run_id:
+    :param task:
+    :return:
+    """
+    with create_session() as session:
+        job_name = openlineage_job_name(task.dag_id, task.task_id)
+        ids = JobIdMapping.get(job_name, run_id, session)
+        if ids is None:
+            return ""
+        elif isinstance(ids, list):
+            run_id = "" if len(ids) == 0 else ids[0]
+        else:
+            run_id = str(ids)
+        return f"{_DAG_NAMESPACE}/{job_name}/{run_id}"
+
+
+def openlineage_job_name(dag_id: str, task_id: str) -> str:
+    return f'{dag_id}.{task_id}'
+
+
 class DAG(airflow.models.DAG):
     def __init__(self, *args, **kwargs):
         self.log.info("openlineage-airflow dag starting")
@@ -70,6 +112,7 @@ class DAG(airflow.models.DAG):
         if kwargs.__contains__("user_defined_macros"):
             macros = kwargs["user_defined_macros"]
         macros["lineage_run_id"] = lineage_run_id
+        macros["lineage_parent_id"] = lineage_parent_id
         kwargs["user_defined_macros"] = macros
         if kwargs.__contains__("lineage_custom_extractors"):
             for operator, extractor in kwargs['lineage_custom_extractors'].items():
@@ -118,7 +161,7 @@ class DAG(airflow.models.DAG):
             try:
                 task_metadata = self._extract_metadata(dagrun, task)
 
-                job_name = self._openlineage_job_name(self.dag_id, task.task_id)
+                job_name = openlineage_job_name(self.dag_id, task.task_id)
                 run_id = new_lineage_run_id(dagrun.run_id, task_id)
 
                 task_run_id = _ADAPTER.start_task(
@@ -182,7 +225,7 @@ class DAG(airflow.models.DAG):
             self._openlineage_job_name_from_task_instance(task_instance), dagrun.run_id, session)
         task_metadata = self._extract_metadata(dagrun, task, task_instance)
 
-        job_name = self._openlineage_job_name(self.dag_id, task.task_id)
+        job_name = openlineage_job_name(self.dag_id, task.task_id)
         run_id = new_lineage_run_id(dagrun.run_id, task.task_id)
 
         if not task_run_id:
@@ -270,7 +313,7 @@ class DAG(airflow.models.DAG):
                 f'Unable to find an extractor. {task_info}')
 
         return TaskMetadata(
-            name=self._openlineage_job_name(self.dag_id, task.task_id)
+            name=openlineage_job_name(self.dag_id, task.task_id)
         )
 
     def _extract(self, extractor, task_instance) -> Optional[TaskMetadata]:
@@ -307,11 +350,7 @@ class DAG(airflow.models.DAG):
 
     @staticmethod
     def _openlineage_job_name_from_task_instance(task_instance):
-        return DAG._openlineage_job_name(task_instance.dag_id, task_instance.task_id)
-
-    @staticmethod
-    def _openlineage_job_name(dag_id: str, task_id: str) -> str:
-        return f'{dag_id}.{task_id}'
+        return openlineage_job_name(task_instance.dag_id, task_instance.task_id)
 
     @staticmethod
     def _now_ms():

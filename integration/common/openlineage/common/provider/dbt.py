@@ -9,7 +9,7 @@ from typing import List, Tuple, Dict, Optional
 import attr
 
 from openlineage.client.facet import DataSourceDatasetFacet, SchemaDatasetFacet, SchemaField, \
-    SqlJobFacet, OutputStatisticsOutputDatasetFacet
+    SqlJobFacet, OutputStatisticsOutputDatasetFacet, ParentRunFacet
 from openlineage.client.run import RunEvent, RunState, Run, Job, Dataset, OutputDataset
 from openlineage.client.facet import Assertion, DataQualityAssertionsDatasetFacet
 from openlineage.common.utils import get_from_nullable_chain, get_from_multiple_chains
@@ -50,6 +50,20 @@ class DbtRunResult:
     fail: Optional[RunEvent] = attr.ib(default=None)
 
 
+@attr.s
+class ParentRunMetadata:
+    run_id: str = attr.ib()
+    job_name: str = attr.ib()
+    job_namespace: str = attr.ib()
+
+    def to_openlineage(self) -> ParentRunFacet:
+        return ParentRunFacet.create(
+            runId=self.run_id,
+            name=self.job_name,
+            namespace=self.job_namespace
+        )
+
+
 class DbtArtifactProcessor:
     def __init__(
         self,
@@ -57,10 +71,11 @@ class DbtArtifactProcessor:
         project_dir: str,
         profile_name: Optional[str] = None,
         target: Optional[str] = None,
-        skip_errors: bool = False
+        skip_errors: bool = False,
     ):
         self.producer = producer
         self.dir = os.path.abspath(project_dir)
+        self._dbt_run_metadata = None
         self.profile_name = profile_name
         self.target = target
         self.project = self.load_yaml(os.path.join(project_dir, 'dbt_project.yml'))
@@ -73,6 +88,14 @@ class DbtArtifactProcessor:
             self.dir, self.project['target-path'], 'run_results.json'
         )
         self.catalog_path = os.path.join(self.dir, self.project['target-path'], 'catalog.json')
+
+    @property
+    def dbt_run_metadata(self):
+        return self._dbt_run_metadata
+
+    @dbt_run_metadata.setter
+    def dbt_run_metadata(self, metadata: ParentRunMetadata):
+        self._dbt_run_metadata = metadata
 
     def parse(self) -> DbtEvents:
         """
@@ -270,7 +293,10 @@ class DbtArtifactProcessor:
                 eventType=RunState.COMPLETE,
                 eventTime=completed_at,
                 run=Run(
-                    runId=run_id
+                    runId=run_id,
+                    facets={
+                        "parent": self._dbt_run_metadata.to_openlineage()
+                    }
                 ),
                 job=Job(
                     namespace=self.job_namespace,
@@ -319,7 +345,10 @@ class DbtArtifactProcessor:
                     eventType=RunState.COMPLETE,
                     eventTime=run.completed_at,
                     run=Run(
-                        runId=run.run_id
+                        runId=run.run_id,
+                        facets={
+                            "parent": self._dbt_run_metadata.to_openlineage()
+                        }
                     ),
                     job=Job(
                         namespace=self.job_namespace,
@@ -340,7 +369,14 @@ class DbtArtifactProcessor:
                     eventType=RunState.FAIL,
                     eventTime=run.completed_at,
                     run=Run(
-                        runId=run.run_id
+                        runId=run.run_id,
+                        facets={
+                            "parent": ParentRunFacet.create(
+                                runId=self.dbt_run_metadata.run_id,
+                                namespace=self.dbt_run_metadata.job_namespace,
+                                name=self.dbt_run_metadata.job_name
+                            )
+                        }
                     ),
                     job=Job(
                         namespace=self.job_namespace,

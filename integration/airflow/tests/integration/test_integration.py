@@ -103,6 +103,7 @@ def check_matches(expected_requests, received_requests):
                     expected['job']['name'] == request['job']['name']:
                 is_compared = True
                 if not match(expected, request):
+                    log.info(f"failed to compare expected {expected}\nwith request {request}")
                     return False
                 break
         if not is_compared:
@@ -144,6 +145,7 @@ def test_integration(dag_id, request_path):
 
     # (3) Verify events emitted
     if not check_events_emitted(expected_requests):
+        log.info(f"failed to compare events!")
         sys.exit(1)
 
 
