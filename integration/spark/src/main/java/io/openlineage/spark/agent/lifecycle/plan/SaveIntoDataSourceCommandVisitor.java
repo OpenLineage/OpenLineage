@@ -3,6 +3,7 @@ package io.openlineage.spark.agent.lifecycle.plan;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.util.PlanUtils;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -16,7 +17,6 @@ import org.apache.spark.sql.sources.RelationProvider;
 import org.apache.spark.sql.sources.SchemaRelationProvider;
 import scala.Option;
 import scala.PartialFunction;
-import scala.runtime.AbstractPartialFunction;
 
 /**
  * {@link LogicalPlan} visitor that matches an {@link SaveIntoDataSourceCommand} and extracts the
@@ -24,8 +24,7 @@ import scala.runtime.AbstractPartialFunction;
  * BaseRelation}, we wrap it with an artificial {@link LogicalRelation} so we can delegate to other
  * plan visitors.
  */
-public class SaveIntoDataSourceCommandVisitor
-    extends AbstractPartialFunction<LogicalPlan, List<OpenLineage.Dataset>> {
+public class SaveIntoDataSourceCommandVisitor extends QueryPlanVisitor<SaveIntoDataSourceCommand> {
   private final SQLContext sqlContext;
   private final List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> relationVisitors;
 

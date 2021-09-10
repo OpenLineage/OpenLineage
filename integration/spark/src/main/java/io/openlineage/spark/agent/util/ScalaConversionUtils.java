@@ -1,4 +1,4 @@
-package io.openlineage.spark.agent.lifecycle.plan;
+package io.openlineage.spark.agent.util;
 
 import java.util.List;
 import java.util.Optional;

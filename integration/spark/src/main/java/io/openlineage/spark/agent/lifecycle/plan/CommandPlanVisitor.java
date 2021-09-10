@@ -1,6 +1,8 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.util.PlanUtils;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -11,7 +13,6 @@ import org.apache.spark.sql.execution.command.InsertIntoDataSourceDirCommand;
 import org.apache.spark.sql.execution.datasources.InsertIntoDataSourceCommand;
 import org.apache.spark.sql.execution.datasources.SaveIntoDataSourceCommand;
 import scala.PartialFunction;
-import scala.runtime.AbstractPartialFunction;
 
 /**
  * {@link LogicalPlan} visitor that extracts the input query of certain write commands that don't
@@ -19,8 +20,7 @@ import scala.runtime.AbstractPartialFunction;
  * normally by calling {@link LogicalPlan#collect(PartialFunction)}, but children that aren't
  * exposed get skipped in the collect call, so we need to root them out here.
  */
-public class CommandPlanVisitor
-    extends AbstractPartialFunction<LogicalPlan, List<OpenLineage.Dataset>> {
+public class CommandPlanVisitor extends QueryPlanVisitor<LogicalPlan> {
   private final PartialFunction<LogicalPlan, List<OpenLineage.Dataset>> inputVisitors;
 
   public CommandPlanVisitor(

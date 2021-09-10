@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.facets.OutputStatisticsFacet;
-import io.openlineage.spark.agent.lifecycle.plan.PlanUtils;
+import io.openlineage.spark.agent.util.PlanUtils;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
