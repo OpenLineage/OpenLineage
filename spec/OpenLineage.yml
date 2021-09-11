@@ -18,7 +18,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: 'OpenLineage.json#/definitions/RunEvent'
+              $ref: 'OpenLineage.json#/$defs/RunEvent'
       responses:
         '200':
           description: OK

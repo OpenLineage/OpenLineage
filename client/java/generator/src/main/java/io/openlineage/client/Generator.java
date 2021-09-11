@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Arrays;
@@ -49,10 +50,7 @@ public class Generator {
       if (url.getProtocol().equals("file")) {
         File file = new File(url.toURI());
         if (file.isDirectory()) {
-          File[] jsonFiles = file.listFiles((File dir, String name) -> name.endsWith(JSON_EXT));
-          for (File jsonFile : jsonFiles) {
-            urls.add(jsonFile.toURI().toURL());
-          }
+          addURLs(urls, file);
         } else {
           urls.add(url);
         }
@@ -62,6 +60,20 @@ public class Generator {
     }
     logger.info("Generating code for schemas:\n" + urls.stream().map(Object::toString).collect(Collectors.joining("\n")));
     generate(urls, new File("src/main/java/io/openlineage/client/"));
+  }
+
+  private static void addURLs(Set<URL> urls, File dir)
+      throws URISyntaxException, MalformedURLException {
+    System.out.println("Looking for json files in: " + dir);
+    File[] jsonFiles = dir.listFiles((File f, String name) -> name.endsWith(JSON_EXT));
+    for (File jsonFile : jsonFiles) {
+      System.out.println("adding: " + jsonFile);
+      urls.add(jsonFile.toURI().toURL());
+    }
+    File[] subDirs = dir.listFiles(File::isDirectory);
+    for (File subDir : subDirs) {
+      addURLs(urls, subDir);
+    }
   }
 
   public static URL verifySchemaVersion(URL url) throws IOException {
@@ -76,7 +88,7 @@ public class Generator {
           throw new RuntimeException("You must increment the version when modifying the schema. The current schema at " + url + " has the $id " + idURL + " but the version at that URL does not match.");
         }
       } catch (FileNotFoundException e) {
-        logger.warn("This version of the spec is not published yet: " + e.toString());
+        logger.warn("This version of the spec is not published yet: " + idURL);
       }
       return idURL;
     }

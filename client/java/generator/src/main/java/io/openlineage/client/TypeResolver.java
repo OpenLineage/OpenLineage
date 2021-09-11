@@ -163,6 +163,7 @@ public class TypeResolver {
         @Override
         public ResolvedType visit(RefType refType) {
           String absolutePointer = refType.getPointer();
+          System.out.println("ref: " + absolutePointer );
           int anchorIndex = absolutePointer.indexOf('#');
           String pointer = absolutePointer.substring(anchorIndex + 1);
           String typeName = titleCase(lastPart(pointer));
@@ -174,6 +175,7 @@ public class TypeResolver {
             refContainer = container;
           }
           String key = refContainer + "." + typeName;
+          System.out.println(key + " in types: " + types.keySet() );
           if (types.containsKey(key)) {
             return types.get(key);
           }
