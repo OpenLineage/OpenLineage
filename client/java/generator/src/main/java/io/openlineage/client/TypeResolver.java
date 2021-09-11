@@ -29,6 +29,9 @@ import io.openlineage.client.SchemaParser.RefType;
 import io.openlineage.client.SchemaParser.Type;
 import io.openlineage.client.SchemaParser.TypeVisitor;
 
+/**
+ * Resolves the types in a Schema. (ref, etc)
+ */
 public class TypeResolver {
 
   private Map<String, ObjectResolvedType> types = new HashMap<>();
@@ -37,7 +40,7 @@ public class TypeResolver {
 
   private Map<URL, ResolvedType> rootResolvedTypePerURL = new HashMap<URL, TypeResolver.ResolvedType>();
 
-  public TypeResolver(List<URL> baseUrls) {
+  public TypeResolver(Collection<URL> baseUrls) {
     super();
     for (final URL baseUrl : baseUrls) {
 

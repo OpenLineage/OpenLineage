@@ -59,11 +59,7 @@ task generateCode(type: JavaExec) {
     main = 'io.openlineage.client.Generator'
     def rootUrl = "file:$rootDir/../../spec/".toString()
     args rootUrl + "OpenLineage.json"
-    args rootUrl + "RunFacets.json"
-    args rootUrl + "JobFacets.json"
-    args rootUrl + "DatasetFacets.json"
-    args rootUrl + "InputDatasetFacets.json"
-    args rootUrl + "OutputDatasetFacets.json"
+    args rootUrl
 }
 
 openApiGenerate {

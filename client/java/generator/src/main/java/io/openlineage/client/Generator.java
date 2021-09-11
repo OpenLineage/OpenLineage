@@ -5,13 +5,15 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,13 +38,29 @@ public class Generator {
    * @throws JsonParseException if the spec is not valid
    * @throws JsonMappingException if the spec is not valid
    * @throws IOException if the spec can't be read or class can not be generated
+   * @throws URISyntaxException
    */
-  public static void main(String[] args) throws JsonParseException, JsonMappingException, IOException {
+  public static void main(String[] args) throws JsonParseException, JsonMappingException, IOException, URISyntaxException {
     List<String> baseURLs = Arrays.asList(args);
-    List<URL> urls = new ArrayList<URL>(baseURLs.size());
+    Set<URL> urls = new LinkedHashSet<>();
     for (String baseURL : baseURLs) {
-      urls.add(new URL(baseURL));
+      URL url = new URL(baseURL);
+
+      if (url.getProtocol().equals("file")) {
+        File file = new File(url.toURI());
+        if (file.isDirectory()) {
+          File[] jsonFiles = file.listFiles((File dir, String name) -> name.endsWith(JSON_EXT));
+          for (File jsonFile : jsonFiles) {
+            urls.add(jsonFile.toURI().toURL());
+          }
+        } else {
+          urls.add(url);
+        }
+      } else {
+        urls.add(url);
+      }
     }
+    logger.info("Generating code for schemas:\n" + urls.stream().map(Object::toString).collect(Collectors.joining("\n")));
     generate(urls, new File("src/main/java/io/openlineage/client/"));
   }
 
@@ -65,7 +83,7 @@ public class Generator {
     return url;
   }
 
-  public static void generate(List<URL> urls, File outputBase) {
+  public static void generate(Set<URL> urls, File outputBase) {
     if (!outputBase.exists()) {
       if (!outputBase.mkdirs()) {
         throw new RuntimeException("can't create output " + outputBase.getAbsolutePath());
@@ -75,23 +93,24 @@ public class Generator {
       TypeResolver typeResolver = new TypeResolver(urls);
       Map<String, ObjectResolvedType> facetContainers = indexFacetContainersByType(typeResolver);
       enrichFacetContainersWithFacets(typeResolver, facetContainers);
+
+      Map<String, URL> containerToID = new HashMap<>();
       for (URL url : urls) {
-        if (!url.getPath().contains("OpenLineage.json")) {
-          continue;
-        }
-        logger.info("Generating from URL: " + url);
-        url = verifySchemaVersion(url);
         String path = url.getPath();
+        url = verifySchemaVersion(url);
         if (path.endsWith(JSON_EXT)) {
           String containerClassName = path.substring(path.lastIndexOf('/') + 1, path.lastIndexOf('.'));
-          String javaPath = containerClassName + ".java";
-          File output = new File(outputBase, javaPath);
-          try (PrintWriter printWriter = new PrintWriter(output)) {
-            new JavaPoetGenerator(typeResolver, containerClassName, url).generate(printWriter);
-          }
+          containerToID.put(containerClassName, url);
         } else {
           throw new IllegalArgumentException("inputs should end in " + JSON_EXT + " got " + path);
         }
+      }
+
+      String containerClassName = "OpenLineage";
+      String javaPath = containerClassName + ".java";
+      File output = new File(outputBase, javaPath);
+      try (PrintWriter printWriter = new PrintWriter(output)) {
+        new JavaPoetGenerator(typeResolver, containerClassName, containerToID).generate(printWriter);
       }
 
     } catch (RuntimeException e) {

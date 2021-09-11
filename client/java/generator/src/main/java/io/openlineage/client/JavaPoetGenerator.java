@@ -53,17 +53,17 @@ public class JavaPoetGenerator {
   private static final String PACKAGE = "io.openlineage.client";
 
   private final TypeResolver typeResolver;
-  private final URL baseURL;
+  private final Map<String, URL> containerToID;
   private final String containerClassName;
   private final String containerClass;
 
-  public JavaPoetGenerator(TypeResolver typeResolver, String containerClassName, URL baseURL) {
+  public JavaPoetGenerator(TypeResolver typeResolver, String containerClassName, Map<String, URL> containerToID) {
     this.typeResolver = typeResolver;
     this.containerClassName = containerClassName;
-    if (baseURL == null) {
+    if (containerToID == null) {
       throw new RuntimeException("missing baseURL");
     }
-    this.baseURL = baseURL;
+    this.containerToID = containerToID;
     this.containerClass = PACKAGE + "." + containerClassName;
   }
 
@@ -132,7 +132,7 @@ public class JavaPoetGenerator {
 
     for (ResolvedField f : type.getProperties()) {
       if (isASchemaUrlField(f)) {
-        String schemaURL = baseURL + "#/definitions/" + type.getName();
+        String schemaURL = containerToID.get(type.getContainer()) + "#/definitions/" + type.getName();
         constructor.addCode("this.$N = URI.create($S);\n", f.getName(), schemaURL);
       } else {
         constructor.addJavadoc("@param $N $N\n", f.getName(), f.getDescription() == null ? "the " + f.getName() : f.getDescription());
@@ -442,7 +442,7 @@ public class JavaPoetGenerator {
 
   private void setSchemaURLField(
       ObjectResolvedType type, MethodSpec.Builder constructor, ResolvedField f) {
-    String schemaURL = baseURL + "#/$defs/" + type.getName();
+    String schemaURL = containerToID.get(type.getContainer()) + "#/$defs/" + type.getName();
     constructor.addCode("this.$N = URI.create($S);\n", f.getName(), schemaURL);
   }
 

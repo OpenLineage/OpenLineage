@@ -1,10 +1,11 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://openlineage.io/spec/1-0-0/OutputDatasetFacets.json",
     "$defs": {
         "OutputStatisticsOutputDatasetFacet": {
           "allOf": [
             {
-              "$ref": "OpenLineage.json#/definitions/OutputDatasetFacet"
+              "$ref": "OpenLineage.json#/$defs/OutputDatasetFacet"
             },
             {
               "type": "object",

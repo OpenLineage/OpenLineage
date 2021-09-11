@@ -1,10 +1,11 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://openlineage.io/spec/1-0-0/DatasetFacets.json",
     "$defs": {
         "DocumentationDatasetFacet": {
             "allOf": [
                 {
-                    "$ref": "OpenLineage.json#/definitions/DatasetFacet"
+                    "$ref": "OpenLineage.json#/$defs/DatasetFacet"
                 },
                 {
                     "type": "object",
@@ -25,7 +26,7 @@
         "SchemaDatasetFacet": {
             "allOf": [
                 {
-                    "$ref": "OpenLineage.json#/definitions/DatasetFacet"
+                    "$ref": "OpenLineage.json#/$defs/DatasetFacet"
                 },
                 {
                     "type": "object",
@@ -65,7 +66,7 @@
         "DatasourceDatasetFacet": {
             "allOf": [
                 {
-                    "$ref": "OpenLineage.json#/definitions/DatasetFacet"
+                    "$ref": "OpenLineage.json#/$defs/DatasetFacet"
                 },
                 {
                     "type": "object",

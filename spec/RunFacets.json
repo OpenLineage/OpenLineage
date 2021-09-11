@@ -1,10 +1,11 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://openlineage.io/spec/1-0-0/RunFacets.json",
     "$defs": {
         "NominalTimeRunFacet": {
             "allOf": [
                 {
-                    "$ref": "OpenLineage.json#/definitions/RunFacet"
+                    "$ref": "OpenLineage.json#/$defs/RunFacet"
                 },
                 {
                     "type": "object",
@@ -33,7 +34,7 @@
             "description": "the id of the parent run and job, iff this run was spawn from an other run (for example, the Dag run scheduling its tasks)",
             "allOf": [
                 {
-                    "$ref": "OpenLineage.json#/definitions/RunFacet"
+                    "$ref": "OpenLineage.json#/$defs/RunFacet"
                 },
                 {
                     "type": "object",
