@@ -1,4 +1,4 @@
-package io.openlineage.spark.agent.lifecycle.plan;
+package io.openlineage.spark.agent.lifecycle;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -28,7 +28,7 @@ import org.apache.spark.sql.sources.BaseRelation;
  * and stacktrace will be reported.
  */
 @Slf4j
-public class LogicalPlanSerializer {
+class LogicalPlanSerializer {
   private final ObjectMapper mapper;
   private static final LogicalPlanSerializer instance = new LogicalPlanSerializer();
 

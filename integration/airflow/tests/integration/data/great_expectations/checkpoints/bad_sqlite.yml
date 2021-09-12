@@ -1,0 +1,12 @@
+config_version:
+module_name: great_expectations.checkpoint
+class_name: LegacyCheckpoint
+validation_operator_name: ol_operator
+batches:
+  - batch_kwargs:
+      path: /opt/data/great_expectations/data
+      datasource: sqlite__data
+      data_asset_name: sqlite__data
+      table: transactions_bad
+    expectation_suite_names:
+      - expectations

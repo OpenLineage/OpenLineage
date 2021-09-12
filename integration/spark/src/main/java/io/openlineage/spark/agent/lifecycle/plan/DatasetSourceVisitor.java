@@ -1,6 +1,7 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.util.PlanUtils;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -10,7 +11,6 @@ import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import org.apache.spark.sql.execution.datasources.v2.WriteToDataSourceV2;
 import org.apache.spark.sql.sources.v2.DataSourceV2;
 import org.apache.spark.sql.sources.v2.reader.DataSourceReader;
-import scala.runtime.AbstractPartialFunction;
 
 /**
  * Find {@link org.apache.spark.sql.sources.BaseRelation}s and {@link DataSourceV2} readers and
@@ -25,8 +25,7 @@ import scala.runtime.AbstractPartialFunction;
  * and/or {@link org.apache.spark.sql.sources.v2.writer.DataSourceWriter} instances to {@link
  * DatasetSource}s.
  */
-public class DatasetSourceVisitor
-    extends AbstractPartialFunction<LogicalPlan, List<OpenLineage.Dataset>> {
+public class DatasetSourceVisitor extends QueryPlanVisitor<LogicalPlan> {
 
   @Override
   public boolean isDefinedAt(LogicalPlan x) {

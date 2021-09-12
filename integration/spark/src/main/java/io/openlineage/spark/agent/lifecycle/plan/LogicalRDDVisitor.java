@@ -1,6 +1,8 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.util.PlanUtils;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -15,7 +17,6 @@ import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.LogicalRDD;
 import scala.collection.Seq;
-import scala.runtime.AbstractPartialFunction;
 
 /**
  * {@link LogicalPlan} visitor that attempts to extract {@link Path}s from a {@link HadoopRDD}
@@ -23,8 +24,7 @@ import scala.runtime.AbstractPartialFunction;
  * org.apache.spark.sql.execution.datasources.HadoopFsRelation}, but works with {@link RDD}s that
  * are converted to {@link org.apache.spark.sql.Dataset}s.
  */
-public class LogicalRDDVisitor
-    extends AbstractPartialFunction<LogicalPlan, List<OpenLineage.Dataset>> {
+public class LogicalRDDVisitor extends QueryPlanVisitor<LogicalRDD> {
 
   @Override
   public boolean isDefinedAt(LogicalPlan x) {

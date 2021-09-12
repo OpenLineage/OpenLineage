@@ -1,4 +1,4 @@
-package io.openlineage.spark.agent.lifecycle.plan;
+package io.openlineage.spark.agent.util;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.client.OpenLineageClient;

@@ -24,8 +24,8 @@ USER 1001
 
 FROM openlineage-airflow-base:latest AS integration
 COPY integration-requirements.txt integration-requirements.txt
-COPY integration.py integration.py
-COPY expected_requests.json expected_requests.json
+COPY *.py ./
+COPY requests requests
 RUN pip install --use-deprecated=legacy-resolver --user -r integration-requirements.txt
 COPY docker/entrypoint.sh entrypoint.sh
 COPY docker/wait-for-it.sh wait-for-it.sh

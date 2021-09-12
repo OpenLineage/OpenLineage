@@ -13,5 +13,5 @@
     "name": "file:/test_data/rdd_to_csv_output"
   } ],
   "producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
-  "schemaURL": "https://openlineage.io/spec/1-0-0/OpenLineage.json#/definitions/RunEvent"
+  "schemaURL": "https://openlineage.io/spec/1-0-1/OpenLineage.json#/definitions/RunEvent"
 }

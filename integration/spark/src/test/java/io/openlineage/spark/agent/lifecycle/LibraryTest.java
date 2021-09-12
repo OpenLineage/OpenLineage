@@ -3,7 +3,6 @@ package io.openlineage.spark.agent.lifecycle;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
@@ -14,17 +13,19 @@ import com.google.common.io.Resources;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.client.OpenLineageClient;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.spark.SparkConf;
@@ -34,6 +35,7 @@ import org.apache.spark.api.java.function.FilterFunction;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.SparkSession$;
+import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
@@ -86,62 +88,54 @@ public class LibraryTest {
         .emit(lineageEvent.capture());
     List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
 
-    updateSnapshots("sparksql", events);
-
     assertEquals(4, events.size());
 
     ObjectMapper objectMapper = OpenLineageClient.getObjectMapper();
+
     for (int i = 0; i < events.size(); i++) {
       OpenLineage.RunEvent event = events.get(i);
       Map<String, Object> snapshot =
           objectMapper.readValue(
               Paths.get(String.format("integrations/%s/%d.json", "sparksql", i + 1)).toFile(),
               mapTypeReference);
-      assertEquals(
-          snapshot,
-          cleanSerializedMap(
-              objectMapper.readValue(objectMapper.writeValueAsString(event), mapTypeReference)));
+      assertThat(objectMapper.readValue(objectMapper.writeValueAsString(event), mapTypeReference))
+          .satisfies(
+              new Condition<>(matchesRecursive(snapshot), "matches snapshot fields %s", snapshot));
     }
     verifySerialization(events);
   }
 
-  private Map<String, Object> cleanSerializedMap(Map<String, Object> map) {
-    // exprId and jvmId are not deterministic, so remove them from the maps to avoid failing
-    map.remove("exprId");
-    map.remove("resultId");
+  private final Set<String> ommittedKeys = new HashSet<>(Arrays.asList("runId"));
 
-    if (map.containsKey("facets") && map.containsKey("runId")) {
-      map.put("runId", "fake_run_id");
-    }
-
-    // timezone is different in CI than local
-    map.remove("timeZoneId");
-    if (map.containsKey("namespace") && map.get("namespace").equals("file")) {
-      map.put("name", "/path/to/data");
-    }
-    if (map.containsKey("uri") && ((String) map.get("uri")).startsWith("file:/")) {
-      map.put("uri", "file:/path/to/data");
-    }
-    map.forEach(
-        (k, v) -> {
-          if (v instanceof Map) {
-            cleanSerializedMap((Map<String, Object>) v);
-          } else if (v instanceof List) {
-            cleanSerializedList((List<?>) v);
+  private Predicate<Map<String, Object>> matchesRecursive(Map<String, Object> target) {
+    Predicate<Map<String, Object>> recurse;
+    recurse =
+        (map) -> {
+          if (!map.keySet().containsAll(target.keySet())) {
+            return false;
           }
-        });
-    return map;
-  }
-
-  private void cleanSerializedList(List<?> l) {
-    l.forEach(
-        i -> {
-          if (i instanceof Map) {
-            cleanSerializedMap((Map<String, Object>) i);
-          } else if (i instanceof List) {
-            cleanSerializedList((List<?>) i);
+          for (String k : target.keySet()) {
+            if (!ommittedKeys.contains(k)) {
+              continue;
+            }
+            Object val = map.get(k);
+            boolean eq;
+            if (val instanceof Map) {
+              eq =
+                  matchesRecursive((Map<String, Object>) target.get(k))
+                      .test((Map<String, Object>) val);
+            } else if (k.equals("_producer") || k.equals("producer")) {
+              eq = OpenLineageClient.OPEN_LINEAGE_CLIENT_URI.toString().equals(val);
+            } else {
+              eq = val.equals(target.get(k));
+            }
+            if (!eq) {
+              return false;
+            }
           }
-        });
+          return true;
+        };
+    return recurse;
   }
 
   @Test
@@ -173,14 +167,15 @@ public class LibraryTest {
     List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
     assertEquals(2, events.size());
 
-    updateSnapshots("sparkrdd", events);
-
     for (int i = 0; i < events.size(); i++) {
       OpenLineage.RunEvent event = events.get(i);
       String snapshot =
           new String(
-              Files.readAllBytes(
-                  Paths.get(String.format("integrations/%s/%d.json", "sparkrdd", i + 1))));
+                  Files.readAllBytes(
+                      Paths.get(String.format("integrations/%s/%d.json", "sparkrdd", i + 1))))
+              .replaceAll(
+                  "https://github.com/OpenLineage/OpenLineage/tree/\\$VERSION/integration/spark",
+                  OpenLineageClient.OPEN_LINEAGE_CLIENT_URI.toString());
 
       Map<String, Object> eventFields =
           OpenLineageClient.getObjectMapper().convertValue(event, mapTypeReference);
@@ -211,26 +206,6 @@ public class LibraryTest {
     for (OpenLineage.RunEvent event : events) {
       assertNotNull(
           "Event can serialize", OpenLineageClient.getObjectMapper().writeValueAsString(event));
-    }
-  }
-
-  private void updateSnapshots(String prefix, List<OpenLineage.RunEvent> events) {
-    if (System.getenv().containsKey("UPDATE_SNAPSHOT")) {
-      for (int i = 0; i < events.size(); i++) {
-        OpenLineage.RunEvent event = events.get(i);
-        try {
-          String url = String.format("integrations/%s/%d.json", prefix, i + 1);
-          FileWriter myWriter = new FileWriter(url);
-          myWriter.write(
-              OpenLineageClient.getObjectMapper()
-                  .writerWithDefaultPrettyPrinter()
-                  .writeValueAsString(event));
-          myWriter.close();
-        } catch (IOException e) {
-          e.printStackTrace();
-          fail();
-        }
-      }
     }
   }
 }

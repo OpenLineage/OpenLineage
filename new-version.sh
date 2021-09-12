@@ -109,13 +109,6 @@ if [[ -n "$(git status --porcelain --untracked-files=no)" ]] ; then
   exit 1;
 fi
 
-# Append '-SNAPSHOT' to 'NEXT_VERSION' if a release candidate, or missing
-# (ex: '-SNAPSHOT' will be appended to X.Y.Z or X.Y.Z-rc.N)
-if [[ "${NEXT_VERSION}" == *-rc.? ||
-      ! "${NEXT_VERSION}" == *-SNAPSHOT ]]; then
-  NEXT_VERSION="${NEXT_VERSION}-SNAPSHOT"
-fi
-
 # Ensure valid versions
 VERSIONS=($RELEASE_VERSION $NEXT_VERSION)
 for VERSION in "${VERSIONS[@]}"; do
@@ -132,19 +125,25 @@ if [[ "${RELEASE_VERSION}" == *-rc.? ]]; then
   PYTHON_RELEASE_VERSION="${RELEASE_VERSION%-*}${RELEASE_CANDIDATE//.}"
 fi
 
-# (1) Bump python module versions
-PYTHON_MODULES=(client/python/ integration/common/ integration/airflow/ integration/dbt/)
-for PYTHON_MODULE in "${PYTHON_MODULES[@]}"; do
-  (cd "${PYTHON_MODULE}" && bump2version manual --new-version "${PYTHON_RELEASE_VERSION}" --allow-dirty)
-done
+# (1) Bump python module versions for release candidates
+# This is only necessary when we are publishing a release candidate
+# This is necessary to get bump2version to bump from x.y.z to x.y.z-rc1
+if [ -n "$RELEASE_CANDIDATE" ]; then
+  PYTHON_MODULES=(client/python/ integration/common/ integration/airflow/ integration/dbt/)
+  for PYTHON_MODULE in "${PYTHON_MODULES[@]}"; do
+    (cd "${PYTHON_MODULE}" && bump2version manual --new-version "${PYTHON_RELEASE_VERSION}" --allow-dirty)
+  done
+fi
 
 # (2) Bump java module versions
 sed -i "" "s/^version=.*/version=${RELEASE_VERSION}/g" ./client/java/gradle.properties
 sed -i "" "s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/spark/gradle.properties
 
 # (3) Bump version in docs
-sed -i "" "s/<version>.*/<version>${RELEASE_VERSION}<\/version>/g" ./integration/spark/README.md
-sed -i "" "s/openlineage-spark:.*/openlineage-spark:${RELEASE_VERSION}/g" ./integration/spark/README.md
+sed -i "" \
+  -e "s/<version>.*/<version>${RELEASE_VERSION}<\/version>/g" \
+  -e "s/openlineage-spark:[[:alnum:]\.-]*/openlineage-spark:${RELEASE_VERSION}/g" \
+  -e "s/openlineage-spark-.*jar/openlineage-spark-${RELEASE_VERSION}.jar/g" ./integration/spark/README.md
 
 # (4) Prepare release commit
 git commit -sam "Prepare for release ${RELEASE_VERSION}"
@@ -154,8 +153,21 @@ git fetch --all --tags
 git tag -a "${RELEASE_VERSION}" -m "openlineage ${RELEASE_VERSION}"
 
 # (6) Prepare next development version
+PYTHON_MODULES=(client/python/ integration/common/ integration/airflow/ integration/dbt/)
+for PYTHON_MODULE in "${PYTHON_MODULES[@]}"; do
+  (cd "${PYTHON_MODULE}" && bump2version manual --new-version "${NEXT_VERSION}" --allow-dirty)
+done
+
+# Append '-SNAPSHOT' to 'NEXT_VERSION' if a release candidate, or missing
+# (ex: '-SNAPSHOT' will be appended to X.Y.Z or X.Y.Z-rc.N)
+if [[ "${NEXT_VERSION}" == *-rc.? ||
+      ! "${NEXT_VERSION}" == *-SNAPSHOT ]]; then
+  NEXT_VERSION="${NEXT_VERSION}-SNAPSHOT"
+fi
+
 sed -i  "" "s/^version=.*/version=${NEXT_VERSION}/g" integration/spark/gradle.properties
 sed -i  "" "s/^version=.*/version=${NEXT_VERSION}/g" client/java/gradle.properties
+echo "version ${NEXT_VERSION}" > integration/spark/src/test/resources/io/openlineage/spark/agent/client/version.properties
 
 # (7) Prepare next development version commit
 git commit -sam "Prepare next development version"

@@ -1,6 +1,13 @@
-package io.openlineage.spark.agent.lifecycle.plan;
+package io.openlineage.spark.agent.lifecycle;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.lifecycle.plan.AppendDataVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.DatasetSourceVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDataSourceDirVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDataSourceVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDirVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHadoopFsRelationVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.SaveIntoDataSourceCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.wrapper.OutputDatasetVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.wrapper.OutputDatasetWithMetadataVisitor;
 import java.util.ArrayList;
@@ -15,7 +22,7 @@ import scala.PartialFunction;
  * OpenLineage.Dataset}. Checks the classpath for classes that are not bundled with Spark to avoid
  * {@link ClassNotFoundException}s during plan traversal.
  */
-public class OutputDatasetVisitors
+class OutputDatasetVisitors
     implements Supplier<List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>>> {
   private final SQLContext sqlContext;
   private final List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> datasetProviders;

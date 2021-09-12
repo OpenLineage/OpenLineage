@@ -16,4 +16,4 @@
 
 set -e
 
-python integration.py
+python test_integration.py

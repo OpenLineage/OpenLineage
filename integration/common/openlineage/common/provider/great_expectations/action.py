@@ -18,6 +18,7 @@ from openlineage.client.run import RunEvent, RunState, Run, Job
 from sqlalchemy import MetaData, Table
 from sqlalchemy.engine import Connection
 
+from openlineage.client.serde import Serde
 from openlineage.common.dataset import Dataset, Source, Field
 from openlineage.common.dataset import Dataset as OLDataset
 from openlineage.common.provider.great_expectations.facets import \
@@ -35,8 +36,8 @@ class OpenLineageValidationAction(ValidationAction):
 
     Openlineage host parameters can be passed in as constructor arguments or environment variables
     will be searched. Job information can optionally be passed in as constructor arguments or the
-    great expectations suite name will be used as the job name (the namespace should be passed in
-    as either a constructor arg or as an environment variable).
+    great expectations suite name and batch identifier will be used as the job name
+    (the namespace should be passed in as either a constructor arg or as an environment variable).
 
     The data_asset will be inspected to determine the dataset source- SqlAlchemy datasets and
     Pandas datasets are supported. SqlAlchemy datasets are typically treated as other SQL data
@@ -88,12 +89,14 @@ class OpenLineageValidationAction(ValidationAction):
         self.job_description = job_description
         self.code_location = code_location
         self.do_publish = do_publish
-        self.log = logging.getLogger(self.__class__.__module__ + '.' + self.__class__.__name__)
 
     def _run(self, validation_result_suite: ExpectationSuiteValidationResult,
              validation_result_suite_identifier: ValidationResultIdentifier,
              data_asset: GEDataset,
              payload=None):
+        # Initialize logger here so that the action is serializable until it actually runs
+        self.log = logging.getLogger(self.__class__.__module__ + '.' + self.__class__.__name__)
+
         datasets = []
         if isinstance(data_asset, SqlAlchemyDataset):
             datasets = self._fetch_datasets_from_sql_source(data_asset, validation_result_suite)
@@ -120,7 +123,8 @@ class OpenLineageValidationAction(ValidationAction):
 
         job_name = self.job_name
         if self.job_name is None:
-            job_name = validation_result_suite.meta["expectation_suite_name"]
+            job_name = validation_result_suite.meta["expectation_suite_name"] + '.' \
+                       + validation_result_suite_identifier.batch_identifier
         run_event = RunEvent(
             eventType=RunState.COMPLETE,
             eventTime=datetime.now().isoformat(),
@@ -132,7 +136,8 @@ class OpenLineageValidationAction(ValidationAction):
         )
         if self.do_publish:
             self.openlineage_client.emit(run_event)
-        return run_event
+        # Great expectations tries to append stuff here, so we need to make it a dict
+        return Serde.to_dict(run_event)
 
     def _fetch_datasets_from_pandas_source(self, data_asset: PandasDataset,
                                            validation_result_suite: ExpectationSuiteValidationResult) -> List[OLDataset]: # noqa

@@ -16,6 +16,11 @@ from typing import List, Dict
 
 import attr
 
+try:
+    import numpy
+except ImportError:
+    numpy = None
+
 
 class Serde:
     @classmethod
@@ -31,6 +36,10 @@ class Serde:
             return list(filter(lambda x: x is not None and x != {}, [
                 cls.remove_nulls_and_enums(v) for v in obj if v is not None
             ]))
+
+        # Pandas can use numpy.int64 object
+        if numpy and isinstance(obj, numpy.int64):
+            return int(obj)
         return obj
 
     @classmethod

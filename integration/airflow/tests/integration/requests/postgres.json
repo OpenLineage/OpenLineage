@@ -4,33 +4,31 @@
     "job": {
         "facets": {
             "documentation": {
-                "_producer": "openlineage-python",
+                "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
                 "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DocumentationJobFacet",
                 "description": "Determines the popular day of week orders are placed."
             },
             "sql": {
-                "_producer": "openlineage-python",
+                "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
                 "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SqlJobFacet",
                 "query": "\n    CREATE TABLE IF NOT EXISTS popular_orders_day_of_week (\n      order_day_of_week VARCHAR(64) NOT NULL,\n      order_placed_on   TIMESTAMP NOT NULL,\n      orders_placed     INTEGER NOT NULL\n    );"
             }
         },
-        "name": "orders_popular_day_of_week.if_not_exists",
+        "name": "postgres_orders_popular_day_of_week.postgres_if_not_exists",
         "namespace": "food_delivery"
     },
     "outputs": [],
-    "producer": "openlineage-airflow/0.0.1",
     "run": {
         "facets": {
             "airflow_runArgs": {
-                "_producer": "openlineage-python",
+                "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
                 "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/BaseFacet",
                 "externalTrigger": false
             },
             "airflow_version": {
-                "_producer": "openlineage-python",
+                "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
                 "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/BaseFacet",
                 "airflowVersion": "1.10.12",
-                "openlineageAirflowVersion": "0.0.1",
                 "operator": "airflow.operators.postgres_operator.PostgresOperator"
             }
         }
@@ -42,7 +40,7 @@
         {
             "facets": {
                 "dataSource": {
-                    "_producer": "openlineage-python",
+                    "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
                     "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
                     "name": "postgres://postgres:5432",
                     "uri": "postgres://postgres:5432/food_delivery"
@@ -55,33 +53,31 @@
     "job": {
         "facets": {
             "documentation": {
-                "_producer": "openlineage-python",
+                "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
                 "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DocumentationJobFacet",
                 "description": "Determines the popular day of week orders are placed."
             },
             "sql": {
-                "_producer": "openlineage-python",
+                "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
                 "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SqlJobFacet",
                 "query": "\n    INSERT INTO popular_orders_day_of_week (order_day_of_week, order_placed_on,orders_placed)\n    SELECT EXTRACT(ISODOW FROM order_placed_on) AS order_day_of_week,\n           order_placed_on,\n           COUNT(*) AS orders_placed\n      FROM top_delivery_times\n     GROUP BY order_placed_on;\n    "
             }
         },
-        "name": "orders_popular_day_of_week.insert",
+        "name": "postgres_orders_popular_day_of_week.postgres_insert",
         "namespace": "food_delivery"
     },
     "outputs": [],
-    "producer": "openlineage-airflow/0.0.1",
     "run": {
         "facets": {
             "airflow_runArgs": {
-                "_producer": "openlineage-python",
+                "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
                 "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/BaseFacet",
                 "externalTrigger": false
             },
             "airflow_version": {
-                "_producer": "openlineage-python",
+                "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
                 "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/BaseFacet",
                 "airflowVersion": "1.10.12",
-                "openlineageAirflowVersion": "0.0.1",
                 "operator": "airflow.operators.postgres_operator.PostgresOperator"
             }
         }
@@ -93,23 +89,22 @@
     "job": {
         "facets": {
             "sql": {
-                "_producer": "openlineage-python",
+                "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
                 "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SqlJobFacet",
                 "query": "\n    CREATE TABLE IF NOT EXISTS popular_orders_day_of_week (\n      order_day_of_week VARCHAR(64) NOT NULL,\n      order_placed_on   TIMESTAMP NOT NULL,\n      orders_placed     INTEGER NOT NULL\n    );"
             }
         },
-        "name": "orders_popular_day_of_week.if_not_exists",
+        "name": "postgres_orders_popular_day_of_week.postgres_if_not_exists",
         "namespace": "food_delivery"
     },
-    "outputs": [],
-    "producer": "openlineage-airflow/0.0.1"
+    "outputs": []
 },
 {
 	"eventType": "COMPLETE",
 	"inputs": [{
 		"facets": {
 			"dataSource": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
 				"name": "postgres://postgres:5432",
 				"uri": "postgres://postgres:5432/food_delivery"
@@ -121,24 +116,24 @@
 	"job": {
 		"facets": {
 			"sql": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SqlJobFacet",
 				"query": "\n    INSERT INTO popular_orders_day_of_week (order_day_of_week, order_placed_on,orders_placed)\n    SELECT EXTRACT(ISODOW FROM order_placed_on) AS order_day_of_week,\n           order_placed_on,\n           COUNT(*) AS orders_placed\n      FROM top_delivery_times\n     GROUP BY order_placed_on;\n    "
 			}
 		},
-		"name": "orders_popular_day_of_week.insert",
+		"name": "postgres_orders_popular_day_of_week.postgres_insert",
 		"namespace": "food_delivery"
 	},
 	"outputs": [{
 		"facets": {
 			"dataSource": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
 				"name": "postgres://postgres:5432",
 				"uri": "postgres://postgres:5432/food_delivery"
 			},
 			"schema": {
-				"_producer": "openlineage-python",
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "order_day_of_week",
@@ -154,6 +149,5 @@
 		},
 		"name": "food_delivery.public.popular_orders_day_of_week",
 		"namespace": "postgres://postgres:5432"
-	}],
-	"producer": "openlineage-airflow/0.0.1"
+	}]
 }]

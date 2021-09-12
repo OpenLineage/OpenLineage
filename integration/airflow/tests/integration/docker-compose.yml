@@ -9,7 +9,7 @@ services:
     depends_on:
       - airflow
       - backend
-    entrypoint: ["./wait-for-it.sh", "backend:5000", "--", "./entrypoint.sh"]
+    entrypoint: ["./wait-for-it.sh", "postgres:5432", "--", "./entrypoint.sh"]
 
   airflow:
     build:
@@ -26,14 +26,18 @@ services:
       - AIRFLOW_EXECUTOR=CeleryExecutor
       - AIRFLOW_LOAD_EXAMPLES=no
       - AIRFLOW_CONN_FOOD_DELIVERY_DB=postgres://food_delivery:food_delivery@postgres:5432/food_delivery
+      - AIRFLOW_CONN_BQ_CONN=google-cloud-platform://?extra__google_cloud_platform__project=speedy-vim-308516&extra__google_cloud_platform__key_path=%2Fopt%2Fconfig%2Fgcloud%2Fgcloud-service-key.json
       - AIRFLOW__CORE__LOGGING_CONFIG_CLASS=log_config.LOGGING_CONFIG
       - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=false
+      - GOOGLE_APPLICATION_CREDENTIALS=/opt/config/gcloud/gcloud-service-key.json
       - OPENLINEAGE_NAMESPACE=food_delivery
     volumes:
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/dags:/opt/bitnami/airflow/dags
       - ./airflow/config/log_config.py:/opt/bitnami/airflow/config/log_config.py
       - ./requirements.txt:/bitnami/python/requirements.txt
+      - ./gcloud:/opt/config/gcloud
+      - ./data:/opt/data
     depends_on:
       - airflow_scheduler
       - airflow_worker
@@ -52,8 +56,10 @@ services:
       - AIRFLOW_EXECUTOR=CeleryExecutor
       - AIRFLOW_LOAD_EXAMPLES=no
       - AIRFLOW_CONN_FOOD_DELIVERY_DB=postgres://food_delivery:food_delivery@postgres:5432/food_delivery
+      - AIRFLOW_CONN_BQ_CONN=google-cloud-platform://?extra__google_cloud_platform__project=speedy-vim-308516&extra__google_cloud_platform__key_path=%2Fopt%2Fconfig%2Fgcloud%2Fgcloud-service-key.json
       - AIRFLOW__CORE__LOGGING_CONFIG_CLASS=log_config.LOGGING_CONFIG
       - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=false
+      - GOOGLE_APPLICATION_CREDENTIALS=/opt/config/gcloud/gcloud-service-key.json
       - OPENLINEAGE_URL=http://backend:5000
       - OPENLINEAGE_NAMESPACE=food_delivery
     volumes:
@@ -61,6 +67,8 @@ services:
       - ./airflow/dags:/opt/bitnami/airflow/dags
       - ./airflow/config/log_config.py:/opt/bitnami/airflow/config/log_config.py
       - ./requirements.txt:/bitnami/python/requirements.txt
+      - ./gcloud:/opt/config/gcloud
+      - ./data:/opt/data
     depends_on:
       - airflow_worker
 
@@ -76,8 +84,10 @@ services:
       - AIRFLOW_DATABASE_PASSWORD=airflow
       - AIRFLOW_EXECUTOR=CeleryExecutor
       - AIRFLOW_CONN_FOOD_DELIVERY_DB=postgres://food_delivery:food_delivery@postgres:5432/food_delivery
+      - AIRFLOW_CONN_BQ_CONN=google-cloud-platform://?extra__google_cloud_platform__project=speedy-vim-308516&extra__google_cloud_platform__key_path=%2Fopt%2Fconfig%2Fgcloud%2Fgcloud-service-key.json
       - AIRFLOW__CORE__LOGGING_CONFIG_CLASS=log_config.LOGGING_CONFIG
       - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=false
+      - GOOGLE_APPLICATION_CREDENTIALS=/opt/config/gcloud/gcloud-service-key.json
       - OPENLINEAGE_NAMESPACE=food_delivery
       - OPENLINEAGE_URL=http://backend:5000
     volumes:
@@ -85,6 +95,8 @@ services:
       - ./airflow/dags:/opt/bitnami/airflow/dags
       - ./airflow/config/log_config.py:/opt/bitnami/airflow/config/log_config.py
       - ./requirements.txt:/bitnami/python/requirements.txt
+      - ./gcloud:/opt/config/gcloud
+      - ./data:/opt/data
 
   backend:
     build:

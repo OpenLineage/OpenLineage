@@ -94,9 +94,12 @@ class BigQueryExtractor(BaseExtractor):
 
         return StepMetadata(
             name=get_job_name(task=self.operator),
-            inputs=inputs,
-            outputs=[output] if output else [],
-            run_facets=run_facets
+            inputs=[ds.to_openlineage_dataset() for ds in inputs],
+            outputs=[output.to_openlineage_dataset()] if output else [],
+            run_facets=run_facets,
+            context={
+                "sql": context.sql
+            }
         )
 
     def _get_xcom_bigquery_job_id(self, task_instance):
