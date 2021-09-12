@@ -1,10 +1,10 @@
 {
   "$schema" : "https://json-schema.org/draft/2020-12/schema",
-  "$id" : "https://openlineage.io/spec/1-0-1/NominalTimeRunFacet.json",
+  "$id" : "https://openlineage.io/spec/facets/1-0-0/NominalTimeRunFacet.json",
   "$defs" : {
     "NominalTimeRunFacet" : {
       "allOf" : [ {
-        "$ref" : "https://openlineage.io/spec/1-0-1/OpenLineage.json#/$defs/RunFacet"
+        "$ref" : "https://openlineage.io/spec/1-0-2/OpenLineage.json#/$defs/RunFacet"
       }, {
         "type" : "object",
         "properties" : {

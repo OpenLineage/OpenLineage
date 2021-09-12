@@ -1,10 +1,10 @@
 {
   "$schema" : "https://json-schema.org/draft/2020-12/schema",
-  "$id" : "https://openlineage.io/spec/1-0-1/SchemaDatasetFacet.json",
+  "$id" : "https://openlineage.io/spec/facets/1-0-0/SchemaDatasetFacet.json",
   "$defs" : {
     "SchemaDatasetFacet" : {
       "allOf" : [ {
-        "$ref" : "https://openlineage.io/spec/1-0-1/OpenLineage.json#/$defs/DatasetFacet"
+        "$ref" : "https://openlineage.io/spec/1-0-2/OpenLineage.json#/$defs/DatasetFacet"
       }, {
         "type" : "object",
         "properties" : {

@@ -1,11 +1,11 @@
 {
   "$schema" : "https://json-schema.org/draft/2020-12/schema",
-  "$id" : "https://openlineage.io/spec/1-0-1/DataQualityAssertionsDatasetFacet.json",
+  "$id" : "https://openlineage.io/spec/facets/1-0-0/DataQualityAssertionsDatasetFacet.json",
   "$defs" : {
     "DataQualityAssertionsDatasetFacet" : {
       "description" : "list of tests performed on dataset or dataset columns, and their results",
       "allOf" : [ {
-        "$ref" : "https://openlineage.io/spec/1-0-1/OpenLineage.json#/$defs/InputDatasetFacet"
+        "$ref" : "https://openlineage.io/spec/1-0-2/OpenLineage.json#/$defs/InputDatasetFacet"
       }, {
         "type" : "object",
         "required" : [ "assertions" ],
