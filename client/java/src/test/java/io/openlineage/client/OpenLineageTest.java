@@ -95,9 +95,9 @@ public class OpenLineageTest {
     UUID runId = UUID.randomUUID();
     RunFacets runFacets =
         ol.newRunFacetsBuilder()
-        .put("nominalTime",
+          .nominalTime(
             ol.newNominalTimeRunFacetBuilder()
-            .nominalEndTime(now)
+            .nominalStartTime(now)
             .nominalEndTime(now)
             .build())
         .build();

@@ -92,8 +92,8 @@ public class JavaPoetGenerator {
   private void generateTypes(TypeSpec.Builder containerTypeBuilder) {
     Collection<ObjectResolvedType> types = typeResolver.getTypes();
     for (ObjectResolvedType type : types) {
-      if (type.getName().length() == 0 /*|| !type.getContainer().equals(containerClassName) */) {
-        // we're limiting ourselves to the types in the container we are generating
+      if (type.getName().length() == 0) {
+        // we're generating types that have name (through ref)
         continue;
       }
       if (typeResolver.getBaseTypes().contains(type.getName())) { // interfaces
@@ -132,7 +132,7 @@ public class JavaPoetGenerator {
 
     for (ResolvedField f : type.getProperties()) {
       if (isASchemaUrlField(f)) {
-        String schemaURL = containerToID.get(type.getContainer()) + "#/definitions/" + type.getName();
+        String schemaURL = containerToID.get(type.getContainer()) + "#/$defs/" + type.getName();
         constructor.addCode("this.$N = URI.create($S);\n", f.getName(), schemaURL);
       } else {
         constructor.addJavadoc("@param $N $N\n", f.getName(), f.getDescription() == null ? "the " + f.getName() : f.getDescription());
@@ -293,19 +293,6 @@ public class JavaPoetGenerator {
     return factory.build();
   }
 
-  private TypeSpec declareBaseTypeSpec(ObjectResolvedType type) {
-    TypeSpec.Builder interfaceBuilder = TypeSpec.interfaceBuilder(type.getName())
-        .addModifiers(STATIC, PUBLIC);
-    for (ResolvedField f : type.getProperties()) {
-      MethodSpec getter = getter(f)
-          .addModifiers(ABSTRACT, PUBLIC)
-          .build();
-      interfaceBuilder.addMethod(getter);
-    }
-    TypeSpec intrfc = interfaceBuilder.build();
-    return intrfc;
-  }
-
   private boolean isAProducerField(ResolvedField f) {
     return f.getName().equals("_producer") || f.getName().equals("producer");
   }
@@ -318,46 +305,7 @@ public class JavaPoetGenerator {
     TypeSpec.Builder interfaceBuilder = TypeSpec.interfaceBuilder(type.getName())
         .addModifiers(STATIC, PUBLIC);
 
-    ///////////////////////////////////////////
-    // Default implementation to deserialize //
-    ///////////////////////////////////////////
-    if (type.getName().endsWith("Facet") && !type.getName().equals("BaseFacet")) {
-      // adding the annotation to the interface to have a default implementation
-      interfaceBuilder.addAnnotation(AnnotationSpec.builder(JsonDeserialize.class)
-          .addMember("as", CodeBlock.of("Default" + type.getName() + ".class"))
-          .build());
-
-      TypeSpec.Builder classBuilder = TypeSpec.classBuilder("Default" + type.getName())
-          .addModifiers(STATIC, PRIVATE, FINAL);
-      classBuilder.addSuperinterface(ClassName.get(PACKAGE, containerClassName, type.getName()));
-
-      MethodSpec.Builder constructor = MethodSpec.constructorBuilder()
-          .addModifiers(PRIVATE);
-      constructor.addAnnotation(JsonCreator.class);
-      List<String> fieldNames = new ArrayList<String>();
-      for (ResolvedField f : type.getProperties()) {
-        classBuilder.addField(getTypeName(f.getType()), f.getName(), PRIVATE, FINAL);
-        fieldNames.add(f.getName());
-        if (isSchemaURL(f)) {
-          setSchemaURLField(type, constructor, f);
-        } else {
-          addConstructorParameter(constructor, f);
-        }
-        MethodSpec getter = getter(f)
-            .addModifiers(PUBLIC)
-            .addCode("return $N;", f.getName())
-            .build();
-        classBuilder.addMethod(getter);
-      }
-
-      // additionalFields
-      if (type.hasAdditionalProperties()) {
-        addAdditionalProperties(type, classBuilder, constructor);
-      }
-      classBuilder.addMethod(constructor.build());
-      containerTypeBuilder.addType(classBuilder.build());
-    }
-    ///////////////////////////////
+    generateDefaultImplementation(containerTypeBuilder, type, interfaceBuilder);
 
     for (ResolvedField f : type.getProperties()) {
       MethodSpec getter = getter(f)
@@ -381,10 +329,50 @@ public class JavaPoetGenerator {
     containerTypeBuilder.addType(intrfc);
   }
 
-  private void returnThis(Builder methodBuilder, String typeName) {
-    methodBuilder.returns(ClassName.get(containerClass, typeName))
-      .addJavadoc("@return this\n")
-      .addCode("return this;");
+  private void generateDefaultImplementation(
+      TypeSpec.Builder containerTypeBuilder,
+      ObjectResolvedType type,
+      TypeSpec.Builder interfaceBuilder) {
+    ///////////////////////////////////////////
+    // Default implementation to deserialize //
+    ///////////////////////////////////////////
+    if (type.getName().endsWith("Facet") && !type.getName().equals("BaseFacet")) {
+      // adding the annotation to the interface to have a default implementation
+      interfaceBuilder.addAnnotation(AnnotationSpec.builder(JsonDeserialize.class)
+          .addMember("as", CodeBlock.of("Default" + type.getName() + ".class"))
+          .build());
+
+      TypeSpec.Builder classBuilder = TypeSpec.classBuilder("Default" + type.getName())
+          .addModifiers(STATIC, PRIVATE, FINAL);
+      classBuilder.addSuperinterface(ClassName.get(PACKAGE, containerClassName, type.getName()));
+
+      MethodSpec.Builder constructor = MethodSpec.constructorBuilder()
+          .addModifiers(PRIVATE);
+      constructor.addAnnotation(JsonCreator.class);
+      List<String> fieldNames = new ArrayList<String>();
+      for (ResolvedField f : type.getProperties()) {
+        classBuilder.addField(getTypeName(f.getType()), f.getName(), PRIVATE, FINAL);
+        fieldNames.add(f.getName());
+        if (isASchemaUrlField(f)) {
+          setSchemaURLField(type, constructor, f);
+        } else {
+          addConstructorParameter(constructor, f);
+        }
+        MethodSpec getter = getter(f)
+            .addModifiers(PUBLIC)
+            .addCode("return $N;", f.getName())
+            .build();
+        classBuilder.addMethod(getter);
+      }
+
+      // additionalFields
+      if (type.hasAdditionalProperties()) {
+        addAdditionalProperties(type, classBuilder, constructor);
+      }
+      classBuilder.addMethod(constructor.build());
+      containerTypeBuilder.addType(classBuilder.build());
+    }
+    ///////////////////////////////
   }
 
   private void addParameterFromField(MethodSpec.Builder factory, ResolvedField f, AnnotationSpec annotationSpec) {
@@ -427,17 +415,9 @@ public class JavaPoetGenerator {
     constructor.addCode(CodeBlock.builder().addStatement("this.$N = new $T<>()", fieldName, LinkedHashMap.class).build());
   }
 
-  private boolean isProducerField(ResolvedField f) {
-    return f.getName().equals("_producer") || f.getName().equals("producer");
-  }
-
   private void addConstructorParameter(MethodSpec.Builder constructor, ResolvedField f) {
     addParameterFromField(constructor, f, AnnotationSpec.builder(JsonProperty.class).addMember("value", "$S", f.getName()).build());
     constructor.addCode("this.$N = $N;\n", f.getName(), f.getName());
-  }
-
-  private boolean isSchemaURL(ResolvedField f) {
-    return f.getName().equals("_schemaURL");
   }
 
   private void setSchemaURLField(
