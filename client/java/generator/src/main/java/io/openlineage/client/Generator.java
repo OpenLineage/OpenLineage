@@ -64,10 +64,8 @@ public class Generator {
 
   private static void addURLs(Set<URL> urls, File dir)
       throws URISyntaxException, MalformedURLException {
-    System.out.println("Looking for json files in: " + dir);
     File[] jsonFiles = dir.listFiles((File f, String name) -> name.endsWith(JSON_EXT));
     for (File jsonFile : jsonFiles) {
-      System.out.println("adding: " + jsonFile);
       urls.add(jsonFile.toURI().toURL());
     }
     File[] subDirs = dir.listFiles(File::isDirectory);
@@ -103,6 +101,8 @@ public class Generator {
     }
     try {
       TypeResolver typeResolver = new TypeResolver(urls);
+
+      // We add the facets to the core model here to keep code generation convenient
       Map<String, ObjectResolvedType> facetContainers = indexFacetContainersByType(typeResolver);
       enrichFacetContainersWithFacets(typeResolver, facetContainers);
 

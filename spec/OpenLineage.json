@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://openlineage.io/spec/1-0-2/OpenLineage.json",
-    "$defs": {
+  "$id": "https://openlineage.io/spec/1-0-2/OpenLineage.json",
+  "$defs": {
     "RunEvent": {
       "type": "object",
       "properties": {
@@ -18,28 +18,28 @@
           "example": "START|COMPLETE|ABORT|FAIL|OTHER"
         },
         "eventTime": {
-                    "description": "the time the event occurred at",
+          "description": "the time the event occurred at",
           "type": "string",
           "format": "date-time"
         },
         "run": {
-                    "$ref": "#/$defs/Run"
+          "$ref": "#/$defs/Run"
         },
         "job": {
-                    "$ref": "#/$defs/Job"
+          "$ref": "#/$defs/Job"
         },
         "inputs": {
           "description": "The set of **input** datasets.",
           "type": "array",
           "items": {
-                        "$ref": "#/$defs/InputDataset"
+            "$ref": "#/$defs/InputDataset"
           }
         },
         "outputs": {
           "description": "The set of **output** datasets.",
           "type": "array",
           "items": {
-                        "$ref": "#/$defs/OutputDataset"
+            "$ref": "#/$defs/OutputDataset"
           }
         },
         "producer": {
@@ -75,7 +75,7 @@
           "description": "The run facets.",
           "type": "object",
           "additionalProperties": {
-                        "$ref": "#/$defs/RunFacet"
+            "$ref": "#/$defs/RunFacet"
           }
         }
       },
@@ -83,19 +83,13 @@
         "runId"
       ]
     },
-        "RunFacet": {
-            "description": "A Run Facet",
-            "type": "object",
-            "allOf": [
-                {
-                    "$ref": "#/$defs/BaseFacet"
-                },
-                {
-                    "type": "object",
-                    "additionalProperties": true
-                }
-            ]
-        },
+    "RunFacet": {
+      "description": "A Run Facet",
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/BaseFacet" }
+      ]
+    },
     "Job": {
       "type": "object",
       "properties": {
@@ -113,7 +107,7 @@
           "description": "The job facets.",
           "type": "object",
           "additionalProperties": {
-                        "$ref": "#/$defs/JobFacet"
+            "$ref": "#/$defs/JobFacet"
           }
         }
       },
@@ -122,75 +116,63 @@
         "name"
       ]
     },
-        "JobFacet": {
-            "description": "A Job Facet",
-            "type": "object",
-            "allOf": [
-                {
-                    "$ref": "#/$defs/BaseFacet"
-                }
-            ]
-        },
+    "JobFacet": {
+      "description": "A Job Facet",
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/BaseFacet" }
+      ]
+    },
     "InputDataset": {
       "description": "An input dataset",
       "type": "object",
       "allOf": [
-                {
-                    "$ref": "#/$defs/Dataset"
-                },
+        { "$ref": "#/$defs/Dataset" },
         {
           "type": "object",
           "properties": {
             "inputFacets": {
               "description": "The input facets for this dataset.",
               "type": "object",
-                            "properties": {},
               "additionalProperties": {
-                                "$ref": "#/$defs/InputDatasetFacet"
+                "$ref": "#/$defs/InputDatasetFacet"
               }
             }
           }
         }
       ]
     },
-        "InputDatasetFacet": {
-            "description": "An Input Dataset Facet",
-            "type": "object",
-            "allOf": [
-                {
-                    "$ref": "#/$defs/BaseFacet"
-                }
-            ]
-        },
+    "InputDatasetFacet": {
+      "description": "An Input Dataset Facet",
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/BaseFacet" }
+      ]
+    },
     "OutputDataset": {
       "description": "An output dataset",
       "type": "object",
       "allOf": [
-                {
-                    "$ref": "#/$defs/Dataset"
-                },
+        { "$ref": "#/$defs/Dataset" },
         {
           "type": "object",
           "properties": {
             "outputFacets": {
               "description": "The output facets for this dataset",
               "type": "object",
-                            "properties": {},
               "additionalProperties": {
-                                "$ref": "#/$defs/OutputDatasetFacet"
-                            }
+                "$ref": "#/$defs/OutputDatasetFacet"
               }
             }
           }
-            ]
-        },
-        "OutputDatasetFacet": {
-            "description": "An Output Dataset Facet",
-            "type": "object",
-            "allOf": [
-                {
-                    "$ref": "#/$defs/BaseFacet"
         }
+      ]
+    },
+    "OutputDatasetFacet": {
+      "description": "An Output Dataset Facet",
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/BaseFacet" }
       ]
     },
     "Dataset": {
@@ -210,7 +192,7 @@
           "description": "The facets for this dataset",
           "type": "object",
           "additionalProperties": {
-                        "$ref": "#/$defs/DatasetFacet"
+            "$ref": "#/$defs/DatasetFacet"
           }
         }
       },
@@ -219,15 +201,13 @@
         "name"
       ]
     },
-        "DatasetFacet": {
-            "description": "A Dataset Facet",
-            "type": "object",
-            "allOf": [
-                {
-                    "$ref": "#/$defs/BaseFacet"
-                }
-            ]
-        },
+    "DatasetFacet": {
+      "description": "A Dataset Facet",
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/BaseFacet" }
+      ]
+     },
     "BaseFacet": {
       "description": "all fields of the base facet are prefixed with _ to avoid name conflicts in facets",
       "type": "object",
@@ -242,15 +222,15 @@
           "description": "The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version of the schema definition for this facet",
           "type": "string",
           "format": "uri",
-                    "example": "https://openlineage.io/spec/0.1.0/OpenLineage.json#/$defs/BaseFacet"
+          "example": "https://openlineage.io/spec/1-0-2/OpenLineage.json#/$defs/BaseFacet"
         }
       },
-            "additionalProperties": true,
+      "additionalProperties": true,
       "required": [
         "_producer",
         "_schemaURL"
       ]
-        }
-        },
-    "$ref": "#/$defs/RunEvent"
+    }
+  },
+  "$ref": "#/$defs/RunEvent"
 }
