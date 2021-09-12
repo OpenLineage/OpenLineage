@@ -4,7 +4,7 @@
   "$defs" : {
     "DataQualityMetricsInputDatasetFacet" : {
       "allOf" : [ {
-        "$ref" : "https://openlineage.io/spec/1-0-1/OpenLineage.json/$defs/InputDatasetFacet"
+        "$ref" : "https://openlineage.io/spec/1-0-1/OpenLineage.json#/$defs/InputDatasetFacet"
       }, {
         "type" : "object",
         "required" : [ "columnMetrics" ],

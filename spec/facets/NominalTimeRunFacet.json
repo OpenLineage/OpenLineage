@@ -4,7 +4,7 @@
   "$defs" : {
     "NominalTimeRunFacet" : {
       "allOf" : [ {
-        "$ref" : "https://openlineage.io/spec/1-0-1/OpenLineage.json/$defs/RunFacet"
+        "$ref" : "https://openlineage.io/spec/1-0-1/OpenLineage.json#/$defs/RunFacet"
       }, {
         "type" : "object",
         "properties" : {

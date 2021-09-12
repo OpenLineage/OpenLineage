@@ -166,10 +166,11 @@ public class TypeResolver {
           System.out.println("ref: " + absolutePointer );
           int anchorIndex = absolutePointer.indexOf('#');
           String pointer = absolutePointer.substring(anchorIndex + 1);
+          String base = absolutePointer.substring(0, anchorIndex);
           String typeName = titleCase(lastPart(pointer));
           final String refContainer;
           if (anchorIndex > 0) {
-            String file = absolutePointer.substring(0, anchorIndex);
+            String file = base.substring(base.lastIndexOf('/') + 1);
             refContainer = file.substring(0, file.lastIndexOf('.'));
           } else {
             refContainer = container;

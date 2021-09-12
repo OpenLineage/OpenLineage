@@ -4,7 +4,7 @@
   "$defs" : {
     "SourceCodeLocationJobFacet" : {
       "allOf" : [ {
-        "$ref" : "https://openlineage.io/spec/1-0-1/OpenLineage.json/$defs/JobFacet"
+        "$ref" : "https://openlineage.io/spec/1-0-1/OpenLineage.json#/$defs/JobFacet"
       }, {
         "type" : "object",
         "properties" : {

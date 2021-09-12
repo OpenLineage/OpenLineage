@@ -4,7 +4,7 @@
   "$defs" : {
     "DocumentationDatasetFacet" : {
       "allOf" : [ {
-        "$ref" : "https://openlineage.io/spec/1-0-1/OpenLineage.json/$defs/DatasetFacet"
+        "$ref" : "https://openlineage.io/spec/1-0-1/OpenLineage.json#/$defs/DatasetFacet"
       }, {
         "type" : "object",
         "properties" : {

@@ -5,7 +5,7 @@
     "DataQualityAssertionsDatasetFacet" : {
       "description" : "list of tests performed on dataset or dataset columns, and their results",
       "allOf" : [ {
-        "$ref" : "https://openlineage.io/spec/1-0-1/OpenLineage.json/$defs/InputDatasetFacet"
+        "$ref" : "https://openlineage.io/spec/1-0-1/OpenLineage.json#/$defs/InputDatasetFacet"
       }, {
         "type" : "object",
         "required" : [ "assertions" ],
