@@ -116,11 +116,7 @@ public class TypeResolver {
 
         @Override
         public ResolvedType visit(OneOfType oneOfType) {
-          List<Type> types = oneOfType.getTypes();
-          if (types.size() != 1) {
-            throw new UnsupportedOperationException("Only oneOf of size 1 accepted for now: " + types);
-          }
-          return visit(types.get(0));
+          throw new UnsupportedOperationException("oneOf is not supported yet " + oneOfType);
         }
 
         @Override
@@ -334,9 +330,6 @@ public class TypeResolver {
       super();
       this.container = container;
       this.objectTypes = objectTypes;
-//      if (name == null || name.length() == 0) {
-//        throw new IllegalArgumentException("missing name for type in " + container);
-//      }
       this.name = name;
       this.parents = parents;
       this.properties = properties;
