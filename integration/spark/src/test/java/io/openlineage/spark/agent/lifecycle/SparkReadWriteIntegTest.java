@@ -23,7 +23,7 @@ import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Provides;
 import com.google.common.collect.ImmutableMap;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
-import io.openlineage.spark.agent.lifecycle.plan.PlanUtils;
+import io.openlineage.spark.agent.util.PlanUtils;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;

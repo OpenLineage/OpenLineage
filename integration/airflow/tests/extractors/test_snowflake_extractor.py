@@ -121,7 +121,7 @@ def test_extract(get_connection, mock_get_table_schemas):
                 connection_url=CONN_URI
             ),
             fields=[]
-        )]
+        ).to_openlineage_dataset()]
 
     expected_context = {
         'sql': SQL,

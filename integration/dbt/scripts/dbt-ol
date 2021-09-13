@@ -7,7 +7,7 @@ import os
 from openlineage.common.provider.dbt import DbtArtifactProcessor
 from openlineage.client.client import OpenLineageClient
 
-__version__ = "0.2.1"
+__version__ = "0.2.3"
 
 from openlineage.common.utils import parse_single_arg
 

@@ -21,13 +21,13 @@
               "type": "string"
             }
           ],
-          "_schemaURL": "https://openlineage.io/spec/1-0-0/OpenLineage.json#/definitions/SchemaDatasetFacet"
+          "_schemaURL": "https://openlineage.io/spec/1-0-1/OpenLineage.json#/definitions/SchemaDatasetFacet"
         },
         "dataSource": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
           "name": "file",
           "uri": "file",
-          "_schemaURL": "https://openlineage.io/spec/1-0-0/OpenLineage.json#/definitions/DatasourceDatasetFacet"
+          "_schemaURL": "https://openlineage.io/spec/1-0-1/OpenLineage.json#/definitions/DatasourceDatasetFacet"
         }
       }
     }
@@ -49,7 +49,7 @@
               "type": "long"
             }
           ],
-          "_schemaURL": "https://openlineage.io/spec/1-0-0/OpenLineage.json#/definitions/SchemaDatasetFacet"
+          "_schemaURL": "https://openlineage.io/spec/1-0-1/OpenLineage.json#/definitions/SchemaDatasetFacet"
         },
         "dataSource": {
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
@@ -70,11 +70,11 @@
           "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
           "rowCount": 0,
           "size": 0,
-          "_schemaURL": "https://openlineage.io/spec/1-0-0/OpenLineage.json#/definitions/OutputStatisticsOutputDatasetFacet"
+          "_schemaURL": "https://openlineage.io/spec/1-0-1/OpenLineage.json#/definitions/OutputStatisticsOutputDatasetFacet"
         }
       }
     }
   ],
   "producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
-  "schemaURL": "https://openlineage.io/spec/1-0-0/OpenLineage.json#/definitions/RunEvent"
+  "schemaURL": "https://openlineage.io/spec/1-0-1/OpenLineage.json#/definitions/RunEvent"
 }

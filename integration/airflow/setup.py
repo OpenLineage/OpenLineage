@@ -19,7 +19,7 @@ from setuptools import setup, find_namespace_packages
 with open("README.md") as readme_file:
     readme = readme_file.read()
 
-__version__ = "0.2.1"
+__version__ = "0.2.3"
 
 requirements = [
     "attrs>=19.3",
@@ -37,7 +37,7 @@ extras_require = {
         "flake8",
         "SQLAlchemy",       # must be set to 1.3.* for airflow tests compatibility
         "Flask-SQLAlchemy",  # must be set to 2.4.* for airflow tests compatibility
-        "pandas-gbq",       # must be set to 0.14.* for airflow tests compatibility
+        "pandas-gbq==0.14.1",       # must be set to 0.14.* for airflow tests compatibility
         "snowflake-connector-python",
         "apache-airflow==1.10.12",
         "apache-airflow[gcp_api]==1.10.12",

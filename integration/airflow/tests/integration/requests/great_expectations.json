@@ -147,7 +147,6 @@
                         "notes": {}
                     },
                     "expectation_suite_name": "expectations",
-                    "great_expectations_version": "0.13.32",
                     "run_id": {
                         "run_name": "ge_sqlite_run"
                     }
@@ -303,7 +302,6 @@
                         "notes": {}
                     },
                     "expectation_suite_name": "expectations",
-                    "great_expectations_version": "0.13.32",
                     "run_id": {
                         "run_name": "ge_pandas_run"
                     }
@@ -459,7 +457,6 @@
                         "notes": {}
                     },
                     "expectation_suite_name": "expectations",
-                    "great_expectations_version": "0.13.32",
                     "run_id": {
                         "run_name": "ge_bad_sqlite_run"
                     }

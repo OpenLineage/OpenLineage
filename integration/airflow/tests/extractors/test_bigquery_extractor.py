@@ -97,26 +97,26 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
         assert step_meta.inputs[0].name == \
             'bigquery-public-data.usa_names.usa_1910_2013'
 
-        assert step_meta.inputs[0].fields is not None
-        assert step_meta.inputs[0].source.name == 'bigquery'
-        assert step_meta.inputs[0].source.connection_url == 'bigquery'
-        assert len(step_meta.inputs[0].fields) == 5
+        assert step_meta.inputs[0].facets['schema'].fields is not None
+        assert step_meta.inputs[0].facets['dataSource'].name == 'bigquery'
+        assert step_meta.inputs[0].facets['dataSource'].uri == 'bigquery'
+        assert len(step_meta.inputs[0].facets['schema'].fields) == 5
         assert step_meta.outputs is not None
         assert len(step_meta.outputs) == 1
-        assert step_meta.outputs[0].fields is not None
-        assert len(step_meta.outputs[0].fields) == 2
+        assert step_meta.outputs[0].facets['schema'].fields is not None
+        assert len(step_meta.outputs[0].facets['schema'].fields) == 2
         assert step_meta.outputs[0].name == \
             'bq-airflow-openlineage.new_dataset.output_table'
 
         assert BigQueryStatisticsDatasetFacet(
             rowCount=20,
             size=321
-        ) == step_meta.outputs[0].custom_facets['stats']
+        ) == step_meta.outputs[0].facets['stats']
 
         assert OutputStatisticsOutputDatasetFacet(
             rowCount=20,
             size=321
-        ) == step_meta.outputs[0].output_facets['outputStatistics']
+        ) == step_meta.outputs[0].outputFacets['outputStatistics']
 
         assert len(step_meta.run_facets) == 1
         assert BigQueryJobRunFacet(

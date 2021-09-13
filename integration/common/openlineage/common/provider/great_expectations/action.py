@@ -89,12 +89,14 @@ class OpenLineageValidationAction(ValidationAction):
         self.job_description = job_description
         self.code_location = code_location
         self.do_publish = do_publish
-        self.log = logging.getLogger(self.__class__.__module__ + '.' + self.__class__.__name__)
 
     def _run(self, validation_result_suite: ExpectationSuiteValidationResult,
              validation_result_suite_identifier: ValidationResultIdentifier,
              data_asset: GEDataset,
              payload=None):
+        # Initialize logger here so that the action is serializable until it actually runs
+        self.log = logging.getLogger(self.__class__.__module__ + '.' + self.__class__.__name__)
+
         datasets = []
         if isinstance(data_asset, SqlAlchemyDataset):
             datasets = self._fetch_datasets_from_sql_source(data_asset, validation_result_suite)

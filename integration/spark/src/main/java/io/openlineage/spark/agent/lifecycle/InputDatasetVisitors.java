@@ -1,4 +1,4 @@
-package io.openlineage.spark.agent.lifecycle.plan;
+package io.openlineage.spark.agent.lifecycle;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.lifecycle.plan.wrapper.InputDatasetVisitor;
@@ -13,7 +13,7 @@ import scala.PartialFunction;
  * OpenLineage.Dataset}. Checks the classpath for classes that are not bundled with Spark to avoid
  * {@link ClassNotFoundException}s during plan traversal.
  */
-public class InputDatasetVisitors
+class InputDatasetVisitors
     implements Supplier<List<PartialFunction<LogicalPlan, List<OpenLineage.InputDataset>>>> {
   private List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> commonVisitors;
 
