@@ -110,7 +110,8 @@ public class LibraryTest {
         .toFile();
   }
 
-  private final Set<String> ommittedKeys = new HashSet<>(Arrays.asList("runId", "nonInheritableMetadataKeys", "validConstraints"));
+  private final Set<String> ommittedKeys =
+      new HashSet<>(Arrays.asList("runId", "nonInheritableMetadataKeys", "validConstraints"));
 
   private Predicate<Map<String, Object>> matchesRecursive(Map<String, Object> target) {
     Predicate<Map<String, Object>> recurse;
