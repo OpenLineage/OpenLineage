@@ -1,0 +1,204 @@
+{
+  "relation": {
+    "location": {
+      "sparkSession": {
+        "traceEnabled": false
+      },
+      "table": {
+        "identifier": {
+          "table": "test",
+          "database": "db",
+          "identifier": "test"
+        },
+        "tableType": {
+          "name": "MANAGED"
+        },
+        "storage": {
+          "locationUri": null,
+          "inputFormat": null,
+          "outputFormat": null,
+          "serde": null,
+          "compressed": false,
+          "properties": {}
+        },
+        "schema": [
+          {
+            "name": "name",
+            "dataType": {
+              "ordering": {}
+            },
+            "nullable": false,
+            "metadata": {
+              "map": {}
+            },
+            "comment": null
+          }
+        ],
+        "provider": null,
+        "partitionColumnNames": [
+          "name"
+        ],
+        "bucketSpec": null,
+        "owner": "",
+        "createTime": 1631621948,
+        "lastAccessTime": 1631621948,
+        "createVersion": "v1",
+        "properties": {},
+        "stats": null,
+        "viewText": null,
+        "comment": null,
+        "unsupportedFeatures": [],
+        "tracksPartitionsInCatalog": false,
+        "schemaPreservesCase": false,
+        "ignoredProperties": {}
+      },
+      "sizeInBytes": 100,
+      "hadoopConf": {
+        "finalParameters": [
+          "mapreduce.job.end-notification.max.retry.interval",
+          "mapreduce.job.end-notification.max.attempts"
+        ]
+      }
+    },
+    "partitionSchema": [
+      {
+        "name": "name",
+        "dataType": {
+          "ordering": {}
+        },
+        "nullable": false,
+        "metadata": {
+          "map": {}
+        },
+        "comment": null
+      }
+    ],
+    "dataSchema": [
+      {
+        "name": "name",
+        "dataType": {
+          "ordering": {}
+        },
+        "nullable": false,
+        "metadata": {
+          "map": {}
+        },
+        "comment": null
+      }
+    ],
+    "bucketSpec": null,
+    "fileFormat": {},
+    "options": {},
+    "sparkSession": {
+      "traceEnabled": false
+    },
+    "overlappedPartCols": {
+      "name": {
+        "name": "name",
+        "dataType": {
+          "ordering": {}
+        },
+        "nullable": false,
+        "metadata": {
+          "map": {}
+        },
+        "comment": null
+      }
+    },
+    "schema": [
+      {
+        "name": "name",
+        "dataType": {
+          "ordering": {}
+        },
+        "nullable": false,
+        "metadata": {
+          "map": {}
+        },
+        "comment": null
+      }
+    ]
+  },
+  "output": [
+    {
+      "name": "name",
+      "dataType": {
+        "ordering": {}
+      },
+      "nullable": false,
+      "metadata": {
+        "map": {}
+      },
+      "exprId": {
+        "id": 1,
+        "jvmId": "bd5688b3-28fa-4539-9fdc-9f52e777a577"
+      },
+      "qualifier": [],
+      "origin": {
+        "line": null,
+        "startPosition": null
+      },
+      "deterministic": true,
+      "resolved": true
+    }
+  ],
+  "catalogTable": null,
+  "isStreaming": false,
+  "origin": {
+    "line": null,
+    "startPosition": null
+  },
+  "schema": [
+    {
+      "name": "name",
+      "dataType": {
+        "ordering": {}
+      },
+      "nullable": false,
+      "metadata": {
+        "map": {}
+      },
+      "comment": null
+    }
+  ],
+  "allAttributes": {
+    "attrs": []
+  },
+  "resolved": true,
+  "constraints": [
+    {
+      "origin": {
+        "line": null,
+        "startPosition": null
+      },
+      "deterministic": true,
+      "resolved": true
+    }
+  ],
+  "statsCache": null,
+  "attributeMap": {
+    "name#1": {
+      "name": "name",
+      "dataType": {
+        "ordering": {}
+      },
+      "nullable": false,
+      "metadata": {
+        "map": {}
+      },
+      "exprId": {
+        "id": 1,
+        "jvmId": "bd5688b3-28fa-4539-9fdc-9f52e777a577"
+      },
+      "qualifier": [],
+      "origin": {
+        "line": null,
+        "startPosition": null
+      },
+      "deterministic": true,
+      "resolved": true
+    }
+  },
+  "traceEnabled": false,
+  "canonicalizedPlan": false
+}

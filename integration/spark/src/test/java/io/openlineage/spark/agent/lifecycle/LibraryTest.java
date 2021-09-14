@@ -22,10 +22,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.spark.SparkConf;
@@ -35,7 +33,6 @@ import org.apache.spark.api.java.function.FilterFunction;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.SparkSession$;
-import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
@@ -99,43 +96,9 @@ public class LibraryTest {
               Paths.get(String.format("integrations/%s/%d.json", "sparksql", i + 1)).toFile(),
               mapTypeReference);
       assertThat(objectMapper.readValue(objectMapper.writeValueAsString(event), mapTypeReference))
-          .satisfies(
-              new Condition<>(matchesRecursive(snapshot), "matches snapshot fields %s", snapshot));
+          .satisfies(new RecursiveMatcher(snapshot, new HashSet<>(Arrays.asList("runId"))));
     }
     verifySerialization(events);
-  }
-
-  private final Set<String> ommittedKeys = new HashSet<>(Arrays.asList("runId"));
-
-  private Predicate<Map<String, Object>> matchesRecursive(Map<String, Object> target) {
-    Predicate<Map<String, Object>> recurse;
-    recurse =
-        (map) -> {
-          if (!map.keySet().containsAll(target.keySet())) {
-            return false;
-          }
-          for (String k : target.keySet()) {
-            if (!ommittedKeys.contains(k)) {
-              continue;
-            }
-            Object val = map.get(k);
-            boolean eq;
-            if (val instanceof Map) {
-              eq =
-                  matchesRecursive((Map<String, Object>) target.get(k))
-                      .test((Map<String, Object>) val);
-            } else if (k.equals("_producer") || k.equals("producer")) {
-              eq = OpenLineageClient.OPEN_LINEAGE_CLIENT_URI.toString().equals(val);
-            } else {
-              eq = val.equals(target.get(k));
-            }
-            if (!eq) {
-              return false;
-            }
-          }
-          return true;
-        };
-    return recurse;
   }
 
   @Test
