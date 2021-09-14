@@ -99,8 +99,11 @@ node of the cluster and its location referenced in the `spark.driver.extraJavaOp
 ### Spark Listener
 The SparkListener reads its configuration from SparkConf parameters. These can be specified on the
 command line (e.g., `--conf "spark.openlineage.url=http://{openlineage.client.host}/api/v1/namespaces/my_namespace/job/the_job"`)
-or from the `conf/spark-defaults.conf` file. The following parameters can be specified
+or from the `conf/spark-defaults.conf` file. 
+
+The following parameters can be specified
 | Parameter | Definition | Example |
+------------|------------|---------
 | spark.openlineage.host | The hostname of the OpenLineage API server where events should be reported | http://localhost:5000 |
 | spark.openlineage.version | The API version of the OpenLineage API server | 1|
 | spark.openlineage.namespace | The default namespace to be applied for any jobs submitted | MyNamespace|
