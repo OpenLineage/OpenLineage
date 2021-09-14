@@ -71,6 +71,10 @@ class DAG(airflow.models.DAG):
             macros = kwargs["user_defined_macros"]
         macros["lineage_run_id"] = lineage_run_id
         kwargs["user_defined_macros"] = macros
+        if kwargs.__contains__("lineage_custom_extractors"):
+            for operator, extractor in kwargs['lineage_custom_extractors'].items():
+                extractor_mapper.add_extractor(operator, extractor)
+            del kwargs['lineage_custom_extractors']
         super().__init__(*args, **kwargs)
 
     def add_task(self, task):
