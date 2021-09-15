@@ -1,22 +1,28 @@
 package io.openlineage.spark.agent;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.client.OpenLineageClient;
+import io.openlineage.spark.agent.lifecycle.RecursiveMatcher;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
-public class SerializeOpenLineageEventTest {
+public class OpenLineageRunEventTest {
+
+  private final TypeReference<Map<String, Object>> mapTypeReference =
+      new TypeReference<Map<String, Object>>() {};
 
   @Test
   public void testSerializeRunEvent() throws IOException {
@@ -88,12 +94,14 @@ public class SerializeOpenLineageEventTest {
     OpenLineage.RunEvent runStateUpdate =
         ol.newRunEvent("START", dateTime, run, job, inputs, outputs);
 
-    String serialized = mapper.writeValueAsString(runStateUpdate);
+    Map<String, Object> actualJson =
+        mapper.readValue(mapper.writeValueAsString(runStateUpdate), mapTypeReference);
 
     Path expectedDataPath =
         Paths.get("src", "test", "resources", "test_data", "serde", "openlineage-event.json");
-    String expectedJson = new String(Files.readAllBytes(expectedDataPath));
+    Map<String, Object> expectedJson =
+        mapper.readValue(expectedDataPath.toFile(), mapTypeReference);
 
-    assertEquals(expectedJson, serialized);
+    assertThat(actualJson).satisfies(new RecursiveMatcher(expectedJson, new HashSet<>()));
   }
 }

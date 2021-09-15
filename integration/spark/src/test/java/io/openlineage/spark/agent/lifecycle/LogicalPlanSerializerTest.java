@@ -13,6 +13,7 @@ import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.Tabl
 import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.TableId;
 import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.TableInfo;
 import com.google.cloud.spark.bigquery.repackaged.com.google.common.collect.ImmutableMap;
+import io.openlineage.spark.agent.client.OpenLineageClient;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -60,6 +61,7 @@ import scala.collection.immutable.Map$;
 class LogicalPlanSerializerTest {
   private final TypeReference<Map<String, Object>> mapTypeReference =
       new TypeReference<Map<String, Object>>() {};
+  private final ObjectMapper objectMapper = OpenLineageClient.createMapper();
 
   @Test
   public void testSerializeLogicalPlan() throws IOException {
@@ -102,7 +104,6 @@ class LogicalPlanSerializerTest {
             Seq$.MODULE$.<Expression>empty(),
             Seq$.MODULE$.<NamedExpression>empty(),
             logicalRelation);
-    ObjectMapper objectMapper = new ObjectMapper();
 
     LogicalPlanSerializer logicalPlanSerializer = LogicalPlanSerializer.getInstance();
     Map<String, Object> aggregateActualNode =
@@ -210,7 +211,6 @@ class LogicalPlanSerializerTest {
             Option.empty(),
             Option.empty(),
             Seq$.MODULE$.<String>newBuilder().$plus$eq("name").result());
-    ObjectMapper objectMapper = new ObjectMapper();
 
     LogicalPlanSerializer logicalPlanSerializer = LogicalPlanSerializer.getInstance();
     Map<String, Object> commandActualNode =
@@ -282,7 +282,6 @@ class LogicalPlanSerializerTest {
 
     InsertIntoDataSourceCommand command =
         new InsertIntoDataSourceCommand(logicalRelation, logicalRelation, false);
-    ObjectMapper objectMapper = new ObjectMapper();
 
     LogicalPlanSerializer logicalPlanSerializer = LogicalPlanSerializer.getInstance();
     Map<String, Object> commandActualNode =
@@ -306,7 +305,8 @@ class LogicalPlanSerializerTest {
         .satisfies(new RecursiveMatcher(expectedBigQueryRelationNode, new HashSet<>()));
   }
 
-  class TestTableDefinition extends TableDefinition {
+  @SuppressWarnings("rawtypes")
+  static class TestTableDefinition extends TableDefinition {
     @Override
     public TableDefinition.Type getType() {
       return TableDefinition.Type.EXTERNAL;
@@ -323,7 +323,7 @@ class LogicalPlanSerializerTest {
       return new TestTableDefinitionBuilder();
     }
 
-    class TestTableDefinitionBuilder extends TableDefinition.Builder {
+    static class TestTableDefinitionBuilder extends TableDefinition.Builder {
 
       @Override
       public TableDefinition.Builder setType(TableDefinition.Type type) {
@@ -339,6 +339,6 @@ class LogicalPlanSerializerTest {
       public TableDefinition build() {
         return new TestTableDefinition();
       }
-    };
+    }
   }
 }
