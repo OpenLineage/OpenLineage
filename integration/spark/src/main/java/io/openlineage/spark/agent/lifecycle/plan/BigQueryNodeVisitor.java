@@ -4,7 +4,6 @@ import com.google.cloud.spark.bigquery.BigQueryRelation;
 import com.google.cloud.spark.bigquery.BigQueryRelationProvider;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.PlanUtils;
-import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -24,6 +23,7 @@ import org.apache.spark.sql.sources.CreatableRelationProvider;
  * bigquery tables is always <code>bigquery</code> and the name is the FQN.
  */
 public class BigQueryNodeVisitor extends QueryPlanVisitor<LogicalPlan> {
+  private static final String BIGQUERY_NAMESPACE = "bigquery";
   private final SQLContext sqlContext;
 
   public BigQueryNodeVisitor(SQLContext sqlContext) {
@@ -75,15 +75,12 @@ public class BigQueryNodeVisitor extends QueryPlanVisitor<LogicalPlan> {
         .map(
             s -> {
               BigQueryRelation relation = s.get();
-              String name =
-                  String.format(
-                      "%s.%s.%s",
-                      relation.tableId().getProject(),
-                      relation.tableId().getDataset(),
-                      relation.tableId().getTable());
+              String name = relation.tableName();
               return Collections.singletonList(
                   PlanUtils.getDataset(
-                      URI.create(String.format("bigquery://%s", name)), x.schema()));
+                      name,
+                      BIGQUERY_NAMESPACE,
+                      PlanUtils.datasetFacet(relation.schema(), BIGQUERY_NAMESPACE)));
             })
         .orElse(null);
   }
