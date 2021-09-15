@@ -129,3 +129,28 @@ def test_dbt_parse_failed_event(mock_datetime, mock_uuid):
     ]
     with open('tests/dbt/fail/result.json', 'r') as f:
         assert events == json.load(f)
+
+
+@mock.patch('uuid.uuid4')
+@mock.patch('datetime.datetime')
+def test_dbt_parse_dbt_test_event(mock_datetime, mock_uuid):
+    mock_datetime.now.return_value.isoformat.return_value = '2021-08-25T11:00:25.277467+00:00'
+    mock_uuid.side_effect = [
+        '6edf42ed-d8d0-454a-b819-d09b9067ff99',
+        '1a69c0a7-04bb-408b-980e-cbbfb1831ef7',
+        'f99310b4-339a-4381-ad3e-c1b95c24ff11',
+        'c11f2efd-4415-45fc-8081-10d2aaa594d2',
+    ]
+
+    processor = DbtArtifactProcessor(
+        producer='https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt',
+        project_dir='tests/dbt/test'
+    )
+    dbt_events = processor.parse()
+    events = [
+        attr.asdict(event, value_serializer=serialize)
+        for event
+        in dbt_events.starts + dbt_events.completes + dbt_events.fails
+    ]
+    with open('tests/dbt/test/result.json', 'r') as f:
+        assert events == json.load(f)
