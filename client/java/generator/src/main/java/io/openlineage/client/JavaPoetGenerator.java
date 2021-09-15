@@ -230,13 +230,16 @@ public class JavaPoetGenerator {
               .build());
       builderClassBuilder.addMethod(MethodSpec
           .methodBuilder("put")
+          .addJavadoc("add additional properties\n")
           .addModifiers(PUBLIC)
           .returns(ClassName.get(PACKAGE, containerClassName, type.getName() + "Builder"))
-          .addJavadoc("@return this\n")
           .addParameter(TypeName.get(String.class), "key")
+          .addJavadoc("@param key the additional property name\n")
           .addParameter(additionalPropertiesValueType, "value")
+          .addJavadoc("@param value the additional property value\n")
           .addCode("this.$N.put(key, value);", fieldName)
           .addCode("return this;", fieldName)
+          .addJavadoc("@return this\n")
           .build());
     }
 
