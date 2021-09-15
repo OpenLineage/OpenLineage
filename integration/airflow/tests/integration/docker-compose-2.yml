@@ -1,11 +1,11 @@
 version: "3.7"
 
-x-airflow-common: &airflow-common
+x-airflow-base: &airflow-base
   build:
     context: .
     target: airflow
     dockerfile: Dockerfile.2
-  environment: &airflow-common-env
+  environment:
     DB_BACKEND: postgresql+psycopg2
     DB_HOST: postgres
     DB_PORT: 5432
@@ -48,7 +48,7 @@ services:
     entrypoint: ["./wait-for-it.sh", "backend:5000", "--", "./entrypoint.sh"]
 
   airflow:
-    <<: *airflow-common
+    <<: *airflow-base
     ports:
       - "8080:8080"
     command: webserver
@@ -63,7 +63,7 @@ services:
     restart: always
 
   airflow_scheduler:
-    <<: *airflow-common
+    <<: *airflow-base
     command: scheduler
     healthcheck:
       test: [ "CMD-SHELL", 'airflow jobs check --job-type SchedulerJob --hostname "$${HOSTNAME}"' ]
@@ -73,7 +73,7 @@ services:
     restart: always
 
   airflow_worker:
-    <<: *airflow-common
+    <<: *airflow-base
     command: celery worker
     restart: always
     healthcheck:
@@ -91,7 +91,7 @@ services:
       - FLASK_RUN_PORT=5000
 
   airflow_init:
-    <<: *airflow-common
+    <<: *airflow-base
     command: db init
 
   redis:
