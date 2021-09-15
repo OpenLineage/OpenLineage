@@ -9,6 +9,7 @@ import io.openlineage.spark.agent.lifecycle.ExecutionContext;
 import io.openlineage.spark.agent.lifecycle.SparkSQLExecutionContext;
 import io.openlineage.spark.agent.transformers.PairRDDFunctionsTransformer;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import java.io.PrintWriter;
 import java.lang.reflect.Field;
 import java.net.URISyntaxException;
 import java.time.ZonedDateTime;
@@ -18,6 +19,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.WeakHashMap;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
@@ -194,11 +196,13 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   }
 
   private static OpenLineage.RunFacets errorRunFacet(Exception e, OpenLineage ol) {
-    OpenLineage.CustomFacetBuilder errorFacet = ol.newCustomFacetBuilder();
-    errorFacet.put("exception", e);
+    OpenLineage.RunFacet errorFacet = ol.newRunFacet();
+    ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+    e.printStackTrace(new PrintWriter(buffer, true));
+    errorFacet.getAdditionalProperties().put("exception", buffer.toString());
 
     OpenLineage.RunFacetsBuilder runFacetsBuilder = ol.newRunFacetsBuilder();
-    runFacetsBuilder.put("lineage.error", errorFacet.build());
+    runFacetsBuilder.put("lineage.error", errorFacet);
     return runFacetsBuilder.build();
   }
 

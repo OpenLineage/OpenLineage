@@ -120,6 +120,9 @@ jobs:
     steps:
       - *checkout_project_root
       - run: |
+          cd ../../java/client
+          ./gradlew publishToMavenLocal
+          cd - 
           # Get, then decode the GPG private key used to sign *.jar
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
           export RELEASE_PASSWORD=$(echo $SONATYPE_PASSWORD)

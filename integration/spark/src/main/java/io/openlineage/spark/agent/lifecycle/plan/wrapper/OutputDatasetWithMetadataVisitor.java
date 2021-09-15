@@ -74,9 +74,10 @@ public class OutputDatasetWithMetadataVisitor
                     .getAdditionalProperties()
                     .put(
                         "stats",
-                        new OutputStatisticsFacet(
-                            outputFacet.getOutputStatistics().getRowCount(),
-                            outputFacet.getOutputStatistics().getSize()));
+                        (OpenLineage.DatasetFacet)
+                            new OutputStatisticsFacet(
+                                outputFacet.getOutputStatistics().getRowCount(),
+                                outputFacet.getOutputStatistics().getSize()));
               }
               return ol.newOutputDatasetBuilder()
                   .name(dataset.getName())

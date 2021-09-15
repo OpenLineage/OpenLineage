@@ -346,11 +346,11 @@ public class JavaPoetGenerator {
           .build());
 
       TypeSpec.Builder classBuilder = TypeSpec.classBuilder("Default" + type.getName())
-          .addModifiers(STATIC, PRIVATE, FINAL);
+          .addModifiers(STATIC, PUBLIC);
       classBuilder.addSuperinterface(ClassName.get(PACKAGE, containerClassName, type.getName()));
 
       MethodSpec.Builder constructor = MethodSpec.constructorBuilder()
-          .addModifiers(PRIVATE);
+          .addModifiers(PUBLIC);
       constructor.addAnnotation(JsonCreator.class);
       List<String> fieldNames = new ArrayList<String>();
       for (ResolvedField f : type.getProperties()) {
@@ -374,6 +374,28 @@ public class JavaPoetGenerator {
       }
       classBuilder.addMethod(constructor.build());
       containerTypeBuilder.addType(classBuilder.build());
+
+
+      Builder factory = MethodSpec.methodBuilder("new" + type.getName())
+          .addModifiers(PUBLIC)
+          .returns(getTypeName(type));
+
+      List<CodeBlock> factoryParams = new ArrayList<>();
+
+      type.getProperties().stream().filter(f -> !isASchemaUrlField(f)).forEach(f -> {
+        if (isAProducerField(f)) {
+          factoryParams.add(CodeBlock.of("this.producer"));
+        } else {
+          factory.addParameter(ParameterSpec.builder(getTypeName(f.getType()), f.getName()).build());
+          factory.addJavadoc("@param $N $N\n", f.getName(), f.getDescription() == null ? "the " + f.getName() : f.getDescription());
+          factoryParams.add(CodeBlock.of("$N", f.getName()));
+        }
+      });
+      factory.addJavadoc("@return $N", type.getName());
+      factory.addCode("return new $N(", "Default" + type.getName());
+      factory.addCode(CodeBlock.join(factoryParams, ", "));
+      factory.addCode(");\n");
+      containerTypeBuilder.addMethod(factory.build());
     }
     ///////////////////////////////
   }
