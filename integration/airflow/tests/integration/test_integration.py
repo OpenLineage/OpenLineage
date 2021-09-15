@@ -116,7 +116,6 @@ def check_events_emitted(expected_requests):
     r = requests.get('http://backend:5000/api/v1/lineage', timeout=5)
     r.raise_for_status()
     received_requests = r.json()
-
     return check_matches(expected_requests, received_requests)
 
 
@@ -132,52 +131,14 @@ def setup_db():
     airflow_db_conn.autocommit = True
 
 
-def clear_db():
-    requests.post('http://backend:5000/clear', timeout=5)
-
-
-def test_integration_postgres():
-    DAG_ID = 'postgres_orders_popular_day_of_week'
-
-    # (0) Give db time to start
-    setup_db()
+def test_integration(dag_id, request_path):
     # (1) Wait for DAG to complete
-    wait_for_dag(DAG_ID)
+    wait_for_dag(dag_id)
     # (2) Read expected events
-    with open('requests/postgres.json', 'r') as f:
+    with open(request_path, 'r') as f:
         expected_requests = json.load(f)
 
-    # (3) Verify events emitted
-    if not check_events_emitted(expected_requests):
-        sys.exit(1)
-
-
-def test_integration_bigquery():
-    DAG_ID = 'bigquery_orders_popular_day_of_week'
-
-    # (0) Give db time to start
-    setup_db()
-    # (1) Wait for DAG to complete
-    wait_for_dag(DAG_ID)
-    # (2) Read expected events
-    with open('requests/bigquery.json', 'r') as f:
-        expected_requests = json.load(f)
-
-    # (3) Verify events emitted
-    if not check_events_emitted(expected_requests):
-        sys.exit(1)
-
-
-def test_integration_great_expectations():
-    DAG_ID = 'great_expectations_validation'
-
-    # (1) Wait for DAG to complete
-    wait_for_dag(DAG_ID)
-    # (2) Read expected events
-    with open('requests/great_expectations.json', 'r') as f:
-        expected_requests = json.load(f)
-
-    time.sleep(10)
+    time.sleep(5)
 
     # (3) Verify events emitted
     if not check_events_emitted(expected_requests):
@@ -186,6 +147,7 @@ def test_integration_great_expectations():
 
 if __name__ == '__main__':
     setup_db()
-    test_integration_great_expectations()
-    test_integration_postgres()
-    test_integration_bigquery()
+    test_integration('great_expectations_validation', 'requests/great_expectations.json')
+    test_integration('postgres_orders_popular_day_of_week', 'requests/postgres.json')
+    test_integration('bigquery_orders_popular_day_of_week', 'requests/bigquery.json')
+    test_integration('dbt_dag', 'requests/dbt.json')

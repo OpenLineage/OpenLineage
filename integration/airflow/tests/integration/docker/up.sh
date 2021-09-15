@@ -38,6 +38,7 @@ OPENLINEAGE_AIRFLOW_WHL_ALL=$(docker run openlineage-airflow-base:latest sh -c "
 # Add revision to requirements.txt
 cat > requirements.txt <<EOL
 airflow-provider-great-expectations==0.0.8
+dbt-bigquery==0.20.1
 ${OPENLINEAGE_AIRFLOW_WHL}
 EOL
 

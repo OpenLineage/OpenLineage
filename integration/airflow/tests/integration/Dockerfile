@@ -4,7 +4,7 @@ FROM bitnami/airflow-scheduler:1.10.12 AS scheduler
 COPY --from=build /app/wheel /whl
 USER root
 RUN apt-get update && \
-    apt-get install -y git
+    apt-get install -y git build-essential
 USER 1001
 
 
@@ -12,14 +12,14 @@ FROM bitnami/airflow-worker:1.10.12 AS worker
 COPY --from=build /app/wheel /whl
 USER root
 RUN apt-get update && \
-    apt-get install -y git
+    apt-get install -y git build-essential
 USER 1001
 
 FROM bitnami/airflow:1.10.12 AS airflow
 COPY --from=build /app/wheel /whl
 USER root
 RUN apt-get update && \
-    apt-get install -y git
+    apt-get install -y git build-essential
 USER 1001
 
 FROM openlineage-airflow-base:latest AS integration
