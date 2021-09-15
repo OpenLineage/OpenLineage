@@ -127,7 +127,7 @@ public class SchemaParser {
 
     @Override
     public String toString() {
-      return "RefType:" + pointer;
+      return "RefType{pointer: " + pointer + "}";
     }
 
   }
@@ -149,6 +149,12 @@ public class SchemaParser {
       return visitor.visit(this);
     }
 
+
+    @Override
+    public String toString() {
+      return "OneOfType{types: " + types + "}";
+    }
+
   }
 
   static class AllOfType implements Type {
@@ -166,6 +172,11 @@ public class SchemaParser {
     @Override
     public <T> T accept(TypeVisitor<T> visitor) {
       return visitor.visit(this);
+    }
+
+    @Override
+    public String toString() {
+      return "AllOfType{children: " + children + "}";
     }
 
   }
@@ -191,17 +202,17 @@ public class SchemaParser {
       return visitor.visit(this);
     }
 
-    @Override
-    public String toString() {
-      return "PrimitiveType [name=" + name + "]";
-    }
-
     public String getName() {
       return name;
     }
 
     public String getFormat() {
       return format;
+    }
+
+    @Override
+    public String toString() {
+      return "PrimitiveType{name: " + name + "}";
     }
   }
 
@@ -269,7 +280,7 @@ public class SchemaParser {
 
     @Override
     public String toString() {
-      return "ObjectType [properties=" + properties + "]";
+      return "ObjectType{properties: " + properties + "}";
     }
 
   }
@@ -292,7 +303,7 @@ public class SchemaParser {
     }
     @Override
     public String toString() {
-      return "ArrayType [items=" + items + "]";
+      return "ArrayType{items: " + items + "}";
     }
 
   }

@@ -31,7 +31,9 @@ import io.openlineage.client.TypeResolver.ResolvedField;
 public class Generator {
   private static final Logger logger = LoggerFactory.getLogger(Generator.class);
 
+  private static final String CONTAINER_CLASS_NAME = "OpenLineage";
   private static final String JSON_EXT = ".json";
+  private static final String JAVA_EXT = ".java";
 
   /**
    * will generate java classes from the spec URL
@@ -83,7 +85,7 @@ public class Generator {
       try (InputStream openStream = idURL.openStream();) {
         JsonNode published = mapper.readValue(openStream, JsonNode.class);
         if (!published.equals(schema)) {
-          throw new RuntimeException("You must increment the version when modifying the schema. The current schema at " + url + " has the $id " + idURL + " but the version at that URL does not match.");
+          throw new InvalidSchemaIDException("You must increment the version when modifying the schema. The current schema at " + url + " has the $id " + idURL + " but the version at that URL does not match.");
         }
       } catch (FileNotFoundException e) {
         logger.warn("This version of the spec is not published yet: " + idURL);
@@ -93,10 +95,10 @@ public class Generator {
     return url;
   }
 
-  public static void generate(Set<URL> urls, File outputBase) {
+  public static void generate(Set<URL> urls, File outputBase) throws FileNotFoundException {
     if (!outputBase.exists()) {
       if (!outputBase.mkdirs()) {
-        throw new RuntimeException("can't create output " + outputBase.getAbsolutePath());
+        throw new FileNotFoundException("can't create output " + outputBase.getAbsolutePath());
       }
     }
     try {
@@ -118,11 +120,10 @@ public class Generator {
         }
       }
 
-      String containerClassName = "OpenLineage";
-      String javaPath = containerClassName + ".java";
+      String javaPath = CONTAINER_CLASS_NAME + JAVA_EXT;
       File output = new File(outputBase, javaPath);
       try (PrintWriter printWriter = new PrintWriter(output)) {
-        new JavaPoetGenerator(typeResolver, containerClassName, containerToID).generate(printWriter);
+        new JavaPoetGenerator(typeResolver, CONTAINER_CLASS_NAME, containerToID).generate(printWriter);
       }
 
     } catch (RuntimeException e) {
@@ -135,7 +136,7 @@ public class Generator {
   private static void enrichFacetContainersWithFacets(
       TypeResolver typeResolver, Map<String, ObjectResolvedType> facetContainers) {
     for (ObjectResolvedType objectResolvedType : typeResolver.getTypes()) {
-      if (objectResolvedType.getContainer().equals("OpenLineage")) {
+      if (objectResolvedType.getContainer().equals(CONTAINER_CLASS_NAME)) {
         continue;
       }
       List<ResolvedField> properties = objectResolvedType.getProperties();
@@ -160,7 +161,7 @@ public class Generator {
       TypeResolver typeResolver) {
     Map<String, ObjectResolvedType> facetContainers = new HashMap<>();
     for (ObjectResolvedType objectResolvedType : typeResolver.getTypes()) {
-      if (objectResolvedType.getContainer().equals("OpenLineage")
+      if (objectResolvedType.getContainer().equals(CONTAINER_CLASS_NAME)
           && objectResolvedType.hasAdditionalProperties()
           && objectResolvedType.getAdditionalPropertiesType() != null) {
         objectResolvedType.getAdditionalPropertiesType().accept(new DefaultResolvedTypeVisitor<Void>() {
@@ -173,6 +174,16 @@ public class Generator {
       }
     }
     return facetContainers;
+  }
+
+  public static class InvalidSchemaIDException extends RuntimeException {
+
+    public InvalidSchemaIDException(String message) {
+      super(message);
+    }
+
+    private static final long serialVersionUID = 1L;
+
   }
 
 }
