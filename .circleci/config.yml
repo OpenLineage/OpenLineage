@@ -113,6 +113,16 @@ jobs:
           # Publish *.jar
           ./gradlew publish
 
+  publish-snapshot-locally-client-java:
+    working_directory: ~/openlineage/client/java
+    docker:
+      - image: cimg/openjdk:11.0
+    steps:
+      - *checkout_project_root
+      - run: |
+          # Publish openlineage-client-*-SNAPSHOT.jar to local maven repository
+          ./gradlew publishToMavenLocal
+
   release-integration-spark:
     working_directory: ~/openlineage/integration/spark
     docker:
@@ -303,12 +313,17 @@ workflows:
   openlineage:
     jobs:
       - build-client-java
+      - publish-snapshot-locally-client-java:
+          requires:
+            - build-client-java
       - publish-snapshot-client-java:
           <<: *only_on_main
           context: release
           requires:
             - build-client-java
-      - build-integration-spark
+      - build-integration-spark:
+          requires:
+            - publish-snapshot-locally-client-java
       - integration-test-integration-spark:
           requires:
             - build-integration-spark
