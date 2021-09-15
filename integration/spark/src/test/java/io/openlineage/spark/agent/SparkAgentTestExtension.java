@@ -4,9 +4,15 @@ import static org.mockito.Mockito.mock;
 
 import io.openlineage.spark.agent.lifecycle.StaticExecutionContextFactory;
 import net.bytebuddy.agent.ByteBuddyAgent;
+import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.SparkSession$;
+import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.ParameterContext;
+import org.junit.jupiter.api.extension.ParameterResolutionException;
+import org.junit.jupiter.api.extension.ParameterResolver;
 import org.mockito.Mockito;
 
 /**
@@ -21,21 +27,44 @@ import org.mockito.Mockito;
  * {@link java.lang.instrument.ClassFileTransformer} process again. If a test doesn't use this
  * extension and ends up running before other Spark tests, those subsequent tests will fail.
  */
-public class SparkAgentTestExtension implements BeforeAllCallback, BeforeEachCallback {
+public class SparkAgentTestExtension
+    implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback, ParameterResolver {
   public static final OpenLineageContext OPEN_LINEAGE_SPARK_CONTEXT =
       mock(OpenLineageContext.class);
 
   @Override
   public void beforeAll(ExtensionContext context) throws Exception {
-    ByteBuddyAgent.install();
-    SparkAgent.premain(
-        "/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54",
-        ByteBuddyAgent.getInstrumentation(),
-        new StaticExecutionContextFactory(OPEN_LINEAGE_SPARK_CONTEXT));
+    OpenLineageSparkListener.init(new StaticExecutionContextFactory(OPEN_LINEAGE_SPARK_CONTEXT));
   }
 
   @Override
   public void beforeEach(ExtensionContext context) throws Exception {
     Mockito.reset(OPEN_LINEAGE_SPARK_CONTEXT);
+  }
+
+  @Override
+  public void afterEach(ExtensionContext context) throws Exception {
+    SparkSession$.MODULE$.cleanupAnyExistingSession();
+  }
+
+  @Override
+  public boolean supportsParameter(
+      ParameterContext parameterContext, ExtensionContext extensionContext)
+      throws ParameterResolutionException {
+    return parameterContext.getParameter().getType().equals(SparkSession.class);
+  }
+
+  @Override
+  public Object resolveParameter(
+      ParameterContext parameterContext, ExtensionContext extensionContext)
+      throws ParameterResolutionException {
+    SparkSession$.MODULE$.cleanupAnyExistingSession();
+    return SparkSession.builder()
+        .master("local[*]")
+        .appName(parameterContext.getDeclaringExecutable().getName())
+        .config("spark.extraListeners", OpenLineageSparkListener.class.getName())
+        .config("spark.driver.host", "127.0.0.1")
+        .config("spark.driver.bindAddress", "127.0.0.1")
+        .getOrCreate();
   }
 }

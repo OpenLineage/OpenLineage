@@ -3,6 +3,7 @@ import json
 import yaml
 import os
 import uuid
+import collections
 from typing import List, Tuple, Dict, Optional
 
 import attr
@@ -10,6 +11,7 @@ import attr
 from openlineage.client.facet import DataSourceDatasetFacet, SchemaDatasetFacet, SchemaField, \
     SqlJobFacet, OutputStatisticsOutputDatasetFacet
 from openlineage.client.run import RunEvent, RunState, Run, Job, Dataset, OutputDataset
+from openlineage.client.facet import Assertion, DataQualityAssertionsDatasetFacet
 from openlineage.common.utils import get_from_nullable_chain, get_from_multiple_chains
 
 
@@ -25,7 +27,7 @@ class DbtRun:
     completed_at: str = attr.ib()
     status: str = attr.ib()
     inputs: List[ModelNode] = attr.ib()
-    output: ModelNode = attr.ib()
+    output: Optional[ModelNode] = attr.ib()
     job_name: str = attr.ib()
     namespace: str = attr.ib()
     run_id: str = attr.ib(factory=lambda: str(uuid.uuid4()))
@@ -97,19 +99,20 @@ class DbtArtifactProcessor:
         self.extract_dataset_namespace(profile)
         self.extract_job_namespace(profile)
 
-        runs = self.parse_artifacts(manifest, run_result, catalog)
+        nodes = {}
+        # Filter non-model or test nodes
+        for name, node in manifest['nodes'].items():
+            if name.startswith('model.') or name.startswith('test.'):
+                nodes[name] = node
 
-        start_events, complete_events, fail_events = [], [], []
-        for run in runs:
-            results = self.to_openlineage_events(run)
-            if not results:
-                continue
-            start_events.append(results.start)
-            if results.complete:
-                complete_events.append(results.complete)
-            elif results.fail:
-                fail_events.append(results.fail)
-        return DbtEvents(start_events, complete_events, fail_events)
+        if run_result['args']['which'] == 'run':
+            return self.parse_run(manifest, run_result, catalog, nodes)
+        elif run_result['args']['which'] == 'test':
+            return self.parse_test(manifest, run_result, catalog, nodes)
+        raise ValueError(
+            f"Not recognized run command "
+            f"{run_result['args']['which']} - should be run or test"
+        )
 
     @staticmethod
     def load_metadata(path: str, desired_schema_version: str) -> Dict:
@@ -142,32 +145,16 @@ class DbtArtifactProcessor:
         with open(path, 'r') as f:
             return yaml.load(f, Loader=yaml.FullLoader)
 
-    def parse_artifacts(
-            self,
-            manifest: Dict,
-            run_results: Dict,
-            catalog: Optional[Dict]
-    ) -> List[DbtRun]:
-        nodes = {}
+    def parse_run(
+        self,
+        manifest: Dict,
+        run_results: Dict,
+        catalog: Optional[Dict],
+        nodes: Dict
+    ) -> DbtEvents:
         runs = []
-
-        # Filter non-model nodes
-        for name, node in manifest['nodes'].items():
-            if name.startswith('model.'):
-                nodes[name] = node
-
         for run in run_results['results']:
-
-            def get_timings(timings: List[Dict]) -> Tuple[str, str]:
-                try:
-                    timing = list(filter(lambda x: x['name'] == 'execute', timings))[0]
-                    return timing['started_at'], timing['completed_at']
-                except IndexError:
-                    # Run failed: there is no timing data
-                    timing = datetime.datetime.now(datetime.timezone.utc).isoformat()
-                    return timing, timing
-
-            started_at, completed_at = get_timings(run['timing'])
+            started_at, completed_at = self.get_timings(run['timing'])
 
             inputs = []
             for node in manifest['parent_map'][run['unique_id']]:
@@ -198,7 +185,105 @@ class DbtArtifactProcessor:
                 f"{self.removeprefix(run['unique_id'], 'model.')}",
                 self.dataset_namespace
             ))
-        return runs
+
+        start_events, complete_events, fail_events = [], [], []
+        for run in runs:
+            results = self.to_openlineage_events(run)
+            if not results:
+                continue
+            start_events.append(results.start)
+            if results.complete:
+                complete_events.append(results.complete)
+            elif results.fail:
+                fail_events.append(results.fail)
+        return DbtEvents(start_events, complete_events, fail_events)
+
+    def parse_test(
+        self,
+        manifest: Dict,
+        run_results: Dict,
+        catalog: Optional[Dict],
+        nodes: Dict
+    ) -> DbtEvents:
+
+        # The tests can have different timings, so just take current time
+        started_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        completed_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+        assertions = collections.defaultdict(list)
+
+        for run in run_results['results']:
+
+            test_node = nodes[run['unique_id']]
+            model_node = None
+            for node in manifest['parent_map'][run['unique_id']]:
+                if node.startswith('model.') or node.startswith('source.'):
+                    model_node = node
+
+            assertions[model_node].append(Assertion(
+                assertion=test_node['test_metadata']['name'],
+                success=True if run['status'] == 'pass' else False,
+                column=get_from_nullable_chain(
+                    test_node['test_metadata'],
+                    ['kwargs', 'column_name']
+                )
+            ))
+
+            if not model_node:
+                raise ValueError(
+                    f"Model node connected to test {nodes[run['unique_id']]} not found"
+                )
+
+        starts, completes = [], []
+        for name, node in manifest['nodes'].items():
+            if not name.startswith('model.') and not name.startswith('source.'):
+                continue
+            if len(assertions[name]) == 0:
+                continue
+
+            assertion_facet = DataQualityAssertionsDatasetFacet(
+                assertions=assertions[name]
+            )
+
+            namespace, name, _ = self.extract_dataset_data(ModelNode(node), has_facets=False)
+
+            job_name = f"{node['database']}." \
+                f"{node['schema']}." \
+                f"{self.removeprefix(node['unique_id'], 'test.')}"
+
+            run_id = str(uuid.uuid4())
+            starts.append(RunEvent(
+                eventType=RunState.START,
+                eventTime=started_at,
+                run=Run(
+                    runId=run_id
+                ),
+                job=Job(
+                    namespace=self.job_namespace,
+                    name=job_name
+                ),
+                producer=self.producer,
+                inputs=[Dataset(namespace, name)],
+                outputs=[]
+            ))
+            completes.append(RunEvent(
+                eventType=RunState.COMPLETE,
+                eventTime=completed_at,
+                run=Run(
+                    runId=run_id
+                ),
+                job=Job(
+                    namespace=self.job_namespace,
+                    name=job_name
+                ),
+                producer=self.producer,
+                inputs=[Dataset(namespace, name, facets={
+                    "dataQualityAssertions": assertion_facet
+                })],
+                outputs=[]
+            ))
+
+        return DbtEvents(starts, completes, [])
 
     def to_openlineage_events(self, run: DbtRun) -> Optional[DbtRunResult]:
         try:
@@ -224,7 +309,7 @@ class DbtArtifactProcessor:
             ),
             producer=self.producer,
             inputs=[self.node_to_dataset(node) for node in run.inputs],
-            outputs=[self.node_to_output_dataset(run.output)]
+            outputs=[self.node_to_output_dataset(run.output)] if run.output else []
         )
 
         if run.status == 'success':
@@ -274,33 +359,6 @@ class DbtArtifactProcessor:
             raise ValueError(f"Run status was {run.status}, "
                              f"should be in ['success', 'skipped', 'skipped']")
 
-    def extract_dataset_data(
-            self, node: ModelNode, has_facets: bool = False
-    ) -> Tuple[str, str, Dict]:
-        if has_facets:
-            facets = {
-                'dataSource': DataSourceDatasetFacet(
-                    name=self.dataset_namespace,
-                    uri=self.dataset_namespace
-                ),
-                'schema': SchemaDatasetFacet(
-                    fields=self.extract_metadata_fields(node.metadata_node['columns'].values())
-                )
-            }
-            if node.catalog_node:
-                facets['schema'] = SchemaDatasetFacet(
-                    fields=self.extract_catalog_fields(node.catalog_node['columns'].values())
-                )
-        else:
-            facets = {}
-        return (
-            self.dataset_namespace,
-            f"{node.metadata_node['database']}."
-            f"{node.metadata_node['schema']}."
-            f"{node.metadata_node['name']}",
-            facets
-        )
-
     def node_to_dataset(self, node: ModelNode, has_facets: bool = False) -> Dataset:
         return Dataset(
             *self.extract_dataset_data(node, has_facets)
@@ -338,8 +396,40 @@ class DbtArtifactProcessor:
             name, namespace, facets, output_facets
         )
 
+    def extract_dataset_data(
+            self, node: ModelNode, has_facets: bool = False
+    ) -> Tuple[str, str, Dict]:
+        if has_facets:
+            facets = {
+                'dataSource': DataSourceDatasetFacet(
+                    name=self.dataset_namespace,
+                    uri=self.dataset_namespace
+                ),
+                'schema': SchemaDatasetFacet(
+                    fields=self.extract_metadata_fields(node.metadata_node['columns'].values())
+                )
+            }
+            if node.catalog_node:
+                facets['schema'] = SchemaDatasetFacet(
+                    fields=self.extract_catalog_fields(node.catalog_node['columns'].values())
+                )
+        else:
+            facets = {}
+        return (
+            self.dataset_namespace,
+            f"{node.metadata_node['database']}."
+            f"{node.metadata_node['schema']}."
+            f"{node.metadata_node['name']}",
+            facets
+        )
+
     @staticmethod
     def extract_metadata_fields(columns: List[Dict]) -> List[SchemaField]:
+        """
+        Extract table field info from metadata's node column info
+        Should be used only in the lack of catalog's presence, as there's less
+        information in metadata file than in catalog.
+        """
         fields = []
         for field in columns:
             type = None
@@ -352,6 +442,7 @@ class DbtArtifactProcessor:
 
     @staticmethod
     def extract_catalog_fields(columns: List[Dict]) -> List[SchemaField]:
+        """Extract table field info from catalog's node column info"""
         fields = []
         for field in columns:
             type, description = None, None
@@ -374,6 +465,7 @@ class DbtArtifactProcessor:
         )
 
     def extract_namespace(self, profile: Dict) -> str:
+        """Extract namespace from profile's type"""
         if profile['type'] == 'snowflake':
             return f"snowflake://{profile['account']}"
         elif profile['type'] == 'bigquery':
@@ -383,6 +475,17 @@ class DbtArtifactProcessor:
                 f"Only 'snowflake' and 'bigquery' adapters are supported right now. "
                 f"Passed {profile['type']}"
             )
+
+    @staticmethod
+    def get_timings(timings: List[Dict]) -> Tuple[str, str]:
+        """Extract timing info from run_result's timing dict"""
+        try:
+            timing = list(filter(lambda x: x['name'] == 'execute', timings))[0]
+            return timing['started_at'], timing['completed_at']
+        except IndexError:
+            # Run failed: there is no timing data
+            timing = datetime.datetime.now(datetime.timezone.utc).isoformat()
+            return timing, timing
 
     @staticmethod
     def removeprefix(string: str, prefix: str) -> str:
