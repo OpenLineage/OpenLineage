@@ -95,7 +95,7 @@ dependencies {
     testImplementation "org.testcontainers:junit-jupiter:${testcontainersVersion}"
     testImplementation "org.testcontainers:postgresql:${testcontainersVersion}"
     testImplementation "org.testcontainers:mockserver:${testcontainersVersion}"
-    testImplementation "org.testcontainers:kafka:1.16.0"
+    testImplementation "org.testcontainers:kafka:${testcontainersVersion}"
     testImplementation('org.mock-server:mockserver-client-java:5.11.2') {
         exclude group: 'com.google.guava', module: 'guava'
     }
