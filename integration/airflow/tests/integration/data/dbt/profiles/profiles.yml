@@ -1,0 +1,13 @@
+bigquery:
+    target: prod
+    outputs:
+        prod:
+            type: bigquery
+            method: service-account
+            keyfile: /opt/config/gcloud/gcloud-service-key.json
+            project: speedy-vim-308516
+            dataset: dbt_test1
+            threads: 2
+            timeout_seconds: 300
+            location: EU
+            priority: interactive

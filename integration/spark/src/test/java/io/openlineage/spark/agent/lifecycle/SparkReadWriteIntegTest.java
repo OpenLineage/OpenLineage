@@ -43,7 +43,6 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.SparkSession$;
 import org.apache.spark.sql.catalyst.expressions.GenericRow;
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema;
 import org.apache.spark.sql.types.IntegerType$;
@@ -54,7 +53,6 @@ import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.map.ObjectMapper;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -78,23 +76,11 @@ public class SparkReadWriteIntegTest {
         .thenReturn("Namespace");
   }
 
-  @AfterEach
-  public void tearDown() {
-    SparkSession$.MODULE$.cleanupAnyExistingSession();
-  }
-
   @Test
-  public void testBigQueryReadWriteToFile(@TempDir Path writeDir)
+  public void testBigQueryReadWriteToFile(@TempDir Path writeDir, SparkSession spark)
       throws InterruptedException, TimeoutException {
     TableId tableId = TableId.of("testproject", "dataset", "MyTable");
     BigQuery bq = MockBigQueryRelationProvider.BIG_QUERY;
-    final SparkSession spark =
-        SparkSession.builder()
-            .master("local[*]")
-            .appName("Word Count")
-            .config("spark.driver.host", "127.0.0.1")
-            .config("spark.driver.bindAddress", "127.0.0.1")
-            .getOrCreate();
     StructType tableSchema =
         new StructType(
             new StructField[] {
@@ -177,17 +163,10 @@ public class SparkReadWriteIntegTest {
   }
 
   @Test
-  public void testReadFromFileWriteToJdbc(@TempDir Path writeDir)
+  public void testReadFromFileWriteToJdbc(@TempDir Path writeDir, SparkSession spark)
       throws InterruptedException, TimeoutException, IOException {
     Path testFile = writeTestDataToFile(writeDir);
 
-    final SparkSession spark =
-        SparkSession.builder()
-            .master("local[*]")
-            .appName("Word Count")
-            .config("spark.driver.host", "127.0.0.1")
-            .config("spark.driver.bindAddress", "127.0.0.1")
-            .getOrCreate();
     Dataset<Row> df = spark.read().json("file://" + testFile.toAbsolutePath().toString());
 
     Path sqliteFile = writeDir.resolve("sqlite/database");
@@ -257,16 +236,9 @@ public class SparkReadWriteIntegTest {
   }
 
   @Test
-  public void testInsertIntoDataSourceDirVisitor(@TempDir Path tempDir)
+  public void testInsertIntoDataSourceDirVisitor(@TempDir Path tempDir, SparkSession spark)
       throws IOException, InterruptedException, TimeoutException {
     Path testFile = writeTestDataToFile(tempDir);
-    final SparkSession spark =
-        SparkSession.builder()
-            .master("local[*]")
-            .appName("Word Count")
-            .config("spark.driver.host", "127.0.0.1")
-            .config("spark.driver.bindAddress", "127.0.0.1")
-            .getOrCreate();
     Path parquetDir = tempDir.resolve("parquet").toAbsolutePath();
     spark.read().json("file://" + testFile.toAbsolutePath()).createOrReplaceTempView("testdata");
     spark.sql(
@@ -297,9 +269,8 @@ public class SparkReadWriteIntegTest {
   }
 
   @Test
-  public void testWithLogicalRdd(@TempDir Path tmpDir)
+  public void testWithLogicalRdd(@TempDir Path tmpDir, SparkSession spark)
       throws InterruptedException, TimeoutException {
-    SparkSession session = SparkSession.builder().master("local").getOrCreate();
     StructType schema =
         new StructType(
             new StructField[] {
@@ -308,7 +279,7 @@ public class SparkReadWriteIntegTest {
             });
     String csvPath = tmpDir.toAbsolutePath() + "/csv_data";
     String csvUri = "file://" + csvPath;
-    session
+    spark
         .createDataFrame(
             Arrays.asList(
                 new GenericRow(new Object[] {1, "seven"}),
@@ -330,7 +301,7 @@ public class SparkReadWriteIntegTest {
     JobConf conf = new JobConf();
     FileInputFormat.addInputPath(conf, new org.apache.hadoop.fs.Path(csvUri));
     JavaRDD<Tuple2<LongWritable, Text>> csvRdd =
-        session
+        spark
             .sparkContext()
             .hadoopRDD(conf, TextInputFormat.class, LongWritable.class, Text.class, 1)
             .toJavaRDD();
@@ -338,7 +309,7 @@ public class SparkReadWriteIntegTest {
         csvRdd
             .map(t -> new String(t._2.getBytes()).split(","))
             .map(arr -> new GenericRow(new Object[] {Integer.parseInt(arr[0]), arr[1]}));
-    Dataset<Row> df = session.createDataFrame(splitDf, schema);
+    Dataset<Row> df = spark.createDataFrame(splitDf, schema);
     String outputPath = tmpDir.toAbsolutePath() + "/output_data";
     String jsonPath = "file://" + outputPath;
     df.write().json(jsonPath);

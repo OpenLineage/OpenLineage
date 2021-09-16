@@ -29,15 +29,12 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.FilterFunction;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.SparkSession$;
 import org.assertj.core.api.Condition;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,27 +48,14 @@ public class LibraryTest {
   private final TypeReference<Map<String, Object>> mapTypeReference =
       new TypeReference<Map<String, Object>>() {};
 
-  @AfterEach
-  public void tearDown() throws Exception {
-    SparkSession$.MODULE$.cleanupAnyExistingSession();
-  }
-
   @RepeatedTest(30)
-  public void testSparkSql() throws IOException, TimeoutException {
+  public void testSparkSql(SparkSession spark) throws IOException, TimeoutException {
     when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getJobNamespace())
         .thenReturn("ns_name");
     when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentJobName())
         .thenReturn("job_name");
     when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentRunId())
         .thenReturn(Optional.of(UUID.fromString("ea445b5c-22eb-457a-8007-01c7c52b6e54")));
-
-    final SparkSession spark =
-        SparkSession.builder()
-            .master("local[*]")
-            .appName("Word Count")
-            .config("spark.driver.host", "127.0.0.1")
-            .config("spark.driver.bindAddress", "127.0.0.1")
-            .getOrCreate();
 
     URL url = Resources.getResource("test_data/data.txt");
     final Dataset<String> data = spark.read().textFile(url.getPath());
@@ -145,7 +129,7 @@ public class LibraryTest {
   }
 
   @Test
-  public void testRdd() throws IOException {
+  public void testRdd(SparkSession spark) throws IOException {
     when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getJobNamespace())
         .thenReturn("ns_name");
     when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentJobName())
@@ -154,8 +138,7 @@ public class LibraryTest {
         .thenReturn(Optional.of(UUID.fromString("8d99e33e-2a1c-4254-9600-18f23435fc3b")));
 
     URL url = Resources.getResource("test_data/data.txt");
-    SparkConf conf = new SparkConf().setAppName("Word Count").setMaster("local[*]");
-    JavaSparkContext sc = new JavaSparkContext(conf);
+    JavaSparkContext sc = new JavaSparkContext(spark.sparkContext());
     JavaRDD<String> textFile = sc.textFile(url.getPath());
 
     textFile
@@ -195,9 +178,8 @@ public class LibraryTest {
   }
 
   @Test
-  public void testRDDName() {
-    SparkConf conf = new SparkConf().setAppName("Word Count").setMaster("local[*]");
-    JavaSparkContext sc = new JavaSparkContext(conf);
+  public void testRDDName(SparkSession spark) {
+    JavaSparkContext sc = new JavaSparkContext(spark.sparkContext());
     JavaRDD<Integer> numbers =
         sc.parallelize(IntStream.range(1, 100).mapToObj(Integer::new).collect(Collectors.toList()));
     numbers.setName("numbers");

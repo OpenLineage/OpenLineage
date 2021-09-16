@@ -58,7 +58,6 @@ archivesBaseName='openlineage-spark'
 ext {
     assertjVersion = '3.20.2'
     junit5Version = '5.7.2'
-    bytebuddyVersion = '1.10.21'
     sparkVersion = '2.4.7'
     spark3Version = '3.1.0'
     jacksonVersion = '2.12.2'
@@ -85,8 +84,6 @@ dependencies {
     compileOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
     compileOnly 'com.google.cloud.spark:spark-bigquery_2.11:0.21.1'
 
-    testImplementation "net.bytebuddy:byte-buddy-agent:${bytebuddyVersion}"
-    testImplementation "net.bytebuddy:byte-buddy-dep:${bytebuddyVersion}"
     testImplementation platform('org.junit:junit-bom:5.7.1')
     testImplementation "org.postgresql:postgresql:${postgresqlVersion}"
     testImplementation 'org.hamcrest:hamcrest-library:2.2'
