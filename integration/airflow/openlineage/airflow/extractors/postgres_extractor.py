@@ -18,8 +18,9 @@ from airflow.hooks.postgres_hook import PostgresHook
 from openlineage.airflow.utils import get_normalized_postgres_connection_uri, get_connection
 from openlineage.airflow.extractors.base import (
     BaseExtractor,
-    StepMetadata
+    TaskMetadata
 )
+from openlineage.client.facet import SqlJobFacet
 from openlineage.common.models import (
     DbTableName,
     DbTableSchema,
@@ -48,7 +49,7 @@ class PostgresExtractor(BaseExtractor):
     def get_operator_classnames(cls) -> List[str]:
         return ['PostgresOperator']
 
-    def extract(self) -> StepMetadata:
+    def extract(self) -> TaskMetadata:
         # (1) Parse sql statement to obtain input / output tables.
         sql_meta: SqlMeta = SqlParser.parse(self.operator.sql, self.default_schema)
 
@@ -92,12 +93,12 @@ class PostgresExtractor(BaseExtractor):
             )
         ]
 
-        return StepMetadata(
+        return TaskMetadata(
             name=f"{self.operator.dag_id}.{self.operator.task_id}",
             inputs=[ds.to_openlineage_dataset() for ds in inputs],
             outputs=[ds.to_openlineage_dataset() for ds in outputs],
-            context={
-                'sql': self.operator.sql
+            job_facets={
+                'sql': SqlJobFacet(self.operator.sql)
             }
         )
 

@@ -83,47 +83,47 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
             execution_date=datetime.utcnow().replace(tzinfo=pytz.utc))
 
         bq_extractor = BigQueryExtractor(task)
-        steps_meta_extract = bq_extractor.extract()
-        assert steps_meta_extract is None
+        task_meta_extract = bq_extractor.extract()
+        assert task_meta_extract is None
 
         task_instance.run()
 
-        step_meta = bq_extractor.extract_on_complete(task_instance)
+        task_meta = bq_extractor.extract_on_complete(task_instance)
         mock_client.return_value \
             .get_job.assert_called_once_with(job_id=bq_job_id)
 
-        assert step_meta.inputs is not None
-        assert len(step_meta.inputs) == 1
-        assert step_meta.inputs[0].name == \
+        assert task_meta.inputs is not None
+        assert len(task_meta.inputs) == 1
+        assert task_meta.inputs[0].name == \
             'bigquery-public-data.usa_names.usa_1910_2013'
 
-        assert step_meta.inputs[0].facets['schema'].fields is not None
-        assert step_meta.inputs[0].facets['dataSource'].name == 'bigquery'
-        assert step_meta.inputs[0].facets['dataSource'].uri == 'bigquery'
-        assert len(step_meta.inputs[0].facets['schema'].fields) == 5
-        assert step_meta.outputs is not None
-        assert len(step_meta.outputs) == 1
-        assert step_meta.outputs[0].facets['schema'].fields is not None
-        assert len(step_meta.outputs[0].facets['schema'].fields) == 2
-        assert step_meta.outputs[0].name == \
+        assert task_meta.inputs[0].facets['schema'].fields is not None
+        assert task_meta.inputs[0].facets['dataSource'].name == 'bigquery'
+        assert task_meta.inputs[0].facets['dataSource'].uri == 'bigquery'
+        assert len(task_meta.inputs[0].facets['schema'].fields) == 5
+        assert task_meta.outputs is not None
+        assert len(task_meta.outputs) == 1
+        assert task_meta.outputs[0].facets['schema'].fields is not None
+        assert len(task_meta.outputs[0].facets['schema'].fields) == 2
+        assert task_meta.outputs[0].name == \
             'bq-airflow-openlineage.new_dataset.output_table'
 
         assert BigQueryStatisticsDatasetFacet(
             rowCount=20,
             size=321
-        ) == step_meta.outputs[0].facets['stats']
+        ) == task_meta.outputs[0].facets['stats']
 
         assert OutputStatisticsOutputDatasetFacet(
             rowCount=20,
             size=321
-        ) == step_meta.outputs[0].outputFacets['outputStatistics']
+        ) == task_meta.outputs[0].outputFacets['outputStatistics']
 
-        assert len(step_meta.run_facets) == 1
+        assert len(task_meta.run_facets) == 1
         assert BigQueryJobRunFacet(
             cached=False,
             billedBytes=111149056,
             properties=json.dumps(job_details)
-        ) == step_meta.run_facets['bigQuery_job']
+        ) == task_meta.run_facets['bigQuery_job']
 
         mock_client.return_value.close.assert_called()
 
@@ -180,17 +180,17 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
             execution_date=datetime.utcnow().replace(tzinfo=pytz.utc))
 
         bq_extractor = BigQueryExtractor(task)
-        steps_meta_extract = bq_extractor.extract()
-        assert steps_meta_extract is None
+        tasks_meta_extract = bq_extractor.extract()
+        assert tasks_meta_extract is None
 
         task_instance.run()
 
-        step_meta = bq_extractor.extract_on_complete(task_instance)
-        assert step_meta.inputs is not None
-        assert step_meta.outputs is not None
+        task_meta = bq_extractor.extract_on_complete(task_instance)
+        assert task_meta.inputs is not None
+        assert task_meta.outputs is not None
 
-        assert len(step_meta.run_facets) == 1
-        assert step_meta.run_facets['bigQuery_job'] \
+        assert len(task_meta.run_facets) == 1
+        assert task_meta.run_facets['bigQuery_job'] \
                == BigQueryJobRunFacet(cached=True)
 
     @mock.patch('airflow.contrib.operators.bigquery_operator.BigQueryHook')
@@ -228,22 +228,22 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
 
         bq_extractor = BigQueryExtractor(task)
 
-        steps_meta_extract = bq_extractor.extract()
-        assert steps_meta_extract is None
+        tasks_meta_extract = bq_extractor.extract()
+        assert tasks_meta_extract is None
 
         task_instance.run()
 
-        step_meta = bq_extractor.extract_on_complete(task_instance)
+        task_meta = bq_extractor.extract_on_complete(task_instance)
 
-        assert step_meta.run_facets['bigQuery_error'] == BigQueryErrorRunFacet(
+        assert task_meta.run_facets['bigQuery_error'] == BigQueryErrorRunFacet(
             clientError=mock.ANY
         )
         mock_client.return_value.get_job.assert_called_once_with(job_id=bq_job_id)
 
-        assert step_meta.inputs is not None
-        assert len(step_meta.inputs) == 0
-        assert step_meta.outputs is not None
-        assert len(step_meta.outputs) == 0
+        assert task_meta.inputs is not None
+        assert len(task_meta.inputs) == 0
+        assert task_meta.outputs is not None
+        assert len(task_meta.outputs) == 0
 
         mock_client.return_value.close.assert_called()
 
@@ -257,8 +257,8 @@ class TestBigQueryExtractor(unittest.TestCase):
 
     def test_extract(self):
         log.info("test_extractor")
-        steps_meta_extract = BigQueryExtractor(self.task).extract()
-        assert steps_meta_extract is None
+        tasks_meta_extract = BigQueryExtractor(self.task).extract()
+        assert tasks_meta_extract is None
 
     @mock.patch("airflow.models.TaskInstance.xcom_pull")
     def test_get_xcom_bigquery_job_id(self, mock_xcom_pull):
