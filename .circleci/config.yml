@@ -120,8 +120,8 @@ jobs:
     steps:
       - *checkout_project_root
       - run: |
-          cd ../../java/client
-          ./gradlew publishToMavenLocal
+          cd ../../client/java
+          ./gradlew  --no-daemon publishToMavenLocal
           cd - 
           # Get, then decode the GPG private key used to sign *.jar
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
@@ -156,6 +156,10 @@ jobs:
             - v1-integration-spark-{{ .Branch }}
       - attach_workspace:
           at: .
+      - run: |
+          cd ../../client/java
+          ./gradlew  --no-daemon publishToMavenLocal
+          cd -
       - run: ./gradlew --no-daemon --stacktrace build
       - run:
           when: on_fail
@@ -223,6 +227,10 @@ jobs:
           keys:
             - v1-integration-spark-{{ .Branch }}-{{ .Revision }}
             - v1-integration-spark-{{ .Branch }}
+      - run: |
+          cd ../../client/java
+          ./gradlew  --no-daemon publishToMavenLocal
+          cd -
       - run: ./gradlew --no-daemon --stacktrace integrationTest
       - run:
           when: on_fail
