@@ -117,9 +117,10 @@ public class RddExecutionContext implements ExecutionContext {
   }
 
   /**
-   *  Retrieves HadoopMapRedWriteConfigUtil field from function.
-   *  In spark2 we can get it by "config$1" field
-   *  In spark3 we can get it by "arg$1" field
+   * Retrieves HadoopMapRedWriteConfigUtil field from function.<br>
+   * In spark2 we can get it by "config$1" field.<br>
+   * In spark3 we can get it by "arg$1" field
+   *
    * @param fn
    * @return HadoopMapRedWriteConfigUtil field
    * @throws NoSuchFieldException
