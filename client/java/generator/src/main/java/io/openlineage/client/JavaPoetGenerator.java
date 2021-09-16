@@ -48,7 +48,7 @@ import io.openlineage.client.TypeResolver.ResolvedTypeVisitor;
 public class JavaPoetGenerator {
 
   private static final String PACKAGE = "io.openlineage.client";
-  private static final String CONTAINER_CLASS_NAME = "OpenLineage";
+  private static final String CONTAINER_CLASS_NAME = "OpenLineageTest";
   private static final String CONTAINER_CLASS = PACKAGE + "." + CONTAINER_CLASS_NAME;
   private final TypeResolver typeResolver;
   private final String baseURL;
@@ -233,7 +233,7 @@ public class JavaPoetGenerator {
     List<CodeBlock> builderParams = new ArrayList<>();
     type.getProperties().stream().filter(f -> !isASchemaUrlField(f)).forEach(f -> {
       if (isAProducerField(f)) {
-        builderParams.add(CodeBlock.of("OpenLineage.this.producer"));
+        builderParams.add(CodeBlock.of("OpenLineageTest.this.producer"));
       } else {
         builderParams.add(CodeBlock.of("$N", f.getName()));
       }
