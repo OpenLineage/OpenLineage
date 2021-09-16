@@ -153,7 +153,7 @@ jobs:
             - v1-integration-spark-{{ .Branch }}
       - attach_workspace:
           at: .
-      - run: (cd ./../../client/java/ && ./gradlew --no-daemon --stacktrace build)
+      - run: (cd ./../../client/java/ && ./gradlew --no-daemon --stacktrace publishToMavenLocal)
       - run: ./gradlew --no-daemon --stacktrace build
       - run:
           when: on_fail
@@ -221,7 +221,7 @@ jobs:
           keys:
             - v1-integration-spark-{{ .Branch }}-{{ .Revision }}
             - v1-integration-spark-{{ .Branch }}
-      - run: (cd ./../../client/java/ && ./gradlew --no-daemon --stacktrace build)
+      - run: (cd ./../../client/java/ && ./gradlew --no-daemon --stacktrace publishToMavenLocal)
       - run: ./gradlew --no-daemon --stacktrace integrationTest
       - run:
           when: on_fail
