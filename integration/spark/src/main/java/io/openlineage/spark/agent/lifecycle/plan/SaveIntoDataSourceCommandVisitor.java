@@ -59,8 +59,7 @@ public class SaveIntoDataSourceCommandVisitor extends QueryPlanVisitor<SaveIntoD
                 relationVisitors,
                 new LogicalRelation(
                     relation, relation.schema().toAttributes(), Option.empty(), x.isStreaming())))
-        .orElse(Collections.emptyList())
-        .stream()
+        .orElse(Collections.emptyList()).stream()
         // constructed datasets don't include the output stats, so add that facet here
         .peek(
             ds -> {
