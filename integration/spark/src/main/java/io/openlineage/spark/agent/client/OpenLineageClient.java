@@ -3,14 +3,12 @@ package io.openlineage.spark.agent.client;
 import static org.apache.hc.core5.http.HttpHeaders.AUTHORIZATION;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.ok2c.hc5.json.http.JsonRequestProducers;
-import com.ok2c.hc5.json.http.JsonResponseConsumers;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Type;
@@ -26,9 +24,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.hc.client5.http.async.methods.BasicHttpRequests;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
+import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpRequest;
 import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.Message;
+import org.apache.hc.core5.http.nio.AsyncRequestProducer;
+import org.apache.hc.core5.http.nio.entity.AsyncEntityProducers;
+import org.apache.hc.core5.http.nio.entity.StringAsyncEntityConsumer;
+import org.apache.hc.core5.http.nio.support.BasicRequestProducer;
+import org.apache.hc.core5.http.nio.support.BasicResponseConsumer;
 
 @Slf4j
 public class OpenLineageClient {
@@ -113,26 +117,36 @@ public class OpenLineageClient {
       HttpRequest request, Object obj, TypeReference<T> ref) {
     addAuthToReqIfKeyPresent(request);
 
-    Future<Message<HttpResponse, JsonNode>> future =
-        http.execute(
-            JsonRequestProducers.create(request, obj, objectMapper),
-            JsonResponseConsumers.create(objectMapper.getFactory()),
-            null);
+    try {
+      String jsonBody = objectMapper.writeValueAsString(obj);
+      final AsyncRequestProducer requestProducer =
+          new BasicRequestProducer(
+              request, AsyncEntityProducers.create(jsonBody, ContentType.APPLICATION_JSON));
 
-    return CompletableFuture.supplyAsync(
-        () -> {
-          try {
-            Message<HttpResponse, JsonNode> message = future.get();
-            return createMessage(message, ref);
-          } catch (ExecutionException | InterruptedException e) {
-            throw new RuntimeException(e);
-          }
-        },
-        executorService);
+      Future<Message<HttpResponse, String>> future =
+          http.execute(
+              requestProducer, new BasicResponseConsumer<>(new StringAsyncEntityConsumer()), null);
+      return CompletableFuture.supplyAsync(
+          () -> {
+            try {
+              Message<HttpResponse, String> message = future.get();
+              return createMessage(message, ref);
+            } catch (ExecutionException | InterruptedException e) {
+              throw new RuntimeException(e);
+            }
+          },
+          executorService);
+
+    } catch (JsonProcessingException e) {
+      log.error("Could not serialize to json object - {}", obj);
+      CompletableFuture<ResponseMessage<T>> completableFuture = new CompletableFuture<>();
+      completableFuture.completeExceptionally(e);
+      return completableFuture;
+    }
   }
 
   private <T> ResponseMessage<T> createMessage(
-      Message<HttpResponse, JsonNode> message, TypeReference<T> ref) {
+      Message<HttpResponse, String> message, TypeReference<T> ref) {
     if (!completedSuccessfully(message)) {
       return new ResponseMessage<>(
           message.getHead().getCode(),
@@ -144,7 +158,7 @@ public class OpenLineageClient {
         message.getHead().getCode(), objectMapper.convertValue(message.getBody(), ref), null);
   }
 
-  private boolean completedSuccessfully(Message<HttpResponse, JsonNode> message) {
+  private boolean completedSuccessfully(Message<HttpResponse, String> message) {
     final int code = message.getHead().getCode();
     if (code >= 400 && code < 600) { // non-2xx
       return false;

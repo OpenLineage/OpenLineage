@@ -95,7 +95,9 @@ public class LibraryTest {
           objectMapper.readValue(
               Paths.get(String.format("integrations/%s/%d.json", "sparksql", i + 1)).toFile(),
               mapTypeReference);
-      assertThat(objectMapper.readValue(objectMapper.writeValueAsString(event), mapTypeReference))
+      Map<String, Object> actual =
+          objectMapper.readValue(objectMapper.writeValueAsString(event), mapTypeReference);
+      assertThat(actual)
           .satisfies(new MatchesMapRecursively(snapshot, new HashSet<>(Arrays.asList("runId"))));
     }
     verifySerialization(events);

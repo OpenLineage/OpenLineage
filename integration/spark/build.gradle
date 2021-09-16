@@ -62,7 +62,7 @@ ext {
     sparkVersion = '2.4.7'
     jacksonVersion = '2.6.7'
     jacksonModuleScalaVersion = '2.6.7.1'
-    jacksonDatatypeVersion = '2.12.2'
+    jacksonDatatypeVersion = '2.6.7'
     jacksonDatabindVersion = '2.6.7.3'
     postgresqlVersion = '42.2.19'
     lombokVersion = '1.18.20'
@@ -75,9 +75,11 @@ dependencies {
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
-    implementation "io.openlineage:openlineage-java:${project.version}"
+    implementation("io.openlineage:openlineage-java:${project.version}"){
+        exclude group: 'com.fasterxml.jackson.core'
+        exclude group: 'com.fasterxml.jackson.datatype'
+    }
     implementation 'org.javassist:javassist:3.27.0-GA'
-    implementation 'com.github.ok2c.hc5:hc5-async-json:0.2.1'
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.0.3'
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonDatatypeVersion}"
     compileOnly "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
@@ -104,7 +106,9 @@ dependencies {
     testImplementation "org.testcontainers:postgresql:${testcontainersVersion}"
     testImplementation "org.testcontainers:mockserver:${testcontainersVersion}"
     testImplementation('org.mock-server:mockserver-client-java:5.11.2') {
-         exclude group: 'com.google.guava', module: 'guava'
+        exclude group: 'com.google.guava', module: 'guava'
+        exclude group: 'com.fasterxml.jackson.core'
+        exclude group: 'com.fasterxml.jackson.datatype'
     }
     testCompile "org.assertj:assertj-core:${assertjVersion}"
     testCompile "org.junit.jupiter:junit-jupiter:${junit5Version}"
