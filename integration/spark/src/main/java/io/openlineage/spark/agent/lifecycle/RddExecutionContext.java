@@ -116,6 +116,14 @@ public class RddExecutionContext implements ExecutionContext {
     this.outputs = findOutputs(finalRDD, jc);
   }
 
+  /**
+   *  Retrieves HadoopMapRedWriteConfigUtil field from function.
+   *  In spark2 we can get it by "config$1" field
+   *  In spark3 we can get it by "arg$1" field
+   * @param fn
+   * @return HadoopMapRedWriteConfigUtil field
+   * @throws NoSuchFieldException
+   */
   private Field getConfigField(Function2<TaskContext, Iterator<?>, ?> fn)
       throws NoSuchFieldException {
     try {
