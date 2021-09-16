@@ -58,7 +58,6 @@ archivesBaseName='openlineage-spark'
 ext {
     assertjVersion = '3.20.2'
     junit5Version = '5.7.2'
-    bytebuddyVersion = '1.10.21'
     sparkVersion = '2.4.7'
     jacksonVersion = '2.6.7'
     jacksonModuleScalaVersion = '2.6.7.1'
@@ -88,16 +87,16 @@ dependencies {
     compileOnly "org.apache.spark:spark-core_2.11:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
     compileOnly 'com.google.cloud.spark:spark-bigquery_2.11:0.21.1'
+    compileOnly "org.apache.spark:spark-hive_2.11:${sparkVersion}"
 
     testRuntimeOnly "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
     testRuntimeOnly "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
     testRuntimeOnly "com.fasterxml.jackson.module:jackson-module-scala_2.11:${jacksonModuleScalaVersion}"
 
-    testImplementation 'com.google.cloud.spark:spark-bigquery-with-dependencies_2.11:0.19.1'
-    testImplementation "net.bytebuddy:byte-buddy-agent:${bytebuddyVersion}"
-    testImplementation "net.bytebuddy:byte-buddy-dep:${bytebuddyVersion}"
+    testImplementation 'com.google.cloud.spark:spark-bigquery-with-dependencies_2.11:0.21.1'
     testImplementation "org.apache.spark:spark-core_2.11:${sparkVersion}"
     testImplementation "org.apache.spark:spark-sql_2.11:${sparkVersion}"
+    testImplementation "org.apache.spark:spark-hive_2.11:${sparkVersion}"
     testImplementation platform('org.junit:junit-bom:5.7.1')
     testImplementation "org.postgresql:postgresql:${postgresqlVersion}"
     testImplementation 'org.hamcrest:hamcrest-library:2.2'

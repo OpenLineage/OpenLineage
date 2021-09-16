@@ -1,7 +1,6 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.util.PlanUtils;
 import java.util.Collections;
 import java.util.List;
@@ -37,11 +36,6 @@ import scala.runtime.AbstractFunction0;
  * describe the {@link OpenLineage.Dataset} if its {@link org.apache.spark.sql.sources.BaseRelation}
  * is unknown.
  *
- * <p>If the {@link org.apache.spark.sql.sources.BaseRelation} is unknown, we send back a {@link
- * OpenLineage.Dataset} named for the node name in the logical plan. This helps track what nodes are
- * yet unknown, while hopefully avoiding gaps in the lineage coverage by providing what information
- * we have about the dataset.
- *
  * <p>TODO If a user specifies the {@link JDBCOptions#JDBC_QUERY_STRING()} option, we do not parse
  * the sql to determine the specific tables used. Since we return a List of {@link
  * OpenLineage.Dataset}s, we can parse the sql and determine each table referenced to return a
@@ -60,14 +54,13 @@ public class LogicalRelationVisitor extends QueryPlanVisitor<LogicalRelation> {
   @Override
   public boolean isDefinedAt(LogicalPlan x) {
     return x instanceof LogicalRelation
-        &&
-        // ignore DatasetSources since they're handled by the DatasetSourceVisitor
-        !(((LogicalRelation) x).relation() instanceof DatasetSource);
+        && (((LogicalRelation) x).relation() instanceof HadoopFsRelation
+            || ((LogicalRelation) x).relation() instanceof JDBCRelation
+            || ((LogicalRelation) x).catalogTable().isDefined());
   }
 
   @Override
   public List<OpenLineage.Dataset> apply(LogicalPlan x) {
-    OpenLineage ol = new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
     LogicalRelation logRel = (LogicalRelation) x;
     if (logRel.relation() instanceof HadoopFsRelation) {
       return handleHadoopFsRelation((LogicalRelation) x);
@@ -75,26 +68,11 @@ public class LogicalRelationVisitor extends QueryPlanVisitor<LogicalRelation> {
       return handleJdbcRelation((LogicalRelation) x);
     } else if (logRel.catalogTable().isDefined()) {
       return handleCatalogTable(logRel);
-    } else {
-      // make a best attempt at capturing the dataset information
-      log.warn("Don't know how to extract dataset from unknown relation {}", logRel.relation());
-      return Collections.singletonList(
-          PlanUtils.getDataset(
-              getUnknownDatasetName(logRel), jobNamespace, getDatasetFacet(ol, logRel)));
     }
-  }
-
-  private OpenLineage.DatasetFacets getDatasetFacet(OpenLineage ol, LogicalRelation logRel) {
-    return ol.newDatasetFacetsBuilder()
-        .documentation(ol.newDocumentationDatasetFacet(logRel.simpleString()))
-        .schema(PlanUtils.schemaFacet(logRel.schema()))
-        .build();
-  }
-
-  private String getUnknownDatasetName(LogicalRelation logRel) {
-    return logRel.relation().getClass().getSimpleName()
-        + "_"
-        + logRel.relation().schema().catalogString();
+    throw new IllegalArgumentException(
+        "Expected logical plan to be either HadoopFsRelation, JDBCRelation, "
+            + "or CatalogTable but was "
+            + x);
   }
 
   private List<OpenLineage.Dataset> handleCatalogTable(LogicalRelation logRel) {
