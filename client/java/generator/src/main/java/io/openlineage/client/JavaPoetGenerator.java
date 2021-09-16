@@ -47,7 +47,7 @@ import io.openlineage.client.TypeResolver.ResolvedTypeVisitor;
  */
 public class JavaPoetGenerator {
 
-  private static final String PACKAGE = "io.openlineage.client.test";
+  private static final String PACKAGE = "io.openlineage.client";
   private static final String CONTAINER_CLASS_NAME = "OpenLineage";
   private static final String CONTAINER_CLASS = PACKAGE + "." + CONTAINER_CLASS_NAME;
   private final TypeResolver typeResolver;

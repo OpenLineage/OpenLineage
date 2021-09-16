@@ -31,7 +31,7 @@ public class Generator {
     logger.info("Generating from URL: " + baseURL);
     InputStream input = new URL(baseURL).openStream();
     try {
-      File output = new File("src/main/java/io/openlineage/client/test/OpenLineage.java");
+      File output = new File("src/main/java/io/openlineage/client/OpenLineage.java");
       generate(baseURL, input, output);
     } finally {
       input.close();

@@ -1,4 +1,4 @@
-package io.openlineage.client.test;
+package io.openlineage.client;
 
 import static org.junit.Assert.assertEquals;
 
@@ -17,15 +17,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
-import io.openlineage.client.test.OpenLineage.DataQualityMetricsInputDatasetFacet;
-import io.openlineage.client.test.OpenLineage.DataQualityMetricsInputDatasetFacetColumnMetricsAdditional;
-import io.openlineage.client.test.OpenLineage.InputDataset;
-import io.openlineage.client.test.OpenLineage.Job;
-import io.openlineage.client.test.OpenLineage.JobFacets;
-import io.openlineage.client.test.OpenLineage.OutputDataset;
-import io.openlineage.client.test.OpenLineage.Run;
-import io.openlineage.client.test.OpenLineage.RunEvent;
-import io.openlineage.client.test.OpenLineage.RunFacets;
+import io.openlineage.client.OpenLineage.DataQualityMetricsInputDatasetFacet;
+import io.openlineage.client.OpenLineage.DataQualityMetricsInputDatasetFacetColumnMetricsAdditional;
+import io.openlineage.client.OpenLineage.InputDataset;
+import io.openlineage.client.OpenLineage.Job;
+import io.openlineage.client.OpenLineage.JobFacets;
+import io.openlineage.client.OpenLineage.OutputDataset;
+import io.openlineage.client.OpenLineage.Run;
+import io.openlineage.client.OpenLineage.RunEvent;
+import io.openlineage.client.OpenLineage.RunFacets;
 
 public class OpenLineageTest {
 
