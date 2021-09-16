@@ -6,14 +6,13 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.client.OpenLineageClient;
-import io.openlineage.spark.agent.lifecycle.RecursiveMatcher;
+import io.openlineage.spark.agent.lifecycle.MatchesMapRecursively;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -102,6 +101,6 @@ public class OpenLineageRunEventTest {
     Map<String, Object> expectedJson =
         mapper.readValue(expectedDataPath.toFile(), mapTypeReference);
 
-    assertThat(actualJson).satisfies(new RecursiveMatcher(expectedJson, new HashSet<>()));
+    assertThat(actualJson).satisfies(new MatchesMapRecursively(expectedJson));
   }
 }

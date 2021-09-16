@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nullable;
@@ -121,10 +120,9 @@ class LogicalPlanSerializerTest {
     Map<String, Object> expectedLogicalRelationNode =
         objectMapper.readValue(logicalRelationNodePath.toFile(), mapTypeReference);
 
-    assertThat(aggregateActualNode)
-        .satisfies(new RecursiveMatcher(expectedAggregateNode, new HashSet<>()));
+    assertThat(aggregateActualNode).satisfies(new MatchesMapRecursively(expectedAggregateNode));
     assertThat(logicalRelationActualNode)
-        .satisfies(new RecursiveMatcher(expectedLogicalRelationNode, new HashSet<>()));
+        .satisfies(new MatchesMapRecursively(expectedLogicalRelationNode));
   }
 
   @Test
@@ -228,10 +226,8 @@ class LogicalPlanSerializerTest {
     Map<String, Object> expectedHadoopFSNode =
         objectMapper.readValue(expectedHadoopFSNodePath.toFile(), mapTypeReference);
 
-    assertThat(commandActualNode)
-        .satisfies(new RecursiveMatcher(expectedCommandNode, new HashSet<>()));
-    assertThat(hadoopFSActualNode)
-        .satisfies(new RecursiveMatcher(expectedHadoopFSNode, new HashSet<>()));
+    assertThat(commandActualNode).satisfies(new MatchesMapRecursively(expectedCommandNode));
+    assertThat(hadoopFSActualNode).satisfies(new MatchesMapRecursively(expectedHadoopFSNode));
   }
 
   @Test
@@ -299,10 +295,9 @@ class LogicalPlanSerializerTest {
     Map<String, Object> expectedBigQueryRelationNode =
         objectMapper.readValue(expectedBigQueryRelationNodePath.toFile(), mapTypeReference);
 
-    assertThat(commandActualNode)
-        .satisfies(new RecursiveMatcher(expectedCommandNode, new HashSet<>()));
+    assertThat(commandActualNode).satisfies(new MatchesMapRecursively(expectedCommandNode));
     assertThat(hadoopFSActualNode)
-        .satisfies(new RecursiveMatcher(expectedBigQueryRelationNode, new HashSet<>()));
+        .satisfies(new MatchesMapRecursively(expectedBigQueryRelationNode));
   }
 
   @SuppressWarnings("rawtypes")

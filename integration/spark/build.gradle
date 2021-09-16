@@ -63,7 +63,7 @@ ext {
     jacksonVersion = '2.6.7'
     jacksonModuleScalaVersion = '2.6.7.1'
     jacksonDatatypeVersion = '2.12.2'
-    jacksonDatabindVersion = '2.6.7.1'
+    jacksonDatabindVersion = '2.6.7.3'
     postgresqlVersion = '42.2.19'
     lombokVersion = '1.18.20'
     mockitoVersion = '3.11.2'

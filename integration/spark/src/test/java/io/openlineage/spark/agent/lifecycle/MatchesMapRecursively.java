@@ -1,6 +1,7 @@
 package io.openlineage.spark.agent.lifecycle;
 
 import io.openlineage.spark.agent.client.OpenLineageClient;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -10,15 +11,25 @@ import org.assertj.core.api.Condition;
 /**
  * Custom Condition writen for recursive comparison of Map with ability to ignore specified Map keys
  * AssertJ Built-in recursive comparison is not working with Map type, it can ignore only object
- * properties Example usage: assertThat(actualMap).satisfies(new RecursiveMatcher(expectedMap, new
- * HashSet<>(Arrays.asList("runId"))));
+ * properties Example usage: assertThat(actualMap).satisfies(new MatchesMapRecursively(expectedMap,
+ * new HashSet<>(Arrays.asList("runId"))));
  *
  * @see AbstractObjectAssert#usingRecursiveComparison()
  */
-public class RecursiveMatcher extends Condition<Map<String, Object>> {
+public class MatchesMapRecursively extends Condition<Map<String, Object>> {
 
-  public RecursiveMatcher(Map<String, Object> target, Set<String> ommittedKeys) {
-    super(RecursiveMatcher.predicate(target, ommittedKeys), "matches snapshot fields %s", target);
+  public MatchesMapRecursively(Map<String, Object> target, Set<String> ommittedKeys) {
+    super(
+        MatchesMapRecursively.predicate(target, ommittedKeys),
+        "matches snapshot fields %s",
+        target);
+  }
+
+  public MatchesMapRecursively(Map<String, Object> target) {
+    super(
+        MatchesMapRecursively.predicate(target, new HashSet<>()),
+        "matches snapshot fields %s",
+        target);
   }
 
   public static Predicate<Map<String, Object>> predicate(
@@ -35,7 +46,7 @@ public class RecursiveMatcher extends Condition<Map<String, Object>> {
         boolean eq;
         if (val instanceof Map) {
           eq =
-              RecursiveMatcher.predicate((Map<String, Object>) target.get(k), ommittedKeys)
+              MatchesMapRecursively.predicate((Map<String, Object>) target.get(k), ommittedKeys)
                   .test((Map<String, Object>) val);
         } else if (k.equals("_producer") || k.equals("producer")) {
           eq = OpenLineageClient.OPEN_LINEAGE_CLIENT_URI.toString().equals(val);
