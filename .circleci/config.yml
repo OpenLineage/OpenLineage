@@ -324,15 +324,11 @@ workflows:
               spark-version: [ '2.4.7', '3.1' ]
           requires:
             - build-integration-spark
-      - test-integration-spark-v3:
-          requires:
-            - build-integration-spark
       - publish-snapshot-integration-spark:
           <<: *only_on_main
           context: release
           requires:
             - integration-test-integration-spark
-            - test-integration-spark-v3
       - unit-test-client-python
       - build-client-python:
           <<: *only_on_main
