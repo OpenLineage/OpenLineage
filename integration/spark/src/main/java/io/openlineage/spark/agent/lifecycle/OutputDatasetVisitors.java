@@ -7,6 +7,8 @@ import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDataSourceDirVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDataSourceVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDirVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHadoopFsRelationVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHiveDirVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHiveTableVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.SaveIntoDataSourceCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.wrapper.OutputDatasetVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.wrapper.OutputDatasetWithMetadataVisitor;
@@ -48,7 +50,10 @@ class OutputDatasetVisitors
     list.add(new OutputDatasetVisitor(new DatasetSourceVisitor()));
     list.add(new OutputDatasetVisitor(new AppendDataVisitor(datasetProviders)));
     list.add(new OutputDatasetVisitor(new InsertIntoDirVisitor(sqlContext)));
-
+    list.add(
+        new OutputDatasetWithMetadataVisitor(
+            new InsertIntoHiveTableVisitor(sqlContext.sparkContext())));
+    list.add(new OutputDatasetVisitor(new InsertIntoHiveDirVisitor()));
     return list;
   }
 }

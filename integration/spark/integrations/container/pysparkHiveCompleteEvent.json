@@ -1,0 +1,223 @@
+{
+    "eventType": "COMPLETE",
+    "inputs": [],
+    "job": {
+        "name": "open_lineage_integration_hive.execute_insert_into_hive_table",
+        "namespace": "testPysparkSQLHiveTest"
+    },
+    "outputs": [
+        {
+            "facets": {
+                "dataSource": {
+                    "name": "file",
+                    "uri": "file"
+                },
+                "schema": {
+                    "fields": [
+                        {
+                            "name": "key",
+                            "type": "integer"
+                        },
+                        {
+                            "name": "value",
+                            "type": "string"
+                        }
+                    ]
+                }
+            },
+            "outputFacets": {
+                "outputStatistics": {
+                    "rowCount": 3,
+                    "size": 12
+                }
+            },    
+            "name": "/tmp/warehouse/test",
+            "namespace": "file"
+        }
+    ],
+    "run": {
+        "facets": {
+            "spark.logicalPlan": {
+                "plan": [
+                    {
+                        "class": "org.apache.spark.sql.catalyst.plans.logical.InsertIntoTable",
+                        "ifPartitionNotExists": false,
+                        "num-children": 1,
+                        "overwrite": false,
+                        "partition": null,
+                        "query": 0,
+                        "table": [
+                            {
+                                "class": "org.apache.spark.sql.catalyst.analysis.UnresolvedRelation",
+                                "num-children": 0,
+                                "tableIdentifier": {
+                                    "product-class": "org.apache.spark.sql.catalyst.TableIdentifier",
+                                    "table": "test"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "class": "org.apache.spark.sql.catalyst.analysis.UnresolvedInlineTable",
+                        "names": "[col1, col2]",
+                        "num-children": 0,
+                        "rows": null
+                    }
+                ]
+            },
+            "spark_unknown": {
+                "inputs": [
+                    {
+                        "description": {
+                            "allAttributes": {
+                                "attrs": []
+                            },
+                            "canonicalizedPlan": false,
+                            "constraints": [
+                                {
+                                    "deterministic": true,
+                                    "origin": {
+                                        "line": null,
+                                        "startPosition": null
+                                    },
+                                    "resolved": true
+                                },
+                                {
+                                    "deterministic": true,
+                                    "origin": {
+                                        "line": null,
+                                        "startPosition": null
+                                    },
+                                    "resolved": true
+                                }
+                            ],
+                            "data": [
+                                {
+                                    "values": [
+                                        1,
+                                        {
+                                            "baseObject": "YQ==",
+                                            "baseOffset": 16,
+                                            "byteBuffer": "YQ==",
+                                            "bytes": "YQ==",
+                                            "prefix": 6989586621679009792
+                                        }
+                                    ]
+                                },
+                                {
+                                    "values": [
+                                        2,
+                                        {
+                                            "baseObject": "Yg==",
+                                            "baseOffset": 16,
+                                            "byteBuffer": "Yg==",
+                                            "bytes": "Yg==",
+                                            "prefix": 7061644215716937728
+                                        }
+                                    ]
+                                },
+                                {
+                                    "values": [
+                                        3,
+                                        {
+                                            "baseObject": "Yw==",
+                                            "baseOffset": 16,
+                                            "byteBuffer": "Yw==",
+                                            "bytes": "Yw==",
+                                            "prefix": 7133701809754865664
+                                        }
+                                    ]
+                                }
+                            ],
+                            "isStreaming": false,
+                            "origin": {
+                                "line": null,
+                                "startPosition": null
+                            },
+                            "output": [
+                                {
+                                    "dataType": {
+                                        "integral": {},
+                                        "numeric": {},
+                                        "ordering": {}
+                                    },
+                                    "deterministic": true,
+                                    "metadata": {
+                                        "map": {}
+                                    },
+                                    "name": "key",
+                                    "nullable": false,
+                                    "origin": {
+                                        "line": null,
+                                        "startPosition": null
+                                    },
+                                    "qualifier": [],
+                                    "resolved": true
+                                },
+                                {
+                                    "dataType": {
+                                        "ordering": {}
+                                    },
+                                    "deterministic": true,
+                                    "metadata": {
+                                        "map": {}
+                                    },
+                                    "name": "value",
+                                    "nullable": false,
+                                    "origin": {
+                                        "line": null,
+                                        "startPosition": null
+                                    },
+                                    "qualifier": [],
+                                    "resolved": true
+                                }
+                            ],
+                            "resolved": true,
+                            "schema": [
+                                {
+                                    "comment": null,
+                                    "dataType": {
+                                        "integral": {},
+                                        "numeric": {},
+                                        "ordering": {}
+                                    },
+                                    "metadata": {
+                                        "map": {}
+                                    },
+                                    "name": "key",
+                                    "nullable": false
+                                },
+                                {
+                                    "comment": null,
+                                    "dataType": {
+                                        "ordering": {}
+                                    },
+                                    "metadata": {
+                                        "map": {}
+                                    },
+                                    "name": "value",
+                                    "nullable": false
+                                }
+                            ],
+                            "statsCache": null,
+                            "traceEnabled": false
+                        },
+                        "inputAttributes": [],
+                        "outputAttributes": [
+                            {
+                                "metadata": {},
+                                "name": "key",
+                                "type": "integer"
+                            },
+                            {
+                                "metadata": {},
+                                "name": "value",
+                                "type": "string"
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    }
+}
