@@ -131,6 +131,7 @@ dependencies {
     spark3Test "org.apache.spark:spark-sql_2.12:${spark3Version}"
     spark3Test "org.apache.spark:spark-hive_2.12:${spark3Version}"
 
+    spark2Test "com.fasterxml.jackson.module:jackson-module-scala_2.11:${jacksonVersion}"
     spark2Test 'com.google.cloud.spark:spark-bigquery-with-dependencies_2.11:0.21.1'
     spark2Test "org.apache.spark:spark-core_2.11:${sparkVersion}"
     spark2Test "org.apache.spark:spark-sql_2.11:${sparkVersion}"
@@ -178,15 +179,6 @@ task integrationTest(type: Test) {
         includeTags "integration-test"
     }
     dependsOn shadowJar
-}
-
-task integrationTestSpark3(type: Test) {
-    configure commonTestConfiguration
-    useJUnitPlatform {
-        includeTags "integration-test"
-    }
-    systemProperty('spark.version', '3.1')
-    dependsOn bumpVersionTestFiles, shadowJar
 }
 
 spotless {
