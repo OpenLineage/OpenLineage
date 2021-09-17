@@ -85,7 +85,7 @@ dependencies {
     implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
     implementation "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
-    compileOnly "com.fasterxml.jackson.module:jackson-module-scala_2.11:${jacksonVersion}"
+    implementation "com.fasterxml.jackson.module:jackson-module-scala_2.11:${jacksonVersion}"
     compileOnly "org.apache.spark:spark-core_2.11:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
     compileOnly 'com.google.cloud.spark:spark-bigquery_2.11:0.21.1'
@@ -135,15 +135,6 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     from javadoc.destinationDir
 }
 
-task bumpVersionTestFiles() {
-    doLast {
-        def dir = new File(project.projectDir.path + '/integrations')
-        dir.eachFileRecurse (FileType.FILES) { file ->
-            ant.replace(file: file, token: "\$VERSION", value: project.version.toString())
-        }
-    }
-}
-
 def commonTestConfiguration = {
     forkEvery 1
     maxParallelForks 3
@@ -165,7 +156,6 @@ test {
     useJUnitPlatform {
         excludeTags 'integration-test'
     }
-    dependsOn bumpVersionTestFiles
 }
 
 task integrationTest(type: Test) {
@@ -173,7 +163,7 @@ task integrationTest(type: Test) {
     useJUnitPlatform {
         includeTags "integration-test"
     }
-    dependsOn bumpVersionTestFiles, shadowJar
+    dependsOn shadowJar
 }
 
 spotless {

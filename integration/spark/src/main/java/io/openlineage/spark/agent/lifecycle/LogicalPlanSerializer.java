@@ -7,9 +7,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreType;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
-import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.introspect.ClassIntrospector;
+import com.fasterxml.jackson.module.scala.DefaultScalaModule$;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.List;
@@ -36,18 +36,11 @@ import scala.runtime.AbstractPartialFunction;
 @Slf4j
 class LogicalPlanSerializer {
   private final ObjectMapper mapper;
-  private static final LogicalPlanSerializer instance = new LogicalPlanSerializer();
 
-  public static LogicalPlanSerializer getInstance() {
-    return instance;
-  }
-
-  private LogicalPlanSerializer() {
+  public LogicalPlanSerializer() {
     mapper = new ObjectMapper();
     try {
-      mapper.registerModule(
-          (Module)
-              Class.forName("com.fasterxml.jackson.module.scala.DefaultScalaModule").newInstance());
+      mapper.registerModule(DefaultScalaModule$.MODULE$);
     } catch (Throwable t) {
       log.warn("Can't register jackson scala module for serializing LogicalPlan");
     }
