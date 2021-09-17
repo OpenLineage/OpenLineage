@@ -39,13 +39,6 @@ OpenLineage client depends on environment variables:
 * `OPENLINEAGE_API_KEY` - set if consumer of OpenLineage events requires `Bearer` authentication key
 * `OPENLINEAGE_NAMESPACE` - set if you are using something other than the `default` namespace for job namespace.
 
-For backwards compatibility, `openlineage-prefect` also support configuration via
-`MARQUEZ_URL`, `MARQUEZ_NAMESPACE` and `MARQUEZ_API_KEY` variables.
-
-```
-MARQUEZ_URL=http://my_hosted_marquez.example.com:5000
-MARQUEZ_NAMESPACE=my_special_ns
-```
 
 ## Usage
 

@@ -1,4 +1,5 @@
 import logging
+import logging
 import os
 from typing import Any, Dict, List, Optional, Type
 
@@ -12,16 +13,13 @@ from openlineage.client.run import Run
 from openlineage.client.run import RunEvent
 from openlineage.client.run import RunState
 
+from openlineage.prefect.util import package_version
 
 _DEFAULT_OWNER = "anonymous"
 _DEFAULT_NAMESPACE = "default"
-
-_NAMESPACE = os.getenv("OPENLINEAGE_NAMESPACE", None)
-if not _NAMESPACE:
-    _NAMESPACE = os.getenv("MARQUEZ_NAMESPACE", _DEFAULT_NAMESPACE)
-OPENLINEAGE_PREFECT_VERSION = "0.0.0"
-
-_PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/{OPENLINEAGE_PREFECT_VERSION}/integration/prefect"
+_NAMESPACE = os.getenv("OPENLINEAGE_NAMESPACE", _DEFAULT_NAMESPACE)
+_OPENLINEAGE_PREFECT_VERSION = package_version()
+_PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/{_OPENLINEAGE_PREFECT_VERSION}/integration/prefect"
 
 set_producer(_PRODUCER)
 

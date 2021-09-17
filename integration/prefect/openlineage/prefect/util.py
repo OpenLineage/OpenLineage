@@ -3,6 +3,7 @@ from functools import lru_cache
 from typing import Any, Dict, Tuple, Union
 
 import fsspec
+import tomlkit
 from dask.base import tokenize
 from fsspec import AbstractFileSystem
 from fsspec.utils import infer_storage_options
@@ -10,6 +11,13 @@ from prefect import Parameter
 from prefect import Task
 from prefect.engine.result import Result
 from prefect.engine.serializers import Serializer
+
+
+def package_version() -> str:
+    with open("../pyproject.toml") as pyproject:
+        file_contents = pyproject.read()
+    meta = tomlkit.parse(file_contents)["tool"]["poetry"]
+    return meta["version"]
 
 
 @lru_cache()

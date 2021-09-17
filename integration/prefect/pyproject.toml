@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "openlineage_prefect"
+name = "openlineage-prefect"
 version = "0.1.0"
 description = ""
 authors = []
@@ -8,6 +8,7 @@ authors = []
 python = "^3.7"
 prefect = "^0.15.5"
 openlineage-python = "^0.2.2"
+tomlkit = "^0.7.2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"
