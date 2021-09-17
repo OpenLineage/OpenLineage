@@ -14,7 +14,6 @@
       "name": "/test_data/rdd_to_csv_output",
       "facets": {
         "schema": {
-          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
           "fields": [
             {
               "name": "name",
@@ -24,14 +23,11 @@
               "name": "age",
               "type": "integer"
             }
-          ],
-          "_schemaURL": "https://openlineage.io/spec/1-0-1/OpenLineage.json#/definitions/SchemaDatasetFacet"
+          ]
         },
         "dataSource": {
-          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
           "name": "file",
-          "uri": "file",
-          "_schemaURL": "https://openlineage.io/spec/1-0-1/OpenLineage.json#/definitions/DatasourceDatasetFacet"
+          "uri": "file"
         }
       }
     }
@@ -42,7 +38,6 @@
       "name": "/test_data/rdd_to_table",
       "facets": {
         "schema": {
-          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
           "fields": [
             {
               "name": "name",
@@ -52,33 +47,17 @@
               "name": "age",
               "type": "integer"
             }
-          ],
-          "_schemaURL": "https://openlineage.io/spec/1-0-1/OpenLineage.json#/definitions/SchemaDatasetFacet"
+          ]
         },
         "dataSource": {
-          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
           "name": "file",
-          "uri": "file",
-          "_schemaURL": "https://openlineage.io/spec/1-0-1/OpenLineage.json#/definitions/DatasourceDatasetFacet"
+          "uri": "file"
         },
-        "stats" : {
-          "_producer" : "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
-          "_schemaURL" : "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark/facets/spark-2.4/v1/output-statistics-facet.json",
-          "rowCount" : 0,
-          "size" : 0,
-          "status" : "DEPRECATED"
-        }
+        "stats" : {}
       },
       "outputFacets": {
-        "outputStatistics": {
-          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
-          "rowCount": 0,
-          "size": 0,
-          "_schemaURL": "https://openlineage.io/spec/1-0-1/OpenLineage.json#/definitions/OutputStatisticsOutputDatasetFacet"
-        }
+        "outputStatistics": {}
       }
     }
-  ],
-  "producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
-  "schemaURL": "https://openlineage.io/spec/1-0-1/OpenLineage.json#/definitions/RunEvent"
+  ]
 }

@@ -89,13 +89,12 @@ public class LibraryTest {
   }
 
   private File getSparkSqlTestData(int i) {
-    String spark3Path = System.getProperty("spark.version").startsWith("3") ? "spark3/" : "";
-    return Paths.get(String.format("integrations/%s/%d.json", spark3Path + "sparksql", i + 1))
-        .toFile();
+    return Paths.get(String.format("integrations/%s/%d.json", "sparksql", i + 1)).toFile();
   }
 
   private final Set<String> ommittedKeys =
-      new HashSet<>(Arrays.asList("runId", "nonInheritableMetadataKeys", "validConstraints"));
+      new HashSet<>(
+          Arrays.asList("runId", "nonInheritableMetadataKeys", "validConstraints", "schema"));
 
   private Predicate<Map<String, Object>> matchesRecursive(Map<String, Object> target) {
     Predicate<Map<String, Object>> recurse;
