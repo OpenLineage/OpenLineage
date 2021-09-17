@@ -13,7 +13,6 @@ import com.google.common.io.Resources;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.client.OpenLineageClient;
-import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -80,16 +79,14 @@ public class LibraryTest {
     for (int i = 0; i < events.size(); i++) {
       OpenLineage.RunEvent event = events.get(i);
       Map<String, Object> snapshot =
-          objectMapper.readValue(getSparkSqlTestData(i), mapTypeReference);
+          objectMapper.readValue(
+              Paths.get(String.format("integrations/%s/%d.json", "sparksql", i + 1)).toFile(),
+              mapTypeReference);
       assertThat(objectMapper.readValue(objectMapper.writeValueAsString(event), mapTypeReference))
           .satisfies(
               new Condition<>(matchesRecursive(snapshot), "matches snapshot fields %s", snapshot));
     }
     verifySerialization(events);
-  }
-
-  private File getSparkSqlTestData(int i) {
-    return Paths.get(String.format("integrations/%s/%d.json", "sparksql", i + 1)).toFile();
   }
 
   private final Set<String> ommittedKeys =
