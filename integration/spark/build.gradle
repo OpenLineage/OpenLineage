@@ -85,7 +85,7 @@ dependencies {
     implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
     implementation "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
-    implementation "com.fasterxml.jackson.module:jackson-module-scala_2.11:${jacksonVersion}"
+    compileOnly "com.fasterxml.jackson.module:jackson-module-scala_2.11:${jacksonVersion}"
     compileOnly "org.apache.spark:spark-core_2.11:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
     compileOnly 'com.google.cloud.spark:spark-bigquery_2.11:0.21.1'
