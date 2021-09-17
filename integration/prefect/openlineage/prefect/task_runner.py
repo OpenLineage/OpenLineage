@@ -128,9 +128,7 @@ class OpenLineageTaskRunner(TaskRunner):
         )
         self.logger.info(f"OpenLineage run FAILED run_id: {run_id}")
 
-    def get_task_inputs(
-        self, state: State, upstream_states: Dict[Edge, State]
-    ) -> Dict[str, Result]:
+    def get_task_inputs(self, state: State, upstream_states: Dict[Edge, State]) -> Dict[str, Result]:
         for upstream in upstream_states:
             self.inputs_to_tasks[upstream.key] = task_qualified_name(task=upstream.upstream_task)
         task_inputs = super().get_task_inputs(state=state, upstream_states=upstream_states)

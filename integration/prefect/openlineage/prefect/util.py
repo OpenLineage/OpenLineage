@@ -31,9 +31,7 @@ def _hash_result(result: Any, serializer: Serializer) -> Dict:
 
 
 def _hash_inputs(inputs: Dict[str, Union[Result, Parameter]]):
-    return {
-        key: _hash_result(value.value, serializer=value.serializer) for key, value in inputs.items()
-    }
+    return {key: _hash_result(value.value, serializer=value.serializer) for key, value in inputs.items()}
 
 
 def _hash_source(func, name=None):
@@ -41,9 +39,7 @@ def _hash_source(func, name=None):
     source = inspect.getsource(func)
     if source.startswith("@task"):
         source = source.split("\n", maxsplit=1)[1]
-    assert source.startswith(
-        "def"
-    ), f"Source for task {name} does not start with def, using decorator?"
+    assert source.startswith("def"), f"Source for task {name} does not start with def, using decorator?"
     return _hash_result(result=source, serializer=SourceSerializer())
 
 
