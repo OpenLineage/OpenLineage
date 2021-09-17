@@ -1,0 +1,298 @@
+{
+    "metadata": {
+        "dbt_schema_version": "https://schemas.getdbt.com/dbt/run-results/v2.json",
+        "dbt_version": "0.20.0",
+        "generated_at": "2021-08-23T15:06:44.629950Z",
+        "invocation_id": "9adc7020-c784-4179-a4e3-e3c4ffb3b09c",
+        "env": {}
+    },
+    "results": [
+        {
+            "status": "fail",
+            "timing": [
+                {
+                    "name": "compile",
+                    "started_at": "2021-08-23T15:06:20.164505Z",
+                    "completed_at": "2021-08-23T15:06:20.189774Z"
+                },
+                {
+                    "name": "execute",
+                    "started_at": "2021-08-23T15:06:20.190308Z",
+                    "completed_at": "2021-08-23T15:06:23.909633Z"
+                }
+            ],
+            "thread_id": "Thread-2",
+            "execution_time": 3.7533376216888428,
+            "adapter_response": {},
+            "message": "Got 6 results, configured to fail if != 0",
+            "failures": 6,
+            "unique_id": "test.dbt_bigquery_test.dbt_expectations_expect_column_quantile_values_to_be_between_test_first_dbt_model_id__2__0__0_95.7d02be244f"
+        },
+        {
+            "status": "fail",
+            "timing": [
+                {
+                    "name": "compile",
+                    "started_at": "2021-08-23T15:06:20.156724Z",
+                    "completed_at": "2021-08-23T15:06:20.166865Z"
+                },
+                {
+                    "name": "execute",
+                    "started_at": "2021-08-23T15:06:20.167003Z",
+                    "completed_at": "2021-08-23T15:06:24.005845Z"
+                }
+            ],
+            "thread_id": "Thread-1",
+            "execution_time": 3.8504960536956787,
+            "adapter_response": {},
+            "message": "Got 6 results, configured to fail if != 0",
+            "failures": 6,
+            "unique_id": "test.dbt_bigquery_test.dbt_expectations_expect_column_median_to_be_between_test_first_dbt_model_id__21__7.98cdd3d9df"
+        },
+        {
+            "status": "pass",
+            "timing": [
+                {
+                    "name": "compile",
+                    "started_at": "2021-08-23T15:06:23.912133Z",
+                    "completed_at": "2021-08-23T15:06:23.923956Z"
+                },
+                {
+                    "name": "execute",
+                    "started_at": "2021-08-23T15:06:23.924229Z",
+                    "completed_at": "2021-08-23T15:06:27.348364Z"
+                }
+            ],
+            "thread_id": "Thread-2",
+            "execution_time": 3.437467098236084,
+            "adapter_response": {},
+            "message": null,
+            "failures": 0,
+            "unique_id": "test.dbt_bigquery_test.dbt_expectations_expect_column_values_to_not_be_null_test_first_dbt_model_id.2da7e7b96e"
+        },
+        {
+            "status": "pass",
+            "timing": [
+                {
+                    "name": "compile",
+                    "started_at": "2021-08-23T15:06:24.008644Z",
+                    "completed_at": "2021-08-23T15:06:24.031682Z"
+                },
+                {
+                    "name": "execute",
+                    "started_at": "2021-08-23T15:06:24.034392Z",
+                    "completed_at": "2021-08-23T15:06:27.418481Z"
+                }
+            ],
+            "thread_id": "Thread-1",
+            "execution_time": 3.411060333251953,
+            "adapter_response": {},
+            "message": null,
+            "failures": 0,
+            "unique_id": "test.dbt_bigquery_test.not_null_test_first_dbt_model_id.a8c5d0180a"
+        },
+        {
+            "status": "pass",
+            "timing": [
+                {
+                    "name": "compile",
+                    "started_at": "2021-08-23T15:06:27.350502Z",
+                    "completed_at": "2021-08-23T15:06:27.360546Z"
+                },
+                {
+                    "name": "execute",
+                    "started_at": "2021-08-23T15:06:27.360805Z",
+                    "completed_at": "2021-08-23T15:06:30.639540Z"
+                }
+            ],
+            "thread_id": "Thread-2",
+            "execution_time": 3.290224313735962,
+            "adapter_response": {},
+            "message": null,
+            "failures": 0,
+            "unique_id": "test.dbt_bigquery_test.not_null_test_second_dbt_model_id.6458075b2a"
+        },
+        {
+            "status": "pass",
+            "timing": [
+                {
+                    "name": "compile",
+                    "started_at": "2021-08-23T15:06:27.421589Z",
+                    "completed_at": "2021-08-23T15:06:27.431605Z"
+                },
+                {
+                    "name": "execute",
+                    "started_at": "2021-08-23T15:06:27.431959Z",
+                    "completed_at": "2021-08-23T15:06:30.953596Z"
+                }
+            ],
+            "thread_id": "Thread-1",
+            "execution_time": 3.533139705657959,
+            "adapter_response": {},
+            "message": null,
+            "failures": 0,
+            "unique_id": "test.dbt_bigquery_test.not_null_test_second_parallel_dbt_model_id.92c37ea38b"
+        },
+        {
+            "status": "pass",
+            "timing": [
+                {
+                    "name": "compile",
+                    "started_at": "2021-08-23T15:06:30.641498Z",
+                    "completed_at": "2021-08-23T15:06:30.651306Z"
+                },
+                {
+                    "name": "execute",
+                    "started_at": "2021-08-23T15:06:30.651542Z",
+                    "completed_at": "2021-08-23T15:06:34.041843Z"
+                }
+            ],
+            "thread_id": "Thread-2",
+            "execution_time": 3.4014694690704346,
+            "adapter_response": {},
+            "message": null,
+            "failures": 0,
+            "unique_id": "test.dbt_bigquery_test.not_null_test_third_dbt_model_id.ee37a1e1fb"
+        },
+        {
+            "status": "pass",
+            "timing": [
+                {
+                    "name": "compile",
+                    "started_at": "2021-08-23T15:06:30.955735Z",
+                    "completed_at": "2021-08-23T15:06:30.965672Z"
+                },
+                {
+                    "name": "execute",
+                    "started_at": "2021-08-23T15:06:30.965962Z",
+                    "completed_at": "2021-08-23T15:06:34.153919Z"
+                }
+            ],
+            "thread_id": "Thread-1",
+            "execution_time": 3.1995866298675537,
+            "adapter_response": {},
+            "message": null,
+            "failures": 0,
+            "unique_id": "test.dbt_bigquery_test.not_null_test_third_dbt_model_second_id.808ed9e604"
+        },
+        {
+            "status": "fail",
+            "timing": [
+                {
+                    "name": "compile",
+                    "started_at": "2021-08-23T15:06:34.044673Z",
+                    "completed_at": "2021-08-23T15:06:34.063220Z"
+                },
+                {
+                    "name": "execute",
+                    "started_at": "2021-08-23T15:06:34.063485Z",
+                    "completed_at": "2021-08-23T15:06:37.522108Z"
+                }
+            ],
+            "thread_id": "Thread-2",
+            "execution_time": 3.478731870651245,
+            "adapter_response": {},
+            "message": "Got 1 result, configured to fail if != 0",
+            "failures": 1,
+            "unique_id": "test.dbt_bigquery_test.unique_test_first_dbt_model_id.1f3ee5c4a1"
+        },
+        {
+            "status": "fail",
+            "timing": [
+                {
+                    "name": "compile",
+                    "started_at": "2021-08-23T15:06:34.167301Z",
+                    "completed_at": "2021-08-23T15:06:34.178614Z"
+                },
+                {
+                    "name": "execute",
+                    "started_at": "2021-08-23T15:06:34.179017Z",
+                    "completed_at": "2021-08-23T15:06:37.525838Z"
+                }
+            ],
+            "thread_id": "Thread-1",
+            "execution_time": 3.3604183197021484,
+            "adapter_response": {},
+            "message": "Got 1 result, configured to fail if != 0",
+            "failures": 1,
+            "unique_id": "test.dbt_bigquery_test.unique_test_second_dbt_model_id.ba8cd8dfe1"
+        },
+        {
+            "status": "pass",
+            "timing": [
+                {
+                    "name": "compile",
+                    "started_at": "2021-08-23T15:06:37.527381Z",
+                    "completed_at": "2021-08-23T15:06:37.540834Z"
+                },
+                {
+                    "name": "execute",
+                    "started_at": "2021-08-23T15:06:37.549807Z",
+                    "completed_at": "2021-08-23T15:06:41.235964Z"
+                }
+            ],
+            "thread_id": "Thread-2",
+            "execution_time": 3.7105484008789062,
+            "adapter_response": {},
+            "message": null,
+            "failures": 0,
+            "unique_id": "test.dbt_bigquery_test.unique_test_second_parallel_dbt_model_id.d59ed1725f"
+        },
+        {
+            "status": "pass",
+            "timing": [
+                {
+                    "name": "compile",
+                    "started_at": "2021-08-23T15:06:37.540649Z",
+                    "completed_at": "2021-08-23T15:06:37.552869Z"
+                },
+                {
+                    "name": "execute",
+                    "started_at": "2021-08-23T15:06:37.553393Z",
+                    "completed_at": "2021-08-23T15:06:41.912560Z"
+                }
+            ],
+            "thread_id": "Thread-1",
+            "execution_time": 4.373392820358276,
+            "adapter_response": {},
+            "message": null,
+            "failures": 0,
+            "unique_id": "test.dbt_bigquery_test.unique_test_third_dbt_model_id.66d6711da6"
+        },
+        {
+            "status": "pass",
+            "timing": [
+                {
+                    "name": "compile",
+                    "started_at": "2021-08-23T15:06:41.238521Z",
+                    "completed_at": "2021-08-23T15:06:41.249977Z"
+                },
+                {
+                    "name": "execute",
+                    "started_at": "2021-08-23T15:06:41.250212Z",
+                    "completed_at": "2021-08-23T15:06:44.586958Z"
+                }
+            ],
+            "thread_id": "Thread-2",
+            "execution_time": 3.3493618965148926,
+            "adapter_response": {},
+            "message": null,
+            "failures": 0,
+            "unique_id": "test.dbt_bigquery_test.unique_test_third_dbt_model_second_id.f3c38f3b89"
+        }
+    ],
+    "elapsed_time": 25.34427523612976,
+    "args": {
+        "log_format": "default",
+        "write_json": true,
+        "use_experimental_parser": false,
+		"profiles_dir": "./tests/dbt/test",
+        "use_cache": true,
+        "data": false,
+        "schema": false,
+        "store_failures": true,
+        "version_check": true,
+        "which": "test",
+        "rpc_method": "test"
+    }
+}

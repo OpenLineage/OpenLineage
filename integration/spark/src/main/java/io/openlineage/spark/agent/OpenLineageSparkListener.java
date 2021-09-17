@@ -1,6 +1,7 @@
 package io.openlineage.spark.agent;
 
 import static io.openlineage.spark.agent.ArgumentParser.DEFAULTS;
+import static io.openlineage.spark.agent.util.SparkConfUtils.findSparkConfigKey;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.client.OpenLineageClient;
@@ -268,15 +269,5 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
           findSparkConfigKey(conf, SPARK_CONF_API_KEY).filter(str -> !str.isEmpty());
       return new ArgumentParser(host, version, namespace, jobName, runId, apiKey);
     }
-  }
-
-  private String findSparkConfigKey(SparkConf conf, String name, String defaultValue) {
-    return findSparkConfigKey(conf, name).orElse(defaultValue);
-  }
-
-  private Optional<String> findSparkConfigKey(SparkConf conf, String name) {
-    return ScalaConversionUtils.asJavaOptional(
-        conf.getOption(name)
-            .getOrElse(ScalaConversionUtils.toScalaFn(() -> conf.getOption("spark." + name))));
   }
 }
