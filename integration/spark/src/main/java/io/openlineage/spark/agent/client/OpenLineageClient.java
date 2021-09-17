@@ -65,7 +65,7 @@ public class OpenLineageClient {
   }
 
   public <T> ResponseMessage post(URI uri, Object obj) throws OpenLineageHttpException {
-    return post(uri, obj, Void.class);
+    return post(uri, obj, String.class);
   }
 
   public <T> ResponseMessage<T> post(URI uri, Object obj, Class<T> clazz)
