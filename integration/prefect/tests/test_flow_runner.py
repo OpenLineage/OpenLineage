@@ -1,5 +1,9 @@
 import os
 
+import prefect
+from prefect import task, Flow
+
+from openlineage.prefect.adapter import OpenLineageAdapter
 from openlineage.prefect.flow_runner import OpenLineageFlowRunner
 from openlineage.prefect.test_utils.tasks import test_flow
 
@@ -9,18 +13,21 @@ class TestCachedFlowRunner:
         self.fs_url = os.environ.get("FS_URL", "memory:///")
         self.flow = test_flow
         self.runner_cls = OpenLineageFlowRunner
-        # self.fs, self.root = get_fs(self.fs_url)
-        # self._clear_fs()
-
-    # def _clear_fs(self):
-    #     try:
-    #         self.fs.rm(f"{self.root}", recursive=True)
-    #     except FileNotFoundError:
-    #         pass
-    #     self.fs.mkdir(self.root)
-    #
-    # def _ls(self):
-    #     return self.fs.glob(f"{self.root}/**/*")
 
     def test_flow_run(self):
         self.flow.run(p=1, runner_cls=self.runner_cls)
+
+    def test_task_gets_lineage_context(self):
+        @task()
+        def test():
+            lineage: OpenLineageAdapter = prefect.context.lineage
+            return lineage.ping()
+
+        with Flow("test") as flow:
+            test()
+
+        flow.run(runner_cls=self.runner_cls)
+
+    def test_full_lineage_example(self):
+        self.flow.run(runner_cls=self.runner_cls)
+

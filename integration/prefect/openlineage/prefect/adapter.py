@@ -1,10 +1,10 @@
-import logging
+import json
 import logging
 import os
 from typing import Any, Dict, List, Optional, Type
+from urllib.parse import urljoin
 
 from openlineage.client import OpenLineageClient
-from openlineage.client import OpenLineageClientOptions
 from openlineage.client import set_producer
 from openlineage.client.facet import BaseFacet
 from openlineage.client.run import Dataset
@@ -12,6 +12,7 @@ from openlineage.client.run import Job
 from openlineage.client.run import Run
 from openlineage.client.run import RunEvent
 from openlineage.client.run import RunState
+from openlineage.client.serde import Serde
 
 from openlineage.prefect.util import package_version
 
@@ -37,17 +38,12 @@ class OpenLineageAdapter:
     @property
     def client(self) -> OpenLineageClient:
         if not self._client:
-            # Back comp with Marquez integration
-            marquez_url = os.getenv("MARQUEZ_URL")
-            marquez_api_key = os.getenv("MARQUEZ_API_KEY")
-            if marquez_url:
-                log.info(f"Sending lineage events to {marquez_url}")
-                self._client = OpenLineageClient(
-                    marquez_url, OpenLineageClientOptions(api_key=marquez_api_key, verify=False)
-                )
-            else:
-                self._client = OpenLineageClient.from_environment()
+            self._client = OpenLineageClient.from_environment()
         return self._client
+
+    @property
+    def namespace(self):
+        return _NAMESPACE
 
     def ping(self):
         resp = self.client.session.get(self.client.url.replace("5000", "5001"))
@@ -141,6 +137,65 @@ class OpenLineageAdapter:
             producer=_PRODUCER,
         )
         self.client.emit(event)
+
+    @staticmethod
+    def _to_json(data: Dict):
+        cleaned = Serde.remove_nulls_and_enums(data)
+        return json.dumps(cleaned, sort_keys=True)
+
+    def list_sources(self):
+        url = urljoin(self.client.url, f"api/v1/sources/")
+        r = self.client.session.get(
+            url=url,
+            timeout=self.client.options.timeout,
+            verify=self.client.options.verify,
+        )
+        return r.json()['sources']
+
+    def create_source(
+        self,
+        source_name: str,
+        source_type: str,
+        connection_url: str,
+        description: Optional[str] = None,
+    ):
+        url = urljoin(self.client.url, f"api/v1/sources/{source_name}")
+        data = {"type": source_type, "connectionUrl": connection_url, "description": description}
+        r = self.client.session.put(
+            url=url,
+            data=self._to_json(data),
+            timeout=self.client.options.timeout,
+            verify=self.client.options.verify,
+        )
+        r.raise_for_status()
+        return r.status_code == 200
+
+    def create_dataset(
+        self,
+        source_name: str,
+        dataset_name: str,
+        url_path: str,
+        dataset_type: Optional[str] = "DB_TABLE",
+        namespace: Optional[str] = None,
+        **kwargs,
+    ):
+        namespace = namespace or self.namespace
+        # TODO - type might be dropped?
+        data = {
+            "type": dataset_type,
+            "physicalName": url_path,
+            "sourceName": source_name,
+            "fields": kwargs.pop("fields", []),
+            **kwargs,
+        }
+        r = self.client.session.put(
+            urljoin(self.client.url, f"api/v1/namespaces/{namespace}/datasets/{dataset_name}"),
+            data=self._to_json(data),
+            timeout=self.client.options.timeout,
+            verify=self.client.options.verify,
+        )
+        r.raise_for_status()
+        return r.status_code == 200
 
     @staticmethod
     def _build_run(

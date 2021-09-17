@@ -10,6 +10,8 @@ from openlineage.prefect.test_utils.memory_result import MemoryResult
 
 memory_result = MemoryResult()
 
+# TODO - Figure out how to use ExternalDataset as a dep to a task inside flow ?
+
 
 @task(result=memory_result, checkpoint=True, state_handlers=[])
 def get(n):

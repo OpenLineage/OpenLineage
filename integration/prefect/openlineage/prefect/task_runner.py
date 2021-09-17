@@ -43,10 +43,10 @@ def result_location(result: Result, **raw_inputs) -> str:
 
 
 class OpenLineageTaskRunner(TaskRunner):
-    def __init__(self, *args, client: OpenLineageAdapter, **kwargs):
+    def __init__(self, *args, lineage_adapter: OpenLineageAdapter, **kwargs):
         super().__init__(*args, **kwargs)
-        self._client = client
-        self.task_full_name = task_qualified_name(task=self.task)
+        self._adapter = lineage_adapter
+        self._task_full_name = task_qualified_name(task=self.task)
         self.state_handlers.append(self.on_state_changed)
         self.task_inputs = None
         self.inputs_to_tasks = {}
@@ -75,12 +75,12 @@ class OpenLineageTaskRunner(TaskRunner):
         output_facets = {}
         if not isinstance(self.task, Parameter):
             output_facets["output-dataset"] = DataSourceDatasetFacet(
-                name=f"{self.task_full_name}-output",
+                name=f"{self._task_full_name}-output",
                 uri=result_location(result, **self.task_inputs),
             )
         return OutputDataset(
             namespace=flow_namespace(),
-            name=f"{self.task_full_name}",
+            name=f"{self._task_full_name}",
             facets={},
             outputFacets=output_facets,
         )
@@ -94,9 +94,9 @@ class OpenLineageTaskRunner(TaskRunner):
 
     def _on_start(self, inputs: Dict[str, Result]):
         context = prefect.context
-        run_id = self._client.start_task(
+        run_id = self._adapter.start_task(
             run_id=context.task_run_id,
-            job_name=self.task_full_name,
+            job_name=self._task_full_name,
             job_description=self._task_description(),
             event_time=utc_now(),
             parent_run_id=context.flow_run_id,
@@ -108,9 +108,9 @@ class OpenLineageTaskRunner(TaskRunner):
 
     def _on_success(self, state: Success):
         context = prefect.context
-        run_id = self._client.complete_task(
+        run_id = self._adapter.complete_task(
             run_id=context.task_run_id,
-            job_name=self.task_full_name,
+            job_name=self._task_full_name,
             inputs=None,
             end_time=utc_now(),
             outputs=[self.prefect_result_to_output_dataset(result=state._result)],
@@ -119,9 +119,9 @@ class OpenLineageTaskRunner(TaskRunner):
 
     def _on_failure(self, state: Failed):
         context = prefect.context
-        run_id = self._client.fail_task(
+        run_id = self._adapter.fail_task(
             run_id=context.task_run_id,
-            job_name=self.task_full_name,
+            job_name=self._task_full_name,
             inputs=None,
             outputs=None,
             end_time=utc_now(),
@@ -139,3 +139,8 @@ class OpenLineageTaskRunner(TaskRunner):
         state = super().set_task_to_running(state=state, inputs=inputs)
         self._on_start(inputs=inputs)
         return state
+
+    def get_task_run_state(self, state: State, inputs: Dict[str, Result]) -> State:
+        """Inject the OpenLineageAdapter into the context for the task run"""
+        with prefect.context(lineage=self._adapter):
+            return super().get_task_run_state(state=state, inputs=inputs)

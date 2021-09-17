@@ -9,12 +9,12 @@ from openlineage.prefect.task_runner import OpenLineageTaskRunner
 
 class OpenLineageFlowRunner(FlowRunner):
     def __init__(self, *args, **kwargs):
-        self._client = OpenLineageAdapter()
-        task_runner_cls = partial(OpenLineageTaskRunner, client=self._client)
+        self._adapter = OpenLineageAdapter()
+        task_runner_cls = partial(OpenLineageTaskRunner, lineage_adapter=self._adapter)
         super().__init__(*args, task_runner_cls=task_runner_cls, **kwargs)
 
         # Ensure we're connected early on - don't want this to trigger tasks to fail inside the flow
-        self._client.ping()
+        self._adapter.ping()
 
     def run(self, *args, **kwargs):
         return super().run(*args, **kwargs)
