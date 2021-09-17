@@ -36,7 +36,7 @@ import scala.collection.JavaConversions;
 class UnknownEntryFacetListener implements Consumer<LogicalPlan> {
 
   private final Map<LogicalPlan, Object> visitedNodes = new IdentityHashMap<>();
-  private final LogicalPlanSerializer planSerializer = LogicalPlanSerializer.getInstance();
+  private final LogicalPlanSerializer planSerializer = new LogicalPlanSerializer();
 
   @Override
   public void accept(LogicalPlan logicalPlan) {
