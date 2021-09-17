@@ -41,6 +41,11 @@ repositories {
     }
 }
 
+configurations {
+    spark3Test
+    spark2Test
+}
+
 apply plugin: 'jacoco'
 apply plugin: 'java'
 apply plugin: 'java-library'
@@ -66,6 +71,7 @@ ext {
     mockitoVersion = '3.11.2'
     testcontainersVersion = '1.15.3'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
+    isSpark3 = project.getProperty('spark.version').startsWith('3')
 }
 
 dependencies {
@@ -103,17 +109,18 @@ dependencies {
     testCompileOnly "org.apache.spark:spark-core_2.11:${sparkVersion}"
     testCompileOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
     testCompileOnly 'com.google.cloud.spark:spark-bigquery-with-dependencies_2.11:0.21.1'
-    if (project.getProperty('spark.version').startsWith('3')) {
-        testRuntimeOnly 'com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:0.21.1'
-        testRuntimeOnly "org.apache.spark:spark-core_2.12:${spark3Version}"
-        testRuntimeOnly "org.apache.spark:spark-sql_2.12:${spark3Version}"
-        testRuntimeOnly "org.apache.spark:spark-hive_2.12:${spark3Version}"
-    } else {
-        testRuntimeOnly 'com.google.cloud.spark:spark-bigquery-with-dependencies_2.11:0.21.1'
-        testRuntimeOnly "org.apache.spark:spark-core_2.11:${sparkVersion}"
-        testRuntimeOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
-        testRuntimeOnly "org.apache.spark:spark-hive_2.11:${sparkVersion}"
-    }
+
+    spark3Test "com.fasterxml.jackson.module:jackson-module-scala_2.12:${jacksonVersion}"
+    spark3Test 'com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:0.21.1'
+    spark3Test "org.apache.spark:spark-core_2.12:${spark3Version}"
+    spark3Test "org.apache.spark:spark-sql_2.12:${spark3Version}"
+    spark3Test "org.apache.spark:spark-hive_2.12:${spark3Version}"
+
+    spark2Test 'com.google.cloud.spark:spark-bigquery-with-dependencies_2.11:0.21.1'
+    spark2Test "org.apache.spark:spark-core_2.11:${sparkVersion}"
+    spark2Test "org.apache.spark:spark-sql_2.11:${sparkVersion}"
+    spark2Test "org.apache.spark:spark-hive_2.11:${sparkVersion}"
+
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 }
 
@@ -149,6 +156,7 @@ def commonTestConfiguration = {
             'spark.version'                       : project.getProperty('spark.version'),
             'openlineage.spark.jar': "${archivesBaseName}-${project.version}.jar"
     ]
+    classpath =  project.sourceSets.test.runtimeClasspath + (isSpark3 ? configurations.spark3Test : configurations.spark2Test)
 }
 
 test {
