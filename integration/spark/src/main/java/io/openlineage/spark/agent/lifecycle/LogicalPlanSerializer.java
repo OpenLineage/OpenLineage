@@ -7,9 +7,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreType;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.introspect.ClassIntrospector;
-import com.fasterxml.jackson.module.scala.DefaultScalaModule$;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.util.List;
@@ -45,7 +45,9 @@ class LogicalPlanSerializer {
   private LogicalPlanSerializer() {
     mapper = new ObjectMapper();
     try {
-      mapper.registerModule(DefaultScalaModule$.MODULE$);
+      mapper.registerModule(
+          (Module)
+              Class.forName("com.fasterxml.jackson.module.scala.DefaultScalaModule").newInstance());
     } catch (Throwable t) {
       log.warn("Can't register jackson scala module for serializing LogicalPlan");
     }

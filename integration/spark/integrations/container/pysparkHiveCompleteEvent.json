@@ -26,7 +26,10 @@
                 }
             },
             "outputFacets": {
-                "outputStatistics": {}
+                "outputStatistics": {
+                    "rowCount": 3,
+                    "size": 12
+                }
             },    
             "name": "/tmp/warehouse/test",
             "namespace": "file"
@@ -35,7 +38,26 @@
     "run": {
         "facets": {
             "spark.logicalPlan": {},
-            "spark_unknown": {}
+            "spark_unknown": {
+                "inputs": [
+                    {
+                        "description": {},
+                        "inputAttributes": [],
+                        "outputAttributes": [
+                            {
+                                "metadata": {},
+                                "name": "key",
+                                "type": "integer"
+                            },
+                            {
+                                "metadata": {},
+                                "name": "value",
+                                "type": "string"
+                            }
+                        ]
+                    }
+                ]
+            }
         }
     }
 }

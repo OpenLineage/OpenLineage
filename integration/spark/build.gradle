@@ -123,11 +123,13 @@ dependencies {
         testRuntimeOnly 'com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:0.21.1'
         testRuntimeOnly "org.apache.spark:spark-core_2.12:${spark3Version}"
         testRuntimeOnly "org.apache.spark:spark-sql_2.12:${spark3Version}"
+        testRuntimeOnly "org.apache.spark:spark-hive_2.12:${spark3Version}"
     } else {
         runtimeOnly "com.fasterxml.jackson.module:jackson-module-scala_2.11:${jacksonVersion}"
         testRuntimeOnly 'com.google.cloud.spark:spark-bigquery-with-dependencies_2.11:0.21.1'
         testRuntimeOnly "org.apache.spark:spark-core_2.11:${sparkVersion}"
         testRuntimeOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
+        testRuntimeOnly "org.apache.spark:spark-hive_2.11:${sparkVersion}"
     }
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 }
