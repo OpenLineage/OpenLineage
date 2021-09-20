@@ -20,6 +20,7 @@
         "_schemaURL": "https://openlineage.io/spec/1-0-1/OpenLineage.json#/definitions/CustomFacet",
         "output": {
           "description": {
+            "@class": "org.apache.spark.sql.catalyst.plans.logical.Aggregate",
             "groupingExpressions": [],
             "aggregateExpressions": [
               {

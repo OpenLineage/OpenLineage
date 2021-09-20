@@ -1,0 +1,49 @@
+version: 2
+models:
+    - name: money_received
+      description: "Money that was received from other accounts"
+      columns:
+          - name: user_id
+            description: "user which received money"
+            tests:
+                - not_null
+          - name: currency
+            description: "currency"
+            tests:
+                - not_null
+          - name: amount
+            description: "sum of amounts received in particular currency"
+            tests:
+                - not_null
+
+    - name: money_send
+      description: "Money that was send to other accounts"
+      columns:
+          - name: user_id
+            description: "user which send money"
+            tests:
+                - not_null
+          - name: currency
+            description: "currency"
+            tests:
+                - not_null
+          - name: amount
+            description: "sum of amounts send in particular currency"
+            tests:
+                - not_null
+
+    - name: balance
+      description: "Current balance on user account"
+      columns:
+          - name: user_id
+            description: "user"
+            tests:
+                - not_null
+          - name: currency
+            description: "currency"
+            tests:
+                - not_null
+          - name: amount
+            description: "sum of amounts received after subtracting amounts send"
+            tests:
+                - not_null
