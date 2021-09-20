@@ -11,6 +11,6 @@
 # limitations under the License.
 
 from openlineage.airflow.extractors.extractors import Extractors
-from openlineage.airflow.extractors.base import BaseExtractor, StepMetadata
+from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
 
-__all__ = [Extractors, BaseExtractor, StepMetadata]
+__all__ = [Extractors, BaseExtractor, TaskMetadata]
