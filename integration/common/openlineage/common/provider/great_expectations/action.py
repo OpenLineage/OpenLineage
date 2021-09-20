@@ -93,6 +93,8 @@ class OpenLineageValidationAction(ValidationAction):
     def _run(self, validation_result_suite: ExpectationSuiteValidationResult,
              validation_result_suite_identifier: ValidationResultIdentifier,
              data_asset: GEDataset,
+             expectation_suite_identifier=None,
+             checkpoint_identifier=None,
              payload=None):
         # Initialize logger here so that the action is serializable until it actually runs
         self.log = logging.getLogger(self.__class__.__module__ + '.' + self.__class__.__name__)
