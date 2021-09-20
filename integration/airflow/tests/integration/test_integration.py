@@ -153,3 +153,4 @@ if __name__ == '__main__':
     test_integration('postgres_orders_popular_day_of_week', 'requests/postgres.json')
     test_integration('bigquery_orders_popular_day_of_week', 'requests/bigquery.json')
     test_integration('dbt_dag', 'requests/dbt.json')
+    test_integration('custom_extractor', 'requests/custom_extractor.json')

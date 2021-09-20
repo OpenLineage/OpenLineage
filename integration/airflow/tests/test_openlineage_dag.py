@@ -10,9 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import datetime
-import functools
 import logging
 import uuid
+from typing import List
 from uuid import UUID
 
 import mock
@@ -43,7 +43,7 @@ from openlineage.airflow.facets import AirflowRunArgsRunFacet, \
 from openlineage.airflow.utils import get_location, get_job_name, new_lineage_run_id
 from openlineage.client.facet import NominalTimeRunFacet, SourceCodeLocationJobFacet, \
     DocumentationJobFacet, DataSourceDatasetFacet, SchemaDatasetFacet, \
-    SchemaField, ParentRunFacet, SqlJobFacet, set_producer
+    SchemaField, ParentRunFacet, set_producer
 from openlineage.client.run import RunEvent, RunState, Job, Run, \
     Dataset as OpenLineageDataset
 
@@ -287,7 +287,6 @@ class TestFixtureDummyOperator(DummyOperator):
 
 
 class TestFixtureDummyExtractor(BaseExtractor):
-    operator_class = TestFixtureDummyOperator
     source = Source(
         scheme="dummy",
         authority="localhost:1234",
@@ -296,6 +295,10 @@ class TestFixtureDummyExtractor(BaseExtractor):
 
     def __init__(self, operator):
         super().__init__(operator)
+
+    @classmethod
+    def get_operator_classnames(cls) -> List[str]:
+        return ['TestFixtureDummyOperator']
 
     def extract(self) -> StepMetadata:
         inputs = [
@@ -318,7 +321,6 @@ class TestFixtureDummyExtractor(BaseExtractor):
 
 
 class TestFixtureDummyExtractorOnComplete(BaseExtractor):
-    operator_class = TestFixtureDummyOperator
     source = Source(
         scheme="dummy",
         authority="localhost:1234",
@@ -327,6 +329,10 @@ class TestFixtureDummyExtractorOnComplete(BaseExtractor):
 
     def __init__(self, operator):
         super().__init__(operator)
+
+    @classmethod
+    def get_operator_classnames(cls) -> List[str]:
+        return ['TestFixtureDummyOperator']
 
     def extract(self) -> StepMetadata:
         return None
@@ -380,7 +386,7 @@ def test_openlineage_dag_with_extractor(
     # --- test setup
 
     # Add the dummy extractor to the list for the task above
-    openlineage.airflow.dag.extractor_mapper.extractors[TestFixtureDummyOperator] = \
+    openlineage.airflow.dag.extractor_mapper.extractors[TestFixtureDummyOperator.__name__] = \
         TestFixtureDummyExtractor
 
     dag_id = 'test_openlineage_dag_with_extractor'
@@ -504,7 +510,7 @@ def test_openlineage_dag_with_extract_on_complete(
 
     # Add the dummy extractor to the list for the task above
     openlineage.airflow.dag.extractors.clear()
-    openlineage.airflow.dag.extractor_mapper.extractors[TestFixtureDummyOperator] = \
+    openlineage.airflow.dag.extractor_mapper.extractors[TestFixtureDummyOperator.__name__] = \
         TestFixtureDummyExtractorOnComplete
 
     dag_id = 'test_openlineage_dag_with_extractor_on_complete'
@@ -610,7 +616,6 @@ def test_openlineage_dag_with_extract_on_complete(
 
 
 class TestFixtureDummyExtractorWithMultipleSteps(BaseExtractor):
-    operator_class = TestFixtureDummyOperator
     source = Source(
         scheme='dummy',
         authority='localhost:1234',
@@ -619,6 +624,10 @@ class TestFixtureDummyExtractorWithMultipleSteps(BaseExtractor):
 
     def __init__(self, operator):
         super().__init__(operator)
+
+    @classmethod
+    def get_operator_classnames(cls) -> List[str]:
+        return ['TestFixtureDummyOperator']
 
     def extract(self) -> [StepMetadata]:
         inputs = [
@@ -667,7 +676,7 @@ def test_openlineage_dag_with_extractor_returning_two_steps(
 
     # Add the dummy extractor to the list for the task above
     openlineage.airflow.dag.extractors.clear()
-    openlineage.airflow.dag.extractor_mapper.extractors[TestFixtureDummyOperator] = \
+    openlineage.airflow.dag.extractor_mapper.extractors[TestFixtureDummyOperator.__name__] = \
         TestFixtureDummyExtractorWithMultipleSteps
 
     dag_id = 'test_openlineage_dag_with_extractor_returning_two_steps'
@@ -775,7 +784,7 @@ def test_openlineage_dag_adds_custom_facets(
         clear_db_airflow_dags,
 ):
     openlineage.airflow.dag.extractors.clear()
-    openlineage.airflow.dag.extractor_mapper.extractors.pop(TestFixtureDummyOperator, None)
+    openlineage.airflow.dag.extractor_mapper.extractors.pop('TestFixtureDummyOperator', None)
 
     dag = DAG(
         DAG_ID,
@@ -846,156 +855,3 @@ class TestFixtureHookingDummyOperator(DummyOperator):
 
     def execute(self, context):
         return self.result
-
-
-def wrap_callback(f):
-    @functools.wraps(f)
-    def wrapper(self, *args, **kwargs):
-        result = f(self, *args, **kwargs)
-        self._extractor.store_result(result)
-        return result
-    return wrapper
-
-
-TestFixtureHookingDummyOperator.execute = wrap_callback(TestFixtureHookingDummyOperator.execute)
-
-
-class TestFixtureHookingDummyExtractor(BaseExtractor):
-    operator_class = TestFixtureHookingDummyOperator
-    source = Source(
-        scheme="dummy://localhost:1234",
-        connection_url="dummy://localhost:1234?query_tag=asdf"
-    )
-
-    def __init__(self, operator):
-        super().__init__(operator)
-        self.operator._extractor = self
-        self.result = None
-
-    def store_result(self, result):
-        self.result = result
-
-    def extract(self) -> StepMetadata:
-        return None
-
-    def extract_on_complete(self, task_instance) -> StepMetadata:
-        return StepMetadata(
-            name=get_job_name(task=self.operator),
-            inputs=[],
-            outputs=[],
-            context={
-                "sql": self.result
-            }
-        )
-
-
-# tests a simple workflow with default custom facet mechanism
-# test the lifecycle including with extractors
-@mock.patch('openlineage.airflow.dag.new_lineage_run_id')
-@mock.patch('openlineage.airflow.dag.get_custom_facets')
-@mock.patch('openlineage.airflow.adapter.OpenLineageAdapter.get_or_create_openlineage_client')
-@mock.patch('openlineage.airflow.dag.JobIdMapping')
-@provide_session
-def test_openlineage_dag_with_hooking_operator(
-        job_id_mapping,
-        mock_get_or_create_openlineage_client,
-        get_custom_facets,
-        new_lineage_run_id,
-        clear_db_airflow_dags,
-        session=None):
-
-    # --- test setup
-
-    # Add the dummy extractor to the list for the task above
-    openlineage.airflow.dag.extractors.clear()
-    openlineage.airflow.dag.extractor_mapper.extractors[TestFixtureHookingDummyOperator] = \
-        TestFixtureHookingDummyExtractor
-
-    dag_id = 'test_openlineage_dag_with_extractor_returning_two_steps'
-    dag = DAG(
-        dag_id,
-        schedule_interval='@daily',
-        default_args=DAG_DEFAULT_ARGS,
-        description=DAG_DESCRIPTION
-    )
-
-    dag_run_id = 'test_openlineage_dag_with_extractor_returning_two_steps_run_id'
-
-    run_id = str(uuid.uuid4())
-    job_id = f"{dag_id}.{TASK_ID_COMPLETED}"
-
-    # Mock the openlineage client method calls
-    mock_openlineage_client = mock.Mock()
-    mock_get_or_create_openlineage_client.return_value = mock_openlineage_client
-    get_custom_facets.return_value = {}
-    new_lineage_run_id.return_value = run_id
-
-    query = "select * from employees"
-
-    # Add task that will be marked as completed
-    task_will_complete = TestFixtureHookingDummyOperator(
-        task_id=TASK_ID_COMPLETED,
-        result=query,
-        dag=dag
-    )
-    completed_task_location = get_location(task_will_complete.dag.fileloc)
-
-    # --- pretend run the DAG
-
-    # Create DAG run and mark as running
-    dagrun = dag.create_dagrun(
-        run_id=dag_run_id,
-        execution_date=DEFAULT_DATE,
-        state=State.RUNNING)
-
-    # --- Asserts that the job starting triggers openlineage event
-
-    start_time = '2016-01-01T00:00:00.000000Z'
-    end_time = '2016-01-02T00:00:00.000000Z'
-
-    mock_openlineage_client.emit.assert_called_once_with(
-        RunEvent(
-            RunState.START,
-            mock.ANY,
-            Run(run_id, {
-                "nominalTime": NominalTimeRunFacet(start_time, end_time),
-                "parentRun": ParentRunFacet.create(
-                    runId=dag_run_id,
-                    namespace=DAG_NAMESPACE,
-                    name=job_id
-                )
-            }),
-            Job("default", job_id, {
-                "documentation": DocumentationJobFacet(DAG_DESCRIPTION),
-                "sourceCodeLocation": SourceCodeLocationJobFacet("", completed_task_location)
-            }),
-            PRODUCER,
-            [],
-            []
-        )
-    )
-
-    mock_openlineage_client.reset_mock()
-
-    # --- Pretend complete the task
-    job_id_mapping.pop.return_value = run_id
-
-    task_will_complete.run(start_date=DEFAULT_DATE, end_date=DEFAULT_DATE)
-
-    dag.handle_callback(dagrun, success=True, session=session)
-
-    # --- Assert that the openlineage call is done
-
-    mock_openlineage_client.emit.assert_called_once_with(
-        RunEvent(
-            RunState.COMPLETE,
-            mock.ANY,
-            Run(run_id),
-            Job("default", job_id, {
-                "sql": SqlJobFacet(query)
-            }),
-            PRODUCER,
-            [],
-            []
-        )
-    )

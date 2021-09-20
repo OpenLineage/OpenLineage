@@ -65,4 +65,6 @@ def lineage():
 
         logger.info(f"GOT {len(received_requests)} requests")
 
+        logger.info(json.dumps(received_requests, indent=4, sort_keys=True))
+
         return jsonify(received_requests), 200

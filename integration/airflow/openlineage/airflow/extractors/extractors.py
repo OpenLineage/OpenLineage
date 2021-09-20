@@ -1,3 +1,6 @@
+import importlib
+import os
+
 from typing import Type, Optional
 
 from openlineage.airflow.extractors.base import BaseExtractor
@@ -27,26 +30,40 @@ class Extractors:
     """
     def __init__(self):
         # Do not expose extractors relying on external dependencies that are not installed
-        self.extractors = {
-            extractor.operator_class: extractor
-            for extractor
-            in _extractors
-            if getattr(extractor, 'operator_class', None) is not None
-        }
+        self.extractors = {}
+        self.patchers = {}
 
-        self.patchers = {
-            extractor.operator_class: extractor
-            for extractor
-            in _patchers
-            if getattr(extractor, 'operator_class', None) is not None
-        }
+        for extractor in _extractors:
+            for operator_class in extractor.get_operator_classnames():
+                self.extractors[operator_class] = extractor
+
+        for patcher in _patchers:
+            for operator_class in patcher.get_operator_classnames():
+                self.patchers[operator_class] = patcher
+
+        # Adding operator: extractor pairs registered via environmental variable in pattern
+        # OPENLINEAGE_EXTRACTOR_<operator>=<path.to.ExtractorClass>
+        # The value in extractor map is extractor class type - it needs to be instantiated.
+        # We import the module provided and get type using importlib then.
+        for key, value in os.environ.items():
+            if key.startswith("OPENLINEAGE_EXTRACTOR_"):
+                operator = key[22:]
+                parts = value.split('.')
+                module = '.'.join(parts[:-1])
+                extractor = importlib.import_module(module)
+                self.extractors[operator] = getattr(extractor, parts[-1])
+
+    def add_extractor(self, operator: str, extractor: Type):
+        self.extractors[operator] = extractor
 
     def get_extractor_class(self, clazz: Type) -> Optional[Type[BaseExtractor]]:
-        if clazz in self.extractors:
-            return self.extractors[clazz]
+        name = clazz.__name__
+        if name in self.extractors:
+            return self.extractors[name]
         return None
 
     def get_patcher_class(self, clazz: Type) -> Optional[Type[BaseExtractor]]:
-        if clazz in self.patchers:
-            return self.patchers[clazz]
+        name = clazz.__name__
+        if name in self.patchers:
+            return self.patchers[name]
         return None
