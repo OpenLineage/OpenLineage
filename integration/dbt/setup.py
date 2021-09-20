@@ -23,6 +23,7 @@ __version__ = "0.2.3"
 
 requirements = [
     f"sqlparse>=0.2.3,<0.4",
+    f"tqdm>=4.62.0",
     f"openlineage-integration-common[dbt]=={__version__}",
 ]
 
