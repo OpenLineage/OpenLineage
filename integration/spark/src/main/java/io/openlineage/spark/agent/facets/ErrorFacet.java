@@ -7,7 +7,7 @@ import java.io.StringWriter;
 import lombok.Builder;
 import lombok.NonNull;
 
-public class ErrorFacet extends OpenLineage.CustomFacet {
+public class ErrorFacet extends OpenLineage.DefaultRunFacet {
   private final Exception exception;
 
   @Builder

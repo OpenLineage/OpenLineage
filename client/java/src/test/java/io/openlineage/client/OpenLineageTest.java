@@ -13,6 +13,7 @@ import org.junit.Test;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -22,12 +23,22 @@ import io.openlineage.client.OpenLineage.DataQualityMetricsInputDatasetFacetColu
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.Job;
 import io.openlineage.client.OpenLineage.JobFacets;
+import io.openlineage.client.OpenLineage.NominalTimeRunFacet;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.Run;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunFacets;
 
 public class OpenLineageTest {
+
+  ObjectMapper mapper = new ObjectMapper();
+  {
+    mapper.registerModule(new JavaTimeModule());
+    mapper.setSerializationInclusion(Include.NON_NULL);
+    mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+    mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
+    mapper.configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
+  }
 
   @Test
   public void jsonSerialization() throws JsonProcessingException {
@@ -36,21 +47,17 @@ public class OpenLineageTest {
     URI producer = URI.create("producer");
     OpenLineage ol = new OpenLineage(producer);
     UUID runId = UUID.randomUUID();
-    RunFacets runFacets = ol.newRunFacets(ol.newNominalTimeRunFacet(now, now), null);
+    RunFacets runFacets = ol.newRunFacetsBuilder().nominalTime(ol.newNominalTimeRunFacet(now, now)).build();
     Run run = ol.newRun(runId, runFacets);
     String name = "jobName";
     String namespace = "namespace";
-    JobFacets jobFacets = ol.newJobFacets(null, null, null);
+    JobFacets jobFacets = ol.newJobFacetsBuilder().build();
     Job job = ol.newJob(namespace, name, jobFacets);
     List<InputDataset> inputs = Arrays.asList(ol.newInputDataset("ins", "input", null, null));
     List<OutputDataset> outputs = Arrays.asList(ol.newOutputDataset("ons", "output", null, null));
     RunEvent runStateUpdate = ol.newRunEvent("START", now, run, job, inputs, outputs);
 
-    ObjectMapper mapper = new ObjectMapper();
-    mapper.registerModule(new JavaTimeModule());
-    mapper.setSerializationInclusion(Include.NON_NULL);
-    mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-    mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
+
     String json = mapper.writeValueAsString(runStateUpdate);
     RunEvent read = mapper.readValue(json, RunEvent.class);
 
@@ -61,6 +68,9 @@ public class OpenLineageTest {
     assertEquals(runStateUpdate.getEventType(),read.getEventType());
     assertEquals(runStateUpdate.getEventTime(),read.getEventTime());
     assertEquals(1, runStateUpdate.getInputs().size());
+    NominalTimeRunFacet nominalTime = runStateUpdate.getRun().getFacets().getNominalTime();
+    assertEquals(now, nominalTime.getNominalStartTime());
+    assertEquals(now, nominalTime.getNominalEndTime());
     InputDataset inputDataset = runStateUpdate.getInputs().get(0);
     assertEquals("ins", inputDataset.getNamespace());
     assertEquals("input", inputDataset.getName());
@@ -69,10 +79,11 @@ public class OpenLineageTest {
     assertEquals("ons", outputDataset.getNamespace());
     assertEquals("output", outputDataset.getName());
 
+    assertEquals(roundTrip(json), roundTrip(mapper.writeValueAsString(read)));
+  }
 
-    assertEquals(json, mapper.writeValueAsString(read));
-
-
+  String roundTrip(String value) throws JsonMappingException, JsonProcessingException {
+    return mapper.writeValueAsString(mapper.readValue(value, Object.class));
   }
 
   @Test
@@ -84,12 +95,12 @@ public class OpenLineageTest {
     UUID runId = UUID.randomUUID();
     RunFacets runFacets =
         ol.newRunFacetsBuilder()
-            .nominalTime(
-                ol.newNominalTimeRunFacetBuilder()
-                    .nominalEndTime(now)
-                    .nominalEndTime(now)
-                    .build())
-            .build();
+          .nominalTime(
+            ol.newNominalTimeRunFacetBuilder()
+            .nominalStartTime(now)
+            .nominalEndTime(now)
+            .build())
+        .build();
     Run run = ol.newRunBuilder().runId(runId).facets(runFacets).build();
     String name = "jobName";
     String namespace = "namespace";
@@ -163,6 +174,8 @@ public class OpenLineageTest {
     OutputDataset outputDataset = runStateUpdate.getOutputs().get(0);
     assertEquals("ons", outputDataset.getNamespace());
     assertEquals("output", outputDataset.getName());
+
+    assertEquals(roundTrip(json), roundTrip(mapper.writeValueAsString(read)));
     assertEquals((Long)10L, outputDataset.getOutputFacets().getOutputStatistics().getRowCount());
     assertEquals((Long)20L, outputDataset.getOutputFacets().getOutputStatistics().getSize());
 

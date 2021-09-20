@@ -18,7 +18,7 @@ import lombok.Value;
 @EqualsAndHashCode(callSuper = true)
 @Value
 @Deprecated
-public class OutputStatisticsFacet extends OpenLineage.CustomFacet {
+public class OutputStatisticsFacet extends OpenLineage.DefaultDatasetFacet {
   long rowCount;
   long size;
   String status = "DEPRECATED";

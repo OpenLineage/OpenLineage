@@ -22,7 +22,7 @@ plugins {
     id 'signing'
     id 'idea'
     id 'eclipse'
-    id "org.openapi.generator" version "5.0.1"
+    id "org.openapi.generator" version "5.2.0"
 }
 
 java {
@@ -57,7 +57,9 @@ task generateCode(type: JavaExec) {
     description 'generate java code from spec.'
     classpath configurations.codeGenerator
     main = 'io.openlineage.client.Generator'
-    args "file:$rootDir/../../spec/OpenLineage.json".toString()
+    def rootUrl = "file:$rootDir/../../spec/".toString()
+    args rootUrl + "OpenLineage.json"
+    args rootUrl
 }
 
 openApiGenerate {
