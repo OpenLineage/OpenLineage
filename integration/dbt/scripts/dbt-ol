@@ -3,16 +3,29 @@ import subprocess
 import sys
 import time
 import os
+from typing import Optional
 
 from tqdm import tqdm
 from openlineage.common.provider.dbt import DbtArtifactProcessor
-from openlineage.client.client import OpenLineageClient
+from openlineage.client.client import OpenLineageClient, OpenLineageClientOptions
 
 __version__ = "0.2.3"
 
 from openlineage.common.utils import parse_single_arg
 
 PRODUCER = f'https://github.com/OpenLineage/OpenLineage/tree/{__version__}/integration/dbt'
+
+
+def setup_client() -> Optional[OpenLineageClient]:
+    url = os.getenv("OPENLINEAGE_URL")
+    if not url:
+        return None
+    return OpenLineageClient(
+        url=url,
+        options=OpenLineageClientOptions(
+            api_key=os.getenv("OPENLINEAGE_API_KEY", None)
+        )
+    )
 
 
 def main():
@@ -24,7 +37,11 @@ def main():
     project_dir = parse_single_arg(args, ['--project-dir'], default='./')
     profile_name = parse_single_arg(args, ['--profile'])
 
-    client = OpenLineageClient.from_environment()
+    client = setup_client()
+    if client is None:
+        print("OPENLINEAGE_URL is not set: stopping execution")
+        sys.exit(1)
+
     processor = DbtArtifactProcessor(
         producer=PRODUCER,
         target=target,
