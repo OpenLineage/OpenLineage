@@ -43,11 +43,11 @@ COLORED_LOG = conf.getboolean('core', 'COLORED_CONSOLE_LOG')
 
 COLORED_FORMATTER_CLASS = conf.get('core', 'COLORED_FORMATTER_CLASS')
 
-# BASE_LOG_FOLDER = '/opt/airflow/logs'
-BASE_LOG_FOLDER = conf.get('core', 'BASE_LOG_FOLDER')
-
-# PROCESSOR_LOG_FOLDER = '/opt/airflow/logs'
-PROCESSOR_LOG_FOLDER = conf.get('scheduler', 'CHILD_PROCESS_LOG_DIRECTORY')
+BASE_LOG_FOLDER = '/opt/airflow/logs'
+# BASE_LOG_FOLDER = conf.get('core', 'BASE_LOG_FOLDER')
+#
+PROCESSOR_LOG_FOLDER = '/opt/airflow/logs'
+# PROCESSOR_LOG_FOLDER = conf.get('scheduler', 'CHILD_PROCESS_LOG_DIRECTORY')
 
 DAG_PROCESSOR_MANAGER_LOG_LOCATION = \
     conf.get('core', 'DAG_PROCESSOR_MANAGER_LOG_LOCATION')

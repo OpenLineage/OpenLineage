@@ -148,3 +148,5 @@ cython_debug/
 *.classpath
 *.project
 *.settings/
+
+gcloud-service-key.json
