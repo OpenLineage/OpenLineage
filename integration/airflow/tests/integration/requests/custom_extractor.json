@@ -1,0 +1,48 @@
+ [{
+ 		"eventType": "START",
+ 		"inputs": [{
+ 			"facets": {},
+ 			"name": "dataset",
+ 			"namespace": "test"
+ 		}],
+ 		"job": {
+ 			"facets": {
+ 				"documentation": {
+ 					"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
+ 					"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DocumentationJobFacet",
+ 					"description": "Test dag."
+ 				}
+ 			},
+ 			"name": "custom_extractor.custom_extractor",
+ 			"namespace": "food_delivery"
+ 		},
+ 		"outputs": [],
+ 		"run": {
+ 			"facets": {
+ 				"airflow_runArgs": {
+ 					"externalTrigger": false
+ 				},
+ 				"parentRun": {
+ 					"job": {
+ 						"name": "custom_extractor.custom_extractor",
+ 						"namespace": "food_delivery"
+ 					}
+ 				}
+ 			}
+ 		}
+ 	},
+ 	{
+ 		"eventType": "COMPLETE",
+ 		"inputs": [{
+ 			"facets": {},
+ 			"name": "dataset",
+ 			"namespace": "test"
+ 		}],
+ 		"job": {
+ 			"facets": {},
+ 			"name": "custom_extractor.custom_extractor",
+ 			"namespace": "food_delivery"
+ 		},
+ 		"outputs": []
+ 	}
+ ]

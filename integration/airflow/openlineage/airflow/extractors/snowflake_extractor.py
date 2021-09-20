@@ -1,4 +1,5 @@
 import logging
+from typing import List
 
 from openlineage.airflow.extractors.postgres_extractor import PostgresExtractor
 from openlineage.airflow.utils import get_connection_uri, get_connection  # noqa
@@ -6,25 +7,15 @@ from openlineage.airflow.utils import get_connection_uri, get_connection  # noqa
 log = logging.getLogger(__file__)
 
 
-# Snowflake is optional dependency.
-def try_load_operator():
-    try:
-        from airflow.contrib.operators.snowflake_operator import SnowflakeOperator
-        return SnowflakeOperator
-    except Exception:
-        log.warn('Did not find snowflake_operator library or failed to import it')
-        return None
-
-
-Operator = try_load_operator()
-
-
 class SnowflakeExtractor(PostgresExtractor):
-    operator_class = Operator
     source_type = 'SNOWFLAKE'
 
     def __init__(self, operator):
         super().__init__(operator)
+
+    @classmethod
+    def get_operator_classnames(cls) -> List[str]:
+        return ['SnowflakeOperator']
 
     def _information_schema_query(self, table_names: str) -> str:
         return f"""

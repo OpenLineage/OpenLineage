@@ -13,7 +13,7 @@
 import json
 import logging
 import traceback
-from typing import Optional
+from typing import Optional, List
 
 import attr
 
@@ -42,23 +42,13 @@ class SqlContext:
     parser_error: Optional[str] = attr.ib(default=None)
 
 
-def try_load_operator():
-    try:
-        from airflow.contrib.operators.bigquery_operator import BigQueryOperator
-        return BigQueryOperator
-    except Exception:
-        log.warn('Did not find bigquery_operator library or failed to import it')
-        return None
-
-
-Operator = try_load_operator()
-
-
 class BigQueryExtractor(BaseExtractor):
-    operator_class = Operator
-
     def __init__(self, operator: BaseOperator):
         super().__init__(operator)
+
+    @classmethod
+    def get_operator_classnames(cls) -> List[str]:
+        return ['BigQueryOperator']
 
     def extract(self) -> Optional[StepMetadata]:
         return None
