@@ -23,7 +23,7 @@ only_on_forks: &only_on_forks
   filters:
     branches:
       # Forked pull requests have CIRCLE_BRANCH set to pull/XXX
-      only: /pull\/[0-9]+/n
+      only: /pull\/[0-9]+/
 
 # Only trigger CI job on release (=X.Y.Z) with possible (rcX)
 only_on_release: &only_on_release
