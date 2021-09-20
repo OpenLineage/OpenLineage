@@ -12,7 +12,7 @@
 import logging
 from typing import Optional, List
 
-from openlineage.airflow.extractors.base import BaseExtractor, StepMetadata
+from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
 
 log = logging.getLogger(__file__)
 
@@ -41,10 +41,10 @@ class GreatExpectationsExtractorImpl(BaseExtractor):
     def get_operator_classnames(cls) -> List[str]:
         return [GreatExpectationsOperator.__name__] if GreatExpectationsOperator else []
 
-    def extract(self) -> Optional[StepMetadata]:
+    def extract(self) -> Optional[TaskMetadata]:
         return None
 
-    def extract_on_complete(self, task_instance) -> Optional[StepMetadata]:
+    def extract_on_complete(self, task_instance) -> Optional[TaskMetadata]:
         return None
 
 

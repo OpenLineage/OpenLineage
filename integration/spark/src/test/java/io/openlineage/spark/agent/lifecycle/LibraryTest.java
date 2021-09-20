@@ -165,10 +165,25 @@ public class LibraryTest {
       ((Map<String, Object>) eventFields.get("run")).replace("runId", "fake_run_id");
 
       assertEquals(
-          OpenLineageClient.getObjectMapper().readValue(snapshot, mapTypeReference), eventFields);
+          stripSchemaURL(OpenLineageClient.getObjectMapper().readValue(snapshot, mapTypeReference)),
+          stripSchemaURL(eventFields));
     }
 
     verifySerialization(events);
+  }
+
+  Map<String, Object> stripSchemaURL(Map<String, Object> map) {
+    for (String key : map.keySet()) {
+      if (key.endsWith("schemaURL")) {
+        map.remove(key);
+      } else {
+        Object value = map.get(key);
+        if (value instanceof Map) {
+          stripSchemaURL((Map<String, Object>) value);
+        }
+      }
+    }
+    return map;
   }
 
   @Test

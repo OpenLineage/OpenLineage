@@ -63,8 +63,8 @@ public class SaveIntoDataSourceCommandVisitor extends QueryPlanVisitor<SaveIntoD
         // constructed datasets don't include the output stats, so add that facet here
         .peek(
             ds -> {
-              Builder<String, OpenLineage.CustomFacet> facetsMap =
-                  ImmutableMap.<String, OpenLineage.CustomFacet>builder();
+              Builder<String, OpenLineage.DatasetFacet> facetsMap =
+                  ImmutableMap.<String, OpenLineage.DatasetFacet>builder();
               if (ds.getFacets().getAdditionalProperties() != null) {
                 facetsMap.putAll(ds.getFacets().getAdditionalProperties());
               }

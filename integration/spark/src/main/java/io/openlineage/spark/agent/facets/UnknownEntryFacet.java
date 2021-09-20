@@ -11,7 +11,7 @@ import lombok.Value;
 
 @Value
 @EqualsAndHashCode(callSuper = true)
-public class UnknownEntryFacet extends OpenLineage.CustomFacet {
+public class UnknownEntryFacet extends OpenLineage.DefaultRunFacet {
 
   public UnknownEntryFacet(FacetEntry output, List<FacetEntry> inputs) {
     super(OPEN_LINEAGE_CLIENT_URI);

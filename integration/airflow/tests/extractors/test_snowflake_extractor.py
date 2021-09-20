@@ -123,19 +123,14 @@ def test_extract(get_connection, mock_get_table_schemas):
             fields=[]
         ).to_openlineage_dataset()]
 
-    expected_context = {
-        'sql': SQL,
-    }
-
     # Set the environment variable for the connection
     os.environ[f"AIRFLOW_CONN_{CONN_ID.upper()}"] = CONN_URI
 
-    step_metadata = SnowflakeExtractor(TASK).extract()
+    task_metadata = SnowflakeExtractor(TASK).extract()
 
-    assert step_metadata.name == f"{DAG_ID}.{TASK_ID}"
-    assert step_metadata.inputs == expected_inputs
-    assert step_metadata.outputs == []
-    assert step_metadata.context == expected_context
+    assert task_metadata.name == f"{DAG_ID}.{TASK_ID}"
+    assert task_metadata.inputs == expected_inputs
+    assert task_metadata.outputs == []
 
 
 @mock.patch('snowflake.connector.connect')
