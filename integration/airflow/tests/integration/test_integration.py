@@ -52,7 +52,9 @@ def wait_for_dag(dag_id):
     cur.close()
 
     log.info(f"DAG '{dag_id}' state set to '{state}'.")
-    if state != "success":
+    if state == 'failed':
+        sys.exit(1)
+    elif state != "success":
         raise Exception('Retry!')
 
 
