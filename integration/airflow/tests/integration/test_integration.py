@@ -31,7 +31,8 @@ airflow_db_conn = None
 
 @retry(
     wait_exponential_multiplier=1000,
-    wait_exponential_max=10000
+    wait_exponential_max=10000,
+    stop_max_attempt_number=20
 )
 def wait_for_dag(dag_id):
     log.info(
@@ -185,6 +186,8 @@ def test_integration_great_expectations():
 
 
 if __name__ == '__main__':
+    # Wait for airflow worker and scheduler runs up
+    time.sleep(120)
     setup_db()
     test_integration_great_expectations()
     test_integration_postgres()
