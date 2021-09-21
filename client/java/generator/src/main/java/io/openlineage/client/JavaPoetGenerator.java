@@ -129,7 +129,7 @@ public class JavaPoetGenerator {
 
   private MethodSpec modelConstructor(ObjectResolvedType type) {
     Builder constructor = MethodSpec.constructorBuilder();
-    if (type.getName().equals("CustomFacet")) {
+    if (type.getName().equals("CustomFacet") || server) {
       constructor.addModifiers(PUBLIC);
     } else {
       constructor.addModifiers(PRIVATE);
