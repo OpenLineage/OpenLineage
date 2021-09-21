@@ -55,8 +55,8 @@ public class LogicalRelationVisitor extends QueryPlanVisitor<LogicalRelation> {
   public boolean isDefinedAt(LogicalPlan x) {
     return x instanceof LogicalRelation
         && (((LogicalRelation) x).relation() instanceof HadoopFsRelation
-        || ((LogicalRelation) x).relation() instanceof JDBCRelation
-        || ((LogicalRelation) x).catalogTable().isDefined());
+            || ((LogicalRelation) x).relation() instanceof JDBCRelation
+            || ((LogicalRelation) x).catalogTable().isDefined());
   }
 
   @Override

@@ -26,10 +26,7 @@
                 }
             },
             "outputFacets": {
-                "outputStatistics": {
-                    "rowCount": 3,
-                    "size": 12
-                }
+                "outputStatistics": {}
             },    
             "name": "/tmp/warehouse/test",
             "namespace": "file"
