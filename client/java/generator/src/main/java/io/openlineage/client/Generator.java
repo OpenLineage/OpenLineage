@@ -121,9 +121,16 @@ public class Generator {
 
       TypeResolver typeResolver = new TypeResolver(urls);
 
-      // We add the facets to the core model here to keep code generation convenient
-      Map<String, ObjectResolvedType> facetContainers = indexFacetContainersByType(typeResolver);
-      enrichFacetContainersWithFacets(typeResolver, facetContainers);
+      if (server) {
+        // The server wants to be forward compatible and read any extra fields.
+        for (ObjectResolvedType objectResolvedType : typeResolver.getTypes()) {
+          objectResolvedType.setAdditionalProperties(true);
+        }
+      } else {
+        // We add the facets to the core model here to keep code generation convenient
+        Map<String, ObjectResolvedType> facetContainers = indexFacetContainersByType(typeResolver);
+        enrichFacetContainersWithFacets(typeResolver, facetContainers);
+      }
 
       String javaPath = CONTAINER_CLASS_NAME + JAVA_EXT;
       File output = new File(outputBase, javaPath);
