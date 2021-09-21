@@ -1,5 +1,7 @@
 package io.openlineage.client;
 
+import static java.util.Arrays.asList;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -10,6 +12,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -61,7 +64,8 @@ public class Generator {
       }
     }
     logger.info("Generating code for schemas:\n" + urls.stream().map(Object::toString).collect(Collectors.joining("\n")));
-    generate(urls, new File("src/main/java/io/openlineage/client/"));
+    generate(new HashSet<>(asList(urls.iterator().next())), "io.openlineage.server", true, new File("src/main/java/io/openlineage/server/"));
+    generate(urls, "io.openlineage.client", false, new File("src/main/java/io/openlineage/client/"));
   }
 
   private static void addURLs(Set<URL> urls, File dir)
@@ -95,18 +99,13 @@ public class Generator {
     return url;
   }
 
-  public static void generate(Set<URL> urls, File outputBase) throws FileNotFoundException {
+  public static void generate(Set<URL> urls, String packageName, boolean server, File outputBase) throws FileNotFoundException {
     if (!outputBase.exists()) {
       if (!outputBase.mkdirs()) {
         throw new FileNotFoundException("can't create output " + outputBase.getAbsolutePath());
       }
     }
     try {
-      TypeResolver typeResolver = new TypeResolver(urls);
-
-      // We add the facets to the core model here to keep code generation convenient
-      Map<String, ObjectResolvedType> facetContainers = indexFacetContainersByType(typeResolver);
-      enrichFacetContainersWithFacets(typeResolver, facetContainers);
 
       Map<String, URL> containerToID = new HashMap<>();
       for (URL url : urls) {
@@ -120,10 +119,16 @@ public class Generator {
         }
       }
 
+      TypeResolver typeResolver = new TypeResolver(urls);
+
+      // We add the facets to the core model here to keep code generation convenient
+      Map<String, ObjectResolvedType> facetContainers = indexFacetContainersByType(typeResolver);
+      enrichFacetContainersWithFacets(typeResolver, facetContainers);
+
       String javaPath = CONTAINER_CLASS_NAME + JAVA_EXT;
       File output = new File(outputBase, javaPath);
       try (PrintWriter printWriter = new PrintWriter(output)) {
-        new JavaPoetGenerator(typeResolver, CONTAINER_CLASS_NAME, containerToID).generate(printWriter);
+        new JavaPoetGenerator(typeResolver, packageName, CONTAINER_CLASS_NAME, server, containerToID).generate(printWriter);
       }
 
     } catch (RuntimeException e) {

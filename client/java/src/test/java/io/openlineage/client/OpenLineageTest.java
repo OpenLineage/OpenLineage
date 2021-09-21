@@ -145,42 +145,56 @@ public class OpenLineageTest {
     mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
     String json = mapper.writeValueAsString(runStateUpdate);
-    RunEvent read = mapper.readValue(json, RunEvent.class);
+    {
+      RunEvent read = mapper.readValue(json, RunEvent.class);
 
-    assertEquals(producer,read.getProducer());
-    assertEquals(runId,read.getRun().getRunId());
-    assertEquals(name,read.getJob().getName());
-    assertEquals(namespace,read.getJob().getNamespace());
-    assertEquals(runStateUpdate.getEventType(),read.getEventType());
-    assertEquals(runStateUpdate.getEventTime(),read.getEventTime());
-    assertEquals(1, runStateUpdate.getInputs().size());
-    InputDataset inputDataset = runStateUpdate.getInputs().get(0);
-    assertEquals("ins", inputDataset.getNamespace());
-    assertEquals("input", inputDataset.getName());
+      assertEquals(producer,read.getProducer());
+      assertEquals(runId,read.getRun().getRunId());
+      assertEquals(name,read.getJob().getName());
+      assertEquals(namespace,read.getJob().getNamespace());
+      assertEquals(runStateUpdate.getEventType(),read.getEventType());
+      assertEquals(runStateUpdate.getEventTime(),read.getEventTime());
+      assertEquals(1, runStateUpdate.getInputs().size());
+      InputDataset inputDataset = runStateUpdate.getInputs().get(0);
+      assertEquals("ins", inputDataset.getNamespace());
+      assertEquals("input", inputDataset.getName());
 
-    DataQualityMetricsInputDatasetFacet dq = inputDataset.getInputFacets().getDataQualityMetrics();
-    assertEquals((Long)10L, dq.getRowCount());
-    assertEquals((Long)20L, dq.getBytes());
-    DataQualityMetricsInputDatasetFacetColumnMetricsAdditional colMetrics = dq.getColumnMetrics().getAdditionalProperties().get("mycol");
-    assertEquals((Double)10D, colMetrics.getCount());
-    assertEquals((Long)10L, colMetrics.getDistinctCount());
-    assertEquals((Double)30D, colMetrics.getMax());
-    assertEquals((Double)5D, colMetrics.getMin());
-    assertEquals((Long)1L, colMetrics.getNullCount());
-    assertEquals((Double)3000D, colMetrics.getSum());
-    assertEquals((Double)52D, colMetrics.getQuantiles().getAdditionalProperties().get("25"));
+      DataQualityMetricsInputDatasetFacet dq = inputDataset.getInputFacets().getDataQualityMetrics();
+      assertEquals((Long)10L, dq.getRowCount());
+      assertEquals((Long)20L, dq.getBytes());
+      DataQualityMetricsInputDatasetFacetColumnMetricsAdditional colMetrics = dq.getColumnMetrics().getAdditionalProperties().get("mycol");
+      assertEquals((Double)10D, colMetrics.getCount());
+      assertEquals((Long)10L, colMetrics.getDistinctCount());
+      assertEquals((Double)30D, colMetrics.getMax());
+      assertEquals((Double)5D, colMetrics.getMin());
+      assertEquals((Long)1L, colMetrics.getNullCount());
+      assertEquals((Double)3000D, colMetrics.getSum());
+      assertEquals((Double)52D, colMetrics.getQuantiles().getAdditionalProperties().get("25"));
 
-    assertEquals(1, runStateUpdate.getOutputs().size());
-    OutputDataset outputDataset = runStateUpdate.getOutputs().get(0);
-    assertEquals("ons", outputDataset.getNamespace());
-    assertEquals("output", outputDataset.getName());
+      assertEquals(1, runStateUpdate.getOutputs().size());
+      OutputDataset outputDataset = runStateUpdate.getOutputs().get(0);
+      assertEquals("ons", outputDataset.getNamespace());
+      assertEquals("output", outputDataset.getName());
 
-    assertEquals(roundTrip(json), roundTrip(mapper.writeValueAsString(read)));
-    assertEquals((Long)10L, outputDataset.getOutputFacets().getOutputStatistics().getRowCount());
-    assertEquals((Long)20L, outputDataset.getOutputFacets().getOutputStatistics().getSize());
+      assertEquals(roundTrip(json), roundTrip(mapper.writeValueAsString(read)));
+      assertEquals((Long)10L, outputDataset.getOutputFacets().getOutputStatistics().getRowCount());
+      assertEquals((Long)20L, outputDataset.getOutputFacets().getOutputStatistics().getSize());
 
-    assertEquals(json, mapper.writeValueAsString(read));
+      assertEquals(json, mapper.writeValueAsString(read));
+    }
 
+    {
+      io.openlineage.server.OpenLineage.RunEvent readServer = mapper.readValue(json, io.openlineage.server.OpenLineage.RunEvent.class);
+
+      assertEquals(producer, readServer.getProducer());
+      assertEquals(runId, readServer.getRun().getRunId());
+      assertEquals(name, readServer.getJob().getName());
+      assertEquals(namespace, readServer.getJob().getNamespace());
+      assertEquals(runStateUpdate.getEventType(), readServer.getEventType());
+      assertEquals(runStateUpdate.getEventTime(), readServer.getEventTime());
+
+      assertEquals(json, mapper.writeValueAsString(readServer));
+    }
 
   }
 }
