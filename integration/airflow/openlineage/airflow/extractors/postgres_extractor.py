@@ -10,17 +10,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from contextlib import closing
-from typing import Optional
+from typing import Optional, List
 from urllib.parse import urlparse
 
 from airflow.hooks.postgres_hook import PostgresHook
-from airflow.operators.postgres_operator import PostgresOperator
 
 from openlineage.airflow.utils import get_normalized_postgres_connection_uri, get_connection
 from openlineage.airflow.extractors.base import (
     BaseExtractor,
-    StepMetadata
+    TaskMetadata
 )
+from openlineage.client.facet import SqlJobFacet
 from openlineage.common.models import (
     DbTableName,
     DbTableSchema,
@@ -39,14 +39,17 @@ _UDT_NAME = 4
 
 
 class PostgresExtractor(BaseExtractor):
-    operator_class = PostgresOperator
     default_schema = 'public'
 
     def __init__(self, operator):
         super().__init__(operator)
         self.conn = None
 
-    def extract(self) -> StepMetadata:
+    @classmethod
+    def get_operator_classnames(cls) -> List[str]:
+        return ['PostgresOperator']
+
+    def extract(self) -> TaskMetadata:
         # (1) Parse sql statement to obtain input / output tables.
         sql_meta: SqlMeta = SqlParser.parse(self.operator.sql, self.default_schema)
 
@@ -90,12 +93,12 @@ class PostgresExtractor(BaseExtractor):
             )
         ]
 
-        return StepMetadata(
+        return TaskMetadata(
             name=f"{self.operator.dag_id}.{self.operator.task_id}",
             inputs=[ds.to_openlineage_dataset() for ds in inputs],
             outputs=[ds.to_openlineage_dataset() for ds in outputs],
-            context={
-                'sql': self.operator.sql
+            job_facets={
+                'sql': SqlJobFacet(self.operator.sql)
             }
         )
 

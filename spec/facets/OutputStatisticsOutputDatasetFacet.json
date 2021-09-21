@@ -1,0 +1,30 @@
+{
+  "$schema" : "https://json-schema.org/draft/2020-12/schema",
+  "$id" : "https://openlineage.io/spec/facets/1-0-0/OutputStatisticsOutputDatasetFacet.json",
+  "$defs" : {
+    "OutputStatisticsOutputDatasetFacet" : {
+      "allOf" : [ {
+        "$ref" : "https://openlineage.io/spec/1-0-2/OpenLineage.json#/$defs/OutputDatasetFacet"
+      }, {
+        "type" : "object",
+        "properties" : {
+          "rowCount" : {
+            "description" : "The number of rows written to the dataset",
+            "type" : "integer"
+          },
+          "size" : {
+            "description" : "The size in bytes written to the dataset",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "rowCount" ]
+      } ]
+    }
+  },
+  "type" : "object",
+  "properties" : {
+    "outputStatistics" : {
+      "$ref" : "#/$defs/OutputStatisticsOutputDatasetFacet"
+    }
+  }
+}

@@ -8,7 +8,7 @@ import lombok.ToString;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 
 @ToString
-public class LogicalPlanFacet extends OpenLineage.CustomFacet {
+public class LogicalPlanFacet extends OpenLineage.DefaultRunFacet {
   private final LogicalPlan plan;
 
   @Builder

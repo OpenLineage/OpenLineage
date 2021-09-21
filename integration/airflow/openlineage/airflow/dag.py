@@ -11,13 +11,13 @@
 # limitations under the License.
 import time
 import copy
-from typing import List, Union, Optional
+from typing import Optional
 
 import airflow.models
 from airflow.models import DagRun
 from airflow.utils.db import create_session
 from airflow.utils.state import State
-from openlineage.airflow.extractors import StepMetadata, BaseExtractor
+from openlineage.airflow.extractors import TaskMetadata, BaseExtractor
 from openlineage.airflow.extractors.extractors import Extractors
 from openlineage.airflow.utils import (
     JobIdMapping,
@@ -71,6 +71,10 @@ class DAG(airflow.models.DAG):
             macros = kwargs["user_defined_macros"]
         macros["lineage_run_id"] = lineage_run_id
         kwargs["user_defined_macros"] = macros
+        if kwargs.__contains__("lineage_custom_extractors"):
+            for operator, extractor in kwargs['lineage_custom_extractors'].items():
+                extractor_mapper.add_extractor(operator, extractor)
+            del kwargs['lineage_custom_extractors']
         super().__init__(*args, **kwargs)
 
     def add_task(self, task):
@@ -112,7 +116,7 @@ class DAG(airflow.models.DAG):
         for task_id, task in self.task_dict.items():
             t = self._now_ms()
             try:
-                step = self._extract_metadata(dagrun, task)
+                task_metadata = self._extract_metadata(dagrun, task)
 
                 job_name = self._openlineage_job_name(self.dag_id, task.task_id)
                 run_id = new_lineage_run_id(dagrun.run_id, task_id)
@@ -126,8 +130,8 @@ class DAG(airflow.models.DAG):
                     self._get_location(task),
                     DagUtils.get_start_time(execution_date),
                     DagUtils.get_end_time(execution_date, self.following_schedule(execution_date)),
-                    step,
-                    {**step.run_facets, **get_custom_facets(task, is_external_trigger)}
+                    task_metadata,
+                    {**task_metadata.run_facets, **get_custom_facets(task, is_external_trigger)}
                 )
 
                 JobIdMapping.set(
@@ -176,7 +180,7 @@ class DAG(airflow.models.DAG):
         # or the job could not be registered.
         task_run_id = JobIdMapping.pop(
             self._openlineage_job_name_from_task_instance(task_instance), dagrun.run_id, session)
-        step = self._extract_metadata(dagrun, task, task_instance)
+        task_metadata = self._extract_metadata(dagrun, task, task_instance)
 
         job_name = self._openlineage_job_name(self.dag_id, task.task_id)
         run_id = new_lineage_run_id(dagrun.run_id, task.task_id)
@@ -191,8 +195,8 @@ class DAG(airflow.models.DAG):
                 self._get_location(task),
                 DagUtils.to_iso_8601(task_instance.start_date),
                 DagUtils.to_iso_8601(task_instance.end_date),
-                step,
-                {**step.run_facets, **get_custom_facets(task, False)}
+                task_metadata,
+                {**task_metadata.run_facets, **get_custom_facets(task, False)}
             )
 
             if not task_run_id:
@@ -205,14 +209,14 @@ class DAG(airflow.models.DAG):
                 task_run_id,
                 job_name,
                 DagUtils.to_iso_8601(task_instance.end_date),
-                step
+                task_metadata
             )
         else:
             _ADAPTER.fail_task(
                 task_run_id,
                 job_name,
                 DagUtils.to_iso_8601(task_instance.end_date),
-                step
+                task_metadata
             )
 
     def __deepcopy__(self, memo):
@@ -240,7 +244,7 @@ class DAG(airflow.models.DAG):
         result.params = self.params
         return result
 
-    def _extract_metadata(self, dagrun, task, task_instance=None) -> StepMetadata:
+    def _extract_metadata(self, dagrun, task, task_instance=None) -> TaskMetadata:
         extractor = self._get_extractor(task)
         task_info = f'task_type={task.__class__.__name__} ' \
             f'airflow_dag_id={self.dag_id} ' \
@@ -250,26 +254,12 @@ class DAG(airflow.models.DAG):
             try:
                 self.log.debug(
                     f'Using extractor {extractor.__class__.__name__} {task_info}')
-                step = self._extract(extractor, task_instance)
-
-                if isinstance(step, StepMetadata):
-                    self.log.info(f"Found step metadata for operation {task.task_id}: {step}")
-                    return step
-
-                # Compatibility with custom extractors
-                if isinstance(step, list):
-                    if len(step) == 0:
-                        return StepMetadata(
-                            name=self._openlineage_job_name(self.dag_id, task.task_id)
-                        )
-                    elif len(step) >= 1:
-                        self.log.warning(
-                            f'Extractor {extractor.__class__.__name__} {task_info} '
-                            f'returned more then one StepMetadata instance: {step} '
-                            f'will drop steps except for first!'
-                        )
-                    self.log.info(f"Found step metadata for operation {task.task_id}: {step[0]}")
-                    return step[0]
+                task_metadata = self._extract(extractor, task_instance)
+                self.log.debug(
+                    f"Found task metadata for operation {task.task_id}: {task_metadata}"
+                )
+                if task_metadata:
+                    return task_metadata
 
             except Exception as e:
                 self.log.exception(
@@ -279,16 +269,15 @@ class DAG(airflow.models.DAG):
             self.log.warning(
                 f'Unable to find an extractor. {task_info}')
 
-        return StepMetadata(
+        return TaskMetadata(
             name=self._openlineage_job_name(self.dag_id, task.task_id)
         )
 
-    def _extract(self, extractor, task_instance) -> \
-            Union[Optional[StepMetadata], List[StepMetadata]]:
+    def _extract(self, extractor, task_instance) -> Optional[TaskMetadata]:
         if task_instance:
-            step = extractor.extract_on_complete(task_instance)
-            if step:
-                return step
+            task_metadata = extractor.extract_on_complete(task_instance)
+            if task_metadata:
+                return task_metadata
 
         return extractor.extract()
 

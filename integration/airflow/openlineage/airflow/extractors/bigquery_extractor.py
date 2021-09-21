@@ -13,18 +13,19 @@
 import json
 import logging
 import traceback
-from typing import Optional
+from typing import Optional, List
 
 import attr
 
 from airflow.models import BaseOperator
 
+from openlineage.client.facet import SqlJobFacet
 from openlineage.common.provider.bigquery import BigQueryDatasetsProvider, BigQueryErrorRunFacet
 from openlineage.common.sql import SqlParser
 
 from openlineage.airflow.extractors.base import (
     BaseExtractor,
-    StepMetadata
+    TaskMetadata
 )
 from openlineage.airflow.utils import get_job_name
 
@@ -42,28 +43,18 @@ class SqlContext:
     parser_error: Optional[str] = attr.ib(default=None)
 
 
-def try_load_operator():
-    try:
-        from airflow.contrib.operators.bigquery_operator import BigQueryOperator
-        return BigQueryOperator
-    except Exception:
-        log.warn('Did not find bigquery_operator library or failed to import it')
-        return None
-
-
-Operator = try_load_operator()
-
-
 class BigQueryExtractor(BaseExtractor):
-    operator_class = Operator
-
     def __init__(self, operator: BaseOperator):
         super().__init__(operator)
 
-    def extract(self) -> Optional[StepMetadata]:
+    @classmethod
+    def get_operator_classnames(cls) -> List[str]:
+        return ['BigQueryOperator']
+
+    def extract(self) -> Optional[TaskMetadata]:
         return None
 
-    def extract_on_complete(self, task_instance) -> Optional[StepMetadata]:
+    def extract_on_complete(self, task_instance) -> Optional[TaskMetadata]:
         log.debug(f"extract_on_complete({task_instance})")
         context = self.parse_sql_context()
 
@@ -75,10 +66,8 @@ class BigQueryExtractor(BaseExtractor):
         except Exception as e:
             log.error(f"Cannot retrieve job details from BigQuery.Client. {e}",
                       exc_info=True)
-            return StepMetadata(
+            return TaskMetadata(
                 name=get_job_name(task=self.operator),
-                inputs=None,
-                outputs=None,
                 run_facets={
                     "bigQuery_error": BigQueryErrorRunFacet(
                         clientError=f"{e}: {traceback.format_exc()}",
@@ -92,13 +81,13 @@ class BigQueryExtractor(BaseExtractor):
         output = stats.output
         run_facets = stats.run_facets
 
-        return StepMetadata(
+        return TaskMetadata(
             name=get_job_name(task=self.operator),
             inputs=[ds.to_openlineage_dataset() for ds in inputs],
             outputs=[output.to_openlineage_dataset()] if output else [],
             run_facets=run_facets,
-            context={
-                "sql": context.sql
+            job_facets={
+                "sql": SqlJobFacet(context.sql)
             }
         )
 

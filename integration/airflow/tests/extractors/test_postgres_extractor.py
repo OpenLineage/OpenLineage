@@ -127,19 +127,14 @@ def test_extract(get_connection, mock_get_table_schemas):
             fields=[]
         ).to_openlineage_dataset()]
 
-    expected_context = {
-        'sql': SQL,
-    }
-
     # Set the environment variable for the connection
     os.environ[f"AIRFLOW_CONN_{CONN_ID.upper()}"] = CONN_URI
 
-    step_metadata = PostgresExtractor(TASK).extract()
+    task_metadata = PostgresExtractor(TASK).extract()
 
-    assert step_metadata.name == f"{DAG_ID}.{TASK_ID}"
-    assert step_metadata.inputs == expected_inputs
-    assert step_metadata.outputs == []
-    assert step_metadata.context == expected_context
+    assert task_metadata.name == f"{DAG_ID}.{TASK_ID}"
+    assert task_metadata.inputs == expected_inputs
+    assert task_metadata.outputs == []
 
 
 @mock.patch('openlineage.airflow.extractors.postgres_extractor.PostgresExtractor._get_table_schemas')  # noqa
@@ -164,16 +159,11 @@ def test_extract_authority_uri(get_connection, mock_get_table_schemas):
             fields=[]
         ).to_openlineage_dataset()]
 
-    expected_context = {
-        'sql': SQL,
-    }
+    task_metadata = PostgresExtractor(TASK).extract()
 
-    step_metadata = PostgresExtractor(TASK).extract()
-
-    assert step_metadata.name == f"{DAG_ID}.{TASK_ID}"
-    assert step_metadata.inputs == expected_inputs
-    assert step_metadata.outputs == []
-    assert step_metadata.context == expected_context
+    assert task_metadata.name == f"{DAG_ID}.{TASK_ID}"
+    assert task_metadata.inputs == expected_inputs
+    assert task_metadata.outputs == []
 
 
 @mock.patch('psycopg2.connect')
