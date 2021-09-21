@@ -58,12 +58,14 @@ class OpenLineageClient:
         data = Serde.to_json(event)
         if log.isEnabledFor(logging.DEBUG):
             log.debug(f"Sending openlineage event {event}")
-        self.session.post(
+        resp = self.session.post(
             urljoin(self.url, 'api/v1/lineage'),
             data,
             timeout=self.options.timeout,
             verify=self.options.verify
         )
+        resp.raise_for_status()
+        return resp
 
     def _add_auth(self, api_key: str):
         self.session.headers.update({
