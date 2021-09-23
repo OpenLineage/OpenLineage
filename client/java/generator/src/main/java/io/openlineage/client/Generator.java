@@ -50,7 +50,7 @@ public class Generator {
       URL url = new URL(baseURL);
 
       if (url.getProtocol().equals("file")) {
-        File file = new File(url.toURI());
+        File file = new File(url.getFile());
         if (file.isDirectory()) {
           addURLs(urls, file);
         } else {
