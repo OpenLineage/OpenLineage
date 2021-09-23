@@ -27,8 +27,8 @@
             },
             "outputFacets": {
                 "outputStatistics": {
-                    "rowCount": 3,
-                    "size": 12
+                    "rowCount": "${json-unit.any-number}",
+                    "size": "${json-unit.any-number}"
                 }
             },    
             "name": "/tmp/warehouse/test",

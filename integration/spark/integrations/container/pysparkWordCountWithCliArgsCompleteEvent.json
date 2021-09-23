@@ -53,8 +53,8 @@
       },
       "outputFacets": {
         "outputStatistics": {
-          "rowCount":167,
-          "size":12183
+          "rowCount": "${json-unit.any-number}",
+          "size": "${json-unit.any-number}"
         }
       }
     }
