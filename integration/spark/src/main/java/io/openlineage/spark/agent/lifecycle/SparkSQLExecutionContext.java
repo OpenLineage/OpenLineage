@@ -180,7 +180,7 @@ public class SparkSQLExecutionContext implements ExecutionContext {
             .job(buildJob(queryExecution))
             .build();
 
-    log.debug("Posting event for start {}: {}", jobEnd, event);
+    log.debug("Posting event for end {}: {}", jobEnd, event);
     sparkContext.emit(event);
   }
 
