@@ -77,7 +77,7 @@ class LogicalPlanSerializerTest {
         new JDBCRelation(
             new StructType(
                 new StructField[] {
-                    new StructField("name", StringType$.MODULE$, false, Metadata.empty())
+                  new StructField("name", StringType$.MODULE$, false, Metadata.empty())
                 }),
             new Partition[] {},
             new JDBCOptions(
@@ -140,11 +140,11 @@ class LogicalPlanSerializerTest {
             new CatalogFileIndex(session, getCatalogTable(), 100L),
             new StructType(
                 new StructField[] {
-                    new StructField("name", StringType$.MODULE$, false, Metadata.empty())
+                  new StructField("name", StringType$.MODULE$, false, Metadata.empty())
                 }),
             new StructType(
                 new StructField[] {
-                    new StructField("name", StringType$.MODULE$, false, Metadata.empty())
+                  new StructField("name", StringType$.MODULE$, false, Metadata.empty())
                 }),
             Option.empty(),
             new TextFileFormat(),
@@ -223,7 +223,7 @@ class LogicalPlanSerializerTest {
     params.add(
         new StructType(
             new StructField[] {
-                new StructField("name", StringType$.MODULE$, false, Metadata.empty())
+              new StructField("name", StringType$.MODULE$, false, Metadata.empty())
             }));
     params.add(Option.empty());
     params.add(Seq$.MODULE$.<String>newBuilder().$plus$eq("name").result());

@@ -123,8 +123,8 @@ public class LibraryTest {
       OpenLineage.RunEvent event = events.get(i);
       String snapshot =
           new String(
-              Files.readAllBytes(
-                  Paths.get(String.format("integrations/%s/%d.json", "sparkrdd", i + 1))))
+                  Files.readAllBytes(
+                      Paths.get(String.format("integrations/%s/%d.json", "sparkrdd", i + 1))))
               .replaceAll(
                   "https://github.com/OpenLineage/OpenLineage/tree/\\$VERSION/integration/spark",
                   OpenLineageClient.OPEN_LINEAGE_CLIENT_URI.toString());
