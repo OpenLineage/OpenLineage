@@ -1,3 +1,4 @@
+import datetime
 import inspect
 from functools import lru_cache
 from typing import Any, Dict, Tuple, Union
@@ -18,6 +19,11 @@ def package_version() -> str:
         file_contents = pyproject.read()
     meta = tomlkit.parse(file_contents)["tool"]["poetry"]
     return meta["version"]
+
+
+def utc_now() -> str:
+    """Create an openlineage compatible timestamp string"""
+    return datetime.datetime.now(datetime.timezone.utc).isoformat()[:-6] + "Z"
 
 
 @lru_cache()

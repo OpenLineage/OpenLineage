@@ -1,7 +1,9 @@
 import os
+from unittest.mock import patch
 
 import prefect
 from prefect import task, Flow
+from requests import Response
 
 from openlineage.prefect.adapter import OpenLineageAdapter
 from openlineage.prefect.flow_runner import OpenLineageFlowRunner
@@ -28,6 +30,7 @@ class TestCachedFlowRunner:
 
         flow.run(runner_cls=self.runner_cls)
 
-    def test_full_lineage_example(self):
-        self.flow.run(runner_cls=self.runner_cls)
-
+    @patch("openlineage.prefect.adapter.OpenLineageClient")
+    def test_full_lineage_example(self, mock_open_lineage_client):
+        mock_open_lineage_client.session.get = Response.ok
+        self.flow.run(p=1, runner_cls=self.runner_cls)
