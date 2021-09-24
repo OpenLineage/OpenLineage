@@ -347,6 +347,9 @@ workflows:
             - unit-test-integration-airflow
             - unit-test-integration-common
             - unit-test-client-python
+          filters:
+            branches:
+              ignore: /pull\/[0-9]+/
       - build-integration-airflow:
           <<: *only_on_main
           build_tag: .dev${CIRCLE_BUILD_NUM}
