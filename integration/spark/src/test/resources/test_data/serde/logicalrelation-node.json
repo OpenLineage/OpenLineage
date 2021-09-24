@@ -1,0 +1,123 @@
+{
+  "relation": {
+    "schema": [
+      {
+        "name": "name",
+        "dataType": {
+          "ordering": {}
+        },
+        "nullable": false,
+        "metadata": {
+          "map": {}
+        },
+        "comment": null
+      }
+    ],
+    "parts": [],
+    "jdbcOptions": {
+      "url": "jdbc:postgresql://postgreshost:5432/sparkdata",
+      "asProperties": {
+        "url": "jdbc:postgresql://postgreshost:5432/sparkdata",
+        "dbtable": "my_spark_table",
+        "driver": "org.postgresql.Driver"
+      },
+      "asConnectionProperties": {},
+      "tableOrQuery": "my_spark_table",
+      "driverClass": "org.postgresql.Driver",
+      "numPartitions": null,
+      "queryTimeout": 0,
+      "partitionColumn": null,
+      "lowerBound": null,
+      "upperBound": null,
+      "fetchSize": 0,
+      "isTruncate": false,
+      "isCascadeTruncate": null,
+      "createTableOptions": "",
+      "createTableColumnTypes": null,
+      "customSchema": null,
+      "batchSize": 1000,
+      "isolationLevel": 1,
+      "sessionInitStatement": null,
+      "pushDownPredicate": true
+    },
+    "needConversion": false
+  },
+  "output": [
+    {
+      "name": "name",
+      "dataType": {
+        "ordering": {}
+      },
+      "nullable": false,
+      "metadata": {
+        "map": {}
+      },
+      "exprId": {
+        "id": 1,
+        "jvmId": "f7dff447-fa8b-4738-b173-7855f66f8614"
+      },
+      "qualifier": [],
+      "origin": {
+        "line": null,
+        "startPosition": null
+      },
+      "deterministic": true,
+      "resolved": true
+    }
+  ],
+  "catalogTable": null,
+  "isStreaming": false,
+  "origin": {
+    "line": null,
+    "startPosition": null
+  },
+  "schema": [
+    {
+      "name": "name",
+      "dataType": {
+        "ordering": {}
+      },
+      "nullable": false,
+      "metadata": {
+        "map": {}
+      },
+      "comment": null
+    }
+  ],
+  "allAttributes": {
+    "attrs": []
+  },
+  "resolved": true,
+  "constraints": [
+    {
+      "origin": {
+        "line": null,
+        "startPosition": null
+      },
+      "deterministic": true,
+      "resolved": true
+    }
+  ],
+  "statsCache": null,
+  "attributeMap": {
+    "name#1": {
+      "name": "name",
+      "dataType": {
+        "ordering": {}
+      },
+      "nullable": false,
+      "metadata": {
+        "map": {}
+      },
+      "qualifier": [],
+      "origin": {
+        "line": null,
+        "startPosition": null
+      },
+      "deterministic": true,
+      "resolved": true
+    }
+  },
+  "traceEnabled": false,
+  "canonicalizedPlan": false
+}
