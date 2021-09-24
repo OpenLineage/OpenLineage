@@ -2,6 +2,7 @@ import os
 from unittest.mock import patch
 
 import prefect
+from openlineage.client import OpenLineageClient
 from prefect import task, Flow
 from requests import Response
 
@@ -16,10 +17,13 @@ class TestCachedFlowRunner:
         self.flow = test_flow
         self.runner_cls = OpenLineageFlowRunner
 
-    def test_flow_run(self):
+    @patch.object(OpenLineageClient, "emit")
+    @patch.object(OpenLineageAdapter, "ping", return_value=True)
+    def test_flow_run(self, _, mock_emit):
         self.flow.run(p=1, runner_cls=self.runner_cls)
 
-    def test_task_gets_lineage_context(self):
+    @patch.object(OpenLineageAdapter, "ping", return_value=True)
+    def test_task_gets_lineage_context(self, _):
         @task()
         def test():
             lineage: OpenLineageAdapter = prefect.context.lineage

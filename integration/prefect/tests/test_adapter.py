@@ -11,6 +11,7 @@ from prefect.engine.state import Success, State, Pending, Running
 from prefect.tasks.shell import ShellTask
 
 from openlineage.prefect.adapter import OpenLineageAdapter
+from openlineage.prefect.facets import PrefectRunFacet
 from openlineage.prefect.test_utils import RESOURCES
 from openlineage.prefect.test_utils.tasks import test_flow
 
@@ -99,7 +100,15 @@ class TestAdapter:
             outputs=OutputDataset(
                 namespace="test-flow",
                 name="test_adapter.SuccessTask",
-                facets={},
+                facets={
+                    "prefect_run": PrefectRunFacet(
+                        task="test_adapter.SuccessTask",
+                        prefect_version="0.15.5",
+                        prefect_commit="50b863925be86d27451f4b9d43a5d7d6c62da359",
+                        prefect_backend="cloud",
+                        openlineage_prefect_version="0.1.0",
+                    )
+                },
                 outputFacets={
                     "output-dataset": DataSourceDatasetFacet(
                         name="test_adapter.SuccessTask-output",

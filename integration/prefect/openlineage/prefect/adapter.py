@@ -19,14 +19,14 @@ from prefect.engine.result import Result
 from prefect.engine.state import State, Pending, Running, Success, Failed
 from prefect.utilities.context import Context
 
+from openlineage.prefect.facets import PrefectRunFacet
 from openlineage.prefect.util import package_version, task_qualified_name
 
-_DEFAULT_OWNER = "anonymous"
 _DEFAULT_NAMESPACE = "default"
-_NAMESPACE = os.getenv("OPENLINEAGE_NAMESPACE", _DEFAULT_NAMESPACE)
-_OPENLINEAGE_PREFECT_VERSION = package_version()
-_PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/{_OPENLINEAGE_PREFECT_VERSION}/integration/prefect"
-set_producer(_PRODUCER)
+NAMESPACE = os.getenv("OPENLINEAGE_NAMESPACE", _DEFAULT_NAMESPACE)
+OPENLINEAGE_PREFECT_VERSION = package_version()
+PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/{OPENLINEAGE_PREFECT_VERSION}/integration/prefect"
+set_producer(PRODUCER)
 
 
 class OpenLineageAdapter:
@@ -44,7 +44,7 @@ class OpenLineageAdapter:
 
     @property
     def namespace(self):
-        return _NAMESPACE
+        return NAMESPACE
 
     def ping(self):
         resp = self.client.session.get(self.client.url.replace("5000", "5001"))
@@ -120,7 +120,7 @@ class OpenLineageAdapter:
         return OutputDataset(
             namespace=flow_namespace(),
             name=f"{task_full_name}",
-            facets={},
+            facets={"prefect_run": PrefectRunFacet.from_task(task=task)},
             outputFacets=output_facets,
         )
 
@@ -145,9 +145,6 @@ class OpenLineageAdapter:
         :param event_time:
         :param parent_run_id: identifier of job spawning this task
         :param code_location: file path or URL of DAG file
-        :param nominal_start_time: scheduled time of dag run
-        :param nominal_end_time: following schedule of dag run
-        :param task: metadata container with information extracted from operator
         :param run_facets:
         :return:
         """
@@ -159,7 +156,7 @@ class OpenLineageAdapter:
             job=self._build_job(job_name, job_description, code_location, job_facets),
             inputs=inputs,
             outputs=outputs,
-            producer=_PRODUCER,
+            producer=PRODUCER,
         )
         self.client.emit(event)
         return event.run.runId
@@ -187,7 +184,7 @@ class OpenLineageAdapter:
             job=self._build_job(job_name, job_facets=job_facets),
             inputs=inputs,
             outputs=outputs,
-            producer=_PRODUCER,
+            producer=PRODUCER,
         )
         self.client.emit(event)
 
@@ -212,7 +209,7 @@ class OpenLineageAdapter:
             job=self._build_job(job_name),
             inputs=inputs,
             outputs=outputs,
-            producer=_PRODUCER,
+            producer=PRODUCER,
         )
         self.client.emit(event)
 
@@ -225,7 +222,7 @@ class OpenLineageAdapter:
     ) -> Run:
         facets = {}
         if parent_run_id:
-            facets.update({"parentRun": ParentRunFacet.create(parent_run_id, _NAMESPACE, job_name)})
+            facets.update({"parentRun": ParentRunFacet.create(parent_run_id, NAMESPACE, job_name)})
 
         if custom_facets:
             facets.update(custom_facets)
@@ -248,7 +245,7 @@ class OpenLineageAdapter:
         if job_facets:
             facets = {**facets, **job_facets}
 
-        return Job(_NAMESPACE, job_name, facets)
+        return Job(NAMESPACE, job_name, facets)
 
 
 def flow_namespace() -> str:
