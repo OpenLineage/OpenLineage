@@ -28,8 +28,3 @@ class PrefectRunFacet(BaseFacet):
             prefect_backend=context.config.backend,
             openlineage_prefect_version=OPENLINEAGE_PREFECT_VERSION,
         )
-
-
-@attr.s
-class AirflowRunArgsRunFacet(BaseFacet):
-    externalTrigger: bool = attr.ib(default=False)
