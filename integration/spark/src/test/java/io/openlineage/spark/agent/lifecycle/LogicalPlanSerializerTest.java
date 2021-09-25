@@ -15,9 +15,14 @@ import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.Tabl
 import com.google.cloud.spark.bigquery.repackaged.com.google.common.collect.ImmutableMap;
 import io.openlineage.spark.agent.client.OpenLineageClient;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nullable;
@@ -61,6 +66,7 @@ class LogicalPlanSerializerTest {
   private final TypeReference<Map<String, Object>> mapTypeReference =
       new TypeReference<Map<String, Object>>() {};
   private final ObjectMapper objectMapper = OpenLineageClient.createMapper();
+  private final LogicalPlanSerializer logicalPlanSerializer = new LogicalPlanSerializer();
 
   @Test
   public void testSerializeLogicalPlan() throws IOException {
@@ -104,7 +110,6 @@ class LogicalPlanSerializerTest {
             Seq$.MODULE$.<NamedExpression>empty(),
             logicalRelation);
 
-    LogicalPlanSerializer logicalPlanSerializer = LogicalPlanSerializer.getInstance();
     Map<String, Object> aggregateActualNode =
         objectMapper.readValue(logicalPlanSerializer.serialize(aggregate), mapTypeReference);
     Map<String, Object> logicalRelationActualNode =
@@ -126,37 +131,13 @@ class LogicalPlanSerializerTest {
   }
 
   @Test
-  public void testSerializeInsertIntoHadoopPlan() throws IOException {
+  public void testSerializeInsertIntoHadoopPlan()
+      throws IOException, InvocationTargetException, IllegalAccessException {
     SparkSession session = SparkSession.builder().master("local").getOrCreate();
 
     HadoopFsRelation hadoopFsRelation =
         new HadoopFsRelation(
-            new CatalogFileIndex(
-                session,
-                CatalogTable.apply(
-                    new TableIdentifier("test", Option.apply("db")),
-                    CatalogTableType.MANAGED(),
-                    CatalogStorageFormat.empty(),
-                    new StructType(
-                        new StructField[] {
-                          new StructField("name", StringType$.MODULE$, false, Metadata.empty())
-                        }),
-                    Option.empty(),
-                    Seq$.MODULE$.<String>newBuilder().$plus$eq("name").result(),
-                    Option.empty(),
-                    "",
-                    Instant.now().getEpochSecond(),
-                    Instant.now().getEpochSecond(),
-                    "v1",
-                    new HashMap<>(),
-                    Option.empty(),
-                    Option.empty(),
-                    Option.empty(),
-                    Seq$.MODULE$.<String>empty(),
-                    false,
-                    false,
-                    new HashMap<>()),
-                100L),
+            new CatalogFileIndex(session, getCatalogTable(), 100L),
             new StructType(
                 new StructField[] {
                   new StructField("name", StringType$.MODULE$, false, Metadata.empty())
@@ -210,7 +191,6 @@ class LogicalPlanSerializerTest {
             Option.empty(),
             Seq$.MODULE$.<String>newBuilder().$plus$eq("name").result());
 
-    LogicalPlanSerializer logicalPlanSerializer = LogicalPlanSerializer.getInstance();
     Map<String, Object> commandActualNode =
         objectMapper.readValue(logicalPlanSerializer.serialize(command), mapTypeReference);
     Map<String, Object> hadoopFSActualNode =
@@ -228,6 +208,43 @@ class LogicalPlanSerializerTest {
 
     assertThat(commandActualNode).satisfies(new MatchesMapRecursively(expectedCommandNode));
     assertThat(hadoopFSActualNode).satisfies(new MatchesMapRecursively(expectedHadoopFSNode));
+  }
+
+  // TODO: (OD) reflection approach would be changed on splitting source tree task
+  private CatalogTable getCatalogTable() throws InvocationTargetException, IllegalAccessException {
+    Method applyMethod =
+        Arrays.stream(CatalogTable.class.getDeclaredMethods())
+            .filter(m -> m.getName().equals("apply"))
+            .findFirst()
+            .get();
+    List<Object> params = new ArrayList<>();
+    params.add(new TableIdentifier("test", Option.apply("db")));
+    params.add(CatalogTableType.MANAGED());
+    params.add(CatalogStorageFormat.empty());
+    params.add(
+        new StructType(
+            new StructField[] {
+              new StructField("name", StringType$.MODULE$, false, Metadata.empty())
+            }));
+    params.add(Option.empty());
+    params.add(Seq$.MODULE$.<String>newBuilder().$plus$eq("name").result());
+    params.add(Option.empty());
+    params.add("");
+    params.add(Instant.now().getEpochSecond());
+    params.add(Instant.now().getEpochSecond());
+    params.add("v1");
+    params.add(new HashMap<>());
+    params.add(Option.empty());
+    params.add(Option.empty());
+    params.add(Option.empty());
+    params.add(Seq$.MODULE$.<String>empty());
+    params.add(false);
+    params.add(false);
+    params.add(new HashMap<>());
+    if (applyMethod.getParameterCount() > 19) {
+      params.add(Option.empty());
+    }
+    return (CatalogTable) applyMethod.invoke(null, params.toArray());
   }
 
   @Test
@@ -279,7 +296,6 @@ class LogicalPlanSerializerTest {
     InsertIntoDataSourceCommand command =
         new InsertIntoDataSourceCommand(logicalRelation, logicalRelation, false);
 
-    LogicalPlanSerializer logicalPlanSerializer = LogicalPlanSerializer.getInstance();
     Map<String, Object> commandActualNode =
         objectMapper.readValue(logicalPlanSerializer.serialize(command), mapTypeReference);
     Map<String, Object> hadoopFSActualNode =
