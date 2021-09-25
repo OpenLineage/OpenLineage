@@ -210,6 +210,7 @@ class LogicalPlanSerializerTest {
     assertThat(hadoopFSActualNode).satisfies(new MatchesMapRecursively(expectedHadoopFSNode));
   }
 
+  //TODO: (OD) reflection approach would be changed on splitting source tree on spark2 and spark3 task
   private CatalogTable getCatalogTable() throws InvocationTargetException, IllegalAccessException {
     Method applyMethod =
         Arrays.stream(CatalogTable.class.getDeclaredMethods())
