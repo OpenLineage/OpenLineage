@@ -82,7 +82,11 @@ public class LibraryTest {
       Map<String, Object> actual =
           objectMapper.readValue(objectMapper.writeValueAsString(event), mapTypeReference);
       assertThat(actual)
-          .satisfies(new MatchesMapRecursively(snapshot, new HashSet<>(Arrays.asList("runId"))));
+          .satisfies(
+              new MatchesMapRecursively(
+                  snapshot,
+                  new HashSet<>(
+                      Arrays.asList("runId", "nonInheritableMetadataKeys", "validConstraints"))));
     }
     verifySerialization(events);
   }

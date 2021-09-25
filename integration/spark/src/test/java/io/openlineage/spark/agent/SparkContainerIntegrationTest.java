@@ -4,7 +4,6 @@ import static java.nio.file.Files.readAllBytes;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.JsonBody.json;
 
-import io.openlineage.spark.agent.client.OpenLineageClient;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -140,16 +139,10 @@ public class SparkContainerIntegrationTest {
 
     Path eventFolder = Paths.get("integrations/container/");
     String startEvent =
-        new String(readAllBytes(eventFolder.resolve("pysparkWordCountWithCliArgsStartEvent.json")))
-            .replaceAll(
-                "https://github.com/OpenLineage/OpenLineage/tree/\\$VERSION/integration/spark",
-                OpenLineageClient.OPEN_LINEAGE_CLIENT_URI.toString());
+        new String(readAllBytes(eventFolder.resolve("pysparkWordCountWithCliArgsStartEvent.json")));
     String completeEvent =
         new String(
-                readAllBytes(eventFolder.resolve("pysparkWordCountWithCliArgsCompleteEvent.json")))
-            .replaceAll(
-                "https://github.com/OpenLineage/OpenLineage/tree/\\$VERSION/integration/spark",
-                OpenLineageClient.OPEN_LINEAGE_CLIENT_URI.toString());
+            readAllBytes(eventFolder.resolve("pysparkWordCountWithCliArgsCompleteEvent.json")));
     mockServerClient.verify(
         request()
             .withPath("/api/v1/lineage")
@@ -169,27 +162,14 @@ public class SparkContainerIntegrationTest {
 
     Path eventFolder = Paths.get("integrations/container/");
     String startCsvEvent =
-        new String(readAllBytes(eventFolder.resolve("pysparkRddToCsvStartEvent.json")))
-            .replaceAll(
-                "https://github.com/OpenLineage/OpenLineage/tree/\\$VERSION/integration/spark",
-                OpenLineageClient.OPEN_LINEAGE_CLIENT_URI.toString());
+        new String(readAllBytes(eventFolder.resolve("pysparkRddToCsvStartEvent.json")));
     String completeCsvEvent =
-        new String(readAllBytes(eventFolder.resolve("pysparkRddToCsvCompleteEvent.json")))
-            .replaceAll(
-                "https://github.com/OpenLineage/OpenLineage/tree/\\$VERSION/integration/spark",
-                OpenLineageClient.OPEN_LINEAGE_CLIENT_URI.toString());
+        new String(readAllBytes(eventFolder.resolve("pysparkRddToCsvCompleteEvent.json")));
 
     String startTableEvent =
-        new String(readAllBytes(eventFolder.resolve("pysparkRddToTableStartEvent.json")))
-            .replaceAll(
-                "https://github.com/OpenLineage/OpenLineage/tree/\\$VERSION/integration/spark",
-                OpenLineageClient.OPEN_LINEAGE_CLIENT_URI.toString());
-
+        new String(readAllBytes(eventFolder.resolve("pysparkRddToTableStartEvent.json")));
     String completeTableEvent =
-        new String(readAllBytes(eventFolder.resolve("pysparkRddToTableCompleteEvent.json")))
-            .replaceAll(
-                "https://github.com/OpenLineage/OpenLineage/tree/\\$VERSION/integration/spark",
-                OpenLineageClient.OPEN_LINEAGE_CLIENT_URI.toString());
+        new String(readAllBytes(eventFolder.resolve("pysparkRddToTableCompleteEvent.json")));
 
     mockServerClient.verify(
         request()
@@ -215,17 +195,10 @@ public class SparkContainerIntegrationTest {
     pyspark.start();
 
     Path eventFolder = Paths.get("integrations/container/");
-
-    String startEvent =
-        new String(readAllBytes(eventFolder.resolve("pysparkHiveStartEvent.json")))
-            .replaceAll(
-                "https://github.com/OpenLineage/OpenLineage/tree/\\$VERSION/integration/spark",
-                OpenLineageClient.OPEN_LINEAGE_CLIENT_URI.toString());
+    String startEvent = new String(readAllBytes(eventFolder.resolve("pysparkHiveStartEvent.json")));
     String completeEvent =
-        new String(readAllBytes(eventFolder.resolve("pysparkHiveCompleteEvent.json")))
-            .replaceAll(
-                "https://github.com/OpenLineage/OpenLineage/tree/\\$VERSION/integration/spark",
-                OpenLineageClient.OPEN_LINEAGE_CLIENT_URI.toString());
+        new String(readAllBytes(eventFolder.resolve("pysparkHiveCompleteEvent.json")));
+
     mockServerClient.verify(
         request()
             .withPath("/api/v1/lineage")
@@ -246,15 +219,9 @@ public class SparkContainerIntegrationTest {
     Path eventFolder = Paths.get("integrations/container/");
 
     String startEvent =
-        new String(readAllBytes(eventFolder.resolve("pysparkHiveOverwriteDirStartEvent.json")))
-            .replaceAll(
-                "https://github.com/OpenLineage/OpenLineage/tree/\\$VERSION/integration/spark",
-                OpenLineageClient.OPEN_LINEAGE_CLIENT_URI.toString());
+        new String(readAllBytes(eventFolder.resolve("pysparkHiveOverwriteDirStartEvent.json")));
     String completeEvent =
-        new String(readAllBytes(eventFolder.resolve("pysparkHiveOverwriteDirCompleteEvent.json")))
-            .replaceAll(
-                "https://github.com/OpenLineage/OpenLineage/tree/\\$VERSION/integration/spark",
-                OpenLineageClient.OPEN_LINEAGE_CLIENT_URI.toString());
+        new String(readAllBytes(eventFolder.resolve("pysparkHiveOverwriteDirCompleteEvent.json")));
     mockServerClient.verify(
         request()
             .withPath("/api/v1/lineage")

@@ -31,9 +31,26 @@
     ],
     "run": {
         "facets": {
-            "spark.logicalPlan": {
-            },
+            "spark.logicalPlan": {},
             "spark_unknown": {
+                "inputs": [
+                    {
+                        "description": {},
+                        "inputAttributes": [],
+                        "outputAttributes": [
+                            {
+                                "metadata": {},
+                                "name": "key",
+                                "type": "integer"
+                            },
+                            {
+                                "metadata": {},
+                                "name": "value",
+                                "type": "string"
+                            }
+                        ]
+                    }
+                ]
             }
         }
     }
