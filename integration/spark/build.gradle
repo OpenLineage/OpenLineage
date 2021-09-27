@@ -44,6 +44,8 @@ repositories {
 configurations {
     spark3Test
     spark2Test
+    spark3.extendsFrom implementation
+    lombok
 }
 
 apply plugin: 'jacoco'
@@ -137,7 +139,30 @@ dependencies {
     spark2Test "org.apache.spark:spark-sql_2.11:${sparkVersion}"
     spark2Test "org.apache.spark:spark-hive_2.11:${sparkVersion}"
 
+    spark3 "org.projectlombok:lombok:${lombokVersion}"
+    spark3 'io.openlineage:openlineage-java:0.0.1-SNAPSHOT'
+    spark3 "com.fasterxml.jackson.module:jackson-module-scala_2.12:${jacksonVersionSpark3}"
+    spark3 "com.google.cloud.spark:spark-bigquery_2.12:0.21.1"
+    spark3 "com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:0.21.1"
+    spark3 "org.apache.spark:spark-core_2.12:${spark3Version}"
+    spark3 "org.apache.spark:spark-sql_2.12:${spark3Version}"
+    spark3 "org.apache.spark:spark-hive_2.12:${spark3Version}"
+
+    lombok  "org.projectlombok:lombok:${lombokVersion}"
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+}
+
+sourceSets {
+    main.java.srcDirs = ["src/main/common/java", "src/main/spark2/java"]
+
+    spark3{
+        java {
+            srcDirs = ["src/main/common/java", "src/main/spark3/java"]
+            compileClasspath = configurations.spark3 + sourceSets.main.output
+            annotationProcessorPath = configurations.lombok
+            destinationDirectory.set(file("$buildDir/classes/java/main/"))
+        }
+    }
 }
 
 task sourceJar(type: Jar) {

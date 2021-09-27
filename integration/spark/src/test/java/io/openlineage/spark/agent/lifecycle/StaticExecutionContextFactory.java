@@ -124,7 +124,7 @@ public class StaticExecutionContextFactory extends ContextFactory {
       commonDatasetVisitors(SQLContext sqlContext, OpenLineageContext sparkContext) {
     List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> list = new ArrayList<>();
     list.add(new LogicalRelationVisitor(sqlContext.sparkContext(), sparkContext.getJobNamespace()));
-    list.add(new DatasetSourceVisitor());
+    //list.add(new DatasetSourceVisitor());
     list.add(new LogicalRDDVisitor());
     list.add(new CommandPlanVisitor(new ArrayList<>(list)));
     if (BigQueryNodeVisitor.hasBigQueryClasses()) {

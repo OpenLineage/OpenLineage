@@ -2,7 +2,6 @@ package io.openlineage.spark.agent.lifecycle;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.lifecycle.plan.AppendDataVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.DatasetSourceVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDataSourceDirVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDataSourceVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDirVisitor;
@@ -47,7 +46,7 @@ class OutputDatasetVisitors
     list.add(
         new OutputDatasetWithMetadataVisitor(
             new SaveIntoDataSourceCommandVisitor(sqlContext, datasetProviders)));
-    list.add(new OutputDatasetVisitor(new DatasetSourceVisitor()));
+    //list.add(new OutputDatasetVisitor(new DatasetSourceVisitor()));
     list.add(new OutputDatasetVisitor(new AppendDataVisitor(datasetProviders)));
     list.add(new OutputDatasetVisitor(new InsertIntoDirVisitor(sqlContext)));
     list.add(

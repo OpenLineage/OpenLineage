@@ -4,7 +4,6 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.OpenLineageContext;
 import io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.CommandPlanVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.DatasetSourceVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRDDVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRelationVisitor;
 import java.util.ArrayList;
@@ -45,7 +44,7 @@ public class ContextFactory {
       SQLContext sqlContext) {
     List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> list = new ArrayList<>();
     list.add(new LogicalRelationVisitor(sqlContext.sparkContext(), sparkContext.getJobNamespace()));
-    list.add(new DatasetSourceVisitor());
+    //list.add(new DatasetSourceVisitor());
     list.add(new LogicalRDDVisitor());
     list.add(new CommandPlanVisitor(new ArrayList<>(list)));
     if (BigQueryNodeVisitor.hasBigQueryClasses()) {

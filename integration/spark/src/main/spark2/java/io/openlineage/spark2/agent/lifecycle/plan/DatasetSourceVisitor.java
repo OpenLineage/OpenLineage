@@ -1,6 +1,8 @@
-package io.openlineage.spark.agent.lifecycle.plan;
+package io.openlineage.spark2.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.lifecycle.plan.DatasetSource;
+import io.openlineage.spark.agent.lifecycle.plan.QueryPlanVisitor;
 import io.openlineage.spark.agent.util.PlanUtils;
 import java.util.Collections;
 import java.util.List;
