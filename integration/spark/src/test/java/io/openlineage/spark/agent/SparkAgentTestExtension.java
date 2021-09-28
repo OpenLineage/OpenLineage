@@ -34,6 +34,7 @@ public class SparkAgentTestExtension
 
   @Override
   public void beforeAll(ExtensionContext context) throws Exception {
+    // when(OPEN_LINEAGE_SPARK_CONTEXT.getJobNamespace()).thenReturn("test_namespace");
     OpenLineageSparkListener.init(new StaticExecutionContextFactory(OPEN_LINEAGE_SPARK_CONTEXT));
   }
 

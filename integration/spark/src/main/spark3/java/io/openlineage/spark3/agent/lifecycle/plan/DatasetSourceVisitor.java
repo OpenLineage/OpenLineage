@@ -10,20 +10,14 @@ import java.util.Optional;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
-import org.apache.spark.sql.execution.datasources.v2.WriteToDataSourceV2;
 
 /**
- * Find {@link org.apache.spark.sql.sources.BaseRelation}s and {@link DataSourceV2} readers and
- * writers that implement the {@link DatasetSource} interface.
+ * Find {@link org.apache.spark.sql.sources.BaseRelation}s and {@link
+ * org.apache.spark.sql.connector.catalog.Table} that implement the {@link DatasetSource} interface.
  *
  * <p>Note that while the {@link DataSourceV2Relation} is a {@link
  * org.apache.spark.sql.catalyst.analysis.NamedRelation}, the returned name is that of the source,
- * not the specific dataset (e.g., "bigquery" not the table). While the {@link DataSourceV2Relation}
- * is a {@link LogicalPlan}, its {@link DataSourceReader} and {@link
- * org.apache.spark.sql.sources.v2.writer.DataSourceWriter} fields are not. Thus, the only (current)
- * way of extracting the actual dataset name is to attempt to cast the {@link DataSourceReader}
- * and/or {@link org.apache.spark.sql.sources.v2.writer.DataSourceWriter} instances to {@link
- * DatasetSource}s.
+ * not the specific dataset (e.g., "bigquery" not the table).
  */
 public class DatasetSourceVisitor extends QueryPlanVisitor<LogicalPlan> {
 
@@ -37,11 +31,11 @@ public class DatasetSourceVisitor extends QueryPlanVisitor<LogicalPlan> {
       if (((LogicalRelation) plan).relation() instanceof DatasetSource) {
         return Optional.of((DatasetSource) ((LogicalRelation) plan).relation());
       }
-      // Check the DataSourceV2Relation's reader.
-      // Note that we don't check the writer here as it is always encapsulated by the
-      // WriteToDataSourceV2 LogicalPlan below.
     } else if (plan instanceof DataSourceV2Relation) {
       DataSourceV2Relation relation = (DataSourceV2Relation) plan;
+      if (relation.table() instanceof DatasetSource) {
+        return Optional.of((DatasetSource) relation.table());
+      }
     }
 
     return Optional.empty();
