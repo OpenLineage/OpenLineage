@@ -2,6 +2,7 @@
     {
         "eventType": "START",
         "inputs": [],
+        "run": {},
         "job": {
             "facets": {},
             "name": "speedy-vim-308516.dbt_test1.testproject.money_received",
@@ -19,6 +20,7 @@
     {
         "eventType": "START",
         "inputs": [],
+        "run": {},
         "job": {
             "facets": {},
             "name": "speedy-vim-308516.dbt_test1.testproject.money_send",
@@ -64,6 +66,14 @@
     {
         "eventType": "COMPLETE",
         "inputs": [],
+        "run": {
+            "facets": {
+                "parent": {
+                    "job": {"name": "dbt-run-testproject", "namespace": "food_delivery"},
+                    "run": {}
+                }
+		    }
+        },
         "job": {
             "facets": {
                 "sql": {
@@ -103,6 +113,14 @@
     {
         "eventType": "COMPLETE",
         "inputs": [],
+        "run": {
+            "facets": {
+                "parent": {
+                    "job": {"name": "dbt-run-testproject", "namespace": "food_delivery"},
+                    "run": {}
+                }
+		    }
+        },
         "job": {
             "facets": {
                 "sql": {
@@ -141,6 +159,14 @@
     },
     {
         "eventType": "COMPLETE",
+        "run": {
+            "facets": {
+                "parent": {
+                    "job": {"name": "dbt-run-testproject", "namespace": "food_delivery"},
+                    "run": {}
+                }
+		    }
+        },
         "inputs": [
             {
                 "facets": {

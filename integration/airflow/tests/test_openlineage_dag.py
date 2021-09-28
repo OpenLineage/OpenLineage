@@ -252,10 +252,9 @@ def test_lineage_run_id(mock_get_or_create_openlineage_client, session=None):
     )
 
     class Collector:
-
         def update_task_id(self, tid):
-            self.task_id = tid
-            print(f"Got task id {self.task_id}")
+            self.run_id = tid
+            print(f"Got run id {self.run_id}")
 
     collector = Collector()
     t1 = PythonOperator(
@@ -276,7 +275,49 @@ def test_lineage_run_id(mock_get_or_create_openlineage_client, session=None):
     ti = dagrun.get_task_instance(t1.task_id)
     ti.task = t1
     ti.run()
-    assert collector.task_id != ""
+    assert collector.run_id != ""
+
+
+@mock.patch('openlineage.airflow.adapter.OpenLineageAdapter.get_or_create_openlineage_client')
+@provide_session
+def test_lineage_parent_id(mock_get_or_create_openlineage_client, session=None):
+    mock_openlineage_client = mock.Mock()
+    mock_get_or_create_openlineage_client.return_value = mock_openlineage_client
+
+    dag = DAG(
+        "test_lineage_parent_id",
+        schedule_interval="@daily",
+        default_args=DAG_DEFAULT_ARGS,
+        description="test dag"
+    )
+
+    class Collector:
+        def update_task_id(self, tid):
+            self.namespace, self.job_id, self.run_id = tid.split('/')
+            print(f"Got namespace {self.namespace} - job id {self.job_id} - run id {self.run_id}")
+
+    collector = Collector()
+    t1 = PythonOperator(
+        task_id='show_template',
+        python_callable=collector.update_task_id,
+        op_args=['{{ lineage_parent_id(run_id, task) }}'],
+        provide_context=False,
+        dag=dag
+    )
+
+    dag.clear()
+    today = datetime.datetime.now()
+    dagrun = dag.create_dagrun(
+        run_id="test_dag_run",
+        execution_date=timezone.datetime(today.year, month=today.month, day=today.day),
+        state=State.RUNNING,
+        session=session)
+    ti = dagrun.get_task_instance(t1.task_id)
+    ti.task = t1
+    ti.run()
+    assert collector.namespace != ""
+    assert collector.job_id != ""
+    assert collector.run_id != ""
 
 
 class TestFixtureDummyOperator(DummyOperator):

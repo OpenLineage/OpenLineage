@@ -1,8 +1,10 @@
+import os
+
 from airflow.operators.bash_operator import BashOperator
 from airflow.utils.dates import days_ago
 
 # do not need airflow integration
-from airflow import DAG
+from openlineage.airflow import DAG
 
 PROJECT_DIR = "/opt/data/dbt/testproject"
 PROFILE_DIR = "/opt/data/dbt/profiles"
@@ -32,7 +34,11 @@ t1 = BashOperator(
 t2 = BashOperator(
     task_id='dbt_run',
     dag=dag,
-    bash_command=f"dbt-ol run --project-dir={PROJECT_DIR} --profiles-dir={PROFILE_DIR}"
+    bash_command=f"dbt-ol run --project-dir={PROJECT_DIR} --profiles-dir={PROFILE_DIR}",
+    env={
+        **os.environ,
+        "OPENLINEAGE_PARENT_ID": "{{ lineage_parent_id(run_id, task) }}"
+    }
 )
 
 t1 >> t2
