@@ -165,6 +165,8 @@ sourceSets {
     }
 }
 
+compileJava.finalizedBy compileSpark3Java
+
 task sourceJar(type: Jar) {
     classifier 'sources'
     from sourceSets.main.allJava
@@ -182,7 +184,6 @@ def commonTestConfiguration = {
         events "passed", "skipped", "failed"
         showStandardStreams = true
     }
-//    jvmArgs '-verbose:class'
     systemProperties = [
             'junit.platform.output.capture.stdout': 'true',
             'junit.platform.output.capture.stderr': 'true',
