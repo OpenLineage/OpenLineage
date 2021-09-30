@@ -5,7 +5,12 @@ import java.util.List;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import scala.PartialFunction;
 
-/** */
+/**
+ * Provides Visitors for iterating on {@link LogicalPlan}.
+ *
+ * <p>All common Visitors should be grouped and passed to {@link
+ * VisitorFactory#getOutputVisitors(List)} to retrieve {@link OpenLineage.OutputDataset}
+ */
 public interface VisitorFactory {
 
   List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> getCommonVisitors();
