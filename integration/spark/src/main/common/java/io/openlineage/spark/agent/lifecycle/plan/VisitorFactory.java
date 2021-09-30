@@ -9,7 +9,8 @@ import scala.PartialFunction;
  * Provides Visitors for iterating on {@link LogicalPlan}.
  *
  * <p>All common Visitors should be grouped and passed to {@link
- * VisitorFactory#getOutputVisitors(List)} to retrieve {@link OpenLineage.OutputDataset}
+ * VisitorFactory#getOutputVisitors(List)} to retrieve Visitors for {@link
+ * OpenLineage.OutputDataset}
  */
 public interface VisitorFactory {
 
