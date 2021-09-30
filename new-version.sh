@@ -34,7 +34,7 @@ usage() {
   echo "A script used to release OpenLineage"
   echo
   title "EXAMPLES:"
-  echo "  # Bump version ('-SNAPSHOT' will automatically be appended to '0.0.2')"
+  echo "  # Bump version ('-SNAPSHOT' and '-devN' will automatically be appended to '0.0.2')"
   echo "  $ ./new-version.sh -r 0.0.1 -n 0.0.2"
   echo
   echo "  # Bump version (with '-SNAPSHOT' already appended to '0.0.2')"
@@ -47,8 +47,10 @@ usage() {
   echo "  $ ./new-version.sh -r 0.0.1-rc.1 -n 0.0.2-rc.2 -p"
   echo
   title "ARGUMENTS:"
-  echo "  -r, --release-version string     the release version (ex: X.Y.Z, X.Y.Z-rc.*)"
-  echo "  -n, --next-version string        the next version (ex: X.Y.Z, X.Y.Z-SNAPSHOT)"
+  echo "  -r, --release-version string    the release version (ex: X.Y.Z, X.Y.Z-rc.*)"
+  echo "  -n, --next-version string       the next version (ex: X.Y.Z, X.Y.Z-SNAPSHOT)"
+  echo "  -d, --next-python-dev string    the next python dev version (ex: 1, 2, 3 - will"
+  echo "                                  be added to end of next version, creating X.Y.Z-devN"
   echo
   title "FLAGS:"
   echo "  -p, --no-push     local changes are not automatically pushed to the remote repository"
@@ -75,6 +77,7 @@ if [[ $# -eq 0 ]] ; then
 fi
 
 PUSH="true"
+PYTHON_DEV_VERSION=0
 while [ $# -gt 0 ]; do
   case $1 in
     -r|--release-version)
@@ -84,6 +87,10 @@ while [ $# -gt 0 ]; do
     -n|--next-version)
        shift
        NEXT_VERSION="${1}"
+       ;;
+    -d|--next-dev-version)
+       shift
+       PYTHON_DEV_VERSION="${1}"
        ;;
     -p|--no-push)
        PUSH="false"
@@ -136,14 +143,26 @@ if [ -n "$RELEASE_CANDIDATE" ]; then
 fi
 
 # (2) Bump java module versions
-sed -i "" "s/^version=.*/version=${RELEASE_VERSION}/g" ./client/java/gradle.properties
-sed -i "" "s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/spark/gradle.properties
+if [[ $OSTYPE == 'darwin'* ]]; then
+  sed -i "" "s/^version=.*/version=${RELEASE_VERSION}/g" ./client/java/gradle.properties
+  sed -i "" "s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/spark/gradle.properties
+else
+  sed -i "s/^version=.*/version=${RELEASE_VERSION}/g" ./client/java/gradle.properties
+  sed -i "s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/spark/gradle.properties
+fi
 
 # (3) Bump version in docs
-sed -i "" \
-  -e "s/<version>.*/<version>${RELEASE_VERSION}<\/version>/g" \
-  -e "s/openlineage-spark:[[:alnum:]\.-]*/openlineage-spark:${RELEASE_VERSION}/g" \
-  -e "s/openlineage-spark-.*jar/openlineage-spark-${RELEASE_VERSION}.jar/g" ./integration/spark/README.md
+if [[ $OSTYPE == 'darwin'* ]]; then
+  sed -i \
+    -e "s/<version>.*/<version>${RELEASE_VERSION}<\/version>/g" \
+    -e "s/openlineage-spark:[[:alnum:]\.-]*/openlineage-spark:${RELEASE_VERSION}/g" \
+    -e "s/openlineage-spark-.*jar/openlineage-spark-${RELEASE_VERSION}.jar/g" ./integration/spark/README.md
+else
+  sed -i \
+    -e "s/<version>.*/<version>${RELEASE_VERSION}<\/version>/g" \
+    -e "s/openlineage-spark:[[:alnum:]\.-]*/openlineage-spark:${RELEASE_VERSION}/g" \
+    -e "s/openlineage-spark-.*jar/openlineage-spark-${RELEASE_VERSION}.jar/g" ./integration/spark/README.md
+fi
 
 # (4) Prepare release commit
 git commit -sam "Prepare for release ${RELEASE_VERSION}"
@@ -152,27 +171,44 @@ git commit -sam "Prepare for release ${RELEASE_VERSION}"
 git fetch --all --tags
 git tag -a "${RELEASE_VERSION}" -m "openlineage ${RELEASE_VERSION}"
 
-# (6) Prepare next development version
-PYTHON_MODULES=(client/python/ integration/common/ integration/airflow/ integration/dbt/)
-for PYTHON_MODULE in "${PYTHON_MODULES[@]}"; do
-  (cd "${PYTHON_MODULE}" && bump2version manual --new-version "${NEXT_VERSION}" --allow-dirty)
-done
-
-# Append '-SNAPSHOT' to 'NEXT_VERSION' if a release candidate, or missing
+# (6) Append SNAPSHOT and dev versions
+# Java: append '-SNAPSHOT' to 'NEXT_VERSION' if a release candidate, or missing
 # (ex: '-SNAPSHOT' will be appended to X.Y.Z or X.Y.Z-rc.N)
 if [[ "${NEXT_VERSION}" == *-rc.? ||
       ! "${NEXT_VERSION}" == *-SNAPSHOT ]]; then
-  NEXT_VERSION="${NEXT_VERSION}-SNAPSHOT"
+  JAVA_NEXT_VERSION="${NEXT_VERSION}-SNAPSHOT"
 fi
 
-sed -i  "" "s/^version=.*/version=${NEXT_VERSION}/g" integration/spark/gradle.properties
-sed -i  "" "s/^version=.*/version=${NEXT_VERSION}/g" client/java/gradle.properties
-echo "version ${NEXT_VERSION}" > integration/spark/src/test/resources/io/openlineage/spark/agent/client/version.properties
+# Python: append "-devN" to 'NEXT_VERSION' if missing
+# If version ends with SNAPSHOT or rc.N, remove it
+if [[ "${NEXT_VERSION}" == *-SNAPSHOT ]]; then
+  PYTHON_NEXT_VERSION="${NEXT_VERSION%-SNAPSHOT}-dev${PYTHON_DEV_VERSION}"
+elif [[ "${NEXT_VERSION}" == *-rc.? ]]; then
+  PYTHON_NEXT_VERSION="${NEXT_VERSION%-rc.?}-dev${PYTHON_DEV_VERSION}"
+else
+  PYTHON_NEXT_VERSION="${NEXT_VERSION}-dev${PYTHON_DEV_VERSION}"
+fi
 
-# (7) Prepare next development version commit
+# (7) Prepare next development version
+PYTHON_MODULES=(client/python/ integration/common/ integration/airflow/ integration/dbt/)
+for PYTHON_MODULE in "${PYTHON_MODULES[@]}"; do
+  (cd "${PYTHON_MODULE}" && bump2version manual --new-version "${PYTHON_NEXT_VERSION}" --allow-dirty)
+done
+
+
+if [[ $OSTYPE == 'darwin'* ]]; then
+  sed -i "" "s/^version=.*/version=${JAVA_NEXT_VERSION}/g" integration/spark/gradle.properties
+  sed -i "" "s/^version=.*/version=${JAVA_NEXT_VERSION}/g" client/java/gradle.properties
+else
+  sed -i "s/^version=.*/version=${JAVA_NEXT_VERSION}/g" integration/spark/gradle.properties
+  sed -i "s/^version=.*/version=${JAVA_NEXT_VERSION}/g" client/java/gradle.properties
+fi
+echo "version ${JAVA_NEXT_VERSION}" > integration/spark/src/test/resources/io/openlineage/spark/agent/client/version.properties
+
+# (8) Prepare next development version commit
 git commit -sam "Prepare next development version"
 
-# (8) Push commits and tag
+# (9) Push commits and tag
 if [[ ! ${PUSH} = "false" ]]; then
   git push origin main && git push origin "${RELEASE_VERSION}"
 else
