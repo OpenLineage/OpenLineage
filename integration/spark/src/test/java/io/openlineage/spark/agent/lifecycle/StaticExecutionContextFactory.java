@@ -18,8 +18,6 @@ import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -80,28 +78,14 @@ public class StaticExecutionContextFactory extends ContextFactory {
               List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> commonDatasetVisitors =
                   commonDatasetVisitors(sqlContext, sparkContext);
 
-              VisitorFactory common =
-                  new CommonVisitorFactory(sqlContext, sparkContext.getJobNamespace());
-              VisitorFactory versionSpecific =
-                  VersionSpecificVisitorsProvider.getInstance(SparkSession.active());
-
-              List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> commonDatasets =
-                  Stream.concat(
-                          common.getCommonVisitors().stream(),
-                          versionSpecific.getCommonVisitors().stream())
-                      .collect(Collectors.toList());
+              VisitorFactory visitorFactory =
+                  VisitorFactoryProvider.getInstance(SparkSession.active());
 
               List<PartialFunction<LogicalPlan, List<OpenLineage.InputDataset>>> inputDatasets =
-                  Stream.concat(
-                          common.getInputVisitors().stream(),
-                          versionSpecific.getInputVisitors().stream())
-                      .collect(Collectors.toList());
+                  visitorFactory.getInputVisitors(sqlContext, sparkContext.getJobNamespace());
 
               List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>> outputDatasets =
-                  Stream.concat(
-                          common.getOutputVisitors(commonDatasets).stream(),
-                          versionSpecific.getOutputVisitors(commonDatasets).stream())
-                      .collect(Collectors.toList());
+                  visitorFactory.getOutputVisitors(sqlContext, sparkContext.getJobNamespace());
 
               SparkSQLExecutionContext sparksql =
                   new SparkSQLExecutionContext(

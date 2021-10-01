@@ -24,17 +24,10 @@ import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import scala.PartialFunction;
 
-public class CommonVisitorFactory implements VisitorFactory {
-  private final SQLContext sqlContext;
-  private String jobNamespace;
+public abstract class BaseVisitorFactory implements VisitorFactory {
 
-  public CommonVisitorFactory(SQLContext sqlContext, String jobNamespace) {
-    this.sqlContext = sqlContext;
-    this.jobNamespace = jobNamespace;
-  }
-
-  @Override
-  public List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> getCommonVisitors() {
+  protected List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> getBaseCommonVisitors(
+      SQLContext sqlContext, String jobNamespace) {
     List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> list = new ArrayList<>();
     list.add(new LogicalRelationVisitor(sqlContext.sparkContext(), jobNamespace));
     list.add(new LogicalRDDVisitor());
@@ -45,14 +38,22 @@ public class CommonVisitorFactory implements VisitorFactory {
     return list;
   }
 
+  public abstract List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> getCommonVisitors(
+      SQLContext sqlContext, String jobNamespace);
+
   @Override
-  public List<PartialFunction<LogicalPlan, List<OpenLineage.InputDataset>>> getInputVisitors() {
-    return getCommonVisitors().stream().map(InputDatasetVisitor::new).collect(Collectors.toList());
+  public List<PartialFunction<LogicalPlan, List<OpenLineage.InputDataset>>> getInputVisitors(
+      SQLContext sqlContext, String jobNamespace) {
+    return getCommonVisitors(sqlContext, jobNamespace).stream()
+        .map(InputDatasetVisitor::new)
+        .collect(Collectors.toList());
   }
 
   @Override
   public List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>> getOutputVisitors(
-      List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> allCommonVisitors) {
+      SQLContext sqlContext, String jobNamespace) {
+    List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> allCommonVisitors =
+        getCommonVisitors(sqlContext, jobNamespace);
     List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>> list = new ArrayList<>();
 
     list.add(new OutputDatasetWithMetadataVisitor(new InsertIntoDataSourceDirVisitor()));

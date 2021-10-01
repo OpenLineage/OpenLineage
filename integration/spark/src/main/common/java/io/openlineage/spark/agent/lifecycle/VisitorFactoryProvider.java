@@ -3,7 +3,7 @@ package io.openlineage.spark.agent.lifecycle;
 import io.openlineage.spark.agent.lifecycle.plan.VisitorFactory;
 import org.apache.spark.sql.SparkSession;
 
-public class VersionSpecificVisitorsProvider {
+public class VisitorFactoryProvider {
 
   private static final String SPARK2_FACTORY_NAME =
       "io.openlineage.spark2.agent.lifecycle.plan.VisitorFactoryImpl";

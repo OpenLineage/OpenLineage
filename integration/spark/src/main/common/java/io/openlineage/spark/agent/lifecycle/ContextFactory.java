@@ -9,8 +9,6 @@ import io.openlineage.spark.agent.lifecycle.plan.LogicalRelationVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.VisitorFactory;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.SparkSession;
@@ -33,25 +31,13 @@ public class ContextFactory {
   public SparkSQLExecutionContext createSparkSQLExecutionContext(long executionId) {
     SQLContext sqlContext = SQLExecution.getQueryExecution(executionId).sparkPlan().sqlContext();
 
-    VisitorFactory common = new CommonVisitorFactory(sqlContext, sparkContext.getJobNamespace());
-    VisitorFactory versionSpecific =
-        VersionSpecificVisitorsProvider.getInstance(SparkSession.active());
-
-    List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> commonDatasets =
-        Stream.concat(
-                common.getCommonVisitors().stream(), versionSpecific.getCommonVisitors().stream())
-            .collect(Collectors.toList());
+    VisitorFactory visitorFactory = VisitorFactoryProvider.getInstance(SparkSession.active());
 
     List<PartialFunction<LogicalPlan, List<OpenLineage.InputDataset>>> inputDatasets =
-        Stream.concat(
-                common.getInputVisitors().stream(), versionSpecific.getInputVisitors().stream())
-            .collect(Collectors.toList());
+        visitorFactory.getInputVisitors(sqlContext, sparkContext.getJobNamespace());
 
     List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>> outputDatasets =
-        Stream.concat(
-                common.getOutputVisitors(commonDatasets).stream(),
-                versionSpecific.getOutputVisitors(commonDatasets).stream())
-            .collect(Collectors.toList());
+        visitorFactory.getOutputVisitors(sqlContext, sparkContext.getJobNamespace());
 
     return new SparkSQLExecutionContext(executionId, sparkContext, outputDatasets, inputDatasets);
   }
