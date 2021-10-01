@@ -1,0 +1,22 @@
+### Problem
+
+👋 Thanks for opening a pull request! Please include a brief summary of the problem your change is trying to solve, or bug fix. If your change fixes a bug or you'd like to provide context on why you're making the change, please [link the issue](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue) as follows:
+
+Closes: #ISSUE-NUMBER
+
+### Solution
+
+Please describe your change, or bug fix, as well as any dependencies. If your change requires a schema, please select one of the following (_if relevant_):
+
+- [ ] Your change modifies the [core]() OpenLineage model
+- [ ] Your change modifies one or more OpenLineage [facets]()
+
+### Checklist
+
+- [ ] You've [sign-off](https://github.com/OpenLineage/OpenLineage/blob/main/why-the-dco.md) your work
+- [ ] Your pull request title should follow our [guidelines](https://github.com/OpenLineage/OpenLineage/blob/main/CONTRIBUTING.md#creating-pull-requests)
+- [ ] Your changes are accompanied by tests (_if relevant_)
+- [ ] Your change contains a [small diff](https://kurtisnusbaum.medium.com/stacked-diffs-keeping-phabricator-diffs-small-d9964f4dcfa6) and is self-contained
+- [ ] You've updated any relevant documentation (_if relevant_)
+- [ ] You've updated the [`CHANGELOG.md`](https://github.com/OpenLineage/OpenLineage/blob/main/CHANGELOG.md) with details about your change under the "Unreleased" section
+- [ ] You've versioned the core OpenLineage model or facets according to [SchemaVer](https://docs.snowplowanalytics.com/docs/pipeline-components-and-applications/iglu/common-architecture/schemaver) (_if relevant_)
