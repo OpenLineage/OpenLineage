@@ -42,7 +42,7 @@ import scala.runtime.AbstractFunction0;
  * complete list of datasets referenced.
  */
 @Slf4j
-public class LogicalRelationVisitor extends QueryPlanVisitor<LogicalRelation> {
+public class LogicalRelationVisitor extends QueryPlanVisitor<LogicalRelation, OpenLineage.Dataset> {
   private final SparkContext context;
   private final String jobNamespace;
 

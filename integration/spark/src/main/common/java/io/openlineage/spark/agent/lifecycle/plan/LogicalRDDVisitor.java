@@ -24,7 +24,7 @@ import scala.collection.Seq;
  * org.apache.spark.sql.execution.datasources.HadoopFsRelation}, but works with {@link RDD}s that
  * are converted to {@link org.apache.spark.sql.Dataset}s.
  */
-public class LogicalRDDVisitor extends QueryPlanVisitor<LogicalRDD> {
+public class LogicalRDDVisitor extends QueryPlanVisitor<LogicalRDD, OpenLineage.Dataset> {
 
   @Override
   public boolean isDefinedAt(LogicalPlan x) {

@@ -16,7 +16,6 @@ import org.apache.spark.sql.sources.BaseRelation;
 import org.apache.spark.sql.sources.RelationProvider;
 import org.apache.spark.sql.sources.SchemaRelationProvider;
 import scala.Option;
-import scala.PartialFunction;
 
 /**
  * {@link LogicalPlan} visitor that matches an {@link SaveIntoDataSourceCommand} and extracts the
@@ -24,13 +23,14 @@ import scala.PartialFunction;
  * BaseRelation}, we wrap it with an artificial {@link LogicalRelation} so we can delegate to other
  * plan visitors.
  */
-public class SaveIntoDataSourceCommandVisitor extends QueryPlanVisitor<SaveIntoDataSourceCommand> {
+public class SaveIntoDataSourceCommandVisitor
+    extends QueryPlanVisitor<SaveIntoDataSourceCommand, OpenLineage.Dataset> {
   private final SQLContext sqlContext;
-  private final List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> relationVisitors;
+  private final List<QueryPlanVisitor<? extends LogicalPlan, OpenLineage.Dataset>> relationVisitors;
 
   public SaveIntoDataSourceCommandVisitor(
       SQLContext sqlContext,
-      List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> relationVisitors) {
+      List<QueryPlanVisitor<? extends LogicalPlan, OpenLineage.Dataset>> relationVisitors) {
     this.sqlContext = sqlContext;
     this.relationVisitors = relationVisitors;
   }

@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.facets.OutputStatisticsFacet;
+import io.openlineage.spark.agent.lifecycle.plan.QueryPlanVisitor;
 import io.openlineage.spark.agent.util.PlanUtils;
 import java.util.List;
 import java.util.function.Function;
@@ -14,7 +15,6 @@ import org.apache.spark.sql.execution.command.RunnableCommand;
 import org.apache.spark.sql.execution.metric.SQLMetric;
 import scala.PartialFunction;
 import scala.collection.Map;
-import scala.runtime.AbstractPartialFunction;
 
 /**
  * Like the {@link OutputDatasetVisitor}, this is a wrapper around {@link LogicalPlan} visitors that
@@ -25,7 +25,7 @@ import scala.runtime.AbstractPartialFunction;
  * io.openlineage.client.OpenLineage.Dataset}
  */
 public class OutputDatasetWithMetadataVisitor
-    extends AbstractPartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>> {
+    extends QueryPlanVisitor<LogicalPlan, OpenLineage.OutputDataset> {
 
   private final PartialFunction<LogicalPlan, List<OpenLineage.Dataset>> visitor;
   private final ImmutableMap<Class, Function<Object, Map<String, SQLMetric>>> statisticsCommands =

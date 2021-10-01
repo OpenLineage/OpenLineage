@@ -13,7 +13,7 @@ import org.apache.spark.sql.execution.datasources.InsertIntoHadoopFsRelationComm
  * extracts the output {@link OpenLineage.Dataset} being written.
  */
 public class InsertIntoHadoopFsRelationVisitor
-    extends QueryPlanVisitor<InsertIntoHadoopFsRelationCommand> {
+    extends QueryPlanVisitor<InsertIntoHadoopFsRelationCommand, OpenLineage.Dataset> {
 
   @Override
   public List<OpenLineage.Dataset> apply(LogicalPlan x) {

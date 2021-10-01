@@ -27,7 +27,7 @@ import org.apache.spark.sql.sources.v2.reader.DataSourceReader;
  * and/or {@link org.apache.spark.sql.sources.v2.writer.DataSourceWriter} instances to {@link
  * DatasetSource}s.
  */
-public class DatasetSourceVisitor extends QueryPlanVisitor<LogicalPlan> {
+public class DatasetSourceVisitor extends QueryPlanVisitor<LogicalPlan, OpenLineage.Dataset> {
 
   @Override
   public boolean isDefinedAt(LogicalPlan x) {

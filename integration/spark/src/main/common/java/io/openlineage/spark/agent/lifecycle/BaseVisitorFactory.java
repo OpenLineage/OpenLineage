@@ -12,6 +12,7 @@ import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHiveDirVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHiveTableVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRDDVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRelationVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.QueryPlanVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.SaveIntoDataSourceCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.VisitorFactory;
 import io.openlineage.spark.agent.lifecycle.plan.wrapper.InputDatasetVisitor;
@@ -22,13 +23,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
-import scala.PartialFunction;
 
 public abstract class BaseVisitorFactory implements VisitorFactory {
 
-  protected List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> getBaseCommonVisitors(
-      SQLContext sqlContext, String jobNamespace) {
-    List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> list = new ArrayList<>();
+  protected List<QueryPlanVisitor<? extends LogicalPlan, OpenLineage.Dataset>>
+      getBaseCommonVisitors(SQLContext sqlContext, String jobNamespace) {
+    List<QueryPlanVisitor<? extends LogicalPlan, OpenLineage.Dataset>> list = new ArrayList<>();
     list.add(new LogicalRelationVisitor(sqlContext.sparkContext(), jobNamespace));
     list.add(new LogicalRDDVisitor());
     list.add(new CommandPlanVisitor(new ArrayList<>(list)));
@@ -38,11 +38,11 @@ public abstract class BaseVisitorFactory implements VisitorFactory {
     return list;
   }
 
-  public abstract List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> getCommonVisitors(
-      SQLContext sqlContext, String jobNamespace);
+  public abstract List<QueryPlanVisitor<? extends LogicalPlan, OpenLineage.Dataset>>
+      getCommonVisitors(SQLContext sqlContext, String jobNamespace);
 
   @Override
-  public List<PartialFunction<LogicalPlan, List<OpenLineage.InputDataset>>> getInputVisitors(
+  public List<QueryPlanVisitor<LogicalPlan, OpenLineage.InputDataset>> getInputVisitors(
       SQLContext sqlContext, String jobNamespace) {
     return getCommonVisitors(sqlContext, jobNamespace).stream()
         .map(InputDatasetVisitor::new)
@@ -50,11 +50,11 @@ public abstract class BaseVisitorFactory implements VisitorFactory {
   }
 
   @Override
-  public List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>> getOutputVisitors(
+  public List<QueryPlanVisitor<LogicalPlan, OpenLineage.OutputDataset>> getOutputVisitors(
       SQLContext sqlContext, String jobNamespace) {
-    List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> allCommonVisitors =
+    List<QueryPlanVisitor<? extends LogicalPlan, OpenLineage.Dataset>> allCommonVisitors =
         getCommonVisitors(sqlContext, jobNamespace);
-    List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>> list = new ArrayList<>();
+    List<QueryPlanVisitor<LogicalPlan, OpenLineage.OutputDataset>> list = new ArrayList<>();
 
     list.add(new OutputDatasetWithMetadataVisitor(new InsertIntoDataSourceDirVisitor()));
     list.add(

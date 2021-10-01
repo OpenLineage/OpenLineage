@@ -22,7 +22,7 @@ import org.apache.spark.sql.sources.CreatableRelationProvider;
  * bigquery://&lt;projectId&gt;.&lt;.datasetId&gt;.&lt;tableName&gt;</code> . The namespace for
  * bigquery tables is always <code>bigquery</code> and the name is the FQN.
  */
-public class BigQueryNodeVisitor extends QueryPlanVisitor<LogicalPlan> {
+public class BigQueryNodeVisitor extends QueryPlanVisitor<LogicalPlan, OpenLineage.Dataset> {
   private static final String BIGQUERY_NAMESPACE = "bigquery";
   private final SQLContext sqlContext;
 

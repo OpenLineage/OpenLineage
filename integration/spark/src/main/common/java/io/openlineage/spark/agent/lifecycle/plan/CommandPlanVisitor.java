@@ -20,7 +20,7 @@ import scala.PartialFunction;
  * normally by calling {@link LogicalPlan#collect(PartialFunction)}, but children that aren't
  * exposed get skipped in the collect call, so we need to root them out here.
  */
-public class CommandPlanVisitor extends QueryPlanVisitor<LogicalPlan> {
+public class CommandPlanVisitor extends QueryPlanVisitor<LogicalPlan, OpenLineage.Dataset> {
   private final PartialFunction<LogicalPlan, List<OpenLineage.Dataset>> inputVisitors;
 
   public CommandPlanVisitor(

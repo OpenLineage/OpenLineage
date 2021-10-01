@@ -8,17 +8,17 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.InsertIntoDataSourceCommand;
-import scala.PartialFunction;
 
 /**
  * {@link LogicalPlan} visitor that matches an {@link InsertIntoDataSourceCommand} and extracts the
  * output {@link OpenLineage.Dataset} being written.
  */
-public class InsertIntoDataSourceVisitor extends QueryPlanVisitor<InsertIntoDataSourceCommand> {
-  private final List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> datasetProviders;
+public class InsertIntoDataSourceVisitor
+    extends QueryPlanVisitor<InsertIntoDataSourceCommand, OpenLineage.Dataset> {
+  private final List<QueryPlanVisitor<? extends LogicalPlan, OpenLineage.Dataset>> datasetProviders;
 
   public InsertIntoDataSourceVisitor(
-      List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> datasetProviders) {
+      List<QueryPlanVisitor<? extends LogicalPlan, OpenLineage.Dataset>> datasetProviders) {
     this.datasetProviders = datasetProviders;
   }
 

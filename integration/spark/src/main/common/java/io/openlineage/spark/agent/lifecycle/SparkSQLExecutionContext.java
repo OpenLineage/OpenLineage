@@ -9,6 +9,7 @@ import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.facets.ErrorFacet;
 import io.openlineage.spark.agent.facets.LogicalPlanFacet;
 import io.openlineage.spark.agent.facets.UnknownEntryFacet;
+import io.openlineage.spark.agent.lifecycle.plan.QueryPlanVisitor;
 import io.openlineage.spark.agent.util.PlanUtils;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -47,15 +48,15 @@ public class SparkSQLExecutionContext implements ExecutionContext {
       new UnknownEntryFacetListener();
 
   private OpenLineageContext sparkContext;
-  private final List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>>
+  private final List<QueryPlanVisitor<LogicalPlan, OpenLineage.OutputDataset>>
       outputDatasetSupplier;
-  private final List<PartialFunction<LogicalPlan, List<InputDataset>>> inputDatasetSupplier;
+  private final List<QueryPlanVisitor<LogicalPlan, OpenLineage.InputDataset>> inputDatasetSupplier;
 
   public SparkSQLExecutionContext(
       long executionId,
       OpenLineageContext sparkContext,
-      List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>> outputDatasetSupplier,
-      List<PartialFunction<LogicalPlan, List<InputDataset>>> inputDatasetSupplier) {
+      List<QueryPlanVisitor<LogicalPlan, OpenLineage.OutputDataset>> outputDatasetSupplier,
+      List<QueryPlanVisitor<LogicalPlan, OpenLineage.InputDataset>> inputDatasetSupplier) {
     this.executionId = executionId;
     this.sparkContext = sparkContext;
     this.queryExecution = SQLExecution.getQueryExecution(executionId);
@@ -77,8 +78,10 @@ public class SparkSQLExecutionContext implements ExecutionContext {
       log.info("No execution info {}", queryExecution);
       return;
     }
+
     PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>> outputVisitor =
         merge(outputDatasetSupplier);
+
     PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>> planTraversal =
         getPlanTraversal(outputVisitor);
     List<OpenLineage.OutputDataset> outputDatasets =

@@ -1,11 +1,11 @@
 package io.openlineage.spark.agent.lifecycle.plan.wrapper;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.lifecycle.plan.QueryPlanVisitor;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import scala.PartialFunction;
-import scala.runtime.AbstractPartialFunction;
 
 /**
  * Wrapper around {@link LogicalPlan} visitors that converts found {@link
@@ -13,8 +13,7 @@ import scala.runtime.AbstractPartialFunction;
  * io.openlineage.client.OpenLineage.InputDataset}s and may apply input-specific facets to the
  * returned {@link io.openlineage.client.OpenLineage.InputDataset}.
  */
-public class InputDatasetVisitor
-    extends AbstractPartialFunction<LogicalPlan, List<OpenLineage.InputDataset>> {
+public class InputDatasetVisitor extends QueryPlanVisitor<LogicalPlan, OpenLineage.InputDataset> {
 
   private final PartialFunction<LogicalPlan, List<OpenLineage.Dataset>> visitor;
 

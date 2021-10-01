@@ -13,7 +13,7 @@ import org.apache.spark.sql.execution.command.InsertIntoDataSourceDirCommand;
  * the output {@link OpenLineage.Dataset} being written.
  */
 public class InsertIntoDataSourceDirVisitor
-    extends QueryPlanVisitor<InsertIntoDataSourceDirCommand> {
+    extends QueryPlanVisitor<InsertIntoDataSourceDirCommand, OpenLineage.Dataset> {
 
   @Override
   public List<OpenLineage.Dataset> apply(LogicalPlan x) {

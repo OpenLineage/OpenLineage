@@ -14,7 +14,8 @@ import org.apache.spark.sql.hive.execution.InsertIntoHiveDirCommand;
  * {@link LogicalPlan} visitor that matches an {@link InsertIntoHiveDirCommand} and extracts the
  * output {@link OpenLineage.Dataset} being written.
  */
-public class InsertIntoHiveDirVisitor extends QueryPlanVisitor<InsertIntoHiveDirCommand> {
+public class InsertIntoHiveDirVisitor
+    extends QueryPlanVisitor<InsertIntoHiveDirCommand, OpenLineage.Dataset> {
 
   @Override
   public List<OpenLineage.Dataset> apply(LogicalPlan x) {

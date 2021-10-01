@@ -16,7 +16,8 @@ import org.apache.spark.sql.hive.execution.InsertIntoHiveTable;
  * {@link LogicalPlan} visitor that matches an {@link InsertIntoHiveTable} and extracts the output
  * {@link OpenLineage.Dataset} being written.
  */
-public class InsertIntoHiveTableVisitor extends QueryPlanVisitor<InsertIntoHiveTable> {
+public class InsertIntoHiveTableVisitor
+    extends QueryPlanVisitor<InsertIntoHiveTable, OpenLineage.Dataset> {
 
   private final SparkContext context;
 

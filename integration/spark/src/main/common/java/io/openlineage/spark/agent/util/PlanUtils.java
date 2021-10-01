@@ -36,7 +36,7 @@ public class PlanUtils {
    * @param <R>
    * @return
    */
-  public static <T, R> R applyFirst(List<PartialFunction<T, R>> fns, T arg) {
+  public static <T, R> R applyFirst(List<? extends PartialFunction<T, R>> fns, T arg) {
     PartialFunction<T, R> fn = merge(fns);
     if (fn.isDefinedAt(arg)) {
       return fn.apply(arg);
@@ -54,8 +54,11 @@ public class PlanUtils {
    * @param <R>
    * @return
    */
-  public static <T, R> PartialFunction<T, R> merge(List<PartialFunction<T, R>> fns) {
-    return fns.stream().reduce(PartialFunction::orElse).orElse(PartialFunction$.MODULE$.empty());
+  public static <T, R> PartialFunction<T, R> merge(List<? extends PartialFunction<T, R>> fns) {
+    return fns.stream()
+        .map(PartialFunction.class::cast)
+        .reduce(PartialFunction::orElse)
+        .orElse(PartialFunction$.MODULE$.empty());
   }
 
   /**

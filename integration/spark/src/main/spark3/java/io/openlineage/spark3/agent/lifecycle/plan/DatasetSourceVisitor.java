@@ -19,7 +19,7 @@ import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
  * org.apache.spark.sql.catalyst.analysis.NamedRelation}, the returned name is that of the source,
  * not the specific dataset (e.g., "bigquery" not the table).
  */
-public class DatasetSourceVisitor extends QueryPlanVisitor<LogicalPlan> {
+public class DatasetSourceVisitor extends QueryPlanVisitor<LogicalPlan, OpenLineage.Dataset> {
 
   @Override
   public boolean isDefinedAt(LogicalPlan x) {

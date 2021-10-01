@@ -27,8 +27,8 @@ import scala.runtime.AbstractPartialFunction;
  *
  * @param <T>
  */
-public abstract class QueryPlanVisitor<T extends LogicalPlan>
-    extends AbstractPartialFunction<LogicalPlan, List<OpenLineage.Dataset>> {
+public abstract class QueryPlanVisitor<T extends LogicalPlan, D extends OpenLineage.Dataset>
+    extends AbstractPartialFunction<LogicalPlan, List<D>> {
 
   @Override
   public boolean isDefinedAt(LogicalPlan x) {

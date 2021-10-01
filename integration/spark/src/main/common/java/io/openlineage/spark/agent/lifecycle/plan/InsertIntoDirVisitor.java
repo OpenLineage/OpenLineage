@@ -15,7 +15,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
  * {@link LogicalPlan} visitor that matches an {@link InsertIntoDir} and extracts the output {@link
  * OpenLineage.Dataset} being written.
  */
-public class InsertIntoDirVisitor extends QueryPlanVisitor<InsertIntoDir> {
+public class InsertIntoDirVisitor extends QueryPlanVisitor<InsertIntoDir, OpenLineage.Dataset> {
   private final SQLContext sqlContext;
 
   public InsertIntoDirVisitor(SQLContext sqlContext) {

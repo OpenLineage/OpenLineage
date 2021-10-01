@@ -6,6 +6,7 @@ import io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.CommandPlanVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRDDVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRelationVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.QueryPlanVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.VisitorFactory;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,10 +34,10 @@ public class ContextFactory {
 
     VisitorFactory visitorFactory = VisitorFactoryProvider.getInstance(SparkSession.active());
 
-    List<PartialFunction<LogicalPlan, List<OpenLineage.InputDataset>>> inputDatasets =
+    List<QueryPlanVisitor<LogicalPlan, OpenLineage.InputDataset>> inputDatasets =
         visitorFactory.getInputVisitors(sqlContext, sparkContext.getJobNamespace());
 
-    List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>> outputDatasets =
+    List<QueryPlanVisitor<LogicalPlan, OpenLineage.OutputDataset>> outputDatasets =
         visitorFactory.getOutputVisitors(sqlContext, sparkContext.getJobNamespace());
 
     return new SparkSQLExecutionContext(executionId, sparkContext, outputDatasets, inputDatasets);
