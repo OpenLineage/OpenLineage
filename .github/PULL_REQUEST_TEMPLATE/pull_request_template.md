@@ -6,7 +6,7 @@ Closes: #ISSUE-NUMBER
 
 ### Solution
 
-Please describe your change, or bug fix, as well as any dependencies. If your change requires a schema change, please describe the schema modifcation(s) and whethers it's a _backwards-incompatible_ or _backwards-compatible_ change, then select one of the following (_if relevant_):
+Please describe your change as it relates to the problem, or bug fix, as well as any dependencies. If your change requires a schema change, please describe the schema modifcation(s) and whether it's a _backwards-incompatible_ or _backwards-compatible_ change, then select one of the following (_if relevant_):
 
 > **Note:** All schema changes require discussion. Please [link the issue](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue) for context.
 
