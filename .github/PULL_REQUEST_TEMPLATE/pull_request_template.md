@@ -6,7 +6,7 @@ Closes: #ISSUE-NUMBER
 
 ### Solution
 
-Please describe your change as it relates to the problem, or bug fix, as well as any dependencies. If your change requires a schema change, please describe the schema modifcation(s) and whether it's a _backwards-incompatible_ or _backwards-compatible_ change, then select one of the following (_if relevant_):
+Please describe your change as it relates to the problem, or bug fix, as well as any dependencies. If your change requires a schema change, please describe the schema modifcation(s) and whether it's a _backwards-incompatible_ or _backwards-compatible_ change, then select one of the following:
 
 > **Note:** All schema changes require discussion. Please [link the issue](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue) for context.
 
@@ -17,7 +17,7 @@ If you're contributing a new integration, please specify the scope of the integr
 
 ### Checklist
 
-- [ ] You've [sign-off](https://github.com/OpenLineage/OpenLineage/blob/main/why-the-dco.md) your work
+- [ ] You've [signed-off](https://github.com/OpenLineage/OpenLineage/blob/main/why-the-dco.md) your work
 - [ ] Your pull request title follows our [guidelines](https://github.com/OpenLineage/OpenLineage/blob/main/CONTRIBUTING.md#creating-pull-requests)
 - [ ] Your changes are accompanied by tests (_if relevant_)
 - [ ] Your change contains a [small diff](https://kurtisnusbaum.medium.com/stacked-diffs-keeping-phabricator-diffs-small-d9964f4dcfa6) and is self-contained
