@@ -10,8 +10,10 @@ Please describe your change as it relates to the problem, or bug fix, as well as
 
 > **Note:** All schema changes require discussion. Please [link the issue](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue) for context.
 
-- [ ] Your change modifies the [core]() OpenLineage model
-- [ ] Your change modifies one or more OpenLineage [facets]()
+- [ ] Your change modifies the [core](https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json) OpenLineage model
+- [ ] Your change modifies one or more OpenLineage [facets](https://github.com/OpenLineage/OpenLineage/tree/main/spec/facets)
+
+If you're contributing a new integration, please specify the scope of the integration and how/where it has been tested (e.g., Apache Spark integration supports `S3` and `GCS` filesystem operations, tested with AWS EMR).
 
 ### Checklist
 
