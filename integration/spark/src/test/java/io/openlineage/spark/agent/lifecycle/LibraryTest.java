@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -173,15 +174,19 @@ public class LibraryTest {
   }
 
   Map<String, Object> stripSchemaURL(Map<String, Object> map) {
+    List<String> toRemove = new ArrayList<>();
     for (String key : map.keySet()) {
       if (key.endsWith("schemaURL")) {
-        map.remove(key);
+        toRemove.add(key);
       } else {
         Object value = map.get(key);
         if (value instanceof Map) {
           stripSchemaURL((Map<String, Object>) value);
         }
       }
+    }
+    for (String key : toRemove) {
+      map.remove(key);
     }
     return map;
   }

@@ -322,7 +322,7 @@ public class TypeResolver {
     private final List<ObjectType> objectTypes;
     private final String name;
     private final List<ResolvedField> properties;
-    private final boolean additionalProperties;
+    private boolean additionalProperties;
     private final ResolvedType additionalPropertiesType;
     private final Set<ObjectResolvedType> parents;
 
@@ -363,6 +363,10 @@ public class TypeResolver {
 
     public ResolvedType getAdditionalPropertiesType() {
       return additionalPropertiesType;
+    }
+
+    public void setAdditionalProperties(boolean additionalProperties) {
+      this.additionalProperties = additionalProperties;
     }
 
     @Override
