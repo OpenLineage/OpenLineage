@@ -88,6 +88,7 @@ class LogicalPlanSerializer {
     public Boolean isEmpty() {
       return false;
     }
+
     @JsonIgnore
     public Partition[] getPartitions() {
       return null;
