@@ -97,21 +97,6 @@
 							"attrs": []
 						},
 						"resolved": true,
-						"constraints": [{
-							"origin": {
-								"line": null,
-								"startPosition": null
-							},
-							"deterministic": true,
-							"resolved": true
-						}, {
-							"origin": {
-								"line": null,
-								"startPosition": null
-							},
-							"deterministic": true,
-							"resolved": true
-						}],
 						"statsCache": null,
 						"traceEnabled": false,
 						"canonicalizedPlan": false

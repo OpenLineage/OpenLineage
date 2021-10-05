@@ -129,24 +129,6 @@
                                 "attrs": []
                             },
                             "canonicalizedPlan": false,
-                            "constraints": [
-                                {
-                                    "deterministic": true,
-                                    "origin": {
-                                        "line": null,
-                                        "startPosition": null
-                                    },
-                                    "resolved": true
-                                },
-                                {
-                                    "deterministic": true,
-                                    "origin": {
-                                        "line": null,
-                                        "startPosition": null
-                                    },
-                                    "resolved": true
-                                }
-                            ],
                             "data": [
                                 {
                                     "values": [
