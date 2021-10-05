@@ -10,6 +10,7 @@ from great_expectations.checkpoint import ValidationAction
 from great_expectations.core import ExpectationSuiteValidationResult
 from great_expectations.data_context.types.resource_identifiers import ValidationResultIdentifier
 from great_expectations.dataset import SqlAlchemyDataset, PandasDataset, Dataset as GEDataset
+from requests import RequestException
 
 from openlineage.client import OpenLineageClient, OpenLineageClientOptions
 from openlineage.client.facet import ParentRunFacet, DocumentationJobFacet, \
@@ -137,7 +138,11 @@ class OpenLineageValidationAction(ValidationAction):
             producer="https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/common/openlineage/provider/great_expectations" # noqa
         )
         if self.do_publish:
-            self.openlineage_client.emit(run_event)
+            try:
+                self.openlineage_client.emit(run_event)
+            except RequestException:
+                self.log.exception("Failed to send OpenLineage event")
+
         # Great expectations tries to append stuff here, so we need to make it a dict
         return Serde.to_dict(run_event)
 

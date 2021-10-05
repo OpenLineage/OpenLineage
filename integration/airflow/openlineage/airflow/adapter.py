@@ -4,6 +4,7 @@ from typing import Optional, Dict, Type
 
 from openlineage.airflow import __version__ as OPENLINEAGE_AIRFLOW_VERSION
 from openlineage.airflow.extractors import TaskMetadata
+from requests import RequestException
 
 from openlineage.client import OpenLineageClient, OpenLineageClientOptions, set_producer
 from openlineage.client.facet import DocumentationJobFacet, SourceCodeLocationJobFacet, \
@@ -60,7 +61,7 @@ class OpenLineageAdapter:
         code_location: Optional[str],
         nominal_start_time: str,
         nominal_end_time: str,
-        task: Optional[TaskMetadata],
+        task: TaskMetadata,
         run_facets: Optional[Dict[str, Type[BaseFacet]]] = None,  # Custom run facets
     ) -> str:
         """
@@ -91,7 +92,11 @@ class OpenLineageAdapter:
             outputs=task.outputs if task else None,
             producer=_PRODUCER
         )
-        self.get_or_create_openlineage_client().emit(event)
+        try:
+            self.get_or_create_openlineage_client().emit(event)
+        except RequestException:
+            log.exception("Failed to send OpenLineage event")
+
         return event.run.runId
 
     def complete_task(
@@ -122,7 +127,10 @@ class OpenLineageAdapter:
             outputs=task.outputs,
             producer=_PRODUCER
         )
-        self.get_or_create_openlineage_client().emit(event)
+        try:
+            self.get_or_create_openlineage_client().emit(event)
+        except RequestException:
+            log.exception("Failed to send OpenLineage event")
 
     def fail_task(
         self,
@@ -151,7 +159,10 @@ class OpenLineageAdapter:
             outputs=task.outputs,
             producer=_PRODUCER
         )
-        self.get_or_create_openlineage_client().emit(event)
+        try:
+            self.get_or_create_openlineage_client().emit(event)
+        except RequestException:
+            log.exception("Failed to send OpenLineage event")
 
     @staticmethod
     def _build_run(
