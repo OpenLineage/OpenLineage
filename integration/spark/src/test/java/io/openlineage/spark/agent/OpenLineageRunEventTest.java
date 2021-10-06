@@ -32,7 +32,10 @@ public class OpenLineageRunEventTest {
 
     UUID runId = UUID.fromString("5f24c93c-2ce9-49dc-82e7-95ab4915242f");
     OpenLineage.RunFacets runFacets =
-        ol.newRunFacets(ol.newNominalTimeRunFacet(dateTime, dateTime), null);
+        ol.newRunFacets(
+            ol.newParentRunFacet(
+                ol.newParentRunFacetRun(runId), ol.newParentRunFacetJob("namespace", "jobName")),
+            null);
     OpenLineage.Run run = ol.newRun(runId, runFacets);
     OpenLineage.DocumentationJobFacet documentationJobFacet =
         ol.newDocumentationJobFacetBuilder().description("test documentation").build();
@@ -49,7 +52,7 @@ public class OpenLineageRunEventTest {
     OpenLineage.SQLJobFacet sqlJobFacet = ol.newSQLJobFacet("SELECT * FROM test");
 
     OpenLineage.JobFacets jobFacets =
-        ol.newJobFacets(documentationJobFacet, sourceCodeLocationJobFacet, sqlJobFacet);
+        ol.newJobFacets(sourceCodeLocationJobFacet, sqlJobFacet, documentationJobFacet);
     OpenLineage.Job job = ol.newJob("namespace", "jobName", jobFacets);
     List<OpenLineage.InputDataset> inputs =
         Arrays.asList(

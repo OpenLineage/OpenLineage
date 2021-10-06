@@ -1,4 +1,5 @@
 {
+  "@class": "org.apache.spark.sql.catalyst.plans.logical.Aggregate",
   "groupingExpressions": [],
   "aggregateExpressions": [],
   "origin": {
@@ -26,7 +27,6 @@
     ]
   },
   "resolved": true,
-  "constraints": [],
   "statsCache": null,
   "traceEnabled": false,
   "streaming": false,

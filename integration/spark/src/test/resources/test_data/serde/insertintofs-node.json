@@ -1,4 +1,5 @@
 {
+  "@class":"org.apache.spark.sql.execution.datasources.InsertIntoHadoopFsRelationCommand",
   "outputPath": {
     "root": false,
     "uriPathAbsolute": true,
@@ -209,16 +210,6 @@
       "attrs": []
     },
     "resolved": true,
-    "constraints": [
-      {
-        "origin": {
-          "line": null,
-          "startPosition": null
-        },
-        "deterministic": true,
-        "resolved": true
-      }
-    ],
     "statsCache": null,
     "attributeMap": {
       "name#1": {
@@ -283,7 +274,6 @@
     ]
   },
   "resolved": true,
-  "constraints": [],
   "statsCache": null,
   "metrics": {
     "numFiles": {

@@ -88,16 +88,6 @@
     "attrs": []
   },
   "resolved": true,
-  "constraints": [
-    {
-      "origin": {
-        "line": null,
-        "startPosition": null
-      },
-      "deterministic": true,
-      "resolved": true
-    }
-  ],
   "statsCache": null,
   "attributeMap": {
     "name#1": {
