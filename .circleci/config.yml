@@ -120,6 +120,9 @@ jobs:
     steps:
       - *checkout_project_root
       - run: |
+          cd ../../client/java
+          ./gradlew  --no-daemon publishToMavenLocal
+          cd -
           # Get, then decode the GPG private key used to sign *.jar
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
           export RELEASE_PASSWORD=$(echo $SONATYPE_PASSWORD)
@@ -350,6 +353,9 @@ workflows:
             - unit-test-integration-airflow
             - unit-test-integration-common
             - unit-test-client-python
+          filters:
+            branches:
+              ignore: /pull\/[0-9]+/
       - build-integration-airflow:
           <<: *only_on_main
           build_tag: .dev${CIRCLE_BUILD_NUM}

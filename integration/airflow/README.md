@@ -63,15 +63,45 @@ MARQUEZ_NAMESPACE=my_special_ns
 
 ### Extractors : Sending the correct data from your DAGs
 
-If you do nothing, OpenLineage backend will receive the `Job` and the `Run` from your DAGs, but sources and datasets will not be sent.
+If you do nothing, OpenLineage backend will receive the `Job` and the `Run` from your DAGs, but,
+unless you use few operators for which this integration provides extractor, input and output metadata will not be send.
 
-`openlineage-airflow` allows you to do more than that by building "Extractors".  Extractors are in the process of changing right now, but they basically take a task and extract:
+`openlineage-airflow` allows you to do more than that by building "Extractors". Extractor is object
+suited to extract metadata from particular operator (or operators). 
 
 1. Name : The name of the task
-2. Location : Location of the code for the task
-3. Inputs : List of input datasets
-4. Outputs : List of output datasets
-5. Context : The Airflow context for the task
+2. Inputs : List of input datasets
+3. Outputs : List of output datasets
+4. Context : The Airflow context for the task
+
+#### Bundled Extractors
+
+`openlineage-airflow` provides extractors for
+
+* `PostgresOperator`
+* `BigQueryOperator`
+* `SnowflakeOperator`
+* `GreatExpectationsOperator`
+
+#### Custom Extractors
+
+If your DAGs contain additional operators from which you want to extract lineage data, fear not - you can always
+provide custom extractors. They should derive from `BaseExtractor`. 
+
+There are two ways to register them for use in `openlineage-airflow`. 
+
+First one, is to provide environment variable in pattern of 
+```
+OPENLINEAGE_EXTRACTOR_<operator>=full.path.to.ExtractorClass
+```
+
+For example: 
+```
+OPENLINEAGE_EXTRACTOR_PostgresOperator=openlineage.airflow.extractors.postgres_extractor.PostgresExtractor
+```
+
+Second one - working in Airflow 1.10.x only - is to register all additional operator-extractor pairings by 
+providing `lineage_custom_extractors` argument in `openlineage.airflow.DAG`.
 
 #### Great Expectations
 

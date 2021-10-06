@@ -56,7 +56,7 @@ class LogicalPlanSerializer {
     try {
       return mapper.writeValueAsString(x);
     } catch (Throwable e) {
-      return "Unable to serialize {}: " + e.getMessage();
+      return "Unable to serialize: " + e.getMessage();
     }
   }
 
@@ -71,7 +71,7 @@ class LogicalPlanSerializer {
    * and 'containsChild' fields ignored cause we don't need them for the root node in {@link
    * LogicalPlan} and leaf nodes don't have child nodes in {@link LogicalPlan}
    */
-  @JsonIgnoreProperties({"child", "containsChild", "canonicalized"})
+  @JsonIgnoreProperties({"child", "containsChild", "canonicalized", "constraints"})
   abstract class ChildMixIn {}
 
   public static class PythonRDDMixin {
@@ -82,6 +82,11 @@ class LogicalPlanSerializer {
   @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "id")
   public static class RDDMixin {
     @JsonIgnore private Partition[] partitions;
+
+    @JsonIgnore
+    public Boolean isEmpty() {
+      return false;
+    }
 
     @JsonIgnore
     public Partition[] getPartitions() {

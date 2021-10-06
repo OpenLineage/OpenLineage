@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://openlineage.io/spec/1-0-1/OpenLineage.json",
-  "definitions": {
+  "$id": "https://openlineage.io/spec/1-0-2/OpenLineage.json",
+  "$defs": {
     "RunEvent": {
       "type": "object",
       "properties": {
@@ -18,28 +18,28 @@
           "example": "START|COMPLETE|ABORT|FAIL|OTHER"
         },
         "eventTime": {
-          "description": "the time the event occured at",
+          "description": "the time the event occurred at",
           "type": "string",
           "format": "date-time"
         },
         "run": {
-          "$ref": "#/definitions/Run"
+          "$ref": "#/$defs/Run"
         },
         "job": {
-          "$ref": "#/definitions/Job"
+          "$ref": "#/$defs/Job"
         },
         "inputs": {
           "description": "The set of **input** datasets.",
           "type": "array",
           "items": {
-            "$ref": "#/definitions/InputDataset"
+            "$ref": "#/$defs/InputDataset"
           }
         },
         "outputs": {
           "description": "The set of **output** datasets.",
           "type": "array",
           "items": {
-            "$ref": "#/definitions/OutputDataset"
+            "$ref": "#/$defs/OutputDataset"
           }
         },
         "producer": {
@@ -74,21 +74,20 @@
         "facets": {
           "description": "The run facets.",
           "type": "object",
-          "properties": {
-            "nominalTime": {
-              "$ref": "#/definitions/NominalTimeRunFacet"
-            },
-            "parent": {
-              "$ref": "#/definitions/ParentRunFacet"
-            }
-          },
           "additionalProperties": {
-            "$ref": "#/definitions/CustomFacet"
+            "$ref": "#/$defs/RunFacet"
           }
         }
       },
       "required": [
         "runId"
+      ]
+    },
+    "RunFacet": {
+      "description": "A Run Facet",
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/BaseFacet" }
       ]
     },
     "Job": {
@@ -107,19 +106,8 @@
         "facets": {
           "description": "The job facets.",
           "type": "object",
-          "properties": {
-            "documentation": {
-              "$ref": "#/definitions/DocumentationJobFacet"
-            },
-            "sourceCodeLocation": {
-              "$ref": "#/definitions/SourceCodeLocationJobFacet"
-            },
-            "sql": {
-              "$ref": "#/definitions/SQLJobFacet"
-            }
-          },
           "additionalProperties": {
-            "$ref": "#/definitions/CustomFacet"
+            "$ref": "#/$defs/JobFacet"
           }
         }
       },
@@ -128,55 +116,63 @@
         "name"
       ]
     },
+    "JobFacet": {
+      "description": "A Job Facet",
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/BaseFacet" }
+      ]
+    },
     "InputDataset": {
       "description": "An input dataset",
       "type": "object",
       "allOf": [
-        { "$ref": "#/definitions/Dataset" },
+        { "$ref": "#/$defs/Dataset" },
         {
           "type": "object",
           "properties": {
             "inputFacets": {
               "description": "The input facets for this dataset.",
               "type": "object",
-              "properties": {
-                "dataQualityMetrics" : {
-                  "$ref": "#/definitions/DataQualityMetricsInputDatasetFacet"
-                },
-                "dataQualityAssertions": {
-                  "$ref": "#/definitions/DataQualityAssertionsDatasetFacet"
-                }
-              },
               "additionalProperties": {
-                "$ref": "#/definitions/CustomFacet"
+                "$ref": "#/$defs/InputDatasetFacet"
               }
             }
           }
         }
       ]
     },
+    "InputDatasetFacet": {
+      "description": "An Input Dataset Facet",
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/BaseFacet" }
+      ]
+    },
     "OutputDataset": {
       "description": "An output dataset",
       "type": "object",
       "allOf": [
-        { "$ref": "#/definitions/Dataset" },
+        { "$ref": "#/$defs/Dataset" },
         {
           "type": "object",
           "properties": {
             "outputFacets": {
               "description": "The output facets for this dataset",
               "type": "object",
-              "properties": {
-                "outputStatistics": {
-                  "$ref": "#/definitions/OutputStatisticsOutputDatasetFacet"
-                }
-              },
               "additionalProperties": {
-                "$ref": "#/definitions/CustomFacet"
+                "$ref": "#/$defs/OutputDatasetFacet"
               }
             }
           }
         }
+      ]
+    },
+    "OutputDatasetFacet": {
+      "description": "An Output Dataset Facet",
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/BaseFacet" }
       ]
     },
     "Dataset": {
@@ -195,19 +191,8 @@
         "facets": {
           "description": "The facets for this dataset",
           "type": "object",
-          "properties": {
-            "documentation": {
-              "$ref": "#/definitions/DocumentationDatasetFacet"
-            },
-            "schema": {
-              "$ref": "#/definitions/SchemaDatasetFacet"
-            },
-            "dataSource": {
-              "$ref": "#/definitions/DatasourceDatasetFacet"
-            }
-          },
           "additionalProperties": {
-            "$ref": "#/definitions/CustomFacet"
+            "$ref": "#/$defs/DatasetFacet"
           }
         }
       },
@@ -216,7 +201,13 @@
         "name"
       ]
     },
-
+    "DatasetFacet": {
+      "description": "A Dataset Facet",
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/BaseFacet" }
+      ]
+     },
     "BaseFacet": {
       "description": "all fields of the base facet are prefixed with _ to avoid name conflicts in facets",
       "type": "object",
@@ -231,394 +222,15 @@
           "description": "The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version of the schema definition for this facet",
           "type": "string",
           "format": "uri",
-          "example": "https://openlineage.io/spec/0-0-1/OpenLineage.json#/definitions/BaseFacet"
+          "example": "https://openlineage.io/spec/1-0-2/OpenLineage.json#/$defs/BaseFacet"
         }
       },
+      "additionalProperties": true,
       "required": [
         "_producer",
         "_schemaURL"
       ]
-    },
-
-    "CustomFacet": {
-      "description": "a Custom Facet is defined is a separate spec. field must not start with _",
-      "type": "object",
-      "allOf": [
-        {
-          "$ref": "#/definitions/BaseFacet"
-        },
-        {
-          "type": "object",
-          "additionalProperties": true
-        }
-      ]
-    },
-
-    "NominalTimeRunFacet": {
-      "allOf": [
-        {
-          "$ref": "#/definitions/BaseFacet"
-        },
-        {
-          "type": "object",
-          "properties": {
-            "nominalStartTime": {
-              "description": "An [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) timestamp representing the nominal start time (included) of the run. AKA the schedule time",
-              "type": "string",
-              "format": "date-time",
-              "example": "2020-12-17T03:00:00.000Z"
-            },
-            "nominalEndTime": {
-              "description": "An [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) timestamp representing the nominal end time (excluded) of the run. (Should be the nominal start time of the next run)",
-              "type": "string",
-              "format": "date-time",
-              "example": "2020-12-17T04:00:00.000Z"
-            }
-          },
-          "required": [
-            "nominalStartTime"
-          ]
-        }
-      ],
-      "type": "object"
-    },
-    "ParentRunFacet": {
-      "description": "the id of the parent run and job, iff this run was spawn from an other run (for example, the Dag run scheduling its tasks)",
-      "allOf": [
-        {
-          "$ref": "#/definitions/BaseFacet"
-        },
-        {
-          "type": "object",
-          "properties": {
-            "run": {
-              "type": "object",
-              "properties": {
-                "runId": {
-                  "description": "The globally unique ID of the run associated with the job.",
-                  "type": "string",
-                  "format": "uuid"
-                }
-              },
-              "required": [
-                "runId"
-              ]
-            },
-            "job": {
-              "type": "object",
-              "properties": {
-                "namespace": {
-                  "description": "The namespace containing that job",
-                  "type": "string",
-                  "example": "my-scheduler-namespace"
-                },
-                "name": {
-                  "description": "The unique name for that job within that namespace",
-                  "type": "string",
-                  "example": "myjob.mytask"
-                }
-              },
-              "required": [
-                "namespace",
-                "name"
-              ]
-            }
-          },
-          "required": [
-            "run",
-            "job"
-          ]
-        }
-      ],
-      "type": "object"
-    },
-
-    "DocumentationJobFacet": {
-      "allOf": [
-        {
-          "$ref": "#/definitions/BaseFacet"
-        },
-        {
-          "type": "object",
-          "properties": {
-            "description": {
-              "description": "The description of the job.",
-              "type": "string"
-            }
-          },
-          "required": [
-            "description"
-          ]
-        }
-      ],
-      "type": "object"
-    },
-    "SourceCodeLocationJobFacet": {
-      "allOf": [
-        {
-          "$ref": "#/definitions/BaseFacet"
-        },
-        {
-          "type": "object",
-          "properties": {
-            "type": {
-              "type": "string",
-              "description": "the source control system",
-              "example":"git|svn"
-            },
-            "url": {
-              "type": "string",
-              "description": "the full http URL to locate the file",
-              "format": "uri",
-              "example": "https://github.com/MarquezProject/marquez-airflow-quickstart/blob/693e35482bc2e526ced2b5f9f76ef83dec6ec691/dags/dummy_example.py"
-            },
-            "repoUrl": {
-              "type": "string",
-              "description": "the URL to the repository",
-              "example": "git@github.com:{org}/{repo}.git or https://github.com/{org}/{repo}.git|svn://<your_ip>/<repository_name>"
-            },
-            "path": {
-              "type": "string",
-              "description": "the path in the repo containing the source files",
-              "example": "path/to/my/dags"
-            },
-            "version": {
-              "type": "string",
-              "description": "the current version deployed (not a branch name, the actual unique version)",
-              "example": "git: the git sha | Svn: the revision number"
-            },
-            "tag": {
-              "type": "string",
-              "description": "optional tag name"
-            },
-            "branch": {
-              "type": "string",
-              "description": "optional branch name"
-            }
-          },
-          "required": [
-            "type", "url"
-          ]
-        }
-      ],
-      "type": "object"
-    },
-    "SQLJobFacet": {
-      "allOf": [
-        {
-          "$ref": "#/definitions/BaseFacet"
-        },
-        {
-          "type": "object",
-          "properties": {
-            "query": {
-              "type": "string",
-              "example": "SELECT * FROM foo"
-            }
-          },
-          "required": [
-            "query"
-          ]
-        }
-      ],
-      "type": "object"
-    },
-    "OutputStatisticsOutputDatasetFacet": {
-      "allOf": [
-        {
-          "$ref": "#/definitions/BaseFacet"
-        },
-        {
-          "type": "object",
-          "properties": {
-            "rowCount": {
-              "description": "The number of rows written to the dataset",
-              "type": "integer"
-            },
-            "size": {
-              "description": "The size in bytes written to the dataset",
-              "type": "integer"
-            }
-          },
-          "required": [
-            "rowCount"
-          ]
-        }
-      ]
-    },
-    "DataQualityAssertionsDatasetFacet": {
-      "description": "list of tests performed on dataset or dataset columns, and their results",
-      "allOf": [
-        {
-          "$ref": "#/definitions/BaseFacet"
-        },
-        {
-          "type": "object",
-          "required": ["assertions"],
-          "properties": {
-            "assertions": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "assertion": {
-                    "type": "string",
-                    "description": "Type of expectation test that dataset is subjected to",
-                    "example":  "not_null"
-                  },
-                  "success": {"type":  "boolean"},
-                  "column": {
-                    "type":  "string",
-                    "description": "Column that expectation is testing. It should match the name provided in SchemaDatasetFacet. If column field is empty, then expectation refers to whole dataset.",
-                    "example":  "id"
-                  }
-                },
-                "required": ["assertion", "success"]
-              }
-            }
-          }
-        }
-      ],
-      "type": "object"
-    },
-    "DataQualityMetricsInputDatasetFacet": {
-      "allOf": [
-        {
-          "$ref": "#/definitions/BaseFacet"
-        },
-        {
-          "type": "object",
-          "required": ["columnMetrics"],
-          "properties": {
-            "rowCount": {
-              "description": "The number of rows evaluated",
-              "type":  "integer"
-            },
-            "bytes": {
-              "description": "The size in bytes",
-              "type":  "integer"
-            },
-            "columnMetrics": {
-              "description": "The property key is the column name",
-              "type": "object",
-              "additionalProperties": {
-                "type": "object",
-                "properties": {
-                  "nullCount": {
-                    "description": "The number of null values in this column for the rows evaluated",
-                    "type": "integer"
-                  },
-                  "distinctCount": {
-                    "description": "The number of distinct values in this column for the rows evaluated",
-                    "type":  "integer"
-                  },
-                  "sum": {
-                    "description": "The total sum of values in this column for the rows evaluated",
-                    "type":  "number"
-                  },
-                  "count": {
-                    "description": "The number of values in this column",
-                    "type":  "number"
-                  },
-                  "min": {"type": "number"},
-                  "max": {"type":  "number"},
-                  "quantiles": {
-                    "description": "The property key is the quantile. Examples: 0.1 0.25 0.5 0.75 1",
-                    "type": "object",
-                    "additionalProperties": {"type":  "number"}
-                  }
-                }
-              }
-            }
-          }
-        }
-      ],
-      "type": "object"
-    },
-    "DocumentationDatasetFacet": {
-      "allOf": [
-        {
-          "$ref": "#/definitions/BaseFacet"
-        },
-        {
-          "type": "object",
-          "properties": {
-            "description": {
-              "description": "The description of the dataset.",
-              "type": "string",
-              "example": "canonical representation of entity Foo"
-            }
-          },
-          "required": [
-            "description"
-          ]
-        }
-      ],
-      "type": "object"
-    },
-    "SchemaDatasetFacet": {
-      "allOf": [
-        {
-          "$ref": "#/definitions/BaseFacet"
-        },
-        {
-          "type": "object",
-          "properties": {
-            "fields": {
-              "description": "The fields of the table.",
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "name": {
-                    "description": "The name of the field.",
-                    "type": "string",
-                    "example": "column1"
-                  },
-                  "type": {
-                    "description": "The type of the field.",
-                    "type": "string",
-                    "example": "VARCHAR|INT|..."
-                  },
-                  "description": {
-                    "description": "The description of the field.",
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "name"
-                ]
-              }
-            }
-          }
-        }
-      ],
-      "type": "object"
-    },
-    "DatasourceDatasetFacet": {
-      "allOf": [
-        {
-          "$ref": "#/definitions/BaseFacet"
-        },
-        {
-          "type": "object",
-          "properties": {
-            "name": {
-              "type": "string"
-            },
-            "uri": {
-              "type": "string",
-              "format": "uri"
-            }
-          }
-        }
-      ],
-      "type": "object"
     }
   },
-  "oneOf": [
-    {
-      "$ref": "#/definitions/RunEvent"
-    }
-  ]
+  "$ref": "#/$defs/RunEvent"
 }

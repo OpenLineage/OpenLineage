@@ -1,6 +1,10 @@
 .idea
 .gradle
 
+.classpath
+.project
+.settings
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -148,3 +152,5 @@ cython_debug/
 *.classpath
 *.project
 *.settings/
+
+gcloud-service-key.json

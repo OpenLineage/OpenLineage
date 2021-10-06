@@ -52,7 +52,9 @@ def wait_for_dag(dag_id):
     cur.close()
 
     log.info(f"DAG '{dag_id}' state set to '{state}'.")
-    if state != "success":
+    if state == 'failed':
+        sys.exit(1)
+    elif state != "success":
         raise Exception('Retry!')
 
 
@@ -101,6 +103,7 @@ def check_matches(expected_requests, received_requests):
                     expected['job']['name'] == request['job']['name']:
                 is_compared = True
                 if not match(expected, request):
+                    log.info(f"failed to compare expected {expected}\nwith request {request}")
                     return False
                 break
         if not is_compared:
@@ -142,6 +145,7 @@ def test_integration(dag_id, request_path):
 
     # (3) Verify events emitted
     if not check_events_emitted(expected_requests):
+        log.info(f"failed to compare events!")
         sys.exit(1)
 
 
@@ -151,3 +155,4 @@ if __name__ == '__main__':
     test_integration('postgres_orders_popular_day_of_week', 'requests/postgres.json')
     test_integration('bigquery_orders_popular_day_of_week', 'requests/bigquery.json')
     test_integration('dbt_dag', 'requests/dbt.json')
+    test_integration('custom_extractor', 'requests/custom_extractor.json')

@@ -10,9 +10,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import logging
-from typing import Optional
+from typing import Optional, List
 
-from openlineage.airflow.extractors.base import BaseExtractor, StepMetadata
+from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
 
 log = logging.getLogger(__file__)
 
@@ -33,16 +33,18 @@ class GreatExpectationsExtractorImpl(BaseExtractor):
     Great Expectations extractor extracts validation data from CheckpointResult object and
     parses it via ExpectationsParsers. Results are used to prepare data quality facet.
     """
-    operator_class = GreatExpectationsOperator
-
     def __init__(self, operator):
         super().__init__(operator)
         self.result = None
 
-    def extract(self) -> Optional[StepMetadata]:
+    @classmethod
+    def get_operator_classnames(cls) -> List[str]:
+        return [GreatExpectationsOperator.__name__] if GreatExpectationsOperator else []
+
+    def extract(self) -> Optional[TaskMetadata]:
         return None
 
-    def extract_on_complete(self, task_instance) -> Optional[StepMetadata]:
+    def extract_on_complete(self, task_instance) -> Optional[TaskMetadata]:
         return None
 
 
@@ -52,3 +54,7 @@ else:
     class GreatExpectationsExtractor:
         def __init__(self):
             raise RuntimeError('Great Expectations provider not found')
+
+        @classmethod
+        def get_operator_classnames(cls) -> List[str]:
+            return []

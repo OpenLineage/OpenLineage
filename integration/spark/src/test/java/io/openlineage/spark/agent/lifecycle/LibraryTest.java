@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -134,10 +135,29 @@ public class LibraryTest {
       ((Map<String, Object>) eventFields.get("run")).replace("runId", "fake_run_id");
 
       assertEquals(
-          OpenLineageClient.getObjectMapper().readValue(snapshot, mapTypeReference), eventFields);
+          stripSchemaURL(OpenLineageClient.getObjectMapper().readValue(snapshot, mapTypeReference)),
+          stripSchemaURL(eventFields));
     }
 
     verifySerialization(events);
+  }
+
+  Map<String, Object> stripSchemaURL(Map<String, Object> map) {
+    List<String> toRemove = new ArrayList<>();
+    for (String key : map.keySet()) {
+      if (key.endsWith("schemaURL")) {
+        toRemove.add(key);
+      } else {
+        Object value = map.get(key);
+        if (value instanceof Map) {
+          stripSchemaURL((Map<String, Object>) value);
+        }
+      }
+    }
+    for (String key : toRemove) {
+      map.remove(key);
+    }
+    return map;
   }
 
   @Test
