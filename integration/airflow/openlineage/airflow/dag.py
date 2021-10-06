@@ -14,8 +14,7 @@ import os
 import copy
 from typing import Optional
 
-import airflow.models
-from airflow.models import DagRun
+from airflow.models import DAG as AIRFLOW_DAG
 from airflow.utils.db import create_session
 from airflow.utils.state import State
 from openlineage.airflow.extractors import TaskMetadata, BaseExtractor
@@ -39,6 +38,11 @@ if not _DAG_NAMESPACE:
 _ADAPTER = OpenLineageAdapter()
 extractor_mapper = Extractors()
 extractors = {}
+
+
+def has_lineage_backend_setup():
+    from airflow.configuration import conf
+    return conf.get("lineage", "backend") == "openlineage.lineage_backend.OpenLineageBackend"
 
 
 def lineage_run_id(run_id, task):
@@ -105,7 +109,7 @@ def openlineage_job_name(dag_id: str, task_id: str) -> str:
     return f'{dag_id}.{task_id}'
 
 
-class DAG(airflow.models.DAG):
+class DAG(AIRFLOW_DAG):
     def __init__(self, *args, **kwargs):
         self.log.info("openlineage-airflow dag starting")
         macros = {}
@@ -118,6 +122,8 @@ class DAG(airflow.models.DAG):
             for operator, extractor in kwargs['lineage_custom_extractors'].items():
                 extractor_mapper.add_extractor(operator, extractor)
             del kwargs['lineage_custom_extractors']
+
+        self.has_lineage_backend = has_lineage_backend_setup()
         super().__init__(*args, **kwargs)
 
     def add_task(self, task):
@@ -153,7 +159,7 @@ class DAG(airflow.models.DAG):
     # tasks can be safely marked as started as well.
     # Doing it other way would require to hook up to
     # scheduler, where tasks are actually started
-    def _register_dagrun(self, dagrun: DagRun, is_external_trigger: bool, execution_date: str):
+    def _register_dagrun(self, dagrun, is_external_trigger: bool, execution_date: str):
         self.log.debug(f"self.task_dict: {self.task_dict}")
         # Register each task in the DAG
         for task_id, task in self.task_dict.items():
@@ -190,6 +196,11 @@ class DAG(airflow.models.DAG):
 
     def handle_callback(self, *args, **kwargs):
         self.log.debug(f"handle_callback({args}, {kwargs})")
+
+        if has_lineage_backend_setup():
+            self.log.info("lineage backend is set up; dag is skipping COMPLETE events")
+            return super(DAG, self).handle_callback(*args, **kwargs)
+
         try:
             dagrun = args[0]
             self.log.debug(f"handle_callback() dagrun : {dagrun}")
