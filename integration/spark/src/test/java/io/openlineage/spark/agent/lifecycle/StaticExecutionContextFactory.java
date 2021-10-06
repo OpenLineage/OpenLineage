@@ -5,9 +5,10 @@ import io.openlineage.spark.agent.OpenLineageContext;
 import io.openlineage.spark.agent.OpenLineageSparkListener;
 import io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.CommandPlanVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.DatasetSourceVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRDDVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRelationVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.QueryPlanVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.VisitorFactory;
 import java.net.URI;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -19,6 +20,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.spark.sql.SQLContext;
+import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.SQLExecution;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
@@ -77,16 +79,18 @@ public class StaticExecutionContextFactory extends ContextFactory {
               List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> commonDatasetVisitors =
                   commonDatasetVisitors(sqlContext, sparkContext);
 
-              InputDatasetVisitors inputDatasetVisitors =
-                  new InputDatasetVisitors(commonDatasetVisitors);
-              OutputDatasetVisitors outputDatasetVisitors =
-                  new OutputDatasetVisitors(sqlContext, commonDatasetVisitors);
+              VisitorFactory visitorFactory =
+                  VisitorFactoryProvider.getInstance(SparkSession.active());
+
+              List<QueryPlanVisitor<LogicalPlan, OpenLineage.InputDataset>> inputDatasets =
+                  visitorFactory.getInputVisitors(sqlContext, sparkContext.getJobNamespace());
+
+              List<QueryPlanVisitor<LogicalPlan, OpenLineage.OutputDataset>> outputDatasets =
+                  visitorFactory.getOutputVisitors(sqlContext, sparkContext.getJobNamespace());
+
               SparkSQLExecutionContext sparksql =
                   new SparkSQLExecutionContext(
-                      executionId,
-                      sparkContext,
-                      outputDatasetVisitors.get(),
-                      inputDatasetVisitors.get()) {
+                      executionId, sparkContext, outputDatasets, inputDatasets) {
                     @Override
                     public ZonedDateTime toZonedTime(long time) {
                       return getZonedTime();
@@ -124,7 +128,6 @@ public class StaticExecutionContextFactory extends ContextFactory {
       commonDatasetVisitors(SQLContext sqlContext, OpenLineageContext sparkContext) {
     List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> list = new ArrayList<>();
     list.add(new LogicalRelationVisitor(sqlContext.sparkContext(), sparkContext.getJobNamespace()));
-    list.add(new DatasetSourceVisitor());
     list.add(new LogicalRDDVisitor());
     list.add(new CommandPlanVisitor(new ArrayList<>(list)));
     if (BigQueryNodeVisitor.hasBigQueryClasses()) {
