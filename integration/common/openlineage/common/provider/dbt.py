@@ -1,5 +1,6 @@
 import datetime
 import json
+
 import yaml
 import os
 import uuid
@@ -112,28 +113,36 @@ class DbtArtifactProcessor:
         return DbtEvents(start_events, complete_events, fail_events)
 
     @staticmethod
-    def load_metadata(path: str, desired_schema_version: str) -> Dict:
+    def load_metadata(path: str, desired_schema_versions: List[str]) -> Dict:
         with open(path, 'r') as f:
             metadata = json.load(f)
             schema_version = get_from_nullable_chain(metadata, ['metadata', 'dbt_schema_version'])
-            if schema_version != desired_schema_version:
+            if schema_version not in desired_schema_versions:
                 # Maybe we should accept it and throw exception only if it substantially differs
                 raise ValueError(f"Wrong version of dbt metadata: {schema_version}, "
-                                 f"should be {desired_schema_version}")
+                                 f"should be in {desired_schema_versions}")
             return metadata
 
     @classmethod
     def load_manifest(cls, path: str) -> Dict:
-        return cls.load_metadata(path, "https://schemas.getdbt.com/dbt/manifest/v2.json")
+        return cls.load_metadata(path, [
+            "https://schemas.getdbt.com/dbt/manifest/v2.json",
+            "https://schemas.getdbt.com/dbt/manifest/v3.json",
+        ])
 
     @classmethod
     def load_run_results(cls, path: str) -> Dict:
-        return cls.load_metadata(path, "https://schemas.getdbt.com/dbt/run-results/v2.json")
+        return cls.load_metadata(path, [
+            "https://schemas.getdbt.com/dbt/run-results/v2.json",
+            "https://schemas.getdbt.com/dbt/run-results/v3.json"
+        ])
 
     @classmethod
     def load_catalog(cls, path: str) -> Optional[Dict]:
         try:
-            return cls.load_metadata(path, "https://schemas.getdbt.com/dbt/catalog/v1.json")
+            return cls.load_metadata(path, [
+                "https://schemas.getdbt.com/dbt/catalog/v1.json"
+            ])
         except FileNotFoundError:
             return None
 
