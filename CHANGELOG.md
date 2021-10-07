@@ -1,6 +1,12 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.2.2...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.2.3...HEAD)
+
+## [0.2.3](https://github.com/OpenLineage/OpenLineage/releases/tag/0.2.3) - 2021-10-07
+
+### Fixed
+
+* Add dbt `v3` manifest support [@mobuchowski](https://github.com/mobuchowski)
 
 ## [0.2.2](https://github.com/OpenLineage/OpenLineage/releases/tag/0.2.2) - 2021-09-08
 
