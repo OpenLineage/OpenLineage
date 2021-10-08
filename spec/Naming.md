@@ -30,8 +30,8 @@ Identifier:
 
 #### Redshift:
 Datasource hierarchy:
- * Host
- * Port
+ * Host: examplecluster.\<XXXXXXXXXXXX>.us-west-2.redshift.amazonaws.com
+ * Port: 5439
  
 Naming hierarchy:
  * Database
