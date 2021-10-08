@@ -27,6 +27,23 @@ Identifier:
    * Authority = {host}:{port}
  * Unique name: {database}.{schema}.{table}
    * URI =  postgres://{host}:{port}/{database}.{schema}.{table}
+
+#### Redshift:
+Datasource hierarchy:
+ * Host
+ * Port
+
+Naming hierarchy:
+ * Database
+ * Schema
+ * Table
+
+Identifier:
+ * Namespace: redshift://{host}:{port} of the cluster instance.
+   * Scheme = redshift
+   * Authority = {host}:{port}
+ * Unique name: {database}.{schema}.{table}
+   * URI =  redshift://{host}:{port}/{database}.{schema}.{table}
   
 #### Snowflake
 See: [Object Identifiers — Snowflake Documentation](https://docs.snowflake.com/en/sql-reference/identifiers.html)
