@@ -23,6 +23,7 @@ __version__ = "0.2.3"
 
 requirements = [
     "attrs>=19.3.0",
+    "Jinja2",
     f"openlineage-python=={__version__}",
     "sqlparse>=0.3.1",
 ]

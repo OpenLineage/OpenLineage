@@ -1,0 +1,147 @@
+{
+	"metadata": {
+		"dbt_schema_version": "https://schemas.getdbt.com/dbt/manifest/v2.json",
+		"dbt_version": "0.20.0rc2",
+		"generated_at": "2021-07-07T12:44:44.367050Z",
+		"invocation_id": "b8513ee2-6c1f-44ed-a13d-3fc35ef81004",
+		"env": {},
+		"project_id": "dc5b36ac8a5ba619cc093366efe36d3d",
+		"user_id": "7bae5953-769e-4aa1-81f6-55a82ac4d4d4",
+		"send_anonymous_usage_stats": true,
+		"adapter_type": "redshift"
+	},
+	"nodes": {
+		"model.dbt_test.test_model": {
+			"raw_sql": "select *\nfrom {{ source('dbt_test1', 'source_table') }}\nwhere id = 1",
+			"compiled": true,
+			"resource_type": "model",
+			"depends_on": {
+				"macros": ["macro.dbt.create_or_replace_view", "macro.dbt.persist_docs"],
+				"nodes": ["source.dbt_test.dbt_test1.source_table"]
+			},
+			"config": {
+				"enabled": true,
+				"materialized": "view",
+				"persist_docs": {},
+				"vars": {},
+				"quoting": {},
+				"column_types": {},
+				"alias": null,
+				"schema": null,
+				"database": null,
+				"tags": [],
+				"full_refresh": null,
+				"post-hook": [],
+				"pre-hook": []
+			},
+			"database": "foo_db_name",
+			"schema": "foo_schema",
+			"fqn": ["dbt_test", "example", "test_model"],
+			"unique_id": "model.dbt_test.test_model",
+			"package_name": "dbt_test",
+			"root_path": "/home/example/code/dbt-test",
+			"path": "example/test_second_parallel_dbt_model.sql",
+			"original_file_path": "models/example/test_model.sql",
+			"name": "test_model",
+			"alias": "test_model",
+			"checksum": {
+				"name": "sha256",
+				"checksum": "318f640067e471c6a2e8d370039786939aaf4197c4be4ee64677e59f1f1a9a34"
+			},
+			"tags": [],
+			"refs": [],
+			"sources": [
+				["dbt_test1", "source_table"]
+			],
+			"description": "A starter dbt model",
+			"columns": {
+				"id": {
+					"name": "id",
+					"description": "The primary key for this table",
+					"meta": {},
+					"data_type": null,
+					"quote": null,
+					"tags": []
+				}
+			},
+			"meta": {},
+			"docs": {
+				"show": true
+			},
+			"patch_path": "dbt_test://models/example/schema.yml",
+			"compiled_path": "target/compiled/dbt_test/models/example/test_model.sql",
+			"build_path": "target/run/dbt_test/models/example/test_model.sql",
+			"deferred": false,
+			"unrendered_config": {},
+			"created_at": 1625661884,
+			"compiled_sql": "select *\nfrom `speedy-vim-308516`.`dbt_test1`.`source_table`\nwhere id = 1",
+			"extra_ctes_injected": true,
+			"extra_ctes": [],
+			"relation_name": "`foo_db_name`.`foo_schema`.`test_model`"
+		}
+	},
+  	"sources": {
+		"source.dbt_test.dbt_test1.source_table": {
+			"fqn": ["dbt_test", "example", "dbt_test1", "source_table"],
+			"database": "foo_db_name",
+			"schema": "foo_schema",
+			"unique_id": "source.dbt_test.dbt_test1.source_table",
+			"package_name": "dbt_test",
+			"root_path": "/home/example/code/dbt-test",
+			"path": "models/example/schema.yml",
+			"original_file_path": "models/example/schema.yml",
+			"name": "source_table",
+			"source_name": "dbt_test1",
+			"source_description": "",
+			"loader": "",
+			"identifier": "source_table",
+			"resource_type": "source",
+			"quoting": {
+				"database": null,
+				"schema": null,
+				"identifier": null,
+				"column": null
+			},
+			"loaded_at_field": null,
+			"freshness": {
+				"warn_after": null,
+				"error_after": null,
+				"filter": null
+			},
+			"external": null,
+			"description": "",
+			"columns": {},
+			"meta": {},
+			"source_meta": {},
+			"tags": [],
+			"config": {
+				"enabled": true
+			},
+			"patch_path": null,
+			"unrendered_config": {},
+			"relation_name": "`foo_db_name`.`foo_schema`.`source_table`",
+			"created_at": 1625661884
+		}
+	},
+	"macros": {},
+	"docs": {
+		"dbt.__overview__": {
+			"unique_id": "dbt.__overview__",
+			"package_name": "dbt",
+			"root_path": "/home/example/tools/pyenv/versions/3.9.2/lib/python3.9/site-packages/dbt/include/global_project",
+			"path": "overview.md",
+			"original_file_path": "docs/overview.md",
+			"name": "__overview__",
+			"block_contents": "### Welcome!\n\nWelcome to the auto-generated documentation for your dbt project!\n\n### Navigation\n\nYou can use the `Project` and `Database` navigation tabs on the left side of the window to explore the models\nin your project.\n\n#### Project Tab\nThe `Project` tab mirrors the directory structure of your dbt project. In this tab, you can see all of the\nmodels defined in your dbt project, as well as models imported from dbt packages.\n\n#### Database Tab\nThe `Database` tab also exposes your models, but in a format that looks more like a database explorer. This view\nshows relations (tables and views) grouped into database schemas. Note that ephemeral models are _not_ shown\nin this interface, as they do not exist in the database.\n\n### Graph Exploration\nYou can click the blue icon on the bottom-right corner of the page to view the lineage graph of your models.\n\nOn model pages, you'll see the immediate parents and children of the model you're exploring. By clicking the `Expand`\nbutton at the top-right of this lineage pane, you'll be able to see all of the models that are used to build,\nor are built from, the model you're exploring.\n\nOnce expanded, you'll be able to use the `--models` and `--exclude` model selection syntax to filter the\nmodels in the graph. For more information on model selection, check out the [dbt docs](https://docs.getdbt.com/docs/model-selection-syntax).\n\nNote that you can also right-click on models to interactively filter and explore the graph.\n\n---\n\n### More information\n\n- [What is dbt](https://docs.getdbt.com/docs/overview)?\n- Read the [dbt viewpoint](https://docs.getdbt.com/docs/viewpoint)\n- [Installation](https://docs.getdbt.com/docs/installation)\n- Join the [chat](https://community.getdbt.com/) on Slack for live questions and support."
+		}
+	},
+	"exposures": {},
+	"selectors": {},
+	"disabled": [],
+	"parent_map": {
+		"model.dbt_test.test_model": ["source.dbt_test.dbt_test1.source_table"]
+	},
+	"child_map": {
+		"model.dbt_test.test_model": []
+	}
+}

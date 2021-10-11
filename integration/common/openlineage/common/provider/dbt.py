@@ -1,4 +1,6 @@
 import datetime
+
+from jinja2 import Environment, Template, meta
 import json
 
 import yaml
@@ -63,7 +65,6 @@ class ParentRunMetadata:
             name=self.job_name,
             namespace=self.job_namespace
         )
-
 
 class DbtArtifactProcessor:
     def __init__(
@@ -173,9 +174,28 @@ class DbtArtifactProcessor:
             return None
 
     @staticmethod
+    def env_var(var: str, default: Optional[str] = None) -> str:
+        """The env_var() function. Return the environment variable named 'var'.
+        If there is no such environment variable set, return the default.
+
+        If the default is None, raise an exception for an undefined variable.
+        """
+        if var in os.environ:
+            return os.environ[var]
+        elif default is not None:
+            return default
+
+    @staticmethod
     def load_yaml(path: str) -> Dict:
         with open(path, 'r') as f:
-            return yaml.load(f, Loader=yaml.FullLoader)
+            env = Environment()
+
+            # When using env vars for Redshift port, it must be "{{ env_var('PORT') | as_number }}"
+            # otherwise Redshift driver will complain, hence the need to add the "as_number" filter
+            env.filters.update({"as_number": lambda x: x})
+            templated_yaml = env.from_string(f.read())
+        rendered_yaml = templated_yaml.render(env_var=DbtArtifactProcessor.env_var)
+        return yaml.load(rendered_yaml, Loader=yaml.FullLoader)
 
     def parse_run(
         self,
@@ -417,14 +437,16 @@ class DbtArtifactProcessor:
                 node.catalog_node,
                 [
                     ['stats', 'num_bytes', 'value'],  # bigquery
-                    ['stats', 'bytes', 'value']  # snowflake
+                    ['stats', 'bytes', 'value'],  # snowflake
+                    ['stats', 'size', 'value'] # redshift (Note: size is calculated from a count of 1MB blocks - https://docs.aws.amazon.com/redshift/latest/dg/r_SVV_TABLE_INFO.html)
                 ]
             )
             rows = get_from_multiple_chains(
                 node.catalog_node,
                 [
                     ['stats', 'num_rows', 'value'],  # bigquery
-                    ['stats', 'row_count', 'value']  # snowflake
+                    ['stats', 'row_count', 'value'],  # snowflake
+                    ['stats', 'rows', 'value'] # redshift
                 ]
             )
 
@@ -515,6 +537,8 @@ class DbtArtifactProcessor:
             return f"snowflake://{profile['account']}"
         elif profile['type'] == 'bigquery':
             return "bigquery"
+        elif profile['type'] == 'redshift':
+            return f"redshift://{profile['host']}:{profile['port']}"
         else:
             raise NotImplementedError(
                 f"Only 'snowflake' and 'bigquery' adapters are supported right now. "
