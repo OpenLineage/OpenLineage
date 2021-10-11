@@ -1,6 +1,6 @@
 import datetime
 
-from jinja2 import Environment, Template, meta
+from jinja2 import Environment
 import json
 
 import yaml
@@ -438,7 +438,7 @@ class DbtArtifactProcessor:
                 [
                     ['stats', 'num_bytes', 'value'],  # bigquery
                     ['stats', 'bytes', 'value'],  # snowflake
-                    ['stats', 'size', 'value'] # redshift (Note: size is calculated from a count of 1MB blocks - https://docs.aws.amazon.com/redshift/latest/dg/r_SVV_TABLE_INFO.html)
+                    ['stats', 'size', 'value'] # redshift (Note: size is calculated from a count of 1MB blocks)
                 ]
             )
             rows = get_from_multiple_chains(
