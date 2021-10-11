@@ -179,7 +179,17 @@ def test_dbt_parse_dbt_test_event(mock_datetime, mock_uuid, parent_run_metadata)
 
 
 @mock.patch('uuid.uuid4')
-@mock.patch.dict(os.environ, {"HOST": "foo_host", "PORT": "1111", "DB_NAME": "foo_db_name", "USER_NAME": "foo_user", "PASSWORD": "foo_password", "SCHEMA": "foo_schema"})
+@mock.patch.dict(
+    os.environ,
+    {
+        "HOST": "foo_host",
+        "PORT": "1111",
+        "DB_NAME": "foo_db_name",
+        "USER_NAME": "foo_user",
+        "PASSWORD": "foo_password",
+        "SCHEMA": "foo_schema"
+    }
+)
 def test_dbt_parse_profile_with_env_vars(mock_uuid, parent_run_metadata):
     mock_uuid.side_effect = [
         '6edf42ed-d8d0-454a-b819-d09b9067ff99',
