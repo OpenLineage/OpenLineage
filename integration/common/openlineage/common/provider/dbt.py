@@ -66,6 +66,7 @@ class ParentRunMetadata:
             namespace=self.job_namespace
         )
 
+
 class DbtArtifactProcessor:
     def __init__(
         self,
@@ -438,7 +439,7 @@ class DbtArtifactProcessor:
                 [
                     ['stats', 'num_bytes', 'value'],  # bigquery
                     ['stats', 'bytes', 'value'],  # snowflake
-                    ['stats', 'size', 'value'] # redshift (Note: size is calculated from a count of 1MB blocks)
+                    ['stats', 'size', 'value']  # redshift (Note: size = count of 1MB blocks)
                 ]
             )
             rows = get_from_multiple_chains(
@@ -446,7 +447,7 @@ class DbtArtifactProcessor:
                 [
                     ['stats', 'num_rows', 'value'],  # bigquery
                     ['stats', 'row_count', 'value'],  # snowflake
-                    ['stats', 'rows', 'value'] # redshift
+                    ['stats', 'rows', 'value']  # redshift
                 ]
             )
 
