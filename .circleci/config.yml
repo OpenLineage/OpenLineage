@@ -337,13 +337,13 @@ workflows:
       - unit-test-client-python
       - build-client-python:
           <<: *only_on_main
-          build_tag: .dev${CIRCLE_BUILD_NUM}
+          build_tag: ".dev<< pipeline.number >>"
           requires:
             - unit-test-client-python
       - unit-test-integration-common
       - build-integration-common:
           <<: *only_on_main
-          build_tag: .dev${CIRCLE_BUILD_NUM}
+          build_tag: ".dev<< pipeline.number >>"
           requires:
             - unit-test-integration-common
       - unit-test-integration-airflow
@@ -358,12 +358,12 @@ workflows:
               ignore: /pull\/[0-9]+/
       - build-integration-airflow:
           <<: *only_on_main
-          build_tag: .dev${CIRCLE_BUILD_NUM}
+          build_tag: ".dev<< pipeline.number >>"
           requires:
             - integration-test-integration-airflow
       - build-integration-dbt:
           <<: *only_on_main
-          build_tag: .dev${CIRCLE_BUILD_NUM}
+          build_tag: ".dev<< pipeline.number >>"
       - publish-snapshot-python:
           <<: *only_on_main
           context: release
