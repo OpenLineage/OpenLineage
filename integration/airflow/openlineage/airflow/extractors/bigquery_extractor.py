@@ -17,8 +17,6 @@ from typing import Optional, List
 
 import attr
 
-from airflow.models import BaseOperator
-
 from openlineage.client.facet import SqlJobFacet
 from openlineage.common.provider.bigquery import BigQueryDatasetsProvider, BigQueryErrorRunFacet
 from openlineage.common.sql import SqlParser
@@ -44,12 +42,12 @@ class SqlContext:
 
 
 class BigQueryExtractor(BaseExtractor):
-    def __init__(self, operator: BaseOperator):
+    def __init__(self, operator):
         super().__init__(operator)
 
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
-        return ['BigQueryOperator']
+        return ['BigQueryOperator', 'BigQueryExecuteQueryOperator']
 
     def extract(self) -> Optional[TaskMetadata]:
         return None

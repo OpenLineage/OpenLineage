@@ -31,6 +31,8 @@ fi
 if [[ -n "$CI" ]]; then
   echo $GCLOUD_SERVICE_KEY > gcloud/gcloud-service-key.json
   chmod 644 gcloud/gcloud-service-key.json
+  mkdir -p airflow/logs
+  chmod a+rwx -R airflow/logs
 fi
 
 # maybe overkill
@@ -44,7 +46,6 @@ dbt-bigquery==0.20.1
 ${OPENLINEAGE_AIRFLOW_WHL}
 EOL
 
-
 # Add revision to integration-requirements.txt
 cat > integration-requirements.txt <<EOL
 requests==2.24.0
@@ -54,4 +55,6 @@ retrying==1.3.3
 pytest==6.2.2
 EOL
 
-docker-compose up --build --force-recreate --exit-code-from integration
+docker-compose -f docker-compose-2.yml down
+docker-compose -f docker-compose-2.yml up --build --abort-on-container-exit airflow_init postgres
+docker-compose -f docker-compose-2.yml up --build --exit-code-from integration --scale airflow_init=0
