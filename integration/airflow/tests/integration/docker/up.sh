@@ -48,10 +48,11 @@ EOL
 # Add revision to integration-requirements.txt
 cat > integration-requirements.txt <<EOL
 requests==2.24.0
+setuptools==34.0.0
 psycopg2-binary==2.8.6
 httplib2>=0.18.1
 retrying==1.3.3
 pytest==6.2.2
 EOL
 
-docker-compose up --build --force-recreate --exit-code-from integration
+docker-compose up -V --build --force-recreate --exit-code-from integration
