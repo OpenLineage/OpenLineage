@@ -44,8 +44,9 @@ class Serde:
 
     @classmethod
     def to_dict(cls, obj):
-        dicted = attr.asdict(obj)
-        return cls.remove_nulls_and_enums(dicted)
+        if not isinstance(obj, dict):
+            obj = attr.asdict(obj)
+        return cls.remove_nulls_and_enums(obj)
 
     @classmethod
     def to_json(cls, obj):

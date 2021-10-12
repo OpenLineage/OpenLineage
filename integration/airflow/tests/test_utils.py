@@ -38,13 +38,13 @@ def test_get_connection_uri():
 
 def test_get_connection_from_uri():
     conn = Connection()
-    conn.parse_from_uri(AIRFLOW_CONN_URI)
+    conn.parse_from_uri(uri=AIRFLOW_CONN_URI)
     assert get_normalized_postgres_connection_uri(conn) == AIRFLOW_CONN_URI
 
 
 def test_get_normalized_postgres_connection_uri():
     conn = Connection()
-    conn.parse_from_uri("postgresql://localhost:5432/testdb")
+    conn.parse_from_uri(uri="postgresql://localhost:5432/testdb")
     assert get_normalized_postgres_connection_uri(conn) == AIRFLOW_CONN_URI
 
 
