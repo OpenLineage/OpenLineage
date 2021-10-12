@@ -121,6 +121,7 @@ class DbtArtifactProcessor:
             self.target = profile['target']
 
         profile = profile['outputs'][self.target]
+        self.adapter_type = profile['type']
 
         self.extract_dataset_namespace(profile)
         self.extract_job_namespace(profile)
@@ -185,6 +186,9 @@ class DbtArtifactProcessor:
             return os.environ[var]
         elif default is not None:
             return default
+        else:
+            msg = f"Env var required but not provided: '{var}'"
+            raise Exception(msg)
 
     @staticmethod
     def load_yaml(path: str) -> Dict:
@@ -452,7 +456,7 @@ class DbtArtifactProcessor:
             )
 
             if bytes:
-                bytes = int(bytes)
+                bytes = int(bytes) if self.adapter_type != 'redshift' else int(rows) * (2 ** 20)
             if rows:
                 rows = int(rows)
 
@@ -542,7 +546,7 @@ class DbtArtifactProcessor:
             return f"redshift://{profile['host']}:{profile['port']}"
         else:
             raise NotImplementedError(
-                f"Only 'snowflake' and 'bigquery' adapters are supported right now. "
+                f"Only 'snowflake', 'bigquery', and 'redshift' adapters are supported right now. "
                 f"Passed {profile['type']}"
             )
 
