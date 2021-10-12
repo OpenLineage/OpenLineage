@@ -7,7 +7,6 @@ import io.openlineage.spark.agent.lifecycle.plan.CommandPlanVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRDDVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRelationVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.QueryPlanVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.VisitorFactory;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;

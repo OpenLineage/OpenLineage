@@ -1,6 +1,7 @@
-package io.openlineage.spark.agent.lifecycle.plan;
+package io.openlineage.spark.agent.lifecycle;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.lifecycle.plan.QueryPlanVisitor;
 import java.util.List;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -12,7 +13,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
  * VisitorFactory#getOutputVisitors(SQLContext, String)} to retrieve Visitors for {@link
  * OpenLineage.OutputDataset}
  */
-public interface VisitorFactory {
+interface VisitorFactory {
 
   List<QueryPlanVisitor<LogicalPlan, OpenLineage.InputDataset>> getInputVisitors(
       SQLContext sqlContext, String jobNamespace);

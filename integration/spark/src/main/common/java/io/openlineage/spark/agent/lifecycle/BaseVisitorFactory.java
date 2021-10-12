@@ -14,7 +14,6 @@ import io.openlineage.spark.agent.lifecycle.plan.LogicalRDDVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRelationVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.QueryPlanVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.SaveIntoDataSourceCommandVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.VisitorFactory;
 import io.openlineage.spark.agent.lifecycle.plan.wrapper.InputDatasetVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.wrapper.OutputDatasetVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.wrapper.OutputDatasetWithMetadataVisitor;
@@ -24,7 +23,7 @@ import java.util.stream.Collectors;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 
-public abstract class BaseVisitorFactory implements VisitorFactory {
+abstract class BaseVisitorFactory implements VisitorFactory {
 
   protected List<QueryPlanVisitor<? extends LogicalPlan, OpenLineage.Dataset>>
       getBaseCommonVisitors(SQLContext sqlContext, String jobNamespace) {

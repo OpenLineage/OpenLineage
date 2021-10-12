@@ -1,8 +1,7 @@
-package io.openlineage.spark3.agent.lifecycle.plan;
+package io.openlineage.spark.agent.lifecycle;
 
 import com.google.common.collect.ImmutableList;
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.lifecycle.BaseVisitorFactory;
 import io.openlineage.spark.agent.lifecycle.plan.QueryPlanVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.wrapper.OutputDatasetVisitor;
 import io.openlineage.spark2.agent.lifecycle.plan.DatasetSourceVisitor;
@@ -10,7 +9,7 @@ import java.util.List;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 
-public class VisitorFactoryImpl extends BaseVisitorFactory {
+class Spark2VisitorFactoryImpl extends BaseVisitorFactory {
 
   @Override
   public List<QueryPlanVisitor<LogicalPlan, OpenLineage.OutputDataset>> getOutputVisitors(
