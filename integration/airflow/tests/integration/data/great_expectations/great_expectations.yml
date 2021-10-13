@@ -21,7 +21,7 @@ datasources:
     class_name: SqlAlchemyDatasource
     module_name: great_expectations.datasource
     credentials:
-      url: sqlite:///opt/data/great_expectations/data/sqlite.data
+      url: sqlite:////opt/data/great_expectations/data/sqlite.data
     data_asset_type:
       module_name:
       class_name: SqlAlchemyDataset

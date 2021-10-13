@@ -13,9 +13,10 @@ from contextlib import closing
 from typing import Optional, List
 from urllib.parse import urlparse
 
-from airflow.hooks.postgres_hook import PostgresHook
-
-from openlineage.airflow.utils import get_normalized_postgres_connection_uri, get_connection
+from openlineage.airflow.utils import (
+    get_normalized_postgres_connection_uri,
+    get_connection, safe_import_airflow
+)
 from openlineage.airflow.extractors.base import (
     BaseExtractor,
     TaskMetadata
@@ -137,6 +138,10 @@ class PostgresExtractor(BaseExtractor):
         """
 
     def _get_hook(self):
+        PostgresHook = safe_import_airflow(
+            airflow_1_path="airflow.hooks.postgres_hook.PostgresHook",
+            airflow_2_path="airflow.providers.postgres.hooks.postgres.PostgresHook"
+        )
         return PostgresHook(
             postgres_conn_id=self.operator.postgres_conn_id,
             schema=self.operator.database

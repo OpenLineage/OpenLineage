@@ -1,8 +1,8 @@
 import attr
 from abc import ABC, abstractmethod
-from typing import List, Dict, Optional
 
 from openlineage.client.run import Dataset
+from typing import List, Dict, Optional
 from pkg_resources import parse_version
 
 from airflow.version import version as AIRFLOW_VERSION

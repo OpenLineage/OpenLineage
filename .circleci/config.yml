@@ -122,7 +122,7 @@ jobs:
       - run: |
           cd ../../client/java
           ./gradlew  --no-daemon publishToMavenLocal
-          cd - 
+          cd -
           # Get, then decode the GPG private key used to sign *.jar
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
           export RELEASE_PASSWORD=$(echo $SONATYPE_PASSWORD)
@@ -246,7 +246,7 @@ jobs:
           paths:
             - ~/.gradle
 
-  unit-test-integration-airflow:
+  unit-test-integration-airflow-1:
     working_directory: ~/openlineage/integration/airflow
     docker:
       - image: circleci/python:3.6
@@ -254,10 +254,25 @@ jobs:
       - *checkout_project_root
       - *install_python_client
       - *install_integration_common
-      - run: pip install -e .[dev]
+      - run: pip install -e .[dev,airflow-1]
       - run: flake8 --exclude integration
       - run: airflow initdb
       - run: pytest --cov=openlineage --ignore tests/integration tests/
+      - run: bash <(curl -s https://codecov.io/bash)
+
+
+  unit-test-integration-airflow-2:
+    working_directory: ~/openlineage/integration/airflow
+    docker:
+      - image: circleci/python:3.6
+    steps:
+      - *checkout_project_root
+      - *install_python_client
+      - *install_integration_common
+      - run: pip install -e .[dev,airflow-2]
+      - run: flake8 --exclude integration
+      - run: airflow db init
+      - run: pytest --cov=openlineage --ignore tests/integration --ignore tests/test_openlineage_dag.py tests/
       - run: bash <(curl -s https://codecov.io/bash)
 
   build-integration-airflow:
@@ -287,6 +302,19 @@ jobs:
       - run: cp -r ../client/python python
       - run: docker build -f airflow/Dockerfile.tests -t openlineage-airflow-base .
       - run: ./airflow/tests/integration/docker/up.sh
+
+  integration-test-integration-airflow-2:
+    working_directory: ~/openlineage/integration/
+    machine: true
+    steps:
+      - *checkout_project_root
+      - gcp-cli/install
+      - gcp-cli/initialize
+      - run: ../.circleci/get-docker-compose.sh
+      - run: cp -r ../client/python python
+      - run: docker build -f airflow/Dockerfile.tests -t openlineage-airflow-base .
+      - run: ./airflow/tests/integration/docker/up-2.sh
+
 
   publish-snapshot-python:
     working_directory: ~/openlineage
@@ -331,20 +359,30 @@ workflows:
       - unit-test-client-python
       - build-client-python:
           <<: *only_on_main
-          build_tag: .dev${CIRCLE_BUILD_NUM}
+          build_tag: ".dev<< pipeline.number >>"
           requires:
             - unit-test-client-python
       - unit-test-integration-common
       - build-integration-common:
           <<: *only_on_main
-          build_tag: .dev${CIRCLE_BUILD_NUM}
+          build_tag: ".dev<< pipeline.number >>"
           requires:
             - unit-test-integration-common
-      - unit-test-integration-airflow
+      - unit-test-integration-airflow-1
+      - unit-test-integration-airflow-2
       - integration-test-integration-airflow:
           context: integration-tests
           requires:
-            - unit-test-integration-airflow
+            - unit-test-integration-airflow-1
+            - unit-test-integration-common
+            - unit-test-client-python
+          filters:
+            branches:
+              ignore: /pull\/[0-9]+/
+      - integration-test-integration-airflow-2:
+          context: integration-tests
+          requires:
+            - unit-test-integration-airflow-2
             - unit-test-integration-common
             - unit-test-client-python
           filters:
@@ -352,12 +390,12 @@ workflows:
               ignore: /pull\/[0-9]+/
       - build-integration-airflow:
           <<: *only_on_main
-          build_tag: .dev${CIRCLE_BUILD_NUM}
+          build_tag: ".dev<< pipeline.number >>"
           requires:
             - integration-test-integration-airflow
       - build-integration-dbt:
           <<: *only_on_main
-          build_tag: .dev${CIRCLE_BUILD_NUM}
+          build_tag: ".dev<< pipeline.number >>"
       - publish-snapshot-python:
           <<: *only_on_main
           context: release

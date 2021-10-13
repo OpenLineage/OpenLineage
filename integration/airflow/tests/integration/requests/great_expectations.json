@@ -5,14 +5,10 @@
             {
                 "facets": {
                     "dataSource": {
-                        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
-                        "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
                         "name": "sqlite",
-                        "uri": "sqlite:/opt/data/great_expectations/data/sqlite.data"
+                        "uri": "sqlite://opt/data/great_expectations/data/sqlite.data"
                     },
                     "schema": {
-                        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
-                        "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
                         "fields": [
                             {
                                 "name": "user_id",
@@ -35,8 +31,6 @@
                 },
                 "inputFacets": {
                     "dataQuality": {
-                        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
-                        "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataQualityMetricsInputDatasetFacet",
                         "columnMetrics": {
                             "amount": {
                                 "count": 10,
@@ -55,8 +49,6 @@
                         "rowCount": 10
                     },
                     "dataQualityMetrics": {
-                        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
-                        "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataQualityMetricsInputDatasetFacet",
                         "columnMetrics": {
                             "amount": {
                                 "count": 10,
@@ -75,8 +67,6 @@
                         "rowCount": 10
                     },
                     "greatExpectations_assertions": {
-                        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
-                        "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/common/provider/ge-assertions-dataset-facet.json",
                         "assertions": [
                             {
                                 "expectationType": "expect_table_row_count_to_be_between",
@@ -130,12 +120,9 @@
             "namespace": "food_delivery"
         },
         "outputs": [],
-        "producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/common/openlineage/provider/great_expectations",
         "run": {
             "facets": {
                 "great_expectations_meta": {
-                    "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
-                    "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/common/provider/ge-run-facet.json",
                     "batch_kwargs": {
                         "data_asset_name": "sqlite__data",
                         "datasource": "sqlite__data",
@@ -160,14 +147,10 @@
             {
                 "facets": {
                     "dataSource": {
-                        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
-                        "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
                         "name": "file",
                         "uri": "file://"
                     },
                     "schema": {
-                        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
-                        "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
                         "fields": [
                             {
                                 "name": "user_id",
@@ -190,8 +173,6 @@
                 },
                 "inputFacets": {
                     "dataQuality": {
-                        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
-                        "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataQualityMetricsInputDatasetFacet",
                         "columnMetrics": {
                             "amount": {
                                 "count": 10,
@@ -210,8 +191,6 @@
                         "rowCount": 10
                     },
                     "dataQualityMetrics": {
-                        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
-                        "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataQualityMetricsInputDatasetFacet",
                         "columnMetrics": {
                             "amount": {
                                 "count": 10,
@@ -230,8 +209,6 @@
                         "rowCount": 10
                     },
                     "greatExpectations_assertions": {
-                        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
-                        "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/common/provider/ge-assertions-dataset-facet.json",
                         "assertions": [
                             {
                                 "expectationType": "expect_table_row_count_to_be_between",
@@ -285,12 +262,9 @@
             "namespace": "food_delivery"
         },
         "outputs": [],
-        "producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/common/openlineage/provider/great_expectations",
         "run": {
             "facets": {
                 "great_expectations_meta": {
-                    "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
-                    "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/common/provider/ge-run-facet.json",
                     "batch_kwargs": {
                         "data_asset_name": "dataset",
                         "datasource": "file__data",
@@ -315,14 +289,10 @@
             {
                 "facets": {
                     "dataSource": {
-                        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
-                        "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
                         "name": "sqlite",
-                        "uri": "sqlite:/opt/data/great_expectations/data/sqlite.data"
+                        "uri": "sqlite://opt/data/great_expectations/data/sqlite.data"
                     },
                     "schema": {
-                        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
-                        "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
                         "fields": [
                             {
                                 "name": "user_id",
@@ -345,8 +315,6 @@
                 },
                 "inputFacets": {
                     "dataQuality": {
-                        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
-                        "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataQualityMetricsInputDatasetFacet",
                         "columnMetrics": {
                             "amount": {
                                 "count": 10,
@@ -365,8 +333,6 @@
                         "rowCount": 10
                     },
                     "dataQualityMetrics": {
-                        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
-                        "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataQualityMetricsInputDatasetFacet",
                         "columnMetrics": {
                             "amount": {
                                 "count": 10,
@@ -385,8 +351,6 @@
                         "rowCount": 10
                     },
                     "greatExpectations_assertions": {
-                        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
-                        "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/common/provider/ge-assertions-dataset-facet.json",
                         "assertions": [
                             {
                                 "expectationType": "expect_table_row_count_to_be_between",
@@ -440,12 +404,9 @@
             "namespace": "food_delivery"
         },
         "outputs": [],
-        "producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/common/openlineage/provider/great_expectations",
         "run": {
             "facets": {
                 "great_expectations_meta": {
-                    "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
-                    "_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/common/provider/ge-run-facet.json",
                     "batch_kwargs": {
                         "data_asset_name": "sqlite__data",
                         "datasource": "sqlite__data",

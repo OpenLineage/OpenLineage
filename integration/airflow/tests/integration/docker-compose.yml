@@ -48,6 +48,7 @@ services:
       context: .
       target: scheduler
     environment:
+      - AIRFLOW_WEBSERVER_HOST=airflow
       - AIRFLOW_FERNET_KEY=Z2uDm0ZL60fXNkEXG8LW99Ki2zf8wkmIltaTz1iQPDU=
       - AIRFLOW_DATABASE_HOST=postgres
       - AIRFLOW_DATABASE_NAME=airflow
@@ -77,6 +78,7 @@ services:
       context: .
       target: worker
     environment:
+      - AIRFLOW_WEBSERVER_HOST=airflow
       - AIRFLOW_FERNET_KEY=Z2uDm0ZL60fXNkEXG8LW99Ki2zf8wkmIltaTz1iQPDU=
       - AIRFLOW_DATABASE_HOST=postgres
       - AIRFLOW_DATABASE_NAME=airflow

@@ -13,12 +13,11 @@
 import os
 from unittest import mock
 
-from airflow.hooks.postgres_hook import PostgresHook
 from airflow.models import Connection
-from airflow.operators.postgres_operator import PostgresOperator
 from airflow.utils.dates import days_ago
+from airflow import DAG
 
-from openlineage.airflow import DAG
+from openlineage.airflow.utils import safe_import_airflow
 from openlineage.common.models import (
     DbTableName,
     DbTableSchema,
@@ -26,6 +25,16 @@ from openlineage.common.models import (
 )
 from openlineage.common.dataset import Source, Dataset
 from openlineage.airflow.extractors.postgres_extractor import PostgresExtractor
+
+PostgresOperator = safe_import_airflow(
+    airflow_1_path="airflow.operators.postgres_operator.PostgresOperator",
+    airflow_2_path="airflow.providers.postgres.operators.postgres.PostgresOperator"
+)
+
+PostgresHook = safe_import_airflow(
+    airflow_1_path="airflow.hooks.postgres_hook.PostgresHook",
+    airflow_2_path="airflow.providers.postgres.hooks.postgres.PostgresHook"
+)
 
 CONN_ID = 'food_delivery_db'
 CONN_URI = 'postgres://user:pass@localhost:5432/food_delivery'
@@ -145,7 +154,7 @@ def test_extract_authority_uri(get_connection, mock_get_table_schemas):
         [[DB_TABLE_SCHEMA], NO_DB_TABLE_SCHEMA]
 
     conn = Connection()
-    conn.parse_from_uri(CONN_URI)
+    conn.parse_from_uri(uri=CONN_URI)
     get_connection.return_value = conn
 
     expected_inputs = [
@@ -171,6 +180,10 @@ def test_get_table_schemas(mock_conn):
     # (1) Define a simple hook class for testing
     class TestPostgresHook(PostgresHook):
         conn_name_attr = 'test_conn_id'
+
+        def __init__(self, *args, **kwargs):
+            super(TestPostgresHook, self).__init__(*args, **kwargs)
+            self.schema = ''
 
     # (2) Mock calls to postgres
     rows = [
