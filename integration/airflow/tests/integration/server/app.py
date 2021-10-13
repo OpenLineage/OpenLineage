@@ -55,6 +55,7 @@ def lineage():
         """, {
             "body": json.dumps(request.json)
         })
+        logger.info(json.dumps(request.json, sort_keys=True))
         conn.commit()
         return '', 200
     elif request.method == 'GET':

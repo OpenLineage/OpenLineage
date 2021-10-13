@@ -14,7 +14,7 @@ import logging
 from datetime import datetime
 
 from airflow.operators.dummy_operator import DummyOperator
-from openlineage.airflow import DAG
+from airflow import DAG
 
 log = logging.getLogger(__name__)
 

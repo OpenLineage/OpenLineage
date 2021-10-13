@@ -38,15 +38,25 @@ extras_require = {
         "SQLAlchemy",       # must be set to 1.3.* for airflow tests compatibility
         "Flask-SQLAlchemy",  # must be set to 2.4.* for airflow tests compatibility
         "pandas-gbq==0.14.1",       # must be set to 0.14.* for airflow tests compatibility
-        "snowflake-connector-python",
+        "snowflake-connector-python"
+    ],
+    "airflow-1": [
         "apache-airflow==1.10.12",
         "apache-airflow[gcp_api]==1.10.12",
         "apache-airflow[google]==1.10.12",
         "apache-airflow[postgres]==1.10.12",
-        "airflow-provider-great-expectations==0.0.8"
+        "airflow-provider-great-expectations==0.0.8",
+    ],
+    "airflow-2": [
+        "apache-airflow==2.1.2",
+        "apache-airflow-providers-postgres==2.0.0",
+        "apache-airflow-providers-snowflake==2.1.0",
+        "apache-airflow-providers-google==5.0.0",
+        "airflow-provider-great-expectations==0.0.8",
     ],
 }
-extras_require["dev"] = set(sum(extras_require.values(), []))
+
+extras_require["dev"] = extras_require["tests"]
 
 setup(
     name="openlineage-airflow",
