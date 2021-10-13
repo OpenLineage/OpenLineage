@@ -12,10 +12,8 @@
  * limitations under the License.
  */
 
-package io.openlineage.proxy;
+package io.openlineage.proxy.api.models;
 
-import io.dropwizard.Configuration;
-import lombok.NoArgsConstructor;
-
-@NoArgsConstructor
-public final class ProxyConfig extends Configuration {}
+public final class LineageStream {
+  // TODO: Define lineage stream
+}

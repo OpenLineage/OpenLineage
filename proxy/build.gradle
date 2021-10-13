@@ -34,12 +34,13 @@ ext {
 }
 
 dependencies {
-    compileOnly "io.dropwizard:dropwizard-core:${dropwizardVersion}"
-    compileOnly "org.projectlombok:lombok:${lombokVersion}"
+    implementation "io.dropwizard:dropwizard-core:${dropwizardVersion}"
+    implementation "io.dropwizard:dropwizard-json-logging:${dropwizardVersion}"
+    implementation 'com.google.guava:guava:30.1.1-jre'
+    implementation "org.projectlombok:lombok:${lombokVersion}"
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
-    compileOnly 'com.google.guava:guava:30.1.1-jre'
 
-    testCompile "io.dropwizard:dropwizard-testing:${dropwizardVersion}"
+    testImplementation "io.dropwizard:dropwizard-testing:${dropwizardVersion}"
 }
 
 compileJava {
@@ -72,5 +73,12 @@ shadowJar {
 }
 
 runShadow {
-    args = ['server', 'config.yml']
+    args = ['server', 'proxy.yml']
+}
+
+spotless {
+    java {
+        googleJavaFormat()
+        removeUnusedImports()
+    }
 }
