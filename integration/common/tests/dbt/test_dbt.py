@@ -1,4 +1,5 @@
 import json
+import textwrap
 from enum import Enum
 from unittest import mock
 
@@ -210,3 +211,47 @@ def test_dbt_parse_profile_with_env_vars(mock_uuid, parent_run_metadata):
     ]
     with open('tests/dbt/env_vars/result.json', 'r') as f:
         assert events == json.load(f)
+
+
+def test_jinja_undefined_variable():
+    text = "{{ variable }}"
+    assert text == DbtArtifactProcessor.parse_jinja(text)
+
+
+def test_jinja_undefined_method():
+    text = "{{ method() }}"
+    assert text == DbtArtifactProcessor.parse_jinja(text)
+
+
+def test_jinja_defined():
+    os.environ['PORT_REDSHIFT'] = "13"
+    text = "{{ env_var('PORT_REDSHIFT') | as_number }}"
+    assert "13" == DbtArtifactProcessor.parse_jinja(text)
+    del os.environ['PORT_REDSHIFT']
+
+
+def test_jinja_undefined_method_with_args():
+    text = "# {{ does_not_exist(some_arg.subarg.subarg2) }}"
+    assert text == DbtArtifactProcessor.parse_jinja(text)
+
+
+def test_jinja_multiline():
+    os.environ['PORT_REDSHIFT'] = "13"
+
+    text = textwrap.dedent("""
+    # {{ does_not_exist(some_arg.subarg.subarg2) }}
+    {{ env_var('PORT_REDSHIFT') | as_number }}
+    {{ undefined }}
+    more_text
+    even_more_text""")
+
+    parsed = DbtArtifactProcessor.parse_jinja(text)
+
+    assert parsed == textwrap.dedent("""
+    # {{ does_not_exist(some_arg.subarg.subarg2) }}
+    13
+    {{ undefined }}
+    more_text
+    even_more_text""")
+
+    del os.environ['PORT_REDSHIFT']

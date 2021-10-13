@@ -1,6 +1,6 @@
 import datetime
 
-from jinja2 import Environment
+from jinja2 import Environment, Undefined
 import json
 
 import yaml
@@ -16,6 +16,23 @@ from openlineage.client.facet import DataSourceDatasetFacet, SchemaDatasetFacet,
 from openlineage.client.run import RunEvent, RunState, Run, Job, Dataset, OutputDataset
 from openlineage.client.facet import Assertion, DataQualityAssertionsDatasetFacet
 from openlineage.common.utils import get_from_nullable_chain, get_from_multiple_chains
+
+
+class SkipUndefined(Undefined):
+    def __getattr__(self, name):
+        return SkipUndefined(name=f"{self._undefined_name}.{name}")
+
+    def __str__(self):
+        return f"{{{{ {self._undefined_name} }}}}"
+
+    def _fail_with_undefined_error(self, *args, **kwargs):
+        pass
+
+    def __call__(self, *args, **kwargs):
+        arguments = ', '.join([
+            arg._undefined_name if isinstance(arg, SkipUndefined) else str(arg) for arg in args
+        ])
+        return f"{{{{ {self._undefined_name}({arguments}) }}}}"
 
 
 @attr.s
@@ -190,17 +207,21 @@ class DbtArtifactProcessor:
             msg = f"Env var required but not provided: '{var}'"
             raise Exception(msg)
 
-    @staticmethod
-    def load_yaml(path: str) -> Dict:
+    @classmethod
+    def load_yaml(cls, path: str) -> Dict:
         with open(path, 'r') as f:
-            env = Environment()
+            parsed_yaml = cls.parse_jinja(f.read())
+            return yaml.load(parsed_yaml, Loader=yaml.FullLoader)
 
-            # When using env vars for Redshift port, it must be "{{ env_var('PORT') | as_number }}"
-            # otherwise Redshift driver will complain, hence the need to add the "as_number" filter
-            env.filters.update({"as_number": lambda x: x})
-            templated_yaml = env.from_string(f.read())
-        rendered_yaml = templated_yaml.render(env_var=DbtArtifactProcessor.env_var)
-        return yaml.load(rendered_yaml, Loader=yaml.FullLoader)
+    @staticmethod
+    def parse_jinja(text: str):
+        env = Environment(undefined=SkipUndefined)
+
+        # When using env vars for Redshift port, it must be "{{ env_var('PORT') | as_number }}"
+        # otherwise Redshift driver will complain, hence the need to add the "as_number" filter
+        env.filters.update({"as_number": lambda x: x})
+        templated_yaml = env.from_string(text)
+        return templated_yaml.render(env_var=DbtArtifactProcessor.env_var)
 
     def parse_run(
         self,
