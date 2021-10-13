@@ -20,3 +20,8 @@ logging:
       # Enables app logs formatted as JSON
       # layout:
       #   type: json
+
+# Enables lineage streams (default: console)
+# lineageStreams:
+#  - type: Kafka
+#  - type: Kinesis

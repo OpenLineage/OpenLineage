@@ -18,8 +18,9 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 import io.openlineage.proxy.api.models.LineageEvent;
 import io.openlineage.proxy.service.ProxyService;
+import javax.validation.Valid;
 import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.container.Suspended;
@@ -36,15 +37,15 @@ public class ProxyResource {
     this.service = service;
   }
 
-  @GET
+  @POST
   @Consumes(APPLICATION_JSON)
-  public void emit(@NonNull LineageEvent event, @Suspended final AsyncResponse asyncResponse) {
+  public void emit(@Valid LineageEvent event, @Suspended final AsyncResponse asyncResponse) {
     service
         .emitAsync(event)
         .whenComplete(
             (result, err) -> {
               if (err != null) {
-                log.error("Failed to handle request", err);
+                log.error("Failed to handle request!", err);
                 asyncResponse.resume(Response.status(500).build());
               } else {
                 asyncResponse.resume(Response.status(201).build());

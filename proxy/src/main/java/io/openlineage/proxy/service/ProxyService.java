@@ -14,22 +14,27 @@
 
 package io.openlineage.proxy.service;
 
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import io.openlineage.proxy.ProxyConfig;
 import io.openlineage.proxy.api.models.LineageEvent;
 import io.openlineage.proxy.api.models.LineageStream;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import lombok.NonNull;
 
-public class ProxyService {
-  private final ImmutableList<LineageStream> streams;
+public final class ProxyService {
+  private final ImmutableSet<LineageStream> lineageStreams;
 
   public ProxyService(final ProxyConfig config) {
-    this.streams = ImmutableList.of();
+    this.lineageStreams = config.getLineageStreams();
   }
 
   public CompletableFuture<Void> emitAsync(@NonNull LineageEvent event) {
-    // TODO:
-    return CompletableFuture.allOf();
+    final List<CompletableFuture> collectionFutures = Lists.newArrayList();
+    lineageStreams.forEach(
+        lineageStream ->
+            collectionFutures.add(CompletableFuture.runAsync(() -> lineageStream.collect(event))));
+    return CompletableFuture.allOf(collectionFutures.toArray(CompletableFuture[]::new));
   }
 }

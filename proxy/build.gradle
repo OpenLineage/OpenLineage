@@ -30,7 +30,7 @@ repositories {
 
 ext {
     dropwizardVersion = '2.0.24'
-    lombokVersion = '1.18.20'
+    lombokVersion = '1.18.22'
 }
 
 dependencies {
@@ -52,6 +52,7 @@ compileJava {
 compileTestJava {
     options.incremental = true
     options.compilerArgs << '-parameters'
+    options.encoding = 'UTF-8'
 }
 
 mainClassName = 'io.openlineage.proxy.ProxyApp'

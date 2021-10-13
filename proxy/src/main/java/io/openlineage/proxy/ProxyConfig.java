@@ -14,8 +14,17 @@
 
 package io.openlineage.proxy;
 
+import com.google.common.collect.ImmutableSet;
 import io.dropwizard.Configuration;
+import io.openlineage.proxy.api.models.ConsoleLineageStream;
+import io.openlineage.proxy.api.models.LineageStream;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
-public final class ProxyConfig extends Configuration {}
+public final class ProxyConfig extends Configuration {
+  private static final ImmutableSet<LineageStream> DEFAULT_LINEAGE_STREAMS =
+      ImmutableSet.of(new ConsoleLineageStream());
+
+  @Getter private ImmutableSet<LineageStream> lineageStreams = DEFAULT_LINEAGE_STREAMS;
+}

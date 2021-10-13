@@ -14,6 +14,35 @@
 
 package io.openlineage.proxy.api.models;
 
-public final class LineageStream {
-  // TODO: Define lineage stream
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import lombok.EqualsAndHashCode;
+import lombok.NonNull;
+import lombok.ToString;
+
+@EqualsAndHashCode
+@ToString
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.NAME,
+    include = JsonTypeInfo.As.EXISTING_PROPERTY,
+    property = "type")
+@JsonSubTypes({
+  @JsonSubTypes.Type(value = ConsoleLineageStream.class, name = "CONSOLE"),
+  @JsonSubTypes.Type(value = KafkaLineageStream.class, name = "KAFKA"),
+  @JsonSubTypes.Type(value = KinesisLineageStream.class, name = "KINESIS")
+})
+public abstract class LineageStream {
+  enum Type {
+    KAFKA,
+    KINESIS,
+    CONSOLE
+  }
+
+  private final Type type;
+
+  LineageStream(@NonNull Type type) {
+    this.type = type;
+  }
+
+  public abstract void collect(@NonNull LineageEvent event);
 }

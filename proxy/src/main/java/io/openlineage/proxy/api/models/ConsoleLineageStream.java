@@ -14,21 +14,17 @@
 
 package io.openlineage.proxy.api.models;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.NonNull;
-import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 
-// NOTE: Only used for demonstration purposes, as of OpenLineage 0.3.0  please use server models
-// instead (see: https://github.com/OpenLineage/OpenLineage/pull/300)
-@EqualsAndHashCode
-@ToString
-public final class LineageEvent {
-  @Getter private final String eventType;
+@Slf4j
+public class ConsoleLineageStream extends LineageStream {
+  public ConsoleLineageStream() {
+    super(Type.CONSOLE);
+  }
 
-  @JsonCreator
-  public LineageEvent(@NonNull final String eventType) {
-    this.eventType = eventType;
+  @Override
+  public void collect(@NonNull LineageEvent event) {
+    log.info("{}", event);
   }
 }
