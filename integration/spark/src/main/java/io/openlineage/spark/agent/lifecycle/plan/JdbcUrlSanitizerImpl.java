@@ -1,114 +1,81 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
-import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableMap;
-
+import com.google.common.collect.ImmutableSet;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Locale;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+/**
+ * Generic implementation of {@link JdbcUrlSanitizer} Removes username and password from jdbc url
+ */
 public class JdbcUrlSanitizerImpl implements JdbcUrlSanitizer {
 
-  Map<String, JdbcUrlSanitizer> sanitizers = ImmutableMap.of(
-      "sqlserver", new SqlServerSanitizer(),
-      "postgresql", new PostgresThinSanitizer()
-      "oracle", new OracleThinSanitizer()
-  );
+  public static final String SLASH_DELIMITER_USER_PASSWORD_REGEX =
+      "[A-Za-z0-9_%]+//?[A-Za-z0-9_%]*@";
+  public static final String COLON_DELIMITER_USER_PASSWORD_REGEX =
+      "([/|,])[A-Za-z0-9_%]+:?[A-Za-z0-9_%]*@";
+  public static final Pattern EXTRACT_KEY_REGEX = Pattern.compile("([\\w|%]*)$");
 
-  private JdbcUrlSanitizer defaultSanitizer = new CommonSanitizer();
+  public static final String KEY_VALUE_FORMAT = "(?i)%s%s%s%s?";
+  public static final String[][] KEY_VALUE_STYLE =
+      new String[][] {
+        {";", "="}, // sqlserver, db2, cassandra, phoenix, hive2
+        {"&", "="}, // postgres, snowflake, redshift,mongo
+        {",", "="}, // mysql, teradata
+        {"\\)", "="}, // mysql
+        {":", "="}, // db2 (user, password)
+      };
+  private static final Set<String> FILTERED_KEYS = ImmutableSet.of("user", "username", "password");
 
   @Override
   public String sanitize(String jdbcUrl) {
-    String url = jdbcUrl.replaceFirst("jdbc:", "");
-    try {
-      String provider = jdbcUrl.substring(5, jdbcUrl.indexOf(':', 5)).toLowerCase();
+    jdbcUrl = jdbcUrl.substring(5);
+    jdbcUrl = jdbcUrl.replaceAll(SLASH_DELIMITER_USER_PASSWORD_REGEX, "@");
+    final String urlWithoutUserSpec = jdbcUrl.replaceAll(COLON_DELIMITER_USER_PASSWORD_REGEX, "$1");
 
-      JdbcUrlSanitizer sanitizer = sanitizers.getOrDefault(provider, defaultSanitizer);
-      return sanitizer.sanitize(url);
-    } catch (Exception e) {
-      return url;
+    List<String> pairToRemove = new ArrayList<>();
+    for (String[] pair : KEY_VALUE_STYLE) {
+      Map<String, List<String>> props = split(urlWithoutUserSpec, pair[0], pair[1]);
+      FILTERED_KEYS.stream()
+          .filter(props::containsKey)
+          .forEach(
+              k ->
+                  props
+                      .get(k)
+                      .forEach(
+                          v ->
+                              pairToRemove.add(
+                                  String.format(KEY_VALUE_FORMAT, k, pair[1], v, pair[0]))));
     }
+    return pairToRemove.stream()
+        .reduce(urlWithoutUserSpec, (prev, cur) -> prev.replaceAll(cur, ""));
   }
 
-  private static Map<String, String> split(String data, String outerDelimiter, String entryDelimiter){
+  private static Map<String, List<String>> split(
+      String data, String outerDelimiter, String entryDelimiter) {
     return Arrays.stream(data.split(outerDelimiter))
         .map(s -> s.split(entryDelimiter))
-        .collect(Collectors.toMap(
-            a -> a[0].toLowerCase(),
-            a -> a[1]
-        ));
+        .filter(s -> s.length == 2)
+        .collect(
+            Collectors.toMap(
+                a -> {
+                  Matcher m = EXTRACT_KEY_REGEX.matcher(a[0]);
+                  m.find();
+                  return m.group(1);
+                },
+                a -> {
+                  List<String> l = new ArrayList<>();
+                  l.add(a[1].trim());
+                  return l;
+                },
+                (a, b) -> {
+                  a.addAll(b);
+                  return a;
+                }));
   }
-
-  private static String combine(String left, String db) {
-    return String.format("%s/%s", left, db);
-  }
-
-  public static class CommonSanitizer implements JdbcUrlSanitizer {
-    Pattern partsPattern = Pattern.compile("(.*//(.+)/\\w+)");
-
-    @Override
-    public String sanitize(String jdbcUrl) {
-      Matcher partsMatcher = partsPattern.matcher(jdbcUrl);
-      if (partsMatcher.find()) {
-        String fullPart = partsMatcher.group(1);
-        String hostPart = partsMatcher.group(2);
-        String hostPartCleaned = hostPart.replaceAll("(.*?):(.*?)@", "$3");
-        return fullPart.replace(hostPart, hostPartCleaned);
-      }
-      return jdbcUrl;
-    }
-  }
-
-  private static class SqlServerSanitizer implements JdbcUrlSanitizer {
-    private static final String DB_PROP_NAME = "databasename";
-    private static final String SERVER_NAME_PROP_NAME = "servername";
-
-    @Override
-    public String sanitize(String jdbcUrl) {
-      int keyValueIndex = jdbcUrl.indexOf(';');
-      if (keyValueIndex != 0) {
-        String leftPart = jdbcUrl.substring(0, keyValueIndex);
-        String rightPart = jdbcUrl.substring(keyValueIndex + 1);
-        Map<String, String> properties = split(rightPart, ";", "=");
-        String dbName = properties.getOrDefault(DB_PROP_NAME, "");
-        String serverName = properties.getOrDefault(SERVER_NAME_PROP_NAME, "");
-        return combine(leftPart + serverName, dbName);
-      }
-
-      return jdbcUrl;
-    }
-  }
-
-  private class PostgresThinSanitizer implements JdbcUrlSanitizer {
-
-    @Override
-    public String sanitize(String jdbcUrl) {
-      int propIndex = jdbcUrl.indexOf('?');
-      return propIndex == -1 ? jdbcUrl : jdbcUrl.substring(0, propIndex);
-    }
-  }
-
-  private class OracleThinSanitizer implements JdbcUrlSanitizer {
-
-    @Override
-    public String sanitize(String jdbcUrl) {
-      int protocol = jdbcUrl.indexOf(":", jdbcUrl.indexOf(":") + 1) + 1;
-      int var8 = jdbcUrl.indexOf('/', protocol+1);
-      int var9 = jdbcUrl.indexOf('@', protocol+1);
-
-      return null;
-    }
-  }
-
-  private class TeradataSanitizer implements JdbcUrlSanitizer {
-
-    @Override
-    public String sanitize(String jdbcUrl) {
-      return null;
-    }
-  }
-
 }
