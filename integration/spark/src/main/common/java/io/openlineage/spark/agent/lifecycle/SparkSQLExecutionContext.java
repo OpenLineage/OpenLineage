@@ -144,8 +144,6 @@ public class SparkSQLExecutionContext implements ExecutionContext {
 
   @Override
   public void end(SparkListenerJobEnd jobEnd) {
-    // executing plan for injecting write metrics to optimizedPlan
-    queryExecution.executedPlan().execute();
     log.info("Ending job as part of spark-sql:" + jobEnd.jobId());
     if (queryExecution == null) {
       log.info("No execution info {}", queryExecution);
