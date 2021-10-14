@@ -1,4 +1,5 @@
 import json
+import textwrap
 from enum import Enum
 from unittest import mock
 
@@ -210,3 +211,76 @@ def test_dbt_parse_profile_with_env_vars(mock_uuid, parent_run_metadata):
     ]
     with open('tests/dbt/env_vars/result.json', 'r') as f:
         assert events == json.load(f)
+
+
+@pytest.fixture()
+def jinja_env():
+    env = DbtArtifactProcessor.setup_jinja()
+    env.globals.update({
+        "test": "test_variable",
+        "method": lambda: "test_method"
+    })
+    return env
+
+
+def test_jinja_undefined_variable(jinja_env):
+    text = "{{ variable }}"
+    assert text == DbtArtifactProcessor.render_values_jinja(jinja_env, text)
+
+
+def test_jinja_undefined_method(jinja_env):
+    text = "{{ undefined_method() }}"
+    assert text == DbtArtifactProcessor.render_values_jinja(jinja_env, text)
+
+
+def test_jinja_defined_method(jinja_env):
+    os.environ['PORT_REDSHIFT'] = "13"
+    text = "{{ env_var('PORT_REDSHIFT') | as_number }}"
+    assert '13' == DbtArtifactProcessor.render_values_jinja(jinja_env, text)
+    del os.environ['PORT_REDSHIFT']
+
+
+def test_jinja_defined_variable(jinja_env):
+    text = "{{ test }}"
+    assert 'test_variable' == DbtArtifactProcessor.render_values_jinja(jinja_env, text)
+
+
+def test_jinja_undefined_method_with_args(jinja_env):
+    text = "# {{ does_not_exist(some_arg.subarg.subarg2) }}"
+    assert text == DbtArtifactProcessor.render_values_jinja(jinja_env, text)
+
+
+def test_jinja_multiline(jinja_env):
+    os.environ['PORT_REDSHIFT'] = "13"
+
+    text = textwrap.dedent("""
+    # {{ does_not_exist(some_arg.subarg.subarg2) }}
+    {{ env_var('PORT_REDSHIFT') | as_number }}
+    {{ undefined }}
+    more_text
+    even_more_text""")
+
+    parsed = DbtArtifactProcessor.render_values_jinja(jinja_env, text)
+
+    assert parsed == textwrap.dedent("""
+    # {{ does_not_exist(some_arg.subarg.subarg2) }}
+    13
+    {{ undefined }}
+    more_text
+    even_more_text""")
+
+    del os.environ['PORT_REDSHIFT']
+
+
+def test_jinja_dict(jinja_env):
+    dictionary = {"key": "{{ test }}"}
+    assert {"key": "test_variable"} == DbtArtifactProcessor.render_values_jinja(
+        jinja_env, dictionary
+    )
+
+
+def test_jinja_list(jinja_env):
+    test_list = ["key", "{{ test }}"]
+    assert ["key", "test_variable"] == DbtArtifactProcessor.render_values_jinja(
+        jinja_env, test_list
+    )
