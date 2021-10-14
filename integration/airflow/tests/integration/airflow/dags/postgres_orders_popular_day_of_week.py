@@ -28,6 +28,7 @@ dag = DAG(
     description='Determines the popular day of week orders are placed.'
 )
 
+
 t1 = PostgresOperator(
     task_id='postgres_if_not_exists',
     postgres_conn_id='food_delivery_db',

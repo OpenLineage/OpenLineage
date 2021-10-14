@@ -103,6 +103,11 @@ LOGGING_CONFIG = {
             'level': LOG_LEVEL,
             'propagate': False,
         },
+        'airflow.lineage': {
+            'handlers': ['console', 'task'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
         'flask_appbuilder': {
             'handler': ['console'],
             'level': FAB_LOG_LEVEL,

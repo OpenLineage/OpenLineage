@@ -1,18 +1,16 @@
 import logging
 import uuid
 import time
-from typing import Optional
+from pkg_resources import parse_version
 
 from airflow.lineage.backend import LineageBackend
-
-from openlineage.airflow.adapter import OpenLineageAdapter
-from openlineage.airflow.extractors.extractors import Extractors
-from openlineage.airflow.extractors.base import TaskMetadata, BaseExtractor
-from openlineage.airflow.utils import DagUtils, get_location, get_custom_facets
+from airflow.version import version as AIRFLOW_VERSION
 
 
-class OpenLineageBackend(LineageBackend):
+class Backend:
     def __init__(self):
+        from openlineage.airflow.adapter import OpenLineageAdapter
+        from openlineage.airflow.extractors.extractors import Extractors
         self.extractors = {}
         self.extractor_mapper = Extractors()
         self.log = logging.getLogger()
@@ -23,16 +21,17 @@ class OpenLineageBackend(LineageBackend):
     """
 
     def send_lineage(
-        self,
-        operator=None,
-        inlets=None,
-        outlets=None,
-        context=None
+            self,
+            operator=None,
+            inlets=None,
+            outlets=None,
+            context=None
     ):
         """
         Send_lineage ignores manually provided inlets and outlets. The data collection mechanism
         is automatic, and bases on the passed context.
         """
+        from openlineage.airflow.utils import DagUtils, get_custom_facets
         dag = context['dag']
         dagrun = context['dag_run']
         task_instance = context['task_instance']
@@ -47,24 +46,22 @@ class OpenLineageBackend(LineageBackend):
             task_instance=task_instance
         )
 
-        self.adapter.start_task(
-            run_id=run_id,
-            job_name=job_name,
-            job_description=dag.description,
-            event_time=DagUtils.to_iso_8601(self._now_ms()),
-            parent_run_id=dagrun.run_id,
-            code_location=self._get_location(operator),
-            nominal_start_time=DagUtils.get_start_time(dagrun.execution_date),
-            nominal_end_time=DagUtils.get_end_time(
-                dagrun.execution_date,
-                dag.following_schedule(dagrun.execution_date)
-            ),
-            task=task_metadata,
-            run_facets={
-                **task_metadata.run_facets,
-                **get_custom_facets(operator, dagrun.external_trigger)
-            }
-        )
+        if parse_version(AIRFLOW_VERSION) >= parse_version("2.0.0"):
+            self.adapter.start_task(
+                run_id=run_id,
+                job_name=job_name,
+                job_description=dag.description,
+                event_time=DagUtils.get_start_time(dagrun.execution_date),
+                parent_run_id=dagrun.run_id,
+                code_location=self._get_location(operator),
+                nominal_start_time=DagUtils.get_start_time(dagrun.execution_date),
+                nominal_end_time=DagUtils.to_iso_8601(task_instance.end_date),
+                task=task_metadata,
+                run_facets={
+                    **task_metadata.run_facets,
+                    **get_custom_facets(operator, dagrun.external_trigger)
+                }
+            )
 
         self.adapter.complete_task(
             run_id=run_id,
@@ -73,7 +70,7 @@ class OpenLineageBackend(LineageBackend):
             task=task_metadata
         )
 
-    def _extract_metadata(self, dag_id, dagrun, task, task_instance=None) -> TaskMetadata:
+    def _extract_metadata(self, dag_id, dagrun, task, task_instance=None):
         extractor = self._get_extractor(task)
         task_info = f'task_type={task.__class__.__name__} ' \
             f'airflow_dag_id={dag_id} ' \
@@ -97,12 +94,12 @@ class OpenLineageBackend(LineageBackend):
         else:
             self.log.warning(
                 f'Unable to find an extractor. {task_info}')
-
+        from openlineage.airflow.extractors.base import TaskMetadata
         return TaskMetadata(
             name=self._openlineage_job_name(dag_id, task.task_id)
         )
 
-    def _extract(self, extractor, task_instance) -> Optional[TaskMetadata]:
+    def _extract(self, extractor, task_instance):
         if task_instance:
             task_metadata = extractor.extract_on_complete(task_instance)
             if task_metadata:
@@ -110,7 +107,7 @@ class OpenLineageBackend(LineageBackend):
 
         return extractor.extract()
 
-    def _get_extractor(self, task) -> Optional[BaseExtractor]:
+    def _get_extractor(self, task):
         if task.task_id in self.extractors:
             return self.extractors[task.task_id]
         extractor = self.extractor_mapper.get_extractor_class(task.__class__)
@@ -130,6 +127,7 @@ class OpenLineageBackend(LineageBackend):
 
     @staticmethod
     def _get_location(task):
+        from openlineage.airflow.utils import get_location
         try:
             if hasattr(task, 'file_path') and task.file_path:
                 return get_location(task.file_path)
@@ -141,3 +139,15 @@ class OpenLineageBackend(LineageBackend):
     @staticmethod
     def _now_ms():
         return int(round(time.time() * 1000))
+
+
+class OpenLineageBackend(LineageBackend):
+    # Airflow 1.10 uses send_lineage as staticmethod, so just construct class
+    # instance on first use and delegate calls to it
+    backend: Backend = None
+
+    @classmethod
+    def send_lineage(cls, *args, **kwargs):
+        if not cls.backend:
+            cls.backend = Backend()
+        return cls.backend.send_lineage(*args, **kwargs)
