@@ -1,13 +1,13 @@
 import datetime
 
-from jinja2 import Environment
+from jinja2 import Environment, Undefined
 import json
 
 import yaml
 import os
 import uuid
 import collections
-from typing import List, Tuple, Dict, Optional
+from typing import List, Tuple, Dict, Optional, TypeVar
 
 import attr
 
@@ -16,6 +16,23 @@ from openlineage.client.facet import DataSourceDatasetFacet, SchemaDatasetFacet,
 from openlineage.client.run import RunEvent, RunState, Run, Job, Dataset, OutputDataset
 from openlineage.client.facet import Assertion, DataQualityAssertionsDatasetFacet
 from openlineage.common.utils import get_from_nullable_chain, get_from_multiple_chains
+
+
+class SkipUndefined(Undefined):
+    def __getattr__(self, name):
+        return SkipUndefined(name=f"{self._undefined_name}.{name}")
+
+    def __str__(self):
+        return f"{{{{ {self._undefined_name} }}}}"
+
+    def _fail_with_undefined_error(self, *args, **kwargs):
+        pass
+
+    def __call__(self, *args, **kwargs):
+        arguments = ', '.join([
+            arg._undefined_name if isinstance(arg, SkipUndefined) else str(arg) for arg in args
+        ])
+        return f"{{{{ {self._undefined_name}({arguments}) }}}}"
 
 
 @attr.s
@@ -67,6 +84,9 @@ class ParentRunMetadata:
         )
 
 
+T = TypeVar('T')
+
+
 class DbtArtifactProcessor:
     def __init__(
         self,
@@ -81,10 +101,12 @@ class DbtArtifactProcessor:
         self._dbt_run_metadata = None
         self.profile_name = profile_name
         self.target = target
-        self.project = self.load_yaml(os.path.join(project_dir, 'dbt_project.yml'))
+        self.jinja_environment = None
+
         self.job_namespace = ""
         self.dataset_namespace = ""
         self.skip_errors = skip_errors
+        self.project = self.load_yaml_with_jinja(os.path.join(project_dir, 'dbt_project.yml'))
 
         self.manifest_path = os.path.join(self.dir, self.project['target-path'], 'manifest.json')
         self.run_result_path = os.path.join(
@@ -113,7 +135,7 @@ class DbtArtifactProcessor:
         if not self.profile_name:
             self.profile_name = self.project['profile']
 
-        profile = self.load_yaml(
+        profile = self.load_yaml_with_jinja(
             os.path.join(profile_dir, 'profiles.yml')
         )[self.profile_name]
 
@@ -193,14 +215,43 @@ class DbtArtifactProcessor:
     @staticmethod
     def load_yaml(path: str) -> Dict:
         with open(path, 'r') as f:
-            env = Environment()
+            return yaml.load(f, Loader=yaml.FullLoader)
 
-            # When using env vars for Redshift port, it must be "{{ env_var('PORT') | as_number }}"
-            # otherwise Redshift driver will complain, hence the need to add the "as_number" filter
-            env.filters.update({"as_number": lambda x: x})
-            templated_yaml = env.from_string(f.read())
-        rendered_yaml = templated_yaml.render(env_var=DbtArtifactProcessor.env_var)
-        return yaml.load(rendered_yaml, Loader=yaml.FullLoader)
+    @staticmethod
+    def setup_jinja() -> Environment:
+        env = Environment(undefined=SkipUndefined)
+        # When using env vars for Redshift port, it must be "{{ env_var('PORT') | as_number }}"
+        # otherwise Redshift driver will complain, hence the need to add the "as_number" filter
+        env.filters.update({"as_number": lambda x: x})
+        env.globals["env_var"] = DbtArtifactProcessor.env_var
+        return env
+
+    def load_yaml_with_jinja(self, path: str) -> Dict:
+        loaded = self.load_yaml(path)
+        if not self.jinja_environment:
+            self.jinja_environment = self.setup_jinja()
+        return self.render_values_jinja(environment=self.jinja_environment, value=loaded)
+
+    @classmethod
+    def render_values_jinja(cls, environment: Environment, value: T) -> T:
+        """
+        Traverses passed dictionary and render any string value using jinja.
+        Returns copy of the dict with parsed values.
+        """
+        if isinstance(value, dict):
+            parsed = {}
+            for key, val in value.items():
+                parsed[key] = cls.render_values_jinja(environment, val)
+            return parsed
+        elif isinstance(value, list):
+            parsed = []
+            for elem in value:
+                parsed.append(cls.render_values_jinja(environment, elem))
+            return parsed
+        elif isinstance(value, str):
+            return environment.from_string(value).render()
+        else:
+            return value
 
     def parse_run(
         self,

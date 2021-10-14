@@ -19,7 +19,8 @@ x-airflow-common: &airflow-common
     AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
     AIRFLOW__CORE__LOAD_EXAMPLES: "False"
-    AIRFLOW__LINEAGE__BACKEND: openlineage.airflow.backend.OpenLineageBackend
+    AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT: 60.0
+    AIRFLOW__LINEAGE__BACKEND: openlineage.lineage_backend.OpenLineageBackend
     AIRFLOW_CONN_FOOD_DELIVERY_DB: postgres://food_delivery:food_delivery@postgres:5432/food_delivery
     AIRFLOW_CONN_BQ_CONN: google-cloud-platform://?extra__google_cloud_platform__project=speedy-vim-308516&extra__google_cloud_platform__key_path=%2Fopt%2Fconfig%2Fgcloud%2Fgcloud-service-key.json
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "False"
