@@ -13,11 +13,12 @@
 import os
 from unittest import mock
 
+import pytest
 from airflow.models import Connection
 from airflow.utils.dates import days_ago
 from airflow import DAG
 
-from openlineage.airflow.utils import safe_import_airflow
+from openlineage.airflow.utils import safe_import_airflow, get_connection
 from openlineage.common.models import (
     DbTableName,
     DbTableSchema,
@@ -207,3 +208,32 @@ def test_get_table_schemas(mock_conn):
     table_schemas = extractor._get_table_schemas(table_names=[DB_TABLE_NAME])
 
     assert table_schemas == [DB_TABLE_SCHEMA]
+
+
+def test_get_connection_import_returns_none_if_not_exists():
+    assert get_connection("does_not_exist") is None
+    assert get_connection("does_exist") is None
+
+
+@pytest.fixture
+def create_connection():
+    create_session = safe_import_airflow(
+        airflow_1_path="airflow.utils.db.create_session",
+        airflow_2_path="airflow.utils.session.create_session",
+    )
+
+    conn = Connection("does_exist", conn_type="postgres")
+    with create_session() as session:
+        session.add(conn)
+        session.commit()
+
+    yield conn
+
+    with create_session() as session:
+        session.delete(conn)
+        session.commit()
+
+
+def test_get_connection_returns_one_if_exists(create_connection):
+    conn = Connection("does_exist")
+    assert get_connection("does_exist").conn_id == conn.conn_id
