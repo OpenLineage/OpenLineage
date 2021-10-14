@@ -19,7 +19,6 @@ from urllib.parse import urlparse, urlunparse
 
 from airflow.version import version as AIRFLOW_VERSION
 
-import airflow
 from pkg_resources import parse_version
 
 from openlineage.airflow.facets import AirflowVersionRunFacet, AirflowRunArgsRunFacet
@@ -34,7 +33,8 @@ class JobIdMapping:
 
     @staticmethod
     def set(job_name: str, dag_run_id: str, task_run_id: str):
-        airflow.models.Variable.set(
+        from airflow.models import Variable
+        Variable.set(
             JobIdMapping.make_key(job_name, dag_run_id),
             json.dumps(task_run_id)
         )
@@ -47,8 +47,8 @@ class JobIdMapping:
     def get(job_name, dag_run_id, session, delete=False):
         key = JobIdMapping.make_key(job_name, dag_run_id)
         if session:
-            q = session.query(airflow.models.Variable).filter(
-                airflow.models.Variable.key == key)
+            from airflow.models import Variable
+            q = session.query(Variable).filter(Variable.key == key)
             if not q.first():
                 return None
             else:
@@ -227,14 +227,14 @@ def import_from_string(path: str):
         raise ImportError(f"Failed to import {path}") from e
 
 
-def choose_based_on_version(airflow_1_version: str, airflow_2_version: str):
+def choose_based_on_version(airflow_1_version, airflow_2_version):
     if parse_version(AIRFLOW_VERSION) >= parse_version("2.0.0"):
         return airflow_2_version
     else:
         return airflow_1_version
 
 
-def safe_import_airflow(airflow_1_path, airflow_2_path):
+def safe_import_airflow(airflow_1_path: str, airflow_2_path: str):
     return import_from_string(
         choose_based_on_version(
             airflow_1_path, airflow_2_path
