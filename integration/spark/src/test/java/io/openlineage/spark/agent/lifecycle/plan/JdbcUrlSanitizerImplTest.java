@@ -25,6 +25,9 @@ class JdbcUrlSanitizerImplTest {
             "jdbc:sqlserver://localhost;user=MyUserName;password=P%20%4021",
             "sqlserver://localhost;"),
         Arguments.of(
+            "jdbc:sqlserver://localhost;USER=MyUserName;paSSword=P%20%4021",
+            "sqlserver://localhost;"),
+        Arguments.of(
             "jdbc:sqlserver://localhost\\instance1;databaseName=AdventureWorks;integratedSecurity=true",
             "sqlserver://localhost\\instance1;databaseName=AdventureWorks;integratedSecurity=true"),
         Arguments.of(

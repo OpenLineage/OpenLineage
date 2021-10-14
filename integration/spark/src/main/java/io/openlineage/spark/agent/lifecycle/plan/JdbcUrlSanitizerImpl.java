@@ -2,13 +2,13 @@ package io.openlineage.spark.agent.lifecycle.plan;
 
 import com.google.common.collect.ImmutableSet;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * Generic implementation of {@link JdbcUrlSanitizer} Removes username and password from jdbc url
@@ -41,16 +41,11 @@ public class JdbcUrlSanitizerImpl implements JdbcUrlSanitizer {
     List<String> pairToRemove = new ArrayList<>();
     for (String[] pair : KEY_VALUE_STYLE) {
       Map<String, List<String>> props = split(urlWithoutUserSpec, pair[0], pair[1]);
-      FILTERED_KEYS.stream()
-          .filter(props::containsKey)
-          .forEach(
-              k ->
-                  props
-                      .get(k)
-                      .forEach(
-                          v ->
-                              pairToRemove.add(
-                                  String.format(KEY_VALUE_FORMAT, k, pair[1], v, pair[0]))));
+      for (String key : FILTERED_KEYS) {
+        for (String value : props.getOrDefault(key, Collections.emptyList())) {
+          pairToRemove.add(String.format(KEY_VALUE_FORMAT, key, pair[1], value, pair[0]));
+        }
+      }
     }
     return pairToRemove.stream()
         .reduce(urlWithoutUserSpec, (prev, cur) -> prev.replaceAll(cur, ""));
@@ -58,24 +53,17 @@ public class JdbcUrlSanitizerImpl implements JdbcUrlSanitizer {
 
   private static Map<String, List<String>> split(
       String data, String outerDelimiter, String entryDelimiter) {
-    return Arrays.stream(data.split(outerDelimiter))
-        .map(s -> s.split(entryDelimiter))
-        .filter(s -> s.length == 2)
-        .collect(
-            Collectors.toMap(
-                a -> {
-                  Matcher m = EXTRACT_KEY_REGEX.matcher(a[0]);
-                  m.find();
-                  return m.group(1);
-                },
-                a -> {
-                  List<String> l = new ArrayList<>();
-                  l.add(a[1].trim());
-                  return l;
-                },
-                (a, b) -> {
-                  a.addAll(b);
-                  return a;
-                }));
+    Map<String, List<String>> result = new HashMap<>();
+    for (String pair : data.split(outerDelimiter)) {
+      String[] parts = pair.split(entryDelimiter);
+      if (parts.length == 2) {
+        Matcher m = EXTRACT_KEY_REGEX.matcher(parts[0]);
+        m.find();
+        String key = m.group(1).toLowerCase();
+        result.putIfAbsent(key, new ArrayList<>());
+        result.get(key).add(parts[1]);
+      }
+    }
+    return result;
   }
 }
