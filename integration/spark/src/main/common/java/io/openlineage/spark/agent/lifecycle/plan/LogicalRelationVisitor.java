@@ -118,7 +118,7 @@ public class LogicalRelationVisitor extends QueryPlanVisitor<LogicalRelation, Op
     // formats that aren't always amenable to how Java parses URIs. E.g., the oracle
     // driver format looks like oracle:<drivertype>:<user>/<password>@<database>
     // whereas postgres, mysql, and sqlserver use the scheme://hostname:port/db format.
-    String url = relation.jdbcOptions().url().replaceFirst("jdbc:", "");
+    String url = PlanUtils.sanitizeJdbcUrl(relation.jdbcOptions().url());
     OpenLineage.DatasetFacets datasetFacet = PlanUtils.datasetFacet(relation.schema(), url);
     return Collections.singletonList(PlanUtils.getDataset(tableName, url, datasetFacet));
   }
