@@ -136,14 +136,13 @@ if [ -n "$RELEASE_CANDIDATE" ]; then
 fi
 
 # (2) Bump java module versions
-sed -i "" "s/^version=.*/version=${RELEASE_VERSION}/g" ./client/java/gradle.properties
-sed -i "" "s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/spark/gradle.properties
+perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./client/java/gradle.properties
+perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/spark/gradle.properties
 
 # (3) Bump version in docs
-sed -i "" \
-  -e "s/<version>.*/<version>${RELEASE_VERSION}<\/version>/g" \
-  -e "s/openlineage-spark:[[:alnum:]\.-]*/openlineage-spark:${RELEASE_VERSION}/g" \
-  -e "s/openlineage-spark-.*jar/openlineage-spark-${RELEASE_VERSION}.jar/g" ./integration/spark/README.md
+perl -i -pe"s/<version>.*/<version>${RELEASE_VERSION}<\/version>/g" ./integration/spark/README.md
+perl -i -pe"s/openlineage-spark:[[:alnum:]\.-]*/openlineage-spark:${RELEASE_VERSION}/g" ./integration/spark/README.md
+perl -i -pe"s/openlineage-spark-.*jar/openlineage-spark-${RELEASE_VERSION}.jar/g" ./integration/spark/README.md
 
 # (4) Prepare release commit
 git commit -sam "Prepare for release ${RELEASE_VERSION}"
@@ -165,8 +164,8 @@ if [[ "${NEXT_VERSION}" == *-rc.? ||
   NEXT_VERSION="${NEXT_VERSION}-SNAPSHOT"
 fi
 
-sed -i  "" "s/^version=.*/version=${NEXT_VERSION}/g" integration/spark/gradle.properties
-sed -i  "" "s/^version=.*/version=${NEXT_VERSION}/g" client/java/gradle.properties
+perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" integration/spark/gradle.properties
+perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" client/java/gradle.properties
 echo "version ${NEXT_VERSION}" > integration/spark/src/test/resources/io/openlineage/spark/agent/client/version.properties
 
 # (7) Prepare next development version commit

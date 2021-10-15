@@ -148,11 +148,6 @@ def get_normalized_postgres_connection_uri(conn):
 
 
 def get_connection(conn_id):
-    create_session = safe_import_airflow(
-        airflow_1_path="airflow.utils.db.provide_session",
-        airflow_2_path="airflow.utils.session.provide_session",
-    )
-
     # TODO: We may want to throw an exception if the connection
     # does not exist (ex: AirflowConnectionException). The connection
     # URI is required when collecting metadata for a data source.
@@ -162,6 +157,11 @@ def get_connection(conn_id):
         conn = Connection()
         conn.parse_from_uri(uri=conn_uri)
         return conn
+
+    create_session = safe_import_airflow(
+        airflow_1_path="airflow.utils.db.create_session",
+        airflow_2_path="airflow.utils.session.create_session",
+    )
 
     with create_session() as session:
         return (session
