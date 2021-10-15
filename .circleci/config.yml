@@ -145,6 +145,9 @@ jobs:
           ./gradlew publish
 
   build-integration-spark:
+    parameters:
+      spark-version:
+        type: string
     working_directory: ~/openlineage/integration/spark
     docker:
       - image: circleci/openjdk:8-jdk
@@ -156,11 +159,8 @@ jobs:
             - v1-integration-spark-{{ .Branch }}
       - attach_workspace:
           at: .
-      - run: |
-          cd ../../client/java
-          ./gradlew  --no-daemon publishToMavenLocal
-          cd -
-      - run: ./gradlew --no-daemon --stacktrace build
+      - run: (cd ./../../client/java/ && ./gradlew --no-daemon --stacktrace publishToMavenLocal)
+      - run: ./gradlew --no-daemon --stacktrace build -Pspark.version=<< parameters.spark-version >>
       - run:
           when: on_fail
           command: cat integration/spark/build/test-results/test/TEST-*.xml
@@ -216,6 +216,9 @@ jobs:
             - ./dist/*.tar.gz
 
   integration-test-integration-spark:
+    parameters:
+      spark-version:
+        type: string
     working_directory: ~/openlineage/integration/spark
     machine: true
     environment:
@@ -227,19 +230,16 @@ jobs:
           keys:
             - v1-integration-spark-{{ .Branch }}-{{ .Revision }}
             - v1-integration-spark-{{ .Branch }}
-      - run: |
-          cd ../../client/java
-          ./gradlew  --no-daemon publishToMavenLocal
-          cd -
-      - run: ./gradlew --no-daemon --stacktrace integrationTest
+      - run: (cd ./../../client/java/ && ./gradlew --no-daemon --stacktrace publishToMavenLocal)
+      - run: ./gradlew --no-daemon --stacktrace integrationTest -Pspark.version=<< parameters.spark-version >>
       - run:
           when: on_fail
-          command: cat integration/spark/build/test-results/integrationTests/TEST-*.xml
+          command: cat integration/spark/build/test-results/integrationTest/TEST-*.xml
       - run: ./gradlew --no-daemon jacocoTestReport
       - store_test_results:
-          path: integration/spark/build/test-results/integrationTests
+          path: integration/spark/build/test-results/integrationTest
       - store_artifacts:
-          path: integration/spark/build/reports/tests/integrationTests
+          path: integration/spark/build/reports/tests/integrationTest
           destination: test-report
       - save_cache:
           key: v1-integration-spark-{{ .Branch }}-{{ .Revision }}
@@ -359,8 +359,14 @@ workflows:
           context: release
           requires:
             - build-client-java
-      - build-integration-spark
+      - build-integration-spark:
+          matrix:
+            parameters:
+              spark-version: [ '2.4.1', '3.1' ]
       - integration-test-integration-spark:
+          matrix:
+            parameters:
+              spark-version: [ '2.4.1', '3.1' ]
           requires:
             - build-integration-spark
       - publish-snapshot-integration-spark:

@@ -1,0 +1,34 @@
+{
+  "@class": "org.apache.spark.sql.catalyst.plans.logical.Aggregate",
+  "groupingExpressions": [],
+  "aggregateExpressions": [],
+  "origin": {
+    "line": null,
+    "startPosition": null
+  },
+  "schema": [],
+  "allAttributes": {
+    "attrs": [
+      {
+        "name": "name",
+        "dataType": {
+          "ordering": {}
+        },
+        "nullable": false,
+        "metadata": null,
+        "qualifier": [],
+        "origin": {
+          "line": null,
+          "startPosition": null
+        },
+        "deterministic": true,
+        "resolved": true
+      }
+    ]
+  },
+  "resolved": true,
+  "statsCache": null,
+  "traceEnabled": false,
+  "streaming": false,
+  "canonicalizedPlan": false
+}

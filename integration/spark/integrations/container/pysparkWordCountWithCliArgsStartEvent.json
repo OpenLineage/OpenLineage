@@ -14,7 +14,6 @@
       "name": "/test_data",
       "facets": {
         "schema": {
-          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
           "fields": [
             {
               "name": "value",
@@ -23,7 +22,6 @@
           ]
         },
         "dataSource": {
-          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
           "name": "file",
           "uri": "file"
         }
@@ -36,7 +34,6 @@
       "name": "/test_data/test_output",
       "facets": {
         "schema": {
-          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
           "fields": [
             {
               "name": "value",
@@ -49,19 +46,17 @@
           ]
         },
         "dataSource": {
-          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
           "name": "file",
           "uri": "file"
-        }
+        },
+        "stats" : {}
       },
       "outputFacets": {
         "outputStatistics": {
-          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
-          "rowCount": 0,
-          "size": 0
+          "rowCount": "${json-unit.any-number}",
+          "size": "${json-unit.any-number}"
         }
       }
     }
-  ],
-  "producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark"
+  ]
 }

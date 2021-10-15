@@ -4,103 +4,7 @@
 		"facets": {
 			"spark_unknown": {
 				"inputs": [{
-					"description": {
-						"output": [{
-							"name": "col1",
-							"dataType": {
-								"numeric": {},
-								"integral": {},
-								"ordering": {}
-							},
-							"nullable": false,
-							"metadata": {
-								"map": {}
-							},
-							"qualifier": [],
-							"origin": {
-								"line": 1,
-								"startPosition": 61
-							},
-							"deterministic": true,
-							"resolved": true
-						}, {
-							"name": "col2",
-							"dataType": {
-								"ordering": {}
-							},
-							"nullable": false,
-							"metadata": {
-								"map": {}
-							},
-							"qualifier": [],
-							"origin": {
-								"line": 1,
-								"startPosition": 61
-							},
-							"deterministic": true,
-							"resolved": true
-						}],
-						"data": [{
-							"values": [1, {
-								"baseObject": "YQ==",
-								"baseOffset": 16,
-								"prefix": 6989586621679009792,
-								"bytes": "YQ==",
-								"byteBuffer": "YQ=="
-							}]
-						}, {
-							"values": [2, {
-								"baseObject": "Yg==",
-								"baseOffset": 16,
-								"prefix": 7061644215716937728,
-								"bytes": "Yg==",
-								"byteBuffer": "Yg=="
-							}]
-						}, {
-							"values": [3, {
-								"baseObject": "Yw==",
-								"baseOffset": 16,
-								"prefix": 7133701809754865664,
-								"bytes": "Yw==",
-								"byteBuffer": "Yw=="
-							}]
-						}],
-						"isStreaming": false,
-						"origin": {
-							"line": 1,
-							"startPosition": 61
-						},
-						"schema": [{
-							"name": "col1",
-							"dataType": {
-								"numeric": {},
-								"integral": {},
-								"ordering": {}
-							},
-							"nullable": false,
-							"metadata": {
-								"map": {}
-							},
-							"comment": null
-						}, {
-							"name": "col2",
-							"dataType": {
-								"ordering": {}
-							},
-							"nullable": false,
-							"metadata": {
-								"map": {}
-							},
-							"comment": null
-						}],
-						"allAttributes": {
-							"attrs": []
-						},
-						"resolved": true,
-						"statsCache": null,
-						"traceEnabled": false,
-						"canonicalizedPlan": false
-					},
+					"description": {},
 					"inputAttributes": [],
 					"outputAttributes": [{
 						"name": "col1",
@@ -113,27 +17,7 @@
 					}]
 				}]
 			},
-			"spark.logicalPlan": {
-				"plan": [{
-					"class": "org.apache.spark.sql.catalyst.plans.logical.InsertIntoDir",
-					"num-children": 1,
-					"isLocal": false,
-					"storage": {
-						"product-class": "org.apache.spark.sql.catalyst.catalog.CatalogStorageFormat",
-						"locationUri": null,
-						"compressed": false,
-						"properties": null
-					},
-					"provider": "hive",
-					"child": 0,
-					"overwrite": true
-				}, {
-					"class": "org.apache.spark.sql.catalyst.analysis.UnresolvedInlineTable",
-					"num-children": 0,
-					"names": "[col1, col2]",
-					"rows": null
-				}]
-			}
+			"spark.logicalPlan": {}
 		}
 	},
 	"job": {
