@@ -25,6 +25,10 @@ import scala.runtime.AbstractFunction0;
  */
 @Slf4j
 public class PlanUtils {
+  public static final String SLASH_DELIMITER_USER_PASSWORD_REGEX =
+      "[A-Za-z0-9_%]+//?[A-Za-z0-9_%]*@";
+  public static final String COLON_DELIMITER_USER_PASSWORD_REGEX =
+      "([/|,])[A-Za-z0-9_%]+:?[A-Za-z0-9_%]*@";
 
   /**
    * Merge a list of {@link PartialFunction}s and return the first value where the function is
@@ -220,5 +224,17 @@ public class PlanUtils {
       log.warn("Unable to get file system for path ", e);
       return p;
     }
+  }
+
+  /**
+   * JdbcUrl can contain username and password this method clean-up credentials from jdbcUrl and
+   * strip the jdbc prefix from the url
+   */
+  public static String sanitizeJdbcUrl(String jdbcUrl) {
+    jdbcUrl = jdbcUrl.substring(5);
+    return jdbcUrl
+        .replaceAll(SLASH_DELIMITER_USER_PASSWORD_REGEX, "@")
+        .replaceAll(COLON_DELIMITER_USER_PASSWORD_REGEX, "$1")
+        .replaceAll("(?<=[?,;&:)=])\\(?(?i)(?:user|username|password)=[^;&,)]+(?:[;&;)]|$)", "");
   }
 }

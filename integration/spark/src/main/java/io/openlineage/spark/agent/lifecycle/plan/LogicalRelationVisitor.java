@@ -45,12 +45,10 @@ import scala.runtime.AbstractFunction0;
 public class LogicalRelationVisitor extends QueryPlanVisitor<LogicalRelation> {
   private final SparkContext context;
   private final String jobNamespace;
-  private final JdbcUrlSanitizer jdbcUrlSanitizer;
 
   public LogicalRelationVisitor(SparkContext context, String jobNamespace) {
     this.context = context;
     this.jobNamespace = jobNamespace;
-    this.jdbcUrlSanitizer = new JdbcUrlSanitizerImpl();
   }
 
   @Override
@@ -120,7 +118,7 @@ public class LogicalRelationVisitor extends QueryPlanVisitor<LogicalRelation> {
     // formats that aren't always amenable to how Java parses URIs. E.g., the oracle
     // driver format looks like oracle:<drivertype>:<user>/<password>@<database>
     // whereas postgres, mysql, and sqlserver use the scheme://hostname:port/db format.
-    String url = jdbcUrlSanitizer.sanitize(relation.jdbcOptions().url());
+    String url = PlanUtils.sanitizeJdbcUrl(relation.jdbcOptions().url());
     OpenLineage.DatasetFacets datasetFacet = PlanUtils.datasetFacet(relation.schema(), url);
     return Collections.singletonList(PlanUtils.getDataset(tableName, url, datasetFacet));
   }

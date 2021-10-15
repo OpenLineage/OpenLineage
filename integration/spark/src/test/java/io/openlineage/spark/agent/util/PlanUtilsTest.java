@@ -1,20 +1,19 @@
-package io.openlineage.spark.agent.lifecycle.plan;
+package io.openlineage.spark.agent.util;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-class JdbcUrlSanitizerImplTest {
+class PlanUtilsTest {
 
   @ParameterizedTest
   @MethodSource("provideJdbcUrls")
   void testJdbcUrlSanitizer(String jdbcUrl, String expectedResult) {
-    JdbcUrlSanitizer jdbcUrlSanitizer = new JdbcUrlSanitizerImpl();
 
-    String actualResult = jdbcUrlSanitizer.sanitize(jdbcUrl);
+    String actualResult = PlanUtils.sanitizeJdbcUrl(jdbcUrl);
 
     assertEquals(expectedResult, actualResult);
   }
@@ -95,6 +94,6 @@ class JdbcUrlSanitizerImplTest {
             "mysql://myhost1:1111,myhost2:2222/db"),
         Arguments.of(
             "jdbc:mysql://address=(host=myhost1)(port=1111)(user=sandy)(password=secret),address=(host=myhost2)(port=2222)(user=finn)(password=secret)/db",
-            "mysql://address=(host=myhost1)(port=1111)((,address=(host=myhost2)(port=2222)((/db"));
+            "mysql://address=(host=myhost1)(port=1111),address=(host=myhost2)(port=2222)/db"));
   }
 }
