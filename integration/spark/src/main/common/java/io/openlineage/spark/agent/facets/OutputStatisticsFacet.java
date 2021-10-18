@@ -34,6 +34,6 @@ public class OutputStatisticsFacet extends OpenLineage.DefaultDatasetFacet {
   public URI get_schemaURL() {
     return URI.create(
         OpenLineageClient.OPEN_LINEAGE_CLIENT_URI
-            + "/facets/spark-2.4/v1/output-statistics-facet.json");
+            + "/facets/spark/v1/output-statistics-facet.json");
   }
 }
