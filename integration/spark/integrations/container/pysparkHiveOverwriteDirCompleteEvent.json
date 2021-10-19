@@ -17,7 +17,11 @@
 					}]
 				}]
 			},
-			"spark.logicalPlan": {}
+			"spark.logicalPlan": {},
+			"spark_version": {
+				"spark-version": "${json-unit.any-string}",
+				"openlineage-spark-version": "${json-unit.any-string}"
+			}
 		}
 	},
 	"job": {

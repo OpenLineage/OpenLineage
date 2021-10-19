@@ -9,6 +9,7 @@ import io.openlineage.spark.agent.client.DatasetParser;
 import io.openlineage.spark.agent.client.DatasetParser.DatasetParseResult;
 import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.facets.ErrorFacet;
+import io.openlineage.spark.agent.facets.SparkVersionFacet;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.io.IOException;
@@ -50,6 +51,7 @@ import org.apache.spark.scheduler.ResultStage;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.scheduler.Stage;
+import org.apache.spark.sql.SparkSession;
 import org.apache.spark.util.SerializableJobConf;
 import scala.Function2;
 import scala.collection.Iterator;
@@ -223,6 +225,7 @@ public class RddExecutionContext implements ExecutionContext {
     if (jobError != null) {
       builder.put("spark.exception", jobError);
     }
+    builder.put("spark_version", new SparkVersionFacet(SparkSession.active()));
     return builder.build();
   }
 
