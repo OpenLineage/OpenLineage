@@ -2,6 +2,9 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.2.3...HEAD)
 
+### Added
+* facet: adding custom spark version facet to spark integration [@OleksandrDvornik](https://github.com/OleksandrDvornik)
+
 ## [0.2.3](https://github.com/OpenLineage/OpenLineage/releases/tag/0.2.3) - 2021-10-07
 
 ### Fixed

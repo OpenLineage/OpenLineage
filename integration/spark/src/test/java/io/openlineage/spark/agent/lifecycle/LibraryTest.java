@@ -15,7 +15,6 @@ import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.client.OpenLineageClient;
 import java.io.IOException;
 import java.net.URL;
-import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -120,23 +119,21 @@ public class LibraryTest {
     List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
     assertEquals(2, events.size());
 
+    ObjectMapper objectMapper = OpenLineageClient.getObjectMapper();
     for (int i = 0; i < events.size(); i++) {
       OpenLineage.RunEvent event = events.get(i);
-      String snapshot =
-          new String(
-                  Files.readAllBytes(
-                      Paths.get(String.format("integrations/%s/%d.json", "sparkrdd", i + 1))))
-              .replaceAll(
-                  "https://github.com/OpenLineage/OpenLineage/tree/\\$VERSION/integration/spark",
-                  OpenLineageClient.OPEN_LINEAGE_CLIENT_URI.toString());
-
-      Map<String, Object> eventFields =
-          OpenLineageClient.getObjectMapper().convertValue(event, mapTypeReference);
-      ((Map<String, Object>) eventFields.get("run")).replace("runId", "fake_run_id");
-
-      assertEquals(
-          stripSchemaURL(OpenLineageClient.getObjectMapper().readValue(snapshot, mapTypeReference)),
-          stripSchemaURL(eventFields));
+      Map<String, Object> snapshot =
+          objectMapper.readValue(
+              Paths.get(String.format("integrations/%s/%d.json", "sparkrdd", i + 1)).toFile(),
+              mapTypeReference);
+      Map<String, Object> actual =
+          objectMapper.readValue(objectMapper.writeValueAsString(event), mapTypeReference);
+      assertThat(actual)
+          .satisfies(
+              new MatchesMapRecursively(
+                  snapshot,
+                  new HashSet<>(
+                      Arrays.asList("runId", "nonInheritableMetadataKeys", "validConstraints"))));
     }
 
     verifySerialization(events);

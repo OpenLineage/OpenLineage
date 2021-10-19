@@ -8,15 +8,19 @@ import io.openlineage.spark.agent.OpenLineageContext;
 import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.facets.ErrorFacet;
 import io.openlineage.spark.agent.facets.LogicalPlanFacet;
+import io.openlineage.spark.agent.facets.SparkVersionFacet;
 import io.openlineage.spark.agent.facets.UnknownEntryFacet;
 import io.openlineage.spark.agent.lifecycle.plan.QueryPlanVisitor;
 import io.openlineage.spark.agent.util.PlanUtils;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -28,6 +32,7 @@ import org.apache.spark.scheduler.JobFailed;
 import org.apache.spark.scheduler.JobResult;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
+import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.QueryExecution;
 import org.apache.spark.sql.execution.SQLExecution;
@@ -90,8 +95,8 @@ public class SparkSQLExecutionContext implements ExecutionContext {
             : Collections.emptyList();
 
     List<InputDataset> inputDatasets = getInputDatasets();
-    Optional<UnknownEntryFacet> unknownFacet =
-        unknownEntryFacetListener.build(queryExecution.optimizedPlan());
+    UnknownEntryFacet unknownFacet =
+        unknownEntryFacetListener.build(queryExecution.optimizedPlan()).orElse(null);
 
     OpenLineage ol = new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
     OpenLineage.RunEvent event =
@@ -103,10 +108,13 @@ public class SparkSQLExecutionContext implements ExecutionContext {
             .run(
                 buildRun(
                     buildRunFacets(
-                        buildLogicalPlanFacet(queryExecution.optimizedPlan()),
-                        null,
-                        unknownFacet,
-                        buildParentFacet())))
+                        buildParentFacet(),
+                        new SimpleImmutableEntry(
+                            "spark.logicalPlan",
+                            buildLogicalPlanFacet(queryExecution.optimizedPlan())),
+                        new SimpleImmutableEntry("spark_unknown", unknownFacet),
+                        new SimpleImmutableEntry(
+                            "spark_version", new SparkVersionFacet(SparkSession.active())))))
             .job(buildJob(queryExecution))
             .build();
 
@@ -163,8 +171,8 @@ public class SparkSQLExecutionContext implements ExecutionContext {
             : Collections.emptyList();
 
     List<InputDataset> inputDatasets = getInputDatasets();
-    Optional<UnknownEntryFacet> unknownFacet =
-        unknownEntryFacetListener.build(queryExecution.optimizedPlan());
+    UnknownEntryFacet unknownFacet =
+        unknownEntryFacetListener.build(queryExecution.optimizedPlan()).orElse(null);
 
     OpenLineage ol = new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
     OpenLineage.RunEvent event =
@@ -176,10 +184,14 @@ public class SparkSQLExecutionContext implements ExecutionContext {
             .run(
                 buildRun(
                     buildRunFacets(
-                        buildLogicalPlanFacet(queryExecution.logical()),
-                        buildJobErrorFacet(jobEnd.jobResult()),
-                        unknownFacet,
-                        buildParentFacet())))
+                        buildParentFacet(),
+                        new SimpleImmutableEntry(
+                            "spark.logicalPlan", buildLogicalPlanFacet(queryExecution.logical())),
+                        new SimpleImmutableEntry(
+                            "spark.exception", buildJobErrorFacet(jobEnd.jobResult())),
+                        new SimpleImmutableEntry("spark_unknown", unknownFacet),
+                        new SimpleImmutableEntry(
+                            "spark_version", new SparkVersionFacet(SparkSession.active())))))
             .job(buildJob(queryExecution))
             .build();
 
@@ -204,20 +216,13 @@ public class SparkSQLExecutionContext implements ExecutionContext {
   }
 
   protected OpenLineage.RunFacets buildRunFacets(
-      LogicalPlanFacet logicalPlanFacet,
-      ErrorFacet jobError,
-      Optional<UnknownEntryFacet> unknownEntryFacet,
-      Optional<OpenLineage.ParentRunFacet> parentRunFacet) {
+      Optional<OpenLineage.ParentRunFacet> parentRunFacet,
+      Map.Entry<String, OpenLineage.DefaultRunFacet>... customFacets) {
     OpenLineage.RunFacetsBuilder builder = new OpenLineage.RunFacetsBuilder();
     parentRunFacet.ifPresent(builder::parent);
-    unknownEntryFacet.ifPresent(f -> builder.put("spark_unknown", f));
-
-    if (logicalPlanFacet != null) {
-      builder.put("spark.logicalPlan", logicalPlanFacet);
-    }
-    if (jobError != null) {
-      builder.put("spark.exception", jobError);
-    }
+    Arrays.stream(customFacets)
+        .filter(e -> Objects.nonNull(e.getValue()))
+        .forEach(e -> builder.put(e.getKey(), e.getValue()));
     return builder.build();
   }
 
