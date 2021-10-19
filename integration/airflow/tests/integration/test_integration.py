@@ -18,6 +18,7 @@ import time
 import requests
 from retrying import retry
 
+from openlineage.common.test import match
 
 logging.basicConfig(
     format="[%(asctime)s] {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s",
@@ -59,45 +60,6 @@ def wait_for_dag(dag_id):
         raise Exception('Retry!')
 
 
-def match(expected, request):
-    for k, v in expected.items():
-        if k not in request:
-            log.error(f"Key {k} not in event {request}\nExpected {expected}")
-            return False
-        elif isinstance(v, dict):
-            if not match(v, request[k]):
-                return False
-        elif isinstance(v, list):
-            if len(v) != len(request[k]):
-                log.error(f"For list of key {k}, length of lists does"
-                          f" not match: {len(v)} {len(request[k])}\n{expected}\n{request}")
-                return False
-            if not all([match(x, y) for x, y in zip(v, request[k])]):
-                return False
-
-            # Try to resolve case where we have wrongly sorted lists by looking at name attr
-            # If name is not present then assume that lists are sorted
-            for i, x in enumerate(v):
-                if 'name' in x:
-                    matched = False
-                    for y in request[k]:
-                        if 'name' in y and x['name'] == y['name']:
-                            if not match(x, y):
-                                return False
-                            matched = True
-                            break
-                    if not matched:
-                        return False
-                else:
-                    if not match(x, request[k][i]):
-                        return False
-        elif v != request[k]:
-            log.error(f"For key {k}, value {v} not in event {request[k]}"
-                      f"\nExpected {expected}, request {request}")
-            return False
-    return True
-
-
 def check_matches(expected_requests, received_requests):
     for expected in expected_requests:
         is_compared = False
@@ -117,7 +79,7 @@ def check_matches(expected_requests, received_requests):
 
 
 def check_events_emitted(expected_requests):
-    time.sleep(20)
+    time.sleep(5)
     # Service in ./server captures requests and serves them
     r = requests.get('http://backend:5000/api/v1/lineage', timeout=5)
     r.raise_for_status()
@@ -144,8 +106,6 @@ def test_integration(dag_id, request_path):
     # (2) Read expected events
     with open(request_path, 'r') as f:
         expected_requests = json.load(f)
-
-    time.sleep(5)
 
     # (3) Verify events emitted
     if not check_events_emitted(expected_requests):
