@@ -5,6 +5,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.client.OpenLineageClient;
 import lombok.Getter;
 import lombok.NonNull;
+import org.apache.spark.sql.SparkSession;
 
 @Getter
 public class SparkVersionFacet extends OpenLineage.DefaultRunFacet {
@@ -14,9 +15,9 @@ public class SparkVersionFacet extends OpenLineage.DefaultRunFacet {
   @JsonProperty("openlineage-spark-version")
   private String openlineageSparkVersion;
 
-  public SparkVersionFacet(@NonNull String sparkVersion, String openlineageSparkVersion) {
+  public SparkVersionFacet(@NonNull SparkSession session) {
     super(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
-    this.sparkVersion = sparkVersion;
-    this.openlineageSparkVersion = openlineageSparkVersion;
+    this.sparkVersion = session.version();
+    this.openlineageSparkVersion = this.getClass().getPackage().getImplementationVersion();
   }
 }

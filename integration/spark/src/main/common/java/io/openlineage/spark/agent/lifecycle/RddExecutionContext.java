@@ -225,7 +225,7 @@ public class RddExecutionContext implements ExecutionContext {
     if (jobError != null) {
       builder.put("spark.exception", jobError);
     }
-    builder.put("spark_version", buildSparkVersionFacet());
+    builder.put("spark_version", new SparkVersionFacet(SparkSession.active()));
     return builder.build();
   }
 
@@ -236,11 +236,6 @@ public class RddExecutionContext implements ExecutionContext {
             runId ->
                 PlanUtils.parentRunFacet(
                     runId, sparkContext.getParentJobName(), sparkContext.getJobNamespace()));
-  }
-
-  protected SparkVersionFacet buildSparkVersionFacet() {
-    String jarVersion = this.getClass().getPackage().getImplementationVersion();
-    return new SparkVersionFacet(SparkSession.active().version(), jarVersion);
   }
 
   protected ErrorFacet buildJobErrorFacet(JobResult jobResult) {
