@@ -1,0 +1,27 @@
+server:
+  applicationConnectors:
+    - type: http
+      port: ${OPENLINEAGE_PROXY_PORT:-8080}
+  adminConnectors:
+    - type: http
+      port: ${OPENLINEAGE_PROXY_ADMIN_PORT:-8081}
+  # Enables access logs formatted as JSON
+  # requestLog:
+  #   appenders:
+  #     - type: console
+  #       layout:
+  #         type: access-json
+
+logging:
+  # Levels: TRACE, DEBUG, INFO, WARN, ERROR, FATAL, ALL, OFF
+  level: ${LOG_LEVEL:-INFO}
+  appenders:
+    - type: console
+      # Enables app logs formatted as JSON
+      # layout:
+      #   type: json
+
+# Enables lineage streams (default: console)
+# lineageStreams:
+#  - type: Kafka
+#  - type: Kinesis
