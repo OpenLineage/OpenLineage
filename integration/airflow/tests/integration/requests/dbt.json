@@ -5,13 +5,13 @@
         "run": {},
         "job": {
             "facets": {},
-            "name": "speedy-vim-308516.dbt_test1.testproject.money_received",
+            "name": "openlineage-ci.dbt_test1.testproject.money_received",
             "namespace": "food_delivery"
         },
         "outputs": [
             {
                 "facets": {},
-                "name": "speedy-vim-308516.dbt_test1.money_received",
+                "name": "openlineage-ci.dbt_test1.money_received",
                 "namespace": "bigquery",
                 "outputFacets": {}
             }
@@ -23,13 +23,13 @@
         "run": {},
         "job": {
             "facets": {},
-            "name": "speedy-vim-308516.dbt_test1.testproject.money_send",
+            "name": "openlineage-ci.dbt_test1.testproject.money_send",
             "namespace": "food_delivery"
         },
         "outputs": [
             {
                 "facets": {},
-                "name": "speedy-vim-308516.dbt_test1.money_send",
+                "name": "openlineage-ci.dbt_test1.money_send",
                 "namespace": "bigquery",
                 "outputFacets": {}
             }
@@ -40,24 +40,24 @@
         "inputs": [
             {
                 "facets": {},
-                "name": "speedy-vim-308516.dbt_test1.money_received",
+                "name": "openlineage-ci.dbt_test1.money_received",
                 "namespace": "bigquery"
             },
             {
                 "facets": {},
-                "name": "speedy-vim-308516.dbt_test1.money_send",
+                "name": "openlineage-ci.dbt_test1.money_send",
                 "namespace": "bigquery"
             }
         ],
         "job": {
             "facets": {},
-            "name": "speedy-vim-308516.dbt_test1.testproject.balance",
+            "name": "openlineage-ci.dbt_test1.testproject.balance",
             "namespace": "food_delivery"
         },
         "outputs": [
             {
                 "facets": {},
-                "name": "speedy-vim-308516.dbt_test1.balance",
+                "name": "openlineage-ci.dbt_test1.balance",
                 "namespace": "bigquery",
                 "outputFacets": {}
             }
@@ -77,10 +77,10 @@
         "job": {
             "facets": {
                 "sql": {
-                    "query": "select\n    users.user_id,\n    transactions.currency,\n    sum(transactions.amount) as amount\nfrom `speedy-vim-308516`.`dbt_test1`.`users`\nleft join `speedy-vim-308516`.`dbt_test1`.`transactions`\non users.user_id=transactions.user_id\nwhere leg='c'\ngroup by user_id, currency"
+                    "query": "select\n    users.user_id,\n    transactions.currency,\n    sum(transactions.amount) as amount\nfrom `openlineage-ci`.`dbt_test1`.`users`\nleft join `openlineage-ci`.`dbt_test1`.`transactions`\non users.user_id=transactions.user_id\nwhere leg='c'\ngroup by user_id, currency"
                 }
             },
-            "name": "speedy-vim-308516.dbt_test1.testproject.money_received",
+            "name": "openlineage-ci.dbt_test1.testproject.money_received",
             "namespace": "food_delivery"
         },
         "outputs": [
@@ -104,7 +104,7 @@
                         ]
                     }
                 },
-                "name": "speedy-vim-308516.dbt_test1.money_received",
+                "name": "openlineage-ci.dbt_test1.money_received",
                 "namespace": "bigquery",
                 "outputFacets": {}
             }
@@ -124,10 +124,10 @@
         "job": {
             "facets": {
                 "sql": {
-                    "query": "select\n    users.user_id,\n    transactions.currency,\n    sum(transactions.amount) as amount\nfrom `speedy-vim-308516`.`dbt_test1`.`users`\nleft join `speedy-vim-308516`.`dbt_test1`.`transactions`\non users.user_id=transactions.user_id\nwhere leg='b'\ngroup by user_id, currency"
+                    "query": "select\n    users.user_id,\n    transactions.currency,\n    sum(transactions.amount) as amount\nfrom `openlineage-ci`.`dbt_test1`.`users`\nleft join `openlineage-ci`.`dbt_test1`.`transactions`\non users.user_id=transactions.user_id\nwhere leg='b'\ngroup by user_id, currency"
                 }
             },
-            "name": "speedy-vim-308516.dbt_test1.testproject.money_send",
+            "name": "openlineage-ci.dbt_test1.testproject.money_send",
             "namespace": "food_delivery"
         },
         "outputs": [
@@ -151,7 +151,7 @@
                         ]
                     }
                 },
-                "name": "speedy-vim-308516.dbt_test1.money_send",
+                "name": "openlineage-ci.dbt_test1.money_send",
                 "namespace": "bigquery",
                 "outputFacets": {}
             }
@@ -188,7 +188,7 @@
                         ]
                     }
                 },
-                "name": "speedy-vim-308516.dbt_test1.money_received",
+                "name": "openlineage-ci.dbt_test1.money_received",
                 "namespace": "bigquery"
             },
             {
@@ -211,17 +211,17 @@
                         ]
                     }
                 },
-                "name": "speedy-vim-308516.dbt_test1.money_send",
+                "name": "openlineage-ci.dbt_test1.money_send",
                 "namespace": "bigquery"
             }
         ],
         "job": {
             "facets": {
                 "sql": {
-                    "query": "select\n    ifnull(money_received.user_id, money_send.user_id) as user_id,\n    ifnull(money_received.currency, money_send.currency) as currency,\n    ifnull(money_received.amount, 0) - ifnull(money_send.amount, 0) as balance\nfrom `speedy-vim-308516`.`dbt_test1`.`money_received`\nfull outer join `speedy-vim-308516`.`dbt_test1`.`money_send`\non money_received.user_id=money_send.user_id\nand money_received.currency=money_send.currency"
+                    "query": "select\n    ifnull(money_received.user_id, money_send.user_id) as user_id,\n    ifnull(money_received.currency, money_send.currency) as currency,\n    ifnull(money_received.amount, 0) - ifnull(money_send.amount, 0) as balance\nfrom `openlineage-ci`.`dbt_test1`.`money_received`\nfull outer join `openlineage-ci`.`dbt_test1`.`money_send`\non money_received.user_id=money_send.user_id\nand money_received.currency=money_send.currency"
                 }
             },
-            "name": "speedy-vim-308516.dbt_test1.testproject.balance",
+            "name": "openlineage-ci.dbt_test1.testproject.balance",
             "namespace": "food_delivery"
         },
         "outputs": [
@@ -245,7 +245,7 @@
                         ]
                     }
                 },
-                "name": "speedy-vim-308516.dbt_test1.balance",
+                "name": "openlineage-ci.dbt_test1.balance",
                 "namespace": "bigquery",
                 "outputFacets": {}
             }

@@ -43,7 +43,7 @@
 			"sql": {
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SqlJobFacet",
-				"query": "select *\nfrom `speedy-vim-308516`.`dbt_test1`.`source_table`\nwhere id = 1"
+				"query": "select *\nfrom `random-gcp-project`.`dbt_test1`.`source_table`\nwhere id = 1"
 			}
 		}
 	},
