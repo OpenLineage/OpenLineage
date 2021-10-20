@@ -430,9 +430,15 @@ workflows:
       - release-client-java:
           <<: *only_on_release
           context: release
+      - hold:
+          type: approval
+          requires:
+            - release-client-java
       - release-integration-spark:
           <<: *only_on_release
           context: release
+          requires:
+            - hold
       - build-client-python:
           <<: *only_on_release
       - build-integration-common:
