@@ -1,0 +1,6 @@
+{
+  "eventType": "COMPLETE",
+  "job": {
+    "name": "event_order.just_wait"
+  }
+}

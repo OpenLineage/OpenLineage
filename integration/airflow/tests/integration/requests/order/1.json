@@ -1,0 +1,6 @@
+{
+  "eventType": "START",
+  "job": {
+    "name": "event_order.just_wait"
+  }
+}
