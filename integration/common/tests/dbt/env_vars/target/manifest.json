@@ -74,7 +74,7 @@
 			"deferred": false,
 			"unrendered_config": {},
 			"created_at": 1625661884,
-			"compiled_sql": "select *\nfrom `speedy-vim-308516`.`dbt_test1`.`source_table`\nwhere id = 1",
+			"compiled_sql": "select *\nfrom `random-gcp-project`.`dbt_test1`.`source_table`\nwhere id = 1",
 			"extra_ctes_injected": true,
 			"extra_ctes": [],
 			"relation_name": "`foo_db_name`.`foo_schema`.`test_model`"

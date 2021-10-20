@@ -33,7 +33,7 @@ dag = DAG(
     description='Determines the popular day of week orders are placed.'
 )
 
-PROJECT_ID = 'speedy-vim-308516'
+PROJECT_ID = 'openlineage-ci'
 DATASET_ID = 'airflow_integration'
 CONNECTION = 'bq_conn'
 

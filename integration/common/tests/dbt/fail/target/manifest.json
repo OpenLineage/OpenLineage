@@ -33,7 +33,7 @@
 				"post-hook": [],
 				"pre-hook": []
 			},
-			"database": "speedy-vim-308516",
+			"database": "random-gcp-project",
 			"schema": "dbt_test1",
 			"fqn": ["dbt_bigquery_test", "example", "test_third_dbt_model"],
 			"unique_id": "model.dbt_bigquery_test.test_third_dbt_model",
@@ -108,7 +108,7 @@
 				"post-hook": [],
 				"pre-hook": []
 			},
-			"database": "speedy-vim-308516",
+			"database": "random-gcp-project",
 			"schema": "dbt_test1",
 			"fqn": ["dbt_bigquery_test", "example", "test_second_parallel_dbt_model"],
 			"unique_id": "model.dbt_bigquery_test.test_second_parallel_dbt_model",
@@ -148,10 +148,10 @@
 			"deferred": false,
 			"unrendered_config": {},
 			"created_at": 1627474184,
-			"compiled_sql": "select *\nfrom `speedy-vim-308516`.`dbt_test1`.`source_table`\nwhere id = 1\nbork bork fail",
+			"compiled_sql": "select *\nfrom `random-gcp-project`.`dbt_test1`.`source_table`\nwhere id = 1\nbork bork fail",
 			"extra_ctes_injected": true,
 			"extra_ctes": [],
-			"relation_name": "`speedy-vim-308516`.`dbt_test1`.`test_second_parallel_dbt_model`"
+			"relation_name": "`random-gcp-project`.`dbt_test1`.`test_second_parallel_dbt_model`"
 		},
 		"model.dbt_bigquery_test.test_second_dbt_model": {
 			"raw_sql": "select *\nfrom {{ ref('test_first_dbt_model') }}\nwhere id = 1",
@@ -176,7 +176,7 @@
 				"post-hook": [],
 				"pre-hook": []
 			},
-			"database": "speedy-vim-308516",
+			"database": "random-gcp-project",
 			"schema": "dbt_test1",
 			"fqn": ["dbt_bigquery_test", "example", "test_second_dbt_model"],
 			"unique_id": "model.dbt_bigquery_test.test_second_dbt_model",
@@ -216,10 +216,10 @@
 			"deferred": false,
 			"unrendered_config": {},
 			"created_at": 1627474184,
-			"compiled_sql": "select *\nfrom `speedy-vim-308516`.`dbt_test1`.`test_first_dbt_model`\nwhere id = 1",
+			"compiled_sql": "select *\nfrom `random-gcp-project`.`dbt_test1`.`test_first_dbt_model`\nwhere id = 1",
 			"extra_ctes_injected": true,
 			"extra_ctes": [],
-			"relation_name": "`speedy-vim-308516`.`dbt_test1`.`test_second_dbt_model`"
+			"relation_name": "`random-gcp-project`.`dbt_test1`.`test_second_dbt_model`"
 		},
 		"model.dbt_bigquery_test.test_first_dbt_model": {
 			"raw_sql": "{{ config(materialized='table') }}\n\nwith source_data as (\n\n    select 1 as id\n    union all\n    select null as id\n\n)\n\nselect *\nfrom source_data",
@@ -244,7 +244,7 @@
 				"post-hook": [],
 				"pre-hook": []
 			},
-			"database": "speedy-vim-308516",
+			"database": "random-gcp-project",
 			"schema": "dbt_test1",
 			"fqn": ["dbt_bigquery_test", "example", "test_first_dbt_model"],
 			"unique_id": "model.dbt_bigquery_test.test_first_dbt_model",
@@ -287,14 +287,14 @@
 			"compiled_sql": "\n\nwith source_data as (\n\n    select 1 as id\n    union all\n    select null as id\n\n)\n\nselect *\nfrom source_data",
 			"extra_ctes_injected": true,
 			"extra_ctes": [],
-			"relation_name": "`speedy-vim-308516`.`dbt_test1`.`test_first_dbt_model`"
+			"relation_name": "`random-gcp-project`.`dbt_test1`.`test_first_dbt_model`"
 		}
 	},
 	"macros": {},
 	"sources": {
 		"source.dbt_bigquery_test.dbt_test1.source_table": {
 			"fqn": ["dbt_bigquery_test", "example", "dbt_test1", "source_table"],
-			"database": "speedy-vim-308516",
+			"database": "random-gcp-project",
 			"schema": "dbt_test1",
 			"unique_id": "source.dbt_bigquery_test.dbt_test1.source_table",
 			"package_name": "dbt_bigquery_test",
@@ -330,7 +330,7 @@
 			},
 			"patch_path": null,
 			"unrendered_config": {},
-			"relation_name": "`speedy-vim-308516`.`dbt_test1`.`source_table`",
+			"relation_name": "`random-gcp-project`.`dbt_test1`.`source_table`",
 			"created_at": 1627474185
 		}
 	},
