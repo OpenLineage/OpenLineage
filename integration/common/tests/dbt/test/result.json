@@ -5,13 +5,13 @@
         "inputs": [
             {
                 "facets": {},
-                "name": "speedy-vim-308516.dbt_test1.test_third_dbt_model",
+                "name": "random-gcp-project.dbt_test1.test_third_dbt_model",
                 "namespace": "bigquery"
             }
         ],
         "job": {
             "facets": {},
-            "name": "speedy-vim-308516.dbt_test1.model.dbt_bigquery_test.test_third_dbt_model",
+            "name": "random-gcp-project.dbt_test1.model.dbt_bigquery_test.test_third_dbt_model",
             "namespace": "bigquery"
         },
         "outputs": [],
@@ -27,13 +27,13 @@
         "inputs": [
             {
                 "facets": {},
-                "name": "speedy-vim-308516.dbt_test1.test_second_parallel_dbt_model",
+                "name": "random-gcp-project.dbt_test1.test_second_parallel_dbt_model",
                 "namespace": "bigquery"
             }
         ],
         "job": {
             "facets": {},
-            "name": "speedy-vim-308516.dbt_test1.model.dbt_bigquery_test.test_second_parallel_dbt_model",
+            "name": "random-gcp-project.dbt_test1.model.dbt_bigquery_test.test_second_parallel_dbt_model",
             "namespace": "bigquery"
         },
         "outputs": [],
@@ -49,13 +49,13 @@
         "inputs": [
             {
                 "facets": {},
-                "name": "speedy-vim-308516.dbt_test1.test_second_dbt_model",
+                "name": "random-gcp-project.dbt_test1.test_second_dbt_model",
                 "namespace": "bigquery"
             }
         ],
         "job": {
             "facets": {},
-            "name": "speedy-vim-308516.dbt_test1.model.dbt_bigquery_test.test_second_dbt_model",
+            "name": "random-gcp-project.dbt_test1.model.dbt_bigquery_test.test_second_dbt_model",
             "namespace": "bigquery"
         },
         "outputs": [],
@@ -71,13 +71,13 @@
         "inputs": [
             {
                 "facets": {},
-                "name": "speedy-vim-308516.dbt_test1.test_first_dbt_model",
+                "name": "random-gcp-project.dbt_test1.test_first_dbt_model",
                 "namespace": "bigquery"
             }
         ],
         "job": {
             "facets": {},
-            "name": "speedy-vim-308516.dbt_test1.model.dbt_bigquery_test.test_first_dbt_model",
+            "name": "random-gcp-project.dbt_test1.model.dbt_bigquery_test.test_first_dbt_model",
             "namespace": "bigquery"
         },
         "outputs": [],
@@ -120,13 +120,13 @@
                         ]
                     }
                 },
-                "name": "speedy-vim-308516.dbt_test1.test_third_dbt_model",
+                "name": "random-gcp-project.dbt_test1.test_third_dbt_model",
                 "namespace": "bigquery"
             }
         ],
         "job": {
             "facets": {},
-            "name": "speedy-vim-308516.dbt_test1.model.dbt_bigquery_test.test_third_dbt_model",
+            "name": "random-gcp-project.dbt_test1.model.dbt_bigquery_test.test_third_dbt_model",
             "namespace": "bigquery"
         },
         "outputs": [],
@@ -166,13 +166,13 @@
                         ]
                     }
                 },
-                "name": "speedy-vim-308516.dbt_test1.test_second_parallel_dbt_model",
+                "name": "random-gcp-project.dbt_test1.test_second_parallel_dbt_model",
                 "namespace": "bigquery"
             }
         ],
         "job": {
             "facets": {},
-            "name": "speedy-vim-308516.dbt_test1.model.dbt_bigquery_test.test_second_parallel_dbt_model",
+            "name": "random-gcp-project.dbt_test1.model.dbt_bigquery_test.test_second_parallel_dbt_model",
             "namespace": "bigquery"
         },
         "outputs": [],
@@ -212,13 +212,13 @@
                         ]
                     }
                 },
-                "name": "speedy-vim-308516.dbt_test1.test_second_dbt_model",
+                "name": "random-gcp-project.dbt_test1.test_second_dbt_model",
                 "namespace": "bigquery"
             }
         ],
         "job": {
             "facets": {},
-            "name": "speedy-vim-308516.dbt_test1.model.dbt_bigquery_test.test_second_dbt_model",
+            "name": "random-gcp-project.dbt_test1.model.dbt_bigquery_test.test_second_dbt_model",
             "namespace": "bigquery"
         },
         "outputs": [],
@@ -273,13 +273,13 @@
                         ]
                     }
                 },
-                "name": "speedy-vim-308516.dbt_test1.test_first_dbt_model",
+                "name": "random-gcp-project.dbt_test1.test_first_dbt_model",
                 "namespace": "bigquery"
             }
         ],
         "job": {
             "facets": {},
-            "name": "speedy-vim-308516.dbt_test1.model.dbt_bigquery_test.test_first_dbt_model",
+            "name": "random-gcp-project.dbt_test1.model.dbt_bigquery_test.test_first_dbt_model",
             "namespace": "bigquery"
         },
         "outputs": [],
