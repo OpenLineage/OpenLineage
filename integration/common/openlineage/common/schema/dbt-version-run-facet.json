@@ -1,0 +1,22 @@
+{
+  "$schema" : "https://json-schema.org/draft/2020-12/schema",
+  "definitions": {
+    "DbtVersionRunFacet": {
+      "allOf": [
+        {
+          "$ref": "https://openlineage.io/spec/1-0-2/OpenLineage.json#/definitions/BaseFacet"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "version": {
+              "type": "string",
+              "example": "0.20.1"
+            }
+          }
+        }
+      ],
+      "type": "object"
+    }
+  }
+}
