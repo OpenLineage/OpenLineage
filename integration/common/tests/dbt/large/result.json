@@ -1,139 +1,110 @@
 [{
 	"eventType": "START",
-	"eventTime": "2021-07-05T11:43:14.756283Z",
+	"eventTime": "{{ is_datetime(result) }}",
 	"run": {
-		"runId": "6edf42ed-d8d0-454a-b819-d09b9067ff99",
-		"facets": {}
+		"runId": "{{ any(result) }}"
 	},
 	"job": {
 		"namespace": "snowflake://ASDF1234.eu-central-1",
-		"name": "DEMO_DB.public.jaffle_shop.stg_orders",
-		"facets": {}
+		"name": "DEMO_DB.public.jaffle_shop.stg_orders"
 	},
 	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 	"inputs": [],
 	"outputs": [{
 		"namespace": "snowflake://ASDF1234.eu-central-1",
-		"name": "DEMO_DB.public.stg_orders",
-		"facets": {},
-		"outputFacets": {}
+		"name": "DEMO_DB.public.stg_orders"
 	}]
 }, {
 	"eventType": "START",
-	"eventTime": "2021-07-05T11:43:16.271247Z",
+	"eventTime": "{{ is_datetime(result) }}",
 	"run": {
-		"runId": "1a69c0a7-04bb-408b-980e-cbbfb1831ef7",
-		"facets": {}
+		"runId": "{{ any(result) }}"
 	},
 	"job": {
 		"namespace": "snowflake://ASDF1234.eu-central-1",
-		"name": "DEMO_DB.public.jaffle_shop.stg_payments",
-		"facets": {}
+		"name": "DEMO_DB.public.jaffle_shop.stg_payments"
 	},
 	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 	"inputs": [],
 	"outputs": [{
 		"namespace": "snowflake://ASDF1234.eu-central-1",
-		"name": "DEMO_DB.public.stg_payments",
-		"facets": {},
-		"outputFacets": {}
+		"name": "DEMO_DB.public.stg_payments"
 	}]
 }, {
 	"eventType": "START",
-	"eventTime": "2021-07-05T11:43:17.338870Z",
+	"eventTime": "{{ is_datetime(result) }}",
 	"run": {
-		"runId": "f99310b4-339a-4381-ad3e-c1b95c24ff11",
-		"facets": {}
+		"runId": "{{ any(result) }}"
 	},
 	"job": {
 		"namespace": "snowflake://ASDF1234.eu-central-1",
-		"name": "DEMO_DB.public.jaffle_shop.stg_customers",
-		"facets": {}
+		"name": "DEMO_DB.public.jaffle_shop.stg_customers"
 	},
 	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 	"inputs": [],
 	"outputs": [{
 		"namespace": "snowflake://ASDF1234.eu-central-1",
-		"name": "DEMO_DB.public.stg_customers",
-		"facets": {},
-		"outputFacets": {}
+		"name": "DEMO_DB.public.stg_customers"
 	}]
 }, {
 	"eventType": "START",
-	"eventTime": "2021-07-05T11:43:18.498280Z",
+	"eventTime": "{{ is_datetime(result) }}",
 	"run": {
-		"runId": "c11f2efd-4415-45fc-8081-10d2aaa594d2",
-		"facets": {}
+		"runId": "{{ any(result) }}"
 	},
 	"job": {
 		"namespace": "snowflake://ASDF1234.eu-central-1",
-		"name": "DEMO_DB.public.jaffle_shop.orders",
-		"facets": {}
+		"name": "DEMO_DB.public.jaffle_shop.orders"
 	},
 	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 	"inputs": [{
 		"namespace": "snowflake://ASDF1234.eu-central-1",
-		"name": "DEMO_DB.public.stg_orders",
-		"facets": {}
+		"name": "DEMO_DB.public.stg_orders"
 	}, {
 		"namespace": "snowflake://ASDF1234.eu-central-1",
-		"name": "DEMO_DB.public.stg_payments",
-		"facets": {}
+		"name": "DEMO_DB.public.stg_payments"
 	}],
 	"outputs": [{
 		"namespace": "snowflake://ASDF1234.eu-central-1",
-		"name": "DEMO_DB.public.orders",
-		"facets": {},
-		"outputFacets": {}
+		"name": "DEMO_DB.public.orders"
 	}]
 }, {
 	"eventType": "START",
-	"eventTime": "2021-07-05T11:43:22.037678Z",
+	"eventTime": "{{ is_datetime(result) }}",
 	"run": {
-		"runId": "ae0a988e-72ad-4caf-8223-fe9dcb923a3f",
-		"facets": {}
+		"runId": "{{ any(result) }}"
 	},
 	"job": {
 		"namespace": "snowflake://ASDF1234.eu-central-1",
-		"name": "DEMO_DB.public.jaffle_shop.customers",
-		"facets": {}
+		"name": "DEMO_DB.public.jaffle_shop.customers"
 	},
 	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 	"inputs": [{
 		"namespace": "snowflake://ASDF1234.eu-central-1",
-		"name": "DEMO_DB.public.stg_customers",
-		"facets": {}
+		"name": "DEMO_DB.public.stg_customers"
 	}, {
 		"namespace": "snowflake://ASDF1234.eu-central-1",
-		"name": "DEMO_DB.public.stg_orders",
-		"facets": {}
+		"name": "DEMO_DB.public.stg_orders"
 	}, {
 		"namespace": "snowflake://ASDF1234.eu-central-1",
-		"name": "DEMO_DB.public.stg_payments",
-		"facets": {}
+		"name": "DEMO_DB.public.stg_payments"
 	}],
 	"outputs": [{
 		"namespace": "snowflake://ASDF1234.eu-central-1",
-		"name": "DEMO_DB.public.customers",
-		"facets": {},
-		"outputFacets": {}
+		"name": "DEMO_DB.public.customers"
 	}]
 }, {
 	"eventType": "COMPLETE",
-	"eventTime": "2021-07-05T11:43:16.146647Z",
+	"eventTime": "{{ is_datetime(result) }}",
 	"run": {
-		"runId": "6edf42ed-d8d0-454a-b819-d09b9067ff99",
+		"runId": "{{ any(result) }}",
 		"facets": {
 			"parent": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/ParentRunFacet",
 				"job": {"name": "dbt-job-name", "namespace": "dbt"},
-				"run": {"runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"}
+				"run": {"runId": "{{ any(result) }}"}
 			},
 			"dbt_version": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
-				"version": "0.21.0"
+				"version": "{{ any(result) }}"
 			}
 		}
 	},
@@ -148,21 +119,16 @@
 			}
 		}
 	},
-	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 	"inputs": [],
 	"outputs": [{
 		"namespace": "snowflake://ASDF1234.eu-central-1",
 		"name": "DEMO_DB.public.stg_orders",
 		"facets": {
 			"dataSource": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
 				"name": "snowflake://ASDF1234.eu-central-1",
 				"uri": "snowflake://ASDF1234.eu-central-1"
 			},
 			"schema": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "order_id",
 					"type": null,
@@ -173,25 +139,22 @@
 					"description": null
 				}]
 			}
-		},
-		"outputFacets": {}
+		}
 	}]
 }, {
 	"eventType": "COMPLETE",
 	"eventTime": "2021-07-05T11:43:17.218104Z",
 	"run": {
-		"runId": "1a69c0a7-04bb-408b-980e-cbbfb1831ef7",
+		"runId": "{{ any(result) }}",
 		"facets": {
 			"parent": {
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/ParentRunFacet",
 				"job": {"name": "dbt-job-name", "namespace": "dbt"},
-				"run": {"runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"}
+				"run": {"runId": "{{ any(result) }}"}
 			},
 			"dbt_version": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
-				"version": "0.21.0"
+				"version": "{{ any(result) }}"
 			}
 		}
 	},
@@ -206,21 +169,16 @@
 			}
 		}
 	},
-	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 	"inputs": [],
 	"outputs": [{
 		"namespace": "snowflake://ASDF1234.eu-central-1",
 		"name": "DEMO_DB.public.stg_payments",
 		"facets": {
 			"dataSource": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
 				"name": "snowflake://ASDF1234.eu-central-1",
 				"uri": "snowflake://ASDF1234.eu-central-1"
 			},
 			"schema": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "payment_id",
 					"type": null,
@@ -238,7 +196,6 @@
 	"eventType": "COMPLETE",
 	"eventTime": "2021-07-05T11:43:18.375002Z",
 	"run": {
-		"runId": "f99310b4-339a-4381-ad3e-c1b95c24ff11",
 		"facets": {
 			"parent": {
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -249,7 +206,7 @@
 			"dbt_version": {
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
-				"version": "0.21.0"
+				"version": "{{ any(result) }}"
 			}
 		}
 	},
@@ -264,45 +221,35 @@
 			}
 		}
 	},
-	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 	"inputs": [],
 	"outputs": [{
 		"namespace": "snowflake://ASDF1234.eu-central-1",
 		"name": "DEMO_DB.public.stg_customers",
 		"facets": {
 			"dataSource": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
 				"name": "snowflake://ASDF1234.eu-central-1",
 				"uri": "snowflake://ASDF1234.eu-central-1"
 			},
 			"schema": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "customer_id",
 					"type": null,
 					"description": null
 				}]
 			}
-		},
-		"outputFacets": {}
+		}
 	}]
 }, {
 	"eventType": "COMPLETE",
 	"eventTime": "2021-07-05T11:43:21.900891Z",
 	"run": {
-		"runId": "c11f2efd-4415-45fc-8081-10d2aaa594d2",
+		"runId": "{{ any(result) }}",
 		"facets": {
 			"parent": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/ParentRunFacet",
 				"job": {"name": "dbt-job-name", "namespace": "dbt"},
-				"run": {"runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"}
+				"run": {"runId": "{{ any(result) }}"}
 			},
 			"dbt_version": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
 				"version": "0.21.0"
 			}
 		}
@@ -312,8 +259,6 @@
 		"name": "DEMO_DB.public.jaffle_shop.orders",
 		"facets": {
 			"sql": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SqlJobFacet",
 				"query": "\n\nwith orders as (\n\n    select * from DEMO_DB.public.stg_orders\n\n),\n\npayments as (\n\n    select * from DEMO_DB.public.stg_payments\n\n),\n\norder_payments as (\n\n    select\n        order_id,\n\n        sum(case when payment_method = 'credit_card' then amount else 0 end) as credit_card_amount,\n        sum(case when payment_method = 'coupon' then amount else 0 end) as coupon_amount,\n        sum(case when payment_method = 'bank_transfer' then amount else 0 end) as bank_transfer_amount,\n        sum(case when payment_method = 'gift_card' then amount else 0 end) as gift_card_amount,\n        sum(amount) as total_amount\n\n    from payments\n\n    group by 1\n\n),\n\nfinal as (\n\n    select\n        orders.order_id,\n        orders.customer_id,\n        orders.order_date,\n        orders.status,\n\n        order_payments.credit_card_amount,\n\n        order_payments.coupon_amount,\n\n        order_payments.bank_transfer_amount,\n\n        order_payments.gift_card_amount,\n\n        order_payments.total_amount as amount\n\n    from orders\n\n    left join order_payments using (order_id)\n\n)\n\nselect * from final"
 			}
 		}
@@ -324,14 +269,10 @@
 		"name": "DEMO_DB.public.stg_orders",
 		"facets": {
 			"dataSource": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
 				"name": "snowflake://ASDF1234.eu-central-1",
 				"uri": "snowflake://ASDF1234.eu-central-1"
 			},
 			"schema": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "order_id",
 					"type": null,
@@ -348,14 +289,10 @@
 		"name": "DEMO_DB.public.stg_payments",
 		"facets": {
 			"dataSource": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
 				"name": "snowflake://ASDF1234.eu-central-1",
 				"uri": "snowflake://ASDF1234.eu-central-1"
 			},
 			"schema": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "payment_id",
 					"type": null,
@@ -373,14 +310,10 @@
 		"name": "DEMO_DB.public.orders",
 		"facets": {
 			"dataSource": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
 				"name": "snowflake://ASDF1234.eu-central-1",
 				"uri": "snowflake://ASDF1234.eu-central-1"
 			},
 			"schema": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "order_id",
 					"type": null,
@@ -424,19 +357,15 @@
 	}]
 }, {
 	"eventType": "COMPLETE",
-	"eventTime": "2021-07-05T11:43:24.406553Z",
+	"eventTime": "{{ is_datetime(result) }}",
 	"run": {
-		"runId": "ae0a988e-72ad-4caf-8223-fe9dcb923a3f",
+		"runId": "{{ any(result) }}",
 		"facets": {
 			"parent": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/ParentRunFacet",
 				"job": {"name": "dbt-job-name", "namespace": "dbt"},
 				"run": {"runId": "f99310b4-3c3c-1a1a-2b2b-c1b95c24ff11"}
 			},
 			"dbt_version": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/schema/dbt-version-run-facet.json",
 				"version": "0.21.0"
 			}
 		}
@@ -446,26 +375,19 @@
 		"name": "DEMO_DB.public.jaffle_shop.customers",
 		"facets": {
 			"sql": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SqlJobFacet",
 				"query": "with customers as (\n\n    select * from DEMO_DB.public.stg_customers\n\n),\n\norders as (\n\n    select * from DEMO_DB.public.stg_orders\n\n),\n\npayments as (\n\n    select * from DEMO_DB.public.stg_payments\n\n),\n\ncustomer_orders as (\n\n        select\n        customer_id,\n\n        min(order_date) as first_order,\n        max(order_date) as most_recent_order,\n        count(order_id) as number_of_orders\n    from orders\n\n    group by 1\n\n),\n\ncustomer_payments as (\n\n    select\n        orders.customer_id,\n        sum(amount) as total_amount\n\n    from payments\n\n    left join orders using (order_id)\n\n    group by 1\n\n),\n\nfinal as (\n\n    select\n        customers.customer_id,\n        customers.first_name,\n        customers.last_name,\n        customer_orders.first_order,\n        customer_orders.most_recent_order,\n        customer_orders.number_of_orders,\n        customer_payments.total_amount as customer_lifetime_value\n\n    from customers\n\n    left join customer_orders using (customer_id)\n\n    left join customer_payments using (customer_id)\n\n)\n\nselect * from final"
 			}
 		}
 	},
-	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 	"inputs": [{
 		"namespace": "snowflake://ASDF1234.eu-central-1",
 		"name": "DEMO_DB.public.stg_customers",
 		"facets": {
 			"dataSource": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
 				"name": "snowflake://ASDF1234.eu-central-1",
 				"uri": "snowflake://ASDF1234.eu-central-1"
 			},
 			"schema": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "customer_id",
 					"type": null,
@@ -478,14 +400,10 @@
 		"name": "DEMO_DB.public.stg_orders",
 		"facets": {
 			"dataSource": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
 				"name": "snowflake://ASDF1234.eu-central-1",
 				"uri": "snowflake://ASDF1234.eu-central-1"
 			},
 			"schema": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "order_id",
 					"type": null,
@@ -502,14 +420,10 @@
 		"name": "DEMO_DB.public.stg_payments",
 		"facets": {
 			"dataSource": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
 				"name": "snowflake://ASDF1234.eu-central-1",
 				"uri": "snowflake://ASDF1234.eu-central-1"
 			},
 			"schema": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "payment_id",
 					"type": null,
@@ -565,7 +479,6 @@
 					"description": null
 				}]
 			}
-		},
-		"outputFacets": {}
+		}
 	}]
 }]
