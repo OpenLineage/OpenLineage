@@ -101,7 +101,7 @@ jobs:
       - save_cache:
           key: v1-release-client-java-{{ .Branch }}-{{ .Revision }}
           paths:
-            - ~/.gradle
+            - ~/.m2
 
   publish-snapshot-client-java:
     working_directory: ~/openlineage/client/java
