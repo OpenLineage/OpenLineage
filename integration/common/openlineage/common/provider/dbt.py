@@ -416,7 +416,7 @@ class DbtArtifactProcessor:
         except Exception as e:
             if self.skip_errors:
                 return None
-            raise ValueError(e)
+            raise ValueError() from e
 
     def _to_openlineage_events(self, run: DbtRun) -> Optional[DbtRunResult]:
         if run.status == 'skipped':

@@ -1,0 +1,6 @@
+{
+  "eventType": "COMPLETE",
+  "job": {
+    "name": "wait-for-me"
+  }
+}
