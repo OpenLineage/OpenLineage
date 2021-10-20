@@ -98,6 +98,10 @@ jobs:
           export RELEASE_USERNAME=$(echo $SONATYPE_USER)
           # Publish *.jar
           ./gradlew publish
+      - save_cache:
+          key: v1-release-client-java-{{ .Branch }}-{{ .Revision }}
+          paths:
+            - ~/.gradle
 
   publish-snapshot-client-java:
     working_directory: ~/openlineage/client/java
@@ -105,6 +109,10 @@ jobs:
       - image: cimg/openjdk:11.0
     steps:
       - *checkout_project_root
+      - restore_cache:
+          keys:
+            - v1-release-client-java-{{ .Branch }}-{{ .Revision }}
+            - v1-release-client-java-{{ .Branch }}
       - run: |
           # Get, then decode the GPG private key used to sign *.jar
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
@@ -430,15 +438,11 @@ workflows:
       - release-client-java:
           <<: *only_on_release
           context: release
-      - hold:
-          type: approval
-          requires:
-            - release-client-java
       - release-integration-spark:
           <<: *only_on_release
           context: release
           requires:
-            - hold
+            - release-client-java
       - build-client-python:
           <<: *only_on_release
       - build-integration-common:
