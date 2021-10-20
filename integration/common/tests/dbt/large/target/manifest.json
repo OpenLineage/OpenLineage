@@ -1,7 +1,7 @@
 {
 	"metadata": {
 		"dbt_schema_version": "https://schemas.getdbt.com/dbt/manifest/v2.json",
-		"dbt_version": "0.20.0rc2",
+		"dbt_version": "0.21.0",
 		"generated_at": "2021-07-05T11:43:09.384637Z",
 		"invocation_id": "ebb384bf-f2f3-4303-bb1b-98b1daa6d2d4",
 		"env": {},
