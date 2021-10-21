@@ -96,6 +96,10 @@ jobs:
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
           export RELEASE_PASSWORD=$(echo $SONATYPE_PASSWORD)
           export RELEASE_USERNAME=$(echo $SONATYPE_USER)
+
+          # publish jar to maven local so it can be found by dependents
+          ./gradlew publishToMavenLocal
+
           # Publish *.jar
           ./gradlew publish
       - save_cache:
