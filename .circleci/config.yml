@@ -109,10 +109,6 @@ jobs:
       - image: cimg/openjdk:11.0
     steps:
       - *checkout_project_root
-      - restore_cache:
-          keys:
-            - v1-release-client-java-{{ .Branch }}-{{ .Revision }}
-            - v1-release-client-java-{{ .Branch }}
       - run: |
           # Get, then decode the GPG private key used to sign *.jar
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
@@ -127,6 +123,10 @@ jobs:
       - image: circleci/openjdk:8-jdk
     steps:
       - *checkout_project_root
+      - restore_cache:
+          keys:
+            - v1-release-client-java-{{ .Branch }}-{{ .Revision }}
+            - v1-release-client-java-{{ .Branch }}
       - run: |
           cd ../../client/java
           ./gradlew  --no-daemon publishToMavenLocal
