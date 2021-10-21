@@ -65,7 +65,7 @@ jobs:
   build-client-java:
     working_directory: ~/openlineage/client/java
     docker:
-      - image: cimg/openjdk:11.0
+      - image: circleci/openjdk:8-jdk
     steps:
       - *checkout_project_root
       - restore_cache:
@@ -89,7 +89,7 @@ jobs:
   release-client-java:
     working_directory: ~/openlineage/client/java
     docker:
-      - image: cimg/openjdk:11.0
+      - image: circleci/openjdk:8-jdk
     steps:
       - *checkout_project_root
       - run: |
@@ -111,7 +111,7 @@ jobs:
   publish-snapshot-client-java:
     working_directory: ~/openlineage/client/java
     docker:
-      - image: cimg/openjdk:11.0
+      - image: circleci/openjdk:8-jdk
     steps:
       - *checkout_project_root
       - run: |
@@ -133,9 +133,6 @@ jobs:
             - v1-release-client-java-{{ .Branch }}-{{ .Revision }}
             - v1-release-client-java-{{ .Branch }}
       - run: |
-          cd ../../client/java
-          ./gradlew  --no-daemon publishToMavenLocal
-          cd -
           # Get, then decode the GPG private key used to sign *.jar
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
           export RELEASE_PASSWORD=$(echo $SONATYPE_PASSWORD)
