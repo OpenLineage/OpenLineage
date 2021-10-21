@@ -1,13 +1,21 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.2.3...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.3.0...HEAD)
+
+## [0.3.0](https://github.com/OpenLineage/OpenLineage/releases/tag/0.3.0) - 2021-10-21
 
 ### Added
-* facet: adding custom spark version facet to spark integration [@OleksandrDvornik](https://github.com/OleksandrDvornik)
+* Spark3 support [@OleksandrDvornik](https://github.com/OleksandrDvornik)/[@collado-mike](https://github.com/collado-mike)
+* LineageBackend for Airflow 2 [@mobuchowski](https://github.com/mobuchowski)
+* Adding custom spark version facet to spark integration [@OleksandrDvornik](https://github.com/OleksandrDvornik)
+* Adding dbt version facet [@mobuchowski](https://github.com/mobuchowski)
+* Added support for Redshift profile [@AlessandroLollo](https://github.com/AlessandroLollo)
 
 ### Fixed
 
+* Sanitize JDBC URLs [@OleksandrDvornik](https://github.com/OleksandrDvornik)
 * strip openlineage url in python client [@OleksandrDvornik](https://github.com/OleksandrDvornik)
+* deploy spec if spec file changes [@mobuchowski](https://github.com/mobuchowski)
 
 ## [0.2.3](https://github.com/OpenLineage/OpenLineage/releases/tag/0.2.3) - 2021-10-07
 
