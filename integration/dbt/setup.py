@@ -34,6 +34,7 @@ extras_require = {
         "pytest-cov",
         "mock",
         "flake8",
+        "python-dateutil"
     ],
 }
 extras_require["dev"] = set(sum(extras_require.values(), []))

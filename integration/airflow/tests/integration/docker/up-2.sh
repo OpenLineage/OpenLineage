@@ -53,6 +53,9 @@ psycopg2-binary==2.8.6
 httplib2>=0.18.1
 retrying==1.3.3
 pytest==6.2.2
+jinja2==3.0.2
+python-dateutil==2.8.2
+${OPENLINEAGE_AIRFLOW_WHL}
 EOL
 
 docker-compose -f docker-compose-2.yml down
