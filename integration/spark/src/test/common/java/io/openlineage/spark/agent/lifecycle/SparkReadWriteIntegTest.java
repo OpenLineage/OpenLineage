@@ -82,6 +82,7 @@ import org.testcontainers.utility.DockerImageName;
 import scala.Tuple2;
 import scala.collection.immutable.HashMap;
 
+@Tag("integration-test")
 @ExtendWith(SparkAgentTestExtension.class)
 @Tag("integration-test")
 public class SparkReadWriteIntegTest {

@@ -28,12 +28,14 @@ import java.util.stream.IntStream;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SparkSession;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import scala.Tuple2;
 
+@Tag("integration-test")
 @ExtendWith(SparkAgentTestExtension.class)
 public class LibraryTest {
 
