@@ -1,6 +1,11 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.3.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.3.1...HEAD)
+
+## [0.3.1](https://github.com/OpenLineage/OpenLineage/releases/tag/0.3.1) - 2021-10-21
+
+### Fixed
+* fix import in spark3 visitor [@mobuchowski](https://github.com/mobuchowski)
 
 ## [0.3.0](https://github.com/OpenLineage/OpenLineage/releases/tag/0.3.0) - 2021-10-21
 
