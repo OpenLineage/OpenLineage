@@ -19,7 +19,7 @@ from setuptools import setup, find_namespace_packages
 with open("README.md") as readme_file:
     readme = readme_file.read()
 
-__version__ = "0.3.1"
+__version__ = "0.4.0"
 
 requirements = [
     "attrs>=19.3",
