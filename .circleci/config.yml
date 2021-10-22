@@ -65,7 +65,7 @@ jobs:
   build-client-java:
     working_directory: ~/openlineage/client/java
     docker:
-      - image: circleci/openjdk:8-jdk
+      - image: cimg/openjdk:8.0
     steps:
       - *checkout_project_root
       - restore_cache:
@@ -88,7 +88,7 @@ jobs:
   release-client-java:
     working_directory: ~/openlineage/client/java
     docker:
-      - image: circleci/openjdk:8-jdk
+      - image: cimg/openjdk:8.0
     steps:
       - *checkout_project_root
       - run: |
@@ -110,7 +110,7 @@ jobs:
   publish-snapshot-client-java:
     working_directory: ~/openlineage/client/java
     docker:
-      - image: circleci/openjdk:8-jdk
+      - image: cimg/openjdk:8.0
     steps:
       - *checkout_project_root
       - run: |
@@ -124,7 +124,7 @@ jobs:
   release-integration-spark:
     working_directory: ~/openlineage/integration/spark
     docker:
-      - image: circleci/openjdk:8-jdk
+      - image: cimg/openjdk:8.0
     steps:
       - *checkout_project_root
       - restore_cache:
@@ -142,7 +142,7 @@ jobs:
   publish-snapshot-integration-spark:
     working_directory: ~/openlineage/integration/spark
     docker:
-      - image: circleci/openjdk:8-jdk
+      - image: cimg/openjdk:8.0
     steps:
       - *checkout_project_root
       - run: |
@@ -159,7 +159,7 @@ jobs:
         type: string
     working_directory: ~/openlineage/integration/spark
     docker:
-      - image: circleci/openjdk:8-jdk
+      - image: cimg/openjdk:8.0
     steps:
       - *checkout_project_root
       - restore_cache:
