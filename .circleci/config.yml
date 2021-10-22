@@ -72,7 +72,7 @@ jobs:
           keys:
             - v1-client-java-{{ .Branch }}-{{ .Revision }}
             - v1-client-java-{{ .Branch }}
-      - run: ./gradlew --no-daemon --stacktrace build
+      - run: ./gradlew --no-daemon --stacktrace build publishToMavenLocal
       - run: ./gradlew --no-daemon jacocoTestReport
       - run: bash <(curl -s https://codecov.io/bash)
       - run: ./gradlew javadoc
@@ -90,13 +90,20 @@ jobs:
     working_directory: ~/openlineage/client/java
     docker:
       - image: cimg/openjdk:8.0
+    parameters:
+      username:
+        type: string
+        default: $ARTIFACTORY_USERNAME
+      password:
+        type: string
+        default: $ARTIFACTORY_PASSWORD
     steps:
       - *checkout_project_root
       - run: |
           # Get, then decode the GPG private key used to sign *.jar
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
-          export RELEASE_PASSWORD=$(echo $SONATYPE_PASSWORD)
-          export RELEASE_USERNAME=$(echo $SONATYPE_USER)
+          export RELEASE_PASSWORD=$(echo << parameters.password >>)
+          export RELEASE_USERNAME=$(echo << parameters.username >>)
 
           # publish jar to maven local so it can be found by dependents
           ./gradlew publishToMavenLocal
@@ -107,52 +114,6 @@ jobs:
           key: v1-release-client-java-{{ .Branch }}-{{ .Revision }}
           paths:
             - ~/.m2
-
-  publish-snapshot-client-java:
-    working_directory: ~/openlineage/client/java
-    docker:
-      - image: cimg/openjdk:8.0
-    steps:
-      - *checkout_project_root
-      - run: |
-          # Get, then decode the GPG private key used to sign *.jar
-          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
-          export RELEASE_PASSWORD=$(echo $ARTIFACTORY_PASSWORD)
-          export RELEASE_USERNAME=$(echo $ARTIFACTORY_USERNAME)
-          # Publish *.jar
-          ./gradlew --no-daemon publish
-
-  release-integration-spark:
-    working_directory: ~/openlineage/integration/spark
-    docker:
-      - image: cimg/openjdk:8.0
-    steps:
-      - *checkout_project_root
-      - restore_cache:
-          keys:
-            - v1-release-client-java-{{ .Branch }}-{{ .Revision }}
-            - v1-release-client-java-{{ .Branch }}
-      - run: |
-          # Get, then decode the GPG private key used to sign *.jar
-          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
-          export RELEASE_PASSWORD=$(echo $SONATYPE_PASSWORD)
-          export RELEASE_USERNAME=$(echo $SONATYPE_USER)
-          # Publish *.jar
-          ./gradlew --no-daemon publish
-
-  publish-snapshot-integration-spark:
-    working_directory: ~/openlineage/integration/spark
-    docker:
-      - image: cimg/openjdk:8.0
-    steps:
-      - *checkout_project_root
-      - run: |
-          # Get, then decode the GPG private key used to sign *.jar
-          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
-          export RELEASE_PASSWORD=$(echo $ARTIFACTORY_PASSWORD)
-          export RELEASE_USERNAME=$(echo $ARTIFACTORY_USERNAME)
-          # Publish *.jar
-          ./gradlew --no-daemon publish
 
   build-integration-spark:
     parameters:
@@ -165,11 +126,11 @@ jobs:
       - *checkout_project_root
       - restore_cache:
           keys:
+            - v1-client-java-{{ .Branch }}-{{ .Revision }}
             - v1-integration-spark-{{ .Branch }}-{{ .Revision }}
             - v1-integration-spark-{{ .Branch }}
       - attach_workspace:
           at: .
-      - run: (cd ./../../client/java/ && ./gradlew --no-daemon --stacktrace publishToMavenLocal)
       - run: ./gradlew --no-daemon --stacktrace build -Pspark.version=<< parameters.spark-version >>
       - run:
           when: on_fail
@@ -185,6 +146,31 @@ jobs:
           key: v1-integration-spark-{{ .Branch }}-{{ .Revision }}
           paths:
             - ~/.gradle
+
+  release-integration-spark:
+    working_directory: ~/openlineage/integration/spark
+    parameters:
+      username:
+        type: string
+        default: $ARTIFACTORY_USERNAME
+      password:
+        type: string
+        default: $ARTIFACTORY_PASSWORD
+    docker:
+      - image: circleci/openjdk:8-jdk
+    steps:
+      - *checkout_project_root
+      - restore_cache:
+          keys:
+            - v1-release-client-java-{{ .Branch }}-{{ .Revision }}
+            - v1-release-client-java-{{ .Branch }}
+      - run: |
+          # Get, then decode the GPG private key used to sign *.jar
+          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
+          export RELEASE_PASSWORD=$(echo << parameters.password >>)
+          export RELEASE_USERNAME=$(echo << parameters.username >>)
+          # Publish *.jar
+          ./gradlew publish
 
   unit-test-integration-common:
     working_directory: ~/openlineage/integration/common
@@ -405,12 +391,16 @@ workflows:
   openlineage:
     jobs:
       - build-client-java
-      - publish-snapshot-client-java:
+      - release-client-java:
           <<: *only_on_main
           context: release
+          password: $ARTIFACTORY_PASSWORD
+          username: $ARTIFACTORY_USERNAME
           requires:
             - build-client-java
       - build-integration-spark:
+          requires:
+            - build-client-java
           matrix:
             parameters:
               spark-version: [ '2.4.1', '3.1.2' ]
@@ -420,9 +410,11 @@ workflows:
               spark-version: [ '2.4.1', '3.1.2' ]
           requires:
             - build-integration-spark
-      - publish-snapshot-integration-spark:
+      - release-integration-spark:
           <<: *only_on_main
           context: release
+          password: $ARTIFACTORY_PASSWORD
+          username: $ARTIFACTORY_USERNAME
           requires:
             - integration-test-integration-spark
       - unit-test-client-python
@@ -481,9 +473,13 @@ workflows:
     jobs:
       - release-client-java:
           <<: *only_on_release
+          password: $SONATYPE_PASSWORD
+          username: $SONATYPE_USER
           context: release
       - release-integration-spark:
           <<: *only_on_release
+          password: $SONATYPE_PASSWORD
+          username: $SONATYPE_USER
           context: release
           requires:
             - release-client-java
