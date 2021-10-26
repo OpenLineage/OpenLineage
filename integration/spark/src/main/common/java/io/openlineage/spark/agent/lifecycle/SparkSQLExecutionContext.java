@@ -213,7 +213,6 @@ public class SparkSQLExecutionContext implements ExecutionContext {
 
     Map<JobMetricsHolder.Metric, Number> metrics = jobMetrics.pollMetrics(jobId);
 
-
     OpenLineage.OutputDatasetOutputFacetsBuilder statisticsOutputFacets =
         ol.newOutputDatasetOutputFacetsBuilder()
             .outputStatistics(
