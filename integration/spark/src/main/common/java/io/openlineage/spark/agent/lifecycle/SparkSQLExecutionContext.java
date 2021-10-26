@@ -4,6 +4,7 @@ import static io.openlineage.spark.agent.util.PlanUtils.merge;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
+import io.openlineage.spark.agent.JobMetricsHolder;
 import io.openlineage.spark.agent.OpenLineageContext;
 import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.facets.ErrorFacet;
@@ -56,17 +57,20 @@ public class SparkSQLExecutionContext implements ExecutionContext {
   private final List<QueryPlanVisitor<LogicalPlan, OpenLineage.OutputDataset>>
       outputDatasetSupplier;
   private final List<QueryPlanVisitor<LogicalPlan, OpenLineage.InputDataset>> inputDatasetSupplier;
+  private JobMetricsHolder jobMetrics;
 
   public SparkSQLExecutionContext(
       long executionId,
       OpenLineageContext sparkContext,
       List<QueryPlanVisitor<LogicalPlan, OpenLineage.OutputDataset>> outputDatasetSupplier,
-      List<QueryPlanVisitor<LogicalPlan, OpenLineage.InputDataset>> inputDatasetSupplier) {
+      List<QueryPlanVisitor<LogicalPlan, OpenLineage.InputDataset>> inputDatasetSupplier,
+      JobMetricsHolder jobMetrics) {
     this.executionId = executionId;
     this.sparkContext = sparkContext;
     this.queryExecution = SQLExecution.getQueryExecution(executionId);
     this.outputDatasetSupplier = outputDatasetSupplier;
     this.inputDatasetSupplier = inputDatasetSupplier;
+    this.jobMetrics = jobMetrics;
   }
 
   public void start(SparkListenerSQLExecutionStart startEvent) {}
@@ -169,6 +173,7 @@ public class SparkSQLExecutionContext implements ExecutionContext {
         planTraversal.isDefinedAt(queryExecution.optimizedPlan())
             ? planTraversal.apply(queryExecution.optimizedPlan())
             : Collections.emptyList();
+    outputDatasets = populateOutputMetrics(jobEnd.jobId(), outputDatasets);
 
     List<InputDataset> inputDatasets = getInputDatasets();
     UnknownEntryFacet unknownFacet =
@@ -197,6 +202,37 @@ public class SparkSQLExecutionContext implements ExecutionContext {
 
     log.debug("Posting event for start {}: {}", jobEnd, event);
     sparkContext.emit(event);
+  }
+
+  private List<OpenLineage.OutputDataset> populateOutputMetrics(
+      int jobId, List<OpenLineage.OutputDataset> outputDatasets) {
+    if (outputDatasets.isEmpty()) return outputDatasets;
+    OpenLineage ol = new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
+
+    OpenLineage.OutputDataset outputDataset = outputDatasets.get(0);
+
+    Map<JobMetricsHolder.Metric, Number> metrics = jobMetrics.pollMetrics(jobId);
+
+
+    OpenLineage.OutputDatasetOutputFacetsBuilder statisticsOutputFacets =
+        ol.newOutputDatasetOutputFacetsBuilder()
+            .outputStatistics(
+                ol.newOutputStatisticsOutputDatasetFacet(
+                    metrics.getOrDefault(JobMetricsHolder.Metric.WRITE_RECORDS, 0L).longValue(),
+                    metrics.getOrDefault(JobMetricsHolder.Metric.WRITE_BYTES, 0L).longValue()));
+    OpenLineage.OutputDatasetOutputFacets outputFacets = outputDataset.getOutputFacets();
+    if (outputFacets != null) {
+      for (Map.Entry<String, OpenLineage.OutputDatasetFacet> entry :
+          outputDataset.getOutputFacets().getAdditionalProperties().entrySet()) {
+        statisticsOutputFacets.put(entry.getKey(), entry.getValue());
+      }
+    }
+    return Collections.singletonList(
+        ol.newOutputDataset(
+            outputDataset.getNamespace(),
+            outputDataset.getName(),
+            outputDataset.getFacets(),
+            statisticsOutputFacets.build()));
   }
 
   protected ZonedDateTime toZonedTime(long time) {

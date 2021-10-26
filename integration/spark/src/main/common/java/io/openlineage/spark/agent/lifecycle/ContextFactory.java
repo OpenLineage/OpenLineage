@@ -1,6 +1,7 @@
 package io.openlineage.spark.agent.lifecycle;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.JobMetricsHolder;
 import io.openlineage.spark.agent.OpenLineageContext;
 import io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.CommandPlanVisitor;
@@ -28,7 +29,8 @@ public class ContextFactory {
     return new RddExecutionContext(jobId, sparkContext);
   }
 
-  public SparkSQLExecutionContext createSparkSQLExecutionContext(long executionId) {
+  public SparkSQLExecutionContext createSparkSQLExecutionContext(
+      long executionId, JobMetricsHolder jobMetrics) {
     SQLContext sqlContext = SQLExecution.getQueryExecution(executionId).sparkPlan().sqlContext();
 
     VisitorFactory visitorFactory = VisitorFactoryProvider.getInstance(SparkSession.active());
@@ -39,7 +41,8 @@ public class ContextFactory {
     List<QueryPlanVisitor<LogicalPlan, OpenLineage.OutputDataset>> outputDatasets =
         visitorFactory.getOutputVisitors(sqlContext, sparkContext.getJobNamespace());
 
-    return new SparkSQLExecutionContext(executionId, sparkContext, outputDatasets, inputDatasets);
+    return new SparkSQLExecutionContext(
+        executionId, sparkContext, outputDatasets, inputDatasets, jobMetrics);
   }
 
   private List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> commonDatasetVisitors(

@@ -1,6 +1,7 @@
 package io.openlineage.spark.agent.lifecycle;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.JobMetricsHolder;
 import io.openlineage.spark.agent.OpenLineageContext;
 import io.openlineage.spark.agent.OpenLineageSparkListener;
 import io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeVisitor;
@@ -70,7 +71,8 @@ public class StaticExecutionContextFactory extends ContextFactory {
   }
 
   @Override
-  public SparkSQLExecutionContext createSparkSQLExecutionContext(long executionId) {
+  public SparkSQLExecutionContext createSparkSQLExecutionContext(
+      long executionId, JobMetricsHolder jobMetrics) {
     return Optional.ofNullable(SQLExecution.getQueryExecution(executionId))
         .map(
             qe -> {
@@ -89,7 +91,7 @@ public class StaticExecutionContextFactory extends ContextFactory {
 
               SparkSQLExecutionContext sparksql =
                   new SparkSQLExecutionContext(
-                      executionId, sparkContext, outputDatasets, inputDatasets) {
+                      executionId, sparkContext, outputDatasets, inputDatasets, jobMetrics) {
                     @Override
                     public ZonedDateTime toZonedTime(long time) {
                       return getZonedTime();
@@ -120,7 +122,11 @@ public class StaticExecutionContextFactory extends ContextFactory {
         .orElseGet(
             () ->
                 new SparkSQLExecutionContext(
-                    executionId, sparkContext, Collections.emptyList(), Collections.emptyList()));
+                    executionId,
+                    sparkContext,
+                    Collections.emptyList(),
+                    Collections.emptyList(),
+                    jobMetrics));
   }
 
   private static List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>>
