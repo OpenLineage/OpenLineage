@@ -130,6 +130,7 @@ dependencies {
     spark3Test "org.apache.spark:spark-core_2.12:${spark3Version}"
     spark3Test "org.apache.spark:spark-sql_2.12:${spark3Version}"
     spark3Test "org.apache.spark:spark-hive_2.12:${spark3Version}"
+    spark3Test "io.delta:delta-core_2.12:1.0.0"
 
     spark2Test "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
     spark2Test "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"

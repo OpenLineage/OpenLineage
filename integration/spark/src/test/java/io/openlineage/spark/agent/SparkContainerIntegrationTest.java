@@ -111,6 +111,28 @@ public class SparkContainerIntegrationTest {
         command);
   }
 
+  private static GenericContainer<?> makePysparkContainerWithDelta(
+      String namespace, String command) {
+    return makePysparkContainer(
+        "--master",
+        "local",
+        "--conf",
+        "spark.openlineage.host=" + "http://openlineageclient:1080",
+        "--conf",
+        "spark.openlineage.url=" + "http://openlineageclient:1080/api/v1/namespaces/" + namespace,
+        "--conf",
+        "spark.extraListeners=" + OpenLineageSparkListener.class.getName(),
+        "--conf",
+        "spark.sql.warehouse.dir=/tmp/warehouse",
+        "--conf",
+        "spark.sql.extensions=io.delta.sql.DeltaSparkSessionExtension",
+        "--conf",
+        "spark.sql.catalog.spark_catalog=org.apache.spark.sql.delta.catalog.DeltaCatalog",
+        "--jars",
+        "/opt/libs/" + System.getProperty("openlineage.spark.jar"),
+        command);
+  }
+
   private static void consumeOutput(org.testcontainers.containers.output.OutputFrame of) {
     try {
       switch (of.getType()) {
@@ -213,6 +235,29 @@ public class SparkContainerIntegrationTest {
     pyspark =
         makePysparkContainerWithDefaultConf(
             "testPysparkSQLHiveOverwriteDirTest", "/opt/spark_scripts/spark_overwrite_hive.py");
+    pyspark.setWaitStrategy(Wait.forLogMessage(".*ShutdownHookManager: Shutdown hook called.*", 1));
+    pyspark.start();
+
+    Path eventFolder = Paths.get("integrations/container/");
+
+    String startEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkHiveOverwriteDirStartEvent.json")));
+    String completeEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkHiveOverwriteDirCompleteEvent.json")));
+    mockServerClient.verify(
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(startEvent, MatchType.ONLY_MATCHING_FIELDS)),
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(completeEvent, MatchType.ONLY_MATCHING_FIELDS)));
+  }
+
+  @Test
+  public void testPysparkDeltaWriteToFile() throws IOException, InterruptedException {
+    pyspark =
+        makePysparkContainerWithDelta(
+            "testPysparkDeltaWriteToFile", "/opt/spark_scripts/spark_delta.py");
     pyspark.setWaitStrategy(Wait.forLogMessage(".*ShutdownHookManager: Shutdown hook called.*", 1));
     pyspark.start();
 
