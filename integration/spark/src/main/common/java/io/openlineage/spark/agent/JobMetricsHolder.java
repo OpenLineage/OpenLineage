@@ -11,7 +11,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.apache.spark.executor.OutputMetrics;
 import org.apache.spark.executor.TaskMetrics;
+import org.apache.spark.scheduler.SparkListenerJobStart;
+import org.apache.spark.scheduler.SparkListenerTaskEnd;
 
+/**
+ * This class is made for gathering job metrics based on {@link TaskMetrics} {@link
+ * org.apache.spark.scheduler.SparkListener#onJobStart(SparkListenerJobStart)} provides job stages
+ * {@link org.apache.spark.scheduler.SparkListener#onTaskEnd(SparkListenerTaskEnd)} provides metrics
+ * per task
+ */
 public class JobMetricsHolder {
   private final Map<Integer, Set<Integer>> jobStages = new ConcurrentHashMap<>();
   private final Map<Integer, TaskMetrics> stageMetrics = new ConcurrentHashMap<>();
