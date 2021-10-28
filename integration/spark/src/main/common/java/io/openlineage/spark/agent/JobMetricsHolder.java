@@ -7,14 +7,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.apache.spark.executor.OutputMetrics;
 import org.apache.spark.executor.TaskMetrics;
 
 public class JobMetricsHolder {
-
-  private Map<Integer, Set<Integer>> jobStages = new HashMap<>();
-  private Map<Integer, TaskMetrics> stageMetrics = new HashMap<>();
+  private final Map<Integer, Set<Integer>> jobStages = new ConcurrentHashMap<>();
+  private final Map<Integer, TaskMetrics> stageMetrics = new ConcurrentHashMap<>();
 
   public void addJobStages(int jobId, Set<Integer> stages) {
     jobStages.put(jobId, stages);
@@ -25,13 +25,11 @@ public class JobMetricsHolder {
   }
 
   public Map<Metric, Number> pollMetrics(int jobId) {
-    List<TaskMetrics> jobMetrics =
-        Optional.ofNullable(jobStages.remove(jobId))
-            .map(stages -> stages.stream().map(stageMetrics::remove).collect(Collectors.toList()))
-            .orElse(Collections.emptyList());
-    if (jobMetrics.isEmpty()) return Collections.emptyMap();
-
-    return mapOutputMetrics(jobMetrics);
+    return Optional.ofNullable(jobStages.remove(jobId))
+        .map(stages -> stages.stream().map(stageMetrics::remove).collect(Collectors.toList()))
+        .filter(l -> !l.isEmpty())
+        .map(this::mapOutputMetrics)
+        .orElse(Collections.emptyMap());
   }
 
   public void cleanUp(int jobId) {
@@ -42,15 +40,18 @@ public class JobMetricsHolder {
 
   private Map<Metric, Number> mapOutputMetrics(List<TaskMetrics> jobMetrics) {
     Map<Metric, Number> result = new HashMap<>();
-    result.put(Metric.WRITE_BYTES, 0L);
-    result.put(Metric.WRITE_RECORDS, 0L);
 
     for (TaskMetrics taskMetric : jobMetrics) {
       OutputMetrics outputMetrics = taskMetric.outputMetrics();
       if (Objects.nonNull(outputMetrics)) {
-        result.compute(Metric.WRITE_BYTES, (m, b) -> b.longValue() + outputMetrics.bytesWritten());
-        result.compute(
-            Metric.WRITE_RECORDS, (m, b) -> b.longValue() + outputMetrics.recordsWritten());
+        result.merge(
+            Metric.WRITE_BYTES,
+            outputMetrics.bytesWritten(),
+            (m, b) -> m.longValue() + b.longValue());
+        result.merge(
+            Metric.WRITE_RECORDS,
+            outputMetrics.recordsWritten(),
+            (m, b) -> m.longValue() + b.longValue());
       }
     }
     return result;
@@ -59,5 +60,13 @@ public class JobMetricsHolder {
   public enum Metric {
     WRITE_BYTES,
     WRITE_RECORDS
+  }
+
+  private static class SingletonHolder {
+    public static final JobMetricsHolder instance = new JobMetricsHolder();
+  }
+
+  public static JobMetricsHolder getInstance() {
+    return SingletonHolder.instance;
   }
 }

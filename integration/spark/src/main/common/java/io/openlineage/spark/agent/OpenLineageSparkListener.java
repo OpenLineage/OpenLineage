@@ -185,7 +185,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   public static SparkSQLExecutionContext getSparkSQLExecutionContext(long executionId) {
     return sparkSqlExecutionRegistry.computeIfAbsent(
-        executionId, (e) -> contextFactory.createSparkSQLExecutionContext(executionId, jobMetrics));
+        executionId, (e) -> contextFactory.createSparkSQLExecutionContext(executionId));
   }
 
   public static ExecutionContext getExecutionContext(int jobId) {
