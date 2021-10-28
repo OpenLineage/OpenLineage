@@ -5,7 +5,7 @@ bigquery:
             type: bigquery
             method: service-account
             keyfile: /opt/config/gcloud/gcloud-service-key.json
-            project: speedy-vim-308516
+            project: openlineage-ci
             dataset: dbt_test1
             threads: 2
             timeout_seconds: 300

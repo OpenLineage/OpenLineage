@@ -8,7 +8,7 @@ COPY dbt /tmp/openlineage-integration-dbt
 RUN cd /tmp/openlineage-client-python && pip wheel --no-deps --wheel-dir=/tmp/openlineage-client-python/wheel .
 RUN cd /tmp/openlineage-integration-common && pip wheel --no-deps --wheel-dir=/tmp/openlineage-integration-common/wheel .
 RUN cd /tmp/openlineage-integration-dbt && pip wheel --no-deps --wheel-dir=/tmp/openlineage-integration-dbt/wheel .
-COPY airflow/openlineage/airflow /app/openlineage/airflow
+COPY airflow/openlineage /app/openlineage
 WORKDIR /app
 RUN ls -halt /tmp/openlineage-client-python/wheel
 RUN pip wheel --no-deps --wheel-dir=/app/wheel -e /tmp/openlineage-client-python .[tests]

@@ -1,0 +1,11 @@
+redshift:
+    target: prod
+    outputs:
+        prod:
+            type: redshift
+            host: "{{ env_var('HOST') }}"
+            port: "{{ env_var('PORT') | as_number }}"
+            dbname: "{{ env_var('DB_NAME') }}"
+            user: "{{ env_var('USER_NAME') }}"
+            pass: "{{ env_var('PASSWORD') }}"
+            schema: "{{ env_var('SCHEMA') }}"

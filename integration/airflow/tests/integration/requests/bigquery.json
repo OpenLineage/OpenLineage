@@ -1,74 +1,47 @@
 [{
     "eventType": "START",
-    "inputs": [],
     "job": {
         "facets": {
             "documentation": {
-                "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
-                "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DocumentationJobFacet",
                 "description": "Determines the popular day of week orders are placed."
             }
         },
         "name": "bigquery_orders_popular_day_of_week.bigquery_if_not_exists",
         "namespace": "food_delivery"
     },
-    "outputs": [],
     "run": {
         "facets": {
             "airflow_runArgs": {
-                "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
-                "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/BaseFacet",
                 "externalTrigger": false
-            },
-            "airflow_version": {
-                "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
-                "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/BaseFacet",
-                "airflowVersion": "1.10.12",
-                "operator": "airflow.contrib.operators.bigquery_operator.BigQueryOperator"
             }
         }
     }
 },
 {
     "eventType": "START",
-    "inputs": [],
     "job": {
         "facets": {
             "documentation": {
-                "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
-                "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DocumentationJobFacet",
                 "description": "Determines the popular day of week orders are placed."
             }
         },
         "name": "bigquery_orders_popular_day_of_week.bigquery_insert",
         "namespace": "food_delivery"
     },
-    "outputs": [],
     "run": {
         "facets": {
             "airflow_runArgs": {
-                "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
-                "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/BaseFacet",
                 "externalTrigger": false
-            },
-            "airflow_version": {
-                "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
-                "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/BaseFacet",
-                "airflowVersion": "1.10.12",
-                "operator": "airflow.contrib.operators.bigquery_operator.BigQueryOperator"
             }
         }
     }
 },
 {
     "eventType": "COMPLETE",
-    "inputs": [],
     "job": {
         "facets": {
             "sql": {
-                "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
-                "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SqlJobFacet",
-                "query": "\n    CREATE TABLE IF NOT EXISTS `speedy-vim-308516.airflow_integration.popular_orders_day_of_week` (\n      order_day_of_week INTEGER NOT NULL,\n      order_placed_on   TIMESTAMP NOT NULL,\n      orders_placed     INTEGER NOT NULL\n    );"
+                "query": "\n    CREATE TABLE IF NOT EXISTS `openlineage-ci.airflow_integration.popular_orders_day_of_week` (\n      order_day_of_week INTEGER NOT NULL,\n      order_placed_on   TIMESTAMP NOT NULL,\n      orders_placed     INTEGER NOT NULL\n    );"
             }
         },
         "name": "bigquery_orders_popular_day_of_week.bigquery_if_not_exists",
@@ -77,14 +50,10 @@
     "outputs": [{
 		"facets": {
 			"dataSource": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
-				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
 				"name": "bigquery",
 				"uri": "bigquery"
 			},
             "schema": {
-                "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
-                "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
                 "fields": [
                     {
                         "name": "order_day_of_week",
@@ -101,7 +70,7 @@
                 ]
             }
 		},
-		"name": "speedy-vim-308516.airflow_integration.popular_orders_day_of_week",
+		"name": "openlineage-ci.airflow_integration.popular_orders_day_of_week",
 		"namespace": "bigquery"
 	}]
 },
@@ -110,14 +79,10 @@
 	"inputs": [{
 		"facets": {
 			"dataSource": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
-				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
 				"name": "bigquery",
 				"uri": "bigquery"
 			},
             "schema": {
-                "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
-                "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
                 "fields": [
                     {
                         "name": "order_placed_on",
@@ -126,20 +91,16 @@
                 ]
             }
 		},
-		"name": "speedy-vim-308516.airflow_integration.top_delivery_times",
+		"name": "openlineage-ci.airflow_integration.top_delivery_times",
 		"namespace": "bigquery"
 	},
     {
 		"facets": {
 			"dataSource": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
-				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
 				"name": "bigquery",
 				"uri": "bigquery"
 			},
             "schema": {
-                "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
-                "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
                 "fields": [
                     {
                         "name": "order_day_of_week",
@@ -156,15 +117,13 @@
                 ]
             }
 		},
-		"name": "speedy-vim-308516.airflow_integration.popular_orders_day_of_week",
+		"name": "openlineage-ci.airflow_integration.popular_orders_day_of_week",
 		"namespace": "bigquery"
 	}],
 	"job": {
 		"facets": {
 			"sql": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
-				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SqlJobFacet",
-				"query": "\n    INSERT INTO `speedy-vim-308516.airflow_integration.popular_orders_day_of_week` (order_day_of_week, order_placed_on, orders_placed)\n    SELECT EXTRACT(DAYOFWEEK FROM order_placed_on) AS order_day_of_week,\n        order_placed_on,\n        COUNT(*) AS orders_placed\n    FROM airflow_integration.top_delivery_times\n    GROUP BY order_placed_on;"
+				"query": "\n    INSERT INTO `openlineage-ci.airflow_integration.popular_orders_day_of_week` (order_day_of_week, order_placed_on, orders_placed)\n    SELECT EXTRACT(DAYOFWEEK FROM order_placed_on) AS order_day_of_week,\n        order_placed_on,\n        COUNT(*) AS orders_placed\n    FROM airflow_integration.top_delivery_times\n    GROUP BY order_placed_on;"
 			}
 		},
 		"name": "bigquery_orders_popular_day_of_week.bigquery_insert",
@@ -173,14 +132,10 @@
 	"outputs": [{
 		"facets": {
 			"dataSource": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
-				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
 				"name": "bigquery",
 				"uri": "bigquery"
 			},
 			"schema": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow",
-				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "order_day_of_week",
 					"type": "INTEGER"
@@ -193,7 +148,7 @@
 				}]
 			}
 		},
-		"name": "speedy-vim-308516.airflow_integration.popular_orders_day_of_week",
+		"name": "openlineage-ci.airflow_integration.popular_orders_day_of_week",
 		"namespace": "bigquery"
 	}]
 }]

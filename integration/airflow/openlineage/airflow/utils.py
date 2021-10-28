@@ -9,7 +9,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import importlib
 import json
 import logging
 import os
@@ -17,9 +17,10 @@ import subprocess
 from uuid import uuid4
 from urllib.parse import urlparse, urlunparse
 
-import airflow
-from airflow.models import Connection
-from airflow.utils.db import provide_session
+from airflow.version import version as AIRFLOW_VERSION
+
+from pkg_resources import parse_version
+
 from openlineage.airflow.facets import AirflowVersionRunFacet, AirflowRunArgsRunFacet
 from pendulum import from_timestamp
 
@@ -32,7 +33,8 @@ class JobIdMapping:
 
     @staticmethod
     def set(job_name: str, dag_run_id: str, task_run_id: str):
-        airflow.models.Variable.set(
+        from airflow.models import Variable
+        Variable.set(
             JobIdMapping.make_key(job_name, dag_run_id),
             json.dumps(task_run_id)
         )
@@ -45,8 +47,8 @@ class JobIdMapping:
     def get(job_name, dag_run_id, session, delete=False):
         key = JobIdMapping.make_key(job_name, dag_run_id)
         if session:
-            q = session.query(airflow.models.Variable).filter(
-                airflow.models.Variable.key == key)
+            from airflow.models import Variable
+            q = session.query(Variable).filter(Variable.key == key)
             if not q.first():
                 return None
             else:
@@ -118,7 +120,7 @@ def execute_git(cwd, params):
     return out.decode('utf8').strip()
 
 
-def get_connection_uri(conn: Connection):
+def get_connection_uri(conn):
     """
     Return the connection URI for the given ID. We first attempt to lookup
     the connection URI via AIRFLOW_CONN_<conn_id>, else fallback on querying
@@ -133,7 +135,7 @@ def get_connection_uri(conn: Connection):
     return urlunparse(parsed)
 
 
-def get_normalized_postgres_connection_uri(conn: Connection):
+def get_normalized_postgres_connection_uri(conn):
     """
     URIs starting with postgresql:// and postgres:// are both valid
     PostgreSQL connection strings. This function normalizes it to
@@ -145,21 +147,27 @@ def get_normalized_postgres_connection_uri(conn: Connection):
     return uri
 
 
-@provide_session
-def get_connection(conn_id, session=None) -> Connection:
+def get_connection(conn_id):
     # TODO: We may want to throw an exception if the connection
     # does not exist (ex: AirflowConnectionException). The connection
     # URI is required when collecting metadata for a data source.
+    from airflow.models import Connection
     conn_uri = os.environ.get('AIRFLOW_CONN_' + conn_id.upper())
     if conn_uri:
         conn = Connection()
-        conn.parse_from_uri(conn_uri)
+        conn.parse_from_uri(uri=conn_uri)
         return conn
 
-    return (session
-            .query(Connection)
-            .filter(Connection.conn_id == conn_id)
-            .first())
+    create_session = safe_import_airflow(
+        airflow_1_path="airflow.utils.db.create_session",
+        airflow_2_path="airflow.utils.session.create_session",
+    )
+
+    with create_session() as session:
+        return (session
+                .query(Connection)
+                .filter(Connection.conn_id == conn_id)
+                .first())
 
 
 def get_job_name(task):
@@ -208,3 +216,27 @@ class DagUtils:
             dt = from_timestamp(dt/1000.0)
 
         return dt.strftime(_NOMINAL_TIME_FORMAT)
+
+
+def import_from_string(path: str):
+    try:
+        module_path, target = path.rsplit('.', 1)
+        module = importlib.import_module(module_path)
+        return getattr(module, target)
+    except Exception as e:
+        raise ImportError(f"Failed to import {path}") from e
+
+
+def choose_based_on_version(airflow_1_version, airflow_2_version):
+    if parse_version(AIRFLOW_VERSION) >= parse_version("2.0.0"):
+        return airflow_2_version
+    else:
+        return airflow_1_version
+
+
+def safe_import_airflow(airflow_1_path: str, airflow_2_path: str):
+    return import_from_string(
+        choose_based_on_version(
+            airflow_1_path, airflow_2_path
+        )
+    )

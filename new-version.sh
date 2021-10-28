@@ -125,25 +125,20 @@ if [[ "${RELEASE_VERSION}" == *-rc.? ]]; then
   PYTHON_RELEASE_VERSION="${RELEASE_VERSION%-*}${RELEASE_CANDIDATE//.}"
 fi
 
-# (1) Bump python module versions for release candidates
-# This is only necessary when we are publishing a release candidate
-# This is necessary to get bump2version to bump from x.y.z to x.y.z-rc1
-if [ -n "$RELEASE_CANDIDATE" ]; then
-  PYTHON_MODULES=(client/python/ integration/common/ integration/airflow/ integration/dbt/)
-  for PYTHON_MODULE in "${PYTHON_MODULES[@]}"; do
-    (cd "${PYTHON_MODULE}" && bump2version manual --new-version "${PYTHON_RELEASE_VERSION}" --allow-dirty)
-  done
-fi
+# (1) Bump python module versions
+PYTHON_MODULES=(client/python/ integration/common/ integration/airflow/ integration/dbt/)
+for PYTHON_MODULE in "${PYTHON_MODULES[@]}"; do
+  (cd "${PYTHON_MODULE}" && bump2version manual --new-version "${PYTHON_RELEASE_VERSION}" --allow-dirty)
+done
 
 # (2) Bump java module versions
-sed -i "" "s/^version=.*/version=${RELEASE_VERSION}/g" ./client/java/gradle.properties
-sed -i "" "s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/spark/gradle.properties
+perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./client/java/gradle.properties
+perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/spark/gradle.properties
 
 # (3) Bump version in docs
-sed -i "" \
-  -e "s/<version>.*/<version>${RELEASE_VERSION}<\/version>/g" \
-  -e "s/openlineage-spark:[[:alnum:]\.-]*/openlineage-spark:${RELEASE_VERSION}/g" \
-  -e "s/openlineage-spark-.*jar/openlineage-spark-${RELEASE_VERSION}.jar/g" ./integration/spark/README.md
+perl -i -pe"s/<version>.*/<version>${RELEASE_VERSION}<\/version>/g" ./integration/spark/README.md
+perl -i -pe"s/openlineage-spark:[[:alnum:]\.-]*/openlineage-spark:${RELEASE_VERSION}/g" ./integration/spark/README.md
+perl -i -pe"s/openlineage-spark-.*jar/openlineage-spark-${RELEASE_VERSION}.jar/g" ./integration/spark/README.md
 
 # (4) Prepare release commit
 git commit -sam "Prepare for release ${RELEASE_VERSION}"
@@ -165,8 +160,8 @@ if [[ "${NEXT_VERSION}" == *-rc.? ||
   NEXT_VERSION="${NEXT_VERSION}-SNAPSHOT"
 fi
 
-sed -i  "" "s/^version=.*/version=${NEXT_VERSION}/g" integration/spark/gradle.properties
-sed -i  "" "s/^version=.*/version=${NEXT_VERSION}/g" client/java/gradle.properties
+perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" integration/spark/gradle.properties
+perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" client/java/gradle.properties
 echo "version ${NEXT_VERSION}" > integration/spark/src/test/resources/io/openlineage/spark/agent/client/version.properties
 
 # (7) Prepare next development version commit

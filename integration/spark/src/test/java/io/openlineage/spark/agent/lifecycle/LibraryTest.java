@@ -15,17 +15,15 @@ import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.client.OpenLineageClient;
 import java.io.IOException;
 import java.net.URL;
-import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.spark.api.java.JavaRDD;
@@ -33,7 +31,6 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.FilterFunction;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.SparkSession;
-import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -82,44 +79,16 @@ public class LibraryTest {
           objectMapper.readValue(
               Paths.get(String.format("integrations/%s/%d.json", "sparksql", i + 1)).toFile(),
               mapTypeReference);
-      assertThat(objectMapper.readValue(objectMapper.writeValueAsString(event), mapTypeReference))
+      Map<String, Object> actual =
+          objectMapper.readValue(objectMapper.writeValueAsString(event), mapTypeReference);
+      assertThat(actual)
           .satisfies(
-              new Condition<>(matchesRecursive(snapshot), "matches snapshot fields %s", snapshot));
+              new MatchesMapRecursively(
+                  snapshot,
+                  new HashSet<>(
+                      Arrays.asList("runId", "nonInheritableMetadataKeys", "validConstraints"))));
     }
     verifySerialization(events);
-  }
-
-  private final Set<String> ommittedKeys = new HashSet<>(Arrays.asList("runId"));
-
-  private Predicate<Map<String, Object>> matchesRecursive(Map<String, Object> target) {
-    Predicate<Map<String, Object>> recurse;
-    recurse =
-        (map) -> {
-          if (!map.keySet().containsAll(target.keySet())) {
-            return false;
-          }
-          for (String k : target.keySet()) {
-            if (!ommittedKeys.contains(k)) {
-              continue;
-            }
-            Object val = map.get(k);
-            boolean eq;
-            if (val instanceof Map) {
-              eq =
-                  matchesRecursive((Map<String, Object>) target.get(k))
-                      .test((Map<String, Object>) val);
-            } else if (k.equals("_producer") || k.equals("producer")) {
-              eq = OpenLineageClient.OPEN_LINEAGE_CLIENT_URI.toString().equals(val);
-            } else {
-              eq = val.equals(target.get(k));
-            }
-            if (!eq) {
-              return false;
-            }
-          }
-          return true;
-        };
-    return recurse;
   }
 
   @Test
@@ -150,38 +119,40 @@ public class LibraryTest {
     List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
     assertEquals(2, events.size());
 
+    ObjectMapper objectMapper = OpenLineageClient.getObjectMapper();
     for (int i = 0; i < events.size(); i++) {
       OpenLineage.RunEvent event = events.get(i);
-      String snapshot =
-          new String(
-                  Files.readAllBytes(
-                      Paths.get(String.format("integrations/%s/%d.json", "sparkrdd", i + 1))))
-              .replaceAll(
-                  "https://github.com/OpenLineage/OpenLineage/tree/\\$VERSION/integration/spark",
-                  OpenLineageClient.OPEN_LINEAGE_CLIENT_URI.toString());
-
-      Map<String, Object> eventFields =
-          OpenLineageClient.getObjectMapper().convertValue(event, mapTypeReference);
-      ((Map<String, Object>) eventFields.get("run")).replace("runId", "fake_run_id");
-
-      assertEquals(
-          stripSchemaURL(OpenLineageClient.getObjectMapper().readValue(snapshot, mapTypeReference)),
-          stripSchemaURL(eventFields));
+      Map<String, Object> snapshot =
+          objectMapper.readValue(
+              Paths.get(String.format("integrations/%s/%d.json", "sparkrdd", i + 1)).toFile(),
+              mapTypeReference);
+      Map<String, Object> actual =
+          objectMapper.readValue(objectMapper.writeValueAsString(event), mapTypeReference);
+      assertThat(actual)
+          .satisfies(
+              new MatchesMapRecursively(
+                  snapshot,
+                  new HashSet<>(
+                      Arrays.asList("runId", "nonInheritableMetadataKeys", "validConstraints"))));
     }
 
     verifySerialization(events);
   }
 
   Map<String, Object> stripSchemaURL(Map<String, Object> map) {
+    List<String> toRemove = new ArrayList<>();
     for (String key : map.keySet()) {
       if (key.endsWith("schemaURL")) {
-        map.remove(key);
+        toRemove.add(key);
       } else {
         Object value = map.get(key);
         if (value instanceof Map) {
           stripSchemaURL((Map<String, Object>) value);
         }
       }
+    }
+    for (String key : toRemove) {
+      map.remove(key);
     }
     return map;
   }

@@ -4,118 +4,7 @@
 		"facets": {
 			"spark_unknown": {
 				"inputs": [{
-					"description": {
-						"output": [{
-							"name": "col1",
-							"dataType": {
-								"numeric": {},
-								"integral": {},
-								"ordering": {}
-							},
-							"nullable": false,
-							"metadata": {
-								"map": {}
-							},
-							"qualifier": [],
-							"origin": {
-								"line": 1,
-								"startPosition": 61
-							},
-							"deterministic": true,
-							"resolved": true
-						}, {
-							"name": "col2",
-							"dataType": {
-								"ordering": {}
-							},
-							"nullable": false,
-							"metadata": {
-								"map": {}
-							},
-							"qualifier": [],
-							"origin": {
-								"line": 1,
-								"startPosition": 61
-							},
-							"deterministic": true,
-							"resolved": true
-						}],
-						"data": [{
-							"values": [1, {
-								"baseObject": "YQ==",
-								"baseOffset": 16,
-								"prefix": 6989586621679009792,
-								"bytes": "YQ==",
-								"byteBuffer": "YQ=="
-							}]
-						}, {
-							"values": [2, {
-								"baseObject": "Yg==",
-								"baseOffset": 16,
-								"prefix": 7061644215716937728,
-								"bytes": "Yg==",
-								"byteBuffer": "Yg=="
-							}]
-						}, {
-							"values": [3, {
-								"baseObject": "Yw==",
-								"baseOffset": 16,
-								"prefix": 7133701809754865664,
-								"bytes": "Yw==",
-								"byteBuffer": "Yw=="
-							}]
-						}],
-						"isStreaming": false,
-						"origin": {
-							"line": 1,
-							"startPosition": 61
-						},
-						"schema": [{
-							"name": "col1",
-							"dataType": {
-								"numeric": {},
-								"integral": {},
-								"ordering": {}
-							},
-							"nullable": false,
-							"metadata": {
-								"map": {}
-							},
-							"comment": null
-						}, {
-							"name": "col2",
-							"dataType": {
-								"ordering": {}
-							},
-							"nullable": false,
-							"metadata": {
-								"map": {}
-							},
-							"comment": null
-						}],
-						"allAttributes": {
-							"attrs": []
-						},
-						"resolved": true,
-						"constraints": [{
-							"origin": {
-								"line": null,
-								"startPosition": null
-							},
-							"deterministic": true,
-							"resolved": true
-						}, {
-							"origin": {
-								"line": null,
-								"startPosition": null
-							},
-							"deterministic": true,
-							"resolved": true
-						}],
-						"statsCache": null,
-						"traceEnabled": false,
-						"canonicalizedPlan": false
-					},
+					"description": {},
 					"inputAttributes": [],
 					"outputAttributes": [{
 						"name": "col1",
@@ -128,46 +17,10 @@
 					}]
 				}]
 			},
-			"spark.logicalPlan": {
-				"plan": [{
-					"class": "org.apache.spark.sql.hive.execution.InsertIntoHiveDirCommand",
-					"num-children": 1,
-					"isLocal": false,
-					"storage": {
-						"product-class": "org.apache.spark.sql.catalyst.catalog.CatalogStorageFormat",
-						"locationUri": null,
-						"compressed": false,
-						"properties": null
-					},
-					"query": 0,
-					"overwrite": true,
-					"outputColumnNames": "[col1, col2]"
-				}, {
-					"class": "org.apache.spark.sql.catalyst.plans.logical.LocalRelation",
-					"num-children": 0,
-					"output": [
-						[{
-							"class": "org.apache.spark.sql.catalyst.expressions.AttributeReference",
-							"num-children": 0,
-							"name": "col1",
-							"dataType": "integer",
-							"nullable": false,
-							"metadata": {},
-							"qualifier": []
-						}],
-						[{
-							"class": "org.apache.spark.sql.catalyst.expressions.AttributeReference",
-							"num-children": 0,
-							"name": "col2",
-							"dataType": "string",
-							"nullable": false,
-							"metadata": {},
-							"qualifier": []
-						}]
-					],
-					"data": null,
-					"isStreaming": false
-				}]
+			"spark.logicalPlan": {},
+			"spark_version": {
+				"spark-version": "${json-unit.any-string}",
+				"openlineage-spark-version": "${json-unit.any-string}"
 			}
 		}
 	},

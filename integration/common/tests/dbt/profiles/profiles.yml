@@ -5,7 +5,7 @@ bigquery:
             type: bigquery
             method: service-account
             keyfile: /home/example/.gcp/bq-key.json
-            project: speedy-vim-308516
+            project: random-gcp-project
             dataset: dbt_test1
             threads: 2
             timeout_seconds: 300
@@ -15,7 +15,7 @@ bigquery:
             type: bigquery
             method: service-account
             keyfile: /home/example/.gcp/bq-key.json
-            project: speedy-vim-308516
+            project: random-gcp-project
             dataset: dbt_prod1
             threads: 2
             timeout_seconds: 300

@@ -15,8 +15,8 @@ public class TestQueryPlanVisitor {
   @Test
   public void testIsDefinedAt() {
     // construct an anonymous class with an AddJarCommand type parameter
-    QueryPlanVisitor<AddJarCommand> visitor =
-        new QueryPlanVisitor<AddJarCommand>() {
+    QueryPlanVisitor<AddJarCommand, OpenLineage.Dataset> visitor =
+        new QueryPlanVisitor<AddJarCommand, OpenLineage.Dataset>() {
           @Override
           public List<OpenLineage.Dataset> apply(LogicalPlan x) {
             return Collections.emptyList();

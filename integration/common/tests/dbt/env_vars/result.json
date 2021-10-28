@@ -1,0 +1,76 @@
+[{
+	"eventType": "START",
+	"eventTime": "{{ is_datetime(result) }}",
+	"run": {
+		"runId": "{{ any(result) }}"
+	},
+	"job": {
+		"namespace": "redshift://foo_host:1111",
+		"name": "foo_db_name.foo_schema.dbt_test.test_model"
+	},
+	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+	"inputs": [{
+		"namespace": "redshift://foo_host:1111",
+		"name": "foo_db_name.foo_schema.source_table"
+	}],
+	"outputs": [{
+		"namespace": "redshift://foo_host:1111",
+		"name": "foo_db_name.foo_schema.test_model"
+	}]
+}, {
+	"eventType": "COMPLETE",
+	"eventTime": "{{ is_datetime(result) }}",
+	"run": {
+		"runId": "{{ any(result) }}",
+		"facets": {
+			"parent": {
+				"job": {"name": "dbt-job-name", "namespace": "dbt"},
+				"run": {"runId": "{{ any(result) }}"}
+			},
+			"dbt_version": {
+				"version": "{{ any(result) }}"
+			}
+		}
+	},
+	"job": {
+		"namespace": "redshift://foo_host:1111",
+		"name": "foo_db_name.foo_schema.dbt_test.test_model",
+		"facets": {
+			"sql": {
+				"query": "select *\nfrom `random-gcp-project`.`dbt_test1`.`source_table`\nwhere id = 1"
+			}
+		}
+	},
+	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+	"inputs": [{
+		"namespace": "redshift://foo_host:1111",
+		"name": "foo_db_name.foo_schema.source_table",
+		"facets": {
+			"dataSource": {
+				"name": "redshift://foo_host:1111",
+				"uri": "redshift://foo_host:1111"
+			},
+			"schema": {
+				"fields": []
+			}
+		}
+	}],
+	"outputs": [{
+		"namespace": "redshift://foo_host:1111",
+		"name": "foo_db_name.foo_schema.test_model",
+		"facets": {
+			"dataSource": {
+				"name": "redshift://foo_host:1111",
+				"uri": "redshift://foo_host:1111"
+			},
+			"schema": {
+				"fields": [{
+					"name": "id",
+					"type": null,
+					"description": null
+				}]
+			}
+		},
+		"outputFacets": {}
+	}]
+}]

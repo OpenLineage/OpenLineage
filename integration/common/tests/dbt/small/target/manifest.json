@@ -1,7 +1,7 @@
 {
 	"metadata": {
 		"dbt_schema_version": "https://schemas.getdbt.com/dbt/manifest/v2.json",
-		"dbt_version": "0.20.0rc2",
+		"dbt_version": "0.21.0",
 		"generated_at": "2021-07-07T12:44:44.367050Z",
 		"invocation_id": "b8513ee2-6c1f-44ed-a13d-3fc35ef81004",
 		"env": {},
@@ -34,7 +34,7 @@
 				"post-hook": [],
 				"pre-hook": []
 			},
-			"database": "speedy-vim-308516",
+			"database": "random-gcp-project",
 			"schema": "dbt_test1",
 			"fqn": ["dbt_test", "example", "test_model"],
 			"unique_id": "model.dbt_test.test_model",
@@ -74,16 +74,16 @@
 			"deferred": false,
 			"unrendered_config": {},
 			"created_at": 1625661884,
-			"compiled_sql": "select *\nfrom `speedy-vim-308516`.`dbt_test1`.`source_table`\nwhere id = 1",
+			"compiled_sql": "select *\nfrom `random-gcp-project`.`dbt_test1`.`source_table`\nwhere id = 1",
 			"extra_ctes_injected": true,
 			"extra_ctes": [],
-			"relation_name": "`speedy-vim-308516`.`dbt_test1`.`test_model`"
+			"relation_name": "`random-gcp-project`.`dbt_test1`.`test_model`"
 		}
 	},
   	"sources": {
 		"source.dbt_test.dbt_test1.source_table": {
 			"fqn": ["dbt_test", "example", "dbt_test1", "source_table"],
-			"database": "speedy-vim-308516",
+			"database": "random-gcp-project",
 			"schema": "dbt_test1",
 			"unique_id": "source.dbt_test.dbt_test1.source_table",
 			"package_name": "dbt_test",
@@ -119,7 +119,7 @@
 			},
 			"patch_path": null,
 			"unrendered_config": {},
-			"relation_name": "`speedy-vim-308516`.`dbt_test1`.`source_table`",
+			"relation_name": "`random-gcp-project`.`dbt_test1`.`source_table`",
 			"created_at": 1625661884
 		}
 	},

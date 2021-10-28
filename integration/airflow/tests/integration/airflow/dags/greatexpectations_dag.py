@@ -1,11 +1,16 @@
 from great_expectations_provider.operators.great_expectations import GreatExpectationsOperator
 
-from openlineage.airflow import DAG
 from airflow.utils.dates import days_ago
-
 from openlineage.client import set_producer
-
 set_producer("https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow")
+
+from airflow.version import version as AIRFLOW_VERSION
+from pkg_resources import parse_version
+if parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"):
+    from openlineage.airflow import DAG
+else:
+    from airflow import DAG
+
 
 default_args = {
     'owner': 'datascience',
@@ -33,6 +38,7 @@ t1 = GreatExpectationsOperator(
     dag=dag,
     fail_task_on_validation_failure=False,
     validation_operator_name="ol_operator",
+    do_xcom_push=False
 )
 
 t2 = GreatExpectationsOperator(
@@ -42,7 +48,8 @@ t2 = GreatExpectationsOperator(
     data_context_root_dir=data_context_dir,
     dag=dag,
     fail_task_on_validation_failure=False,
-    validation_operator_name="ol_operator"
+    validation_operator_name="ol_operator",
+    do_xcom_push=False
 )
 
 t3 = GreatExpectationsOperator(
@@ -52,7 +59,8 @@ t3 = GreatExpectationsOperator(
     data_context_root_dir=data_context_dir,
     dag=dag,
     fail_task_on_validation_failure=False,
-    validation_operator_name="ol_operator"
+    validation_operator_name="ol_operator",
+    do_xcom_push=False
 )
 
 t1 >> t2 >> t3

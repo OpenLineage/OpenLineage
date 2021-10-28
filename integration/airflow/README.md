@@ -23,8 +23,9 @@ A library that integrates [Airflow `DAGs`]() with [OpenLineage](https://openline
 
 ## Requirements
 
-- [Python 3.6.0](https://www.python.org/downloads)+
-- [Airflow 1.10.12+](https://pypi.org/project/apache-airflow)+
+- [Python 3.6.0](https://www.python.org/downloads)
+- [Airflow 1.10.12+](https://pypi.org/project/apache-airflow)
+- (experimental) [Airflow 2.1+](https://pypi.org/project/apache-airflow)
 
 ## Installation
 
@@ -39,6 +40,41 @@ To install from source, run:
 ```bash
 $ python3 setup.py install
 ```
+
+
+## Usage
+
+###Airflow 1.10+
+
+To begin collecting Airflow DAG metadata with OpenLineage, use:
+
+```diff
+- from airflow import DAG
++ from openlineage.airflow import DAG
+```
+
+When enabled, the library will:
+
+1. On DAG **start**, collect metadata for each task using an `Extractor` if it exists for given operator.
+2. Collect task input / output metadata (`source`, `schema`, etc)
+3. Collect task run-level metadata (execution time, state, parameters, etc)
+4. On DAG **complete**, also mark the task as _complete_ in OpenLineage
+
+###Airflow 2.1+ (*experimental*)
+
+Set your LineageBackend in your [airflow.cfg](https://airflow.apache.org/docs/apache-airflow/stable/howto/set-config.html) or via environmental variable `AIRFLOW__LINEAGE__BACKEND`
+to 
+```
+openlineage.lineage_backend.OpenLineageBackend
+```
+
+In contrast to integration via subclassing `DAG`, `LineageBackend` based approach collects all metadata 
+for task on each task completion.
+
+OpenLineageBackend does not take into account manually configured inlets and outlets. 
+
+Support for Airflow 2.1+ is currently experimental, and has some caveats: 
+it does not support tracking failed jobs, and job starts are registered only when job ends.
 
 ## Configuration
 
@@ -143,22 +179,6 @@ If you're using `GreatExpectationsOperator`, you need to set `validation_operato
 Setting it in `great_expectations.yml` files isn't enough - the operator overrides it with default name if it's not provided.
 
 To see example of working configuration, you can see [DAG](https://github.com/OpenLineage/OpenLineage/blob/main/integration/airflow/tests/integration/airflow/dags/greatexpectations_dag.py) and [Great Expectations configuration](https://github.com/OpenLineage/OpenLineage/tree/main/integration/airflow/tests/integration/data/great_expectations) in integration tests.
-
-## Usage
-
-To begin collecting Airflow DAG metadata with OpenLineage, use:
-
-```diff
-- from airflow import DAG
-+ from openlineage.airflow import DAG
-```
-
-When enabled, the library will:
-
-1. On DAG **start**, collect metadata for each task using an `Extractor` (the library defines a _default_ extractor to use otherwise)
-2. Collect task input / output metadata (`source`, `schema`, etc)
-3. Collect task run-level metadata (execution time, state, parameters, etc)
-4. On DAG **complete**, also mark the task as _complete_ in OpenLineage
 
 ## Triggering Child Jobs
 Commonly, Airflow DAGs will trigger processes on remote systems, such as an Apache Spark or Apache

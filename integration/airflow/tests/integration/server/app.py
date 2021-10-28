@@ -34,7 +34,7 @@ def get_conn():
     if db is None:
         db = g._database = sqlite3.connect(DATABASE)
         db.execute('''
-            CREATE TABLE IF NOT EXISTS requests (body text)
+            CREATE TABLE IF NOT EXISTS requests (body text, job_name text, created_at text)
         ''')
     return db
 
@@ -50,21 +50,31 @@ def close_connection(exception):
 def lineage():
     conn = get_conn()
     if request.method == 'POST':
+        job_name = request.json['job']['name']
         conn.execute("""
-            INSERT INTO requests values (:body)
+            INSERT INTO requests values (:body, :job_name, CURRENT_TIMESTAMP)
         """, {
-            "body": json.dumps(request.json)
+            "body": json.dumps(request.json),
+            "job_name": job_name
         })
+        logger.info(f"job_name: {job_name}")
+        logger.info(json.dumps(request.json, sort_keys=True))
         conn.commit()
         return '', 200
     elif request.method == 'GET':
-        received_requests = conn.execute("""
-            SELECT * FROM requests
-        """).fetchall()
+        job_name = request.args.get("job_name")
+        if job_name:
+            received_requests = conn.execute("""
+                SELECT body FROM requests WHERE job_name LIKE :job_name ORDER BY created_at
+            """, {
+                "job_name": f'{job_name}%'
+            }).fetchall()
+        else:
+            received_requests = conn.execute("""
+                SELECT body FROM requests
+            """).fetchall()
         received_requests = [json.loads(req[0]) for req in received_requests]
 
-        logger.info(f"GOT {len(received_requests)} requests")
-
-        logger.info(json.dumps(received_requests, indent=4, sort_keys=True))
+        logger.info(f"GOT {len(received_requests)} requests for job {job_name}")
 
         return jsonify(received_requests), 200

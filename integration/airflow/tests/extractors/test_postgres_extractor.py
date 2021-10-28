@@ -13,12 +13,12 @@
 import os
 from unittest import mock
 
-from airflow.hooks.postgres_hook import PostgresHook
+import pytest
 from airflow.models import Connection
-from airflow.operators.postgres_operator import PostgresOperator
 from airflow.utils.dates import days_ago
+from airflow import DAG
 
-from openlineage.airflow import DAG
+from openlineage.airflow.utils import safe_import_airflow, get_connection
 from openlineage.common.models import (
     DbTableName,
     DbTableSchema,
@@ -26,6 +26,16 @@ from openlineage.common.models import (
 )
 from openlineage.common.dataset import Source, Dataset
 from openlineage.airflow.extractors.postgres_extractor import PostgresExtractor
+
+PostgresOperator = safe_import_airflow(
+    airflow_1_path="airflow.operators.postgres_operator.PostgresOperator",
+    airflow_2_path="airflow.providers.postgres.operators.postgres.PostgresOperator"
+)
+
+PostgresHook = safe_import_airflow(
+    airflow_1_path="airflow.hooks.postgres_hook.PostgresHook",
+    airflow_2_path="airflow.providers.postgres.hooks.postgres.PostgresHook"
+)
 
 CONN_ID = 'food_delivery_db'
 CONN_URI = 'postgres://user:pass@localhost:5432/food_delivery'
@@ -145,7 +155,7 @@ def test_extract_authority_uri(get_connection, mock_get_table_schemas):
         [[DB_TABLE_SCHEMA], NO_DB_TABLE_SCHEMA]
 
     conn = Connection()
-    conn.parse_from_uri(CONN_URI)
+    conn.parse_from_uri(uri=CONN_URI)
     get_connection.return_value = conn
 
     expected_inputs = [
@@ -172,6 +182,10 @@ def test_get_table_schemas(mock_conn):
     class TestPostgresHook(PostgresHook):
         conn_name_attr = 'test_conn_id'
 
+        def __init__(self, *args, **kwargs):
+            super(TestPostgresHook, self).__init__(*args, **kwargs)
+            self.schema = ''
+
     # (2) Mock calls to postgres
     rows = [
         (DB_SCHEMA_NAME, DB_TABLE_NAME.name, 'id', 1, 'int4'),
@@ -194,3 +208,32 @@ def test_get_table_schemas(mock_conn):
     table_schemas = extractor._get_table_schemas(table_names=[DB_TABLE_NAME])
 
     assert table_schemas == [DB_TABLE_SCHEMA]
+
+
+def test_get_connection_import_returns_none_if_not_exists():
+    assert get_connection("does_not_exist") is None
+    assert get_connection("does_exist") is None
+
+
+@pytest.fixture
+def create_connection():
+    create_session = safe_import_airflow(
+        airflow_1_path="airflow.utils.db.create_session",
+        airflow_2_path="airflow.utils.session.create_session",
+    )
+
+    conn = Connection("does_exist", conn_type="postgres")
+    with create_session() as session:
+        session.add(conn)
+        session.commit()
+
+    yield conn
+
+    with create_session() as session:
+        session.delete(conn)
+        session.commit()
+
+
+def test_get_connection_returns_one_if_exists(create_connection):
+    conn = Connection("does_exist")
+    assert get_connection("does_exist").conn_id == conn.conn_id

@@ -2,82 +2,69 @@
 	"eventType": "START",
 	"eventTime": "2021-07-07T12:44:46.069306Z",
 	"run": {
-		"runId": "6edf42ed-d8d0-454a-b819-d09b9067ff99",
-		"facets": {}
+		"runId": "{{ any(result) }}"
 	},
 	"job": {
 		"namespace": "bigquery",
-		"name": "speedy-vim-308516.dbt_prod1.dbt_test.test_model",
-		"facets": {}
+		"name": "random-gcp-project.dbt_prod1.dbt_test.test_model"
 	},
-	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 	"inputs": [{
 		"namespace": "bigquery",
-		"name": "speedy-vim-308516.dbt_prod1.source_table",
-		"facets": {}
+		"name": "random-gcp-project.dbt_prod1.source_table"
 	}],
 	"outputs": [{
 		"namespace": "bigquery",
-		"name": "speedy-vim-308516.dbt_prod1.test_model",
-		"facets": {},
-		"outputFacets": {}
+		"name": "random-gcp-project.dbt_prod1.test_model"
 	}]
 }, {
 	"eventType": "COMPLETE",
-	"eventTime": "2021-07-07T12:44:46.972743Z",
+	"eventTime": "{{ is_datetime(result) }}",
 	"run": {
-		"runId": "6edf42ed-d8d0-454a-b819-d09b9067ff99",
-		"facets": {}
+		"runId": "{{ any(result) }}",
+		"facets": {
+			"parent": {
+				"job": {"name": "dbt-job-name", "namespace": "dbt"},
+				"run": {"runId": "{{ any(result) }}"}
+			},
+                "dbt_version": {
+                    "version": "{{ any(result) }}"
+                }
+		}
 	},
 	"job": {
 		"namespace": "bigquery",
-		"name": "speedy-vim-308516.dbt_prod1.dbt_test.test_model",
+		"name": "random-gcp-project.dbt_prod1.dbt_test.test_model",
 		"facets": {
 			"sql": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SqlJobFacet",
-				"query": "select *\nfrom `speedy-vim-308516`.`dbt_prod1`.`source_table`\nwhere id = 1"
+				"query": "select *\nfrom `random-gcp-project`.`dbt_prod1`.`source_table`\nwhere id = 1"
 			}
 		}
 	},
-	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 	"inputs": [{
 		"namespace": "bigquery",
-		"name": "speedy-vim-308516.dbt_prod1.source_table",
+		"name": "random-gcp-project.dbt_prod1.source_table",
 		"facets": {
 			"dataSource": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
 				"name": "bigquery",
 				"uri": "bigquery"
-			},
-			"schema": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
-				"fields": []
 			}
 		}
 	}],
 	"outputs": [{
 		"namespace": "bigquery",
-		"name": "speedy-vim-308516.dbt_prod1.test_model",
+		"name": "random-gcp-project.dbt_prod1.test_model",
 		"facets": {
 			"dataSource": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
 				"name": "bigquery",
 				"uri": "bigquery"
 			},
 			"schema": {
-				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
-				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "id",
 					"type": null,
 					"description": null
 				}]
 			}
-		},
-		"outputFacets": {}
+		}
 	}]
 }]

@@ -1,18 +1,39 @@
 import datetime
+
+from jinja2 import Environment, Undefined
 import json
+
 import yaml
 import os
 import uuid
 import collections
-from typing import List, Tuple, Dict, Optional
+from typing import List, Tuple, Dict, Optional, TypeVar
 
 import attr
 
 from openlineage.client.facet import DataSourceDatasetFacet, SchemaDatasetFacet, SchemaField, \
-    SqlJobFacet, OutputStatisticsOutputDatasetFacet
+    SqlJobFacet, OutputStatisticsOutputDatasetFacet, ParentRunFacet, BaseFacet, \
+    Assertion, DataQualityAssertionsDatasetFacet
 from openlineage.client.run import RunEvent, RunState, Run, Job, Dataset, OutputDataset
-from openlineage.client.facet import Assertion, DataQualityAssertionsDatasetFacet
+from openlineage.common.schema import GITHUB_LOCATION
 from openlineage.common.utils import get_from_nullable_chain, get_from_multiple_chains
+
+
+class SkipUndefined(Undefined):
+    def __getattr__(self, name):
+        return SkipUndefined(name=f"{self._undefined_name}.{name}")
+
+    def __str__(self):
+        return f"{{{{ {self._undefined_name} }}}}"
+
+    def _fail_with_undefined_error(self, *args, **kwargs):
+        pass
+
+    def __call__(self, *args, **kwargs):
+        arguments = ', '.join([
+            arg._undefined_name if isinstance(arg, SkipUndefined) else str(arg) for arg in args
+        ])
+        return f"{{{{ {self._undefined_name}({arguments}) }}}}"
 
 
 @attr.s
@@ -50,6 +71,32 @@ class DbtRunResult:
     fail: Optional[RunEvent] = attr.ib(default=None)
 
 
+@attr.s
+class ParentRunMetadata:
+    run_id: str = attr.ib()
+    job_name: str = attr.ib()
+    job_namespace: str = attr.ib()
+
+    def to_openlineage(self) -> ParentRunFacet:
+        return ParentRunFacet.create(
+            runId=self.run_id,
+            name=self.job_name,
+            namespace=self.job_namespace
+        )
+
+
+@attr.s
+class DbtVersionRunFacet(BaseFacet):
+    version: str = attr.ib()
+
+    @staticmethod
+    def _get_schema() -> str:
+        return GITHUB_LOCATION + "dbt-version-run-facet.json"
+
+
+T = TypeVar('T')
+
+
 class DbtArtifactProcessor:
     def __init__(
         self,
@@ -61,12 +108,16 @@ class DbtArtifactProcessor:
     ):
         self.producer = producer
         self.dir = os.path.abspath(project_dir)
+        self._dbt_run_metadata = None
         self.profile_name = profile_name
         self.target = target
-        self.project = self.load_yaml(os.path.join(project_dir, 'dbt_project.yml'))
+        self.jinja_environment = None
+
         self.job_namespace = ""
         self.dataset_namespace = ""
         self.skip_errors = skip_errors
+        self.project = self.load_yaml_with_jinja(os.path.join(project_dir, 'dbt_project.yml'))
+        self.run_metadata = None
 
         self.manifest_path = os.path.join(self.dir, self.project['target-path'], 'manifest.json')
         self.run_result_path = os.path.join(
@@ -74,12 +125,22 @@ class DbtArtifactProcessor:
         )
         self.catalog_path = os.path.join(self.dir, self.project['target-path'], 'catalog.json')
 
+    @property
+    def dbt_run_metadata(self):
+        return self._dbt_run_metadata
+
+    @dbt_run_metadata.setter
+    def dbt_run_metadata(self, metadata: ParentRunMetadata):
+        self._dbt_run_metadata = metadata
+
     def parse(self) -> DbtEvents:
         """
             Parse dbt manifest and run_result and produce OpenLineage events.
         """
         manifest = self.load_manifest(self.manifest_path)
         run_result = self.load_run_results(self.run_result_path)
+        self.run_metadata = run_result['metadata']
+
         catalog = self.load_catalog(self.catalog_path)
 
         profile_dir = run_result['args']['profiles_dir']
@@ -87,7 +148,7 @@ class DbtArtifactProcessor:
         if not self.profile_name:
             self.profile_name = self.project['profile']
 
-        profile = self.load_yaml(
+        profile = self.load_yaml_with_jinja(
             os.path.join(profile_dir, 'profiles.yml')
         )[self.profile_name]
 
@@ -95,6 +156,7 @@ class DbtArtifactProcessor:
             self.target = profile['target']
 
         profile = profile['outputs'][self.target]
+        self.adapter_type = profile['type']
 
         self.extract_dataset_namespace(profile)
         self.extract_job_namespace(profile)
@@ -115,35 +177,94 @@ class DbtArtifactProcessor:
         )
 
     @staticmethod
-    def load_metadata(path: str, desired_schema_version: str) -> Dict:
+    def load_metadata(path: str, desired_schema_versions: List[str]) -> Dict:
         with open(path, 'r') as f:
             metadata = json.load(f)
             schema_version = get_from_nullable_chain(metadata, ['metadata', 'dbt_schema_version'])
-            if schema_version != desired_schema_version:
+            if schema_version not in desired_schema_versions:
                 # Maybe we should accept it and throw exception only if it substantially differs
                 raise ValueError(f"Wrong version of dbt metadata: {schema_version}, "
-                                 f"should be {desired_schema_version}")
+                                 f"should be in {desired_schema_versions}")
             return metadata
 
     @classmethod
     def load_manifest(cls, path: str) -> Dict:
-        return cls.load_metadata(path, "https://schemas.getdbt.com/dbt/manifest/v2.json")
+        return cls.load_metadata(path, [
+            "https://schemas.getdbt.com/dbt/manifest/v2.json",
+            "https://schemas.getdbt.com/dbt/manifest/v3.json",
+        ])
 
     @classmethod
     def load_run_results(cls, path: str) -> Dict:
-        return cls.load_metadata(path, "https://schemas.getdbt.com/dbt/run-results/v2.json")
+        return cls.load_metadata(path, [
+            "https://schemas.getdbt.com/dbt/run-results/v2.json",
+            "https://schemas.getdbt.com/dbt/run-results/v3.json"
+        ])
 
     @classmethod
     def load_catalog(cls, path: str) -> Optional[Dict]:
         try:
-            return cls.load_metadata(path, "https://schemas.getdbt.com/dbt/catalog/v1.json")
+            return cls.load_metadata(path, [
+                "https://schemas.getdbt.com/dbt/catalog/v1.json"
+            ])
         except FileNotFoundError:
             return None
+
+    @staticmethod
+    def env_var(var: str, default: Optional[str] = None) -> str:
+        """The env_var() function. Return the environment variable named 'var'.
+        If there is no such environment variable set, return the default.
+
+        If the default is None, raise an exception for an undefined variable.
+        """
+        if var in os.environ:
+            return os.environ[var]
+        elif default is not None:
+            return default
+        else:
+            msg = f"Env var required but not provided: '{var}'"
+            raise Exception(msg)
 
     @staticmethod
     def load_yaml(path: str) -> Dict:
         with open(path, 'r') as f:
             return yaml.load(f, Loader=yaml.FullLoader)
+
+    @staticmethod
+    def setup_jinja() -> Environment:
+        env = Environment(undefined=SkipUndefined)
+        # When using env vars for Redshift port, it must be "{{ env_var('PORT') | as_number }}"
+        # otherwise Redshift driver will complain, hence the need to add the "as_number" filter
+        env.filters.update({"as_number": lambda x: x})
+        env.globals["env_var"] = DbtArtifactProcessor.env_var
+        return env
+
+    def load_yaml_with_jinja(self, path: str) -> Dict:
+        loaded = self.load_yaml(path)
+        if not self.jinja_environment:
+            self.jinja_environment = self.setup_jinja()
+        return self.render_values_jinja(environment=self.jinja_environment, value=loaded)
+
+    @classmethod
+    def render_values_jinja(cls, environment: Environment, value: T) -> T:
+        """
+        Traverses passed dictionary and render any string value using jinja.
+        Returns copy of the dict with parsed values.
+        """
+        if isinstance(value, dict):
+            parsed = {}
+            for key, val in value.items():
+                parsed[key] = cls.render_values_jinja(environment, val)
+            return parsed
+        elif isinstance(value, list):
+            parsed = []
+            for elem in value:
+                parsed.append(cls.render_values_jinja(environment, elem))
+            return parsed
+        elif isinstance(value, str):
+            return environment.from_string(value).render()
+        else:
+            return value
 
     def parse_run(
         self,
@@ -270,7 +391,11 @@ class DbtArtifactProcessor:
                 eventType=RunState.COMPLETE,
                 eventTime=completed_at,
                 run=Run(
-                    runId=run_id
+                    runId=run_id,
+                    facets={
+                        "parent": self._dbt_run_metadata.to_openlineage(),
+                        "dbt_version": self.dbt_version_facet()
+                    }
                 ),
                 job=Job(
                     namespace=self.job_namespace,
@@ -291,7 +416,7 @@ class DbtArtifactProcessor:
         except Exception as e:
             if self.skip_errors:
                 return None
-            raise ValueError(e)
+            raise ValueError() from e
 
     def _to_openlineage_events(self, run: DbtRun) -> Optional[DbtRunResult]:
         if run.status == 'skipped':
@@ -319,7 +444,11 @@ class DbtArtifactProcessor:
                     eventType=RunState.COMPLETE,
                     eventTime=run.completed_at,
                     run=Run(
-                        runId=run.run_id
+                        runId=run.run_id,
+                        facets={
+                            "parent": self._dbt_run_metadata.to_openlineage(),
+                            "dbt_version": self.dbt_version_facet()
+                        }
                     ),
                     job=Job(
                         namespace=self.job_namespace,
@@ -340,7 +469,11 @@ class DbtArtifactProcessor:
                     eventType=RunState.FAIL,
                     eventTime=run.completed_at,
                     run=Run(
-                        runId=run.run_id
+                        runId=run.run_id,
+                        facets={
+                            "parent": self._dbt_run_metadata.to_openlineage(),
+                            "dbt_version": self.dbt_version_facet()
+                        }
                     ),
                     job=Job(
                         namespace=self.job_namespace,
@@ -372,19 +505,21 @@ class DbtArtifactProcessor:
                 node.catalog_node,
                 [
                     ['stats', 'num_bytes', 'value'],  # bigquery
-                    ['stats', 'bytes', 'value']  # snowflake
+                    ['stats', 'bytes', 'value'],  # snowflake
+                    ['stats', 'size', 'value']  # redshift (Note: size = count of 1MB blocks)
                 ]
             )
             rows = get_from_multiple_chains(
                 node.catalog_node,
                 [
                     ['stats', 'num_rows', 'value'],  # bigquery
-                    ['stats', 'row_count', 'value']  # snowflake
+                    ['stats', 'row_count', 'value'],  # snowflake
+                    ['stats', 'rows', 'value']  # redshift
                 ]
             )
 
             if bytes:
-                bytes = int(bytes)
+                bytes = int(bytes) if self.adapter_type != 'redshift' else int(rows) * (2 ** 20)
             if rows:
                 rows = int(rows)
 
@@ -470,11 +605,18 @@ class DbtArtifactProcessor:
             return f"snowflake://{profile['account']}"
         elif profile['type'] == 'bigquery':
             return "bigquery"
+        elif profile['type'] == 'redshift':
+            return f"redshift://{profile['host']}:{profile['port']}"
         else:
             raise NotImplementedError(
-                f"Only 'snowflake' and 'bigquery' adapters are supported right now. "
+                f"Only 'snowflake', 'bigquery', and 'redshift' adapters are supported right now. "
                 f"Passed {profile['type']}"
             )
+
+    def dbt_version_facet(self):
+        return DbtVersionRunFacet(
+            version=self.run_metadata['dbt_version']
+        )
 
     @staticmethod
     def get_timings(timings: List[Dict]) -> Tuple[str, str]:

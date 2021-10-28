@@ -19,7 +19,7 @@ from setuptools import setup, find_namespace_packages
 with open("README.md") as readme_file:
     readme = readme_file.read()
 
-__version__ = "0.2.3"
+__version__ = "0.4.0"
 
 requirements = [
     "attrs>=19.3",
@@ -38,15 +38,25 @@ extras_require = {
         "SQLAlchemy",       # must be set to 1.3.* for airflow tests compatibility
         "Flask-SQLAlchemy",  # must be set to 2.4.* for airflow tests compatibility
         "pandas-gbq==0.14.1",       # must be set to 0.14.* for airflow tests compatibility
-        "snowflake-connector-python",
-        "apache-airflow==1.10.12",
-        "apache-airflow[gcp_api]==1.10.12",
-        "apache-airflow[google]==1.10.12",
-        "apache-airflow[postgres]==1.10.12",
-        "airflow-provider-great-expectations==0.0.8"
+        "snowflake-connector-python"
+    ],
+    "airflow-1": [
+        "apache-airflow==1.10.15",
+        "apache-airflow[gcp_api]==1.10.15",
+        "apache-airflow[google]==1.10.15",
+        "apache-airflow[postgres]==1.10.15",
+        "airflow-provider-great-expectations==0.0.8",
+    ],
+    "airflow-2": [
+        "apache-airflow==2.1.3",
+        "apache-airflow-providers-postgres==2.0.0",
+        "apache-airflow-providers-snowflake==2.1.0",
+        "apache-airflow-providers-google==5.0.0",
+        "airflow-provider-great-expectations==0.0.8",
     ],
 }
-extras_require["dev"] = set(sum(extras_require.values(), []))
+
+extras_require["dev"] = extras_require["tests"]
 
 setup(
     name="openlineage-airflow",

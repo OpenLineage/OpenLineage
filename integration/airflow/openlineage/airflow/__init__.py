@@ -11,9 +11,12 @@
 # limitations under the License.
 #
 # -*- coding: utf-8 -*-
+from pkg_resources import parse_version
+from airflow.version import version as AIRFLOW_VERSION
 
 __author__ = """OpenLineage"""
-__version__ = "0.2.3"
-__all__ = ["DAG"]
+__version__ = "0.4.0"
 
-from openlineage.airflow.dag import DAG
+if parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"):
+    from openlineage.airflow.dag import DAG
+    __all__ = ["DAG"]
