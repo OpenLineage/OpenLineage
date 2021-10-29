@@ -71,7 +71,7 @@ ext {
     jacksonModuleScalaVersion = '2.6.7.1'
     jacksonDatatypeVersion = '2.6.7'
     jacksonDatabindVersion = '2.6.7.3'
-    spark3Version = '3.1.0'
+    spark3Version = '3.1.2'
     postgresqlVersion = '42.2.19'
     lombokVersion = '1.18.20'
     mockitoVersion = '3.11.2'

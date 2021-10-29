@@ -50,7 +50,9 @@ public class InsertIntoHiveTableVisitor
 
         path = new Path("hive", authority, table.qualifiedName());
       }
-      throw e;
+      else {
+        throw e;
+      }
     }
     return Collections.singletonList(PlanUtils.getDataset(path.toUri(), cmd.query().schema()));
   }
