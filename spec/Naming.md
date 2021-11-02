@@ -125,6 +125,18 @@ Identifier :
  * Unique name: {path}
    * URI =   hdfs://{namenode host}:{namenode port}{path}
 
+#### DBFS (Databricks File System)
+Naming hierarchy:
+ * workspace name: globally unique
+ * Path
+
+Identifier :
+ * Namespace: hdfs://{workspace name}
+   * Scheme = hdfs
+   * Authority = workspace name
+ * Unique name: {path}
+   * URI =   hdfs://{workspace name}{path}
+
 ## Jobs
 ### Context
 
