@@ -10,7 +10,7 @@ Open Lineage's [Spark Integration](../README.md) can be installed on Databricks 
 
 Follow the steps below to enable Open Lineage on Databricks.
 
-* Build the jar via Gradle
+* Build the jar via Gradle - or download the [latest release](https://search.maven.org/remote_content?g=io.openlineage&a=openlineage-spark&v=LATEST)
 * Configure the Databricks CLI with your desired workspace:
     * [Azure Databricks CLI](https://docs.microsoft.com/en-us/azure/databricks/dev-tools/cli/)
     * [GCP Databricks CLI](https://docs.gcp.databricks.com/dev-tools/cli/index.html)
