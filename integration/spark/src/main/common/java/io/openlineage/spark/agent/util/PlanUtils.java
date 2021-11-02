@@ -12,6 +12,8 @@ import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.spark.sql.AnalysisException;
+import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.execution.metric.SQLMetric;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
@@ -138,6 +140,39 @@ public class PlanUtils {
         return datasetFacet;
       }
     };
+  }
+
+  public static Path getPath(URI location, String qualifiedName, String authority) {
+    Path path;
+    try {
+      path = new Path(location);
+      if (location.getScheme() == null) {
+        path = new Path("file", null, location.toString());
+      }
+    } catch (Exception e) { // Java does not recognize scala exception
+      if (e instanceof AnalysisException) {
+        path = new Path("hive", authority, qualifiedName);
+      }
+      throw e;
+    }
+    return path;
+  }
+
+  /**
+   * Construct a dataset {@link OpenLineage.Dataset} given a {@link
+   * org.apache.spark.sql.catalyst.catalog.CatalogTable} If table does not contain location, use
+   * passed authority as a backup.
+   *
+   * @param table
+   * @return
+   */
+  public static OpenLineage.Dataset getDataset(CatalogTable table, String authority) {
+    Path path = getPath(table.location(), table.qualifiedName(), authority);
+    return getDataset(path.toUri(), table.schema());
+  }
+
+  public static OpenLineage.Dataset getDataset(CatalogTable table) {
+    return getDataset(table, "");
   }
 
   /**
