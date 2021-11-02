@@ -4,12 +4,17 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.lifecycle.plan.AppendDataVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.CommandPlanVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.CreateDataSourceTableAsSelectCommandVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.CreateDataSourceTableCommandVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.CreateHiveTableAsSelectCommandVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.CreateTableLikeCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDataSourceDirVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDataSourceVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDirVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHadoopFsRelationVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHiveDirVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHiveTableVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.LoadDataCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRDDVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRelationVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.QueryPlanVisitor;
@@ -62,12 +67,19 @@ abstract class BaseVisitorFactory implements VisitorFactory {
     list.add(
         new OutputDatasetWithMetadataVisitor(
             new SaveIntoDataSourceCommandVisitor(sqlContext, allCommonVisitors)));
+    list.add(
+        new OutputDatasetWithMetadataVisitor(new CreateDataSourceTableAsSelectCommandVisitor()));
     list.add(new OutputDatasetVisitor(new AppendDataVisitor(allCommonVisitors)));
     list.add(new OutputDatasetVisitor(new InsertIntoDirVisitor(sqlContext)));
     list.add(
         new OutputDatasetWithMetadataVisitor(
             new InsertIntoHiveTableVisitor(sqlContext.sparkContext())));
     list.add(new OutputDatasetVisitor(new InsertIntoHiveDirVisitor()));
+    list.add(new OutputDatasetVisitor(new CreateDataSourceTableCommandVisitor()));
+    list.add(
+        new OutputDatasetVisitor(new CreateTableLikeCommandVisitor(sqlContext.sparkSession())));
+    list.add(new OutputDatasetVisitor(new CreateHiveTableAsSelectCommandVisitor()));
+    list.add(new OutputDatasetVisitor(new LoadDataCommandVisitor(sqlContext.sparkSession())));
     return list;
   }
 }
