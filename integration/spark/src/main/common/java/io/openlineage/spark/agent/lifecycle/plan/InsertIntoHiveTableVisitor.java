@@ -5,9 +5,7 @@ import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.SparkConfUtils;
 import java.util.Collections;
 import java.util.List;
-import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkContext;
-import org.apache.spark.sql.AnalysisException;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.hive.execution.InsertIntoHiveTable;
@@ -44,26 +42,13 @@ public class InsertIntoHiveTableVisitor
   public List<OpenLineage.Dataset> apply(LogicalPlan x) {
     InsertIntoHiveTable cmd = (InsertIntoHiveTable) x;
     CatalogTable table = cmd.table();
-    Path path;
 
-    try {
-      path = new Path(table.location());
-      if (table.location().getScheme() == null) {
-        path = new Path("file", null, table.location().toString());
-      }
-    } catch (Exception e) { // Java does not recognize scala exception
-      if (e instanceof AnalysisException) {
+    String authority =
+        SparkConfUtils.findSparkConfigKey(context.getConf(), metastoreUriKey)
+            .orElse(
+                SparkConfUtils.findSparkConfigKey(context.getConf(), metastoreHadoopUriKey)
+                    .orElse(""));
 
-        String authority =
-            SparkConfUtils.findSparkConfigKey(context.getConf(), metastoreUriKey)
-                .orElse(
-                    SparkConfUtils.findSparkConfigKey(context.getConf(), metastoreHadoopUriKey)
-                        .get());
-
-        path = new Path("hive", authority, table.qualifiedName());
-      }
-      throw e;
-    }
-    return Collections.singletonList(PlanUtils.getDataset(path.toUri(), cmd.query().schema()));
+    return Collections.singletonList(PlanUtils.getDataset(table, authority));
   }
 }
