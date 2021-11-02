@@ -32,26 +32,13 @@ public class InsertIntoHiveTableVisitor
   public List<OpenLineage.Dataset> apply(LogicalPlan x) {
     InsertIntoHiveTable cmd = (InsertIntoHiveTable) x;
     CatalogTable table = cmd.table();
-    Path path;
 
-    try {
-      path = new Path(table.location());
-      if (table.location().getScheme() == null) {
-        path = new Path("file", null, table.location().toString());
-      }
-    } catch (Exception e) { // Java does not recognize scala exception
-      if (e instanceof AnalysisException) {
+    String authority =
+      SparkConfUtils.findSparkConfigKey(context.getConf(), metastoreUriKey)
+        .orElse(
+          SparkConfUtils.findSparkConfigKey(context.getConf(), metastoreHadoopUriKey)
+            .get());
 
-        String authority =
-            SparkConfUtils.findSparkConfigKey(context.getConf(), metastoreUriKey)
-                .orElse(
-                    SparkConfUtils.findSparkConfigKey(context.getConf(), metastoreHadoopUriKey)
-                        .get());
-
-        path = new Path("hive", authority, table.qualifiedName());
-      }
-      throw e;
-    }
-    return Collections.singletonList(PlanUtils.getDataset(path.toUri(), cmd.query().schema()));
+    return Collections.singletonList(PlanUtils.getDataset(table, authority));
   }
 }

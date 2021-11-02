@@ -119,7 +119,7 @@ dependencies {
     testCompile "org.junit.jupiter:junit-jupiter:${junit5Version}"
     testCompile "org.mockito:mockito-core:${mockitoVersion}"
     testCompile "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
-    testCompileOnly "org.projectlombok:lombok:${lombokVersion}"
+    testCompile "org.projectlombok:lombok:${lombokVersion}"
     testCompileOnly "org.apache.spark:spark-core_2.11:${sparkVersion}"
     testCompileOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
     testCompileOnly 'com.google.cloud.spark:spark-bigquery-with-dependencies_2.11:0.21.1'
@@ -156,7 +156,7 @@ dependencies {
 
 sourceSets {
     main.java.srcDirs = ["src/main/common/java", "src/main/spark2/java"]
-    test.java.srcDirs = ["src/test/common/java"]
+    test.java.srcDirs = ["src/test/common/java", "src/test/spark2/java"]
 
     spark3{
         java {

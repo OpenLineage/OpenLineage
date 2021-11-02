@@ -29,6 +29,7 @@ import org.apache.spark.SparkEnv;
 import org.apache.spark.SparkEnv$;
 import org.apache.spark.rdd.PairRDDFunctions;
 import org.apache.spark.rdd.RDD;
+import org.apache.spark.scheduler.SparkListenerApplicationEnd;
 import org.apache.spark.scheduler.SparkListenerApplicationStart;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
@@ -114,8 +115,10 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   @Override
   public void onOtherEvent(SparkListenerEvent event) {
     if (event instanceof SparkListenerSQLExecutionStart) {
+      log.warn(event + "\n---------------------------------------------------------------------\n");
       sparkSQLExecStart((SparkListenerSQLExecutionStart) event);
     } else if (event instanceof SparkListenerSQLExecutionEnd) {
+      log.warn(event + "\n---------------------------------------------------------------------\n");
       sparkSQLExecEnd((SparkListenerSQLExecutionEnd) event);
     }
   }
@@ -137,6 +140,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   /** called by the SparkListener when a job starts */
   @Override
   public void onJobStart(SparkListenerJobStart jobStart) {
+    log.warn(jobStart + "\n---------------------------------------------------------------------\n");
     ScalaConversionUtils.asJavaOptional(
             SparkSession.getActiveSession()
                 .map(ScalaConversionUtils.toScalaFn(sess -> sess.sparkContext()))
@@ -163,6 +167,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   /** called by the SparkListener when a job ends */
   @Override
   public void onJobEnd(SparkListenerJobEnd jobEnd) {
+    log.warn(jobEnd + "\n---------------------------------------------------------------------\n");
     ExecutionContext context = rddExecutionRegistry.remove(jobEnd.jobId());
     context.end(jobEnd);
   }
@@ -239,6 +244,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
    */
   @Override
   public void onApplicationStart(SparkListenerApplicationStart applicationStart) {
+    log.warn("onAppStart");
     if (contextFactory != null) {
       return;
     }
