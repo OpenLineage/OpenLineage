@@ -546,7 +546,10 @@ class DbtArtifactProcessor:
             }
             if node.catalog_node:
                 facets['schema'] = SchemaDatasetFacet(
-                    fields=self.extract_catalog_fields(node.catalog_node['columns'].values())
+                    fields=self.extract_catalog_fields(
+                        node.catalog_node['columns'].values(),
+                        node.metadata_node['columns']
+                    )
                 )
         else:
             facets = {}
@@ -567,26 +570,28 @@ class DbtArtifactProcessor:
         """
         fields = []
         for field in columns:
-            type = None
+            type, description = None, None
             if 'data_type' in field and field['data_type'] is not None:
                 type = field['data_type']
+            if 'description' in field and field['description'] is not None:
+                description = field['description']
             fields.append(SchemaField(
-                name=field['name'], type=type
+                name=field['name'], type=type, description=description
             ))
         return fields
 
     @staticmethod
-    def extract_catalog_fields(columns: List[Dict]) -> List[SchemaField]:
+    def extract_catalog_fields(columns: List[Dict], metadata_columns: Dict) -> List[SchemaField]:
         """Extract table field info from catalog's node column info"""
         fields = []
         for field in columns:
-            type, description = None, None
+            name = field['name']
+            type = None
             if 'type' in field and field['type'] is not None:
                 type = field['type']
-            if 'column' in field and field['column'] is not None:
-                description = field['column']
+            description = get_from_nullable_chain(metadata_columns, [name, 'description'])
             fields.append(SchemaField(
-                name=field['name'], type=type, description=description
+                name=name, type=type, description=description
             ))
         return fields
 

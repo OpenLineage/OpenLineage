@@ -61,8 +61,7 @@
 			"schema": {
 				"fields": [{
 					"name": "id",
-					"type": null,
-					"description": null
+					"type": null
 				}]
 			}
 		}

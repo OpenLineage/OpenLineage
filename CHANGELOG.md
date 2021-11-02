@@ -2,6 +2,8 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.3.1...HEAD)
 
+* dbt: column descriptions are properly filled from metadata.json [@mobuchowski](https://github.com/mobuchowski)
+
 ## [0.3.1](https://github.com/OpenLineage/OpenLineage/releases/tag/0.3.1) - 2021-10-21
 
 ### Fixed

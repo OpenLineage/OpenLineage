@@ -70,7 +70,7 @@
 				"fields": [{
 					"name": "id",
 					"type": "INT64",
-					"description": null
+					"description": "The primary key for this table"
 				}]
 			}
 		},
