@@ -10,6 +10,7 @@ import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDirVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHadoopFsRelationVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHiveDirVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHiveTableVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.KafkaWriterVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRDDVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRelationVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.QueryPlanVisitor;
@@ -68,6 +69,7 @@ abstract class BaseVisitorFactory implements VisitorFactory {
         new OutputDatasetWithMetadataVisitor(
             new InsertIntoHiveTableVisitor(sqlContext.sparkContext())));
     list.add(new OutputDatasetVisitor(new InsertIntoHiveDirVisitor()));
+    list.add(new OutputDatasetVisitor(new KafkaWriterVisitor()));
     return list;
   }
 }

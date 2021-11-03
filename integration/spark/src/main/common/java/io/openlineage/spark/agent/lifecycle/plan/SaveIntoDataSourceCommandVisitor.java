@@ -12,6 +12,7 @@ import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.SaveIntoDataSourceCommand;
+import org.apache.spark.sql.kafka010.KafkaSourceProvider;
 import org.apache.spark.sql.sources.BaseRelation;
 import org.apache.spark.sql.sources.RelationProvider;
 import org.apache.spark.sql.sources.SchemaRelationProvider;
@@ -38,6 +39,7 @@ public class SaveIntoDataSourceCommandVisitor
   @Override
   public boolean isDefinedAt(LogicalPlan x) {
     return x instanceof SaveIntoDataSourceCommand
+        && !(((SaveIntoDataSourceCommand) x).dataSource() instanceof KafkaSourceProvider)
         && (((SaveIntoDataSourceCommand) x).dataSource() instanceof SchemaRelationProvider
             || ((SaveIntoDataSourceCommand) x).dataSource() instanceof RelationProvider);
   }

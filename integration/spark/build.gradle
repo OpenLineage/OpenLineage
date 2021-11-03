@@ -102,6 +102,7 @@ dependencies {
     compileOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
     compileOnly 'com.google.cloud.spark:spark-bigquery_2.11:0.21.1'
     compileOnly "org.apache.spark:spark-hive_2.11:${sparkVersion}"
+    compileOnly "org.apache.spark:spark-sql-kafka-0-10_2.11:${sparkVersion}"
 
     testImplementation platform('org.junit:junit-bom:5.7.1')
     testImplementation "org.postgresql:postgresql:${postgresqlVersion}"
@@ -141,6 +142,7 @@ dependencies {
     spark2Test "org.apache.spark:spark-core_2.11:${sparkVersion}"
     spark2Test "org.apache.spark:spark-sql_2.11:${sparkVersion}"
     spark2Test "org.apache.spark:spark-hive_2.11:${sparkVersion}"
+    spark2Test "org.apache.spark:spark-sql-kafka-0-10_2.11:${sparkVersion}"
 
     spark3 "org.projectlombok:lombok:${lombokVersion}"
     spark3 'io.openlineage:openlineage-java:0.0.1-SNAPSHOT'
@@ -150,6 +152,7 @@ dependencies {
     spark3 "org.apache.spark:spark-core_2.12:${spark3Version}"
     spark3 "org.apache.spark:spark-sql_2.12:${spark3Version}"
     spark3 "org.apache.spark:spark-hive_2.12:${spark3Version}"
+    spark3 "org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.0"
 
     lombok  "org.projectlombok:lombok:${lombokVersion}"
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"

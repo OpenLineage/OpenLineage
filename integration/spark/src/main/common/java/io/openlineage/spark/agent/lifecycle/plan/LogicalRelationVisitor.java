@@ -1,7 +1,11 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
+import static io.openlineage.spark.agent.util.PlanUtils.datasetFacet;
+import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptional;
+
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.PlanUtils;
+import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -9,10 +13,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap;
 import org.apache.spark.sql.execution.datasources.HadoopFsRelation;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
+import org.apache.spark.sql.kafka010.KafkaRelation;
 import scala.collection.JavaConversions;
 import scala.runtime.AbstractFunction0;
 
@@ -56,6 +62,7 @@ public class LogicalRelationVisitor extends QueryPlanVisitor<LogicalRelation, Op
     return x instanceof LogicalRelation
         && (((LogicalRelation) x).relation() instanceof HadoopFsRelation
             || ((LogicalRelation) x).relation() instanceof JDBCRelation
+            || ((LogicalRelation) x).relation() instanceof KafkaRelation
             || ((LogicalRelation) x).catalogTable().isDefined());
   }
 
@@ -66,6 +73,8 @@ public class LogicalRelationVisitor extends QueryPlanVisitor<LogicalRelation, Op
       return handleHadoopFsRelation((LogicalRelation) x);
     } else if (logRel.relation() instanceof JDBCRelation) {
       return handleJdbcRelation((LogicalRelation) x);
+    } else if (logRel.relation() instanceof KafkaRelation) {
+      return handleKafkaRelation((LogicalRelation) x);
     } else if (logRel.catalogTable().isDefined()) {
       return handleCatalogTable(logRel);
     }
@@ -119,7 +128,33 @@ public class LogicalRelationVisitor extends QueryPlanVisitor<LogicalRelation, Op
     // driver format looks like oracle:<drivertype>:<user>/<password>@<database>
     // whereas postgres, mysql, and sqlserver use the scheme://hostname:port/db format.
     String url = PlanUtils.sanitizeJdbcUrl(relation.jdbcOptions().url());
-    OpenLineage.DatasetFacets datasetFacet = PlanUtils.datasetFacet(relation.schema(), url);
+    OpenLineage.DatasetFacets datasetFacet = datasetFacet(relation.schema(), url);
     return Collections.singletonList(PlanUtils.getDataset(tableName, url, datasetFacet));
+  }
+
+  private List<OpenLineage.Dataset> handleKafkaRelation(LogicalRelation x) {
+    KafkaRelation relation = (KafkaRelation) x.relation();
+    String server = "";
+    String topic = "";
+    try {
+      Field sourceOptionsField = x.relation().getClass().getDeclaredField("sourceOptions");
+      sourceOptionsField.setAccessible(true);
+      CaseInsensitiveMap sourceOptions = (CaseInsensitiveMap) sourceOptionsField.get(x.relation());
+      String servers =
+          (String) asJavaOptional(sourceOptions.get("kafka.bootstrap.servers")).orElse("");
+      topic =
+          (String)
+              asJavaOptional(sourceOptions.get("subscribe"))
+                  .orElse(
+                      asJavaOptional(sourceOptions.get("subscribePattern"))
+                          .orElse(asJavaOptional(sourceOptions.get("assign")).orElse("")));
+      server = servers.split(",")[0];
+    } catch (Exception e) {
+      log.error("Can't extract kafka server option", e);
+    }
+    String namespace = "kafka://" + server;
+    return Collections.singletonList(
+        PlanUtils.getDataset(
+            topic, namespace, PlanUtils.datasetFacet(relation.schema(), namespace)));
   }
 }
