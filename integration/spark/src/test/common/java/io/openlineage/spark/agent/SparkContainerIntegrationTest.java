@@ -10,7 +10,6 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.stream.Stream;
-
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -110,24 +109,29 @@ public class SparkContainerIntegrationTest {
 
   private static GenericContainer<?> makePysparkContainerWithDefaultConf(
       String namespace, String... command) {
-    return makePysparkContainer(Stream.of(new String[]{
-                "--master",
-                "local",
-                "--conf",
-                "spark.openlineage.host=" + "http://openlineageclient:1080",
-                "--conf",
-                "spark.openlineage.url="
-                    + "http://openlineageclient:1080/api/v1/namespaces/"
-                    + namespace,
-                "--conf",
-                "spark.extraListeners=" + OpenLineageSparkListener.class.getName(),
-                "--conf",
-                "spark.driver.extraJavaOptions=-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=0.0.0.0:5005",
-                "--conf",
-                "spark.sql.warehouse.dir=/tmp/warehouse",
-                "--jars",
-                "/opt/libs/" + System.getProperty("openlineage.spark.jar")}, command)
-        .flatMap(Stream::of).toArray(String[]::new));
+    return makePysparkContainer(
+        Stream.of(
+                new String[] {
+                  "--master",
+                  "local",
+                  "--conf",
+                  "spark.openlineage.host=" + "http://openlineageclient:1080",
+                  "--conf",
+                  "spark.openlineage.url="
+                      + "http://openlineageclient:1080/api/v1/namespaces/"
+                      + namespace,
+                  "--conf",
+                  "spark.extraListeners=" + OpenLineageSparkListener.class.getName(),
+                  "--conf",
+                  "spark.driver.extraJavaOptions=-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=0.0.0.0:5005",
+                  "--conf",
+                  "spark.sql.warehouse.dir=/tmp/warehouse",
+                  "--jars",
+                  "/opt/libs/" + System.getProperty("openlineage.spark.jar")
+                },
+                command)
+            .flatMap(Stream::of)
+            .toArray(String[]::new));
   }
 
   private static void consumeOutput(org.testcontainers.containers.output.OutputFrame of) {
@@ -224,8 +228,8 @@ public class SparkContainerIntegrationTest {
     pyspark.start();
 
     Path eventFolder = Paths.get("integrations/container/");
-    String writeStartEvent = new
-        String(readAllBytes(eventFolder.resolve("pysparkKafkaWriteStartEvent.json")));
+    String writeStartEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkKafkaWriteStartEvent.json")));
     String writeCompleteEvent =
         new String(readAllBytes(eventFolder.resolve("pysparkKafkaWriteCompleteEvent.json")));
     String readStartEvent =
@@ -245,8 +249,7 @@ public class SparkContainerIntegrationTest {
             .withBody(json(readStartEvent, MatchType.ONLY_MATCHING_FIELDS)),
         request()
             .withPath("/api/v1/lineage")
-            .withBody(json(readCompleteEvent, MatchType.ONLY_MATCHING_FIELDS))
-    );
+            .withBody(json(readCompleteEvent, MatchType.ONLY_MATCHING_FIELDS)));
   }
 
   @Test
