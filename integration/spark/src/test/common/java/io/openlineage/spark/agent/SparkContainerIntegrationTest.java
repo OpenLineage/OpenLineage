@@ -123,8 +123,6 @@ public class SparkContainerIntegrationTest {
                   "--conf",
                   "spark.extraListeners=" + OpenLineageSparkListener.class.getName(),
                   "--conf",
-                  "spark.driver.extraJavaOptions=-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=0.0.0.0:5005",
-                  "--conf",
                   "spark.sql.warehouse.dir=/tmp/warehouse",
                   "--jars",
                   "/opt/libs/" + System.getProperty("openlineage.spark.jar")
