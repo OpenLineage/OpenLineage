@@ -5,6 +5,8 @@ import io.openlineage.spark.agent.OpenLineageContext;
 import io.openlineage.spark.agent.OpenLineageSparkListener;
 import io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.CommandPlanVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.KafkaRelationVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.KafkaWriterVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRDDVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRelationVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.QueryPlanVisitor;
@@ -131,6 +133,9 @@ public class StaticExecutionContextFactory extends ContextFactory {
     list.add(new CommandPlanVisitor(new ArrayList<>(list)));
     if (BigQueryNodeVisitor.hasBigQueryClasses()) {
       list.add(new BigQueryNodeVisitor(sqlContext));
+    }
+    if (KafkaWriterVisitor.hasKafkaClasses()) {
+      list.add(new KafkaRelationVisitor());
     }
     return list;
   }

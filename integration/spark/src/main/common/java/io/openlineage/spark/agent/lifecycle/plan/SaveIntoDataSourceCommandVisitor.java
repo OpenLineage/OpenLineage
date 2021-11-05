@@ -12,7 +12,6 @@ import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.SaveIntoDataSourceCommand;
-import org.apache.spark.sql.kafka010.KafkaSourceProvider;
 import org.apache.spark.sql.sources.BaseRelation;
 import org.apache.spark.sql.sources.RelationProvider;
 import org.apache.spark.sql.sources.SchemaRelationProvider;
@@ -39,7 +38,7 @@ public class SaveIntoDataSourceCommandVisitor
   @Override
   public boolean isDefinedAt(LogicalPlan x) {
     return x instanceof SaveIntoDataSourceCommand
-        && !(((SaveIntoDataSourceCommand) x).dataSource() instanceof KafkaSourceProvider)
+        && isNotKafkaSourceProvider((SaveIntoDataSourceCommand) x)
         && (((SaveIntoDataSourceCommand) x).dataSource() instanceof SchemaRelationProvider
             || ((SaveIntoDataSourceCommand) x).dataSource() instanceof RelationProvider);
   }
@@ -73,5 +72,15 @@ public class SaveIntoDataSourceCommandVisitor
               ds.getFacets().getAdditionalProperties().putAll(facetsMap.build());
             })
         .collect(Collectors.toList());
+  }
+
+  private boolean isNotKafkaSourceProvider(SaveIntoDataSourceCommand x) {
+    try {
+      return KafkaWriterVisitor.hasKafkaClasses()
+          && !Class.forName("org.apache.spark.sql.kafka010.KafkaSourceProvider")
+              .isInstance(x.dataSource());
+    } catch (ClassNotFoundException e) {
+      return false;
+    }
   }
 }

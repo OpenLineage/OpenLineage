@@ -11,18 +11,30 @@ import org.apache.spark.sql.kafka010.KafkaSourceProvider;
 
 /**
  * {@link LogicalPlan} visitor that matches an {@link KafkaSourceProvider} and extracts the output
- * {@link OpenLineage.Dataset} being written.
- * Gets the first host from 'kafka.bootstrap.servers' option and creates namespace
- * Extracts a 'topic' option and put it as dataset name
+ * {@link OpenLineage.Dataset} being written. Gets the first host from 'kafka.bootstrap.servers'
+ * option and creates namespace Extracts a 'topic' option and put it as dataset name
  *
- * Write to Kafka using a topic specified in the data is not supported.
+ * <p>Write to Kafka using a topic specified in the data is not supported.
  */
 public class KafkaWriterVisitor
     extends QueryPlanVisitor<SaveIntoDataSourceCommand, OpenLineage.Dataset> {
 
+  public static boolean hasKafkaClasses() {
+    try {
+      KafkaWriterVisitor.class
+          .getClassLoader()
+          .loadClass("org.apache.spark.sql.kafka010.KafkaSourceProvider");
+      return true;
+    } catch (Exception e) {
+      // swallow- we don't care
+    }
+    return false;
+  }
+
   @Override
   public boolean isDefinedAt(LogicalPlan x) {
     return x instanceof SaveIntoDataSourceCommand
+        && hasKafkaClasses()
         && ((SaveIntoDataSourceCommand) x).dataSource() instanceof KafkaSourceProvider;
   }
 
