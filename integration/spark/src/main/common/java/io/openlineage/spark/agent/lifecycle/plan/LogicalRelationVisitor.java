@@ -128,10 +128,9 @@ public class LogicalRelationVisitor extends QueryPlanVisitor<LogicalRelation, Op
 
   private boolean isNotKafkaRelation(LogicalRelation x) {
     try {
-      return KafkaWriterVisitor.hasKafkaClasses()
-          && !Class.forName("org.apache.spark.sql.kafka010.KafkaRelation").isInstance(x.relation());
+      return !Class.forName("org.apache.spark.sql.kafka010.KafkaRelation").isInstance(x.relation());
     } catch (ClassNotFoundException e) {
-      return false;
+      return true;
     }
   }
 }

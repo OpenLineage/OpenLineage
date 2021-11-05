@@ -76,11 +76,10 @@ public class SaveIntoDataSourceCommandVisitor
 
   private boolean isNotKafkaSourceProvider(SaveIntoDataSourceCommand x) {
     try {
-      return KafkaWriterVisitor.hasKafkaClasses()
-          && !Class.forName("org.apache.spark.sql.kafka010.KafkaSourceProvider")
-              .isInstance(x.dataSource());
+      return !Class.forName("org.apache.spark.sql.kafka010.KafkaSourceProvider")
+          .isInstance(x.dataSource());
     } catch (ClassNotFoundException e) {
-      return false;
+      return true;
     }
   }
 }
