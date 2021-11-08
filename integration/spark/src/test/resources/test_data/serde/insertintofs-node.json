@@ -1,5 +1,5 @@
 {
-  "@class":"org.apache.spark.sql.execution.datasources.InsertIntoHadoopFsRelationCommand",
+  "@class": "org.apache.spark.sql.execution.datasources.InsertIntoHadoopFsRelationCommand",
   "outputPath": {
     "root": false,
     "uriPathAbsolute": true,
@@ -17,38 +17,28 @@
   },
   "staticPartitions": {},
   "ifPartitionNotExists": false,
-  "partitionColumns": [
-    {
-      "name": "name",
-      "dataType": {
-        "ordering": {}
-      },
-      "nullable": false,
-      "metadata": {
-        "map": {}
-      },
-      "exprId": {
-        "id": 1,
-        "jvmId": "1a41a881-0cda-4d15-9d33-048db59eb018"
-      },
-      "qualifier": [],
-      "origin": {
-        "line": null,
-        "startPosition": null
-      },
-      "deterministic": true,
-      "resolved": true
-    }
-  ],
+  "partitionColumns": [{
+    "name": "name",
+    "nullable": false,
+    "metadata": {
+      "map": {}
+    },
+    "exprId": {
+      "id": 1,
+      "jvmId": "9a566e0c-8f15-4239-9222-8f8dfd4557a1"
+    },
+    "qualifier": [],
+    "deterministic": true,
+    "resolved": true
+  }],
   "bucketSpec": null,
   "fileFormat": {},
   "options": {},
   "query": {
+    "@class": "org.apache.spark.sql.execution.datasources.LogicalRelation",
     "relation": {
+      "@class": "org.apache.spark.sql.execution.datasources.HadoopFsRelation",
       "location": {
-        "sparkSession": {
-          "traceEnabled": false
-        },
         "table": {
           "identifier": {
             "table": "test",
@@ -66,27 +56,10 @@
             "compressed": false,
             "properties": {}
           },
-          "schema": [
-            {
-              "name": "name",
-              "dataType": {
-                "ordering": {}
-              },
-              "nullable": false,
-              "metadata": {
-                "map": {}
-              },
-              "comment": null
-            }
-          ],
           "provider": null,
-          "partitionColumnNames": [
-            "name"
-          ],
+          "partitionColumnNames": ["name"],
           "bucketSpec": null,
           "owner": "",
-          "createTime": 1631630712,
-          "lastAccessTime": 1631630712,
           "createVersion": "v1",
           "properties": {},
           "stats": null,
@@ -99,233 +72,74 @@
         },
         "sizeInBytes": 100,
         "hadoopConf": {
-          "finalParameters": [
-            "mapreduce.job.end-notification.max.retry.interval",
-            "mapreduce.job.end-notification.max.attempts"
-          ]
+          "finalParameters": ["mapreduce.job.end-notification.max.retry.interval", "mapreduce.job.end-notification.max.attempts"]
         }
       },
-      "partitionSchema": [
-        {
-          "name": "name",
-          "dataType": {
-            "ordering": {}
-          },
-          "nullable": false,
-          "metadata": {
-            "map": {}
-          },
-          "comment": null
-        }
-      ],
-      "dataSchema": [
-        {
-          "name": "name",
-          "dataType": {
-            "ordering": {}
-          },
-          "nullable": false,
-          "metadata": {
-            "map": {}
-          },
-          "comment": null
-        }
-      ],
       "bucketSpec": null,
-      "fileFormat": {},
-      "options": {},
-      "sparkSession": {
-        "traceEnabled": false
+      "fileFormat": {
       },
-      "overlappedPartCols": {
-        "name": {
-          "name": "name",
-          "dataType": {
-            "ordering": {}
-          },
-          "nullable": false,
-          "metadata": {
-            "map": {}
-          },
-          "comment": null
-        }
-      },
-      "schema": [
-        {
-          "name": "name",
-          "dataType": {
-            "ordering": {}
-          },
-          "nullable": false,
-          "metadata": {
-            "map": {}
-          },
-          "comment": null
-        }
-      ]
+      "options": {}
     },
-    "output": [
-      {
-        "name": "name",
-        "dataType": {
-          "ordering": {}
-        },
-        "nullable": false,
-        "metadata": {
-          "map": {}
-        },
-        "exprId": {
-          "id": 1,
-          "jvmId": "1a41a881-0cda-4d15-9d33-048db59eb018"
-        },
-        "qualifier": [],
-        "origin": {
-          "line": null,
-          "startPosition": null
-        },
-        "deterministic": true,
-        "resolved": true
-      }
-    ],
+    "output": [{
+      "name": "name",
+      "nullable": false,
+      "qualifier": [],
+      "deterministic": true,
+      "resolved": true
+    }],
     "catalogTable": null,
     "isStreaming": false,
-    "origin": {
-      "line": null,
-      "startPosition": null
-    },
-    "schema": [
-      {
-        "name": "name",
-        "dataType": {
-          "ordering": {}
-        },
-        "nullable": false,
-        "metadata": {
-          "map": {}
-        },
-        "comment": null
-      }
-    ],
     "allAttributes": {
       "attrs": []
     },
     "resolved": true,
     "statsCache": null,
-    "attributeMap": {
-      "name#1": {
-        "name": "name",
-        "dataType": {
-          "ordering": {}
-        },
-        "nullable": false,
-        "metadata": {
-          "map": {}
-        },
-        "exprId": {
-          "id": 1,
-          "jvmId": "1a41a881-0cda-4d15-9d33-048db59eb018"
-        },
-        "qualifier": [],
-        "origin": {
-          "line": null,
-          "startPosition": null
-        },
-        "deterministic": true,
-        "resolved": true
-      }
-    },
     "traceEnabled": false,
     "canonicalizedPlan": false
   },
   "mode": "Overwrite",
   "catalogTable": null,
   "fileIndex": null,
-  "outputColumnNames": [
-    "name"
-  ],
-  "origin": {
-    "line": null,
-    "startPosition": null
-  },
-  "schema": [],
-  "allAttributes": {
-    "attrs": [
-      {
-        "name": "name",
-        "dataType": {
-          "ordering": {}
-        },
-        "nullable": false,
-        "metadata": {
-          "map": {}
-        },
-        "exprId": {
-          "id": 1,
-          "jvmId": "1a41a881-0cda-4d15-9d33-048db59eb018"
-        },
-        "qualifier": [],
-        "origin": {
-          "line": null,
-          "startPosition": null
-        },
-        "deterministic": true,
-        "resolved": true
-      }
-    ]
-  },
   "resolved": true,
   "statsCache": null,
   "metrics": {
     "numFiles": {
-      "metricType": "sum",
       "metadata": {
-        "id": 0,
         "name": "number of written files",
         "countFailedValues": false
       },
-      "org$apache$spark$util$AccumulatorV2$$atDriverSide": true,
       "zero": true,
       "atDriverSide": true,
       "registered": true
     },
     "numOutputBytes": {
-      "metricType": "sum",
       "metadata": {
-        "id": 1,
-        "name": "bytes of written output",
         "countFailedValues": false
       },
-      "org$apache$spark$util$AccumulatorV2$$atDriverSide": true,
       "zero": true,
       "atDriverSide": true,
       "registered": true
     },
     "numOutputRows": {
-      "metricType": "sum",
       "metadata": {
-        "id": 2,
         "name": "number of output rows",
         "countFailedValues": false
       },
-      "org$apache$spark$util$AccumulatorV2$$atDriverSide": true,
       "zero": true,
       "atDriverSide": true,
       "registered": true
     },
     "numParts": {
-      "metricType": "sum",
       "metadata": {
-        "id": 3,
         "name": "number of dynamic part",
         "countFailedValues": false
       },
-      "org$apache$spark$util$AccumulatorV2$$atDriverSide": true,
       "zero": true,
       "atDriverSide": true,
       "registered": true
     }
   },
-  "traceEnabled": false,
   "streaming": false,
+  "traceEnabled": false,
   "canonicalizedPlan": false
 }
