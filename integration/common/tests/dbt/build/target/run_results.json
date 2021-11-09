@@ -1,0 +1,97 @@
+{
+	"metadata": {
+		"dbt_schema_version": "https://schemas.getdbt.com/dbt/run-results/v3.json",
+		"dbt_version": "0.21.0",
+		"generated_at": "2021-11-09T14:20:08.032240Z",
+		"invocation_id": "b1d24c06-5f63-40e4-a0a2-b0a8d46fb18f",
+		"env": {}
+	},
+	"results": [{
+		"status": "success",
+		"timing": [{
+			"name": "compile",
+			"started_at": "2021-11-09T14:20:01.025669Z",
+			"completed_at": "2021-11-09T14:20:01.028618Z"
+		}, {
+			"name": "execute",
+			"started_at": "2021-11-09T14:20:01.028876Z",
+			"completed_at": "2021-11-09T14:20:04.470460Z"
+		}],
+		"thread_id": "Thread-1",
+		"execution_time": 3.445859909057617,
+		"adapter_response": {
+			"_message": "CREATE TABLE (2.0 rows, 0.0 Bytes processed)",
+			"code": "CREATE TABLE",
+			"rows_affected": 2,
+			"bytes_processed": 0
+		},
+		"message": "CREATE TABLE (2.0 rows, 0.0 Bytes processed)",
+		"failures": null,
+		"unique_id": "model.dbt_bigquery_test.test_first_dbt_model"
+	}, {
+		"status": "pass",
+		"timing": [{
+			"name": "compile",
+			"started_at": "2021-11-09T14:20:04.476502Z",
+			"completed_at": "2021-11-09T14:20:04.508504Z"
+		}, {
+			"name": "execute",
+			"started_at": "2021-11-09T14:20:04.519118Z",
+			"completed_at": "2021-11-09T14:20:06.436524Z"
+		}],
+		"thread_id": "Thread-2",
+		"execution_time": 1.962324619293213,
+		"adapter_response": {},
+		"message": null,
+		"failures": 0,
+		"unique_id": "test.dbt_bigquery_test.dbt_expectations_expect_column_median_to_be_between_test_first_dbt_model_id__21__1.dd83ff215d"
+	}, {
+		"status": "pass",
+		"timing": [{
+			"name": "compile",
+			"started_at": "2021-11-09T14:20:04.476877Z",
+			"completed_at": "2021-11-09T14:20:04.508141Z"
+		}, {
+			"name": "execute",
+			"started_at": "2021-11-09T14:20:04.508889Z",
+			"completed_at": "2021-11-09T14:20:06.666529Z"
+		}],
+		"thread_id": "Thread-1",
+		"execution_time": 2.191458225250244,
+		"adapter_response": {},
+		"message": null,
+		"failures": 0,
+		"unique_id": "test.dbt_bigquery_test.dbt_expectations_expect_column_quantile_values_to_be_between_test_first_dbt_model_id__2__0__0_95.af5e727e43"
+	}, {
+		"status": "pass",
+		"timing": [{
+			"name": "compile",
+			"started_at": "2021-11-09T14:20:06.440501Z",
+			"completed_at": "2021-11-09T14:20:06.454287Z"
+		}, {
+			"name": "execute",
+			"started_at": "2021-11-09T14:20:06.454691Z",
+			"completed_at": "2021-11-09T14:20:08.024819Z"
+		}],
+		"thread_id": "Thread-2",
+		"execution_time": 1.586305856704712,
+		"adapter_response": {},
+		"message": null,
+		"failures": 0,
+		"unique_id": "test.dbt_bigquery_test.unique_test_first_dbt_model_id.f2b0bdd46c"
+	}],
+	"elapsed_time": 7.9490602016448975,
+	"args": {
+		"log_format": "default",
+		"write_json": true,
+		"use_experimental_parser": false,
+		"profiles_dir": "./tests/dbt/test",
+		"use_cache": true,
+		"store_failures": false,
+		"greedy": false,
+		"resource_types": [],
+		"version_check": true,
+		"which": "build",
+		"rpc_method": "build"
+	}
+}
