@@ -39,7 +39,7 @@ public class ProxyResource {
 
   @POST
   @Consumes(APPLICATION_JSON)
-  public void emit(@Valid LineageEvent event, @Suspended final AsyncResponse asyncResponse) {
+  public void emit(@Valid String event, @Suspended final AsyncResponse asyncResponse) {
     service
         .emitAsync(event)
         .whenComplete(

@@ -14,35 +14,42 @@
 
 package io.openlineage.proxy.api.models;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import lombok.EqualsAndHashCode;
-import lombok.NonNull;
-import lombok.ToString;
 
-@EqualsAndHashCode
-@ToString
-@JsonTypeInfo(
-    use = JsonTypeInfo.Id.NAME,
-    include = JsonTypeInfo.As.EXISTING_PROPERTY,
-    property = "type")
-@JsonSubTypes({
-  @JsonSubTypes.Type(value = ConsoleLineageStream.class, name = "CONSOLE"),
-  @JsonSubTypes.Type(value = KafkaLineageStream.class, name = "KAFKA"),
-  @JsonSubTypes.Type(value = KinesisLineageStream.class, name = "KINESIS")
-})
-public abstract class LineageStream {
-  enum Type {
+/**
+ * LineageStream provides the generic implementation of the backend destinations supported by the proxy backend.
+ */
+public abstract class LineageStream
+{
+  /**
+   * The Type enum (and JsonSubTypes above) are extended for each new type of destination that the proxy backend supports.
+   * There is a subtype class for each of these destination types.
+   */
+  enum Type
+  {
+    CONSOLE,
     KAFKA,
-    KINESIS,
-    CONSOLE
+    KINESIS
   }
 
   private final Type type;
 
-  LineageStream(@NonNull Type type) {
+
+  /**
+   * The constructor sets up the type for destination for logging purposes.
+   *
+   * @param type type of destination implemented by the subtype.
+   */
+  LineageStream(Type type)
+  {
     this.type = type;
   }
 
-  public abstract void collect(@NonNull LineageEvent event);
+
+  /**
+   * Ths is the method that is called when a new lineage event is emitted from the data platform.  The specific destination class implements
+   * this method with the logic to send the event to its supported destination.
+   *
+   * @param event open lineage event
+   */
+  public abstract void collect(String event);
 }

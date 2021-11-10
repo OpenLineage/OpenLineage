@@ -1,6 +1,6 @@
-# openlineage-proxy
+# OpenLineage Proxy Backend (openlineage-proxy)
 
-Proxy your OpenLineage events to one or more lineage streams (`Kafaka`, `Kinesis`, etc).
+Direct your OpenLineage events to a Kafka Topic. If the Kafka properties are not set up, the events are printed to the console (stdout).  
 
 ## Requirements
 
@@ -18,7 +18,7 @@ The executable can be found under `build/libs/`
 
 ## Configuration
 
-To run the OpenLineage _proxy_, you will have to define `proxy.yml`. The configuration file is passed to the application and used to configure your proxy. Please copy [`proxy.example.yml`](proxy.example.yml):
+To run the OpenLineage _proxy backend_, you will have to define `proxy.yml`. The configuration file is passed to the application and used to configure your proxy. Please copy [`proxy.example.yml`](proxy.example.yml):
 
 ```bash
 $ cp proxy.example.yml proxy.yml

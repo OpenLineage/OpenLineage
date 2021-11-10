@@ -14,17 +14,90 @@
 
 package io.openlineage.proxy;
 
-import com.google.common.collect.ImmutableSet;
 import io.dropwizard.Configuration;
+
+import java.util.Map;
+import java.util.Properties;
 import io.openlineage.proxy.api.models.ConsoleLineageStream;
 import io.openlineage.proxy.api.models.LineageStream;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import javax.validation.constraints.NotEmpty;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-@NoArgsConstructor
-public final class ProxyConfig extends Configuration {
-  private static final ImmutableSet<LineageStream> DEFAULT_LINEAGE_STREAMS =
-      ImmutableSet.of(new ConsoleLineageStream());
+/**
+ * ProxyConfig defines the structure of the configuration file proxy.yml
+ */
+public final class ProxyConfig extends Configuration
+{
+  @NotEmpty
+  private String     lineageSourceName;
 
-  @Getter private ImmutableSet<LineageStream> lineageStreams = DEFAULT_LINEAGE_STREAMS;
+  private boolean    consoleLog = false;
+
+  @NotEmpty
+  private String     kafkaTopicName;
+  @NotEmpty
+  private String     kafkaBootstrapServerURL;
+  @NotEmpty
+  private Properties kafkaProperties = null;
+
+  @JsonProperty
+  public String getLineageSourceName()
+  {
+    return lineageSourceName;
+  }
+
+  @JsonProperty
+  public void setLineageSourceName(String lineageSourceName)
+  {
+    this.lineageSourceName = lineageSourceName;
+  }
+
+  @JsonProperty
+  public boolean getConsoleLog()
+  {
+    return consoleLog;
+  }
+
+  @JsonProperty
+  public void setConsoleLog(boolean consoleLog)
+  {
+    this.consoleLog = consoleLog;
+  }
+
+
+  @JsonProperty
+  public String getKafkaTopicName()
+  {
+    return kafkaTopicName;
+  }
+
+  @JsonProperty
+  public void setKafkaTopicName(String kafkaTopicName)
+  {
+    this.kafkaTopicName = kafkaTopicName;
+  }
+
+  @JsonProperty
+  public String getKafkaBootstrapServerURL()
+  {
+    return kafkaBootstrapServerURL;
+  }
+
+  @JsonProperty
+  public void setKafkaBootstrapServerURL(String kafkaBootstrapServerURL)
+  {
+    this.kafkaBootstrapServerURL = kafkaBootstrapServerURL;
+  }
+
+  @JsonProperty
+  public Properties getKafkaProperties()
+  {
+    return kafkaProperties;
+  }
+
+  @JsonProperty
+  public void setKafkaProperties(Properties kafkaProperties)
+  {
+    this.kafkaProperties = kafkaProperties;
+  }
 }

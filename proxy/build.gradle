@@ -31,6 +31,8 @@ repositories {
 ext {
     dropwizardVersion = '2.0.24'
     lombokVersion = '1.18.22'
+    kafkaVersion = '2.8.0'
+    jacksonVersion = '2.12.2'
 }
 
 dependencies {
@@ -38,6 +40,10 @@ dependencies {
     implementation "io.dropwizard:dropwizard-json-logging:${dropwizardVersion}"
     implementation 'com.google.guava:guava:30.1.1-jre'
     implementation "org.projectlombok:lombok:${lombokVersion}"
+    implementation("org.apache.kafka:kafka-clients:2.8.0")
+    implementation("com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}")
+    implementation("com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}")
+    implementation("com.fasterxml.jackson.core:jackson-core:${jacksonVersion}")
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
     testImplementation "io.dropwizard:dropwizard-testing:${dropwizardVersion}"
