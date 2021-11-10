@@ -208,6 +208,10 @@ public class SparkReadWriteIntegTest {
     assertEquals("sqlite:" + sqliteFile.toAbsolutePath().toUri(), output.getNamespace());
     assertEquals(tableName, output.getName());
     assertNotNull(output.getFacets().getAdditionalProperties());
+
+    assertThat(output.getOutputFacets().getOutputStatistics())
+            .isNotNull()
+            .hasFieldOrPropertyWithValue("rowCount", 0L);
   }
 
   private Path writeTestDataToFile(Path writeDir) throws IOException {

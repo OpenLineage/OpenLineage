@@ -213,13 +213,18 @@ public class SparkSQLExecutionContext implements ExecutionContext {
 
     Map<JobMetricsHolder.Metric, Number> metrics = jobMetrics.pollMetrics(jobId);
 
+    Optional<OpenLineage.OutputStatisticsOutputDatasetFacet> outputStats = Optional.empty();
+    if (metrics.containsKey(JobMetricsHolder.Metric.WRITE_BYTES) ||
+            metrics.containsKey(JobMetricsHolder.Metric.WRITE_RECORDS)) {
+      outputStats = Optional.of(openLineage.newOutputStatisticsOutputDatasetFacet(
+              Optional.of(metrics.get(JobMetricsHolder.Metric.WRITE_RECORDS)).map(Number::longValue).orElse(null),
+              Optional.of(metrics.get(JobMetricsHolder.Metric.WRITE_BYTES)).map(Number::longValue).orElse(null)
+      ));
+    }
     OpenLineage.OutputDatasetOutputFacetsBuilder statisticsOutputFacets =
         openLineage
             .newOutputDatasetOutputFacetsBuilder()
-            .outputStatistics(
-                openLineage.newOutputStatisticsOutputDatasetFacet(
-                    metrics.getOrDefault(JobMetricsHolder.Metric.WRITE_RECORDS, 0L).longValue(),
-                    metrics.getOrDefault(JobMetricsHolder.Metric.WRITE_BYTES, 0L).longValue()));
+            .outputStatistics(outputStats.orElse(null));
     OpenLineage.OutputDatasetOutputFacets outputFacets = outputDataset.getOutputFacets();
     if (outputFacets != null) {
       for (Map.Entry<String, OpenLineage.OutputDatasetFacet> entry :

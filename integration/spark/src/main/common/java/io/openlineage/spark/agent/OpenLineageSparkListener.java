@@ -56,7 +56,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   public static final String SPARK_CONF_API_KEY = "openlineage.apiKey";
   private static WeakHashMap<RDD<?>, Configuration> outputs = new WeakHashMap<>();
   private static ContextFactory contextFactory;
-  private static JobMetricsHolder jobMetrics = new JobMetricsHolder();
+  private static JobMetricsHolder jobMetrics = JobMetricsHolder.getInstance();
 
   /** called by the agent on init with the provided argument */
   public static void init(ContextFactory contextFactory) {
