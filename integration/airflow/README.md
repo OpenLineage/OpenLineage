@@ -64,7 +64,7 @@ When enabled, the library will:
 Set your LineageBackend in your [airflow.cfg](https://airflow.apache.org/docs/apache-airflow/stable/howto/set-config.html) or via environmental variable `AIRFLOW__LINEAGE__BACKEND`
 to 
 ```
-openlineage.airflow.backend.OpenLineageBackend
+openlineage.lineage_backend.OpenLineageBackend
 ```
 
 In contrast to integration via subclassing `DAG`, `LineageBackend` based approach collects all metadata 
