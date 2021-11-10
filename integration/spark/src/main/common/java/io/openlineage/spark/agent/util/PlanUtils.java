@@ -4,10 +4,8 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.client.OpenLineageClient;
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -32,7 +30,7 @@ public class PlanUtils {
 
   /**
    * Merge a list of {@link PartialFunction}s and return the first value where the function is
-   * defined or null if no function matches the input.
+   * defined or empty list if no function matches the input.
    *
    * @param fns
    * @param arg
@@ -40,12 +38,12 @@ public class PlanUtils {
    * @param <R>
    * @return
    */
-  public static <T, R> R applyFirst(List<? extends PartialFunction<T, R>> fns, T arg) {
-    PartialFunction<T, R> fn = merge(fns);
+  public static <T, R> List<R> applyFirst(List<? extends PartialFunction<T, List<R>>> fns, T arg) {
+    PartialFunction<T, List<R>> fn = merge(fns);
     if (fn.isDefinedAt(arg)) {
       return fn.apply(arg);
     }
-    return null;
+    return Collections.emptyList();
   }
 
   /**
