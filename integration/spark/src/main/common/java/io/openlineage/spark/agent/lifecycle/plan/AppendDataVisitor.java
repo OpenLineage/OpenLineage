@@ -2,6 +2,7 @@ package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.PlanUtils;
+import java.util.Collections;
 import java.util.List;
 import org.apache.spark.sql.catalyst.plans.logical.AppendData;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -20,6 +21,11 @@ public class AppendDataVisitor extends QueryPlanVisitor<AppendData, OpenLineage.
 
   @Override
   public List<OpenLineage.Dataset> apply(LogicalPlan x) {
-    return PlanUtils.applyFirst(outputVisitors, (LogicalPlan) ((AppendData) x).table());
+    List<OpenLineage.Dataset> datasets =
+        PlanUtils.applyFirst(outputVisitors, (LogicalPlan) ((AppendData) x).table());
+    if (datasets == null) {
+      return Collections.emptyList();
+    }
+    return datasets;
   }
 }
