@@ -19,7 +19,7 @@ from setuptools import find_namespace_packages, setup
 with open("README.md") as readme_file:
     readme = readme_file.read()
 
-__version__ = "0.2.3"
+__version__ = "0.4.0"
 
 requirements = [
     "attrs>=19.3.0",
@@ -48,7 +48,9 @@ extras_require = {
         "pytest-cov",
         "mock",
         "flake8",
-        "pandas"
+        "pandas",
+        "jinja2",
+        "python-dateutil"
     ],
 }
 extras_require["dev"] = set(sum(extras_require.values(), []))

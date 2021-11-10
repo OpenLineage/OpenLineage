@@ -296,10 +296,10 @@ def test_parser_integration():
 
 def test_bigquery_escaping():
     sql_meta = SqlParser.parse(
-        "select * from `speedy-vim-308516`.`dbt_test1`.`source_table` where id = 1",
+        "select * from `random-project`.`dbt_test1`.`source_table` where id = 1",
         "public"
     )
-    assert sql_meta.in_tables == [DbTableName('speedy-vim-308516.dbt_test1.source_table')]
+    assert sql_meta.in_tables == [DbTableName('random-project.dbt_test1.source_table')]
 
 
 def test_parse_multi_statement():

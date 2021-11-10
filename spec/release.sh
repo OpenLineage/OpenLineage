@@ -40,10 +40,9 @@ git diff --name-only HEAD~1 HEAD 'spec/*.json' | while read LINE; do
   # create dir if necessary, and copy files
   mkdir -p $LOC_DIR
   cp $LINE $LOC
-  echo
 done
 
 # commit new spec and push
 git-website add -A spec/
-git-website commit -m "openlineage specification update"
+git --git-dir "$WEBSITE_DIR/.git" --work-tree "$WEBSITE_DIR" commit -m "openlineage specification update"
 git-website push

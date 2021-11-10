@@ -96,8 +96,16 @@ jobs:
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
           export RELEASE_PASSWORD=$(echo $SONATYPE_PASSWORD)
           export RELEASE_USERNAME=$(echo $SONATYPE_USER)
+
+          # publish jar to maven local so it can be found by dependents
+          ./gradlew publishToMavenLocal
+
           # Publish *.jar
           ./gradlew publish
+      - save_cache:
+          key: v1-release-client-java-{{ .Branch }}-{{ .Revision }}
+          paths:
+            - ~/.m2
 
   publish-snapshot-client-java:
     working_directory: ~/openlineage/client/java
@@ -119,6 +127,10 @@ jobs:
       - image: circleci/openjdk:8-jdk
     steps:
       - *checkout_project_root
+      - restore_cache:
+          keys:
+            - v1-release-client-java-{{ .Branch }}-{{ .Revision }}
+            - v1-release-client-java-{{ .Branch }}
       - run: |
           cd ../../client/java
           ./gradlew  --no-daemon publishToMavenLocal
@@ -433,6 +445,8 @@ workflows:
       - release-integration-spark:
           <<: *only_on_release
           context: release
+          requires:
+            - release-client-java
       - build-client-python:
           <<: *only_on_release
       - build-integration-common:

@@ -19,7 +19,7 @@ from setuptools import setup
 with open("README.md") as readme_file:
      readme = readme_file.read()
 
-__version__ = "0.2.3"
+__version__ = "0.4.0"
 
 requirements = [
     f"sqlparse>=0.2.3,<0.4",
@@ -34,6 +34,7 @@ extras_require = {
         "pytest-cov",
         "mock",
         "flake8",
+        "python-dateutil"
     ],
 }
 extras_require["dev"] = set(sum(extras_require.values(), []))

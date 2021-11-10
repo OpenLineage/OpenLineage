@@ -41,7 +41,7 @@
     "job": {
         "facets": {
             "sql": {
-                "query": "\n    CREATE TABLE IF NOT EXISTS `speedy-vim-308516.airflow_integration.popular_orders_day_of_week` (\n      order_day_of_week INTEGER NOT NULL,\n      order_placed_on   TIMESTAMP NOT NULL,\n      orders_placed     INTEGER NOT NULL\n    );"
+                "query": "\n    CREATE TABLE IF NOT EXISTS `openlineage-ci.airflow_integration.popular_orders_day_of_week` (\n      order_day_of_week INTEGER NOT NULL,\n      order_placed_on   TIMESTAMP NOT NULL,\n      orders_placed     INTEGER NOT NULL\n    );"
             }
         },
         "name": "bigquery_orders_popular_day_of_week.bigquery_if_not_exists",
@@ -70,7 +70,7 @@
                 ]
             }
 		},
-		"name": "speedy-vim-308516.airflow_integration.popular_orders_day_of_week",
+		"name": "openlineage-ci.airflow_integration.popular_orders_day_of_week",
 		"namespace": "bigquery"
 	}]
 },
@@ -91,7 +91,7 @@
                 ]
             }
 		},
-		"name": "speedy-vim-308516.airflow_integration.top_delivery_times",
+		"name": "openlineage-ci.airflow_integration.top_delivery_times",
 		"namespace": "bigquery"
 	},
     {
@@ -117,13 +117,13 @@
                 ]
             }
 		},
-		"name": "speedy-vim-308516.airflow_integration.popular_orders_day_of_week",
+		"name": "openlineage-ci.airflow_integration.popular_orders_day_of_week",
 		"namespace": "bigquery"
 	}],
 	"job": {
 		"facets": {
 			"sql": {
-				"query": "\n    INSERT INTO `speedy-vim-308516.airflow_integration.popular_orders_day_of_week` (order_day_of_week, order_placed_on, orders_placed)\n    SELECT EXTRACT(DAYOFWEEK FROM order_placed_on) AS order_day_of_week,\n        order_placed_on,\n        COUNT(*) AS orders_placed\n    FROM airflow_integration.top_delivery_times\n    GROUP BY order_placed_on;"
+				"query": "\n    INSERT INTO `openlineage-ci.airflow_integration.popular_orders_day_of_week` (order_day_of_week, order_placed_on, orders_placed)\n    SELECT EXTRACT(DAYOFWEEK FROM order_placed_on) AS order_day_of_week,\n        order_placed_on,\n        COUNT(*) AS orders_placed\n    FROM airflow_integration.top_delivery_times\n    GROUP BY order_placed_on;"
 			}
 		},
 		"name": "bigquery_orders_popular_day_of_week.bigquery_insert",
@@ -148,7 +148,7 @@
 				}]
 			}
 		},
-		"name": "speedy-vim-308516.airflow_integration.popular_orders_day_of_week",
+		"name": "openlineage-ci.airflow_integration.popular_orders_day_of_week",
 		"namespace": "bigquery"
 	}]
 }]

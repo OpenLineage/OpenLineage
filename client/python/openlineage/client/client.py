@@ -12,11 +12,12 @@
 
 import os
 import logging
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin
 
 import attr
 from requests import Session
 from requests.adapters import HTTPAdapter
+from urllib3.util.url import parse_url
 
 from openlineage.client import constants
 from openlineage.client.run import RunEvent
@@ -41,9 +42,13 @@ class OpenLineageClient:
             options: OpenLineageClientOptions = OpenLineageClientOptions(),
             session: Session = None
     ):
-        parsed = urlparse(url)
-        if not (parsed.scheme and parsed.netloc):
-            raise ValueError(f"Need valid url for OpenLineageClient, passed {url}")
+        url = url.strip()
+        try:
+            parsed = parse_url(url)
+            if not (parsed.scheme and parsed.netloc):
+                raise ValueError(f"Need valid url for OpenLineageClient, passed {url}")
+        except Exception as e:
+            raise ValueError(f"Need valid url for OpenLineageClient, passed {url}. Exception: {e}")
         self.url = url
         self.options = options
         self.session = session if session else Session()

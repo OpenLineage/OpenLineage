@@ -19,7 +19,7 @@ from setuptools import setup, find_namespace_packages
 with open("README.md") as readme_file:
     readme = readme_file.read()
 
-__version__ = "0.2.3"
+__version__ = "0.4.0"
 
 requirements = [
     "attrs>=19.3",
@@ -41,14 +41,14 @@ extras_require = {
         "snowflake-connector-python"
     ],
     "airflow-1": [
-        "apache-airflow==1.10.12",
-        "apache-airflow[gcp_api]==1.10.12",
-        "apache-airflow[google]==1.10.12",
-        "apache-airflow[postgres]==1.10.12",
+        "apache-airflow==1.10.15",
+        "apache-airflow[gcp_api]==1.10.15",
+        "apache-airflow[google]==1.10.15",
+        "apache-airflow[postgres]==1.10.15",
         "airflow-provider-great-expectations==0.0.8",
     ],
     "airflow-2": [
-        "apache-airflow==2.1.2",
+        "apache-airflow==2.1.3",
         "apache-airflow-providers-postgres==2.0.0",
         "apache-airflow-providers-snowflake==2.1.0",
         "apache-airflow-providers-google==5.0.0",

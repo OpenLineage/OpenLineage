@@ -12,9 +12,10 @@ from typing import List, Tuple, Dict, Optional, TypeVar
 import attr
 
 from openlineage.client.facet import DataSourceDatasetFacet, SchemaDatasetFacet, SchemaField, \
-    SqlJobFacet, OutputStatisticsOutputDatasetFacet, ParentRunFacet
+    SqlJobFacet, OutputStatisticsOutputDatasetFacet, ParentRunFacet, BaseFacet, \
+    Assertion, DataQualityAssertionsDatasetFacet
 from openlineage.client.run import RunEvent, RunState, Run, Job, Dataset, OutputDataset
-from openlineage.client.facet import Assertion, DataQualityAssertionsDatasetFacet
+from openlineage.common.schema import GITHUB_LOCATION
 from openlineage.common.utils import get_from_nullable_chain, get_from_multiple_chains
 
 
@@ -84,6 +85,15 @@ class ParentRunMetadata:
         )
 
 
+@attr.s
+class DbtVersionRunFacet(BaseFacet):
+    version: str = attr.ib()
+
+    @staticmethod
+    def _get_schema() -> str:
+        return GITHUB_LOCATION + "dbt-version-run-facet.json"
+
+
 T = TypeVar('T')
 
 
@@ -107,6 +117,7 @@ class DbtArtifactProcessor:
         self.dataset_namespace = ""
         self.skip_errors = skip_errors
         self.project = self.load_yaml_with_jinja(os.path.join(project_dir, 'dbt_project.yml'))
+        self.run_metadata = None
 
         self.manifest_path = os.path.join(self.dir, self.project['target-path'], 'manifest.json')
         self.run_result_path = os.path.join(
@@ -128,6 +139,8 @@ class DbtArtifactProcessor:
         """
         manifest = self.load_manifest(self.manifest_path)
         run_result = self.load_run_results(self.run_result_path)
+        self.run_metadata = run_result['metadata']
+
         catalog = self.load_catalog(self.catalog_path)
 
         profile_dir = run_result['args']['profiles_dir']
@@ -380,7 +393,8 @@ class DbtArtifactProcessor:
                 run=Run(
                     runId=run_id,
                     facets={
-                        "parent": self._dbt_run_metadata.to_openlineage()
+                        "parent": self._dbt_run_metadata.to_openlineage(),
+                        "dbt_version": self.dbt_version_facet()
                     }
                 ),
                 job=Job(
@@ -402,7 +416,7 @@ class DbtArtifactProcessor:
         except Exception as e:
             if self.skip_errors:
                 return None
-            raise ValueError(e)
+            raise ValueError() from e
 
     def _to_openlineage_events(self, run: DbtRun) -> Optional[DbtRunResult]:
         if run.status == 'skipped':
@@ -432,7 +446,8 @@ class DbtArtifactProcessor:
                     run=Run(
                         runId=run.run_id,
                         facets={
-                            "parent": self._dbt_run_metadata.to_openlineage()
+                            "parent": self._dbt_run_metadata.to_openlineage(),
+                            "dbt_version": self.dbt_version_facet()
                         }
                     ),
                     job=Job(
@@ -456,11 +471,8 @@ class DbtArtifactProcessor:
                     run=Run(
                         runId=run.run_id,
                         facets={
-                            "parent": ParentRunFacet.create(
-                                runId=self.dbt_run_metadata.run_id,
-                                namespace=self.dbt_run_metadata.job_namespace,
-                                name=self.dbt_run_metadata.job_name
-                            )
+                            "parent": self._dbt_run_metadata.to_openlineage(),
+                            "dbt_version": self.dbt_version_facet()
                         }
                     ),
                     job=Job(
@@ -534,7 +546,10 @@ class DbtArtifactProcessor:
             }
             if node.catalog_node:
                 facets['schema'] = SchemaDatasetFacet(
-                    fields=self.extract_catalog_fields(node.catalog_node['columns'].values())
+                    fields=self.extract_catalog_fields(
+                        node.catalog_node['columns'].values(),
+                        node.metadata_node['columns']
+                    )
                 )
         else:
             facets = {}
@@ -555,26 +570,28 @@ class DbtArtifactProcessor:
         """
         fields = []
         for field in columns:
-            type = None
+            type, description = None, None
             if 'data_type' in field and field['data_type'] is not None:
                 type = field['data_type']
+            if 'description' in field and field['description'] is not None:
+                description = field['description']
             fields.append(SchemaField(
-                name=field['name'], type=type
+                name=field['name'], type=type, description=description
             ))
         return fields
 
     @staticmethod
-    def extract_catalog_fields(columns: List[Dict]) -> List[SchemaField]:
+    def extract_catalog_fields(columns: List[Dict], metadata_columns: Dict) -> List[SchemaField]:
         """Extract table field info from catalog's node column info"""
         fields = []
         for field in columns:
-            type, description = None, None
+            name = field['name']
+            type = None
             if 'type' in field and field['type'] is not None:
                 type = field['type']
-            if 'column' in field and field['column'] is not None:
-                description = field['column']
+            description = get_from_nullable_chain(metadata_columns, [name, 'description'])
             fields.append(SchemaField(
-                name=field['name'], type=type, description=description
+                name=name, type=type, description=description
             ))
         return fields
 
@@ -600,6 +617,11 @@ class DbtArtifactProcessor:
                 f"Only 'snowflake', 'bigquery', and 'redshift' adapters are supported right now. "
                 f"Passed {profile['type']}"
             )
+
+    def dbt_version_facet(self):
+        return DbtVersionRunFacet(
+            version=self.run_metadata['dbt_version']
+        )
 
     @staticmethod
     def get_timings(timings: List[Dict]) -> Tuple[str, str]:

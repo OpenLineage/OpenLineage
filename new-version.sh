@@ -125,15 +125,11 @@ if [[ "${RELEASE_VERSION}" == *-rc.? ]]; then
   PYTHON_RELEASE_VERSION="${RELEASE_VERSION%-*}${RELEASE_CANDIDATE//.}"
 fi
 
-# (1) Bump python module versions for release candidates
-# This is only necessary when we are publishing a release candidate
-# This is necessary to get bump2version to bump from x.y.z to x.y.z-rc1
-if [ -n "$RELEASE_CANDIDATE" ]; then
-  PYTHON_MODULES=(client/python/ integration/common/ integration/airflow/ integration/dbt/)
-  for PYTHON_MODULE in "${PYTHON_MODULES[@]}"; do
-    (cd "${PYTHON_MODULE}" && bump2version manual --new-version "${PYTHON_RELEASE_VERSION}" --allow-dirty)
-  done
-fi
+# (1) Bump python module versions
+PYTHON_MODULES=(client/python/ integration/common/ integration/airflow/ integration/dbt/)
+for PYTHON_MODULE in "${PYTHON_MODULES[@]}"; do
+  (cd "${PYTHON_MODULE}" && bump2version manual --new-version "${PYTHON_RELEASE_VERSION}" --allow-dirty)
+done
 
 # (2) Bump java module versions
 perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./client/java/gradle.properties
