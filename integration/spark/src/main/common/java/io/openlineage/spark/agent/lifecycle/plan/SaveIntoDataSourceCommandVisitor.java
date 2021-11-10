@@ -38,7 +38,6 @@ public class SaveIntoDataSourceCommandVisitor
   @Override
   public boolean isDefinedAt(LogicalPlan x) {
     return x instanceof SaveIntoDataSourceCommand
-        && isNotKafkaSourceProvider((SaveIntoDataSourceCommand) x)
         && (((SaveIntoDataSourceCommand) x).dataSource() instanceof SchemaRelationProvider
             || ((SaveIntoDataSourceCommand) x).dataSource() instanceof RelationProvider);
   }
@@ -46,14 +45,26 @@ public class SaveIntoDataSourceCommandVisitor
   @Override
   public List<OpenLineage.Dataset> apply(LogicalPlan x) {
     BaseRelation relation;
-    if (((SaveIntoDataSourceCommand) x).dataSource() instanceof RelationProvider) {
-      RelationProvider p = (RelationProvider) ((SaveIntoDataSourceCommand) x).dataSource();
-      relation = p.createRelation(sqlContext, ((SaveIntoDataSourceCommand) x).options());
+    SaveIntoDataSourceCommand command = (SaveIntoDataSourceCommand) x;
+
+    // Kafka has some special handling because the Source and Sink relations require different
+    // options. A KafkaRelation for writes uses the "topic" option, while the same relation for
+    // reads requires the "subscribe" option. The KafkaSourceProvider never returns a KafkaRelation
+    // for write operations (it executes the real writer, then returns a dummy relation), so we have
+    // to use it to construct a reader, meaning we need to change the "topic" option to "subscribe".
+    // Since it requires special handling anyway, we just go ahead and extract the Dataset(s)
+    // directly.
+    // TODO- it may be the case that we need to extend this pattern to support arbitrary relations,
+    // as other impls of CreatableRelationProvider may not be able to be handled in the generic way.
+    if (KafkaRelationVisitor.isKafkaSource(command.dataSource())) {
+      return KafkaRelationVisitor.createKafkaDatasets(
+          command.dataSource(), command.options(), command.mode(), command.schema());
+    } else if (command.dataSource() instanceof RelationProvider) {
+      RelationProvider p = (RelationProvider) command.dataSource();
+      relation = p.createRelation(sqlContext, command.options());
     } else {
-      SchemaRelationProvider p =
-          (SchemaRelationProvider) ((SaveIntoDataSourceCommand) x).dataSource();
-      relation =
-          p.createRelation(sqlContext, ((SaveIntoDataSourceCommand) x).options(), x.schema());
+      SchemaRelationProvider p = (SchemaRelationProvider) command.dataSource();
+      relation = p.createRelation(sqlContext, command.options(), x.schema());
     }
     return Optional.ofNullable(
             PlanUtils.applyFirst(
@@ -72,14 +83,5 @@ public class SaveIntoDataSourceCommandVisitor
               ds.getFacets().getAdditionalProperties().putAll(facetsMap.build());
             })
         .collect(Collectors.toList());
-  }
-
-  private boolean isNotKafkaSourceProvider(SaveIntoDataSourceCommand x) {
-    try {
-      return !Class.forName("org.apache.spark.sql.kafka010.KafkaSourceProvider")
-          .isInstance(x.dataSource());
-    } catch (ClassNotFoundException e) {
-      return true;
-    }
   }
 }

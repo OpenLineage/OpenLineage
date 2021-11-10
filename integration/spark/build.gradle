@@ -42,10 +42,9 @@ repositories {
 }
 
 configurations {
-    spark3Test
-    spark2Test
-    spark3.extendsFrom implementation
     spark3Test.extendsFrom testImplementation
+    spark2Test.extendsFrom testImplementation
+    spark3.extendsFrom implementation
     lombok
 }
 
@@ -112,6 +111,7 @@ dependencies {
     testImplementation "org.testcontainers:postgresql:${testcontainersVersion}"
     testImplementation "org.testcontainers:mockserver:${testcontainersVersion}"
     testImplementation "org.testcontainers:kafka:${testcontainersVersion}"
+    testImplementation "org.apache.kafka:kafka-clients:2.6.0"
     testImplementation('org.mock-server:mockserver-client-java:5.11.2') {
         exclude group: 'com.google.guava', module: 'guava'
         exclude group: 'com.fasterxml.jackson.core'

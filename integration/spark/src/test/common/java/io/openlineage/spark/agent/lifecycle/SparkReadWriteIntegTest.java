@@ -26,6 +26,7 @@ import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.util.PlanUtils;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
@@ -33,18 +34,25 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.TextInputFormat;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.expressions.GenericRow;
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema;
+import org.apache.spark.sql.types.BinaryType$;
 import org.apache.spark.sql.types.IntegerType$;
 import org.apache.spark.sql.types.LongType$;
 import org.apache.spark.sql.types.Metadata;
@@ -53,17 +61,23 @@ import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.testcontainers.containers.KafkaContainer;
+import org.testcontainers.utility.DockerImageName;
 import scala.Tuple2;
 import scala.collection.immutable.HashMap;
 
 @ExtendWith(SparkAgentTestExtension.class)
 public class SparkReadWriteIntegTest {
+
+  private final KafkaContainer kafkaContainer =
+      new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.0.0"));
 
   @BeforeEach
   public void setUp() {
@@ -74,6 +88,13 @@ public class SparkReadWriteIntegTest {
         .thenReturn("ParentJob");
     when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getJobNamespace())
         .thenReturn("Namespace");
+  }
+
+  @AfterEach
+  public void tearDown() {
+    if (kafkaContainer.isCreated()) {
+      kafkaContainer.stop();
+    }
   }
 
   @Test
@@ -331,5 +352,116 @@ public class SparkReadWriteIntegTest {
         .singleElement()
         .hasFieldOrPropertyWithValue("name", outputPath)
         .hasFieldOrPropertyWithValue("namespace", "file");
+  }
+
+  @Test
+  public void testWriteWithKafkaSourceProvider(SparkSession spark)
+      throws InterruptedException, TimeoutException {
+    kafkaContainer.start();
+    StructType schema =
+        new StructType(
+            new StructField[] {
+              new StructField("key", StringType$.MODULE$, false, new Metadata(new HashMap<>())),
+              new StructField("value", BinaryType$.MODULE$, false, new Metadata(new HashMap<>()))
+            });
+
+    spark
+        .createDataFrame(
+            Arrays.asList(
+                new GenericRow(new Object[] {"seven", "seven".getBytes(StandardCharsets.UTF_8)}),
+                new GenericRow(new Object[] {"one", "one".getBytes(StandardCharsets.UTF_8)}),
+                new GenericRow(
+                    new Object[] {"fourteen", "fourteen".getBytes(StandardCharsets.UTF_8)}),
+                new GenericRow(
+                    new Object[] {"sixteen", "sixteen".getBytes(StandardCharsets.UTF_8)})),
+            schema)
+        .write()
+        .format("kafka")
+        .option("topic", "topicA")
+        .option("kafka.bootstrap.servers", kafkaContainer.getBootstrapServers())
+        .save();
+
+    StaticExecutionContextFactory.waitForExecutionEnd();
+    ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
+        ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(2))
+        .emit(lineageEvent.capture());
+    OpenLineage.RunEvent completeEvent = lineageEvent.getAllValues().get(1);
+    assertThat(completeEvent).hasFieldOrPropertyWithValue("eventType", "COMPLETE");
+    String kafkaNamespace =
+        "kafka://"
+            + kafkaContainer.getHost()
+            + ":"
+            + kafkaContainer.getMappedPort(KafkaContainer.KAFKA_PORT);
+    assertThat(completeEvent.getOutputs())
+        .hasSize(1)
+        .first()
+        .hasFieldOrPropertyWithValue("name", "topicA")
+        .hasFieldOrPropertyWithValue("namespace", kafkaNamespace);
+  }
+
+  @Test
+  public void testReadWithKafkaSourceProviderUsingAssignConfig(SparkSession spark)
+      throws InterruptedException, TimeoutException, ExecutionException {
+    kafkaContainer.start();
+    Properties p = new Properties();
+    p.setProperty("bootstrap.servers", kafkaContainer.getBootstrapServers());
+    p.setProperty("key.serializer", StringSerializer.class.getName());
+    p.setProperty("value.serializer", StringSerializer.class.getName());
+    p.setProperty("max.block.ms", "1000");
+    KafkaProducer<String, String> producer = new KafkaProducer<>(p);
+    CompletableFuture.allOf(
+            sendMessage(producer, new ProducerRecord<>("oneTopic", 0, "theKey", "theValue")),
+            sendMessage(
+                producer, new ProducerRecord<>("twoTopic", 0, "anotherKey", "anotherValue")))
+        .get(10, TimeUnit.SECONDS);
+
+    producer.flush();
+
+    Dataset<Row> kafkaDf =
+        spark
+            .read()
+            .format("kafka")
+            .option("kafka.bootstrap.servers", kafkaContainer.getBootstrapServers())
+            .option("kafka.default.api.timeout.ms", "1000")
+            .option("assign", "{\"oneTopic\": [0], \"twoTopic\": [0]}")
+            .load();
+    kafkaDf.collect();
+
+    StaticExecutionContextFactory.waitForExecutionEnd();
+    ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
+        ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(2))
+        .emit(lineageEvent.capture());
+    OpenLineage.RunEvent completeEvent = lineageEvent.getAllValues().get(1);
+    assertThat(completeEvent).hasFieldOrPropertyWithValue("eventType", "COMPLETE");
+    String kafkaNamespace =
+        "kafka://"
+            + kafkaContainer.getHost()
+            + ":"
+            + kafkaContainer.getMappedPort(KafkaContainer.KAFKA_PORT);
+    assertThat(completeEvent.getInputs())
+        .hasSize(2)
+        .satisfiesExactlyInAnyOrder(
+            dataset ->
+                assertThat(dataset)
+                    .hasFieldOrPropertyWithValue("name", "oneTopic")
+                    .hasFieldOrPropertyWithValue("namespace", kafkaNamespace),
+            dataset -> assertThat(dataset.getName()).isEqualTo("twoTopic"));
+  }
+
+  private CompletableFuture sendMessage(
+      KafkaProducer<String, String> producer, ProducerRecord<String, String> record) {
+    CompletableFuture future = new CompletableFuture();
+    producer.send(
+        record,
+        (md, e) -> {
+          if (e != null) {
+            future.completeExceptionally(e);
+          } else {
+            future.complete(md);
+          }
+        });
+    return future;
   }
 }

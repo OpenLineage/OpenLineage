@@ -2,17 +2,32 @@ package io.openlineage.spark.agent.lifecycle.plan;
 
 import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptional;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.PlanUtils;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.lang.reflect.Field;
+import java.net.URI;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
-import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.kafka010.KafkaRelation;
+import org.apache.spark.sql.kafka010.KafkaSourceProvider;
+import org.apache.spark.sql.sources.CreatableRelationProvider;
+import org.apache.spark.sql.types.StructType;
+import scala.collection.immutable.Map;
+import scala.collection.immutable.Map$;
 
 /**
  * {@link LogicalPlan} visitor that attempts to extract a {@link OpenLineage.Dataset} from a {@link
@@ -21,6 +36,33 @@ import org.apache.spark.sql.kafka010.KafkaRelation;
  */
 @Slf4j
 public class KafkaRelationVisitor extends QueryPlanVisitor<LogicalRelation, OpenLineage.Dataset> {
+
+  public static boolean hasKafkaClasses() {
+    try {
+      KafkaRelationVisitor.class
+          .getClassLoader()
+          .loadClass("org.apache.spark.sql.kafka010.KafkaSourceProvider");
+      return true;
+    } catch (Exception e) {
+      // swallow- we don't care
+    }
+    return false;
+  }
+
+  public static boolean isKafkaSource(CreatableRelationProvider provider) {
+    if (!hasKafkaClasses()) {
+      return false;
+    }
+    return provider instanceof KafkaSourceProvider;
+  }
+
+  public static List<OpenLineage.Dataset> createKafkaDatasets(
+      CreatableRelationProvider relationProvider,
+      scala.collection.immutable.Map<String, String> options,
+      SaveMode mode,
+      StructType schema) {
+    return createDatasetsFromOptions(options, schema);
+  }
 
   @Override
   public boolean isDefinedAt(LogicalPlan x) {
@@ -31,30 +73,82 @@ public class KafkaRelationVisitor extends QueryPlanVisitor<LogicalRelation, Open
   @Override
   public List<OpenLineage.Dataset> apply(LogicalPlan x) {
     KafkaRelation relation = (KafkaRelation) ((LogicalRelation) x).relation();
-    String server = "";
-    String topic = "";
+    List<String> topics = Collections.emptyList();
+    scala.collection.immutable.Map<String, String> sourceOptions;
     try {
       Field sourceOptionsField = relation.getClass().getDeclaredField("sourceOptions");
       sourceOptionsField.setAccessible(true);
-      CaseInsensitiveMap sourceOptions = (CaseInsensitiveMap) sourceOptionsField.get(relation);
-      String servers =
-          (String) asJavaOptional(sourceOptions.get("kafka.bootstrap.servers")).orElse("");
-      topic =
-          Stream.of("subscribe", "subscribePattern", "assign")
-              .map(it -> sourceOptions.get(it))
-              .filter(it -> it.nonEmpty())
-              .map(it -> it.get())
-              .map(String.class::cast)
-              .findFirst()
-              .orElse("");
-
-      server = servers.split(",")[0];
+      sourceOptions =
+          (scala.collection.immutable.Map<String, String>) sourceOptionsField.get(relation);
     } catch (Exception e) {
-      log.error("Can't extract kafka server option", e);
+      log.error("Can't extract kafka server options", e);
+      sourceOptions = Map$.MODULE$.empty();
     }
+    return createDatasetsFromOptions(sourceOptions, relation.schema());
+  }
+
+  private static List<OpenLineage.Dataset> createDatasetsFromOptions(
+      Map<String, String> sourceOptions, StructType schema) {
+    List<String> topics;
+    Optional<String> servers = asJavaOptional(sourceOptions.get("kafka.bootstrap.servers"));
+
+    // don't support subscribePattern, as it will report dataset nodes that don't exist
+
+    topics =
+        Stream.concat(
+                // handle "subscribe" and "topic" here to handle single topic reads/writes
+                Stream.of("subscribe", "topic")
+                    .map(it -> sourceOptions.get(it))
+                    .filter(it -> it.nonEmpty())
+                    .map(it -> it.get())
+                    .map(String.class::cast),
+
+                // handle "assign" configuration, which specifies topics and the partitions this
+                // client will read from
+                // "assign" is a json string, with the topics as keys and the values are arrays of
+                // the partitions to read
+                // E.g., {"topicA":[0,1],"topicB":[2,4]}
+                // see
+                // https://spark.apache.org/docs/3.1.2/structured-streaming-kafka-integration.html
+                ScalaConversionUtils.asJavaOptional(sourceOptions.get("assign"))
+                    .map(
+                        (String str) -> {
+                          try {
+                            JsonNode jsonNode = new ObjectMapper().readTree(str);
+                            long fieldCount = jsonNode.size();
+                            return StreamSupport.stream(
+                                Spliterators.spliterator(
+                                    jsonNode.fieldNames(),
+                                    fieldCount,
+                                    Spliterator.SIZED & Spliterator.IMMUTABLE),
+                                false);
+                          } catch (JsonProcessingException e) {
+                            log.warn(
+                                "Unable to find topics from Kafka source configuration {}", str, e);
+                          }
+                          return Stream.<String>empty();
+                        })
+                    .orElse(Stream.empty()))
+            .collect(Collectors.toList());
+
+    String server =
+        servers
+            .map(
+                str -> {
+                  if (!str.matches("\\w+://.*")) {
+                    return "PLAINTEXT://" + str;
+                  } else {
+                    return str;
+                  }
+                })
+            .map(str -> URI.create(str.split(",")[0]))
+            .map(uri -> uri.getHost() + ":" + uri.getPort())
+            .orElse("");
     String namespace = "kafka://" + server;
-    return Collections.singletonList(
-        PlanUtils.getDataset(
-            topic, namespace, PlanUtils.datasetFacet(relation.schema(), namespace)));
+    return topics.stream()
+        .map(
+            topic ->
+                PlanUtils.getDataset(topic, namespace, PlanUtils.datasetFacet(schema, namespace)))
+        .collect(Collectors.toList());
   }
 }

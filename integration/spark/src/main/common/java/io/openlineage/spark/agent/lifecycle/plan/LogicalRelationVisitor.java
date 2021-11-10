@@ -1,7 +1,5 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
-import static io.openlineage.spark.agent.util.PlanUtils.datasetFacet;
-
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.PlanUtils;
 import java.util.Collections;
@@ -56,7 +54,6 @@ public class LogicalRelationVisitor extends QueryPlanVisitor<LogicalRelation, Op
   @Override
   public boolean isDefinedAt(LogicalPlan x) {
     return x instanceof LogicalRelation
-        && isNotKafkaRelation((LogicalRelation) x)
         && (((LogicalRelation) x).relation() instanceof HadoopFsRelation
             || ((LogicalRelation) x).relation() instanceof JDBCRelation
             || ((LogicalRelation) x).catalogTable().isDefined());
@@ -122,15 +119,7 @@ public class LogicalRelationVisitor extends QueryPlanVisitor<LogicalRelation, Op
     // driver format looks like oracle:<drivertype>:<user>/<password>@<database>
     // whereas postgres, mysql, and sqlserver use the scheme://hostname:port/db format.
     String url = PlanUtils.sanitizeJdbcUrl(relation.jdbcOptions().url());
-    OpenLineage.DatasetFacets datasetFacet = datasetFacet(relation.schema(), url);
+    OpenLineage.DatasetFacets datasetFacet = PlanUtils.datasetFacet(relation.schema(), url);
     return Collections.singletonList(PlanUtils.getDataset(tableName, url, datasetFacet));
-  }
-
-  private boolean isNotKafkaRelation(LogicalRelation x) {
-    try {
-      return !Class.forName("org.apache.spark.sql.kafka010.KafkaRelation").isInstance(x.relation());
-    } catch (ClassNotFoundException e) {
-      return true;
-    }
   }
 }
