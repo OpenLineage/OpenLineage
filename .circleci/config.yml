@@ -161,8 +161,10 @@ jobs:
       spark-version:
         type: string
     working_directory: ~/openlineage/integration/spark
-    docker:
-      - image: circleci/openjdk:8-jdk
+    machine: true
+    environment:
+      TESTCONTAINERS_RYUK_DISABLED: "true"
+      JDK8_HOME: /usr/lib/jvm/java-8-openjdk-amd64
     steps:
       - *checkout_project_root
       - restore_cache:
