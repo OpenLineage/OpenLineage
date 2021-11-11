@@ -8,8 +8,8 @@ import lombok.Getter;
 import lombok.NonNull;
 
 /**
- * Custom facet to provide extra information on table provider including properties:
- * provider (e.g. iceberg, delta-lake, etc.) and format (e.g. parquet, orc, etc.)
+ * Custom facet to provide extra information on table provider including properties: provider (e.g.
+ * iceberg, delta-lake, etc.) and format (e.g. parquet, orc, etc.)
  */
 @Getter
 public class TableProviderFacet extends OpenLineage.DefaultDatasetFacet {
