@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.facets.TableProviderFacet;
-import io.openlineage.spark.agent.lifecycle.plan.DatasetSource;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.spark.sql.connector.catalog.Table;
@@ -14,37 +13,20 @@ import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-public class DatasetSourceVisitorTest {
+public class DataSourceV2RelationVisitorTest {
 
-  DatasetSourceVisitor datasetSourceVisitor = new DatasetSourceVisitor();
+  DataSourceV2RelationVisitor dataSourceV2RelationVisitor = new DataSourceV2RelationVisitor();
   DataSourceV2Relation dataSourceV2Relation = Mockito.mock(DataSourceV2Relation.class);
   Table table = Mockito.mock(Table.class);
   Map<String, String> tableProperties = new HashMap<>();
 
   @Test
-  public void testApplyExceptionIsThrownWhenNoDatasetSourceFound() {
+  public void testApplyExceptionIsThrownWhenNonSupportedProvider() {
     Exception exception =
         assertThrows(
-            RuntimeException.class, () -> datasetSourceVisitor.apply(dataSourceV2Relation));
+            RuntimeException.class, () -> dataSourceV2RelationVisitor.apply(dataSourceV2Relation));
 
     Assert.assertTrue(exception.getMessage().startsWith("Couldn't find DatasetSource in plan"));
-  }
-
-  @Test
-  public void testApplyForDefaultProvider() {
-    tableProperties.put("provider", "unknown");
-
-    table = Mockito.mock(Table.class, Mockito.withSettings().extraInterfaces(DatasetSource.class));
-    Mockito.when(table.properties()).thenReturn(tableProperties);
-    Mockito.when(table.name()).thenReturn("some-name");
-    Mockito.when(((DatasetSource) table).namespace()).thenReturn("some-namespace");
-    Mockito.when((dataSourceV2Relation).table()).thenReturn(table);
-    Mockito.when(dataSourceV2Relation.schema()).thenReturn(new StructType());
-
-    OpenLineage.Dataset dataset = datasetSourceVisitor.apply(dataSourceV2Relation).get(0);
-
-    Assert.assertEquals("some-namespace", dataset.getNamespace());
-    Assert.assertEquals("some-name", dataset.getName());
   }
 
   @Test
@@ -58,7 +40,7 @@ public class DatasetSourceVisitorTest {
     Mockito.when(dataSourceV2Relation.schema()).thenReturn(new StructType());
     Mockito.when(table.name()).thenReturn("remote-gcs.db.table");
 
-    OpenLineage.Dataset dataset = datasetSourceVisitor.apply(dataSourceV2Relation).get(0);
+    OpenLineage.Dataset dataset = dataSourceV2RelationVisitor.apply(dataSourceV2Relation).get(0);
 
     TableProviderFacet tableProviderFacet =
         (TableProviderFacet) dataset.getFacets().getAdditionalProperties().get("table_provider");
@@ -79,7 +61,7 @@ public class DatasetSourceVisitorTest {
     Mockito.when(dataSourceV2Relation.schema()).thenReturn(new StructType());
     Mockito.when(table.name()).thenReturn("local.db.table");
 
-    OpenLineage.Dataset dataset = datasetSourceVisitor.apply(dataSourceV2Relation).get(0);
+    OpenLineage.Dataset dataset = dataSourceV2RelationVisitor.apply(dataSourceV2Relation).get(0);
 
     TableProviderFacet tableProviderFacet =
         (TableProviderFacet) dataset.getFacets().getAdditionalProperties().get("table_provider");
@@ -89,17 +71,9 @@ public class DatasetSourceVisitorTest {
   }
 
   @Test
-  public void testIsDefinedAtForDefaultProviderWhenDefined() {
-    Mockito.when(dataSourceV2Relation.table())
-        .thenReturn(
-            Mockito.mock(Table.class, Mockito.withSettings().extraInterfaces(DatasetSource.class)));
-    Assert.assertTrue(datasetSourceVisitor.isDefinedAt(dataSourceV2Relation));
-  }
-
-  @Test
-  public void testIsDefinedAtForDefaultProviderWhenNotDefined() {
+  public void testIsDefinedAtForNonDefinedProvider() {
     Mockito.when(dataSourceV2Relation.table()).thenReturn(table);
-    Assert.assertFalse(datasetSourceVisitor.isDefinedAt(dataSourceV2Relation));
+    Assert.assertFalse(dataSourceV2RelationVisitor.isDefinedAt(dataSourceV2Relation));
   }
 
   @Test
@@ -107,6 +81,6 @@ public class DatasetSourceVisitorTest {
     tableProperties.put("provider", "iceberg");
     Mockito.when((dataSourceV2Relation).table()).thenReturn(table);
     Mockito.when(table.properties()).thenReturn(tableProperties);
-    Assert.assertTrue(datasetSourceVisitor.isDefinedAt(dataSourceV2Relation));
+    Assert.assertTrue(dataSourceV2RelationVisitor.isDefinedAt(dataSourceV2Relation));
   }
 }

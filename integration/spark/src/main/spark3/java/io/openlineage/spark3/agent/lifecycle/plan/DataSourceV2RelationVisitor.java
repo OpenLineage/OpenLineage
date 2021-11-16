@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.Optional;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.connector.catalog.Table;
-import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 
 /**
@@ -25,29 +24,14 @@ import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
  * org.apache.spark.sql.catalyst.analysis.NamedRelation}, the returned name is that of the source,
  * not the specific dataset (e.g., "bigquery" not the table).
  */
-public class DatasetSourceVisitor extends QueryPlanVisitor<LogicalPlan, OpenLineage.Dataset> {
+public class DataSourceV2RelationVisitor
+    extends QueryPlanVisitor<LogicalPlan, OpenLineage.Dataset> {
 
   private static final String ICEBERG = "iceberg";
 
   @Override
   public boolean isDefinedAt(LogicalPlan logicalPlan) {
-    return findDatasetProvider(logicalPlan).equals(ICEBERG)
-        || findDefaultDatasetSource(logicalPlan).isPresent();
-  }
-
-  private Optional<DatasetSource> findDefaultDatasetSource(LogicalPlan plan) {
-    if (plan instanceof LogicalRelation) {
-      if (((LogicalRelation) plan).relation() instanceof DatasetSource) {
-        return Optional.of((DatasetSource) ((LogicalRelation) plan).relation());
-      }
-    } else if (plan instanceof DataSourceV2Relation) {
-      DataSourceV2Relation relation = (DataSourceV2Relation) plan;
-
-      if (relation.table() instanceof DatasetSource) {
-        return Optional.of((DatasetSource) relation.table());
-      }
-    }
-    return Optional.empty();
+    return findDatasetProvider(logicalPlan).equals(ICEBERG);
   }
 
   private String findDatasetProvider(LogicalPlan plan) {
@@ -81,21 +65,10 @@ public class DatasetSourceVisitor extends QueryPlanVisitor<LogicalPlan, OpenLine
 
   @Override
   public List<OpenLineage.Dataset> apply(LogicalPlan logicalPlan) {
-    String provider = findDatasetProvider(logicalPlan);
-
-    if (provider.equals("iceberg")) {
+    if (findDatasetProvider(logicalPlan).equals(ICEBERG)) {
       return Collections.singletonList(findDatasetForIceberg((DataSourceV2Relation) logicalPlan));
-    } else {
-      DatasetSource datasetSource =
-          findDefaultDatasetSource(logicalPlan)
-              .orElseThrow(
-                  () -> new RuntimeException("Couldn't find DatasetSource in plan " + logicalPlan));
-
-      return Collections.singletonList(
-          PlanUtils.getDataset(
-              datasetSource.name(),
-              datasetSource.namespace(),
-              PlanUtils.datasetFacet(logicalPlan.schema(), datasetSource.namespace())));
     }
+
+    throw new RuntimeException("Couldn't find DatasetSource in plan " + logicalPlan);
   }
 }
