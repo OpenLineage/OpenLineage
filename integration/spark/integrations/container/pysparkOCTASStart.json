@@ -1,5 +1,5 @@
 {
-  "eventType" : "COMPLETE",
+  "eventType" : "START",
   "job" : {
     "namespace" : "testCreateAsSelectAndLoad",
     "name" : "open_lineage_integration_cta_s_load.execute_create_hive_table_as_select_command"
@@ -7,7 +7,7 @@
   "inputs" : [ ],
   "outputs" : [ {
     "namespace" : "file",
-    "name" : "/tmp/ctas_load/tbl1",
+    "name" : "/tmp/ctas_load/tbl2",
     "facets" : {
       "dataSource" : {
         "name" : "file",
