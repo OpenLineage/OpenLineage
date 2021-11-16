@@ -68,7 +68,7 @@ ext {
     assertjVersion = '3.20.2'
     bigqueryVersion = '0.21.1'
     junit5Version = '5.7.2'
-    sparkVersion = '2.4.7'
+    sparkVersion = '2.4.8'
     jacksonVersion = '2.6.7'
     jacksonVersionSpark3 = '2.10.0'
     jacksonModuleScalaVersion = '2.6.7.1'

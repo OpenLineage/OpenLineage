@@ -349,6 +349,11 @@ public class SparkContainerIntegrationTest {
     String startCTASEvent = new String(readAllBytes(eventFolder.resolve("pysparkCTASStart.json")));
     String completeCTASEvent = new String(readAllBytes(eventFolder.resolve("pysparkCTASEnd.json")));
 
+    String startOCTASEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkOCTASStart.json")));
+    String completeOCTASEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkOCTASEnd.json")));
+
     //    String startLoadEvent =
     //      new String(readAllBytes(eventFolder.resolve("pysparkLoadStart.json")));
     //    String completeLoadEvent =
@@ -360,7 +365,13 @@ public class SparkContainerIntegrationTest {
             .withBody(json(startCTASEvent, MatchType.ONLY_MATCHING_FIELDS)),
         request()
             .withPath("/api/v1/lineage")
-            .withBody(json(completeCTASEvent, MatchType.ONLY_MATCHING_FIELDS)));
+            .withBody(json(completeCTASEvent, MatchType.ONLY_MATCHING_FIELDS)),
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(startOCTASEvent, MatchType.ONLY_MATCHING_FIELDS)),
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(completeOCTASEvent, MatchType.ONLY_MATCHING_FIELDS)));
     //      TODO: Those do not fire since LoadDataCommand do not fire SparkListenerJobEnd event
     //      request()
     //        .withPath("/api/v1/lineage")

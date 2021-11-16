@@ -7,7 +7,7 @@
   "inputs" : [ ],
   "outputs" : [ {
     "namespace" : "file",
-    "name" : "/tmp/ctas_load/tbl1",
+    "name" : "/tmp/ctas_load/tbl2",
     "facets" : {
       "dataSource" : {
         "name" : "file",
