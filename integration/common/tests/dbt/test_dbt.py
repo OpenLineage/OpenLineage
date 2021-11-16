@@ -191,3 +191,22 @@ def test_jinja_list(jinja_env):
     assert ["key", "test_variable"] == DbtArtifactProcessor.render_values_jinja(
         jinja_env, test_list
     )
+
+
+def test_logging_handler_warns():
+    path = 'tests/dbt/test/target/manifest.json'
+    logger = mock.Mock()
+    DbtArtifactProcessor.load_metadata(path, [1], logger)
+
+    logger.warning.assert_called_once_with(
+        "Artifact schema version: https://schemas.getdbt.com/dbt/manifest/v2.json is above "
+        "dbt-ol supported version 1. This might cause errors."
+    )
+
+
+def test_logging_handler_does_not_warn():
+    path = 'tests/dbt/test/target/manifest.json'
+    logger = mock.Mock()
+    DbtArtifactProcessor.load_metadata(path, [2], logger)
+
+    logger.warning.assert_not_called()
