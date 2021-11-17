@@ -6,7 +6,7 @@ from pyspark.sql import SparkSession
 
 spark = SparkSession.builder \
     .master("local") \
-    .appName("Open Lineage Integration CTAS Load") \
+    .appName("Open Lineage Integration OCTAS Load") \
     .config("spark.sql.warehouse.dir", "/tmp/ctas_load") \
     .enableHiveSupport() \
     .getOrCreate()
@@ -19,8 +19,4 @@ df = spark.createDataFrame([
 
 df.createOrReplaceTempView('temp')
 
-spark.sql("CREATE TABLE tbl1 USING hive LOCATION '/tmp/ctas_load/tbl1' AS SELECT a, b FROM temp")
-
-
-# TODO: Does not generate event since it does not fire SparkListenerJobEnd
-# spark.sql(f"LOAD DATA INPATH '/test_data/test_data.csv' INTO TABLE tbl")
+spark.sql("CREATE TABLE tbl2 STORED AS PARQUET LOCATION '/tmp/ctas_load/tbl2' AS SELECT a, b FROM temp")
