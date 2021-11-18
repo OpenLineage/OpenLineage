@@ -15,6 +15,8 @@
 import org.apache.tools.ant.filters.ReplaceTokens
 import groovy.io.FileType
 
+import java.nio.file.Files
+
 buildscript {
     repositories {
         maven {
@@ -199,6 +201,15 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     from javadoc.destinationDir
 }
 
+tasks.register('copyDependencies', Copy) {
+    // delete the dependencies directory so we don't accidentally mix Spark 2 and Spark 3 dependencies
+    delete layout.buildDirectory.dir("dependencies")
+    def config = isSpark3 ? configurations.spark3Test : configurations.spark2Test
+    from config.getFiles()
+    include "*.jar"
+    into layout.buildDirectory.dir("dependencies")
+}
+
 def commonTestConfiguration = {
     forkEvery 1
     maxParallelForks 3
@@ -214,7 +225,6 @@ def commonTestConfiguration = {
             'kafka.package.version': kafkaPackage(scalaVersion, project.getProperty('spark.version'))
     ]
     classpath =  project.sourceSets.test.runtimeClasspath + (isSpark3 ? configurations.spark3Test : configurations.spark2Test)
-    println project.sourceSets.test.runtimeClasspath + (isSpark3 ? configurations.spark3Test : configurations.spark2Test)
 }
 
 test {
@@ -223,6 +233,7 @@ test {
         excludeTags 'integration-test'
     }
     if (!isSpark3) exclude 'io/openlineage/spark3/**'
+    dependsOn copyDependencies
 }
 
 task integrationTest(type: Test) {
@@ -230,7 +241,7 @@ task integrationTest(type: Test) {
     useJUnitPlatform {
         includeTags "integration-test"
     }
-    dependsOn shadowJar
+    dependsOn copyDependencies, shadowJar
 }
 
 spotless {
