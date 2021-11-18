@@ -60,6 +60,7 @@ public class SparkContainerIntegrationTest {
 
   @AfterEach
   public void cleanupSpark() {
+    mockServerClient.reset();
     try {
       pyspark.stop();
     } catch (Exception e2) {
