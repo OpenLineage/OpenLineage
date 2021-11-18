@@ -408,7 +408,6 @@ public class SparkReadWriteIntegTest {
     p.setProperty("bootstrap.servers", kafkaContainer.getBootstrapServers());
     p.setProperty("key.serializer", StringSerializer.class.getName());
     p.setProperty("value.serializer", StringSerializer.class.getName());
-    p.setProperty("max.block.ms", "1000");
     KafkaProducer<String, String> producer = new KafkaProducer<>(p);
     CompletableFuture.allOf(
             sendMessage(producer, new ProducerRecord<>("oneTopic", 0, "theKey", "theValue")),
@@ -423,7 +422,6 @@ public class SparkReadWriteIntegTest {
             .read()
             .format("kafka")
             .option("kafka.bootstrap.servers", kafkaContainer.getBootstrapServers())
-            .option("kafka.default.api.timeout.ms", "1000")
             .option("assign", "{\"oneTopic\": [0], \"twoTopic\": [0]}")
             .load();
     kafkaDf.collect();

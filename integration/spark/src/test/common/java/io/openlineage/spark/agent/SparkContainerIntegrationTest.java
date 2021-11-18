@@ -105,7 +105,7 @@ public class SparkContainerIntegrationTest {
   }
 
   private static GenericContainer<?> makeKafkaContainer() {
-    return new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:5.4.3"))
+    return new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.0.0"))
         .withNetworkAliases("kafka")
         .withNetwork(network);
   }
@@ -219,10 +219,7 @@ public class SparkContainerIntegrationTest {
         makePysparkContainerWithDefaultConf(
             "testPysparkKafkaReadWriteTest",
             "--packages",
-            "org.apache.spark:spark-sql-kafka-0-10_"
-                + (System.getProperty("spark.version").startsWith("3")
-                    ? "2.12:3.1.0"
-                    : "2.11:2.4.7"),
+            System.getProperty("kafka.package.version"),
             "/opt/spark_scripts/spark_kafka.py");
 
     pyspark.setWaitStrategy(Wait.forLogMessage(".*ShutdownHookManager: Shutdown hook called.*", 1));
@@ -269,10 +266,7 @@ public class SparkContainerIntegrationTest {
         makePysparkContainerWithDefaultConf(
             "testPysparkKafkaReadAssignTest",
             "--packages",
-            "org.apache.spark:spark-sql-kafka-0-10_"
-                + (System.getProperty("spark.version").startsWith("3")
-                    ? "2.12:3.1.0"
-                    : "2.11:2.4.7"),
+            System.getProperty("kafka.package.version"),
             "/opt/spark_scripts/spark_kafk_assign_read.py");
 
     pyspark.setWaitStrategy(Wait.forLogMessage(".*ShutdownHookManager: Shutdown hook called.*", 1));
