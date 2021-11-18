@@ -3,7 +3,9 @@ package io.openlineage.spark.agent;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -27,6 +29,7 @@ public class ArgumentParser {
   private final String jobName;
   private final String parentRunId;
   private final Optional<String> apiKey;
+  private final Optional<Map<String, String>> urlParams;
 
   public static ArgumentParser parse(String clientUrl) {
     URI uri = URI.create(clientUrl);
@@ -41,12 +44,13 @@ public class ArgumentParser {
 
     List<NameValuePair> nameValuePairList = URLEncodedUtils.parse(uri, StandardCharsets.UTF_8);
     Optional<String> apiKey = getApiKey(nameValuePairList);
+    Optional<Map<String, String>> urlParams = getUrlParams(nameValuePairList);
 
     log.info(
         String.format(
             "%s/api/%s/namespaces/%s/jobs/%s/runs/%s", host, version, namespace, jobName, runId));
 
-    return new ArgumentParser(host, version, namespace, jobName, runId, apiKey);
+    return new ArgumentParser(host, version, namespace, jobName, runId, apiKey, urlParams);
   }
 
   public static UUID getRandomUuid() {
@@ -56,6 +60,29 @@ public class ArgumentParser {
   private static Optional<String> getApiKey(List<NameValuePair> nameValuePairList) {
     return Optional.ofNullable(getNamedParameter(nameValuePairList, "api_key"))
         .filter(StringUtils::isNoneBlank);
+  }
+
+  public String getUrlParam(String urlParamName) {
+    String param = null;
+    if (urlParams.isPresent()) {
+      param = urlParams.get().get(urlParamName);
+    }
+    return param;
+  }
+
+  private static Optional<Map<String, String>> getUrlParams(List<NameValuePair> nameValuePairList) {
+    Map<String, String> urlParams = new HashMap<String, String>();
+    for (NameValuePair nameValuePair : nameValuePairList) {
+      String name = nameValuePair.getName();
+      if (!name.equals("api_key")) {
+        urlParams.put(name, nameValuePair.getValue());
+      }
+    }
+    Integer totalParams = urlParams.size();
+    if (totalParams.equals(0)) {
+      urlParams = null;
+    }
+    return Optional.ofNullable(urlParams);
   }
 
   protected static String getNamedParameter(List<NameValuePair> nameValuePairList, String param) {
@@ -78,6 +105,7 @@ public class ArgumentParser {
   }
 
   private static ArgumentParser getDefaultArguments() {
-    return new ArgumentParser("", "v1", "default", "default", null, Optional.empty());
+    return new ArgumentParser(
+        "", "v1", "default", "default", null, Optional.empty(), Optional.empty());
   }
 }
