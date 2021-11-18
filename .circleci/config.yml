@@ -235,7 +235,7 @@ jobs:
         type: string
     working_directory: ~/openlineage/integration/spark
     machine:
-      image: ubuntu-2004:202104-01
+      image: ubuntu-2004:202010-01
     environment:
       TESTCONTAINERS_RYUK_DISABLED: "true"
       JDK8_HOME: /usr/lib/jvm/java-8-openjdk-amd64
