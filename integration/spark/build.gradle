@@ -45,6 +45,7 @@ configurations {
     spark3Test
     spark2Test
     spark3.extendsFrom implementation
+    spark3Test.extendsFrom testImplementation
     lombok
 }
 
@@ -71,7 +72,7 @@ ext {
     jacksonModuleScalaVersion = '2.6.7.1'
     jacksonDatatypeVersion = '2.6.7'
     jacksonDatabindVersion = '2.6.7.3'
-    spark3Version = '3.1.0'
+    spark3Version = '3.1.2'
     postgresqlVersion = '42.2.19'
     lombokVersion = '1.18.20'
     mockitoVersion = '3.11.2'
@@ -130,6 +131,7 @@ dependencies {
     spark3Test "org.apache.spark:spark-core_2.12:${spark3Version}"
     spark3Test "org.apache.spark:spark-sql_2.12:${spark3Version}"
     spark3Test "org.apache.spark:spark-hive_2.12:${spark3Version}"
+    spark3Test "org.apache.spark:spark-catalyst_2.12:${spark3Version}"
 
     spark2Test "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
     spark2Test "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
@@ -154,6 +156,7 @@ dependencies {
 
 sourceSets {
     main.java.srcDirs = ["src/main/common/java", "src/main/spark2/java"]
+    test.java.srcDirs = ["src/test/common/java"]
 
     spark3{
         java {
@@ -163,9 +166,19 @@ sourceSets {
             destinationDirectory.set(file("$buildDir/classes/java/main/"))
         }
     }
+
+    spark3Test {
+        java {
+            srcDirs = ["src/test/spark3/java"]
+            compileClasspath = configurations.spark3Test + sourceSets.main.output
+            annotationProcessorPath = configurations.lombok
+            destinationDirectory.set(file("$buildDir/classes/java/test/"))
+        }
+    }
 }
 
 compileJava.finalizedBy compileSpark3Java
+compileTestJava.finalizedBy compileSpark3TestJava
 
 task sourceJar(type: Jar) {
     classifier 'sources'
@@ -198,6 +211,7 @@ test {
     useJUnitPlatform {
         excludeTags 'integration-test'
     }
+    if (!isSpark3) exclude 'io/openlineage/spark3/**'
 }
 
 task integrationTest(type: Test) {

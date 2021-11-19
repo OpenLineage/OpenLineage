@@ -263,7 +263,8 @@ jobs:
       - *checkout_project_root
       - *install_python_client
       - *install_integration_common
-      - run: pip install -e .[dev,airflow-1]
+      - run: pip install --upgrade pip==20.2.4
+      - run: pip install -e .[dev,airflow-1] --constraint="https://raw.githubusercontent.com/apache/airflow/constraints-1.10.15/constraints-3.6.txt"
       - run: flake8 --exclude integration
       - run: airflow initdb
       - run: pytest --cov=openlineage --ignore tests/integration tests/
@@ -278,7 +279,7 @@ jobs:
       - *checkout_project_root
       - *install_python_client
       - *install_integration_common
-      - run: pip install -e .[dev,airflow-2]
+      - run: pip install -e .[dev,airflow-2] --constraint="https://raw.githubusercontent.com/apache/airflow/constraints-2.1.3/constraints-3.6.txt"
       - run: flake8 --exclude integration
       - run: airflow db init
       - run: pytest --cov=openlineage --ignore tests/integration --ignore tests/test_openlineage_dag.py tests/

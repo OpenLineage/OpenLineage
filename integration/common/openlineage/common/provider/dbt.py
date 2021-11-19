@@ -10,6 +10,7 @@ import collections
 from typing import List, Tuple, Dict, Optional, TypeVar
 
 import attr
+import logging
 
 from openlineage.client.facet import DataSourceDatasetFacet, SchemaDatasetFacet, SchemaField, \
     SqlJobFacet, OutputStatisticsOutputDatasetFacet, ParentRunFacet, BaseFacet, \
@@ -96,6 +97,8 @@ class DbtVersionRunFacet(BaseFacet):
 
 T = TypeVar('T')
 
+logging.getLogger('null').addHandler(logging.NullHandler())
+
 
 class DbtArtifactProcessor:
     def __init__(
@@ -104,7 +107,8 @@ class DbtArtifactProcessor:
         project_dir: str,
         profile_name: Optional[str] = None,
         target: Optional[str] = None,
-        skip_errors: bool = False
+        skip_errors: bool = False,
+        logger: logging.Logger = logging.getLogger("null")
     ):
         self.producer = producer
         self.dir = os.path.abspath(project_dir)
@@ -112,6 +116,7 @@ class DbtArtifactProcessor:
         self.profile_name = profile_name
         self.target = target
         self.jinja_environment = None
+        self.logger = logger
 
         self.job_namespace = ""
         self.dataset_namespace = ""
@@ -137,11 +142,14 @@ class DbtArtifactProcessor:
         """
             Parse dbt manifest and run_result and produce OpenLineage events.
         """
-        manifest = self.load_manifest(self.manifest_path)
-        run_result = self.load_run_results(self.run_result_path)
+        manifest = self.load_metadata(self.manifest_path, [2, 3], self.logger)
+        run_result = self.load_metadata(self.run_result_path, [2, 3], self.logger)
         self.run_metadata = run_result['metadata']
 
-        catalog = self.load_catalog(self.catalog_path)
+        try:
+            catalog = self.load_metadata(self.catalog_path, [1], self.logger)
+        except FileNotFoundError:
+            catalog = None
 
         profile_dir = run_result['args']['profiles_dir']
 
@@ -176,39 +184,38 @@ class DbtArtifactProcessor:
             f"{run_result['args']['which']} - should be run or test"
         )
 
-    @staticmethod
-    def load_metadata(path: str, desired_schema_versions: List[str]) -> Dict:
+    @classmethod
+    def load_metadata(
+        cls,
+        path: str,
+        desired_schema_versions: List[int],
+        logger: logging.Logger
+    ) -> Dict:
         with open(path, 'r') as f:
             metadata = json.load(f)
-            schema_version = get_from_nullable_chain(metadata, ['metadata', 'dbt_schema_version'])
+            str_schema_version = get_from_nullable_chain(
+                metadata,
+                ['metadata', 'dbt_schema_version']
+            )
+            schema_version = cls.get_version_number(str_schema_version)
             if schema_version not in desired_schema_versions:
-                # Maybe we should accept it and throw exception only if it substantially differs
-                raise ValueError(f"Wrong version of dbt metadata: {schema_version}, "
-                                 f"should be in {desired_schema_versions}")
+                if schema_version > max(desired_schema_versions):
+                    logger.warning(
+                        f"Artifact schema version: {str_schema_version} is above dbt-ol "
+                        f"supported version {max(desired_schema_versions)}. "
+                        f"This might cause errors."
+                    )
+                else:
+                    raise ValueError(f"Wrong version of dbt metadata: {schema_version}, "
+                                     f"should be in {desired_schema_versions}")
             return metadata
 
-    @classmethod
-    def load_manifest(cls, path: str) -> Dict:
-        return cls.load_metadata(path, [
-            "https://schemas.getdbt.com/dbt/manifest/v2.json",
-            "https://schemas.getdbt.com/dbt/manifest/v3.json",
-        ])
-
-    @classmethod
-    def load_run_results(cls, path: str) -> Dict:
-        return cls.load_metadata(path, [
-            "https://schemas.getdbt.com/dbt/run-results/v2.json",
-            "https://schemas.getdbt.com/dbt/run-results/v3.json"
-        ])
-
-    @classmethod
-    def load_catalog(cls, path: str) -> Optional[Dict]:
-        try:
-            return cls.load_metadata(path, [
-                "https://schemas.getdbt.com/dbt/catalog/v1.json"
-            ])
-        except FileNotFoundError:
-            return None
+    @staticmethod
+    def get_version_number(version: str) -> int:
+        # "https://schemas.getdbt.com/dbt/manifest/v2.json" -> "v2.json"
+        file = version.split('/')[-1]
+        # "v2.json" -> 2
+        return int(file.split('.')[0][1:])
 
     @staticmethod
     def env_var(var: str, default: Optional[str] = None) -> str:
@@ -546,7 +553,10 @@ class DbtArtifactProcessor:
             }
             if node.catalog_node:
                 facets['schema'] = SchemaDatasetFacet(
-                    fields=self.extract_catalog_fields(node.catalog_node['columns'].values())
+                    fields=self.extract_catalog_fields(
+                        node.catalog_node['columns'].values(),
+                        node.metadata_node['columns']
+                    )
                 )
         else:
             facets = {}
@@ -567,26 +577,28 @@ class DbtArtifactProcessor:
         """
         fields = []
         for field in columns:
-            type = None
+            type, description = None, None
             if 'data_type' in field and field['data_type'] is not None:
                 type = field['data_type']
+            if 'description' in field and field['description'] is not None:
+                description = field['description']
             fields.append(SchemaField(
-                name=field['name'], type=type
+                name=field['name'], type=type, description=description
             ))
         return fields
 
     @staticmethod
-    def extract_catalog_fields(columns: List[Dict]) -> List[SchemaField]:
+    def extract_catalog_fields(columns: List[Dict], metadata_columns: Dict) -> List[SchemaField]:
         """Extract table field info from catalog's node column info"""
         fields = []
         for field in columns:
-            type, description = None, None
+            name = field['name']
+            type = None
             if 'type' in field and field['type'] is not None:
                 type = field['type']
-            if 'column' in field and field['column'] is not None:
-                description = field['column']
+            description = get_from_nullable_chain(metadata_columns, [name, 'description'])
             fields.append(SchemaField(
-                name=field['name'], type=type, description=description
+                name=name, type=type, description=description
             ))
         return fields
 

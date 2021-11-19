@@ -20,6 +20,9 @@ public class AppendDataVisitor extends QueryPlanVisitor<AppendData, OpenLineage.
 
   @Override
   public List<OpenLineage.Dataset> apply(LogicalPlan x) {
-    return PlanUtils.applyFirst(outputVisitors, (LogicalPlan) ((AppendData) x).table());
+    List<OpenLineage.Dataset> datasets =
+        PlanUtils.applyFirst(outputVisitors, (LogicalPlan) ((AppendData) x).table());
+
+    return datasets;
   }
 }

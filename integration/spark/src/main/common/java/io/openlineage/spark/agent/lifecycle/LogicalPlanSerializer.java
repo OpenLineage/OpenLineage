@@ -64,6 +64,7 @@ class LogicalPlanSerializer {
   public static class IgnoredType {}
 
   @JsonTypeInfo(use = Id.CLASS)
+  @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "id")
   public static class TypeInfoMixin {}
 
   /**
@@ -71,9 +72,11 @@ class LogicalPlanSerializer {
    * and 'containsChild' fields ignored cause we don't need them for the root node in {@link
    * LogicalPlan} and leaf nodes don't have child nodes in {@link LogicalPlan}
    */
+  @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "id")
   @JsonIgnoreProperties({"child", "containsChild", "canonicalized", "constraints"})
   abstract class ChildMixIn {}
 
+  @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "id")
   public static class PythonRDDMixin {
     @JsonIgnore private PythonRDDMixin asJavaRDD;
   }
