@@ -28,6 +28,18 @@ public class InsertIntoHiveTableVisitor
     this.context = context;
   }
 
+  public static boolean hasHiveClasses() {
+    try {
+      InsertIntoHiveTableVisitor.class
+          .getClassLoader()
+          .loadClass("org.apache.spark.sql.hive.execution.InsertIntoHiveTable");
+      return true;
+    } catch (ClassNotFoundException e) {
+      // ignore
+    }
+    return false;
+  }
+
   @Override
   public List<OpenLineage.Dataset> apply(LogicalPlan x) {
     InsertIntoHiveTable cmd = (InsertIntoHiveTable) x;
