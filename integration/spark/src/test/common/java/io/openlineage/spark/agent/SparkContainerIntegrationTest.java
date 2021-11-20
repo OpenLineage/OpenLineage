@@ -60,6 +60,7 @@ public class SparkContainerIntegrationTest {
 
   @AfterEach
   public void cleanupSpark() {
+    mockServerClient.reset();
     try {
       pyspark.stop();
     } catch (Exception e2) {
@@ -97,6 +98,7 @@ public class SparkContainerIntegrationTest {
         .withFileSystemBind("src/test/resources/test_data", "/test_data")
         .withFileSystemBind("src/test/resources/spark_scripts", "/opt/spark_scripts")
         .withFileSystemBind("build/libs", "/opt/libs")
+        .withFileSystemBind("build/dependencies", "/opt/dependencies")
         .withLogConsumer(SparkContainerIntegrationTest::consumeOutput)
         .withStartupTimeout(Duration.of(2, ChronoUnit.MINUTES))
         .dependsOn(openLineageClientMockContainer)
@@ -105,7 +107,7 @@ public class SparkContainerIntegrationTest {
   }
 
   private static GenericContainer<?> makeKafkaContainer() {
-    return new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:5.4.3"))
+    return new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.0.0"))
         .withNetworkAliases("kafka")
         .withNetwork(network);
   }
@@ -128,7 +130,12 @@ public class SparkContainerIntegrationTest {
                   "--conf",
                   "spark.sql.warehouse.dir=/tmp/warehouse",
                   "--jars",
-                  "/opt/libs/" + System.getProperty("openlineage.spark.jar")
+                  "/opt/libs/"
+                      + System.getProperty("openlineage.spark.jar")
+                      + ",/opt/dependencies/spark-sql-kafka-*.jar"
+                      + ",/opt/dependencies/kafka-*.jar"
+                      + ",/opt/dependencies/spark-token-provider-*.jar"
+                      + ",/opt/dependencies/commons-pool2-*.jar"
                 },
                 command)
             .flatMap(Stream::of)
@@ -219,10 +226,7 @@ public class SparkContainerIntegrationTest {
         makePysparkContainerWithDefaultConf(
             "testPysparkKafkaReadWriteTest",
             "--packages",
-            "org.apache.spark:spark-sql-kafka-0-10_"
-                + (System.getProperty("spark.version").startsWith("3")
-                    ? "2.12:3.1.0"
-                    : "2.11:2.4.7"),
+            System.getProperty("kafka.package.version"),
             "/opt/spark_scripts/spark_kafka.py");
 
     pyspark.setWaitStrategy(Wait.forLogMessage(".*ShutdownHookManager: Shutdown hook called.*", 1));
@@ -267,13 +271,7 @@ public class SparkContainerIntegrationTest {
         Arrays.asList(new NewTopic("topicA", 1, (short) 0), new NewTopic("topicB", 1, (short) 0)));
     pyspark =
         makePysparkContainerWithDefaultConf(
-            "testPysparkKafkaReadAssignTest",
-            "--packages",
-            "org.apache.spark:spark-sql-kafka-0-10_"
-                + (System.getProperty("spark.version").startsWith("3")
-                    ? "2.12:3.1.0"
-                    : "2.11:2.4.7"),
-            "/opt/spark_scripts/spark_kafk_assign_read.py");
+            "testPysparkKafkaReadAssignTest", "/opt/spark_scripts/spark_kafk_assign_read.py");
 
     pyspark.setWaitStrategy(Wait.forLogMessage(".*ShutdownHookManager: Shutdown hook called.*", 1));
     pyspark.start();

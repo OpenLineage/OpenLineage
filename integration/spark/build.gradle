@@ -15,6 +15,8 @@
 import org.apache.tools.ant.filters.ReplaceTokens
 import groovy.io.FileType
 
+import java.nio.file.Files
+
 buildscript {
     repositories {
         maven {
@@ -78,6 +80,10 @@ ext {
     testcontainersVersion = '1.15.3'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
     isSpark3 = project.getProperty('spark.version').startsWith('3')
+    scalaVersion = isSpark3 ? '2.12' : '2.11'
+    kafkaPackage = { scalaVersion, sparkVersion->
+        return "org.apache.spark:spark-sql-kafka-0-10_${scalaVersion}:${sparkVersion}"
+    }
 }
 
 dependencies {
@@ -134,6 +140,7 @@ dependencies {
     spark3Test "org.apache.spark:spark-sql_2.12:${spark3Version}"
     spark3Test "org.apache.spark:spark-hive_2.12:${spark3Version}"
     spark3Test "org.apache.spark:spark-catalyst_2.12:${spark3Version}"
+    spark3Test kafkaPackage('2.12', spark3Version)
 
     spark2Test "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
     spark2Test "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
@@ -142,7 +149,7 @@ dependencies {
     spark2Test "org.apache.spark:spark-core_2.11:${sparkVersion}"
     spark2Test "org.apache.spark:spark-sql_2.11:${sparkVersion}"
     spark2Test "org.apache.spark:spark-hive_2.11:${sparkVersion}"
-    spark2Test "org.apache.spark:spark-sql-kafka-0-10_2.11:${sparkVersion}"
+    spark2Test kafkaPackage('2.11', sparkVersion)
 
     spark3 "org.projectlombok:lombok:${lombokVersion}"
     spark3 'io.openlineage:openlineage-java:0.0.1-SNAPSHOT'
@@ -152,7 +159,7 @@ dependencies {
     spark3 "org.apache.spark:spark-core_2.12:${spark3Version}"
     spark3 "org.apache.spark:spark-sql_2.12:${spark3Version}"
     spark3 "org.apache.spark:spark-hive_2.12:${spark3Version}"
-    spark3 "org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.0"
+    spark3 kafkaPackage('2.12', spark3Version)
 
     lombok  "org.projectlombok:lombok:${lombokVersion}"
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
@@ -194,6 +201,15 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     from javadoc.destinationDir
 }
 
+tasks.register('copyDependencies', Copy) {
+    // delete the dependencies directory so we don't accidentally mix Spark 2 and Spark 3 dependencies
+    delete layout.buildDirectory.dir("dependencies")
+    def config = isSpark3 ? configurations.spark3Test : configurations.spark2Test
+    from config.getFiles()
+    include "*.jar"
+    into layout.buildDirectory.dir("dependencies")
+}
+
 def commonTestConfiguration = {
     forkEvery 1
     maxParallelForks 3
@@ -205,7 +221,8 @@ def commonTestConfiguration = {
             'junit.platform.output.capture.stdout': 'true',
             'junit.platform.output.capture.stderr': 'true',
             'spark.version'                       : project.getProperty('spark.version'),
-            'openlineage.spark.jar': "${archivesBaseName}-${project.version}.jar"
+            'openlineage.spark.jar': "${archivesBaseName}-${project.version}.jar",
+            'kafka.package.version': kafkaPackage(scalaVersion, project.getProperty('spark.version'))
     ]
     classpath =  project.sourceSets.test.runtimeClasspath + (isSpark3 ? configurations.spark3Test : configurations.spark2Test)
 }
@@ -216,6 +233,7 @@ test {
         excludeTags 'integration-test'
     }
     if (!isSpark3) exclude 'io/openlineage/spark3/**'
+    dependsOn copyDependencies
 }
 
 task integrationTest(type: Test) {
@@ -223,7 +241,7 @@ task integrationTest(type: Test) {
     useJUnitPlatform {
         includeTags "integration-test"
     }
-    dependsOn shadowJar
+    dependsOn copyDependencies, shadowJar
 }
 
 spotless {
