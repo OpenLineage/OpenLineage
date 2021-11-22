@@ -165,6 +165,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
               } else {
                 context = getExecutionContext(job.jobId());
               }
+
               context.setActiveJob(job);
               context.start(jobStart);
             });

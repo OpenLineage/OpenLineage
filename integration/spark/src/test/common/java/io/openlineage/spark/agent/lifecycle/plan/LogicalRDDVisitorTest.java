@@ -31,8 +31,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import scala.collection.Seq$;
 import scala.collection.immutable.HashMap;
-import scala.collection.immutable.Seq$;
 
 @ExtendWith(SparkAgentTestExtension.class)
 class LogicalRDDVisitorTest {
@@ -55,7 +55,7 @@ class LogicalRDDVisitorTest {
               new StructField("aString", StringType$.MODULE$, false, new Metadata(new HashMap<>()))
             });
     jobConf = new JobConf();
-    FileInputFormat.addInputPath(jobConf, new org.apache.hadoop.fs.Path("file:///path/to/data/"));
+    FileInputFormat.addInputPath(jobConf, new org.apache.hadoop.fs.Path("file://" + tmpDir));
     RDD<InternalRow> hadoopRdd =
         new HadoopRDD<>(
                 session.sparkContext(),
@@ -82,7 +82,7 @@ class LogicalRDDVisitorTest {
     List<OpenLineage.Dataset> datasets = visitor.apply(logicalRDD);
     assertThat(datasets)
         .singleElement()
-        .hasFieldOrPropertyWithValue("name", "/path/to/data")
+        .hasFieldOrPropertyWithValue("name", tmpDir.toString())
         .hasFieldOrPropertyWithValue("namespace", "file");
   }
 }

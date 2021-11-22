@@ -3,7 +3,6 @@ package io.openlineage.spark.agent.lifecycle.plan;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.SparkAgentTestExtension;
 import java.util.List;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier$;
@@ -14,12 +13,10 @@ import org.apache.spark.sql.types.StringType$;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import scala.Option;
 import scala.collection.Map$;
 import scala.collection.immutable.HashMap;
 
-@ExtendWith(SparkAgentTestExtension.class)
 class LoadDataCommandVisitorTest {
   @Test
   void testLoadDataCommand() {
