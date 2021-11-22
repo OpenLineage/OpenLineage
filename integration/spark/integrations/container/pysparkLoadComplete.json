@@ -1,1 +1,27 @@
-{}
+{
+  "eventType" : "COMPLETE",
+  "job" : {
+    "namespace" : "testCreateAsSelectAndLoad",
+    "name" : "open_lineage_integration_cta_s_load.execute_load"
+  },
+  "inputs" : [ ],
+  "outputs" : [ {
+    "namespace" : "file",
+    "name" : "/tmp/ctas_load",
+    "facets" : {
+      "dataSource" : {
+        "name" : "file",
+        "uri" : "file"
+      },
+      "schema" : {
+        "fields" : [ {
+          "name" : "a",
+          "type" : "long"
+        }, {
+          "name" : "b",
+          "type" : "long"
+        } ]
+      }
+    }
+  } ]
+}

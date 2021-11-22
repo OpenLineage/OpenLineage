@@ -4,10 +4,12 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.PlanUtils;
+import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
@@ -23,6 +25,7 @@ import scala.Option;
  * BaseRelation}, we wrap it with an artificial {@link LogicalRelation} so we can delegate to other
  * plan visitors.
  */
+@Slf4j
 public class SaveIntoDataSourceCommandVisitor
     extends QueryPlanVisitor<SaveIntoDataSourceCommand, OpenLineage.Dataset> {
   private final SQLContext sqlContext;
@@ -59,12 +62,26 @@ public class SaveIntoDataSourceCommandVisitor
     if (KafkaRelationVisitor.isKafkaSource(command.dataSource())) {
       return KafkaRelationVisitor.createKafkaDatasets(
           command.dataSource(), command.options(), command.mode(), command.schema());
-    } else if (command.dataSource() instanceof RelationProvider) {
-      RelationProvider p = (RelationProvider) command.dataSource();
-      relation = p.createRelation(sqlContext, command.options());
-    } else {
-      SchemaRelationProvider p = (SchemaRelationProvider) command.dataSource();
-      relation = p.createRelation(sqlContext, command.options(), x.schema());
+    }
+    try {
+      if (command.dataSource() instanceof RelationProvider) {
+        RelationProvider p = (RelationProvider) command.dataSource();
+        relation = p.createRelation(sqlContext, command.options());
+      } else {
+        SchemaRelationProvider p = (SchemaRelationProvider) command.dataSource();
+        relation = p.createRelation(sqlContext, command.options(), x.schema());
+      }
+    } catch (Exception ex) {
+      // Bad detection of errors in scala
+      if (ex instanceof SQLException) {
+        // This can happen on SparkListenerSQLExecutionStart for example for sqlite, when database
+        // does not exist yet - it will be created as command execution
+        // Still, we can just ignore it on start, because it will work on end
+        // see SparkReadWriteIntegTest.testReadFromFileWriteToJdbc
+        log.warn("Can't create relation: ", ex);
+        return Collections.emptyList();
+      }
+      throw ex;
     }
     return Optional.ofNullable(
             PlanUtils.applyFirst(

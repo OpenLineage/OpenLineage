@@ -13,6 +13,7 @@ import lombok.AllArgsConstructor;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.execution.QueryExecution;
 import org.apache.spark.sql.execution.SQLExecution;
 import scala.PartialFunction;
 
@@ -29,7 +30,8 @@ public class ContextFactory {
   }
 
   public SparkSQLExecutionContext createSparkSQLExecutionContext(long executionId) {
-    SQLContext sqlContext = SQLExecution.getQueryExecution(executionId).sparkPlan().sqlContext();
+    QueryExecution queryExecution = SQLExecution.getQueryExecution(executionId);
+    SQLContext sqlContext = queryExecution.sparkPlan().sqlContext();
 
     VisitorFactory visitorFactory = VisitorFactoryProvider.getInstance(SparkSession.active());
 
@@ -39,7 +41,8 @@ public class ContextFactory {
     List<QueryPlanVisitor<LogicalPlan, OpenLineage.OutputDataset>> outputDatasets =
         visitorFactory.getOutputVisitors(sqlContext, sparkContext.getJobNamespace());
 
-    return new SparkSQLExecutionContext(executionId, sparkContext, outputDatasets, inputDatasets);
+    return new SparkSQLExecutionContext(
+        executionId, sparkContext, queryExecution, outputDatasets, inputDatasets);
   }
 
   private List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> commonDatasetVisitors(
