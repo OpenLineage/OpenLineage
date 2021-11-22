@@ -4,6 +4,8 @@
 
 * dbt: column descriptions are properly filled from metadata.json [@mobuchowski](https://github.com/mobuchowski)
 * dbt: allow parsing artifacts with version higher than officially supported  [@mobuchowski](https://github.com/mobuchowski)
+* dbt: dbt build command is supported  [@mobuchowski](https://github.com/mobuchowski)
+
 
 ## [0.3.1](https://github.com/OpenLineage/OpenLineage/releases/tag/0.3.1) - 2021-10-21
 

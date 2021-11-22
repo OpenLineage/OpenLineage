@@ -40,7 +40,8 @@ def serialize(inst, field, value):
         "tests/dbt/large",
         "tests/dbt/profiles",
         "tests/dbt/catalog",
-        "tests/dbt/fail"
+        "tests/dbt/fail",
+        "tests/dbt/build"
     ]
 )
 def test_dbt_parse_and_compare_event(path, parent_run_metadata):
