@@ -1,0 +1,102 @@
+[
+    {
+	    "eventTime": "{{ is_datetime(result) }}",
+        "eventType": "START",
+        "job": {
+            "namespace": "bigquery",
+            "name": "random-gcp-project.dbt_test1.dbt_bigquery_test.test_first_dbt_model.build.run"
+        },
+        "run": {
+		    "runId": "{{ any(result) }}"
+        }
+    },
+    {
+        "eventTime": "{{ is_datetime(result) }}",
+        "eventType": "START",
+        "job": {
+            "name": "random-gcp-project.dbt_test1.dbt_bigquery_test.test_first_dbt_model.build.test",
+            "namespace": "bigquery"
+        },
+        "run": {
+            "runId": "{{ any(result) }}"
+        }
+    },
+    {
+	    "eventTime": "{{ is_datetime(result) }}",
+        "eventType": "COMPLETE",
+        "outputs": [
+            {
+                "facets": {},
+                "name": "random-gcp-project.dbt_test1.test_first_dbt_model",
+                "namespace": "bigquery"
+            }
+        ],
+        "job": {
+            "facets": {},
+            "name": "random-gcp-project.dbt_test1.dbt_bigquery_test.test_first_dbt_model.build.run",
+            "namespace": "bigquery"
+        },
+        "inputs": [],
+        "run": {
+            "facets": {
+                "parent": {
+                    "job": {"name": "dbt-job-name", "namespace": "dbt"},
+                    "run": {"runId": "{{ any(result) }}"}
+                },
+                "dbt_version": {
+                    "version": "0.21.0"
+                }
+            },
+            "runId": "{{ any(result) }}"
+        }
+    },
+    {
+	    "eventTime": "{{ is_datetime(result) }}",
+        "eventType": "COMPLETE",
+        "inputs": [
+            {
+                "facets": {
+                    "dataQualityAssertions": {
+                        "assertions": [
+                            {
+                                "column": "id",
+                                "assertion": "expect_column_median_to_be_between",
+                                "success": true
+                            },
+                            {
+                                "column": "id",
+                                "assertion": "expect_column_quantile_values_to_be_between",
+                                "success": true
+                            },
+                            {
+                                "column": "id",
+                                "assertion": "unique",
+                                "success": true
+                            }
+                        ]
+                    }
+                },
+                "name": "random-gcp-project.dbt_test1.test_first_dbt_model",
+                "namespace": "bigquery"
+            }
+        ],
+        "job": {
+            "facets": {},
+            "name": "random-gcp-project.dbt_test1.dbt_bigquery_test.test_first_dbt_model.build.test",
+            "namespace": "bigquery"
+        },
+        "outputs": [],
+        "run": {
+            "facets": {
+                "parent": {
+                    "job": {"name": "dbt-job-name", "namespace": "dbt"},
+                    "run": {"runId": "{{ any(result) }}"}
+                },
+                "dbt_version": {
+                    "version": "0.21.0"
+                }
+            },
+            "runId": "{{ any(result) }}"
+        }
+    }
+]

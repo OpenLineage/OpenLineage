@@ -1,0 +1,13 @@
+bigquery:
+    target: dev
+    outputs:
+        dev:
+            type: bigquery
+            method: service-account
+            keyfile: /home/example/.gcp/bq-key.json
+            project: random-gcp-project
+            dataset: dbt_test1
+            threads: 2
+            timeout_seconds: 300
+            location: EU
+            priority: interactive
