@@ -1,6 +1,7 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import java.util.Collections;
 import java.util.List;
@@ -27,6 +28,7 @@ public class LoadDataCommandVisitor extends QueryPlanVisitor<LoadDataCommand, Op
   public List<OpenLineage.Dataset> apply(LogicalPlan x) {
     LoadDataCommand command = (LoadDataCommand) x;
     CatalogTable table = sparkSession.sessionState().catalog().getTableMetadata(command.table());
-    return Collections.singletonList(PlanUtils.getDataset(table));
+    return Collections.singletonList(
+        PlanUtils.getDataset(PathUtils.fromCatalogTable(table), table.schema()));
   }
 }

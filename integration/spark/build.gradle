@@ -143,6 +143,8 @@ dependencies {
     spark3Test "org.apache.spark:spark-hive_2.12:${spark3Version}"
     spark3Test "org.apache.spark:spark-catalyst_2.12:${spark3Version}"
     spark3Test kafkaPackage('2.12', spark3Version)
+    spark3Test "org.apache.iceberg:iceberg-spark3-runtime:0.12.1"
+    spark3Test "io.delta:delta-core_2.12:1.0.0"
 
     spark2Test "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
     spark2Test "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
@@ -154,7 +156,6 @@ dependencies {
     spark2Test kafkaPackage('2.11', sparkVersion)
 
     spark3 "org.projectlombok:lombok:${lombokVersion}"
-    spark3 'io.openlineage:openlineage-java:0.0.1-SNAPSHOT'
     spark3 "com.fasterxml.jackson.module:jackson-module-scala_2.12:${jacksonVersionSpark3}"
     spark3 "com.google.cloud.spark:spark-bigquery_2.12:${bigqueryVersion}"
     spark3 "com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:${bigqueryVersion}"
@@ -162,6 +163,8 @@ dependencies {
     spark3 "org.apache.spark:spark-sql_2.12:${spark3Version}"
     spark3 "org.apache.spark:spark-hive_2.12:${spark3Version}"
     spark3 kafkaPackage('2.12', spark3Version)
+    spark3 "org.apache.iceberg:iceberg-spark3-runtime:0.12.1"
+    spark3 "io.delta:delta-core_2.12:1.0.0"
 
     lombok  "org.projectlombok:lombok:${lombokVersion}"
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
@@ -182,7 +185,7 @@ sourceSets {
 
     spark3Test {
         java {
-            srcDirs = ["src/test/spark3/java"]
+            srcDirs = ["src/test/common/java", "src/test/spark3/java"]
             compileClasspath = configurations.spark3Test + sourceSets.main.output
             annotationProcessorPath = configurations.lombok
             destinationDirectory.set(file("$buildDir/classes/java/test/"))
@@ -248,6 +251,8 @@ task integrationTest(type: Test) {
     if (!isSpark3) exclude 'io/openlineage/spark3/**'
     dependsOn copyDependencies, shadowJar
 }
+
+integrationTest.outputs.upToDateWhen { false }
 
 spotless {
     def disallowWildcardImports = {

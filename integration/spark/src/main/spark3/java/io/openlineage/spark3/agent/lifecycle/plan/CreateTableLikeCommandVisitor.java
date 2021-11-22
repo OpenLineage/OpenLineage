@@ -1,11 +1,16 @@
-package io.openlineage.spark.agent.lifecycle.plan;
+package io.openlineage.spark3.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.lifecycle.plan.QueryPlanVisitor;
+import io.openlineage.spark.agent.util.DatasetIdentifier;
+import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import lombok.SneakyThrows;
-import org.apache.hadoop.fs.Path;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog;
@@ -16,6 +21,7 @@ import org.apache.spark.sql.execution.command.CreateTableLikeCommand;
  * {@link LogicalPlan} visitor that matches an {@link CreateTableLikeCommand} and extracts the
  * output {@link OpenLineage.Dataset} being written.
  */
+@Slf4j
 public class CreateTableLikeCommandVisitor
     extends QueryPlanVisitor<CreateTableLikeCommand, OpenLineage.Dataset> {
 
@@ -30,10 +36,14 @@ public class CreateTableLikeCommandVisitor
   public List<OpenLineage.Dataset> apply(LogicalPlan x) {
     CreateTableLikeCommand command = (CreateTableLikeCommand) x;
     SessionCatalog catalog = sparkSession.sessionState().catalog();
+
     CatalogTable source = catalog.getTempViewOrPermanentTableMetadata(command.sourceTable());
+    URI defaultLocation = catalog.defaultTablePath(command.targetTable());
 
-    Path path = PlanUtils.getPath(source.location(), command.targetTable().identifier(), "");
-
-    return Collections.singletonList(PlanUtils.getDataset(path.toUri(), source.schema()));
+    URI location =
+        ScalaConversionUtils.<URI>asJavaOptional(command.fileFormat().locationUri())
+            .orElse(defaultLocation);
+    DatasetIdentifier di = PathUtils.fromURI(location, "file");
+    return Collections.singletonList(PlanUtils.getDataset(di, source.schema()));
   }
 }

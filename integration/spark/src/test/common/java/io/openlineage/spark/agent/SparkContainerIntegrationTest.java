@@ -359,12 +359,50 @@ public class SparkContainerIntegrationTest {
             .withBody(json(startCTASEvent, MatchType.ONLY_MATCHING_FIELDS)),
         request()
             .withPath("/api/v1/lineage")
-            .withBody(json(completeCTASEvent, MatchType.ONLY_MATCHING_FIELDS)));
-    request()
-        .withPath("/api/v1/lineage")
-        .withBody(json(startLoadEvent, MatchType.ONLY_MATCHING_FIELDS));
-    request()
-        .withPath("/api/v1/lineage")
-        .withBody(json(completeLoadEvent, MatchType.ONLY_MATCHING_FIELDS));
+            .withBody(json(completeCTASEvent, MatchType.ONLY_MATCHING_FIELDS)),
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(startLoadEvent, MatchType.ONLY_MATCHING_FIELDS)),
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(completeLoadEvent, MatchType.ONLY_MATCHING_FIELDS)));
+  }
+
+  @Test
+  public void testCTASDelta() throws IOException, InterruptedException {
+    pyspark =
+        makePysparkContainerWithDefaultConf(
+            "testCreateAsSelectAndLoad",
+            "--packages",
+            "io.delta:delta-core_2.12:1.0.0",
+            "/opt/spark_scripts/spark_delta.py");
+    pyspark.setWaitStrategy(Wait.forLogMessage(".*ShutdownHookManager: Shutdown hook called.*", 1));
+    pyspark.start();
+
+    Path eventFolder = Paths.get("integrations/container/");
+
+    String startViewEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkDeltaViewStart.json")));
+    String completeViewEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkDeltaViewComplete.json")));
+
+    String startLoadEvent = new String(readAllBytes(eventFolder.resolve("pysparkLoadStart.json")));
+    String completeLoadEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkLoadComplete.json")));
+
+    mockServerClient.verify(
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(startViewEvent, MatchType.ONLY_MATCHING_FIELDS)),
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(completeViewEvent, MatchType.ONLY_MATCHING_FIELDS))
+        //      request()
+        //        .withPath("/api/v1/lineage")
+        //        .withBody(json(startLoadEvent, MatchType.ONLY_MATCHING_FIELDS)),
+        //      request()
+        //        .withPath("/api/v1/lineage")
+        //        .withBody(json(completeLoadEvent, MatchType.ONLY_MATCHING_FIELDS))
+        );
   }
 }
