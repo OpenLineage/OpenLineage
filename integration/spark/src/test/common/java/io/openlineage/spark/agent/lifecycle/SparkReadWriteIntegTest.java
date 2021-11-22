@@ -261,6 +261,7 @@ public class SparkReadWriteIntegTest {
       throws IOException, InterruptedException, TimeoutException {
     Path testFile = writeTestDataToFile(tempDir);
     Path parquetDir = tempDir.resolve("parquet").toAbsolutePath();
+    // Two events from CreateViewCommand
     spark.read().json("file://" + testFile.toAbsolutePath()).createOrReplaceTempView("testdata");
     spark.sql(
         "INSERT OVERWRITE DIRECTORY '"
@@ -274,7 +275,7 @@ public class SparkReadWriteIntegTest {
     ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
 
-    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(4))
+    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(6))
         .emit(lineageEvent.capture());
     List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
     Optional<OpenLineage.RunEvent> completionEvent =

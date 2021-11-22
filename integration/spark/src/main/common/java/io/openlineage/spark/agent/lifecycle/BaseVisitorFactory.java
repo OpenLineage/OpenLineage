@@ -74,7 +74,7 @@ abstract class BaseVisitorFactory implements VisitorFactory {
     list.add(
         new OutputDatasetWithMetadataVisitor(new CreateDataSourceTableAsSelectCommandVisitor()));
     list.add(new OutputDatasetVisitor(new AppendDataVisitor(allCommonVisitors)));
-    list.add(new OutputDatasetVisitor(new InsertIntoDirVisitor(sqlContext)));
+    list.add(new OutputDatasetVisitor(new InsertIntoDirVisitor()));
     if (InsertIntoHiveTableVisitor.hasHiveClasses()) {
       list.add(
           new OutputDatasetWithMetadataVisitor(

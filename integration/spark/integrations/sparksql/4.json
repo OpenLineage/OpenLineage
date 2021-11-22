@@ -2,22 +2,15 @@
   "eventType": "COMPLETE",
   "eventTime": "2021-01-01T00:00:00Z",
   "run": {
-    "runId": "fake_run_id",
     "facets": {
       "parent": {
-        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
-        "_schemaURL": "https://openlineage.io/spec/1-0-1/OpenLineage.json#/definitions/ParentRunFacet",
-        "run": {
-          "runId": "ea445b5c-22eb-457a-8007-01c7c52b6e54"
-        },
+        "run": {},
         "job": {
           "namespace": "ns_name",
           "name": "job_name"
         }
       },
       "spark_unknown": {
-        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
-        "_schemaURL": "https://openlineage.io/spec/1-0-1/OpenLineage.json#/definitions/CustomFacet",
         "output": {
           "description": {
             "@class": "org.apache.spark.sql.catalyst.plans.logical.Aggregate",
@@ -29,47 +22,14 @@
                 "explicitMetadata": {
                   "map": {}
                 },
-                "origin": {
-                  "line": null,
-                  "startPosition": null
-                },
                 "deterministic": true,
                 "resolved": true
-              }
-            ],
-            "origin": {
-              "line": null,
-              "startPosition": null
-            },
-            "schema": [
-              {
-                "name": "count",
-                "dataType": {
-                  "numeric": {},
-                  "integral": {},
-                  "ordering": {}
-                },
-                "nullable": false,
-                "metadata": {
-                  "map": {}
-                },
-                "comment": null
               }
             ],
             "allAttributes": {
               "attrs": []
             },
             "resolved": true,
-            "constraints": [
-              {
-                "origin": {
-                  "line": null,
-                  "startPosition": null
-                },
-                "deterministic": true,
-                "resolved": true
-              }
-            ],
             "statsCache": null,
             "traceEnabled": false,
             "streaming": false,
@@ -87,8 +47,6 @@
         "inputs": []
       },
       "spark.logicalPlan": {
-        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
-        "_schemaURL": "https://openlineage.io/spec/1-0-1/OpenLineage.json#/definitions/CustomFacet",
         "plan": [
           {
             "class": "org.apache.spark.sql.catalyst.plans.logical.Aggregate",
@@ -218,7 +176,7 @@
   },
   "job": {
     "namespace": "ns_name",
-    "name": "word_count.hash_aggregate"
+    "name": "test_spark_sql.hash_aggregate"
   },
   "inputs": [
     {
@@ -226,8 +184,6 @@
       "name": "/path/to/data",
       "facets": {
         "schema": {
-          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
-          "_schemaURL": "https://openlineage.io/spec/1-0-1/OpenLineage.json#/definitions/SchemaDatasetFacet",
           "fields": [
             {
               "name": "value",
@@ -236,15 +192,11 @@
           ]
         },
         "dataSource": {
-          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
-          "_schemaURL": "https://openlineage.io/spec/1-0-1/OpenLineage.json#/definitions/DatasourceDatasetFacet",
           "uri": "file",
           "name": "file"
         }
       }
     }
   ],
-  "outputs": [],
-  "producer": "https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/spark",
-  "schemaURL": "https://openlineage.io/spec/1-0-1/OpenLineage.json#/definitions/RunEvent"
+  "outputs": []
 }

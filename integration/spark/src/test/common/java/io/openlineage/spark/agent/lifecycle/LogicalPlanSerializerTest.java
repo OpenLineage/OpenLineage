@@ -22,6 +22,7 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -206,8 +207,11 @@ class LogicalPlanSerializerTest {
     Map<String, Object> expectedHadoopFSNode =
         objectMapper.readValue(expectedHadoopFSNodePath.toFile(), mapTypeReference);
 
-    assertThat(commandActualNode).satisfies(new MatchesMapRecursively(expectedCommandNode));
-    assertThat(hadoopFSActualNode).satisfies(new MatchesMapRecursively(expectedHadoopFSNode));
+    assertThat(commandActualNode)
+        .satisfies(new MatchesMapRecursively(expectedCommandNode, Collections.singleton("exprId")));
+    assertThat(hadoopFSActualNode)
+        .satisfies(
+            new MatchesMapRecursively(expectedHadoopFSNode, Collections.singleton("exprId")));
   }
 
   private CatalogTable getCatalogTable() throws InvocationTargetException, IllegalAccessException {
@@ -297,7 +301,7 @@ class LogicalPlanSerializerTest {
 
     Map<String, Object> commandActualNode =
         objectMapper.readValue(logicalPlanSerializer.serialize(command), mapTypeReference);
-    Map<String, Object> hadoopFSActualNode =
+    Map<String, Object> bigqueryActualNode =
         objectMapper.readValue(logicalPlanSerializer.serialize(logicalRelation), mapTypeReference);
 
     Path expectedCommandNodePath =
@@ -310,9 +314,12 @@ class LogicalPlanSerializerTest {
     Map<String, Object> expectedBigQueryRelationNode =
         objectMapper.readValue(expectedBigQueryRelationNodePath.toFile(), mapTypeReference);
 
-    assertThat(commandActualNode).satisfies(new MatchesMapRecursively(expectedCommandNode));
-    assertThat(hadoopFSActualNode)
-        .satisfies(new MatchesMapRecursively(expectedBigQueryRelationNode));
+    assertThat(commandActualNode)
+        .satisfies(new MatchesMapRecursively(expectedCommandNode, Collections.singleton("exprId")));
+    assertThat(bigqueryActualNode)
+        .satisfies(
+            new MatchesMapRecursively(
+                expectedBigQueryRelationNode, Collections.singleton("exprId")));
   }
 
   @SuppressWarnings("rawtypes")

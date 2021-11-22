@@ -4,11 +4,11 @@
   "run": {
     "runId": "5f24c93c-2ce9-49dc-82e7-95ab4915242f",
     "facets": {
-      "nominalTime": {
-        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.2.3-SNAPSHOT/integration/spark",
-        "nominalStartTime": "2021-01-01T00:00:01Z",
-        "nominalEndTime": "2021-01-01T00:00:01Z",
-        "_schemaURL": "https://openlineage.io/spec/1-0-1/OpenLineage.json#/definitions/NominalTimeRunFacet"
+      "parent": {
+        "job": {
+          "namespace": "namespace",
+          "name": "jobName"
+        }
       }
     }
   },
@@ -17,25 +17,19 @@
     "name": "jobName",
     "facets": {
       "documentation": {
-        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.2.3-SNAPSHOT/integration/spark",
-        "description": "test documentation",
-        "_schemaURL": "https://openlineage.io/spec/1-0-1/OpenLineage.json#/definitions/DocumentationJobFacet"
+        "description": "test documentation"
       },
       "sourceCodeLocation": {
-        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.2.3-SNAPSHOT/integration/spark",
         "type": "git",
         "url": "https://github.com/apache/spark",
         "repoUrl": "https://github.com/apache/spark",
         "path": "/path/to/file",
         "version": "v1",
         "tag": "v1.0.0",
-        "branch": "branch",
-        "_schemaURL": "https://openlineage.io/spec/1-0-1/OpenLineage.json#/definitions/SourceCodeLocationJobFacet"
+        "branch": "branch"
       },
       "sql": {
-        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.2.3-SNAPSHOT/integration/spark",
-        "query": "SELECT * FROM test",
-        "_schemaURL": "https://openlineage.io/spec/1-0-1/OpenLineage.json#/definitions/SQLJobFacet"
+        "query": "SELECT * FROM test"
       }
     }
   },
@@ -45,7 +39,6 @@
       "name": "input",
       "inputFacets": {
         "dataQualityMetrics": {
-          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.2.3-SNAPSHOT/integration/spark",
           "rowCount": 10,
           "bytes": 20,
           "columnMetrics": {
@@ -60,8 +53,7 @@
                 "25": 52.0
               }
             }
-          },
-          "_schemaURL": "https://openlineage.io/spec/1-0-1/OpenLineage.json#/definitions/DataQualityMetricsInputDatasetFacet"
+          }
         }
       }
     }
@@ -72,14 +64,10 @@
       "name": "output",
       "outputFacets": {
         "outputStatistics": {
-          "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.2.3-SNAPSHOT/integration/spark",
           "rowCount": 10,
-          "size": 20,
-          "_schemaURL": "https://openlineage.io/spec/1-0-1/OpenLineage.json#/definitions/OutputStatisticsOutputDatasetFacet"
+          "size": 20
         }
       }
     }
-  ],
-  "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.2.3-SNAPSHOT/integration/spark",
-  "schemaURL": "https://openlineage.io/spec/1-0-1/OpenLineage.json#/definitions/RunEvent"
+  ]
 }

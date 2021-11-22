@@ -6,7 +6,6 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.util.Collections;
 import java.util.List;
 import org.apache.hadoop.fs.Path;
-import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.catalyst.catalog.CatalogStorageFormat;
 import org.apache.spark.sql.catalyst.plans.logical.InsertIntoDir;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -16,11 +15,6 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
  * OpenLineage.Dataset} being written.
  */
 public class InsertIntoDirVisitor extends QueryPlanVisitor<InsertIntoDir, OpenLineage.Dataset> {
-  private final SQLContext sqlContext;
-
-  public InsertIntoDirVisitor(SQLContext sqlContext) {
-    this.sqlContext = sqlContext;
-  }
 
   @Override
   public List<OpenLineage.Dataset> apply(LogicalPlan x) {
