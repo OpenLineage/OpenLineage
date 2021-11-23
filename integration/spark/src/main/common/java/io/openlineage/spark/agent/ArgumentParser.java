@@ -71,18 +71,12 @@ public class ArgumentParser {
   }
 
   private static Optional<Map<String, String>> getUrlParams(List<NameValuePair> nameValuePairList) {
-    Map<String, String> urlParams = new HashMap<String, String>();
-    for (NameValuePair nameValuePair : nameValuePairList) {
-      String name = nameValuePair.getName();
-      if (!name.equals("api_key")) {
-        urlParams.put(name, nameValuePair.getValue());
-      }
-    }
-    Integer totalParams = urlParams.size();
-    if (totalParams.equals(0)) {
-      urlParams = null;
-    }
-    return Optional.ofNullable(urlParams);
+    final Map<String, String> urlParams = new HashMap<String, String>();
+    nameValuePairList.stream()
+      .filter(pair -> !(pair.getName().equals("api_key")))
+      .forEach(pair -> urlParams.put(pair.getName(), pair.getValue()));
+      
+    return urlParams.isEmpty() ? Optional.empty() : Optional.ofNullable(urlParams);
   }
 
   protected static String getNamedParameter(List<NameValuePair> nameValuePairList, String param) {
