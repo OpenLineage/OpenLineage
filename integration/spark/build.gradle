@@ -151,6 +151,7 @@ dependencies {
     spark2Test "org.apache.spark:spark-core_2.11:${sparkVersion}"
     spark2Test "org.apache.spark:spark-hive_2.11:${sparkVersion}"
     spark2Test "org.apache.spark:spark-sql_2.11:${sparkVersion}"
+    spark2Test kafkaPackage('2.11', sparkVersion)
 
     spark3 "org.projectlombok:lombok:${lombokVersion}"
     spark3 'io.openlineage:openlineage-java:0.0.1-SNAPSHOT'

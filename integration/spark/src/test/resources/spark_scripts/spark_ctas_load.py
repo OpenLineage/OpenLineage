@@ -21,6 +21,4 @@ df.createOrReplaceTempView('temp')
 
 spark.sql("CREATE TABLE tbl1 USING hive LOCATION '/tmp/ctas_load/tbl1' AS SELECT a, b FROM temp")
 
-
-# TODO: Does not generate event since it does not fire SparkListenerJobEnd
-# spark.sql(f"LOAD DATA INPATH '/test_data/test_data.csv' INTO TABLE tbl")
+spark.sql(f"LOAD DATA INPATH '/test_data/test_data.csv' INTO TABLE tbl1")
