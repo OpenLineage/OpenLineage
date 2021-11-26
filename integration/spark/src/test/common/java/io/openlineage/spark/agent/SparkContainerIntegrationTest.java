@@ -19,6 +19,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.matchers.MatchType;
 import org.slf4j.Logger;
@@ -366,5 +367,31 @@ public class SparkContainerIntegrationTest {
     request()
         .withPath("/api/v1/lineage")
         .withBody(json(completeLoadEvent, MatchType.ONLY_MATCHING_FIELDS));
+  }
+
+  @Test
+  @EnabledIfSystemProperty(
+      named = "spark.version",
+      matches = "(3.*)|(2\\.4\\.([8,9]|\\d\\d))") // Spark version >= 2.4.8
+  public void testOptimizedCreateAsSelectAndLoad() throws IOException, InterruptedException {
+    pyspark =
+        makePysparkContainerWithDefaultConf(
+            "testOptimizedCreateAsSelectAndLoad", "/opt/spark_scripts/spark_octas_load.py");
+    pyspark.setWaitStrategy(Wait.forLogMessage(".*ShutdownHookManager: Shutdown hook called.*", 1));
+    pyspark.start();
+
+    Path eventFolder = Paths.get("integrations/container/");
+    String startOCTASEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkOCTASStart.json")));
+    String completeOCTASEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkOCTASEnd.json")));
+
+    mockServerClient.verify(
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(startOCTASEvent, MatchType.ONLY_MATCHING_FIELDS)),
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(completeOCTASEvent, MatchType.ONLY_MATCHING_FIELDS)));
   }
 }
