@@ -14,6 +14,7 @@ import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDirVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHadoopFsRelationVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHiveDirVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHiveTableVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.KafkaRelationVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LoadDataCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRDDVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRelationVisitor;
@@ -74,7 +75,7 @@ abstract class BaseVisitorFactory implements VisitorFactory {
     list.add(
         new OutputDatasetWithMetadataVisitor(new CreateDataSourceTableAsSelectCommandVisitor()));
     list.add(new OutputDatasetVisitor(new AppendDataVisitor(allCommonVisitors)));
-    list.add(new OutputDatasetVisitor(new InsertIntoDirVisitor(sqlContext)));
+    list.add(new OutputDatasetVisitor(new InsertIntoDirVisitor()));
     if (OptimizedCreateHiveTableAsSelectCommandVisitor.hasClasses()) {
       list.add(new OutputDatasetVisitor(new OptimizedCreateHiveTableAsSelectCommandVisitor()));
     }

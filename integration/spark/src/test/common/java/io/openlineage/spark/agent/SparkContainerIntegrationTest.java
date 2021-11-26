@@ -372,7 +372,9 @@ public class SparkContainerIntegrationTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(named = "spark.version", matches = "(3.*)|(2\\.4\\.([8,9]|\\d\\d))") // Spark version >= 2.4.8
+  @EnabledIfSystemProperty(
+      named = "spark.version",
+      matches = "(3.*)|(2\\.4\\.([8,9]|\\d\\d))") // Spark version >= 2.4.8
   public void testOptimizedCreateAsSelectAndLoad() throws IOException, InterruptedException {
     pyspark =
         makePysparkContainerWithDefaultConf(
@@ -381,8 +383,10 @@ public class SparkContainerIntegrationTest {
     pyspark.start();
 
     Path eventFolder = Paths.get("integrations/container/");
-    String startOCTASEvent = new String(readAllBytes(eventFolder.resolve("pysparkOCTASStart.json")));
-    String completeOCTASEvent = new String(readAllBytes(eventFolder.resolve("pysparkOCTASEnd.json")));
+    String startOCTASEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkOCTASStart.json")));
+    String completeOCTASEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkOCTASEnd.json")));
 
     mockServerClient.verify(
         request()
