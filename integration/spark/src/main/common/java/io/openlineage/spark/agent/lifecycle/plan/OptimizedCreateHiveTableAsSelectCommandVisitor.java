@@ -42,7 +42,6 @@ public class OptimizedCreateHiveTableAsSelectCommandVisitor
   public List<OpenLineage.Dataset> apply(LogicalPlan x) {
     OptimizedCreateHiveTableAsSelectCommand command = (OptimizedCreateHiveTableAsSelectCommand) x;
     CatalogTable table = command.tableDesc();
-    // FIXME: location() throws exception when no location specified
     Path path = PlanUtils.getPath(table.location(), table.qualifiedName(), "");
     StructType schema = outputSchema(ScalaConversionUtils.fromSeq(command.outputColumns()));
 
