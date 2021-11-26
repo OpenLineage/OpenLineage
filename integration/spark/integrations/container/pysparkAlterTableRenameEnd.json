@@ -1,0 +1,37 @@
+{
+  "eventType" : "COMPLETE",
+  "job" : {
+    "namespace" : "testAlterTable",
+    "name" : "open_lineage_integration_alter_table.execute_alter_table_rename_command"
+  },
+  "inputs" : [ ],
+  "outputs" : [ {
+    "namespace" : "file",
+    "name" : "/tmp/alter_test/alter_table_test_new",
+    "facets" : {
+      "dataSource" : {
+        "name" : "file",
+        "uri" : "file"
+      },
+      "schema" : {
+        "fields" : [ {
+          "name" : "a",
+          "type" : "string"
+        }, {
+          "name" : "b",
+          "type" : "string"
+        }, {
+          "name" : "c",
+          "type" : "string"
+        }, {
+          "name" : "d",
+          "type" : "string"
+        } ]
+      },
+      "previousTableName" : {
+        "previousTableURI" : "/tmp/alter_test/alter_table_test",
+        "currentTableURI" : "/tmp/alter_test/alter_table_test_new"
+      }
+    }
+  } ]
+}
