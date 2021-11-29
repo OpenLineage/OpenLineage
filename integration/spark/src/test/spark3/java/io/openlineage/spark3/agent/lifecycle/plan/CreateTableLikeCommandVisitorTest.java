@@ -1,4 +1,4 @@
-package io.openlineage.spark2.agent.lifecycle.plan;
+package io.openlineage.spark3.agent.lifecycle.plan;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -7,6 +7,7 @@ import io.openlineage.spark.agent.SparkAgentTestExtension;
 import java.util.List;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier$;
+import org.apache.spark.sql.catalyst.catalog.CatalogStorageFormat;
 import org.apache.spark.sql.execution.command.CreateTableLikeCommand;
 import org.apache.spark.sql.types.IntegerType$;
 import org.apache.spark.sql.types.Metadata;
@@ -16,6 +17,7 @@ import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import scala.Option;
+import scala.Option$;
 import scala.collection.Map$;
 import scala.collection.immutable.HashMap;
 
@@ -43,9 +45,11 @@ class CreateTableLikeCommandVisitorTest {
 
     CreateTableLikeCommand command =
         new CreateTableLikeCommand(
-            TableIdentifier$.MODULE$.apply("table", Option.apply(database)),
             TableIdentifier$.MODULE$.apply("newtable", Option.apply(database)),
-            Option.apply("/path/to/data"),
+            TableIdentifier$.MODULE$.apply("table", Option.apply(database)),
+            CatalogStorageFormat.empty(),
+            Option$.MODULE$.empty(),
+            Map$.MODULE$.empty(),
             false);
 
     assertThat(visitor.isDefinedAt(command)).isTrue();
