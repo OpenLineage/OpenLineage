@@ -1,11 +1,13 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.util.DatasetIdentifier;
+import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.util.Collections;
 import java.util.List;
-import org.apache.hadoop.fs.Path;
+import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -23,7 +25,7 @@ public class OptimizedCreateHiveTableAsSelectCommandVisitor
   // OptimizedCreateHiveTableAsSelectCommand has been added in Spark 2.4.8
   public static boolean hasClasses() {
     try {
-      BigQueryNodeVisitor.class
+      OptimizedCreateHiveTableAsSelectCommandVisitor.class
           .getClassLoader()
           .loadClass("org.apache.spark.sql.hive.execution.OptimizedCreateHiveTableAsSelectCommand");
       return true;
@@ -31,6 +33,12 @@ public class OptimizedCreateHiveTableAsSelectCommandVisitor
       // swallow- we don't care
     }
     return false;
+  }
+
+  private final SparkSession sparkSession;
+
+  public OptimizedCreateHiveTableAsSelectCommandVisitor(SparkSession sparkSession) {
+    this.sparkSession = sparkSession;
   }
 
   @Override
@@ -42,10 +50,10 @@ public class OptimizedCreateHiveTableAsSelectCommandVisitor
   public List<OpenLineage.Dataset> apply(LogicalPlan x) {
     OptimizedCreateHiveTableAsSelectCommand command = (OptimizedCreateHiveTableAsSelectCommand) x;
     CatalogTable table = command.tableDesc();
-    Path path = PlanUtils.getPath(table.location(), table.qualifiedName(), "");
+    DatasetIdentifier datasetIdentifier = PathUtils.fromHiveTable(sparkSession, table);
     StructType schema = outputSchema(ScalaConversionUtils.fromSeq(command.outputColumns()));
 
-    return Collections.singletonList(PlanUtils.getDataset(path.toUri(), schema));
+    return Collections.singletonList(PlanUtils.getDataset(datasetIdentifier, schema));
   }
 
   private StructType outputSchema(List<Attribute> attrs) {

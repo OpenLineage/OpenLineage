@@ -9,7 +9,6 @@ import io.openlineage.spark.agent.lifecycle.plan.CommandPlanVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.CreateDataSourceTableAsSelectCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.CreateDataSourceTableCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.CreateHiveTableAsSelectCommandVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.CreateTableLikeCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDataSourceDirVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDataSourceVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDirVisitor;
@@ -76,16 +75,18 @@ abstract class BaseVisitorFactory implements VisitorFactory {
     list.add(new OutputDatasetVisitor(new AppendDataVisitor(allCommonVisitors)));
     list.add(new OutputDatasetVisitor(new InsertIntoDirVisitor()));
     if (InsertIntoHiveTableVisitor.hasHiveClasses()) {
-      list.add(new OutputDatasetVisitor(new InsertIntoHiveTableVisitor(sqlContext.sparkContext())));
+      list.add(new OutputDatasetVisitor(new InsertIntoHiveTableVisitor(sqlContext.sparkSession())));
       list.add(new OutputDatasetVisitor(new InsertIntoHiveDirVisitor()));
-      list.add(new OutputDatasetVisitor(new CreateHiveTableAsSelectCommandVisitor()));
+      list.add(
+          new OutputDatasetVisitor(
+              new CreateHiveTableAsSelectCommandVisitor(sqlContext.sparkSession())));
     }
     if (OptimizedCreateHiveTableAsSelectCommandVisitor.hasClasses()) {
-      list.add(new OutputDatasetVisitor(new OptimizedCreateHiveTableAsSelectCommandVisitor()));
+      list.add(
+          new OutputDatasetVisitor(
+              new OptimizedCreateHiveTableAsSelectCommandVisitor(sqlContext.sparkSession())));
     }
     list.add(new OutputDatasetVisitor(new CreateDataSourceTableCommandVisitor()));
-    list.add(
-        new OutputDatasetVisitor(new CreateTableLikeCommandVisitor(sqlContext.sparkSession())));
     list.add(new OutputDatasetVisitor(new LoadDataCommandVisitor(sqlContext.sparkSession())));
     list.add(
         new OutputDatasetVisitor(new AlterTableRenameCommandVisitor(sqlContext.sparkSession())));

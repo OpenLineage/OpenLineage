@@ -1,13 +1,13 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import static io.openlineage.spark.agent.util.PlanUtils.datasourceFacet;
-import static io.openlineage.spark.agent.util.PlanUtils.namespaceUri;
 import static io.openlineage.spark.agent.util.PlanUtils.schemaFacet;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.facets.PreviousTableNameFacet;
+import io.openlineage.spark.agent.util.DatasetIdentifier;
+import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
-import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import lombok.SneakyThrows;
@@ -42,27 +42,22 @@ public class AlterTableRenameCommandVisitor
       return Collections.emptyList();
     }
 
-    URI currentPath = PlanUtils.getPath(table.location(), table.qualifiedName(), "").toUri();
+    DatasetIdentifier di = PathUtils.fromCatalogTable(table);
 
     AlterTableRenameCommand alterTableRenameCommand = (AlterTableRenameCommand) x;
     String previousPath =
-        currentPath
-            .getPath()
+        di.getName()
             .replace(
                 alterTableRenameCommand.newName().table(),
                 alterTableRenameCommand.oldName().table());
 
-    String namespace = namespaceUri(currentPath);
     return Collections.singletonList(
         PlanUtils.getDataset(
-            currentPath.getPath(),
-            namespace,
+            di,
             new OpenLineage.DatasetFacetsBuilder()
                 .schema(schemaFacet(table.schema()))
-                .dataSource(datasourceFacet(namespace))
-                .put(
-                    "previousTableName",
-                    new PreviousTableNameFacet(previousPath, currentPath.getPath()))
+                .dataSource(datasourceFacet(di.getNamespace()))
+                .put("previousTableName", new PreviousTableNameFacet(previousPath, di.getName()))
                 .build()));
   }
 }

@@ -41,7 +41,8 @@ class CreateHiveTableAsSelectCommandVisitorTest {
   @Test
   void testCreateHiveTableAsSelectCommand() {
     SparkSession session = SparkSession.builder().master("local").getOrCreate();
-    CreateHiveTableAsSelectCommandVisitor visitor = new CreateHiveTableAsSelectCommandVisitor();
+    CreateHiveTableAsSelectCommandVisitor visitor =
+        new CreateHiveTableAsSelectCommandVisitor(session);
 
     CreateHiveTableAsSelectCommand command =
         new CreateHiveTableAsSelectCommand(
@@ -106,7 +107,7 @@ class CreateHiveTableAsSelectCommandVisitorTest {
     List<OpenLineage.Dataset> datasets = visitor.apply(command);
     assertThat(datasets)
         .singleElement()
-        .hasFieldOrPropertyWithValue("name", "/directory")
+        .hasFieldOrPropertyWithValue("name", "directory")
         .hasFieldOrPropertyWithValue("namespace", "s3://bucket");
   }
 }
