@@ -1,4 +1,5 @@
 import os
+import time
 
 os.makedirs("/tmp/ctas_load", exist_ok=True)
 
@@ -14,5 +15,7 @@ spark = SparkSession.builder \
 spark.sparkContext.setLogLevel('info')
 
 spark.sql("CREATE TABLE alter_table_test (a string, b string)")
+time.sleep(1)
 spark.sql("ALTER TABLE alter_table_test ADD COLUMNS (c string, d string)")
+time.sleep(1)
 spark.sql("ALTER TABLE alter_table_test RENAME TO alter_table_test_new")

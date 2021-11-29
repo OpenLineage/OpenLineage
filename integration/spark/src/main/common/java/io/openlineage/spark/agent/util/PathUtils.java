@@ -95,27 +95,32 @@ public class PathUtils {
   @SneakyThrows
   public static DatasetIdentifier fromHiveTable(
       SparkSession sparkSession, CatalogTable catalogTable) {
-    String metastoreAuth =
-        SparkConfUtils.getMetastoreKey(sparkSession.sparkContext().getConf()).orElse(null);
-    if (metastoreAuth != null) {
-      URI metastoreUri = new URI(metastoreAuth);
+    Optional<URI> metastoreUri =
+        SparkConfUtils.getMetastoreUri(sparkSession.sparkContext().getConf());
+    if (metastoreUri.isPresent()) {
+      URI uri = metastoreUri.get();
       String qualifiedName = catalogTable.qualifiedName();
       if (!qualifiedName.startsWith("/")) {
         qualifiedName = String.format("/%s", qualifiedName);
       }
-      return PathUtils.fromPath(
-          new Path(
-              new URI(
-                  "hive",
-                  null,
-                  metastoreUri.getHost(),
-                  metastoreUri.getPort(),
-                  qualifiedName,
-                  null,
-                  null)));
+      return PathUtils.fromHiveTable(qualifiedName, uri);
     }
     return PathUtils.fromURI(catalogTable.location(), "file");
   };
+
+  @SneakyThrows
+  public static DatasetIdentifier fromHiveTable(String qualifiedName, URI metastoreUri) {
+    return PathUtils.fromPath(
+        new Path(
+            new URI(
+                "hive",
+                null,
+                metastoreUri.getHost(),
+                metastoreUri.getPort(),
+                qualifiedName,
+                null,
+                null)));
+  }
 
   private static String fixName(String name) {
     if (name.chars().filter(x -> x == '/').count() > 1) {

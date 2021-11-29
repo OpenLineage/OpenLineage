@@ -245,7 +245,7 @@ jobs:
             - v1-integration-spark-{{ .Branch }}-{{ .Revision }}
             - v1-integration-spark-{{ .Branch }}
       - run: (cd ./../../client/java/ && ./gradlew --no-daemon --stacktrace publishToMavenLocal)
-      - run: ./gradlew --no-daemon --stacktrace integrationTest -Pspark.version=<< parameters.spark-version >>
+      - run: ./gradlew --no-daemon --info integrationTest -Pspark.version=<< parameters.spark-version >>
       - run:
           when: on_fail
           command: cat integration/spark/build/test-results/integrationTest/TEST-*.xml
