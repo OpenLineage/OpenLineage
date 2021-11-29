@@ -1,8 +1,9 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.util.DatasetIdentifier;
+import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
-import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -19,13 +20,7 @@ public class InsertIntoDataSourceDirVisitor
   public List<OpenLineage.Dataset> apply(LogicalPlan x) {
     InsertIntoDataSourceDirCommand command = (InsertIntoDataSourceDirCommand) x;
     // URI is required by the InsertIntoDataSourceDirCommand
-    URI outputPath = command.storage().locationUri().get();
-    if (outputPath.getScheme() == null) {
-      outputPath = URI.create("file://" + outputPath);
-    }
-    String namespace = PlanUtils.namespaceUri(outputPath);
-    return Collections.singletonList(
-        PlanUtils.getDataset(
-            outputPath.getPath(), namespace, PlanUtils.datasetFacet(command.schema(), namespace)));
+    DatasetIdentifier di = PathUtils.fromURI(command.storage().locationUri().get(), "file");
+    return Collections.singletonList(PlanUtils.getDataset(di, command.schema()));
   }
 }

@@ -12,8 +12,6 @@ import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.spark.sql.AnalysisException;
-import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.execution.metric.SQLMetric;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
@@ -100,20 +98,6 @@ public class PlanUtils {
   }
 
   /**
-   * Given a {@link URI}, construct a valid {@link OpenLineage.Dataset} following the expected
-   * naming conventions.
-   *
-   * @param outputPath
-   * @param schema
-   * @return
-   */
-  public static OpenLineage.Dataset getDataset(URI outputPath, StructType schema) {
-    String namespace = namespaceUri(outputPath);
-    OpenLineage.DatasetFacets datasetFacet = datasetFacet(schema, namespace);
-    return getDataset(outputPath.getPath(), namespace, datasetFacet);
-  }
-
-  /**
    * Construct a dataset {@link OpenLineage.Dataset} given a name, namespace, and preconstructed
    * {@link OpenLineage.DatasetFacets}.
    *
@@ -142,37 +126,23 @@ public class PlanUtils {
     };
   }
 
-  public static Path getPath(URI location, String qualifiedName, String authority) {
-    Path path;
-    try {
-      path = new Path(location);
-      if (location.getScheme() == null) {
-        path = new Path("file", null, location.toString());
-      }
-    } catch (Exception e) { // Java does not recognize scala exception
-      if (e instanceof AnalysisException) {
-        path = new Path("hive", authority, qualifiedName);
-      }
-      throw e;
-    }
-    return path;
-  }
-
   /**
-   * Construct a dataset {@link OpenLineage.Dataset} given a {@link
-   * org.apache.spark.sql.catalyst.catalog.CatalogTable} If table does not contain location, use
-   * passed authority as a backup.
+   * Given a {@link URI}, construct a valid {@link OpenLineage.Dataset} following the expected
+   * naming conventions.
    *
-   * @param table
+   * @param outputPath
+   * @param schema
    * @return
    */
-  public static OpenLineage.Dataset getDataset(CatalogTable table, String authority) {
-    Path path = getPath(table.location(), table.qualifiedName(), authority);
-    return getDataset(path.toUri(), table.schema());
+  public static OpenLineage.Dataset getDataset(URI outputPath, StructType schema) {
+    String namespace = namespaceUri(outputPath);
+    OpenLineage.DatasetFacets datasetFacet = datasetFacet(schema, namespace);
+    return getDataset(outputPath.getPath(), namespace, datasetFacet);
   }
 
-  public static OpenLineage.Dataset getDataset(CatalogTable table) {
-    return getDataset(table, "");
+  public static OpenLineage.Dataset getDataset(DatasetIdentifier ident, StructType schema) {
+    OpenLineage.DatasetFacets datasetFacet = datasetFacet(schema, ident.getNamespace());
+    return getDataset(ident.getName(), ident.getNamespace(), datasetFacet);
   }
 
   /**

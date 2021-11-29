@@ -74,6 +74,10 @@ class LogicalPlanSerializerTest {
     SparkSession session = SparkSession.builder().master("local").getOrCreate();
     String jdbcUrl = "jdbc:postgresql://postgreshost:5432/sparkdata";
     String sparkTableName = "my_spark_table";
+    scala.collection.immutable.Map<String, String> map = (scala.collection.immutable.Map<String, String>) Map$.MODULE$
+      .<String, String>newBuilder()
+      .$plus$eq(Tuple2.apply("driver", Driver.class.getName()))
+      .result();
     JDBCRelation relation =
         new JDBCRelation(
             new StructType(
@@ -84,10 +88,7 @@ class LogicalPlanSerializerTest {
             new JDBCOptions(
                 jdbcUrl,
                 sparkTableName,
-                Map$.MODULE$
-                    .newBuilder()
-                    .$plus$eq(Tuple2.apply("driver", Driver.class.getName()))
-                    .result()),
+                map),
             session);
     LogicalRelation logicalRelation =
         new LogicalRelation(

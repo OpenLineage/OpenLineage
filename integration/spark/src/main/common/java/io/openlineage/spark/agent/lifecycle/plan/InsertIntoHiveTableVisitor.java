@@ -1,6 +1,7 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.SparkConfUtils;
 import java.util.Collections;
@@ -18,9 +19,6 @@ public class InsertIntoHiveTableVisitor
     extends QueryPlanVisitor<InsertIntoHiveTable, OpenLineage.Dataset> {
 
   private final SparkContext context;
-
-  private final String metastoreUriKey = "spark.sql.hive.metastore.uris";
-  private final String metastoreHadoopUriKey = "spark.hadoop.hive.metastore.uris";
 
   public InsertIntoHiveTableVisitor(SparkContext context) {
     this.context = context;
@@ -42,13 +40,9 @@ public class InsertIntoHiveTableVisitor
   public List<OpenLineage.Dataset> apply(LogicalPlan x) {
     InsertIntoHiveTable cmd = (InsertIntoHiveTable) x;
     CatalogTable table = cmd.table();
+    String authority = SparkConfUtils.getMetastoreKey(context.getConf()).orElse(null);
 
-    String authority =
-        SparkConfUtils.findSparkConfigKey(context.getConf(), metastoreUriKey)
-            .orElse(
-                SparkConfUtils.findSparkConfigKey(context.getConf(), metastoreHadoopUriKey)
-                    .orElse(""));
-
-    return Collections.singletonList(PlanUtils.getDataset(table, authority));
+    return Collections.singletonList(
+        PlanUtils.getDataset(PathUtils.fromCatalogTable(table, authority), table.schema()));
   }
 }

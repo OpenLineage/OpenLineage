@@ -7,6 +7,7 @@ import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.lifecycle.plan.CreateDataSourceTableCommandVisitor;
 import java.net.URI;
 import java.util.List;
+import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier$;
 import org.apache.spark.sql.catalyst.catalog.CatalogStorageFormat$;
 import org.apache.spark.sql.catalyst.catalog.CatalogTableType;
@@ -27,6 +28,7 @@ class CreateDataSourceTableCommandVisitorTest {
 
   @Test
   void testCreateDataSourceTableCommand() {
+    SparkSession session = SparkSession.builder().master("local").getOrCreate();
     CreateDataSourceTableCommandVisitor visitor = new CreateDataSourceTableCommandVisitor();
 
     CreateDataSourceTableCommand command =
