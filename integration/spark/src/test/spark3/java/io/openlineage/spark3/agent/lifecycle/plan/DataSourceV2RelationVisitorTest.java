@@ -26,7 +26,8 @@ public class DataSourceV2RelationVisitorTest {
         assertThrows(
             RuntimeException.class, () -> dataSourceV2RelationVisitor.apply(dataSourceV2Relation));
 
-    Assert.assertTrue(exception.getMessage().startsWith("Couldn't find DatasetSource in plan"));
+    Assert.assertTrue(
+        exception.getMessage().startsWith("Couldn't find provider for dataset in plan"));
   }
 
   @Test
@@ -55,6 +56,7 @@ public class DataSourceV2RelationVisitorTest {
   public void testApplyForIcebergOnLocal() {
     tableProperties.put("provider", "iceberg");
     tableProperties.put("location", "/tmp/catalog/db/table");
+    tableProperties.put("format", "iceberg/parquet");
 
     Mockito.when(table.properties()).thenReturn(tableProperties);
     Mockito.when((dataSourceV2Relation).table()).thenReturn(table);
@@ -82,5 +84,30 @@ public class DataSourceV2RelationVisitorTest {
     Mockito.when((dataSourceV2Relation).table()).thenReturn(table);
     Mockito.when(table.properties()).thenReturn(tableProperties);
     Assert.assertTrue(dataSourceV2RelationVisitor.isDefinedAt(dataSourceV2Relation));
+  }
+
+  @Test
+  public void testIsDefinedForDelta() {
+    tableProperties.put("provider", "delta");
+    Mockito.when((dataSourceV2Relation).table()).thenReturn(table);
+    Mockito.when(table.properties()).thenReturn(tableProperties);
+    Assert.assertTrue(dataSourceV2RelationVisitor.isDefinedAt(dataSourceV2Relation));
+  }
+
+  @Test
+  public void testApplyDeltaLocal() {
+    tableProperties.put("provider", "delta");
+    tableProperties.put("location", "file:/tmp/delta/spark-warehouse/tbl");
+    tableProperties.put("format", "parquet");
+
+    Mockito.when(table.properties()).thenReturn(tableProperties);
+    Mockito.when((dataSourceV2Relation).table()).thenReturn(table);
+    Mockito.when(dataSourceV2Relation.schema()).thenReturn(new StructType());
+    Mockito.when(table.name()).thenReturn("table");
+
+    OpenLineage.Dataset dataset = dataSourceV2RelationVisitor.apply(dataSourceV2Relation).get(0);
+
+    Assert.assertEquals("file:/tmp/delta/spark-warehouse/tbl", dataset.getNamespace());
+    Assert.assertEquals("table", dataset.getName());
   }
 }
