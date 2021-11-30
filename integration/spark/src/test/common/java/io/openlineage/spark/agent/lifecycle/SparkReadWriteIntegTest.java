@@ -231,8 +231,8 @@ public class SparkReadWriteIntegTest {
     assertNotNull(output.getFacets().getAdditionalProperties());
 
     assertThat(output.getOutputFacets().getOutputStatistics())
-            .isNotNull()
-            .hasFieldOrPropertyWithValue("rowCount", 0L);
+        .isNotNull()
+        .hasFieldOrPropertyWithValue("rowCount", 0L);
   }
 
   private Path writeTestDataToFile(Path writeDir) throws IOException {

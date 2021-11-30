@@ -25,8 +25,7 @@ public class JobMetricsHolder {
   private final Map<Integer, TaskMetrics> stageMetrics = new ConcurrentHashMap<>();
 
   // Use singleton instance
-  JobMetricsHolder() {
-  }
+  JobMetricsHolder() {}
 
   public void addJobStages(int jobId, Set<Integer> stages) {
     jobStages.put(jobId, stages);
