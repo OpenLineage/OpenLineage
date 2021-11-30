@@ -10,6 +10,7 @@ import collections
 from typing import List, Tuple, Dict, Optional, TypeVar
 
 import attr
+import logging
 
 from openlineage.client.facet import DataSourceDatasetFacet, SchemaDatasetFacet, SchemaField, \
     SqlJobFacet, OutputStatisticsOutputDatasetFacet, ParentRunFacet, BaseFacet, \
@@ -47,21 +48,11 @@ class DbtRun:
     started_at: str = attr.ib()
     completed_at: str = attr.ib()
     status: str = attr.ib()
-    inputs: List[ModelNode] = attr.ib()
-    output: Optional[ModelNode] = attr.ib()
+    inputs: List[Dataset] = attr.ib()
+    output: Optional[Dataset] = attr.ib()
     job_name: str = attr.ib()
     namespace: str = attr.ib()
     run_id: str = attr.ib(factory=lambda: str(uuid.uuid4()))
-
-
-@attr.s
-class DbtEvents:
-    starts: List[RunEvent] = attr.ib()
-    completes: List[RunEvent] = attr.ib()
-    fails: List[RunEvent] = attr.ib()
-
-    def events(self):
-        return self.starts + self.completes + self.fails
 
 
 @attr.s
@@ -69,6 +60,40 @@ class DbtRunResult:
     start: RunEvent = attr.ib()
     complete: Optional[RunEvent] = attr.ib(default=None)
     fail: Optional[RunEvent] = attr.ib(default=None)
+
+
+@attr.s
+class DbtEvents:
+    starts: List[RunEvent] = attr.ib(factory=list)
+    completes: List[RunEvent] = attr.ib(factory=list)
+    fails: List[RunEvent] = attr.ib(factory=list)
+
+    def events(self):
+        return self.starts + self.completes + self.fails
+
+    def add(self, item: Optional[DbtRunResult]):
+        if not item:
+            return
+        self.starts.append(item.start)
+        if item.complete:
+            self.completes.append(item.complete)
+        if item.fail:
+            self.fails.append(item.fail)
+
+    def __iadd__(self, other):
+        if isinstance(other, DbtEvents):
+            self.starts += other.starts
+            self.completes += other.completes
+            self.fails += other.fails
+            return self
+        raise NotImplementedError()
+
+
+@attr.s
+class DbtRunContext:
+    manifest: Dict = attr.ib()
+    run_results: Dict = attr.ib()
+    catalog: Optional[Dict] = attr.ib(default=None)
 
 
 @attr.s
@@ -96,6 +121,8 @@ class DbtVersionRunFacet(BaseFacet):
 
 T = TypeVar('T')
 
+logging.getLogger('null').addHandler(logging.NullHandler())
+
 
 class DbtArtifactProcessor:
     def __init__(
@@ -104,7 +131,8 @@ class DbtArtifactProcessor:
         project_dir: str,
         profile_name: Optional[str] = None,
         target: Optional[str] = None,
-        skip_errors: bool = False
+        skip_errors: bool = False,
+        logger: logging.Logger = logging.getLogger("null")
     ):
         self.producer = producer
         self.dir = os.path.abspath(project_dir)
@@ -112,12 +140,14 @@ class DbtArtifactProcessor:
         self.profile_name = profile_name
         self.target = target
         self.jinja_environment = None
+        self.logger = logger
 
         self.job_namespace = ""
         self.dataset_namespace = ""
         self.skip_errors = skip_errors
         self.project = self.load_yaml_with_jinja(os.path.join(project_dir, 'dbt_project.yml'))
         self.run_metadata = None
+        self.command = None
 
         self.manifest_path = os.path.join(self.dir, self.project['target-path'], 'manifest.json')
         self.run_result_path = os.path.join(
@@ -137,11 +167,15 @@ class DbtArtifactProcessor:
         """
             Parse dbt manifest and run_result and produce OpenLineage events.
         """
-        manifest = self.load_manifest(self.manifest_path)
-        run_result = self.load_run_results(self.run_result_path)
+        manifest = self.load_metadata(self.manifest_path, [2, 3], self.logger)
+        run_result = self.load_metadata(self.run_result_path, [2, 3], self.logger)
         self.run_metadata = run_result['metadata']
+        self.command = run_result['args']['which']
 
-        catalog = self.load_catalog(self.catalog_path)
+        try:
+            catalog = self.load_metadata(self.catalog_path, [1], self.logger)
+        except FileNotFoundError:
+            catalog = None
 
         profile_dir = run_result['args']['profiles_dir']
 
@@ -167,48 +201,53 @@ class DbtArtifactProcessor:
             if name.startswith('model.') or name.startswith('test.'):
                 nodes[name] = node
 
-        if run_result['args']['which'] == 'run':
-            return self.parse_run(manifest, run_result, catalog, nodes)
-        elif run_result['args']['which'] == 'test':
-            return self.parse_test(manifest, run_result, catalog, nodes)
-        raise ValueError(
-            f"Not recognized run command "
-            f"{run_result['args']['which']} - should be run or test"
-        )
+        context = DbtRunContext(manifest, run_result, catalog)
 
-    @staticmethod
-    def load_metadata(path: str, desired_schema_versions: List[str]) -> Dict:
+        if self.command not in ['run', 'build', 'test']:
+            raise ValueError(
+                f"Not recognized run command "
+                f"{self.command} - should be run, test or build"
+            )
+
+        events = DbtEvents()
+        if self.command in ['run', 'build']:
+            events += self.parse_execution(context, nodes)
+        if self.command in ['test', 'build']:
+            events += self.parse_test(context, nodes)
+        return events
+
+    @classmethod
+    def load_metadata(
+        cls,
+        path: str,
+        desired_schema_versions: List[int],
+        logger: logging.Logger
+    ) -> Dict:
         with open(path, 'r') as f:
             metadata = json.load(f)
-            schema_version = get_from_nullable_chain(metadata, ['metadata', 'dbt_schema_version'])
+            str_schema_version = get_from_nullable_chain(
+                metadata,
+                ['metadata', 'dbt_schema_version']
+            )
+            schema_version = cls.get_version_number(str_schema_version)
             if schema_version not in desired_schema_versions:
-                # Maybe we should accept it and throw exception only if it substantially differs
-                raise ValueError(f"Wrong version of dbt metadata: {schema_version}, "
-                                 f"should be in {desired_schema_versions}")
+                if schema_version > max(desired_schema_versions):
+                    logger.warning(
+                        f"Artifact schema version: {str_schema_version} is above dbt-ol "
+                        f"supported version {max(desired_schema_versions)}. "
+                        f"This might cause errors."
+                    )
+                else:
+                    raise ValueError(f"Wrong version of dbt metadata: {schema_version}, "
+                                     f"should be in {desired_schema_versions}")
             return metadata
 
-    @classmethod
-    def load_manifest(cls, path: str) -> Dict:
-        return cls.load_metadata(path, [
-            "https://schemas.getdbt.com/dbt/manifest/v2.json",
-            "https://schemas.getdbt.com/dbt/manifest/v3.json",
-        ])
-
-    @classmethod
-    def load_run_results(cls, path: str) -> Dict:
-        return cls.load_metadata(path, [
-            "https://schemas.getdbt.com/dbt/run-results/v2.json",
-            "https://schemas.getdbt.com/dbt/run-results/v3.json"
-        ])
-
-    @classmethod
-    def load_catalog(cls, path: str) -> Optional[Dict]:
-        try:
-            return cls.load_metadata(path, [
-                "https://schemas.getdbt.com/dbt/catalog/v1.json"
-            ])
-        except FileNotFoundError:
-            return None
+    @staticmethod
+    def get_version_number(version: str) -> int:
+        # "https://schemas.getdbt.com/dbt/manifest/v2.json" -> "v2.json"
+        file = version.split('/')[-1]
+        # "v2.json" -> 2
+        return int(file.split('.')[0][1:])
 
     @staticmethod
     def env_var(var: str, default: Optional[str] = None) -> str:
@@ -266,64 +305,68 @@ class DbtArtifactProcessor:
         else:
             return value
 
-    def parse_run(
+    def parse_execution(
         self,
-        manifest: Dict,
-        run_results: Dict,
-        catalog: Optional[Dict],
+        context: DbtRunContext,
         nodes: Dict
     ) -> DbtEvents:
-        runs = []
-        for run in run_results['results']:
+        events = DbtEvents()
+        for run in context.run_results['results']:
+            name = run['unique_id']
+            if not name.startswith('model.') and not name.startswith('source.'):
+                continue
+            if run['status'] == 'skipped':
+                continue
+
+            output_node = nodes[name]
             started_at, completed_at = self.get_timings(run['timing'])
+            namespace, name, _ = self.extract_dataset_data(
+                ModelNode(output_node), None, has_facets=False
+            )
 
             inputs = []
-            for node in manifest['parent_map'][run['unique_id']]:
+            for node in context.manifest['parent_map'][run['unique_id']]:
                 if node.startswith('model.'):
                     inputs.append(ModelNode(
                         nodes[node],
-                        get_from_nullable_chain(catalog, ['nodes', node])
+                        get_from_nullable_chain(context.catalog, ['nodes', node])
                     ))
                 elif node.startswith('source.'):
                     inputs.append(ModelNode(
-                        manifest['sources'][node],
-                        get_from_nullable_chain(catalog, ['sources', node])
+                        context.manifest['sources'][node],
+                        get_from_nullable_chain(context.catalog, ['sources', node])
                     ))
 
-            output_node = nodes[run['unique_id']]
-
-            runs.append(DbtRun(
+            run_id = str(uuid.uuid4())
+            job_name = f"{output_node['database']}.{output_node['schema']}" \
+                f".{self.removeprefix(run['unique_id'], 'model.')}" \
+                + (".build.run" if self.command == 'build' else "")
+            events.add(self.to_openlineage_events(
+                run['status'],
                 started_at,
                 completed_at,
-                run['status'],
-                inputs,
-                ModelNode(
-                    output_node,
-                    get_from_nullable_chain(catalog, ['nodes', run['unique_id']])
+                self.get_run(run_id),
+                Job(
+                    namespace=self.job_namespace,
+                    name=job_name,
+                    facets={
+                        'sql': SqlJobFacet(output_node['compiled_sql'])
+                    }
                 ),
-                f"{output_node['database']}."
-                f"{output_node['schema']}."
-                f"{self.removeprefix(run['unique_id'], 'model.')}",
-                self.dataset_namespace
+                [self.node_to_dataset(node, has_facets=True) for node in inputs],
+                self.node_to_output_dataset(
+                    ModelNode(
+                        output_node,
+                        get_from_nullable_chain(context.catalog, ['nodes', run['unique_id']])
+                    ),
+                    has_facets=True
+                )
             ))
-
-        start_events, complete_events, fail_events = [], [], []
-        for run in runs:
-            results = self.to_openlineage_events(run)
-            if not results:
-                continue
-            start_events.append(results.start)
-            if results.complete:
-                complete_events.append(results.complete)
-            elif results.fail:
-                fail_events.append(results.fail)
-        return DbtEvents(start_events, complete_events, fail_events)
+        return events
 
     def parse_test(
         self,
-        manifest: Dict,
-        run_results: Dict,
-        catalog: Optional[Dict],
+        context: DbtRunContext,
         nodes: Dict
     ) -> DbtEvents:
 
@@ -331,13 +374,56 @@ class DbtArtifactProcessor:
         started_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
         completed_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
+        assertions = self.parse_assertions(context, nodes)
+
+        events = DbtEvents()
+        for name, node in context.manifest['nodes'].items():
+            if not name.startswith('model.') and not name.startswith('source.'):
+                continue
+            if len(assertions[name]) == 0:
+                continue
+
+            assertion_facet = DataQualityAssertionsDatasetFacet(
+                assertions=assertions[name]
+            )
+
+            namespace, name, _ = self.extract_dataset_data(
+                ModelNode(node),
+                assertion_facet,
+                has_facets=False
+            )
+
+            job_name = f"{node['database']}.{node['schema']}." \
+                f"{self.removeprefix(node['unique_id'], 'model.')}" \
+                + (".build.test" if self.command == 'build' else "")
+
+            run_id = str(uuid.uuid4())
+            events.add(self.to_openlineage_events(
+                "success",
+                started_at,
+                completed_at,
+                self.get_run(run_id),
+                Job(self.job_namespace, job_name),
+                [Dataset(namespace, name, facets={
+                    "dataQualityAssertions": assertion_facet
+                })],
+                None
+            ))
+        return events
+
+    def parse_assertions(
+        self,
+        context: DbtRunContext,
+        nodes: Dict
+    ) -> Dict[str, List[Assertion]]:
         assertions = collections.defaultdict(list)
-
-        for run in run_results['results']:
-
+        for run in context.run_results['results']:
             test_node = nodes[run['unique_id']]
+            if not run['unique_id'].startswith('test.'):
+                continue
+
             model_node = None
-            for node in manifest['parent_map'][run['unique_id']]:
+            for node in context.manifest['parent_map'][run['unique_id']]:
                 if node.startswith('model.') or node.startswith('source.'):
                     model_node = node
 
@@ -354,151 +440,81 @@ class DbtArtifactProcessor:
                 raise ValueError(
                     f"Model node connected to test {nodes[run['unique_id']]} not found"
                 )
+        return assertions
 
-        starts, completes = [], []
-        for name, node in manifest['nodes'].items():
-            if not name.startswith('model.') and not name.startswith('source.'):
-                continue
-            if len(assertions[name]) == 0:
-                continue
-
-            assertion_facet = DataQualityAssertionsDatasetFacet(
-                assertions=assertions[name]
-            )
-
-            namespace, name, _ = self.extract_dataset_data(ModelNode(node), has_facets=False)
-
-            job_name = f"{node['database']}." \
-                f"{node['schema']}." \
-                f"{self.removeprefix(node['unique_id'], 'test.')}"
-
-            run_id = str(uuid.uuid4())
-            starts.append(RunEvent(
-                eventType=RunState.START,
-                eventTime=started_at,
-                run=Run(
-                    runId=run_id
-                ),
-                job=Job(
-                    namespace=self.job_namespace,
-                    name=job_name
-                ),
-                producer=self.producer,
-                inputs=[Dataset(namespace, name)],
-                outputs=[]
-            ))
-            completes.append(RunEvent(
-                eventType=RunState.COMPLETE,
-                eventTime=completed_at,
-                run=Run(
-                    runId=run_id,
-                    facets={
-                        "parent": self._dbt_run_metadata.to_openlineage(),
-                        "dbt_version": self.dbt_version_facet()
-                    }
-                ),
-                job=Job(
-                    namespace=self.job_namespace,
-                    name=job_name
-                ),
-                producer=self.producer,
-                inputs=[Dataset(namespace, name, facets={
-                    "dataQualityAssertions": assertion_facet
-                })],
-                outputs=[]
-            ))
-
-        return DbtEvents(starts, completes, [])
-
-    def to_openlineage_events(self, run: DbtRun) -> Optional[DbtRunResult]:
+    def to_openlineage_events(self, *args, **kwargs) -> Optional[DbtRunResult]:
         try:
-            return self._to_openlineage_events(run)
+            return self._to_openlineage_events(*args, **kwargs)
         except Exception as e:
             if self.skip_errors:
                 return None
             raise ValueError() from e
 
-    def _to_openlineage_events(self, run: DbtRun) -> Optional[DbtRunResult]:
-        if run.status == 'skipped':
-            return None
-
+    def _to_openlineage_events(
+        self,
+        status: str,
+        started_at: str,
+        completed_at: str,
+        run: Run,
+        job: Job,
+        inputs: List[Dataset],
+        output: Optional[Dataset]
+    ) -> Optional[DbtRunResult]:
         start = RunEvent(
             eventType=RunState.START,
-            eventTime=run.started_at,
-            run=Run(
-                runId=run.run_id
-            ),
-            job=Job(
-                namespace=self.job_namespace,
-                name=run.job_name
-            ),
+            eventTime=started_at,
+            run=run,
+            job=job,
             producer=self.producer,
-            inputs=[self.node_to_dataset(node) for node in run.inputs],
-            outputs=[self.node_to_output_dataset(run.output)] if run.output else []
+            inputs=inputs,
+            outputs=[output] if output else []
         )
-
-        if run.status == 'success':
+        if status == 'success':
             return DbtRunResult(
                 start,
                 complete=RunEvent(
                     eventType=RunState.COMPLETE,
-                    eventTime=run.completed_at,
-                    run=Run(
-                        runId=run.run_id,
-                        facets={
-                            "parent": self._dbt_run_metadata.to_openlineage(),
-                            "dbt_version": self.dbt_version_facet()
-                        }
-                    ),
-                    job=Job(
-                        namespace=self.job_namespace,
-                        name=run.job_name,
-                        facets={
-                            'sql': SqlJobFacet(run.output.metadata_node['compiled_sql'])
-                        }
-                    ),
+                    eventTime=completed_at,
+                    run=run,
+                    job=job,
                     producer=self.producer,
-                    inputs=[self.node_to_dataset(node, has_facets=True) for node in run.inputs],
-                    outputs=[self.node_to_output_dataset(run.output, has_facets=True)]
+                    inputs=inputs,
+                    outputs=[output] if output else []
                 )
             )
-        elif run.status == 'error':
+        elif status == 'error':
             return DbtRunResult(
                 start,
                 fail=RunEvent(
                     eventType=RunState.FAIL,
-                    eventTime=run.completed_at,
-                    run=Run(
-                        runId=run.run_id,
-                        facets={
-                            "parent": self._dbt_run_metadata.to_openlineage(),
-                            "dbt_version": self.dbt_version_facet()
-                        }
-                    ),
-                    job=Job(
-                        namespace=self.job_namespace,
-                        name=run.job_name,
-                        facets={
-                            'sql': SqlJobFacet(run.output.metadata_node['compiled_sql'])
-                        }
-                    ),
+                    eventTime=completed_at,
+                    run=run,
+                    job=job,
                     producer=self.producer,
-                    inputs=[self.node_to_dataset(node, has_facets=True) for node in run.inputs],
+                    inputs=inputs,
                     outputs=[]
                 )
             )
         else:
             # Should not happen?
-            raise ValueError(f"Run status was {run.status}, "
-                             f"should be in ['success', 'skipped', 'skipped']")
+            raise ValueError(f"Run status was {status}, "
+                             f"should be in ['success', 'skipped', 'error']")
 
-    def node_to_dataset(self, node: ModelNode, has_facets: bool = False) -> Dataset:
-        return Dataset(
-            *self.extract_dataset_data(node, has_facets)
-        )
+    def node_to_dataset(
+        self,
+        node: ModelNode,
+        assertions: Optional[DataQualityAssertionsDatasetFacet] = None,
+        has_facets: bool = False
+    ) -> Dataset:
+        name, namespace, facets = self.extract_dataset_data(node, assertions, has_facets)
+        return Dataset(name, namespace, facets)
 
-    def node_to_output_dataset(self, node: ModelNode, has_facets: bool = False) -> OutputDataset:
-        name, namespace, facets = self.extract_dataset_data(node, has_facets)
+    def node_to_output_dataset(
+        self,
+        node: ModelNode,
+        has_facets: bool = False
+    ) -> OutputDataset:
+        name, namespace, facets = self.extract_dataset_data(node, None, has_facets)
         output_facets = {}
         if has_facets and node.catalog_node:
             bytes = get_from_multiple_chains(
@@ -532,7 +548,10 @@ class DbtArtifactProcessor:
         )
 
     def extract_dataset_data(
-            self, node: ModelNode, has_facets: bool = False
+        self,
+        node: ModelNode,
+        assertions: Optional[DataQualityAssertionsDatasetFacet],
+        has_facets: bool = False
     ) -> Tuple[str, str, Dict]:
         if has_facets:
             facets = {
@@ -544,6 +563,8 @@ class DbtArtifactProcessor:
                     fields=self.extract_metadata_fields(node.metadata_node['columns'].values())
                 )
             }
+            if assertions:
+                facets['dataQualityAssertions'] = assertions
             if node.catalog_node:
                 facets['schema'] = SchemaDatasetFacet(
                     fields=self.extract_catalog_fields(
@@ -617,6 +638,15 @@ class DbtArtifactProcessor:
                 f"Only 'snowflake', 'bigquery', and 'redshift' adapters are supported right now. "
                 f"Passed {profile['type']}"
             )
+
+    def get_run(self, run_id: str) -> Run:
+        return Run(
+            runId=run_id,
+            facets={
+                "parent": self._dbt_run_metadata.to_openlineage(),
+                "dbt_version": self.dbt_version_facet()
+            }
+        )
 
     def dbt_version_facet(self):
         return DbtVersionRunFacet(

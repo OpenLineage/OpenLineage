@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableList;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.lifecycle.plan.QueryPlanVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.wrapper.OutputDatasetVisitor;
-import io.openlineage.spark3.agent.lifecycle.plan.DatasetSourceVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationVisitor;
 import java.util.List;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -16,7 +16,7 @@ class Spark3VisitorFactoryImpl extends BaseVisitorFactory {
       SQLContext sqlContext, String jobNamespace) {
     return ImmutableList.<QueryPlanVisitor<LogicalPlan, OpenLineage.OutputDataset>>builder()
         .addAll(super.getOutputVisitors(sqlContext, jobNamespace))
-        .add(new OutputDatasetVisitor(new DatasetSourceVisitor()))
+        .add(new OutputDatasetVisitor(new DataSourceV2RelationVisitor()))
         .build();
   }
 
@@ -24,7 +24,7 @@ class Spark3VisitorFactoryImpl extends BaseVisitorFactory {
       SQLContext sqlContext, String jobNamespace) {
     return ImmutableList.<QueryPlanVisitor<? extends LogicalPlan, OpenLineage.Dataset>>builder()
         .addAll(super.getBaseCommonVisitors(sqlContext, jobNamespace))
-        .add(new DatasetSourceVisitor())
+        .add(new DataSourceV2RelationVisitor())
         .build();
   }
 }

@@ -1,0 +1,29 @@
+{
+  "eventType": "COMPLETE",
+  "run": {
+    "facets": {
+      "spark.logicalPlan": {},
+      "spark_version": {}
+    }
+  },
+  "job": {
+    "namespace": "testPysparkKafkaReadWriteTest",
+    "name": "kafka_examples.execute_save_into_data_source_command"
+  },
+  "inputs": [],
+  "outputs": [
+    {
+      "namespace": "kafka://kafka:9092",
+      "name": "topic1",
+      "facets": {
+        "dataSource": {
+          "name": "kafka://kafka:9092",
+          "uri": "kafka://kafka:9092"
+        },
+        "schema": {
+          "fields": []
+        }
+      }
+    }
+  ]
+}

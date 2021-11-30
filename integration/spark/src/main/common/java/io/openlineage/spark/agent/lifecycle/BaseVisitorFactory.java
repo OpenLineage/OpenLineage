@@ -10,6 +10,7 @@ import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDirVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHadoopFsRelationVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHiveDirVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHiveTableVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.KafkaRelationVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRDDVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRelationVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.QueryPlanVisitor;
@@ -32,6 +33,9 @@ abstract class BaseVisitorFactory implements VisitorFactory {
     list.add(new CommandPlanVisitor(new ArrayList<>(list)));
     if (BigQueryNodeVisitor.hasBigQueryClasses()) {
       list.add(new BigQueryNodeVisitor(sqlContext));
+    }
+    if (KafkaRelationVisitor.hasKafkaClasses()) {
+      list.add(new KafkaRelationVisitor());
     }
     return list;
   }
@@ -62,8 +66,10 @@ abstract class BaseVisitorFactory implements VisitorFactory {
             new SaveIntoDataSourceCommandVisitor(sqlContext, allCommonVisitors)));
     list.add(new OutputDatasetVisitor(new AppendDataVisitor(allCommonVisitors)));
     list.add(new OutputDatasetVisitor(new InsertIntoDirVisitor(sqlContext)));
-    list.add(new OutputDatasetVisitor(new InsertIntoHiveTableVisitor(sqlContext.sparkContext())));
-    list.add(new OutputDatasetVisitor(new InsertIntoHiveDirVisitor()));
+    if (InsertIntoHiveTableVisitor.hasHiveClasses()) {
+      list.add(new OutputDatasetVisitor(new InsertIntoHiveTableVisitor(sqlContext.sparkContext())));
+      list.add(new OutputDatasetVisitor(new InsertIntoHiveDirVisitor()));
+    }
     return list;
   }
 }

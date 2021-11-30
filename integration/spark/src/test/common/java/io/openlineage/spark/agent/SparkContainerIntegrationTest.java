@@ -4,11 +4,16 @@ import static java.nio.file.Files.readAllBytes;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.JsonBody.json;
 
+import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.stream.Stream;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.NewTopic;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -19,6 +24,7 @@ import org.mockserver.matchers.MatchType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.containers.MockServerContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -37,7 +43,9 @@ public class SparkContainerIntegrationTest {
       makeMockServerContainer();
 
   private static GenericContainer<?> pyspark;
+  private static GenericContainer<?> kafka;
   private static MockServerClient mockServerClient;
+  private static final Logger logger = LoggerFactory.getLogger(SparkContainerIntegrationTest.class);
 
   @BeforeAll
   public static void setup() {
@@ -52,21 +60,25 @@ public class SparkContainerIntegrationTest {
 
   @AfterEach
   public void cleanupSpark() {
-    pyspark.stop();
-  }
-
-  @AfterAll
-  public static void tearDown() {
-    Logger logger = LoggerFactory.getLogger(SparkContainerIntegrationTest.class);
-    try {
-      openLineageClientMockContainer.stop();
-    } catch (Exception e2) {
-      logger.error("Unable to shut down openlineage client container", e2);
-    }
+    mockServerClient.reset();
     try {
       pyspark.stop();
     } catch (Exception e2) {
       logger.error("Unable to shut down pyspark container", e2);
+    }
+    try {
+      kafka.stop();
+    } catch (Exception e2) {
+      logger.error("Unable to shut down kafka container", e2);
+    }
+  }
+
+  @AfterAll
+  public static void tearDown() {
+    try {
+      openLineageClientMockContainer.stop();
+    } catch (Exception e2) {
+      logger.error("Unable to shut down openlineage client container", e2);
     }
     network.close();
   }
@@ -86,6 +98,7 @@ public class SparkContainerIntegrationTest {
         .withFileSystemBind("src/test/resources/test_data", "/test_data")
         .withFileSystemBind("src/test/resources/spark_scripts", "/opt/spark_scripts")
         .withFileSystemBind("build/libs", "/opt/libs")
+        .withFileSystemBind("build/dependencies", "/opt/dependencies")
         .withLogConsumer(SparkContainerIntegrationTest::consumeOutput)
         .withStartupTimeout(Duration.of(2, ChronoUnit.MINUTES))
         .dependsOn(openLineageClientMockContainer)
@@ -93,22 +106,40 @@ public class SparkContainerIntegrationTest {
         .withCommand(command);
   }
 
+  private static GenericContainer<?> makeKafkaContainer() {
+    return new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.0.0"))
+        .withNetworkAliases("kafka")
+        .withNetwork(network);
+  }
+
   private static GenericContainer<?> makePysparkContainerWithDefaultConf(
-      String namespace, String command) {
+      String namespace, String... command) {
     return makePysparkContainer(
-        "--master",
-        "local",
-        "--conf",
-        "spark.openlineage.host=" + "http://openlineageclient:1080",
-        "--conf",
-        "spark.openlineage.url=" + "http://openlineageclient:1080/api/v1/namespaces/" + namespace,
-        "--conf",
-        "spark.extraListeners=" + OpenLineageSparkListener.class.getName(),
-        "--conf",
-        "spark.sql.warehouse.dir=/tmp/warehouse",
-        "--jars",
-        "/opt/libs/" + System.getProperty("openlineage.spark.jar"),
-        command);
+        Stream.of(
+                new String[] {
+                  "--master",
+                  "local",
+                  "--conf",
+                  "spark.openlineage.host=" + "http://openlineageclient:1080",
+                  "--conf",
+                  "spark.openlineage.url="
+                      + "http://openlineageclient:1080/api/v1/namespaces/"
+                      + namespace,
+                  "--conf",
+                  "spark.extraListeners=" + OpenLineageSparkListener.class.getName(),
+                  "--conf",
+                  "spark.sql.warehouse.dir=/tmp/warehouse",
+                  "--jars",
+                  "/opt/libs/"
+                      + System.getProperty("openlineage.spark.jar")
+                      + ",/opt/dependencies/spark-sql-kafka-*.jar"
+                      + ",/opt/dependencies/kafka-*.jar"
+                      + ",/opt/dependencies/spark-token-provider-*.jar"
+                      + ",/opt/dependencies/commons-pool2-*.jar"
+                },
+                command)
+            .flatMap(Stream::of)
+            .toArray(String[]::new));
   }
 
   private static void consumeOutput(org.testcontainers.containers.output.OutputFrame of) {
@@ -184,6 +215,80 @@ public class SparkContainerIntegrationTest {
         request()
             .withPath("/api/v1/lineage")
             .withBody(json(completeTableEvent, MatchType.ONLY_MATCHING_FIELDS)));
+  }
+
+  @Test
+  public void testPysparkKafkaReadWrite() throws IOException {
+    kafka = makeKafkaContainer();
+    kafka.start();
+
+    pyspark =
+        makePysparkContainerWithDefaultConf(
+            "testPysparkKafkaReadWriteTest",
+            "--packages",
+            System.getProperty("kafka.package.version"),
+            "/opt/spark_scripts/spark_kafka.py");
+
+    pyspark.setWaitStrategy(Wait.forLogMessage(".*ShutdownHookManager: Shutdown hook called.*", 1));
+    pyspark.start();
+
+    Path eventFolder = Paths.get("integrations/container/");
+    String writeStartEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkKafkaWriteStartEvent.json")));
+    String writeCompleteEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkKafkaWriteCompleteEvent.json")));
+    String readStartEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkKafkaReadStartEvent.json")));
+    String readCompleteEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkKafkaReadCompleteEvent.json")));
+
+    mockServerClient.verify(
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(writeStartEvent, MatchType.ONLY_MATCHING_FIELDS)),
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(writeCompleteEvent, MatchType.ONLY_MATCHING_FIELDS)),
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(readStartEvent, MatchType.ONLY_MATCHING_FIELDS)),
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(readCompleteEvent, MatchType.ONLY_MATCHING_FIELDS)));
+  }
+
+  @Test
+  public void testPysparkKafkaReadAssign() throws IOException {
+    kafka = makeKafkaContainer();
+    kafka.start();
+
+    ImmutableMap<String, Object> kafkaProps =
+        ImmutableMap.of(
+            "bootstrap.servers",
+            kafka.getHost() + ":" + kafka.getMappedPort(KafkaContainer.KAFKA_PORT));
+    AdminClient admin = AdminClient.create(kafkaProps);
+    admin.createTopics(
+        Arrays.asList(new NewTopic("topicA", 1, (short) 0), new NewTopic("topicB", 1, (short) 0)));
+    pyspark =
+        makePysparkContainerWithDefaultConf(
+            "testPysparkKafkaReadAssignTest", "/opt/spark_scripts/spark_kafk_assign_read.py");
+
+    pyspark.setWaitStrategy(Wait.forLogMessage(".*ShutdownHookManager: Shutdown hook called.*", 1));
+    pyspark.start();
+
+    Path eventFolder = Paths.get("integrations/container/");
+    String readStartEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkKafkaAssignReadStartEvent.json")));
+    String readCompleteEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkKafkaAssignReadCompleteEvent.json")));
+
+    mockServerClient.verify(
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(readStartEvent, MatchType.ONLY_MATCHING_FIELDS)),
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(readCompleteEvent, MatchType.ONLY_MATCHING_FIELDS)));
   }
 
   @Test
