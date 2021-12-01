@@ -19,7 +19,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.WeakHashMap;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.hadoop.conf.Configuration;
@@ -34,6 +36,7 @@ import org.apache.spark.scheduler.SparkListenerApplicationStart;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
+import org.apache.spark.scheduler.SparkListenerTaskEnd;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
@@ -55,6 +58,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   public static final String SPARK_CONF_URL_PARAM_PREFIX = "openlineage.url.param";
   private static WeakHashMap<RDD<?>, Configuration> outputs = new WeakHashMap<>();
   private static ContextFactory contextFactory;
+  private static JobMetricsHolder jobMetrics = JobMetricsHolder.getInstance();
 
   /** called by the agent on init with the provided argument */
   public static void init(ContextFactory contextFactory) {
@@ -139,6 +143,12 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   /** called by the SparkListener when a job starts */
   @Override
   public void onJobStart(SparkListenerJobStart jobStart) {
+    Set<Integer> stages =
+        ScalaConversionUtils.fromSeq(jobStart.stageIds()).stream()
+            .map(Integer.class::cast)
+            .collect(Collectors.toSet());
+    jobMetrics.addJobStages(jobStart.jobId(), stages);
+
     ScalaConversionUtils.asJavaOptional(
             SparkSession.getActiveSession()
                 .map(ScalaConversionUtils.toScalaFn(sess -> sess.sparkContext()))
@@ -166,7 +176,13 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   @Override
   public void onJobEnd(SparkListenerJobEnd jobEnd) {
     ExecutionContext context = rddExecutionRegistry.remove(jobEnd.jobId());
-    context.end(jobEnd);
+    if (context != null) context.end(jobEnd);
+    jobMetrics.cleanUp(jobEnd.jobId());
+  }
+
+  @Override
+  public void onTaskEnd(SparkListenerTaskEnd taskEnd) {
+    jobMetrics.addMetrics(taskEnd.stageId(), taskEnd.taskMetrics());
   }
 
   public static SparkSQLExecutionContext getSparkSQLExecutionContext(long executionId) {
