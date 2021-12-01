@@ -1,0 +1,33 @@
+{
+  "eventType" : "COMPLETE",
+  "job" : {
+    "namespace" : "testJdbcDataSource",
+    "name" : "open_lineage_integration_jdbc.execute_save_into_data_source_command"
+  },
+  "inputs" : [ ],
+  "outputs" : [ {
+    "namespace" : "derby:memory:;databaseName=/tmp/tbl;create=true",
+    "name" : "tbl",
+    "facets" : {
+      "dataSource" : {
+        "name" : "derby:memory:;databaseName=/tmp/tbl;create=true",
+        "uri" : "derby:memory:;databaseName=/tmp/tbl;create=true"
+      },
+      "schema" : {
+        "fields" : [ {
+          "name" : "a",
+          "type" : "long"
+        }, {
+          "name" : "b",
+          "type" : "long"
+        } ]
+      }
+    },
+    "outputFacets" : {
+      "outputStatistics" : {
+        "rowCount" : 2,
+        "size" : 0
+      }
+    }
+  } ]
+}

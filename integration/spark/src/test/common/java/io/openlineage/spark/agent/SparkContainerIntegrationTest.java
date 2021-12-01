@@ -138,6 +138,7 @@ public class SparkContainerIntegrationTest {
                       + ",/opt/dependencies/kafka-*.jar"
                       + ",/opt/dependencies/spark-token-provider-*.jar"
                       + ",/opt/dependencies/commons-pool2-*.jar"
+                      + ",/opt/dependencies/sqlite-jdbc-*.jar"
                 },
                 command)
             .flatMap(Stream::of)
@@ -270,8 +271,6 @@ public class SparkContainerIntegrationTest {
     pyspark =
         makePysparkContainerWithDefaultConf(
             "testPysparkKafkaReadAssignTest", "/opt/spark_scripts/spark_kafk_assign_read.py");
-
-    pyspark.setWaitStrategy(Wait.forLogMessage(".*ShutdownHookManager: Shutdown hook called.*", 1));
     pyspark.start();
 
     Path eventFolder = Paths.get("integrations/container/");
@@ -385,6 +384,23 @@ public class SparkContainerIntegrationTest {
         request()
             .withPath("/api/v1/lineage")
             .withBody(json(completeCTASEvent, MatchType.ONLY_MATCHING_FIELDS)));
+  }
+
+  @Test
+  public void testJDBCDataSource() throws IOException, InterruptedException {
+    pyspark =
+        makePysparkContainerWithDefaultConf(
+            "testJdbcDataSource", "/opt/spark_scripts/spark_jdbc_datasource.py");
+    pyspark.start();
+
+    Path eventFolder = Paths.get("integrations/container/");
+
+    String jdbcEnd = new String(readAllBytes(eventFolder.resolve("pysparkJDBCEnd.json")));
+
+    mockServerClient.verify(
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(jdbcEnd, MatchType.ONLY_MATCHING_FIELDS)));
   }
 
   @Test
