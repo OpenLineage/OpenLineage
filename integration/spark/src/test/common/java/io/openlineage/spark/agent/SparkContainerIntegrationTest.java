@@ -388,6 +388,49 @@ public class SparkContainerIntegrationTest {
   }
 
   @Test
+  public void testCreateTable() throws IOException {
+    pyspark =
+        makePysparkContainerWithDefaultConf(
+            "testCreateTable", "/opt/spark_scripts/spark_create_table.py");
+    pyspark.setWaitStrategy(Wait.forLogMessage(".*ShutdownHookManager: Shutdown hook called.*", 1));
+    pyspark.start();
+
+    Path eventFolder = Paths.get("integrations/container/");
+
+    String startCreateTableEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkCreateTableStartEvent.json")));
+    String completeCreateTableEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkCreateTableCompleteEvent.json")));
+
+    mockServerClient.verify(
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(startCreateTableEvent, MatchType.ONLY_MATCHING_FIELDS)),
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(completeCreateTableEvent, MatchType.ONLY_MATCHING_FIELDS)));
+  }
+
+  @Test
+  public void testDropTable() throws IOException {
+    pyspark =
+        makePysparkContainerWithDefaultConf(
+            "testDropTable", "/opt/spark_scripts/spark_drop_table.py");
+    pyspark.setWaitStrategy(Wait.forLogMessage(".*ShutdownHookManager: Shutdown hook called.*", 1));
+    pyspark.start();
+
+    Path eventFolder = Paths.get("integrations/container/");
+
+    String startDropTableEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkDropTableStartEvent.json")));
+
+    mockServerClient.verify(
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(startDropTableEvent, MatchType.ONLY_MATCHING_FIELDS)));
+  }
+
+  @Test
   @EnabledIfSystemProperty(
       named = "spark.version",
       matches = "(3.*)|(2\\.4\\.([8,9]|\\d\\d))") // Spark version >= 2.4.8

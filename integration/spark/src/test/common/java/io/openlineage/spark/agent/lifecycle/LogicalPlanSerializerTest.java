@@ -16,14 +16,9 @@ import com.google.cloud.spark.bigquery.repackaged.com.google.common.collect.Immu
 import io.openlineage.spark.agent.client.OpenLineageClient;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nullable;
@@ -33,9 +28,6 @@ import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier;
-import org.apache.spark.sql.catalyst.catalog.CatalogStorageFormat;
-import org.apache.spark.sql.catalyst.catalog.CatalogTable;
-import org.apache.spark.sql.catalyst.catalog.CatalogTableType;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
@@ -138,7 +130,11 @@ class LogicalPlanSerializerTest {
 
     HadoopFsRelation hadoopFsRelation =
         new HadoopFsRelation(
-            new CatalogFileIndex(session, getCatalogTable(), 100L),
+            new CatalogFileIndex(
+                session,
+                CatalogTableTestUtils.getCatalogTable(
+                    new TableIdentifier("test", Option.apply("db"))),
+                100L),
             new StructType(
                 new StructField[] {
                   new StructField("name", StringType$.MODULE$, false, Metadata.empty())
@@ -212,42 +208,6 @@ class LogicalPlanSerializerTest {
     assertThat(hadoopFSActualNode)
         .satisfies(
             new MatchesMapRecursively(expectedHadoopFSNode, Collections.singleton("exprId")));
-  }
-
-  private CatalogTable getCatalogTable() throws InvocationTargetException, IllegalAccessException {
-    Method applyMethod =
-        Arrays.stream(CatalogTable.class.getDeclaredMethods())
-            .filter(m -> m.getName().equals("apply"))
-            .findFirst()
-            .get();
-    List<Object> params = new ArrayList<>();
-    params.add(new TableIdentifier("test", Option.apply("db")));
-    params.add(CatalogTableType.MANAGED());
-    params.add(CatalogStorageFormat.empty());
-    params.add(
-        new StructType(
-            new StructField[] {
-              new StructField("name", StringType$.MODULE$, false, Metadata.empty())
-            }));
-    params.add(Option.empty());
-    params.add(Seq$.MODULE$.<String>newBuilder().$plus$eq("name").result());
-    params.add(Option.empty());
-    params.add("");
-    params.add(Instant.now().getEpochSecond());
-    params.add(Instant.now().getEpochSecond());
-    params.add("v1");
-    params.add(new HashMap<>());
-    params.add(Option.empty());
-    params.add(Option.empty());
-    params.add(Option.empty());
-    params.add(Seq$.MODULE$.<String>empty());
-    params.add(false);
-    params.add(false);
-    params.add(new HashMap<>());
-    if (applyMethod.getParameterCount() > 19) {
-      params.add(Option.empty());
-    }
-    return (CatalogTable) applyMethod.invoke(null, params.toArray());
   }
 
   @Test
