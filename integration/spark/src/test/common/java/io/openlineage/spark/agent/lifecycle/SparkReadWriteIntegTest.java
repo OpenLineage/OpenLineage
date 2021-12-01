@@ -193,13 +193,12 @@ public class SparkReadWriteIntegTest {
     Path sqliteFile = writeDir.resolve("sqlite/database");
     sqliteFile.getParent().toFile().mkdir();
     String tableName = "data_table";
-    df.filter("age > 16")
+    df.filter("age > 100")
         .write()
         .jdbc(
             "jdbc:sqlite:" + sqliteFile.toAbsolutePath().toUri().toString(),
             tableName,
             new Properties());
-
     // wait for event processing to complete
     StaticExecutionContextFactory.waitForExecutionEnd();
 
@@ -230,9 +229,12 @@ public class SparkReadWriteIntegTest {
     assertEquals(tableName, output.getName());
     assertNotNull(output.getFacets().getAdditionalProperties());
 
-    assertThat(output.getOutputFacets().getOutputStatistics())
-        .isNotNull()
-        .hasFieldOrPropertyWithValue("rowCount", 0L);
+    // Spark rowCount metrics currently only working in Spark 3.x
+    if (spark.version().startsWith("3")) {
+      assertThat(output.getOutputFacets().getOutputStatistics())
+          .isNotNull()
+          .hasFieldOrPropertyWithValue("rowCount", 2L);
+    }
   }
 
   private Path writeTestDataToFile(Path writeDir) throws IOException {
@@ -251,7 +253,15 @@ public class SparkReadWriteIntegTest {
         ImmutableMap<String, Object> map =
             ImmutableMap.of("name", UUID.randomUUID().toString(), "age", random.nextInt(100));
         mapper.writeValue(jsonWriter, map);
+        writer.write('\n');
       }
+      mapper.writeValue(
+          jsonWriter, ImmutableMap.of("name", UUID.randomUUID().toString(), "age", 107));
+      writer.write('\n');
+      mapper.writeValue(
+          jsonWriter, ImmutableMap.of("name", UUID.randomUUID().toString(), "age", 103));
+      writer.write('\n');
+      jsonWriter.flush();
     }
     return testFile;
   }
