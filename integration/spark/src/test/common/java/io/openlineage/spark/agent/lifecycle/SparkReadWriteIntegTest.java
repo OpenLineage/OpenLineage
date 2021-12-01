@@ -229,9 +229,12 @@ public class SparkReadWriteIntegTest {
     assertEquals(tableName, output.getName());
     assertNotNull(output.getFacets().getAdditionalProperties());
 
-    assertThat(output.getOutputFacets().getOutputStatistics())
-        .isNotNull()
-        .hasFieldOrPropertyWithValue("rowCount", 2L);
+    // Spark rowCount metrics currently only working in Spark 3.x
+    if (spark.version().startsWith("3")) {
+      assertThat(output.getOutputFacets().getOutputStatistics())
+          .isNotNull()
+          .hasFieldOrPropertyWithValue("rowCount", 2L);
+    }
   }
 
   private Path writeTestDataToFile(Path writeDir) throws IOException {

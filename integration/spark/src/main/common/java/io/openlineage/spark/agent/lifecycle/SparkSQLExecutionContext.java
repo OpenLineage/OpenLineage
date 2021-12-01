@@ -162,8 +162,9 @@ public class SparkSQLExecutionContext implements ExecutionContext {
       log.info("No execution info {}", queryExecution);
       return;
     }
+    LogicalPlan optimizedPlan = queryExecution.optimizedPlan();
     if (log.isDebugEnabled()) {
-      log.debug("Traversing optimized plan {}", queryExecution.optimizedPlan().toJSON());
+      log.debug("Traversing optimized plan {}", optimizedPlan.toJSON());
       log.debug("Physical plan executed {}", queryExecution.executedPlan().toJSON());
     }
     PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>> outputVisitor =
@@ -171,14 +172,13 @@ public class SparkSQLExecutionContext implements ExecutionContext {
     PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>> planTraversal =
         getPlanTraversal(outputVisitor);
     List<OpenLineage.OutputDataset> outputDatasets =
-        planTraversal.isDefinedAt(queryExecution.optimizedPlan())
-            ? planTraversal.apply(queryExecution.optimizedPlan())
+        planTraversal.isDefinedAt(optimizedPlan)
+            ? planTraversal.apply(optimizedPlan)
             : Collections.emptyList();
     outputDatasets = populateOutputMetrics(jobEnd.jobId(), outputDatasets);
 
     List<InputDataset> inputDatasets = getInputDatasets();
-    UnknownEntryFacet unknownFacet =
-        unknownEntryFacetListener.build(queryExecution.optimizedPlan()).orElse(null);
+    UnknownEntryFacet unknownFacet = unknownEntryFacetListener.build(optimizedPlan).orElse(null);
 
     OpenLineage.RunEvent event =
         openLineage
