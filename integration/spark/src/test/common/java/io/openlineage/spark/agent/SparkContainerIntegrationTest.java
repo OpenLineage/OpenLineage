@@ -101,7 +101,7 @@ public class SparkContainerIntegrationTest {
         .withFileSystemBind("build/libs", "/opt/libs")
         .withFileSystemBind("build/dependencies", "/opt/dependencies")
         .withLogConsumer(SparkContainerIntegrationTest::consumeOutput)
-        .withStartupTimeout(Duration.of(2, ChronoUnit.MINUTES))
+        .withStartupTimeout(Duration.of(5, ChronoUnit.MINUTES))
         .dependsOn(openLineageClientMockContainer)
         .withReuse(true)
         .withCommand(command);
@@ -393,5 +393,29 @@ public class SparkContainerIntegrationTest {
         request()
             .withPath("/api/v1/lineage")
             .withBody(json(completeOCTASEvent, MatchType.ONLY_MATCHING_FIELDS)));
+  }
+
+  @Test
+  public void testAlterTable() throws IOException {
+    pyspark =
+        makePysparkContainerWithDefaultConf(
+            "testAlterTable", "/opt/spark_scripts/spark_alter_table.py");
+    pyspark.setWaitStrategy(Wait.forLogMessage(".*ShutdownHookManager: Shutdown hook called.*", 1));
+    pyspark.start();
+
+    Path eventFolder = Paths.get("integrations/container/");
+
+    String completeAddColumnsEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkAlterTableAddColumnsEnd.json")));
+    String completeRenameEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkAlterTableRenameEnd.json")));
+
+    mockServerClient.verify(
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(completeAddColumnsEvent, MatchType.ONLY_MATCHING_FIELDS)),
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(completeRenameEvent, MatchType.ONLY_MATCHING_FIELDS)));
   }
 }
