@@ -167,8 +167,8 @@ class DbtArtifactProcessor:
         """
             Parse dbt manifest and run_result and produce OpenLineage events.
         """
-        manifest = self.load_metadata(self.manifest_path, [2, 3], self.logger)
-        run_result = self.load_metadata(self.run_result_path, [2, 3], self.logger)
+        manifest = self.load_metadata(self.manifest_path, [2, 3, 4], self.logger)
+        run_result = self.load_metadata(self.run_result_path, [2, 3, 4], self.logger)
         self.run_metadata = run_result['metadata']
         self.command = run_result['args']['which']
 
@@ -418,9 +418,9 @@ class DbtArtifactProcessor:
     ) -> Dict[str, List[Assertion]]:
         assertions = collections.defaultdict(list)
         for run in context.run_results['results']:
-            test_node = nodes[run['unique_id']]
             if not run['unique_id'].startswith('test.'):
                 continue
+            test_node = nodes[run['unique_id']]
 
             model_node = None
             for node in context.manifest['parent_map'][run['unique_id']]:
