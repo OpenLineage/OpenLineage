@@ -6,7 +6,7 @@ from unittest import mock
 import attr
 import pytest
 
-from openlineage.common.provider.dbt import DbtArtifactProcessor, ParentRunMetadata
+from openlineage.common.provider.dbt import DbtArtifactProcessor, ParentRunMetadata, DbtRunContext
 from openlineage.client import set_producer
 from openlineage.common.test import match
 
@@ -211,3 +211,15 @@ def test_logging_handler_does_not_warn():
     DbtArtifactProcessor.load_metadata(path, [2], logger)
 
     logger.warning.assert_not_called()
+
+
+def test_seed_snapshot_nodes_do_not_throw():
+    processor = DbtArtifactProcessor(
+        producer='https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt',
+        project_dir='tests/dbt/test',
+    )
+
+    # Should just skip processing
+    processor.parse_assertions(
+        DbtRunContext({}, {"results": [{"unique_id": "seed.jaffle_shop.raw_orders"}]}), {}
+    )
