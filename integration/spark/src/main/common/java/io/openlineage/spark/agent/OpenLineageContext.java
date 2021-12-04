@@ -34,8 +34,8 @@ public class OpenLineageContext {
       Map<String, String> urlParams = argument.getUrlParams().get();
 
       StringJoiner query = new StringJoiner("&");
-      urlParams.forEach( (k, v) -> query.add(k + "=" + v) );
-      
+      urlParams.forEach((k, v) -> query.add(k + "=" + v));
+
       queryParams = query.toString();
     }
 
