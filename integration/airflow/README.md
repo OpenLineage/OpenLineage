@@ -41,10 +41,9 @@ To install from source, run:
 $ python3 setup.py install
 ```
 
-
 ## Usage
 
-###Airflow 1.10+
+### Airflow 1.10+
 
 To begin collecting Airflow DAG metadata with OpenLineage, use:
 
@@ -60,7 +59,7 @@ When enabled, the library will:
 3. Collect task run-level metadata (execution time, state, parameters, etc)
 4. On DAG **complete**, also mark the task as _complete_ in OpenLineage
 
-###Airflow 2.1+ (*experimental*)
+### Airflow 2.1+ (*experimental*)
 
 Set your LineageBackend in your [airflow.cfg](https://airflow.apache.org/docs/apache-airflow/stable/howto/set-config.html) or via environmental variable `AIRFLOW__LINEAGE__BACKEND`
 to 

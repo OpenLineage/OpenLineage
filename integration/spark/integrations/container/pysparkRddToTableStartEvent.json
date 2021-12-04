@@ -52,13 +52,6 @@
         "dataSource": {
           "name": "file",
           "uri": "file"
-        },
-        "stats" : {}
-      },
-      "outputFacets": {
-        "outputStatistics": {
-          "rowCount": "${json-unit.any-number}",
-          "size": "${json-unit.any-number}"
         }
       }
     }

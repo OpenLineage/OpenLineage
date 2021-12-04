@@ -29,6 +29,7 @@ public class OutputDatasetVisitor extends QueryPlanVisitor<LogicalPlan, OpenLine
   @Override
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
     return visitor.apply(x).stream()
+        .filter(a -> a != null)
         .map(
             dataset ->
                 new OpenLineage.OutputDatasetBuilder()
