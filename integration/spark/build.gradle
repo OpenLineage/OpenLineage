@@ -182,7 +182,7 @@ sourceSets {
 
     spark3Test {
         java {
-            srcDirs = ["src/test/spark3/java"]
+            srcDirs = ["src/test/common/java", "src/test/spark3/java"]
             compileClasspath = configurations.spark3Test + sourceSets.main.output
             annotationProcessorPath = configurations.lombok
             destinationDirectory.set(file("$buildDir/classes/java/test/"))
