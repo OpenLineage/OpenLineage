@@ -1,12 +1,13 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import java.net.URI;
 import java.util.Collections;
 import java.util.List;
-import org.apache.hadoop.fs.Path;
-import org.apache.spark.sql.catalyst.catalog.CatalogStorageFormat;
+import java.util.Optional;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.hive.execution.InsertIntoHiveDirCommand;
 
@@ -20,17 +21,12 @@ public class InsertIntoHiveDirVisitor
   @Override
   public List<OpenLineage.Dataset> apply(LogicalPlan x) {
     InsertIntoHiveDirCommand cmd = (InsertIntoHiveDirCommand) x;
-    CatalogStorageFormat storage = cmd.storage();
-    return ScalaConversionUtils.asJavaOptional(storage.locationUri())
+    Optional<URI> optionalUri = ScalaConversionUtils.asJavaOptional(cmd.storage().locationUri());
+    return optionalUri
         .map(
-            uri -> {
-              Path path = new Path(uri);
-              if (uri.getScheme() == null) {
-                path = new Path("file", null, uri.toString());
-              }
-              return Collections.singletonList(
-                  PlanUtils.getDataset(path.toUri(), cmd.query().schema()));
-            })
+            uri ->
+                Collections.singletonList(
+                    PlanUtils.getDataset(PathUtils.fromURI(uri, "file"), cmd.query().schema())))
         .orElse(Collections.emptyList());
   }
 }

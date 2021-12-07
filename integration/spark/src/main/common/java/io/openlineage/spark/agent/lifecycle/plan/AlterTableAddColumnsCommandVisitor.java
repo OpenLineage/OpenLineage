@@ -1,6 +1,7 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import java.util.Arrays;
 import java.util.Collections;
@@ -36,7 +37,8 @@ public class AlterTableAddColumnsCommandVisitor
         JavaConversions.seqAsJavaList(((AlterTableAddColumnsCommand) x).colsToAdd());
 
     if (tableColumns.containsAll(addedColumns)) {
-      return Collections.singletonList(PlanUtils.getDataset(catalogTable));
+      return Collections.singletonList(
+          PlanUtils.getDataset(PathUtils.fromCatalogTable(catalogTable), catalogTable.schema()));
     } else {
       // apply triggered before applying the change - do not send an event
       return Collections.emptyList();

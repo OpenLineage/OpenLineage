@@ -7,6 +7,7 @@ import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.lifecycle.plan.CreateDataSourceTableAsSelectCommandVisitor;
 import java.net.URI;
 import java.util.List;
+import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier$;
 import org.apache.spark.sql.catalyst.catalog.CatalogStorageFormat$;
 import org.apache.spark.sql.catalyst.catalog.CatalogTableType;
@@ -28,6 +29,8 @@ class CreateDataSourceTableAsSelectCommandVisitorTest {
 
   @Test
   void testCTASCommand() {
+    SparkSession session = SparkSession.builder().master("local").getOrCreate();
+
     CreateDataSourceTableAsSelectCommandVisitor visitor =
         new CreateDataSourceTableAsSelectCommandVisitor();
 
@@ -58,7 +61,7 @@ class CreateDataSourceTableAsSelectCommandVisitorTest {
     List<OpenLineage.Dataset> datasets = visitor.apply(command);
     assertThat(datasets)
         .singleElement()
-        .hasFieldOrPropertyWithValue("name", "/directory")
+        .hasFieldOrPropertyWithValue("name", "directory")
         .hasFieldOrPropertyWithValue("namespace", "s3://bucket");
   }
 }

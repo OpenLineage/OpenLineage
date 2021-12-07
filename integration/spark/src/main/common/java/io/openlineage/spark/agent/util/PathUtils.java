@@ -3,6 +3,7 @@ package io.openlineage.spark.agent.util;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Optional;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.sql.AnalysisException;
@@ -42,6 +43,10 @@ public class PathUtils {
     return fromPath(new Path(location), defaultScheme);
   }
 
+  /**
+   * Create DatasetIdentifier from location. If the location does not exist, use provided authority
+   * with hive scheme.
+   */
   public static DatasetIdentifier fromCatalogTable(CatalogTable catalogTable, String authority) {
     try {
       URI location = catalogTable.location();
@@ -63,18 +68,54 @@ public class PathUtils {
     }
   }
 
+  /**
+   * Create DatasetIdentifier from CatalogTable, using storage's locationURI if it exists. In other
+   * way, use defaultTablePath.
+   */
+  @SneakyThrows
   public static DatasetIdentifier fromCatalogTable(CatalogTable catalogTable) {
     String authority =
         ScalaConversionUtils.asJavaOptional(catalogTable.storage().locationUri())
             .map(URI::toString)
-            .orElse(
-                SparkSession.active()
-                    .sessionState()
-                    .catalog()
-                    .defaultTablePath(catalogTable.identifier())
-                    .toString());
+            .orElseGet(
+                () ->
+                    SparkSession.active()
+                        .sessionState()
+                        .catalog()
+                        .defaultTablePath(catalogTable.identifier())
+                        .toString());
     return PathUtils.fromCatalogTable(catalogTable, authority);
   }
+
+  /**
+   * We use Hive metastore's address as a namespace for tables, with a physical location of a table
+   * as a backup. The physical location, when existing, will be also included as a separate facet,
+   * to facilicate "symlinking" of those datasets on OpenLineage consumer.
+   */
+  @SneakyThrows
+  public static DatasetIdentifier fromHiveTable(
+      SparkSession sparkSession, CatalogTable catalogTable) {
+    String metastoreAuth =
+        SparkConfUtils.getMetastoreKey(sparkSession.sparkContext().getConf()).orElse(null);
+    if (metastoreAuth != null) {
+      URI metastoreUri = new URI(metastoreAuth);
+      String qualifiedName = catalogTable.qualifiedName();
+      if (!qualifiedName.startsWith("/")) {
+        qualifiedName = String.format("/%s", qualifiedName);
+      }
+      return PathUtils.fromPath(
+          new Path(
+              new URI(
+                  "hive",
+                  null,
+                  metastoreUri.getHost(),
+                  metastoreUri.getPort(),
+                  qualifiedName,
+                  null,
+                  null)));
+    }
+    return PathUtils.fromURI(catalogTable.location(), "file");
+  };
 
   private static String fixName(String name) {
     if (name.chars().filter(x -> x == '/').count() > 1) {

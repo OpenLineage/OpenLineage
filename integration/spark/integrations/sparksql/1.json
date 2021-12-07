@@ -165,7 +165,6 @@
   "inputs": [
     {
       "namespace": "file",
-      "name": "/path/to/data",
       "facets": {
         "schema": {
           "fields": [
