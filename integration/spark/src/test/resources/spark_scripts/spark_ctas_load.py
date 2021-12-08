@@ -1,4 +1,5 @@
 import os
+import time
 
 os.makedirs("/tmp/ctas_load", exist_ok=True)
 
@@ -21,4 +22,4 @@ df.createOrReplaceTempView('temp')
 
 spark.sql("CREATE TABLE tbl1 USING hive LOCATION '/tmp/ctas_load/tbl1' AS SELECT a, b FROM temp")
 
-spark.sql(f"LOAD DATA INPATH '/test_data/test_data.csv' INTO TABLE tbl1")
+spark.sql(f"LOAD DATA LOCAL INPATH '/test_data/test_data.csv' INTO TABLE tbl1")

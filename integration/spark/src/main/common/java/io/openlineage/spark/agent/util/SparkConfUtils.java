@@ -1,5 +1,7 @@
 package io.openlineage.spark.agent.util;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Optional;
 import org.apache.spark.SparkConf;
@@ -25,7 +27,7 @@ public class SparkConfUtils {
     return Optional.empty();
   }
 
-  public static Optional<String> getMetastoreKey(SparkConf conf) {
+  public static Optional<URI> getMetastoreUri(SparkConf conf) {
     return Optional.ofNullable(
             SparkConfUtils.findSparkConfigKey(conf, metastoreUriKey)
                 .orElse(
@@ -36,6 +38,14 @@ public class SparkConfUtils {
                 return Arrays.stream(key.split(",")).findFirst().get();
               }
               return key;
+            })
+        .map(
+            uri -> {
+              try {
+                return new URI(uri);
+              } catch (URISyntaxException e) {
+                return null;
+              }
             });
   }
 }
