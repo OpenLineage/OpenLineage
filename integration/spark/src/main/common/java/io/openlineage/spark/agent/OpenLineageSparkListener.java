@@ -2,6 +2,7 @@ package io.openlineage.spark.agent;
 
 import static io.openlineage.spark.agent.ArgumentParser.DEFAULTS;
 import static io.openlineage.spark.agent.util.SparkConfUtils.findSparkConfigKey;
+import static io.openlineage.spark.agent.util.SparkConfUtils.findSparkUrlParams;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.client.OpenLineageClient;
@@ -54,6 +55,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   public static final String SPARK_CONF_JOB_NAME_KEY = "openlineage.parentJobName";
   public static final String SPARK_CONF_PARENT_RUN_ID_KEY = "openlineage.parentRunId";
   public static final String SPARK_CONF_API_KEY = "openlineage.apiKey";
+  public static final String SPARK_CONF_URL_PARAM_PREFIX = "openlineage.url.param";
   private static WeakHashMap<RDD<?>, Configuration> outputs = new WeakHashMap<>();
   private static ContextFactory contextFactory;
   private static JobMetricsHolder jobMetrics = JobMetricsHolder.getInstance();
@@ -287,7 +289,9 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
           findSparkConfigKey(conf, SPARK_CONF_PARENT_RUN_ID_KEY, DEFAULTS.getParentRunId());
       Optional<String> apiKey =
           findSparkConfigKey(conf, SPARK_CONF_API_KEY).filter(str -> !str.isEmpty());
-      return new ArgumentParser(host, version, namespace, jobName, runId, apiKey);
+      Optional<Map<String, String>> urlParams =
+          findSparkUrlParams(conf, SPARK_CONF_URL_PARAM_PREFIX);
+      return new ArgumentParser(host, version, namespace, jobName, runId, apiKey, urlParams);
     }
   }
 }
