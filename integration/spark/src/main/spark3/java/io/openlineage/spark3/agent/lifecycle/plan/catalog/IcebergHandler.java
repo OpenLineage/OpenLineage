@@ -79,12 +79,14 @@ public class IcebergHandler implements CatalogHandler {
   private DatasetIdentifier getHiveIdentifier(
       SparkSession session, @Nullable String confUri, String table) {
     table = String.format("/%s", table);
+    URI uri;
     if (confUri == null) {
-      URI uri =
+      uri =
           SparkConfUtils.getMetastoreUri(session.sparkContext().conf())
               .orElseThrow(() -> new UnsupportedCatalogException("hive"));
-      return PathUtils.fromHiveTable(table, uri);
+    } else {
+      uri = new URI(confUri);
     }
-    return PathUtils.fromHiveTable(table, new URI(confUri));
+    return PathUtils.fromPath(new Path(PathUtils.enrichHiveMetastoreURIWithTableName(uri, table)));
   }
 }

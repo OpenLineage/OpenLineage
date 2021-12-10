@@ -1,19 +1,21 @@
 package io.openlineage.spark.agent.util;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Optional;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.fs.Path;
-import org.apache.spark.sql.AnalysisException;
+import org.apache.spark.SparkConf;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
+import org.apache.spark.sql.internal.StaticSQLConf;
 
 @Slf4j
 public class PathUtils {
 
   private static final String DEFAULT_SCHEME = "file";
+
+  private static Optional<SparkConf> sparkConf = Optional.empty();
 
   public static DatasetIdentifier fromPath(Path path) {
     return PathUtils.fromPath(path, DEFAULT_SCHEME);
@@ -27,15 +29,8 @@ public class PathUtils {
     String namespace =
         Optional.ofNullable(uri.getAuthority())
             .map(a -> String.format("%s://%s", uri.getScheme(), a))
-            .orElseGet(
-                () -> {
-                  if (uri.getScheme() != null) {
-                    return uri.getScheme();
-                  } else {
-                    return defaultScheme;
-                  }
-                });
-    String name = fixName(uri.getPath());
+            .orElseGet(() -> (uri.getScheme() != null) ? uri.getScheme() : defaultScheme);
+    String name = removeFirstSlashIfSingleSlashInString(uri.getPath());
     return new DatasetIdentifier(name, namespace);
   }
 
@@ -43,29 +38,8 @@ public class PathUtils {
     return fromPath(new Path(location), defaultScheme);
   }
 
-  /**
-   * Create DatasetIdentifier from location. If the location does not exist, use provided authority
-   * with hive scheme.
-   */
-  public static DatasetIdentifier fromCatalogTable(CatalogTable catalogTable, String authority) {
-    try {
-      URI location = catalogTable.location();
-      return PathUtils.fromURI(location, "file");
-    } catch (Exception e) { // Java does not recognize scala exception
-      if (e instanceof AnalysisException) {
-        try {
-          String qualifiedName = catalogTable.qualifiedName();
-          if (!qualifiedName.startsWith("/")) {
-            qualifiedName = String.format("/%s", qualifiedName);
-          }
-          return PathUtils.fromPath(
-              new Path(new URI("hive", authority, qualifiedName, null, null)));
-        } catch (URISyntaxException uriSyntaxException) {
-          throw new IllegalArgumentException(uriSyntaxException);
-        }
-      }
-      throw e;
-    }
+  public static DatasetIdentifier fromCatalogTable(CatalogTable catalogTable) {
+    return fromCatalogTable(catalogTable, loadSparkConf());
   }
 
   /**
@@ -73,60 +47,89 @@ public class PathUtils {
    * way, use defaultTablePath.
    */
   @SneakyThrows
-  public static DatasetIdentifier fromCatalogTable(CatalogTable catalogTable) {
-    String authority =
-        ScalaConversionUtils.asJavaOptional(catalogTable.storage().locationUri())
-            .map(URI::toString)
-            .orElseGet(
-                () ->
-                    SparkSession.active()
-                        .sessionState()
-                        .catalog()
-                        .defaultTablePath(catalogTable.identifier())
-                        .toString());
-    return PathUtils.fromCatalogTable(catalogTable, authority);
+  public static DatasetIdentifier fromCatalogTable(
+      CatalogTable catalogTable, Optional<SparkConf> sparkConf) {
+    Optional<URI> metastoreUri = extractMetastoreUri(sparkConf);
+    if (metastoreUri.isPresent() && metastoreUri.get() != null) {
+      // dealing with Hive tables
+      return prepareHiveDatasetIdentifier(catalogTable, metastoreUri.get());
+    } else {
+      if (catalogTable.storage() != null && catalogTable.storage().locationUri().isDefined()) {
+        // location is present -> use it for dataset identifier with `file:/` scheme
+        return PathUtils.fromURI(catalogTable.storage().locationUri().get(), "file");
+      }
+
+      try {
+        // read it from default table path
+        return prepareDatasetIdentifierFromDefaultTablePath(catalogTable);
+      } catch (IllegalStateException e) {
+        // session inactive - no way to find DatasetProvider
+        throw new IllegalArgumentException(
+            "Unable to extract DatasetIdentifier from a CatalogTable", e);
+      }
+    }
+  }
+
+  @SneakyThrows
+  private static DatasetIdentifier prepareDatasetIdentifierFromDefaultTablePath(
+      CatalogTable catalogTable) {
+    String path =
+        SparkSession.active()
+            .sessionState()
+            .catalog()
+            .defaultTablePath(catalogTable.identifier())
+            .getPath();
+
+    return PathUtils.fromURI(new URI("file", null, path, null, null), "file");
+  }
+
+  @SneakyThrows
+  private static DatasetIdentifier prepareHiveDatasetIdentifier(
+      CatalogTable catalogTable, URI metastoreUri) {
+    String qualifiedName = catalogTable.qualifiedName();
+    if (!qualifiedName.startsWith("/")) {
+      qualifiedName = String.format("/%s", qualifiedName);
+    }
+    return PathUtils.fromPath(
+        new Path(enrichHiveMetastoreURIWithTableName(metastoreUri, qualifiedName)));
+  }
+
+  @SneakyThrows
+  public static URI enrichHiveMetastoreURIWithTableName(URI metastoreUri, String qualifiedName) {
+    return new URI(
+        "hive", null, metastoreUri.getHost(), metastoreUri.getPort(), qualifiedName, null, null);
   }
 
   /**
-   * We use Hive metastore's address as a namespace for tables, with a physical location of a table
-   * as a backup. The physical location, when existing, will be also included as a separate facet,
-   * to facilicate "symlinking" of those datasets on OpenLineage consumer.
+   * SparkConf does not change through job lifetime but it can get lost once session is closed. It's
+   * good to have it set in case of SPARK-29046
    */
-  @SneakyThrows
-  public static DatasetIdentifier fromHiveTable(
-      SparkSession sparkSession, CatalogTable catalogTable) {
-    Optional<URI> metastoreUri =
-        SparkConfUtils.getMetastoreUri(sparkSession.sparkContext().getConf());
-    if (metastoreUri.isPresent()) {
-      URI uri = metastoreUri.get();
-      String qualifiedName = catalogTable.qualifiedName();
-      if (!qualifiedName.startsWith("/")) {
-        qualifiedName = String.format("/%s", qualifiedName);
-      }
-      return PathUtils.fromHiveTable(qualifiedName, uri);
+  private static Optional<SparkConf> loadSparkConf() {
+    if (!sparkConf.isPresent() && SparkSession.getActiveSession().isDefined()) {
+      sparkConf = Optional.of(SparkSession.getActiveSession().get().sparkContext().getConf());
     }
-    return PathUtils.fromURI(catalogTable.location(), "file");
-  };
-
-  @SneakyThrows
-  public static DatasetIdentifier fromHiveTable(String qualifiedName, URI metastoreUri) {
-    return PathUtils.fromPath(
-        new Path(
-            new URI(
-                "hive",
-                null,
-                metastoreUri.getHost(),
-                metastoreUri.getPort(),
-                qualifiedName,
-                null,
-                null)));
+    return sparkConf;
   }
 
-  private static String fixName(String name) {
-    if (name.chars().filter(x -> x == '/').count() > 1) {
-      return name;
+  private static Optional<URI> extractMetastoreUri(Optional<SparkConf> sparkConf) {
+    // make sure SparkConf is present
+    if (!sparkConf.isPresent()) {
+      return Optional.empty();
     }
-    if (name.startsWith("/")) {
+
+    // make sure enableHiveSupport is called
+    Optional<String> setting =
+        SparkConfUtils.findSparkConfigKey(
+            sparkConf.get(), StaticSQLConf.CATALOG_IMPLEMENTATION().key());
+    if (!setting.isPresent() || !setting.get().equals("hive")) {
+      return Optional.empty();
+    }
+
+    return SparkConfUtils.getMetastoreUri(sparkConf.get());
+  }
+
+  private static String removeFirstSlashIfSingleSlashInString(String name) {
+    if (name.chars().filter(x -> x == '/').count() == 1 && name.startsWith("/")) {
       return name.substring(1);
     }
     return name;

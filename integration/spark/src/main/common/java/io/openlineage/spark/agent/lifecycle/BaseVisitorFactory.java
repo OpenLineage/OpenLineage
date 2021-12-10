@@ -75,16 +75,12 @@ abstract class BaseVisitorFactory implements VisitorFactory {
     list.add(new OutputDatasetVisitor(new AppendDataVisitor(allCommonVisitors)));
     list.add(new OutputDatasetVisitor(new InsertIntoDirVisitor()));
     if (InsertIntoHiveTableVisitor.hasHiveClasses()) {
-      list.add(new OutputDatasetVisitor(new InsertIntoHiveTableVisitor(sqlContext.sparkSession())));
+      list.add(new OutputDatasetVisitor(new InsertIntoHiveTableVisitor()));
       list.add(new OutputDatasetVisitor(new InsertIntoHiveDirVisitor()));
-      list.add(
-          new OutputDatasetVisitor(
-              new CreateHiveTableAsSelectCommandVisitor(sqlContext.sparkSession())));
+      list.add(new OutputDatasetVisitor(new CreateHiveTableAsSelectCommandVisitor()));
     }
     if (OptimizedCreateHiveTableAsSelectCommandVisitor.hasClasses()) {
-      list.add(
-          new OutputDatasetVisitor(
-              new OptimizedCreateHiveTableAsSelectCommandVisitor(sqlContext.sparkSession())));
+      list.add(new OutputDatasetVisitor(new OptimizedCreateHiveTableAsSelectCommandVisitor()));
     }
     list.add(new OutputDatasetVisitor(new CreateDataSourceTableCommandVisitor()));
     list.add(new OutputDatasetVisitor(new LoadDataCommandVisitor(sqlContext.sparkSession())));

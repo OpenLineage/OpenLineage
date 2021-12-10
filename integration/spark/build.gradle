@@ -127,6 +127,7 @@ dependencies {
     testCompile "org.assertj:assertj-core:${assertjVersion}"
     testCompile "org.junit.jupiter:junit-jupiter:${junit5Version}"
     testCompile "org.mockito:mockito-core:${mockitoVersion}"
+    testCompile "org.mockito:mockito-inline:${mockitoVersion}"
     testCompile "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
     testCompile "org.projectlombok:lombok:${lombokVersion}"
     testCompileOnly "org.apache.spark:spark-core_2.11:${sparkVersion}"
