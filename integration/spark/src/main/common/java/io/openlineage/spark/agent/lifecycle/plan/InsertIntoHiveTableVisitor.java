@@ -5,7 +5,6 @@ import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import java.util.Collections;
 import java.util.List;
-import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.hive.execution.InsertIntoHiveTable;
@@ -16,12 +15,6 @@ import org.apache.spark.sql.hive.execution.InsertIntoHiveTable;
  */
 public class InsertIntoHiveTableVisitor
     extends QueryPlanVisitor<InsertIntoHiveTable, OpenLineage.Dataset> {
-
-  private final SparkSession sparkSession;
-
-  public InsertIntoHiveTableVisitor(SparkSession sparkSession) {
-    this.sparkSession = sparkSession;
-  }
 
   public static boolean hasHiveClasses() {
     try {
@@ -41,6 +34,6 @@ public class InsertIntoHiveTableVisitor
     CatalogTable table = cmd.table();
 
     return Collections.singletonList(
-        PlanUtils.getDataset(PathUtils.fromHiveTable(sparkSession, table), table.schema()));
+        PlanUtils.getDataset(PathUtils.fromCatalogTable(table), table.schema()));
   }
 }

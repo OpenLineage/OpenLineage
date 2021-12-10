@@ -42,7 +42,7 @@ class OptimizedCreateHiveTableAsSelectCommandVisitorTest {
   void testOptimizedCreateHiveTableAsSelectCommand() {
     SparkSession session = SparkSession.builder().master("local").getOrCreate();
     OptimizedCreateHiveTableAsSelectCommandVisitor visitor =
-        new OptimizedCreateHiveTableAsSelectCommandVisitor(session);
+        new OptimizedCreateHiveTableAsSelectCommandVisitor();
 
     OptimizedCreateHiveTableAsSelectCommand command =
         new OptimizedCreateHiveTableAsSelectCommand(

@@ -1,21 +1,27 @@
 package io.openlineage.spark.agent.util;
 
+import static io.openlineage.spark.agent.util.PathUtils.enrichHiveMetastoreURIWithTableName;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.BDDMockito.given;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
-import org.apache.spark.sql.AnalysisException;
 import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.catalyst.TableIdentifier$;
+import org.apache.spark.sql.catalyst.catalog.CatalogStorageFormat;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
+import org.apache.spark.sql.catalyst.catalog.SessionCatalog;
+import org.apache.spark.sql.internal.SessionState;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 import scala.Option;
 
 @Slf4j
@@ -92,28 +98,11 @@ public class PathUtilsTest {
   }
 
   @Test
-  void testFromCatalogTable() {
-    CatalogTable catalogTable = mock(CatalogTable.class);
-    when(catalogTable.identifier()).thenReturn(TableIdentifier$.MODULE$.apply("table"));
-    when(catalogTable.qualifiedName()).thenReturn("table");
-    given(catalogTable.location())
-        .willAnswer(
-            invocation -> {
-              throw new AnalysisException(
-                  "", Option.empty(), Option.empty(), Option.empty(), Option.empty());
-            });
-
-    DatasetIdentifier di = PathUtils.fromCatalogTable(catalogTable, "10.1.0.1:9083");
-    assertThat(catalogTable.qualifiedName()).isEqualTo("table");
-    assertThat(di.getName()).isEqualTo("table");
-    assertThat(di.getNamespace()).isEqualTo("hive://10.1.0.1:9083");
-  }
-
-  @Test
-  void testFromHiveTable() throws URISyntaxException {
+  void testFromCatalogTableWithHiveTables() throws URISyntaxException {
     SparkSession sparkSession = mock(SparkSession.class);
     SparkContext sparkContext = mock(SparkContext.class);
     SparkConf sparkConf = new SparkConf();
+    sparkConf.set("spark.sql.catalogImplementation", "hive");
     sparkConf.set("spark.sql.hive.metastore.uris", "thrift://10.1.0.1:9083");
     when(sparkContext.getConf()).thenReturn(sparkConf);
     when(sparkSession.sparkContext()).thenReturn(sparkContext);
@@ -121,26 +110,67 @@ public class PathUtilsTest {
     CatalogTable catalogTable = mock(CatalogTable.class);
     when(catalogTable.qualifiedName()).thenReturn("table");
 
-    DatasetIdentifier di = PathUtils.fromHiveTable(sparkSession, catalogTable);
+    DatasetIdentifier di = PathUtils.fromCatalogTable(catalogTable, Optional.of(sparkConf));
     assertThat(di.getName()).isEqualTo("table");
     assertThat(di.getNamespace()).isEqualTo("hive://10.1.0.1:9083");
 
     sparkConf.set(
         "spark.sql.hive.metastore.uris", "anotherprotocol://127.0.0.1:1010,yetanother://something");
-    di = PathUtils.fromHiveTable(sparkSession, catalogTable);
+    di = PathUtils.fromCatalogTable(catalogTable, Optional.of(sparkConf));
     assertThat(di.getName()).isEqualTo("table");
     assertThat(di.getNamespace()).isEqualTo("hive://127.0.0.1:1010");
 
     sparkConf.remove("spark.sql.hive.metastore.uris");
     sparkConf.set("spark.hadoop.hive.metastore.uris", "thrift://10.1.0.1:9083");
-    di = PathUtils.fromHiveTable(sparkSession, catalogTable);
+    di = PathUtils.fromCatalogTable(catalogTable, Optional.of(sparkConf));
     assertThat(di.getName()).isEqualTo("table");
     assertThat(di.getNamespace()).isEqualTo("hive://10.1.0.1:9083");
+  }
+
+  @Test
+  void testFromCatalogWithNoHiveMetastoreAndHdfsLocation() throws URISyntaxException {
+    CatalogTable catalogTable = mock(CatalogTable.class);
+    CatalogStorageFormat catalogStorageFormat = mock(CatalogStorageFormat.class);
+    SparkConf sparkConf = new SparkConf();
 
     sparkConf.remove("spark.hadoop.hive.metastore.uris");
-    when(catalogTable.location()).thenReturn(new URI("hdfs://namenode:8020/warehouse/table"));
-    di = PathUtils.fromHiveTable(sparkSession, catalogTable);
+    when(catalogTable.storage()).thenReturn(catalogStorageFormat);
+    when(catalogStorageFormat.locationUri())
+        .thenReturn(Option.apply(new URI("hdfs://namenode:8020/warehouse/table")));
+    DatasetIdentifier di = PathUtils.fromCatalogTable(catalogTable, Optional.of(sparkConf));
     assertThat(di.getName()).isEqualTo("/warehouse/table");
     assertThat(di.getNamespace()).isEqualTo("hdfs://namenode:8020");
+  }
+
+  @Test
+  void testFromCatalogExceptionIsThrownWhenUnableToExtractDatasetIdentifier() {
+    CatalogTable catalogTable = mock(CatalogTable.class);
+    assertThrows(IllegalArgumentException.class, () -> PathUtils.fromCatalogTable(catalogTable));
+  }
+
+  @Test
+  void testEnrichMetastoreUriWithTableName() throws URISyntaxException {
+    assertThat(enrichHiveMetastoreURIWithTableName(new URI("thrift://10.1.0.1:9083"), "/db/table"))
+        .isEqualTo(new URI("hive://10.1.0.1:9083/db/table"));
+  }
+
+  @Test
+  void testFromCatalogFromDefaultTablePath() throws URISyntaxException {
+    SparkSession sparkSession = mock(SparkSession.class);
+    SessionState sessionState = mock(SessionState.class);
+    SessionCatalog sessionCatalog = mock(SessionCatalog.class);
+
+    when(sparkSession.sessionState()).thenReturn(sessionState);
+    when(sessionState.catalog()).thenReturn(sessionCatalog);
+    when(sessionCatalog.defaultTablePath(any())).thenReturn(new URI("/warehouse/table"));
+
+    try (MockedStatic mocked = mockStatic(SparkSession.class)) {
+      mocked.when(SparkSession::active).thenReturn(sparkSession);
+      DatasetIdentifier di =
+          PathUtils.fromCatalogTable(mock(CatalogTable.class), Optional.of(new SparkConf()));
+
+      assertThat(di.getName()).isEqualTo("/warehouse/table");
+      assertThat(di.getNamespace()).isEqualTo("file");
+    }
   }
 }

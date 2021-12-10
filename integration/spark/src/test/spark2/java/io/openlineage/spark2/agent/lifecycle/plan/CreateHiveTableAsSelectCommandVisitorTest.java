@@ -41,8 +41,7 @@ class CreateHiveTableAsSelectCommandVisitorTest {
   @Test
   void testCreateHiveTableAsSelectCommand() {
     SparkSession session = SparkSession.builder().master("local").getOrCreate();
-    CreateHiveTableAsSelectCommandVisitor visitor =
-        new CreateHiveTableAsSelectCommandVisitor(session);
+    CreateHiveTableAsSelectCommandVisitor visitor = new CreateHiveTableAsSelectCommandVisitor();
 
     CreateHiveTableAsSelectCommand command =
         new CreateHiveTableAsSelectCommand(

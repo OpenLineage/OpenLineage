@@ -7,7 +7,6 @@ import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.util.Collections;
 import java.util.List;
-import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -35,12 +34,6 @@ public class OptimizedCreateHiveTableAsSelectCommandVisitor
     return false;
   }
 
-  private final SparkSession sparkSession;
-
-  public OptimizedCreateHiveTableAsSelectCommandVisitor(SparkSession sparkSession) {
-    this.sparkSession = sparkSession;
-  }
-
   @Override
   public boolean isDefinedAt(LogicalPlan plan) {
     return (plan instanceof OptimizedCreateHiveTableAsSelectCommand);
@@ -50,7 +43,7 @@ public class OptimizedCreateHiveTableAsSelectCommandVisitor
   public List<OpenLineage.Dataset> apply(LogicalPlan x) {
     OptimizedCreateHiveTableAsSelectCommand command = (OptimizedCreateHiveTableAsSelectCommand) x;
     CatalogTable table = command.tableDesc();
-    DatasetIdentifier datasetIdentifier = PathUtils.fromHiveTable(sparkSession, table);
+    DatasetIdentifier datasetIdentifier = PathUtils.fromCatalogTable(table);
     StructType schema = outputSchema(ScalaConversionUtils.fromSeq(command.outputColumns()));
 
     return Collections.singletonList(PlanUtils.getDataset(datasetIdentifier, schema));
