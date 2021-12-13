@@ -60,7 +60,8 @@ public class ScalaConversionUtils {
    * Convert a {@link scala.collection.immutable.Map} to a Java {@link java.util.Map}.
    *
    * @param map
-   * @param <K, V>
+   * @param <K>
+   * @param <V>
    * @return
    */
   public static <K, V> Map<K, V> fromMap(scala.collection.immutable.Map<K, V> map) {
