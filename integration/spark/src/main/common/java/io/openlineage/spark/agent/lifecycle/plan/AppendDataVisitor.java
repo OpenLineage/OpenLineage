@@ -20,6 +20,7 @@ public class AppendDataVisitor extends QueryPlanVisitor<AppendData, OpenLineage.
 
   @Override
   public List<OpenLineage.Dataset> apply(LogicalPlan x) {
+    // Needs to cast to logical plan despite IntelliJ claiming otherwise.
     List<OpenLineage.Dataset> datasets =
         PlanUtils.applyFirst(outputVisitors, (LogicalPlan) ((AppendData) x).table());
 

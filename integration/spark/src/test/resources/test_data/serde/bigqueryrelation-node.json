@@ -1,5 +1,7 @@
 {
+  "@class": "org.apache.spark.sql.execution.datasources.LogicalRelation",
   "relation": {
+    "@class": "com.google.cloud.spark.bigquery.BigQueryRelation",
     "options": {
       "tableId": {
         "project": null,
@@ -14,122 +16,80 @@
       "credentialsKey": {
         "present": false
       },
-      "credentialsFile": {
-        "present": false
-      },
-      "accessToken": {
-        "present": false
-      },
-      "filter": {
-        "present": false
-      },
-      "schema": {
-        "present": false
-      },
+      "credentialsFile": 6,
+      "accessToken": 6,
+      "filter": 6,
       "maxParallelism": {
-        "asInt": 2,
-        "present": true
+        "isPresent": true,
+        "asInt": 2
       },
       "defaultParallelism": 10,
-      "temporaryGcsBucket": {
-        "present": false
-      },
-      "persistentGcsBucket": {
-        "present": false
-      },
-      "persistentGcsPath": {
-        "present": false
-      },
+      "temporaryGcsBucket": 6,
+      "persistentGcsBucket": 6,
+      "persistentGcsPath": 6,
       "intermediateFormat": "PARQUET",
       "readDataFormat": "ARROW",
       "combinePushedDownFilters": true,
       "viewsEnabled": false,
-      "materializationProject": {
-        "present": false
-      },
-      "materializationDataset": {
-        "present": false
-      },
-      "partitionField": {
-        "present": false
-      },
+      "materializationProject": 6,
+      "materializationDataset": 6,
+      "partitionField": 6,
       "partitionExpirationMs": {
-        "asLong": 2,
-        "present": true
+        "isPresent": true,
+        "asLong": 2
       },
-      "partitionRequireFilter": {
-        "present": false
-      },
-      "partitionType": {
-        "present": false
-      },
-      "clusteredFields": {
-        "present": false
-      },
-      "createDisposition": {
-        "present": false
-      },
+      "partitionRequireFilter": 6,
+      "partitionType": 6,
+      "clusteredFields": 6,
+      "createDisposition": 6,
       "optimizedEmptyProjection": true,
       "useAvroLogicalTypes": false,
       "loadSchemaUpdateOptions": [],
       "materializationExpirationTimeInMinutes": 1440,
       "maxReadRowsRetries": 3,
+      "pushAllFilters": true,
+      "tableIdWithoutThePartition": 4,
       "partitionTypeOrDefault": "DAY",
       "bigQueryClientConnectTimeout": 60000,
       "bigQueryClientReadTimeout": 60000,
       "bigQueryClientRetrySettings": {
         "totalTimeout": {
           "seconds": 600,
-          "zero": false,
           "negative": false,
-          "units": [
-            "SECONDS",
-            "NANOS"
-          ],
+          "zero": false,
+          "units": ["SECONDS", "NANOS"],
           "nano": 0
         },
         "initialRetryDelay": {
           "seconds": 1,
-          "zero": false,
           "negative": false,
-          "units": [
-            "SECONDS",
-            "NANOS"
-          ],
+          "zero": false,
+          "units": ["SECONDS", "NANOS"],
           "nano": 250000000
         },
         "retryDelayMultiplier": 1.6,
         "maxRetryDelay": {
           "seconds": 5,
-          "zero": false,
           "negative": false,
-          "units": [
-            "SECONDS",
-            "NANOS"
-          ],
+          "zero": false,
+          "units": ["SECONDS", "NANOS"],
           "nano": 0
         },
         "maxAttempts": 0,
         "jittered": true,
         "initialRpcTimeout": {
           "seconds": 60,
-          "zero": false,
           "negative": false,
-          "units": [
-            "SECONDS",
-            "NANOS"
-          ],
+          "zero": false,
+          "units": ["SECONDS", "NANOS"],
           "nano": 0
         },
         "rpcTimeoutMultiplier": 1.6,
         "maxRpcTimeout": {
           "seconds": 300,
-          "zero": false,
           "negative": false,
-          "units": [
-            "SECONDS",
-            "NANOS"
-          ],
+          "zero": false,
+          "units": ["SECONDS", "NANOS"],
           "nano": 0
         }
       }
@@ -152,119 +112,28 @@
       "numBytes": null,
       "numLongTermBytes": null,
       "numRows": null,
-      "definition": {
-        "type": {},
-        "schema": {
-          "fields": [
-            {
-              "name": "name",
-              "type": {
-                "standardType": "STRING"
-              },
-              "subFields": null,
-              "mode": null,
-              "description": null,
-              "policyTags": null
-            }
-          ]
-        }
-      },
-      "encryptionConfiguration": null,
-      "labels": {},
-      "requirePartitionFilter": null
-    },
-    "tableId": {
-      "project": null,
-      "dataset": "dataset",
-      "table": "test",
-      "iamresourceName": "projects/null/datasets/dataset/tables/test"
-    },
-    "tableName": "dataset.test",
-    "schema": [
-      {
-        "name": "name",
-        "dataType": {
-          "ordering": {}
-        },
-        "nullable": true,
-        "metadata": {
-          "map": {}
-        },
-        "comment": null
+      "definition": {}
       }
-    ],
+    },
     "traceEnabled": false
   },
-  "output": [
-    {
-      "name": "name",
-      "dataType": {
-        "ordering": {}
-      },
-      "nullable": false,
-      "metadata": {
-        "map": {}
-      },
-      "exprId": {
-        "id": 1,
-        "jvmId": "a822420c-ca2f-483b-a3c1-4e561ccae8d6"
-      },
-      "qualifier": [],
-      "origin": {
-        "line": null,
-        "startPosition": null
-      },
-      "deterministic": true,
-      "resolved": true
-    }
-  ],
+  "output": [{
+    "name": "name",
+    "nullable": false,
+    "metadata": {
+      "map": {}
+    },
+    "qualifier": [],
+    "deterministic": true,
+    "resolved": true
+  }],
   "catalogTable": null,
   "isStreaming": false,
-  "origin": {
-    "line": null,
-    "startPosition": null
-  },
-  "schema": [
-    {
-      "name": "name",
-      "dataType": {
-        "ordering": {}
-      },
-      "nullable": false,
-      "metadata": {
-        "map": {}
-      },
-      "comment": null
-    }
-  ],
   "allAttributes": {
     "attrs": []
   },
   "resolved": true,
   "statsCache": null,
-  "attributeMap": {
-    "name#1": {
-      "name": "name",
-      "dataType": {
-        "ordering": {}
-      },
-      "nullable": false,
-      "metadata": {
-        "map": {}
-      },
-      "exprId": {
-        "id": 1,
-        "jvmId": "a822420c-ca2f-483b-a3c1-4e561ccae8d6"
-      },
-      "qualifier": [],
-      "origin": {
-        "line": null,
-        "startPosition": null
-      },
-      "deterministic": true,
-      "resolved": true
-    }
-  },
   "traceEnabled": false,
   "canonicalizedPlan": false
 }

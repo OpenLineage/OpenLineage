@@ -9,6 +9,7 @@ import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.lifecycle.MatchesMapRecursively;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.ZonedDateTime;
@@ -24,11 +25,14 @@ public class OpenLineageRunEventTest {
       new TypeReference<Map<String, Object>>() {};
 
   @Test
-  public void testSerializeRunEvent() throws IOException {
+  public void testSerializeRunEvent() throws IOException, URISyntaxException {
     ObjectMapper mapper = OpenLineageClient.createMapper();
 
     ZonedDateTime dateTime = ZonedDateTime.parse("2021-01-01T00:00:01.000000000+02:00[UTC]");
-    OpenLineage ol = new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
+    OpenLineage ol =
+        new OpenLineage(
+            new URI(
+                "https://github.com/OpenLineage/OpenLineage/tree/0.2.3-SNAPSHOT/integration/spark"));
 
     UUID runId = UUID.fromString("5f24c93c-2ce9-49dc-82e7-95ab4915242f");
     OpenLineage.RunFacets runFacets =

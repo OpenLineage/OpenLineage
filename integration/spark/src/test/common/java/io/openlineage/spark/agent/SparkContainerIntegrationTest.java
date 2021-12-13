@@ -19,6 +19,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.matchers.MatchType;
 import org.slf4j.Logger;
@@ -100,7 +101,8 @@ public class SparkContainerIntegrationTest {
         .withFileSystemBind("build/libs", "/opt/libs")
         .withFileSystemBind("build/dependencies", "/opt/dependencies")
         .withLogConsumer(SparkContainerIntegrationTest::consumeOutput)
-        .withStartupTimeout(Duration.of(2, ChronoUnit.MINUTES))
+        .waitingFor(Wait.forLogMessage(".*ShutdownHookManager: Shutdown hook called.*", 1))
+        .withStartupTimeout(Duration.of(5, ChronoUnit.MINUTES))
         .dependsOn(openLineageClientMockContainer)
         .withReuse(true)
         .withCommand(command);
@@ -165,7 +167,6 @@ public class SparkContainerIntegrationTest {
     pyspark =
         makePysparkContainerWithDefaultConf(
             "testPysparkWordCountWithCliArgs", "/opt/spark_scripts/spark_word_count.py");
-    pyspark.setWaitStrategy(Wait.forLogMessage(".*ShutdownHookManager: Shutdown hook called.*", 1));
     pyspark.start();
 
     Path eventFolder = Paths.get("integrations/container/");
@@ -188,7 +189,6 @@ public class SparkContainerIntegrationTest {
     pyspark =
         makePysparkContainerWithDefaultConf(
             "testPysparkRddToTable", "/opt/spark_scripts/spark_rdd_to_table.py");
-    pyspark.setWaitStrategy(Wait.forLogMessage(".*ShutdownHookManager: Shutdown hook called.*", 1));
     pyspark.start();
 
     Path eventFolder = Paths.get("integrations/container/");
@@ -228,8 +228,6 @@ public class SparkContainerIntegrationTest {
             "--packages",
             System.getProperty("kafka.package.version"),
             "/opt/spark_scripts/spark_kafka.py");
-
-    pyspark.setWaitStrategy(Wait.forLogMessage(".*ShutdownHookManager: Shutdown hook called.*", 1));
     pyspark.start();
 
     Path eventFolder = Paths.get("integrations/container/");
@@ -296,7 +294,6 @@ public class SparkContainerIntegrationTest {
     pyspark =
         makePysparkContainerWithDefaultConf(
             "testPysparkSQLHiveTest", "/opt/spark_scripts/spark_hive.py");
-    pyspark.setWaitStrategy(Wait.forLogMessage(".*ShutdownHookManager: Shutdown hook called.*", 1));
     pyspark.start();
 
     Path eventFolder = Paths.get("integrations/container/");
@@ -318,7 +315,6 @@ public class SparkContainerIntegrationTest {
     pyspark =
         makePysparkContainerWithDefaultConf(
             "testPysparkSQLHiveOverwriteDirTest", "/opt/spark_scripts/spark_overwrite_hive.py");
-    pyspark.setWaitStrategy(Wait.forLogMessage(".*ShutdownHookManager: Shutdown hook called.*", 1));
     pyspark.start();
 
     Path eventFolder = Paths.get("integrations/container/");
@@ -334,5 +330,151 @@ public class SparkContainerIntegrationTest {
         request()
             .withPath("/api/v1/lineage")
             .withBody(json(completeEvent, MatchType.ONLY_MATCHING_FIELDS)));
+  }
+
+  @Test
+  public void testCreateAsSelectAndLoad() throws IOException, InterruptedException {
+    pyspark =
+        makePysparkContainerWithDefaultConf(
+            "testCreateAsSelectAndLoad", "/opt/spark_scripts/spark_ctas_load.py");
+    pyspark.start();
+
+    Path eventFolder = Paths.get("integrations/container/");
+
+    String startCTASEvent = new String(readAllBytes(eventFolder.resolve("pysparkCTASStart.json")));
+    String completeCTASEvent = new String(readAllBytes(eventFolder.resolve("pysparkCTASEnd.json")));
+
+    String startLoadEvent = new String(readAllBytes(eventFolder.resolve("pysparkLoadStart.json")));
+    String completeLoadEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkLoadComplete.json")));
+
+    mockServerClient.verify(
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(startCTASEvent, MatchType.ONLY_MATCHING_FIELDS)),
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(completeCTASEvent, MatchType.ONLY_MATCHING_FIELDS)),
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(startLoadEvent, MatchType.ONLY_MATCHING_FIELDS)),
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(completeLoadEvent, MatchType.ONLY_MATCHING_FIELDS)));
+  }
+
+  @Test
+  @EnabledIfSystemProperty(
+      named = "spark.version",
+      matches = "(3.*)|(2\\.4\\.([8,9]|\\d\\d))") // Spark version >= 2.4.8
+  public void testCTASDelta() throws IOException, InterruptedException {
+    pyspark =
+        makePysparkContainerWithDefaultConf(
+            "testCTASDelta",
+            "--packages",
+            "io.delta:delta-core_2.12:1.0.0",
+            "/opt/spark_scripts/spark_delta.py");
+    pyspark.start();
+
+    Path eventFolder = Paths.get("integrations/container/");
+
+    String completeCTASEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkDeltaCTASComplete.json")));
+
+    mockServerClient.verify(
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(completeCTASEvent, MatchType.ONLY_MATCHING_FIELDS)));
+  }
+
+  @Test
+  public void testCreateTable() throws IOException {
+    pyspark =
+        makePysparkContainerWithDefaultConf(
+            "testCreateTable", "/opt/spark_scripts/spark_create_table.py");
+    pyspark.setWaitStrategy(Wait.forLogMessage(".*ShutdownHookManager: Shutdown hook called.*", 1));
+    pyspark.start();
+
+    Path eventFolder = Paths.get("integrations/container/");
+
+    String startCreateTableEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkCreateTableStartEvent.json")));
+    String completeCreateTableEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkCreateTableCompleteEvent.json")));
+
+    mockServerClient.verify(
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(startCreateTableEvent, MatchType.ONLY_MATCHING_FIELDS)),
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(completeCreateTableEvent, MatchType.ONLY_MATCHING_FIELDS)));
+  }
+
+  @Test
+  public void testDropTable() throws IOException {
+    pyspark =
+        makePysparkContainerWithDefaultConf(
+            "testDropTable", "/opt/spark_scripts/spark_drop_table.py");
+    pyspark.setWaitStrategy(Wait.forLogMessage(".*ShutdownHookManager: Shutdown hook called.*", 1));
+    pyspark.start();
+
+    Path eventFolder = Paths.get("integrations/container/");
+
+    String startDropTableEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkDropTableStartEvent.json")));
+
+    mockServerClient.verify(
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(startDropTableEvent, MatchType.ONLY_MATCHING_FIELDS)));
+  }
+
+  @Test
+  @EnabledIfSystemProperty(
+      named = "spark.version",
+      matches = "(3.*)|(2\\.4\\.([8,9]|\\d\\d))") // Spark version >= 2.4.8
+  public void testOptimizedCreateAsSelectAndLoad() throws IOException, InterruptedException {
+    pyspark =
+        makePysparkContainerWithDefaultConf(
+            "testOptimizedCreateAsSelectAndLoad", "/opt/spark_scripts/spark_octas_load.py");
+    pyspark.start();
+
+    Path eventFolder = Paths.get("integrations/container/");
+    String startOCTASEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkOCTASStart.json")));
+    String completeOCTASEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkOCTASEnd.json")));
+
+    mockServerClient.verify(
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(startOCTASEvent, MatchType.ONLY_MATCHING_FIELDS)),
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(completeOCTASEvent, MatchType.ONLY_MATCHING_FIELDS)));
+  }
+
+  @Test
+  public void testAlterTable() throws IOException {
+    pyspark =
+        makePysparkContainerWithDefaultConf(
+            "testAlterTable", "/opt/spark_scripts/spark_alter_table.py");
+    pyspark.start();
+
+    Path eventFolder = Paths.get("integrations/container/");
+
+    String completeAddColumnsEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkAlterTableAddColumnsEnd.json")));
+    String completeRenameEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkAlterTableRenameEnd.json")));
+
+    mockServerClient.verify(
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(completeAddColumnsEvent, MatchType.ONLY_MATCHING_FIELDS)),
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(completeRenameEvent, MatchType.ONLY_MATCHING_FIELDS)));
   }
 }
