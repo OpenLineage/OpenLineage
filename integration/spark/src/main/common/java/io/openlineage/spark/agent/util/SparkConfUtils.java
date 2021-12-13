@@ -3,6 +3,8 @@ package io.openlineage.spark.agent.util;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import org.apache.spark.SparkConf;
 import scala.Option;
@@ -47,5 +49,16 @@ public class SparkConfUtils {
                 return null;
               }
             });
+  }
+
+  public static Optional<Map<String, String>> findSparkUrlParams(SparkConf conf, String prefix) {
+    Map<String, String> urlParams = new HashMap<String, String>();
+    scala.Tuple2<String, String>[] urlConfigs = conf.getAllWithPrefix("spark." + prefix + ".");
+    for (scala.Tuple2<String, String> param : urlConfigs) {
+      urlParams.put(param._1, param._2);
+      System.out.println(param._1);
+    }
+
+    return Optional.ofNullable(urlParams);
   }
 }

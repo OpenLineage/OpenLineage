@@ -8,7 +8,9 @@ import io.openlineage.spark.agent.client.OpenLineageHttpException;
 import io.openlineage.spark.agent.client.ResponseMessage;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Map;
 import java.util.Optional;
+import java.util.StringJoiner;
 import java.util.UUID;
 import java.util.concurrent.ForkJoinPool;
 import lombok.Getter;
@@ -26,8 +28,23 @@ public class OpenLineageContext {
 
   public OpenLineageContext(ArgumentParser argument) throws URISyntaxException {
     this.client = OpenLineageClient.create(argument.getApiKey(), ForkJoinPool.commonPool());
+    // Extract url parameters other than api_key to append to lineageURI
+    String queryParams = null;
+    if (argument.getUrlParams().isPresent()) {
+      Map<String, String> urlParams = argument.getUrlParams().get();
+
+      StringJoiner query = new StringJoiner("&");
+      urlParams.forEach((k, v) -> query.add(k + "=" + v));
+
+      queryParams = query.toString();
+    }
+
+    // Convert host to a URI to extract scheme and authority
+    URI hostURI = new URI(argument.getHost());
+    String uriPath = String.format("/api/%s/lineage", argument.getVersion());
+
     this.lineageURI =
-        new URI(String.format("%s/api/%s/lineage", argument.getHost(), argument.getVersion()));
+        new URI(hostURI.getScheme(), hostURI.getAuthority(), uriPath, queryParams, null);
     this.jobNamespace = argument.getNamespace();
     this.parentJobName = argument.getJobName();
     this.parentRunId = convertToUUID(argument.getParentRunId());
