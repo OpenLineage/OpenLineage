@@ -431,6 +431,30 @@ public class SparkContainerIntegrationTest {
   }
 
   @Test
+  public void testTruncateTable() throws IOException {
+    pyspark =
+        makePysparkContainerWithDefaultConf(
+            "testTruncateTable", "/opt/spark_scripts/spark_truncate_table.py");
+    pyspark.setWaitStrategy(Wait.forLogMessage(".*ShutdownHookManager: Shutdown hook called.*", 1));
+    pyspark.start();
+
+    Path eventFolder = Paths.get("integrations/container/");
+
+    String startTruncateTableEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkTruncateTableStartEvent.json")));
+    String completeTruncateTableEvent =
+        new String(readAllBytes(eventFolder.resolve("pysparkTruncateTableCompleteEvent.json")));
+
+    mockServerClient.verify(
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(startTruncateTableEvent, MatchType.ONLY_MATCHING_FIELDS)),
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(json(completeTruncateTableEvent, MatchType.ONLY_MATCHING_FIELDS)));
+  }
+
+  @Test
   @EnabledIfSystemProperty(
       named = "spark.version",
       matches = "(3.*)|(2\\.4\\.([8,9]|\\d\\d))") // Spark version >= 2.4.8
