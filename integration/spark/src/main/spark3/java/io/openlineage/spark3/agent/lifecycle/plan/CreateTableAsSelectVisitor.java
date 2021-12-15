@@ -2,12 +2,8 @@ package io.openlineage.spark3.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.lifecycle.plan.QueryPlanVisitor;
-import io.openlineage.spark.agent.util.DatasetIdentifier;
-import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
-import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
-import io.openlineage.spark3.agent.lifecycle.plan.catalog.UnsupportedCatalogException;
-import java.util.Collections;
+import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.SparkSession;
@@ -31,24 +27,11 @@ public class CreateTableAsSelectVisitor
   @Override
   public List<OpenLineage.Dataset> apply(LogicalPlan x) {
     CreateTableAsSelect command = (CreateTableAsSelect) x;
-
-    DatasetIdentifier datasetIdentifier;
-    try {
-      datasetIdentifier =
-          CatalogUtils3.getDatasetIdentifier(
-              sparkSession,
-              command.catalog(),
-              command.tableName(),
-              ScalaConversionUtils.<String, String>fromMap(command.properties()));
-    } catch (UnsupportedCatalogException ex) {
-      log.error(String.format("Catalog %s is unsupported", ex.getMessage()), ex);
-      return Collections.emptyList();
-    }
-
-    return Collections.singletonList(
-        PlanUtils.getDataset(
-            datasetIdentifier.getName(),
-            datasetIdentifier.getNamespace(),
-            PlanUtils.datasetFacet(command.tableSchema(), datasetIdentifier.getNamespace())));
+    return PlanUtils3.getDataset(
+        sparkSession,
+        command.catalog(),
+        command.tableName(),
+        ScalaConversionUtils.<String, String>fromMap(command.properties()),
+        command.tableSchema());
   }
 }

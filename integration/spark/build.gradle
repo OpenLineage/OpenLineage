@@ -126,6 +126,7 @@ dependencies {
     }
     testCompile "org.assertj:assertj-core:${assertjVersion}"
     testCompile "org.junit.jupiter:junit-jupiter:${junit5Version}"
+    testCompile "org.junit.jupiter:junit-jupiter-params:${junit5Version}"
     testCompile "org.mockito:mockito-core:${mockitoVersion}"
     testCompile "org.mockito:mockito-inline:${mockitoVersion}"
     testCompile "org.mockito:mockito-junit-jupiter:${mockitoVersion}"

@@ -49,6 +49,7 @@ public class IcebergHandler implements CatalogHandler {
     Map<String, String> catalogConf =
         conf.entrySet().stream()
             .filter(x -> x.getKey().startsWith(prefix))
+            .filter(x -> x.getKey().length() > prefix.length())
             .collect(
                 Collectors.toMap(
                     x -> x.getKey().substring(prefix.length() + 1), // handle dot after prefix
