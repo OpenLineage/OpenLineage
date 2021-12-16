@@ -18,7 +18,6 @@ from typing import Optional, List
 import attr
 
 from openlineage.client.facet import SqlJobFacet
-from openlineage.common.provider.bigquery import BigQueryDatasetsProvider, BigQueryErrorRunFacet
 from openlineage.common.sql import SqlParser
 
 from openlineage.airflow.extractors.base import (
@@ -41,7 +40,16 @@ class SqlContext:
     parser_error: Optional[str] = attr.ib(default=None)
 
 
-class BigQueryExtractor(BaseExtractor):
+try:
+    from google.cloud.bigquery import Client  # noqa
+    _has_bigquery = True
+except Exception:
+    # Create placeholder for GreatExpectationsOperator
+    log.warning('Did not find great_expectations_provider library or failed to import it')
+    _has_bigquery = False
+
+
+class BigQueryExtractorImpl(BaseExtractor):
     def __init__(self, operator):
         super().__init__(operator)
 
@@ -53,6 +61,9 @@ class BigQueryExtractor(BaseExtractor):
         return None
 
     def extract_on_complete(self, task_instance) -> Optional[TaskMetadata]:
+        from openlineage.common.provider.bigquery import BigQueryDatasetsProvider, \
+            BigQueryErrorRunFacet
+
         log.debug(f"extract_on_complete({task_instance})")
         context = self.parse_sql_context()
 
@@ -116,3 +127,15 @@ class BigQueryExtractor(BaseExtractor):
                 sql=self.operator.sql,
                 parser_error=f'{e}: {traceback.format_exc()}'
             )
+
+
+if _has_bigquery:
+    BigQueryExtractor = BigQueryExtractorImpl
+else:
+    class BigQueryExtractor:
+        def __init__(self):
+            raise RuntimeError('Bigquery client provider not found')
+
+        @classmethod
+        def get_operator_classnames(cls) -> List[str]:
+            return []
