@@ -24,6 +24,7 @@ import io.openlineage.spark.agent.lifecycle.plan.LogicalRelationVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.OptimizedCreateHiveTableAsSelectCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.QueryPlanVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.SaveIntoDataSourceCommandVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.TruncateTableCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.wrapper.InputDatasetVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.wrapper.OutputDatasetVisitor;
 import java.util.ArrayList;
@@ -93,6 +94,7 @@ abstract class BaseVisitorFactory implements VisitorFactory {
             new AlterTableAddColumnsCommandVisitor(sqlContext.sparkSession())));
     list.add(new OutputDatasetVisitor(new CreateTableCommandVisitor()));
     list.add(new OutputDatasetVisitor(new DropTableCommandVisitor(sqlContext.sparkSession())));
+    list.add(new OutputDatasetVisitor(new TruncateTableCommandVisitor(sqlContext.sparkSession())));
     return list;
   }
 }
