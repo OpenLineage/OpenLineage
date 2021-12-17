@@ -11,7 +11,9 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.SneakyThrows;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.junit.jupiter.api.AfterAll;
@@ -20,8 +22,12 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.matchers.MatchType;
+import org.mockserver.model.JsonBody;
+import org.mockserver.model.RequestDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
@@ -43,6 +49,10 @@ public class SparkContainerIntegrationTest {
   private static final MockServerContainer openLineageClientMockContainer =
       makeMockServerContainer();
 
+  private static final String SPARK_3 = "(3.*)";
+  private static final String SPARK_ABOVE_EQUAL_2_4_8 =
+      "(3.*)|(2\\.4\\.([8,9]|\\d\\d))"; // Spark version >= 2.4.8
+
   private static GenericContainer<?> pyspark;
   private static GenericContainer<?> kafka;
   private static MockServerClient mockServerClient;
@@ -63,7 +73,7 @@ public class SparkContainerIntegrationTest {
   public void cleanupSpark() {
     mockServerClient.reset();
     try {
-      pyspark.stop();
+      if (pyspark != null) pyspark.stop();
     } catch (Exception e2) {
       logger.error("Unable to shut down pyspark container", e2);
     }
@@ -144,6 +154,10 @@ public class SparkContainerIntegrationTest {
             .toArray(String[]::new));
   }
 
+  private static void runPysparkContainerWithDefaultConf(String namespace, String pysparkFile) {
+    makePysparkContainerWithDefaultConf(namespace, "/opt/spark_scripts/" + pysparkFile).start();
+  }
+
   private static void consumeOutput(org.testcontainers.containers.output.OutputFrame of) {
     try {
       switch (of.getType()) {
@@ -163,62 +177,25 @@ public class SparkContainerIntegrationTest {
   }
 
   @Test
-  public void testPysparkWordCountWithCliArgs() throws IOException, InterruptedException {
-    pyspark =
-        makePysparkContainerWithDefaultConf(
-            "testPysparkWordCountWithCliArgs", "/opt/spark_scripts/spark_word_count.py");
-    pyspark.start();
-
-    Path eventFolder = Paths.get("integrations/container/");
-    String startEvent =
-        new String(readAllBytes(eventFolder.resolve("pysparkWordCountWithCliArgsStartEvent.json")));
-    String completeEvent =
-        new String(
-            readAllBytes(eventFolder.resolve("pysparkWordCountWithCliArgsCompleteEvent.json")));
-    mockServerClient.verify(
-        request()
-            .withPath("/api/v1/lineage")
-            .withBody(json(startEvent, MatchType.ONLY_MATCHING_FIELDS)),
-        request()
-            .withPath("/api/v1/lineage")
-            .withBody(json(completeEvent, MatchType.ONLY_MATCHING_FIELDS)));
+  public void testPysparkWordCountWithCliArgs() {
+    runPysparkContainerWithDefaultConf("testPysparkWordCountWithCliArgs", "spark_word_count.py");
+    verifyEvents(
+        "pysparkWordCountWithCliArgsStartEvent.json",
+        "pysparkWordCountWithCliArgsCompleteEvent.json");
   }
 
   @Test
-  public void testPysparkRddToTable() throws IOException, InterruptedException {
-    pyspark =
-        makePysparkContainerWithDefaultConf(
-            "testPysparkRddToTable", "/opt/spark_scripts/spark_rdd_to_table.py");
-    pyspark.start();
-
-    Path eventFolder = Paths.get("integrations/container/");
-    String startCsvEvent =
-        new String(readAllBytes(eventFolder.resolve("pysparkRddToCsvStartEvent.json")));
-    String completeCsvEvent =
-        new String(readAllBytes(eventFolder.resolve("pysparkRddToCsvCompleteEvent.json")));
-
-    String startTableEvent =
-        new String(readAllBytes(eventFolder.resolve("pysparkRddToTableStartEvent.json")));
-    String completeTableEvent =
-        new String(readAllBytes(eventFolder.resolve("pysparkRddToTableCompleteEvent.json")));
-
-    mockServerClient.verify(
-        request()
-            .withPath("/api/v1/lineage")
-            .withBody(json(startCsvEvent, MatchType.ONLY_MATCHING_FIELDS)),
-        request()
-            .withPath("/api/v1/lineage")
-            .withBody(json(completeCsvEvent, MatchType.ONLY_MATCHING_FIELDS)),
-        request()
-            .withPath("/api/v1/lineage")
-            .withBody(json(startTableEvent, MatchType.ONLY_MATCHING_FIELDS)),
-        request()
-            .withPath("/api/v1/lineage")
-            .withBody(json(completeTableEvent, MatchType.ONLY_MATCHING_FIELDS)));
+  public void testPysparkRddToTable() {
+    runPysparkContainerWithDefaultConf("testPysparkRddToTable", "spark_rdd_to_table.py");
+    verifyEvents(
+        "pysparkRddToCsvStartEvent.json",
+        "pysparkRddToCsvCompleteEvent.json",
+        "pysparkRddToTableStartEvent.json",
+        "pysparkRddToTableCompleteEvent.json");
   }
 
   @Test
-  public void testPysparkKafkaReadWrite() throws IOException {
+  public void testPysparkKafkaReadWrite() {
     kafka = makeKafkaContainer();
     kafka.start();
 
@@ -230,33 +207,15 @@ public class SparkContainerIntegrationTest {
             "/opt/spark_scripts/spark_kafka.py");
     pyspark.start();
 
-    Path eventFolder = Paths.get("integrations/container/");
-    String writeStartEvent =
-        new String(readAllBytes(eventFolder.resolve("pysparkKafkaWriteStartEvent.json")));
-    String writeCompleteEvent =
-        new String(readAllBytes(eventFolder.resolve("pysparkKafkaWriteCompleteEvent.json")));
-    String readStartEvent =
-        new String(readAllBytes(eventFolder.resolve("pysparkKafkaReadStartEvent.json")));
-    String readCompleteEvent =
-        new String(readAllBytes(eventFolder.resolve("pysparkKafkaReadCompleteEvent.json")));
-
-    mockServerClient.verify(
-        request()
-            .withPath("/api/v1/lineage")
-            .withBody(json(writeStartEvent, MatchType.ONLY_MATCHING_FIELDS)),
-        request()
-            .withPath("/api/v1/lineage")
-            .withBody(json(writeCompleteEvent, MatchType.ONLY_MATCHING_FIELDS)),
-        request()
-            .withPath("/api/v1/lineage")
-            .withBody(json(readStartEvent, MatchType.ONLY_MATCHING_FIELDS)),
-        request()
-            .withPath("/api/v1/lineage")
-            .withBody(json(readCompleteEvent, MatchType.ONLY_MATCHING_FIELDS)));
+    verifyEvents(
+        "pysparkKafkaWriteStartEvent.json",
+        "pysparkKafkaWriteCompleteEvent.json",
+        "pysparkKafkaReadStartEvent.json",
+        "pysparkKafkaReadCompleteEvent.json");
   }
 
   @Test
-  public void testPysparkKafkaReadAssign() throws IOException {
+  public void testPysparkKafkaReadAssign() {
     kafka = makeKafkaContainer();
     kafka.start();
 
@@ -267,107 +226,42 @@ public class SparkContainerIntegrationTest {
     AdminClient admin = AdminClient.create(kafkaProps);
     admin.createTopics(
         Arrays.asList(new NewTopic("topicA", 1, (short) 0), new NewTopic("topicB", 1, (short) 0)));
-    pyspark =
-        makePysparkContainerWithDefaultConf(
-            "testPysparkKafkaReadAssignTest", "/opt/spark_scripts/spark_kafk_assign_read.py");
+    runPysparkContainerWithDefaultConf(
+        "testPysparkKafkaReadAssignTest", "spark_kafk_assign_read.py");
 
-    pyspark.setWaitStrategy(Wait.forLogMessage(".*ShutdownHookManager: Shutdown hook called.*", 1));
-    pyspark.start();
-
-    Path eventFolder = Paths.get("integrations/container/");
-    String readStartEvent =
-        new String(readAllBytes(eventFolder.resolve("pysparkKafkaAssignReadStartEvent.json")));
-    String readCompleteEvent =
-        new String(readAllBytes(eventFolder.resolve("pysparkKafkaAssignReadCompleteEvent.json")));
-
-    mockServerClient.verify(
-        request()
-            .withPath("/api/v1/lineage")
-            .withBody(json(readStartEvent, MatchType.ONLY_MATCHING_FIELDS)),
-        request()
-            .withPath("/api/v1/lineage")
-            .withBody(json(readCompleteEvent, MatchType.ONLY_MATCHING_FIELDS)));
+    verifyEvents(
+        "pysparkKafkaAssignReadStartEvent.json", "pysparkKafkaAssignReadCompleteEvent.json");
   }
 
   @Test
-  public void testPysparkSQLHiveTest() throws IOException, InterruptedException {
-    pyspark =
-        makePysparkContainerWithDefaultConf(
-            "testPysparkSQLHiveTest", "/opt/spark_scripts/spark_hive.py");
-    pyspark.start();
-
-    Path eventFolder = Paths.get("integrations/container/");
-    String startEvent = new String(readAllBytes(eventFolder.resolve("pysparkHiveStartEvent.json")));
-    String completeEvent =
-        new String(readAllBytes(eventFolder.resolve("pysparkHiveCompleteEvent.json")));
-
-    mockServerClient.verify(
-        request()
-            .withPath("/api/v1/lineage")
-            .withBody(json(startEvent, MatchType.ONLY_MATCHING_FIELDS)),
-        request()
-            .withPath("/api/v1/lineage")
-            .withBody(json(completeEvent, MatchType.ONLY_MATCHING_FIELDS)));
+  public void testPysparkSQLHiveTest() {
+    runPysparkContainerWithDefaultConf("testPysparkSQLHiveTest", "spark_hive.py");
+    verifyEvents("pysparkHiveStartEvent.json", "pysparkHiveCompleteEvent.json");
   }
 
   @Test
-  public void testPysparkSQLOverwriteDirHiveTest() throws IOException, InterruptedException {
-    pyspark =
-        makePysparkContainerWithDefaultConf(
-            "testPysparkSQLHiveOverwriteDirTest", "/opt/spark_scripts/spark_overwrite_hive.py");
-    pyspark.start();
-
-    Path eventFolder = Paths.get("integrations/container/");
-
-    String startEvent =
-        new String(readAllBytes(eventFolder.resolve("pysparkHiveOverwriteDirStartEvent.json")));
-    String completeEvent =
-        new String(readAllBytes(eventFolder.resolve("pysparkHiveOverwriteDirCompleteEvent.json")));
-    mockServerClient.verify(
-        request()
-            .withPath("/api/v1/lineage")
-            .withBody(json(startEvent, MatchType.ONLY_MATCHING_FIELDS)),
-        request()
-            .withPath("/api/v1/lineage")
-            .withBody(json(completeEvent, MatchType.ONLY_MATCHING_FIELDS)));
+  public void testPysparkSQLOverwriteDirHiveTest() {
+    runPysparkContainerWithDefaultConf(
+        "testPysparkSQLHiveOverwriteDirTest", "spark_overwrite_hive.py");
+    verifyEvents(
+        "pysparkHiveOverwriteDirStartEvent.json", "pysparkHiveOverwriteDirCompleteEvent.json");
   }
 
   @Test
-  public void testCreateAsSelectAndLoad() throws IOException, InterruptedException {
-    pyspark =
-        makePysparkContainerWithDefaultConf(
-            "testCreateAsSelectAndLoad", "/opt/spark_scripts/spark_ctas_load.py");
-    pyspark.start();
-
-    Path eventFolder = Paths.get("integrations/container/");
-
-    String startCTASEvent = new String(readAllBytes(eventFolder.resolve("pysparkCTASStart.json")));
-    String completeCTASEvent = new String(readAllBytes(eventFolder.resolve("pysparkCTASEnd.json")));
-
-    String startLoadEvent = new String(readAllBytes(eventFolder.resolve("pysparkLoadStart.json")));
-    String completeLoadEvent =
-        new String(readAllBytes(eventFolder.resolve("pysparkLoadComplete.json")));
-
-    mockServerClient.verify(
-        request()
-            .withPath("/api/v1/lineage")
-            .withBody(json(startCTASEvent, MatchType.ONLY_MATCHING_FIELDS)),
-        request()
-            .withPath("/api/v1/lineage")
-            .withBody(json(completeCTASEvent, MatchType.ONLY_MATCHING_FIELDS)),
-        request()
-            .withPath("/api/v1/lineage")
-            .withBody(json(startLoadEvent, MatchType.ONLY_MATCHING_FIELDS)),
-        request()
-            .withPath("/api/v1/lineage")
-            .withBody(json(completeLoadEvent, MatchType.ONLY_MATCHING_FIELDS)));
+  public void testCreateAsSelectAndLoad() {
+    runPysparkContainerWithDefaultConf("testCreateAsSelectAndLoad", "spark_ctas_load.py");
+    verifyEvents(
+        "pysparkCTASStart.json",
+        "pysparkCTASEnd.json",
+        "pysparkLoadStart.json",
+        "pysparkLoadComplete.json");
   }
 
   @Test
   @EnabledIfSystemProperty(
       named = "spark.version",
-      matches = "(3.*)|(2\\.4\\.([8,9]|\\d\\d))") // Spark version >= 2.4.8
-  public void testCTASDelta() throws IOException, InterruptedException {
+      matches = SPARK_ABOVE_EQUAL_2_4_8) // Spark version >= 2.4.8
+  public void testCTASDelta() {
     pyspark =
         makePysparkContainerWithDefaultConf(
             "testCTASDelta",
@@ -375,130 +269,76 @@ public class SparkContainerIntegrationTest {
             "io.delta:delta-core_2.12:1.0.0",
             "/opt/spark_scripts/spark_delta.py");
     pyspark.start();
+    verifyEvents("pysparkDeltaCTASComplete.json");
+  }
 
-    Path eventFolder = Paths.get("integrations/container/");
-
-    String completeCTASEvent =
-        new String(readAllBytes(eventFolder.resolve("pysparkDeltaCTASComplete.json")));
-
-    mockServerClient.verify(
-        request()
-            .withPath("/api/v1/lineage")
-            .withBody(json(completeCTASEvent, MatchType.ONLY_MATCHING_FIELDS)));
+  @EnabledIfSystemProperty(named = "spark.version", matches = SPARK_3) // Spark version >= 3.*
+  @ParameterizedTest
+  @CsvSource(
+      value = {
+        "spark_v2_create.py:pysparkV2CreateTableAsSelectStartEvent.json:pysparkV2CreateTableAsSelectCompleteEvent.json",
+      },
+      delimiter = ':')
+  public void testV2Commands(
+      String pysparkScript, String expectedStartEvent, String expectedCompleteEvent) {
+    pyspark =
+        makePysparkContainerWithDefaultConf(
+            "testV2Commands",
+            "--packages",
+            "org.apache.iceberg:iceberg-spark3-runtime:0.12.0",
+            "/opt/spark_scripts/" + pysparkScript);
+    pyspark.start();
+    verifyEvents(expectedStartEvent, expectedCompleteEvent);
   }
 
   @Test
-  public void testCreateTable() throws IOException {
-    pyspark =
-        makePysparkContainerWithDefaultConf(
-            "testCreateTable", "/opt/spark_scripts/spark_create_table.py");
-    pyspark.setWaitStrategy(Wait.forLogMessage(".*ShutdownHookManager: Shutdown hook called.*", 1));
-    pyspark.start();
-
-    Path eventFolder = Paths.get("integrations/container/");
-
-    String startCreateTableEvent =
-        new String(readAllBytes(eventFolder.resolve("pysparkCreateTableStartEvent.json")));
-    String completeCreateTableEvent =
-        new String(readAllBytes(eventFolder.resolve("pysparkCreateTableCompleteEvent.json")));
-
-    mockServerClient.verify(
-        request()
-            .withPath("/api/v1/lineage")
-            .withBody(json(startCreateTableEvent, MatchType.ONLY_MATCHING_FIELDS)),
-        request()
-            .withPath("/api/v1/lineage")
-            .withBody(json(completeCreateTableEvent, MatchType.ONLY_MATCHING_FIELDS)));
+  public void testCreateTable() {
+    runPysparkContainerWithDefaultConf("testCreateTable", "spark_create_table.py");
+    verifyEvents("pysparkCreateTableStartEvent.json", "pysparkCreateTableCompleteEvent.json");
   }
 
   @Test
-  public void testDropTable() throws IOException {
-    pyspark =
-        makePysparkContainerWithDefaultConf(
-            "testDropTable", "/opt/spark_scripts/spark_drop_table.py");
-    pyspark.setWaitStrategy(Wait.forLogMessage(".*ShutdownHookManager: Shutdown hook called.*", 1));
-    pyspark.start();
-
-    Path eventFolder = Paths.get("integrations/container/");
-
-    String startDropTableEvent =
-        new String(readAllBytes(eventFolder.resolve("pysparkDropTableStartEvent.json")));
-
-    mockServerClient.verify(
-        request()
-            .withPath("/api/v1/lineage")
-            .withBody(json(startDropTableEvent, MatchType.ONLY_MATCHING_FIELDS)));
+  public void testDropTable() {
+    runPysparkContainerWithDefaultConf("testDropTable", "spark_drop_table.py");
+    verifyEvents("pysparkDropTableStartEvent.json");
   }
 
   @Test
-  public void testTruncateTable() throws IOException {
-    pyspark =
-        makePysparkContainerWithDefaultConf(
-            "testTruncateTable", "/opt/spark_scripts/spark_truncate_table.py");
-    pyspark.setWaitStrategy(Wait.forLogMessage(".*ShutdownHookManager: Shutdown hook called.*", 1));
-    pyspark.start();
-
-    Path eventFolder = Paths.get("integrations/container/");
-
-    String startTruncateTableEvent =
-        new String(readAllBytes(eventFolder.resolve("pysparkTruncateTableStartEvent.json")));
-    String completeTruncateTableEvent =
-        new String(readAllBytes(eventFolder.resolve("pysparkTruncateTableCompleteEvent.json")));
-
-    mockServerClient.verify(
-        request()
-            .withPath("/api/v1/lineage")
-            .withBody(json(startTruncateTableEvent, MatchType.ONLY_MATCHING_FIELDS)),
-        request()
-            .withPath("/api/v1/lineage")
-            .withBody(json(completeTruncateTableEvent, MatchType.ONLY_MATCHING_FIELDS)));
+  public void testTruncateTable() {
+    runPysparkContainerWithDefaultConf("testTruncateTable", "spark_truncate_table.py");
+    verifyEvents("pysparkTruncateTableStartEvent.json", "pysparkTruncateTableCompleteEvent.json");
   }
 
   @Test
   @EnabledIfSystemProperty(
       named = "spark.version",
-      matches = "(3.*)|(2\\.4\\.([8,9]|\\d\\d))") // Spark version >= 2.4.8
-  public void testOptimizedCreateAsSelectAndLoad() throws IOException, InterruptedException {
-    pyspark =
-        makePysparkContainerWithDefaultConf(
-            "testOptimizedCreateAsSelectAndLoad", "/opt/spark_scripts/spark_octas_load.py");
-    pyspark.start();
-
-    Path eventFolder = Paths.get("integrations/container/");
-    String startOCTASEvent =
-        new String(readAllBytes(eventFolder.resolve("pysparkOCTASStart.json")));
-    String completeOCTASEvent =
-        new String(readAllBytes(eventFolder.resolve("pysparkOCTASEnd.json")));
-
-    mockServerClient.verify(
-        request()
-            .withPath("/api/v1/lineage")
-            .withBody(json(startOCTASEvent, MatchType.ONLY_MATCHING_FIELDS)),
-        request()
-            .withPath("/api/v1/lineage")
-            .withBody(json(completeOCTASEvent, MatchType.ONLY_MATCHING_FIELDS)));
+      matches = SPARK_ABOVE_EQUAL_2_4_8) // Spark version >= 2.4.8
+  public void testOptimizedCreateAsSelectAndLoad() {
+    runPysparkContainerWithDefaultConf("testOptimizedCreateAsSelectAndLoad", "spark_octas_load.py");
+    verifyEvents("pysparkOCTASStart.json", "pysparkOCTASEnd.json");
   }
 
   @Test
-  public void testAlterTable() throws IOException {
-    pyspark =
-        makePysparkContainerWithDefaultConf(
-            "testAlterTable", "/opt/spark_scripts/spark_alter_table.py");
-    pyspark.start();
+  public void testAlterTable() {
+    runPysparkContainerWithDefaultConf("testAlterTable", "spark_alter_table.py");
+    verifyEvents("pysparkAlterTableAddColumnsEnd.json", "pysparkAlterTableRenameEnd.json");
+  }
 
+  private void verifyEvents(String... eventFiles) {
     Path eventFolder = Paths.get("integrations/container/");
-
-    String completeAddColumnsEvent =
-        new String(readAllBytes(eventFolder.resolve("pysparkAlterTableAddColumnsEnd.json")));
-    String completeRenameEvent =
-        new String(readAllBytes(eventFolder.resolve("pysparkAlterTableRenameEnd.json")));
-
     mockServerClient.verify(
-        request()
-            .withPath("/api/v1/lineage")
-            .withBody(json(completeAddColumnsEvent, MatchType.ONLY_MATCHING_FIELDS)),
-        request()
-            .withPath("/api/v1/lineage")
-            .withBody(json(completeRenameEvent, MatchType.ONLY_MATCHING_FIELDS)));
+        Arrays.stream(eventFiles)
+            .map(
+                fileEvent ->
+                    request()
+                        .withPath("/api/v1/lineage")
+                        .withBody(readJson(eventFolder.resolve(fileEvent))))
+            .collect(Collectors.toList())
+            .toArray(new RequestDefinition[0]));
+  }
+
+  @SneakyThrows
+  private JsonBody readJson(Path path) {
+    return json(new String(readAllBytes(path)), MatchType.ONLY_MATCHING_FIELDS);
   }
 }
