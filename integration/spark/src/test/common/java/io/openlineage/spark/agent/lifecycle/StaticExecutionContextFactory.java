@@ -1,7 +1,7 @@
 package io.openlineage.spark.agent.lifecycle;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.OpenLineageContext;
+import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.OpenLineageSparkListener;
 import io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.CommandPlanVisitor;
@@ -31,7 +31,7 @@ import scala.PartialFunction;
 public class StaticExecutionContextFactory extends ContextFactory {
   public static final Semaphore semaphore = new Semaphore(1);
 
-  public StaticExecutionContextFactory(OpenLineageContext sparkContext) {
+  public StaticExecutionContextFactory(EventEmitter sparkContext) {
     super(sparkContext);
   }
 
@@ -129,7 +129,7 @@ public class StaticExecutionContextFactory extends ContextFactory {
   }
 
   private static List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>>
-      commonDatasetVisitors(SQLContext sqlContext, OpenLineageContext sparkContext) {
+      commonDatasetVisitors(SQLContext sqlContext, EventEmitter sparkContext) {
     List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> list = new ArrayList<>();
     list.add(new LogicalRelationVisitor(sqlContext.sparkContext(), sparkContext.getJobNamespace()));
     list.add(new LogicalRDDVisitor());

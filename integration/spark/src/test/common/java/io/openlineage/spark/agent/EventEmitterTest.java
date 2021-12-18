@@ -6,12 +6,12 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import org.junit.jupiter.api.Test;
 
-public class OpenLineageContextTest {
+public class EventEmitterTest {
 
   @Test
   public void testLineageUri() throws URISyntaxException {
-    OpenLineageContext ctx =
-        new OpenLineageContext(
+    EventEmitter ctx =
+        new EventEmitter(
             ArgumentParser.parse(
                 "https://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/"
                     + "ea445b5c-22eb-457a-8007-01c7c52b6e54?api_key=abc"));
@@ -20,8 +20,8 @@ public class OpenLineageContextTest {
 
   @Test
   public void testLineageUriWithExtraParams() throws URISyntaxException {
-    OpenLineageContext ctx =
-        new OpenLineageContext(
+    EventEmitter ctx =
+        new EventEmitter(
             ArgumentParser.parse(
                 "https://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/"
                     + "ea445b5c-22eb-457a-8007-01c7c52b6e54?api_key=abc&code=123&foo=bar"));
