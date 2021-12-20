@@ -16,6 +16,7 @@ import os
 import subprocess
 from uuid import uuid4
 from urllib.parse import urlparse, urlunparse
+from warnings import warn
 
 from airflow.version import version as AIRFLOW_VERSION
 
@@ -225,6 +226,14 @@ def import_from_string(path: str):
         return getattr(module, target)
     except Exception as e:
         raise ImportError(f"Failed to import {path}") from e
+
+
+def try_import_from_string(path: str):
+    try:
+        return import_from_string(path)
+    except ImportError as e:
+        warn(e.msg)
+        return None
 
 
 def choose_based_on_version(airflow_1_version, airflow_2_version):

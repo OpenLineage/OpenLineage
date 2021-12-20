@@ -3,22 +3,22 @@ import os
 from typing import Type, Optional
 
 from openlineage.airflow.extractors.base import BaseExtractor
-from openlineage.airflow.extractors.bigquery_extractor import BigQueryExtractor
-from openlineage.airflow.extractors.great_expectations_extractor import GreatExpectationsExtractor
-from openlineage.airflow.extractors.postgres_extractor import PostgresExtractor
-from openlineage.airflow.extractors.snowflake_extractor import SnowflakeExtractor
-from openlineage.airflow.utils import import_from_string
+from openlineage.airflow.utils import import_from_string, try_import_from_string
 
-_extractors = [
-    PostgresExtractor,
-    BigQueryExtractor,
-    GreatExpectationsExtractor,
-    SnowflakeExtractor
-]
+_extractors = list(
+    filter(None, [
+        try_import_from_string('openlineage.airflow.extractors.postgres_extractor.PostgresExtractor'),
+        try_import_from_string('openlineage.airflow.extractors.bigquery_extractorBigQueryExtractor'),
+        try_import_from_string('openlineage.airflow.extractors.great_expectations_extractor.GreatExpectationsExtractor'),
+        try_import_from_string('openlineage.airflow.extractors.snowflake_extractor.SnowflakeExtractor')
+    ])
+)
 
-_patchers = [
-    GreatExpectationsExtractor
-]
+_patchers = list(
+    filter(None, [
+        try_import_from_string('openlineage.airflow.extractors.great_expectations_extractor.GreatExpectationsExtractor')
+    ])
+)
 
 
 class Extractors:
