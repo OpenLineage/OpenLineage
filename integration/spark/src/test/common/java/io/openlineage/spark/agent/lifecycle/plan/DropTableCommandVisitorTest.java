@@ -40,7 +40,7 @@ public class DropTableCommandVisitorTest {
 
     database = session.catalog().currentDatabase();
     command = new DropTableCommand(table, true, false, true);
-    visitor = new DropTableCommandVisitor(session);
+    visitor = new DropTableCommandVisitor(SparkAgentTestExtension.newContext(session));
   }
 
   @AfterEach
@@ -55,7 +55,7 @@ public class DropTableCommandVisitorTest {
     command.run(session);
 
     assertThat(visitor.isDefinedAt(command)).isTrue();
-    List<OpenLineage.Dataset> datasets = visitor.apply(command);
+    List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
     assertThat(datasets).isEmpty();
   }
 
@@ -70,7 +70,7 @@ public class DropTableCommandVisitorTest {
     session.catalog().createTable("drop_table", "csv", schema, Map$.MODULE$.empty());
 
     // apply the visitor before running the command
-    List<OpenLineage.Dataset> datasets = visitor.apply(command);
+    List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
 
     assertEquals(null, datasets.get(0).getFacets().getSchema());
     assertThat(datasets)

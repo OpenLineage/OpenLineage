@@ -3,8 +3,9 @@ package io.openlineage.spark.agent.lifecycle.plan;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
-import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
 import java.util.List;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
@@ -19,7 +20,11 @@ import org.apache.spark.sql.types.StructType;
  * extracts the output {@link OpenLineage.Dataset} being written.
  */
 public class OptimizedCreateHiveTableAsSelectCommandVisitor
-    extends QueryPlanVisitor<OptimizedCreateHiveTableAsSelectCommand, OpenLineage.Dataset> {
+    extends QueryPlanVisitor<OptimizedCreateHiveTableAsSelectCommand, OpenLineage.OutputDataset> {
+
+  public OptimizedCreateHiveTableAsSelectCommandVisitor(OpenLineageContext context) {
+    super(context);
+  }
 
   // OptimizedCreateHiveTableAsSelectCommand has been added in Spark 2.4.8
   public static boolean hasClasses() {
@@ -40,13 +45,13 @@ public class OptimizedCreateHiveTableAsSelectCommandVisitor
   }
 
   @Override
-  public List<OpenLineage.Dataset> apply(LogicalPlan x) {
+  public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
     OptimizedCreateHiveTableAsSelectCommand command = (OptimizedCreateHiveTableAsSelectCommand) x;
     CatalogTable table = command.tableDesc();
     DatasetIdentifier datasetIdentifier = PathUtils.fromCatalogTable(table);
     StructType schema = outputSchema(ScalaConversionUtils.fromSeq(command.outputColumns()));
 
-    return Collections.singletonList(PlanUtils.getDataset(datasetIdentifier, schema));
+    return Collections.singletonList(outputDataset().getDataset(datasetIdentifier, schema));
   }
 
   private StructType outputSchema(List<Attribute> attrs) {

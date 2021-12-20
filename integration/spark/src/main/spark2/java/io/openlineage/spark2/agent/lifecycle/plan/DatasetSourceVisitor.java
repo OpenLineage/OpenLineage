@@ -1,9 +1,10 @@
 package io.openlineage.spark2.agent.lifecycle.plan;
 
-import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.Dataset;
 import io.openlineage.spark.agent.lifecycle.plan.DatasetSource;
-import io.openlineage.spark.agent.lifecycle.plan.QueryPlanVisitor;
-import io.openlineage.spark.agent.util.PlanUtils;
+import io.openlineage.spark.api.DatasetFactory;
+import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -27,7 +28,14 @@ import org.apache.spark.sql.sources.v2.reader.DataSourceReader;
  * and/or {@link org.apache.spark.sql.sources.v2.writer.DataSourceWriter} instances to {@link
  * DatasetSource}s.
  */
-public class DatasetSourceVisitor extends QueryPlanVisitor<LogicalPlan, OpenLineage.Dataset> {
+public class DatasetSourceVisitor<D extends Dataset> extends QueryPlanVisitor<LogicalPlan, D> {
+
+  private final DatasetFactory<D> datasetFactory;
+
+  public DatasetSourceVisitor(OpenLineageContext context, DatasetFactory<D> datasetFactory) {
+    super(context);
+    this.datasetFactory = datasetFactory;
+  }
 
   @Override
   public boolean isDefinedAt(LogicalPlan x) {
@@ -62,14 +70,11 @@ public class DatasetSourceVisitor extends QueryPlanVisitor<LogicalPlan, OpenLine
   }
 
   @Override
-  public List<OpenLineage.Dataset> apply(LogicalPlan x) {
+  public List<D> apply(LogicalPlan x) {
     DatasetSource datasetSource =
         findDatasetSource(x)
             .orElseThrow(() -> new RuntimeException("Couldn't find DatasetSource in plan " + x));
     return Collections.singletonList(
-        PlanUtils.getDataset(
-            datasetSource.name(),
-            datasetSource.namespace(),
-            PlanUtils.datasetFacet(x.schema(), datasetSource.namespace())));
+        datasetFactory.getDataset(datasetSource.name(), datasetSource.namespace(), x.schema()));
   }
 }

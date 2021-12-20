@@ -62,7 +62,7 @@ public class AlterTableRenameCommandVisitorTest {
             });
 
     session.catalog().createTable("old_table", "csv", schema, Map$.MODULE$.empty());
-    visitor = new AlterTableRenameCommandVisitor(session);
+    visitor = new AlterTableRenameCommandVisitor(SparkAgentTestExtension.newContext(session));
   }
 
   @Test
@@ -75,7 +75,7 @@ public class AlterTableRenameCommandVisitorTest {
     command.run(session);
 
     assertThat(visitor.isDefinedAt(command)).isTrue();
-    List<OpenLineage.Dataset> datasets = visitor.apply(command);
+    List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
     assertThat(datasets)
         .singleElement()
         .hasFieldOrPropertyWithValue("name", "/tmp/warehouse/new_table")
@@ -99,7 +99,7 @@ public class AlterTableRenameCommandVisitorTest {
 
     // command is not run
     assertThat(visitor.isDefinedAt(command)).isTrue();
-    List<OpenLineage.Dataset> datasets = visitor.apply(command);
+    List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
     assertThat(datasets).isEmpty();
   }
 }

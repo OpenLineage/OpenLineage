@@ -60,7 +60,7 @@ public class AlterTableAddColumnsCommandVisitorTest {
 
     session.catalog().createTable("table1", "csv", schema, Map$.MODULE$.empty());
     database = session.catalog().currentDatabase();
-    visitor = new AlterTableAddColumnsCommandVisitor(session);
+    visitor = new AlterTableAddColumnsCommandVisitor(SparkAgentTestExtension.newContext(session));
   }
 
   @Test
@@ -80,7 +80,7 @@ public class AlterTableAddColumnsCommandVisitorTest {
     command.run(session);
 
     assertThat(visitor.isDefinedAt(command)).isTrue();
-    List<OpenLineage.Dataset> datasets = visitor.apply(command);
+    List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
     assertEquals(3, datasets.get(0).getFacets().getSchema().getFields().size());
     assertThat(datasets)
         .singleElement()
@@ -102,7 +102,7 @@ public class AlterTableAddColumnsCommandVisitorTest {
 
     // command is not run
     assertThat(visitor.isDefinedAt(command)).isTrue();
-    List<OpenLineage.Dataset> datasets = visitor.apply(command);
+    List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
     assertThat(datasets).isEmpty();
   }
 }

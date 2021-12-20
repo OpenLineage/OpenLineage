@@ -2,12 +2,12 @@ package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.PathUtils;
-import io.openlineage.spark.agent.util.PlanUtils;
+import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import lombok.SneakyThrows;
-import org.apache.spark.sql.SparkSession;
+import java.util.Optional;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.command.AlterTableAddColumnsCommand;
@@ -15,22 +15,32 @@ import org.apache.spark.sql.types.StructField;
 import scala.collection.JavaConversions;
 
 public class AlterTableAddColumnsCommandVisitor
-    extends QueryPlanVisitor<AlterTableAddColumnsCommand, OpenLineage.Dataset> {
+    extends QueryPlanVisitor<AlterTableAddColumnsCommand, OpenLineage.OutputDataset> {
 
-  private final SparkSession sparkSession;
-
-  public AlterTableAddColumnsCommandVisitor(SparkSession sparkSession) {
-    this.sparkSession = sparkSession;
+  public AlterTableAddColumnsCommandVisitor(OpenLineageContext context) {
+    super(context);
   }
 
   @Override
-  @SneakyThrows
-  public List<OpenLineage.Dataset> apply(LogicalPlan x) {
-    CatalogTable catalogTable =
-        sparkSession
-            .sessionState()
-            .catalog()
-            .getTableMetadata(((AlterTableAddColumnsCommand) x).table());
+  public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
+    Optional<CatalogTable> tableOption =
+        context
+            .getSparkSession()
+            .flatMap(
+                ctx -> {
+                  try {
+                    return Optional.of(
+                        ctx.sessionState()
+                            .catalog()
+                            .getTableMetadata(((AlterTableAddColumnsCommand) x).table()));
+                  } catch (Exception e) {
+                    return Optional.empty();
+                  }
+                });
+    if (!tableOption.isPresent()) {
+      return Collections.emptyList();
+    }
+    CatalogTable catalogTable = tableOption.get();
 
     List<StructField> tableColumns = Arrays.asList(catalogTable.schema().fields());
     List<StructField> addedColumns =
@@ -38,7 +48,8 @@ public class AlterTableAddColumnsCommandVisitor
 
     if (tableColumns.containsAll(addedColumns)) {
       return Collections.singletonList(
-          PlanUtils.getDataset(PathUtils.fromCatalogTable(catalogTable), catalogTable.schema()));
+          outputDataset()
+              .getDataset(PathUtils.fromCatalogTable(catalogTable), catalogTable.schema()));
     } else {
       // apply triggered before applying the change - do not send an event
       return Collections.emptyList();

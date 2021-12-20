@@ -3,6 +3,7 @@ package io.openlineage.spark.agent.lifecycle.plan;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.SparkAgentTestExtension;
 import java.util.List;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier$;
@@ -36,7 +37,8 @@ class LoadDataCommandVisitorTest {
 
     session.catalog().createTable("table", "csv", schema, Map$.MODULE$.empty());
 
-    LoadDataCommandVisitor visitor = new LoadDataCommandVisitor(session);
+    LoadDataCommandVisitor visitor =
+        new LoadDataCommandVisitor(SparkAgentTestExtension.newContext(session));
 
     LoadDataCommand command =
         new LoadDataCommand(
@@ -47,7 +49,7 @@ class LoadDataCommandVisitorTest {
             Option.empty());
 
     assertThat(visitor.isDefinedAt(command)).isTrue();
-    List<OpenLineage.Dataset> datasets = visitor.apply(command);
+    List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
     assertThat(datasets)
         .singleElement()
         .hasFieldOrPropertyWithValue("name", "/tmp/warehouse/table")

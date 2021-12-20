@@ -4,11 +4,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
+import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.lifecycle.plan.CreateHiveTableAsSelectCommandVisitor;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.OpenLineageContext;
 import java.net.URI;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import org.apache.spark.Partition;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
@@ -41,7 +45,15 @@ class CreateHiveTableAsSelectCommandVisitorTest {
   @Test
   void testCreateHiveTableAsSelectCommand() {
     SparkSession session = SparkSession.builder().master("local").getOrCreate();
-    CreateHiveTableAsSelectCommandVisitor visitor = new CreateHiveTableAsSelectCommandVisitor();
+    CreateHiveTableAsSelectCommandVisitor visitor =
+        new CreateHiveTableAsSelectCommandVisitor(
+            new OpenLineageContext(
+                Optional.of(session),
+                session.sparkContext(),
+                new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Optional.empty()));
 
     CreateHiveTableAsSelectCommand command =
         new CreateHiveTableAsSelectCommand(
@@ -103,7 +115,7 @@ class CreateHiveTableAsSelectCommandVisitorTest {
             SaveMode.Overwrite);
 
     assertThat(visitor.isDefinedAt(command)).isTrue();
-    List<OpenLineage.Dataset> datasets = visitor.apply(command);
+    List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
     assertThat(datasets)
         .singleElement()
         .hasFieldOrPropertyWithValue("name", "directory")

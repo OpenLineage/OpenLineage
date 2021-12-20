@@ -1,10 +1,11 @@
 package io.openlineage.spark.agent.lifecycle;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.lifecycle.plan.QueryPlanVisitor;
+import io.openlineage.spark.api.OpenLineageContext;
 import java.util.List;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import scala.PartialFunction;
 
 /**
  * Provides Visitors for iterating on {@link LogicalPlan}.
@@ -15,9 +16,9 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
  */
 interface VisitorFactory {
 
-  List<QueryPlanVisitor<LogicalPlan, OpenLineage.InputDataset>> getInputVisitors(
-      SQLContext sqlContext, String jobNamespace);
+  List<PartialFunction<LogicalPlan, List<OpenLineage.InputDataset>>> getInputVisitors(
+      OpenLineageContext context);
 
-  List<QueryPlanVisitor<LogicalPlan, OpenLineage.OutputDataset>> getOutputVisitors(
-      SQLContext sqlContext, String jobNamespace);
+  List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>> getOutputVisitors(
+      OpenLineageContext context);
 }

@@ -1,16 +1,18 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
-import static io.openlineage.spark.agent.util.PlanUtils.datasourceFacet;
-
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.spark.agent.facets.TableStateChangeFacet;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
+import io.openlineage.spark.api.DatasetFactory;
+import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
 import java.util.List;
-import lombok.SneakyThrows;
-import org.apache.spark.sql.SparkSession;
+import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.command.TruncateTableCommand;
@@ -19,31 +21,46 @@ import org.apache.spark.sql.execution.command.TruncateTableCommand;
  * {@link LogicalPlan} visitor that matches an {@link TruncateTableCommand} and extracts the output
  * {@link OpenLineage.Dataset} being written.
  */
+@Slf4j
 public class TruncateTableCommandVisitor
-    extends QueryPlanVisitor<TruncateTableCommand, OpenLineage.Dataset> {
+    extends QueryPlanVisitor<TruncateTableCommand, OutputDataset> {
 
-  private final SparkSession sparkSession;
-
-  public TruncateTableCommandVisitor(SparkSession sparkSession) {
-    this.sparkSession = sparkSession;
+  public TruncateTableCommandVisitor(OpenLineageContext context) {
+    super(context);
   }
 
   @Override
-  @SneakyThrows
-  public List<OpenLineage.Dataset> apply(LogicalPlan x) {
+  public List<OutputDataset> apply(LogicalPlan x) {
     TruncateTableCommand command = (TruncateTableCommand) x;
 
-    if (sparkSession.sessionState().catalog().tableExists(command.tableName())) {
-      CatalogTable table =
-          sparkSession.sessionState().catalog().getTableMetadata(command.tableName());
+    Optional<CatalogTable> tableOpt =
+        context
+            .getSparkSession()
+            .flatMap(
+                session -> {
+                  if (session.sessionState().catalog().tableExists(command.tableName())) {
+                    try {
+                      return Optional.of(
+                          session.sessionState().catalog().getTableMetadata(command.tableName()));
+                    } catch (Exception e) {
+                      log.warn("No table named {} exists", command.tableName());
+                    }
+                  }
+                  return Optional.empty();
+                });
+    if (tableOpt.isPresent()) {
+      CatalogTable table = tableOpt.get();
       DatasetIdentifier datasetIdentifier = PathUtils.fromCatalogTable(table);
 
+      DatasetFactory<OutputDataset> datasetFactory = outputDataset();
       return Collections.singletonList(
-          PlanUtils.getDataset(
+          datasetFactory.getDataset(
               datasetIdentifier,
               new OpenLineage.DatasetFacetsBuilder()
                   .schema(null)
-                  .dataSource(datasourceFacet(datasetIdentifier.getNamespace()))
+                  .dataSource(
+                      PlanUtils.datasourceFacet(
+                          context.getOpenLineage(), datasetIdentifier.getNamespace()))
                   .put(
                       "tableStateChange",
                       new TableStateChangeFacet(TableStateChangeFacet.StateChange.TRUNCATE))

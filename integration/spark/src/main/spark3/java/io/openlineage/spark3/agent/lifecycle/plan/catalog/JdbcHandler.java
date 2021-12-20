@@ -1,7 +1,7 @@
 package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
 import io.openlineage.spark.agent.util.DatasetIdentifier;
-import io.openlineage.spark.agent.util.PlanUtils;
+import io.openlineage.spark.agent.util.JdbcUtils;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -39,6 +39,6 @@ public class JdbcHandler implements CatalogHandler {
         Stream.concat(Arrays.stream(identifier.namespace()), Stream.of(identifier.name()))
             .collect(Collectors.joining("."));
 
-    return new DatasetIdentifier(name, PlanUtils.sanitizeJdbcUrl(options.url()));
+    return new DatasetIdentifier(name, JdbcUtils.sanitizeJdbcUrl(options.url()));
   }
 }

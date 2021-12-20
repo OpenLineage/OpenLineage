@@ -23,6 +23,7 @@ import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Provides;
 import com.google.common.collect.ImmutableMap;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
+import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.util.PlanUtils;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -175,7 +176,9 @@ public class SparkReadWriteIntegTest {
     OpenLineage.OutputDataset output = outputs.get(0);
     assertEquals("file", output.getNamespace());
     assertEquals(outputDir, output.getName());
-    OpenLineage.SchemaDatasetFacet schemaDatasetFacet = PlanUtils.schemaFacet(tableSchema);
+    OpenLineage.SchemaDatasetFacet schemaDatasetFacet =
+        PlanUtils.schemaFacet(
+            new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI), tableSchema);
     assertThat(output.getFacets().getSchema())
         .usingRecursiveComparison()
         .isEqualTo(schemaDatasetFacet);

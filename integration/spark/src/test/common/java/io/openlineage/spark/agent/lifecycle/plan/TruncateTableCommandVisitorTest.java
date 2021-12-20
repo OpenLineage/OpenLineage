@@ -42,7 +42,7 @@ public class TruncateTableCommandVisitorTest {
 
     database = session.catalog().currentDatabase();
     command = new TruncateTableCommand(table, Option.empty());
-    visitor = new TruncateTableCommandVisitor(session);
+    visitor = new TruncateTableCommandVisitor(SparkAgentTestExtension.newContext(session));
   }
 
   @AfterEach
@@ -63,7 +63,7 @@ public class TruncateTableCommandVisitorTest {
     }
 
     assertThat(visitor.isDefinedAt(command)).isTrue();
-    List<OpenLineage.Dataset> datasets = visitor.apply(command);
+    List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
     assertThat(datasets).isEmpty();
   }
 
@@ -78,7 +78,7 @@ public class TruncateTableCommandVisitorTest {
     session.catalog().createTable("truncate_table", "csv", schema, Map$.MODULE$.empty());
 
     // apply the visitor before running the command
-    List<OpenLineage.Dataset> datasets = visitor.apply(command);
+    List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
 
     assertEquals(null, datasets.get(0).getFacets().getSchema());
     assertThat(datasets)

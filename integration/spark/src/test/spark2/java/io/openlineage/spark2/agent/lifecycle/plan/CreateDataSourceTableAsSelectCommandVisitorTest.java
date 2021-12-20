@@ -32,7 +32,8 @@ class CreateDataSourceTableAsSelectCommandVisitorTest {
     SparkSession session = SparkSession.builder().master("local").getOrCreate();
 
     CreateDataSourceTableAsSelectCommandVisitor visitor =
-        new CreateDataSourceTableAsSelectCommandVisitor();
+        new CreateDataSourceTableAsSelectCommandVisitor(
+            SparkAgentTestExtension.newContext(session));
 
     CreateDataSourceTableAsSelectCommand command =
         new CreateDataSourceTableAsSelectCommand(
@@ -58,7 +59,7 @@ class CreateDataSourceTableAsSelectCommandVisitorTest {
             Seq$.MODULE$.<String>empty());
 
     assertThat(visitor.isDefinedAt(command)).isTrue();
-    List<OpenLineage.Dataset> datasets = visitor.apply(command);
+    List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
     assertThat(datasets)
         .singleElement()
         .hasFieldOrPropertyWithValue("name", "directory")

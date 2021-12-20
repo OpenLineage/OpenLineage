@@ -61,7 +61,8 @@ class CreateTableAsSelectVisitorTest {
   @Test
   void testCreateTableAsSelectJdbcCommand() throws IllegalAccessException {
     SparkSession session = SparkSession.builder().master("local").getOrCreate();
-    CreateTableAsSelectVisitor visitor = new CreateTableAsSelectVisitor(session);
+    CreateTableAsSelectVisitor visitor =
+        new CreateTableAsSelectVisitor(SparkAgentTestExtension.newContext(session));
 
     JDBCTableCatalog tableCatalog = new JDBCTableCatalog();
     JDBCOptions options = mock(JDBCOptions.class);
@@ -71,7 +72,7 @@ class CreateTableAsSelectVisitorTest {
     CreateTableAsSelect command = createCTAS(tableCatalog);
 
     assertThat(visitor.isDefinedAt(command)).isTrue();
-    List<OpenLineage.Dataset> datasets = visitor.apply(command);
+    List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
     assertThat(datasets)
         .singleElement()
         .hasFieldOrPropertyWithValue("name", "database.schema.table")
@@ -89,14 +90,15 @@ class CreateTableAsSelectVisitorTest {
     session.conf().set("spark.sql.catalog.test.type", "hadoop");
     session.conf().set("spark.sql.catalog.test.warehouse", warehouseConf);
 
-    CreateTableAsSelectVisitor visitor = new CreateTableAsSelectVisitor(session);
+    CreateTableAsSelectVisitor visitor =
+        new CreateTableAsSelectVisitor(SparkAgentTestExtension.newContext(session));
     SparkCatalog sparkCatalog = mock(SparkCatalog.class);
     when(sparkCatalog.name()).thenReturn("test");
 
     CreateTableAsSelect command = createCTAS(sparkCatalog);
 
     assertThat(visitor.isDefinedAt(command)).isTrue();
-    List<OpenLineage.Dataset> datasets = visitor.apply(command);
+    List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
     assertThat(datasets)
         .singleElement()
         .hasFieldOrPropertyWithValue("name", name)
@@ -109,14 +111,15 @@ class CreateTableAsSelectVisitorTest {
     session.conf().set("spark.sql.catalog.test.type", "hive");
     session.conf().set("spark.sql.catalog.test.uri", "thrift://metastore-host:10001");
 
-    CreateTableAsSelectVisitor visitor = new CreateTableAsSelectVisitor(session);
+    CreateTableAsSelectVisitor visitor =
+        new CreateTableAsSelectVisitor(SparkAgentTestExtension.newContext(session));
     SparkCatalog sparkCatalog = mock(SparkCatalog.class);
     when(sparkCatalog.name()).thenReturn("test");
 
     CreateTableAsSelect command = createCTAS(sparkCatalog);
 
     assertThat(visitor.isDefinedAt(command)).isTrue();
-    List<OpenLineage.Dataset> datasets = visitor.apply(command);
+    List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
     assertThat(datasets)
         .singleElement()
         .hasFieldOrPropertyWithValue("name", "database.schema.table")

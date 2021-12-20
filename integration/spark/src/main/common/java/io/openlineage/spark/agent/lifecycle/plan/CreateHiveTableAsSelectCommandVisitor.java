@@ -3,8 +3,9 @@ package io.openlineage.spark.agent.lifecycle.plan;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
-import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
 import java.util.List;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
@@ -19,15 +20,19 @@ import org.apache.spark.sql.types.StructType;
  * the output {@link OpenLineage.Dataset} being written.
  */
 public class CreateHiveTableAsSelectCommandVisitor
-    extends QueryPlanVisitor<CreateHiveTableAsSelectCommand, OpenLineage.Dataset> {
+    extends QueryPlanVisitor<CreateHiveTableAsSelectCommand, OpenLineage.OutputDataset> {
+
+  public CreateHiveTableAsSelectCommandVisitor(OpenLineageContext context) {
+    super(context);
+  }
 
   @Override
-  public List<OpenLineage.Dataset> apply(LogicalPlan x) {
+  public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
     CreateHiveTableAsSelectCommand command = (CreateHiveTableAsSelectCommand) x;
     CatalogTable table = command.tableDesc();
     DatasetIdentifier di = PathUtils.fromCatalogTable(table);
     StructType schema = outputSchema(ScalaConversionUtils.fromSeq(command.outputColumns()));
-    return Collections.singletonList(PlanUtils.getDataset(di, schema));
+    return Collections.singletonList(outputDataset().getDataset(di, schema));
   }
 
   private StructType outputSchema(List<Attribute> attrs) {

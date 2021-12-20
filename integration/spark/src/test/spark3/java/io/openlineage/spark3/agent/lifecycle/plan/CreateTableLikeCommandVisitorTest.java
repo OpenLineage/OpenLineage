@@ -4,7 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
+import io.openlineage.spark.agent.client.OpenLineageClient;
+import io.openlineage.spark.api.OpenLineageContext;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier$;
 import org.apache.spark.sql.catalyst.catalog.CatalogStorageFormat;
@@ -41,7 +45,15 @@ class CreateTableLikeCommandVisitorTest {
 
     session.catalog().createTable("table", "csv", schema, Map$.MODULE$.empty());
 
-    CreateTableLikeCommandVisitor visitor = new CreateTableLikeCommandVisitor(session);
+    CreateTableLikeCommandVisitor visitor =
+        new CreateTableLikeCommandVisitor(
+            new OpenLineageContext(
+                Optional.of(session),
+                session.sparkContext(),
+                new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Optional.empty()));
 
     CreateTableLikeCommand command =
         new CreateTableLikeCommand(
@@ -53,7 +65,7 @@ class CreateTableLikeCommandVisitorTest {
             false);
 
     assertThat(visitor.isDefinedAt(command)).isTrue();
-    List<OpenLineage.Dataset> datasets = visitor.apply(command);
+    List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
     assertThat(datasets)
         .singleElement()
         .hasFieldOrPropertyWithValue("name", "/tmp/warehouse/newtable")
