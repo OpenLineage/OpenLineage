@@ -3,6 +3,8 @@ package io.openlineage.spark.agent.lifecycle.plan;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -20,12 +22,10 @@ import scala.PartialFunction;
  * normally by calling {@link LogicalPlan#collect(PartialFunction)}, but children that aren't
  * exposed get skipped in the collect call, so we need to root them out here.
  */
-public class CommandPlanVisitor extends QueryPlanVisitor<LogicalPlan, OpenLineage.Dataset> {
-  private final PartialFunction<LogicalPlan, List<OpenLineage.Dataset>> inputVisitors;
+public class CommandPlanVisitor extends QueryPlanVisitor<LogicalPlan, OpenLineage.InputDataset> {
 
-  public CommandPlanVisitor(
-      List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> inputVisitors) {
-    this.inputVisitors = PlanUtils.merge(inputVisitors);
+  public CommandPlanVisitor(OpenLineageContext context) {
+    super(context);
   }
 
   @Override
@@ -37,8 +37,10 @@ public class CommandPlanVisitor extends QueryPlanVisitor<LogicalPlan, OpenLineag
   }
 
   @Override
-  public List<OpenLineage.Dataset> apply(LogicalPlan x) {
+  public List<OpenLineage.InputDataset> apply(LogicalPlan x) {
     Optional<LogicalPlan> input = getInput(x);
+    PartialFunction<LogicalPlan, List<OpenLineage.InputDataset>> inputVisitors =
+        PlanUtils.merge(context.getInputDatasetQueryPlanVisitors());
     return input
         .map(
             in ->

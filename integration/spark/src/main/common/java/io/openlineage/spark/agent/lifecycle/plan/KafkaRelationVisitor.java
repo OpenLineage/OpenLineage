@@ -6,11 +6,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.DatasetFactory;
+import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.QueryPlanVisitor;
 import java.lang.reflect.Field;
 import java.net.URI;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Spliterator;
@@ -35,7 +36,14 @@ import scala.collection.immutable.Map$;
  * and bootstrap servers for Kafka
  */
 @Slf4j
-public class KafkaRelationVisitor extends QueryPlanVisitor<LogicalRelation, OpenLineage.Dataset> {
+public class KafkaRelationVisitor<D extends OpenLineage.Dataset>
+    extends QueryPlanVisitor<LogicalRelation, D> {
+  private final DatasetFactory<D> datasetFactory;
+
+  public KafkaRelationVisitor(OpenLineageContext context, DatasetFactory<D> datasetFactory) {
+    super(context);
+    this.datasetFactory = datasetFactory;
+  }
 
   public static boolean hasKafkaClasses() {
     try {
@@ -56,12 +64,13 @@ public class KafkaRelationVisitor extends QueryPlanVisitor<LogicalRelation, Open
     return provider instanceof KafkaSourceProvider;
   }
 
-  public static List<OpenLineage.Dataset> createKafkaDatasets(
+  public static <D extends OpenLineage.Dataset> List<D> createKafkaDatasets(
+      DatasetFactory<D> datasetFactory,
       CreatableRelationProvider relationProvider,
       scala.collection.immutable.Map<String, String> options,
       SaveMode mode,
       StructType schema) {
-    return createDatasetsFromOptions(options, schema);
+    return createDatasetsFromOptions(datasetFactory, options, schema);
   }
 
   @Override
@@ -71,9 +80,8 @@ public class KafkaRelationVisitor extends QueryPlanVisitor<LogicalRelation, Open
   }
 
   @Override
-  public List<OpenLineage.Dataset> apply(LogicalPlan x) {
+  public List<D> apply(LogicalPlan x) {
     KafkaRelation relation = (KafkaRelation) ((LogicalRelation) x).relation();
-    List<String> topics = Collections.emptyList();
     scala.collection.immutable.Map<String, String> sourceOptions;
     try {
       Field sourceOptionsField = relation.getClass().getDeclaredField("sourceOptions");
@@ -84,11 +92,11 @@ public class KafkaRelationVisitor extends QueryPlanVisitor<LogicalRelation, Open
       log.error("Can't extract kafka server options", e);
       sourceOptions = Map$.MODULE$.empty();
     }
-    return createDatasetsFromOptions(sourceOptions, relation.schema());
+    return createDatasetsFromOptions(datasetFactory, sourceOptions, relation.schema());
   }
 
-  private static List<OpenLineage.Dataset> createDatasetsFromOptions(
-      Map<String, String> sourceOptions, StructType schema) {
+  private static <D extends OpenLineage.Dataset> List<D> createDatasetsFromOptions(
+      DatasetFactory<D> datasetFactory, Map<String, String> sourceOptions, StructType schema) {
     List<String> topics;
     Optional<String> servers = asJavaOptional(sourceOptions.get("kafka.bootstrap.servers"));
 
@@ -146,9 +154,7 @@ public class KafkaRelationVisitor extends QueryPlanVisitor<LogicalRelation, Open
             .orElse("");
     String namespace = "kafka://" + server;
     return topics.stream()
-        .map(
-            topic ->
-                PlanUtils.getDataset(topic, namespace, PlanUtils.datasetFacet(schema, namespace)))
+        .map(topic -> datasetFactory.getDataset(topic, namespace, schema))
         .collect(Collectors.toList());
   }
 }

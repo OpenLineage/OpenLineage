@@ -29,7 +29,8 @@ class CreateDataSourceTableCommandVisitorTest {
   @Test
   void testCreateDataSourceTableCommand() {
     SparkSession session = SparkSession.builder().master("local").getOrCreate();
-    CreateDataSourceTableCommandVisitor visitor = new CreateDataSourceTableCommandVisitor();
+    CreateDataSourceTableCommandVisitor visitor =
+        new CreateDataSourceTableCommandVisitor(SparkAgentTestExtension.newContext(session));
 
     CreateDataSourceTableCommand command =
         new CreateDataSourceTableCommand(
@@ -53,7 +54,7 @@ class CreateDataSourceTableCommandVisitorTest {
             false);
 
     assertThat(visitor.isDefinedAt(command)).isTrue();
-    List<OpenLineage.Dataset> datasets = visitor.apply(command);
+    List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
     assertThat(datasets)
         .singleElement()
         .hasFieldOrPropertyWithValue("name", "directory")

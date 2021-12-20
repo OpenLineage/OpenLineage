@@ -1,12 +1,16 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.util.JdbcUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
+import io.openlineage.spark.api.DatasetFactory;
+import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.spark.SparkContext;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.HadoopFsRelation;
@@ -42,13 +46,14 @@ import scala.runtime.AbstractFunction0;
  * complete list of datasets referenced.
  */
 @Slf4j
-public class LogicalRelationVisitor extends QueryPlanVisitor<LogicalRelation, OpenLineage.Dataset> {
-  private final SparkContext context;
-  private final String jobNamespace;
+public class LogicalRelationVisitor<D extends OpenLineage.Dataset>
+    extends QueryPlanVisitor<LogicalRelation, D> {
 
-  public LogicalRelationVisitor(SparkContext context, String jobNamespace) {
-    this.context = context;
-    this.jobNamespace = jobNamespace;
+  private final DatasetFactory<D> datasetFactory;
+
+  public LogicalRelationVisitor(OpenLineageContext context, DatasetFactory<D> datasetFactory) {
+    super(context);
+    this.datasetFactory = datasetFactory;
   }
 
   @Override
@@ -60,12 +65,12 @@ public class LogicalRelationVisitor extends QueryPlanVisitor<LogicalRelation, Op
   }
 
   @Override
-  public List<OpenLineage.Dataset> apply(LogicalPlan x) {
+  public List<D> apply(LogicalPlan x) {
     LogicalRelation logRel = (LogicalRelation) x;
     if (logRel.relation() instanceof HadoopFsRelation) {
-      return handleHadoopFsRelation((LogicalRelation) x);
+      return handleHadoopFsRelation(logRel);
     } else if (logRel.relation() instanceof JDBCRelation) {
-      return handleJdbcRelation((LogicalRelation) x);
+      return handleJdbcRelation(logRel);
     } else if (logRel.catalogTable().isDefined()) {
       return handleCatalogTable(logRel);
     }
@@ -75,27 +80,28 @@ public class LogicalRelationVisitor extends QueryPlanVisitor<LogicalRelation, Op
             + x);
   }
 
-  private List<OpenLineage.Dataset> handleCatalogTable(LogicalRelation logRel) {
+  private List<D> handleCatalogTable(LogicalRelation logRel) {
     CatalogTable catalogTable = logRel.catalogTable().get();
     return Collections.singletonList(
-        PlanUtils.getDataset(catalogTable.location(), catalogTable.schema()));
+        datasetFactory.getDataset(catalogTable.location(), catalogTable.schema()));
   }
 
-  private List<OpenLineage.Dataset> handleHadoopFsRelation(LogicalRelation x) {
+  private List<D> handleHadoopFsRelation(LogicalRelation x) {
     HadoopFsRelation relation = (HadoopFsRelation) x.relation();
+    Configuration hadoopConfig = context.getSparkContext().hadoopConfiguration();
     return JavaConversions.asJavaCollection(relation.location().rootPaths()).stream()
-        .map(p -> PlanUtils.getDirectoryPath(p, context.hadoopConfiguration()))
+        .map(p -> PlanUtils.getDirectoryPath(p, hadoopConfig))
         .distinct()
         .map(
             p -> {
               // TODO- refactor this to return a single partitioned dataset based on static
               // static partitions in the relation
-              return PlanUtils.getDataset(p.toUri(), relation.schema());
+              return datasetFactory.getDataset(p.toUri(), relation.schema());
             })
         .collect(Collectors.toList());
   }
 
-  private List<OpenLineage.Dataset> handleJdbcRelation(LogicalRelation x) {
+  private List<D> handleJdbcRelation(LogicalRelation x) {
     JDBCRelation relation = (JDBCRelation) x.relation();
     // TODO- if a relation is composed of a complex sql query, we should attempt to
     // extract the
@@ -118,8 +124,7 @@ public class LogicalRelationVisitor extends QueryPlanVisitor<LogicalRelation, Op
     // formats that aren't always amenable to how Java parses URIs. E.g., the oracle
     // driver format looks like oracle:<drivertype>:<user>/<password>@<database>
     // whereas postgres, mysql, and sqlserver use the scheme://hostname:port/db format.
-    String url = PlanUtils.sanitizeJdbcUrl(relation.jdbcOptions().url());
-    OpenLineage.DatasetFacets datasetFacet = PlanUtils.datasetFacet(relation.schema(), url);
-    return Collections.singletonList(PlanUtils.getDataset(tableName, url, datasetFacet));
+    String url = JdbcUtils.sanitizeJdbcUrl(relation.jdbcOptions().url());
+    return Collections.singletonList(datasetFactory.getDataset(tableName, url, relation.schema()));
   }
 }

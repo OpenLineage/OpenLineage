@@ -4,7 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
+import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.DatasetFactory;
 import java.nio.file.Path;
 import java.util.List;
 import org.apache.hadoop.io.LongWritable;
@@ -47,7 +49,10 @@ class LogicalRDDVisitorTest {
   @Test
   public void testApply(@TempDir Path tmpDir) {
     SparkSession session = SparkSession.builder().master("local").getOrCreate();
-    LogicalRDDVisitor visitor = new LogicalRDDVisitor();
+    LogicalRDDVisitor visitor =
+        new LogicalRDDVisitor(
+            SparkAgentTestExtension.newContext(session),
+            DatasetFactory.output(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI)));
     StructType schema =
         new StructType(
             new StructField[] {

@@ -12,6 +12,7 @@ import io.openlineage.spark.agent.facets.ErrorFacet;
 import io.openlineage.spark.agent.facets.SparkVersionFacet;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.OpenLineageContext;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
@@ -67,7 +68,7 @@ public class RddExecutionContext implements ExecutionContext {
   private List<URI> outputs;
   private String jobSuffix;
 
-  public RddExecutionContext(int jobId, EventEmitter sparkContext) {
+  public RddExecutionContext(OpenLineageContext context, int jobId, EventEmitter sparkContext) {
     this.sparkContext = sparkContext;
     sparkContextOption =
         Optional.ofNullable(

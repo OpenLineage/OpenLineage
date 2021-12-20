@@ -2,7 +2,12 @@ package io.openlineage.spark.agent;
 
 import static org.mockito.Mockito.mock;
 
+import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.lifecycle.StaticExecutionContextFactory;
+import io.openlineage.spark.api.OpenLineageContext;
+import java.util.Collections;
+import java.util.Optional;
 import net.bytebuddy.agent.ByteBuddyAgent;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.SparkSession$;
@@ -65,5 +70,15 @@ public class SparkAgentTestExtension
         .config("spark.driver.host", "127.0.0.1")
         .config("spark.driver.bindAddress", "127.0.0.1")
         .getOrCreate();
+  }
+
+  public static OpenLineageContext newContext(SparkSession sparkSession) {
+    return new OpenLineageContext(
+        Optional.of(sparkSession),
+        sparkSession.sparkContext(),
+        new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI),
+        Collections.emptyList(),
+        Collections.emptyList(),
+        Optional.empty());
   }
 }

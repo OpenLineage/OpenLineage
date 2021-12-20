@@ -4,6 +4,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.PlanUtils;
+import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.QueryPlanVisitor;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
@@ -27,26 +29,22 @@ import scala.Option;
  */
 @Slf4j
 public class SaveIntoDataSourceCommandVisitor
-    extends QueryPlanVisitor<SaveIntoDataSourceCommand, OpenLineage.Dataset> {
-  private final SQLContext sqlContext;
-  private final List<QueryPlanVisitor<? extends LogicalPlan, OpenLineage.Dataset>> relationVisitors;
+    extends QueryPlanVisitor<SaveIntoDataSourceCommand, OpenLineage.OutputDataset> {
 
-  public SaveIntoDataSourceCommandVisitor(
-      SQLContext sqlContext,
-      List<QueryPlanVisitor<? extends LogicalPlan, OpenLineage.Dataset>> relationVisitors) {
-    this.sqlContext = sqlContext;
-    this.relationVisitors = relationVisitors;
+  public SaveIntoDataSourceCommandVisitor(OpenLineageContext context) {
+    super(context);
   }
 
   @Override
   public boolean isDefinedAt(LogicalPlan x) {
-    return x instanceof SaveIntoDataSourceCommand
+    return context.getSparkSession().isPresent()
+        && x instanceof SaveIntoDataSourceCommand
         && (((SaveIntoDataSourceCommand) x).dataSource() instanceof SchemaRelationProvider
             || ((SaveIntoDataSourceCommand) x).dataSource() instanceof RelationProvider);
   }
 
   @Override
-  public List<OpenLineage.Dataset> apply(LogicalPlan x) {
+  public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
     BaseRelation relation;
     SaveIntoDataSourceCommand command = (SaveIntoDataSourceCommand) x;
 
@@ -61,8 +59,9 @@ public class SaveIntoDataSourceCommandVisitor
     // as other impls of CreatableRelationProvider may not be able to be handled in the generic way.
     if (KafkaRelationVisitor.isKafkaSource(command.dataSource())) {
       return KafkaRelationVisitor.createKafkaDatasets(
-          command.dataSource(), command.options(), command.mode(), command.schema());
+          outputDataset(), command.dataSource(), command.options(), command.mode(), x.schema());
     }
+    SQLContext sqlContext = context.getSparkSession().get().sqlContext();
     try {
       if (command.dataSource() instanceof RelationProvider) {
         RelationProvider p = (RelationProvider) command.dataSource();
@@ -85,7 +84,7 @@ public class SaveIntoDataSourceCommandVisitor
     }
     return Optional.ofNullable(
             PlanUtils.applyFirst(
-                relationVisitors,
+                context.getOutputDatasetQueryPlanVisitors(),
                 new LogicalRelation(
                     relation, relation.schema().toAttributes(), Option.empty(), x.isStreaming())))
         .orElse(Collections.emptyList()).stream()

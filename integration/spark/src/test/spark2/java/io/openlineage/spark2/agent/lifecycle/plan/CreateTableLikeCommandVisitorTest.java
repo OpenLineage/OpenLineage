@@ -39,7 +39,8 @@ class CreateTableLikeCommandVisitorTest {
 
     session.catalog().createTable("table", "csv", schema, Map$.MODULE$.empty());
 
-    CreateTableLikeCommandVisitor visitor = new CreateTableLikeCommandVisitor(session);
+    CreateTableLikeCommandVisitor visitor =
+        new CreateTableLikeCommandVisitor(SparkAgentTestExtension.newContext(session));
 
     CreateTableLikeCommand command =
         new CreateTableLikeCommand(
@@ -49,7 +50,7 @@ class CreateTableLikeCommandVisitorTest {
             false);
 
     assertThat(visitor.isDefinedAt(command)).isTrue();
-    List<OpenLineage.Dataset> datasets = visitor.apply(command);
+    List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
     assertThat(datasets)
         .singleElement()
         .hasFieldOrPropertyWithValue("name", "/path/to/data")

@@ -3,9 +3,17 @@ package io.openlineage.spark3.agent.lifecycle.plan;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.OutputDataset;
+import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.facets.TableProviderFacet;
+import io.openlineage.spark.api.DatasetFactory;
+import io.openlineage.spark.api.OpenLineageContext;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import org.apache.spark.SparkConf;
+import org.apache.spark.SparkContext;
 import org.apache.spark.sql.connector.catalog.Table;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import org.apache.spark.sql.types.StructType;
@@ -16,7 +24,18 @@ import org.mockito.Mockito;
 
 public class DataSourceV2RelationVisitorTest {
 
-  DataSourceV2RelationVisitor dataSourceV2RelationVisitor = new DataSourceV2RelationVisitor();
+  private final OpenLineage openLineage =
+      new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
+  DataSourceV2RelationVisitor<OutputDataset> dataSourceV2RelationVisitor =
+      new DataSourceV2RelationVisitor(
+          new OpenLineageContext(
+              Optional.empty(),
+              SparkContext.getOrCreate(new SparkConf().setMaster("local").setAppName("test")),
+              openLineage,
+              Collections.emptyList(),
+              Collections.emptyList(),
+              Optional.empty()),
+          DatasetFactory.output(openLineage));
   DataSourceV2Relation dataSourceV2Relation = Mockito.mock(DataSourceV2Relation.class);
   Table table = Mockito.mock(Table.class);
   Map<String, String> tableProperties = new HashMap<>();

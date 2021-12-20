@@ -25,9 +25,7 @@ public class OpenLineageContext {
    */
   @NonNull Optional<SparkSession> sparkSession;
 
-  /**
-   * The non-null {@link SparkContext} running for the application we're reporting run data for
-   */
+  /** The non-null {@link SparkContext} running for the application we're reporting run data for */
   @NonNull SparkContext sparkContext;
 
   /**
@@ -37,21 +35,19 @@ public class OpenLineageContext {
   @NonNull OpenLineage openLineage;
 
   /**
-   * A non-null, but potentially empty, list of {@link LogicalPlan} visitors that can extract
-   * {@link InputDataset}s from plan nodes. Useful for delegating from general input visitors to
-   * more specific ones.
+   * A non-null, but potentially empty, list of {@link LogicalPlan} visitors that can extract {@link
+   * InputDataset}s from plan nodes. Useful for delegating from general input visitors to more
+   * specific ones.
    */
   @NonNull List<PartialFunction<LogicalPlan, List<InputDataset>>> inputDatasetQueryPlanVisitors;
 
   /**
-   * A non-null, but potentially empty, list of {@link LogicalPlan} visitors that can extract
-   * {@link OutputDataset}s from plan nodes. Useful for delegating from general output visitors to
-   * more specific ones.
+   * A non-null, but potentially empty, list of {@link LogicalPlan} visitors that can extract {@link
+   * OutputDataset}s from plan nodes. Useful for delegating from general output visitors to more
+   * specific ones.
    */
   @NonNull List<PartialFunction<LogicalPlan, List<OutputDataset>>> outputDatasetQueryPlanVisitors;
 
-  /**
-   * Optional {@link QueryExecution} for runs that are Spark SQL queries.
-   */
+  /** Optional {@link QueryExecution} for runs that are Spark SQL queries. */
   @NonNull Optional<QueryExecution> queryExecution;
 }

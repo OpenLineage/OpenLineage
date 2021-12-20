@@ -2,7 +2,8 @@ package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.PathUtils;
-import io.openlineage.spark.agent.util.PlanUtils;
+import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
 import java.util.List;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
@@ -14,7 +15,11 @@ import org.apache.spark.sql.hive.execution.InsertIntoHiveTable;
  * {@link OpenLineage.Dataset} being written.
  */
 public class InsertIntoHiveTableVisitor
-    extends QueryPlanVisitor<InsertIntoHiveTable, OpenLineage.Dataset> {
+    extends QueryPlanVisitor<InsertIntoHiveTable, OpenLineage.OutputDataset> {
+
+  public InsertIntoHiveTableVisitor(OpenLineageContext context) {
+    super(context);
+  }
 
   public static boolean hasHiveClasses() {
     try {
@@ -29,11 +34,11 @@ public class InsertIntoHiveTableVisitor
   }
 
   @Override
-  public List<OpenLineage.Dataset> apply(LogicalPlan x) {
+  public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
     InsertIntoHiveTable cmd = (InsertIntoHiveTable) x;
     CatalogTable table = cmd.table();
 
     return Collections.singletonList(
-        PlanUtils.getDataset(PathUtils.fromCatalogTable(table), table.schema()));
+        outputDataset().getDataset(PathUtils.fromCatalogTable(table), table.schema()));
   }
 }

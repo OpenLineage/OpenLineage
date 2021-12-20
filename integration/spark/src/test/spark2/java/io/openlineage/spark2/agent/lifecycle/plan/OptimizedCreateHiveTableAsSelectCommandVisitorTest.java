@@ -42,7 +42,8 @@ class OptimizedCreateHiveTableAsSelectCommandVisitorTest {
   void testOptimizedCreateHiveTableAsSelectCommand() {
     SparkSession session = SparkSession.builder().master("local").getOrCreate();
     OptimizedCreateHiveTableAsSelectCommandVisitor visitor =
-        new OptimizedCreateHiveTableAsSelectCommandVisitor();
+        new OptimizedCreateHiveTableAsSelectCommandVisitor(
+            SparkAgentTestExtension.newContext(session));
 
     OptimizedCreateHiveTableAsSelectCommand command =
         new OptimizedCreateHiveTableAsSelectCommand(
@@ -104,7 +105,7 @@ class OptimizedCreateHiveTableAsSelectCommandVisitorTest {
             SaveMode.Overwrite);
 
     assertThat(visitor.isDefinedAt(command)).isTrue();
-    List<OpenLineage.Dataset> datasets = visitor.apply(command);
+    List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
     assertThat(datasets)
         .singleElement()
         .hasFieldOrPropertyWithValue("name", "directory")

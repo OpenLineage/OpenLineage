@@ -2,8 +2,9 @@ package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.PathUtils;
-import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.QueryPlanVisitor;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
@@ -16,17 +17,22 @@ import org.apache.spark.sql.hive.execution.InsertIntoHiveDirCommand;
  * output {@link OpenLineage.Dataset} being written.
  */
 public class InsertIntoHiveDirVisitor
-    extends QueryPlanVisitor<InsertIntoHiveDirCommand, OpenLineage.Dataset> {
+    extends QueryPlanVisitor<InsertIntoHiveDirCommand, OpenLineage.OutputDataset> {
+
+  public InsertIntoHiveDirVisitor(OpenLineageContext context) {
+    super(context);
+  }
 
   @Override
-  public List<OpenLineage.Dataset> apply(LogicalPlan x) {
+  public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
     InsertIntoHiveDirCommand cmd = (InsertIntoHiveDirCommand) x;
     Optional<URI> optionalUri = ScalaConversionUtils.asJavaOptional(cmd.storage().locationUri());
     return optionalUri
         .map(
             uri ->
                 Collections.singletonList(
-                    PlanUtils.getDataset(PathUtils.fromURI(uri, "file"), cmd.query().schema())))
+                    outputDataset()
+                        .getDataset(PathUtils.fromURI(uri, "file"), cmd.query().schema())))
         .orElse(Collections.emptyList());
   }
 }
