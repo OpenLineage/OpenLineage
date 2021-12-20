@@ -6,18 +6,34 @@ from openlineage.airflow.extractors.base import BaseExtractor
 from openlineage.airflow.utils import import_from_string, try_import_from_string
 
 _extractors = list(
-    filter(None, [
-        try_import_from_string('openlineage.airflow.extractors.postgres_extractor.PostgresExtractor'),
-        try_import_from_string('openlineage.airflow.extractors.bigquery_extractorBigQueryExtractor'),
-        try_import_from_string('openlineage.airflow.extractors.great_expectations_extractor.GreatExpectationsExtractor'),
-        try_import_from_string('openlineage.airflow.extractors.snowflake_extractor.SnowflakeExtractor')
-    ])
+    filter(
+        None,
+        [
+            try_import_from_string(
+                'openlineage.airflow.extractors.postgres_extractor.PostgresExtractor'
+            ),
+            try_import_from_string(
+                'openlineage.airflow.extractors.bigquery_extractorBigQueryExtractor'
+            ),
+            try_import_from_string(
+                'openlineage.airflow.extractors.great_expectations_extractor.GreatExpectationsExtractor'
+            ),
+            try_import_from_string(
+                'openlineage.airflow.extractors.snowflake_extractor.SnowflakeExtractor'
+            ),
+        ],
+    )
 )
 
 _patchers = list(
-    filter(None, [
-        try_import_from_string('openlineage.airflow.extractors.great_expectations_extractor.GreatExpectationsExtractor')
-    ])
+    filter(
+        None,
+        [
+            try_import_from_string(
+                'openlineage.airflow.extractors.great_expectations_extractor.GreatExpectationsExtractor'
+            )
+        ],
+    )
 )
 
 
