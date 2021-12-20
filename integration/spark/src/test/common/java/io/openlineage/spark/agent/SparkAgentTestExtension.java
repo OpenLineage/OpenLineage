@@ -29,8 +29,7 @@ import org.mockito.Mockito;
  */
 public class SparkAgentTestExtension
     implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback, ParameterResolver {
-  public static final OpenLineageContext OPEN_LINEAGE_SPARK_CONTEXT =
-      mock(OpenLineageContext.class);
+  public static final EventEmitter OPEN_LINEAGE_SPARK_CONTEXT = mock(EventEmitter.class);
 
   @Override
   public void beforeAll(ExtensionContext context) throws Exception {

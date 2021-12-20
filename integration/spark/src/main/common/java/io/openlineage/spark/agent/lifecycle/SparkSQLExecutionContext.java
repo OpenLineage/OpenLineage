@@ -4,8 +4,8 @@ import static io.openlineage.spark.agent.util.PlanUtils.merge;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
+import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.JobMetricsHolder;
-import io.openlineage.spark.agent.OpenLineageContext;
 import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.facets.ErrorFacet;
 import io.openlineage.spark.agent.facets.LogicalPlanFacet;
@@ -53,7 +53,7 @@ public class SparkSQLExecutionContext implements ExecutionContext {
   private final UnknownEntryFacetListener unknownEntryFacetListener =
       new UnknownEntryFacetListener();
 
-  private OpenLineageContext sparkContext;
+  private EventEmitter sparkContext;
   private final List<QueryPlanVisitor<LogicalPlan, OpenLineage.OutputDataset>>
       outputDatasetSupplier;
   private final List<QueryPlanVisitor<LogicalPlan, OpenLineage.InputDataset>> inputDatasetSupplier;
@@ -67,7 +67,7 @@ public class SparkSQLExecutionContext implements ExecutionContext {
 
   public SparkSQLExecutionContext(
       long executionId,
-      OpenLineageContext sparkContext,
+      EventEmitter sparkContext,
       QueryExecution queryExecution,
       List<QueryPlanVisitor<LogicalPlan, OpenLineage.OutputDataset>> outputDatasetSupplier,
       List<QueryPlanVisitor<LogicalPlan, OpenLineage.InputDataset>> inputDatasetSupplier) {

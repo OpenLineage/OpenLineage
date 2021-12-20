@@ -38,7 +38,7 @@ import scala.collection.Seq$;
 public class OpenLineageSparkListenerTest {
   @Test
   public void testSqlEventWithJobEventEmitsOnce(SparkSession sparkSession) {
-    OpenLineageContext context = mock(OpenLineageContext.class);
+    EventEmitter context = mock(EventEmitter.class);
     QueryExecution qe = mock(QueryExecution.class);
     LogicalPlan query = mock(LogicalPlan.class);
     SparkPlan plan = mock(SparkPlan.class);

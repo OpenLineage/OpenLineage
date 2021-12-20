@@ -17,7 +17,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class OpenLineageContext {
+public class EventEmitter {
   @Getter private OpenLineageClient client;
   @Getter private URI lineageURI;
   @Getter private String jobNamespace;
@@ -26,7 +26,7 @@ public class OpenLineageContext {
 
   private final ObjectMapper mapper = OpenLineageClient.createMapper();
 
-  public OpenLineageContext(ArgumentParser argument) throws URISyntaxException {
+  public EventEmitter(ArgumentParser argument) throws URISyntaxException {
     this.client = OpenLineageClient.create(argument.getApiKey(), ForkJoinPool.commonPool());
     // Extract url parameters other than api_key to append to lineageURI
     String queryParams = null;

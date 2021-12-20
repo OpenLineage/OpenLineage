@@ -1,7 +1,7 @@
 package io.openlineage.spark.agent.lifecycle;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.OpenLineageContext;
+import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.CommandPlanVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRDDVisitor;
@@ -19,7 +19,7 @@ import scala.PartialFunction;
 
 @AllArgsConstructor
 public class ContextFactory {
-  public final OpenLineageContext sparkContext;
+  public final EventEmitter sparkContext;
 
   public void close() {
     sparkContext.close();
