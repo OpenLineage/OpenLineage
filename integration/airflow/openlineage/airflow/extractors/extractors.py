@@ -7,7 +7,7 @@ from openlineage.airflow.utils import import_from_string, try_import_from_string
 
 _extractors = list(
     filter(
-        None,
+        lambda t: t is not None,
         [
             try_import_from_string(
                 'openlineage.airflow.extractors.postgres_extractor.PostgresExtractor'
@@ -27,7 +27,7 @@ _extractors = list(
 
 _patchers = list(
     filter(
-        None,
+        lambda t: t is not None,
         [
             try_import_from_string(
                 'openlineage.airflow.extractors.great_expectations_extractor.GreatExpectationsExtractor'
