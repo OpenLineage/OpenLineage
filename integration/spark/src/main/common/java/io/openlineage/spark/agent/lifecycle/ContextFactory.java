@@ -26,7 +26,7 @@ public class ContextFactory {
     sparkContext.close();
   }
 
-  public RddExecutionContext createRddExecutionContext(int jobId) {
+  public ExecutionContext createRddExecutionContext(int jobId) {
     OpenLineageContext olContext =
         OpenLineageContext.builder()
             .sparkSession(ScalaConversionUtils.asJavaOptional(SparkSession.getActiveSession()))
@@ -36,7 +36,7 @@ public class ContextFactory {
     return new RddExecutionContext(olContext, jobId, sparkContext);
   }
 
-  public SparkSQLExecutionContext createSparkSQLExecutionContext(long executionId) {
+  public ExecutionContext createSparkSQLExecutionContext(long executionId) {
     QueryExecution queryExecution = SQLExecution.getQueryExecution(executionId);
     SparkSession sparkSession = queryExecution.sparkSession();
     OpenLineageContext olContext =

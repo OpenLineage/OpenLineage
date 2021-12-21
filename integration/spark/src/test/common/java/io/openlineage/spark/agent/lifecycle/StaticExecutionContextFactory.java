@@ -19,6 +19,7 @@ import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.execution.QueryExecution;
 import org.apache.spark.sql.execution.SQLExecution;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
@@ -51,7 +52,7 @@ public class StaticExecutionContextFactory extends ContextFactory {
   }
 
   @Override
-  public RddExecutionContext createRddExecutionContext(int jobId) {
+  public ExecutionContext createRddExecutionContext(int jobId) {
     RddExecutionContext rdd =
         new RddExecutionContext(
             OpenLineageContext.builder()
@@ -74,7 +75,7 @@ public class StaticExecutionContextFactory extends ContextFactory {
   }
 
   @Override
-  public SparkSQLExecutionContext createSparkSQLExecutionContext(long executionId) {
+  public ExecutionContext createSparkSQLExecutionContext(long executionId) {
     return Optional.ofNullable(SQLExecution.getQueryExecution(executionId))
         .map(
             qe -> {
@@ -137,6 +138,11 @@ public class StaticExecutionContextFactory extends ContextFactory {
                         .sparkContext(SparkContext.getOrCreate())
                         .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
                         .build()));
+  }
+
+  public ExecutionContext createSparkSQLExecutionContext(
+      Long executionId, EventEmitter emitter, QueryExecution qe, OpenLineageContext olContext) {
+    return new SparkSQLExecutionContext(executionId, emitter, qe, olContext);
   }
 
   private static ZonedDateTime getZonedTime() {

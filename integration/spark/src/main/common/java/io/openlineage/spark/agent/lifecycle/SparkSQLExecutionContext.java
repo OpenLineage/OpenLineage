@@ -44,7 +44,7 @@ import scala.PartialFunction;
 import scala.collection.JavaConversions;
 
 @Slf4j
-public class SparkSQLExecutionContext implements ExecutionContext {
+class SparkSQLExecutionContext implements ExecutionContext {
 
   private final long executionId;
   private final QueryExecution queryExecution;

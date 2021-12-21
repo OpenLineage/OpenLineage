@@ -9,7 +9,6 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.lifecycle.ContextFactory;
 import io.openlineage.spark.agent.lifecycle.ExecutionContext;
-import io.openlineage.spark.agent.lifecycle.SparkSQLExecutionContext;
 import io.openlineage.spark.agent.transformers.PairRDDFunctionsTransformer;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.io.PrintWriter;
@@ -45,7 +44,7 @@ import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 @Slf4j
 public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkListener {
 
-  private static final Map<Long, SparkSQLExecutionContext> sparkSqlExecutionRegistry =
+  private static final Map<Long, ExecutionContext> sparkSqlExecutionRegistry =
       Collections.synchronizedMap(new HashMap<>());
   private static final Map<Integer, ExecutionContext> rddExecutionRegistry =
       Collections.synchronizedMap(new HashMap<>());
@@ -129,13 +128,13 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   /** called by the SparkListener when a spark-sql (Dataset api) execution starts */
   private static void sparkSQLExecStart(SparkListenerSQLExecutionStart startEvent) {
-    SparkSQLExecutionContext context = getSparkSQLExecutionContext(startEvent.executionId());
+    ExecutionContext context = getSparkSQLExecutionContext(startEvent.executionId());
     context.start(startEvent);
   }
 
   /** called by the SparkListener when a spark-sql (Dataset api) execution ends */
   private static void sparkSQLExecEnd(SparkListenerSQLExecutionEnd endEvent) {
-    SparkSQLExecutionContext context = sparkSqlExecutionRegistry.remove(endEvent.executionId());
+    ExecutionContext context = sparkSqlExecutionRegistry.remove(endEvent.executionId());
     if (context != null) {
       context.end(endEvent);
     }
@@ -184,7 +183,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     jobMetrics.addMetrics(taskEnd.stageId(), taskEnd.taskMetrics());
   }
 
-  public static SparkSQLExecutionContext getSparkSQLExecutionContext(long executionId) {
+  public static ExecutionContext getSparkSQLExecutionContext(long executionId) {
     return sparkSqlExecutionRegistry.computeIfAbsent(
         executionId, (e) -> contextFactory.createSparkSQLExecutionContext(executionId));
   }
