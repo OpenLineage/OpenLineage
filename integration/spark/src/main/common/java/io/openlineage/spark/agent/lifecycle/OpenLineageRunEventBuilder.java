@@ -5,29 +5,48 @@ import static io.openlineage.spark.agent.util.ScalaConversionUtils.toScalaFn;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.Builder;
 import io.openlineage.client.OpenLineage.DatasetFacet;
+import io.openlineage.client.OpenLineage.InputDataset;
+import io.openlineage.client.OpenLineage.InputDatasetFacet;
+import io.openlineage.client.OpenLineage.JobBuilder;
+import io.openlineage.client.OpenLineage.JobFacet;
+import io.openlineage.client.OpenLineage.OutputDataset;
+import io.openlineage.client.OpenLineage.OutputDatasetFacet;
 import io.openlineage.client.OpenLineage.ParentRunFacet;
+import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEventBuilder;
-import io.openlineage.spark.agent.lifecycle.Rdds;
+import io.openlineage.client.OpenLineage.RunFacet;
+import io.openlineage.client.OpenLineage.RunFacets;
+import io.openlineage.client.OpenLineage.RunFacetsBuilder;
+import io.openlineage.spark.agent.JobMetricsHolder;
 import io.openlineage.spark.agent.util.PlanUtils;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.scheduler.ActiveJob;
 import org.apache.spark.scheduler.JobFailed;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.scheduler.SparkListenerStageCompleted;
+import org.apache.spark.scheduler.SparkListenerStageSubmitted;
 import org.apache.spark.scheduler.Stage;
+import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
+import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 import scala.PartialFunction;
 
 /**
@@ -58,19 +77,16 @@ import scala.PartialFunction;
  * of every {@link org.apache.spark.rdd.MapPartitionsRDD} or {@link
  * org.apache.spark.sql.execution.SQLExecutionRDD}.
  *
- * <p>Any {@link io.openlineage.client.OpenLineage.RunFacet}s and {@link
- * io.openlineage.client.OpenLineage.JobFacet}s returned by the {@link CustomFacetBuilder}s are
+ * <p>Any {@link RunFacet}s and {@link JobFacet}s returned by the {@link CustomFacetBuilder}s are
  * appended to the {@link io.openlineage.client.OpenLineage.Run} and {@link
  * io.openlineage.client.OpenLineage.Job}, respectively.
  *
  * <p><b>If</b> any {@link io.openlineage.client.OpenLineage.InputDatasetBuilder}s or {@link
  * io.openlineage.client.OpenLineage.OutputDatasetBuilder}s are returned from the partial functions,
  * the {@link #inputDatasetBuilders} or {@link #outputDatasetBuilders} will be invoked using the
- * same input arguments in order to construct any {@link
- * io.openlineage.client.OpenLineage.InputDatasetFacet}s or {@link
- * io.openlineage.client.OpenLineage.OutputDatasetFacet}s to the returned dataset. {@link
- * io.openlineage.client.OpenLineage.InputDatasetFacet}s and {@link
- * io.openlineage.client.OpenLineage.OutputDatasetFacet}s will be attached to <i>any</i> {@link
+ * same input arguments in order to construct any {@link InputDatasetFacet}s or {@link
+ * OutputDatasetFacet}s to the returned dataset. {@link InputDatasetFacet}s and {@link
+ * OutputDatasetFacet}s will be attached to <i>any</i> {@link
  * io.openlineage.client.OpenLineage.InputDatasetBuilder} or {@link
  * io.openlineage.client.OpenLineage.OutputDatasetBuilder} found for the event. This is because
  * facets may be constructed from generic information that is not specifically tied to a Dataset.
@@ -94,6 +110,7 @@ import scala.PartialFunction;
  * <p>If a facet needs to be attached to a specific dataset, the user must take care to construct
  * both the Dataset and the Facet in the same builder.
  */
+@Slf4j
 @AllArgsConstructor
 class OpenLineageRunEventBuilder {
 
@@ -107,23 +124,37 @@ class OpenLineageRunEventBuilder {
   private final List<PartialFunction<Object, List<OpenLineage.OutputDatasetBuilder>>>
       outputDatasetBuilders;
 
-  @NonNull private final List<CustomFacetBuilder<Object, DatasetFacet>> datasetFacetBuilders;
+  @NonNull private final List<CustomFacetBuilder<?, ? extends DatasetFacet>> datasetFacetBuilders;
 
   @NonNull
-  private final List<CustomFacetBuilder<Object, OpenLineage.InputDatasetFacet>>
-      inputDatasetFacetBuilders;
+  private final List<CustomFacetBuilder<?, ? extends InputDatasetFacet>> inputDatasetFacetBuilders;
 
   @NonNull
-  private final List<CustomFacetBuilder<Object, OpenLineage.OutputDatasetFacet>>
+  private final List<CustomFacetBuilder<?, ? extends OutputDatasetFacet>>
       outputDatasetFacetBuilders;
 
-  @NonNull private final List<CustomFacetBuilder<Object, OpenLineage.RunFacet>> runFacetBuilders;
-  @NonNull private final List<CustomFacetBuilder<Object, OpenLineage.JobFacet>> jobFacetBuilders;
+  @NonNull private final List<CustomFacetBuilder<?, ? extends RunFacet>> runFacetBuilders;
+  @NonNull private final List<CustomFacetBuilder<?, ? extends JobFacet>> jobFacetBuilders;
 
+  private final UnknownEntryFacetListener<?> unknownEntryFacetListener =
+      new UnknownEntryFacetListener();
   private final Map<Integer, ActiveJob> jobMap = new HashMap<>();
   private final Map<Integer, Stage> stageMap = new HashMap<>();
 
   private final ObjectMapper objectMapper = new ObjectMapper();
+  private final JobMetricsHolder jobMetricsHolder = JobMetricsHolder.getInstance();
+
+  OpenLineageRunEventBuilder(OpenLineageContext context, OpenLineageEventHandlerFactory factory) {
+    this(
+        context,
+        factory.createInputDatasetBuilder(context),
+        factory.createOutputDatasetBuilder(context),
+        factory.createDatasetFacetBuilders(context),
+        factory.createInputDatasetFacetBuilders(context),
+        factory.createOutputDatasetFacetBuilders(context),
+        factory.createRunFacetBuilders(context),
+        factory.createJobFacetBuilders(context));
+  }
 
   /**
    * Add an {@link ActiveJob} and all of its {@link Stage}s to the maps so we can look them up by id
@@ -137,9 +168,27 @@ class OpenLineageRunEventBuilder {
     job.finalStage().parents().forall(toScalaFn(stage -> stageMap.put(stage.id(), stage)));
   }
 
-  void buildRun(
-      OpenLineage.ParentRunFacet parentRunFacet,
-      OpenLineage.RunEventBuilder runEventBuilder,
+  RunEvent buildRun(
+      Optional<ParentRunFacet> parentRunFacet,
+      RunEventBuilder runEventBuilder,
+      JobBuilder jobBuilder,
+      SparkListenerStageSubmitted event) {
+    Stage stage = stageMap.get(event.stageInfo().stageId());
+    RDD<?> rdd = stage.rdd();
+
+    List<Object> nodes = new ArrayList<>();
+    nodes.addAll(Arrays.asList(event.stageInfo(), stage));
+
+    nodes.addAll(Rdds.flattenRDDs(rdd));
+
+    return populateRun(
+        parentRunFacet, runEventBuilder, jobBuilder, nodes, new ArrayList<>(), new ArrayList<>());
+  }
+
+  RunEvent buildRun(
+      Optional<ParentRunFacet> parentRunFacet,
+      RunEventBuilder runEventBuilder,
+      JobBuilder jobBuilder,
       SparkListenerStageCompleted event) {
     Stage stage = stageMap.get(event.stageInfo().stageId());
     RDD<?> rdd = stage.rdd();
@@ -149,56 +198,132 @@ class OpenLineageRunEventBuilder {
 
     nodes.addAll(Rdds.flattenRDDs(rdd));
 
-    populateRun(parentRunFacet, runEventBuilder, nodes);
+    return populateRun(
+        parentRunFacet, runEventBuilder, jobBuilder, nodes, new ArrayList<>(), new ArrayList<>());
   }
 
-  void buildRun(
-      OpenLineage.ParentRunFacet parentRunFacet,
-      OpenLineage.RunEventBuilder runEventBuilder,
+  RunEvent buildRun(
+      Optional<ParentRunFacet> parentRunFacet,
+      RunEventBuilder runEventBuilder,
+      JobBuilder jobBuilder,
+      SparkListenerSQLExecutionStart event) {
+    runEventBuilder.eventType("START");
+    return buildRun(parentRunFacet, runEventBuilder, jobBuilder, event, Optional.empty());
+  }
+
+  RunEvent buildRun(
+      Optional<ParentRunFacet> parentRunFacet,
+      RunEventBuilder runEventBuilder,
+      JobBuilder jobBuilder,
+      SparkListenerSQLExecutionEnd event) {
+    runEventBuilder.eventType("COMPLETE");
+    return buildRun(parentRunFacet, runEventBuilder, jobBuilder, event, Optional.empty());
+  }
+
+  RunEvent buildRun(
+      Optional<ParentRunFacet> parentRunFacet,
+      RunEventBuilder runEventBuilder,
+      JobBuilder jobBuilder,
       SparkListenerJobStart event) {
     runEventBuilder.eventType("START");
-    buildRunFromJob(parentRunFacet, runEventBuilder, event, jobMap.get(event.jobId()));
+    return buildRun(
+        parentRunFacet,
+        runEventBuilder,
+        jobBuilder,
+        event,
+        Optional.ofNullable(jobMap.get(event.jobId())));
   }
 
-  void buildRun(
-      OpenLineage.ParentRunFacet parentRunFacet,
-      OpenLineage.RunEventBuilder runEventBuilder,
+  RunEvent buildRun(
+      Optional<ParentRunFacet> parentRunFacet,
+      RunEventBuilder runEventBuilder,
+      JobBuilder jobBuilder,
       SparkListenerJobEnd event) {
     runEventBuilder.eventType(event.jobResult() instanceof JobFailed ? "FAIL" : "COMPLETE");
-    buildRunFromJob(parentRunFacet, runEventBuilder, event, jobMap.get(event.jobId()));
+    return buildRun(
+        parentRunFacet,
+        runEventBuilder,
+        jobBuilder,
+        event,
+        Optional.ofNullable(jobMap.get(event.jobId())));
   }
 
-  private void buildRunFromJob(
-      ParentRunFacet parentRunFacet, RunEventBuilder runEventBuilder, Object event, ActiveJob job) {
-    RDD<?> rdd = job.finalStage().rdd();
-
+  private RunEvent buildRun(
+      Optional<ParentRunFacet> parentRunFacet,
+      RunEventBuilder runEventBuilder,
+      JobBuilder jobBuilder,
+      Object event,
+      Optional<ActiveJob> job) {
     List<Object> nodes = new ArrayList<>();
-    nodes.addAll(Arrays.asList(event, job));
+    nodes.add(event);
+    job.ifPresent(
+        j -> {
+          nodes.add(j);
+          nodes.addAll(Rdds.flattenRDDs(j.finalStage().rdd()));
+        });
 
-    nodes.addAll(Rdds.flattenRDDs(rdd));
+    List<InputDataset> inputDatasets =
+        visitQueryPlan(PlanUtils.merge(inputDatasetBuilders), InputDataset.class)
+            .orElse(Collections.emptyList());
+    List<OutputDataset> outputDatasets =
+        visitQueryPlan(PlanUtils.merge(outputDatasetBuilders), OutputDataset.class)
+            .orElse(Collections.emptyList());
 
-    populateRun(parentRunFacet, runEventBuilder, nodes);
+    return populateRun(
+        parentRunFacet, runEventBuilder, jobBuilder, nodes, inputDatasets, outputDatasets);
   }
 
-  private void populateRun(
-      OpenLineage.ParentRunFacet parentRunFacet,
-      OpenLineage.RunEventBuilder runEventBuilder,
-      List<Object> nodes) {
-    OpenLineage openLineage = openLineageContext.getOpenLineage();
-    OpenLineage.RunFacets runFacets =
-        buildFacets(nodes, runFacetBuilders, openLineage.newRunFacetsBuilder())
-            .parent(parentRunFacet)
-            .build();
-    OpenLineage.JobFacets jobFacets =
-        buildFacets(nodes, jobFacetBuilders, openLineage.newJobFacetsBuilder()).build();
-    OpenLineage.RunBuilder runBuilder = openLineage.newRunBuilder().facets(runFacets);
-    OpenLineage.JobBuilder jobBuilder = openLineage.newJobBuilder().facets(jobFacets);
+  private <T, B extends Builder<T>> Optional<List<T>> visitQueryPlan(
+      PartialFunction<Object, List<B>> fn, Class<T> klass) {
+    return openLineageContext
+        .getQueryExecution()
+        .map(
+            qe -> {
+              if (log.isDebugEnabled()) {
+                log.debug("Traversing optimized plan {}", qe.optimizedPlan().toJSON());
+                log.debug("Physical plan executed {}", qe.executedPlan().toJSON());
+              }
+              return qe;
+            })
+        .map(
+            qe ->
+                ScalaConversionUtils.fromSeq(
+                        qe.optimizedPlan().collect(fn.orElse(unknownEntryFacetListener)))
+                    .stream()
+                    .flatMap(List::stream)
+                    .map(klass::cast)
+                    .collect(Collectors.toList()));
+  }
 
-    runEventBuilder
+  private RunEvent populateRun(
+      Optional<ParentRunFacet> parentRunFacet,
+      RunEventBuilder runEventBuilder,
+      JobBuilder jobBuilder,
+      List<Object> nodes,
+      List<InputDataset> inputDatasets,
+      List<OutputDataset> outputDatasets) {
+    OpenLineage openLineage = openLineageContext.getOpenLineage();
+
+    RunFacetsBuilder runFacetsBuilder = openLineage.newRunFacetsBuilder();
+    parentRunFacet.ifPresent(runFacetsBuilder::parent);
+    RunFacets runFacets = buildFacets(nodes, runFacetBuilders, runFacetsBuilder.build());
+    openLineageContext
+        .getQueryExecution()
+        .flatMap(qe -> unknownEntryFacetListener.build(qe.optimizedPlan()))
+        .ifPresent(facet -> runFacetsBuilder.put("spark_unknown", facet));
+    OpenLineage.JobFacets jobFacets =
+        buildFacets(nodes, jobFacetBuilders, openLineage.newJobFacets(null, null, null));
+    OpenLineage.RunBuilder runBuilder =
+        openLineage.newRunBuilder().runId(openLineageContext.getRunUuid()).facets(runFacets);
+    inputDatasets.addAll(buildInputDatasets(nodes));
+    outputDatasets.addAll(buildOutputDatasets(nodes));
+
+    return runEventBuilder
         .run(runBuilder.build())
-        .job(jobBuilder.build())
-        .inputs(buildInputDatasets(nodes))
-        .outputs(buildOutputDatasets(nodes));
+        .job(jobBuilder.facets(jobFacets).build())
+        .inputs(inputDatasets)
+        .outputs(outputDatasets)
+        .build();
   }
 
   private List<OpenLineage.InputDataset> buildInputDatasets(List<Object> nodes) {
@@ -207,10 +332,11 @@ class OpenLineageRunEventBuilder {
     if (!datasets.isEmpty()) {
       OpenLineage.InputDatasetInputFacets inputFacets =
           buildFacets(
-                  nodes, inputDatasetFacetBuilders, openLineage.newInputDatasetInputFacetsBuilder())
-              .build();
+              nodes,
+              inputDatasetFacetBuilders,
+              openLineage.newInputDatasetInputFacetsBuilder().build());
       OpenLineage.DatasetFacets datasetFacets =
-          buildFacets(nodes, datasetFacetBuilders, openLineage.newDatasetFacetsBuilder()).build();
+          buildFacets(nodes, datasetFacetBuilders, openLineage.newDatasetFacetsBuilder().build());
       datasets.forEach(ds -> ds.inputFacets(inputFacets).facets(datasetFacets));
     }
     return datasets.stream()
@@ -277,7 +403,7 @@ class OpenLineageRunEventBuilder {
    * @return
    */
   private <T, F> F buildFacets(
-      List<Object> events, List<CustomFacetBuilder<Object, T>> builders, F facetsContainer) {
+      List<Object> events, List<CustomFacetBuilder<?, ? extends T>> builders, F facetsContainer) {
     Map<String, T> facetsMap = new HashMap<>();
     events.forEach(event -> builders.forEach(fn -> fn.accept(event, facetsMap::put)));
     try {

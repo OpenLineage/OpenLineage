@@ -26,11 +26,11 @@ import java.util.function.BiConsumer;
  * @param <F>
  */
 public abstract class CustomFacetBuilder<T, F>
-    implements AbstractPartial<T>, BiConsumer<T, BiConsumer<String, ? super F>> {
+    implements AbstractPartial<Object>, BiConsumer<Object, BiConsumer<String, ? super F>> {
 
-  public final void accept(T event, BiConsumer<String, ? super F> consumer) {
+  public final void accept(Object event, BiConsumer<String, ? super F> consumer) {
     if (isDefinedAt(event)) {
-      build(event, consumer);
+      build((T) event, consumer);
     }
   }
 

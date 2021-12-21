@@ -6,6 +6,7 @@ import io.openlineage.client.OpenLineage.OutputDataset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -32,6 +33,7 @@ import scala.PartialFunction;
 @Value
 @Builder
 public class OpenLineageContext {
+  UUID runUuid = UUID.randomUUID();
 
   /**
    * Optional {@link SparkSession} instance when an application is using a Spark SQL configuration
