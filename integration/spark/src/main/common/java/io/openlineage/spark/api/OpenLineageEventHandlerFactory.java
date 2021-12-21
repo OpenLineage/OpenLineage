@@ -1,0 +1,61 @@
+package io.openlineage.spark.api;
+
+import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.DatasetFacet;
+import io.openlineage.client.OpenLineage.InputDataset;
+import io.openlineage.client.OpenLineage.InputDatasetBuilder;
+import io.openlineage.client.OpenLineage.JobFacet;
+import io.openlineage.client.OpenLineage.OutputDataset;
+import io.openlineage.client.OpenLineage.OutputDatasetBuilder;
+import io.openlineage.client.OpenLineage.OutputDatasetFacet;
+import io.openlineage.client.OpenLineage.RunFacet;
+import java.util.Collections;
+import java.util.List;
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import scala.PartialFunction;
+
+/**
+ * Factory for the builders that generate OpenLineage components and facets from Spark events.
+ */
+public interface OpenLineageEventHandlerFactory {
+
+  default List<PartialFunction<LogicalPlan, List<InputDataset>>> createInputDatasetQueryPlanVisitors(
+      OpenLineageContext context) {
+    return Collections.emptyList();
+  }
+
+  default List<PartialFunction<LogicalPlan, List<OutputDataset>>> createOutputDatasetQueryPlanVisitors(
+      OpenLineageContext context) {
+    return Collections.emptyList();
+  }
+
+  default List<PartialFunction<Object, List<InputDatasetBuilder>>> createInputDatasetBuilder(
+      OpenLineageContext context) {
+    return Collections.emptyList();
+  }
+
+  default List<PartialFunction<Object, List<OutputDatasetBuilder>>> createOutputDatasetBuilder(
+      OpenLineageContext context) {
+    return Collections.emptyList();
+  }
+
+  default List<CustomFacetBuilder<Object, OpenLineage.InputDatasetFacet>> createInputDatasetFacetBuilders(OpenLineageContext context) {
+    return Collections.emptyList();
+  }
+
+  default List<CustomFacetBuilder<Object, OutputDatasetFacet>> createOutputDatasetFacetBuilders(OpenLineageContext context) {
+    return Collections.emptyList();
+  }
+
+  default List<CustomFacetBuilder<Object, DatasetFacet>> createDatasetFacetBuilders(OpenLineageContext context) {
+    return Collections.emptyList();
+  }
+
+  default List<CustomFacetBuilder<Object, RunFacet>> createRunFacetBuilders(OpenLineageContext context) {
+    return Collections.emptyList();
+  }
+
+  default List<CustomFacetBuilder<Object, JobFacet>> createJobFacetBuilders(OpenLineageContext context) {
+    return Collections.emptyList();
+  }
+}
