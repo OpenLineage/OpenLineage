@@ -7,7 +7,8 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.client.OpenLineageClient;
-import io.openlineage.spark.agent.lifecycle.SparkSQLExecutionContext;
+import io.openlineage.spark.agent.lifecycle.ExecutionContext;
+import io.openlineage.spark.agent.lifecycle.StaticExecutionContextFactory;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHadoopFsRelationVisitor;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Optional;
@@ -80,8 +81,9 @@ public class OpenLineageSparkListenerTest {
     olContext
         .getOutputDatasetQueryPlanVisitors()
         .add(new InsertIntoHadoopFsRelationVisitor(olContext));
-    SparkSQLExecutionContext executionContext =
-        new SparkSQLExecutionContext(1L, emitter, qe, olContext);
+    ExecutionContext executionContext =
+        new StaticExecutionContextFactory(emitter)
+            .createSparkSQLExecutionContext(1L, emitter, qe, olContext);
 
     executionContext.start(
         new SparkListenerSQLExecutionStart(

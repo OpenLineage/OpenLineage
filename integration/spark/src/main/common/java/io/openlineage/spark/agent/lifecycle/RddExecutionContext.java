@@ -53,6 +53,8 @@ import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.scheduler.Stage;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
+import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 import org.apache.spark.util.SerializableJobConf;
 import scala.Function2;
 import scala.collection.Iterator;
@@ -60,7 +62,7 @@ import scala.collection.Seq;
 import scala.runtime.AbstractFunction0;
 
 @Slf4j
-public class RddExecutionContext implements ExecutionContext {
+class RddExecutionContext implements ExecutionContext {
   private final EventEmitter sparkContext;
   private final Optional<SparkContext> sparkContextOption;
   private final UUID runId = UUID.randomUUID();
@@ -175,6 +177,16 @@ public class RddExecutionContext implements ExecutionContext {
     } else {
       return dependencyName;
     }
+  }
+
+  @Override
+  public void start(SparkListenerSQLExecutionStart sqlStart) {
+    // do nothing
+  }
+
+  @Override
+  public void end(SparkListenerSQLExecutionEnd sqlEnd) {
+    // do nothing
   }
 
   @Override
