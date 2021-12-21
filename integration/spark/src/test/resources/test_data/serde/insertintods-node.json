@@ -1,390 +1,145 @@
 {
+  "@class": "org.apache.spark.sql.execution.datasources.InsertIntoDataSourceCommand",
   "logicalRelation": {
-    "@class":"org.apache.spark.sql.execution.datasources.InsertIntoHadoopFsRelationCommand",
+    "@class": "org.apache.spark.sql.execution.datasources.LogicalRelation",
     "relation": {
-      "location": {
-        "sparkSession": {
-          "traceEnabled": false
+      "@class": "com.google.cloud.spark.bigquery.BigQueryRelation",
+      "options": {
+        "tableId": {
+          "dataset": "test-dataset",
+          "table": "QUERY",
+          "iamresourceName": "projects/null/datasets/test-dataset/tables/QUERY"
         },
-        "table": {
-          "identifier": {
-            "table": "test",
-            "database": "db",
-            "identifier": "test"
+        "query": {
+          "present": true
+        },
+        "parentProjectId": "test_serialization",
+        "credentialsKey": {
+          "present": false
+        },
+        "credentialsFile": 7,
+        "accessToken": 7,
+        "filter": 7,
+        "maxParallelism": {
+          "isPresent": true,
+          "asInt": 2
+        },
+        "defaultParallelism": 10,
+        "temporaryGcsBucket": 7,
+        "persistentGcsBucket": 7,
+        "persistentGcsPath": 7,
+        "intermediateFormat": "PARQUET",
+        "readDataFormat": "ARROW",
+        "combinePushedDownFilters": true,
+        "viewsEnabled": false,
+        "materializationProject": 7,
+        "materializationDataset": 7,
+        "partitionField": 7,
+        "partitionExpirationMs": {
+          "isPresent": true,
+          "asLong": 2
+        },
+        "partitionRequireFilter": 7,
+        "partitionType": 7,
+        "clusteredFields": 7,
+        "createDisposition": 7,
+        "optimizedEmptyProjection": true,
+        "useAvroLogicalTypes": false,
+        "loadSchemaUpdateOptions": [],
+        "materializationExpirationTimeInMinutes": 1440,
+        "maxReadRowsRetries": 3,
+        "pushAllFilters": true,
+        "tableIdWithoutThePartition": 5,
+        "partitionTypeOrDefault": "DAY",
+        "bigQueryClientConnectTimeout": 60000,
+        "bigQueryClientReadTimeout": 60000,
+        "bigQueryClientRetrySettings": {
+          "totalTimeout": {
+            "seconds": 600,
+            "negative": false,
+            "zero": false,
+            "units": ["SECONDS", "NANOS"],
+            "nano": 0
           },
-          "tableType": {
-            "name": "MANAGED"
+          "initialRetryDelay": {
+            "seconds": 1,
+            "negative": false,
+            "zero": false,
+            "units": ["SECONDS", "NANOS"],
+            "nano": 250000000
           },
-          "storage": {
-            "locationUri": null,
-            "inputFormat": null,
-            "outputFormat": null,
-            "serde": null,
-            "compressed": false,
-            "properties": {}
+          "retryDelayMultiplier": 1.6,
+          "maxRetryDelay": {
+            "seconds": 5,
+            "negative": false,
+            "zero": false,
+            "units": ["SECONDS", "NANOS"],
+            "nano": 0
           },
-          "schema": [
-            {
+          "maxAttempts": 0,
+          "jittered": true,
+          "initialRpcTimeout": {
+            "seconds": 60,
+            "negative": false,
+            "zero": false,
+            "units": ["SECONDS", "NANOS"],
+            "nano": 0
+          },
+          "rpcTimeoutMultiplier": 1.6,
+          "maxRpcTimeout": {
+            "seconds": 300,
+            "negative": false,
+            "zero": false,
+            "units": ["SECONDS", "NANOS"],
+            "nano": 0
+          }
+        }
+      },
+      "table": {
+        "tableId": {
+          "dataset": "dataset",
+          "table": "test",
+          "iamresourceName": "projects/null/datasets/dataset/tables/test"
+        },
+        "definition": {
+          "schema": {
+            "fields": [{
               "name": "name",
-              "dataType": {
-                "ordering": {}
-              },
-              "nullable": false,
-              "metadata": {
-                "map": {}
-              },
-              "comment": null
-            }
-          ],
-          "provider": null,
-          "partitionColumnNames": [
-            "name"
-          ],
-          "bucketSpec": null,
-          "owner": "",
-          "createTime": 1631621948,
-          "lastAccessTime": 1631621948,
-          "createVersion": "v1",
-          "properties": {},
-          "stats": null,
-          "viewText": null,
-          "comment": null,
-          "unsupportedFeatures": [],
-          "tracksPartitionsInCatalog": false,
-          "schemaPreservesCase": false,
-          "ignoredProperties": {}
-        },
-        "sizeInBytes": 100,
-        "hadoopConf": {
-          "finalParameters": [
-            "mapreduce.job.end-notification.max.retry.interval",
-            "mapreduce.job.end-notification.max.attempts"
-          ]
+              "type": {
+                "standardType": "STRING"
+              }
+            }]
+          }
         }
       },
-      "partitionSchema": [
-        {
-          "name": "name",
-          "dataType": {
-            "ordering": {}
-          },
-          "nullable": false,
-          "metadata": {
-            "map": {}
-          },
-          "comment": null
-        }
-      ],
-      "dataSchema": [
-        {
-          "name": "name",
-          "dataType": {
-            "ordering": {}
-          },
-          "nullable": false,
-          "metadata": {
-            "map": {}
-          },
-          "comment": null
-        }
-      ],
-      "bucketSpec": null,
-      "fileFormat": {},
-      "options": {},
-      "sparkSession": {
-        "traceEnabled": false
-      },
-      "overlappedPartCols": {
-        "name": {
-          "name": "name",
-          "dataType": {
-            "ordering": {}
-          },
-          "nullable": false,
-          "metadata": {
-            "map": {}
-          },
-          "comment": null
-        }
-      },
-      "schema": [
-        {
-          "name": "name",
-          "dataType": {
-            "ordering": {}
-          },
-          "nullable": false,
-          "metadata": {
-            "map": {}
-          },
-          "comment": null
-        }
-      ]
+      "traceEnabled": false
     },
-    "output": [
-      {
-        "name": "name",
-        "dataType": {
-          "ordering": {}
-        },
-        "nullable": false,
-        "metadata": {
-          "map": {}
-        },
-        "qualifier": [],
-        "origin": {
-          "line": null,
-          "startPosition": null
-        },
-        "deterministic": true,
-        "resolved": true
-      }
-    ],
-    "catalogTable": null,
+    "output": [{
+      "name": "name",
+      "nullable": false,
+      "metadata": {
+        "map": {}
+      },
+      "qualifier": [],
+      "deterministic": true,
+      "resolved": true
+    }],
     "isStreaming": false,
-    "origin": {
-      "line": null,
-      "startPosition": null
-    },
-    "schema": [
-      {
-        "name": "name",
-        "dataType": {
-          "ordering": {}
-        },
-        "nullable": false,
-        "metadata": {
-          "map": {}
-        },
-        "comment": null
-      }
-    ],
     "allAttributes": {
       "attrs": []
     },
     "resolved": true,
-    "statsCache": null,
-    "attributeMap": {
-      "name#1": {
-        "name": "name",
-        "dataType": {
-          "ordering": {}
-        },
-        "nullable": false,
-        "metadata": {
-          "map": {}
-        },
-        "qualifier": [],
-        "origin": {
-          "line": null,
-          "startPosition": null
-        },
-        "deterministic": true,
-        "resolved": true
-      }
-    },
     "traceEnabled": false,
     "canonicalizedPlan": false
   },
-  "query": {
-    "relation": {
-      "location": {
-        "sparkSession": {
-          "traceEnabled": false
-        },
-        "table": {
-          "identifier": {
-            "table": "test",
-            "database": "db",
-            "identifier": "test"
-          },
-          "tableType": {
-            "name": "MANAGED"
-          },
-          "storage": {
-            "locationUri": null,
-            "inputFormat": null,
-            "outputFormat": null,
-            "serde": null,
-            "compressed": false,
-            "properties": {}
-          },
-          "schema": [
-            {
-              "name": "name",
-              "dataType": {
-                "ordering": {}
-              },
-              "nullable": false,
-              "metadata": {
-                "map": {}
-              },
-              "comment": null
-            }
-          ],
-          "provider": null,
-          "partitionColumnNames": [
-            "name"
-          ],
-          "bucketSpec": null,
-          "owner": "",
-          "createTime": 1631621948,
-          "lastAccessTime": 1631621948,
-          "createVersion": "v1",
-          "properties": {},
-          "stats": null,
-          "viewText": null,
-          "comment": null,
-          "unsupportedFeatures": [],
-          "tracksPartitionsInCatalog": false,
-          "schemaPreservesCase": false,
-          "ignoredProperties": {}
-        },
-        "sizeInBytes": 100,
-        "hadoopConf": {
-          "finalParameters": [
-            "mapreduce.job.end-notification.max.retry.interval",
-            "mapreduce.job.end-notification.max.attempts"
-          ]
-        }
-      },
-      "partitionSchema": [
-        {
-          "name": "name",
-          "dataType": {
-            "ordering": {}
-          },
-          "nullable": false,
-          "metadata": {
-            "map": {}
-          },
-          "comment": null
-        }
-      ],
-      "dataSchema": [
-        {
-          "name": "name",
-          "dataType": {
-            "ordering": {}
-          },
-          "nullable": false,
-          "metadata": {
-            "map": {}
-          },
-          "comment": null
-        }
-      ],
-      "bucketSpec": null,
-      "fileFormat": {},
-      "options": {},
-      "sparkSession": {
-        "traceEnabled": false
-      },
-      "overlappedPartCols": {
-        "name": {
-          "name": "name",
-          "dataType": {
-            "ordering": {}
-          },
-          "nullable": false,
-          "metadata": {
-            "map": {}
-          },
-          "comment": null
-        }
-      },
-      "schema": [
-        {
-          "name": "name",
-          "dataType": {
-            "ordering": {}
-          },
-          "nullable": false,
-          "metadata": {
-            "map": {}
-          },
-          "comment": null
-        }
-      ]
-    },
-    "output": [
-      {
-        "name": "name",
-        "dataType": {
-          "ordering": {}
-        },
-        "nullable": false,
-        "metadata": {
-          "map": {}
-        },
-        "qualifier": [],
-        "origin": {
-          "line": null,
-          "startPosition": null
-        },
-        "deterministic": true,
-        "resolved": true
-      }
-    ],
-    "catalogTable": null,
-    "isStreaming": false,
-    "origin": {
-      "line": null,
-      "startPosition": null
-    },
-    "schema": [
-      {
-        "name": "name",
-        "dataType": {
-          "ordering": {}
-        },
-        "nullable": false,
-        "metadata": {
-          "map": {}
-        },
-        "comment": null
-      }
-    ],
-    "allAttributes": {
-      "attrs": []
-    },
-    "resolved": true,
-    "statsCache": null,
-    "attributeMap": {
-      "name#1": {
-        "name": "name",
-        "dataType": {
-          "ordering": {}
-        },
-        "nullable": false,
-        "metadata": {
-          "map": {}
-        },
-        "qualifier": [],
-        "origin": {
-          "line": null,
-          "startPosition": null
-        },
-        "deterministic": true,
-        "resolved": true
-      }
-    },
-    "traceEnabled": false,
-    "canonicalizedPlan": false
-  },
+  "query": 2,
   "overwrite": false,
-  "origin": {
-    "line": null,
-    "startPosition": null
-  },
-  "schema": [],
   "allAttributes": {
     "attrs": []
   },
   "resolved": true,
-  "statsCache": null,
   "metrics": {},
-  "traceEnabled": false,
   "streaming": false,
+  "traceEnabled": false,
   "canonicalizedPlan": false
 }

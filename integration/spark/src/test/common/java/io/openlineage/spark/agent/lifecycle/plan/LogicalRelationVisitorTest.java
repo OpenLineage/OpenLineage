@@ -57,7 +57,7 @@ class LogicalRelationVisitorTest {
                 jdbcUrl,
                 sparkTableName,
                 Map$.MODULE$
-                    .newBuilder()
+                    .<String, String>newBuilder()
                     .$plus$eq(Tuple2.apply("driver", Driver.class.getName()))
                     .result()),
             session);

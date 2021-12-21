@@ -1,6 +1,7 @@
 package io.openlineage.spark.agent.util;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -53,6 +54,18 @@ public class ScalaConversionUtils {
    */
   public static <T> List<T> fromSeq(Seq<T> seq) {
     return JavaConverters.bufferAsJavaListConverter(seq.<T>toBuffer()).asJava();
+  }
+
+  /**
+   * Convert a {@link scala.collection.immutable.Map} to a Java {@link java.util.Map}.
+   *
+   * @param map
+   * @param <K>
+   * @param <V>
+   * @return
+   */
+  public static <K, V> Map<K, V> fromMap(scala.collection.immutable.Map<K, V> map) {
+    return JavaConverters.mapAsJavaMapConverter(map).asJava();
   }
 
   /**

@@ -98,20 +98,6 @@ public class PlanUtils {
   }
 
   /**
-   * Given a {@link URI}, construct a valid {@link OpenLineage.Dataset} following the expected
-   * naming conventions.
-   *
-   * @param outputPath
-   * @param schema
-   * @return
-   */
-  public static OpenLineage.Dataset getDataset(URI outputPath, StructType schema) {
-    String namespace = namespaceUri(outputPath);
-    OpenLineage.DatasetFacets datasetFacet = datasetFacet(schema, namespace);
-    return getDataset(outputPath.getPath(), namespace, datasetFacet);
-  }
-
-  /**
    * Construct a dataset {@link OpenLineage.Dataset} given a name, namespace, and preconstructed
    * {@link OpenLineage.DatasetFacets}.
    *
@@ -138,6 +124,30 @@ public class PlanUtils {
         return datasetFacet;
       }
     };
+  }
+
+  /**
+   * Given a {@link URI}, construct a valid {@link OpenLineage.Dataset} following the expected
+   * naming conventions.
+   *
+   * @param outputPath
+   * @param schema
+   * @return
+   */
+  public static OpenLineage.Dataset getDataset(URI outputPath, StructType schema) {
+    String namespace = namespaceUri(outputPath);
+    OpenLineage.DatasetFacets datasetFacet = datasetFacet(schema, namespace);
+    return getDataset(outputPath.getPath(), namespace, datasetFacet);
+  }
+
+  public static OpenLineage.Dataset getDataset(DatasetIdentifier ident, StructType schema) {
+    OpenLineage.DatasetFacets datasetFacet = datasetFacet(schema, ident.getNamespace());
+    return getDataset(ident.getName(), ident.getNamespace(), datasetFacet);
+  }
+
+  public static OpenLineage.Dataset getDataset(
+      DatasetIdentifier ident, OpenLineage.DatasetFacets datasetFacet) {
+    return getDataset(ident.getName(), ident.getNamespace(), datasetFacet);
   }
 
   /**

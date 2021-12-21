@@ -1,9 +1,16 @@
 package io.openlineage.spark.agent.lifecycle;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.lifecycle.plan.AlterTableAddColumnsCommandVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.AlterTableRenameCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.AppendDataVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.CommandPlanVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.CreateDataSourceTableAsSelectCommandVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.CreateDataSourceTableCommandVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.CreateHiveTableAsSelectCommandVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.CreateTableCommandVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.DropTableCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDataSourceDirVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDataSourceVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDirVisitor;
@@ -11,10 +18,13 @@ import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHadoopFsRelationVisit
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHiveDirVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHiveTableVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.KafkaRelationVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.LoadDataCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRDDVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRelationVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.OptimizedCreateHiveTableAsSelectCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.QueryPlanVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.SaveIntoDataSourceCommandVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.TruncateTableCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.wrapper.InputDatasetVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.wrapper.OutputDatasetVisitor;
 import java.util.ArrayList;
@@ -64,12 +74,27 @@ abstract class BaseVisitorFactory implements VisitorFactory {
     list.add(
         new OutputDatasetVisitor(
             new SaveIntoDataSourceCommandVisitor(sqlContext, allCommonVisitors)));
+    list.add(new OutputDatasetVisitor(new CreateDataSourceTableAsSelectCommandVisitor()));
     list.add(new OutputDatasetVisitor(new AppendDataVisitor(allCommonVisitors)));
-    list.add(new OutputDatasetVisitor(new InsertIntoDirVisitor(sqlContext)));
+    list.add(new OutputDatasetVisitor(new InsertIntoDirVisitor()));
     if (InsertIntoHiveTableVisitor.hasHiveClasses()) {
-      list.add(new OutputDatasetVisitor(new InsertIntoHiveTableVisitor(sqlContext.sparkContext())));
+      list.add(new OutputDatasetVisitor(new InsertIntoHiveTableVisitor()));
       list.add(new OutputDatasetVisitor(new InsertIntoHiveDirVisitor()));
+      list.add(new OutputDatasetVisitor(new CreateHiveTableAsSelectCommandVisitor()));
     }
+    if (OptimizedCreateHiveTableAsSelectCommandVisitor.hasClasses()) {
+      list.add(new OutputDatasetVisitor(new OptimizedCreateHiveTableAsSelectCommandVisitor()));
+    }
+    list.add(new OutputDatasetVisitor(new CreateDataSourceTableCommandVisitor()));
+    list.add(new OutputDatasetVisitor(new LoadDataCommandVisitor(sqlContext.sparkSession())));
+    list.add(
+        new OutputDatasetVisitor(new AlterTableRenameCommandVisitor(sqlContext.sparkSession())));
+    list.add(
+        new OutputDatasetVisitor(
+            new AlterTableAddColumnsCommandVisitor(sqlContext.sparkSession())));
+    list.add(new OutputDatasetVisitor(new CreateTableCommandVisitor()));
+    list.add(new OutputDatasetVisitor(new DropTableCommandVisitor(sqlContext.sparkSession())));
+    list.add(new OutputDatasetVisitor(new TruncateTableCommandVisitor(sqlContext.sparkSession())));
     return list;
   }
 }
