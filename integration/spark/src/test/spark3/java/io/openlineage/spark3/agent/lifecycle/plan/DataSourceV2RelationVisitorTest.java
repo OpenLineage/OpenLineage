@@ -106,6 +106,7 @@ public class DataSourceV2RelationVisitorTest {
   @Test
   public void testIsDefinedAtForNonDefinedProvider() {
     Mockito.when(dataSourceV2Relation.table()).thenReturn(table);
+    Mockito.when(table.name()).thenReturn("table");
     Assertions.assertFalse(dataSourceV2RelationVisitor.isDefinedAt(dataSourceV2Relation));
   }
 
@@ -140,5 +141,28 @@ public class DataSourceV2RelationVisitorTest {
 
     Assertions.assertEquals("file:/tmp/delta/spark-warehouse/tbl", dataset.getNamespace());
     Assertions.assertEquals("table", dataset.getName());
+  }
+
+  @Test
+  public void testIsDefinedForAzureCosmos() {
+
+    Mockito.when((dataSourceV2Relation).table()).thenReturn(table);
+    Mockito.when(table.properties()).thenReturn(tableProperties);
+    Mockito.when(table.name()).thenReturn("com.azure.cosmos.spark.items.serviceName.databaseName.collectionName");
+    Assertions.assertTrue(dataSourceV2RelationVisitor.isDefinedAt(dataSourceV2Relation));
+  }
+
+  @Test
+  public void testApplyAzureCosmosLocal() {
+
+    Mockito.when((dataSourceV2Relation).table()).thenReturn(table);
+    Mockito.when(table.properties()).thenReturn(tableProperties);
+    Mockito.when(table.name()).thenReturn("com.azure.cosmos.spark.items.serviceName.databaseName.collectionName");
+    Mockito.when(dataSourceV2Relation.schema()).thenReturn(new StructType());
+
+    OpenLineage.Dataset dataset = dataSourceV2RelationVisitor.apply(dataSourceV2Relation).get(0);
+
+    Assertions.assertEquals("azurecosmos", dataset.getNamespace());
+    Assertions.assertEquals("https://serviceName.documents.azure.com/dbs/databaseName/colls/collectionName", dataset.getName());
   }
 }
