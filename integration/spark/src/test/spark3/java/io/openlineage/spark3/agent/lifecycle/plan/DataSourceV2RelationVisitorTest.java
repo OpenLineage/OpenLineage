@@ -148,7 +148,8 @@ public class DataSourceV2RelationVisitorTest {
 
     Mockito.when((dataSourceV2Relation).table()).thenReturn(table);
     Mockito.when(table.properties()).thenReturn(tableProperties);
-    Mockito.when(table.name()).thenReturn("com.azure.cosmos.spark.items.serviceName.databaseName.collectionName");
+    Mockito.when(table.name())
+        .thenReturn("com.azure.cosmos.spark.items.serviceName.databaseName.collectionName");
     Assertions.assertTrue(dataSourceV2RelationVisitor.isDefinedAt(dataSourceV2Relation));
   }
 
@@ -157,12 +158,15 @@ public class DataSourceV2RelationVisitorTest {
 
     Mockito.when((dataSourceV2Relation).table()).thenReturn(table);
     Mockito.when(table.properties()).thenReturn(tableProperties);
-    Mockito.when(table.name()).thenReturn("com.azure.cosmos.spark.items.serviceName.databaseName.collectionName");
+    Mockito.when(table.name())
+        .thenReturn("com.azure.cosmos.spark.items.serviceName.databaseName.collectionName");
     Mockito.when(dataSourceV2Relation.schema()).thenReturn(new StructType());
 
     OpenLineage.Dataset dataset = dataSourceV2RelationVisitor.apply(dataSourceV2Relation).get(0);
 
     Assertions.assertEquals("azurecosmos", dataset.getNamespace());
-    Assertions.assertEquals("https://serviceName.documents.azure.com/dbs/databaseName/colls/collectionName", dataset.getName());
+    Assertions.assertEquals(
+        "https://serviceName.documents.azure.com/dbs/databaseName/colls/collectionName",
+        dataset.getName());
   }
 }
