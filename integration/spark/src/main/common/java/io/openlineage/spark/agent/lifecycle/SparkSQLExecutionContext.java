@@ -41,6 +41,7 @@ import org.apache.spark.sql.execution.WholeStageCodegenExec;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 import scala.PartialFunction;
+import scala.PartialFunction$;
 import scala.collection.JavaConversions;
 
 @Slf4j
@@ -49,8 +50,8 @@ class SparkSQLExecutionContext implements ExecutionContext {
   private final long executionId;
   private final QueryExecution queryExecution;
   private final UUID runUuid = UUID.randomUUID();
-  private final UnknownEntryFacetListener unknownEntryFacetListener =
-      new UnknownEntryFacetListener();
+  private final UnknownEntryFacetListener<?> unknownEntryFacetListener =
+      new UnknownEntryFacetListener<>();
 
   private EventEmitter eventEmitter;
   private final OpenLineageContext context;
@@ -122,12 +123,9 @@ class SparkSQLExecutionContext implements ExecutionContext {
     PartialFunction<LogicalPlan, List<OutputDataset>> outputVisitor =
         PlanUtils.merge(context.getOutputDatasetQueryPlanVisitors());
 
-    PartialFunction<LogicalPlan, List<OutputDataset>> planTraversal =
-        getPlanTraversal(outputVisitor);
     List<OutputDataset> outputDatasets =
-        planTraversal.isDefinedAt(queryExecution.optimizedPlan())
-            ? planTraversal.apply(queryExecution.optimizedPlan())
-            : Collections.emptyList();
+        outputVisitor.orElse(unknownEntryFacetListener)
+            .applyOrElse(queryExecution.optimizedPlan(), PartialFunction$.MODULE$.empty());
 
     List<InputDataset> inputDatasets = getInputDatasets();
     UnknownEntryFacet unknownFacet =
@@ -161,19 +159,13 @@ class SparkSQLExecutionContext implements ExecutionContext {
     PartialFunction<LogicalPlan, List<InputDataset>> inputFunc =
         PlanUtils.merge(context.getInputDatasetQueryPlanVisitors());
     return JavaConversions.seqAsJavaList(
-            queryExecution.optimizedPlan().collect(getPlanTraversal(inputFunc)))
+            queryExecution.optimizedPlan()
+                .collect(inputFunc.orElse(unknownEntryFacetListener)))
         .stream()
         .filter(Objects::nonNull)
         .flatMap(List::stream)
+        .map(InputDataset.class::cast) // address the wildcard in the unknownEntryFacetListener
         .collect(Collectors.toList());
-  }
-
-  private <T> PlanTraversal<LogicalPlan, List<T>> getPlanTraversal(
-      PartialFunction<LogicalPlan, List<T>> processor) {
-    return PlanTraversal.<LogicalPlan, List<T>>builder()
-        .processor(processor)
-        .visitedNodeListener(unknownEntryFacetListener)
-        .build();
   }
 
   private Optional<OpenLineage.ParentRunFacet> buildParentFacet() {
