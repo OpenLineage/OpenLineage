@@ -30,6 +30,7 @@ public class DataSourceV2RelationVisitor<D extends OpenLineage.Dataset>
 
   private enum Provider {
     ICEBERG,
+    AZURECOSMOS,
     DELTA,
     UNKNOWN;
   }
@@ -46,14 +47,23 @@ public class DataSourceV2RelationVisitor<D extends OpenLineage.Dataset>
     return logicalPlan instanceof DataSourceV2Relation
         && !findDatasetProvider(logicalPlan).equals(Provider.UNKNOWN);
   }
+  
+  private String providerPropertyOrTableMetadata(Table table) {
+    if (table.properties().containsKey("provider")
+        && table.properties().getOrDefault("provider", null) != null) {
+      return table.properties().get("provider");
+    } else if (table.name().startsWith("com.azure.cosmos")) {
+      return "AZURECOSMOS";
+    }
+    return null;
+  }
 
   private Provider findDatasetProvider(LogicalPlan plan) {
     return Optional.of(plan)
         .filter(x -> x instanceof DataSourceV2Relation)
         .map(x -> (DataSourceV2Relation) x)
         .map(DataSourceV2Relation::table)
-        .map(Table::properties)
-        .map(properties -> properties.get("provider"))
+        .map(this::providerPropertyOrTableMetadata)
         .map(String::toUpperCase)
         .map(
             provider -> {
@@ -89,6 +99,33 @@ public class DataSourceV2RelationVisitor<D extends OpenLineage.Dataset>
             .build());
   }
 
+  private D findDatasetForAzureCosmos(DataSourceV2Relation relation) {
+    String namespace = "azurecosmos";
+    String relationName = relation.table().name().replace("com.azure.cosmos.spark.items.", "");
+    int expectedParts = 3;
+    String[] tableParts = relationName.split("\\.", expectedParts);
+    String tableName;
+    if (tableParts.length != expectedParts) {
+      tableName = relationName;
+    } else {
+      tableName =
+          String.format(
+              "https://%s.documents.azure.com/dbs/%s/colls/%s",
+              tableParts[0], tableParts[1], tableParts[2]);
+    }
+    return factory.getDataset(
+      tableName,
+        namespace,
+      new OpenLineage.DatasetFacetsBuilder()
+          .schema(PlanUtils.schemaFacet(context.getOpenLineage(), relation.schema()))
+          .dataSource(PlanUtils.datasourceFacet(context.getOpenLineage(), namespace))
+          .put(
+              "table_provider",
+              new TableProviderFacet(
+                Provider.AZURECOSMOS.name().toLowerCase(), "json")) // Cosmos is always json
+          .build());
+  }
+
   private D findDatasetForDelta(DataSourceV2Relation relation) {
     Map<String, String> properties = relation.table().properties();
 
@@ -122,6 +159,8 @@ public class DataSourceV2RelationVisitor<D extends OpenLineage.Dataset>
         return nullableSingletonList(findDatasetForIceberg(x));
       case DELTA:
         return nullableSingletonList(findDatasetForDelta(x));
+      case AZURECOSMOS:
+        return nullableSingletonList(findDatasetForAzureCosmos(x));
       default:
         throw new RuntimeException("Couldn't find provider for dataset in plan " + logicalPlan);
     }

@@ -30,6 +30,10 @@ class Spark3VisitorFactoryImpl extends BaseVisitorFactory {
 
   public <D extends Dataset> List<PartialFunction<LogicalPlan, List<D>>> getCommonVisitors(
       OpenLineageContext context, DatasetFactory<D> factory) {
-    return super.getBaseCommonVisitors(context, factory);
+        DatasetFactory<OutputDataset> outputFactory = DatasetFactory.output(context.getOpenLineage());
+    return ImmutableList.<PartialFunction<LogicalPlan, List<D>>>builder()
+        .addAll(super.getBaseCommonVisitors(context, factory))
+        .add(new DataSourceV2RelationVisitor(context, outputFactory))
+        .build();
   }
 }
