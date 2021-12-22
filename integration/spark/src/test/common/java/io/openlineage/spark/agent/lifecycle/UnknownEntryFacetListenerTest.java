@@ -19,7 +19,7 @@ class UnknownEntryFacetListenerTest {
 
   @Test
   void testBuildUnknownFacet() {
-    UnknownEntryFacetListener underTest = new UnknownEntryFacetListener();
+    UnknownEntryFacetListener<?> underTest = new UnknownEntryFacetListener<>();
 
     NamedExpression reference =
         new AttributeReference(
@@ -71,7 +71,7 @@ class UnknownEntryFacetListenerTest {
 
   @Test
   void testReturnNullIfProcessedUnknownFacet() {
-    UnknownEntryFacetListener underTest = new UnknownEntryFacetListener();
+    UnknownEntryFacetListener<?> underTest = new UnknownEntryFacetListener<>();
 
     NamedExpression reference =
         new AttributeReference(
@@ -87,8 +87,8 @@ class UnknownEntryFacetListenerTest {
     Project project =
         new Project(
             Seq$.MODULE$.<NamedExpression>newBuilder().$plus$eq(reference).result(), logicalPlan);
-    underTest.accept(project);
-    underTest.accept(logicalPlan);
+    underTest.apply(project);
+    underTest.apply(logicalPlan);
 
     Optional<UnknownEntryFacet> facet = underTest.build(project);
     assertThat(facet.isPresent()).isFalse();
