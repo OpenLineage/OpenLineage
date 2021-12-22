@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.connector.catalog.Table;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
+import org.apache.spark.sql.execution.datasources.v2.DataSourceV2ScanRelation;
 
 /**
  * Find {@link org.apache.spark.sql.sources.BaseRelation}s and {@link
@@ -41,11 +42,20 @@ public class DataSourceV2RelationVisitor<D extends OpenLineage.Dataset>
     super(context);
     this.factory = factory;
   }
+  private boolean isV2ScanRelation(LogicalPlan logicalPlan) {
+    return logicalPlan instanceof DataSourceV2ScanRelation;
+  }
 
   @Override
   public boolean isDefinedAt(LogicalPlan logicalPlan) {
-    return logicalPlan instanceof DataSourceV2Relation
-        && !findDatasetProvider(logicalPlan).equals(Provider.UNKNOWN);
+    LogicalPlan plan;
+    if (isV2ScanRelation(logicalPlan)) {
+      plan = ((DataSourceV2ScanRelation) logicalPlan).relation();
+    } else {
+      plan = logicalPlan;
+    }
+    return plan instanceof DataSourceV2Relation
+        && !findDatasetProvider(plan).equals(Provider.UNKNOWN);
   }
   
   private String providerPropertyOrTableMetadata(Table table) {
@@ -151,6 +161,13 @@ public class DataSourceV2RelationVisitor<D extends OpenLineage.Dataset>
 
   @Override
   public List<D> apply(LogicalPlan logicalPlan) {
+    LogicalPlan plan = null;
+    if (isV2ScanRelation(logicalPlan)) {
+      plan = (LogicalPlan) ((DataSourceV2ScanRelation) logicalPlan).relation();
+    } else {
+      plan = logicalPlan;
+    }
+    
     Provider provider = findDatasetProvider(logicalPlan);
     DataSourceV2Relation x = (DataSourceV2Relation) logicalPlan;
 
