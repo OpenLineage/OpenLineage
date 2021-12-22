@@ -16,7 +16,7 @@ _extractors = list(
                 'openlineage.airflow.extractors.bigquery_extractorBigQueryExtractor'
             ),
             try_import_from_string(
-                'openlineage.airflow.extractors.great_expectations_extractor.GreatExpectationsExtractor'
+                'openlineage.airflow.extractors.great_expectations_extractor.GreatExpectationsExtractor'  # noqa: E501
             ),
             try_import_from_string(
                 'openlineage.airflow.extractors.snowflake_extractor.SnowflakeExtractor'
@@ -30,7 +30,7 @@ _patchers = list(
         lambda t: t is not None,
         [
             try_import_from_string(
-                'openlineage.airflow.extractors.great_expectations_extractor.GreatExpectationsExtractor'
+                'openlineage.airflow.extractors.great_expectations_extractor.GreatExpectationsExtractor'  # noqa: E501
             )
         ],
     )
@@ -43,6 +43,7 @@ class Extractors:
     dependency. Patchers are a category of extractor that needs to hook up to operator's
     internals during DAG creation.
     """
+
     def __init__(self):
         # Do not expose extractors relying on external dependencies that are not installed
         self.extractors = {}
