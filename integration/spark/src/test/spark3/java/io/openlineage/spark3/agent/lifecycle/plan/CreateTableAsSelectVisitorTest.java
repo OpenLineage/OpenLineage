@@ -1,128 +1,89 @@
 package io.openlineage.spark3.agent.lifecycle.plan;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static io.openlineage.spark.agent.facets.TableStateChangeFacet.StateChange.CREATE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.SparkAgentTestExtension;
+import io.openlineage.spark.agent.client.OpenLineageClient;
+import io.openlineage.spark.agent.facets.TableStateChangeFacet;
+import io.openlineage.spark.agent.util.DatasetIdentifier;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark3.agent.utils.PlanUtils3;
+import java.util.Collections;
 import java.util.List;
-import org.apache.commons.lang.reflect.FieldUtils;
-import org.apache.iceberg.spark.SparkCatalog;
+import java.util.Optional;
+import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.plans.logical.CreateTableAsSelect;
-import org.apache.spark.sql.catalyst.plans.logical.LocalRelation$;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
-import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions;
-import org.apache.spark.sql.execution.datasources.v2.jdbc.JDBCTableCatalog;
-import org.apache.spark.sql.types.IntegerType$;
-import org.apache.spark.sql.types.Metadata;
-import org.apache.spark.sql.types.StructField;
+import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-import scala.collection.Map$;
-import scala.collection.Seq$;
+import org.mockito.MockedStatic;
 import scala.collection.immutable.HashMap;
+import scala.collection.immutable.Map;
 
-@ExtendWith(SparkAgentTestExtension.class)
 class CreateTableAsSelectVisitorTest {
 
-  private CreateTableAsSelect createCTAS(TableCatalog tableCatalog) {
-    return new CreateTableAsSelect(
-        tableCatalog,
-        new Identifier() {
-          @Override
-          public String[] namespace() {
-            return new String[] {"database", "schema"};
-          }
+  OpenLineageContext openLineageContext =
+      new OpenLineageContext(
+          Optional.of(mock(SparkSession.class)),
+          mock(SparkContext.class),
+          new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI),
+          Collections.emptyList(),
+          Collections.emptyList(),
+          Optional.empty());
 
-          @Override
-          public String name() {
-            return "table";
-          }
+  CreateTableAsSelect logicalPlan = mock(CreateTableAsSelect.class);
+  TableCatalog catalogTable = mock(TableCatalog.class);
+  StructType schema = new StructType();
+  Map<String, String> commandProperties = new HashMap<>();
+  Identifier tableName = Identifier.of(new String[] {"db"}, "table");
 
-          @Override
-          public String toString() {
-            return "database.schema.table";
-          }
-        },
-        Seq$.MODULE$.empty(),
-        LocalRelation$.MODULE$.apply(
-            new StructField("key", IntegerType$.MODULE$, false, new Metadata(new HashMap<>())),
-            Seq$.MODULE$.<StructField>empty()),
-        Map$.MODULE$.empty(),
-        Map$.MODULE$.empty(),
-        false);
+  @Test
+  public void testApply() {
+    when(logicalPlan.catalog()).thenReturn(catalogTable);
+    when(logicalPlan.tableName()).thenReturn(tableName);
+    when(logicalPlan.tableSchema()).thenReturn(schema);
+    when(logicalPlan.properties()).thenReturn(commandProperties);
+
+    DatasetIdentifier di = new DatasetIdentifier("table", "db");
+    CreateTableAsSelectVisitor visitor = new CreateTableAsSelectVisitor(openLineageContext);
+    try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
+      when(PlanUtils3.getDatasetIdentifier(
+              openLineageContext,
+              catalogTable,
+              tableName,
+              ScalaConversionUtils.<String, String>fromMap(logicalPlan.properties())))
+          .thenReturn(Optional.of(di));
+
+      List<OpenLineage.OutputDataset> outputDatasets = visitor.apply(logicalPlan);
+
+      assertEquals(1, outputDatasets.size());
+      assertEquals(
+          new TableStateChangeFacet(CREATE),
+          outputDatasets.get(0).getFacets().getAdditionalProperties().get("tableStateChange"));
+    }
   }
 
   @Test
-  void testCreateTableAsSelectJdbcCommand() throws IllegalAccessException {
-    SparkSession session = SparkSession.builder().master("local").getOrCreate();
-    CreateTableAsSelectVisitor visitor =
-        new CreateTableAsSelectVisitor(SparkAgentTestExtension.newContext(session));
+  public void testApplyWhenNoDatasetIdentifierReturned() {
+    CreateTableAsSelectVisitor visitor = new CreateTableAsSelectVisitor(openLineageContext);
+    try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
+      when(PlanUtils3.getDatasetIdentifier(
+              openLineageContext,
+              catalogTable,
+              tableName,
+              ScalaConversionUtils.<String, String>fromMap(logicalPlan.properties())))
+          .thenReturn(Optional.empty());
 
-    JDBCTableCatalog tableCatalog = new JDBCTableCatalog();
-    JDBCOptions options = mock(JDBCOptions.class);
-    when(options.url()).thenReturn("jdbc:postgresql://postgreshost:5432");
-    FieldUtils.writeField(tableCatalog, "options", options, true);
+      List<OpenLineage.OutputDataset> outputDatasets = visitor.apply(logicalPlan);
 
-    CreateTableAsSelect command = createCTAS(tableCatalog);
-
-    assertThat(visitor.isDefinedAt(command)).isTrue();
-    List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
-    assertThat(datasets)
-        .singleElement()
-        .hasFieldOrPropertyWithValue("name", "database.schema.table")
-        .hasFieldOrPropertyWithValue("namespace", "postgresql://postgreshost:5432");
-  }
-
-  @ParameterizedTest
-  @CsvSource({
-    "hdfs://namenode:8020/warehouse,hdfs://namenode:8020,/warehouse/database.schema.table",
-    "/tmp/warehouse,file,/tmp/warehouse/database.schema.table"
-  })
-  void testCreateTableAsSelectIcebergHadoopCommand(
-      String warehouseConf, String namespace, String name) throws IllegalAccessException {
-    SparkSession session = SparkSession.builder().master("local").getOrCreate();
-    session.conf().set("spark.sql.catalog.test.type", "hadoop");
-    session.conf().set("spark.sql.catalog.test.warehouse", warehouseConf);
-
-    CreateTableAsSelectVisitor visitor =
-        new CreateTableAsSelectVisitor(SparkAgentTestExtension.newContext(session));
-    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
-    when(sparkCatalog.name()).thenReturn("test");
-
-    CreateTableAsSelect command = createCTAS(sparkCatalog);
-
-    assertThat(visitor.isDefinedAt(command)).isTrue();
-    List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
-    assertThat(datasets)
-        .singleElement()
-        .hasFieldOrPropertyWithValue("name", name)
-        .hasFieldOrPropertyWithValue("namespace", namespace);
-  }
-
-  @Test
-  void testCreateTableAsSelectIcebergHiveCommand() throws IllegalAccessException {
-    SparkSession session = SparkSession.builder().master("local").getOrCreate();
-    session.conf().set("spark.sql.catalog.test.type", "hive");
-    session.conf().set("spark.sql.catalog.test.uri", "thrift://metastore-host:10001");
-
-    CreateTableAsSelectVisitor visitor =
-        new CreateTableAsSelectVisitor(SparkAgentTestExtension.newContext(session));
-    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
-    when(sparkCatalog.name()).thenReturn("test");
-
-    CreateTableAsSelect command = createCTAS(sparkCatalog);
-
-    assertThat(visitor.isDefinedAt(command)).isTrue();
-    List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
-    assertThat(datasets)
-        .singleElement()
-        .hasFieldOrPropertyWithValue("name", "database.schema.table")
-        .hasFieldOrPropertyWithValue("namespace", "hive://metastore-host:10001");
+      assertEquals(0, outputDatasets.size());
+    }
   }
 }

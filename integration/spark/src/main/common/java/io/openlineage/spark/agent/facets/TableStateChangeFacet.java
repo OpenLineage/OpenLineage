@@ -4,16 +4,19 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.client.OpenLineageClient;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
 /** Facet used to notify state change performed on table like "CREATE", "DROP" or "TRUNCATE". */
 @Getter
+@EqualsAndHashCode(callSuper = false)
 public class TableStateChangeFacet extends OpenLineage.DefaultDatasetFacet {
 
   public enum StateChange {
     CREATE,
     DROP,
-    TRUNCATE;
+    TRUNCATE,
+    OVERWRITE;
 
     @JsonValue
     @Override
