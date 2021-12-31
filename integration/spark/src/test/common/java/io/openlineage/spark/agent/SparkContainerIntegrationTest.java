@@ -78,7 +78,7 @@ public class SparkContainerIntegrationTest {
       logger.error("Unable to shut down pyspark container", e2);
     }
     try {
-      kafka.stop();
+      if (kafka != null) kafka.stop();
     } catch (Exception e2) {
       logger.error("Unable to shut down kafka container", e2);
     }
@@ -277,6 +277,8 @@ public class SparkContainerIntegrationTest {
   @CsvSource(
       value = {
         "spark_v2_create.py:pysparkV2CreateTableAsSelectStartEvent.json:pysparkV2CreateTableAsSelectCompleteEvent.json",
+        "spark_v2_overwrite_by_expression.py:pysparkV2OverwriteByExpressionStartEvent.json:pysparkV2OverwriteByExpressionCompleteEvent.json",
+        "spark_v2_overwrite_partitions.py:pysparkV2OverwritePartitionsStartEvent.json:pysparkV2OverwritePartitionsCompleteEvent.json"
       },
       delimiter = ':')
   public void testV2Commands(

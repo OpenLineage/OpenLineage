@@ -1,5 +1,6 @@
 package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
+import io.openlineage.spark.agent.facets.TableProviderFacet;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
 import java.util.Arrays;
@@ -62,7 +63,16 @@ public class DeltaHandler implements CatalogHandler {
                                     .reduce((x, y) -> y)
                                     .orElse(null))))
                     .toString()));
-    log.warn(path.toString());
+    log.info(path.toString());
     return PathUtils.fromPath(path, "file");
+  }
+
+  public Optional<TableProviderFacet> getTableProviderFacet(Map<String, String> properties) {
+    return Optional.of(new TableProviderFacet("delta", "parquet")); // Delta is always parquet
+  }
+
+  @Override
+  public String getName() {
+    return "delta";
   }
 }

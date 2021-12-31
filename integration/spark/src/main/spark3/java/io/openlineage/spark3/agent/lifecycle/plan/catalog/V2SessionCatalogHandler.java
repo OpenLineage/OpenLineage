@@ -28,4 +28,9 @@ public class V2SessionCatalogHandler implements CatalogHandler {
     V2SessionCatalog catalog = (V2SessionCatalog) tableCatalog;
     throw new UnsupportedCatalogException(V2SessionCatalog.class.getCanonicalName());
   }
+
+  @Override
+  public String getName() {
+    return "session";
+  }
 }

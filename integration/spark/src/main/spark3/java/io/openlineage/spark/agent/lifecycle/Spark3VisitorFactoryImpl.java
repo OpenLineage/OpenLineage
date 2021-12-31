@@ -9,6 +9,7 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.CreateTableAsSelectVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.CreateTableLikeCommandVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.TableContentChangeVisitor;
 import java.util.List;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import scala.PartialFunction;
@@ -24,6 +25,7 @@ class Spark3VisitorFactoryImpl extends BaseVisitorFactory {
         .add(new CreateTableAsSelectVisitor(context))
         .add(new DataSourceV2RelationVisitor(context, outputFactory))
         .add(new CreateTableAsSelectVisitor(context))
+        .add(new TableContentChangeVisitor(context))
         .add(new CreateTableLikeCommandVisitor(context))
         .build();
   }

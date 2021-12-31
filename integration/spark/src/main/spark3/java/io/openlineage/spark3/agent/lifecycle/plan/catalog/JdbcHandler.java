@@ -41,4 +41,9 @@ public class JdbcHandler implements CatalogHandler {
 
     return new DatasetIdentifier(name, JdbcUtils.sanitizeJdbcUrl(options.url()));
   }
+
+  @Override
+  public String getName() {
+    return "jdbc";
+  }
 }
