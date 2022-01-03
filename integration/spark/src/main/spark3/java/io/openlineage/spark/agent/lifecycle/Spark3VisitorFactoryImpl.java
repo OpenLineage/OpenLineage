@@ -6,7 +6,7 @@ import io.openlineage.client.OpenLineage.Dataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark3.agent.lifecycle.plan.CreateTableAsSelectVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.CreateReplaceVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.CreateTableLikeCommandVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.TableContentChangeVisitor;
@@ -22,9 +22,8 @@ class Spark3VisitorFactoryImpl extends BaseVisitorFactory {
     DatasetFactory<OutputDataset> outputFactory = DatasetFactory.output(context.getOpenLineage());
     return ImmutableList.<PartialFunction<LogicalPlan, List<OutputDataset>>>builder()
         .addAll(super.getOutputVisitors(context))
-        .add(new CreateTableAsSelectVisitor(context))
+        .add(new CreateReplaceVisitor(context))
         .add(new DataSourceV2RelationVisitor(context, outputFactory))
-        .add(new CreateTableAsSelectVisitor(context))
         .add(new TableContentChangeVisitor(context))
         .add(new CreateTableLikeCommandVisitor(context))
         .build();
