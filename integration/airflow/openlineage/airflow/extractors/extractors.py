@@ -13,7 +13,7 @@ _extractors = list(
                 'openlineage.airflow.extractors.postgres_extractor.PostgresExtractor'
             ),
             try_import_from_string(
-                'openlineage.airflow.extractors.bigquery_extractorBigQueryExtractor'
+                'openlineage.airflow.extractors.bigquery_extractor.BigQueryExtractor'
             ),
             try_import_from_string(
                 'openlineage.airflow.extractors.great_expectations_extractor.GreatExpectationsExtractor'  # noqa: E501
