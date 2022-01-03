@@ -37,6 +37,7 @@ import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 
+import com.squareup.javapoet.TypeVariableName;
 import io.openlineage.client.TypeResolver.ArrayResolvedType;
 import io.openlineage.client.TypeResolver.ObjectResolvedType;
 import io.openlineage.client.TypeResolver.PrimitiveResolvedType;
@@ -84,6 +85,18 @@ public class JavaPoetGenerator {
           .addCode("this.producer = producer;\n")
           .build());
     }
+
+    TypeSpec.Builder builderInterfaceBuilder = TypeSpec.interfaceBuilder("Builder")
+            .addModifiers(STATIC, PUBLIC)
+            .addTypeVariable(TypeVariableName.get("T"));
+    builderInterfaceBuilder.addMethod(MethodSpec
+            .methodBuilder("build")
+            .addJavadoc("@return the constructed type")
+            .returns(TypeVariableName.get("T"))
+            .addModifiers(PUBLIC, ABSTRACT)
+            .build());
+    TypeSpec builder = builderInterfaceBuilder.build();
+    containerTypeBuilder.addType(builder);
 
     generateTypes(containerTypeBuilder);
     TypeSpec openLineage = containerTypeBuilder.build();
@@ -210,7 +223,9 @@ public class JavaPoetGenerator {
 
   private TypeSpec builderClass(ObjectResolvedType type) {
     TypeSpec.Builder builderClassBuilder = TypeSpec.classBuilder(type.getName() + "Builder")
-        .addModifiers(PUBLIC, FINAL);
+        .addModifiers(PUBLIC, FINAL)
+        .addSuperinterface(ParameterizedTypeName.get(ClassName.get(containerPackage, containerClassName, "Builder"),
+                getTypeName(type)));
 
     boolean producerFiledExist = type.getProperties().stream()
         .anyMatch(this::isAProducerField);
