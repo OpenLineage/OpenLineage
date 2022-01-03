@@ -1,23 +1,50 @@
+import collections
 import datetime
-
-from jinja2 import Environment, Undefined
 import json
-
-import yaml
+import logging
 import os
 import uuid
-import collections
-from typing import List, Tuple, Dict, Optional, TypeVar
+from enum import Enum
+from typing import Dict, List, Optional, Tuple, TypeVar
 
 import attr
-import logging
+import yaml
+from jinja2 import Environment, Undefined
+from openlineage.client.facet import (Assertion, BaseFacet,
+                                      DataQualityAssertionsDatasetFacet,
+                                      DataSourceDatasetFacet,
+                                      OutputStatisticsOutputDatasetFacet,
+                                      ParentRunFacet, SchemaDatasetFacet,
+                                      SchemaField, SqlJobFacet)
+from openlineage.client.run import (Dataset, Job, OutputDataset, Run, RunEvent,
+                                    RunState)
 
-from openlineage.client.facet import DataSourceDatasetFacet, SchemaDatasetFacet, SchemaField, \
-    SqlJobFacet, OutputStatisticsOutputDatasetFacet, ParentRunFacet, BaseFacet, \
-    Assertion, DataQualityAssertionsDatasetFacet
-from openlineage.client.run import RunEvent, RunState, Run, Job, Dataset, OutputDataset
 from openlineage.common.schema import GITHUB_LOCATION
-from openlineage.common.utils import get_from_nullable_chain, get_from_multiple_chains
+from openlineage.common.utils import (get_from_multiple_chains,
+                                      get_from_nullable_chain)
+
+
+class Adapter(Enum):
+    # This class represents supported adapters.
+    BIGQUERY = 'bigquery'
+    SNOWFLAKE = 'snowflake'
+    REDSHIFT = 'redshift'
+    SPARK = 'spark'
+
+    @staticmethod
+    def adapters() -> str:
+        # String representation of all supported adapter names
+        return ','.join([f"`{x.value}`" for x in list(Adapter)])
+
+
+class SparkConnectionMethod(Enum):
+    THRIFT = 'thrift'
+    ODBC = 'odbc'
+    HTTP = 'http'
+
+    @staticmethod
+    def methods():
+        return [x.value for x in SparkConnectionMethod]
 
 
 class SkipUndefined(Undefined):
@@ -190,8 +217,8 @@ class DbtArtifactProcessor:
             self.target = profile['target']
 
         profile = profile['outputs'][self.target]
-        self.adapter_type = profile['type']
 
+        self.extract_adapter_type(profile)
         self.extract_dataset_namespace(profile)
         self.extract_job_namespace(profile)
 
@@ -535,7 +562,8 @@ class DbtArtifactProcessor:
             )
 
             if bytes:
-                bytes = int(bytes) if self.adapter_type != 'redshift' else int(rows) * (2 ** 20)
+                bytes = int(bytes) if self.adapter_type != Adapter.REDSHIFT \
+                    else int(rows) * (2 ** 20)
             if rows:
                 rows = int(rows)
 
@@ -616,6 +644,15 @@ class DbtArtifactProcessor:
             ))
         return fields
 
+    def extract_adapter_type(self, profile: Dict):
+        try:
+            self.adapter_type = Adapter[profile['type'].upper()]
+        except KeyError:
+            raise NotImplementedError(
+                f"Only {Adapter.adapters()} adapters are supported right now. "
+                f"Passed {profile['type']}"
+            )
+
     def extract_dataset_namespace(self, profile: Dict):
         self.dataset_namespace = self.extract_namespace(profile)
 
@@ -627,15 +664,34 @@ class DbtArtifactProcessor:
 
     def extract_namespace(self, profile: Dict) -> str:
         """Extract namespace from profile's type"""
-        if profile['type'] == 'snowflake':
+        if self.adapter_type == Adapter.SNOWFLAKE:
             return f"snowflake://{profile['account']}"
-        elif profile['type'] == 'bigquery':
+        elif self.adapter_type == Adapter.BIGQUERY:
             return "bigquery"
-        elif profile['type'] == 'redshift':
+        elif self.adapter_type == Adapter.REDSHIFT:
             return f"redshift://{profile['host']}:{profile['port']}"
+        elif self.adapter_type == Adapter.SPARK:
+            port = ""
+
+            if 'port' in profile:
+                port = f":{profile['port']}"
+            elif profile['method'] in [
+                SparkConnectionMethod.HTTP.value, SparkConnectionMethod.ODBC.value
+            ]:
+                port = '443'
+            elif profile['method'] == SparkConnectionMethod.THRIFT.value:
+                port = '10001'
+
+            if profile['method'] in SparkConnectionMethod.methods():
+                return f"spark://{profile['host']}{port}"
+            else:
+                raise NotImplementedError(
+                    f"Connection method `{profile['method']}` is not "
+                    f"supported for spark adapter."
+                )
         else:
             raise NotImplementedError(
-                f"Only 'snowflake', 'bigquery', and 'redshift' adapters are supported right now. "
+                f"Only {Adapter.adapters()} adapters are supported right now. "
                 f"Passed {profile['type']}"
             )
 

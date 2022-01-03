@@ -1,0 +1,381 @@
+{
+	"metadata": {
+		"dbt_schema_version": "https://schemas.getdbt.com/dbt/catalog/v1.json",
+		"dbt_version": "1.0.0",
+		"generated_at": "2021-12-22T16:20:23.347254Z",
+		"invocation_id": "51a3bddf-1ab6-478b-b0ef-ad6904923b0f",
+		"env": {}
+	},
+	"nodes": {
+		"model.jaffle_shop.orders": {
+			"metadata": {
+				"type": "table",
+				"schema": "default",
+				"name": "orders",
+				"database": null,
+				"comment": null,
+				"owner": "root"
+			},
+			"columns": {
+				"order_id": {
+					"type": "long",
+					"index": 0,
+					"name": "order_id",
+					"comment": null
+				},
+				"customer_id": {
+					"type": "long",
+					"index": 1,
+					"name": "customer_id",
+					"comment": null
+				},
+				"order_date": {
+					"type": "date",
+					"index": 2,
+					"name": "order_date",
+					"comment": null
+				},
+				"status": {
+					"type": "string",
+					"index": 3,
+					"name": "status",
+					"comment": null
+				},
+				"credit_card_amount": {
+					"type": "double",
+					"index": 4,
+					"name": "credit_card_amount",
+					"comment": null
+				},
+				"coupon_amount": {
+					"type": "double",
+					"index": 5,
+					"name": "coupon_amount",
+					"comment": null
+				},
+				"bank_transfer_amount": {
+					"type": "double",
+					"index": 6,
+					"name": "bank_transfer_amount",
+					"comment": null
+				},
+				"gift_card_amount": {
+					"type": "double",
+					"index": 7,
+					"name": "gift_card_amount",
+					"comment": null
+				},
+				"amount": {
+					"type": "double",
+					"index": 8,
+					"name": "amount",
+					"comment": null
+				}
+			},
+			"stats": {
+				"bytes": {
+					"id": "bytes",
+					"label": "bytes",
+					"value": 4722.0,
+					"include": 1.0,
+					"description": null
+				},
+				"has_stats": {
+					"id": "has_stats",
+					"label": "Has Stats?",
+					"value": true,
+					"include": false,
+					"description": "Indicates whether there are statistics for this table"
+				}
+			},
+			"unique_id": "model.jaffle_shop.orders"
+		},
+		"seed.jaffle_shop.raw_customers": {
+			"metadata": {
+				"type": "table",
+				"schema": "default",
+				"name": "raw_customers",
+				"database": null,
+				"comment": null,
+				"owner": "root"
+			},
+			"columns": {
+				"id": {
+					"type": "long",
+					"index": 0,
+					"name": "id",
+					"comment": null
+				},
+				"first_name": {
+					"type": "string",
+					"index": 1,
+					"name": "first_name",
+					"comment": null
+				},
+				"last_name": {
+					"type": "string",
+					"index": 2,
+					"name": "last_name",
+					"comment": null
+				}
+			},
+			"stats": {
+				"bytes": {
+					"id": "bytes",
+					"label": "bytes",
+					"value": 1278.0,
+					"include": 1.0,
+					"description": null
+				},
+				"has_stats": {
+					"id": "has_stats",
+					"label": "Has Stats?",
+					"value": true,
+					"include": false,
+					"description": "Indicates whether there are statistics for this table"
+				}
+			},
+			"unique_id": "seed.jaffle_shop.raw_customers"
+		},
+		"seed.jaffle_shop.raw_orders": {
+			"metadata": {
+				"type": "table",
+				"schema": "default",
+				"name": "raw_orders",
+				"database": null,
+				"comment": null,
+				"owner": "root"
+			},
+			"columns": {
+				"id": {
+					"type": "long",
+					"index": 0,
+					"name": "id",
+					"comment": null
+				},
+				"user_id": {
+					"type": "long",
+					"index": 1,
+					"name": "user_id",
+					"comment": null
+				},
+				"order_date": {
+					"type": "date",
+					"index": 2,
+					"name": "order_date",
+					"comment": null
+				},
+				"status": {
+					"type": "string",
+					"index": 3,
+					"name": "status",
+					"comment": null
+				}
+			},
+			"stats": {
+				"bytes": {
+					"id": "bytes",
+					"label": "bytes",
+					"value": 2594.0,
+					"include": 1.0,
+					"description": null
+				},
+				"has_stats": {
+					"id": "has_stats",
+					"label": "Has Stats?",
+					"value": true,
+					"include": false,
+					"description": "Indicates whether there are statistics for this table"
+				}
+			},
+			"unique_id": "seed.jaffle_shop.raw_orders"
+		},
+		"seed.jaffle_shop.raw_payments": {
+			"metadata": {
+				"type": "table",
+				"schema": "default",
+				"name": "raw_payments",
+				"database": null,
+				"comment": null,
+				"owner": "root"
+			},
+			"columns": {
+				"id": {
+					"type": "long",
+					"index": 0,
+					"name": "id",
+					"comment": null
+				},
+				"order_id": {
+					"type": "long",
+					"index": 1,
+					"name": "order_id",
+					"comment": null
+				},
+				"payment_method": {
+					"type": "string",
+					"index": 2,
+					"name": "payment_method",
+					"comment": null
+				},
+				"amount": {
+					"type": "long",
+					"index": 3,
+					"name": "amount",
+					"comment": null
+				}
+			},
+			"stats": {
+				"bytes": {
+					"id": "bytes",
+					"label": "bytes",
+					"value": 2526.0,
+					"include": 1.0,
+					"description": null
+				},
+				"has_stats": {
+					"id": "has_stats",
+					"label": "Has Stats?",
+					"value": true,
+					"include": false,
+					"description": "Indicates whether there are statistics for this table"
+				}
+			},
+			"unique_id": "seed.jaffle_shop.raw_payments"
+		},
+		"model.jaffle_shop.stg_customers": {
+			"metadata": {
+				"type": "view",
+				"schema": "default",
+				"name": "stg_customers",
+				"database": null,
+				"comment": null,
+				"owner": "root"
+			},
+			"columns": {
+				"customer_id": {
+					"type": "long",
+					"index": 0,
+					"name": "customer_id",
+					"comment": null
+				},
+				"first_name": {
+					"type": "string",
+					"index": 1,
+					"name": "first_name",
+					"comment": null
+				},
+				"last_name": {
+					"type": "string",
+					"index": 2,
+					"name": "last_name",
+					"comment": null
+				}
+			},
+			"stats": {
+				"has_stats": {
+					"id": "has_stats",
+					"label": "Has Stats?",
+					"value": false,
+					"include": false,
+					"description": "Indicates whether there are statistics for this table"
+				}
+			},
+			"unique_id": "model.jaffle_shop.stg_customers"
+		},
+		"model.jaffle_shop.stg_orders": {
+			"metadata": {
+				"type": "view",
+				"schema": "default",
+				"name": "stg_orders",
+				"database": null,
+				"comment": null,
+				"owner": "root"
+			},
+			"columns": {
+				"order_id": {
+					"type": "long",
+					"index": 0,
+					"name": "order_id",
+					"comment": null
+				},
+				"customer_id": {
+					"type": "long",
+					"index": 1,
+					"name": "customer_id",
+					"comment": null
+				},
+				"order_date": {
+					"type": "date",
+					"index": 2,
+					"name": "order_date",
+					"comment": null
+				},
+				"status": {
+					"type": "string",
+					"index": 3,
+					"name": "status",
+					"comment": null
+				}
+			},
+			"stats": {
+				"has_stats": {
+					"id": "has_stats",
+					"label": "Has Stats?",
+					"value": false,
+					"include": false,
+					"description": "Indicates whether there are statistics for this table"
+				}
+			},
+			"unique_id": "model.jaffle_shop.stg_orders"
+		},
+		"model.jaffle_shop.stg_payments": {
+			"metadata": {
+				"type": "view",
+				"schema": "default",
+				"name": "stg_payments",
+				"database": null,
+				"comment": null,
+				"owner": "root"
+			},
+			"columns": {
+				"payment_id": {
+					"type": "long",
+					"index": 0,
+					"name": "payment_id",
+					"comment": null
+				},
+				"order_id": {
+					"type": "long",
+					"index": 1,
+					"name": "order_id",
+					"comment": null
+				},
+				"payment_method": {
+					"type": "string",
+					"index": 2,
+					"name": "payment_method",
+					"comment": null
+				},
+				"amount": {
+					"type": "double",
+					"index": 3,
+					"name": "amount",
+					"comment": null
+				}
+			},
+			"stats": {
+				"has_stats": {
+					"id": "has_stats",
+					"label": "Has Stats?",
+					"value": false,
+					"include": false,
+					"description": "Indicates whether there are statistics for this table"
+				}
+			},
+			"unique_id": "model.jaffle_shop.stg_payments"
+		}
+	},
+	"sources": {},
+	"errors": null
+}
