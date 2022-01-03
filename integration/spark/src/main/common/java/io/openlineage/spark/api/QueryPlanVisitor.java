@@ -10,6 +10,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.NonNull;
+import org.apache.spark.sql.catalyst.TableIdentifier;
+import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,6 +67,20 @@ public abstract class QueryPlanVisitor<T extends LogicalPlan, D extends OpenLine
   }
 
   private final Logger logger = LoggerFactory.getLogger(getClass());
+
+  protected Optional<CatalogTable> catalogTableFor(TableIdentifier tableId) {
+    return context
+        .getSparkSession()
+        .flatMap(
+            session -> {
+              try {
+                return Optional.of(session.sessionState().catalog().getTableMetadata(tableId));
+              } catch (Exception e) {
+                logger.warn("Unable to find table by identifier {} - {}", tableId, e.getMessage());
+                return Optional.empty();
+              }
+            });
+  }
 
   @Override
   public boolean isDefinedAt(LogicalPlan x) {

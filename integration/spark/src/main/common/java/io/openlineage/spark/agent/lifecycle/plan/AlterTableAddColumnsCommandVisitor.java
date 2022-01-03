@@ -23,20 +23,7 @@ public class AlterTableAddColumnsCommandVisitor
 
   @Override
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
-    Optional<CatalogTable> tableOption =
-        context
-            .getSparkSession()
-            .flatMap(
-                ctx -> {
-                  try {
-                    return Optional.of(
-                        ctx.sessionState()
-                            .catalog()
-                            .getTableMetadata(((AlterTableAddColumnsCommand) x).table()));
-                  } catch (Exception e) {
-                    return Optional.empty();
-                  }
-                });
+    Optional<CatalogTable> tableOption = catalogTableFor(((AlterTableAddColumnsCommand) x).table());
     if (!tableOption.isPresent()) {
       return Collections.emptyList();
     }

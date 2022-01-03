@@ -14,7 +14,6 @@ import java.util.Optional;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
-import org.apache.spark.sql.catalyst.catalog.SessionCatalog;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.command.AlterTableRenameCommand;
 
@@ -29,20 +28,7 @@ public class AlterTableRenameCommandVisitor
   @SneakyThrows
   @Override
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
-    Optional<CatalogTable> tableOpt =
-        context
-            .getSparkSession()
-            .flatMap(
-                session -> {
-                  SessionCatalog sessionCatalog = session.sessionState().catalog();
-                  try {
-                    return Optional.of(
-                        sessionCatalog.getTableMetadata(((AlterTableRenameCommand) x).newName()));
-                  } catch (Exception e) {
-                    log.info("Exception caught finding table metadata: {}", e.getMessage());
-                  }
-                  return Optional.<CatalogTable>empty();
-                });
+    Optional<CatalogTable> tableOpt = catalogTableFor(((AlterTableRenameCommand) x).newName());
     if (!tableOpt.isPresent()) {
       return Collections.emptyList();
     }

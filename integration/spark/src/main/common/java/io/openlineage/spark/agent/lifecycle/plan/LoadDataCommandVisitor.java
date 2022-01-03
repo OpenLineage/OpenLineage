@@ -6,7 +6,6 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.command.LoadDataCommand;
@@ -26,18 +25,7 @@ public class LoadDataCommandVisitor
   @Override
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
     LoadDataCommand command = (LoadDataCommand) x;
-    return context
-        .getSparkSession()
-        .flatMap(
-            session -> {
-              try {
-                return Optional.of(
-                    session.sessionState().catalog().getTableMetadata(command.table()));
-              } catch (Exception e) {
-                log.warn("Table {} doesn't exist", command.table());
-              }
-              return Optional.empty();
-            })
+    return catalogTableFor(command.table())
         .map(
             table ->
                 Collections.singletonList(

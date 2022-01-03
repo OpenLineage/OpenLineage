@@ -31,22 +31,7 @@ public class DropTableCommandVisitor
   @Override
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
     DropTableCommand command = (DropTableCommand) x;
-    Optional<CatalogTable> table =
-        context
-            .getSparkSession()
-            .flatMap(
-                session -> {
-                  if (session.sessionState().catalog().tableExists(command.tableName())) {
-                    // prepare an event, table will be deleted soon
-                    try {
-                      return Optional.of(
-                          session.sessionState().catalog().getTableMetadata(command.tableName()));
-                    } catch (Exception e) {
-                      log.warn("Table {} doesn't exist", command.tableName());
-                    }
-                  }
-                  return Optional.empty();
-                });
+    Optional<CatalogTable> table = catalogTableFor(command.tableName());
     if (table.isPresent()) {
       DatasetIdentifier datasetIdentifier = PathUtils.fromCatalogTable(table.get());
 

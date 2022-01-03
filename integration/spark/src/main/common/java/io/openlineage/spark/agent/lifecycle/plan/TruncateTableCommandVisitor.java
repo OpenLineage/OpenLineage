@@ -33,21 +33,7 @@ public class TruncateTableCommandVisitor
   public List<OutputDataset> apply(LogicalPlan x) {
     TruncateTableCommand command = (TruncateTableCommand) x;
 
-    Optional<CatalogTable> tableOpt =
-        context
-            .getSparkSession()
-            .flatMap(
-                session -> {
-                  if (session.sessionState().catalog().tableExists(command.tableName())) {
-                    try {
-                      return Optional.of(
-                          session.sessionState().catalog().getTableMetadata(command.tableName()));
-                    } catch (Exception e) {
-                      log.warn("No table named {} exists", command.tableName());
-                    }
-                  }
-                  return Optional.empty();
-                });
+    Optional<CatalogTable> tableOpt = catalogTableFor(command.tableName());
     if (tableOpt.isPresent()) {
       CatalogTable table = tableOpt.get();
       DatasetIdentifier datasetIdentifier = PathUtils.fromCatalogTable(table);
