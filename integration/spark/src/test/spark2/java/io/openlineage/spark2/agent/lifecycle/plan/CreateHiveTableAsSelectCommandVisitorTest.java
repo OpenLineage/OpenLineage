@@ -10,7 +10,6 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.net.URI;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.apache.spark.Partition;
@@ -47,13 +46,11 @@ class CreateHiveTableAsSelectCommandVisitorTest {
     SparkSession session = SparkSession.builder().master("local").getOrCreate();
     CreateHiveTableAsSelectCommandVisitor visitor =
         new CreateHiveTableAsSelectCommandVisitor(
-            new OpenLineageContext(
-                Optional.of(session),
-                session.sparkContext(),
-                new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Optional.empty()));
+            OpenLineageContext.builder()
+                .sparkSession(Optional.of(session))
+                .sparkContext(session.sparkContext())
+                .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
+                .build());
 
     CreateHiveTableAsSelectCommand command =
         new CreateHiveTableAsSelectCommand(

@@ -10,7 +10,6 @@ import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.lifecycle.SparkSQLExecutionContext;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHadoopFsRelationVisitor;
 import io.openlineage.spark.api.OpenLineageContext;
-import java.util.ArrayList;
 import java.util.Optional;
 import java.util.Properties;
 import org.apache.hadoop.fs.Path;
@@ -73,13 +72,11 @@ public class OpenLineageSparkListenerTest {
     when(plan.nodeName()).thenReturn("execute");
 
     OpenLineageContext olContext =
-        new OpenLineageContext(
-            Optional.of(sparkSession),
-            sparkSession.sparkContext(),
-            new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI),
-            new ArrayList<>(),
-            new ArrayList<>(),
-            Optional.empty());
+        OpenLineageContext.builder()
+            .sparkSession(Optional.of(sparkSession))
+            .sparkContext(sparkSession.sparkContext())
+            .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
+            .build();
     olContext
         .getOutputDatasetQueryPlanVisitors()
         .add(new InsertIntoHadoopFsRelationVisitor(olContext));

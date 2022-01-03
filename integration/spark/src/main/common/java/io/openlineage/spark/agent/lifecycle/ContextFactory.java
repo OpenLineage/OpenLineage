@@ -7,7 +7,6 @@ import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import lombok.AllArgsConstructor;
@@ -29,13 +28,11 @@ public class ContextFactory {
 
   public RddExecutionContext createRddExecutionContext(int jobId) {
     OpenLineageContext olContext =
-        new OpenLineageContext(
-            ScalaConversionUtils.asJavaOptional(SparkSession.getActiveSession()),
-            SparkContext.getOrCreate(),
-            new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI),
-            new ArrayList<>(),
-            new ArrayList<>(),
-            Optional.empty());
+        OpenLineageContext.builder()
+            .sparkSession(ScalaConversionUtils.asJavaOptional(SparkSession.getActiveSession()))
+            .sparkContext(SparkContext.getOrCreate())
+            .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
+            .build();
     return new RddExecutionContext(olContext, jobId, sparkContext);
   }
 
@@ -43,13 +40,12 @@ public class ContextFactory {
     QueryExecution queryExecution = SQLExecution.getQueryExecution(executionId);
     SparkSession sparkSession = queryExecution.sparkSession();
     OpenLineageContext olContext =
-        new OpenLineageContext(
-            Optional.of(sparkSession),
-            sparkSession.sparkContext(),
-            new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI),
-            new ArrayList<>(),
-            new ArrayList<>(),
-            Optional.of(queryExecution));
+        OpenLineageContext.builder()
+            .sparkSession(Optional.of(sparkSession))
+            .sparkContext(sparkSession.sparkContext())
+            .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
+            .queryExecution(queryExecution)
+            .build();
 
     VisitorFactory visitorFactory = VisitorFactoryProvider.getInstance(sparkSession);
 

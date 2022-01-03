@@ -10,8 +10,6 @@ import io.openlineage.spark.api.OpenLineageContext;
 import java.net.URI;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Semaphore;
@@ -56,13 +54,10 @@ public class StaticExecutionContextFactory extends ContextFactory {
   public RddExecutionContext createRddExecutionContext(int jobId) {
     RddExecutionContext rdd =
         new RddExecutionContext(
-            new OpenLineageContext(
-                Optional.empty(),
-                SparkContext.getOrCreate(),
-                new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Optional.empty()),
+            OpenLineageContext.builder()
+                .sparkContext(SparkContext.getOrCreate())
+                .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
+                .build(),
             jobId,
             sparkContext) {
           @Override
@@ -86,13 +81,12 @@ public class StaticExecutionContextFactory extends ContextFactory {
               SparkSession session = qe.sparkSession();
               SQLContext sqlContext = qe.sparkPlan().sqlContext();
               OpenLineageContext olContext =
-                  new OpenLineageContext(
-                      Optional.of(session),
-                      sqlContext.sparkContext(),
-                      new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI),
-                      new ArrayList<>(),
-                      new ArrayList<>(),
-                      Optional.of(qe));
+                  OpenLineageContext.builder()
+                      .sparkSession(Optional.of(session))
+                      .sparkContext(sqlContext.sparkContext())
+                      .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
+                      .queryExecution(qe)
+                      .build();
 
               VisitorFactory visitorFactory =
                   VisitorFactoryProvider.getInstance(SparkSession.active());
@@ -139,13 +133,10 @@ public class StaticExecutionContextFactory extends ContextFactory {
                     executionId,
                     sparkContext,
                     null,
-                    new OpenLineageContext(
-                        Optional.empty(),
-                        SparkContext.getOrCreate(),
-                        new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI),
-                        Collections.emptyList(),
-                        Collections.emptyList(),
-                        Optional.empty())));
+                    OpenLineageContext.builder()
+                        .sparkContext(SparkContext.getOrCreate())
+                        .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
+                        .build()));
   }
 
   private static ZonedDateTime getZonedTime() {

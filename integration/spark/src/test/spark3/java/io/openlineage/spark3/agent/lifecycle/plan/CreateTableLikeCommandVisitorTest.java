@@ -6,7 +6,6 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.api.OpenLineageContext;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.apache.spark.sql.SparkSession;
@@ -47,13 +46,11 @@ class CreateTableLikeCommandVisitorTest {
 
     CreateTableLikeCommandVisitor visitor =
         new CreateTableLikeCommandVisitor(
-            new OpenLineageContext(
-                Optional.of(session),
-                session.sparkContext(),
-                new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Optional.empty()));
+            OpenLineageContext.builder()
+                .sparkSession(Optional.of(session))
+                .sparkContext(session.sparkContext())
+                .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
+                .build());
 
     CreateTableLikeCommand command =
         new CreateTableLikeCommand(
