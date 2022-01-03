@@ -51,7 +51,7 @@ class Backend:
                 run_id=run_id,
                 job_name=job_name,
                 job_description=dag.description,
-                event_time=DagUtils.get_start_time(dagrun.execution_date),
+                event_time=DagUtils.get_start_time(task_instance.start_date),
                 parent_run_id=dagrun.run_id,
                 code_location=self._get_location(operator),
                 nominal_start_time=DagUtils.get_start_time(dagrun.execution_date),
