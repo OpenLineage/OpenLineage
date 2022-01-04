@@ -10,6 +10,7 @@ import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
 import lombok.Value;
+import lombok.experimental.Tolerate;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -77,11 +78,11 @@ public class OpenLineageContext {
    * a present value.
    */
   public static class OpenLineageContextBuilder {
-    private Optional<QueryExecution> queryExecution;
 
+    // allow this method and the generated method, since the signatures differ
+    @Tolerate
     public OpenLineageContextBuilder queryExecution(QueryExecution queryExecution) {
-      this.queryExecution = Optional.of(queryExecution);
-      return this;
+      return queryExecution(Optional.of(queryExecution));
     }
   }
 }
