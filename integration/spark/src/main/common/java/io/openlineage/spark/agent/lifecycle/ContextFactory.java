@@ -20,10 +20,10 @@ import scala.PartialFunction;
 @AllArgsConstructor
 public class ContextFactory {
 
-  public final EventEmitter sparkContext;
+  public final EventEmitter openLineageEventEmitter;
 
   public void close() {
-    sparkContext.close();
+    openLineageEventEmitter.close();
   }
 
   public ExecutionContext createRddExecutionContext(int jobId) {
@@ -33,7 +33,7 @@ public class ContextFactory {
             .sparkContext(SparkContext.getOrCreate())
             .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
             .build();
-    return new RddExecutionContext(olContext, jobId, sparkContext);
+    return new RddExecutionContext(olContext, jobId, openLineageEventEmitter);
   }
 
   public ExecutionContext createSparkSQLExecutionContext(long executionId) {
@@ -57,6 +57,6 @@ public class ContextFactory {
         visitorFactory.getOutputVisitors(olContext);
     olContext.getOutputDatasetQueryPlanVisitors().addAll(outputDatasets);
 
-    return new SparkSQLExecutionContext(executionId, sparkContext, queryExecution, olContext);
+    return new SparkSQLExecutionContext(executionId, openLineageEventEmitter, queryExecution, olContext);
   }
 }
