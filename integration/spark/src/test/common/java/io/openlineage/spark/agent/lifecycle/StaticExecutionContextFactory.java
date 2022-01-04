@@ -60,7 +60,7 @@ public class StaticExecutionContextFactory extends ContextFactory {
                 .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
                 .build(),
             jobId,
-            sparkContext) {
+            openLineageEventEmitter) {
           @Override
           protected ZonedDateTime toZonedTime(long time) {
             return getZonedTime();
@@ -100,7 +100,7 @@ public class StaticExecutionContextFactory extends ContextFactory {
               olContext.getOutputDatasetQueryPlanVisitors().addAll(outputDatasets);
 
               SparkSQLExecutionContext sparksql =
-                  new SparkSQLExecutionContext(executionId, sparkContext, qe, olContext) {
+                  new SparkSQLExecutionContext(executionId, openLineageEventEmitter, qe, olContext) {
                     @Override
                     public ZonedDateTime toZonedTime(long time) {
                       return getZonedTime();
@@ -132,7 +132,7 @@ public class StaticExecutionContextFactory extends ContextFactory {
             () ->
                 new SparkSQLExecutionContext(
                     executionId,
-                    sparkContext,
+                    openLineageEventEmitter,
                     null,
                     OpenLineageContext.builder()
                         .sparkContext(SparkContext.getOrCreate())

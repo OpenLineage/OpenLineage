@@ -206,7 +206,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   public static void emitError(Exception e) {
     OpenLineage ol = new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
     try {
-      contextFactory.sparkContext.emit(buildErrorLineageEvent(ol, errorRunFacet(e, ol)));
+      contextFactory.openLineageEventEmitter.emit(buildErrorLineageEvent(ol, errorRunFacet(e, ol)));
     } catch (Exception ex) {
       log.error("Could not emit open lineage on error", e);
     }
@@ -227,11 +227,11 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       OpenLineage ol, OpenLineage.RunFacets runFacets) {
     return ol.newRunEventBuilder()
         .eventTime(ZonedDateTime.now())
-        .run(ol.newRun(contextFactory.sparkContext.getParentRunId().orElse(null), runFacets))
+        .run(ol.newRun(contextFactory.openLineageEventEmitter.getParentRunId().orElse(null), runFacets))
         .job(
             ol.newJobBuilder()
-                .namespace(contextFactory.sparkContext.getJobNamespace())
-                .name(contextFactory.sparkContext.getParentJobName())
+                .namespace(contextFactory.openLineageEventEmitter.getJobNamespace())
+                .name(contextFactory.openLineageEventEmitter.getParentJobName())
                 .build())
         .build();
   }
