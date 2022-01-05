@@ -1,4 +1,4 @@
-# Contributing  to OpenLineage
+# Contributing to OpenLineage
 
 This project welcomes contributors from any organization or background, provided they are
 willing to follow the simple processes outlined below, as well as adhere to the 
@@ -80,3 +80,9 @@ Look tickets labeled ['good first issue'][goodfirstissues] and ['help wanted'][h
 [contributionvideos]: https://egghead.io/courses/how-to-contribute-to-an-open-source-project-on-github
 [goodfirstissues]: https://github.com/OpenLineage/OpenLineage/labels/good%20first%20issue
 [helpwantedissues]: https://github.com/OpenLineage/OpenLineage/labels/help%20wanted
+
+## Triggering CI runs from forks (committers)
+
+CI runs on forks are disabled due to possibility to access external services via CI run. 
+Once contributor decides PR is ready to be checked, they can use [this script](https://github.com/jklukas/git-push-fork-to-upstream-branch)
+to trigger CI run on separate branch with same commit ID. This will update CI status of a PR.
