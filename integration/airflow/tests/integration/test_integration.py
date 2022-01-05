@@ -96,6 +96,16 @@ def check_matches_ordered(expected_events, actual_events) -> bool:
     return True
 
 
+def check_event_time_ordered(actual_events) -> bool:
+    event_times = [event['eventTime'] for event in actual_events]
+
+    # Check event times are not all same and properly ordered
+    if len(set(event_times)) != len(event_times) or \
+            event_times != sorted(event_times):
+        return False
+    return True
+
+
 def get_events(job_name: str = None):
     time.sleep(5)
     params = {}
@@ -166,6 +176,10 @@ def test_integration_ordered(dag_id, request_dir: str):
 
     if not check_matches_ordered(expected_events, actual_events):
         log.info(f"failed to compare events!")
+        sys.exit(1)
+
+    if not check_event_time_ordered(actual_events):
+        log.info(f"failed on event timestamp order!")
         sys.exit(1)
 
 
