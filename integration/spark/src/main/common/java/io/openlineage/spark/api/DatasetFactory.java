@@ -6,7 +6,23 @@ import io.openlineage.spark.agent.util.PlanUtils;
 import java.net.URI;
 import org.apache.spark.sql.types.StructType;
 
-/** @param <D> */
+/**
+ * Defines factories for creating either {@link io.openlineage.client.OpenLineage.InputDataset}s or
+ * {@link io.openlineage.client.OpenLineage.OutputDataset}s. This allows {@link QueryPlanVisitor}s
+ * that may identify input or output datasets (e.g., a {@link
+ * io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeVisitor} or {@link
+ * io.openlineage.spark.agent.lifecycle.plan.LogicalRelationVisitor}) to be reused in the
+ * construction of both input and output datasets, allowing each to focus on extracting the
+ * identifier and general {@link io.openlineage.client.OpenLineage.DatasetFacet}s, while delegating
+ * to the factory to construct the correct instance.
+ *
+ * <p>Ideally, this would be a sealed class. We emulate that by using a private constructor and
+ * provide two static factory methods - {@link #input(OpenLineage)} and {@link
+ * #output(OpenLineage)}.
+ *
+ * @param <D> the implementation of {@link io.openlineage.client.OpenLineage.Dataset} constructed by
+ *     this factory
+ */
 public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
   private final OpenLineage openLineage;
 
@@ -17,6 +33,13 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
   abstract OpenLineage.Builder<D> datasetBuilder(
       String name, String namespace, OpenLineage.DatasetFacets datasetFacet);
 
+  /**
+   * Create a {@link DatasetFactory} that constructs only {@link
+   * io.openlineage.client.OpenLineage.InputDataset}s.
+   *
+   * @param client
+   * @return
+   */
   public static DatasetFactory<OpenLineage.InputDataset> input(OpenLineage client) {
     return new DatasetFactory<OpenLineage.InputDataset>(client) {
       public OpenLineage.Builder<OpenLineage.InputDataset> datasetBuilder(
@@ -26,6 +49,13 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
     };
   }
 
+  /**
+   * Create a {@link DatasetFactory} that constructs only {@link
+   * io.openlineage.client.OpenLineage.OutputDataset}s.
+   *
+   * @param client
+   * @return
+   */
   public static DatasetFactory<OpenLineage.OutputDataset> output(OpenLineage client) {
     return new DatasetFactory<OpenLineage.OutputDataset>(client) {
       public OpenLineage.Builder<OpenLineage.OutputDataset> datasetBuilder(
@@ -80,12 +110,25 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
     return getDataset(outputPath.getPath(), namespace, datasetFacet);
   }
 
+  /**
+   * Construct a {@link io.openlineage.client.OpenLineage.Dataset} with the given {@link
+   * DatasetIdentifier} and schema.
+   *
+   * @param ident
+   * @param schema
+   * @return
+   */
   public D getDataset(DatasetIdentifier ident, StructType schema) {
     OpenLineage.DatasetFacets datasetFacet =
         datasetFacet(openLineage, schema, ident.getNamespace());
     return getDataset(ident.getName(), ident.getNamespace(), datasetFacet);
   }
 
+  /**
+   * @param ident
+   * @param datasetFacet
+   * @return
+   */
   public D getDataset(DatasetIdentifier ident, OpenLineage.DatasetFacets datasetFacet) {
     return getDataset(ident.getName(), ident.getNamespace(), datasetFacet);
   }
