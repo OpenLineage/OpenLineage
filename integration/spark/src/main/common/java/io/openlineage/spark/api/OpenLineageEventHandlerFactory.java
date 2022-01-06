@@ -2,11 +2,9 @@ package io.openlineage.spark.api;
 
 import io.openlineage.client.OpenLineage.DatasetFacet;
 import io.openlineage.client.OpenLineage.InputDataset;
-import io.openlineage.client.OpenLineage.InputDatasetBuilder;
 import io.openlineage.client.OpenLineage.InputDatasetFacet;
 import io.openlineage.client.OpenLineage.JobFacet;
 import io.openlineage.client.OpenLineage.OutputDataset;
-import io.openlineage.client.OpenLineage.OutputDatasetBuilder;
 import io.openlineage.client.OpenLineage.OutputDatasetFacet;
 import io.openlineage.client.OpenLineage.RunFacet;
 import java.util.Collections;
@@ -27,12 +25,12 @@ public interface OpenLineageEventHandlerFactory {
     return Collections.emptyList();
   }
 
-  default List<PartialFunction<Object, List<InputDatasetBuilder>>> createInputDatasetBuilder(
+  default List<PartialFunction<Object, List<InputDataset>>> createInputDatasetBuilder(
       OpenLineageContext context) {
     return Collections.emptyList();
   }
 
-  default List<PartialFunction<Object, List<OutputDatasetBuilder>>> createOutputDatasetBuilder(
+  default List<PartialFunction<Object, List<OutputDataset>>> createOutputDatasetBuilder(
       OpenLineageContext context) {
     return Collections.emptyList();
   }

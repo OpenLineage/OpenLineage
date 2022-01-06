@@ -7,12 +7,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.Builder;
 import io.openlineage.client.OpenLineage.DatasetFacet;
+import io.openlineage.client.OpenLineage.DatasetFacets;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.InputDatasetFacet;
+import io.openlineage.client.OpenLineage.InputDatasetInputFacets;
 import io.openlineage.client.OpenLineage.JobBuilder;
 import io.openlineage.client.OpenLineage.JobFacet;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.OutputDatasetFacet;
+import io.openlineage.client.OpenLineage.OutputDatasetOutputFacets;
 import io.openlineage.client.OpenLineage.ParentRunFacet;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEventBuilder;
@@ -27,7 +30,6 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +47,7 @@ import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.scheduler.SparkListenerStageCompleted;
 import org.apache.spark.scheduler.SparkListenerStageSubmitted;
 import org.apache.spark.scheduler.Stage;
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 import scala.PartialFunction;
@@ -117,12 +120,19 @@ class OpenLineageRunEventBuilder {
   @NonNull private final OpenLineageContext openLineageContext;
 
   @NonNull
-  private final List<PartialFunction<Object, List<OpenLineage.InputDatasetBuilder>>>
-      inputDatasetBuilders;
+  private final List<PartialFunction<Object, List<OpenLineage.InputDataset>>> inputDatasetBuilders;
 
   @NonNull
-  private final List<PartialFunction<Object, List<OpenLineage.OutputDatasetBuilder>>>
+  private final List<PartialFunction<LogicalPlan, List<InputDataset>>>
+      inputDatasetQueryPlanVisitors;
+
+  @NonNull
+  private final List<PartialFunction<Object, List<OpenLineage.OutputDataset>>>
       outputDatasetBuilders;
+
+  @NonNull
+  private final List<PartialFunction<LogicalPlan, List<OutputDataset>>>
+      outputDatasetQueryPlanVisitors;
 
   @NonNull private final List<CustomFacetBuilder<?, ? extends DatasetFacet>> datasetFacetBuilders;
 
@@ -148,7 +158,9 @@ class OpenLineageRunEventBuilder {
     this(
         context,
         factory.createInputDatasetBuilder(context),
+        factory.createInputDatasetQueryPlanVisitors(context),
         factory.createOutputDatasetBuilder(context),
+        factory.createOutputDatasetQueryPlanVisitors(context),
         factory.createDatasetFacetBuilders(context),
         factory.createInputDatasetFacetBuilders(context),
         factory.createOutputDatasetFacetBuilders(context),
@@ -181,8 +193,7 @@ class OpenLineageRunEventBuilder {
 
     nodes.addAll(Rdds.flattenRDDs(rdd));
 
-    return populateRun(
-        parentRunFacet, runEventBuilder, jobBuilder, nodes, new ArrayList<>(), new ArrayList<>());
+    return populateRun(parentRunFacet, runEventBuilder, jobBuilder, nodes);
   }
 
   RunEvent buildRun(
@@ -198,8 +209,7 @@ class OpenLineageRunEventBuilder {
 
     nodes.addAll(Rdds.flattenRDDs(rdd));
 
-    return populateRun(
-        parentRunFacet, runEventBuilder, jobBuilder, nodes, new ArrayList<>(), new ArrayList<>());
+    return populateRun(parentRunFacet, runEventBuilder, jobBuilder, nodes);
   }
 
   RunEvent buildRun(
@@ -262,46 +272,14 @@ class OpenLineageRunEventBuilder {
           nodes.addAll(Rdds.flattenRDDs(j.finalStage().rdd()));
         });
 
-    List<InputDataset> inputDatasets =
-        visitQueryPlan(PlanUtils.merge(inputDatasetBuilders), InputDataset.class)
-            .orElse(Collections.emptyList());
-    List<OutputDataset> outputDatasets =
-        visitQueryPlan(PlanUtils.merge(outputDatasetBuilders), OutputDataset.class)
-            .orElse(Collections.emptyList());
-
-    return populateRun(
-        parentRunFacet, runEventBuilder, jobBuilder, nodes, inputDatasets, outputDatasets);
-  }
-
-  private <T, B extends Builder<T>> Optional<List<T>> visitQueryPlan(
-      PartialFunction<Object, List<B>> fn, Class<T> klass) {
-    return openLineageContext
-        .getQueryExecution()
-        .map(
-            qe -> {
-              if (log.isDebugEnabled()) {
-                log.debug("Traversing optimized plan {}", qe.optimizedPlan().toJSON());
-                log.debug("Physical plan executed {}", qe.executedPlan().toJSON());
-              }
-              return qe;
-            })
-        .map(
-            qe ->
-                ScalaConversionUtils.fromSeq(
-                        qe.optimizedPlan().collect(fn.orElse(unknownEntryFacetListener)))
-                    .stream()
-                    .flatMap(List::stream)
-                    .map(klass::cast)
-                    .collect(Collectors.toList()));
+    return populateRun(parentRunFacet, runEventBuilder, jobBuilder, nodes);
   }
 
   private RunEvent populateRun(
       Optional<ParentRunFacet> parentRunFacet,
       RunEventBuilder runEventBuilder,
       JobBuilder jobBuilder,
-      List<Object> nodes,
-      List<InputDataset> inputDatasets,
-      List<OutputDataset> outputDatasets) {
+      List<Object> nodes) {
     OpenLineage openLineage = openLineageContext.getOpenLineage();
 
     RunFacetsBuilder runFacetsBuilder = openLineage.newRunFacetsBuilder();
@@ -315,8 +293,8 @@ class OpenLineageRunEventBuilder {
         buildFacets(nodes, jobFacetBuilders, openLineage.newJobFacets(null, null, null));
     OpenLineage.RunBuilder runBuilder =
         openLineage.newRunBuilder().runId(openLineageContext.getRunUuid()).facets(runFacets);
-    inputDatasets.addAll(buildInputDatasets(nodes));
-    outputDatasets.addAll(buildOutputDatasets(nodes));
+    List<InputDataset> inputDatasets = buildInputDatasets(nodes);
+    List<OutputDataset> outputDatasets = buildOutputDatasets(nodes);
 
     return runEventBuilder
         .run(runBuilder.build())
@@ -327,43 +305,112 @@ class OpenLineageRunEventBuilder {
   }
 
   private List<OpenLineage.InputDataset> buildInputDatasets(List<Object> nodes) {
-    List<OpenLineage.InputDatasetBuilder> datasets = buildDatasets(nodes, inputDatasetBuilders);
+    openLineageContext
+        .getQueryExecution()
+        .ifPresent(
+            qe -> {
+              if (log.isDebugEnabled()) {
+                log.debug("Traversing optimized plan {}", qe.optimizedPlan().toJSON());
+                log.debug("Physical plan executed {}", qe.executedPlan().toJSON());
+              }
+            });
+    log.info(
+        "Visiting query plan {} with input dataset builders {}",
+        openLineageContext.getQueryExecution(),
+        inputDatasetQueryPlanVisitors);
+
+    List<OpenLineage.InputDataset> datasets =
+        Stream.concat(
+                buildDatasets(nodes, inputDatasetBuilders),
+                openLineageContext
+                    .getQueryExecution()
+                    .map(
+                        qe ->
+                            ScalaConversionUtils.fromSeq(
+                                    qe.optimizedPlan()
+                                        .collect(
+                                            PlanUtils.merge(inputDatasetQueryPlanVisitors)
+                                                .orElse(unknownEntryFacetListener)))
+                                .stream()
+                                .flatMap(List::stream)
+                                .map(((Class<InputDataset>) InputDataset.class)::cast))
+                    .orElse(Stream.empty()))
+            .collect(Collectors.toList());
     OpenLineage openLineage = openLineageContext.getOpenLineage();
     if (!datasets.isEmpty()) {
-      OpenLineage.InputDatasetInputFacets inputFacets =
-          buildFacets(
-              nodes,
-              inputDatasetFacetBuilders,
-              openLineage.newInputDatasetInputFacetsBuilder().build());
-      OpenLineage.DatasetFacets datasetFacets =
-          buildFacets(nodes, datasetFacetBuilders, openLineage.newDatasetFacetsBuilder().build());
-      datasets.forEach(ds -> ds.inputFacets(inputFacets).facets(datasetFacets));
+      Map<String, InputDatasetFacet> inputFacetsMap = new HashMap<>();
+      nodes.forEach(
+          event -> inputDatasetFacetBuilders.forEach(fn -> fn.accept(event, inputFacetsMap::put)));
+      Map<String, DatasetFacets> datasetFacetsMap = new HashMap<>();
+      nodes.forEach(
+          event -> inputDatasetFacetBuilders.forEach(fn -> fn.accept(event, inputFacetsMap::put)));
+      return datasets.stream()
+          .map(
+              ds ->
+                  openLineage
+                      .newInputDatasetBuilder()
+                      .name(ds.getName())
+                      .namespace(ds.getNamespace())
+                      .inputFacets(
+                          mergeFacets(
+                              inputFacetsMap, ds.getInputFacets(), InputDatasetInputFacets.class))
+                      .facets(mergeFacets(datasetFacetsMap, ds.getFacets(), DatasetFacets.class))
+                      .build())
+          .collect(Collectors.toList());
     }
-    return datasets.stream()
-        .map(OpenLineage.InputDatasetBuilder::build)
-        .collect(Collectors.toList());
+    return datasets;
   }
 
   private List<OpenLineage.OutputDataset> buildOutputDatasets(List<Object> nodes) {
-    List<OpenLineage.OutputDatasetBuilder> datasets = buildDatasets(nodes, outputDatasetBuilders);
+    log.info(
+        "Visiting query plan {} with output dataset builders {}",
+        openLineageContext.getQueryExecution(),
+        outputDatasetBuilders);
+    PartialFunction<LogicalPlan, List<OutputDataset>> visitor =
+        PlanUtils.merge(outputDatasetQueryPlanVisitors);
+    List<OutputDataset> datasets =
+        Stream.concat(
+                buildDatasets(nodes, outputDatasetBuilders),
+                openLineageContext
+                    .getQueryExecution()
+                    .map(
+                        qe ->
+                            visitor.applyOrElse(qe.optimizedPlan(), unknownEntryFacetListener)
+                                .stream()
+                                .map(OutputDataset.class::cast))
+                    .orElse(Stream.empty()))
+            .collect(Collectors.toList());
+
     OpenLineage openLineage = openLineageContext.getOpenLineage();
+
     if (!datasets.isEmpty()) {
-      OpenLineage.OutputDatasetOutputFacets outputFacets =
-          buildFacets(
-                  nodes,
-                  outputDatasetFacetBuilders,
-                  openLineage.newOutputDatasetOutputFacetsBuilder())
-              .build();
-      OpenLineage.DatasetFacets datasetFacets =
-          buildFacets(nodes, datasetFacetBuilders, openLineage.newDatasetFacetsBuilder()).build();
-      datasets.forEach(ds -> ds.outputFacets(outputFacets).facets(datasetFacets));
+      Map<String, OutputDatasetFacet> outputFacetsMap = new HashMap<>();
+      nodes.forEach(
+          event ->
+              outputDatasetFacetBuilders.forEach(fn -> fn.accept(event, outputFacetsMap::put)));
+      Map<String, DatasetFacet> datasetFacetsMap = new HashMap<>();
+      nodes.forEach(
+          event -> datasetFacetBuilders.forEach(fn -> fn.accept(event, datasetFacetsMap::put)));
+      return datasets.stream()
+          .map(
+              ds ->
+                  openLineage
+                      .newOutputDatasetBuilder()
+                      .name(ds.getName())
+                      .namespace(ds.getNamespace())
+                      .outputFacets(
+                          mergeFacets(
+                              outputFacetsMap,
+                              ds.getOutputFacets(),
+                              OutputDatasetOutputFacets.class))
+                      .facets(mergeFacets(datasetFacetsMap, ds.getFacets(), DatasetFacets.class))
+                      .build())
+          .collect(Collectors.toList());
     }
-    return datasets.stream()
-        .map(OpenLineage.OutputDatasetBuilder::build)
-        .collect(Collectors.toList());
+    return datasets;
   }
 
-  private <T> List<T> buildDatasets(
+  private <T> Stream<T> buildDatasets(
       List<Object> nodes, List<PartialFunction<Object, List<T>>> builders) {
     PartialFunction<Object, List<T>> fn = PlanUtils.merge(builders);
     return nodes.stream()
@@ -374,8 +421,7 @@ class OpenLineageRunEventBuilder {
               } else {
                 return Stream.empty();
               }
-            })
-        .collect(Collectors.toList());
+            });
   }
 
   /**
@@ -406,6 +452,17 @@ class OpenLineageRunEventBuilder {
       List<Object> events, List<CustomFacetBuilder<?, ? extends T>> builders, F facetsContainer) {
     Map<String, T> facetsMap = new HashMap<>();
     events.forEach(event -> builders.forEach(fn -> fn.accept(event, facetsMap::put)));
+    try {
+      return objectMapper.updateValue(facetsContainer, facetsMap);
+    } catch (JsonMappingException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private <T, F> T mergeFacets(Map<String, F> facetsMap, T facetsContainer, Class<T> klass) {
+    if (facetsContainer == null) {
+      return objectMapper.convertValue(facetsMap, klass);
+    }
     try {
       return objectMapper.updateValue(facetsContainer, facetsMap);
     } catch (JsonMappingException e) {
