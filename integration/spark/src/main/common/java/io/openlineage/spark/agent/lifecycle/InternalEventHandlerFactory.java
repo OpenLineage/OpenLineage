@@ -2,11 +2,9 @@ package io.openlineage.spark.agent.lifecycle;
 
 import io.openlineage.client.OpenLineage.DatasetFacet;
 import io.openlineage.client.OpenLineage.InputDataset;
-import io.openlineage.client.OpenLineage.InputDatasetBuilder;
 import io.openlineage.client.OpenLineage.InputDatasetFacet;
 import io.openlineage.client.OpenLineage.JobFacet;
 import io.openlineage.client.OpenLineage.OutputDataset;
-import io.openlineage.client.OpenLineage.OutputDatasetBuilder;
 import io.openlineage.client.OpenLineage.OutputDatasetFacet;
 import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.spark.api.CustomFacetBuilder;
@@ -23,15 +21,18 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import scala.PartialFunction;
 
 class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
-  private final List<PartialFunction<LogicalPlan, InputDataset>> inputDatasetQueryPlanVisitors;
-  private final List<PartialFunction<LogicalPlan, OutputDataset>> outputDatasetQueryPlanVisitors;
-  private final List<PartialFunction<Object, List<InputDatasetBuilder>>> inputDatasetBuilder;
-  private final List<CustomFacetBuilder<Object, InputDatasetFacet>> inputDatasetFacetBuilders;
-  private final List<PartialFunction<Object, List<OutputDatasetBuilder>>> outputDatasetBuilder;
-  private final List<CustomFacetBuilder<Object, OutputDatasetFacet>> outputDatasetFacetBuilders;
-  private final List<CustomFacetBuilder<Object, DatasetFacet>> datasetFacetBuilders;
-  private final List<CustomFacetBuilder<Object, JobFacet>> jobFacetBuilders;
-  private final List<CustomFacetBuilder<Object, RunFacet>> runFacetBuilders;
+  private final List<PartialFunction<LogicalPlan, List<InputDataset>>>
+      inputDatasetQueryPlanVisitors;
+  private final List<PartialFunction<LogicalPlan, List<OutputDataset>>>
+      outputDatasetQueryPlanVisitors;
+  private final List<PartialFunction<Object, List<InputDataset>>> inputDatasetBuilder;
+  private final List<CustomFacetBuilder<?, ? extends InputDatasetFacet>> inputDatasetFacetBuilders;
+  private final List<PartialFunction<Object, List<OutputDataset>>> outputDatasetBuilder;
+  private final List<CustomFacetBuilder<?, ? extends OutputDatasetFacet>>
+      outputDatasetFacetBuilders;
+  private final List<CustomFacetBuilder<?, ? extends DatasetFacet>> datasetFacetBuilders;
+  private final List<CustomFacetBuilder<?, ? extends JobFacet>> jobFacetBuilders;
+  private final List<CustomFacetBuilder<?, ? extends RunFacet>> runFacetBuilders;
 
   public InternalEventHandlerFactory(OpenLineageContext context) {
     ServiceLoader<OpenLineageEventHandlerFactory> loader = ServiceLoader.load(
@@ -73,55 +74,55 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
   }
 
   @Override
-  public List<PartialFunction<LogicalPlan, InputDataset>> createInputDatasetQueryPlanVisitors(
+  public List<PartialFunction<LogicalPlan, List<InputDataset>>> createInputDatasetQueryPlanVisitors(
       OpenLineageContext context) {
     return inputDatasetQueryPlanVisitors;
   }
 
   @Override
-  public List<PartialFunction<LogicalPlan, OutputDataset>> createOutputDatasetQueryPlanVisitors(
+  public List<PartialFunction<LogicalPlan, List<OutputDataset>>> createOutputDatasetQueryPlanVisitors(
       OpenLineageContext context) {
     return outputDatasetQueryPlanVisitors;
   }
 
   @Override
-  public List<PartialFunction<Object, List<InputDatasetBuilder>>> createInputDatasetBuilder(
+  public List<PartialFunction<Object, List<InputDataset>>> createInputDatasetBuilder(
       OpenLineageContext context) {
     return inputDatasetBuilder;
   }
 
   @Override
-  public List<PartialFunction<Object, List<OutputDatasetBuilder>>> createOutputDatasetBuilder(
+  public List<PartialFunction<Object, List<OutputDataset>>> createOutputDatasetBuilder(
       OpenLineageContext context) {
     return outputDatasetBuilder;
   }
 
   @Override
-  public List<CustomFacetBuilder<Object, InputDatasetFacet>> createInputDatasetFacetBuilders(
+  public List<CustomFacetBuilder<?, ? extends InputDatasetFacet>> createInputDatasetFacetBuilders(
       OpenLineageContext context) {
     return inputDatasetFacetBuilders;
   }
 
   @Override
-  public List<CustomFacetBuilder<Object, OutputDatasetFacet>> createOutputDatasetFacetBuilders(
+  public List<CustomFacetBuilder<?, ? extends OutputDatasetFacet>> createOutputDatasetFacetBuilders(
       OpenLineageContext context) {
     return outputDatasetFacetBuilders;
   }
 
   @Override
-  public List<CustomFacetBuilder<Object, DatasetFacet>> createDatasetFacetBuilders(
+  public List<CustomFacetBuilder<?, ? extends DatasetFacet>> createDatasetFacetBuilders(
       OpenLineageContext context) {
     return datasetFacetBuilders;
   }
 
   @Override
-  public List<CustomFacetBuilder<Object, RunFacet>> createRunFacetBuilders(
+  public List<CustomFacetBuilder<?, ? extends RunFacet>> createRunFacetBuilders(
       OpenLineageContext context) {
     return runFacetBuilders;
   }
 
   @Override
-  public List<CustomFacetBuilder<Object, JobFacet>> createJobFacetBuilders(OpenLineageContext context) {
+  public List<CustomFacetBuilder<?, ? extends JobFacet>> createJobFacetBuilders(OpenLineageContext context) {
     return jobFacetBuilders;
   }
 }
