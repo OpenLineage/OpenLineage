@@ -164,9 +164,8 @@ public class DataSourceV2RelationVisitorTest {
 
     OpenLineage.Dataset dataset = dataSourceV2RelationVisitor.apply(dataSourceV2Relation).get(0);
 
-    Assertions.assertEquals("azurecosmos", dataset.getNamespace());
     Assertions.assertEquals(
-        "https://serviceName.documents.azure.com/dbs/databaseName/colls/collectionName",
-        dataset.getName());
+        "azurecosmos://serviceName.documents.azure.com/dbs/databaseName", dataset.getNamespace());
+    Assertions.assertEquals("/colls/collectionName", dataset.getName());
   }
 }

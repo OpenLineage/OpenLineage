@@ -115,13 +115,15 @@ public class DataSourceV2RelationVisitor<D extends OpenLineage.Dataset>
     int expectedParts = 3;
     String[] tableParts = relationName.split("\\.", expectedParts);
     String tableName;
+    String namespace;
     if (tableParts.length != expectedParts) {
       tableName = relationName;
+      namespace = relationName;
     } else {
-      tableName =
+      namespace =
           String.format(
-              "https://%s.documents.azure.com/dbs/%s/colls/%s",
-              tableParts[0], tableParts[1], tableParts[2]);
+              "azurecosmos://%s.documents.azure.com/dbs/%s", tableParts[0], tableParts[1]);
+      tableName = String.format("/colls/%s", tableParts[2]);
     }
     return factory.getDataset(
       tableName,
@@ -167,7 +169,7 @@ public class DataSourceV2RelationVisitor<D extends OpenLineage.Dataset>
     } else {
       plan = logicalPlan;
     }
-    
+
     Provider provider = findDatasetProvider(logicalPlan);
     DataSourceV2Relation x = (DataSourceV2Relation) logicalPlan;
 
