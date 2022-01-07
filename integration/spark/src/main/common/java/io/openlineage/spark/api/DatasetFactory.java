@@ -9,18 +9,20 @@ import org.apache.spark.sql.types.StructType;
 /**
  * Defines factories for creating either {@link io.openlineage.client.OpenLineage.InputDataset}s or
  * {@link io.openlineage.client.OpenLineage.OutputDataset}s. This allows {@link QueryPlanVisitor}s
- * that may identify input or output datasets (e.g., a
- * {@link io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeVisitor} or
- * {@link io.openlineage.spark.agent.lifecycle.plan.LogicalRelationVisitor}) to be reused in the
+ * that may identify input or output datasets (e.g., a {@link
+ * io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeVisitor} or {@link
+ * io.openlineage.spark.agent.lifecycle.plan.LogicalRelationVisitor}) to be reused in the
  * construction of both input and output datasets, allowing each to focus on extracting the
  * identifier and general {@link io.openlineage.client.OpenLineage.DatasetFacet}s, while delegating
  * to the factory to construct the correct instance.
  *
- * Ideally, this would be a sealed class. We emulate that by using a private constructor and
- * provide two static factory methods - {@link #input(OpenLineage)} and {@link #output(OpenLineage)}.
- * @param <D> the implementation of {@link io.openlineage.client.OpenLineage.Dataset} constructed
- *           by this factory
- **/
+ * <p>Ideally, this would be a sealed class. We emulate that by using a private constructor and
+ * provide two static factory methods - {@link #input(OpenLineage)} and {@link
+ * #output(OpenLineage)}.
+ *
+ * @param <D> the implementation of {@link io.openlineage.client.OpenLineage.Dataset} constructed by
+ *     this factory
+ */
 public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
   private final OpenLineage openLineage;
 
@@ -32,8 +34,9 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
       String name, String namespace, OpenLineage.DatasetFacets datasetFacet);
 
   /**
-   * Create a {@link DatasetFactory} that constructs only
-   * {@link io.openlineage.client.OpenLineage.InputDataset}s.
+   * Create a {@link DatasetFactory} that constructs only {@link
+   * io.openlineage.client.OpenLineage.InputDataset}s.
+   *
    * @param client
    * @return
    */
@@ -47,8 +50,9 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
   }
 
   /**
-   * Create a {@link DatasetFactory} that constructs only
-   * {@link io.openlineage.client.OpenLineage.OutputDataset}s.
+   * Create a {@link DatasetFactory} that constructs only {@link
+   * io.openlineage.client.OpenLineage.OutputDataset}s.
+   *
    * @param client
    * @return
    */
@@ -107,8 +111,9 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
   }
 
   /**
-   * Construct a {@link io.openlineage.client.OpenLineage.Dataset} with the given
-   * {@link DatasetIdentifier} and schema.
+   * Construct a {@link io.openlineage.client.OpenLineage.Dataset} with the given {@link
+   * DatasetIdentifier} and schema.
+   *
    * @param ident
    * @param schema
    * @return
@@ -120,7 +125,6 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
   }
 
   /**
-   *
    * @param ident
    * @param datasetFacet
    * @return

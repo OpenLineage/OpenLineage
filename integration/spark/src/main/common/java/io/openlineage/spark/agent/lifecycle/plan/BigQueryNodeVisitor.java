@@ -23,6 +23,7 @@ import org.apache.spark.sql.sources.CreatableRelationProvider;
  * used for naming is a URI of <code>
  * bigquery://&lt;projectId&gt;.&lt;.datasetId&gt;.&lt;tableName&gt;</code> . The namespace for
  * bigquery tables is always <code>bigquery</code> and the name is the FQN.
+ *
  * @param <D> the type of {@link io.openlineage.client.OpenLineage.Dataset} created by this visitor
  */
 public class BigQueryNodeVisitor<D extends OpenLineage.Dataset>
