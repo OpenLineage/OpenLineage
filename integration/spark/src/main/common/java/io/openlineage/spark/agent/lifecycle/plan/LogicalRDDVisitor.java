@@ -3,6 +3,9 @@ package io.openlineage.spark.agent.lifecycle.plan;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.DatasetFactory;
+import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -24,7 +27,14 @@ import scala.collection.Seq;
  * org.apache.spark.sql.execution.datasources.HadoopFsRelation}, but works with {@link RDD}s that
  * are converted to {@link org.apache.spark.sql.Dataset}s.
  */
-public class LogicalRDDVisitor extends QueryPlanVisitor<LogicalRDD, OpenLineage.Dataset> {
+public class LogicalRDDVisitor<D extends OpenLineage.Dataset>
+    extends QueryPlanVisitor<LogicalRDD, D> {
+  private final DatasetFactory<D> datasetFactory;
+
+  public LogicalRDDVisitor(OpenLineageContext context, DatasetFactory<D> datasetFactory) {
+    super(context);
+    this.datasetFactory = datasetFactory;
+  }
 
   @Override
   public boolean isDefinedAt(LogicalPlan x) {
@@ -51,7 +61,7 @@ public class LogicalRDDVisitor extends QueryPlanVisitor<LogicalRDD, OpenLineage.
   }
 
   @Override
-  public List<OpenLineage.Dataset> apply(LogicalPlan x) {
+  public List<D> apply(LogicalPlan x) {
     LogicalRDD logicalRdd = (LogicalRDD) x;
     List<HadoopRDD> hadoopRdds = findHadoopRdds(logicalRdd);
     return hadoopRdds.stream()
@@ -66,7 +76,7 @@ public class LogicalRDDVisitor extends QueryPlanVisitor<LogicalRDD, OpenLineage.
             p -> {
               // TODO- refactor this to return a single partitioned dataset based on static
               // static partitions in the relation
-              return PlanUtils.getDataset(p.toUri(), logicalRdd.schema());
+              return datasetFactory.getDataset(p.toUri(), logicalRdd.schema());
             })
         .collect(Collectors.toList());
   }

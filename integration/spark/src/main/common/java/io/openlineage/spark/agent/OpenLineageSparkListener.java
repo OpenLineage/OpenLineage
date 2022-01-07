@@ -1,6 +1,7 @@
 package io.openlineage.spark.agent;
 
 import static io.openlineage.spark.agent.ArgumentParser.DEFAULTS;
+import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptional;
 import static io.openlineage.spark.agent.util.SparkConfUtils.findSparkConfigKey;
 import static io.openlineage.spark.agent.util.SparkConfUtils.findSparkUrlParams;
 
@@ -71,7 +72,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
    *
    * <p>called through the agent when creating the Spark context We register a new SparkListener
    *
-   * @param context the spark context
+   * @param context the spark contextStaticExecutionContextFactory
    */
   @SuppressWarnings("unused")
   public static void instrument(SparkContext context) {
@@ -149,14 +150,11 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
             .collect(Collectors.toSet());
     jobMetrics.addJobStages(jobStart.jobId(), stages);
 
-    ScalaConversionUtils.asJavaOptional(
+    asJavaOptional(
             SparkSession.getActiveSession()
                 .map(ScalaConversionUtils.toScalaFn(sess -> sess.sparkContext()))
                 .orElse(ScalaConversionUtils.toScalaFn(() -> SparkContext$.MODULE$.getActive())))
-        .flatMap(
-            ctx ->
-                ScalaConversionUtils.asJavaOptional(
-                    ctx.dagScheduler().jobIdToActiveJob().get(jobStart.jobId())))
+        .flatMap(ctx -> asJavaOptional(ctx.dagScheduler().jobIdToActiveJob().get(jobStart.jobId())))
         .ifPresent(
             job -> {
               String executionIdProp = job.properties().getProperty("spark.sql.execution.id");

@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
+import io.openlineage.spark.agent.client.OpenLineageClient;
+import io.openlineage.spark.api.DatasetFactory;
 import java.net.URI;
 import java.util.List;
 import org.apache.spark.Partition;
@@ -45,7 +47,9 @@ class LogicalRelationVisitorTest {
   void testApply(String connectionUri) {
     SparkSession session = SparkSession.builder().master("local").getOrCreate();
     LogicalRelationVisitor visitor =
-        new LogicalRelationVisitor(session.sparkContext(), "testnamespace");
+        new LogicalRelationVisitor(
+            SparkAgentTestExtension.newContext(session),
+            DatasetFactory.output(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI)));
     String jdbcUrl = "jdbc:" + connectionUri;
     String sparkTableName = "my_spark_table";
     JDBCRelation relation =

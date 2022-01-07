@@ -6,10 +6,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.lifecycle.SparkSQLExecutionContext;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHadoopFsRelationVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.wrapper.OutputDatasetVisitor;
-import java.util.Collections;
+import io.openlineage.spark.api.OpenLineageContext;
+import java.util.Optional;
 import java.util.Properties;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkContext;
@@ -38,7 +39,7 @@ import scala.collection.Seq$;
 public class OpenLineageSparkListenerTest {
   @Test
   public void testSqlEventWithJobEventEmitsOnce(SparkSession sparkSession) {
-    EventEmitter context = mock(EventEmitter.class);
+    EventEmitter emitter = mock(EventEmitter.class);
     QueryExecution qe = mock(QueryExecution.class);
     LogicalPlan query = mock(LogicalPlan.class);
     SparkPlan plan = mock(SparkPlan.class);
@@ -70,14 +71,17 @@ public class OpenLineageSparkListenerTest {
     when(plan.sparkContext()).thenReturn(SparkContext.getOrCreate());
     when(plan.nodeName()).thenReturn("execute");
 
+    OpenLineageContext olContext =
+        OpenLineageContext.builder()
+            .sparkSession(Optional.of(sparkSession))
+            .sparkContext(sparkSession.sparkContext())
+            .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
+            .build();
+    olContext
+        .getOutputDatasetQueryPlanVisitors()
+        .add(new InsertIntoHadoopFsRelationVisitor(olContext));
     SparkSQLExecutionContext executionContext =
-        new SparkSQLExecutionContext(
-            1L,
-            context,
-            qe,
-            Collections.singletonList(
-                new OutputDatasetVisitor(new InsertIntoHadoopFsRelationVisitor())),
-            Collections.emptyList());
+        new SparkSQLExecutionContext(1L, emitter, qe, olContext);
 
     executionContext.start(
         new SparkListenerSQLExecutionStart(
@@ -94,6 +98,6 @@ public class OpenLineageSparkListenerTest {
     ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
 
-    verify(context, times(1)).emit(lineageEvent.capture());
+    verify(emitter, times(1)).emit(lineageEvent.capture());
   }
 }

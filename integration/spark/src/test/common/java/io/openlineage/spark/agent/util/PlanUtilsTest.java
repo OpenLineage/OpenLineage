@@ -13,7 +13,7 @@ class PlanUtilsTest {
   @MethodSource("provideJdbcUrls")
   void testJdbcUrlSanitizer(String jdbcUrl, String expectedResult) {
 
-    String actualResult = PlanUtils.sanitizeJdbcUrl(jdbcUrl);
+    String actualResult = JdbcUtils.sanitizeJdbcUrl(jdbcUrl);
 
     assertEquals(expectedResult, actualResult);
   }

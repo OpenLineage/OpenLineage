@@ -1,13 +1,12 @@
 package io.openlineage.spark3.agent.lifecycle.plan;
 
-import static io.openlineage.spark.agent.util.PlanUtils.datasourceFacet;
-import static io.openlineage.spark.agent.util.PlanUtils.schemaFacet;
-
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.facets.TableProviderFacet;
 import io.openlineage.spark.agent.lifecycle.plan.DatasetSource;
-import io.openlineage.spark.agent.lifecycle.plan.QueryPlanVisitor;
 import io.openlineage.spark.agent.util.PlanUtils;
+import io.openlineage.spark.api.DatasetFactory;
+import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -26,13 +25,20 @@ import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
  * not the specific dataset (e.g., "bigquery" not the table).
  */
 @Slf4j
-public class DataSourceV2RelationVisitor
-    extends QueryPlanVisitor<LogicalPlan, OpenLineage.Dataset> {
+public class DataSourceV2RelationVisitor<D extends OpenLineage.Dataset>
+    extends QueryPlanVisitor<LogicalPlan, D> {
 
   private enum Provider {
     ICEBERG,
     DELTA,
     UNKNOWN;
+  }
+
+  private final DatasetFactory<D> factory;
+
+  public DataSourceV2RelationVisitor(OpenLineageContext context, DatasetFactory<D> factory) {
+    super(context);
+    this.factory = factory;
   }
 
   @Override
@@ -60,7 +66,7 @@ public class DataSourceV2RelationVisitor
         .orElse(Provider.UNKNOWN);
   }
 
-  private OpenLineage.Dataset findDatasetForIceberg(DataSourceV2Relation relation) {
+  private D findDatasetForIceberg(DataSourceV2Relation relation) {
     Map<String, String> properties = relation.table().properties();
 
     String namespace = properties.getOrDefault("location", null);
@@ -70,12 +76,12 @@ public class DataSourceV2RelationVisitor
       return null;
     }
     namespace = namespace.startsWith("/") ? "file://" + namespace : namespace;
-    return PlanUtils.getDataset(
+    return factory.getDataset(
         relation.table().name(),
         namespace,
         new OpenLineage.DatasetFacetsBuilder()
-            .schema(schemaFacet(relation.schema()))
-            .dataSource(datasourceFacet(namespace))
+            .schema(PlanUtils.schemaFacet(context.getOpenLineage(), relation.schema()))
+            .dataSource(PlanUtils.datasourceFacet(context.getOpenLineage(), namespace))
             .put(
                 "table_provider",
                 new TableProviderFacet(
@@ -83,7 +89,7 @@ public class DataSourceV2RelationVisitor
             .build());
   }
 
-  private OpenLineage.Dataset findDatasetForDelta(DataSourceV2Relation relation) {
+  private D findDatasetForDelta(DataSourceV2Relation relation) {
     Map<String, String> properties = relation.table().properties();
 
     String namespace = properties.getOrDefault("location", null);
@@ -93,12 +99,12 @@ public class DataSourceV2RelationVisitor
       return null;
     }
 
-    return PlanUtils.getDataset(
+    return factory.getDataset(
         relation.table().name(),
         namespace,
         new OpenLineage.DatasetFacetsBuilder()
-            .schema(schemaFacet(relation.schema()))
-            .dataSource(datasourceFacet(namespace))
+            .schema(PlanUtils.schemaFacet(context.getOpenLineage(), relation.schema()))
+            .dataSource(PlanUtils.datasourceFacet(context.getOpenLineage(), namespace))
             .put(
                 "table_provider",
                 new TableProviderFacet(
@@ -107,7 +113,7 @@ public class DataSourceV2RelationVisitor
   }
 
   @Override
-  public List<OpenLineage.Dataset> apply(LogicalPlan logicalPlan) {
+  public List<D> apply(LogicalPlan logicalPlan) {
     Provider provider = findDatasetProvider(logicalPlan);
     DataSourceV2Relation x = (DataSourceV2Relation) logicalPlan;
 
@@ -121,7 +127,7 @@ public class DataSourceV2RelationVisitor
     }
   }
 
-  private <T> List<T> nullableSingletonList(T singleton) {
+  private List<D> nullableSingletonList(D singleton) {
     if (singleton == null) {
       return Collections.emptyList();
     }

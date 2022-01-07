@@ -1,9 +1,8 @@
 package io.openlineage.spark.agent.lifecycle;
 
-import static io.openlineage.spark.agent.util.PlanUtils.merge;
-
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
+import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.JobMetricsHolder;
 import io.openlineage.spark.agent.client.OpenLineageClient;
@@ -11,8 +10,8 @@ import io.openlineage.spark.agent.facets.ErrorFacet;
 import io.openlineage.spark.agent.facets.LogicalPlanFacet;
 import io.openlineage.spark.agent.facets.SparkVersionFacet;
 import io.openlineage.spark.agent.facets.UnknownEntryFacet;
-import io.openlineage.spark.agent.lifecycle.plan.QueryPlanVisitor;
 import io.openlineage.spark.agent.util.PlanUtils;
+import io.openlineage.spark.api.OpenLineageContext;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -53,10 +52,8 @@ public class SparkSQLExecutionContext implements ExecutionContext {
   private final UnknownEntryFacetListener unknownEntryFacetListener =
       new UnknownEntryFacetListener();
 
-  private EventEmitter sparkContext;
-  private final List<QueryPlanVisitor<LogicalPlan, OpenLineage.OutputDataset>>
-      outputDatasetSupplier;
-  private final List<QueryPlanVisitor<LogicalPlan, OpenLineage.InputDataset>> inputDatasetSupplier;
+  private EventEmitter eventEmitter;
+  private final OpenLineageContext context;
   private final JobMetricsHolder jobMetrics;
   private final OpenLineage openLineage =
       new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
@@ -67,15 +64,13 @@ public class SparkSQLExecutionContext implements ExecutionContext {
 
   public SparkSQLExecutionContext(
       long executionId,
-      EventEmitter sparkContext,
+      EventEmitter eventEmitter,
       QueryExecution queryExecution,
-      List<QueryPlanVisitor<LogicalPlan, OpenLineage.OutputDataset>> outputDatasetSupplier,
-      List<QueryPlanVisitor<LogicalPlan, OpenLineage.InputDataset>> inputDatasetSupplier) {
+      OpenLineageContext context) {
     this.executionId = executionId;
-    this.sparkContext = sparkContext;
+    this.eventEmitter = eventEmitter;
     this.queryExecution = queryExecution;
-    this.outputDatasetSupplier = outputDatasetSupplier;
-    this.inputDatasetSupplier = inputDatasetSupplier;
+    this.context = context;
     this.jobMetrics = JobMetricsHolder.getInstance();
   }
 
@@ -124,12 +119,12 @@ public class SparkSQLExecutionContext implements ExecutionContext {
       return;
     }
 
-    PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>> outputVisitor =
-        merge(outputDatasetSupplier);
+    PartialFunction<LogicalPlan, List<OutputDataset>> outputVisitor =
+        PlanUtils.merge(context.getOutputDatasetQueryPlanVisitors());
 
-    PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>> planTraversal =
+    PartialFunction<LogicalPlan, List<OutputDataset>> planTraversal =
         getPlanTraversal(outputVisitor);
-    List<OpenLineage.OutputDataset> outputDatasets =
+    List<OutputDataset> outputDatasets =
         planTraversal.isDefinedAt(queryExecution.optimizedPlan())
             ? planTraversal.apply(queryExecution.optimizedPlan())
             : Collections.emptyList();
@@ -159,12 +154,12 @@ public class SparkSQLExecutionContext implements ExecutionContext {
             .build();
 
     log.debug("Posting event for start {}: {}", executionId, event);
-    sparkContext.emit(event);
+    eventEmitter.emit(event);
   }
 
   private List<InputDataset> getInputDatasets() {
     PartialFunction<LogicalPlan, List<InputDataset>> inputFunc =
-        PlanUtils.merge(inputDatasetSupplier);
+        PlanUtils.merge(context.getInputDatasetQueryPlanVisitors());
     return JavaConversions.seqAsJavaList(
             queryExecution.optimizedPlan().collect(getPlanTraversal(inputFunc)))
         .stream()
@@ -182,12 +177,12 @@ public class SparkSQLExecutionContext implements ExecutionContext {
   }
 
   private Optional<OpenLineage.ParentRunFacet> buildParentFacet() {
-    return sparkContext
+    return eventEmitter
         .getParentRunId()
         .map(
             runId ->
                 PlanUtils.parentRunFacet(
-                    runId, sparkContext.getParentJobName(), sparkContext.getJobNamespace()));
+                    runId, eventEmitter.getParentJobName(), eventEmitter.getJobNamespace()));
   }
 
   void endEvent(Long time, String eventType, Exception exception) {
@@ -206,11 +201,11 @@ public class SparkSQLExecutionContext implements ExecutionContext {
       log.debug("Physical plan executed {}", queryExecution.executedPlan().toJSON());
     }
 
-    PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>> outputVisitor =
-        merge(outputDatasetSupplier);
-    PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>> planTraversal =
+    PartialFunction<LogicalPlan, List<OutputDataset>> outputVisitor =
+        PlanUtils.merge(context.getOutputDatasetQueryPlanVisitors());
+    PartialFunction<LogicalPlan, List<OutputDataset>> planTraversal =
         getPlanTraversal(outputVisitor);
-    List<OpenLineage.OutputDataset> outputDatasets =
+    List<OutputDataset> outputDatasets =
         planTraversal.isDefinedAt(optimizedPlan)
             ? planTraversal.apply(optimizedPlan)
             : Collections.emptyList();
@@ -243,14 +238,13 @@ public class SparkSQLExecutionContext implements ExecutionContext {
             .build();
 
     log.debug("Posting event for end {}: {}", executionId, event);
-    sparkContext.emit(event);
+    eventEmitter.emit(event);
   }
 
-  private List<OpenLineage.OutputDataset> populateOutputMetrics(
-      int jobId, List<OpenLineage.OutputDataset> outputDatasets) {
+  private List<OutputDataset> populateOutputMetrics(int jobId, List<OutputDataset> outputDatasets) {
     if (outputDatasets.isEmpty()) return outputDatasets;
 
-    OpenLineage.OutputDataset outputDataset = outputDatasets.get(0);
+    OutputDataset outputDataset = outputDatasets.get(0);
 
     Map<JobMetricsHolder.Metric, Number> metrics = jobMetrics.pollMetrics(jobId);
 
@@ -334,7 +328,7 @@ public class SparkSQLExecutionContext implements ExecutionContext {
     }
     return openLineage
         .newJobBuilder()
-        .namespace(this.sparkContext.getJobNamespace())
+        .namespace(this.eventEmitter.getJobNamespace())
         .name(
             sparkContext.appName().replaceAll(CAMEL_TO_SNAKE_CASE, "_$1").toLowerCase(Locale.ROOT)
                 + "."
