@@ -124,7 +124,8 @@ class SparkSQLExecutionContext implements ExecutionContext {
         PlanUtils.merge(context.getOutputDatasetQueryPlanVisitors());
 
     List<OutputDataset> outputDatasets =
-        outputVisitor.orElse(unknownEntryFacetListener)
+        outputVisitor
+            .orElse(unknownEntryFacetListener)
             .applyOrElse(queryExecution.optimizedPlan(), PartialFunction$.MODULE$.empty());
 
     List<InputDataset> inputDatasets = getInputDatasets();
@@ -159,8 +160,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
     PartialFunction<LogicalPlan, List<InputDataset>> inputFunc =
         PlanUtils.merge(context.getInputDatasetQueryPlanVisitors());
     return JavaConversions.seqAsJavaList(
-            queryExecution.optimizedPlan()
-                .collect(inputFunc.orElse(unknownEntryFacetListener)))
+            queryExecution.optimizedPlan().collect(inputFunc.orElse(unknownEntryFacetListener)))
         .stream()
         .filter(Objects::nonNull)
         .flatMap(List::stream)
@@ -195,12 +195,10 @@ class SparkSQLExecutionContext implements ExecutionContext {
 
     PartialFunction<LogicalPlan, List<OutputDataset>> outputVisitor =
         PlanUtils.merge(context.getOutputDatasetQueryPlanVisitors());
-    PartialFunction<LogicalPlan, List<OutputDataset>> planTraversal =
-        getPlanTraversal(outputVisitor);
     List<OutputDataset> outputDatasets =
-        planTraversal.isDefinedAt(optimizedPlan)
-            ? planTraversal.apply(optimizedPlan)
-            : Collections.emptyList();
+        outputVisitor.orElse(unknownEntryFacetListener).apply(optimizedPlan).stream()
+            .map(OutputDataset.class::cast)
+            .collect(Collectors.toList());
     if (jobId.isPresent()) {
       outputDatasets = populateOutputMetrics(jobId.get(), outputDatasets);
     }

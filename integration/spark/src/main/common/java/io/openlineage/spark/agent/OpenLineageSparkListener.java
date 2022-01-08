@@ -227,7 +227,9 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       OpenLineage ol, OpenLineage.RunFacets runFacets) {
     return ol.newRunEventBuilder()
         .eventTime(ZonedDateTime.now())
-        .run(ol.newRun(contextFactory.openLineageEventEmitter.getParentRunId().orElse(null), runFacets))
+        .run(
+            ol.newRun(
+                contextFactory.openLineageEventEmitter.getParentRunId().orElse(null), runFacets))
         .job(
             ol.newJobBuilder()
                 .namespace(contextFactory.openLineageEventEmitter.getJobNamespace())
