@@ -148,7 +148,8 @@ class SparkSQLExecutionContext implements ExecutionContext {
                             buildLogicalPlanFacet(queryExecution.optimizedPlan())),
                         new SimpleImmutableEntry("spark_unknown", unknownFacet),
                         new SimpleImmutableEntry(
-                            "spark_version", new SparkVersionFacet(SparkSession.active())))))
+                            "spark_version",
+                            new SparkVersionFacet(queryExecution.sparkSession().sparkContext())))))
             .job(buildJob(queryExecution))
             .build();
 
@@ -223,7 +224,8 @@ class SparkSQLExecutionContext implements ExecutionContext {
                             "spark.exception", buildJobErrorFacet(eventType, exception)),
                         new SimpleImmutableEntry("spark_unknown", unknownFacet),
                         new SimpleImmutableEntry(
-                            "spark_version", new SparkVersionFacet(SparkSession.active())))))
+                            "spark_version",
+                            new SparkVersionFacet(queryExecution.sparkSession().sparkContext())))))
             .job(buildJob(queryExecution))
             .build();
 

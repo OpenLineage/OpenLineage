@@ -238,7 +238,8 @@ class RddExecutionContext implements ExecutionContext {
     if (jobError != null) {
       builder.put("spark.exception", jobError);
     }
-    builder.put("spark_version", new SparkVersionFacet(SparkSession.active()));
+    sparkContextOption.ifPresent(context ->
+        builder.put("spark_version", new SparkVersionFacet(context)));
     return builder.build();
   }
 
