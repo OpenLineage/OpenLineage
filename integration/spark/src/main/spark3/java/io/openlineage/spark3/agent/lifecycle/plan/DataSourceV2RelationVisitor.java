@@ -42,6 +42,7 @@ public class DataSourceV2RelationVisitor<D extends OpenLineage.Dataset>
     super(context);
     this.factory = factory;
   }
+
   private boolean isV2ScanRelation(LogicalPlan logicalPlan) {
     return logicalPlan instanceof DataSourceV2ScanRelation;
   }
@@ -57,7 +58,7 @@ public class DataSourceV2RelationVisitor<D extends OpenLineage.Dataset>
     return plan instanceof DataSourceV2Relation
         && !findDatasetProvider(plan).equals(Provider.UNKNOWN);
   }
-  
+
   private String providerPropertyOrTableMetadata(Table table) {
     if (table.properties().containsKey("provider")
         && table.properties().getOrDefault("provider", null) != null) {
@@ -110,7 +111,6 @@ public class DataSourceV2RelationVisitor<D extends OpenLineage.Dataset>
   }
 
   private D findDatasetForAzureCosmos(DataSourceV2Relation relation) {
-    String namespace = "azurecosmos";
     String relationName = relation.table().name().replace("com.azure.cosmos.spark.items.", "");
     int expectedParts = 3;
     String[] tableParts = relationName.split("\\.", expectedParts);
@@ -126,16 +126,16 @@ public class DataSourceV2RelationVisitor<D extends OpenLineage.Dataset>
       tableName = String.format("/colls/%s", tableParts[2]);
     }
     return factory.getDataset(
-      tableName,
+        tableName,
         namespace,
-      new OpenLineage.DatasetFacetsBuilder()
-          .schema(PlanUtils.schemaFacet(context.getOpenLineage(), relation.schema()))
-          .dataSource(PlanUtils.datasourceFacet(context.getOpenLineage(), namespace))
-          .put(
-              "table_provider",
-              new TableProviderFacet(
-                Provider.AZURECOSMOS.name().toLowerCase(), "json")) // Cosmos is always json
-          .build());
+        new OpenLineage.DatasetFacetsBuilder()
+            .schema(PlanUtils.schemaFacet(context.getOpenLineage(), relation.schema()))
+            .dataSource(PlanUtils.datasourceFacet(context.getOpenLineage(), namespace))
+            .put(
+                "table_provider",
+                new TableProviderFacet(
+                    Provider.AZURECOSMOS.name().toLowerCase(), "json")) // Cosmos is always json
+            .build());
   }
 
   private D findDatasetForDelta(DataSourceV2Relation relation) {
