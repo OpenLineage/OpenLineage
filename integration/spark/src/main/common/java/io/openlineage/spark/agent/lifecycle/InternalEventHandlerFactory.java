@@ -1,5 +1,6 @@
 package io.openlineage.spark.agent.lifecycle;
 
+import com.google.common.collect.ImmutableList;
 import io.openlineage.client.OpenLineage.DatasetFacet;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.InputDatasetFacet;
@@ -7,6 +8,10 @@ import io.openlineage.client.OpenLineage.JobFacet;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.OutputDatasetFacet;
 import io.openlineage.client.OpenLineage.RunFacet;
+import io.openlineage.spark.agent.facets.builder.ErrorFacetBuilder;
+import io.openlineage.spark.agent.facets.builder.LogicalPlanRunFacetBuilder;
+import io.openlineage.spark.agent.facets.builder.OutputStatisticsOutputDatasetFacetBuilder;
+import io.openlineage.spark.agent.facets.builder.SparkVersionFacetBuilder;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
@@ -18,8 +23,19 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.slf4j.LoggerFactory;
 import scala.PartialFunction;
 
+/**
+ * Internal implementation of the {@link OpenLineageEventHandlerFactory} interface. This
+ * implementation is responsible for loading all implementations declared on the classpath (using
+ * standard {@link ServiceLoader} conventions), as well as loading all internal plan and event
+ * functions. No guarantees are made regarding the order in which {@link
+ * OpenLineageEventHandlerFactory} components are loaded or stored.
+ *
+ * @see ServiceLoader documentation for guidance on implementing an {@link
+ *     OpenLineageEventHandlerFactory}
+ */
 class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
   private final List<PartialFunction<LogicalPlan, List<InputDataset>>>
       inputDatasetQueryPlanVisitors;
@@ -37,10 +53,29 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
   public InternalEventHandlerFactory(OpenLineageContext context) {
     ServiceLoader<OpenLineageEventHandlerFactory> loader =
         ServiceLoader.load(OpenLineageEventHandlerFactory.class);
+
+    VisitorFactory visitorFactory = VisitorFactoryProvider.getInstance(context.getSparkContext());
+
+    List<PartialFunction<LogicalPlan, List<InputDataset>>> inputDatasets =
+        visitorFactory.getInputVisitors(context);
+
+    List<PartialFunction<LogicalPlan, List<OutputDataset>>> outputDatasets =
+        visitorFactory.getOutputVisitors(context);
+
     this.inputDatasetQueryPlanVisitors =
-        generate(loader, factory -> factory.createInputDatasetQueryPlanVisitors(context));
+        ImmutableList.<PartialFunction<LogicalPlan, List<InputDataset>>>builder()
+            .addAll(
+                generate(loader, factory -> factory.createInputDatasetQueryPlanVisitors(context)))
+            .addAll(inputDatasets)
+            .build();
+    LoggerFactory.getLogger(getClass())
+        .info("Built input dataset query plan visitors {}", this.inputDatasetQueryPlanVisitors);
     this.outputDatasetQueryPlanVisitors =
-        generate(loader, factory -> factory.createOutputDatasetQueryPlanVisitors(context));
+        ImmutableList.<PartialFunction<LogicalPlan, List<OutputDataset>>>builder()
+            .addAll(
+                generate(loader, factory -> factory.createOutputDatasetQueryPlanVisitors(context)))
+            .addAll(outputDatasets)
+            .build();
     this.inputDatasetBuilder =
         generate(loader, factory -> factory.createInputDatasetBuilder(context));
     this.outputDatasetBuilder =
@@ -48,11 +83,24 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
     this.inputDatasetFacetBuilders =
         generate(loader, factory -> factory.createInputDatasetFacetBuilders(context));
     this.outputDatasetFacetBuilders =
-        generate(loader, factory -> factory.createOutputDatasetFacetBuilders(context));
+        ImmutableList.<CustomFacetBuilder<?, ? extends OutputDatasetFacet>>builder()
+            .addAll(generate(loader, factory -> factory.createOutputDatasetFacetBuilders(context)))
+            .add(new OutputStatisticsOutputDatasetFacetBuilder(context))
+            .build();
     this.datasetFacetBuilders =
         generate(loader, factory -> factory.createDatasetFacetBuilders(context));
     this.jobFacetBuilders = generate(loader, factory -> factory.createJobFacetBuilders(context));
-    this.runFacetBuilders = generate(loader, factory -> factory.createRunFacetBuilders((context)));
+    this.runFacetBuilders =
+        ImmutableList.<CustomFacetBuilder<?, ? extends RunFacet>>builder()
+            .addAll(generate(loader, factory -> factory.createRunFacetBuilders((context))))
+            .add(
+                new ErrorFacetBuilder(),
+                new LogicalPlanRunFacetBuilder(context),
+                new SparkVersionFacetBuilder(context))
+            .build();
+
+    context.getInputDatasetQueryPlanVisitors().addAll(inputDatasetQueryPlanVisitors);
+    context.getOutputDatasetQueryPlanVisitors().addAll(outputDatasetQueryPlanVisitors);
   }
 
   /**

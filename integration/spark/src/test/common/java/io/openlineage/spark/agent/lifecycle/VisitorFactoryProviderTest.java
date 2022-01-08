@@ -5,19 +5,19 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.stream.Stream;
-import org.apache.spark.sql.SparkSession;
+import org.apache.spark.SparkContext;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class VisitorFactoryProviderTest {
-  SparkSession session = mock(SparkSession.class);
+  SparkContext sparkContext = mock(SparkContext.class);
 
   @ParameterizedTest
   @MethodSource("provideVersionFactory")
   void getInstance(String version, String expectedClass) {
-    when(session.version()).thenReturn(version);
-    VisitorFactory factory = VisitorFactoryProvider.getInstance(session);
+    when(sparkContext.version()).thenReturn(version);
+    VisitorFactory factory = VisitorFactoryProvider.getInstance(sparkContext);
     assertThat(factory.getClass().getName()).isEqualTo(expectedClass);
   }
 
