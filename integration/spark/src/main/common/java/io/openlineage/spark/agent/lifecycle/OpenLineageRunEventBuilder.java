@@ -21,7 +21,6 @@ import io.openlineage.client.OpenLineage.RunEventBuilder;
 import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.client.OpenLineage.RunFacets;
 import io.openlineage.client.OpenLineage.RunFacetsBuilder;
-import io.openlineage.spark.agent.JobMetricsHolder;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.CustomFacetBuilder;
@@ -29,6 +28,7 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -151,7 +151,6 @@ class OpenLineageRunEventBuilder {
   private final Map<Integer, Stage> stageMap = new HashMap<>();
 
   private final ObjectMapper objectMapper = new ObjectMapper();
-  private final JobMetricsHolder jobMetricsHolder = JobMetricsHolder.getInstance();
 
   OpenLineageRunEventBuilder(OpenLineageContext context, OpenLineageEventHandlerFactory factory) {
     this(
@@ -283,18 +282,18 @@ class OpenLineageRunEventBuilder {
 
     RunFacetsBuilder runFacetsBuilder = openLineage.newRunFacetsBuilder();
     parentRunFacet.ifPresent(runFacetsBuilder::parent);
-    RunFacets runFacets = buildFacets(nodes, runFacetBuilders, runFacetsBuilder.build());
+    OpenLineage.JobFacets jobFacets =
+        buildFacets(nodes, jobFacetBuilders, openLineage.newJobFacets(null, null, null));
+    List<InputDataset> inputDatasets = buildInputDatasets(nodes);
+    List<OutputDataset> outputDatasets = buildOutputDatasets(nodes);
     openLineageContext
         .getQueryExecution()
         .flatMap(qe -> unknownEntryFacetListener.build(qe.optimizedPlan()))
         .ifPresent(facet -> runFacetsBuilder.put("spark_unknown", facet));
-    OpenLineage.JobFacets jobFacets =
-        buildFacets(nodes, jobFacetBuilders, openLineage.newJobFacets(null, null, null));
+
+    RunFacets runFacets = buildFacets(nodes, runFacetBuilders, runFacetsBuilder.build());
     OpenLineage.RunBuilder runBuilder =
         openLineage.newRunBuilder().runId(openLineageContext.getRunUuid()).facets(runFacets);
-    List<InputDataset> inputDatasets = buildInputDatasets(nodes);
-    List<OutputDataset> outputDatasets = buildOutputDatasets(nodes);
-
     return runEventBuilder
         .run(runBuilder.build())
         .job(jobBuilder.facets(jobFacets).build())
@@ -318,6 +317,8 @@ class OpenLineageRunEventBuilder {
         openLineageContext.getQueryExecution(),
         inputDatasetQueryPlanVisitors);
 
+    PartialFunction<LogicalPlan, List<InputDataset>> inputVisitor =
+        PlanUtils.merge(inputDatasetQueryPlanVisitors);
     List<OpenLineage.InputDataset> datasets =
         Stream.concat(
                 buildDatasets(nodes, inputDatasetBuilders),
@@ -327,9 +328,21 @@ class OpenLineageRunEventBuilder {
                         qe ->
                             ScalaConversionUtils.fromSeq(
                                     qe.optimizedPlan()
-                                        .collect(
-                                            PlanUtils.merge(inputDatasetQueryPlanVisitors)
-                                                .orElse(unknownEntryFacetListener)))
+                                        .map(
+                                            toScalaFn(
+                                                node ->
+                                                    inputVisitor
+                                                        .andThen(
+                                                            toScalaFn(
+                                                                ds -> {
+                                                                  unknownEntryFacetListener.apply(
+                                                                      node);
+                                                                  return ds;
+                                                                }))
+                                                        .applyOrElse(
+                                                            node,
+                                                            toScalaFn(
+                                                                n -> Collections.emptyList())))))
                                 .stream()
                                 .flatMap(List::stream)
                                 .map(((Class<InputDataset>) InputDataset.class)::cast))
@@ -374,7 +387,16 @@ class OpenLineageRunEventBuilder {
                     .getQueryExecution()
                     .map(
                         qe ->
-                            visitor.applyOrElse(qe.optimizedPlan(), unknownEntryFacetListener)
+                            visitor
+                                .andThen(
+                                    toScalaFn(
+                                        ds -> {
+                                          unknownEntryFacetListener.apply(qe.optimizedPlan());
+                                          return ds;
+                                        }))
+                                .applyOrElse(
+                                    qe.optimizedPlan(),
+                                    toScalaFn((node) -> Collections.emptyList()))
                                 .stream()
                                 .map(OutputDataset.class::cast))
                     .orElse(Stream.empty()))
