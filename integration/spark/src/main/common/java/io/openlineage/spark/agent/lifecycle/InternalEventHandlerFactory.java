@@ -35,8 +35,8 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
   private final List<CustomFacetBuilder<?, ? extends RunFacet>> runFacetBuilders;
 
   public InternalEventHandlerFactory(OpenLineageContext context) {
-    ServiceLoader<OpenLineageEventHandlerFactory> loader = ServiceLoader.load(
-        OpenLineageEventHandlerFactory.class);
+    ServiceLoader<OpenLineageEventHandlerFactory> loader =
+        ServiceLoader.load(OpenLineageEventHandlerFactory.class);
     this.inputDatasetQueryPlanVisitors =
         generate(loader, factory -> factory.createInputDatasetQueryPlanVisitors(context));
     this.outputDatasetQueryPlanVisitors =
@@ -51,21 +51,21 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
         generate(loader, factory -> factory.createOutputDatasetFacetBuilders(context));
     this.datasetFacetBuilders =
         generate(loader, factory -> factory.createDatasetFacetBuilders(context));
-    this.jobFacetBuilders =
-        generate(loader, factory -> factory.createJobFacetBuilders(context));
-    this.runFacetBuilders =
-        generate(loader, factory -> factory.createRunFacetBuilders((context)));
+    this.jobFacetBuilders = generate(loader, factory -> factory.createJobFacetBuilders(context));
+    this.runFacetBuilders = generate(loader, factory -> factory.createRunFacetBuilders((context)));
   }
 
   /**
    * Invoke a method on each of the supplied {@link OpenLineageEventHandlerFactory}s and merge the
    * results into a single list.
+   *
    * @param factories
    * @param supplier
    * @param <T>
    * @return
    */
-  private <T> List<T> generate(ServiceLoader<OpenLineageEventHandlerFactory> factories,
+  private <T> List<T> generate(
+      ServiceLoader<OpenLineageEventHandlerFactory> factories,
       Function<OpenLineageEventHandlerFactory, List<T>> supplier) {
     return StreamSupport.stream(
             Spliterators.spliteratorUnknownSize(factories.iterator(), Spliterator.IMMUTABLE), false)
@@ -80,8 +80,8 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
   }
 
   @Override
-  public List<PartialFunction<LogicalPlan, List<OutputDataset>>> createOutputDatasetQueryPlanVisitors(
-      OpenLineageContext context) {
+  public List<PartialFunction<LogicalPlan, List<OutputDataset>>>
+      createOutputDatasetQueryPlanVisitors(OpenLineageContext context) {
     return outputDatasetQueryPlanVisitors;
   }
 
@@ -122,7 +122,8 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
   }
 
   @Override
-  public List<CustomFacetBuilder<?, ? extends JobFacet>> createJobFacetBuilders(OpenLineageContext context) {
+  public List<CustomFacetBuilder<?, ? extends JobFacet>> createJobFacetBuilders(
+      OpenLineageContext context) {
     return jobFacetBuilders;
   }
 }

@@ -100,7 +100,8 @@ public class StaticExecutionContextFactory extends ContextFactory {
               olContext.getOutputDatasetQueryPlanVisitors().addAll(outputDatasets);
 
               SparkSQLExecutionContext sparksql =
-                  new SparkSQLExecutionContext(executionId, openLineageEventEmitter, qe, olContext) {
+                  new SparkSQLExecutionContext(
+                      executionId, openLineageEventEmitter, qe, olContext) {
                     @Override
                     public ZonedDateTime toZonedTime(long time) {
                       return getZonedTime();
