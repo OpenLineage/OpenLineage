@@ -22,9 +22,11 @@ import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Module;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Provides;
 import com.google.common.collect.ImmutableMap;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.DefaultRunFacet;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.util.PlanUtils;
+import io.openlineage.spark.agent.util.TestOpenLineageEventHandlerFactory;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -60,6 +62,7 @@ import org.apache.spark.sql.types.Metadata;
 import org.apache.spark.sql.types.StringType$;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
@@ -166,6 +169,16 @@ public class SparkReadWriteIntegTest {
     Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(2))
         .emit(lineageEvent.capture());
     List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
+    assertThat(events.get(1).getRun().getFacets().getAdditionalProperties())
+        .hasEntrySatisfying(
+            TestOpenLineageEventHandlerFactory.TEST_FACET_KEY,
+            facet ->
+                assertThat(facet)
+                    .isInstanceOf(DefaultRunFacet.class)
+                    .extracting(
+                        "additionalProperties",
+                        InstanceOfAssertFactories.map(String.class, Object.class))
+                    .containsKey("message"));
     List<OpenLineage.InputDataset> inputs = events.get(1).getInputs();
     assertEquals(1, inputs.size());
     assertEquals("bigquery", inputs.get(0).getNamespace());
