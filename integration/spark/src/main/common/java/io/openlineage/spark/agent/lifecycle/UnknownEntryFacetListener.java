@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.AttributeSet;
@@ -36,11 +35,11 @@ import scala.runtime.AbstractPartialFunction;
  * org.apache.spark.sql.execution.LogicalRDD}, which encapsulates {@link org.apache.spark.rdd.RDD}s,
  * which may point to parseable data sources.
  */
-class UnknownEntryFacetListener<D extends Dataset> extends AbstractPartialFunction<LogicalPlan, List<D>> {
+class UnknownEntryFacetListener<D extends Dataset>
+    extends AbstractPartialFunction<LogicalPlan, List<D>> {
 
   private final Map<LogicalPlan, Object> visitedNodes = new IdentityHashMap<>();
   private final LogicalPlanSerializer planSerializer = new LogicalPlanSerializer();
-
 
   @Override
   public boolean isDefinedAt(LogicalPlan x) {

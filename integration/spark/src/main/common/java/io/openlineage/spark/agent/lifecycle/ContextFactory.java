@@ -57,6 +57,7 @@ public class ContextFactory {
         visitorFactory.getOutputVisitors(olContext);
     olContext.getOutputDatasetQueryPlanVisitors().addAll(outputDatasets);
 
-    return new SparkSQLExecutionContext(executionId, openLineageEventEmitter, queryExecution, olContext);
+    return new SparkSQLExecutionContext(
+        executionId, openLineageEventEmitter, queryExecution, olContext);
   }
 }
