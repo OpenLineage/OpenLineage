@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * Abstract base class for {@link scala.PartialFunction}s that return an {@link
- * io.openlineage.client.OpenLineage.InputDatasetBuilder}.
+ * io.openlineage.client.OpenLineage.InputDataset}.
  *
  * @see io.openlineage.spark.agent.OpenLineageEventHandler for a list of event types that may be
  *     passed to this function.
@@ -14,6 +14,6 @@ import lombok.RequiredArgsConstructor;
  */
 @RequiredArgsConstructor
 public abstract class AbstractInputDatasetBuilder<T>
-    extends AbstractGenericArgPartialFunction<T, OpenLineage.InputDatasetBuilder> {
+    extends AbstractGenericArgPartialFunction<T, OpenLineage.InputDataset> {
   @NonNull protected final OpenLineageContext context;
 }
