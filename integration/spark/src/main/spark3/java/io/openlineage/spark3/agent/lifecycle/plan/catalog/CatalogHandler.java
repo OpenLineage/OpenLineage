@@ -1,7 +1,9 @@
 package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
+import io.openlineage.spark.agent.facets.TableProviderFacet;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import java.util.Map;
+import java.util.Optional;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
@@ -16,4 +18,10 @@ public interface CatalogHandler {
       TableCatalog tableCatalog,
       Identifier identifier,
       Map<String, String> properties);
+
+  default Optional<TableProviderFacet> getTableProviderFacet(Map<String, String> properties) {
+    return Optional.empty();
+  }
+
+  String getName();
 }

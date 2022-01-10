@@ -1,19 +1,13 @@
 package io.openlineage.spark3.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.facets.TableProviderFacet;
-import io.openlineage.spark.agent.lifecycle.plan.DatasetSource;
-import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
-import java.util.Collections;
+import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
-import org.apache.spark.sql.connector.catalog.Table;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 
 /**
@@ -26,13 +20,7 @@ import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
  */
 @Slf4j
 public class DataSourceV2RelationVisitor<D extends OpenLineage.Dataset>
-    extends QueryPlanVisitor<LogicalPlan, D> {
-
-  private enum Provider {
-    ICEBERG,
-    DELTA,
-    UNKNOWN;
-  }
+    extends QueryPlanVisitor<DataSourceV2Relation, D> {
 
   private final DatasetFactory<D> factory;
 
@@ -42,95 +30,8 @@ public class DataSourceV2RelationVisitor<D extends OpenLineage.Dataset>
   }
 
   @Override
-  public boolean isDefinedAt(LogicalPlan logicalPlan) {
-    return logicalPlan instanceof DataSourceV2Relation
-        && !findDatasetProvider(logicalPlan).equals(Provider.UNKNOWN);
-  }
-
-  private Provider findDatasetProvider(LogicalPlan plan) {
-    return Optional.of(plan)
-        .filter(x -> x instanceof DataSourceV2Relation)
-        .map(x -> (DataSourceV2Relation) x)
-        .map(DataSourceV2Relation::table)
-        .map(Table::properties)
-        .map(properties -> properties.get("provider"))
-        .map(String::toUpperCase)
-        .map(
-            provider -> {
-              try {
-                return Provider.valueOf(provider);
-              } catch (IllegalArgumentException e) {
-                return Provider.UNKNOWN;
-              }
-            })
-        .orElse(Provider.UNKNOWN);
-  }
-
-  private D findDatasetForIceberg(DataSourceV2Relation relation) {
-    Map<String, String> properties = relation.table().properties();
-
-    String namespace = properties.getOrDefault("location", null);
-    String format = properties.getOrDefault("format", null);
-    // Should not happen - we're inside proper iceberg table.
-    if (namespace == null || format == null) {
-      return null;
-    }
-    namespace = namespace.startsWith("/") ? "file://" + namespace : namespace;
-    return factory.getDataset(
-        relation.table().name(),
-        namespace,
-        new OpenLineage.DatasetFacetsBuilder()
-            .schema(PlanUtils.schemaFacet(context.getOpenLineage(), relation.schema()))
-            .dataSource(PlanUtils.datasourceFacet(context.getOpenLineage(), namespace))
-            .put(
-                "table_provider",
-                new TableProviderFacet(
-                    Provider.ICEBERG.name().toLowerCase(), format.replace("iceberg/", "")))
-            .build());
-  }
-
-  private D findDatasetForDelta(DataSourceV2Relation relation) {
-    Map<String, String> properties = relation.table().properties();
-
-    String namespace = properties.getOrDefault("location", null);
-    String format = properties.getOrDefault("format", null);
-    // Should not happen - we're inside proper delta table.
-    if (namespace == null || format == null) {
-      return null;
-    }
-
-    return factory.getDataset(
-        relation.table().name(),
-        namespace,
-        new OpenLineage.DatasetFacetsBuilder()
-            .schema(PlanUtils.schemaFacet(context.getOpenLineage(), relation.schema()))
-            .dataSource(PlanUtils.datasourceFacet(context.getOpenLineage(), namespace))
-            .put(
-                "table_provider",
-                new TableProviderFacet(
-                    Provider.DELTA.name().toLowerCase(), "parquet")) // Delta is always parquet
-            .build());
-  }
-
-  @Override
   public List<D> apply(LogicalPlan logicalPlan) {
-    Provider provider = findDatasetProvider(logicalPlan);
-    DataSourceV2Relation x = (DataSourceV2Relation) logicalPlan;
-
-    switch (provider) {
-      case ICEBERG:
-        return nullableSingletonList(findDatasetForIceberg(x));
-      case DELTA:
-        return nullableSingletonList(findDatasetForDelta(x));
-      default:
-        throw new RuntimeException("Couldn't find provider for dataset in plan " + logicalPlan);
-    }
-  }
-
-  private List<D> nullableSingletonList(D singleton) {
-    if (singleton == null) {
-      return Collections.emptyList();
-    }
-    return Collections.singletonList(singleton);
+    return PlanUtils3.fromDataSourceV2Relation(
+        factory, context, (DataSourceV2Relation) logicalPlan);
   }
 }

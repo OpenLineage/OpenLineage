@@ -4,6 +4,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PlanUtils;
 import java.net.URI;
+import java.util.Map;
 import org.apache.spark.sql.types.StructType;
 
 /**
@@ -125,6 +126,33 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
   }
 
   /**
+   * Construct a {@link io.openlineage.client.OpenLineage.Dataset} with the given {@link
+   * DatasetIdentifier}, schema and facets map.
+   *
+   * @param ident
+   * @param schema
+   * @param facets
+   * @return
+   */
+  public D getDataset(
+      DatasetIdentifier ident,
+      StructType schema,
+      Map<String, OpenLineage.DefaultDatasetFacet> facets) {
+    OpenLineage.DatasetFacetsBuilder builder =
+        openLineage
+            .newDatasetFacetsBuilder()
+            .schema(PlanUtils.schemaFacet(openLineage, schema))
+            .dataSource(PlanUtils.datasourceFacet(openLineage, ident.getNamespace()));
+
+    facets.forEach((key, facet) -> builder.put(key, facet));
+
+    return getDataset(ident.getName(), ident.getNamespace(), builder.build());
+  }
+
+  /**
+   * Construct a {@link io.openlineage.client.OpenLineage.Dataset} with the given {@link
+   * DatasetIdentifier} and {@link OpenLineage.DatasetFacets}.
+   *
    * @param ident
    * @param datasetFacet
    * @return

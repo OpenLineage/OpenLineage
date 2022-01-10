@@ -1,11 +1,13 @@
 package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
+import io.openlineage.spark.agent.facets.TableProviderFacet;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.agent.util.SparkConfUtils;
 import java.net.URI;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import lombok.SneakyThrows;
@@ -45,7 +47,7 @@ public class IcebergHandler implements CatalogHandler {
     String prefix = String.format("spark.sql.catalog.%s", catalogName);
     Map<String, String> conf =
         ScalaConversionUtils.<String, String>fromMap(session.conf().getAll());
-    log.warn(conf.toString());
+    log.info(conf.toString());
     Map<String, String> catalogConf =
         conf.entrySet().stream()
             .filter(x -> x.getKey().startsWith(prefix))
@@ -55,11 +57,11 @@ public class IcebergHandler implements CatalogHandler {
                     x -> x.getKey().substring(prefix.length() + 1), // handle dot after prefix
                     Map.Entry::getValue));
 
-    log.warn(catalogConf.toString());
+    log.info(catalogConf.toString());
     if (catalogConf.isEmpty() || !catalogConf.containsKey("type")) {
       throw new UnsupportedCatalogException(catalogName);
     }
-    log.warn(catalogConf.get("type"));
+    log.info(catalogConf.get("type"));
     switch (catalogConf.get("type")) {
       case "hadoop":
         return getHadoopIdentifier(catalogConf, identifier.toString());
@@ -89,5 +91,15 @@ public class IcebergHandler implements CatalogHandler {
       uri = new URI(confUri);
     }
     return PathUtils.fromPath(new Path(PathUtils.enrichHiveMetastoreURIWithTableName(uri, table)));
+  }
+
+  public Optional<TableProviderFacet> getTableProviderFacet(Map<String, String> properties) {
+    String format = properties.getOrDefault("format", "");
+    return Optional.of(new TableProviderFacet("iceberg", format.replace("iceberg/", "")));
+  }
+
+  @Override
+  public String getName() {
+    return "iceberg";
   }
 }
