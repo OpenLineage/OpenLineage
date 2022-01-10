@@ -42,6 +42,7 @@ OPENLINEAGE_AIRFLOW_WHL_ALL=$(docker run openlineage-airflow-base:latest sh -c "
 # Add revision to requirements.txt
 cat > requirements.txt <<EOL
 airflow-provider-great-expectations==0.0.8
+great-expectations==0.13.42
 dbt-bigquery==0.20.1
 ${OPENLINEAGE_AIRFLOW_WHL}
 EOL
@@ -49,7 +50,7 @@ EOL
 # Add revision to integration-requirements.txt
 cat > integration-requirements.txt <<EOL
 requests==2.24.0
-psycopg2-binary==2.8.6
+psycopg2-binary==2.9.2
 httplib2>=0.18.1
 retrying==1.3.3
 pytest==6.2.2

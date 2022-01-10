@@ -5,7 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -22,7 +24,8 @@ public class ArgumentParserTest {
           "job_name",
           "ea445b5c-22eb-457a-8007-01c7c52b6e54",
           false,
-          Optional.of("abc")
+          Optional.of("abc"),
+          Optional.empty()
         });
     pass.add(
         new Object[] {
@@ -33,6 +36,7 @@ public class ArgumentParserTest {
           "job_name",
           "ea445b5c-22eb-457a-8007-01c7c52b6e54",
           false,
+          Optional.empty(),
           Optional.empty()
         });
     pass.add(
@@ -44,6 +48,7 @@ public class ArgumentParserTest {
           "job_name",
           "ea445b5c-22eb-457a-8007-01c7c52b6e54",
           false,
+          Optional.empty(),
           Optional.empty()
         });
     pass.add(
@@ -55,7 +60,42 @@ public class ArgumentParserTest {
           "job_name",
           null,
           true,
+          Optional.empty(),
           Optional.empty()
+        });
+    pass.add(
+        new Object[] {
+          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54?api_key=abc&myParam=xyz",
+          "http://localhost:5000",
+          "v1",
+          "ns_name",
+          "job_name",
+          "ea445b5c-22eb-457a-8007-01c7c52b6e54",
+          false,
+          Optional.of("abc"),
+          Optional.of(
+              new HashMap<String, String>() {
+                {
+                  put("myParam", "xyz");
+                }
+              })
+        });
+    pass.add(
+        new Object[] {
+          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54?api_key=&myParam=xyz",
+          "http://localhost:5000",
+          "v1",
+          "ns_name",
+          "job_name",
+          "ea445b5c-22eb-457a-8007-01c7c52b6e54",
+          false,
+          Optional.empty(),
+          Optional.of(
+              new HashMap<String, String>() {
+                {
+                  put("myParam", "xyz");
+                }
+              })
         });
     return pass;
   }
@@ -70,7 +110,8 @@ public class ArgumentParserTest {
       String jobName,
       String runId,
       boolean defaultRunId,
-      Optional<String> apiKey) {
+      Optional<String> apiKey,
+      Optional<Map<String, String>> urlParams) {
     ArgumentParser parser = ArgumentParser.parse(input);
     assertEquals(host, parser.getHost());
     assertEquals(version, parser.getVersion());
@@ -82,5 +123,11 @@ public class ArgumentParserTest {
       assertEquals(runId, parser.getParentRunId());
     }
     assertEquals(apiKey, parser.getApiKey());
+    assertEquals(urlParams, parser.getUrlParams());
+    if (urlParams.isPresent()) {
+      urlParams
+          .get()
+          .forEach((k, v) -> assertEquals(urlParams.get().get(k), parser.getUrlParam(k)));
+    }
   }
 }

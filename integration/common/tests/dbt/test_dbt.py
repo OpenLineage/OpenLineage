@@ -6,7 +6,7 @@ from unittest import mock
 import attr
 import pytest
 
-from openlineage.common.provider.dbt import DbtArtifactProcessor, ParentRunMetadata
+from openlineage.common.provider.dbt import DbtArtifactProcessor, ParentRunMetadata, DbtRunContext
 from openlineage.client import set_producer
 from openlineage.common.test import match
 
@@ -40,7 +40,8 @@ def serialize(inst, field, value):
         "tests/dbt/large",
         "tests/dbt/profiles",
         "tests/dbt/catalog",
-        "tests/dbt/fail"
+        "tests/dbt/fail",
+        "tests/dbt/build"
     ]
 )
 def test_dbt_parse_and_compare_event(path, parent_run_metadata):
@@ -190,4 +191,35 @@ def test_jinja_list(jinja_env):
     test_list = ["key", "{{ test }}"]
     assert ["key", "test_variable"] == DbtArtifactProcessor.render_values_jinja(
         jinja_env, test_list
+    )
+
+
+def test_logging_handler_warns():
+    path = 'tests/dbt/test/target/manifest.json'
+    logger = mock.Mock()
+    DbtArtifactProcessor.load_metadata(path, [1], logger)
+
+    logger.warning.assert_called_once_with(
+        "Artifact schema version: https://schemas.getdbt.com/dbt/manifest/v2.json is above "
+        "dbt-ol supported version 1. This might cause errors."
+    )
+
+
+def test_logging_handler_does_not_warn():
+    path = 'tests/dbt/test/target/manifest.json'
+    logger = mock.Mock()
+    DbtArtifactProcessor.load_metadata(path, [2], logger)
+
+    logger.warning.assert_not_called()
+
+
+def test_seed_snapshot_nodes_do_not_throw():
+    processor = DbtArtifactProcessor(
+        producer='https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt',
+        project_dir='tests/dbt/test',
+    )
+
+    # Should just skip processing
+    processor.parse_assertions(
+        DbtRunContext({}, {"results": [{"unique_id": "seed.jaffle_shop.raw_orders"}]}), {}
     )

@@ -5,19 +5,17 @@ import io.openlineage.spark.agent.client.OpenLineageClient;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.spark.sql.execution.metric.SQLMetric;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import scala.PartialFunction;
 import scala.PartialFunction$;
-import scala.collection.Map;
-import scala.runtime.AbstractFunction0;
 
 /**
  * Utility functions for traversing a {@link
@@ -32,7 +30,7 @@ public class PlanUtils {
 
   /**
    * Merge a list of {@link PartialFunction}s and return the first value where the function is
-   * defined or null if no function matches the input.
+   * defined or empty list if no function matches the input.
    *
    * @param fns
    * @param arg
@@ -40,12 +38,12 @@ public class PlanUtils {
    * @param <R>
    * @return
    */
-  public static <T, R> R applyFirst(List<? extends PartialFunction<T, R>> fns, T arg) {
-    PartialFunction<T, R> fn = merge(fns);
+  public static <T, R> List<R> applyFirst(List<? extends PartialFunction<T, List<R>>> fns, T arg) {
+    PartialFunction<T, List<R>> fn = merge(fns);
     if (fn.isDefinedAt(arg)) {
       return fn.apply(arg);
     }
-    return null;
+    return Collections.emptyList();
   }
 
   /**
@@ -71,18 +69,21 @@ public class PlanUtils {
    * @param structType
    * @return
    */
-  public static OpenLineage.SchemaDatasetFacet schemaFacet(StructType structType) {
-    return new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI)
+  public static OpenLineage.SchemaDatasetFacet schemaFacet(
+      OpenLineage openLineage, StructType structType) {
+    return openLineage
         .newSchemaDatasetFacetBuilder()
-        .fields(transformFields(structType.fields()))
+        .fields(transformFields(openLineage, structType.fields()))
         .build();
   }
 
-  private static List<OpenLineage.SchemaDatasetFacetFields> transformFields(StructField[] fields) {
+  private static List<OpenLineage.SchemaDatasetFacetFields> transformFields(
+      OpenLineage openLineage, StructField[] fields) {
     List<OpenLineage.SchemaDatasetFacetFields> list = new ArrayList<>();
     for (StructField field : fields) {
       list.add(
-          new OpenLineage.SchemaDatasetFacetFieldsBuilder()
+          openLineage
+              .newSchemaDatasetFacetFieldsBuilder()
               .name(field.name())
               .type(field.dataType().typeName())
               .build());
@@ -97,70 +98,14 @@ public class PlanUtils {
   }
 
   /**
-   * Given a {@link URI}, construct a valid {@link OpenLineage.Dataset} following the expected
-   * naming conventions.
-   *
-   * @param outputPath
-   * @param schema
-   * @return
-   */
-  public static OpenLineage.Dataset getDataset(URI outputPath, StructType schema) {
-    String namespace = namespaceUri(outputPath);
-    OpenLineage.DatasetFacets datasetFacet = datasetFacet(schema, namespace);
-    return getDataset(outputPath.getPath(), namespace, datasetFacet);
-  }
-
-  /**
-   * Construct a dataset {@link OpenLineage.Dataset} given a name, namespace, and preconstructed
-   * {@link OpenLineage.DatasetFacets}.
-   *
-   * @param name
-   * @param namespace
-   * @param datasetFacet
-   * @return
-   */
-  public static OpenLineage.Dataset getDataset(
-      String name, String namespace, OpenLineage.DatasetFacets datasetFacet) {
-    return new OpenLineage.Dataset() {
-      @Override
-      public String getNamespace() {
-        return namespace;
-      }
-
-      @Override
-      public String getName() {
-        return name;
-      }
-
-      @Override
-      public OpenLineage.DatasetFacets getFacets() {
-        return datasetFacet;
-      }
-    };
-  }
-
-  /**
-   * Construct a {@link OpenLineage.DatasetFacets} given a schema and a namespace.
-   *
-   * @param schema
-   * @param namespaceUri
-   * @return
-   */
-  public static OpenLineage.DatasetFacets datasetFacet(StructType schema, String namespaceUri) {
-    return new OpenLineage.DatasetFacetsBuilder()
-        .schema(schemaFacet(schema))
-        .dataSource(datasourceFacet(namespaceUri))
-        .build();
-  }
-
-  /**
    * Construct a {@link OpenLineage.DatasourceDatasetFacet} given a namespace for the datasource.
    *
    * @param namespaceUri
    * @return
    */
-  public static OpenLineage.DatasourceDatasetFacet datasourceFacet(String namespaceUri) {
-    return new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI)
+  public static OpenLineage.DatasourceDatasetFacet datasourceFacet(
+      OpenLineage openLineage, String namespaceUri) {
+    return openLineage
         .newDatasourceDatasetFacetBuilder()
         .uri(URI.create(namespaceUri))
         .name(namespaceUri)
@@ -189,33 +134,6 @@ public class PlanUtils {
         .build();
   }
 
-  public static OpenLineage.OutputStatisticsOutputDatasetFacet getOutputStats(
-      OpenLineage ol, Map<String, SQLMetric> metrics) {
-    long rowCount =
-        metrics
-            .getOrElse(
-                "numOutputRows",
-                new AbstractFunction0<SQLMetric>() {
-                  @Override
-                  public SQLMetric apply() {
-                    return new SQLMetric("sum", 0L);
-                  }
-                })
-            .value();
-    long outputBytes =
-        metrics
-            .getOrElse(
-                "numOutputBytes",
-                new AbstractFunction0<SQLMetric>() {
-                  @Override
-                  public SQLMetric apply() {
-                    return new SQLMetric("sum", 0L);
-                  }
-                })
-            .value();
-    return ol.newOutputStatisticsOutputDatasetFacet(rowCount, outputBytes);
-  }
-
   public static Path getDirectoryPath(Path p, Configuration hadoopConf) {
     try {
       if (p.getFileSystem(hadoopConf).getFileStatus(p).isFile()) {
@@ -227,17 +145,5 @@ public class PlanUtils {
       log.warn("Unable to get file system for path ", e);
       return p;
     }
-  }
-
-  /**
-   * JdbcUrl can contain username and password this method clean-up credentials from jdbcUrl and
-   * strip the jdbc prefix from the url
-   */
-  public static String sanitizeJdbcUrl(String jdbcUrl) {
-    jdbcUrl = jdbcUrl.substring(5);
-    return jdbcUrl
-        .replaceAll(SLASH_DELIMITER_USER_PASSWORD_REGEX, "@")
-        .replaceAll(COLON_DELIMITER_USER_PASSWORD_REGEX, "$1")
-        .replaceAll("(?<=[?,;&:)=])\\(?(?i)(?:user|username|password)=[^;&,)]+(?:[;&;)]|$)", "");
   }
 }

@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import logging
 import subprocess
 import sys
 import time
@@ -13,7 +14,7 @@ from openlineage.client.run import RunEvent, RunState, Run, Job
 from openlineage.client.client import OpenLineageClient, OpenLineageClientOptions
 from openlineage.common.provider.dbt import DbtArtifactProcessor, ParentRunMetadata
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 
 from openlineage.common.utils import parse_single_arg
 
@@ -79,9 +80,14 @@ def dbt_run_event_end(
     )
 
 
+logger = logging.getLogger("dbtol")
+logger.setLevel("INFO")
+logger.addHandler(logging.StreamHandler(sys.stdout))
+
+
 def main():
-    print(f"Running OpenLineage dbt wrapper version {__version__}")
-    print(f"This wrapper will send OpenLineage events at the end of dbt execution.")
+    logger.info(f"Running OpenLineage dbt wrapper version {__version__}")
+    logger.info(f"This wrapper will send OpenLineage events at the end of dbt execution.")
 
     args = sys.argv[2:]
     target = parse_single_arg(args, ['-t', '--target'])
@@ -90,7 +96,7 @@ def main():
 
     client = setup_client()
     if client is None:
-        print("OPENLINEAGE_URL is not set: stopping execution")
+        logger.info("OPENLINEAGE_URL is not set: stopping execution")
         sys.exit(1)
 
     # We can get this if we have been orchestrated by an external system like airflow
@@ -112,6 +118,7 @@ def main():
         target=target,
         project_dir=project_dir,
         profile_name=profile_name,
+        logger=logger
     )
 
     # Always emit "wrapping event" around dbt run. This indicates start of dbt execution, since
@@ -138,19 +145,19 @@ def main():
     )
     process.wait()
 
-    if len(sys.argv) < 2 or sys.argv[1] not in ['run', 'test']:
+    if len(sys.argv) < 2 or sys.argv[1] not in ['run', 'test', 'build']:
         return
 
     # If run_result has modification time before dbt command
     # or does not exist, do not emit dbt events.
     try:
         if os.stat(processor.run_result_path).st_mtime < pre_run_time:
-            print(f"OpenLineage events not emittled: run_result file "
-                  f"({processor.run_result_path}) was not modified by dbt")
+            logger.info(f"OpenLineage events not emittled: run_result file "
+                        f"({processor.run_result_path}) was not modified by dbt")
             return
     except FileNotFoundError:
-        print(f"OpenLineage events not emittled:"
-              f"did not find run_result file ({processor.run_result_path})")
+        logger.info(f"OpenLineage events not emittled:"
+                    f"did not find run_result file ({processor.run_result_path})")
         return
 
     events = processor.parse().events()
@@ -164,7 +171,7 @@ def main():
         job_name=dbt_run_metadata.job_name,
         parent_run_metadata=parent_run_metadata
     ))
-    print(f"Emitted {len(events) + 2} openlineage events")
+    logger.info(f"Emitted {len(events) + 2} openlineage events")
 
 
 if __name__ == '__main__':

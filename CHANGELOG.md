@@ -1,8 +1,29 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.3.1...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.4.0...HEAD)
 
+### Fixed
+* airflow: fix import failures when dependencies for bigquery, dbt, great_expectations extractors are missing [@lukaszlaszko](https://github.com/lukaszlaszko)
+
+## [0.4.0](https://github.com/OpenLineage/OpenLineage/releases/tag/0.4.0) - 2021-12-13
+
+### Added
+* Spark output metrics [@OleksandrDvornik](https://github.com/OleksandrDvornik)
+* Separated tests between Spark 2 & 3 [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+* Databricks install README and init scripts [@wjohnson](https://github.com/wjohnson)
+* Iceberg integration with unit tests [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+* Kafka read and write support [@OleksandrDvornik](https://github.com/OleksandrDvornik) / [@collado-mike](https://github.com/collado-mike)
+* Arbitrary parameters supported in HTTP URL construction [@wjohnson](https://github.com/wjohnson)
+* Increased visitor coverage for Spark commands [@mobuchowski](https://github.com/mobuchowski) / [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+
+### Fixed
 * dbt: column descriptions are properly filled from metadata.json [@mobuchowski](https://github.com/mobuchowski)
+* dbt: allow parsing artifacts with version higher than officially supported  [@mobuchowski](https://github.com/mobuchowski)
+* dbt: dbt build command is supported  [@mobuchowski](https://github.com/mobuchowski)
+* dbt: fix crash when build command is used with seeds in dbt 1.0.0rc3 [@mobuchowski](https://github.com/mobuchowski)
+* spark: increase logical plan visitor coverage [@mobuchowski](https://github.com/mobuchowski) 
+* spark: fix logical serialization recursion issue [@OleksandrDvornik](https://github.com/OleksandrDvornik)
+* Use URL#getFile to fix build on Windows [@mobuchowski](https://github.com/mobuchowski)
 
 ## [0.3.1](https://github.com/OpenLineage/OpenLineage/releases/tag/0.3.1) - 2021-10-21
 
@@ -12,7 +33,7 @@
 ## [0.3.0](https://github.com/OpenLineage/OpenLineage/releases/tag/0.3.0) - 2021-10-21
 
 ### Added
-* Spark3 support [@OleksandrDvornik](https://github.com/OleksandrDvornik)/[@collado-mike](https://github.com/collado-mike)
+* Spark3 support [@OleksandrDvornik](https://github.com/OleksandrDvornik) / [@collado-mike](https://github.com/collado-mike)
 * LineageBackend for Airflow 2 [@mobuchowski](https://github.com/mobuchowski)
 * Adding custom spark version facet to spark integration [@OleksandrDvornik](https://github.com/OleksandrDvornik)
 * Adding dbt version facet [@mobuchowski](https://github.com/mobuchowski)

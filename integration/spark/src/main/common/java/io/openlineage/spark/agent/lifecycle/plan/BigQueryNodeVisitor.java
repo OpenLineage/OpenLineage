@@ -3,7 +3,9 @@ package io.openlineage.spark.agent.lifecycle.plan;
 import com.google.cloud.spark.bigquery.BigQueryRelation;
 import com.google.cloud.spark.bigquery.BigQueryRelationProvider;
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.util.PlanUtils;
+import io.openlineage.spark.api.DatasetFactory;
+import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -21,13 +23,17 @@ import org.apache.spark.sql.sources.CreatableRelationProvider;
  * used for naming is a URI of <code>
  * bigquery://&lt;projectId&gt;.&lt;.datasetId&gt;.&lt;tableName&gt;</code> . The namespace for
  * bigquery tables is always <code>bigquery</code> and the name is the FQN.
+ *
+ * @param <D> the type of {@link io.openlineage.client.OpenLineage.Dataset} created by this visitor
  */
-public class BigQueryNodeVisitor extends QueryPlanVisitor<LogicalPlan, OpenLineage.Dataset> {
+public class BigQueryNodeVisitor<D extends OpenLineage.Dataset>
+    extends QueryPlanVisitor<LogicalPlan, D> {
   private static final String BIGQUERY_NAMESPACE = "bigquery";
-  private final SQLContext sqlContext;
+  private final DatasetFactory<D> factory;
 
-  public BigQueryNodeVisitor(SQLContext sqlContext) {
-    this.sqlContext = sqlContext;
+  public BigQueryNodeVisitor(OpenLineageContext context, DatasetFactory<D> factory) {
+    super(context);
+    this.factory = factory;
   }
 
   public static boolean hasBigQueryClasses() {
@@ -50,6 +56,7 @@ public class BigQueryNodeVisitor extends QueryPlanVisitor<LogicalPlan, OpenLinea
   private Optional<Supplier<BigQueryRelation>> bigQuerySupplier(LogicalPlan plan) {
     // SaveIntoDataSourceCommand is a special case because it references a CreatableRelationProvider
     // Every other write instance references a LogicalRelation(BigQueryRelation, _, _, _)
+    SQLContext sqlContext = context.getSparkSession().get().sqlContext();
     if (plan instanceof SaveIntoDataSourceCommand) {
       SaveIntoDataSourceCommand saveCommand = (SaveIntoDataSourceCommand) plan;
       CreatableRelationProvider relationProvider = saveCommand.dataSource();
@@ -70,17 +77,14 @@ public class BigQueryNodeVisitor extends QueryPlanVisitor<LogicalPlan, OpenLinea
   }
 
   @Override
-  public List<OpenLineage.Dataset> apply(LogicalPlan x) {
+  public List<D> apply(LogicalPlan x) {
     return bigQuerySupplier(x)
         .map(
             s -> {
               BigQueryRelation relation = s.get();
               String name = relation.tableName();
               return Collections.singletonList(
-                  PlanUtils.getDataset(
-                      name,
-                      BIGQUERY_NAMESPACE,
-                      PlanUtils.datasetFacet(relation.schema(), BIGQUERY_NAMESPACE)));
+                  factory.getDataset(name, BIGQUERY_NAMESPACE, relation.schema()));
             })
         .orElse(null);
   }

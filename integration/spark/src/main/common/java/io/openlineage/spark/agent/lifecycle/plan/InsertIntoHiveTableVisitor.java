@@ -1,13 +1,11 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.util.PlanUtils;
-import io.openlineage.spark.agent.util.SparkConfUtils;
+import io.openlineage.spark.agent.util.PathUtils;
+import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
 import java.util.List;
-import org.apache.hadoop.fs.Path;
-import org.apache.spark.SparkContext;
-import org.apache.spark.sql.AnalysisException;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.hive.execution.InsertIntoHiveTable;
@@ -17,41 +15,30 @@ import org.apache.spark.sql.hive.execution.InsertIntoHiveTable;
  * {@link OpenLineage.Dataset} being written.
  */
 public class InsertIntoHiveTableVisitor
-    extends QueryPlanVisitor<InsertIntoHiveTable, OpenLineage.Dataset> {
+    extends QueryPlanVisitor<InsertIntoHiveTable, OpenLineage.OutputDataset> {
 
-  private final SparkContext context;
+  public InsertIntoHiveTableVisitor(OpenLineageContext context) {
+    super(context);
+  }
 
-  private final String metastoreUriKey = "spark.sql.hive.metastore.uris";
-  private final String metastoreHadoopUriKey = "spark.hadoop.hive.metastore.uris";
-
-  public InsertIntoHiveTableVisitor(SparkContext context) {
-    this.context = context;
+  public static boolean hasHiveClasses() {
+    try {
+      InsertIntoHiveTableVisitor.class
+          .getClassLoader()
+          .loadClass("org.apache.spark.sql.hive.execution.InsertIntoHiveTable");
+      return true;
+    } catch (ClassNotFoundException e) {
+      // ignore
+    }
+    return false;
   }
 
   @Override
-  public List<OpenLineage.Dataset> apply(LogicalPlan x) {
+  public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
     InsertIntoHiveTable cmd = (InsertIntoHiveTable) x;
     CatalogTable table = cmd.table();
-    Path path;
 
-    try {
-      path = new Path(table.location());
-      if (table.location().getScheme() == null) {
-        path = new Path("file", null, table.location().toString());
-      }
-    } catch (Exception e) { // Java does not recognize scala exception
-      if (e instanceof AnalysisException) {
-
-        String authority =
-            SparkConfUtils.findSparkConfigKey(context.getConf(), metastoreUriKey)
-                .orElse(
-                    SparkConfUtils.findSparkConfigKey(context.getConf(), metastoreHadoopUriKey)
-                        .get());
-
-        path = new Path("hive", authority, table.qualifiedName());
-      }
-      throw e;
-    }
-    return Collections.singletonList(PlanUtils.getDataset(path.toUri(), cmd.query().schema()));
+    return Collections.singletonList(
+        outputDataset().getDataset(PathUtils.fromCatalogTable(table), table.schema()));
   }
 }

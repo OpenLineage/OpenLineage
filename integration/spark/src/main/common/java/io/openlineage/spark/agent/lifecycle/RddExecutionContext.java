@@ -3,7 +3,7 @@ package io.openlineage.spark.agent.lifecycle;
 import static scala.collection.JavaConversions.asJavaCollection;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.OpenLineageContext;
+import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.OpenLineageSparkListener;
 import io.openlineage.spark.agent.client.DatasetParser;
 import io.openlineage.spark.agent.client.DatasetParser.DatasetParseResult;
@@ -12,6 +12,7 @@ import io.openlineage.spark.agent.facets.ErrorFacet;
 import io.openlineage.spark.agent.facets.SparkVersionFacet;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.OpenLineageContext;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
@@ -60,14 +61,14 @@ import scala.runtime.AbstractFunction0;
 
 @Slf4j
 public class RddExecutionContext implements ExecutionContext {
-  private final OpenLineageContext sparkContext;
+  private final EventEmitter sparkContext;
   private final Optional<SparkContext> sparkContextOption;
   private final UUID runId = UUID.randomUUID();
   private List<URI> inputs;
   private List<URI> outputs;
   private String jobSuffix;
 
-  public RddExecutionContext(int jobId, OpenLineageContext sparkContext) {
+  public RddExecutionContext(OpenLineageContext context, int jobId, EventEmitter sparkContext) {
     this.sparkContext = sparkContext;
     sparkContextOption =
         Optional.ofNullable(

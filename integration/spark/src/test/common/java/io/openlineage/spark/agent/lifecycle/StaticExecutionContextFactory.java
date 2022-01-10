@@ -1,23 +1,21 @@
 package io.openlineage.spark.agent.lifecycle;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.OpenLineageContext;
+import io.openlineage.client.OpenLineage.InputDataset;
+import io.openlineage.client.OpenLineage.OutputDataset;
+import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.OpenLineageSparkListener;
-import io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.CommandPlanVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.LogicalRDDVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.LogicalRelationVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.QueryPlanVisitor;
+import io.openlineage.spark.agent.client.OpenLineageClient;
+import io.openlineage.spark.api.OpenLineageContext;
 import java.net.URI;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -30,7 +28,7 @@ import scala.PartialFunction;
 public class StaticExecutionContextFactory extends ContextFactory {
   public static final Semaphore semaphore = new Semaphore(1);
 
-  public StaticExecutionContextFactory(OpenLineageContext sparkContext) {
+  public StaticExecutionContextFactory(EventEmitter sparkContext) {
     super(sparkContext);
   }
 
@@ -55,7 +53,13 @@ public class StaticExecutionContextFactory extends ContextFactory {
   @Override
   public RddExecutionContext createRddExecutionContext(int jobId) {
     RddExecutionContext rdd =
-        new RddExecutionContext(jobId, sparkContext) {
+        new RddExecutionContext(
+            OpenLineageContext.builder()
+                .sparkContext(SparkContext.getOrCreate())
+                .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
+                .build(),
+            jobId,
+            sparkContext) {
           @Override
           protected ZonedDateTime toZonedTime(long time) {
             return getZonedTime();
@@ -74,22 +78,28 @@ public class StaticExecutionContextFactory extends ContextFactory {
     return Optional.ofNullable(SQLExecution.getQueryExecution(executionId))
         .map(
             qe -> {
+              SparkSession session = qe.sparkSession();
               SQLContext sqlContext = qe.sparkPlan().sqlContext();
-              List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> commonDatasetVisitors =
-                  commonDatasetVisitors(sqlContext, sparkContext);
+              OpenLineageContext olContext =
+                  OpenLineageContext.builder()
+                      .sparkSession(Optional.of(session))
+                      .sparkContext(sqlContext.sparkContext())
+                      .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
+                      .queryExecution(qe)
+                      .build();
 
               VisitorFactory visitorFactory =
                   VisitorFactoryProvider.getInstance(SparkSession.active());
 
-              List<QueryPlanVisitor<LogicalPlan, OpenLineage.InputDataset>> inputDatasets =
-                  visitorFactory.getInputVisitors(sqlContext, sparkContext.getJobNamespace());
-
-              List<QueryPlanVisitor<LogicalPlan, OpenLineage.OutputDataset>> outputDatasets =
-                  visitorFactory.getOutputVisitors(sqlContext, sparkContext.getJobNamespace());
+              List<PartialFunction<LogicalPlan, List<InputDataset>>> inputDatasets =
+                  visitorFactory.getInputVisitors(olContext);
+              olContext.getInputDatasetQueryPlanVisitors().addAll(inputDatasets);
+              List<PartialFunction<LogicalPlan, List<OutputDataset>>> outputDatasets =
+                  visitorFactory.getOutputVisitors(olContext);
+              olContext.getOutputDatasetQueryPlanVisitors().addAll(outputDatasets);
 
               SparkSQLExecutionContext sparksql =
-                  new SparkSQLExecutionContext(
-                      executionId, sparkContext, outputDatasets, inputDatasets) {
+                  new SparkSQLExecutionContext(executionId, sparkContext, qe, olContext) {
                     @Override
                     public ZonedDateTime toZonedTime(long time) {
                       return getZonedTime();
@@ -120,19 +130,13 @@ public class StaticExecutionContextFactory extends ContextFactory {
         .orElseGet(
             () ->
                 new SparkSQLExecutionContext(
-                    executionId, sparkContext, Collections.emptyList(), Collections.emptyList()));
-  }
-
-  private static List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>>
-      commonDatasetVisitors(SQLContext sqlContext, OpenLineageContext sparkContext) {
-    List<PartialFunction<LogicalPlan, List<OpenLineage.Dataset>>> list = new ArrayList<>();
-    list.add(new LogicalRelationVisitor(sqlContext.sparkContext(), sparkContext.getJobNamespace()));
-    list.add(new LogicalRDDVisitor());
-    list.add(new CommandPlanVisitor(new ArrayList<>(list)));
-    if (BigQueryNodeVisitor.hasBigQueryClasses()) {
-      list.add(new BigQueryNodeVisitor(sqlContext));
-    }
-    return list;
+                    executionId,
+                    sparkContext,
+                    null,
+                    OpenLineageContext.builder()
+                        .sparkContext(SparkContext.getOrCreate())
+                        .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
+                        .build()));
   }
 
   private static ZonedDateTime getZonedTime() {

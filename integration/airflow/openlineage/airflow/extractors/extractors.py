@@ -3,22 +3,38 @@ import os
 from typing import Type, Optional
 
 from openlineage.airflow.extractors.base import BaseExtractor
-from openlineage.airflow.extractors.bigquery_extractor import BigQueryExtractor
-from openlineage.airflow.extractors.great_expectations_extractor import GreatExpectationsExtractor
-from openlineage.airflow.extractors.postgres_extractor import PostgresExtractor
-from openlineage.airflow.extractors.snowflake_extractor import SnowflakeExtractor
-from openlineage.airflow.utils import import_from_string
+from openlineage.airflow.utils import import_from_string, try_import_from_string
 
-_extractors = [
-    PostgresExtractor,
-    BigQueryExtractor,
-    GreatExpectationsExtractor,
-    SnowflakeExtractor
-]
+_extractors = list(
+    filter(
+        lambda t: t is not None,
+        [
+            try_import_from_string(
+                'openlineage.airflow.extractors.postgres_extractor.PostgresExtractor'
+            ),
+            try_import_from_string(
+                'openlineage.airflow.extractors.bigquery_extractor.BigQueryExtractor'
+            ),
+            try_import_from_string(
+                'openlineage.airflow.extractors.great_expectations_extractor.GreatExpectationsExtractor'  # noqa: E501
+            ),
+            try_import_from_string(
+                'openlineage.airflow.extractors.snowflake_extractor.SnowflakeExtractor'
+            ),
+        ],
+    )
+)
 
-_patchers = [
-    GreatExpectationsExtractor
-]
+_patchers = list(
+    filter(
+        lambda t: t is not None,
+        [
+            try_import_from_string(
+                'openlineage.airflow.extractors.great_expectations_extractor.GreatExpectationsExtractor'  # noqa: E501
+            )
+        ],
+    )
+)
 
 
 class Extractors:
@@ -27,6 +43,7 @@ class Extractors:
     dependency. Patchers are a category of extractor that needs to hook up to operator's
     internals during DAG creation.
     """
+
     def __init__(self):
         # Do not expose extractors relying on external dependencies that are not installed
         self.extractors = {}

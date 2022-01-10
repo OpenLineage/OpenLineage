@@ -48,8 +48,7 @@
         "dataSource": {
           "name": "file",
           "uri": "file"
-        },
-        "stats" : {}
+        }
       },
       "outputFacets": {
         "outputStatistics": {

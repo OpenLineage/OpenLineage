@@ -1,73 +1,98 @@
 package io.openlineage.spark.agent.lifecycle;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.InputDataset;
+import io.openlineage.spark.agent.lifecycle.plan.AlterTableAddColumnsCommandVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.AlterTableRenameCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.AppendDataVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.CommandPlanVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.CreateDataSourceTableAsSelectCommandVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.CreateDataSourceTableCommandVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.CreateHiveTableAsSelectCommandVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.CreateTableCommandVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.DropTableCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDataSourceDirVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDataSourceVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDirVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHadoopFsRelationVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHiveDirVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHiveTableVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.KafkaRelationVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.LoadDataCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRDDVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRelationVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.QueryPlanVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.OptimizedCreateHiveTableAsSelectCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.SaveIntoDataSourceCommandVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.wrapper.InputDatasetVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.wrapper.OutputDatasetVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.wrapper.OutputDatasetWithMetadataVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.TruncateTableCommandVisitor;
+import io.openlineage.spark.api.DatasetFactory;
+import io.openlineage.spark.api.OpenLineageContext;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
-import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import scala.PartialFunction;
 
 abstract class BaseVisitorFactory implements VisitorFactory {
 
-  protected List<QueryPlanVisitor<? extends LogicalPlan, OpenLineage.Dataset>>
-      getBaseCommonVisitors(SQLContext sqlContext, String jobNamespace) {
-    List<QueryPlanVisitor<? extends LogicalPlan, OpenLineage.Dataset>> list = new ArrayList<>();
-    list.add(new LogicalRelationVisitor(sqlContext.sparkContext(), jobNamespace));
-    list.add(new LogicalRDDVisitor());
-    list.add(new CommandPlanVisitor(new ArrayList<>(list)));
+  protected <D extends OpenLineage.Dataset>
+      List<PartialFunction<LogicalPlan, List<D>>> getBaseCommonVisitors(
+          OpenLineageContext context, DatasetFactory<D> factory) {
+    List<PartialFunction<LogicalPlan, List<D>>> list = new ArrayList<>();
+    list.add(new LogicalRelationVisitor(context, factory));
+    list.add(new LogicalRDDVisitor(context, factory));
     if (BigQueryNodeVisitor.hasBigQueryClasses()) {
-      list.add(new BigQueryNodeVisitor(sqlContext));
+      list.add(new BigQueryNodeVisitor(context, factory));
+    }
+    if (KafkaRelationVisitor.hasKafkaClasses()) {
+      list.add(new KafkaRelationVisitor(context, factory));
     }
     return list;
   }
 
-  public abstract List<QueryPlanVisitor<? extends LogicalPlan, OpenLineage.Dataset>>
-      getCommonVisitors(SQLContext sqlContext, String jobNamespace);
+  public abstract <D extends OpenLineage.Dataset>
+      List<PartialFunction<LogicalPlan, List<D>>> getCommonVisitors(
+          OpenLineageContext context, DatasetFactory<D> factory);
 
   @Override
-  public List<QueryPlanVisitor<LogicalPlan, OpenLineage.InputDataset>> getInputVisitors(
-      SQLContext sqlContext, String jobNamespace) {
-    return getCommonVisitors(sqlContext, jobNamespace).stream()
-        .map(InputDatasetVisitor::new)
-        .collect(Collectors.toList());
+  public List<PartialFunction<LogicalPlan, List<InputDataset>>> getInputVisitors(
+      OpenLineageContext context) {
+    List<PartialFunction<LogicalPlan, List<OpenLineage.InputDataset>>> inputVisitors =
+        new ArrayList<>(getCommonVisitors(context, DatasetFactory.input(context.getOpenLineage())));
+    inputVisitors.add(new CommandPlanVisitor(context));
+    return inputVisitors;
   }
 
   @Override
-  public List<QueryPlanVisitor<LogicalPlan, OpenLineage.OutputDataset>> getOutputVisitors(
-      SQLContext sqlContext, String jobNamespace) {
-    List<QueryPlanVisitor<? extends LogicalPlan, OpenLineage.Dataset>> allCommonVisitors =
-        getCommonVisitors(sqlContext, jobNamespace);
-    List<QueryPlanVisitor<LogicalPlan, OpenLineage.OutputDataset>> list = new ArrayList<>();
+  public List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>> getOutputVisitors(
+      OpenLineageContext context) {
 
-    list.add(new OutputDatasetWithMetadataVisitor(new InsertIntoDataSourceDirVisitor()));
-    list.add(
-        new OutputDatasetWithMetadataVisitor(new InsertIntoDataSourceVisitor(allCommonVisitors)));
-    list.add(new OutputDatasetWithMetadataVisitor(new InsertIntoHadoopFsRelationVisitor()));
-    list.add(
-        new OutputDatasetWithMetadataVisitor(
-            new SaveIntoDataSourceCommandVisitor(sqlContext, allCommonVisitors)));
-    list.add(new OutputDatasetVisitor(new AppendDataVisitor(allCommonVisitors)));
-    list.add(new OutputDatasetVisitor(new InsertIntoDirVisitor(sqlContext)));
-    list.add(
-        new OutputDatasetWithMetadataVisitor(
-            new InsertIntoHiveTableVisitor(sqlContext.sparkContext())));
-    list.add(new OutputDatasetVisitor(new InsertIntoHiveDirVisitor()));
+    List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>> outputCommonVisitors =
+        getCommonVisitors(context, DatasetFactory.output(context.getOpenLineage()));
+    List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>> list =
+        new ArrayList<>(outputCommonVisitors);
+
+    list.add(new InsertIntoDataSourceDirVisitor(context));
+    list.add(new InsertIntoDataSourceVisitor(context));
+    list.add(new InsertIntoHadoopFsRelationVisitor(context));
+    list.add(new SaveIntoDataSourceCommandVisitor(context));
+    list.add(new CreateDataSourceTableAsSelectCommandVisitor(context));
+    list.add(new AppendDataVisitor(context));
+    list.add(new InsertIntoDirVisitor(context));
+    if (InsertIntoHiveTableVisitor.hasHiveClasses()) {
+      list.add(new InsertIntoHiveTableVisitor(context));
+      list.add(new InsertIntoHiveDirVisitor(context));
+      list.add(new CreateHiveTableAsSelectCommandVisitor(context));
+    }
+    if (OptimizedCreateHiveTableAsSelectCommandVisitor.hasClasses()) {
+      list.add(new OptimizedCreateHiveTableAsSelectCommandVisitor(context));
+    }
+    list.add(new CreateDataSourceTableCommandVisitor(context));
+    list.add(new LoadDataCommandVisitor(context));
+    list.add(new AlterTableRenameCommandVisitor(context));
+    list.add(new AlterTableAddColumnsCommandVisitor(context));
+    list.add(new CreateTableCommandVisitor(context));
+    list.add(new DropTableCommandVisitor(context));
+    list.add(new TruncateTableCommandVisitor(context));
     return list;
   }
 }

@@ -1,12 +1,14 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.util.PlanUtils;
+import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.QueryPlanVisitor;
+import java.net.URI;
 import java.util.Collections;
 import java.util.List;
-import org.apache.hadoop.fs.Path;
-import org.apache.spark.sql.catalyst.catalog.CatalogStorageFormat;
+import java.util.Optional;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.hive.execution.InsertIntoHiveDirCommand;
 
@@ -15,22 +17,22 @@ import org.apache.spark.sql.hive.execution.InsertIntoHiveDirCommand;
  * output {@link OpenLineage.Dataset} being written.
  */
 public class InsertIntoHiveDirVisitor
-    extends QueryPlanVisitor<InsertIntoHiveDirCommand, OpenLineage.Dataset> {
+    extends QueryPlanVisitor<InsertIntoHiveDirCommand, OpenLineage.OutputDataset> {
+
+  public InsertIntoHiveDirVisitor(OpenLineageContext context) {
+    super(context);
+  }
 
   @Override
-  public List<OpenLineage.Dataset> apply(LogicalPlan x) {
+  public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
     InsertIntoHiveDirCommand cmd = (InsertIntoHiveDirCommand) x;
-    CatalogStorageFormat storage = cmd.storage();
-    return ScalaConversionUtils.asJavaOptional(storage.locationUri())
+    Optional<URI> optionalUri = ScalaConversionUtils.asJavaOptional(cmd.storage().locationUri());
+    return optionalUri
         .map(
-            uri -> {
-              Path path = new Path(uri);
-              if (uri.getScheme() == null) {
-                path = new Path("file", null, uri.toString());
-              }
-              return Collections.singletonList(
-                  PlanUtils.getDataset(path.toUri(), cmd.query().schema()));
-            })
+            uri ->
+                Collections.singletonList(
+                    outputDataset()
+                        .getDataset(PathUtils.fromURI(uri, "file"), cmd.query().schema())))
         .orElse(Collections.emptyList());
   }
 }
