@@ -1,0 +1,22 @@
+# Proxy configuration
+proxy.yml
+
+
+
+# MacOS
+.DS_Store
+__MACOSX
+
+
+
+# IntelliJ
+*.iml
+**.iml
+*.ipr
+*.iws
+.idea
+venv
+
+# Built files
+target*
+build*
