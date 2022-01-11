@@ -1,5 +1,4 @@
 import os
-import time
 
 from pyspark.sql import SparkSession
 
@@ -14,7 +13,6 @@ spark = SparkSession.builder \
     .config("spark.sql.catalog.local.type", "hadoop") \
     .config("spark.sql.catalog.local.warehouse", "/tmp/v2_overwrite") \
     .config("spark.sql.extensions", "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions") \
-    .config("packages", "org.apache.iceberg:iceberg-spark3-runtime:0.12.1") \
     .getOrCreate()
 spark.sparkContext.setLogLevel('info')
 

@@ -1,0 +1,27 @@
+{
+  "eventType" : "COMPLETE",
+  "job" : {
+    "namespace" : "testV2Commands",
+    "name" : "open_lineage_integration_v2_commands.create_table"
+  },
+  "inputs" : [ ],
+  "outputs" : [ {
+    "namespace" : "file",
+    "name" : "/tmp/v2_create/db.create_table_test",
+    "facets" : {
+      "dataSource" : {
+        "name" : "file",
+        "uri" : "file"
+      },
+      "schema" : {
+        "fields" : [ {
+          "name" : "a",
+          "type" : "string"
+        }, {
+          "name" : "b",
+          "type" : "string"
+        } ]
+      }
+    }
+  } ]
+}

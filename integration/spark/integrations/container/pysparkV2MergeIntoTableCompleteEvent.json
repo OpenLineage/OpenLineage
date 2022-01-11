@@ -1,0 +1,27 @@
+{
+  "eventType" : "COMPLETE",
+  "job" : {
+    "namespace" : "testV2Commands",
+    "name" : "open_lineage_integration_v2_commands.replace_data"
+  },
+  "inputs" : [ ],
+  "outputs" : [ {
+    "namespace" : "file",
+    "name" : "/tmp/v2_merge/db.events",
+    "facets" : {
+      "dataSource" : {
+        "name" : "file",
+        "uri" : "file"
+      },
+      "schema" : {
+        "fields" : [ {
+          "name" : "event_id",
+          "type" : "long"
+        }, {
+          "name" : "last_updated_at",
+          "type" : "long"
+        } ]
+      }
+    }
+  } ]
+}

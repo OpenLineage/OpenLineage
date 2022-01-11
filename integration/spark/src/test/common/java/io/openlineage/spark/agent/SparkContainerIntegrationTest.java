@@ -276,18 +276,29 @@ public class SparkContainerIntegrationTest {
   @ParameterizedTest
   @CsvSource(
       value = {
-        "spark_v2_create.py:pysparkV2CreateTableAsSelectStartEvent.json:pysparkV2CreateTableAsSelectCompleteEvent.json",
-        "spark_v2_overwrite_by_expression.py:pysparkV2OverwriteByExpressionStartEvent.json:pysparkV2OverwriteByExpressionCompleteEvent.json",
-        "spark_v2_overwrite_partitions.py:pysparkV2OverwritePartitionsStartEvent.json:pysparkV2OverwritePartitionsCompleteEvent.json"
+        "spark_v2_create.py:pysparkV2CreateTableStartEvent.json:pysparkV2CreateTableCompleteEvent.json:true",
+        "spark_v2_create_as_select.py:pysparkV2CreateTableAsSelectStartEvent.json:pysparkV2CreateTableAsSelectCompleteEvent.json:true",
+        "spark_v2_overwrite_by_expression.py:pysparkV2OverwriteByExpressionStartEvent.json:pysparkV2OverwriteByExpressionCompleteEvent.json:true",
+        "spark_v2_overwrite_partitions.py:pysparkV2OverwritePartitionsStartEvent.json:pysparkV2OverwritePartitionsCompleteEvent.json:true",
+        "spark_v2_replace_table_as_select.py:pysparkV2ReplaceTableAsSelectStartEvent.json:pysparkV2ReplaceTableAsSelectCompleteEvent.json:true",
+        "spark_v2_replace_table.py:pysparkV2ReplaceTableStartEvent.json:pysparkV2ReplaceTableCompleteEvent.json:false",
+        "spark_v2_delete.py:pysparkV2DeleteStartEvent.json:pysparkV2DeleteCompleteEvent.json:true",
+        "spark_v2_update.py:pysparkV2UpdateStartEvent.json:pysparkV2UpdateCompleteEvent.json:true",
+        "spark_v2_merge_into_table.py:pysparkV2MergeIntoTableStartEvent.json:pysparkV2MergeIntoTableCompleteEvent.json:true"
       },
       delimiter = ':')
   public void testV2Commands(
-      String pysparkScript, String expectedStartEvent, String expectedCompleteEvent) {
+      String pysparkScript,
+      String expectedStartEvent,
+      String expectedCompleteEvent,
+      String isIceberg) {
     pyspark =
         makePysparkContainerWithDefaultConf(
             "testV2Commands",
             "--packages",
-            "org.apache.iceberg:iceberg-spark3-runtime:0.12.0",
+            Boolean.valueOf(isIceberg)
+                ? "org.apache.iceberg:iceberg-spark3-runtime:0.12.0"
+                : "io.delta:delta-core_2.12:1.0.0",
             "/opt/spark_scripts/" + pysparkScript);
     pyspark.start();
     verifyEvents(expectedStartEvent, expectedCompleteEvent);
