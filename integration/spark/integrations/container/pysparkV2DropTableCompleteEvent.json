@@ -1,0 +1,23 @@
+{
+  "eventType": "COMPLETE",
+  "job": {
+    "namespace": "testV2Commands",
+    "name": "open_lineage_integration_v2_commands.drop_table"
+  },
+  "inputs": [],
+  "outputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/v2_drop/db.drop_table_test",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "tableStateChange": {
+          "stateChange": "drop"
+        }
+      }
+    }
+  ]
+}
