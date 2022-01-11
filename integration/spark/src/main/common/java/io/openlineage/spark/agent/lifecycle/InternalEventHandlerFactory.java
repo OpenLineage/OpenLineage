@@ -15,6 +15,7 @@ import io.openlineage.spark.agent.facets.builder.SparkVersionFacetBuilder;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
+import java.util.Collection;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.Spliterator;
@@ -23,7 +24,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
-import org.slf4j.LoggerFactory;
 import scala.PartialFunction;
 
 /**
@@ -37,70 +37,21 @@ import scala.PartialFunction;
  *     OpenLineageEventHandlerFactory}
  */
 class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
-  private final List<PartialFunction<LogicalPlan, List<InputDataset>>>
-      inputDatasetQueryPlanVisitors;
-  private final List<PartialFunction<LogicalPlan, List<OutputDataset>>>
-      outputDatasetQueryPlanVisitors;
-  private final List<PartialFunction<Object, List<InputDataset>>> inputDatasetBuilder;
-  private final List<CustomFacetBuilder<?, ? extends InputDatasetFacet>> inputDatasetFacetBuilders;
-  private final List<PartialFunction<Object, List<OutputDataset>>> outputDatasetBuilder;
-  private final List<CustomFacetBuilder<?, ? extends OutputDatasetFacet>>
-      outputDatasetFacetBuilders;
-  private final List<CustomFacetBuilder<?, ? extends DatasetFacet>> datasetFacetBuilders;
-  private final List<CustomFacetBuilder<?, ? extends JobFacet>> jobFacetBuilders;
-  private final List<CustomFacetBuilder<?, ? extends RunFacet>> runFacetBuilders;
 
-  public InternalEventHandlerFactory(OpenLineageContext context) {
+  private final List<OpenLineageEventHandlerFactory> eventHandlerFactories;
+  private final VisitorFactory visitorFactory;
+
+  public InternalEventHandlerFactory() {
     ServiceLoader<OpenLineageEventHandlerFactory> loader =
         ServiceLoader.load(OpenLineageEventHandlerFactory.class);
+    eventHandlerFactories =
+        StreamSupport.stream(
+                Spliterators.spliteratorUnknownSize(
+                    loader.iterator(), Spliterator.IMMUTABLE & Spliterator.DISTINCT),
+                false)
+            .collect(Collectors.toList());
 
-    VisitorFactory visitorFactory = VisitorFactoryProvider.getInstance(context.getSparkContext());
-
-    List<PartialFunction<LogicalPlan, List<InputDataset>>> inputDatasets =
-        visitorFactory.getInputVisitors(context);
-
-    List<PartialFunction<LogicalPlan, List<OutputDataset>>> outputDatasets =
-        visitorFactory.getOutputVisitors(context);
-
-    this.inputDatasetQueryPlanVisitors =
-        ImmutableList.<PartialFunction<LogicalPlan, List<InputDataset>>>builder()
-            .addAll(
-                generate(loader, factory -> factory.createInputDatasetQueryPlanVisitors(context)))
-            .addAll(inputDatasets)
-            .build();
-    LoggerFactory.getLogger(getClass())
-        .info("Built input dataset query plan visitors {}", this.inputDatasetQueryPlanVisitors);
-    this.outputDatasetQueryPlanVisitors =
-        ImmutableList.<PartialFunction<LogicalPlan, List<OutputDataset>>>builder()
-            .addAll(
-                generate(loader, factory -> factory.createOutputDatasetQueryPlanVisitors(context)))
-            .addAll(outputDatasets)
-            .build();
-    this.inputDatasetBuilder =
-        generate(loader, factory -> factory.createInputDatasetBuilder(context));
-    this.outputDatasetBuilder =
-        generate(loader, factory -> factory.createOutputDatasetBuilder(context));
-    this.inputDatasetFacetBuilders =
-        generate(loader, factory -> factory.createInputDatasetFacetBuilders(context));
-    this.outputDatasetFacetBuilders =
-        ImmutableList.<CustomFacetBuilder<?, ? extends OutputDatasetFacet>>builder()
-            .addAll(generate(loader, factory -> factory.createOutputDatasetFacetBuilders(context)))
-            .add(new OutputStatisticsOutputDatasetFacetBuilder(context))
-            .build();
-    this.datasetFacetBuilders =
-        generate(loader, factory -> factory.createDatasetFacetBuilders(context));
-    this.jobFacetBuilders = generate(loader, factory -> factory.createJobFacetBuilders(context));
-    this.runFacetBuilders =
-        ImmutableList.<CustomFacetBuilder<?, ? extends RunFacet>>builder()
-            .addAll(generate(loader, factory -> factory.createRunFacetBuilders((context))))
-            .add(
-                new ErrorFacetBuilder(),
-                new LogicalPlanRunFacetBuilder(context),
-                new SparkVersionFacetBuilder(context))
-            .build();
-
-    context.getInputDatasetQueryPlanVisitors().addAll(inputDatasetQueryPlanVisitors);
-    context.getOutputDatasetQueryPlanVisitors().addAll(outputDatasetQueryPlanVisitors);
+    visitorFactory = VisitorFactoryProvider.getInstance();
   }
 
   /**
@@ -113,7 +64,7 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
    * @return
    */
   private <T> List<T> generate(
-      ServiceLoader<OpenLineageEventHandlerFactory> factories,
+      Collection<OpenLineageEventHandlerFactory> factories,
       Function<OpenLineageEventHandlerFactory, List<T>> supplier) {
     return StreamSupport.stream(
             Spliterators.spliteratorUnknownSize(factories.iterator(), Spliterator.IMMUTABLE), false)
@@ -124,54 +75,93 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
   @Override
   public List<PartialFunction<LogicalPlan, List<InputDataset>>> createInputDatasetQueryPlanVisitors(
       OpenLineageContext context) {
-    return inputDatasetQueryPlanVisitors;
+    List<PartialFunction<LogicalPlan, List<InputDataset>>> inputDatasets =
+        visitorFactory.getInputVisitors(context);
+
+    ImmutableList<PartialFunction<LogicalPlan, List<InputDataset>>> inputDatasetVisitors =
+        ImmutableList.<PartialFunction<LogicalPlan, List<InputDataset>>>builder()
+            .addAll(
+                generate(
+                    eventHandlerFactories,
+                    factory -> factory.createInputDatasetQueryPlanVisitors(context)))
+            .addAll(inputDatasets)
+            .build();
+    context.getInputDatasetQueryPlanVisitors().addAll(inputDatasetVisitors);
+    return inputDatasetVisitors;
   }
 
   @Override
   public List<PartialFunction<LogicalPlan, List<OutputDataset>>>
       createOutputDatasetQueryPlanVisitors(OpenLineageContext context) {
-    return outputDatasetQueryPlanVisitors;
+    List<PartialFunction<LogicalPlan, List<OutputDataset>>> outputDatasets =
+        visitorFactory.getOutputVisitors(context);
+
+    ImmutableList<PartialFunction<LogicalPlan, List<OutputDataset>>> outputDatasetBuilders =
+        ImmutableList.<PartialFunction<LogicalPlan, List<OutputDataset>>>builder()
+            .addAll(
+                generate(
+                    eventHandlerFactories,
+                    factory -> factory.createOutputDatasetQueryPlanVisitors(context)))
+            .addAll(outputDatasets)
+            .build();
+
+    context.getOutputDatasetQueryPlanVisitors().addAll(outputDatasetBuilders);
+    return outputDatasetBuilders;
   }
 
   @Override
   public List<PartialFunction<Object, List<InputDataset>>> createInputDatasetBuilder(
       OpenLineageContext context) {
-    return inputDatasetBuilder;
+    return generate(eventHandlerFactories, factory -> factory.createInputDatasetBuilder(context));
   }
 
   @Override
   public List<PartialFunction<Object, List<OutputDataset>>> createOutputDatasetBuilder(
       OpenLineageContext context) {
-    return outputDatasetBuilder;
+    return generate(eventHandlerFactories, factory -> factory.createOutputDatasetBuilder(context));
   }
 
   @Override
   public List<CustomFacetBuilder<?, ? extends InputDatasetFacet>> createInputDatasetFacetBuilders(
       OpenLineageContext context) {
-    return inputDatasetFacetBuilders;
+    return generate(
+        eventHandlerFactories, factory -> factory.createInputDatasetFacetBuilders(context));
   }
 
   @Override
   public List<CustomFacetBuilder<?, ? extends OutputDatasetFacet>> createOutputDatasetFacetBuilders(
       OpenLineageContext context) {
-    return outputDatasetFacetBuilders;
+    return ImmutableList.<CustomFacetBuilder<?, ? extends OutputDatasetFacet>>builder()
+        .addAll(
+            generate(
+                eventHandlerFactories,
+                factory -> factory.createOutputDatasetFacetBuilders(context)))
+        .add(new OutputStatisticsOutputDatasetFacetBuilder(context))
+        .build();
   }
 
   @Override
   public List<CustomFacetBuilder<?, ? extends DatasetFacet>> createDatasetFacetBuilders(
       OpenLineageContext context) {
-    return datasetFacetBuilders;
+    return generate(eventHandlerFactories, factory -> factory.createDatasetFacetBuilders(context));
   }
 
   @Override
   public List<CustomFacetBuilder<?, ? extends RunFacet>> createRunFacetBuilders(
       OpenLineageContext context) {
-    return runFacetBuilders;
+    return ImmutableList.<CustomFacetBuilder<?, ? extends RunFacet>>builder()
+        .addAll(
+            generate(eventHandlerFactories, factory -> factory.createRunFacetBuilders((context))))
+        .add(
+            new ErrorFacetBuilder(),
+            new LogicalPlanRunFacetBuilder(context),
+            new SparkVersionFacetBuilder(context))
+        .build();
   }
 
   @Override
   public List<CustomFacetBuilder<?, ? extends JobFacet>> createJobFacetBuilders(
       OpenLineageContext context) {
-    return jobFacetBuilders;
+    return generate(eventHandlerFactories, factory -> factory.createJobFacetBuilders(context));
   }
 }

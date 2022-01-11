@@ -40,7 +40,7 @@ class InternalEventHandlerFactoryTest {
   @Test
   public void testHasTestRunFacet() {
     List<CustomFacetBuilder<?, ? extends RunFacet>> runFacetBuilders =
-        new InternalEventHandlerFactory(context).createRunFacetBuilders(context);
+        new InternalEventHandlerFactory().createRunFacetBuilders(context);
     assertThat(runFacetBuilders)
         .isNotEmpty()
         .anyMatch(builder -> builder instanceof TestRunFacetBuilder);

@@ -29,8 +29,8 @@ import scala.PartialFunction;
 public class StaticExecutionContextFactory extends ContextFactory {
   public static final Semaphore semaphore = new Semaphore(1);
 
-  public StaticExecutionContextFactory(EventEmitter sparkContext) {
-    super(sparkContext);
+  public StaticExecutionContextFactory(EventEmitter eventEmitter) {
+    super(eventEmitter);
   }
 
   /**
@@ -89,11 +89,9 @@ public class StaticExecutionContextFactory extends ContextFactory {
                       .queryExecution(qe)
                       .build();
               OpenLineageRunEventBuilder runEventBuilder =
-                  new OpenLineageRunEventBuilder(
-                      olContext, new InternalEventHandlerFactory(olContext));
+                  new OpenLineageRunEventBuilder(olContext, new InternalEventHandlerFactory());
 
-              VisitorFactory visitorFactory =
-                  VisitorFactoryProvider.getInstance(sqlContext.sparkContext());
+              VisitorFactory visitorFactory = VisitorFactoryProvider.getInstance();
 
               List<PartialFunction<LogicalPlan, List<InputDataset>>> inputDatasets =
                   visitorFactory.getInputVisitors(olContext);
@@ -142,8 +140,7 @@ public class StaticExecutionContextFactory extends ContextFactory {
                   executionId,
                   openLineageEventEmitter,
                   olContext,
-                  new OpenLineageRunEventBuilder(
-                      olContext, new InternalEventHandlerFactory(olContext)));
+                  new OpenLineageRunEventBuilder(olContext, new InternalEventHandlerFactory()));
             });
   }
 
@@ -153,7 +150,7 @@ public class StaticExecutionContextFactory extends ContextFactory {
         executionId,
         emitter,
         olContext,
-        new OpenLineageRunEventBuilder(olContext, new InternalEventHandlerFactory(olContext)));
+        new OpenLineageRunEventBuilder(olContext, new InternalEventHandlerFactory()));
   }
 
   private static ZonedDateTime getZonedTime() {
