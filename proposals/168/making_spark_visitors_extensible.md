@@ -51,47 +51,41 @@ public interface CustomFacetBuilder<T, F> {
 public interface OpenLineageEventListenerFactory {
 
     /**
-     * Set the {@link OpenLineageContext} to be used during construction of the below builders
-     * @param context
-     */
-    default void setOpenLineageContext(OpenLineageContext context) {} // does nothing by default
-
-    /**
      * @return a collection of {@link io.openlineage.spark.api.QueryPlanVisitor}s that can construct `InputDataset`s.
      */
-    default Collection<QueryPlanVisitor<LogicalPlan>> createInputDatasetQueryPlanVisitors() {
+    default Collection<QueryPlanVisitor<LogicalPlan>> createInputDatasetQueryPlanVisitors(OpenLineageContext context) {
         return Collections.emptyList();
     }
 
-    default Collection<QueryPlanVisitor<LogicalPlan>> createOutputDatasetQueryPlanVisitors() {
+    default Collection<QueryPlanVisitor<LogicalPlan>> createOutputDatasetQueryPlanVisitors(OpenLineageContext context) {
         return Collections.emptyList();
     }
 
-    default Collection<PartialFunction<Object, List<OpenLineage.InputDatasetBuilder>>> createInputDatasetBuilder() {
+    default Collection<PartialFunction<Object, List<OpenLineage.InputDatasetBuilder>>> createInputDatasetBuilder(OpenLineageContext context) {
         return PartialFunction.empty();
     }
 
-    default Collection<PartialFunction<Object, List<OpenLineage.InputDatasetBuilder>>> createOutputDatasetBuilder() {
+    default Collection<PartialFunction<Object, List<OpenLineage.InputDatasetBuilder>>> createOutputDatasetBuilder(OpenLineageContext context) {
         return Collections.emptyList();
     }
 
-    default Collection<CustomFacetBuilder<Object, OpenLineage.InputDatasetFacet>> createInputDatasetFacetBuilders() {
+    default Collection<CustomFacetBuilder<Object, OpenLineage.InputDatasetFacet>> createInputDatasetFacetBuilders(OpenLineageContext context) {
         return Collections.emptyList();
     }
 
-    default Collection<CustomFacetBuilder<Object, OpenLineage.OutputDatasetFacet>> createOutputDatasetFacetBuilders() {
+    default Collection<CustomFacetBuilder<Object, OpenLineage.OutputDatasetFacet>> createOutputDatasetFacetBuilders(OpenLineageContext context) {
         return Collections.emptyList();
     }
 
-    default Collection<CustomFacetBuilder<Object, OpenLineage.DatasetFacet>> createDatasetFacetBuilders() {
+    default Collection<CustomFacetBuilder<Object, OpenLineage.DatasetFacet>> createDatasetFacetBuilders(OpenLineageContext context) {
         return Collections.emptyList();
     }
 
-    default Collection<CustomFacetBuilder<Object, OpenLineage.RunFacet>> createRunFacetBuilders() {
+    default Collection<CustomFacetBuilder<Object, OpenLineage.RunFacet>> createRunFacetBuilders(OpenLineageContext context) {
         return Collections.emptyList();
     }
 
-    default Collection<CustomFacetBuilder<Object, OpenLineage.JobFacet>> createJobFacetBuilders() {
+    default Collection<CustomFacetBuilder<Object, OpenLineage.JobFacet>> createJobFacetBuilders(OpenLineageContext context) {
         return Collections.emptyList();
     }
 
@@ -118,47 +112,51 @@ an `OpenLineageContext` class, defined as
 public class OpenLineageContext {
     Collection<QueryPlanVisitor<LogicalPlan>> inputDatasetQueryPlanVisitors;
     Collection<QueryPlanVisitor<LogicalPlan>> outputDatasetQueryPlanVisitors;
-    Collection<CustomFacetBuilder<Object, OpenLineage.InputDatasetFacet>> inputDatasetFacetBuilders;
-    Collection<CustomFacetBuilder<Object, OpenLineage.OutputDatasetFacet>> outputDatasetFacetBuilders;
-    Collection<CustomFacetBuilder<Object, OpenLineage.DatasetFacet>> datasetFacetBuilders;
-    Collection<CustomFacetBuilder<Object, OpenLineage.RunFacet>> runFacetBuilders;
-    Collection<CustomFacetBuilder<Object, OpenLineage.JobFacet>> jobFacetBuilders;
     SparkContext sparkContext;
+    Optional<SparkSession> sparksession;
+    Optional<QueryExecution> queryExecution;
 }
 ```
 
-The `OpenLineageEventListenerFactory#setOpenLineageContext` method will be called once the concrete service 
-implementation has been constructed, before the first `createX` method is called.
+In addition to delegate builders, the `OpenLineageContext` gives factories access to the running 
+`SparkContext`, optional `SparkSession` (when running in a Spark SQL setting), and optional 
+`QueryExecution` (when the running Spark job is a query execution). This enables custom facets to
+generate application and run-level facets, which are currently hard-coded in the 
+`SparkSQLExecutionContext`, such as the serialized logical plan or the current Spark version.  
 
-Each of the `createX` methods will be called exactly once during a Spark application. There's no guarantee regarding the
-order in which the `create` methods will be called. Thus, the constructed builders should make no assumptions about the
-state of the `OpenLineageContext` when the `create` method is called. E.g., the `inputDatasetFacetBuilders` should not 
-assume that all of the `inputDatasetQueryPlanVisitors` have been instantiated or that the `Collection` returned by the
-getter has been fully populated. Builders that need to depend on the ability to delegate to other builders should store
-a reference to the `OpenLineageContext` and call the appropriate getter at the time the delegate is actually needed.
+Each of the `createX` methods will be called exactly once during a detected Spark job run (that is,
+once per `QueryExecution` for Spark SQL queries, once per `ActiveJob` for RDD jobs). There's no
+guarantee regarding the order in which the `create` methods will be called. Thus, the constructed
+builders should make no assumptions about the state of the `OpenLineageContext` when the `create`
+method is called. E.g., the `inputDatasetFacetBuilders` should not assume that all of
+the `inputDatasetQueryPlanVisitors` have been instantiated or that the `Collection` returned by the
+getter has been fully populated. Builders that need to depend on the ability to delegate to other
+builders should store a reference to the `OpenLineageContext` and call the appropriate getter at the
+time the delegate is actually needed.
 
 The builders returned are all some form of `PartialFunction` - they must all define an `isDefinedAt(T event)` method
 which determines the type of argument the builder can respond to. The `createInputDatasetBuilder` and 
-`createOutputDatasetBuilder` methods return `PartialFunction`s that construct either an `InputDatasetBuilder` or an
-`OutputDatasetBuilder`, respectively. Builders are returned so that facets constructed by the other `PartialFunction`s
-can be attached to the dataset before the immutable `InputDataset` or `OutputDataset` is returned. It is expected that
-the `CustomFacet`s returned are already immutable.
+`createOutputDatasetBuilder` methods return `PartialFunction`s that construct either an `InputDataset` or an
+`OutputDataset`, respectively. (Builders are not returned because the Builder classes have no getters
+and they also lack the Jackson annotations present directly on the immutable model objects, so don't
+work well for merging multiple facets from different sources into the same target dataset, which may 
+already have facets defined).
 
 For each `SparkListener` event, an `OpenLineage.RunEvent` will be constructed by 
 1. Construct `RunFacet`s by invoking each of the `runFacetBuilders`
 2. Construct `JobFacet`s by invoking each of the `jobFacetBuilders`
 3. Construct `InputDatasetBuilder`s by invoking each of the `inputDatasetBuilder`s.
 4. _If_ any `InputDatasetBuilder`s are returned, invoke the `inputDatasetFacetBuilder`s and attach any returned facets to
-   the `InputDatasetBuilder`s
-5. _If_ any `InputDatasetBuilder`s are returned, invoke the `datasetFacetBuilder`s and attach any returned facets to 
-    the `InputDatasetBuilder`s
-6. Construct `OutputDatasetBuilder`s by invoking each of the `outputDatasetBuilder`s.
-7. _If_ any `OuptutDatasetBuilder`s are returned, invoke the `outputDatasetFacetBuilder`s and attach any returned facets to
-   the `OutputDatasetBuilder`s
-5. _If_ any `OutputDatasetBuilder`s are returned, invoke the `datasetFacetBuilder`s and attach any returned facets to
-   the `OutputDatasetBuilder`s
+   the `InputDataset`s
+5. _If_ any `InputDataset`s are returned, invoke the `datasetFacetBuilder`s and attach any returned facets to 
+    the `InputDataset`s
+6. Construct `OutputDataset`s by invoking each of the `outputDatasetBuilder`s.
+7. _If_ any `OuptutDataset`s are returned, invoke the `outputDatasetFacetBuilder`s and attach any returned facets to
+   the `OutputDataset`s
+5. _If_ any `OutputDataset`s are returned, invoke the `datasetFacetBuilder`s and attach any returned facets to
+   the `OutputDataset`s
 
-`InputDatasetFacet`s and `OutputDatasetFacet`s will be attached to _any_ `InputDatasetBuilder` or `OutputDatasetBuilder`
+`InputDatasetFacet`s and `OutputDatasetFacet`s will be attached to _any_ `InputDataset` or `OutputDataset`
 found for the event. This is because facets may be constructed from generic information that is not specifi**cally tied
 to a Dataset. For example, `OutputStatisticsOutputDatasetFacet`s are created from `TaskMetrics` attached to** the last
 `StageInfo` for a given job execution. However, the `OutputDataset` is constructed by reading the `LogicalPlan`. There's
@@ -172,7 +170,7 @@ specific dataset, the user must take care to construct both the Dataset and the 
 For convenience, the following abstract base classes are defined:
 
 ```java
-// accepts an argument of type T and returns an InputDatasetBuilder
+// accepts an argument of type T and returns an InputDataset
 public abstract class AbstractInputDatasetBuilder<T>{}
 ```
 
@@ -182,7 +180,7 @@ public abstract class AbstractInputDatasetFacetBuilder<T>{}
 ```
 
 ```java
-// accepts an argument of type T and returns an OutputDatasetBuilder
+// accepts an argument of type T and returns an OutputDataset
 public abstract class AbstractOutputDatasetBuilder<T>{}
 ```
 
@@ -226,7 +224,7 @@ public class FileScanInputDatasetBuilder extends AbstractInputDatasetBuilder<Fil
     }
 
     @Override
-    public List<OpenLineage.InputDatasetBuilder> apply(FileScanRDD rdd) {
+    public List<OpenLineage.InputDataset> apply(FileScanRDD rdd) {
         return ScalaConversionUtils.fromSeq(rdd.filePartitions())
                 .stream()
                 .flatMap(fp -> Arrays.stream(fp.files()))
@@ -244,7 +242,7 @@ public class FileScanInputDatasetBuilder extends AbstractInputDatasetBuilder<Fil
                 }).map(Path::toUri)
                 .distinct()
                 .map(uri -> PathUtils.fromURI(uri, "file"))
-                .map(dsi -> openLineage.newInputDatasetBuilder().namespace(dsi.getNamespace()).name(dsi.getName()))
+                .map(dsi -> openLineage.newInputDatasetBuilder().namespace(dsi.getNamespace()).name(dsi.getName()).build())
                 .collect(Collectors.toList());
     }
 }
