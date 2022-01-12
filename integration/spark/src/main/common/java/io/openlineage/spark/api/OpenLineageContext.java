@@ -29,6 +29,10 @@ import scala.PartialFunction;
  * lists. As {@link QueryPlanVisitor}s require a reference to the {@link OpenLineageContext}, the
  * lists will always be added to after the {@link QueryPlanVisitor}s are constructed. Thus, copies
  * should never be made of the lists, as it should be assumed such copies will be incomplete.
+ *
+ * <p>This API is evolving and may change in future releases
+ *
+ * @apiNote This interface is evolving and may change in future releases
  */
 @Value
 @Builder

@@ -168,6 +168,7 @@ class MyDatasetDetector extends QueryPlanVisitor<MyDataset, OutputDataset> {
 ```
 
 ## API
+The following APIs are still evolving and may change over time, based on user feedback.
 
 ###[`OpenLineageEventHandlerFactory`](src/main/common/java/io/openlineage/spark/api/OpenLineageEventHandlerFactory.java)
 This interface defines the main entrypoint to the extension codebase. Custom implementations
