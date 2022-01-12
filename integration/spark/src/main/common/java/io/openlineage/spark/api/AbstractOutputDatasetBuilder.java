@@ -8,8 +8,8 @@ import lombok.RequiredArgsConstructor;
  * Abstract base class for {@link scala.PartialFunction}s that return an {@link
  * io.openlineage.client.OpenLineage.OutputDataset}.
  *
- * @see io.openlineage.spark.agent.OpenLineageEventHandler for a list of event types that may be
- *     passed to this function.
+ * @see io.openlineage.spark.api.OpenLineageEventHandlerFactory for a list of event types that may
+ *     be passed to this function.
  * @param <T>
  */
 @RequiredArgsConstructor
