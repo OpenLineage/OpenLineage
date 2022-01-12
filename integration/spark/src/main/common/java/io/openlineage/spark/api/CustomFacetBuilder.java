@@ -22,6 +22,7 @@ import java.util.function.BiConsumer;
  *   <li>{@link org.apache.spark.sql.execution.QueryExecution}
  * </ul>
  *
+ * @apiNote This interface is evolving and may change in future releases
  * @param <T>
  * @param <F>
  */

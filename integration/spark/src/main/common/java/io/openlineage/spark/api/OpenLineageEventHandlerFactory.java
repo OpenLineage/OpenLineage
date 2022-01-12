@@ -44,6 +44,10 @@ import scala.PartialFunction;
  * function's logic to complete. For example, if the function requires a {@link
  * org.apache.spark.scheduler.SparkListenerJobEnd}, it should be defined for that type, not the
  * generic {@link org.apache.spark.scheduler.SparkListenerEvent} type.
+ *
+ * <p>This interface is evolving and may change in future releases.
+ *
+ * @apiNote This interface is evolving and may change in future releases
  */
 public interface OpenLineageEventHandlerFactory {
 
