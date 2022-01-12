@@ -115,6 +115,7 @@ public interface OpenLineageEventHandlerFactory {
    * is read. If a user wants to ensure the {@link InputDatasetFacet} is targeted to a specific
    * {@link InputDataset}, they should implement a builder that returns an {@link InputDataset} and
    * directly attach the facet. Merging the dataset and its facets can be handled separately.
+   * Typically, implementations should extend {@link AbstractInputDatasetFacetBuilder}.
    *
    * @param context
    * @return
@@ -133,6 +134,7 @@ public interface OpenLineageEventHandlerFactory {
    * user wants to ensure the {@link OutputDatasetFacet} is targeted to a specific {@link
    * OutputDataset}, they should implement a builder that returns an {@link OutputDataset} and
    * directly attach the facet. Merging the dataset and its facets can be handled separately.
+   * Typically, implementations should extend {@link AbstractOutputDatasetFacetBuilder}.
    *
    * @param context
    * @return
@@ -151,7 +153,8 @@ public interface OpenLineageEventHandlerFactory {
    * the current context. If a user wants to ensure the {@link DatasetFacet} is targeted to a
    * specific {@link OutputDataset} or {@link InputDataset}, they should implement a builder that
    * returns an {@link io.openlineage.client.OpenLineage.Dataset} and directly attach the facet.
-   * Merging the dataset and its facets can be handled separately.
+   * Merging the dataset and its facets can be handled separately. Typically, implementations should
+   * extend {@link AbstractDatasetFacetBuilder}.
    *
    * @param context
    * @return
@@ -165,7 +168,8 @@ public interface OpenLineageEventHandlerFactory {
    * Create a collection of {@link PartialFunction}s that may be applied to various Spark
    * application events and other objects (see class javadocs) that can contain information used to
    * construct a {@link RunFacet} which will be attached to the current {@link
-   * io.openlineage.client.OpenLineage.RunEvent}
+   * io.openlineage.client.OpenLineage.RunEvent} Typically, implementations should extend {@link
+   * AbstractRunFacetBuilder}.
    *
    * @param context
    * @return
@@ -179,7 +183,8 @@ public interface OpenLineageEventHandlerFactory {
    * Create a collection of {@link PartialFunction}s that may be applied to various Spark
    * application events and other objects (see class javadocs) that can contain information used to
    * construct a {@link JobFacet} which will be attached to the current {@link
-   * io.openlineage.client.OpenLineage.Job}.
+   * io.openlineage.client.OpenLineage.Job}. Typically, implementations should extend {@link
+   * AbstractJobFacetBuilder}.
    *
    * @param context
    * @return

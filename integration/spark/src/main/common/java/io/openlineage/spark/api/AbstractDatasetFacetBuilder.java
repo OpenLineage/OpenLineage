@@ -5,15 +5,15 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 /**
- * {@link CustomFacetBuilder} that generates {@link io.openlineage.client.OpenLineage.RunFacet}s
- * from input events.
+ * Abstract base class for {@link scala.PartialFunction}s that return a {@link
+ * OpenLineage.DatasetFacet}.
  *
  * @see io.openlineage.spark.api.OpenLineageEventHandlerFactory for a list of event types that may
- *     be passed to this builder.
+ *     be passed to this function.
  * @param <T>
  */
 @RequiredArgsConstructor
-public abstract class AbstractRunFacetBuilder<T>
-    extends CustomFacetBuilder<T, OpenLineage.RunFacet> {
+public abstract class AbstractDatasetFacetBuilder<T>
+    extends AbstractGenericArgPartialFunction<T, OpenLineage.DatasetFacet> {
   @NonNull protected final OpenLineageContext context;
 }

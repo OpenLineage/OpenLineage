@@ -8,8 +8,8 @@ import lombok.RequiredArgsConstructor;
  * {@link CustomFacetBuilder} that generates {@link io.openlineage.client.OpenLineage.RunFacet}s
  * from input events.
  *
- * @see io.openlineage.spark.agent.OpenLineageEventHandler for a list of event types that may be
- *     passed to this builder.
+ * @see io.openlineage.spark.api.OpenLineageEventHandlerFactory for a list of event types that may
+ *     be passed to this builder.
  * @param <T>
  */
 @RequiredArgsConstructor
