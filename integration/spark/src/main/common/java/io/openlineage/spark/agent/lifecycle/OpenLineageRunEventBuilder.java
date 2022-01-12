@@ -43,6 +43,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -135,31 +136,33 @@ class OpenLineageRunEventBuilder {
   @NonNull private final OpenLineageContext openLineageContext;
 
   @NonNull
-  private final List<PartialFunction<Object, List<OpenLineage.InputDataset>>> inputDatasetBuilders;
+  private final Collection<PartialFunction<Object, List<OpenLineage.InputDataset>>>
+      inputDatasetBuilders;
 
   @NonNull
-  private final List<PartialFunction<LogicalPlan, List<InputDataset>>>
+  private final Collection<PartialFunction<LogicalPlan, List<InputDataset>>>
       inputDatasetQueryPlanVisitors;
 
   @NonNull
-  private final List<PartialFunction<Object, List<OpenLineage.OutputDataset>>>
-      outputDatasetBuilders;
+  private final Collection<PartialFunction<Object, List<OutputDataset>>> outputDatasetBuilders;
 
   @NonNull
-  private final List<PartialFunction<LogicalPlan, List<OutputDataset>>>
+  private final Collection<PartialFunction<LogicalPlan, List<OutputDataset>>>
       outputDatasetQueryPlanVisitors;
 
-  @NonNull private final List<CustomFacetBuilder<?, ? extends DatasetFacet>> datasetFacetBuilders;
+  @NonNull
+  private final Collection<CustomFacetBuilder<?, ? extends DatasetFacet>> datasetFacetBuilders;
 
   @NonNull
-  private final List<CustomFacetBuilder<?, ? extends InputDatasetFacet>> inputDatasetFacetBuilders;
+  private final Collection<CustomFacetBuilder<?, ? extends InputDatasetFacet>>
+      inputDatasetFacetBuilders;
 
   @NonNull
-  private final List<CustomFacetBuilder<?, ? extends OutputDatasetFacet>>
+  private final Collection<CustomFacetBuilder<?, ? extends OutputDatasetFacet>>
       outputDatasetFacetBuilders;
 
-  @NonNull private final List<CustomFacetBuilder<?, ? extends RunFacet>> runFacetBuilders;
-  @NonNull private final List<CustomFacetBuilder<?, ? extends JobFacet>> jobFacetBuilders;
+  @NonNull private final Collection<CustomFacetBuilder<?, ? extends RunFacet>> runFacetBuilders;
+  @NonNull private final Collection<CustomFacetBuilder<?, ? extends JobFacet>> jobFacetBuilders;
 
   private final UnknownEntryFacetListener unknownEntryFacetListener =
       new UnknownEntryFacetListener();
@@ -443,7 +446,7 @@ class OpenLineageRunEventBuilder {
   }
 
   private <T> Stream<T> buildDatasets(
-      List<Object> nodes, List<PartialFunction<Object, List<T>>> builders) {
+      List<Object> nodes, Collection<PartialFunction<Object, List<T>>> builders) {
     PartialFunction<Object, List<T>> fn = PlanUtils.merge(builders);
     return nodes.stream()
         .flatMap(
@@ -480,7 +483,9 @@ class OpenLineageRunEventBuilder {
    * @return
    */
   private <T, F> F buildFacets(
-      List<Object> events, List<CustomFacetBuilder<?, ? extends T>> builders, F facetsContainer) {
+      List<Object> events,
+      Collection<CustomFacetBuilder<?, ? extends T>> builders,
+      F facetsContainer) {
     Map<String, T> facetsMap =
         objectMapper.convertValue(facetsContainer, new TypeReference<Map<String, T>>() {});
     events.forEach(event -> builders.forEach(fn -> fn.accept(event, facetsMap::put)));
@@ -491,7 +496,8 @@ class OpenLineageRunEventBuilder {
    * Create a new instance of the facets container with all values merged from the original
    * facetsContainer and the given facets Map, with precedence given to the facets Map.
    *
-   * @see #buildFacets(List, List, Object) for reasoning behind the map &lt;-&gt; object conversion
+   * @see #buildFacets(List, Collection, Object) for reasoning behind the map &lt;-&gt; object
+   *     conversion
    * @param facetsMap
    * @param facetsContainer
    * @param klass

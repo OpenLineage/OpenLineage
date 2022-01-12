@@ -65,16 +65,16 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
    */
   private <T> List<T> generate(
       Collection<OpenLineageEventHandlerFactory> factories,
-      Function<OpenLineageEventHandlerFactory, List<T>> supplier) {
+      Function<OpenLineageEventHandlerFactory, Collection<T>> supplier) {
     return StreamSupport.stream(
             Spliterators.spliteratorUnknownSize(factories.iterator(), Spliterator.IMMUTABLE), false)
-        .flatMap(supplier.andThen(List::stream))
+        .flatMap(supplier.andThen(Collection::stream))
         .collect(Collectors.toList());
   }
 
   @Override
-  public List<PartialFunction<LogicalPlan, List<InputDataset>>> createInputDatasetQueryPlanVisitors(
-      OpenLineageContext context) {
+  public Collection<PartialFunction<LogicalPlan, List<InputDataset>>>
+      createInputDatasetQueryPlanVisitors(OpenLineageContext context) {
     List<PartialFunction<LogicalPlan, List<InputDataset>>> inputDatasets =
         visitorFactory.getInputVisitors(context);
 
@@ -91,7 +91,7 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
   }
 
   @Override
-  public List<PartialFunction<LogicalPlan, List<OutputDataset>>>
+  public Collection<PartialFunction<LogicalPlan, List<OutputDataset>>>
       createOutputDatasetQueryPlanVisitors(OpenLineageContext context) {
     List<PartialFunction<LogicalPlan, List<OutputDataset>>> outputDatasets =
         visitorFactory.getOutputVisitors(context);
@@ -110,27 +110,27 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
   }
 
   @Override
-  public List<PartialFunction<Object, List<InputDataset>>> createInputDatasetBuilder(
+  public Collection<PartialFunction<Object, List<InputDataset>>> createInputDatasetBuilder(
       OpenLineageContext context) {
     return generate(eventHandlerFactories, factory -> factory.createInputDatasetBuilder(context));
   }
 
   @Override
-  public List<PartialFunction<Object, List<OutputDataset>>> createOutputDatasetBuilder(
+  public Collection<PartialFunction<Object, List<OutputDataset>>> createOutputDatasetBuilder(
       OpenLineageContext context) {
     return generate(eventHandlerFactories, factory -> factory.createOutputDatasetBuilder(context));
   }
 
   @Override
-  public List<CustomFacetBuilder<?, ? extends InputDatasetFacet>> createInputDatasetFacetBuilders(
-      OpenLineageContext context) {
+  public Collection<CustomFacetBuilder<?, ? extends InputDatasetFacet>>
+      createInputDatasetFacetBuilders(OpenLineageContext context) {
     return generate(
         eventHandlerFactories, factory -> factory.createInputDatasetFacetBuilders(context));
   }
 
   @Override
-  public List<CustomFacetBuilder<?, ? extends OutputDatasetFacet>> createOutputDatasetFacetBuilders(
-      OpenLineageContext context) {
+  public Collection<CustomFacetBuilder<?, ? extends OutputDatasetFacet>>
+      createOutputDatasetFacetBuilders(OpenLineageContext context) {
     return ImmutableList.<CustomFacetBuilder<?, ? extends OutputDatasetFacet>>builder()
         .addAll(
             generate(
@@ -141,13 +141,13 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
   }
 
   @Override
-  public List<CustomFacetBuilder<?, ? extends DatasetFacet>> createDatasetFacetBuilders(
+  public Collection<CustomFacetBuilder<?, ? extends DatasetFacet>> createDatasetFacetBuilders(
       OpenLineageContext context) {
     return generate(eventHandlerFactories, factory -> factory.createDatasetFacetBuilders(context));
   }
 
   @Override
-  public List<CustomFacetBuilder<?, ? extends RunFacet>> createRunFacetBuilders(
+  public Collection<CustomFacetBuilder<?, ? extends RunFacet>> createRunFacetBuilders(
       OpenLineageContext context) {
     return ImmutableList.<CustomFacetBuilder<?, ? extends RunFacet>>builder()
         .addAll(
