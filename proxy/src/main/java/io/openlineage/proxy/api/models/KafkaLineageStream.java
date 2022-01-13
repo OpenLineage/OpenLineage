@@ -31,10 +31,10 @@ public class KafkaLineageStream extends LineageStream {
   private final KafkaProducer<String, String> producer;
 
   public KafkaLineageStream(
-      String localServerId,
-      String topicName,
-      String bootstrapServerUrl,
-      Properties producerProperties) {
+      @NonNull final String localServerId,
+      @NonNull final String topicName,
+      @NonNull final String bootstrapServerUrl,
+      @NonNull final Properties producerProperties) {
     super(Type.KAFKA);
     producerProperties.put("server.id", localServerId);
     producerProperties.put("bootstrap.servers", bootstrapServerUrl);

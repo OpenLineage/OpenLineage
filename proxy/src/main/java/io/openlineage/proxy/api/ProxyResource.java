@@ -30,21 +30,22 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Path("/api/v1/lineage")
 public class ProxyResource {
-  private final ProxyService service;
+  private final ProxyService proxyService;
 
-  public ProxyResource(@NonNull final ProxyService service) {
-    this.service = service;
+  public ProxyResource(@NonNull final ProxyService proxyService) {
+    this.proxyService = proxyService;
   }
 
   @POST
   @Consumes(APPLICATION_JSON)
-  public void emit(@Valid String event, @Suspended final AsyncResponse asyncResponse) {
-    service
-        .emitAsync(event)
+  public void proxyEvent(
+      @Valid String eventAsString, @Suspended final AsyncResponse asyncResponse) {
+    proxyService
+        .proxyEventAsync(eventAsString)
         .whenComplete(
             (result, err) -> {
               if (err != null) {
-                log.error("Failed to handle request!", err);
+                log.error("Failed to proxy OpenLineage event!", err);
                 asyncResponse.resume(Response.status(500).build());
               } else {
                 asyncResponse.resume(Response.status(201).build());

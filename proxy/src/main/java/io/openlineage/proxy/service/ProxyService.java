@@ -67,7 +67,7 @@ public final class ProxyService {
    * @param event incoming event
    * @return completion future
    */
-  public CompletableFuture<Void> emitAsync(@NonNull String event) {
+  public CompletableFuture<Void> proxyEventAsync(@NonNull String event) {
     log.info("Inbound event: {}", event);
 
     final List<CompletableFuture> collectionFutures = Lists.newArrayList();
