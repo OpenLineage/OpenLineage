@@ -1,23 +1,18 @@
 package io.openlineage.spark.agent.lifecycle;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.util.stream.Stream;
-import org.apache.spark.sql.SparkSession;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class VisitorFactoryProviderTest {
-  SparkSession session = mock(SparkSession.class);
 
   @ParameterizedTest
   @MethodSource("provideVersionFactory")
   void getInstance(String version, String expectedClass) {
-    when(session.version()).thenReturn(version);
-    VisitorFactory factory = VisitorFactoryProvider.getInstance(session);
+    VisitorFactory factory = VisitorFactoryProvider.getInstance(version);
     assertThat(factory.getClass().getName()).isEqualTo(expectedClass);
   }
 

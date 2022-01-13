@@ -51,8 +51,9 @@ import org.apache.spark.scheduler.JobResult;
 import org.apache.spark.scheduler.ResultStage;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
+import org.apache.spark.scheduler.SparkListenerStageCompleted;
+import org.apache.spark.scheduler.SparkListenerStageSubmitted;
 import org.apache.spark.scheduler.Stage;
-import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 import org.apache.spark.util.SerializableJobConf;
@@ -66,8 +67,8 @@ class RddExecutionContext implements ExecutionContext {
   private final EventEmitter sparkContext;
   private final Optional<SparkContext> sparkContextOption;
   private final UUID runId = UUID.randomUUID();
-  private List<URI> inputs;
-  private List<URI> outputs;
+  private List<URI> inputs = Collections.emptyList();
+  private List<URI> outputs = Collections.emptyList();
   private String jobSuffix;
 
   public RddExecutionContext(OpenLineageContext context, int jobId, EventEmitter sparkContext) {
@@ -84,6 +85,12 @@ class RddExecutionContext implements ExecutionContext {
                       }
                     }));
   }
+
+  @Override
+  public void start(SparkListenerStageSubmitted stageSubmitted) {}
+
+  @Override
+  public void end(SparkListenerStageCompleted stageCompleted) {}
 
   @Override
   public void setActiveJob(ActiveJob activeJob) {
@@ -238,7 +245,8 @@ class RddExecutionContext implements ExecutionContext {
     if (jobError != null) {
       builder.put("spark.exception", jobError);
     }
-    builder.put("spark_version", new SparkVersionFacet(SparkSession.active()));
+    sparkContextOption.ifPresent(
+        context -> builder.put("spark_version", new SparkVersionFacet(context)));
     return builder.build();
   }
 

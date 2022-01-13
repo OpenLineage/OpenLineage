@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.stream.Collectors;
@@ -32,6 +33,7 @@ import org.apache.spark.SparkEnv;
 import org.apache.spark.SparkEnv$;
 import org.apache.spark.rdd.PairRDDFunctions;
 import org.apache.spark.rdd.RDD;
+import org.apache.spark.scheduler.ActiveJob;
 import org.apache.spark.scheduler.SparkListenerApplicationStart;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
@@ -40,6 +42,9 @@ import org.apache.spark.scheduler.SparkListenerTaskEnd;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
+import scala.Function0;
+import scala.Function1;
+import scala.Option;
 
 @Slf4j
 public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkListener {
@@ -59,6 +64,10 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   private static WeakHashMap<RDD<?>, Configuration> outputs = new WeakHashMap<>();
   private static ContextFactory contextFactory;
   private static JobMetricsHolder jobMetrics = JobMetricsHolder.getInstance();
+  private final Function1<SparkSession, SparkContext> sparkContextFromSession =
+      ScalaConversionUtils.toScalaFn(SparkSession::sparkContext);
+  private final Function0<Option<SparkContext>> activeSparkContext =
+      ScalaConversionUtils.toScalaFn(SparkContext$.MODULE$::getActive);
 
   /** called by the agent on init with the provided argument */
   public static void init(ContextFactory contextFactory) {
@@ -143,31 +152,52 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   /** called by the SparkListener when a job starts */
   @Override
   public void onJobStart(SparkListenerJobStart jobStart) {
+    Optional<ActiveJob> activeJob =
+        asJavaOptional(
+                SparkSession.getDefaultSession()
+                    .map(sparkContextFromSession)
+                    .orElse(activeSparkContext))
+            .flatMap(
+                ctx ->
+                    Optional.ofNullable(ctx.dagScheduler())
+                        .map(ds -> ds.jobIdToActiveJob().get(jobStart.jobId())))
+            .flatMap(ScalaConversionUtils::asJavaOptional);
     Set<Integer> stages =
         ScalaConversionUtils.fromSeq(jobStart.stageIds()).stream()
             .map(Integer.class::cast)
             .collect(Collectors.toSet());
     jobMetrics.addJobStages(jobStart.jobId(), stages);
 
-    asJavaOptional(
-            SparkSession.getActiveSession()
-                .map(ScalaConversionUtils.toScalaFn(sess -> sess.sparkContext()))
-                .orElse(ScalaConversionUtils.toScalaFn(() -> SparkContext$.MODULE$.getActive())))
-        .flatMap(ctx -> asJavaOptional(ctx.dagScheduler().jobIdToActiveJob().get(jobStart.jobId())))
-        .ifPresent(
-            job -> {
-              String executionIdProp = job.properties().getProperty("spark.sql.execution.id");
-              ExecutionContext context;
-              if (executionIdProp != null) {
-                long executionId = Long.parseLong(executionIdProp);
-                context = getExecutionContext(job.jobId(), executionId);
-              } else {
-                context = getExecutionContext(job.jobId());
-              }
+    ExecutionContext context =
+        Optional.ofNullable(getSqlExecutionId(jobStart.properties()))
+            .map(Optional::of)
+            .orElseGet(
+                () ->
+                    asJavaOptional(
+                            SparkSession.getDefaultSession()
+                                .map(sparkContextFromSession)
+                                .orElse(activeSparkContext))
+                        .flatMap(
+                            ctx ->
+                                Optional.ofNullable(ctx.dagScheduler())
+                                    .map(ds -> ds.jobIdToActiveJob().get(jobStart.jobId()))
+                                    .flatMap(ScalaConversionUtils::asJavaOptional))
+                        .map(job -> getSqlExecutionId(job.properties())))
+            .map(
+                id -> {
+                  long executionId = Long.parseLong(id);
+                  return getExecutionContext(jobStart.jobId(), executionId);
+                })
+            .orElseGet(() -> getExecutionContext(jobStart.jobId()));
 
-              context.setActiveJob(job);
-              context.start(jobStart);
-            });
+    // set it in the rddExecutionRegistry so jobEnd is called
+    rddExecutionRegistry.put(jobStart.jobId(), context);
+    activeJob.ifPresent(context::setActiveJob);
+    context.start(jobStart);
+  }
+
+  private String getSqlExecutionId(Properties properties) {
+    return properties.getProperty("spark.sql.execution.id");
   }
 
   /** called by the SparkListener when a job ends */

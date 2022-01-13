@@ -29,8 +29,8 @@ import scala.PartialFunction;
 public class StaticExecutionContextFactory extends ContextFactory {
   public static final Semaphore semaphore = new Semaphore(1);
 
-  public StaticExecutionContextFactory(EventEmitter sparkContext) {
-    super(sparkContext);
+  public StaticExecutionContextFactory(EventEmitter eventEmitter) {
+    super(eventEmitter);
   }
 
   /**
@@ -77,7 +77,7 @@ public class StaticExecutionContextFactory extends ContextFactory {
   @Override
   public ExecutionContext createSparkSQLExecutionContext(long executionId) {
     return Optional.ofNullable(SQLExecution.getQueryExecution(executionId))
-        .map(
+        .<SparkSQLExecutionContext>map(
             qe -> {
               SparkSession session = qe.sparkSession();
               SQLContext sqlContext = qe.sparkPlan().sqlContext();
@@ -88,9 +88,10 @@ public class StaticExecutionContextFactory extends ContextFactory {
                       .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
                       .queryExecution(qe)
                       .build();
+              OpenLineageRunEventBuilder runEventBuilder =
+                  new OpenLineageRunEventBuilder(olContext, new InternalEventHandlerFactory());
 
-              VisitorFactory visitorFactory =
-                  VisitorFactoryProvider.getInstance(SparkSession.active());
+              VisitorFactory visitorFactory = VisitorFactoryProvider.getInstance();
 
               List<PartialFunction<LogicalPlan, List<InputDataset>>> inputDatasets =
                   visitorFactory.getInputVisitors(olContext);
@@ -99,51 +100,57 @@ public class StaticExecutionContextFactory extends ContextFactory {
                   visitorFactory.getOutputVisitors(olContext);
               olContext.getOutputDatasetQueryPlanVisitors().addAll(outputDatasets);
 
-              SparkSQLExecutionContext sparksql =
-                  new SparkSQLExecutionContext(
-                      executionId, openLineageEventEmitter, qe, olContext) {
-                    @Override
-                    public ZonedDateTime toZonedTime(long time) {
-                      return getZonedTime();
-                    }
+              return new SparkSQLExecutionContext(
+                  executionId, openLineageEventEmitter, olContext, runEventBuilder) {
+                @Override
+                public ZonedDateTime toZonedTime(long time) {
+                  return getZonedTime();
+                }
 
-                    @Override
-                    public void start(SparkListenerSQLExecutionStart startEvent) {
-                      try {
-                        semaphore.acquire();
-                      } catch (InterruptedException e) {
-                        throw new RuntimeException("Unable to acquire semaphore", e);
-                      }
-                      super.start(startEvent);
-                    }
+                @Override
+                public void start(SparkListenerSQLExecutionStart startEvent) {
+                  try {
+                    semaphore.acquire();
+                  } catch (InterruptedException e) {
+                    throw new RuntimeException("Unable to acquire semaphore", e);
+                  }
+                  super.start(startEvent);
+                }
 
-                    @Override
-                    public void end(SparkListenerSQLExecutionEnd endEvent) {
-                      try {
-                        super.end(endEvent);
-                      } finally {
-                        // ALWAYS release the permit
-                        semaphore.release();
-                      }
-                    }
-                  };
-              return sparksql;
+                @Override
+                public void end(SparkListenerSQLExecutionEnd endEvent) {
+                  try {
+                    super.end(endEvent);
+                  } finally {
+                    // ALWAYS release the permit
+                    semaphore.release();
+                  }
+                }
+              };
             })
         .orElseGet(
-            () ->
-                new SparkSQLExecutionContext(
-                    executionId,
-                    openLineageEventEmitter,
-                    null,
-                    OpenLineageContext.builder()
-                        .sparkContext(SparkContext.getOrCreate())
-                        .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
-                        .build()));
+            () -> {
+              OpenLineageContext olContext =
+                  OpenLineageContext.builder()
+                      .sparkContext(SparkContext.getOrCreate())
+                      .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
+                      .build();
+
+              return new SparkSQLExecutionContext(
+                  executionId,
+                  openLineageEventEmitter,
+                  olContext,
+                  new OpenLineageRunEventBuilder(olContext, new InternalEventHandlerFactory()));
+            });
   }
 
   public ExecutionContext createSparkSQLExecutionContext(
       Long executionId, EventEmitter emitter, QueryExecution qe, OpenLineageContext olContext) {
-    return new SparkSQLExecutionContext(executionId, emitter, qe, olContext);
+    return new SparkSQLExecutionContext(
+        executionId,
+        emitter,
+        olContext,
+        new OpenLineageRunEventBuilder(olContext, new InternalEventHandlerFactory()));
   }
 
   private static ZonedDateTime getZonedTime() {
