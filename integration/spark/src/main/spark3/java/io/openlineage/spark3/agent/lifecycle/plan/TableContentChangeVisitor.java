@@ -8,11 +8,12 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.IcebergHandler;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.spark.sql.catalyst.analysis.NamedRelation;
 import org.apache.spark.sql.catalyst.plans.logical.DeleteFromTable;
 import org.apache.spark.sql.catalyst.plans.logical.InsertIntoStatement;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -44,38 +45,26 @@ public class TableContentChangeVisitor
 
   @Override
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
-    NamedRelation table;
-    Map<String, OpenLineage.DefaultDatasetFacet> facetMap = new HashMap<>();
+    Map<String, OpenLineage.DatasetFacet> facetMap = new HashMap<>();
+
+    Optional<DataSourceV2Relation> table = PlanUtils3.getDataSourceV2Relation(x);
+    if (!table.isPresent()) {
+      return Collections.emptyList();
+    }
 
     // INSERT OVERWRITE TABLE SQL statement is translated into InsertIntoTable logical operator.
     if (x instanceof OverwriteByExpression) {
-      table = ((OverwriteByExpression) x).table();
       includeOverwriteFacet(facetMap);
-    } else if (x instanceof InsertIntoStatement) {
-      table = (NamedRelation) ((InsertIntoStatement) x).table();
-      if (((InsertIntoStatement) x).overwrite()) {
-        includeOverwriteFacet(facetMap);
-      }
-    } else if (new IcebergHandler().hasClasses() && x instanceof ReplaceData) {
-      // DELETE FROM on ICEBERG HAS START ELEMENT WITH ReplaceData AND COMPLETE ONE WITH
-      // DeleteFromTable
-      table = ((ReplaceData) x).table();
-    } else if (x instanceof DeleteFromTable) {
-      table = (NamedRelation) ((DeleteFromTable) x).table();
-    } else if (x instanceof UpdateTable) {
-      table = (NamedRelation) ((UpdateTable) x).table();
-    } else if (x instanceof MergeIntoTable) {
-      table = (NamedRelation) ((MergeIntoTable) x).targetTable();
-    } else {
-      table = ((OverwritePartitionsDynamic) x).table();
+    } else if (x instanceof InsertIntoStatement && ((InsertIntoStatement) x).overwrite()) {
+      includeOverwriteFacet(facetMap);
+    } else if (x instanceof OverwritePartitionsDynamic) {
       includeOverwriteFacet(facetMap);
     }
 
-    return PlanUtils3.fromDataSourceV2Relation(
-        outputDataset(), context, (DataSourceV2Relation) table, facetMap);
+    return PlanUtils3.fromDataSourceV2Relation(outputDataset(), context, table.get(), facetMap);
   }
 
-  private void includeOverwriteFacet(Map<String, OpenLineage.DefaultDatasetFacet> facetMap) {
+  private void includeOverwriteFacet(Map<String, OpenLineage.DatasetFacet> facetMap) {
     facetMap.put("tableStateChange", new TableStateChangeFacet(OVERWRITE));
   }
 }

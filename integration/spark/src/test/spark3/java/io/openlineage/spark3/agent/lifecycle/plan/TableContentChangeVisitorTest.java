@@ -18,6 +18,7 @@ import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import org.apache.spark.sql.catalyst.plans.logical.DeleteFromTable;
 import org.apache.spark.sql.catalyst.plans.logical.InsertIntoStatement;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -102,6 +103,10 @@ public class TableContentChangeVisitorTest {
     when(logicalPlan.overwrite()).thenReturn(false);
 
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
+      mocked
+          .when(() -> PlanUtils3.getDataSourceV2Relation(logicalPlan))
+          .thenReturn(Optional.of(dataSourceV2Relation));
+
       visitor.apply(logicalPlan);
       mocked.verify(
           () ->
@@ -127,9 +132,12 @@ public class TableContentChangeVisitorTest {
 
   private void verify(LogicalPlan logicalPlan, TableStateChangeFacet.StateChange stateChange) {
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
+      mocked
+          .when(() -> PlanUtils3.getDataSourceV2Relation(logicalPlan))
+          .thenReturn(Optional.of(dataSourceV2Relation));
       visitor.apply(logicalPlan);
 
-      Map<String, OpenLineage.DefaultDatasetFacet> expectedFacets;
+      Map<String, OpenLineage.DatasetFacet> expectedFacets;
       if (stateChange == null) {
         expectedFacets = Collections.emptyMap();
       } else {

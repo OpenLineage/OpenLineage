@@ -21,7 +21,7 @@ import scala.PartialFunction;
 class Spark3VisitorFactoryImpl extends BaseVisitorFactory {
 
   @Override
-  public List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>> getOutputVisitors(
+  public List<PartialFunction<LogicalPlan, List<OutputDataset>>> getOutputVisitors(
       OpenLineageContext context) {
     DatasetFactory<OutputDataset> outputFactory = DatasetFactory.output(context.getOpenLineage());
     return ImmutableList.<PartialFunction<LogicalPlan, List<OutputDataset>>>builder()

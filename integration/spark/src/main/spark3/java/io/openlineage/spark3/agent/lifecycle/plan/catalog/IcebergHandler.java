@@ -15,7 +15,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.fs.Path;
 import org.apache.iceberg.CatalogProperties;
 import org.apache.iceberg.spark.SparkCatalog;
+import org.apache.iceberg.spark.source.SparkTable;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.catalyst.analysis.NoSuchTableException;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 
@@ -43,7 +45,9 @@ public class IcebergHandler implements CatalogHandler {
       TableCatalog tableCatalog,
       Identifier identifier,
       Map<String, String> properties) {
-    String catalogName = ((SparkCatalog) tableCatalog).name();
+    SparkCatalog sparkCatalog = (SparkCatalog) tableCatalog;
+    String catalogName = sparkCatalog.name();
+
     String prefix = String.format("spark.sql.catalog.%s", catalogName);
     Map<String, String> conf =
         ScalaConversionUtils.<String, String>fromMap(session.conf().getAll());
@@ -96,6 +100,23 @@ public class IcebergHandler implements CatalogHandler {
   public Optional<TableProviderFacet> getTableProviderFacet(Map<String, String> properties) {
     String format = properties.getOrDefault("format", "");
     return Optional.of(new TableProviderFacet("iceberg", format.replace("iceberg/", "")));
+  }
+
+  @SneakyThrows
+  public Optional<String> getDatasetVersion(
+      TableCatalog tableCatalog, Identifier identifier, Map<String, String> properties) {
+    SparkCatalog sparkCatalog = (SparkCatalog) tableCatalog;
+    SparkTable table;
+    try {
+      table = sparkCatalog.loadTable(identifier);
+    } catch (NoSuchTableException ex) {
+      return Optional.empty();
+    }
+
+    if (table.table() != null && table.table().currentSnapshot() != null) {
+      return Optional.of(Long.toString(table.table().currentSnapshot().snapshotId()));
+    }
+    return Optional.empty();
   }
 
   @Override

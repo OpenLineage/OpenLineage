@@ -6,6 +6,7 @@ import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
+import io.openlineage.spark3.agent.lifecycle.plan.catalog.IcebergHandler;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.UnsupportedCatalogException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -14,6 +15,14 @@ import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.catalyst.analysis.NamedRelation;
+import org.apache.spark.sql.catalyst.plans.logical.DeleteFromTable;
+import org.apache.spark.sql.catalyst.plans.logical.InsertIntoStatement;
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.catalyst.plans.logical.MergeIntoTable;
+import org.apache.spark.sql.catalyst.plans.logical.ReplaceData;
+import org.apache.spark.sql.catalyst.plans.logical.UpdateTable;
+import org.apache.spark.sql.catalyst.plans.logical.V2WriteCommand;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
@@ -48,12 +57,10 @@ public class PlanUtils3 {
   public static void includeProviderFacet(
       TableCatalog catalog,
       Map<String, String> properties,
-      Map<String, OpenLineage.DefaultDatasetFacet> facets) {
+      Map<String, OpenLineage.DatasetFacet> facets) {
     Optional<TableProviderFacet> providerFacet =
         CatalogUtils3.getTableProviderFacet(catalog, properties);
-    if (providerFacet.isPresent()) {
-      facets.put("tableProvider", providerFacet.get());
-    }
+    providerFacet.ifPresent(tableProviderFacet -> facets.put("tableProvider", tableProviderFacet));
   }
 
   public static <D extends OpenLineage.Dataset> List<D> fromDataSourceV2Relation(
@@ -65,7 +72,7 @@ public class PlanUtils3 {
       DatasetFactory<D> datasetFactory,
       OpenLineageContext context,
       DataSourceV2Relation relation,
-      Map<String, OpenLineage.DefaultDatasetFacet> facets) {
+      Map<String, OpenLineage.DatasetFacet> facets) {
 
     if (relation.identifier().isEmpty()) {
       throw new IllegalArgumentException(
@@ -81,14 +88,37 @@ public class PlanUtils3 {
     Map<String, String> tableProperties = relation.table().properties();
 
     includeProviderFacet(tableCatalog, tableProperties, facets);
+
     Optional<DatasetIdentifier> datasetIdentifier =
         PlanUtils3.getDatasetIdentifier(context, tableCatalog, identifier, tableProperties);
 
-    if (datasetIdentifier.isPresent()) {
-      return Collections.singletonList(
-          datasetFactory.getDataset(datasetIdentifier.get(), relation.schema(), facets));
-    } else {
-      return Collections.emptyList();
+    return datasetIdentifier
+        .map(
+            value ->
+                Collections.singletonList(
+                    datasetFactory.getDataset(value, relation.schema(), facets)))
+        .orElse(Collections.emptyList());
+  }
+
+  public static Optional<DataSourceV2Relation> getDataSourceV2Relation(LogicalPlan x) {
+    NamedRelation table = null;
+
+    // INSERT OVERWRITE TABLE SQL statement is translated into InsertIntoTable logical operator.
+    if (x instanceof V2WriteCommand) {
+      table = ((V2WriteCommand) x).table();
+    } else if (x instanceof InsertIntoStatement) {
+      table = (NamedRelation) ((InsertIntoStatement) x).table();
+    } else if (new IcebergHandler().hasClasses() && x instanceof ReplaceData) {
+      // DELETE FROM on ICEBERG HAS START ELEMENT WITH ReplaceData AND COMPLETE ONE WITH
+      // DeleteFromTable
+      table = ((ReplaceData) x).table();
+    } else if (x instanceof DeleteFromTable) {
+      table = (NamedRelation) ((DeleteFromTable) x).table();
+    } else if (x instanceof UpdateTable) {
+      table = (NamedRelation) ((UpdateTable) x).table();
+    } else if (x instanceof MergeIntoTable) {
+      table = (NamedRelation) ((MergeIntoTable) x).targetTable();
     }
+    return Optional.ofNullable((DataSourceV2Relation) table);
   }
 }

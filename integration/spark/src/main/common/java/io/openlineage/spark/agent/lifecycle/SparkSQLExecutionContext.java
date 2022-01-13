@@ -76,6 +76,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
       log.info("No execution info {}", olContext);
       return;
     }
+
     RunEvent event =
         runEventBuilder.buildRun(
             buildParentFacet(),

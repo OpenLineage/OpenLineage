@@ -18,6 +18,7 @@ import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -332,6 +333,46 @@ public class SparkContainerIntegrationTest {
   public void testOptimizedCreateAsSelectAndLoad() {
     runPysparkContainerWithDefaultConf("testOptimizedCreateAsSelectAndLoad", "spark_octas_load.py");
     verifyEvents("pysparkOCTASStart.json", "pysparkOCTASEnd.json");
+  }
+
+  @Test
+  @EnabledIfSystemProperty(named = "spark.version", matches = SPARK_3) // Spark version >= 3.*
+  public void testWriteDeltaTableVersion() {
+    makePysparkContainerWithDefaultConf(
+            "testWriteDeltaTableVersion",
+            "--packages",
+            "io.delta:delta-core_2.12:1.0.0",
+            "/opt/spark_scripts/spark_write_delta_table_version.py")
+        .start();
+    verifyEvents("pysparkWriteDeltaTableVersionEnd.json");
+  }
+
+  @Test
+  @EnabledIfSystemProperty(named = "spark.version", matches = SPARK_3) // Spark version >= 3.*
+  public void testWriteDeltaTableVersionDoesNotAttachToInput() {
+    makePysparkContainerWithDefaultConf(
+      "testWriteDeltaTableVersion",
+      "--packages",
+      "io.delta:delta-core_2.12:1.0.0",
+      "/opt/spark_scripts/spark_write_delta_table_version_does_not_attach.py")
+      .start();
+    Assertions.assertThrows(
+      AssertionError.class,
+      () -> verifyEvents("pysparkWriteDeltaTableVersionDoesNotAttachToInputEnd.json")
+    );
+  }
+
+
+  @Test
+  @EnabledIfSystemProperty(named = "spark.version", matches = SPARK_3) // Spark version >= 3.*
+  public void testWriteIcebergTableVersion() {
+    makePysparkContainerWithDefaultConf(
+            "testWriteIcebergTableVersion",
+            "--packages",
+            "org.apache.iceberg:iceberg-spark3-runtime:0.12.0",
+            "/opt/spark_scripts/spark_write_iceberg_table_version.py")
+        .start();
+    verifyEvents("pysparkWriteIcebergTableVersionEnd.json");
   }
 
   @Test
