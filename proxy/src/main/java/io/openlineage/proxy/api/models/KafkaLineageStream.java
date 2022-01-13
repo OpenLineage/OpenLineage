@@ -54,7 +54,7 @@ public class KafkaLineageStream extends LineageStream {
     try {
       producer.send(record);
     } catch (Exception e) {
-      log.error("Failed to send lineage event to kafka: {}", eventAsString, e);
+      log.error("Failed to collect lineage event: {}", eventAsString, e);
     }
   }
 }
