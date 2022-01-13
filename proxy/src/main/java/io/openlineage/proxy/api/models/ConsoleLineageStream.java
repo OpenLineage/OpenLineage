@@ -25,6 +25,6 @@ public class ConsoleLineageStream extends LineageStream {
 
   @Override
   public void collect(String eventAsString) {
-    System.out.println(eventAsString);
+    log.info(eventAsString);
   }
 }
