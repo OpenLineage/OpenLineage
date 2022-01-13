@@ -123,6 +123,8 @@ Example of valid name is `BigQueryStatisticsJobFacet` and it's key `bigQuery_sta
 
 - **dataSource**: Captures the Database instance containing this datasets (ex: Database schema. Object store bucket, ...)
 
+- **version**: Captures the dataset version when versioning is defined by database (ex. Iceberg snapshot ID)
+
 #### Input Dataset Facets
 
 - **dataQualityMetrics**: Captures dataset level and column level data quality metrics when scanning a dataset whith a DataQuality library (row count, byte size, null count, distinct count, average, min, max, quantiles).
