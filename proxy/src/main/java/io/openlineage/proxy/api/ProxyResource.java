@@ -16,7 +16,6 @@ package io.openlineage.proxy.api;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
-import io.openlineage.proxy.api.models.LineageEvent;
 import io.openlineage.proxy.service.ProxyService;
 import javax.validation.Valid;
 import javax.ws.rs.Consumes;

@@ -19,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class KinesisLineageStream extends LineageStream {
-  public KinesisLineageStream(){
+  public KinesisLineageStream() {
     super(Type.KINESIS);
   }
 

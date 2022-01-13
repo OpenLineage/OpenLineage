@@ -14,90 +14,68 @@
 
 package io.openlineage.proxy;
 
-import io.dropwizard.Configuration;
-
-import java.util.Map;
-import java.util.Properties;
-import io.openlineage.proxy.api.models.ConsoleLineageStream;
-import io.openlineage.proxy.api.models.LineageStream;
-import javax.validation.constraints.NotEmpty;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.dropwizard.Configuration;
+import java.util.Properties;
+import javax.validation.constraints.NotEmpty;
 
-/**
- * ProxyConfig defines the structure of the configuration file proxy.yml
- */
-public final class ProxyConfig extends Configuration
-{
-  @NotEmpty
-  private String     lineageSourceName;
+/** ProxyConfig defines the structure of the configuration file proxy.yml */
+public final class ProxyConfig extends Configuration {
+  @NotEmpty private String lineageSourceName;
 
-  private boolean    consoleLog = false;
+  private boolean consoleLog = false;
 
-  @NotEmpty
-  private String     kafkaTopicName;
-  @NotEmpty
-  private String     kafkaBootstrapServerURL;
-  @NotEmpty
-  private Properties kafkaProperties = null;
+  @NotEmpty private String kafkaTopicName;
+  @NotEmpty private String kafkaBootstrapServerURL;
+  @NotEmpty private Properties kafkaProperties = null;
 
   @JsonProperty
-  public String getLineageSourceName()
-  {
+  public String getLineageSourceName() {
     return lineageSourceName;
   }
 
   @JsonProperty
-  public void setLineageSourceName(String lineageSourceName)
-  {
+  public void setLineageSourceName(String lineageSourceName) {
     this.lineageSourceName = lineageSourceName;
   }
 
   @JsonProperty
-  public boolean getConsoleLog()
-  {
+  public boolean getConsoleLog() {
     return consoleLog;
   }
 
   @JsonProperty
-  public void setConsoleLog(boolean consoleLog)
-  {
+  public void setConsoleLog(boolean consoleLog) {
     this.consoleLog = consoleLog;
   }
 
-
   @JsonProperty
-  public String getKafkaTopicName()
-  {
+  public String getKafkaTopicName() {
     return kafkaTopicName;
   }
 
   @JsonProperty
-  public void setKafkaTopicName(String kafkaTopicName)
-  {
+  public void setKafkaTopicName(String kafkaTopicName) {
     this.kafkaTopicName = kafkaTopicName;
   }
 
   @JsonProperty
-  public String getKafkaBootstrapServerURL()
-  {
+  public String getKafkaBootstrapServerURL() {
     return kafkaBootstrapServerURL;
   }
 
   @JsonProperty
-  public void setKafkaBootstrapServerURL(String kafkaBootstrapServerURL)
-  {
+  public void setKafkaBootstrapServerURL(String kafkaBootstrapServerURL) {
     this.kafkaBootstrapServerURL = kafkaBootstrapServerURL;
   }
 
   @JsonProperty
-  public Properties getKafkaProperties()
-  {
+  public Properties getKafkaProperties() {
     return kafkaProperties;
   }
 
   @JsonProperty
-  public void setKafkaProperties(Properties kafkaProperties)
-  {
+  public void setKafkaProperties(Properties kafkaProperties) {
     this.kafkaProperties = kafkaProperties;
   }
 }
