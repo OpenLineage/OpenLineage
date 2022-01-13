@@ -87,6 +87,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
     eventEmitter.emit(event);
   }
 
+  // TODO: not invoked until https://github.com/OpenLineage/OpenLineage/issues/470 is completed
   @Override
   public void start(SparkListenerStageSubmitted stageSubmitted) {
     if (!olContext.getQueryExecution().isPresent()) {
@@ -104,6 +105,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
     eventEmitter.emit(event);
   }
 
+  // TODO: not invoked until https://github.com/OpenLineage/OpenLineage/issues/470 is completed
   @Override
   public void end(SparkListenerStageCompleted stageCompleted) {
     if (!olContext.getQueryExecution().isPresent()) {
@@ -118,10 +120,8 @@ class SparkSQLExecutionContext implements ExecutionContext {
             stageCompleted);
 
     log.debug("Posting event for stage completed {}: {}", executionId, event);
-    // don't send start events yet - uncomment this when the tests are updated to handle both
-    // sql execution start events and job start events
 
-    // eventEmitter.emit(event);
+    eventEmitter.emit(event);
   }
 
   @Override

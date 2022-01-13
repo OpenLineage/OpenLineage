@@ -193,7 +193,6 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     // set it in the rddExecutionRegistry so jobEnd is called
     rddExecutionRegistry.put(jobStart.jobId(), context);
     activeJob.ifPresent(context::setActiveJob);
-    // context.setActiveJob(job);
     context.start(jobStart);
   }
 

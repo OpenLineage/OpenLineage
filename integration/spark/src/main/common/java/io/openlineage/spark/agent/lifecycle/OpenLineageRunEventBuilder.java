@@ -1,5 +1,6 @@
 package io.openlineage.spark.agent.lifecycle;
 
+import static io.openlineage.spark.agent.util.ScalaConversionUtils.fromSeq;
 import static io.openlineage.spark.agent.util.ScalaConversionUtils.toScalaFn;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
@@ -63,6 +64,7 @@ import org.apache.spark.scheduler.Stage;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
+import scala.Function1;
 import scala.PartialFunction;
 
 /**
@@ -159,7 +161,7 @@ class OpenLineageRunEventBuilder {
   @NonNull private final List<CustomFacetBuilder<?, ? extends RunFacet>> runFacetBuilders;
   @NonNull private final List<CustomFacetBuilder<?, ? extends JobFacet>> jobFacetBuilders;
 
-  private final UnknownEntryFacetListener<?> unknownEntryFacetListener =
+  private final UnknownEntryFacetListener unknownEntryFacetListener =
       new UnknownEntryFacetListener();
   private final Map<Integer, ActiveJob> jobMap = new HashMap<>();
   private final Map<Integer, Stage> stageMap = new HashMap<>();
@@ -332,8 +334,9 @@ class OpenLineageRunEventBuilder {
         openLineageContext.getQueryExecution(),
         inputDatasetQueryPlanVisitors);
 
-    PartialFunction<LogicalPlan, List<InputDataset>> inputVisitor =
-        PlanUtils.merge(inputDatasetQueryPlanVisitors);
+    Function1<LogicalPlan, List<InputDataset>> inputVisitor =
+        visitLogicalPlan(PlanUtils.merge(inputDatasetQueryPlanVisitors));
+
     List<OpenLineage.InputDataset> datasets =
         Stream.concat(
                 buildDatasets(nodes, inputDatasetBuilders),
@@ -341,24 +344,7 @@ class OpenLineageRunEventBuilder {
                     .getQueryExecution()
                     .map(
                         qe ->
-                            ScalaConversionUtils.fromSeq(
-                                    qe.optimizedPlan()
-                                        .map(
-                                            toScalaFn(
-                                                node ->
-                                                    inputVisitor
-                                                        .andThen(
-                                                            toScalaFn(
-                                                                ds -> {
-                                                                  unknownEntryFacetListener.apply(
-                                                                      node);
-                                                                  return ds;
-                                                                }))
-                                                        .applyOrElse(
-                                                            node,
-                                                            toScalaFn(
-                                                                n -> Collections.emptyList())))))
-                                .stream()
+                            fromSeq(qe.optimizedPlan().map(inputVisitor)).stream()
                                 .flatMap(List::stream)
                                 .map(((Class<InputDataset>) InputDataset.class)::cast))
                     .orElse(Stream.empty()))
@@ -388,32 +374,42 @@ class OpenLineageRunEventBuilder {
     return datasets;
   }
 
+  /**
+   * Returns a {@link Function1} that passes the input {@link LogicalPlan} node to the {@link
+   * #unknownEntryFacetListener} if the inputVisitor is defined for the input node.
+   *
+   * @param inputVisitor
+   * @param <D>
+   * @return
+   */
+  private <D> Function1<LogicalPlan, List<D>> visitLogicalPlan(
+      PartialFunction<LogicalPlan, List<D>> inputVisitor) {
+    return ScalaConversionUtils.toScalaFn(
+        node ->
+            inputVisitor
+                .andThen(
+                    toScalaFn(
+                        ds -> {
+                          unknownEntryFacetListener.accept(node);
+                          return ds;
+                        }))
+                .applyOrElse(node, toScalaFn(n -> Collections.emptyList())));
+  }
+
   private List<OpenLineage.OutputDataset> buildOutputDatasets(List<Object> nodes) {
     log.info(
         "Visiting query plan {} with output dataset builders {}",
         openLineageContext.getQueryExecution(),
         outputDatasetBuilders);
-    PartialFunction<LogicalPlan, List<OutputDataset>> visitor =
-        PlanUtils.merge(outputDatasetQueryPlanVisitors);
+    Function1<LogicalPlan, List<OutputDataset>> visitor =
+        visitLogicalPlan(PlanUtils.merge(outputDatasetQueryPlanVisitors));
     List<OutputDataset> datasets =
         Stream.concat(
                 buildDatasets(nodes, outputDatasetBuilders),
                 openLineageContext
                     .getQueryExecution()
-                    .map(
-                        qe ->
-                            visitor
-                                .andThen(
-                                    toScalaFn(
-                                        ds -> {
-                                          unknownEntryFacetListener.apply(qe.optimizedPlan());
-                                          return ds;
-                                        }))
-                                .applyOrElse(
-                                    qe.optimizedPlan(),
-                                    toScalaFn((node) -> Collections.emptyList()))
-                                .stream()
-                                .map(OutputDataset.class::cast))
+                    .map(qe -> visitor.apply(qe.optimizedPlan()))
+                    .map(List::stream)
                     .orElse(Stream.empty()))
             .collect(Collectors.toList());
 
