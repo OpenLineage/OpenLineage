@@ -49,7 +49,7 @@ public class KafkaLineageStream extends LineageStream {
   }
 
   @Override
-  public void collect(String event) {
+  public void collect(String eventAsString) {
     log.debug("Lineage Event: " + event);
     try {
       String eventString = event;

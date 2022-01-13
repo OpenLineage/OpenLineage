@@ -25,8 +25,7 @@ public abstract class LineageStream {
    */
   enum Type {
     CONSOLE,
-    KAFKA,
-    KINESIS
+    KAFKA
   }
 
   private final Type type;
@@ -45,7 +44,7 @@ public abstract class LineageStream {
    * The specific destination class implements this method with the logic to send the event to its
    * supported destination.
    *
-   * @param event open lineage event
+   * @param eventAsString the OpenLineage event as a {code string} value
    */
-  public abstract void collect(String event);
+  public abstract void collect(String eventAsString);
 }
