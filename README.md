@@ -49,11 +49,17 @@ A configurable backend allows to choose what protocol to send the events to.
 ## Spec
 The [specification](spec/OpenLineage.md) is defined using OpenAPI and allows extension through custom facets.
 
+## Integrations
+
+OpenLineage repository contains integrations with several systems.
+
+- [Apache Spark](https://github.com/OpenLineage/OpenLineage/tree/main/integration/spark)
+- [Apache Airflow](https://github.com/OpenLineage/OpenLineage/tree/main/integration/airflow)
+- [dbt](https://github.com/OpenLineage/OpenLineage/tree/main/integration/dbt)
+
 ## Related projects
 - [Marquez](https://marquezproject.ai/): Marquez is an [LF AI & DATA](https://lfaidata.foundation/) project to collect, aggregate, and visualize a data ecosystem's metadata. It is the reference implementation of the OpenLineage API.
   - [OpenLineage collection implementation](https://github.com/MarquezProject/marquez/blob/main/api/src/main/java/marquez/api/OpenLineageResource.java)
-  - [Spark integration](https://github.com/OpenLineage/OpenLineage/tree/main/integration/spark)
-  - [Airflow integration](https://github.com/MarquezProject/marquez/tree/main/integrations/airflow)  
 - [Egeria](https://egeria.odpi.org/): Egeria Open Metadata and Governance. A metadata bus.
 
 ## Community
