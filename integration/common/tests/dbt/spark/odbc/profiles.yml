@@ -1,0 +1,14 @@
+spark:
+    target: dev
+    outputs:
+        dev:
+            type: spark
+            method: odbc
+            driver: "/Library/spark/lib/libsparkodbc_sbu.dylib"
+            database: "db"
+            schema: "schema"
+            host: adb-1500100900.22.azuredatabricks.net
+            organization: "{ 1500100900 | as_text }"
+            token: "15001009001500100900"
+            endpoint: "1500100900"
+            port: 443

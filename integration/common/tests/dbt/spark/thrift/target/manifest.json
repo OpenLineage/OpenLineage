@@ -1,0 +1,2170 @@
+{
+	"metadata": {
+		"dbt_schema_version": "https://schemas.getdbt.com/dbt/manifest/v4.json",
+		"dbt_version": "1.0.0",
+		"generated_at": "2021-12-22T17:44:02.304287Z",
+		"invocation_id": "a10ef908-878c-4bce-bf00-8d00e24f3d8a",
+		"env": {},
+		"project_id": "06e5b98c2db46f8a72cc4f66410e9b3b",
+		"user_id": "93b9834f-b02b-466c-a3ca-ec6db35a82ec",
+		"send_anonymous_usage_stats": true,
+		"adapter_type": "spark"
+	},
+	"nodes": {
+		"model.jaffle_shop.orders": {
+			"raw_sql": "{% set payment_methods = ['credit_card', 'coupon', 'bank_transfer', 'gift_card'] %}\n\nwith orders as (\n\n    select * from {{ ref('stg_orders') }}\n\n),\n\npayments as (\n\n    select * from {{ ref('stg_payments') }}\n\n),\n\norder_payments as (\n\n    select\n        order_id,\n\n        {% for payment_method in payment_methods -%}\n        sum(case when payment_method = '{{ payment_method }}' then amount else 0 end) as {{ payment_method }}_amount,\n        {% endfor -%}\n\n        sum(amount) as total_amount\n\n    from payments\n\n    group by order_id\n\n),\n\nfinal as (\n\n    select\n        orders.order_id,\n        orders.customer_id,\n        orders.order_date,\n        orders.status,\n\n        {% for payment_method in payment_methods -%}\n\n        order_payments.{{ payment_method }}_amount,\n\n        {% endfor -%}\n\n        order_payments.total_amount as amount\n\n    from orders\n\n\n    left join order_payments\n        on orders.order_id = order_payments.order_id\n\n)\n\nselect * from final",
+			"compiled": true,
+			"resource_type": "model",
+			"depends_on": {
+				"macros": ["macro.dbt.run_hooks", "macro.dbt.statement", "macro.dbt.persist_docs"],
+				"nodes": ["model.jaffle_shop.stg_orders", "model.jaffle_shop.stg_payments"]
+			},
+			"config": {
+				"enabled": true,
+				"alias": null,
+				"schema": null,
+				"database": null,
+				"tags": [],
+				"meta": {},
+				"materialized": "table",
+				"persist_docs": {},
+				"quoting": {},
+				"column_types": {},
+				"full_refresh": null,
+				"on_schema_change": "ignore",
+				"post-hook": [],
+				"pre-hook": []
+			},
+			"database": "db",
+			"schema": "default",
+			"fqn": ["jaffle_shop", "orders"],
+			"unique_id": "model.jaffle_shop.orders",
+			"package_name": "jaffle_shop",
+			"root_path": "/Users/test/code/jaffle_shop",
+			"path": "orders.sql",
+			"original_file_path": "models/orders.sql",
+			"name": "orders",
+			"alias": "orders",
+			"checksum": {
+				"name": "sha256",
+				"checksum": "53950235d8e29690d259e95ee49bda6a5b7911b44c739b738a646dc6014bcfcd"
+			},
+			"tags": [],
+			"refs": [
+				["stg_orders"],
+				["stg_payments"]
+			],
+			"sources": [],
+			"description": "This table has basic information about orders, as well as some derived facts based on payments",
+			"columns": {
+				"order_id": {
+					"name": "order_id",
+					"description": "This is a unique identifier for an order",
+					"meta": {},
+					"data_type": null,
+					"quote": null,
+					"tags": []
+				},
+				"customer_id": {
+					"name": "customer_id",
+					"description": "Foreign key to the customers table",
+					"meta": {},
+					"data_type": null,
+					"quote": null,
+					"tags": []
+				},
+				"order_date": {
+					"name": "order_date",
+					"description": "Date (UTC) that the order was placed",
+					"meta": {},
+					"data_type": null,
+					"quote": null,
+					"tags": []
+				},
+				"status": {
+					"name": "status",
+					"description": "Orders can be one of the following statuses:\n\n| status         | description                                                                                                            |\n|----------------|------------------------------------------------------------------------------------------------------------------------|\n| placed         | The order has been placed but has not yet left the warehouse                                                           |\n| shipped        | The order has ben shipped to the customer and is currently in transit                                                  |\n| completed      | The order has been received by the customer                                                                            |\n| return_pending | The customer has indicated that they would like to return the order, but it has not yet been received at the warehouse |\n| returned       | The order has been returned by the customer and received at the warehouse                                              |",
+					"meta": {},
+					"data_type": null,
+					"quote": null,
+					"tags": []
+				},
+				"amount": {
+					"name": "amount",
+					"description": "Total amount (AUD) of the order",
+					"meta": {},
+					"data_type": null,
+					"quote": null,
+					"tags": []
+				},
+				"credit_card_amount": {
+					"name": "credit_card_amount",
+					"description": "Amount of the order (AUD) paid for by credit card",
+					"meta": {},
+					"data_type": null,
+					"quote": null,
+					"tags": []
+				},
+				"coupon_amount": {
+					"name": "coupon_amount",
+					"description": "Amount of the order (AUD) paid for by coupon",
+					"meta": {},
+					"data_type": null,
+					"quote": null,
+					"tags": []
+				},
+				"bank_transfer_amount": {
+					"name": "bank_transfer_amount",
+					"description": "Amount of the order (AUD) paid for by bank transfer",
+					"meta": {},
+					"data_type": null,
+					"quote": null,
+					"tags": []
+				},
+				"gift_card_amount": {
+					"name": "gift_card_amount",
+					"description": "Amount of the order (AUD) paid for by gift card",
+					"meta": {},
+					"data_type": null,
+					"quote": null,
+					"tags": []
+				}
+			},
+			"meta": {},
+			"docs": {
+				"show": true
+			},
+			"patch_path": "jaffle_shop://models/schema.yml",
+			"compiled_path": "target/compiled/jaffle_shop/models/orders.sql",
+			"build_path": "target/run/jaffle_shop/models/orders.sql",
+			"deferred": false,
+			"unrendered_config": {
+				"materialized": "table"
+			},
+			"created_at": 1640188485.816036,
+			"compiled_sql": "\n\nwith orders as (\n\n    select * from default.stg_orders\n\n),\n\npayments as (\n\n    select * from default.stg_payments\n\n),\n\norder_payments as (\n\n    select\n        order_id,\n\n        sum(case when payment_method = 'credit_card' then amount else 0 end) as credit_card_amount,\n        sum(case when payment_method = 'coupon' then amount else 0 end) as coupon_amount,\n        sum(case when payment_method = 'bank_transfer' then amount else 0 end) as bank_transfer_amount,\n        sum(case when payment_method = 'gift_card' then amount else 0 end) as gift_card_amount,\n        sum(amount) as total_amount\n\n    from payments\n\n    group by order_id\n\n),\n\nfinal as (\n\n    select\n        orders.order_id,\n        orders.customer_id,\n        orders.order_date,\n        orders.status,\n\n        order_payments.credit_card_amount,\n\n        order_payments.coupon_amount,\n\n        order_payments.bank_transfer_amount,\n\n        order_payments.gift_card_amount,\n\n        order_payments.total_amount as amount\n\n    from orders\n\n\n    left join order_payments\n        on orders.order_id = order_payments.order_id\n\n)\n\nselect * from final",
+			"extra_ctes_injected": true,
+			"extra_ctes": [],
+			"relation_name": "default.orders"
+		},
+		"model.jaffle_shop.stg_customers": {
+			"raw_sql": "with source as (\n\n    {#-\n    Normally we would select from the table here, but we are using seeds to load\n    our data in this project\n    #}\n    select * from {{ ref('raw_customers') }}\n\n),\n\nrenamed as (\n\n    select\n        id as customer_id,\n        first_name,\n        last_name\n\n    from source\n\n)\n\nselect * from renamed",
+			"compiled": true,
+			"resource_type": "model",
+			"depends_on": {
+				"macros": ["macro.dbt.create_or_replace_view"],
+				"nodes": ["seed.jaffle_shop.raw_customers"]
+			},
+			"config": {
+				"enabled": true,
+				"alias": null,
+				"schema": null,
+				"database": null,
+				"tags": [],
+				"meta": {},
+				"materialized": "view",
+				"persist_docs": {},
+				"quoting": {},
+				"column_types": {},
+				"full_refresh": null,
+				"on_schema_change": "ignore",
+				"post-hook": [],
+				"pre-hook": []
+			},
+			"database": "db",
+			"schema": "default",
+			"fqn": ["jaffle_shop", "staging", "stg_customers"],
+			"unique_id": "model.jaffle_shop.stg_customers",
+			"package_name": "jaffle_shop",
+			"root_path": "/Users/test/code/jaffle_shop",
+			"path": "staging/stg_customers.sql",
+			"original_file_path": "models/staging/stg_customers.sql",
+			"name": "stg_customers",
+			"alias": "stg_customers",
+			"checksum": {
+				"name": "sha256",
+				"checksum": "6f18a29204dad1de6dbb0c288144c4990742e0a1e065c3b2a67b5f98334c22ba"
+			},
+			"tags": [],
+			"refs": [
+				["raw_customers"]
+			],
+			"sources": [],
+			"description": "",
+			"columns": {
+				"customer_id": {
+					"name": "customer_id",
+					"description": "",
+					"meta": {},
+					"data_type": null,
+					"quote": null,
+					"tags": []
+				}
+			},
+			"meta": {},
+			"docs": {
+				"show": true
+			},
+			"patch_path": "jaffle_shop://models/staging/schema.yml",
+			"compiled_path": "target/compiled/jaffle_shop/models/staging/stg_customers.sql",
+			"build_path": "target/run/jaffle_shop/models/staging/stg_customers.sql",
+			"deferred": false,
+			"unrendered_config": {
+				"materialized": "view"
+			},
+			"created_at": 1640188485.840111,
+			"compiled_sql": "with source as (\n    select * from default.raw_customers\n\n),\n\nrenamed as (\n\n    select\n        id as customer_id,\n        first_name,\n        last_name\n\n    from source\n\n)\n\nselect * from renamed",
+			"extra_ctes_injected": true,
+			"extra_ctes": [],
+			"relation_name": "default.stg_customers"
+		},
+		"model.jaffle_shop.stg_payments": {
+			"raw_sql": "with source as (\n    \n    {#-\n    Normally we would select from the table here, but we are using seeds to load\n    our data in this project\n    #}\n    select * from {{ ref('raw_payments') }}\n\n),\n\nrenamed as (\n\n    select\n        id as payment_id,\n        order_id,\n        payment_method,\n\n        -- `amount` is currently stored in cents, so we convert it to dollars\n        amount / 100 as amount\n\n    from source\n\n)\n\nselect * from renamed",
+			"compiled": true,
+			"resource_type": "model",
+			"depends_on": {
+				"macros": ["macro.dbt.create_or_replace_view"],
+				"nodes": ["seed.jaffle_shop.raw_payments"]
+			},
+			"config": {
+				"enabled": true,
+				"alias": null,
+				"schema": null,
+				"database": null,
+				"tags": [],
+				"meta": {},
+				"materialized": "view",
+				"persist_docs": {},
+				"quoting": {},
+				"column_types": {},
+				"full_refresh": null,
+				"on_schema_change": "ignore",
+				"post-hook": [],
+				"pre-hook": []
+			},
+			"database": "db",
+			"schema": "default",
+			"fqn": ["jaffle_shop", "staging", "stg_payments"],
+			"unique_id": "model.jaffle_shop.stg_payments",
+			"package_name": "jaffle_shop",
+			"root_path": "/Users/test/code/jaffle_shop",
+			"path": "staging/stg_payments.sql",
+			"original_file_path": "models/staging/stg_payments.sql",
+			"name": "stg_payments",
+			"alias": "stg_payments",
+			"checksum": {
+				"name": "sha256",
+				"checksum": "eb899938258d1fba27fca716a7c334119912a2f9601282026097a7b6ce8cfcd2"
+			},
+			"tags": [],
+			"refs": [
+				["raw_payments"]
+			],
+			"sources": [],
+			"description": "",
+			"columns": {
+				"payment_id": {
+					"name": "payment_id",
+					"description": "",
+					"meta": {},
+					"data_type": null,
+					"quote": null,
+					"tags": []
+				},
+				"payment_method": {
+					"name": "payment_method",
+					"description": "",
+					"meta": {},
+					"data_type": null,
+					"quote": null,
+					"tags": []
+				}
+			},
+			"meta": {},
+			"docs": {
+				"show": true
+			},
+			"patch_path": "jaffle_shop://models/staging/schema.yml",
+			"compiled_path": "target/compiled/jaffle_shop/models/staging/stg_payments.sql",
+			"build_path": "target/run/jaffle_shop/models/staging/stg_payments.sql",
+			"deferred": false,
+			"unrendered_config": {
+				"materialized": "view"
+			},
+			"created_at": 1640188485.8419032,
+			"compiled_sql": "with source as (\n    select * from default.raw_payments\n\n),\n\nrenamed as (\n\n    select\n        id as payment_id,\n        order_id,\n        payment_method,\n\n        -- `amount` is currently stored in cents, so we convert it to dollars\n        amount / 100 as amount\n\n    from source\n\n)\n\nselect * from renamed",
+			"extra_ctes_injected": true,
+			"extra_ctes": [],
+			"relation_name": "default.stg_payments"
+		},
+		"model.jaffle_shop.stg_orders": {
+			"raw_sql": "with source as (\n\n    {#-\n    Normally we would select from the table here, but we are using seeds to load\n    our data in this project\n    #}\n    select * from {{ ref('raw_orders') }}\n\n),\n\nrenamed as (\n\n    select\n        id as order_id,\n        user_id as customer_id,\n        order_date,\n        status\n\n    from source\n\n)\n\nselect * from renamed",
+			"compiled": true,
+			"resource_type": "model",
+			"depends_on": {
+				"macros": ["macro.dbt.create_or_replace_view"],
+				"nodes": ["seed.jaffle_shop.raw_orders"]
+			},
+			"config": {
+				"enabled": true,
+				"alias": null,
+				"schema": null,
+				"database": null,
+				"tags": [],
+				"meta": {},
+				"materialized": "view",
+				"persist_docs": {},
+				"quoting": {},
+				"column_types": {},
+				"full_refresh": null,
+				"on_schema_change": "ignore",
+				"post-hook": [],
+				"pre-hook": []
+			},
+			"database": "db",
+			"schema": "default",
+			"fqn": ["jaffle_shop", "staging", "stg_orders"],
+			"unique_id": "model.jaffle_shop.stg_orders",
+			"package_name": "jaffle_shop",
+			"root_path": "/Users/test/code/jaffle_shop",
+			"path": "staging/stg_orders.sql",
+			"original_file_path": "models/staging/stg_orders.sql",
+			"name": "stg_orders",
+			"alias": "stg_orders",
+			"checksum": {
+				"name": "sha256",
+				"checksum": "afffa9cbc57e5fd2cf5898ebf571d444a62c9d6d7929d8133d30567fb9a2ce97"
+			},
+			"tags": [],
+			"refs": [
+				["raw_orders"]
+			],
+			"sources": [],
+			"description": "",
+			"columns": {
+				"order_id": {
+					"name": "order_id",
+					"description": "",
+					"meta": {},
+					"data_type": null,
+					"quote": null,
+					"tags": []
+				},
+				"status": {
+					"name": "status",
+					"description": "",
+					"meta": {},
+					"data_type": null,
+					"quote": null,
+					"tags": []
+				}
+			},
+			"meta": {},
+			"docs": {
+				"show": true
+			},
+			"patch_path": "jaffle_shop://models/staging/schema.yml",
+			"compiled_path": "target/compiled/jaffle_shop/models/staging/stg_orders.sql",
+			"build_path": "target/run/jaffle_shop/models/staging/stg_orders.sql",
+			"deferred": false,
+			"unrendered_config": {
+				"materialized": "view"
+			},
+			"created_at": 1640188485.841066,
+			"compiled_sql": "with source as (\n    select * from default.raw_orders\n\n),\n\nrenamed as (\n\n    select\n        id as order_id,\n        user_id as customer_id,\n        order_date,\n        status\n\n    from source\n\n)\n\nselect * from renamed",
+			"extra_ctes_injected": true,
+			"extra_ctes": [],
+			"relation_name": "default.stg_orders"
+		},
+		"seed.jaffle_shop.raw_customers": {
+			"raw_sql": "",
+			"resource_type": "seed",
+			"depends_on": {
+				"macros": ["macro.dbt.should_full_refresh", "macro.dbt.run_hooks", "macro.dbt.reset_csv_table", "macro.dbt.load_csv_rows", "macro.dbt.noop_statement", "macro.dbt.persist_docs"],
+				"nodes": []
+			},
+			"config": {
+				"enabled": true,
+				"alias": null,
+				"schema": null,
+				"database": null,
+				"tags": [],
+				"meta": {},
+				"materialized": "seed",
+				"persist_docs": {},
+				"quoting": {},
+				"column_types": {},
+				"full_refresh": null,
+				"on_schema_change": "ignore",
+				"quote_columns": null,
+				"post-hook": [],
+				"pre-hook": []
+			},
+			"database": "db",
+			"schema": "default",
+			"fqn": ["jaffle_shop", "raw_customers"],
+			"unique_id": "seed.jaffle_shop.raw_customers",
+			"package_name": "jaffle_shop",
+			"root_path": "/Users/test/code/jaffle_shop",
+			"path": "raw_customers.csv",
+			"original_file_path": "data/raw_customers.csv",
+			"name": "raw_customers",
+			"alias": "raw_customers",
+			"checksum": {
+				"name": "sha256",
+				"checksum": "24579b4b26098d43265376f3c50be8b10faf8e8fd95f5508074f10f76a12671d"
+			},
+			"tags": [],
+			"refs": [],
+			"sources": [],
+			"description": "",
+			"columns": {},
+			"meta": {},
+			"docs": {
+				"show": true
+			},
+			"patch_path": null,
+			"compiled_path": null,
+			"build_path": "target/run/jaffle_shop/data/raw_customers.csv",
+			"deferred": false,
+			"unrendered_config": {},
+			"created_at": 1640188485.80256
+		},
+		"seed.jaffle_shop.raw_orders": {
+			"raw_sql": "",
+			"resource_type": "seed",
+			"depends_on": {
+				"macros": ["macro.dbt.should_full_refresh", "macro.dbt.run_hooks", "macro.dbt.reset_csv_table", "macro.dbt.load_csv_rows", "macro.dbt.noop_statement", "macro.dbt.persist_docs"],
+				"nodes": []
+			},
+			"config": {
+				"enabled": true,
+				"alias": null,
+				"schema": null,
+				"database": null,
+				"tags": [],
+				"meta": {},
+				"materialized": "seed",
+				"persist_docs": {},
+				"quoting": {},
+				"column_types": {},
+				"full_refresh": null,
+				"on_schema_change": "ignore",
+				"quote_columns": null,
+				"post-hook": [],
+				"pre-hook": []
+			},
+			"database": "db",
+			"schema": "default",
+			"fqn": ["jaffle_shop", "raw_orders"],
+			"unique_id": "seed.jaffle_shop.raw_orders",
+			"package_name": "jaffle_shop",
+			"root_path": "/Users/test/code/jaffle_shop",
+			"path": "raw_orders.csv",
+			"original_file_path": "data/raw_orders.csv",
+			"name": "raw_orders",
+			"alias": "raw_orders",
+			"checksum": {
+				"name": "sha256",
+				"checksum": "ee6c68d1639ec2b23a4495ec12475e09b8ed4b61e23ab0411ea7ec76648356f7"
+			},
+			"tags": [],
+			"refs": [],
+			"sources": [],
+			"description": "",
+			"columns": {},
+			"meta": {},
+			"docs": {
+				"show": true
+			},
+			"patch_path": null,
+			"compiled_path": null,
+			"build_path": "target/run/jaffle_shop/data/raw_orders.csv",
+			"deferred": false,
+			"unrendered_config": {},
+			"created_at": 1640188485.803354
+		},
+		"seed.jaffle_shop.raw_payments": {
+			"raw_sql": "",
+			"resource_type": "seed",
+			"depends_on": {
+				"macros": ["macro.dbt.should_full_refresh", "macro.dbt.run_hooks", "macro.dbt.reset_csv_table", "macro.dbt.load_csv_rows", "macro.dbt.noop_statement", "macro.dbt.persist_docs"],
+				"nodes": []
+			},
+			"config": {
+				"enabled": true,
+				"alias": null,
+				"schema": null,
+				"database": null,
+				"tags": [],
+				"meta": {},
+				"materialized": "seed",
+				"persist_docs": {},
+				"quoting": {},
+				"column_types": {},
+				"full_refresh": null,
+				"on_schema_change": "ignore",
+				"quote_columns": null,
+				"post-hook": [],
+				"pre-hook": []
+			},
+			"database": "db",
+			"schema": "default",
+			"fqn": ["jaffle_shop", "raw_payments"],
+			"unique_id": "seed.jaffle_shop.raw_payments",
+			"package_name": "jaffle_shop",
+			"root_path": "/Users/test/code/jaffle_shop",
+			"path": "raw_payments.csv",
+			"original_file_path": "data/raw_payments.csv",
+			"name": "raw_payments",
+			"alias": "raw_payments",
+			"checksum": {
+				"name": "sha256",
+				"checksum": "03fd407f3135f84456431a923f22fc185a2154079e210c20b690e3ab11687d11"
+			},
+			"tags": [],
+			"refs": [],
+			"sources": [],
+			"description": "",
+			"columns": {},
+			"meta": {},
+			"docs": {
+				"show": true
+			},
+			"patch_path": null,
+			"compiled_path": null,
+			"build_path": "target/run/jaffle_shop/data/raw_payments.csv",
+			"deferred": false,
+			"unrendered_config": {},
+			"created_at": 1640188485.804141
+		},
+		"test.jaffle_shop.unique_orders_order_id.fed79b3a6e": {
+			"raw_sql": "{{ test_unique(**_dbt_generic_test_kwargs) }}",
+			"test_metadata": {
+				"name": "unique",
+				"kwargs": {
+					"column_name": "order_id",
+					"model": "{{ get_where_subquery(ref('orders')) }}"
+				},
+				"namespace": null
+			},
+			"compiled": true,
+			"resource_type": "test",
+			"depends_on": {
+				"macros": ["macro.dbt.test_unique", "macro.dbt.get_where_subquery", "macro.dbt.should_store_failures", "macro.dbt.statement"],
+				"nodes": ["model.jaffle_shop.orders"]
+			},
+			"config": {
+				"enabled": true,
+				"alias": null,
+				"schema": "dbt_test__audit",
+				"database": null,
+				"tags": [],
+				"meta": {},
+				"materialized": "test",
+				"severity": "ERROR",
+				"store_failures": null,
+				"where": null,
+				"limit": null,
+				"fail_calc": "count(*)",
+				"warn_if": "!= 0",
+				"error_if": "!= 0"
+			},
+			"database": "db",
+			"schema": "default_dbt_test__audit",
+			"fqn": ["jaffle_shop", "unique_orders_order_id"],
+			"unique_id": "test.jaffle_shop.unique_orders_order_id.fed79b3a6e",
+			"package_name": "jaffle_shop",
+			"root_path": "/Users/test/code/jaffle_shop",
+			"path": "unique_orders_order_id.sql",
+			"original_file_path": "models/schema.yml",
+			"name": "unique_orders_order_id",
+			"alias": "unique_orders_order_id",
+			"checksum": {
+				"name": "none",
+				"checksum": ""
+			},
+			"tags": [],
+			"refs": [
+				["orders"]
+			],
+			"sources": [],
+			"description": "",
+			"columns": {},
+			"meta": {},
+			"docs": {
+				"show": true
+			},
+			"patch_path": null,
+			"compiled_path": "target/compiled/jaffle_shop/models/schema.yml/unique_orders_order_id.sql",
+			"build_path": "target/run/jaffle_shop/models/schema.yml/unique_orders_order_id.sql",
+			"deferred": false,
+			"unrendered_config": {},
+			"created_at": 1640188485.821774,
+			"compiled_sql": "\n    \n    \n\nselect\n    order_id as unique_field,\n    count(*) as n_records\n\nfrom default.orders\nwhere order_id is not null\ngroup by order_id\nhaving count(*) > 1\n\n\n",
+			"extra_ctes_injected": true,
+			"extra_ctes": [],
+			"relation_name": null,
+			"column_name": "order_id",
+			"file_key_name": "models.orders"
+		},
+		"test.jaffle_shop.not_null_orders_order_id.cf6c17daed": {
+			"raw_sql": "{{ test_not_null(**_dbt_generic_test_kwargs) }}",
+			"test_metadata": {
+				"name": "not_null",
+				"kwargs": {
+					"column_name": "order_id",
+					"model": "{{ get_where_subquery(ref('orders')) }}"
+				},
+				"namespace": null
+			},
+			"compiled": true,
+			"resource_type": "test",
+			"depends_on": {
+				"macros": ["macro.dbt.test_not_null", "macro.dbt.get_where_subquery", "macro.dbt.should_store_failures", "macro.dbt.statement"],
+				"nodes": ["model.jaffle_shop.orders"]
+			},
+			"config": {
+				"enabled": true,
+				"alias": null,
+				"schema": "dbt_test__audit",
+				"database": null,
+				"tags": [],
+				"meta": {},
+				"materialized": "test",
+				"severity": "ERROR",
+				"store_failures": null,
+				"where": null,
+				"limit": null,
+				"fail_calc": "count(*)",
+				"warn_if": "!= 0",
+				"error_if": "!= 0"
+			},
+			"database": "db",
+			"schema": "default_dbt_test__audit",
+			"fqn": ["jaffle_shop", "not_null_orders_order_id"],
+			"unique_id": "test.jaffle_shop.not_null_orders_order_id.cf6c17daed",
+			"package_name": "jaffle_shop",
+			"root_path": "/Users/test/code/jaffle_shop",
+			"path": "not_null_orders_order_id.sql",
+			"original_file_path": "models/schema.yml",
+			"name": "not_null_orders_order_id",
+			"alias": "not_null_orders_order_id",
+			"checksum": {
+				"name": "none",
+				"checksum": ""
+			},
+			"tags": [],
+			"refs": [
+				["orders"]
+			],
+			"sources": [],
+			"description": "",
+			"columns": {},
+			"meta": {},
+			"docs": {
+				"show": true
+			},
+			"patch_path": null,
+			"compiled_path": "target/compiled/jaffle_shop/models/schema.yml/not_null_orders_order_id.sql",
+			"build_path": "target/run/jaffle_shop/models/schema.yml/not_null_orders_order_id.sql",
+			"deferred": false,
+			"unrendered_config": {},
+			"created_at": 1640188485.822541,
+			"compiled_sql": "\n    \n    \n\nselect *\nfrom default.orders\nwhere order_id is null\n\n\n",
+			"extra_ctes_injected": true,
+			"extra_ctes": [],
+			"relation_name": null,
+			"column_name": "order_id",
+			"file_key_name": "models.orders"
+		},
+		"test.jaffle_shop.not_null_orders_customer_id.c5f02694af": {
+			"raw_sql": "{{ test_not_null(**_dbt_generic_test_kwargs) }}",
+			"test_metadata": {
+				"name": "not_null",
+				"kwargs": {
+					"column_name": "customer_id",
+					"model": "{{ get_where_subquery(ref('orders')) }}"
+				},
+				"namespace": null
+			},
+			"compiled": true,
+			"resource_type": "test",
+			"depends_on": {
+				"macros": ["macro.dbt.test_not_null", "macro.dbt.get_where_subquery", "macro.dbt.should_store_failures", "macro.dbt.statement"],
+				"nodes": ["model.jaffle_shop.orders"]
+			},
+			"config": {
+				"enabled": true,
+				"alias": null,
+				"schema": "dbt_test__audit",
+				"database": null,
+				"tags": [],
+				"meta": {},
+				"materialized": "test",
+				"severity": "ERROR",
+				"store_failures": null,
+				"where": null,
+				"limit": null,
+				"fail_calc": "count(*)",
+				"warn_if": "!= 0",
+				"error_if": "!= 0"
+			},
+			"database": "db",
+			"schema": "default_dbt_test__audit",
+			"fqn": ["jaffle_shop", "not_null_orders_customer_id"],
+			"unique_id": "test.jaffle_shop.not_null_orders_customer_id.c5f02694af",
+			"package_name": "jaffle_shop",
+			"root_path": "/Users/test/code/jaffle_shop",
+			"path": "not_null_orders_customer_id.sql",
+			"original_file_path": "models/schema.yml",
+			"name": "not_null_orders_customer_id",
+			"alias": "not_null_orders_customer_id",
+			"checksum": {
+				"name": "none",
+				"checksum": ""
+			},
+			"tags": [],
+			"refs": [
+				["orders"]
+			],
+			"sources": [],
+			"description": "",
+			"columns": {},
+			"meta": {},
+			"docs": {
+				"show": true
+			},
+			"patch_path": null,
+			"compiled_path": "target/compiled/jaffle_shop/models/schema.yml/not_null_orders_customer_id.sql",
+			"build_path": "target/run/jaffle_shop/models/schema.yml/not_null_orders_customer_id.sql",
+			"deferred": false,
+			"unrendered_config": {},
+			"created_at": 1640188485.823395,
+			"compiled_sql": "\n    \n    \n\nselect *\nfrom default.orders\nwhere customer_id is null\n\n\n",
+			"extra_ctes_injected": true,
+			"extra_ctes": [],
+			"relation_name": null,
+			"column_name": "customer_id",
+			"file_key_name": "models.orders"
+		},
+		"test.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.c6ec7f58f2": {
+			"raw_sql": "{{ test_relationships(**_dbt_generic_test_kwargs) }}",
+			"test_metadata": {
+				"name": "relationships",
+				"kwargs": {
+					"to": "ref('customers')",
+					"field": "customer_id",
+					"column_name": "customer_id",
+					"model": "{{ get_where_subquery(ref('orders')) }}"
+				},
+				"namespace": null
+			},
+			"compiled": true,
+			"resource_type": "test",
+			"depends_on": {
+				"macros": ["macro.dbt.test_relationships", "macro.dbt.get_where_subquery", "macro.dbt.should_store_failures", "macro.dbt.statement"],
+				"nodes": ["model.jaffle_shop.customers", "model.jaffle_shop.orders"]
+			},
+			"config": {
+				"enabled": true,
+				"alias": null,
+				"schema": "dbt_test__audit",
+				"database": null,
+				"tags": [],
+				"meta": {},
+				"materialized": "test",
+				"severity": "ERROR",
+				"store_failures": null,
+				"where": null,
+				"limit": null,
+				"fail_calc": "count(*)",
+				"warn_if": "!= 0",
+				"error_if": "!= 0"
+			},
+			"database": "db",
+			"schema": "default_dbt_test__audit",
+			"fqn": ["jaffle_shop", "relationships_orders_customer_id__customer_id__ref_customers_"],
+			"unique_id": "test.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.c6ec7f58f2",
+			"package_name": "jaffle_shop",
+			"root_path": "/Users/test/code/jaffle_shop",
+			"path": "relationships_orders_customer_id__customer_id__ref_customers_.sql",
+			"original_file_path": "models/schema.yml",
+			"name": "relationships_orders_customer_id__customer_id__ref_customers_",
+			"alias": "relationships_orders_customer_id__customer_id__ref_customers_",
+			"checksum": {
+				"name": "none",
+				"checksum": ""
+			},
+			"tags": [],
+			"refs": [
+				["customers"],
+				["orders"]
+			],
+			"sources": [],
+			"description": "",
+			"columns": {},
+			"meta": {},
+			"docs": {
+				"show": true
+			},
+			"patch_path": null,
+			"compiled_path": "target/compiled/jaffle_shop/models/schema.yml/relationships_orders_customer_id__customer_id__ref_customers_.sql",
+			"build_path": "target/run/jaffle_shop/models/schema.yml/relationships_orders_customer_id__customer_id__ref_customers_.sql",
+			"deferred": false,
+			"unrendered_config": {},
+			"created_at": 1640188485.824152,
+			"compiled_sql": "\n    \n    \n\nwith child as (\n    select customer_id as from_field\n    from default.orders\n    where customer_id is not null\n),\n\nparent as (\n    select customer_id as to_field\n    from default.customers\n)\n\nselect\n    from_field\n\nfrom child\nleft join parent\n    on child.from_field = parent.to_field\n\nwhere parent.to_field is null\n\n\n",
+			"extra_ctes_injected": true,
+			"extra_ctes": [],
+			"relation_name": null,
+			"column_name": "customer_id",
+			"file_key_name": "models.orders"
+		},
+		"test.jaffle_shop.accepted_values_orders_status__placed__shipped__completed__return_pending__returned.be6b5b5ec3": {
+			"raw_sql": "{{ test_accepted_values(**_dbt_generic_test_kwargs) }}{{ config(alias=\"accepted_values_orders_1ce6ab157c285f7cd2ac656013faf758\") }}",
+			"test_metadata": {
+				"name": "accepted_values",
+				"kwargs": {
+					"values": ["placed", "shipped", "completed", "return_pending", "returned"],
+					"column_name": "status",
+					"model": "{{ get_where_subquery(ref('orders')) }}"
+				},
+				"namespace": null
+			},
+			"compiled": true,
+			"resource_type": "test",
+			"depends_on": {
+				"macros": ["macro.dbt.test_accepted_values", "macro.dbt.get_where_subquery", "macro.dbt.should_store_failures", "macro.dbt.statement"],
+				"nodes": ["model.jaffle_shop.orders"]
+			},
+			"config": {
+				"enabled": true,
+				"alias": "accepted_values_orders_1ce6ab157c285f7cd2ac656013faf758",
+				"schema": "dbt_test__audit",
+				"database": null,
+				"tags": [],
+				"meta": {},
+				"materialized": "test",
+				"severity": "ERROR",
+				"store_failures": null,
+				"where": null,
+				"limit": null,
+				"fail_calc": "count(*)",
+				"warn_if": "!= 0",
+				"error_if": "!= 0"
+			},
+			"database": "db",
+			"schema": "default_dbt_test__audit",
+			"fqn": ["jaffle_shop", "accepted_values_orders_status__placed__shipped__completed__return_pending__returned"],
+			"unique_id": "test.jaffle_shop.accepted_values_orders_status__placed__shipped__completed__return_pending__returned.be6b5b5ec3",
+			"package_name": "jaffle_shop",
+			"root_path": "/Users/test/code/jaffle_shop",
+			"path": "accepted_values_orders_1ce6ab157c285f7cd2ac656013faf758.sql",
+			"original_file_path": "models/schema.yml",
+			"name": "accepted_values_orders_status__placed__shipped__completed__return_pending__returned",
+			"alias": "accepted_values_orders_1ce6ab157c285f7cd2ac656013faf758",
+			"checksum": {
+				"name": "none",
+				"checksum": ""
+			},
+			"tags": [],
+			"refs": [
+				["orders"]
+			],
+			"sources": [],
+			"description": "",
+			"columns": {},
+			"meta": {},
+			"docs": {
+				"show": true
+			},
+			"patch_path": null,
+			"compiled_path": "target/compiled/jaffle_shop/models/schema.yml/accepted_values_orders_1ce6ab157c285f7cd2ac656013faf758.sql",
+			"build_path": "target/run/jaffle_shop/models/schema.yml/accepted_values_orders_1ce6ab157c285f7cd2ac656013faf758.sql",
+			"deferred": false,
+			"unrendered_config": {
+				"alias": "accepted_values_orders_1ce6ab157c285f7cd2ac656013faf758"
+			},
+			"created_at": 1640188485.8304682,
+			"compiled_sql": "\n    \n    \n\nwith all_values as (\n\n    select\n        status as value_field,\n        count(*) as n_records\n\n    from default.orders\n    group by status\n\n)\n\nselect *\nfrom all_values\nwhere value_field not in (\n    'placed','shipped','completed','return_pending','returned'\n)\n\n\n",
+			"extra_ctes_injected": true,
+			"extra_ctes": [],
+			"relation_name": null,
+			"column_name": "status",
+			"file_key_name": "models.orders"
+		},
+		"test.jaffle_shop.not_null_orders_amount.106140f9fd": {
+			"raw_sql": "{{ test_not_null(**_dbt_generic_test_kwargs) }}",
+			"test_metadata": {
+				"name": "not_null",
+				"kwargs": {
+					"column_name": "amount",
+					"model": "{{ get_where_subquery(ref('orders')) }}"
+				},
+				"namespace": null
+			},
+			"compiled": true,
+			"resource_type": "test",
+			"depends_on": {
+				"macros": ["macro.dbt.test_not_null", "macro.dbt.get_where_subquery", "macro.dbt.should_store_failures", "macro.dbt.statement"],
+				"nodes": ["model.jaffle_shop.orders"]
+			},
+			"config": {
+				"enabled": true,
+				"alias": null,
+				"schema": "dbt_test__audit",
+				"database": null,
+				"tags": [],
+				"meta": {},
+				"materialized": "test",
+				"severity": "ERROR",
+				"store_failures": null,
+				"where": null,
+				"limit": null,
+				"fail_calc": "count(*)",
+				"warn_if": "!= 0",
+				"error_if": "!= 0"
+			},
+			"database": "db",
+			"schema": "default_dbt_test__audit",
+			"fqn": ["jaffle_shop", "not_null_orders_amount"],
+			"unique_id": "test.jaffle_shop.not_null_orders_amount.106140f9fd",
+			"package_name": "jaffle_shop",
+			"root_path": "/Users/test/code/jaffle_shop",
+			"path": "not_null_orders_amount.sql",
+			"original_file_path": "models/schema.yml",
+			"name": "not_null_orders_amount",
+			"alias": "not_null_orders_amount",
+			"checksum": {
+				"name": "none",
+				"checksum": ""
+			},
+			"tags": [],
+			"refs": [
+				["orders"]
+			],
+			"sources": [],
+			"description": "",
+			"columns": {},
+			"meta": {},
+			"docs": {
+				"show": true
+			},
+			"patch_path": null,
+			"compiled_path": "target/compiled/jaffle_shop/models/schema.yml/not_null_orders_amount.sql",
+			"build_path": "target/run/jaffle_shop/models/schema.yml/not_null_orders_amount.sql",
+			"deferred": false,
+			"unrendered_config": {},
+			"created_at": 1640188485.835659,
+			"compiled_sql": "\n    \n    \n\nselect *\nfrom default.orders\nwhere amount is null\n\n\n",
+			"extra_ctes_injected": true,
+			"extra_ctes": [],
+			"relation_name": null,
+			"column_name": "amount",
+			"file_key_name": "models.orders"
+		},
+		"test.jaffle_shop.not_null_orders_credit_card_amount.d3ca593b59": {
+			"raw_sql": "{{ test_not_null(**_dbt_generic_test_kwargs) }}",
+			"test_metadata": {
+				"name": "not_null",
+				"kwargs": {
+					"column_name": "credit_card_amount",
+					"model": "{{ get_where_subquery(ref('orders')) }}"
+				},
+				"namespace": null
+			},
+			"compiled": true,
+			"resource_type": "test",
+			"depends_on": {
+				"macros": ["macro.dbt.test_not_null", "macro.dbt.get_where_subquery", "macro.dbt.should_store_failures", "macro.dbt.statement"],
+				"nodes": ["model.jaffle_shop.orders"]
+			},
+			"config": {
+				"enabled": true,
+				"alias": null,
+				"schema": "dbt_test__audit",
+				"database": null,
+				"tags": [],
+				"meta": {},
+				"materialized": "test",
+				"severity": "ERROR",
+				"store_failures": null,
+				"where": null,
+				"limit": null,
+				"fail_calc": "count(*)",
+				"warn_if": "!= 0",
+				"error_if": "!= 0"
+			},
+			"database": "db",
+			"schema": "default_dbt_test__audit",
+			"fqn": ["jaffle_shop", "not_null_orders_credit_card_amount"],
+			"unique_id": "test.jaffle_shop.not_null_orders_credit_card_amount.d3ca593b59",
+			"package_name": "jaffle_shop",
+			"root_path": "/Users/test/code/jaffle_shop",
+			"path": "not_null_orders_credit_card_amount.sql",
+			"original_file_path": "models/schema.yml",
+			"name": "not_null_orders_credit_card_amount",
+			"alias": "not_null_orders_credit_card_amount",
+			"checksum": {
+				"name": "none",
+				"checksum": ""
+			},
+			"tags": [],
+			"refs": [
+				["orders"]
+			],
+			"sources": [],
+			"description": "",
+			"columns": {},
+			"meta": {},
+			"docs": {
+				"show": true
+			},
+			"patch_path": null,
+			"compiled_path": "target/compiled/jaffle_shop/models/schema.yml/not_null_orders_credit_card_amount.sql",
+			"build_path": "target/run/jaffle_shop/models/schema.yml/not_null_orders_credit_card_amount.sql",
+			"deferred": false,
+			"unrendered_config": {},
+			"created_at": 1640188485.836452,
+			"compiled_sql": "\n    \n    \n\nselect *\nfrom default.orders\nwhere credit_card_amount is null\n\n\n",
+			"extra_ctes_injected": true,
+			"extra_ctes": [],
+			"relation_name": null,
+			"column_name": "credit_card_amount",
+			"file_key_name": "models.orders"
+		},
+		"test.jaffle_shop.not_null_orders_coupon_amount.ab90c90625": {
+			"raw_sql": "{{ test_not_null(**_dbt_generic_test_kwargs) }}",
+			"test_metadata": {
+				"name": "not_null",
+				"kwargs": {
+					"column_name": "coupon_amount",
+					"model": "{{ get_where_subquery(ref('orders')) }}"
+				},
+				"namespace": null
+			},
+			"compiled": true,
+			"resource_type": "test",
+			"depends_on": {
+				"macros": ["macro.dbt.test_not_null", "macro.dbt.get_where_subquery", "macro.dbt.should_store_failures", "macro.dbt.statement"],
+				"nodes": ["model.jaffle_shop.orders"]
+			},
+			"config": {
+				"enabled": true,
+				"alias": null,
+				"schema": "dbt_test__audit",
+				"database": null,
+				"tags": [],
+				"meta": {},
+				"materialized": "test",
+				"severity": "ERROR",
+				"store_failures": null,
+				"where": null,
+				"limit": null,
+				"fail_calc": "count(*)",
+				"warn_if": "!= 0",
+				"error_if": "!= 0"
+			},
+			"database": "db",
+			"schema": "default_dbt_test__audit",
+			"fqn": ["jaffle_shop", "not_null_orders_coupon_amount"],
+			"unique_id": "test.jaffle_shop.not_null_orders_coupon_amount.ab90c90625",
+			"package_name": "jaffle_shop",
+			"root_path": "/Users/test/code/jaffle_shop",
+			"path": "not_null_orders_coupon_amount.sql",
+			"original_file_path": "models/schema.yml",
+			"name": "not_null_orders_coupon_amount",
+			"alias": "not_null_orders_coupon_amount",
+			"checksum": {
+				"name": "none",
+				"checksum": ""
+			},
+			"tags": [],
+			"refs": [
+				["orders"]
+			],
+			"sources": [],
+			"description": "",
+			"columns": {},
+			"meta": {},
+			"docs": {
+				"show": true
+			},
+			"patch_path": null,
+			"compiled_path": "target/compiled/jaffle_shop/models/schema.yml/not_null_orders_coupon_amount.sql",
+			"build_path": "target/run/jaffle_shop/models/schema.yml/not_null_orders_coupon_amount.sql",
+			"deferred": false,
+			"unrendered_config": {},
+			"created_at": 1640188485.837234,
+			"compiled_sql": "\n    \n    \n\nselect *\nfrom default.orders\nwhere coupon_amount is null\n\n\n",
+			"extra_ctes_injected": true,
+			"extra_ctes": [],
+			"relation_name": null,
+			"column_name": "coupon_amount",
+			"file_key_name": "models.orders"
+		},
+		"test.jaffle_shop.not_null_orders_bank_transfer_amount.7743500c49": {
+			"raw_sql": "{{ test_not_null(**_dbt_generic_test_kwargs) }}",
+			"test_metadata": {
+				"name": "not_null",
+				"kwargs": {
+					"column_name": "bank_transfer_amount",
+					"model": "{{ get_where_subquery(ref('orders')) }}"
+				},
+				"namespace": null
+			},
+			"compiled": true,
+			"resource_type": "test",
+			"depends_on": {
+				"macros": ["macro.dbt.test_not_null", "macro.dbt.get_where_subquery", "macro.dbt.should_store_failures", "macro.dbt.statement"],
+				"nodes": ["model.jaffle_shop.orders"]
+			},
+			"config": {
+				"enabled": true,
+				"alias": null,
+				"schema": "dbt_test__audit",
+				"database": null,
+				"tags": [],
+				"meta": {},
+				"materialized": "test",
+				"severity": "ERROR",
+				"store_failures": null,
+				"where": null,
+				"limit": null,
+				"fail_calc": "count(*)",
+				"warn_if": "!= 0",
+				"error_if": "!= 0"
+			},
+			"database": "db",
+			"schema": "default_dbt_test__audit",
+			"fqn": ["jaffle_shop", "not_null_orders_bank_transfer_amount"],
+			"unique_id": "test.jaffle_shop.not_null_orders_bank_transfer_amount.7743500c49",
+			"package_name": "jaffle_shop",
+			"root_path": "/Users/test/code/jaffle_shop",
+			"path": "not_null_orders_bank_transfer_amount.sql",
+			"original_file_path": "models/schema.yml",
+			"name": "not_null_orders_bank_transfer_amount",
+			"alias": "not_null_orders_bank_transfer_amount",
+			"checksum": {
+				"name": "none",
+				"checksum": ""
+			},
+			"tags": [],
+			"refs": [
+				["orders"]
+			],
+			"sources": [],
+			"description": "",
+			"columns": {},
+			"meta": {},
+			"docs": {
+				"show": true
+			},
+			"patch_path": null,
+			"compiled_path": "target/compiled/jaffle_shop/models/schema.yml/not_null_orders_bank_transfer_amount.sql",
+			"build_path": "target/run/jaffle_shop/models/schema.yml/not_null_orders_bank_transfer_amount.sql",
+			"deferred": false,
+			"unrendered_config": {},
+			"created_at": 1640188485.8381,
+			"compiled_sql": "\n    \n    \n\nselect *\nfrom default.orders\nwhere bank_transfer_amount is null\n\n\n",
+			"extra_ctes_injected": true,
+			"extra_ctes": [],
+			"relation_name": null,
+			"column_name": "bank_transfer_amount",
+			"file_key_name": "models.orders"
+		},
+		"test.jaffle_shop.not_null_orders_gift_card_amount.413a0d2d7a": {
+			"raw_sql": "{{ test_not_null(**_dbt_generic_test_kwargs) }}",
+			"test_metadata": {
+				"name": "not_null",
+				"kwargs": {
+					"column_name": "gift_card_amount",
+					"model": "{{ get_where_subquery(ref('orders')) }}"
+				},
+				"namespace": null
+			},
+			"compiled": true,
+			"resource_type": "test",
+			"depends_on": {
+				"macros": ["macro.dbt.test_not_null", "macro.dbt.get_where_subquery", "macro.dbt.should_store_failures", "macro.dbt.statement"],
+				"nodes": ["model.jaffle_shop.orders"]
+			},
+			"config": {
+				"enabled": true,
+				"alias": null,
+				"schema": "dbt_test__audit",
+				"database": null,
+				"tags": [],
+				"meta": {},
+				"materialized": "test",
+				"severity": "ERROR",
+				"store_failures": null,
+				"where": null,
+				"limit": null,
+				"fail_calc": "count(*)",
+				"warn_if": "!= 0",
+				"error_if": "!= 0"
+			},
+			"database": "db",
+			"schema": "default_dbt_test__audit",
+			"fqn": ["jaffle_shop", "not_null_orders_gift_card_amount"],
+			"unique_id": "test.jaffle_shop.not_null_orders_gift_card_amount.413a0d2d7a",
+			"package_name": "jaffle_shop",
+			"root_path": "/Users/test/code/jaffle_shop",
+			"path": "not_null_orders_gift_card_amount.sql",
+			"original_file_path": "models/schema.yml",
+			"name": "not_null_orders_gift_card_amount",
+			"alias": "not_null_orders_gift_card_amount",
+			"checksum": {
+				"name": "none",
+				"checksum": ""
+			},
+			"tags": [],
+			"refs": [
+				["orders"]
+			],
+			"sources": [],
+			"description": "",
+			"columns": {},
+			"meta": {},
+			"docs": {
+				"show": true
+			},
+			"patch_path": null,
+			"compiled_path": "target/compiled/jaffle_shop/models/schema.yml/not_null_orders_gift_card_amount.sql",
+			"build_path": "target/run/jaffle_shop/models/schema.yml/not_null_orders_gift_card_amount.sql",
+			"deferred": false,
+			"unrendered_config": {},
+			"created_at": 1640188485.838857,
+			"compiled_sql": "\n    \n    \n\nselect *\nfrom default.orders\nwhere gift_card_amount is null\n\n\n",
+			"extra_ctes_injected": true,
+			"extra_ctes": [],
+			"relation_name": null,
+			"column_name": "gift_card_amount",
+			"file_key_name": "models.orders"
+		},
+		"test.jaffle_shop.unique_stg_customers_customer_id.c7614daada": {
+			"raw_sql": "{{ test_unique(**_dbt_generic_test_kwargs) }}",
+			"test_metadata": {
+				"name": "unique",
+				"kwargs": {
+					"column_name": "customer_id",
+					"model": "{{ get_where_subquery(ref('stg_customers')) }}"
+				},
+				"namespace": null
+			},
+			"compiled": true,
+			"resource_type": "test",
+			"depends_on": {
+				"macros": ["macro.dbt.test_unique", "macro.dbt.get_where_subquery", "macro.dbt.should_store_failures", "macro.dbt.statement"],
+				"nodes": ["model.jaffle_shop.stg_customers"]
+			},
+			"config": {
+				"enabled": true,
+				"alias": null,
+				"schema": "dbt_test__audit",
+				"database": null,
+				"tags": [],
+				"meta": {},
+				"materialized": "test",
+				"severity": "ERROR",
+				"store_failures": null,
+				"where": null,
+				"limit": null,
+				"fail_calc": "count(*)",
+				"warn_if": "!= 0",
+				"error_if": "!= 0"
+			},
+			"database": "db",
+			"schema": "default_dbt_test__audit",
+			"fqn": ["jaffle_shop", "staging", "unique_stg_customers_customer_id"],
+			"unique_id": "test.jaffle_shop.unique_stg_customers_customer_id.c7614daada",
+			"package_name": "jaffle_shop",
+			"root_path": "/Users/test/code/jaffle_shop",
+			"path": "unique_stg_customers_customer_id.sql",
+			"original_file_path": "models/staging/schema.yml",
+			"name": "unique_stg_customers_customer_id",
+			"alias": "unique_stg_customers_customer_id",
+			"checksum": {
+				"name": "none",
+				"checksum": ""
+			},
+			"tags": [],
+			"refs": [
+				["stg_customers"]
+			],
+			"sources": [],
+			"description": "",
+			"columns": {},
+			"meta": {},
+			"docs": {
+				"show": true
+			},
+			"patch_path": null,
+			"compiled_path": "target/compiled/jaffle_shop/models/staging/schema.yml/unique_stg_customers_customer_id.sql",
+			"build_path": "target/run/jaffle_shop/models/staging/schema.yml/unique_stg_customers_customer_id.sql",
+			"deferred": false,
+			"unrendered_config": {},
+			"created_at": 1640188485.8423932,
+			"compiled_sql": "\n    \n    \n\nselect\n    customer_id as unique_field,\n    count(*) as n_records\n\nfrom default.stg_customers\nwhere customer_id is not null\ngroup by customer_id\nhaving count(*) > 1\n\n\n",
+			"extra_ctes_injected": true,
+			"extra_ctes": [],
+			"relation_name": null,
+			"column_name": "customer_id",
+			"file_key_name": "models.stg_customers"
+		},
+		"test.jaffle_shop.not_null_stg_customers_customer_id.e2cfb1f9aa": {
+			"raw_sql": "{{ test_not_null(**_dbt_generic_test_kwargs) }}",
+			"test_metadata": {
+				"name": "not_null",
+				"kwargs": {
+					"column_name": "customer_id",
+					"model": "{{ get_where_subquery(ref('stg_customers')) }}"
+				},
+				"namespace": null
+			},
+			"compiled": true,
+			"resource_type": "test",
+			"depends_on": {
+				"macros": ["macro.dbt.test_not_null", "macro.dbt.get_where_subquery", "macro.dbt.should_store_failures", "macro.dbt.statement"],
+				"nodes": ["model.jaffle_shop.stg_customers"]
+			},
+			"config": {
+				"enabled": true,
+				"alias": null,
+				"schema": "dbt_test__audit",
+				"database": null,
+				"tags": [],
+				"meta": {},
+				"materialized": "test",
+				"severity": "ERROR",
+				"store_failures": null,
+				"where": null,
+				"limit": null,
+				"fail_calc": "count(*)",
+				"warn_if": "!= 0",
+				"error_if": "!= 0"
+			},
+			"database": "db",
+			"schema": "default_dbt_test__audit",
+			"fqn": ["jaffle_shop", "staging", "not_null_stg_customers_customer_id"],
+			"unique_id": "test.jaffle_shop.not_null_stg_customers_customer_id.e2cfb1f9aa",
+			"package_name": "jaffle_shop",
+			"root_path": "/Users/test/code/jaffle_shop",
+			"path": "not_null_stg_customers_customer_id.sql",
+			"original_file_path": "models/staging/schema.yml",
+			"name": "not_null_stg_customers_customer_id",
+			"alias": "not_null_stg_customers_customer_id",
+			"checksum": {
+				"name": "none",
+				"checksum": ""
+			},
+			"tags": [],
+			"refs": [
+				["stg_customers"]
+			],
+			"sources": [],
+			"description": "",
+			"columns": {},
+			"meta": {},
+			"docs": {
+				"show": true
+			},
+			"patch_path": null,
+			"compiled_path": "target/compiled/jaffle_shop/models/staging/schema.yml/not_null_stg_customers_customer_id.sql",
+			"build_path": "target/run/jaffle_shop/models/staging/schema.yml/not_null_stg_customers_customer_id.sql",
+			"deferred": false,
+			"unrendered_config": {},
+			"created_at": 1640188485.8432279,
+			"compiled_sql": "\n    \n    \n\nselect *\nfrom default.stg_customers\nwhere customer_id is null\n\n\n",
+			"extra_ctes_injected": true,
+			"extra_ctes": [],
+			"relation_name": null,
+			"column_name": "customer_id",
+			"file_key_name": "models.stg_customers"
+		},
+		"test.jaffle_shop.unique_stg_orders_order_id.e3b841c71a": {
+			"raw_sql": "{{ test_unique(**_dbt_generic_test_kwargs) }}",
+			"test_metadata": {
+				"name": "unique",
+				"kwargs": {
+					"column_name": "order_id",
+					"model": "{{ get_where_subquery(ref('stg_orders')) }}"
+				},
+				"namespace": null
+			},
+			"compiled": true,
+			"resource_type": "test",
+			"depends_on": {
+				"macros": ["macro.dbt.test_unique", "macro.dbt.get_where_subquery", "macro.dbt.should_store_failures", "macro.dbt.statement"],
+				"nodes": ["model.jaffle_shop.stg_orders"]
+			},
+			"config": {
+				"enabled": true,
+				"alias": null,
+				"schema": "dbt_test__audit",
+				"database": null,
+				"tags": [],
+				"meta": {},
+				"materialized": "test",
+				"severity": "ERROR",
+				"store_failures": null,
+				"where": null,
+				"limit": null,
+				"fail_calc": "count(*)",
+				"warn_if": "!= 0",
+				"error_if": "!= 0"
+			},
+			"database": "db",
+			"schema": "default_dbt_test__audit",
+			"fqn": ["jaffle_shop", "staging", "unique_stg_orders_order_id"],
+			"unique_id": "test.jaffle_shop.unique_stg_orders_order_id.e3b841c71a",
+			"package_name": "jaffle_shop",
+			"root_path": "/Users/test/code/jaffle_shop",
+			"path": "unique_stg_orders_order_id.sql",
+			"original_file_path": "models/staging/schema.yml",
+			"name": "unique_stg_orders_order_id",
+			"alias": "unique_stg_orders_order_id",
+			"checksum": {
+				"name": "none",
+				"checksum": ""
+			},
+			"tags": [],
+			"refs": [
+				["stg_orders"]
+			],
+			"sources": [],
+			"description": "",
+			"columns": {},
+			"meta": {},
+			"docs": {
+				"show": true
+			},
+			"patch_path": null,
+			"compiled_path": "target/compiled/jaffle_shop/models/staging/schema.yml/unique_stg_orders_order_id.sql",
+			"build_path": "target/run/jaffle_shop/models/staging/schema.yml/unique_stg_orders_order_id.sql",
+			"deferred": false,
+			"unrendered_config": {},
+			"created_at": 1640188485.8439949,
+			"compiled_sql": "\n    \n    \n\nselect\n    order_id as unique_field,\n    count(*) as n_records\n\nfrom default.stg_orders\nwhere order_id is not null\ngroup by order_id\nhaving count(*) > 1\n\n\n",
+			"extra_ctes_injected": true,
+			"extra_ctes": [],
+			"relation_name": null,
+			"column_name": "order_id",
+			"file_key_name": "models.stg_orders"
+		},
+		"test.jaffle_shop.not_null_stg_orders_order_id.81cfe2fe64": {
+			"raw_sql": "{{ test_not_null(**_dbt_generic_test_kwargs) }}",
+			"test_metadata": {
+				"name": "not_null",
+				"kwargs": {
+					"column_name": "order_id",
+					"model": "{{ get_where_subquery(ref('stg_orders')) }}"
+				},
+				"namespace": null
+			},
+			"compiled": true,
+			"resource_type": "test",
+			"depends_on": {
+				"macros": ["macro.dbt.test_not_null", "macro.dbt.get_where_subquery", "macro.dbt.should_store_failures", "macro.dbt.statement"],
+				"nodes": ["model.jaffle_shop.stg_orders"]
+			},
+			"config": {
+				"enabled": true,
+				"alias": null,
+				"schema": "dbt_test__audit",
+				"database": null,
+				"tags": [],
+				"meta": {},
+				"materialized": "test",
+				"severity": "ERROR",
+				"store_failures": null,
+				"where": null,
+				"limit": null,
+				"fail_calc": "count(*)",
+				"warn_if": "!= 0",
+				"error_if": "!= 0"
+			},
+			"database": "db",
+			"schema": "default_dbt_test__audit",
+			"fqn": ["jaffle_shop", "staging", "not_null_stg_orders_order_id"],
+			"unique_id": "test.jaffle_shop.not_null_stg_orders_order_id.81cfe2fe64",
+			"package_name": "jaffle_shop",
+			"root_path": "/Users/test/code/jaffle_shop",
+			"path": "not_null_stg_orders_order_id.sql",
+			"original_file_path": "models/staging/schema.yml",
+			"name": "not_null_stg_orders_order_id",
+			"alias": "not_null_stg_orders_order_id",
+			"checksum": {
+				"name": "none",
+				"checksum": ""
+			},
+			"tags": [],
+			"refs": [
+				["stg_orders"]
+			],
+			"sources": [],
+			"description": "",
+			"columns": {},
+			"meta": {},
+			"docs": {
+				"show": true
+			},
+			"patch_path": null,
+			"compiled_path": "target/compiled/jaffle_shop/models/staging/schema.yml/not_null_stg_orders_order_id.sql",
+			"build_path": "target/run/jaffle_shop/models/staging/schema.yml/not_null_stg_orders_order_id.sql",
+			"deferred": false,
+			"unrendered_config": {},
+			"created_at": 1640188485.844785,
+			"compiled_sql": "\n    \n    \n\nselect *\nfrom default.stg_orders\nwhere order_id is null\n\n\n",
+			"extra_ctes_injected": true,
+			"extra_ctes": [],
+			"relation_name": null,
+			"column_name": "order_id",
+			"file_key_name": "models.stg_orders"
+		},
+		"test.jaffle_shop.accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned.080fb20aad": {
+			"raw_sql": "{{ test_accepted_values(**_dbt_generic_test_kwargs) }}{{ config(alias=\"accepted_values_stg_orders_4f514bf94b77b7ea437830eec4421c58\") }}",
+			"test_metadata": {
+				"name": "accepted_values",
+				"kwargs": {
+					"values": ["placed", "shipped", "completed", "return_pending", "returned"],
+					"column_name": "status",
+					"model": "{{ get_where_subquery(ref('stg_orders')) }}"
+				},
+				"namespace": null
+			},
+			"compiled": true,
+			"resource_type": "test",
+			"depends_on": {
+				"macros": ["macro.dbt.test_accepted_values", "macro.dbt.get_where_subquery", "macro.dbt.should_store_failures", "macro.dbt.statement"],
+				"nodes": ["model.jaffle_shop.stg_orders"]
+			},
+			"config": {
+				"enabled": true,
+				"alias": "accepted_values_stg_orders_4f514bf94b77b7ea437830eec4421c58",
+				"schema": "dbt_test__audit",
+				"database": null,
+				"tags": [],
+				"meta": {},
+				"materialized": "test",
+				"severity": "ERROR",
+				"store_failures": null,
+				"where": null,
+				"limit": null,
+				"fail_calc": "count(*)",
+				"warn_if": "!= 0",
+				"error_if": "!= 0"
+			},
+			"database": "db",
+			"schema": "default_dbt_test__audit",
+			"fqn": ["jaffle_shop", "staging", "accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned"],
+			"unique_id": "test.jaffle_shop.accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned.080fb20aad",
+			"package_name": "jaffle_shop",
+			"root_path": "/Users/test/code/jaffle_shop",
+			"path": "accepted_values_stg_orders_4f514bf94b77b7ea437830eec4421c58.sql",
+			"original_file_path": "models/staging/schema.yml",
+			"name": "accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned",
+			"alias": "accepted_values_stg_orders_4f514bf94b77b7ea437830eec4421c58",
+			"checksum": {
+				"name": "none",
+				"checksum": ""
+			},
+			"tags": [],
+			"refs": [
+				["stg_orders"]
+			],
+			"sources": [],
+			"description": "",
+			"columns": {},
+			"meta": {},
+			"docs": {
+				"show": true
+			},
+			"patch_path": null,
+			"compiled_path": "target/compiled/jaffle_shop/models/staging/schema.yml/accepted_values_stg_orders_4f514bf94b77b7ea437830eec4421c58.sql",
+			"build_path": "target/run/jaffle_shop/models/staging/schema.yml/accepted_values_stg_orders_4f514bf94b77b7ea437830eec4421c58.sql",
+			"deferred": false,
+			"unrendered_config": {
+				"alias": "accepted_values_stg_orders_4f514bf94b77b7ea437830eec4421c58"
+			},
+			"created_at": 1640188485.8456802,
+			"compiled_sql": "\n    \n    \n\nwith all_values as (\n\n    select\n        status as value_field,\n        count(*) as n_records\n\n    from default.stg_orders\n    group by status\n\n)\n\nselect *\nfrom all_values\nwhere value_field not in (\n    'placed','shipped','completed','return_pending','returned'\n)\n\n\n",
+			"extra_ctes_injected": true,
+			"extra_ctes": [],
+			"relation_name": null,
+			"column_name": "status",
+			"file_key_name": "models.stg_orders"
+		},
+		"test.jaffle_shop.unique_stg_payments_payment_id.3744510712": {
+			"raw_sql": "{{ test_unique(**_dbt_generic_test_kwargs) }}",
+			"test_metadata": {
+				"name": "unique",
+				"kwargs": {
+					"column_name": "payment_id",
+					"model": "{{ get_where_subquery(ref('stg_payments')) }}"
+				},
+				"namespace": null
+			},
+			"compiled": true,
+			"resource_type": "test",
+			"depends_on": {
+				"macros": ["macro.dbt.test_unique", "macro.dbt.get_where_subquery", "macro.dbt.should_store_failures", "macro.dbt.statement"],
+				"nodes": ["model.jaffle_shop.stg_payments"]
+			},
+			"config": {
+				"enabled": true,
+				"alias": null,
+				"schema": "dbt_test__audit",
+				"database": null,
+				"tags": [],
+				"meta": {},
+				"materialized": "test",
+				"severity": "ERROR",
+				"store_failures": null,
+				"where": null,
+				"limit": null,
+				"fail_calc": "count(*)",
+				"warn_if": "!= 0",
+				"error_if": "!= 0"
+			},
+			"database": "db",
+			"schema": "default_dbt_test__audit",
+			"fqn": ["jaffle_shop", "staging", "unique_stg_payments_payment_id"],
+			"unique_id": "test.jaffle_shop.unique_stg_payments_payment_id.3744510712",
+			"package_name": "jaffle_shop",
+			"root_path": "/Users/test/code/jaffle_shop",
+			"path": "unique_stg_payments_payment_id.sql",
+			"original_file_path": "models/staging/schema.yml",
+			"name": "unique_stg_payments_payment_id",
+			"alias": "unique_stg_payments_payment_id",
+			"checksum": {
+				"name": "none",
+				"checksum": ""
+			},
+			"tags": [],
+			"refs": [
+				["stg_payments"]
+			],
+			"sources": [],
+			"description": "",
+			"columns": {},
+			"meta": {},
+			"docs": {
+				"show": true
+			},
+			"patch_path": null,
+			"compiled_path": "target/compiled/jaffle_shop/models/staging/schema.yml/unique_stg_payments_payment_id.sql",
+			"build_path": "target/run/jaffle_shop/models/staging/schema.yml/unique_stg_payments_payment_id.sql",
+			"deferred": false,
+			"unrendered_config": {},
+			"created_at": 1640188485.849059,
+			"compiled_sql": "\n    \n    \n\nselect\n    payment_id as unique_field,\n    count(*) as n_records\n\nfrom default.stg_payments\nwhere payment_id is not null\ngroup by payment_id\nhaving count(*) > 1\n\n\n",
+			"extra_ctes_injected": true,
+			"extra_ctes": [],
+			"relation_name": null,
+			"column_name": "payment_id",
+			"file_key_name": "models.stg_payments"
+		},
+		"test.jaffle_shop.not_null_stg_payments_payment_id.c19cc50075": {
+			"raw_sql": "{{ test_not_null(**_dbt_generic_test_kwargs) }}",
+			"test_metadata": {
+				"name": "not_null",
+				"kwargs": {
+					"column_name": "payment_id",
+					"model": "{{ get_where_subquery(ref('stg_payments')) }}"
+				},
+				"namespace": null
+			},
+			"compiled": true,
+			"resource_type": "test",
+			"depends_on": {
+				"macros": ["macro.dbt.test_not_null", "macro.dbt.get_where_subquery", "macro.dbt.should_store_failures", "macro.dbt.statement"],
+				"nodes": ["model.jaffle_shop.stg_payments"]
+			},
+			"config": {
+				"enabled": true,
+				"alias": null,
+				"schema": "dbt_test__audit",
+				"database": null,
+				"tags": [],
+				"meta": {},
+				"materialized": "test",
+				"severity": "ERROR",
+				"store_failures": null,
+				"where": null,
+				"limit": null,
+				"fail_calc": "count(*)",
+				"warn_if": "!= 0",
+				"error_if": "!= 0"
+			},
+			"database": "db",
+			"schema": "default_dbt_test__audit",
+			"fqn": ["jaffle_shop", "staging", "not_null_stg_payments_payment_id"],
+			"unique_id": "test.jaffle_shop.not_null_stg_payments_payment_id.c19cc50075",
+			"package_name": "jaffle_shop",
+			"root_path": "/Users/test/code/jaffle_shop",
+			"path": "not_null_stg_payments_payment_id.sql",
+			"original_file_path": "models/staging/schema.yml",
+			"name": "not_null_stg_payments_payment_id",
+			"alias": "not_null_stg_payments_payment_id",
+			"checksum": {
+				"name": "none",
+				"checksum": ""
+			},
+			"tags": [],
+			"refs": [
+				["stg_payments"]
+			],
+			"sources": [],
+			"description": "",
+			"columns": {},
+			"meta": {},
+			"docs": {
+				"show": true
+			},
+			"patch_path": null,
+			"compiled_path": "target/compiled/jaffle_shop/models/staging/schema.yml/not_null_stg_payments_payment_id.sql",
+			"build_path": "target/run/jaffle_shop/models/staging/schema.yml/not_null_stg_payments_payment_id.sql",
+			"deferred": false,
+			"unrendered_config": {},
+			"created_at": 1640188485.8498309,
+			"compiled_sql": "\n    \n    \n\nselect *\nfrom default.stg_payments\nwhere payment_id is null\n\n\n",
+			"extra_ctes_injected": true,
+			"extra_ctes": [],
+			"relation_name": null,
+			"column_name": "payment_id",
+			"file_key_name": "models.stg_payments"
+		},
+		"test.jaffle_shop.accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card.3c3820f278": {
+			"raw_sql": "{{ test_accepted_values(**_dbt_generic_test_kwargs) }}{{ config(alias=\"accepted_values_stg_payments_c7909fb19b1f0177c2bf99c7912f06ef\") }}",
+			"test_metadata": {
+				"name": "accepted_values",
+				"kwargs": {
+					"values": ["credit_card", "coupon", "bank_transfer", "gift_card"],
+					"column_name": "payment_method",
+					"model": "{{ get_where_subquery(ref('stg_payments')) }}"
+				},
+				"namespace": null
+			},
+			"compiled": true,
+			"resource_type": "test",
+			"depends_on": {
+				"macros": ["macro.dbt.test_accepted_values", "macro.dbt.get_where_subquery", "macro.dbt.should_store_failures", "macro.dbt.statement"],
+				"nodes": ["model.jaffle_shop.stg_payments"]
+			},
+			"config": {
+				"enabled": true,
+				"alias": "accepted_values_stg_payments_c7909fb19b1f0177c2bf99c7912f06ef",
+				"schema": "dbt_test__audit",
+				"database": null,
+				"tags": [],
+				"meta": {},
+				"materialized": "test",
+				"severity": "ERROR",
+				"store_failures": null,
+				"where": null,
+				"limit": null,
+				"fail_calc": "count(*)",
+				"warn_if": "!= 0",
+				"error_if": "!= 0"
+			},
+			"database": "db",
+			"schema": "default_dbt_test__audit",
+			"fqn": ["jaffle_shop", "staging", "accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card"],
+			"unique_id": "test.jaffle_shop.accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card.3c3820f278",
+			"package_name": "jaffle_shop",
+			"root_path": "/Users/test/code/jaffle_shop",
+			"path": "accepted_values_stg_payments_c7909fb19b1f0177c2bf99c7912f06ef.sql",
+			"original_file_path": "models/staging/schema.yml",
+			"name": "accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card",
+			"alias": "accepted_values_stg_payments_c7909fb19b1f0177c2bf99c7912f06ef",
+			"checksum": {
+				"name": "none",
+				"checksum": ""
+			},
+			"tags": [],
+			"refs": [
+				["stg_payments"]
+			],
+			"sources": [],
+			"description": "",
+			"columns": {},
+			"meta": {},
+			"docs": {
+				"show": true
+			},
+			"patch_path": null,
+			"compiled_path": "target/compiled/jaffle_shop/models/staging/schema.yml/accepted_values_stg_payments_c7909fb19b1f0177c2bf99c7912f06ef.sql",
+			"build_path": "target/run/jaffle_shop/models/staging/schema.yml/accepted_values_stg_payments_c7909fb19b1f0177c2bf99c7912f06ef.sql",
+			"deferred": false,
+			"unrendered_config": {
+				"alias": "accepted_values_stg_payments_c7909fb19b1f0177c2bf99c7912f06ef"
+			},
+			"created_at": 1640188485.850593,
+			"compiled_sql": "\n    \n    \n\nwith all_values as (\n\n    select\n        payment_method as value_field,\n        count(*) as n_records\n\n    from default.stg_payments\n    group by payment_method\n\n)\n\nselect *\nfrom all_values\nwhere value_field not in (\n    'credit_card','coupon','bank_transfer','gift_card'\n)\n\n\n",
+			"extra_ctes_injected": true,
+			"extra_ctes": [],
+			"relation_name": null,
+			"column_name": "payment_method",
+			"file_key_name": "models.stg_payments"
+		},
+		"model.jaffle_shop.customers": {
+			"raw_sql": "with customers as (\n\n    select * from {{ ref('stg_customers') }}\n\n),\n\norders as (\n\n    select * from {{ ref('stg_orders') }}\n\n),\n\npayments as (\n\n    select * from {{ ref('stg_payments') }}\n\n),\n\ncustomer_orders as (\n\n        select\n        customer_id,\n\n        min(order_date) as first_order,\n        max(order_date) as most_recent_order,\n        count(order_id) as number_of_orders\n    from orders\n\n    group by customer_id\n\n),\n\ncustomer_payments as (\n\n    select\n        orders.customer_id,\n        sum(amount) as total_amount\n\n    from payments\n\n    left join orders on\n         payments.order_id = orders.order_id\n\n    group by orders.customer_id\n\n),\n\nfinal as (\n\n    select\n        customers.customer_id,\n        customers.first_name,\n        customers.last_name,\n        customer_orders.first_order,\n        customer_orders.most_recent_order,\n        customer_orders.number_of_orders,\n        customer_payments.total_amount as customer_lifetime_value\n\n    from customers\n\n    left join customer_orders\n        on customers.customer_id = customer_orders.customer_id\n\n    left join customer_payments\n        on  customers.customer_id = customer_payments.customer_id\n\n)\n\nselect * from final",
+			"compiled": true,
+			"resource_type": "model",
+			"depends_on": {
+				"macros": ["macro.dbt.run_hooks", "macro.dbt.statement", "macro.dbt.persist_docs"],
+				"nodes": ["model.jaffle_shop.stg_customers", "model.jaffle_shop.stg_orders", "model.jaffle_shop.stg_payments"]
+			},
+			"config": {
+				"enabled": true,
+				"alias": null,
+				"schema": null,
+				"database": null,
+				"tags": [],
+				"meta": {},
+				"materialized": "table",
+				"persist_docs": {},
+				"quoting": {},
+				"column_types": {},
+				"full_refresh": null,
+				"on_schema_change": "ignore",
+				"post-hook": [],
+				"pre-hook": []
+			},
+			"database": "db",
+			"schema": "default",
+			"fqn": ["jaffle_shop", "customers"],
+			"unique_id": "model.jaffle_shop.customers",
+			"package_name": "jaffle_shop",
+			"root_path": "/Users/test/code/jaffle_shop",
+			"path": "customers.sql",
+			"original_file_path": "models/customers.sql",
+			"name": "customers",
+			"alias": "customers",
+			"checksum": {
+				"name": "sha256",
+				"checksum": "455b90a31f418ae776213ad9932c7cb72d19a5269a8c722bd9f4e44957313ce8"
+			},
+			"tags": [],
+			"refs": [
+				["stg_customers"],
+				["stg_orders"],
+				["stg_payments"]
+			],
+			"sources": [],
+			"description": "This table has basic information about a customer, as well as some derived facts based on a customer's orders",
+			"columns": {
+				"customer_id": {
+					"name": "customer_id",
+					"description": "This is a unique identifier for a customer",
+					"meta": {},
+					"data_type": null,
+					"quote": null,
+					"tags": []
+				},
+				"first_name": {
+					"name": "first_name",
+					"description": "Customer's first name. PII.",
+					"meta": {},
+					"data_type": null,
+					"quote": null,
+					"tags": []
+				},
+				"last_name": {
+					"name": "last_name",
+					"description": "Customer's last name. PII.",
+					"meta": {},
+					"data_type": null,
+					"quote": null,
+					"tags": []
+				},
+				"first_order": {
+					"name": "first_order",
+					"description": "Date (UTC) of a customer's first order",
+					"meta": {},
+					"data_type": null,
+					"quote": null,
+					"tags": []
+				},
+				"most_recent_order": {
+					"name": "most_recent_order",
+					"description": "Date (UTC) of a customer's most recent order",
+					"meta": {},
+					"data_type": null,
+					"quote": null,
+					"tags": []
+				},
+				"number_of_orders": {
+					"name": "number_of_orders",
+					"description": "Count of the number of orders a customer has placed",
+					"meta": {},
+					"data_type": null,
+					"quote": null,
+					"tags": []
+				},
+				"total_order_amount": {
+					"name": "total_order_amount",
+					"description": "Total value (AUD) of a customer's orders",
+					"meta": {},
+					"data_type": null,
+					"quote": null,
+					"tags": []
+				}
+			},
+			"meta": {},
+			"docs": {
+				"show": true
+			},
+			"patch_path": "jaffle_shop://models/schema.yml",
+			"compiled_path": "target/compiled/jaffle_shop/models/customers.sql",
+			"build_path": "target/run/jaffle_shop/models/customers.sql",
+			"deferred": false,
+			"unrendered_config": {
+				"materialized": "table"
+			},
+			"created_at": 1640190020.2282188,
+			"compiled_sql": "with customers as (\n\n    select * from default.stg_customers\n\n),\n\norders as (\n\n    select * from default.stg_orders\n\n),\n\npayments as (\n\n    select * from default.stg_payments\n\n),\n\ncustomer_orders as (\n\n        select\n        customer_id,\n\n        min(order_date) as first_order,\n        max(order_date) as most_recent_order,\n        count(order_id) as number_of_orders\n    from orders\n\n    group by customer_id\n\n),\n\ncustomer_payments as (\n\n    select\n        orders.customer_id,\n        sum(amount) as total_amount\n\n    from payments\n\n    left join orders on\n         payments.order_id = orders.order_id\n\n    group by orders.customer_id\n\n),\n\nfinal as (\n\n    select\n        customers.customer_id,\n        customers.first_name,\n        customers.last_name,\n        customer_orders.first_order,\n        customer_orders.most_recent_order,\n        customer_orders.number_of_orders,\n        customer_payments.total_amount as customer_lifetime_value\n\n    from customers\n\n    left join customer_orders\n        on customers.customer_id = customer_orders.customer_id\n\n    left join customer_payments\n        on  customers.customer_id = customer_payments.customer_id\n\n)\n\nselect * from final",
+			"extra_ctes_injected": true,
+			"extra_ctes": [],
+			"relation_name": "default.customers"
+		},
+		"test.jaffle_shop.unique_customers_customer_id.c5af1ff4b1": {
+			"raw_sql": "{{ test_unique(**_dbt_generic_test_kwargs) }}",
+			"test_metadata": {
+				"name": "unique",
+				"kwargs": {
+					"column_name": "customer_id",
+					"model": "{{ get_where_subquery(ref('customers')) }}"
+				},
+				"namespace": null
+			},
+			"compiled": true,
+			"resource_type": "test",
+			"depends_on": {
+				"macros": ["macro.dbt.test_unique", "macro.dbt.get_where_subquery", "macro.dbt.should_store_failures", "macro.dbt.statement"],
+				"nodes": ["model.jaffle_shop.customers"]
+			},
+			"config": {
+				"enabled": true,
+				"alias": null,
+				"schema": "dbt_test__audit",
+				"database": null,
+				"tags": [],
+				"meta": {},
+				"materialized": "test",
+				"severity": "ERROR",
+				"store_failures": null,
+				"where": null,
+				"limit": null,
+				"fail_calc": "count(*)",
+				"warn_if": "!= 0",
+				"error_if": "!= 0"
+			},
+			"database": "db",
+			"schema": "default_dbt_test__audit",
+			"fqn": ["jaffle_shop", "unique_customers_customer_id"],
+			"unique_id": "test.jaffle_shop.unique_customers_customer_id.c5af1ff4b1",
+			"package_name": "jaffle_shop",
+			"root_path": "/Users/test/code/jaffle_shop",
+			"path": "unique_customers_customer_id.sql",
+			"original_file_path": "models/schema.yml",
+			"name": "unique_customers_customer_id",
+			"alias": "unique_customers_customer_id",
+			"checksum": {
+				"name": "none",
+				"checksum": ""
+			},
+			"tags": [],
+			"refs": [
+				["customers"]
+			],
+			"sources": [],
+			"description": "",
+			"columns": {},
+			"meta": {},
+			"docs": {
+				"show": true
+			},
+			"patch_path": null,
+			"compiled_path": "target/compiled/jaffle_shop/models/schema.yml/unique_customers_customer_id.sql",
+			"build_path": "target/run/jaffle_shop/models/schema.yml/unique_customers_customer_id.sql",
+			"deferred": false,
+			"unrendered_config": {},
+			"created_at": 1640190020.232507,
+			"compiled_sql": "\n    \n    \n\nselect\n    customer_id as unique_field,\n    count(*) as n_records\n\nfrom default.customers\nwhere customer_id is not null\ngroup by customer_id\nhaving count(*) > 1\n\n\n",
+			"extra_ctes_injected": true,
+			"extra_ctes": [],
+			"relation_name": null,
+			"column_name": "customer_id",
+			"file_key_name": "models.customers"
+		},
+		"test.jaffle_shop.not_null_customers_customer_id.5c9bf9911d": {
+			"raw_sql": "{{ test_not_null(**_dbt_generic_test_kwargs) }}",
+			"test_metadata": {
+				"name": "not_null",
+				"kwargs": {
+					"column_name": "customer_id",
+					"model": "{{ get_where_subquery(ref('customers')) }}"
+				},
+				"namespace": null
+			},
+			"compiled": true,
+			"resource_type": "test",
+			"depends_on": {
+				"macros": ["macro.dbt.test_not_null", "macro.dbt.get_where_subquery", "macro.dbt.should_store_failures", "macro.dbt.statement"],
+				"nodes": ["model.jaffle_shop.customers"]
+			},
+			"config": {
+				"enabled": true,
+				"alias": null,
+				"schema": "dbt_test__audit",
+				"database": null,
+				"tags": [],
+				"meta": {},
+				"materialized": "test",
+				"severity": "ERROR",
+				"store_failures": null,
+				"where": null,
+				"limit": null,
+				"fail_calc": "count(*)",
+				"warn_if": "!= 0",
+				"error_if": "!= 0"
+			},
+			"database": "db",
+			"schema": "default_dbt_test__audit",
+			"fqn": ["jaffle_shop", "not_null_customers_customer_id"],
+			"unique_id": "test.jaffle_shop.not_null_customers_customer_id.5c9bf9911d",
+			"package_name": "jaffle_shop",
+			"root_path": "/Users/test/code/jaffle_shop",
+			"path": "not_null_customers_customer_id.sql",
+			"original_file_path": "models/schema.yml",
+			"name": "not_null_customers_customer_id",
+			"alias": "not_null_customers_customer_id",
+			"checksum": {
+				"name": "none",
+				"checksum": ""
+			},
+			"tags": [],
+			"refs": [
+				["customers"]
+			],
+			"sources": [],
+			"description": "",
+			"columns": {},
+			"meta": {},
+			"docs": {
+				"show": true
+			},
+			"patch_path": null,
+			"compiled_path": "target/compiled/jaffle_shop/models/schema.yml/not_null_customers_customer_id.sql",
+			"build_path": "target/run/jaffle_shop/models/schema.yml/not_null_customers_customer_id.sql",
+			"deferred": false,
+			"unrendered_config": {},
+			"created_at": 1640190020.2334259,
+			"compiled_sql": "\n    \n    \n\nselect *\nfrom default.customers\nwhere customer_id is null\n\n\n",
+			"extra_ctes_injected": true,
+			"extra_ctes": [],
+			"relation_name": null,
+			"column_name": "customer_id",
+			"file_key_name": "models.customers"
+		}
+	},
+	"sources": {},
+	"macros": {},
+	"docs": {
+		"jaffle_shop.__overview__": {
+			"unique_id": "jaffle_shop.__overview__",
+			"package_name": "jaffle_shop",
+			"root_path": "/Users/test/code/jaffle_shop",
+			"path": "overview.md",
+			"original_file_path": "models/overview.md",
+			"name": "__overview__",
+			"block_contents": "## Data Documentation for Jaffle Shop\n\n`jaffle_shop` is a fictional ecommerce store.\n\nThis [dbt](https://www.getdbt.com/) project is for testing out code.\n\nThe source code can be found [here](https://github.com/clrcrl/jaffle_shop)."
+		},
+		"jaffle_shop.orders_status": {
+			"unique_id": "jaffle_shop.orders_status",
+			"package_name": "jaffle_shop",
+			"root_path": "/Users/test/code/jaffle_shop",
+			"path": "docs.md",
+			"original_file_path": "models/docs.md",
+			"name": "orders_status",
+			"block_contents": "Orders can be one of the following statuses:\n\n| status         | description                                                                                                            |\n|----------------|------------------------------------------------------------------------------------------------------------------------|\n| placed         | The order has been placed but has not yet left the warehouse                                                           |\n| shipped        | The order has ben shipped to the customer and is currently in transit                                                  |\n| completed      | The order has been received by the customer                                                                            |\n| return_pending | The customer has indicated that they would like to return the order, but it has not yet been received at the warehouse |\n| returned       | The order has been returned by the customer and received at the warehouse                                              |"
+		},
+		"dbt.__overview__": {
+			"unique_id": "dbt.__overview__",
+			"package_name": "dbt",
+			"root_path": "/Users/test/.pyenv/versions/3.9.9/lib/python3.9/site-packages/dbt/include/global_project",
+			"path": "overview.md",
+			"original_file_path": "docs/overview.md",
+			"name": "__overview__",
+			"block_contents": "### Welcome!\n\nWelcome to the auto-generated documentation for your dbt project!\n\n### Navigation\n\nYou can use the `Project` and `Database` navigation tabs on the left side of the window to explore the models\nin your project.\n\n#### Project Tab\nThe `Project` tab mirrors the directory structure of your dbt project. In this tab, you can see all of the\nmodels defined in your dbt project, as well as models imported from dbt packages.\n\n#### Database Tab\nThe `Database` tab also exposes your models, but in a format that looks more like a database explorer. This view\nshows relations (tables and views) grouped into database schemas. Note that ephemeral models are _not_ shown\nin this interface, as they do not exist in the database.\n\n### Graph Exploration\nYou can click the blue icon on the bottom-right corner of the page to view the lineage graph of your models.\n\nOn model pages, you'll see the immediate parents and children of the model you're exploring. By clicking the `Expand`\nbutton at the top-right of this lineage pane, you'll be able to see all of the models that are used to build,\nor are built from, the model you're exploring.\n\nOnce expanded, you'll be able to use the `--select` and `--exclude` model selection syntax to filter the\nmodels in the graph. For more information on model selection, check out the [dbt docs](https://docs.getdbt.com/docs/model-selection-syntax).\n\nNote that you can also right-click on models to interactively filter and explore the graph.\n\n---\n\n### More information\n\n- [What is dbt](https://docs.getdbt.com/docs/overview)?\n- Read the [dbt viewpoint](https://docs.getdbt.com/docs/viewpoint)\n- [Installation](https://docs.getdbt.com/docs/installation)\n- Join the [dbt Community](https://www.getdbt.com/community/) for questions and discussion"
+		}
+	},
+	"exposures": {},
+	"metrics": {},
+	"selectors": {},
+	"disabled": {},
+	"parent_map": {
+		"model.jaffle_shop.orders": ["model.jaffle_shop.stg_orders", "model.jaffle_shop.stg_payments"],
+		"model.jaffle_shop.stg_customers": ["seed.jaffle_shop.raw_customers"],
+		"model.jaffle_shop.stg_payments": ["seed.jaffle_shop.raw_payments"],
+		"model.jaffle_shop.stg_orders": ["seed.jaffle_shop.raw_orders"],
+		"seed.jaffle_shop.raw_customers": [],
+		"seed.jaffle_shop.raw_orders": [],
+		"seed.jaffle_shop.raw_payments": [],
+		"test.jaffle_shop.unique_orders_order_id.fed79b3a6e": ["model.jaffle_shop.orders"],
+		"test.jaffle_shop.not_null_orders_order_id.cf6c17daed": ["model.jaffle_shop.orders"],
+		"test.jaffle_shop.not_null_orders_customer_id.c5f02694af": ["model.jaffle_shop.orders"],
+		"test.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.c6ec7f58f2": ["model.jaffle_shop.customers", "model.jaffle_shop.orders"],
+		"test.jaffle_shop.accepted_values_orders_status__placed__shipped__completed__return_pending__returned.be6b5b5ec3": ["model.jaffle_shop.orders"],
+		"test.jaffle_shop.not_null_orders_amount.106140f9fd": ["model.jaffle_shop.orders"],
+		"test.jaffle_shop.not_null_orders_credit_card_amount.d3ca593b59": ["model.jaffle_shop.orders"],
+		"test.jaffle_shop.not_null_orders_coupon_amount.ab90c90625": ["model.jaffle_shop.orders"],
+		"test.jaffle_shop.not_null_orders_bank_transfer_amount.7743500c49": ["model.jaffle_shop.orders"],
+		"test.jaffle_shop.not_null_orders_gift_card_amount.413a0d2d7a": ["model.jaffle_shop.orders"],
+		"test.jaffle_shop.unique_stg_customers_customer_id.c7614daada": ["model.jaffle_shop.stg_customers"],
+		"test.jaffle_shop.not_null_stg_customers_customer_id.e2cfb1f9aa": ["model.jaffle_shop.stg_customers"],
+		"test.jaffle_shop.unique_stg_orders_order_id.e3b841c71a": ["model.jaffle_shop.stg_orders"],
+		"test.jaffle_shop.not_null_stg_orders_order_id.81cfe2fe64": ["model.jaffle_shop.stg_orders"],
+		"test.jaffle_shop.accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned.080fb20aad": ["model.jaffle_shop.stg_orders"],
+		"test.jaffle_shop.unique_stg_payments_payment_id.3744510712": ["model.jaffle_shop.stg_payments"],
+		"test.jaffle_shop.not_null_stg_payments_payment_id.c19cc50075": ["model.jaffle_shop.stg_payments"],
+		"test.jaffle_shop.accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card.3c3820f278": ["model.jaffle_shop.stg_payments"],
+		"model.jaffle_shop.customers": ["model.jaffle_shop.stg_customers", "model.jaffle_shop.stg_orders", "model.jaffle_shop.stg_payments"],
+		"test.jaffle_shop.unique_customers_customer_id.c5af1ff4b1": ["model.jaffle_shop.customers"],
+		"test.jaffle_shop.not_null_customers_customer_id.5c9bf9911d": ["model.jaffle_shop.customers"]
+	},
+	"child_map": {
+		"model.jaffle_shop.orders": ["test.jaffle_shop.accepted_values_orders_status__placed__shipped__completed__return_pending__returned.be6b5b5ec3", "test.jaffle_shop.not_null_orders_amount.106140f9fd", "test.jaffle_shop.not_null_orders_bank_transfer_amount.7743500c49", "test.jaffle_shop.not_null_orders_coupon_amount.ab90c90625", "test.jaffle_shop.not_null_orders_credit_card_amount.d3ca593b59", "test.jaffle_shop.not_null_orders_customer_id.c5f02694af", "test.jaffle_shop.not_null_orders_gift_card_amount.413a0d2d7a", "test.jaffle_shop.not_null_orders_order_id.cf6c17daed", "test.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.c6ec7f58f2", "test.jaffle_shop.unique_orders_order_id.fed79b3a6e"],
+		"model.jaffle_shop.stg_customers": ["model.jaffle_shop.customers", "test.jaffle_shop.not_null_stg_customers_customer_id.e2cfb1f9aa", "test.jaffle_shop.unique_stg_customers_customer_id.c7614daada"],
+		"model.jaffle_shop.stg_payments": ["model.jaffle_shop.customers", "model.jaffle_shop.orders", "test.jaffle_shop.accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card.3c3820f278", "test.jaffle_shop.not_null_stg_payments_payment_id.c19cc50075", "test.jaffle_shop.unique_stg_payments_payment_id.3744510712"],
+		"model.jaffle_shop.stg_orders": ["model.jaffle_shop.customers", "model.jaffle_shop.orders", "test.jaffle_shop.accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned.080fb20aad", "test.jaffle_shop.not_null_stg_orders_order_id.81cfe2fe64", "test.jaffle_shop.unique_stg_orders_order_id.e3b841c71a"],
+		"seed.jaffle_shop.raw_customers": ["model.jaffle_shop.stg_customers"],
+		"seed.jaffle_shop.raw_orders": ["model.jaffle_shop.stg_orders"],
+		"seed.jaffle_shop.raw_payments": ["model.jaffle_shop.stg_payments"],
+		"test.jaffle_shop.unique_orders_order_id.fed79b3a6e": [],
+		"test.jaffle_shop.not_null_orders_order_id.cf6c17daed": [],
+		"test.jaffle_shop.not_null_orders_customer_id.c5f02694af": [],
+		"test.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.c6ec7f58f2": [],
+		"test.jaffle_shop.accepted_values_orders_status__placed__shipped__completed__return_pending__returned.be6b5b5ec3": [],
+		"test.jaffle_shop.not_null_orders_amount.106140f9fd": [],
+		"test.jaffle_shop.not_null_orders_credit_card_amount.d3ca593b59": [],
+		"test.jaffle_shop.not_null_orders_coupon_amount.ab90c90625": [],
+		"test.jaffle_shop.not_null_orders_bank_transfer_amount.7743500c49": [],
+		"test.jaffle_shop.not_null_orders_gift_card_amount.413a0d2d7a": [],
+		"test.jaffle_shop.unique_stg_customers_customer_id.c7614daada": [],
+		"test.jaffle_shop.not_null_stg_customers_customer_id.e2cfb1f9aa": [],
+		"test.jaffle_shop.unique_stg_orders_order_id.e3b841c71a": [],
+		"test.jaffle_shop.not_null_stg_orders_order_id.81cfe2fe64": [],
+		"test.jaffle_shop.accepted_values_stg_orders_status__placed__shipped__completed__return_pending__returned.080fb20aad": [],
+		"test.jaffle_shop.unique_stg_payments_payment_id.3744510712": [],
+		"test.jaffle_shop.not_null_stg_payments_payment_id.c19cc50075": [],
+		"test.jaffle_shop.accepted_values_stg_payments_payment_method__credit_card__coupon__bank_transfer__gift_card.3c3820f278": [],
+		"model.jaffle_shop.customers": ["test.jaffle_shop.not_null_customers_customer_id.5c9bf9911d", "test.jaffle_shop.relationships_orders_customer_id__customer_id__ref_customers_.c6ec7f58f2", "test.jaffle_shop.unique_customers_customer_id.c5af1ff4b1"],
+		"test.jaffle_shop.unique_customers_customer_id.c5af1ff4b1": [],
+		"test.jaffle_shop.not_null_customers_customer_id.5c9bf9911d": []
+	}
+}

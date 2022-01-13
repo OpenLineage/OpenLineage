@@ -2,6 +2,9 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.4.0...HEAD)
 
+### Added
+* Support for dbt-spark adapter [@mobuchowski](https://github.com/mobuchowski)
+
 ### Fixed
 * airflow: fix import failures when dependencies for bigquery, dbt, great_expectations extractors are missing [@lukaszlaszko](https://github.com/lukaszlaszko)
 

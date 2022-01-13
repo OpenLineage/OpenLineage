@@ -1,0 +1,63 @@
+{
+	"metadata": {
+		"dbt_schema_version": "https://schemas.getdbt.com/dbt/run-results/v4.json",
+		"dbt_version": "1.0.0",
+		"generated_at": "2022-01-03T11:15:03.549503Z",
+		"invocation_id": "3c9ba26f-7249-4274-bd5a-04dc6df605ba",
+		"env": {}
+	},
+	"results": [{
+		"status": "success",
+		"timing": [{
+			"name": "compile",
+			"started_at": "2022-01-03T11:14:47.253912Z",
+			"completed_at": "2022-01-03T11:14:47.255726Z"
+		}, {
+			"name": "execute",
+			"started_at": "2022-01-03T11:14:47.255903Z",
+			"completed_at": "2022-01-03T11:15:01.325405Z"
+		}],
+		"thread_id": "Thread-1",
+		"execution_time": 14.079110145568848,
+		"adapter_response": {
+			"_message": "OK"
+		},
+		"message": "OK",
+		"failures": null,
+		"unique_id": "model.small.my_first_dbt_model"
+	}, {
+		"status": "success",
+		"timing": [{
+			"name": "compile",
+			"started_at": "2022-01-03T11:15:01.336776Z",
+			"completed_at": "2022-01-03T11:15:01.338626Z"
+		}, {
+			"name": "execute",
+			"started_at": "2022-01-03T11:15:01.338808Z",
+			"completed_at": "2022-01-03T11:15:03.046930Z"
+		}],
+		"thread_id": "Thread-1",
+		"execution_time": 1.7207951545715332,
+		"adapter_response": {
+			"_message": "OK"
+		},
+		"message": "OK",
+		"failures": null,
+		"unique_id": "model.small.my_second_dbt_model"
+	}],
+	"elapsed_time": 32.78206205368042,
+	"args": {
+		"write_json": true,
+		"use_colors": true,
+		"printer_width": 80,
+		"version_check": true,
+		"partial_parse": true,
+		"static_parser": true,
+		"profiles_dir": "./tests/dbt/spark/odbc",
+		"send_anonymous_usage_stats": true,
+		"event_buffer_size": 100000,
+		"which": "run",
+		"rpc_method": "run",
+		"indirect_selection": "eager"
+	}
+}

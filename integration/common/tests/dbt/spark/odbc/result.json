@@ -1,0 +1,201 @@
+[{
+	"eventType": "START",
+	"eventTime": "{{ is_datetime(result) }}",
+	"run": {
+		"facets": {
+			"parent": {
+				"job": {
+					"namespace": "dbt",
+					"name": "dbt-job-name"
+				}
+			}
+		}
+	},
+	"job": {
+		"namespace": "spark://adb-1500100900.22.azuredatabricks.net:443",
+		"name": "db.schema.small.my_first_dbt_model",
+		"facets": {
+			"sql": {
+				"query": "/*\n    Welcome to your first dbt model!\n    Did you know that you can also configure models directly within SQL files?\n    This will override configurations stated in dbt_project.yml\n\n    Try changing \"table\" to \"view\" below\n*/\n\n\n\nwith source_data as (\n\n    select 1 as id\n    union all\n    select null as id\n\n)\n\nselect *\nfrom source_data\n\n/*\n    Uncomment the line below to remove records with null `id` values\n*/\n\n-- where id is not null"
+			}
+		}
+	},
+	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+	"inputs": [],
+	"outputs": [{
+		"namespace": "spark://adb-1500100900.22.azuredatabricks.net:443",
+		"name": "db.schema.my_first_dbt_model",
+		"facets": {
+			"dataSource": {
+				"name": "spark://adb-1500100900.22.azuredatabricks.net:443",
+				"uri": "spark://adb-1500100900.22.azuredatabricks.net:443"
+			},
+			"schema": {
+				"fields": [{
+					"name": "id",
+					"type": null,
+					"description": "The primary key for this table"
+				}]
+			}
+		},
+		"outputFacets": {}
+	}]
+}, {
+	"eventType": "START",
+	"eventTime": "{{ is_datetime(result) }}",
+	"run": {
+		"facets": {
+			"parent": {
+				"job": {
+					"namespace": "dbt",
+					"name": "dbt-job-name"
+				}
+			}
+		}
+	},
+	"job": {
+		"namespace": "spark://adb-1500100900.22.azuredatabricks.net:443",
+		"name": "db.schema.small.my_second_dbt_model",
+		"facets": {
+			"sql": {
+				"query": "-- Use the `ref` function to select from other models\n\nselect *\nfrom default.my_first_dbt_model\nwhere id = 1"
+			}
+		}
+	},
+	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+	"inputs": [{
+		"namespace": "spark://adb-1500100900.22.azuredatabricks.net:443",
+		"name": "db.schema.my_first_dbt_model",
+		"facets": {
+			"dataSource": {
+				"name": "spark://adb-1500100900.22.azuredatabricks.net:443",
+				"uri": "spark://adb-1500100900.22.azuredatabricks.net:443"
+			},
+			"schema": {
+				"fields": [{
+					"name": "id",
+					"type": null,
+					"description": "The primary key for this table"
+				}]
+			}
+		}
+	}],
+	"outputs": [{
+		"namespace": "spark://adb-1500100900.22.azuredatabricks.net:443",
+		"name": "db.schema.my_second_dbt_model",
+		"facets": {
+			"dataSource": {
+				"name": "spark://adb-1500100900.22.azuredatabricks.net:443",
+				"uri": "spark://adb-1500100900.22.azuredatabricks.net:443"
+			},
+			"schema": {
+				"fields": [{
+					"name": "id",
+					"type": null,
+					"description": "The primary key for this table"
+				}]
+			}
+		},
+		"outputFacets": {}
+	}]
+}, {
+	"eventType": "COMPLETE",
+	"eventTime": "{{ is_datetime(result) }}",
+	"run": {
+		"facets": {
+			"parent": {
+				"job": {
+					"namespace": "dbt",
+					"name": "dbt-job-name"
+				}
+			}
+		}
+	},
+	"job": {
+		"namespace": "spark://adb-1500100900.22.azuredatabricks.net:443",
+		"name": "db.schema.small.my_first_dbt_model",
+		"facets": {
+			"sql": {
+				"query": "/*\n    Welcome to your first dbt model!\n    Did you know that you can also configure models directly within SQL files?\n    This will override configurations stated in dbt_project.yml\n\n    Try changing \"table\" to \"view\" below\n*/\n\n\n\nwith source_data as (\n\n    select 1 as id\n    union all\n    select null as id\n\n)\n\nselect *\nfrom source_data\n\n/*\n    Uncomment the line below to remove records with null `id` values\n*/\n\n-- where id is not null"
+			}
+		}
+	},
+	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+	"inputs": [],
+	"outputs": [{
+		"namespace": "spark://adb-1500100900.22.azuredatabricks.net:443",
+		"name": "db.schema.my_first_dbt_model",
+		"facets": {
+			"dataSource": {
+				"name": "spark://adb-1500100900.22.azuredatabricks.net:443",
+				"uri": "spark://adb-1500100900.22.azuredatabricks.net:443"
+			},
+			"schema": {
+				"fields": [{
+					"name": "id",
+					"type": null,
+					"description": "The primary key for this table"
+				}]
+			}
+		},
+		"outputFacets": {}
+	}]
+}, {
+	"eventType": "COMPLETE",
+	"eventTime": "{{ is_datetime(result) }}",
+	"run": {
+		"facets": {
+			"parent": {
+				"job": {
+					"namespace": "dbt",
+					"name": "dbt-job-name"
+				}
+			}
+		}
+	},
+	"job": {
+		"namespace": "spark://adb-1500100900.22.azuredatabricks.net:443",
+		"name": "db.schema.small.my_second_dbt_model",
+		"facets": {
+			"sql": {
+				"query": "-- Use the `ref` function to select from other models\n\nselect *\nfrom default.my_first_dbt_model\nwhere id = 1"
+			}
+		}
+	},
+	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+	"inputs": [{
+		"namespace": "spark://adb-1500100900.22.azuredatabricks.net:443",
+		"name": "db.schema.my_first_dbt_model",
+		"facets": {
+			"dataSource": {
+				"name": "spark://adb-1500100900.22.azuredatabricks.net:443",
+				"uri": "spark://adb-1500100900.22.azuredatabricks.net:443"
+			},
+			"schema": {
+				"fields": [{
+					"name": "id",
+					"type": null,
+					"description": "The primary key for this table"
+				}]
+			}
+		}
+	}],
+	"outputs": [{
+		"namespace": "spark://adb-1500100900.22.azuredatabricks.net:443",
+		"name": "db.schema.my_second_dbt_model",
+		"facets": {
+			"dataSource": {
+				"name": "spark://adb-1500100900.22.azuredatabricks.net:443",
+				"uri": "spark://adb-1500100900.22.azuredatabricks.net:443"
+			},
+			"schema": {
+				"fields": [{
+					"name": "id",
+					"type": null,
+					"description": "The primary key for this table"
+				}]
+			}
+		},
+		"outputFacets": {}
+	}]
+}]
