@@ -15,53 +15,46 @@
 package io.openlineage.proxy.api.models;
 
 import java.util.Properties;
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * KafkaLineageStream is responsible for sending open lineage events to kafka. The collect() method
  * is called each time an open lineage event is emitted by the data platform.
  */
+@Slf4j
 public class KafkaLineageStream extends LineageStream {
-  private static final Logger log = LoggerFactory.getLogger(KafkaLineageStream.class);
-
   private final String localServerId;
-  private final Properties producerProperties;
-  private KafkaProducer<String, String> producer;
-  private String topicName;
+  private final String topicName;
+  private final KafkaProducer<String, String> producer;
 
   public KafkaLineageStream(
-      String localServerId, String topicName, String bootstrapServerURL, Properties properties) {
+      String localServerId,
+      String topicName,
+      String bootstrapServerUrl,
+      Properties producerProperties) {
     super(Type.KAFKA);
+    producerProperties.put("server.id", localServerId);
+    producerProperties.put("bootstrap.servers", bootstrapServerUrl);
+    log.info("KafkaProducer properties: {}", producerProperties);
 
     this.localServerId = localServerId;
-
-    log.info("Kafka Properties: " + properties.toString());
-
-    this.producerProperties = properties;
-    this.producerProperties.put("bootstrap.servers", bootstrapServerURL);
-    this.producerProperties.put("server.id", localServerId);
-
-    this.producer = new KafkaProducer<>(producerProperties);
     this.topicName = topicName;
+    this.producer = new KafkaProducer<>(producerProperties);
   }
 
   @Override
-  public void collect(String eventAsString) {
-    log.debug("Lineage Event: " + eventAsString);
+  public void collect(@NonNull String eventAsString) {
+    log.debug("Received lineage event: {}", eventAsString);
+
+    final ProducerRecord<String, String> record =
+        new ProducerRecord<>(topicName, localServerId, eventAsString);
     try {
-      String eventString = eventAsString;
-
-      log.debug("String Event: " + eventString);
-
-      ProducerRecord<String, String> record =
-          new ProducerRecord<>(topicName, localServerId, eventString);
-
       producer.send(record);
-    } catch (Exception error) {
-      log.error("Unable to send lineage event to kafka", error);
+    } catch (Exception e) {
+      log.error("Failed to send lineage event to kafka: {}", eventAsString, e);
     }
   }
 }
