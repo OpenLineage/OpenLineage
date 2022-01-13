@@ -1,9 +1,16 @@
 package io.openlineage.spark.agent.lifecycle;
 
+import static io.openlineage.spark.agent.util.ScalaConversionUtils.fromSeq;
 import static io.openlineage.spark.agent.util.ScalaConversionUtils.toScalaFn;
 
-import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.deser.DeserializationProblemHandler;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.DatasetFacet;
 import io.openlineage.client.OpenLineage.DatasetFacets;
@@ -21,14 +28,22 @@ import io.openlineage.client.OpenLineage.RunEventBuilder;
 import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.client.OpenLineage.RunFacets;
 import io.openlineage.client.OpenLineage.RunFacetsBuilder;
-import io.openlineage.spark.agent.JobMetricsHolder;
+import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
+import java.beans.BeanInfo;
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
+import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +64,7 @@ import org.apache.spark.scheduler.Stage;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
+import scala.Function1;
 import scala.PartialFunction;
 
 /**
@@ -145,13 +161,12 @@ class OpenLineageRunEventBuilder {
   @NonNull private final List<CustomFacetBuilder<?, ? extends RunFacet>> runFacetBuilders;
   @NonNull private final List<CustomFacetBuilder<?, ? extends JobFacet>> jobFacetBuilders;
 
-  private final UnknownEntryFacetListener<?> unknownEntryFacetListener =
+  private final UnknownEntryFacetListener unknownEntryFacetListener =
       new UnknownEntryFacetListener();
   private final Map<Integer, ActiveJob> jobMap = new HashMap<>();
   private final Map<Integer, Stage> stageMap = new HashMap<>();
 
-  private final ObjectMapper objectMapper = new ObjectMapper();
-  private final JobMetricsHolder jobMetricsHolder = JobMetricsHolder.getInstance();
+  private final ObjectMapper objectMapper = OpenLineageClient.createMapper();
 
   OpenLineageRunEventBuilder(OpenLineageContext context, OpenLineageEventHandlerFactory factory) {
     this(
@@ -165,6 +180,7 @@ class OpenLineageRunEventBuilder {
         factory.createOutputDatasetFacetBuilders(context),
         factory.createRunFacetBuilders(context),
         factory.createJobFacetBuilders(context));
+    objectMapper.addHandler(new MissingJsonAnySetterHandler());
   }
 
   /**
@@ -283,18 +299,18 @@ class OpenLineageRunEventBuilder {
 
     RunFacetsBuilder runFacetsBuilder = openLineage.newRunFacetsBuilder();
     parentRunFacet.ifPresent(runFacetsBuilder::parent);
-    RunFacets runFacets = buildFacets(nodes, runFacetBuilders, runFacetsBuilder.build());
+    OpenLineage.JobFacets jobFacets =
+        buildFacets(nodes, jobFacetBuilders, openLineage.newJobFacets(null, null, null));
+    List<InputDataset> inputDatasets = buildInputDatasets(nodes);
+    List<OutputDataset> outputDatasets = buildOutputDatasets(nodes);
     openLineageContext
         .getQueryExecution()
         .flatMap(qe -> unknownEntryFacetListener.build(qe.optimizedPlan()))
         .ifPresent(facet -> runFacetsBuilder.put("spark_unknown", facet));
-    OpenLineage.JobFacets jobFacets =
-        buildFacets(nodes, jobFacetBuilders, openLineage.newJobFacets(null, null, null));
+
+    RunFacets runFacets = buildFacets(nodes, runFacetBuilders, runFacetsBuilder.build());
     OpenLineage.RunBuilder runBuilder =
         openLineage.newRunBuilder().runId(openLineageContext.getRunUuid()).facets(runFacets);
-    List<InputDataset> inputDatasets = buildInputDatasets(nodes);
-    List<OutputDataset> outputDatasets = buildOutputDatasets(nodes);
-
     return runEventBuilder
         .run(runBuilder.build())
         .job(jobBuilder.facets(jobFacets).build())
@@ -318,6 +334,9 @@ class OpenLineageRunEventBuilder {
         openLineageContext.getQueryExecution(),
         inputDatasetQueryPlanVisitors);
 
+    Function1<LogicalPlan, List<InputDataset>> inputVisitor =
+        visitLogicalPlan(PlanUtils.merge(inputDatasetQueryPlanVisitors));
+
     List<OpenLineage.InputDataset> datasets =
         Stream.concat(
                 buildDatasets(nodes, inputDatasetBuilders),
@@ -325,12 +344,7 @@ class OpenLineageRunEventBuilder {
                     .getQueryExecution()
                     .map(
                         qe ->
-                            ScalaConversionUtils.fromSeq(
-                                    qe.optimizedPlan()
-                                        .collect(
-                                            PlanUtils.merge(inputDatasetQueryPlanVisitors)
-                                                .orElse(unknownEntryFacetListener)))
-                                .stream()
+                            fromSeq(qe.optimizedPlan().map(inputVisitor)).stream()
                                 .flatMap(List::stream)
                                 .map(((Class<InputDataset>) InputDataset.class)::cast))
                     .orElse(Stream.empty()))
@@ -360,23 +374,42 @@ class OpenLineageRunEventBuilder {
     return datasets;
   }
 
+  /**
+   * Returns a {@link Function1} that passes the input {@link LogicalPlan} node to the {@link
+   * #unknownEntryFacetListener} if the inputVisitor is defined for the input node.
+   *
+   * @param inputVisitor
+   * @param <D>
+   * @return
+   */
+  private <D> Function1<LogicalPlan, List<D>> visitLogicalPlan(
+      PartialFunction<LogicalPlan, List<D>> inputVisitor) {
+    return ScalaConversionUtils.toScalaFn(
+        node ->
+            inputVisitor
+                .andThen(
+                    toScalaFn(
+                        ds -> {
+                          unknownEntryFacetListener.accept(node);
+                          return ds;
+                        }))
+                .applyOrElse(node, toScalaFn(n -> Collections.emptyList())));
+  }
+
   private List<OpenLineage.OutputDataset> buildOutputDatasets(List<Object> nodes) {
     log.info(
         "Visiting query plan {} with output dataset builders {}",
         openLineageContext.getQueryExecution(),
         outputDatasetBuilders);
-    PartialFunction<LogicalPlan, List<OutputDataset>> visitor =
-        PlanUtils.merge(outputDatasetQueryPlanVisitors);
+    Function1<LogicalPlan, List<OutputDataset>> visitor =
+        visitLogicalPlan(PlanUtils.merge(outputDatasetQueryPlanVisitors));
     List<OutputDataset> datasets =
         Stream.concat(
                 buildDatasets(nodes, outputDatasetBuilders),
                 openLineageContext
                     .getQueryExecution()
-                    .map(
-                        qe ->
-                            visitor.applyOrElse(qe.optimizedPlan(), unknownEntryFacetListener)
-                                .stream()
-                                .map(OutputDataset.class::cast))
+                    .map(qe -> visitor.apply(qe.optimizedPlan()))
+                    .map(List::stream)
                     .orElse(Stream.empty()))
             .collect(Collectors.toList());
 
@@ -436,9 +469,8 @@ class OpenLineageRunEventBuilder {
    * io.openlineage.client.OpenLineage.InputDatasetInputFacets#producer} URI, which need to be
    * included in the serialized JSON.
    *
-   * <p>This method will collect the custom facets generated by the builders into a Map, then merge
-   * the properties into the facet container, using the {@link ObjectMapper#updateValue(Object,
-   * Object)} method.
+   * <p>This method will generate a new facet container with properties potentially overridden by
+   * the values set by the custom facet generators.
    *
    * @param events
    * @param builders
@@ -449,23 +481,87 @@ class OpenLineageRunEventBuilder {
    */
   private <T, F> F buildFacets(
       List<Object> events, List<CustomFacetBuilder<?, ? extends T>> builders, F facetsContainer) {
-    Map<String, T> facetsMap = new HashMap<>();
+    Map<String, T> facetsMap =
+        objectMapper.convertValue(facetsContainer, new TypeReference<Map<String, T>>() {});
     events.forEach(event -> builders.forEach(fn -> fn.accept(event, facetsMap::put)));
-    try {
-      return objectMapper.updateValue(facetsContainer, facetsMap);
-    } catch (JsonMappingException e) {
-      throw new RuntimeException(e);
-    }
+    return objectMapper.convertValue(facetsMap, (Class<F>) facetsContainer.getClass());
   }
 
+  /**
+   * Create a new instance of the facets container with all values merged from the original
+   * facetsContainer and the given facets Map, with precedence given to the facets Map.
+   *
+   * @see #buildFacets(List, List, Object) for reasoning behind the map &lt;-&gt; object conversion
+   * @param facetsMap
+   * @param facetsContainer
+   * @param klass
+   * @param <T>
+   * @param <F>
+   * @return
+   */
   private <T, F> T mergeFacets(Map<String, F> facetsMap, T facetsContainer, Class<T> klass) {
     if (facetsContainer == null) {
       return objectMapper.convertValue(facetsMap, klass);
     }
-    try {
-      return objectMapper.updateValue(facetsContainer, facetsMap);
-    } catch (JsonMappingException e) {
-      throw new RuntimeException(e);
+
+    Map<String, F> targetMap =
+        objectMapper.convertValue(facetsContainer, new TypeReference<Map<String, F>>() {});
+    targetMap.putAll(facetsMap);
+    return objectMapper.convertValue(targetMap, klass);
+  }
+
+  /**
+   * The {@link JsonAnySetter} annotation used on the OpenLineage model objects isn't detected in
+   * the version of Jackson that ships with Spark 2.1.x (Jackson 2.6.x). This {@link
+   * DeserializationProblemHandler} is only triggered with the {@link JsonAnySetter} annotation
+   * isn't detected by the {@link com.fasterxml.jackson.databind.deser.BeanDeserializer} when
+   * generating facet containers (e.g., {@link RunFacets} above. This code is never triggered in
+   * Spark 3.x, with newer versions of Jackson.
+   */
+  private static final class MissingJsonAnySetterHandler extends DeserializationProblemHandler {
+
+    @Override
+    public boolean handleUnknownProperty(
+        DeserializationContext ctxt,
+        JsonParser jp,
+        JsonDeserializer<?> deserializer,
+        Object beanOrClass,
+        String propertyName) {
+      Class<?> objClass = beanOrClass.getClass();
+      BeanInfo beanInfo;
+      try {
+        beanInfo = Introspector.getBeanInfo(objClass);
+      } catch (IntrospectionException e) {
+        log.warn("Unable to inspect bean {}", objClass, e);
+        return false;
+      }
+      Optional<PropertyDescriptor> anySetter =
+          Arrays.stream(beanInfo.getPropertyDescriptors())
+              .filter(
+                  pd ->
+                      pd.getReadMethod().getAnnotation(JsonAnyGetter.class) != null
+                          || (pd.getWriteMethod() != null
+                              && pd.getWriteMethod().getAnnotation(JsonAnySetter.class) != null))
+              .findFirst();
+      if (anySetter.isPresent()) {
+        try {
+          Method readMethod = anySetter.get().getReadMethod();
+          Object facetContainer = readMethod.invoke(beanOrClass);
+          if (facetContainer instanceof Map) {
+            Type genType = readMethod.getGenericReturnType();
+            if (genType instanceof ParameterizedType) {
+              Type[] typeArgs = ((ParameterizedType) genType).getActualTypeArguments();
+              ((Map) facetContainer).put(propertyName, jp.readValueAs((Class<?>) typeArgs[1]));
+            } else {
+              ((Map) facetContainer).put(propertyName, jp.readValueAs(Map.class));
+            }
+            return true;
+          }
+        } catch (Exception e) {
+          log.warn("Unable to update custom facet {}", propertyName, e);
+        }
+      }
+      return false;
     }
   }
 }
