@@ -1,6 +1,6 @@
 # OpenLineage Proxy Backend (openlineage-proxy)
 
-Direct your OpenLineage events to a Kafka Topic. If the Kafka properties are not set up, the events are printed to the console (stdout).  
+Proxy OpenLineage events to one or more event streams. By default, events are logged to the console.  
 
 ## Requirements
 
@@ -11,7 +11,7 @@ Direct your OpenLineage events to a Kafka Topic. If the Kafka properties are not
 To build the entire project run:
 
 ```bash
-$ ./gradlew shadowJar
+$ ./gradlew build
 ```
 
 The executable can be found under `build/libs/`

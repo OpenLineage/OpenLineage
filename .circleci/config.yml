@@ -364,6 +364,28 @@ jobs:
             - "1c:d1:da:e8:76:d7:f7:04:31:07:18:fd:55:ca:e1:2e"
       - run: spec/release.sh
 
+  build-proxy:
+    working_directory: ~/openlineage/proxy
+    docker:
+      - image: cimg/openjdk:11.0
+    steps:
+      - *checkout_project_root
+      - restore_cache:
+          keys:
+            - v1-proxy-{{ .Branch }}-{{ .Revision }}
+            - v1-proxy-{{ .Branch }}
+      - run: ./gradlew --no-daemon --stacktrace build
+      - run: ./gradlew --no-daemon jacocoTestReport
+      - run: bash <(curl -s https://codecov.io/bash)
+      - store_test_results:
+          path: proxy/build/test-results/test
+      - store_artifacts:
+          path: build/reports/tests/test
+          destination: test-report
+      - save_cache:
+          key: v1-proxy-{{ .Branch }}-{{ .Revision }}
+          paths:
+            - ~/.gradle
 
 workflows:
   openlineage:
@@ -440,6 +462,7 @@ workflows:
       - publish-spec:
           <<: *only_on_main
           context: release
+      - build-proxy
   release:
     jobs:
       - release-client-java:
