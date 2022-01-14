@@ -2,7 +2,6 @@ package io.openlineage.spark.agent.lifecycle.plan;
 
 import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptional;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.client.OpenLineage;
@@ -10,6 +9,7 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.util.List;
@@ -130,7 +130,7 @@ public class KafkaRelationVisitor<D extends OpenLineage.Dataset>
                                     fieldCount,
                                     Spliterator.SIZED & Spliterator.IMMUTABLE),
                                 false);
-                          } catch (JsonProcessingException e) {
+                          } catch (IOException e) {
                             log.warn(
                                 "Unable to find topics from Kafka source configuration {}", str, e);
                           }

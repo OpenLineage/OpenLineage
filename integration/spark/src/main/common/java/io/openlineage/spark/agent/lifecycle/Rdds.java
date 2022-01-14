@@ -13,7 +13,7 @@ import scala.collection.JavaConversions;
 
 public class Rdds {
 
-  static Set<RDD<?>> flattenRDDs(RDD<?> rdd) {
+  public static Set<RDD<?>> flattenRDDs(RDD<?> rdd) {
     Set<RDD<?>> rdds = new HashSet<>();
     rdds.add(rdd);
     Collection<Dependency<?>> deps = JavaConversions.asJavaCollection(rdd.dependencies());
