@@ -9,7 +9,6 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.lifecycle.ContextFactory;
 import io.openlineage.spark.agent.lifecycle.ExecutionContext;
-import io.openlineage.spark.agent.lifecycle.SparkSQLExecutionContext;
 import io.openlineage.spark.agent.transformers.PairRDDFunctionsTransformer;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.io.PrintWriter;
@@ -20,6 +19,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.stream.Collectors;
@@ -33,6 +33,7 @@ import org.apache.spark.SparkEnv;
 import org.apache.spark.SparkEnv$;
 import org.apache.spark.rdd.PairRDDFunctions;
 import org.apache.spark.rdd.RDD;
+import org.apache.spark.scheduler.ActiveJob;
 import org.apache.spark.scheduler.SparkListenerApplicationStart;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
@@ -41,11 +42,14 @@ import org.apache.spark.scheduler.SparkListenerTaskEnd;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
+import scala.Function0;
+import scala.Function1;
+import scala.Option;
 
 @Slf4j
 public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkListener {
 
-  private static final Map<Long, SparkSQLExecutionContext> sparkSqlExecutionRegistry =
+  private static final Map<Long, ExecutionContext> sparkSqlExecutionRegistry =
       Collections.synchronizedMap(new HashMap<>());
   private static final Map<Integer, ExecutionContext> rddExecutionRegistry =
       Collections.synchronizedMap(new HashMap<>());
@@ -60,6 +64,10 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   private static WeakHashMap<RDD<?>, Configuration> outputs = new WeakHashMap<>();
   private static ContextFactory contextFactory;
   private static JobMetricsHolder jobMetrics = JobMetricsHolder.getInstance();
+  private final Function1<SparkSession, SparkContext> sparkContextFromSession =
+      ScalaConversionUtils.toScalaFn(SparkSession::sparkContext);
+  private final Function0<Option<SparkContext>> activeSparkContext =
+      ScalaConversionUtils.toScalaFn(SparkContext$.MODULE$::getActive);
 
   /** called by the agent on init with the provided argument */
   public static void init(ContextFactory contextFactory) {
@@ -129,13 +137,13 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   /** called by the SparkListener when a spark-sql (Dataset api) execution starts */
   private static void sparkSQLExecStart(SparkListenerSQLExecutionStart startEvent) {
-    SparkSQLExecutionContext context = getSparkSQLExecutionContext(startEvent.executionId());
+    ExecutionContext context = getSparkSQLExecutionContext(startEvent.executionId());
     context.start(startEvent);
   }
 
   /** called by the SparkListener when a spark-sql (Dataset api) execution ends */
   private static void sparkSQLExecEnd(SparkListenerSQLExecutionEnd endEvent) {
-    SparkSQLExecutionContext context = sparkSqlExecutionRegistry.remove(endEvent.executionId());
+    ExecutionContext context = sparkSqlExecutionRegistry.remove(endEvent.executionId());
     if (context != null) {
       context.end(endEvent);
     }
@@ -144,31 +152,52 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   /** called by the SparkListener when a job starts */
   @Override
   public void onJobStart(SparkListenerJobStart jobStart) {
+    Optional<ActiveJob> activeJob =
+        asJavaOptional(
+                SparkSession.getDefaultSession()
+                    .map(sparkContextFromSession)
+                    .orElse(activeSparkContext))
+            .flatMap(
+                ctx ->
+                    Optional.ofNullable(ctx.dagScheduler())
+                        .map(ds -> ds.jobIdToActiveJob().get(jobStart.jobId())))
+            .flatMap(ScalaConversionUtils::asJavaOptional);
     Set<Integer> stages =
         ScalaConversionUtils.fromSeq(jobStart.stageIds()).stream()
             .map(Integer.class::cast)
             .collect(Collectors.toSet());
     jobMetrics.addJobStages(jobStart.jobId(), stages);
 
-    asJavaOptional(
-            SparkSession.getActiveSession()
-                .map(ScalaConversionUtils.toScalaFn(sess -> sess.sparkContext()))
-                .orElse(ScalaConversionUtils.toScalaFn(() -> SparkContext$.MODULE$.getActive())))
-        .flatMap(ctx -> asJavaOptional(ctx.dagScheduler().jobIdToActiveJob().get(jobStart.jobId())))
-        .ifPresent(
-            job -> {
-              String executionIdProp = job.properties().getProperty("spark.sql.execution.id");
-              ExecutionContext context;
-              if (executionIdProp != null) {
-                long executionId = Long.parseLong(executionIdProp);
-                context = getExecutionContext(job.jobId(), executionId);
-              } else {
-                context = getExecutionContext(job.jobId());
-              }
+    ExecutionContext context =
+        Optional.ofNullable(getSqlExecutionId(jobStart.properties()))
+            .map(Optional::of)
+            .orElseGet(
+                () ->
+                    asJavaOptional(
+                            SparkSession.getDefaultSession()
+                                .map(sparkContextFromSession)
+                                .orElse(activeSparkContext))
+                        .flatMap(
+                            ctx ->
+                                Optional.ofNullable(ctx.dagScheduler())
+                                    .map(ds -> ds.jobIdToActiveJob().get(jobStart.jobId()))
+                                    .flatMap(ScalaConversionUtils::asJavaOptional))
+                        .map(job -> getSqlExecutionId(job.properties())))
+            .map(
+                id -> {
+                  long executionId = Long.parseLong(id);
+                  return getExecutionContext(jobStart.jobId(), executionId);
+                })
+            .orElseGet(() -> getExecutionContext(jobStart.jobId()));
 
-              context.setActiveJob(job);
-              context.start(jobStart);
-            });
+    // set it in the rddExecutionRegistry so jobEnd is called
+    rddExecutionRegistry.put(jobStart.jobId(), context);
+    activeJob.ifPresent(context::setActiveJob);
+    context.start(jobStart);
+  }
+
+  private String getSqlExecutionId(Properties properties) {
+    return properties.getProperty("spark.sql.execution.id");
   }
 
   /** called by the SparkListener when a job ends */
@@ -184,7 +213,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     jobMetrics.addMetrics(taskEnd.stageId(), taskEnd.taskMetrics());
   }
 
-  public static SparkSQLExecutionContext getSparkSQLExecutionContext(long executionId) {
+  public static ExecutionContext getSparkSQLExecutionContext(long executionId) {
     return sparkSqlExecutionRegistry.computeIfAbsent(
         executionId, (e) -> contextFactory.createSparkSQLExecutionContext(executionId));
   }
@@ -207,7 +236,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   public static void emitError(Exception e) {
     OpenLineage ol = new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
     try {
-      contextFactory.sparkContext.emit(buildErrorLineageEvent(ol, errorRunFacet(e, ol)));
+      contextFactory.openLineageEventEmitter.emit(buildErrorLineageEvent(ol, errorRunFacet(e, ol)));
     } catch (Exception ex) {
       log.error("Could not emit open lineage on error", e);
     }
@@ -228,11 +257,13 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       OpenLineage ol, OpenLineage.RunFacets runFacets) {
     return ol.newRunEventBuilder()
         .eventTime(ZonedDateTime.now())
-        .run(ol.newRun(contextFactory.sparkContext.getParentRunId().orElse(null), runFacets))
+        .run(
+            ol.newRun(
+                contextFactory.openLineageEventEmitter.getParentRunId().orElse(null), runFacets))
         .job(
             ol.newJobBuilder()
-                .namespace(contextFactory.sparkContext.getJobNamespace())
-                .name(contextFactory.sparkContext.getParentJobName())
+                .namespace(contextFactory.openLineageEventEmitter.getJobNamespace())
+                .name(contextFactory.openLineageEventEmitter.getParentJobName())
                 .build())
         .build();
   }
