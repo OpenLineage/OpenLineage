@@ -4,5 +4,4 @@ import io.openlineage.proxy.ProxyStreamConfig;
 import lombok.ToString;
 
 @ToString
-public final class ConsoleConfig implements ProxyStreamConfig {
-}
+public final class ConsoleConfig implements ProxyStreamConfig {}

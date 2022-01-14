@@ -20,8 +20,6 @@ import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
 import io.dropwizard.configuration.SubstitutingSourceProvider;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
-import io.openlineage.proxy.api.ProxyResource;
-import io.openlineage.proxy.service.ProxyService;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 

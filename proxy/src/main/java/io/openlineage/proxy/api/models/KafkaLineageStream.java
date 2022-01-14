@@ -14,7 +14,6 @@
 
 package io.openlineage.proxy.api.models;
 
-import java.util.Properties;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -30,8 +29,7 @@ public class KafkaLineageStream extends LineageStream {
   private final String localServerId;
   private final KafkaProducer<String, String> producer;
 
-  public KafkaLineageStream(
-      @NonNull final KafkaConfig kafkaConfig) {
+  public KafkaLineageStream(@NonNull final KafkaConfig kafkaConfig) {
     super(Type.KAFKA);
     this.topicName = kafkaConfig.getTopicName();
     this.localServerId = kafkaConfig.getLocalServerId();
