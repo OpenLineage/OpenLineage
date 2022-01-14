@@ -7,7 +7,8 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.client.OpenLineageClient;
-import io.openlineage.spark.agent.lifecycle.SparkSQLExecutionContext;
+import io.openlineage.spark.agent.lifecycle.ExecutionContext;
+import io.openlineage.spark.agent.lifecycle.StaticExecutionContextFactory;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHadoopFsRelationVisitor;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Optional;
@@ -18,16 +19,14 @@ import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.scheduler.StageInfo;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.catalyst.TableIdentifier;
+import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation$;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.QueryExecution;
 import org.apache.spark.sql.execution.SparkPlan;
 import org.apache.spark.sql.execution.SparkPlanInfo;
 import org.apache.spark.sql.execution.datasources.InsertIntoHadoopFsRelationCommand;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
-import org.apache.spark.sql.types.IntegerType$;
-import org.apache.spark.sql.types.Metadata;
-import org.apache.spark.sql.types.StructField;
-import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -41,15 +40,8 @@ public class OpenLineageSparkListenerTest {
   public void testSqlEventWithJobEventEmitsOnce(SparkSession sparkSession) {
     EventEmitter emitter = mock(EventEmitter.class);
     QueryExecution qe = mock(QueryExecution.class);
-    LogicalPlan query = mock(LogicalPlan.class);
+    LogicalPlan query = UnresolvedRelation$.MODULE$.apply(TableIdentifier.apply("tableName"));
     SparkPlan plan = mock(SparkPlan.class);
-
-    when(query.schema())
-        .thenReturn(
-            new StructType(
-                new StructField[] {
-                  new StructField("key", IntegerType$.MODULE$, false, Metadata.empty())
-                }));
 
     when(qe.optimizedPlan())
         .thenReturn(
@@ -76,12 +68,14 @@ public class OpenLineageSparkListenerTest {
             .sparkSession(Optional.of(sparkSession))
             .sparkContext(sparkSession.sparkContext())
             .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
+            .queryExecution(qe)
             .build();
     olContext
         .getOutputDatasetQueryPlanVisitors()
         .add(new InsertIntoHadoopFsRelationVisitor(olContext));
-    SparkSQLExecutionContext executionContext =
-        new SparkSQLExecutionContext(1L, emitter, qe, olContext);
+    ExecutionContext executionContext =
+        new StaticExecutionContextFactory(emitter)
+            .createSparkSQLExecutionContext(1L, emitter, qe, olContext);
 
     executionContext.start(
         new SparkListenerSQLExecutionStart(
