@@ -46,7 +46,7 @@ public class ProxyResource {
                 log.error("Failed to proxy OpenLineage event!", err);
                 asyncResponse.resume(Response.status(500).build());
               } else {
-                asyncResponse.resume(Response.status(201).build());
+                asyncResponse.resume(Response.status(200).build());
               }
             });
   }
