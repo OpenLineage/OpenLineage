@@ -43,8 +43,6 @@ public final class ProxyService {
    * @return completion future
    */
   public CompletableFuture<Void> proxyEventAsync(@NonNull String eventAsString) {
-    log.info("Inbound event: {}", eventAsString);
-
     final List<CompletableFuture> collectionFutures = Lists.newArrayList();
     lineageStreams.forEach(
         lineageStream ->

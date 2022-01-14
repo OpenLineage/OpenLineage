@@ -14,6 +14,7 @@
 
 package io.openlineage.proxy.api.models;
 
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /** ConsoleLineageStream pushes events to stdout */
@@ -24,7 +25,7 @@ public class ConsoleLineageStream extends LineageStream {
   }
 
   @Override
-  public void collect(String eventAsString) {
+  public void collect(@NonNull String eventAsString) {
     log.info(eventAsString);
   }
 }
