@@ -17,18 +17,14 @@ package io.openlineage.proxy.service;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import io.openlineage.proxy.ProxyConfig;
-import io.openlineage.proxy.api.models.ConsoleLineageStream;
-import io.openlineage.proxy.api.models.KafkaLineageStream;
 import io.openlineage.proxy.api.models.LineageStream;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import lombok.NonNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public final class ProxyService {
-  private static final Logger log = LoggerFactory.getLogger(ProxyService.class);
-
   private final ImmutableSet<LineageStream> lineageStreams;
 
   /**
@@ -36,44 +32,24 @@ public final class ProxyService {
    *
    * @param config configuration properties supplied to the application
    */
-  public ProxyService(final ProxyConfig config) {
-    /*
-     * There are two supported lineage streams.  The first is logging to the console.  This is activated by default or if requested in the config.
-     * The second is kafka.  At the moment, the Kafka configuration is set up to be mandatory and so the kafka stream is always set up.
-     */
-    if (config.getConsoleLog()) {
-      this.lineageStreams =
-          ImmutableSet.of(
-              new ConsoleLineageStream(),
-              new KafkaLineageStream(
-                  config.getLineageSourceName(),
-                  config.getKafkaTopicName(),
-                  config.getKafkaBootstrapServerURL(),
-                  config.getKafkaProperties()));
-    } else {
-      this.lineageStreams =
-          ImmutableSet.of(
-              new KafkaLineageStream(
-                  config.getLineageSourceName(),
-                  config.getKafkaTopicName(),
-                  config.getKafkaBootstrapServerURL(),
-                  config.getKafkaProperties()));
-    }
+  public ProxyService(@NonNull final ProxyConfig config) {
+    this.lineageStreams = config.getProxyStreamFactory().build();
   }
 
   /**
    * process an incoming event by sending it to all configured lineage streams.
    *
-   * @param event incoming event
+   * @param eventAsString incoming event
    * @return completion future
    */
-  public CompletableFuture<Void> proxyEventAsync(@NonNull String event) {
-    log.info("Inbound event: {}", event);
+  public CompletableFuture<Void> proxyEventAsync(@NonNull String eventAsString) {
+    log.info("Inbound event: {}", eventAsString);
 
     final List<CompletableFuture> collectionFutures = Lists.newArrayList();
     lineageStreams.forEach(
         lineageStream ->
-            collectionFutures.add(CompletableFuture.runAsync(() -> lineageStream.collect(event))));
+            collectionFutures.add(
+                CompletableFuture.runAsync(() -> lineageStream.collect(eventAsString))));
     return CompletableFuture.allOf(collectionFutures.toArray(CompletableFuture[]::new));
   }
 }

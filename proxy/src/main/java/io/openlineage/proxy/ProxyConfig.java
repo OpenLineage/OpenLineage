@@ -16,66 +16,13 @@ package io.openlineage.proxy;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dropwizard.Configuration;
-import java.util.Properties;
-import javax.validation.constraints.NotEmpty;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 /** ProxyConfig defines the structure of the configuration file proxy.yml */
+@NoArgsConstructor
 public final class ProxyConfig extends Configuration {
-  @NotEmpty private String lineageSourceName;
-
-  private boolean consoleLog = false;
-
-  @NotEmpty private String kafkaTopicName;
-  @NotEmpty private String kafkaBootstrapServerURL;
-  @NotEmpty private Properties kafkaProperties = null;
-
-  @JsonProperty
-  public String getLineageSourceName() {
-    return lineageSourceName;
-  }
-
-  @JsonProperty
-  public void setLineageSourceName(String lineageSourceName) {
-    this.lineageSourceName = lineageSourceName;
-  }
-
-  @JsonProperty
-  public boolean getConsoleLog() {
-    return consoleLog;
-  }
-
-  @JsonProperty
-  public void setConsoleLog(boolean consoleLog) {
-    this.consoleLog = consoleLog;
-  }
-
-  @JsonProperty
-  public String getKafkaTopicName() {
-    return kafkaTopicName;
-  }
-
-  @JsonProperty
-  public void setKafkaTopicName(String kafkaTopicName) {
-    this.kafkaTopicName = kafkaTopicName;
-  }
-
-  @JsonProperty
-  public String getKafkaBootstrapServerURL() {
-    return kafkaBootstrapServerURL;
-  }
-
-  @JsonProperty
-  public void setKafkaBootstrapServerURL(String kafkaBootstrapServerURL) {
-    this.kafkaBootstrapServerURL = kafkaBootstrapServerURL;
-  }
-
-  @JsonProperty
-  public Properties getKafkaProperties() {
-    return kafkaProperties;
-  }
-
-  @JsonProperty
-  public void setKafkaProperties(Properties kafkaProperties) {
-    this.kafkaProperties = kafkaProperties;
-  }
+  @Getter
+  @JsonProperty("proxy")
+  private final ProxyStreamFactory proxyStreamFactory = new ProxyStreamFactory();
 }

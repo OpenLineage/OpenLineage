@@ -26,23 +26,16 @@ import org.apache.kafka.clients.producer.ProducerRecord;
  */
 @Slf4j
 public class KafkaLineageStream extends LineageStream {
-  private final String localServerId;
   private final String topicName;
+  private final String localServerId;
   private final KafkaProducer<String, String> producer;
 
   public KafkaLineageStream(
-      @NonNull final String localServerId,
-      @NonNull final String topicName,
-      @NonNull final String bootstrapServerUrl,
-      @NonNull final Properties producerProperties) {
+      @NonNull final KafkaConfig kafkaConfig) {
     super(Type.KAFKA);
-    producerProperties.put("server.id", localServerId);
-    producerProperties.put("bootstrap.servers", bootstrapServerUrl);
-    log.info("KafkaProducer properties: {}", producerProperties);
-
-    this.localServerId = localServerId;
-    this.topicName = topicName;
-    this.producer = new KafkaProducer<>(producerProperties);
+    this.topicName = kafkaConfig.getTopicName();
+    this.localServerId = kafkaConfig.getLocalServerId();
+    this.producer = new KafkaProducer<>(kafkaConfig.getProperties());
   }
 
   @Override

@@ -21,35 +21,21 @@ logging:
       # layout:
       #   type: json
 
-#
-# This name is used to identify the lineage source in the different distribution mechanisms.  If can be used in further
-# routing of the lineage events without needing to unpack the event contents. In this example, it identifies that the
-# lineage event has gone through the proxy backend.  However, if a different proxy backend is serving each engine that
-# is producing lineage events, this value can be set up to represent the source engine.
-#
-lineageSourceName: openLineageProxyBackend
-
-#
-# Set to false to prevent lineage events being printed to stdout.
-#
-consoleLog : true
-
-#
-# Kafka Configuration:
-#  - kafkaTopicName - name of topic to publish to - avoid mixing "-" and "." as spacers in the name - use one or other.
-#  - kafkaBootstrapServerURL - location of the kafka broker - typically localhost:9092
-#  - kafkaProperties - see [Apache Kafka producer configurations](http://kafka.apache.org/0100/documentation.html#producerconfigs) for more information and options
-#
-kafkaTopicName: openlineage.topic
-kafkaBootstrapServerURL : localhost:9092
-kafkaProperties:
-    acks: all
-    retries : 1
-    batch.size : 16384
-    linger.ms : 0
-    buffer.memory : 33554432
-    max.request.size : 10485760
-    key.serializer : org.apache.kafka.common.serialization.StringSerializer
-    value.serializer : org.apache.kafka.common.serialization.StringSerializer
-    bring.up.retries : 10
-    bring.up.minSleepTime : 5000
+proxy:
+  source: openLineageProxyBackend
+  streams:
+    - type: Console
+    - type: Kafka
+      topicName: openlineage.topic
+      bootstrapServerUrl : localhost:9092
+      properties:
+        acks: all
+        retries : 1
+        batch.size : 16384
+        linger.ms : 0
+        buffer.memory : 33554432
+        max.request.size : 10485760
+        key.serializer : org.apache.kafka.common.serialization.StringSerializer
+        value.serializer : org.apache.kafka.common.serialization.StringSerializer
+        bring.up.retries : 10
+        bring.up.minSleepTime : 5000

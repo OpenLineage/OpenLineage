@@ -30,17 +30,17 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Path("/api/v1/lineage")
 public class ProxyResource {
-  private final ProxyService proxyService;
+  private final ProxyService service;
 
-  public ProxyResource(@NonNull final ProxyService proxyService) {
-    this.proxyService = proxyService;
+  public ProxyResource(@NonNull final ProxyService service) {
+    this.service = service;
   }
 
   @POST
   @Consumes(APPLICATION_JSON)
   public void proxyEvent(
       @Valid String eventAsString, @Suspended final AsyncResponse asyncResponse) {
-    proxyService
+    service
         .proxyEventAsync(eventAsString)
         .whenComplete(
             (result, err) -> {
