@@ -77,8 +77,5 @@ public final class ProxyApp extends Application<ProxyConfig> {
   @Override
   public void run(@NonNull ProxyConfig config, @NonNull Environment env) {
     log.debug("Registering resources...");
-    env.jersey().register(new ProxyResource(new ProxyService(config)));
-
-    config.getProxyStreamFactory().build();
   }
 }

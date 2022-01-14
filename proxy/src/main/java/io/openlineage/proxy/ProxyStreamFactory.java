@@ -3,6 +3,7 @@ package io.openlineage.proxy;
 import com.google.common.collect.ImmutableSet;
 import java.util.Set;
 
+import com.google.common.collect.Sets;
 import io.openlineage.proxy.ProxyStreamConfig;
 import io.openlineage.proxy.api.models.ConsoleConfig;
 import io.openlineage.proxy.api.models.ConsoleLineageStream;
@@ -17,9 +18,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public final class ProxyStreamFactory {
   private static final String DEFAULT_PROXY_LINEAGE_SOURCE = "openLineageProxyBackend";
+  private static final Set<ProxyStreamConfig> DEFAULT_STREAMS = Sets.newHashSet(new ConsoleConfig());
 
   @Getter @Setter private String source = DEFAULT_PROXY_LINEAGE_SOURCE;
-  @Getter @Setter private Set<ProxyStreamConfig> streams;
+  @Getter @Setter private Set<ProxyStreamConfig> streams = DEFAULT_STREAMS;
 
   public ImmutableSet<LineageStream> build() {
     final ImmutableSet.Builder lineageStreams = ImmutableSet.builder();
