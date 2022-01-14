@@ -31,7 +31,7 @@ By default, the OpenLineage proxy uses the following ports:
 
 > **Note:** All of the configuration settings in `proxy.yml` can be specified either in the configuration file or in an environment variable.
 
-## Running the HTTP API Server
+## Running the Proxy Backend
 
 ```bash
 $ ./gradlew runShadow
