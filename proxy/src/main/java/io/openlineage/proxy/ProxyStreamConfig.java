@@ -12,19 +12,16 @@
  * limitations under the License.
  */
 
-package io.openlineage.proxy.api.models;
+package io.openlineage.proxy;
 
-import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.openlineage.proxy.api.models.ConsoleConfig;
+import io.openlineage.proxy.api.models.KafkaConfig;
 
-@Slf4j
-public class KinesisLineageStream extends LineageStream {
-  public KinesisLineageStream(){
-    super(Type.KINESIS);
-  }
-
-  @Override
-  public void collect(@NonNull String event) {
-    throw new UnsupportedOperationException();
-  }
-}
+@JsonSubTypes({
+  @JsonSubTypes.Type(value = ConsoleConfig.class, name = "Console"),
+  @JsonSubTypes.Type(value = KafkaConfig.class, name = "Kafka")
+})
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
+public interface ProxyStreamConfig {}

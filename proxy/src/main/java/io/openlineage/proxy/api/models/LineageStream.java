@@ -14,42 +14,39 @@
 
 package io.openlineage.proxy.api.models;
 
+import lombok.NonNull;
 
 /**
- * LineageStream provides the generic implementation of the backend destinations supported by the proxy backend.
+ * LineageStream provides the generic implementation of the backend destinations supported by the
+ * proxy backend.
  */
-public abstract class LineageStream
-{
+public abstract class LineageStream {
   /**
-   * The Type enum (and JsonSubTypes above) are extended for each new type of destination that the proxy backend supports.
-   * There is a subtype class for each of these destination types.
+   * The Type enum (and JsonSubTypes above) are extended for each new type of destination that the
+   * proxy backend supports. There is a subtype class for each of these destination types.
    */
-  enum Type
-  {
+  enum Type {
     CONSOLE,
-    KAFKA,
-    KINESIS
+    KAFKA
   }
 
   private final Type type;
-
 
   /**
    * The constructor sets up the type for destination for logging purposes.
    *
    * @param type type of destination implemented by the subtype.
    */
-  LineageStream(Type type)
-  {
+  LineageStream(@NonNull final Type type) {
     this.type = type;
   }
 
-
   /**
-   * Ths is the method that is called when a new lineage event is emitted from the data platform.  The specific destination class implements
-   * this method with the logic to send the event to its supported destination.
+   * Ths is the method that is called when a new lineage event is emitted from the data platform.
+   * The specific destination class implements this method with the logic to send the event to its
+   * supported destination.
    *
-   * @param event open lineage event
+   * @param eventAsString the OpenLineage event as a {code string} value
    */
-  public abstract void collect(String event);
+  public abstract void collect(String eventAsString);
 }

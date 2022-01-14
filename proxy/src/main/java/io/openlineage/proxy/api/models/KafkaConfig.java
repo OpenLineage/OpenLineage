@@ -14,21 +14,22 @@
 
 package io.openlineage.proxy.api.models;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import lombok.EqualsAndHashCode;
+import io.openlineage.proxy.ProxyStreamConfig;
+import java.util.Properties;
 import lombok.Getter;
-import lombok.NonNull;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.ToString;
 
-// NOTE: Only used for demonstration purposes, as of OpenLineage 0.3.0  please use server models
-// instead (see: https://github.com/OpenLineage/OpenLineage/pull/300)
-@EqualsAndHashCode
+@NoArgsConstructor
 @ToString
-public final class LineageEvent {
-  @Getter private final String eventType;
+public final class KafkaConfig implements ProxyStreamConfig {
+  @Getter @Setter private String topicName;
+  @Getter @Setter private String localServerId;
+  @Getter @Setter private String bootstrapServerUrl;
+  @Getter @Setter private Properties properties;
 
-  @JsonCreator
-  public LineageEvent(@NonNull final String eventType) {
-    this.eventType = eventType;
+  public boolean hasLocalServerId() {
+    return (localServerId != null);
   }
 }

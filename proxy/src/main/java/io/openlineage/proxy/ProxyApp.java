@@ -25,27 +25,22 @@ import io.openlineage.proxy.service.ProxyService;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * ProxyApp is the main class of the Proxy Backend.
- */
+/** ProxyApp is the main class of the Proxy Backend. */
 @Slf4j
-public final class ProxyApp extends Application<ProxyConfig>
-{
-  private static final String  APP_NAME           = "OpenLineageProxyBackend";
+public final class ProxyApp extends Application<ProxyConfig> {
+  private static final String APP_NAME = "OpenLineageProxyBackend";
   private static final boolean ERROR_ON_UNDEFINED = false;
 
-
   /**
-   * The main function receives the config file which is used in the initialization of the proxy backend.
+   * The main function receives the config file which is used in the initialization of the proxy
+   * backend.
    *
    * @param args commandline arguments
    * @throws Exception issues with initialization
    */
-  public static void main(final String[] args) throws Exception
-  {
+  public static void main(final String[] args) throws Exception {
     new ProxyApp().run(args);
   }
-
 
   /**
    * Standard dropwizard function to return fixed name of the application at the endpoint.
@@ -53,11 +48,9 @@ public final class ProxyApp extends Application<ProxyConfig>
    * @return name of this application
    */
   @Override
-  public String getName()
-  {
+  public String getName() {
     return APP_NAME;
   }
-
 
   /**
    * Initialize the application.
@@ -65,8 +58,7 @@ public final class ProxyApp extends Application<ProxyConfig>
    * @param bootstrap combination of the yml file and environment variables
    */
   @Override
-  public void initialize(@NonNull Bootstrap<ProxyConfig> bootstrap)
-  {
+  public void initialize(@NonNull Bootstrap<ProxyConfig> bootstrap) {
     // Enable variable substitution with environment variables.
     bootstrap.setConfigurationSourceProvider(
         new SubstitutingSourceProvider(
@@ -76,7 +68,6 @@ public final class ProxyApp extends Application<ProxyConfig>
     bootstrap.getObjectMapper().disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
   }
 
-
   /**
    * Called from main.
    *
@@ -84,8 +75,7 @@ public final class ProxyApp extends Application<ProxyConfig>
    * @param env runtime platform environment
    */
   @Override
-  public void run(@NonNull ProxyConfig config, @NonNull Environment env)
-  {
+  public void run(@NonNull ProxyConfig config, @NonNull Environment env) {
     log.debug("Registering resources...");
     env.jersey().register(new ProxyResource(new ProxyService(config)));
   }
