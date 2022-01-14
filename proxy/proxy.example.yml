@@ -49,21 +49,21 @@ proxy:
   source: ${OPENLINEAGE_PROXY_SOURCE:-openLineageProxyBackend}
   streams:
     - type: Console
-    - type: Kafka
-      # Kafka topic
-      # NOTE: Avoid mixing underscores ("-") and periods (".") as delimiters in the topic name - use one or other.
-      topicName: openlineage.topic
-      # Kafka broker location
-      bootstrapServerUrl: localhost:9092
-      # Kafka properties (see: http://kafka.apache.org/0100/documentation.html#producerconfigs)
-      properties:
-        acks: all
-        retries : 1
-        batch.size : 16384
-        linger.ms : 0
-        buffer.memory : 33554432
-        max.request.size : 10485760
-        key.serializer : org.apache.kafka.common.serialization.StringSerializer
-        value.serializer : org.apache.kafka.common.serialization.StringSerializer
-        bring.up.retries : 10
-        bring.up.minSleepTime : 5000
+    # Enables proxying OpenLineage events to a Kafka topic
+    # - type: Kafka
+    #   Kafka topic (note: avoid mixing underscores ("-") and periods (".") as delimiters in the topic name - use one or other.)
+    #   topicName: openlineage.topic
+    #   Kafka broker location
+    #   bootstrapServerUrl: localhost:9092
+    #   Kafka properties (see: http://kafka.apache.org/0100/documentation.html#producerconfigs)
+    #   properties:
+    #     acks: all
+    #     retries : 1
+    #     batch.size : 16384
+    #     linger.ms : 0
+    #     buffer.memory : 33554432
+    #     max.request.size : 10485760
+    #     key.serializer : org.apache.kafka.common.serialization.StringSerializer
+    #     value.serializer : org.apache.kafka.common.serialization.StringSerializer
+    #     bring.up.retries : 10
+    #     bring.up.minSleepTime : 5000
