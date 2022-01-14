@@ -26,6 +26,19 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * A factory for creating {@link LineageStream} instances. A {@code LineageStream} must define a
+ * {@link ProxyStreamConfig} defining the set of parameters needed to construct a new {@code
+ * LineageStream} instance. For example, {@link KafkaConfig} defines the parameters for constructing
+ * a new {@link KafkaLineageStream} instance when invoking {@link ProxyStreamFactory#build()}.
+ * Below, we define a list of supported {@code LineageStream}s. Note, when defining your own {@code
+ * ProxyStreamConfig}, the {@code type} parameter <b>must</b> be specified.
+ *
+ * <ul>
+ *   <li>A default {@link ConsoleLineageStream} stream
+ *   <li>A {@link KafkaLineageStream} stream
+ * </ul>
+ */
 @Slf4j
 public final class ProxyStreamFactory {
   private static final String DEFAULT_PROXY_LINEAGE_SOURCE = "openLineageProxyBackend";
