@@ -354,11 +354,16 @@ signing {
 }
 
 shadowJar {
+    minimize()
     classifier = ''
     // avoid conflict with any client version of that lib
     relocate 'com.github.ok2c.hc5', 'openlineage.com.github.ok2c.hc5'
     relocate 'org.apache.httpcomponents.client5', 'openlineage.org.apache.httpcomponents.client5'
     relocate 'javassist', 'openlineage.javassist'
+    relocate 'org.apache.hc', 'openlineage.hc'
+    relocate 'com.fasterxml.jackson.datatype.jsr310', 'openlineage.jackson.datatype.jsr310'
+    relocate 'org.slf4j', 'openlineage.slf4j'
+    relocate 'org.apache.commons.codec', 'openlineage.commons.codec'
 
     manifest {
         attributes(
