@@ -13,7 +13,7 @@
  */
 
 import com.github.jengelman.gradle.plugins.shadow.transformers.ServiceFileTransformer
-import org.apache.tools.ant.filters.ReplaceTokens
+import org.apache.tools.ant.filters.*
 
 plugins {
     id 'application'
@@ -42,6 +42,7 @@ ext {
     lombokVersion = '1.18.22'
     kafkaVersion = '2.8.0'
     jacksonVersion = '2.12.2'
+    isReleaseVersion = !version.endsWith('SNAPSHOT')
 }
 
 dependencies {
@@ -68,6 +69,16 @@ compileTestJava {
     options.incremental = true
     options.compilerArgs << '-parameters'
     options.encoding = 'UTF-8'
+}
+
+task sourceJar(type: Jar) {
+    classifier 'sources'
+    from sourceSets.main.allJava
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier 'javadoc'
+    from javadoc.destinationDir
 }
 
 publishing {
@@ -136,6 +147,7 @@ mainClassName = 'io.openlineage.proxy.ProxyApp'
 
 shadowJar {
     classifier = ''
+    version = project.version
     transform(ServiceFileTransformer)
     manifest {
         attributes(
