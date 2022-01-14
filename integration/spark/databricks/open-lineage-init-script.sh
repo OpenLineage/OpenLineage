@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# SPDX-License-Identifier: Apache-2.0
+
 STAGE_DIR="/dbfs/databricks/openlineage"
 
 echo "BEGIN: Upload Spark Listener JARs"

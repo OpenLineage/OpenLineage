@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 #
+# SPDX-License-Identifier: Apache-2.0
+#
 # see: https://github.com/vishnubob/wait-for-it
 
 WAITFORIT_cmdname=${0##*/}

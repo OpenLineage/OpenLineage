@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
 # You can run this on Windows as well, just change to a batch files.
 #
 # Note: You need the Databricks CLI installed, and you need a token configued.

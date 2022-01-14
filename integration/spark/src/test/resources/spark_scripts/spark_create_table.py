@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
 import os
 
 os.makedirs("/tmp/create_test", exist_ok=True)

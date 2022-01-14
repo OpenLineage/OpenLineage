@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
 # OpenLineage-python
 
 To install from source, run:

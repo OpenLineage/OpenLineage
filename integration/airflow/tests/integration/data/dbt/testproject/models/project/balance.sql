@@ -1,3 +1,5 @@
+-- SPDX-License-Identifier: Apache-2.0
+
 select
     ifnull(money_received.user_id, money_send.user_id) as user_id,
     ifnull(money_received.currency, money_send.currency) as currency,

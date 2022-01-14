@@ -1,3 +1,5 @@
+-- SPDX-License-Identifier: Apache-2.0
+
 select
     users.user_id,
     transactions.currency,

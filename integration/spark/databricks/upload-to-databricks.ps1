@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
 # Note: You need the Databricks CLI installed, and you need a token configued.
 #       You may need to add a "--profile" option to each command if you want to
 #       upload to a Databricks workspace that is not configured as your default
