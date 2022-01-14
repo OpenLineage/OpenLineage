@@ -30,10 +30,11 @@ import scala.runtime.AbstractPartialFunction;
  * org.apache.spark.sql.SparkSession} (if set), the {@link org.apache.spark.SparkContext}, and other
  * existing {@link QueryPlanVisitor}s for delegating visitors.
  *
- * <p>Subclasses should use the {@link OpenLineage} client returned from {@link
- * OpenLineageContext#getOpenLineage()} to construct all model objects to that the correct producer
- * and schema URIs are set. For convenience, {@link #outputDataset()} and {@link #inputDataset()}
- * methods have been implemented for subclasses that need to construct one or the other.
+ * <p>Subclasses should use the {@link OpenLineage} client returned by calling {@code
+ * getOpenLineage()} defined in the class {@link OpenLineageContext} to construct all model objects
+ * to that the correct producer and schema URIs are set. For convenience, {@link #outputDataset()}
+ * and {@link #inputDataset()} methods have been implemented for subclasses that need to construct
+ * one or the other.
  *
  * <p>A naive implementation of {@link scala.PartialFunction#isDefinedAt(Object)} is implemented,
  * which simply checks that the given {@link LogicalPlan} node is a subclass of the concrete
