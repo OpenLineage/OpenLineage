@@ -14,6 +14,8 @@
 
 package io.openlineage.proxy.api.models;
 
+import lombok.NonNull;
+
 /**
  * LineageStream provides the generic implementation of the backend destinations supported by the
  * proxy backend.
@@ -35,7 +37,7 @@ public abstract class LineageStream {
    *
    * @param type type of destination implemented by the subtype.
    */
-  LineageStream(Type type) {
+  LineageStream(@NonNull final Type type) {
     this.type = type;
   }
 

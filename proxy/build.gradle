@@ -16,6 +16,7 @@ import com.github.jengelman.gradle.plugins.shadow.transformers.ServiceFileTransf
 
 plugins {
     id 'application'
+    id 'jacoco'
     id 'java'
     id 'maven-publish'
     id 'com.adarshr.test-logger' version '2.1.0'
@@ -29,7 +30,8 @@ repositories {
 }
 
 ext {
-    dropwizardVersion = '2.0.24'
+    dropwizardVersion = '2.0.28'
+    jacocoVersion = '0.8.7'
     lombokVersion = '1.18.22'
     kafkaVersion = '2.8.0'
     jacksonVersion = '2.12.2'
@@ -87,5 +89,20 @@ spotless {
     java {
         googleJavaFormat()
         removeUnusedImports()
+    }
+}
+
+def coverageDir = "${reportsDir}/coverage";
+
+jacoco {
+    toolVersion = '0.8.5'
+    reportsDir = file(coverageDir)
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled = true
+        html.enabled = true
+        html.destination = file(coverageDir)
     }
 }

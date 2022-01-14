@@ -39,7 +39,6 @@ public class KafkaLineageStream extends LineageStream {
   @Override
   public void collect(@NonNull String eventAsString) {
     log.debug("Received lineage event: {}", eventAsString);
-
     final ProducerRecord<String, String> record =
         new ProducerRecord<>(topicName, localServerId, eventAsString);
     try {

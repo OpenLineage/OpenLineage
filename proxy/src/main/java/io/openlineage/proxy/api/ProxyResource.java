@@ -17,6 +17,7 @@ package io.openlineage.proxy.api;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 import io.openlineage.proxy.service.ProxyService;
+import javax.validation.Valid;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -37,7 +38,8 @@ public class ProxyResource {
 
   @POST
   @Consumes(APPLICATION_JSON)
-  public void proxyEvent(String eventAsString, @Suspended final AsyncResponse asyncResponse) {
+  public void proxyEvent(
+      @Valid String eventAsString, @Suspended final AsyncResponse asyncResponse) {
     service
         .proxyEventAsync(eventAsString)
         .whenComplete(
