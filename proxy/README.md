@@ -1,6 +1,6 @@
-# OpenLineage Proxy Backend (openlineage-proxy)
+# OpenLineage Proxy Backend
 
-Proxy OpenLineage events to one or more event streams. By default, events are logged to the console.  
+A `backend` to proxy OpenLineage events to one or more event streams. By default, events are logged to the console.  
 
 ## Requirements
 

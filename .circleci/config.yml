@@ -275,7 +275,6 @@ jobs:
       - run: pytest --cov=openlineage --ignore tests/integration tests/
       - run: bash <(curl -s https://codecov.io/bash)
 
-
   unit-test-integration-airflow-2:
     working_directory: ~/openlineage/integration/airflow
     docker:
@@ -364,7 +363,7 @@ jobs:
             - "1c:d1:da:e8:76:d7:f7:04:31:07:18:fd:55:ca:e1:2e"
       - run: spec/release.sh
 
-  build-proxy:
+  build-proxy-backend:
     working_directory: ~/openlineage/proxy
     docker:
       - image: cimg/openjdk:11.0
@@ -386,6 +385,24 @@ jobs:
           key: v1-proxy-{{ .Branch }}-{{ .Revision }}
           paths:
             - ~/.gradle
+
+  release-proxy-backend:
+    working_directory: ~/openlineage/proxy
+    docker:
+      - image: cimg/openjdk:11.0
+    steps:
+      - *checkout_project_root
+      - run: |
+          # Get, then decode the GPG private key used to sign *.jar
+          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
+          export RELEASE_PASSWORD=$(echo $SONATYPE_PASSWORD)
+          export RELEASE_USERNAME=$(echo $SONATYPE_USER)
+
+          # publish jar to maven local so it can be found by dependents
+          ./gradlew publishToMavenLocal
+
+          # Publish *.jar
+          ./gradlew publish
 
 workflows:
   openlineage:
@@ -462,7 +479,7 @@ workflows:
       - publish-spec:
           <<: *only_on_main
           context: release
-      - build-proxy
+      - build-proxy-backend
   release:
     jobs:
       - release-client-java:
@@ -473,6 +490,9 @@ workflows:
           context: release
           requires:
             - release-client-java
+      - release-proxy:
+          <<: *only_on_release
+          context: release
       - build-client-python:
           <<: *only_on_release
       - build-integration-common:
