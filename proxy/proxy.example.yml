@@ -1,3 +1,18 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+### HTTP SERVER CONFIG ###
+
+# Enables HTTP server configuration overrides (see: https://www.dropwizard.io/en/stable/manual/configuration.html#servers)
 server:
   applicationConnectors:
     - type: http
@@ -12,6 +27,9 @@ server:
   #       layout:
   #         type: access-json
 
+### LOGGING CONFIG ###
+
+# Enables logging configuration overrides (see: https://www.dropwizard.io/en/stable/manual/configuration.html#logging)
 logging:
   # Levels: TRACE, DEBUG, INFO, WARN, ERROR, FATAL, ALL, OFF
   level: ${LOG_LEVEL:-INFO}
@@ -21,13 +39,23 @@ logging:
       # layout:
       #   type: json
 
+### PROXY CONFIG ###
+
 proxy:
-  source: openLineageProxyBackend
+  # The proxy source is used to identify the lineage source in the different distribution mechanisms. If can be used in
+  # further routing of the lineage events without needing to unpack the event contents. In this example, it identifies
+  # that the lineage event has gone through the proxy backend. However, if a different proxy backend is serving each engine
+  # that is producing lineage events, this value can be set up to represent the source engine.
+  source: ${OPENLINEAGE_PROXY_SOURCE:-openLineageProxyBackend}
   streams:
     - type: Console
     - type: Kafka
+      # Kafka topic
+      # NOTE: Avoid mixing underscores ("-") and periods (".") as delimiters in the topic name - use one or other
       topicName: openlineage.topic
-      bootstrapServerUrl : localhost:9092
+      # Kafka broker location
+      bootstrapServerUrl: localhost:9092
+      # Kafka properties (see: http://kafka.apache.org/0100/documentation.html#producerconfigs)
       properties:
         acks: all
         retries : 1
