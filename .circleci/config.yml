@@ -490,7 +490,7 @@ workflows:
           context: release
           requires:
             - release-client-java
-      - release-proxy:
+      - release-proxy-backend:
           <<: *only_on_release
           context: release
       - build-client-python:
