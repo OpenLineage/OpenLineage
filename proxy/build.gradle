@@ -13,15 +13,22 @@
  */
 
 import com.github.jengelman.gradle.plugins.shadow.transformers.ServiceFileTransformer
+import org.apache.tools.ant.filters.ReplaceTokens
 
 plugins {
     id 'application'
     id 'jacoco'
     id 'java'
     id 'maven-publish'
+    id 'signing'
     id 'com.adarshr.test-logger' version '2.1.0'
     id 'com.diffplug.spotless' version '5.1.0'
     id 'com.github.johnrengelman.shadow' version '6.0.0'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
 }
 
 repositories {
@@ -63,12 +70,72 @@ compileTestJava {
     options.encoding = 'UTF-8'
 }
 
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId = 'io.openlineage'
+            artifactId = 'openlineage-proxy'
+
+            from components.java
+
+            artifact sourceJar
+            artifact javadocJar
+
+            pom {
+                name = 'openlineage-proxy'
+                description = 'Proxy backend for OpenLineage'
+                url = 'https://github.com/OpenLineage/OpenLineage'
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'openlineage'
+                        name = 'OpenLineage Project'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git://github.com/OpenLineage/OpenLineage.git'
+                    developerConnection = 'scm:git:ssh://github.com:OpenLineage/OpenLineage.git'
+                    url = 'https://github.com/OpenLineage/OpenLineage'
+                }
+            }
+        }
+    }
+
+    processResources {
+        filter ReplaceTokens, tokens: [
+                "version": project.property("version")
+        ]
+    }
+
+    repositories {
+        maven {
+            url = isReleaseVersion ? 'https://oss.sonatype.org/service/local/staging/deploy/maven2' :
+                    'https://datakin.jfrog.io/artifactory/maven-public-libs-snapshot'
+            credentials {
+                username = System.getenv('RELEASE_USERNAME')
+                password = System.getenv('RELEASE_PASSWORD')
+            }
+        }
+    }
+}
+
+signing {
+    required { isReleaseVersion }
+    def signingKey = findProperty("signingKey")
+    def signingPassword = findProperty("signingPassword")
+    useInMemoryPgpKeys(signingKey, signingPassword)
+    sign publishing.publications.mavenJava
+}
+
 mainClassName = 'io.openlineage.proxy.ProxyApp'
 
 shadowJar {
-    baseName = project.name
     classifier = ''
-    version = project.version
     transform(ServiceFileTransformer)
     manifest {
         attributes(
@@ -92,10 +159,11 @@ spotless {
     }
 }
 
+def reportsDir = "${buildDir}/reports";
 def coverageDir = "${reportsDir}/coverage";
 
 jacoco {
-    toolVersion = '0.8.5'
+    toolVersion = "${jacocoVersion}"
     reportsDir = file(coverageDir)
 }
 
