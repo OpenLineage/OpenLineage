@@ -5,6 +5,7 @@ import io.openlineage.spark.agent.client.OpenLineageClient;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -57,7 +58,8 @@ public class PlanUtils {
    * @param <R>
    * @return
    */
-  public static <T, R> PartialFunction<T, R> merge(List<? extends PartialFunction<T, R>> fns) {
+  public static <T, R> PartialFunction<T, R> merge(
+      Collection<? extends PartialFunction<T, R>> fns) {
     return fns.stream()
         .map(
             pfn ->

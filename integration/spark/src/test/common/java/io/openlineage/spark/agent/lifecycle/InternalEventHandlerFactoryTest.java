@@ -8,7 +8,7 @@ import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.util.TestOpenLineageEventHandlerFactory.TestRunFacetBuilder;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-import java.util.List;
+import java.util.Collection;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.junit.jupiter.api.AfterAll;
@@ -39,7 +39,7 @@ class InternalEventHandlerFactoryTest {
 
   @Test
   public void testHasTestRunFacet() {
-    List<CustomFacetBuilder<?, ? extends RunFacet>> runFacetBuilders =
+    Collection<CustomFacetBuilder<?, ? extends RunFacet>> runFacetBuilders =
         new InternalEventHandlerFactory().createRunFacetBuilders(context);
     assertThat(runFacetBuilders)
         .isNotEmpty()
