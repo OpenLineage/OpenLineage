@@ -5,9 +5,7 @@ COPY --from=build /app/wheel /whl
 USER root
 RUN apt-get update && \
     apt-get install -y git build-essential
-RUN mkdir -p /opt/airflow
 COPY data /opt/data
-RUN chown -R airflow:airflow /opt/airflow
 RUN chmod -R 777 /opt/data
 USER airflow
 COPY requirements.txt requirements.txt
