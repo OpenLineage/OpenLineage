@@ -259,6 +259,10 @@ task integrationTest(type: Test) {
 
 integrationTest.outputs.upToDateWhen { false }
 
+javadoc {
+    options.tags = [ "apiNote" ]
+}
+
 spotless {
     def disallowWildcardImports = {
         String text = it

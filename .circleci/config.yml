@@ -101,7 +101,7 @@ jobs:
           ./gradlew publishToMavenLocal
 
           # Publish *.jar
-          ./gradlew publish
+          ./gradlew --no-daemon publish
       - save_cache:
           key: v1-release-client-java-{{ .Branch }}-{{ .Revision }}
           paths:
@@ -119,7 +119,7 @@ jobs:
           export RELEASE_PASSWORD=$(echo $ARTIFACTORY_PASSWORD)
           export RELEASE_USERNAME=$(echo $ARTIFACTORY_USERNAME)
           # Publish *.jar
-          ./gradlew publish
+          ./gradlew --no-daemon publish
 
   release-integration-spark:
     working_directory: ~/openlineage/integration/spark
@@ -140,7 +140,7 @@ jobs:
           export RELEASE_PASSWORD=$(echo $SONATYPE_PASSWORD)
           export RELEASE_USERNAME=$(echo $SONATYPE_USER)
           # Publish *.jar
-          ./gradlew publish
+          ./gradlew --no-daemon publish
 
   publish-snapshot-integration-spark:
     working_directory: ~/openlineage/integration/spark
@@ -154,7 +154,7 @@ jobs:
           export RELEASE_PASSWORD=$(echo $ARTIFACTORY_PASSWORD)
           export RELEASE_USERNAME=$(echo $ARTIFACTORY_USERNAME)
           # Publish *.jar
-          ./gradlew publish
+          ./gradlew --no-daemon publish
 
   build-integration-spark:
     parameters:
