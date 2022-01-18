@@ -7,27 +7,17 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public final class OpenLineageClient {
-  private static final URL DEFAULT_BASE_URL = Utils.toUrl("http://localhost:8080");
-
   private final OpenLineageHttp http;
 
   public OpenLineageClient() {
-    this(DEFAULT_BASE_URL, null);
+    this(Utils.toUrl(System.getenv("OPENLINEAGE_URL")), System.getenv("OPENLINEAGE_API_KEY"));
   }
 
-  public OpenLineageClient(final String baseUrlString) {
-    this(baseUrlString, null);
-  }
-
-  public OpenLineageClient(final String baseUrlString, @Nullable final String apiKey) {
-    this(Utils.toUrl(baseUrlString), apiKey);
-  }
-
-  public OpenLineageClient(final URL baseUrl) {
+  public OpenLineageClient(@NonNull final URL baseUrl) {
     this(baseUrl, null);
   }
 
-  public OpenLineageClient(final URL baseUrl, @Nullable final String apiKey) {
+  public OpenLineageClient(@NonNull final URL baseUrl, @Nullable final String apiKey) {
     this(OpenLineageHttp.create(baseUrl, apiKey));
   }
 
