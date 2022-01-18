@@ -12,31 +12,31 @@
  * limitations under the License.
  */
 
-package io.openlineage;
+package io.openlineage.client;
 
-import jdk.internal.jline.internal.Nullable;
+import javax.annotation.Nullable;
 import lombok.NoArgsConstructor;
 
 /** An exception thrown to indicate a client error. */
 @NoArgsConstructor
 public class OpenLineageClientException extends RuntimeException {
-    private static final long serialVersionUID = 1L;
+  private static final long serialVersionUID = 1L;
 
-    /** Constructs a {@code OpenLineageClientException} with the message {@code message}. */
-    OpenLineageClientException(@Nullable final String message) {
-        super(message);
-    }
+  /** Constructs a {@code OpenLineageClientException} with the message {@code message}. */
+  OpenLineageClientException(@Nullable final String message) {
+    super(message);
+  }
 
-    /** Constructs a {@code OpenLineageClientException} with the cause {@code cause}. */
-    OpenLineageClientException(@Nullable final Throwable cause) {
-        super(cause);
-    }
+  /** Constructs a {@code OpenLineageClientException} with the cause {@code cause}. */
+  OpenLineageClientException(@Nullable final Throwable cause) {
+    super(cause);
+  }
 
-    /**
-     * Constructs a {@code OpenLineageClientException} with the message {@code message} and the cause
-     * {@code cause}.
-     */
-    OpenLineageClientException(@Nullable final String message, @Nullable final Throwable cause) {
-        super(message, cause);
-    }
+  /**
+   * Constructs a {@code OpenLineageClientException} with the message {@code message} and the cause
+   * {@code cause}.
+   */
+  OpenLineageClientException(@Nullable final String message, @Nullable final Throwable cause) {
+    super(message, cause);
+  }
 }
