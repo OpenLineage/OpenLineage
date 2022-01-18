@@ -62,6 +62,7 @@
 * Support for dbt-spark adapter [@mobuchowski](https://github.com/mobuchowski)
 * **New** `backend` to proxy OpenLineage events to one or more event streams 🎉 [@mandy-chessell](https://github.com/mandy-chessell) [@wslulciuc](https://github.com/wslulciuc)
 * Add Spark extensibility API with support for custom Dataset and custom facet builders [@collado-mike](https://github.com/collado-mike)
+* Add HTTP client to `openlineage-java` lib [@wslulciuc](https://github.com/wslulciuc)
 
 ### Fixed
 * airflow: fix import failures when dependencies for bigquery, dbt, great_expectations extractors are missing [@lukaszlaszko](https://github.com/lukaszlaszko)
