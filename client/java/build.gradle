@@ -40,6 +40,7 @@ dependencies {
     implementation "com.fasterxml.jackson.core:jackson-databind:$jackson_version"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jackson_version"
     codeGenerator project(':generator')
+
     testImplementation 'junit:junit:4.13.2'
 }
 
