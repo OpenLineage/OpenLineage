@@ -14,7 +14,7 @@ from openlineage.client.run import RunEvent, RunState, Run, Job
 from openlineage.client.client import OpenLineageClient, OpenLineageClientOptions
 from openlineage.common.provider.dbt import DbtArtifactProcessor, ParentRunMetadata
 
-__version__ = "0.6.0"
+__version__ = "0.5.1"
 
 from openlineage.common.utils import parse_single_arg
 
