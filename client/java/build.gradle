@@ -27,6 +27,7 @@ repositories {
 
 ext {
     jacksonVersion = "2.12.3"
+    lombokVersion = '1.18.22'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
 }
 
@@ -40,11 +41,17 @@ dependencies {
     implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${jacksonVersion}"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
+    implementation 'com.google.code.findbugs:jsr305:3.0.2'
     implementation 'org.apache.httpcomponents:httpclient:4.5.13'
-    implementation 'org.projectlombok:lombok:1.18.18'
+    implementation 'org.slf4j:slf4j-api:1.7.33'
+    implementation "org.projectlombok:lombok:${lombokVersion}"
+    annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+
     codeGenerator project(':generator')
 
     testImplementation 'junit:junit:4.13.2'
+    testImplementation "org.projectlombok:lombok:${lombokVersion}"
+    testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 }
 
 task generateCode(type: JavaExec) {
