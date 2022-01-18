@@ -55,6 +55,16 @@ usage() {
   exit 1
 }
 
+# Update the python package version only if the current_version is different from the new_version
+# We do this check because bumpversion screws up the search/replace if the current_version and
+# new_version are the same
+function update_py_version_if_needed() {
+  export $(bump2version manual --new-version $1 --allow-dirty --list --dry-run | grep version | xargs)
+  if [ "$new_version" != "$current_version" ]; then
+    bump2version manual --new-version $1 --allow-dirty
+  fi
+}
+
 readonly SEMVER_REGEX="^[0-9]+(\.[0-9]+){2}((-rc\.[0-9]+)?(-SNAPSHOT)?)$" # X.Y.Z
                                                                           # X.Y.Z-rc.*
                                                                           # X.Y.Z-rc.*-SNAPSHOT
@@ -125,10 +135,13 @@ if [[ "${RELEASE_VERSION}" == *-rc.? ]]; then
   PYTHON_RELEASE_VERSION="${RELEASE_VERSION%-*}${RELEASE_CANDIDATE//.}"
 fi
 
-# (1) Bump python module versions
+# (1) Bump python module versions. Do this before the release in case the current release is not
+# the same version as what was expected the last time we released. E.g., if the next expected
+# release was a patch version, but a new minor version is being released, we need to update to the
+# actual release version prior to committing/tagging
 PYTHON_MODULES=(client/python/ integration/common/ integration/airflow/ integration/dbt/)
 for PYTHON_MODULE in "${PYTHON_MODULES[@]}"; do
-  (cd "${PYTHON_MODULE}" && bump2version manual --new-version "${PYTHON_RELEASE_VERSION}" --allow-dirty)
+  (cd "${PYTHON_MODULE}" && update_py_version_if_needed "${PYTHON_RELEASE_VERSION}")
 done
 
 # (2) Bump java module versions
