@@ -155,6 +155,9 @@ cython_debug/
 
 gcloud-service-key.json
 
+<<<<<<< HEAD
 *.java_version
 *.DS_Store
+=======
+client/java/src/main/java/io/openlineage/client/OpenLineage.java
 client/java/src/main/java/io/openlineage/server/*
