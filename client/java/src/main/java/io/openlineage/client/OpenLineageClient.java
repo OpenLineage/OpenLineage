@@ -1,18 +1,15 @@
 package io.openlineage.client;
 
 import java.net.URL;
-
+import javax.annotation.Nullable;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-
-import javax.annotation.Nullable;
 
 @Slf4j
 public final class OpenLineageClient {
   private static final URL DEFAULT_BASE_URL = Utils.toUrl("http://localhost:8080");
 
   private final OpenLineageHttp http;
-
 
   public OpenLineageClient() {
     this(DEFAULT_BASE_URL, null);

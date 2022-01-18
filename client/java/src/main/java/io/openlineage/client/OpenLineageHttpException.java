@@ -15,8 +15,6 @@
 package io.openlineage.client;
 
 import javax.annotation.Nullable;
-
-import io.openlineage.client.OpenLineageClientException;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
@@ -26,16 +24,16 @@ import lombok.ToString;
 @NoArgsConstructor
 @ToString
 public final class OpenLineageHttpException extends OpenLineageClientException {
-    private static final long serialVersionUID = 1L;
+  private static final long serialVersionUID = 1L;
 
-    @Getter @Nullable private Integer code;
-    @Getter @Nullable private String message;
-    @Getter @Nullable private String details;
+  @Getter @Nullable private Integer code;
+  @Getter @Nullable private String message;
+  @Getter @Nullable private String details;
 
-    /** Constructs a {@code OpenLineageHttpException} with the HTTP error {@code error}. */
-    OpenLineageHttpException(@NonNull final OpenLineageHttp.HttpError error) {
-        this.code = error.getCode();
-        this.message = error.getMessage();
-        this.details = error.getDetails();
-    }
+  /** Constructs a {@code OpenLineageHttpException} with the HTTP error {@code error}. */
+  OpenLineageHttpException(@NonNull final OpenLineageHttp.HttpError error) {
+    this.code = error.getCode();
+    this.message = error.getMessage();
+    this.details = error.getDetails();
+  }
 }

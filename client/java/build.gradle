@@ -159,8 +159,11 @@ jar {
 spotless {
     java {
         target fileTree('.') {
-            include 'client/**/*.java'
-            exclude 'server/**/*.java', '**/build/**', '**/build-*/**'
+            include '**/*.java'
+            exclude 'src/main/java/io/openlineage/server/**/*.java',
+                    'src/main/java/io/openlineage/client/OpenLineage.java',
+                    '**/build/**',
+                    '**/generator/**'
         }
         googleJavaFormat()
         removeUnusedImports()
