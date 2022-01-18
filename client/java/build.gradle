@@ -5,13 +5,13 @@
 import org.apache.tools.ant.filters.*
 
 plugins {
+    id 'eclipse'
     id 'jacoco'
     id 'java'
     id 'java-library'
     id 'maven-publish'
     id 'signing'
-    id 'idea'
-    id 'eclipse'
+    id 'com.diffplug.spotless' version '5.1.0'
     id "org.openapi.generator" version "5.2.0"
 }
 
@@ -38,7 +38,9 @@ dependencies {
     implementation "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
     implementation "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
     implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${jacksonVersion}"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
+    implementation 'org.apache.httpcomponents:httpclient:4.5.13'
     implementation 'org.projectlombok:lombok:1.18.18'
     codeGenerator project(':generator')
 
@@ -144,6 +146,17 @@ jar {
                 'Implementation-Title': project.name,
                 'Implementation-Version': project.version
         )
+    }
+}
+
+spotless {
+    java {
+        target fileTree('.') {
+            include 'client/**/*.java'
+            exclude 'server/**/*.java', '**/build/**', '**/build-*/**'
+        }
+        googleJavaFormat()
+        removeUnusedImports()
     }
 }
 
