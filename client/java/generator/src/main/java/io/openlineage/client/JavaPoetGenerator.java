@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 package io.openlineage.client;
 
 import static io.openlineage.client.TypeResolver.titleCase;

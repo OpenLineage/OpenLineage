@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
 from openlineage.common.sql import SqlParser
 from openlineage.common.models import DbTableName
 

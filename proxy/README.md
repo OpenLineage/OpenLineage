@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
 # OpenLineage Proxy Backend
 
 A `backend` to proxy OpenLineage events to one or more event streams. By default, events are logged to the console.  

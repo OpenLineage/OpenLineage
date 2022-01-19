@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
 from airflow.operators.postgres_operator import PostgresOperator
 from airflow.utils.dates import days_ago
 

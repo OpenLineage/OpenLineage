@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 package openlineage.spark.agent;
 
 import lombok.extern.slf4j.Slf4j;

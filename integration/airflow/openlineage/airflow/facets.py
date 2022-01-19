@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
 import attr
 from airflow.version import version as AIRFLOW_VERSION
 from openlineage.client.facet import BaseFacet

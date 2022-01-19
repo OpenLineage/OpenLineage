@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 package io.openlineage.spark.agent.lifecycle;
 
 import static io.openlineage.spark.agent.util.ScalaConversionUtils.fromSeq;
