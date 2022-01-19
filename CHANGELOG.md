@@ -1,7 +1,8 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.4.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.5.1...HEAD)
 
+## [0.5.1](https://github.com/OpenLineage/OpenLineage/compare/0.4.0...0.5.1)
 ### Added
 * Support for dbt-spark adapter [@mobuchowski](https://github.com/mobuchowski)
 * **New** `backend` to proxy OpenLineage events to one or more event streams 🎉 [@mandy-chessell](https://github.com/mandy-chessell) [@wslulciuc](https://github.com/wslulciuc)
