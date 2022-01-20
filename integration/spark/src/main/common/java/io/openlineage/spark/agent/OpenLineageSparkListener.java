@@ -11,16 +11,11 @@ import io.openlineage.spark.agent.lifecycle.ContextFactory;
 import io.openlineage.spark.agent.lifecycle.ExecutionContext;
 import io.openlineage.spark.agent.transformers.PairRDDFunctionsTransformer;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
-import java.io.PrintWriter;
+import java.io.*;
 import java.lang.reflect.Field;
 import java.net.URISyntaxException;
 import java.time.ZonedDateTime;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 import java.util.WeakHashMap;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -50,9 +45,9 @@ import scala.Option;
 public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkListener {
 
   private static final Map<Long, ExecutionContext> sparkSqlExecutionRegistry =
-      Collections.synchronizedMap(new HashMap<>());
+          Collections.synchronizedMap(new HashMap<>());
   private static final Map<Integer, ExecutionContext> rddExecutionRegistry =
-      Collections.synchronizedMap(new HashMap<>());
+          Collections.synchronizedMap(new HashMap<>());
   public static final String SPARK_CONF_URL_KEY = "openlineage.url";
   public static final String SPARK_CONF_HOST_KEY = "openlineage.host";
   public static final String SPARK_CONF_API_VERSION_KEY = "openlineage.version";
@@ -65,9 +60,9 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   private static ContextFactory contextFactory;
   private static JobMetricsHolder jobMetrics = JobMetricsHolder.getInstance();
   private final Function1<SparkSession, SparkContext> sparkContextFromSession =
-      ScalaConversionUtils.toScalaFn(SparkSession::sparkContext);
+          ScalaConversionUtils.toScalaFn(SparkSession::sparkContext);
   private final Function0<Option<SparkContext>> activeSparkContext =
-      ScalaConversionUtils.toScalaFn(SparkContext$.MODULE$::getActive);
+          ScalaConversionUtils.toScalaFn(SparkContext$.MODULE$::getActive);
 
   /** called by the agent on init with the provided argument */
   public static void init(ContextFactory contextFactory) {
@@ -152,6 +147,8 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   /** called by the SparkListener when a job starts */
   @Override
   public void onJobStart(SparkListenerJobStart jobStart) {
+    contextFactory.properties= jobStart.properties();
+
     Optional<ActiveJob> activeJob =
         asJavaOptional(
                 SparkSession.getDefaultSession()
@@ -199,6 +196,9 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   private String getSqlExecutionId(Properties properties) {
     return properties.getProperty("spark.sql.execution.id");
   }
+
+
+
 
   /** called by the SparkListener when a job ends */
   @Override
