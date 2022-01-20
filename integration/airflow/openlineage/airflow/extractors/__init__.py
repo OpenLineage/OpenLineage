@@ -12,5 +12,6 @@
 
 from openlineage.airflow.extractors.extractors import Extractors
 from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
+from openlineage.airflow.extractors.manager import ExtractorManager
 
-__all__ = [Extractors, BaseExtractor, TaskMetadata]
+__all__ = [Extractors, BaseExtractor, TaskMetadata, ExtractorManager]

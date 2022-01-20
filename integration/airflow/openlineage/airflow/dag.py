@@ -12,19 +12,17 @@
 import time
 import os
 import copy
-from typing import Optional
 
 from airflow.models import DAG as AIRFLOW_DAG
 from airflow.utils.db import create_session
 from airflow.utils.state import State
-from openlineage.airflow.extractors import TaskMetadata, BaseExtractor
-from openlineage.airflow.extractors.extractors import Extractors
+
+from openlineage.airflow.extractors.manager import ExtractorManager
 from openlineage.airflow.utils import (
     JobIdMapping,
-    get_location,
     DagUtils,
     get_custom_facets,
-    new_lineage_run_id
+    new_lineage_run_id, get_task_location
 )
 
 from openlineage.airflow.adapter import OpenLineageAdapter, _DAG_DEFAULT_NAMESPACE
@@ -36,8 +34,7 @@ if not _DAG_NAMESPACE:
     )
 
 _ADAPTER = OpenLineageAdapter()
-extractor_mapper = Extractors()
-extractors = {}
+extractor_manager = ExtractorManager()
 
 
 def has_lineage_backend_setup():
@@ -120,7 +117,7 @@ class DAG(AIRFLOW_DAG):
         kwargs["user_defined_macros"] = macros
         if kwargs.__contains__("lineage_custom_extractors"):
             for operator, extractor in kwargs['lineage_custom_extractors'].items():
-                extractor_mapper.add_extractor(operator, extractor)
+                extractor_manager.extractor_mapper.add_extractor(operator, extractor)
             del kwargs['lineage_custom_extractors']
 
         self.has_lineage_backend = has_lineage_backend_setup()
@@ -132,9 +129,9 @@ class DAG(AIRFLOW_DAG):
         # Purpose: some extractors, called patchers need to hook up to internal components of
         # operator to extract necessary data. The hooking up is done on instantiation
         # of extractor via patch() method. That's why extractor is created here.
-        patcher = extractor_mapper.get_patcher_class(task.__class__)
+        patcher = extractor_manager.extractor_mapper.get_patcher_class(task.__class__)
         if patcher:
-            extractors[task.task_id] = patcher(task)
+            extractor_manager.extractors[task.task_id] = patcher(task)
 
     def create_dagrun(self, *args, **kwargs):
         # run Airflow's create_dagrun() first
@@ -165,7 +162,7 @@ class DAG(AIRFLOW_DAG):
         for task_id, task in self.task_dict.items():
             t = self._now_ms()
             try:
-                task_metadata = self._extract_metadata(dagrun, task)
+                task_metadata = extractor_manager.extract_metadata(dagrun, task)
 
                 job_name = openlineage_job_name(self.dag_id, task.task_id)
                 run_id = new_lineage_run_id(dagrun.run_id, task_id)
@@ -176,7 +173,7 @@ class DAG(AIRFLOW_DAG):
                     self.description,
                     DagUtils.to_iso_8601(self._now_ms()),
                     dagrun.run_id,
-                    self._get_location(task),
+                    get_task_location(task),
                     DagUtils.get_start_time(execution_date),
                     DagUtils.get_end_time(execution_date, self.following_schedule(execution_date)),
                     task_metadata,
@@ -246,7 +243,7 @@ class DAG(AIRFLOW_DAG):
                 self.description,
                 DagUtils.to_iso_8601(task_instance.start_date),
                 dagrun.run_id,
-                self._get_location(task),
+                get_task_location(task),
                 DagUtils.to_iso_8601(task_instance.start_date),
                 DagUtils.to_iso_8601(task_instance.end_date),
                 task_metadata,
@@ -298,66 +295,9 @@ class DAG(AIRFLOW_DAG):
         result.params = self.params
         return result
 
-    def _extract_metadata(self, dagrun, task, task_instance=None) -> TaskMetadata:
-        extractor = self._get_extractor(task)
-        task_info = f'task_type={task.__class__.__name__} ' \
-            f'airflow_dag_id={self.dag_id} ' \
-            f'task_id={task.task_id} ' \
-            f'airflow_run_id={dagrun.run_id} '
-        if extractor:
-            try:
-                self.log.debug(
-                    f'Using extractor {extractor.__class__.__name__} {task_info}')
-                task_metadata = self._extract(extractor, task_instance)
-                self.log.debug(
-                    f"Found task metadata for operation {task.task_id}: {task_metadata}"
-                )
-                if task_metadata:
-                    return task_metadata
-
-            except Exception as e:
-                self.log.exception(
-                    f'Failed to extract metadata {e} {task_info}',
-                )
-        else:
-            self.log.warning(
-                f'Unable to find an extractor. {task_info}')
-
-        return TaskMetadata(
-            name=openlineage_job_name(self.dag_id, task.task_id)
-        )
-
-    def _extract(self, extractor, task_instance) -> Optional[TaskMetadata]:
-        if task_instance:
-            task_metadata = extractor.extract_on_complete(task_instance)
-            if task_metadata:
-                return task_metadata
-
-        return extractor.extract()
-
-    def _get_extractor(self, task) -> Optional[BaseExtractor]:
-        if task.task_id in extractors:
-            return extractors[task.task_id]
-        extractor = extractor_mapper.get_extractor_class(task.__class__)
-        self.log.debug(f'extractor for {task.__class__} is {extractor}')
-        if extractor:
-            extractors[task.task_id] = extractor(task)
-            return extractors[task.task_id]
-        return None
-
     def _timed_log_message(self, start_time):
         return f'airflow_dag_id={self.dag_id} ' \
             f'duration_ms={(self._now_ms() - start_time)}'
-
-    @staticmethod
-    def _get_location(task):
-        try:
-            if hasattr(task, 'file_path') and task.file_path:
-                return get_location(task.file_path)
-            else:
-                return get_location(task.dag.fileloc)
-        except Exception:
-            return None
 
     @staticmethod
     def _openlineage_job_name_from_task_instance(task_instance):

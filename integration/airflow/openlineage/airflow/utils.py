@@ -113,6 +113,16 @@ def get_location(file_path) -> str:
     return f'{base_url}/blob/{commit_id}/{repo_relative_path}{file_name}'
 
 
+def get_task_location(task):
+    try:
+        if hasattr(task, 'file_path') and task.file_path:
+            return get_location(task.file_path)
+        else:
+            return get_location(task.dag.fileloc)
+    except Exception:
+        return None
+
+
 def execute_git(cwd, params):
     p = subprocess.Popen(['git'] + params,
                          cwd=cwd, stdout=subprocess.PIPE, stderr=None)
