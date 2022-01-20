@@ -69,4 +69,7 @@ setup(
     python_requires=">=3.6",
     zip_safe=False,
     keywords="openlineage",
+    entry_points={
+        "airflow.plugins": ["OpenLineagePlugin = openlineage.airflow.plugin:OpenLineagePlugin"]
+    }
 )

@@ -1,4 +1,3 @@
-import logging
 import uuid
 import time
 from pkg_resources import parse_version
@@ -6,14 +5,14 @@ from pkg_resources import parse_version
 from airflow.lineage.backend import LineageBackend
 from airflow.version import version as AIRFLOW_VERSION
 
+from openlineage.airflow.extractors.manager import ExtractorManager
+from openlineage.airflow.utils import get_task_location, get_job_name
+
 
 class Backend:
     def __init__(self):
         from openlineage.airflow.adapter import OpenLineageAdapter
-        from openlineage.airflow.extractors.extractors import Extractors
-        self.extractors = {}
-        self.extractor_mapper = Extractors()
-        self.log = logging.getLogger()
+        self.extractor_manager = ExtractorManager()
         self.adapter = OpenLineageAdapter()
     """
     Send OpenLineage events to lineage backend via airflow's LineageBackend mechanism.
@@ -37,7 +36,7 @@ class Backend:
         task_instance = context['task_instance']
 
         run_id = str(uuid.uuid4())
-        job_name = self._openlineage_job_name(dag.dag_id, operator.task_id)
+        job_name = get_job_name(operator)
 
         task_metadata = self._extract_metadata(
             dag_id=dag.dag_id,
@@ -53,7 +52,7 @@ class Backend:
                 job_description=dag.description,
                 event_time=DagUtils.get_start_time(task_instance.start_date),
                 parent_run_id=dagrun.run_id,
-                code_location=self._get_location(operator),
+                code_location=get_task_location(operator),
                 nominal_start_time=DagUtils.get_start_time(dagrun.execution_date),
                 nominal_end_time=DagUtils.to_iso_8601(task_instance.end_date),
                 task=task_metadata,
@@ -120,21 +119,6 @@ class Backend:
     @classmethod
     def _openlineage_job_name_from_task_instance(cls, task_instance):
         return cls._openlineage_job_name(task_instance.dag_id, task_instance.task_id)
-
-    @staticmethod
-    def _openlineage_job_name(dag_id: str, task_id: str) -> str:
-        return f'{dag_id}.{task_id}'
-
-    @staticmethod
-    def _get_location(task):
-        from openlineage.airflow.utils import get_location
-        try:
-            if hasattr(task, 'file_path') and task.file_path:
-                return get_location(task.file_path)
-            else:
-                return get_location(task.dag.fileloc)
-        except Exception:
-            return None
 
     @staticmethod
     def _now_ms():
