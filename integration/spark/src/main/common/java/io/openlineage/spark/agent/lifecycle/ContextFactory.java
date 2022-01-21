@@ -8,7 +8,6 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
 import java.util.Optional;
 import java.util.Properties;
-
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.execution.QueryExecution;

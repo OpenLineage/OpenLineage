@@ -3,9 +3,11 @@ package io.openlineage.spark.api;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
-
-import java.util.*;
-
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.UUID;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -53,8 +55,8 @@ public class OpenLineageContext {
   @NonNull OpenLineage openLineage;
 
   /**
-   * A non-null, but potentially empty, list of {@link io.openlineage.spark.agent.facets.EnvironmentFacet }
-   * to be used to get environment
+   * A non-null, but potentially empty, list of {@link
+   * io.openlineage.spark.agent.facets.EnvironmentFacet } to be used to get environment
    */
   @NonNull Properties properties;
 
