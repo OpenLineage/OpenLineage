@@ -17,6 +17,10 @@ public final class OpenLineageClient {
         System.getenv("OPENLINEAGE_API_KEY"));
   }
 
+  public OpenLineageClient(@NonNull final String baseUrlString) {
+    this(Utils.toUrl(baseUrlString), null);
+  }
+
   public OpenLineageClient(@NonNull final URL baseUrl) {
     this(baseUrl, null);
   }
