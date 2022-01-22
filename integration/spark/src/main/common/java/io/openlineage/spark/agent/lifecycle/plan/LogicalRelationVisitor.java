@@ -90,17 +90,25 @@ public class LogicalRelationVisitor<D extends OpenLineage.Dataset>
 
   private List<D> handleHadoopFsRelation(LogicalRelation x) {
     HadoopFsRelation relation = (HadoopFsRelation) x.relation();
-    Configuration hadoopConfig = context.getSparkContext().hadoopConfiguration();
-    return JavaConversions.asJavaCollection(relation.location().rootPaths()).stream()
-        .map(p -> PlanUtils.getDirectoryPath(p, hadoopConfig))
-        .distinct()
+    return context
+        .getSparkSession()
         .map(
-            p -> {
-              // TODO- refactor this to return a single partitioned dataset based on static
-              // static partitions in the relation
-              return datasetFactory.getDataset(p.toUri(), relation.schema());
+            session -> {
+              Configuration hadoopConfig =
+                  session.sessionState().newHadoopConfWithOptions(relation.options());
+              return JavaConversions.asJavaCollection(relation.location().rootPaths()).stream()
+                  .map(p -> PlanUtils.getDirectoryPath(p, hadoopConfig))
+                  .distinct()
+                  .map(
+                      p -> {
+                        // TODO- refactor this to return a single partitioned dataset based on
+                        // static
+                        // static partitions in the relation
+                        return datasetFactory.getDataset(p.toUri(), relation.schema());
+                      })
+                  .collect(Collectors.toList());
             })
-        .collect(Collectors.toList());
+        .orElse(Collections.emptyList());
   }
 
   private List<D> handleJdbcRelation(LogicalRelation x) {

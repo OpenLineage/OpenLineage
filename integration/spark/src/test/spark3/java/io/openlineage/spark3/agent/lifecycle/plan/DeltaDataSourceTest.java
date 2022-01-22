@@ -30,7 +30,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 @ExtendWith(SparkAgentTestExtension.class)
-public class DeltaDataSourceIntegrationTest {
+public class DeltaDataSourceTest {
 
   @Test
   public void testInsertIntoDeltaSource(@TempDir Path tempDir, SparkSession spark)
