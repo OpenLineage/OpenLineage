@@ -10,7 +10,7 @@ import java.net.URI;
 import java.net.URL;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,9 +21,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 /** Unit tests for {@link OpenLineageClient}. */
 @ExtendWith(MockitoExtension.class)
 public class OpenLineageClientTest {
-  private final String NAMESPACE = "test";
   private final URI PRODUCER = URI.create("https://github.com/OpenLineage/tree/0.0.1/client/java");
   private final OpenLineage OL = new OpenLineage(PRODUCER);
+
   private final UUID RUN_ID = UUID.randomUUID();
   private final ZonedDateTime RUN_EVENT_TIME = ZonedDateTime.now(ZoneId.of("UTC"));
   private final OpenLineage.RunEvent RUN_EVENT =
@@ -31,9 +31,14 @@ public class OpenLineageClientTest {
           "COMPLETE",
           RUN_EVENT_TIME,
           OL.newRunBuilder().runId(RUN_ID).build(),
-          OL.newJobBuilder().namespace(NAMESPACE).name("test-job").build(),
-          Collections.emptyList(),
-          Collections.emptyList());
+          OL.newJobBuilder().namespace("test-namespace").name("test-job").build(),
+          Arrays.asList(
+              OL.newInputDatasetBuilder().namespace("test-namespace").name("test-input").build()),
+          Arrays.asList(
+              OL.newOutputDatasetBuilder()
+                  .namespace("test-namespace")
+                  .name("test-output")
+                  .build()));
 
   @Mock private OpenLineageHttp http;
   private OpenLineageClient client;
@@ -68,6 +73,6 @@ public class OpenLineageClientTest {
   public void testClient_emit() {
     client.emit(RUN_EVENT);
 
-    verify(http, times(1)).post(http.url("/lineae"), Utils.toJson(RUN_EVENT));
+    verify(http, times(1)).post(http.url("/lineage"), Utils.toJson(RUN_EVENT));
   }
 }
