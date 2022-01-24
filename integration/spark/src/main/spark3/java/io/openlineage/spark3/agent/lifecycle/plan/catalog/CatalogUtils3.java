@@ -20,6 +20,7 @@ public class CatalogUtils3 {
         Arrays.asList(
             new IcebergHandler(),
             new DeltaHandler(),
+            new DatabricksDeltaHandler(),
             new JdbcHandler(),
             new V2SessionCatalogHandler());
     return handlers.stream().filter(CatalogHandler::hasClasses).collect(Collectors.toList());
