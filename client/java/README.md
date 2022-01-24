@@ -36,7 +36,7 @@ client.emit(startOrEndRun);
 
 ## Configuration
 
-|                       | **Description**                                                 |
-|-----------------------|-----------------------------------------------------------------|
-| `OPENLINEAGE_URL`     | The URL for the HTTP backend (default: `http://localhost:8080`) |
-| `OPENLINEAGE_API_KEY` | The API key to be set on each HTTP request                      |
+| **Environment Variable** | **Description**                                                 |
+|--------------------------|-----------------------------------------------------------------|
+| `OPENLINEAGE_URL`        | The URL for the HTTP backend (default: `http://localhost:8080`) |
+| `OPENLINEAGE_API_KEY`    | The API key to be set on each HTTP request                      |
