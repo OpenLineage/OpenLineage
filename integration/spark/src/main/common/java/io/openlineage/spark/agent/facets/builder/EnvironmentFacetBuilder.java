@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.BiConsumer;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -76,9 +75,8 @@ public class EnvironmentFacetBuilder
     return dbProperties;
   }
 
-  private static List<Map<String, String>> getDatabricksMountpoints(String urlString) {
-    List<Map<String, String>> databricksMountpoints = new ArrayList<>();
-
+  private static List<DatabricksMountpoint> getDatabricksMountpoints(String urlString) {
+    List<DatabricksMountpoint> mountpoints = new ArrayList<>();
     try {
       String result = "";
       HttpPost post = new HttpPost(urlString);
@@ -93,20 +91,11 @@ public class EnvironmentFacetBuilder
 
       result = EntityUtils.toString(response.getEntity());
 
-      List<DatabricksMountpoint> mountpoints =
-          jsonArrayToObjectList(result, DatabricksMountpoint.class);
-      mountpoints.stream()
-          .forEach(
-              x -> {
-                HashMap<String, String> values = new HashMap<>();
-                values.put("MountPoint", x.getMountPoint());
-                values.put("Source", x.getSource());
-                databricksMountpoints.add(values);
-              });
+      mountpoints = jsonArrayToObjectList(result, DatabricksMountpoint.class);
     } catch (Exception e) {
       log.warn(e.getMessage());
     }
-    return databricksMountpoints;
+    return mountpoints;
   }
 
   public static <T> List<T> jsonArrayToObjectList(String json, Class<T> tClass) throws IOException {
