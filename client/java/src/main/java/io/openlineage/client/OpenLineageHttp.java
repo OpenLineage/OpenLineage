@@ -47,9 +47,9 @@ import org.apache.http.util.EntityUtils;
 class OpenLineageHttp implements Closeable {
   private static final String BASE_PATH = "/api/v1";
 
-  private final HttpClient http;
-  private final URL baseUrl;
-  @Nullable private final String apiKey;
+  final HttpClient http;
+  final URL baseUrl;
+  @Nullable final String apiKey;
 
   OpenLineageHttp(
       @NonNull final HttpClient http, @NonNull final URL baseUrl, @Nullable final String apiKey) {
@@ -58,25 +58,19 @@ class OpenLineageHttp implements Closeable {
     this.apiKey = apiKey;
   }
 
-  static OpenLineageHttp create(@NonNull final URL baseUrl) {
-    return create(baseUrl, null);
-  }
-
   static OpenLineageHttp create(@NonNull final URL baseUrl, @Nullable final String apiKey) {
     final CloseableHttpClient http = HttpClientBuilder.create().build();
     return new OpenLineageHttp(http, baseUrl, apiKey);
   }
 
-  String post(@NonNull URL url, @Nullable String json) {
+  String post(@NonNull URL url, @NonNull String json) {
     log.debug("POST {}: {}", url, json);
     try {
       final HttpPost request = new HttpPost();
       request.setURI(url.toURI());
       request.addHeader(ACCEPT, APPLICATION_JSON.toString());
-      if (json != null) {
-        request.addHeader(CONTENT_TYPE, APPLICATION_JSON.toString());
-        request.setEntity(new StringEntity(json, APPLICATION_JSON));
-      }
+      request.addHeader(CONTENT_TYPE, APPLICATION_JSON.toString());
+      request.setEntity(new StringEntity(json, APPLICATION_JSON));
 
       addAuthToReqIfKeyPresent(request);
 
@@ -110,13 +104,13 @@ class OpenLineageHttp implements Closeable {
     }
   }
 
-  private void addAuthToReqIfKeyPresent(final HttpRequestBase request) {
+  private void addAuthToReqIfKeyPresent(@NonNull HttpRequestBase request) {
     if (apiKey != null) {
       Utils.addAuthTo(request, apiKey);
     }
   }
 
-  private void throwOnHttpError(HttpResponse response) throws IOException {
+  private void throwOnHttpError(@NonNull HttpResponse response) throws IOException {
     final int code = response.getStatusLine().getStatusCode();
     if (code >= 400 && code < 600) { // non-2xx
       throw new OpenLineageHttpException(HttpError.of(response));

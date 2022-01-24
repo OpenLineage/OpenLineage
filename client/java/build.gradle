@@ -11,13 +11,9 @@ plugins {
     id 'java-library'
     id 'maven-publish'
     id 'signing'
+    id "com.adarshr.test-logger" version "2.0.0"
     id 'com.diffplug.spotless' version '5.1.0'
     id "org.openapi.generator" version "5.2.0"
-}
-
-java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 repositories {
@@ -26,8 +22,11 @@ repositories {
 }
 
 ext {
+    assertjVersion = '3.22.0'
     jacksonVersion = "2.12.3"
+    junit5Version = '5.8.2'
     lombokVersion = '1.18.22'
+    mockitoVersion = '4.2.0'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
 }
 
@@ -49,9 +48,28 @@ dependencies {
 
     codeGenerator project(':generator')
 
-    testImplementation 'junit:junit:4.13.2'
+    testImplementation "org.assertj:assertj-core:${assertjVersion}"
+    testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
+    testImplementation "org.mockito:mockito-core:${mockitoVersion}"
+    testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
     testImplementation "org.projectlombok:lombok:${lombokVersion}"
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+}
+
+compileJava {
+    options.incremental = true
+    options.compilerArgs << '-parameters'
+    options.encoding = "UTF-8"
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+compileTestJava {
+    options.incremental = true
+    options.compilerArgs << '-parameters'
+    options.encoding = "UTF-8"
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
 }
 
 task generateCode(type: JavaExec) {
@@ -81,6 +99,10 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 }
 
 compileJava.dependsOn tasks.generateCode, tasks.openApiGenerate
+
+test {
+    useJUnitPlatform()
+}
 
 publishing {
     publications {
