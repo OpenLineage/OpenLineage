@@ -21,7 +21,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 /** Unit tests for {@link OpenLineageClient}. */
 @ExtendWith(MockitoExtension.class)
 public class OpenLineageClientTest {
+  private final String NAMESPACE = "test-namespace";
   private final URI PRODUCER = URI.create("https://github.com/OpenLineage/tree/0.0.1/client/java");
+
   private final OpenLineage OL = new OpenLineage(PRODUCER);
 
   private final UUID RUN_ID = UUID.randomUUID();
@@ -31,14 +33,11 @@ public class OpenLineageClientTest {
           "COMPLETE",
           RUN_EVENT_TIME,
           OL.newRunBuilder().runId(RUN_ID).build(),
-          OL.newJobBuilder().namespace("test-namespace").name("test-job").build(),
+          OL.newJobBuilder().namespace(NAMESPACE).name("test-job").build(),
           Arrays.asList(
-              OL.newInputDatasetBuilder().namespace("test-namespace").name("test-input").build()),
+              OL.newInputDatasetBuilder().namespace(NAMESPACE).name("test-input").build()),
           Arrays.asList(
-              OL.newOutputDatasetBuilder()
-                  .namespace("test-namespace")
-                  .name("test-output")
-                  .build()));
+              OL.newOutputDatasetBuilder().namespace(NAMESPACE).name("test-output").build()));
 
   @Mock private OpenLineageHttp http;
   private OpenLineageClient client;
