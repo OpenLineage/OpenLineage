@@ -18,6 +18,8 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.spark.SparkContext;
+import org.apache.spark.scheduler.SparkListenerJobEnd;
+import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -36,10 +38,18 @@ public class StaticExecutionContextFactory extends ContextFactory {
   // multiple SparkListenerSQLExecutionStart events don't block waiting for the first SQL job to
   // finish. The #waitForExecutionEnd method will wait for <i>all</i> acquired permits to be
   // released before continuing.
-  public static final Semaphore semaphore = new Semaphore(5);
+  public static final int NUM_PERMITS = 5;
+  public static final Semaphore semaphore = new Semaphore(NUM_PERMITS);
 
   public StaticExecutionContextFactory(EventEmitter eventEmitter) {
     super(eventEmitter);
+    try {
+      semaphore.acquire(NUM_PERMITS);
+    } catch (Exception e) {
+      throw new RuntimeException("Unable to acquire permits to start context factory", e);
+    } finally {
+      semaphore.release(NUM_PERMITS);
+    }
   }
 
   /**
@@ -52,13 +62,13 @@ public class StaticExecutionContextFactory extends ContextFactory {
    * @throws InterruptedException
    */
   public static void waitForExecutionEnd() throws InterruptedException, TimeoutException {
-    boolean acquired = semaphore.tryAcquire(5, 5, TimeUnit.SECONDS);
+    boolean acquired = semaphore.tryAcquire(NUM_PERMITS, 10, TimeUnit.SECONDS);
     if (!acquired) {
       throw new TimeoutException(
           "Unable to acquire permit within expected timeout- "
               + "OpenLineageSparkListener processing may not have completed correctly");
     }
-    semaphore.release();
+    semaphore.release(NUM_PERMITS);
   }
 
   @Override
@@ -71,6 +81,25 @@ public class StaticExecutionContextFactory extends ContextFactory {
                 .build(),
             jobId,
             openLineageEventEmitter) {
+          @Override
+          public void start(SparkListenerJobStart jobStart) {
+            try {
+              boolean acquired = semaphore.tryAcquire(1, TimeUnit.SECONDS);
+              if (!acquired) {
+                throw new RuntimeException("Timeout acquiring permit");
+              }
+            } catch (InterruptedException e) {
+              throw new RuntimeException("Unable to acquire semaphore", e);
+            }
+            super.start(jobStart);
+          }
+
+          @Override
+          public void end(SparkListenerJobEnd jobEnd) {
+            super.end(jobEnd);
+            semaphore.release();
+          }
+
           @Override
           protected ZonedDateTime toZonedTime(long time) {
             return getZonedTime();
@@ -135,7 +164,7 @@ public class StaticExecutionContextFactory extends ContextFactory {
                   try {
                     super.end(endEvent);
                   } finally {
-                    // ALWAYS release the permit
+                    // ALWAYS release the permits
                     LoggerFactory.getLogger(getClass()).info("Released permit");
                     semaphore.release();
                   }
