@@ -5,6 +5,7 @@ from airflow.version import version as AIRFLOW_VERSION
 from openlineage.client.facet import BaseFacet
 
 from openlineage.airflow import __version__ as OPENLINEAGE_AIRFLOW_VERSION
+from openlineage.common.schema.unknown_source import UnknownSourceAttributeRunFacet
 
 
 @attr.s
