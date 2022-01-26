@@ -46,5 +46,8 @@ You can override the configuration of the client via environment variables by sp
 creating a new client:
 
 ```java
-OpenLineageClient client = Clients.newClient("http://localhost:5000", "f38d2189-c603-4b46-bdea-e573a3b5a7d5");
+String url = "http://localhost:5000";
+String apiKey = "f38d2189-c603-4b46-bdea-e573a3b5a7d5";
+
+OpenLineageClient client = Clients.newClient(url, apiKey);
 ```
