@@ -23,14 +23,14 @@ implementation 'io.openlineage:openlineage-java:0.5.1'
 ## Usage
 
 ```java
-// Connects to http://localhost:8080
+// Connect to http://localhost:8080
 OpenLineageClient client = Clients.newClient();
 
-// Define a simple OpenLineage START or END event
-OpenLineage.Run startOrEndRun = ...
+// Define a simple OpenLineage START or COMPLETE event
+OpenLineage.Run startOrCompleteRun = ...
 
 // Emit OpenLineage event
-client.emit(startOrEndRun);
+client.emit(startOrCompleteRun);
 ```
 
 ## Configuration
