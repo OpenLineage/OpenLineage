@@ -8,33 +8,32 @@ import lombok.extern.slf4j.Slf4j;
 /** HTTP client used to emit {@link OpenLineage.RunEvent}s to HTTP backend. */
 @Slf4j
 public final class OpenLineageClient {
-  static final URL DEFAULT_BASE_URL = Utils.toUrl("http://localhost:8080");
+  static final URL DEFAULT_OPENLINEAGE_URL = Utils.toUrl("http://localhost:8080");
 
   final OpenLineageHttp http;
 
   /** Creates a new {@code OpenLineageClient} object. */
   public OpenLineageClient() {
     this(
-        Utils.toUrl(System.getProperty("OPENLINEAGE_URL", DEFAULT_BASE_URL.toString())),
+        Utils.toUrl(System.getProperty("OPENLINEAGE_URL", DEFAULT_OPENLINEAGE_URL.toString())),
         System.getenv("OPENLINEAGE_API_KEY"));
   }
 
-  /** Creates a new {@code OpenLineageClient} object with the given {@code baseUrl} string. */
-  public OpenLineageClient(@NonNull final String baseUrlString) {
-    this(Utils.toUrl(baseUrlString), null);
+  /** Creates a new {@code OpenLineageClient} object with the given {@code url} string. */
+  public OpenLineageClient(@NonNull final String urlString) {
+    this(Utils.toUrl(urlString), null);
   }
 
-  /** Creates a new {@code OpenLineageClient} object with the given {@code baseUrl}. */
-  public OpenLineageClient(@NonNull final URL baseUrl) {
-    this(baseUrl, null);
+  /** Creates a new {@code OpenLineageClient} object with the given {@code url}. */
+  public OpenLineageClient(@NonNull final URL url) {
+    this(url, null);
   }
 
   /**
-   * Creates a new {@code OpenLineageClient} object with the given {@code baseUrl} and {@code
-   * apiKey}.
+   * Creates a new {@code OpenLineageClient} object with the given {@code url} and {@code apiKey}.
    */
-  public OpenLineageClient(@NonNull final URL baseUrl, @Nullable final String apiKey) {
-    this(OpenLineageHttp.create(baseUrl, apiKey));
+  public OpenLineageClient(@NonNull final URL url, @Nullable final String apiKey) {
+    this(OpenLineageHttp.create(url, apiKey));
   }
 
   OpenLineageClient(@NonNull final OpenLineageHttp http) {
@@ -58,24 +57,24 @@ public final class OpenLineageClient {
    *
    * <pre>{@code
    * OpenLineageClient client = OpenLineageClient().builder()
-   *     .baseUrl("http://localhost:5000")
+   *     .url("http://localhost:5000")
    *     .build()
    * }</pre>
    */
   public static final class Builder {
-    private URL baseUrl;
+    private URL url;
     private @Nullable String apiKey;
 
     private Builder() {
-      this.baseUrl = DEFAULT_BASE_URL;
+      this.url = DEFAULT_OPENLINEAGE_URL;
     }
 
-    public Builder baseUrl(@NonNull String baseUrlString) {
-      return baseUrl(Utils.toUrl(baseUrlString));
+    public Builder url(@NonNull String urlString) {
+      return url(Utils.toUrl(urlString));
     }
 
-    public Builder baseUrl(@NonNull URL baseUrl) {
-      this.baseUrl = baseUrl;
+    public Builder url(@NonNull URL url) {
+      this.url = url;
       return this;
     }
 
@@ -89,7 +88,7 @@ public final class OpenLineageClient {
      * OpenLineageClient.Builder}.
      */
     public OpenLineageClient build() {
-      return new OpenLineageClient(baseUrl, apiKey);
+      return new OpenLineageClient(url, apiKey);
     }
   }
 

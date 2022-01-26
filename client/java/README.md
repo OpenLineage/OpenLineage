@@ -35,14 +35,14 @@ client.emit(startOrCompleteRun);
 
 ## Configuration
 
-To configure the client, use the following environment variables:
+Use the following environment variables to configure the client:
 
 | **Environment Variable** | **Description**                                                 |
 |--------------------------|-----------------------------------------------------------------|
 | `OPENLINEAGE_URL`        | The URL for the HTTP backend (default: `http://localhost:8080`) |
 | `OPENLINEAGE_API_KEY`    | The API key to be set on each HTTP request                      |
 
-You can override the configuration of the client via environment variables by specifying the URL and API key when
+You can override the default configuration of the client via environment variables by specifying the URL and API key when
 creating a new client:
 
 ```java

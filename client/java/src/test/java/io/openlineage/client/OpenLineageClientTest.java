@@ -1,6 +1,6 @@
 package io.openlineage.client;
 
-import static io.openlineage.client.OpenLineageClient.DEFAULT_BASE_URL;
+import static io.openlineage.client.OpenLineageClient.DEFAULT_OPENLINEAGE_URL;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.Mockito.times;
@@ -50,14 +50,14 @@ public class OpenLineageClientTest {
   @Test
   public void testClientBuilder_default() {
     final OpenLineageClient client = OpenLineageClient.builder().build();
-    assertThat(client.http.baseUrl).isEqualTo(DEFAULT_BASE_URL);
+    assertThat(client.http.baseUrl).isEqualTo(DEFAULT_OPENLINEAGE_URL);
     assertThat(client.http.apiKey).isNull();
   }
 
   @Test
   public void testClientBuilder_overrideUrl() throws Exception {
     final URL url = new URL("http://test.com:8080");
-    final OpenLineageClient client = OpenLineageClient.builder().baseUrl(url).build();
+    final OpenLineageClient client = OpenLineageClient.builder().url(url).build();
     assertThat(client.http.baseUrl).isEqualTo(url);
   }
 
@@ -65,7 +65,7 @@ public class OpenLineageClientTest {
   public void testClientBuilder_throwsOnBadUrl() {
     final String badUrlString = "test.com/api/v1";
     assertThatExceptionOfType(AssertionError.class)
-        .isThrownBy(() -> OpenLineageClient.builder().baseUrl(badUrlString).build());
+        .isThrownBy(() -> OpenLineageClient.builder().url(badUrlString).build());
   }
 
   @Test
