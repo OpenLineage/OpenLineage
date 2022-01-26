@@ -8,7 +8,7 @@ import lombok.NonNull;
 public final class Clients {
   private Clients() {}
 
-  /** Returns a new {@code OpenLineageClient} . */
+  /** Returns a new {@code OpenLineageClient} object. */
   public static OpenLineageClient newClient() {
     return OpenLineageClient.builder().build();
   }
