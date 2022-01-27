@@ -21,6 +21,9 @@
           "name" : "b",
           "type" : "long"
         } ]
+      },
+      "tableStateChange" : {
+        "stateChange" : "create"
       }
     }
   } ]

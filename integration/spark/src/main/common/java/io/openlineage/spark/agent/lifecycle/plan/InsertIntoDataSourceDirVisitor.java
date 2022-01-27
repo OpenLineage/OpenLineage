@@ -1,12 +1,16 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.DefaultDatasetFacet;
+import io.openlineage.spark.agent.facets.TableStateChangeFacet;
+import io.openlineage.spark.agent.facets.TableStateChangeFacet.StateChange;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.command.InsertIntoDataSourceDirCommand;
 
@@ -26,6 +30,12 @@ public class InsertIntoDataSourceDirVisitor
     InsertIntoDataSourceDirCommand command = (InsertIntoDataSourceDirCommand) x;
     // URI is required by the InsertIntoDataSourceDirCommand
     DatasetIdentifier di = PathUtils.fromURI(command.storage().locationUri().get(), "file");
-    return Collections.singletonList(outputDataset().getDataset(di, command.schema()));
+    Map<String, DefaultDatasetFacet> facets =
+        command.overwrite()
+            ? Collections.singletonMap(
+                "tableStateChange", new TableStateChangeFacet(StateChange.OVERWRITE))
+            : Collections.emptyMap();
+
+    return Collections.singletonList(outputDataset().getDataset(di, command.schema(), facets));
   }
 }
