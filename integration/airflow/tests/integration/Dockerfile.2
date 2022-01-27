@@ -1,6 +1,6 @@
 FROM openlineage-airflow-base:latest AS build
 
-FROM apache/airflow:2.1.3 AS airflow
+FROM apache/airflow:2.2.3 AS airflow
 COPY --from=build /app/wheel /whl
 USER root
 RUN apt-get update && \

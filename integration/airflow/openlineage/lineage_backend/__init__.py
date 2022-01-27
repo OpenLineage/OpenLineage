@@ -38,10 +38,10 @@ class Backend:
         run_id = str(uuid.uuid4())
         job_name = get_job_name(operator)
 
-        task_metadata = self._extract_metadata(
-            dag_id=dag.dag_id,
+        task_metadata = self.extractor_manager.extract_metadata(
             dagrun=dagrun,
             task=operator,
+            complete=True,
             task_instance=task_instance
         )
 
@@ -68,57 +68,6 @@ class Backend:
             end_time=DagUtils.to_iso_8601(self._now_ms()),
             task=task_metadata
         )
-
-    def _extract_metadata(self, dag_id, dagrun, task, task_instance=None):
-        extractor = self._get_extractor(task)
-        task_info = f'task_type={task.__class__.__name__} ' \
-            f'airflow_dag_id={dag_id} ' \
-            f'task_id={task.task_id} ' \
-            f'airflow_run_id={dagrun.run_id} '
-        if extractor:
-            try:
-                self.log.debug(
-                    f'Using extractor {extractor.__class__.__name__} {task_info}')
-                task_metadata = self._extract(extractor, task_instance)
-                self.log.debug(
-                    f"Found task metadata for operation {task.task_id}: {task_metadata}"
-                )
-                if task_metadata:
-                    return task_metadata
-
-            except Exception as e:
-                self.log.exception(
-                    f'Failed to extract metadata {e} {task_info}',
-                )
-        else:
-            self.log.warning(
-                f'Unable to find an extractor. {task_info}')
-        from openlineage.airflow.extractors.base import TaskMetadata
-        return TaskMetadata(
-            name=self._openlineage_job_name(dag_id, task.task_id)
-        )
-
-    def _extract(self, extractor, task_instance):
-        if task_instance:
-            task_metadata = extractor.extract_on_complete(task_instance)
-            if task_metadata:
-                return task_metadata
-
-        return extractor.extract()
-
-    def _get_extractor(self, task):
-        if task.task_id in self.extractors:
-            return self.extractors[task.task_id]
-        extractor = self.extractor_mapper.get_extractor_class(task.__class__)
-        self.log.debug(f'extractor for {task.__class__} is {extractor}')
-        if extractor:
-            self.extractors[task.task_id] = extractor(task)
-            return self.extractors[task.task_id]
-        return None
-
-    @classmethod
-    def _openlineage_job_name_from_task_instance(cls, task_instance):
-        return cls._openlineage_job_name(task_instance.dag_id, task_instance.task_id)
 
     @staticmethod
     def _now_ms():

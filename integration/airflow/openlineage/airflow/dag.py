@@ -162,7 +162,7 @@ class DAG(AIRFLOW_DAG):
         for task_id, task in self.task_dict.items():
             t = self._now_ms()
             try:
-                task_metadata = extractor_manager.extract_metadata(dagrun, task)
+                task_metadata = extractor_manager.extract_metadata(dagrun, task, complete=False)
 
                 job_name = openlineage_job_name(self.dag_id, task.task_id)
                 run_id = new_lineage_run_id(dagrun.run_id, task_id)
