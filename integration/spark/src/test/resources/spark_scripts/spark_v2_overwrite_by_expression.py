@@ -6,23 +6,22 @@ os.makedirs("/tmp/v2_overwrite", exist_ok=True)
 
 spark = SparkSession.builder \
     .master("local") \
-    .appName("Open Lineage Integration V2 Commands") \
-    .config("spark.sql.catalog.spark_catalog", "org.apache.iceberg.spark.SparkSessionCatalog") \
-    .config("spark.sql.catalog.spark_catalog.type", "hive") \
-    .config("spark.sql.catalog.local", "org.apache.iceberg.spark.SparkCatalog") \
-    .config("spark.sql.catalog.local.type", "hadoop") \
-    .config("spark.sql.catalog.local.warehouse", "/tmp/v2_overwrite") \
-    .config("spark.sql.extensions", "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions") \
+    .appName("Open Lineage Integration Delta") \
+    .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
+    .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
+    .config("packages", "io.delta:delta-core_2.12:1.0.0") \
     .getOrCreate()
+
 spark.sparkContext.setLogLevel('info')
 
 df = spark.createDataFrame([
-    {'a': 1, 'b': 2},
-    {'a': 3, 'b': 4}
+    {'id': 1},
+    {'id': 2},
+    {'id': 3}
 ])
-df.createOrReplaceTempView('temp')
+df.createOrReplaceTempView('mydata')
 
-spark.sql("CREATE TABLE local.db.tbl USING iceberg AS SELECT * FROM temp")
-spark.sql("INSERT OVERWRITE local.db.tbl VALUES (5,6),(7,8)")
+spark.sql("CREATE TABLE testtable( id INT ) USING DELTA LOCATION '/tmp/v2_overwrite'")
+spark.sql("INSERT OVERWRITE testtable SELECT * FROM mydata")
 
 

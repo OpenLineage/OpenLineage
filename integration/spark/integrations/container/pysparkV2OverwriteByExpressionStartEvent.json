@@ -1,13 +1,12 @@
 {
   "eventType" : "START",
   "job" : {
-    "namespace" : "testV2Commands",
-    "name" : "open_lineage_integration_v2_commands.overwrite_by_expression"
+    "namespace" : "testV2Commands"
   },
   "inputs" : [ ],
   "outputs" : [ {
     "namespace" : "file",
-    "name" : "/tmp/v2_overwrite/db.tbl",
+    "name" : "/tmp/v2_overwrite",
     "facets" : {
       "dataSource" : {
         "name" : "file",
@@ -15,11 +14,8 @@
       },
       "schema" : {
         "fields" : [ {
-          "name" : "a",
-          "type" : "long"
-        }, {
-          "name" : "b",
-          "type" : "long"
+          "name" : "id",
+          "type" : "integer"
         } ]
       },
       "tableStateChange": {
