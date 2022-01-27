@@ -11,7 +11,7 @@ class ExtractorManager:
         self.extractor_mapper = Extractors()
         self.log = logging.getLogger()
 
-    def extract_metadata(self, dagrun, task, task_instance=None) -> TaskMetadata:
+    def extract_metadata(self, dagrun, task, complete: bool, task_instance=None) -> TaskMetadata:
         extractor = self._get_extractor(task)
         task_info = f'task_type={task.__class__.__name__} ' \
             f'airflow_dag_id={task.dag_id} ' \
@@ -21,7 +21,11 @@ class ExtractorManager:
             try:
                 self.log.debug(
                     f'Using extractor {extractor.__class__.__name__} {task_info}')
-                task_metadata = self._extract(extractor, task_instance)
+                if complete:
+                    task_metadata = extractor.extract_on_complete(task_instance)
+                else:
+                    task_metadata = extractor.extract()
+
                 self.log.debug(
                     f"Found task metadata for operation {task.task_id}: {task_metadata}"
                 )
@@ -39,14 +43,6 @@ class ExtractorManager:
         return TaskMetadata(
             name=get_job_name(task)
         )
-
-    def _extract(self, extractor, task_instance) -> Optional[TaskMetadata]:
-        if task_instance:
-            task_metadata = extractor.extract_on_complete(task_instance)
-            if task_metadata:
-                return task_metadata
-
-        return extractor.extract()
 
     def _get_extractor(self, task) -> Optional[BaseExtractor]:
         if task.task_id in self.extractors:
