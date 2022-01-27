@@ -75,6 +75,7 @@ jobs:
       - run: ./gradlew --no-daemon --stacktrace build
       - run: ./gradlew --no-daemon jacocoTestReport
       - run: bash <(curl -s https://codecov.io/bash)
+      - run: ./gradlew javadoc
       - store_test_results:
           path: client/java/build/test-results/test
       - store_artifacts:
@@ -179,6 +180,7 @@ jobs:
           when: on_fail
           command: cat integration/spark/build/test-results/test/TEST-*.xml
       - run: ./gradlew --no-daemon jacocoTestReport
+      - run: ./gradlew javadoc
       - store_test_results:
           path: integration/spark/build/test-results/test
       - store_artifacts:
