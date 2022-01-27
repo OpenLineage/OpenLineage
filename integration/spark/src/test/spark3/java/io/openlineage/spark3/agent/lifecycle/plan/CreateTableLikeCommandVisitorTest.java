@@ -1,10 +1,13 @@
 package io.openlineage.spark3.agent.lifecycle.plan;
 
+import static io.openlineage.spark.agent.facets.TableStateChangeFacet.StateChange.CREATE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.client.OpenLineageClient;
+import io.openlineage.spark.agent.facets.TableStateChangeFacet;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.List;
 import java.util.Optional;
@@ -63,9 +66,14 @@ class CreateTableLikeCommandVisitorTest {
 
     assertThat(visitor.isDefinedAt(command)).isTrue();
     List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
-    assertThat(datasets)
-        .singleElement()
-        .hasFieldOrPropertyWithValue("name", "/tmp/warehouse/newtable")
-        .hasFieldOrPropertyWithValue("namespace", "file");
+
+    assertEquals(1, datasets.size());
+    OpenLineage.OutputDataset outputDataset = datasets.get(0);
+
+    assertEquals(
+        new TableStateChangeFacet(CREATE),
+        outputDataset.getFacets().getAdditionalProperties().get("tableStateChange"));
+    assertEquals("/tmp/warehouse/newtable", outputDataset.getName());
+    assertEquals("file", outputDataset.getNamespace());
   }
 }

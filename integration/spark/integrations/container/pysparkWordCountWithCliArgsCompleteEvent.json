@@ -48,6 +48,9 @@
         "dataSource": {
           "name": "file",
           "uri": "file"
+        },
+        "tableStateChange": {
+          "stateChange": "overwrite"
         }
       },
       "outputFacets": {
