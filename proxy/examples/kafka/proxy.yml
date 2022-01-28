@@ -32,12 +32,6 @@ proxy:
       # Kafka properties (see: http://kafka.apache.org/0100/documentation.html#producerconfigs)
       properties:
         acks: all
-        retries : 1
-        batch.size : 16384
-        linger.ms : 0
-        buffer.memory : 33554432
-        max.request.size : 10485760
-        key.serializer : org.apache.kafka.common.serialization.StringSerializer
-        value.serializer : org.apache.kafka.common.serialization.StringSerializer
-        bring.up.retries : 10
-        bring.up.minSleepTime : 5000
+        retries: 3
+        key.serializer: org.apache.kafka.common.serialization.StringSerializer
+        value.serializer: org.apache.kafka.common.serialization.StringSerializer
