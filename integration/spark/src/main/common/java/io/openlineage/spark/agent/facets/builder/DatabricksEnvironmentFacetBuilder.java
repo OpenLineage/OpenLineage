@@ -20,25 +20,31 @@ import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.spark.scheduler.SparkListenerEvent;
 
-public class EnvironmentFacetBuilder
+/**
+ * {@link CustomFacetBuilder} that generates a {@link EnvironmentFacet} when using OpenLineage on
+ * Databricks.
+ */
+public class DatabricksEnvironmentFacetBuilder
     extends CustomFacetBuilder<SparkListenerEvent, EnvironmentFacet> {
   private static HashMap<String, Object> dbProperties;
   private static final org.slf4j.Logger log =
-      org.slf4j.LoggerFactory.getLogger(EnvironmentFacetBuilder.class);
+      org.slf4j.LoggerFactory.getLogger(DatabricksEnvironmentFacetBuilder.class);
   private final OpenLineageContext openLineageContext;
 
-  public EnvironmentFacetBuilder(OpenLineageContext openLineageContext) {
+  public DatabricksEnvironmentFacetBuilder(OpenLineageContext openLineageContext) {
     this.openLineageContext = openLineageContext;
+  }
+
+  public static boolean isDatabricksRuntime() {
+    return System.getenv().containsKey("DATABRICKS_RUNTIME_VERSION");
   }
 
   @Override
   protected void build(
       SparkListenerEvent event, BiConsumer<String, ? super EnvironmentFacet> consumer) {
-    if (System.getenv().containsKey("DATABRICKS_RUNTIME_VERSION")) {
-      consumer.accept(
-          "environment-properties",
-          new EnvironmentFacet(getDatabricksEnvironmentalAttributes(event)));
-    }
+    consumer.accept(
+        "environment-properties",
+        new EnvironmentFacet(getDatabricksEnvironmentalAttributes(event)));
   }
 
   private HashMap<String, Object> getDatabricksEnvironmentalAttributes(
