@@ -21,5 +21,8 @@ if [[ -z "${OPENLINEAGE_PROXY_CONFIG}" ]]; then
   echo "WARNING 'OPENLINEAGE_PROXY_CONFIG' not set, using development configuration."
 fi
 
-# Start http server with configuration
-java -Duser.timezone=UTC -Dlog4j2.formatMsgNoLookups=true -jar openlineage-proxy-*.jar server "${OPENLINEAGE_PROXY_CONFIG}"
+# Adjust java options for the http server
+JAVA_OPTS="${JAVA_OPTS} -Duser.timezone=UTC -Dlog4j2.formatMsgNoLookups=true"
+
+# Start http server with java options (if any) and configuration
+java "${JAVA_OPTS}" -jar openlineage-proxy-*.jar server "${OPENLINEAGE_PROXY_CONFIG}"
