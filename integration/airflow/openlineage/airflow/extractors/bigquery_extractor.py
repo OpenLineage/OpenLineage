@@ -59,11 +59,13 @@ class BigQueryExtractor(BaseExtractor):
         try:
             bigquery_job_id = self._get_xcom_bigquery_job_id(task_instance)
             if bigquery_job_id is None:
-                raise Exception("Xcom could not resolve BigQuery job id." +
-                                "Job may have failed.")
+                raise Exception(
+                    "Xcom could not resolve BigQuery job id. Job may have failed."
+                )
         except Exception as e:
-            log.error(f"Cannot retrieve job details from BigQuery.Client. {e}",
-                      exc_info=True)
+            log.error(
+                f"Cannot retrieve job details from BigQuery.Client. {e}", exc_info=True
+            )
             return TaskMetadata(
                 name=get_job_name(task=self.operator),
                 run_facets={

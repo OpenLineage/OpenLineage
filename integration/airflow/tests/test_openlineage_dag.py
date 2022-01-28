@@ -78,7 +78,7 @@ TASK_ID_FAILED = 'test_task_failed'
 
 
 PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/" \
-            f"{OPENLINEAGE_AIRFLOW_VERSION}/integration/airflow"
+    f"{OPENLINEAGE_AIRFLOW_VERSION}/integration/airflow"
 
 
 @pytest.fixture(scope='session', autouse=True)
@@ -421,7 +421,8 @@ def test_openlineage_dag_with_extractor(
     # --- test setup
 
     # Add the dummy extractor to the list for the task above
-    openlineage.airflow.dag.extractor_mapper.extractors[TestFixtureDummyOperator.__name__] = \
+    openlineage.airflow.dag.extractor_manager.\
+        extractor_mapper.extractors[TestFixtureDummyOperator.__name__] = \
         TestFixtureDummyExtractor
 
     dag_id = 'test_openlineage_dag_with_extractor'
@@ -512,18 +513,8 @@ def test_openlineage_dag_with_extractor(
             Run(run_id),
             Job("default", job_id),
             PRODUCER,
-            [OpenLineageDataset('dummy://localhost:1234', 'extract_input1', {
-                "dataSource": DataSourceDatasetFacet(
-                    name='dummy://localhost:1234',
-                    uri='dummy://localhost:1234?query_tag=asdf'
-                )
-            })],
-            [OpenLineageDataset('dummy://localhost:1234', 'extract_output1', {
-                "dataSource": DataSourceDatasetFacet(
-                    name='dummy://localhost:1234',
-                    uri='dummy://localhost:1234?query_tag=asdf'
-                )
-            })]
+            [],
+            []
         )
     )
 
@@ -544,8 +535,9 @@ def test_openlineage_dag_with_extract_on_complete(
     # --- test setup
 
     # Add the dummy extractor to the list for the task above
-    openlineage.airflow.dag.extractors.clear()
-    openlineage.airflow.dag.extractor_mapper.extractors[TestFixtureDummyOperator.__name__] = \
+    openlineage.airflow.dag.extractor_manager.extractors.clear()
+    openlineage.airflow.dag.extractor_manager.extractor_mapper.\
+        extractors[TestFixtureDummyOperator.__name__] = \
         TestFixtureDummyExtractorOnComplete
 
     dag_id = 'test_openlineage_dag_with_extractor_on_complete'
@@ -594,7 +586,7 @@ def test_openlineage_dag_with_extract_on_complete(
                     name=job_id
                 )
             }),
-            job=Job("default",  job_id, {
+            job=Job("default", job_id, {
                 "documentation": DocumentationJobFacet(DAG_DESCRIPTION),
                 "sourceCodeLocation": SourceCodeLocationJobFacet("", completed_task_location)
             }),
@@ -658,8 +650,9 @@ def test_openlineage_dag_adds_custom_facets(
         new_lineage_run_id,
         clear_db_airflow_dags,
 ):
-    openlineage.airflow.dag.extractors.clear()
-    openlineage.airflow.dag.extractor_mapper.extractors.pop('TestFixtureDummyOperator', None)
+    openlineage.airflow.dag.extractor_manager.extractors.clear()
+    openlineage.airflow.dag.extractor_manager.\
+        extractor_mapper.extractors.pop('TestFixtureDummyOperator', None)
 
     dag = DAG(
         DAG_ID,
@@ -694,30 +687,30 @@ def test_openlineage_dag_adds_custom_facets(
     end_time = '2016-01-02T00:00:00.000000Z'
 
     mock_openlineage_client.emit.assert_called_once_with(RunEvent(
-            eventType=RunState.START,
-            eventTime=mock.ANY,
-            run=Run(run_id, {
-                "nominalTime": NominalTimeRunFacet(start_time, end_time),
-                "parentRun": ParentRunFacet.create(
-                    runId=DAG_RUN_ID,
-                    namespace=DAG_NAMESPACE,
-                    name=job_id
-                ),
-                "airflow_runArgs": AirflowRunArgsRunFacet(False),
-                "airflow_version": AirflowVersionRunFacet(
-                    operator="airflow.operators.dummy_operator.DummyOperator",
-                    taskInfo=mock.ANY,
-                    airflowVersion=AIRFLOW_VERSION,
-                    openlineageAirflowVersion=OPENLINEAGE_AIRFLOW_VERSION
-                )
-            }),
-            job=Job("default", job_id, {
-                "documentation": DocumentationJobFacet(DAG_DESCRIPTION),
-                "sourceCodeLocation": SourceCodeLocationJobFacet("", completed_task_location)
-            }),
-            producer=PRODUCER,
-            inputs=[],
-            outputs=[]
+        eventType=RunState.START,
+        eventTime=mock.ANY,
+        run=Run(run_id, {
+            "nominalTime": NominalTimeRunFacet(start_time, end_time),
+            "parentRun": ParentRunFacet.create(
+                runId=DAG_RUN_ID,
+                namespace=DAG_NAMESPACE,
+                name=job_id
+            ),
+            "airflow_runArgs": AirflowRunArgsRunFacet(False),
+            "airflow_version": AirflowVersionRunFacet(
+                operator="airflow.operators.dummy_operator.DummyOperator",
+                taskInfo=mock.ANY,
+                airflowVersion=AIRFLOW_VERSION,
+                openlineageAirflowVersion=OPENLINEAGE_AIRFLOW_VERSION
+            )
+        }),
+        job=Job("default", job_id, {
+            "documentation": DocumentationJobFacet(DAG_DESCRIPTION),
+            "sourceCodeLocation": SourceCodeLocationJobFacet("", completed_task_location)
+        }),
+        producer=PRODUCER,
+        inputs=[],
+        outputs=[]
     ))
 
 

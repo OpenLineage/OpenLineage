@@ -24,4 +24,4 @@ def test_adding_extractors():
     extractors = Extractors()
     count = len(extractors.extractors)
     extractors.add_extractor("test", PostgresExtractor)
-    assert len(extractors.extractors) == count+1
+    assert len(extractors.extractors) == count + 1

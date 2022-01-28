@@ -4,7 +4,7 @@ from pkg_resources import parse_version
 
 
 # Provide empty plugin for older version
-if parse_version(AIRFLOW_VERSION) < parse_version("2.3.0"):
+if parse_version(AIRFLOW_VERSION) < parse_version("2.3.0.dev0"):
     class OpenLineagePlugin(AirflowPlugin):
         name = "OpenLineagePlugin"
 else:

@@ -5,13 +5,11 @@ from pkg_resources import parse_version
 from airflow.lineage.backend import LineageBackend
 from airflow.version import version as AIRFLOW_VERSION
 
-from openlineage.airflow.extractors.manager import ExtractorManager
-from openlineage.airflow.utils import get_task_location, get_job_name
-
 
 class Backend:
     def __init__(self):
         from openlineage.airflow.adapter import OpenLineageAdapter
+        from openlineage.airflow.extractors.manager import ExtractorManager
         self.extractor_manager = ExtractorManager()
         self.adapter = OpenLineageAdapter()
     """
@@ -30,7 +28,8 @@ class Backend:
         Send_lineage ignores manually provided inlets and outlets. The data collection mechanism
         is automatic, and bases on the passed context.
         """
-        from openlineage.airflow.utils import DagUtils, get_custom_facets
+        from openlineage.airflow.utils import DagUtils, get_custom_facets, \
+            get_job_name, get_task_location
         dag = context['dag']
         dagrun = context['dag_run']
         task_instance = context['task_instance']
@@ -81,6 +80,9 @@ class OpenLineageBackend(LineageBackend):
 
     @classmethod
     def send_lineage(cls, *args, **kwargs):
+        # Do not use LineageBackend approach when we can use plugins
+        if parse_version(AIRFLOW_VERSION) >= parse_version("2.3.0.dev0"):
+            return
         if not cls.backend:
             cls.backend = Backend()
         return cls.backend.send_lineage(*args, **kwargs)

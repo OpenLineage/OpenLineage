@@ -19,7 +19,10 @@ import time
 import requests
 from retrying import retry
 
-from openlineage.common.test import match
+from openlineage.common.test import match, setup_jinja
+
+
+env = setup_jinja()
 
 logging.basicConfig(
     format="[%(asctime)s] {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s",
@@ -36,7 +39,7 @@ airflow_db_conn = None
     wait_exponential_multiplier=1000,
     wait_exponential_max=10000
 )
-def wait_for_dag(dag_id):
+def wait_for_dag(dag_id) -> bool:
     log.info(
         f"Waiting for DAG '{dag_id}'..."
     )
@@ -56,9 +59,10 @@ def wait_for_dag(dag_id):
 
     log.info(f"DAG '{dag_id}' state set to '{state}'.")
     if state == 'failed':
-        sys.exit(1)
+        return False
     elif state != "success":
         raise Exception('Retry!')
+    return True
 
 
 def check_matches(expected_events, actual_events) -> bool:
@@ -141,10 +145,13 @@ def setup_db():
 def test_integration(dag_id, request_path):
     log.info(f"Checking dag {dag_id}")
     # (1) Wait for DAG to complete
-    wait_for_dag(dag_id)
+    result = wait_for_dag(dag_id)
+    if not result:
+        sys.exit(1)
+
     # (2) Read expected events
     with open(request_path, 'r') as f:
-        expected_events = json.load(f)
+        expected_events = json.loads(env.from_string(f.read()).render())
 
     # (3) Get actual events
     actual_events = get_events()
@@ -158,7 +165,9 @@ def test_integration(dag_id, request_path):
 def test_integration_ordered(dag_id, request_dir: str):
     log.info(f"Checking dag {dag_id}")
     # (1) Wait for DAG to complete
-    wait_for_dag(dag_id)
+    result = wait_for_dag(dag_id)
+    if not result:
+        sys.exit(1)
 
     # (2) Find and read events in given directory on order of file names.
     #     The events have to arrive at the server in the same order.
@@ -169,7 +178,7 @@ def test_integration_ordered(dag_id, request_dir: str):
     expected_events = []
     for file in event_files:
         with open(os.path.join(request_dir, file), 'r') as f:
-            expected_events.append(json.load(f))
+            expected_events.append(json.loads(env.from_string(f.read()).render()))
 
     # (3) Get actual events with job names starting with dag_id
     actual_events = get_events(dag_id)

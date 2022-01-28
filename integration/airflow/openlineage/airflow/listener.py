@@ -1,4 +1,5 @@
 import logging
+import os
 import threading
 import uuid
 import attr
@@ -12,7 +13,6 @@ from openlineage.airflow.extractors import ExtractorManager
 from openlineage.airflow.utils import DagUtils, get_task_location, get_job_name, get_custom_facets
 
 if TYPE_CHECKING:
-    from airflow.models import TaskInstance
     from airflow.models import TaskInstance, BaseOperator
     from sqlalchemy.orm import Session
 
@@ -75,7 +75,6 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
     run_data_holder.set_run_data(task_instance, run_id)
 
     def on_running():
-        log.warning("IN THREAD")
         task_metadata = extractor_manager.extract_metadata(dagrun, task, complete=False)
 
         adapter.start_task(

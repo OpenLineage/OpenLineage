@@ -164,7 +164,7 @@ class DAG(AIRFLOW_DAG):
             try:
                 task_metadata = extractor_manager.extract_metadata(dagrun, task, complete=False)
 
-                job_name = openlineage_job_name(self.dag_id, task.task_id)
+                job_name = openlineage_job_name(task.dag_id, task.task_id)
                 run_id = new_lineage_run_id(dagrun.run_id, task_id)
 
                 task_run_id = _ADAPTER.start_task(
@@ -231,7 +231,9 @@ class DAG(AIRFLOW_DAG):
         # or the job could not be registered.
         task_run_id = JobIdMapping.pop(
             self._openlineage_job_name_from_task_instance(task_instance), dagrun.run_id, session)
-        task_metadata = self._extract_metadata(dagrun, task, task_instance)
+        task_metadata = extractor_manager.extract_metadata(
+            dagrun, task, complete=True, task_instance=task_instance
+        )
 
         job_name = openlineage_job_name(self.dag_id, task.task_id)
         run_id = new_lineage_run_id(dagrun.run_id, task.task_id)

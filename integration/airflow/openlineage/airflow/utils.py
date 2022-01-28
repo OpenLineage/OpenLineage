@@ -224,7 +224,7 @@ class DagUtils:
         if not dt:
             return None
         if isinstance(dt, int):
-            dt = from_timestamp(dt/1000.0)
+            dt = from_timestamp(dt / 1000.0)
 
         return dt.strftime(_NOMINAL_TIME_FORMAT)
 

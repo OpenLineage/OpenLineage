@@ -5,6 +5,8 @@ x-airflow-common: &airflow-common
     context: .
     target: airflow
     dockerfile: Dockerfile.2
+    args:
+      AIRFLOW_IMAGE: ${AIRFLOW_IMAGE}
   environment: &airflow-common-env
     DB_BACKEND: postgresql+psycopg2
     DB_HOST: postgres
@@ -28,6 +30,8 @@ x-airflow-common: &airflow-common
     OPENLINEAGE_URL: http://backend:5000
     OPENLINEAGE_NAMESPACE: food_delivery
     OPENLINEAGE_EXTRACTOR_BashOperator: custom_extractor.BashExtractor
+    BIGQUERY_PREFIX: ${BIGQUERY_PREFIX}
+    BIGQUERY_DBT_DATASET: ${BIGQUERY_DBT_DATASET}_dbt
   volumes:
       - ./airflow/config/log_config.py:/opt/airflow/config/log_config.py
       - ./airflow/logs:/opt/airflow/logs
@@ -40,27 +44,17 @@ services:
       context: .
       target: integration
       dockerfile: Dockerfile.2
+      args:
+        AIRFLOW_IMAGE: ${AIRFLOW_IMAGE}
     volumes:
       - ./docker/wait-for-it.sh:/wait-for-it.sh
-    depends_on:
-      - airflow
-      - backend
-    entrypoint: ["./wait-for-it.sh", "backend:5000", "--", "./entrypoint.sh"]
-
-  airflow:
-    <<: *airflow-common
-    ports:
-      - "8080:8080"
-    command: webserver
+    environment:
+      BIGQUERY_PREFIX: ${BIGQUERY_PREFIX}
+      BIGQUERY_DBT_DATASET: ${BIGQUERY_DBT_DATASET}_dbt
     depends_on:
       - airflow_scheduler
-      - postgres
-    healthcheck:
-      test: [ "CMD", "curl", "--fail", "http://localhost:8080/health" ]
-      interval: 10s
-      timeout: 10s
-      retries: 5
-    restart: always
+      - backend
+    entrypoint: ["./wait-for-it.sh", "backend:5000", "--", "./entrypoint.sh"]
 
   airflow_scheduler:
     <<: *airflow-common

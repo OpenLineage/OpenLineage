@@ -9,6 +9,9 @@ services:
     depends_on:
       - airflow
       - backend
+    environment:
+      - BIGQUERY_PREFIX=airflow_1
+      - BIGQUERY_DBT_DATASET=airflow_1_dbt
     entrypoint: ["./wait-for-it.sh", "postgres:5432", "--", "./entrypoint.sh"]
 
   airflow:
@@ -33,6 +36,9 @@ services:
       - GOOGLE_APPLICATION_CREDENTIALS=/opt/config/gcloud/gcloud-service-key.json
       - OPENLINEAGE_URL=http://backend:5000
       - OPENLINEAGE_NAMESPACE=food_delivery
+      - OPENLINEAGE_EXTRACTOR_BashOperator=custom_extractor.BashExtractor
+      - BIGQUERY_PREFIX=airflow_1
+      - BIGQUERY_DBT_DATASET=airflow_1_dbt
     volumes:
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/dags:/opt/bitnami/airflow/dags
@@ -66,7 +72,9 @@ services:
       - GOOGLE_APPLICATION_CREDENTIALS=/opt/config/gcloud/gcloud-service-key.json
       - OPENLINEAGE_URL=http://backend:5000
       - OPENLINEAGE_NAMESPACE=food_delivery
-
+      - OPENLINEAGE_EXTRACTOR_BashOperator=custom_extractor.BashExtractor
+      - BIGQUERY_PREFIX=airflow_1
+      - BIGQUERY_DBT_DATASET=airflow_1_dbt
     volumes:
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/dags:/opt/bitnami/airflow/dags
@@ -97,6 +105,9 @@ services:
       - GOOGLE_APPLICATION_CREDENTIALS=/opt/config/gcloud/gcloud-service-key.json
       - OPENLINEAGE_NAMESPACE=food_delivery
       - OPENLINEAGE_URL=http://backend:5000
+      - OPENLINEAGE_EXTRACTOR_BashOperator=custom_extractor.BashExtractor
+      - BIGQUERY_PREFIX=airflow_1
+      - BIGQUERY_DBT_DATASET=airflow_1_dbt
     volumes:
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/dags:/opt/bitnami/airflow/dags
