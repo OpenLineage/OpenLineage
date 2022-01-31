@@ -207,8 +207,8 @@ sourceSets {
     }
 }
 
-compileJava.finalizedBy compileSpark3Java
-compileTestJava.finalizedBy compileSpark3TestJava
+compileJava.finalizedBy compileSpark2Java, compileSpark3Java
+compileTestJava.finalizedBy compileSpark2TestJava, compileSpark3TestJava
 
 task sourceJar(type: Jar) {
     classifier 'sources'
