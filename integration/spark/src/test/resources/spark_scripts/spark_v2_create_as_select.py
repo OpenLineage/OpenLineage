@@ -20,5 +20,7 @@ df = spark.createDataFrame([
     {'a': 3, 'b': 4}
 ])
 df.createOrReplaceTempView('temp')
+spark.sql("CREATE TABLE local.db.source1 USING iceberg AS SELECT * FROM temp")
+spark.sql("CREATE TABLE local.db.source2 USING iceberg AS SELECT * FROM temp")
 
-spark.sql("CREATE TABLE local.db.tbl USING iceberg AS SELECT * FROM temp")
+spark.sql("CREATE TABLE local.db.target USING iceberg AS (SELECT * FROM local.db.source1 UNION SELECT * FROM local.db.source2)")
