@@ -286,7 +286,8 @@ public class SparkContainerIntegrationTest {
         "spark_v2_update.py:pysparkV2UpdateStartEvent.json:pysparkV2UpdateCompleteEvent.json:true",
         "spark_v2_merge_into_table.py:pysparkV2MergeIntoTableStartEvent.json:pysparkV2MergeIntoTableCompleteEvent.json:true",
         "spark_v2_drop.py:pysparkV2DropTableStartEvent.json:pysparkV2DropTableCompleteEvent.json:true",
-        "spark_v2_alter.py:pysparkV2AlterTableStartEvent.json:pysparkV2AlterTableCompleteEvent.json:true"
+        "spark_v2_alter.py:pysparkV2AlterTableStartEvent.json:pysparkV2AlterTableCompleteEvent.json:true",
+        "spark_v2_append.py:pysparkV2AppendDataStartEvent.json:pysparkV2AppendDataCompleteEvent.json:true"
       },
       delimiter = ':')
   public void testV2Commands(
