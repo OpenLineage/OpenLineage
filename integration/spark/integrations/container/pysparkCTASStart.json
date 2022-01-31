@@ -4,7 +4,25 @@
     "namespace" : "testCreateAsSelectAndLoad",
     "name" : "open_lineage_integration_cta_s_load.execute_create_hive_table_as_select_command"
   },
-  "inputs" : [ ],
+  "inputs" : [ {
+    "namespace" : "file",
+    "name" : "/tmp/ctas_load/temp",
+    "facets" : {
+      "dataSource" : {
+        "name" : "file",
+        "uri" : "file"
+      },
+      "schema" : {
+        "fields" : [ {
+          "name" : "a",
+          "type" : "long"
+        }, {
+          "name" : "b",
+          "type" : "long"
+        } ]
+      }
+    }
+  } ],
   "outputs" : [ {
     "namespace" : "file",
     "name" : "/tmp/ctas_load/tbl1",
