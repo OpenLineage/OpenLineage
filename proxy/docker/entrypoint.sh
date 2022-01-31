@@ -25,4 +25,4 @@ fi
 JAVA_OPTS="${JAVA_OPTS} -Duser.timezone=UTC -Dlog4j2.formatMsgNoLookups=true"
 
 # Start http server with java options (if any) and configuration
-java "${JAVA_OPTS}" -jar openlineage-proxy-*.jar server "${OPENLINEAGE_PROXY_CONFIG}"
+java ${JAVA_OPTS} -jar openlineage-proxy-*.jar server ${OPENLINEAGE_PROXY_CONFIG}
