@@ -32,13 +32,22 @@ class SnowflakeExtractor(PostgresExtractor):
         return 'snowflake'
 
     def _get_database(self) -> str:
-        return self.operator.get_db_hook()._get_conn_params()['database']
+        if hasattr(self.operator, 'get_db_hook'):
+            return self.operator.get_db_hook()._get_conn_params()['database']
+        else:
+            return self.operator.get_hook()._get_conn_params()['database']
 
     def _get_authority(self) -> str:
-        return self.operator.get_db_hook()._get_conn_params()['account']
+        if hasattr(self.operator, 'get_db_hook'):
+            return self.operator.get_db_hook()._get_conn_params()['account']
+        else:
+            return self.operator.get_hook()._get_conn_params()['account']
 
     def _get_db_hook(self):
         return self.operator.get_db_hook()
+
+    def _get_hook(self):
+        return self.operator.get_hook()
 
     def _conn_id(self):
         return self.operator.snowflake_conn_id
