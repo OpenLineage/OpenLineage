@@ -6,7 +6,6 @@ import io.openlineage.client.OpenLineage.OutputDataset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.UUID;
 import lombok.Builder;
 import lombok.Builder.Default;
@@ -53,12 +52,6 @@ public class OpenLineageContext {
    * model objects
    */
   @NonNull OpenLineage openLineage;
-
-  /**
-   * A non-null, but potentially empty, list of {@link
-   * io.openlineage.spark.agent.facets.EnvironmentFacet } to be used to get environment
-   */
-  @NonNull Properties properties;
 
   /**
    * A non-null, but potentially empty, list of {@link LogicalPlan} visitors that can extract {@link

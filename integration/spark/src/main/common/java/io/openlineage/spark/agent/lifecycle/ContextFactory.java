@@ -7,7 +7,6 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
 import java.util.Optional;
-import java.util.Properties;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.execution.QueryExecution;
@@ -17,7 +16,6 @@ public class ContextFactory {
 
   public final EventEmitter openLineageEventEmitter;
   private final OpenLineageEventHandlerFactory handlerFactory;
-  public static Properties properties;
 
   public ContextFactory(EventEmitter openLineageEventEmitter) {
     this.openLineageEventEmitter = openLineageEventEmitter;
@@ -47,7 +45,6 @@ public class ContextFactory {
             .sparkContext(sparkSession.sparkContext())
             .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
             .queryExecution(queryExecution)
-            .properties(properties)
             .build();
     OpenLineageRunEventBuilder runEventBuilder =
         new OpenLineageRunEventBuilder(olContext, handlerFactory);

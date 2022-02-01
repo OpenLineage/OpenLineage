@@ -1,5 +1,7 @@
 package io.openlineage.spark.agent.facets.builder;
 
+import com.databricks.backend.daemon.dbutils.MountInfo;
+import com.databricks.dbutils_v1.DbfsUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import io.openlineage.spark.agent.facets.EnvironmentFacet;
@@ -12,24 +14,21 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.BiConsumer;
-import org.apache.hc.client5.http.classic.methods.HttpPost;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpResponse;
-import org.apache.hc.client5.http.impl.classic.HttpClients;
-import org.apache.hc.core5.http.io.entity.EntityUtils;
-import org.apache.hc.core5.http.io.entity.StringEntity;
-import org.apache.spark.scheduler.SparkListenerEvent;
+import org.apache.spark.scheduler.SparkListenerJobStart;
+import scala.collection.JavaConversions;
 
 /**
  * {@link CustomFacetBuilder} that generates a {@link EnvironmentFacet} when using OpenLineage on
  * Databricks.
  */
 public class DatabricksEnvironmentFacetBuilder
-    extends CustomFacetBuilder<SparkListenerEvent, EnvironmentFacet> {
+    extends CustomFacetBuilder<SparkListenerJobStart, EnvironmentFacet> {
   private static HashMap<String, Object> dbProperties;
   private static final org.slf4j.Logger log =
       org.slf4j.LoggerFactory.getLogger(DatabricksEnvironmentFacetBuilder.class);
   private final OpenLineageContext openLineageContext;
+  private Class dbutilsClass;
+  private DbfsUtils dbutils;
 
   public DatabricksEnvironmentFacetBuilder(OpenLineageContext openLineageContext) {
     this.openLineageContext = openLineageContext;
@@ -41,21 +40,25 @@ public class DatabricksEnvironmentFacetBuilder
 
   @Override
   protected void build(
-      SparkListenerEvent event, BiConsumer<String, ? super EnvironmentFacet> consumer) {
+      SparkListenerJobStart event, BiConsumer<String, ? super EnvironmentFacet> consumer) {
     consumer.accept(
         "environment-properties",
         new EnvironmentFacet(getDatabricksEnvironmentalAttributes(event)));
   }
 
+  private static <T> List<T> jsonArrayToObjectList(String json, Class<T> tClass)
+      throws IOException {
+    ObjectMapper mapper = new ObjectMapper();
+    CollectionType listType =
+        mapper.getTypeFactory().constructCollectionType(ArrayList.class, tClass);
+    List<T> ts = mapper.readValue(json, listType);
+    return ts;
+  }
+
   private HashMap<String, Object> getDatabricksEnvironmentalAttributes(
-      SparkListenerEvent jobStart) {
+      SparkListenerJobStart jobStart) {
     dbProperties = new HashMap<>();
-    String urlString =
-        "http://"
-            + openLineageContext
-                .getProperties()
-                .getProperty("spark.databricks.clusterUsageTags.driverInstancePrivateIp")
-            + ":7070/?type=%22com.databricks.backend.daemon.data.common.DataMessages$GetMountsV2%22";
+    // These are useful properties to extract if they are available
 
     List<String> dbPropertiesKeys =
         Arrays.asList(
@@ -69,46 +72,35 @@ public class DatabricksEnvironmentFacetBuilder
             "userId",
             "spark.databricks.clusterUsageTags.clusterName",
             "spark.databricks.clusterUsageTags.azureSubscriptionId");
-
     dbPropertiesKeys.stream()
         .forEach(
             (p) -> {
-              dbProperties.put(p, openLineageContext.getProperties().getProperty(p));
+              dbProperties.put(p, jobStart.properties().getProperty(p));
             });
 
-    dbProperties.put("mountPoints", getDatabricksMountpoints(urlString));
+    /**
+     * Azure Databricks makes available a dbutils mount point to list aliased paths to cloud
+     * storage. However, that dbutils object is not available inside a spark listener. We must
+     * access it via reflection.
+     */
+    try {
+      dbutilsClass = Class.forName("com.databricks.dbutils_v1.impl.DbfsUtilsImpl");
+      dbutils = (DbfsUtils) dbutilsClass.getDeclaredConstructor().newInstance();
+      dbProperties.put("mountPoints", getDatabricksMountpoints(dbutils));
+    } catch (Exception e) {
+      log.warn("Failed to load dbutils in OpenLineageListener");
+      dbProperties.put("mountPoints", new ArrayList<DatabricksMountpoint>());
+    }
 
     return dbProperties;
   }
 
-  private static List<DatabricksMountpoint> getDatabricksMountpoints(String urlString) {
+  private static List<DatabricksMountpoint> getDatabricksMountpoints(DbfsUtils dbutils) {
     List<DatabricksMountpoint> mountpoints = new ArrayList<>();
-    try {
-      String result = "";
-      HttpPost post = new HttpPost(urlString);
-      post.addHeader("Sessionid", "1234");
-      post.addHeader("Auth", "{}");
-      post.addHeader("authType", "com.databricks.backend.daemon.data.common.DbfsAuth");
-
-      post.setEntity(new StringEntity("{}"));
-
-      CloseableHttpClient httpClient = HttpClients.createDefault();
-      CloseableHttpResponse response = httpClient.execute(post);
-
-      result = EntityUtils.toString(response.getEntity());
-
-      mountpoints = jsonArrayToObjectList(result, DatabricksMountpoint.class);
-    } catch (Exception e) {
-      log.warn(e.getMessage());
+    List<MountInfo> mountsList = JavaConversions.seqAsJavaList(dbutils.mounts());
+    for (MountInfo mount : mountsList) {
+      mountpoints.add(new DatabricksMountpoint(mount.mountPoint(), mount.source()));
     }
     return mountpoints;
-  }
-
-  public static <T> List<T> jsonArrayToObjectList(String json, Class<T> tClass) throws IOException {
-    ObjectMapper mapper = new ObjectMapper();
-    CollectionType listType =
-        mapper.getTypeFactory().constructCollectionType(ArrayList.class, tClass);
-    List<T> ts = mapper.readValue(json, listType);
-    return ts;
   }
 }
