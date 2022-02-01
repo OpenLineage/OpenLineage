@@ -456,6 +456,7 @@ public class SparkReadWriteIntegTest {
 
     producer.flush();
 
+    producer.close();
     Dataset<Row> kafkaDf =
         spark
             .read()
