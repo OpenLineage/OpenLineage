@@ -307,7 +307,7 @@ jobs:
             - ./dist/*.whl
             - ./dist/*.tar.gz
 
-  integration-test-integration-airflow-1:
+  integration-test-integration-airflow-1-10:
     working_directory: ~/openlineage/integration/
     machine: true
     steps:
@@ -447,7 +447,7 @@ workflows:
             - unit-test-integration-common
       - unit-test-integration-airflow-1
       - unit-test-integration-airflow-2
-      - integration-test-integration-airflow-1:
+      - integration-test-integration-airflow-1-10:
           context: integration-tests
           requires:
             - unit-test-integration-airflow-1

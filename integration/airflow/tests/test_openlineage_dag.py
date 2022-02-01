@@ -422,7 +422,7 @@ def test_openlineage_dag_with_extractor(
 
     # Add the dummy extractor to the list for the task above
     openlineage.airflow.dag.extractor_manager.\
-        extractor_mapper.extractors[TestFixtureDummyOperator.__name__] = \
+        task_to_extractor.extractors[TestFixtureDummyOperator.__name__] = \
         TestFixtureDummyExtractor
 
     dag_id = 'test_openlineage_dag_with_extractor'
@@ -536,7 +536,7 @@ def test_openlineage_dag_with_extract_on_complete(
 
     # Add the dummy extractor to the list for the task above
     openlineage.airflow.dag.extractor_manager.extractors.clear()
-    openlineage.airflow.dag.extractor_manager.extractor_mapper.\
+    openlineage.airflow.dag.extractor_manager.task_to_extractor.\
         extractors[TestFixtureDummyOperator.__name__] = \
         TestFixtureDummyExtractorOnComplete
 
@@ -652,7 +652,7 @@ def test_openlineage_dag_adds_custom_facets(
 ):
     openlineage.airflow.dag.extractor_manager.extractors.clear()
     openlineage.airflow.dag.extractor_manager.\
-        extractor_mapper.extractors.pop('TestFixtureDummyOperator', None)
+        task_to_extractor.extractors.pop('TestFixtureDummyOperator', None)
 
     dag = DAG(
         DAG_ID,

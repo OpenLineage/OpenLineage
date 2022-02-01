@@ -117,7 +117,7 @@ class DAG(AIRFLOW_DAG):
         kwargs["user_defined_macros"] = macros
         if kwargs.__contains__("lineage_custom_extractors"):
             for operator, extractor in kwargs['lineage_custom_extractors'].items():
-                extractor_manager.extractor_mapper.add_extractor(operator, extractor)
+                extractor_manager.add_extractor(operator, extractor)
             del kwargs['lineage_custom_extractors']
 
         self.has_lineage_backend = has_lineage_backend_setup()
@@ -125,13 +125,6 @@ class DAG(AIRFLOW_DAG):
 
     def add_task(self, task):
         super().add_task(task)
-
-        # Purpose: some extractors, called patchers need to hook up to internal components of
-        # operator to extract necessary data. The hooking up is done on instantiation
-        # of extractor via patch() method. That's why extractor is created here.
-        patcher = extractor_manager.extractor_mapper.get_patcher_class(task.__class__)
-        if patcher:
-            extractor_manager.extractors[task.task_id] = patcher(task)
 
     def create_dagrun(self, *args, **kwargs):
         # run Airflow's create_dagrun() first
@@ -162,7 +155,7 @@ class DAG(AIRFLOW_DAG):
         for task_id, task in self.task_dict.items():
             t = self._now_ms()
             try:
-                task_metadata = extractor_manager.extract_metadata(dagrun, task, complete=False)
+                task_metadata = extractor_manager.extract_metadata(dagrun, task)
 
                 job_name = openlineage_job_name(task.dag_id, task.task_id)
                 run_id = new_lineage_run_id(dagrun.run_id, task_id)

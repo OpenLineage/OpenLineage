@@ -17,12 +17,12 @@ if TYPE_CHECKING:
 
 
 @attr.s(frozen=True)
-class RunData:
+class ActiveRun:
     run_id: str = attr.ib()
     task: "BaseOperator" = attr.ib()
 
 
-class RunDataHolder:
+class ActiveRunManager:
     """Class that stores run data - run_id and task in-memory. This is needed because Airflow
     does not always pass all runtime info to on_task_instance_success and
     on_task_instance_failed that is needed to emit events. This is not a big problem since
@@ -32,10 +32,10 @@ class RunDataHolder:
     def __init__(self):
         self.run_data = {}
 
-    def set_run_data(self, task_instance: "TaskInstance", run_id: str):
-        self.run_data[self._pk(task_instance)] = RunData(run_id, task_instance.task)
+    def set_active_run(self, task_instance: "TaskInstance", run_id: str):
+        self.run_data[self._pk(task_instance)] = ActiveRun(run_id, task_instance.task)
 
-    def get_run_data(self, task_instance: "TaskInstance") -> Optional[RunData]:
+    def get_active_run(self, task_instance: "TaskInstance") -> Optional[ActiveRun]:
         pk = self._pk(task_instance)
         if pk not in self.run_data:
             return None
@@ -45,13 +45,13 @@ class RunDataHolder:
         return ti.dag_id + ti.task_id + ti.run_id
 
 
-run_data_holder = RunDataHolder()
+run_data_holder = ActiveRunManager()
 extractor_manager = ExtractorManager()
 adapter = OpenLineageAdapter()
 log = logging.getLogger('airflow')
 
 
-def run_thread(target: Callable, kwargs=None):
+def execute_in_thread(target: Callable, kwargs=None):
     if kwargs is None:
         kwargs = {}
     thread = threading.Thread(
@@ -77,10 +77,10 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
     dag = task_instance.task.dag
 
     run_id = str(uuid.uuid4())
-    run_data_holder.set_run_data(task_instance, run_id)
+    run_data_holder.set_active_run(task_instance, run_id)
 
     def on_running():
-        task_metadata = extractor_manager.extract_metadata(dagrun, task, complete=False)
+        task_metadata = extractor_manager.extract_metadata(dagrun, task)
 
         adapter.start_task(
             run_id=run_id,
@@ -97,12 +97,12 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
                 **get_custom_facets(task_instance, dagrun.external_trigger)
             }
         )
-    run_thread(on_running)
+    execute_in_thread(on_running)
 
 
 @hookimpl
 def on_task_instance_success(previous_state, task_instance: "TaskInstance", session):
-    run_data = run_data_holder.get_run_data(task_instance)
+    run_data = run_data_holder.get_active_run(task_instance)
 
     dagrun = task_instance.dag_run
     task = run_data.task
@@ -117,12 +117,12 @@ def on_task_instance_success(previous_state, task_instance: "TaskInstance", sess
             end_time=DagUtils.to_iso_8601(task_instance.end_date),
             task=task_metadata
         )
-    run_thread(on_success)
+    execute_in_thread(on_success)
 
 
 @hookimpl
 def on_task_instance_failed(previous_state, task_instance: "TaskInstance", session):
-    run_data = run_data_holder.get_run_data(task_instance)
+    run_data = run_data_holder.get_active_run(task_instance)
 
     dagrun = task_instance.dag_run
     task = run_data.task
@@ -138,4 +138,4 @@ def on_task_instance_failed(previous_state, task_instance: "TaskInstance", sessi
             end_time=DagUtils.to_iso_8601(task_instance.end_date),
             task=task_metadata
         )
-    run_thread(on_failure)
+    execute_in_thread(on_failure)

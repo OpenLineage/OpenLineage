@@ -50,6 +50,9 @@ This means you don't have to do anything besides configuring it, which is descri
 
 ### Airflow 2.1 - 2.2
 
+This method has limited support: 
+it does not support tracking failed jobs, and job starts are registered only when job ends.
+
 Set your LineageBackend in your [airflow.cfg](https://airflow.apache.org/docs/apache-airflow/stable/howto/set-config.html) or via environmental variable `AIRFLOW__LINEAGE__BACKEND`
 to 
 ```
@@ -60,9 +63,6 @@ In contrast to integration via subclassing `DAG`, `LineageBackend` based approac
 for task on each task completion.
 
 OpenLineageBackend does not take into account manually configured inlets and outlets. 
-
-This method has some caveats: 
-it does not support tracking failed jobs, and job starts are registered only when job ends.
 
 ### Airflow 1.10+
 

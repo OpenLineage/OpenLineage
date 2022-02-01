@@ -25,17 +25,6 @@ _extractors = list(
     )
 )
 
-_patchers = list(
-    filter(
-        lambda t: t is not None,
-        [
-            try_import_from_string(
-                'openlineage.airflow.extractors.great_expectations_extractor.GreatExpectationsExtractor'  # noqa: E501
-            )
-        ],
-    )
-)
-
 
 class Extractors:
     """
@@ -47,15 +36,10 @@ class Extractors:
     def __init__(self):
         # Do not expose extractors relying on external dependencies that are not installed
         self.extractors = {}
-        self.patchers = {}
 
         for extractor in _extractors:
             for operator_class in extractor.get_operator_classnames():
                 self.extractors[operator_class] = extractor
-
-        for patcher in _patchers:
-            for operator_class in patcher.get_operator_classnames():
-                self.patchers[operator_class] = patcher
 
         # Adding operator: extractor pairs registered via environmental variable in pattern
         # OPENLINEAGE_EXTRACTOR_<operator>=<path.to.ExtractorClass>
@@ -73,10 +57,4 @@ class Extractors:
         name = clazz.__name__
         if name in self.extractors:
             return self.extractors[name]
-        return None
-
-    def get_patcher_class(self, clazz: Type) -> Optional[Type[BaseExtractor]]:
-        name = clazz.__name__
-        if name in self.patchers:
-            return self.patchers[name]
         return None
