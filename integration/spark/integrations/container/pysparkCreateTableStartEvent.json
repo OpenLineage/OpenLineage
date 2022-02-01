@@ -25,6 +25,9 @@
               "type": "string"
             }
           ]
+        },
+        "tableStateChange" : {
+          "stateChange" : "create"
         }
       }
     }

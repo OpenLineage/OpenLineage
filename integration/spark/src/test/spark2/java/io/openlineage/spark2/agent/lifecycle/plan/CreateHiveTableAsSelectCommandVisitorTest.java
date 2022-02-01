@@ -1,10 +1,13 @@
 package io.openlineage.spark2.agent.lifecycle.plan;
 
+import static io.openlineage.spark.agent.facets.TableStateChangeFacet.StateChange.CREATE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.client.OpenLineageClient;
+import io.openlineage.spark.agent.facets.TableStateChangeFacet;
 import io.openlineage.spark.agent.lifecycle.plan.CreateHiveTableAsSelectCommandVisitor;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -113,9 +116,14 @@ class CreateHiveTableAsSelectCommandVisitorTest {
 
     assertThat(visitor.isDefinedAt(command)).isTrue();
     List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
-    assertThat(datasets)
-        .singleElement()
-        .hasFieldOrPropertyWithValue("name", "directory")
-        .hasFieldOrPropertyWithValue("namespace", "s3://bucket");
+
+    assertEquals(1, datasets.size());
+    OpenLineage.OutputDataset outputDataset = datasets.get(0);
+
+    assertEquals(
+        new TableStateChangeFacet(CREATE),
+        outputDataset.getFacets().getAdditionalProperties().get("tableStateChange"));
+    assertEquals("directory", outputDataset.getName());
+    assertEquals("s3://bucket", outputDataset.getNamespace());
   }
 }

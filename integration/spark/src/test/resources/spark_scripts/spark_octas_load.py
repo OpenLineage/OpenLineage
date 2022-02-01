@@ -17,6 +17,6 @@ df = spark.createDataFrame([
     {'a': 3, 'b': 4}
 ])
 
-df.createOrReplaceTempView('temp')
+df.write.saveAsTable('temp')
 
 spark.sql("CREATE TABLE tbl2 STORED AS PARQUET LOCATION '/tmp/ctas_load/tbl2' AS SELECT a, b FROM temp")

@@ -18,7 +18,7 @@ df = spark.createDataFrame([
     {'a': 3, 'b': 4}
 ])
 
-df.createOrReplaceTempView('temp')
+df.write.saveAsTable('temp')
 
 spark.sql("CREATE TABLE tbl1 USING hive LOCATION '/tmp/ctas_load/tbl1' AS SELECT a, b FROM temp")
 
