@@ -12,6 +12,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.UUID;
+import org.apache.http.client.utils.URIBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,7 +51,7 @@ public class OpenLineageClientTest {
   @Test
   public void testClientBuilder_default() {
     final OpenLineageClient client = OpenLineageClient.builder().build();
-    assertThat(client.http.baseUrl).isEqualTo(DEFAULT_OPENLINEAGE_URL);
+    assertThat(client.http.url).isEqualTo(DEFAULT_OPENLINEAGE_URL);
     assertThat(client.http.apiKey).isNull();
   }
 
@@ -58,7 +59,19 @@ public class OpenLineageClientTest {
   public void testClientBuilder_overrideUrl() throws Exception {
     final URL url = new URL("http://test.com:8080");
     final OpenLineageClient client = OpenLineageClient.builder().url(url).build();
-    assertThat(client.http.baseUrl).isEqualTo(url);
+    assertThat(client.http.url).isEqualTo(url);
+  }
+
+  @Test
+  public void testClientBuilder_overrideUrlWithQueryParams() throws Exception {
+    final URI uri =
+        new URIBuilder("http://localhost:5000")
+            .addParameter("param0", "value0")
+            .addParameter("param1", "value2")
+            .build();
+    final URL urlWithQueryParams = uri.toURL();
+    final OpenLineageClient client = OpenLineageClient.builder().url(uri.toURL()).build();
+    assertThat(client.http.url).isEqualTo(urlWithQueryParams);
   }
 
   @Test

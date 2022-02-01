@@ -49,3 +49,14 @@ String apiKey = "f38d2189-c603-4b46-bdea-e573a3b5a7d5";
 
 OpenLineageClient client = Clients.newClient(url, apiKey);
 ```
+
+To configure the client with query params appended on each HTTP request, use:
+
+```java
+URI uri = new URIBuilder("http://localhost:5000")
+  .addParameter("param0", "value0")
+  .addParameter("param1", "value2")
+  .build();
+
+OpenLineageClient client = Clients.newClient(uri.toURL());
+```

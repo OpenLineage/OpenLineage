@@ -48,19 +48,19 @@ class OpenLineageHttp implements Closeable {
   private static final String BASE_PATH = "/api/v1";
 
   final HttpClient http;
-  final URL baseUrl;
+  final URL url;
   @Nullable final String apiKey;
 
   OpenLineageHttp(
-      @NonNull final HttpClient http, @NonNull final URL baseUrl, @Nullable final String apiKey) {
+      @NonNull final HttpClient http, @NonNull final URL url, @Nullable final String apiKey) {
     this.http = http;
-    this.baseUrl = baseUrl;
+    this.url = url;
     this.apiKey = apiKey;
   }
 
-  static OpenLineageHttp create(@NonNull final URL baseUrl, @Nullable final String apiKey) {
+  static OpenLineageHttp create(@NonNull final URL url, @Nullable final String apiKey) {
     final CloseableHttpClient http = HttpClientBuilder.create().build();
-    return new OpenLineageHttp(http, baseUrl, apiKey);
+    return new OpenLineageHttp(http, url, apiKey);
   }
 
   String post(@NonNull URL url, @NonNull String json) {
@@ -96,7 +96,7 @@ class OpenLineageHttp implements Closeable {
   URL url(String path, Map<String, Object> queryParams) {
     try {
       final URIBuilder builder =
-          new URIBuilder(baseUrl.toURI()).setPath(baseUrl.getPath() + BASE_PATH + path);
+          new URIBuilder(url.toURI()).setPath(url.getPath() + BASE_PATH + path);
       queryParams.forEach((name, value) -> builder.addParameter(name, String.valueOf(value)));
       return builder.build().toURL();
     } catch (URISyntaxException | MalformedURLException e) {
