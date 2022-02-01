@@ -13,6 +13,7 @@ import os
 import pendulum
 import datetime
 from airflow.models import Connection
+from pkg_resources import parse_version
 
 from openlineage.airflow.utils import (
     url_to_https,
@@ -85,3 +86,17 @@ def test_pendulum_to_iso_8601():
 
     tz = pendulum.timezone("America/Los_Angeles")
     assert "2021-08-05T19:05:01.000000Z" == DagUtils.to_iso_8601(tz.convert(dt))
+
+
+def test_parse_version():
+    assert parse_version("2.3.0") >= parse_version("2.3.0.dev0")
+    assert parse_version("2.3.0.dev0") >= parse_version("2.3.0.dev0")
+    assert parse_version("2.3.0.beta1") >= parse_version("2.3.0.dev0")
+    assert parse_version("2.3.1") >= parse_version("2.3.0.dev0")
+    assert parse_version("2.4.0") >= parse_version("2.3.0.dev0")
+    assert parse_version("3.0.0") >= parse_version("2.3.0.dev0")
+    assert parse_version("2.2.0") < parse_version("2.3.0.dev0")
+    assert parse_version("2.1.3") < parse_version("2.3.0.dev0")
+    assert parse_version("2.2.4") < parse_version("2.3.0.dev0")
+    assert parse_version("1.10.15") < parse_version("2.3.0.dev0")
+    assert parse_version("2.2.4.dev0") < parse_version("2.3.0.dev0")

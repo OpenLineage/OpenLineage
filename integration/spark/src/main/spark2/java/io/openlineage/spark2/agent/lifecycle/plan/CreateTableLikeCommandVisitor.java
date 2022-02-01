@@ -1,6 +1,10 @@
 package io.openlineage.spark2.agent.lifecycle.plan;
 
+import static java.util.Collections.singletonMap;
+
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.facets.TableStateChangeFacet;
+import io.openlineage.spark.agent.facets.TableStateChangeFacet.StateChange;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -51,7 +55,13 @@ public class CreateTableLikeCommandVisitor
               }
 
               DatasetIdentifier di = PathUtils.fromURI(location, "file");
-              return Collections.singletonList(outputDataset().getDataset(di, source.schema()));
+              return Collections.singletonList(
+                  outputDataset()
+                      .getDataset(
+                          di,
+                          source.schema(),
+                          singletonMap(
+                              "tableStateChange", new TableStateChangeFacet(StateChange.CREATE))));
             })
         .orElse(Collections.emptyList());
   }

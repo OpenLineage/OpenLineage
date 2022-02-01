@@ -1,11 +1,14 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.facets.TableStateChangeFacet;
+import io.openlineage.spark.agent.facets.TableStateChangeFacet.StateChange;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.hive.execution.InsertIntoHiveTable;
@@ -37,8 +40,13 @@ public class InsertIntoHiveTableVisitor
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
     InsertIntoHiveTable cmd = (InsertIntoHiveTable) x;
     CatalogTable table = cmd.table();
+    Map<String, OpenLineage.DefaultDatasetFacet> facets =
+        cmd.overwrite()
+            ? Collections.singletonMap(
+                "tableStateChange", new TableStateChangeFacet(StateChange.OVERWRITE))
+            : Collections.emptyMap();
 
     return Collections.singletonList(
-        outputDataset().getDataset(PathUtils.fromCatalogTable(table), table.schema()));
+        outputDataset().getDataset(PathUtils.fromCatalogTable(table), table.schema(), facets));
   }
 }

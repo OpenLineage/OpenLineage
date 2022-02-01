@@ -1,5 +1,4 @@
 import logging
-import os
 import threading
 import uuid
 import attr
@@ -24,6 +23,12 @@ class RunData:
 
 
 class RunDataHolder:
+    """Class that stores run data - run_id and task in-memory. This is needed because Airflow
+    does not always pass all runtime info to on_task_instance_success and
+    on_task_instance_failed that is needed to emit events. This is not a big problem since
+    we're only running on worker - in separate process that is always spawned (or forked) on
+    execution, just like old PHP runtime model.
+    """
     def __init__(self):
         self.run_data = {}
 
@@ -57,7 +62,7 @@ def run_thread(target: Callable, kwargs=None):
     thread.start()
     # Join, but ignore checking if thread stopped. If it did, then we shoudn't do anything.
     # This basically gives this thread 2 seconds to complete work, then it can be killed,
-    # as daemon=True. We don't want to deadlock this runner if our code hangs.
+    # as daemon=True. We don't want to deadlock Airflow if our code hangs.
     thread.join(timeout=2)
 
 

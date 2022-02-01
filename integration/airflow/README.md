@@ -41,7 +41,28 @@ To install from source, run:
 $ python3 setup.py install
 ```
 
-## Usage
+## Setup
+
+### Airflow 2.3+
+
+Integration automatically registers itself for Airflow 2.3 if it's installed on Airflow worker's python.
+This means you don't have to do anything besides configuring it, which is described in Configuration section.
+
+### Airflow 2.1 - 2.2
+
+Set your LineageBackend in your [airflow.cfg](https://airflow.apache.org/docs/apache-airflow/stable/howto/set-config.html) or via environmental variable `AIRFLOW__LINEAGE__BACKEND`
+to 
+```
+openlineage.lineage_backend.OpenLineageBackend
+```
+
+In contrast to integration via subclassing `DAG`, `LineageBackend` based approach collects all metadata 
+for task on each task completion.
+
+OpenLineageBackend does not take into account manually configured inlets and outlets. 
+
+This method has some caveats: 
+it does not support tracking failed jobs, and job starts are registered only when job ends.
 
 ### Airflow 1.10+
 
@@ -59,24 +80,7 @@ When enabled, the library will:
 3. Collect task run-level metadata (execution time, state, parameters, etc)
 4. On DAG **complete**, also mark the task as _complete_ in OpenLineage
 
-### Airflow 2.1+ (*experimental*)
-
-Set your LineageBackend in your [airflow.cfg](https://airflow.apache.org/docs/apache-airflow/stable/howto/set-config.html) or via environmental variable `AIRFLOW__LINEAGE__BACKEND`
-to 
-```
-openlineage.lineage_backend.OpenLineageBackend
-```
-
-In contrast to integration via subclassing `DAG`, `LineageBackend` based approach collects all metadata 
-for task on each task completion.
-
-OpenLineageBackend does not take into account manually configured inlets and outlets. 
-
-Support for Airflow 2.1+ is currently experimental, and has some caveats: 
-it does not support tracking failed jobs, and job starts are registered only when job ends.
-
 ## Configuration
-
 
 ### `HTTP` Backend Environment Variables
 

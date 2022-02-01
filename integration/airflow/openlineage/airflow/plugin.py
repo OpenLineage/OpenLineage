@@ -10,6 +10,7 @@ if parse_version(AIRFLOW_VERSION) < parse_version("2.3.0.dev0"):
 else:
     from openlineage.airflow import listener
 
+    # Provide entrypoint airflow plugin that registers listener module
     class OpenLineagePlugin(AirflowPlugin):
         name = "OpenLineagePlugin"
         listeners = [listener]

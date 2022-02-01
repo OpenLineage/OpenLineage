@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.5.1...HEAD)
+### Added
+* Airflow integration uses new TaskInstance listener API for Airflow 2.3+ [@mobuchowski](https://github.com/mobuchowski)
 
 ## [0.5.1](https://github.com/OpenLineage/OpenLineage/compare/0.4.0...0.5.1)
 ### Added
