@@ -11,7 +11,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 /** Unit tests for {@link OpenLineageHttp}. */
-@ExtendWith(MockitoExtension.class)
 public class OpenLineageHttpTest {
   @Test
   public void testHttp_overrideUrlWithQueryParams() throws Exception {
