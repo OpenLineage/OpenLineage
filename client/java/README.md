@@ -58,5 +58,6 @@ URI uri = new URIBuilder("http://localhost:5000")
   .addParameter("param1", "value2")
   .build();
 
+// OpenLineage events will be emitted to http://localhost:5000/api/v1/lineage?param0=value0&param1=value2
 OpenLineageClient client = Clients.newClient(uri.toURL());
 ```
