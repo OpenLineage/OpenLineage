@@ -30,7 +30,6 @@ public class OpenLineageHttpTest {
             .addParameter("param1", "value1")
             .build();
     final URL urlWithQueryParams = uri.toURL();
-
     final OpenLineageHttp http = OpenLineageHttp.create(urlWithQueryParams, null);
 
     // URL with query params combined
