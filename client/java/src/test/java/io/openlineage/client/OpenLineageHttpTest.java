@@ -23,7 +23,7 @@ public class OpenLineageHttpTest {
     // URL with query params appended on each HTTP request
     final URI uriWithQueryParams =
         new URIBuilder("http://localhost:5000")
-            .addParameter("paramq", "value0")
+            .addParameter("param0", "value0")
             .addParameter("param1", "value1")
             .build();
     final URL urlWithQueryParams = uriWithQueryParams.toURL();
