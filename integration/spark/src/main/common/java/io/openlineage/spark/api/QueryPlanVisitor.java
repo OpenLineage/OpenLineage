@@ -10,6 +10,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.NonNull;
+import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -55,6 +56,8 @@ public abstract class QueryPlanVisitor<T extends LogicalPlan, D extends OpenLine
     extends AbstractPartialFunction<LogicalPlan, List<D>> {
   @NonNull protected final OpenLineageContext context;
 
+  protected SparkListenerEvent triggeringEvent;
+
   protected QueryPlanVisitor(@NonNull OpenLineageContext context) {
     this.context = context;
   }
@@ -99,6 +102,10 @@ public abstract class QueryPlanVisitor<T extends LogicalPlan, D extends OpenLine
       return isAssignable;
     }
     return false;
+  }
+
+  public void setTriggeringEvent(SparkListenerEvent triggeringEvent) {
+    this.triggeringEvent = triggeringEvent;
   }
 
   @Override
