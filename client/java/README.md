@@ -53,11 +53,17 @@ OpenLineageClient client = Clients.newClient(url, apiKey);
 To configure the client with query params appended on each HTTP request, use:
 
 ```java
-URI uri = new URIBuilder("http://localhost:5000")
+URI uri = new URIBuilder("http://localhost:8080")
   .addParameter("param0", "value0")
   .addParameter("param1", "value2")
   .build();
 
-// OpenLineage events will be emitted to http://localhost:5000/api/v1/lineage?param0=value0&param1=value2
+// Connect to http://localhost:8080
 OpenLineageClient client = Clients.newClient(uri.toURL());
+
+// Define a simple OpenLineage START or COMPLETE event
+OpenLineage.Run startOrCompleteRun = ...
+
+// Emit OpenLineage event to http://localhost:8080/api/v1/lineage?param0=value0&param1=value2
+client.emit(startOrCompleteRun);
 ```
