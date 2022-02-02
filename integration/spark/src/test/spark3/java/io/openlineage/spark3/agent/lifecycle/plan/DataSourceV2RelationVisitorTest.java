@@ -20,7 +20,7 @@ public class DataSourceV2RelationVisitorTest {
   OpenLineageContext openLineageContext = mock(OpenLineageContext.class);
   DatasetFactory<OpenLineage.OutputDataset> datasetFactory = mock(DatasetFactory.class);
   DataSourceV2RelationVisitor visitor =
-      new DataSourceV2RelationVisitor(openLineageContext, datasetFactory);
+      new DataSourceV2RelationVisitor(openLineageContext, datasetFactory, false);
   LogicalPlan logicalPlan = mock(DataSourceV2Relation.class);
 
   @Test

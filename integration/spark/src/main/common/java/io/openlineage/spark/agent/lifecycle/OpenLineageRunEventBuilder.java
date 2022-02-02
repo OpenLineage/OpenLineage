@@ -36,6 +36,7 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
+import io.openlineage.spark.api.QueryPlanVisitor;
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
@@ -59,6 +60,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.scheduler.ActiveJob;
 import org.apache.spark.scheduler.JobFailed;
+import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.scheduler.SparkListenerStageCompleted;
@@ -213,7 +215,7 @@ class OpenLineageRunEventBuilder {
 
     nodes.addAll(Rdds.flattenRDDs(rdd));
 
-    return populateRun(parentRunFacet, runEventBuilder, jobBuilder, nodes);
+    return populateRun(parentRunFacet, runEventBuilder, jobBuilder, event, nodes);
   }
 
   RunEvent buildRun(
@@ -229,7 +231,7 @@ class OpenLineageRunEventBuilder {
 
     nodes.addAll(Rdds.flattenRDDs(rdd));
 
-    return populateRun(parentRunFacet, runEventBuilder, jobBuilder, nodes);
+    return populateRun(parentRunFacet, runEventBuilder, jobBuilder, event, nodes);
   }
 
   RunEvent buildRun(
@@ -282,7 +284,7 @@ class OpenLineageRunEventBuilder {
       Optional<ParentRunFacet> parentRunFacet,
       RunEventBuilder runEventBuilder,
       JobBuilder jobBuilder,
-      Object event,
+      SparkListenerEvent event,
       Optional<ActiveJob> job) {
     List<Object> nodes = new ArrayList<>();
     nodes.add(event);
@@ -292,13 +294,14 @@ class OpenLineageRunEventBuilder {
           nodes.addAll(Rdds.flattenRDDs(j.finalStage().rdd()));
         });
 
-    return populateRun(parentRunFacet, runEventBuilder, jobBuilder, nodes);
+    return populateRun(parentRunFacet, runEventBuilder, jobBuilder, event, nodes);
   }
 
   private RunEvent populateRun(
       Optional<ParentRunFacet> parentRunFacet,
       RunEventBuilder runEventBuilder,
       JobBuilder jobBuilder,
+      SparkListenerEvent sparkListenerEvent,
       List<Object> nodes) {
     OpenLineage openLineage = openLineageContext.getOpenLineage();
 
@@ -306,8 +309,8 @@ class OpenLineageRunEventBuilder {
     parentRunFacet.ifPresent(runFacetsBuilder::parent);
     OpenLineage.JobFacets jobFacets =
         buildFacets(nodes, jobFacetBuilders, openLineage.newJobFacetsBuilder().build());
-    List<InputDataset> inputDatasets = buildInputDatasets(nodes);
-    List<OutputDataset> outputDatasets = buildOutputDatasets(nodes);
+    List<InputDataset> inputDatasets = buildInputDatasets(nodes, sparkListenerEvent);
+    List<OutputDataset> outputDatasets = buildOutputDatasets(nodes, sparkListenerEvent);
     openLineageContext
         .getQueryExecution()
         .flatMap(qe -> unknownEntryFacetListener.build(qe.optimizedPlan()))
@@ -324,7 +327,8 @@ class OpenLineageRunEventBuilder {
         .build();
   }
 
-  private List<OpenLineage.InputDataset> buildInputDatasets(List<Object> nodes) {
+  private List<OpenLineage.InputDataset> buildInputDatasets(
+      List<Object> nodes, SparkListenerEvent sparkListenerEvent) {
     openLineageContext
         .getQueryExecution()
         .ifPresent(
@@ -339,6 +343,10 @@ class OpenLineageRunEventBuilder {
         openLineageContext.getQueryExecution(),
         inputDatasetQueryPlanVisitors);
 
+    inputDatasetQueryPlanVisitors.stream()
+        .filter(v -> v instanceof QueryPlanVisitor)
+        .map((QueryPlanVisitor.class)::cast)
+        .forEach(v -> v.setTriggeringEvent(sparkListenerEvent));
     Function1<LogicalPlan, List<InputDataset>> inputVisitor =
         visitLogicalPlan(PlanUtils.merge(inputDatasetQueryPlanVisitors));
 
@@ -401,11 +409,18 @@ class OpenLineageRunEventBuilder {
                 .applyOrElse(node, toScalaFn(n -> Collections.emptyList())));
   }
 
-  private List<OpenLineage.OutputDataset> buildOutputDatasets(List<Object> nodes) {
+  private List<OpenLineage.OutputDataset> buildOutputDatasets(
+      List<Object> nodes, SparkListenerEvent sparkListenerEvent) {
     log.info(
         "Visiting query plan {} with output dataset builders {}",
         openLineageContext.getQueryExecution(),
         outputDatasetBuilders);
+
+    outputDatasetQueryPlanVisitors.stream()
+        .filter(v -> v instanceof QueryPlanVisitor)
+        .map((QueryPlanVisitor.class)::cast)
+        .forEach(v -> v.setTriggeringEvent(sparkListenerEvent));
+
     Function1<LogicalPlan, List<OutputDataset>> visitor =
         visitLogicalPlan(PlanUtils.merge(outputDatasetQueryPlanVisitors));
     List<OutputDataset> datasets =

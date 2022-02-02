@@ -29,7 +29,7 @@ class Spark3VisitorFactoryImpl extends BaseVisitorFactory {
     return ImmutableList.<PartialFunction<LogicalPlan, List<OutputDataset>>>builder()
         .addAll(super.getOutputVisitors(context))
         .add(new CreateReplaceVisitor(context))
-        .add(new DataSourceV2RelationVisitor(context, outputFactory))
+        .add(new DataSourceV2RelationVisitor(context, outputFactory, false))
         .add(new TableContentChangeVisitor(context))
         .add(new CreateTableLikeCommandVisitor(context))
         .add(new DropTableVisitor(context))
@@ -43,7 +43,7 @@ class Spark3VisitorFactoryImpl extends BaseVisitorFactory {
     DatasetFactory<InputDataset> inputFactory = DatasetFactory.input(context.getOpenLineage());
     return ImmutableList.<PartialFunction<LogicalPlan, List<InputDataset>>>builder()
         .addAll(super.getInputVisitors(context))
-        .add(new DataSourceV2RelationVisitor(context, inputFactory))
+        .add(new DataSourceV2RelationVisitor(context, inputFactory, true))
         .add(new DataSourceV2ScanRelationVisitor(context, inputFactory))
         .build();
   }

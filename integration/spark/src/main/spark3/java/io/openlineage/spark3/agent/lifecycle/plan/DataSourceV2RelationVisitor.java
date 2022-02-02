@@ -25,10 +25,13 @@ public class DataSourceV2RelationVisitor<D extends OpenLineage.Dataset>
     extends QueryPlanVisitor<DataSourceV2Relation, D> {
 
   private final DatasetFactory<D> factory;
+  private final boolean isInputVisitor;
 
-  public DataSourceV2RelationVisitor(OpenLineageContext context, DatasetFactory<D> factory) {
+  public DataSourceV2RelationVisitor(
+      OpenLineageContext context, DatasetFactory<D> factory, boolean isInputVisitor) {
     super(context);
     this.factory = factory;
+    this.isInputVisitor = isInputVisitor;
   }
 
   @Override
