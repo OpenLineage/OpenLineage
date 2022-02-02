@@ -5,7 +5,7 @@
 		"runId": "{{ any(result) }}"
 	},
 	"job": {
-		"namespace": "bigquery",
+		"namespace": "job-namespace",
 		"name": "random-gcp-project.dbt_prod1.dbt_test.test_model"
 	},
 	"inputs": [{
@@ -32,7 +32,7 @@
 		}
 	},
 	"job": {
-		"namespace": "bigquery",
+		"namespace": "job-namespace",
 		"name": "random-gcp-project.dbt_prod1.dbt_test.test_model",
 		"facets": {
 			"sql": {

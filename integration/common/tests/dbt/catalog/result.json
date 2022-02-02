@@ -5,7 +5,7 @@
 		"runId": "{{ any(result) }}"
 	},
 	"job": {
-		"namespace": "bigquery",
+		"namespace": "job-namespace",
 		"name": "random-gcp-project.dbt_test1.dbt_test.test_model"
 	},
 	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -33,7 +33,7 @@
 		}
 	},
 	"job": {
-		"namespace": "bigquery",
+		"namespace": "job-namespace",
 		"name": "random-gcp-project.dbt_test1.dbt_test.test_model",
 		"facets": {
 			"sql": {

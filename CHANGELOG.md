@@ -6,6 +6,10 @@
 
 * Proxy backend example using `Kafka` [@wslulciuc](https://github.com/wslulciuc)
 
+### Fixed
+
+* dbt: job namespaces for given dbt run match each other [@mobuchowski](https://github.com/mobuchowski)
+
 ## [0.5.1](https://github.com/OpenLineage/OpenLineage/compare/0.4.0...0.5.1)
 ### Added
 * Support for dbt-spark adapter [@mobuchowski](https://github.com/mobuchowski)

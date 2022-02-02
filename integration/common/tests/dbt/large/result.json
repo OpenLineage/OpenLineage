@@ -5,7 +5,7 @@
 		"runId": "{{ any(result) }}"
 	},
 	"job": {
-		"namespace": "snowflake://ASDF1234.eu-central-1",
+		"namespace": "job-namespace",
 		"name": "DEMO_DB.public.jaffle_shop.stg_orders"
 	},
 	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -21,7 +21,7 @@
 		"runId": "{{ any(result) }}"
 	},
 	"job": {
-		"namespace": "snowflake://ASDF1234.eu-central-1",
+		"namespace": "job-namespace",
 		"name": "DEMO_DB.public.jaffle_shop.stg_payments"
 	},
 	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -37,7 +37,7 @@
 		"runId": "{{ any(result) }}"
 	},
 	"job": {
-		"namespace": "snowflake://ASDF1234.eu-central-1",
+		"namespace": "job-namespace",
 		"name": "DEMO_DB.public.jaffle_shop.stg_customers"
 	},
 	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -53,7 +53,7 @@
 		"runId": "{{ any(result) }}"
 	},
 	"job": {
-		"namespace": "snowflake://ASDF1234.eu-central-1",
+		"namespace": "job-namespace",
 		"name": "DEMO_DB.public.jaffle_shop.orders"
 	},
 	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -75,7 +75,7 @@
 		"runId": "{{ any(result) }}"
 	},
 	"job": {
-		"namespace": "snowflake://ASDF1234.eu-central-1",
+		"namespace": "job-namespace",
 		"name": "DEMO_DB.public.jaffle_shop.customers"
 	},
 	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -109,7 +109,7 @@
 		}
 	},
 	"job": {
-		"namespace": "snowflake://ASDF1234.eu-central-1",
+		"namespace": "job-namespace",
 		"name": "DEMO_DB.public.jaffle_shop.stg_orders",
 		"facets": {
 			"sql": {
@@ -157,7 +157,7 @@
 		}
 	},
 	"job": {
-		"namespace": "snowflake://ASDF1234.eu-central-1",
+		"namespace": "job-namespace",
 		"name": "DEMO_DB.public.jaffle_shop.stg_payments",
 		"facets": {
 			"sql": {
@@ -207,7 +207,7 @@
 		}
 	},
 	"job": {
-		"namespace": "snowflake://ASDF1234.eu-central-1",
+		"namespace": "job-namespace",
 		"name": "DEMO_DB.public.jaffle_shop.stg_customers",
 		"facets": {
 			"sql": {
@@ -250,7 +250,7 @@
 		}
 	},
 	"job": {
-		"namespace": "snowflake://ASDF1234.eu-central-1",
+		"namespace": "job-namespace",
 		"name": "DEMO_DB.public.jaffle_shop.orders",
 		"facets": {
 			"sql": {
@@ -353,7 +353,7 @@
 		}
 	},
 	"job": {
-		"namespace": "snowflake://ASDF1234.eu-central-1",
+		"namespace": "job-namespace",
 		"name": "DEMO_DB.public.jaffle_shop.customers",
 		"facets": {
 			"sql": {

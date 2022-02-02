@@ -35,9 +35,9 @@ def setup_client() -> Optional[OpenLineageClient]:
 
 def dbt_run_event(
     state: RunState,
+    job_name: str,
+    job_namespace: str,
     run_id: str = str(uuid.uuid4()),
-    job_namespace: str = 'dbt',
-    job_name: str = f"dbt-run-{str(uuid.uuid4())}",
     parent: Optional[ParentRunMetadata] = None
 ) -> RunEvent:
     return RunEvent(
@@ -57,10 +57,11 @@ def dbt_run_event(
     )
 
 
-def dbt_run_event_start(job_name: str, parent_run_metadata: ParentRunMetadata) -> RunEvent:
+def dbt_run_event_start(job_name: str, job_namespace: str, parent_run_metadata: ParentRunMetadata) -> RunEvent:
     return dbt_run_event(
         state=RunState.START,
         job_name=job_name,
+        job_namespace=job_namespace,
         parent=parent_run_metadata
     )
 
@@ -73,9 +74,9 @@ def dbt_run_event_end(
 ) -> RunEvent:
     return dbt_run_event(
         state=RunState.COMPLETE,
-        run_id=run_id,
         job_namespace=job_namespace,
         job_name=job_name,
+        run_id=run_id,
         parent=parent_run_metadata
     )
 
@@ -102,6 +103,10 @@ def main():
     # We can get this if we have been orchestrated by an external system like airflow
     parent_id = os.getenv("OPENLINEAGE_PARENT_ID")
     parent_run_metadata = None
+    job_namespace = os.environ.get(
+        'OPENLINEAGE_NAMESPACE',
+        'dbt'
+    )
 
     client = OpenLineageClient.from_environment()
 
@@ -116,6 +121,7 @@ def main():
     processor = DbtArtifactProcessor(
         producer=PRODUCER,
         target=target,
+        job_namespace=job_namespace,
         project_dir=project_dir,
         profile_name=profile_name,
         logger=logger
@@ -125,6 +131,7 @@ def main():
     # both the start and complete events for dbt models won't get emitted until end of execution.
     dbt_run_event = dbt_run_event_start(
         job_name=f"dbt-run-{processor.project['name']}",
+        job_namespace=job_namespace,
         parent_run_metadata=parent_run_metadata
     )
     dbt_run_metadata = ParentRunMetadata(
