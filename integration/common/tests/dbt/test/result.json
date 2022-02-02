@@ -10,7 +10,7 @@
         ],
         "job": {
             "name": "random-gcp-project.dbt_test1.dbt_bigquery_test.test_third_dbt_model",
-            "namespace": "bigquery"
+            "namespace": "dbt-test-namespace"
         },
         "outputs": [],
         "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -29,7 +29,7 @@
         ],
         "job": {
             "name": "random-gcp-project.dbt_test1.dbt_bigquery_test.test_second_parallel_dbt_model",
-            "namespace": "bigquery"
+            "namespace": "dbt-test-namespace"
         },
         "outputs": [],
         "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -48,7 +48,7 @@
         ],
         "job": {
             "name": "random-gcp-project.dbt_test1.dbt_bigquery_test.test_second_dbt_model",
-            "namespace": "bigquery"
+            "namespace": "dbt-test-namespace"
         },
         "outputs": [],
         "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -67,7 +67,7 @@
         ],
         "job": {
             "name": "random-gcp-project.dbt_test1.dbt_bigquery_test.test_first_dbt_model",
-            "namespace": "bigquery"
+            "namespace": "dbt-test-namespace"
         },
         "outputs": [],
         "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -115,7 +115,7 @@
         "job": {
             "facets": {},
             "name": "random-gcp-project.dbt_test1.dbt_bigquery_test.test_third_dbt_model",
-            "namespace": "bigquery"
+            "namespace": "dbt-test-namespace"
         },
         "outputs": [],
         "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -159,7 +159,7 @@
         ],
         "job": {
             "name": "random-gcp-project.dbt_test1.dbt_bigquery_test.test_second_parallel_dbt_model",
-            "namespace": "bigquery"
+            "namespace": "dbt-test-namespace"
         },
         "outputs": [],
         "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -206,7 +206,7 @@
         "job": {
             "facets": {},
             "name": "random-gcp-project.dbt_test1.dbt_bigquery_test.test_second_dbt_model",
-            "namespace": "bigquery"
+            "namespace": "dbt-test-namespace"
         },
         "outputs": [],
         "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -272,7 +272,7 @@
         "job": {
             "facets": {},
             "name": "random-gcp-project.dbt_test1.dbt_bigquery_test.test_first_dbt_model",
-            "namespace": "bigquery"
+            "namespace": "dbt-test-namespace"
         },
         "outputs": [],
         "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
