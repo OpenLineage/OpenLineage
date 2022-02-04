@@ -14,6 +14,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -123,7 +124,7 @@ public class TypeResolver {
         public ResolvedType visit(AllOfType allOfType) {
           List<Type> children = allOfType.getChildren();
           List<ObjectType> castChildren = new ArrayList<>(children.size());
-          List<ResolvedField> combinedProperties = new ArrayList<>();
+          LinkedHashSet<ResolvedField> combinedProperties = new LinkedHashSet<>();
           boolean additionalProperties = false;
           ResolvedType additionalPropertiesType = null;
           Set<ObjectResolvedType> parents = new LinkedHashSet<>();
@@ -150,7 +151,7 @@ public class TypeResolver {
               }
             }
           }
-          ObjectResolvedType objectResolvedType = new ObjectResolvedType(container, castChildren, currentName, parents, combinedProperties, additionalProperties, additionalPropertiesType);
+          ObjectResolvedType objectResolvedType = new ObjectResolvedType(container, castChildren, currentName, parents, new ArrayList<>(combinedProperties), additionalProperties, additionalPropertiesType);
           String key = container + "." + objectResolvedType.getName();
           types.put(key, objectResolvedType);
           return objectResolvedType;
@@ -286,6 +287,22 @@ public class TypeResolver {
       return visitor.visit(this);
     }
 
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      PrimitiveResolvedType that = (PrimitiveResolvedType) o;
+      return primitiveType.equals(that.primitiveType);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(primitiveType);
+    }
   }
 
   public static class ResolvedField {
@@ -313,6 +330,23 @@ public class TypeResolver {
     @Override
     public String toString() {
       return "ResolvedField{name: " + field.getName() + ", type: " + type +  "}";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      ResolvedField that = (ResolvedField) o;
+      return field.equals(that.field) && type.equals(that.type);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(field, type);
     }
   }
 
@@ -379,6 +413,26 @@ public class TypeResolver {
       return "ObjectResolvedType{" + name + "}";
     }
 
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      ObjectResolvedType that = (ObjectResolvedType) o;
+      return additionalProperties == that.additionalProperties && Objects.equals(container,
+          that.container) && objectTypes.equals(that.objectTypes) && name.equals(that.name)
+          && properties.equals(that.properties) && Objects.equals(additionalPropertiesType,
+          that.additionalPropertiesType) && parents.equals(that.parents);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(container, objectTypes, name, properties, additionalProperties,
+          additionalPropertiesType, parents);
+    }
   }
 
   static class ArrayResolvedType implements ResolvedType {
@@ -398,6 +452,23 @@ public class TypeResolver {
     @Override
     public <T> T accept(ResolvedTypeVisitor<T> visitor) {
       return visitor.visit(this);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      ArrayResolvedType that = (ArrayResolvedType) o;
+      return arrayType.equals(that.arrayType) && items.equals(that.items);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(arrayType, items);
     }
   }
 
