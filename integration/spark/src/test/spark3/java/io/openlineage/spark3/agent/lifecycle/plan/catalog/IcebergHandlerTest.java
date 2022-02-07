@@ -3,6 +3,8 @@
 package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -12,8 +14,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Optional;
 import org.apache.iceberg.spark.SparkCatalog;
+import org.apache.iceberg.spark.source.SparkTable;
 import org.apache.spark.sql.RuntimeConfig;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.catalyst.analysis.NoSuchTableException;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -94,5 +98,21 @@ public class IcebergHandlerTest {
         icebergHandler.getTableProviderFacet(new HashMap<>());
     assertEquals("iceberg", tableProviderFacet.get().getProvider());
     assertEquals("", tableProviderFacet.get().getFormat());
+  }
+
+  @Test
+  public void testGetVersionString() throws NoSuchTableException {
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    SparkTable sparkTable = mock(SparkTable.class, RETURNS_DEEP_STUBS);
+    Identifier identifier = Identifier.of(new String[] {"database", "schema"}, "table");
+
+    when(sparkCatalog.loadTable(identifier)).thenReturn(sparkTable);
+    when(sparkTable.table().currentSnapshot().snapshotId()).thenReturn(1500100900L);
+
+    Optional<String> version =
+        icebergHandler.getDatasetVersion(sparkCatalog, identifier, Collections.emptyMap());
+
+    assertTrue(version.isPresent());
+    assertEquals(version.get(), "1500100900");
   }
 }

@@ -13,8 +13,8 @@ import io.openlineage.spark3.agent.lifecycle.plan.AlterTableVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.CreateReplaceVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.CreateTableLikeCommandVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationVisitor;
-import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2ScanRelationVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.DropTableVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.LogicalRelationVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.TableContentChangeVisitor;
 import java.util.List;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -29,11 +29,14 @@ class Spark3VisitorFactoryImpl extends BaseVisitorFactory {
     return ImmutableList.<PartialFunction<LogicalPlan, List<OutputDataset>>>builder()
         .addAll(super.getOutputVisitors(context))
         .add(new CreateReplaceVisitor(context))
-        .add(new DataSourceV2RelationVisitor(context, outputFactory))
+        .add(new DataSourceV2RelationVisitor(context, outputFactory, false))
         .add(new TableContentChangeVisitor(context))
         .add(new CreateTableLikeCommandVisitor(context))
         .add(new DropTableVisitor(context))
         .add(new AlterTableVisitor(context))
+        .add(
+            new io.openlineage.spark.agent.lifecycle.plan.LogicalRelationVisitor(
+                context, outputFactory, false))
         .build();
   }
 
@@ -43,8 +46,8 @@ class Spark3VisitorFactoryImpl extends BaseVisitorFactory {
     DatasetFactory<InputDataset> inputFactory = DatasetFactory.input(context.getOpenLineage());
     return ImmutableList.<PartialFunction<LogicalPlan, List<InputDataset>>>builder()
         .addAll(super.getInputVisitors(context))
-        .add(new DataSourceV2RelationVisitor(context, inputFactory))
-        .add(new DataSourceV2ScanRelationVisitor(context, inputFactory))
+        .add(new DataSourceV2RelationVisitor(context, inputFactory, true))
+        .add(new LogicalRelationVisitor(context, inputFactory, true))
         .build();
   }
 

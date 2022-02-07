@@ -3,8 +3,12 @@
 package io.openlineage.spark.agent.util;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
 
 import java.util.stream.Stream;
+import org.apache.spark.scheduler.SparkListenerEvent;
+import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
+import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -18,6 +22,21 @@ class PlanUtilsTest {
     String actualResult = JdbcUtils.sanitizeJdbcUrl(jdbcUrl);
 
     assertEquals(expectedResult, actualResult);
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideListenerEvents")
+  void testShouldIncludeDatasetVersionFacet(
+      boolean isInputVisitor, SparkListenerEvent event, boolean expected) {
+    assertEquals(expected, PlanUtils.shouldIncludeDatasetVersionFacet(isInputVisitor, event));
+  }
+
+  private static Stream<Arguments> provideListenerEvents() {
+    return Stream.of(
+        Arguments.of(false, mock(SparkListenerSQLExecutionStart.class), false),
+        Arguments.of(false, mock(SparkListenerSQLExecutionEnd.class), true),
+        Arguments.of(true, mock(SparkListenerSQLExecutionStart.class), true),
+        Arguments.of(true, mock(SparkListenerSQLExecutionEnd.class), false));
   }
 
   private static Stream<Arguments> provideJdbcUrls() {

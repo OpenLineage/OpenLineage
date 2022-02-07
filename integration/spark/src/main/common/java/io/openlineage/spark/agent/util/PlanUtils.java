@@ -15,6 +15,11 @@ import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.spark.scheduler.SparkListenerEvent;
+import org.apache.spark.scheduler.SparkListenerJobEnd;
+import org.apache.spark.scheduler.SparkListenerJobStart;
+import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
+import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import scala.PartialFunction;
@@ -167,5 +172,14 @@ public class PlanUtils {
       log.warn("Unable to get file system for path ", e);
       return p;
     }
+  }
+
+  public static boolean shouldIncludeDatasetVersionFacet(
+      boolean isInputVisitor, SparkListenerEvent event) {
+    boolean isStartEvent =
+        (event instanceof SparkListenerSQLExecutionStart || event instanceof SparkListenerJobStart);
+    boolean isEndEvent =
+        (event instanceof SparkListenerSQLExecutionEnd || event instanceof SparkListenerJobEnd);
+    return (isInputVisitor && isStartEvent || !isInputVisitor && isEndEvent);
   }
 }

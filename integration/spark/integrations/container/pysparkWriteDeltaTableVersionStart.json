@@ -1,0 +1,66 @@
+{
+  "eventType" : "START",
+  "job" : {
+    "namespace" : "testV2Commands",
+    "name" : "open_lineage_integration_delta.append_data_exec_v1"
+  },
+  "inputs": [ {
+    "namespace" : "file",
+    "name" : "/tmp/warehouse/versioned_input_table",
+    "facets" : {
+      "dataSource": {
+        "name": "file",
+        "uri": "file"
+      },
+      "schema": {
+        "fields": [
+          {
+            "name": "a",
+            "type": "long"
+          },
+          {
+            "name": "b",
+            "type": "long"
+          },
+          {
+            "name" : "c",
+            "type" : "long"
+          }
+        ]
+      },
+      "datasetVersion" : {
+        "datasetVersion" : "3"
+      }
+    }
+  }
+  ],
+  "outputs" : [ {
+    "namespace" : "file",
+    "name" : "/tmp/write_delta_table_version",
+    "facets" : {
+      "dataSource" : {
+        "name" : "file",
+        "uri" : "file"
+      },
+      "schema" : {
+        "fields" : [
+          {
+            "name" : "a",
+            "type" : "long"
+          }, {
+            "name" : "b",
+            "type" : "long"
+          },
+          {
+            "name" : "c",
+            "type" : "long"
+          }
+        ]
+      },
+      "tableProvider" : {
+        "provider" : "delta",
+        "format" : "parquet"
+      }
+    }
+  } ]
+}

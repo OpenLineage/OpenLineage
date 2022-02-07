@@ -1,5 +1,3 @@
-/* SPDX-License-Identifier: Apache-2.0 */
-
 package io.openlineage.spark3.agent.utils;
 
 import io.openlineage.client.OpenLineage;
@@ -9,6 +7,7 @@ import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
+import io.openlineage.spark3.agent.lifecycle.plan.catalog.IcebergHandler;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.UnsupportedCatalogException;
 import java.util.Collections;
 import java.util.List;
@@ -16,6 +15,14 @@ import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.catalyst.analysis.NamedRelation;
+import org.apache.spark.sql.catalyst.plans.logical.DeleteFromTable;
+import org.apache.spark.sql.catalyst.plans.logical.InsertIntoStatement;
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.catalyst.plans.logical.MergeIntoTable;
+import org.apache.spark.sql.catalyst.plans.logical.ReplaceData;
+import org.apache.spark.sql.catalyst.plans.logical.UpdateTable;
+import org.apache.spark.sql.catalyst.plans.logical.V2WriteCommand;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
@@ -99,5 +106,27 @@ public class PlanUtils3 {
     return Collections.singletonList(
         datasetFactory.getDataset(
             di.get().getName(), di.get().getNamespace(), datasetFacetsBuilder.build()));
+  }
+
+  public static Optional<DataSourceV2Relation> getDataSourceV2Relation(LogicalPlan x) {
+    NamedRelation table = null;
+
+    // INSERT OVERWRITE TABLE SQL statement is translated into InsertIntoTable logical operator.
+    if (x instanceof V2WriteCommand) {
+      table = ((V2WriteCommand) x).table();
+    } else if (x instanceof InsertIntoStatement) {
+      table = (NamedRelation) ((InsertIntoStatement) x).table();
+    } else if (new IcebergHandler().hasClasses() && x instanceof ReplaceData) {
+      // DELETE FROM on ICEBERG HAS START ELEMENT WITH ReplaceData AND COMPLETE ONE WITH
+      // DeleteFromTable
+      table = ((ReplaceData) x).table();
+    } else if (x instanceof DeleteFromTable) {
+      table = (NamedRelation) ((DeleteFromTable) x).table();
+    } else if (x instanceof UpdateTable) {
+      table = (NamedRelation) ((UpdateTable) x).table();
+    } else if (x instanceof MergeIntoTable) {
+      table = (NamedRelation) ((MergeIntoTable) x).targetTable();
+    }
+    return Optional.ofNullable((DataSourceV2Relation) table);
   }
 }
