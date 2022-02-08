@@ -1,0 +1,10 @@
+{
+  "namespace": "io.openlineage.flink.avro.event",
+  "type": "record",
+  "name": "OutputEvent",
+  "fields": [
+    {"name": "id", "type": ["null", "string"], "default": null},
+    {"name": "version", "type": ["null", "long"], "default": null},
+    {"name": "counter", "type": ["null", "long"], "default": null}
+  ]
+}

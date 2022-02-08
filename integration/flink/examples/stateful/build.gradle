@@ -1,0 +1,73 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:6.1.0'
+    }
+}
+
+plugins {
+    id "com.github.davidmc24.gradle.plugin.avro" version "1.3.0"
+}
+
+apply plugin: 'java'
+apply plugin: 'groovy'
+apply plugin: 'com.github.johnrengelman.shadow'
+
+group 'io.openlineage.flink'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+    maven {
+        url "https://packages.confluent.io/maven/"
+    }
+}
+
+jar.enabled = false
+shadowJar {
+    manifest {
+        attributes 'Main-Class': 'io.openlineage.flink.FlinkStatefulApplication'
+    }
+}
+
+dependencies {
+    configurations.all {
+        exclude module: 'slf4j-log4j12'
+        exclude module: 'log4j'
+    }
+
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter:5.8.2"
+    testCompileOnly 'org.codehaus.groovy:groovy-all:3.0.8'
+    testImplementation 'org.spockframework:spock-core:2.0-groovy-3.0'
+    testImplementation 'org.awaitility:awaitility:4.1.1'
+
+    def flinkVersion = '1.14.2'
+    implementation "org.apache.flink:flink-java:$flinkVersion"
+    implementation "org.apache.flink:flink-streaming-java_2.12:$flinkVersion"
+    implementation "org.apache.flink:flink-runtime-web_2.12:$flinkVersion"
+
+    implementation "com.typesafe:config:1.4.1"
+    implementation "org.apache.avro:avro:1.11.0"
+    implementation 'io.confluent:kafka-schema-registry-client:7.0.1'
+    implementation 'io.confluent:kafka-avro-serializer:7.0.1'
+    implementation 'com.github.davidmc24.gradle.plugin:gradle-avro-plugin:1.3.0'
+
+    implementation "org.apache.flink:flink-core:$flinkVersion"
+    implementation "org.apache.flink:flink-connector-kafka_2.12:$flinkVersion"
+    implementation "org.apache.flink:flink-avro-confluent-registry:$flinkVersion"
+    implementation "org.apache.flink:flink-avro:$flinkVersion"
+}
+
+assemble {
+    dependsOn shadowJar
+}
+
+avro {
+    fieldVisibility = 'PUBLIC'
+}
+
+test {
+    useJUnitPlatform()
+}
