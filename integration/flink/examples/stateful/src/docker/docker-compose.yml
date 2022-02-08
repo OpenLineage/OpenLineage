@@ -1,0 +1,108 @@
+version: '3'
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:6.2.1
+    hostname: zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_SERVER_ID: 1
+
+  kafka:
+    image: confluentinc/cp-kafka:6.2.1
+    hostname: kafka
+    container_name: kafka
+    ports:
+      - "19092:19092"
+    environment:
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_DOCKER_INTERNAL:PLAINTEXT,LISTENER_DOCKER_EXTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: LISTENER_DOCKER_INTERNAL://kafka:9092,LISTENER_DOCKER_EXTERNAL://127.0.0.1:19092
+      KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_DOCKER_INTERNAL
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_BROKER_ID: 1
+      KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
+    depends_on:
+      - zookeeper
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:6.2.1
+    hostname: schema-registry
+    container_name: schema-registry
+    ports:
+      - "28081:28081"
+    environment:
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka:9092
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_LISTENERS: http://schema-registry:8081,http://0.0.0.0:28081
+    depends_on:
+      - zookeeper
+      - kafka
+
+  # This "container" is a workaround to pre-create topics before running Flink application containers
+  kafka-topic-setup:
+    image: confluentinc/cp-kafka:6.2.1
+    hostname: kafka-topic-setup
+    container_name: kafka-topic-setup
+    depends_on:
+      - zookeeper
+      - kafka
+      - schema-registry
+    entrypoint: [ '/bin/sh', '-c' ]
+    command: |
+      "
+      # blocks until kafka is reachable
+      kafka-topics --bootstrap-server kafka:9092 --list
+      
+      echo -e 'Creating kafka topics'
+      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic io.openlineage.flink.kafka.input --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic io.openlineage.flink.kafka.output --replication-factor 1 --partitions 1
+      
+      echo -e 'Topics list:'
+      kafka-topics --bootstrap-server kafka:9092 --list
+      "
+
+  jobmanager:
+    image: flink:1.14.2-scala_2.11
+    container_name: jobmanager
+    ports:
+      - "18081:8081"
+    command: standalone-job --job-classname io.openlineage.flink.FlinkStatefulApplication --input-topic "io.openlineage.flink.kafka.input" --output-topic "io.openlineage.flink.kafka.output"
+    volumes:
+      - ../../build/libs:/opt/flink/usrlib
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        parallelism.default: 1
+
+    depends_on:
+      - zookeeper
+      - kafka
+      - schema-registry
+      - kafka-topic-setup
+
+  taskmanager:
+    image: flink:1.14.2-scala_2.11
+    container_name: taskmanager
+    depends_on:
+      - zookeeper
+      - kafka
+      - schema-registry
+      - kafka-topic-setup
+      - jobmanager
+    command: taskmanager
+    volumes:
+      - ../../build/libs:/opt/flink/usrlib
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        taskmanager.numberOfTaskSlots: 1
+        parallelism.default: 1
