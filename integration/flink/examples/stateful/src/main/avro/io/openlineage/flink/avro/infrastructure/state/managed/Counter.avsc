@@ -1,0 +1,9 @@
+{
+  "namespace": "io.openlineage.flink.avro.infrastructure.state.managed",
+  "type": "record",
+  "name": "Counter",
+  "fields": [
+    {"name": "counter", "type": ["null", "long"], "default": null},
+    {"name": "lastSeen", "type": ["null", "string"], "default": null}
+  ]
+}
