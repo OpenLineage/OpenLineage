@@ -18,7 +18,7 @@ def test_custom_client_config():
     os.environ["OPENLINEAGE_URL"] = "http://ol-api:5000"
     os.environ["OPENLINEAGE_API_KEY"] = "api-key"
     adapter = OpenLineageAdapter()
-    assert adapter._client.url == "http://ol-api:5000"
-    assert adapter._client.options.api_key == "api-key"
+    assert adapter._client.transport.url == "http://ol-api:5000"
+    assert adapter._client.transport.api_key == "api-key"
     del os.environ["OPENLINEAGE_URL"]
     del os.environ["OPENLINEAGE_API_KEY"]
