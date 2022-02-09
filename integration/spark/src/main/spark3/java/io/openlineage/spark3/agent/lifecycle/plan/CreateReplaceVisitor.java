@@ -48,7 +48,7 @@ public class CreateReplaceVisitor extends QueryPlanVisitor<LogicalPlan, OpenLine
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
     TableCatalog tableCatalog;
     Map<String, String> tableProperties;
-    Map<String, OpenLineage.DefaultDatasetFacet> facetMap = new HashMap<>();
+    Map<String, OpenLineage.DatasetFacet> facetMap = new HashMap<>();
     Identifier identifier;
     StructType schema;
     TableStateChangeFacet.StateChange stateChange;

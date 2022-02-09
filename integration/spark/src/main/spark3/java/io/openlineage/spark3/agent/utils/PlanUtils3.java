@@ -48,7 +48,7 @@ public class PlanUtils3 {
   public static void includeProviderFacet(
       TableCatalog catalog,
       Map<String, String> properties,
-      Map<String, OpenLineage.DefaultDatasetFacet> facets) {
+      Map<String, OpenLineage.DatasetFacet> facets) {
     Optional<TableProviderFacet> providerFacet =
         CatalogUtils3.getTableProviderFacet(catalog, properties);
     if (providerFacet.isPresent()) {
@@ -65,7 +65,7 @@ public class PlanUtils3 {
       DatasetFactory<D> datasetFactory,
       OpenLineageContext context,
       DataSourceV2Relation relation,
-      Map<String, OpenLineage.DefaultDatasetFacet> facets) {
+      Map<String, OpenLineage.DatasetFacet> facets) {
 
     if (relation.identifier().isEmpty()) {
       throw new IllegalArgumentException(
