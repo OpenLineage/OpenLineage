@@ -45,7 +45,7 @@ public class TableContentChangeVisitor
   @Override
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
     NamedRelation table;
-    Map<String, OpenLineage.DefaultDatasetFacet> facetMap = new HashMap<>();
+    Map<String, OpenLineage.DatasetFacet> facetMap = new HashMap<>();
 
     // INSERT OVERWRITE TABLE SQL statement is translated into InsertIntoTable logical operator.
     if (x instanceof OverwriteByExpression) {
@@ -75,7 +75,7 @@ public class TableContentChangeVisitor
         outputDataset(), context, (DataSourceV2Relation) table, facetMap);
   }
 
-  private void includeOverwriteFacet(Map<String, OpenLineage.DefaultDatasetFacet> facetMap) {
+  private void includeOverwriteFacet(Map<String, OpenLineage.DatasetFacet> facetMap) {
     facetMap.put("tableStateChange", new TableStateChangeFacet(OVERWRITE));
   }
 }

@@ -5,7 +5,6 @@ import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.client.OpenLineage.DefaultDatasetFacet;
 import io.openlineage.spark.agent.facets.TableStateChangeFacet;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
@@ -51,7 +50,7 @@ public class CreateTableLikeCommandVisitor
                   ScalaConversionUtils.<URI>asJavaOptional(command.fileFormat().locationUri())
                       .orElse(defaultLocation);
               DatasetIdentifier di = PathUtils.fromURI(location, "file");
-              Map<String, DefaultDatasetFacet> facetMap =
+              Map<String, OpenLineage.DatasetFacet> facetMap =
                   singletonMap("tableStateChange", new TableStateChangeFacet(CREATE));
               return singletonList(outputDataset().getDataset(di, source.schema(), facetMap));
             })
