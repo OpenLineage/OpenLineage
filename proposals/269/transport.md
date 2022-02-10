@@ -31,8 +31,8 @@ and Rust prefers monadic `Result<T,E>`.
 
 However, `Clients` and `Transports` utilizing exceptions should be careful to not directly expose 
 integrations to exceptions thrown by underlying libraries - integrations should be 
-independent of `Transports`. 
-
+independent of `Transports`. In any case, any error or exception thrown by client
+should not cause integration target to fail it's job.
 
 `Transports` are implemented for particular language's `Client`. There is no guarantee 
 of availability of any `Transport` on instance that implementation exist for different 
@@ -64,21 +64,28 @@ be careful to keep configuration consistent, however, some differences are accep
 if it improves user experience.
 
 `Clients` provide default implementation of `TransportFactory` which creates `Transports` 
-based on `OPENLINEAGE_TRANSPORT` environment variable.
-Buildin `Transports` are specified via case-insensitive aliases. 
-`OPENLINEAGE_TRANSPORT=http` sets transport to `HTTP`.
+based on configuration contained in yaml files.
+Yaml document should have top-level section named `transport`.
+In that section, `type` property is required, that tells `TransportFactory which key to load.
+Rest of the section will be provided to `Transport` constructor as config.
 
+Example yaml configuration for `HttpTransport`:
+```yaml
+transport:
+  type: "http"
+  url: "http://backend:5000"
+  api_key: "very-secure-api-key"
+```
+
+Buildin `Transports` are specified via case-insensitive aliases, like `http`, `kafka`.
 Default `TransportFactory` can load non-buildin transports based on fully-qualified class names. 
 The fully-qualified name can differ between languages. For example, Java implementation
 of `Apache Kafka Transport` can be `io.openlineage.transport.KafkaTransport`.
 
-The default implementation also passes all environment
-variables fulfilling `OPENLINEAGE_TRANSPORT_*` as `Config`.
-Different `TransportFactories` could utilize other configuration methods, for example
-YAML files. 
+Different `TransportFactories` could utilize other configuration methods.
 
-To keep backwards compatibility, in absence of `OPENLINEAGE_TRANSPORT` header 
-default `TransportFactory` should assume that `HTTP` transport is used and that 
+To keep backwards compatibility, in absence of yaml file providing configuration. 
+default `TransportFactory` assumes that `http` transport is used and that 
 it utilizes `OPENLINEAGE_URL` or `OPENLINEAGE_API_KEY` environment variables.
 
 ## Relation to ProxyBackend
