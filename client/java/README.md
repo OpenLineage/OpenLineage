@@ -23,8 +23,8 @@ implementation 'io.openlineage:openlineage-java:0.5.2'
 ## Usage
 
 ```java
-// Connect to http://localhost:8080
-OpenLineageClient client = new OpenLineageClient();
+// Use openlineage.yml
+OpenLineageClient client = Clients.newClient();
 
 // Define a simple OpenLineage START or COMPLETE event
 OpenLineage.RunEvent startOrCompleteRun = ...
@@ -37,7 +37,7 @@ client.emit(startOrCompleteRun);
 
 Use the following environment variables to configure the client:
 
-* `OPENLINEAGE_URL`: the URL for the HTTP backend (default: `http://localhost:8080`)
+* `OPENLINEAGE_URL`: the URL for the HTTP transport (default: `http://localhost:8080`)
 * `OPENLINEAGE_API_KEY`: the API key to be set on each HTTP request
 
 You can override the default configuration of the client via environment variables by specifying the URL and API key when
@@ -45,8 +45,11 @@ creating a new client:
 
 ```java
 OpenLineageClient client = OpenLineageClient.builder()
-  .url("http://localhost:5000")
-  .apiKey("f38d2189-c603-4b46-bdea-e573a3b5a7d5")
+  .transport(
+    HttpTransport.builder()
+      .url("http://localhost:5000")
+      .apiKey("f38d2189-c603-4b46-bdea-e573a3b5a7d5")
+      .build())
   .build();
 ```
 
@@ -58,10 +61,13 @@ Map<String, String> queryParamsToAppend = Map.of(
   "param1", "value1"
 );
 
-// Connect to http://localhost:5000;
+// Connect to http://localhost:5000
 OpenLineageClient client = OpenLineageClient.builder()
-  .url("http://localhost:5000", queryParamsToAppend)
-  .apiKey("f38d2189-c603-4b46-bdea-e573a3b5a7d5")
+  .transport(
+    HttpTransport.builder()
+      .url("http://localhost:5000", queryParamsToAppend)
+      .apiKey("f38d2189-c603-4b46-bdea-e573a3b5a7d5")
+      .build())
   .build();
 
 // Define a simple OpenLineage START or COMPLETE event
