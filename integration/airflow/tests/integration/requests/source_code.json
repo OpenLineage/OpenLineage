@@ -1,0 +1,40 @@
+[{
+    "eventType": "START",
+    "job": {
+        "facets": {
+          "sourceCode": {
+            "language": "python",
+            "source": "def callable():\n    print(10)\n"
+          }
+        },
+        "name": "source_code_dag.python_task",
+        "namespace": "food_delivery"
+    }
+},
+{
+    "eventType": "START",
+    "job": {
+        "name": "source_code_dag.bash_task",
+        "namespace": "food_delivery"
+    }
+},
+{
+    "eventType": "COMPLETE",
+    "job": {
+        "facets": {
+          "sourceCode": {
+            "language": "python",
+            "source": "def callable():\n    print(10)\n"
+          }
+        },
+        "name": "source_code_dag.python_task",
+        "namespace": "food_delivery"
+    }
+},
+{
+	"eventType": "COMPLETE",
+	"job": {
+        "name": "source_code_dag.bash_task",
+		"namespace": "food_delivery"
+	}
+}]
