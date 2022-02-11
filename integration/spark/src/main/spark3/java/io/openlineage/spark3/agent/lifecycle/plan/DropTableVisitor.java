@@ -29,7 +29,7 @@ public class DropTableVisitor extends QueryPlanVisitor<DropTable, OpenLineage.Ou
 
   @Override
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
-    Map<String, OpenLineage.DefaultDatasetFacet> facetMap = new HashMap<>();
+    Map<String, OpenLineage.DatasetFacet> facetMap = new HashMap<>();
     ResolvedTable resolvedTable = ((ResolvedTable) ((DropTable) x).child());
     TableCatalog tableCatalog = resolvedTable.catalog();
     Map<String, String> tableProperties = resolvedTable.table().properties();

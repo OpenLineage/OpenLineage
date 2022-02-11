@@ -1,7 +1,6 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.client.OpenLineage.DefaultDatasetFacet;
 import io.openlineage.spark.agent.facets.TableStateChangeFacet;
 import io.openlineage.spark.agent.facets.TableStateChangeFacet.StateChange;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
@@ -30,7 +29,7 @@ public class InsertIntoDataSourceDirVisitor
     InsertIntoDataSourceDirCommand command = (InsertIntoDataSourceDirCommand) x;
     // URI is required by the InsertIntoDataSourceDirCommand
     DatasetIdentifier di = PathUtils.fromURI(command.storage().locationUri().get(), "file");
-    Map<String, DefaultDatasetFacet> facets =
+    Map<String, OpenLineage.DatasetFacet> facets =
         command.overwrite()
             ? Collections.singletonMap(
                 "tableStateChange", new TableStateChangeFacet(StateChange.OVERWRITE))

@@ -12,7 +12,7 @@
 		}
 	},
 	"job": {
-		"namespace": "spark://adb-1500100900.22.azuredatabricks.net:443",
+		"namespace": "job-namespace",
 		"name": "db.schema.small.my_first_dbt_model",
 		"facets": {
 			"sql": {
@@ -54,7 +54,7 @@
 		}
 	},
 	"job": {
-		"namespace": "spark://adb-1500100900.22.azuredatabricks.net:443",
+		"namespace": "job-namespace",
 		"name": "db.schema.small.my_second_dbt_model",
 		"facets": {
 			"sql": {
@@ -112,7 +112,7 @@
 		}
 	},
 	"job": {
-		"namespace": "spark://adb-1500100900.22.azuredatabricks.net:443",
+		"namespace": "job-namespace",
 		"name": "db.schema.small.my_first_dbt_model",
 		"facets": {
 			"sql": {
@@ -154,7 +154,7 @@
 		}
 	},
 	"job": {
-		"namespace": "spark://adb-1500100900.22.azuredatabricks.net:443",
+		"namespace": "job-namespace",
 		"name": "db.schema.small.my_second_dbt_model",
 		"facets": {
 			"sql": {

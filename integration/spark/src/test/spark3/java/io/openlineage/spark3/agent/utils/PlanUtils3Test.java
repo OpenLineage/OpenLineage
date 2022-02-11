@@ -38,7 +38,7 @@ public class PlanUtils3Test {
   TableCatalog tableCatalog = mock(TableCatalog.class);
   Identifier identifier = mock(Identifier.class);
   StructType schema = mock(StructType.class);
-  Map<String, OpenLineage.DefaultDatasetFacet> facets;
+  Map<String, OpenLineage.DatasetFacet> facets;
   Table table = mock(Table.class);
   Map<String, String> tableProperties;
 

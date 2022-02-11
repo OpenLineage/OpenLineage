@@ -5,7 +5,7 @@
 		"runId": "{{ any(result) }}"
 	},
 	"job": {
-		"namespace": "redshift://foo_host:1111",
+		"namespace": "ol-namespace",
 		"name": "foo_db_name.foo_schema.dbt_test.test_model"
 	},
 	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -33,7 +33,7 @@
 		}
 	},
 	"job": {
-		"namespace": "redshift://foo_host:1111",
+		"namespace": "ol-namespace",
 		"name": "foo_db_name.foo_schema.dbt_test.test_model",
 		"facets": {
 			"sql": {

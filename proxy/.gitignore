@@ -1,13 +1,10 @@
 # Proxy configuration
 proxy.yml
-
-
+!examples/kafka/proxy.yml
 
 # MacOS
 .DS_Store
 __MACOSX
-
-
 
 # IntelliJ
 *.iml

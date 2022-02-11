@@ -35,7 +35,7 @@ public class CreateHiveTableAsSelectCommandVisitor
     CatalogTable table = command.tableDesc();
     DatasetIdentifier di = PathUtils.fromCatalogTable(table);
     StructType schema = outputSchema(ScalaConversionUtils.fromSeq(command.outputColumns()));
-    Map<String, OpenLineage.DefaultDatasetFacet> facetMap =
+    Map<String, OpenLineage.DatasetFacet> facetMap =
         Collections.singletonMap("tableStateChange", new TableStateChangeFacet(StateChange.CREATE));
 
     return Collections.singletonList(outputDataset().getDataset(di, schema, facetMap));

@@ -46,7 +46,6 @@ def test_no_extractor_proper_name():
     task.dag_id = "a"
     task.task_id = "b"
 
-
     extractors = ExtractorManager()
     metadata = extractors.extract_metadata(dagrun, task)
 

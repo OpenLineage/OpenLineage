@@ -27,7 +27,7 @@ public class InsertIntoHadoopFsRelationVisitor
   @Override
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
     InsertIntoHadoopFsRelationCommand command = (InsertIntoHadoopFsRelationCommand) x;
-    Map<String, OpenLineage.DefaultDatasetFacet> facets =
+    Map<String, OpenLineage.DatasetFacet> facets =
         (SaveMode.Overwrite == command.mode())
             ? Collections.singletonMap(
                 "tableStateChange", new TableStateChangeFacet(StateChange.OVERWRITE))
