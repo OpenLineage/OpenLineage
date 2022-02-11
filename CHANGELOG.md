@@ -4,6 +4,10 @@
 ### Added
 * Airflow integration uses [new TaskInstance listener API](https://github.com/apache/airflow/blob/main/docs/apache-airflow/listeners.rst) for Airflow 2.3+ [@mobuchowski](https://github.com/mobuchowski)
 
+### Added
+* Extract source code of PythonOperator code similar to SQL facet [@mobuchowski](https://github.com/mobuchowski)
+
+
 ## [0.5.2](https://github.com/OpenLineage/OpenLineage/compare/0.5.1...0.5.2)
 ### Added
 

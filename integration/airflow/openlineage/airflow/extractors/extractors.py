@@ -21,6 +21,9 @@ _extractors = list(
             try_import_from_string(
                 'openlineage.airflow.extractors.snowflake_extractor.SnowflakeExtractor'
             ),
+            try_import_from_string(
+                'openlineage.airflow.extractors.python_extractor.PythonExtractor'
+            ),
         ],
     )
 )
