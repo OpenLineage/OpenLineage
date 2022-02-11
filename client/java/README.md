@@ -27,7 +27,7 @@ implementation 'io.openlineage:openlineage-java:0.5.2'
 OpenLineageClient client = Clients.newClient();
 
 // Define a simple OpenLineage START or COMPLETE event
-OpenLineage.Run startOrCompleteRun = ...
+OpenLineage.RunEvent startOrCompleteRun = ...
 
 // Emit OpenLineage event
 client.emit(startOrCompleteRun);
@@ -62,7 +62,7 @@ URI uri = new URIBuilder("http://localhost:5000")
 OpenLineageClient client = Clients.newClient(uri.toURL());
 
 // Define a simple OpenLineage START or COMPLETE event
-OpenLineage.Run startOrCompleteRun = ...
+OpenLineage.RunEvent startOrCompleteRun = ...
 
 // Emit OpenLineage event to http://localhost:5000/api/v1/lineage?param0=value0&param1=value2
 client.emit(startOrCompleteRun);
