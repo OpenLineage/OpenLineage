@@ -4,7 +4,7 @@
 2. Tag the release and prepare for the next version with: ([bump2version](https://pypi.org/project/bump2version/) is a dependency. You'll need to install it if you don't have it)
 
    ```bash
-   $ ./new-version.sh --release-version X.Y.Z --next-release X.Y.Z
+   $ ./new-version.sh --release-version X.Y.Z --next-version X.Y.Z
    ```
 
    > **Tip:** Use `--help` to see script usage
