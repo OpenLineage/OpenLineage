@@ -27,7 +27,7 @@ x-airflow-common: &airflow-common
     GOOGLE_APPLICATION_CREDENTIALS: /opt/config/gcloud/gcloud-service-key.json
     OPENLINEAGE_URL: http://backend:5000
     OPENLINEAGE_NAMESPACE: food_delivery
-    OPENLINEAGE_EXTRACTOR_BashOperator: custom_extractor.BashExtractor
+    OPENLINEAGE_EXTRACTOR_CustomOperator: custom_extractor.CustomExtractor
   volumes:
       - ./airflow/config/log_config.py:/opt/airflow/config/log_config.py
       - ./airflow/logs:/opt/airflow/logs
