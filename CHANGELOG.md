@@ -1,14 +1,22 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.5.1...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.5.2...HEAD)
 
+## [0.5.2](https://github.com/OpenLineage/OpenLineage/compare/0.5.1...0.5.2)
 ### Added
 
 * Proxy backend example using `Kafka` [@wslulciuc](https://github.com/wslulciuc)
+* Support Databricks Delta Catalog naming convention with DatabricksDeltaHandler [@wjohnson](https://github.com/wjohnson)
+* Add javadoc as part of build task [@mobuchowski](https://github.com/mobuchowski)
+* Include TableStateChangeFacet in non V2 commands for Spark [@mr-yusupov](https://github.com/mr-yusupov)
+* Support for SqlDWRelation on Databricks' Azure Synapse/SQL DW Connector [@wjohnson](https://github.com/wjohnson)
+* Implement input visitors for v2 commands [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+* Enabled SparkListenerJobStart events to trigger open lineage events [@collado-mike](https://github.com/collado-mike)
 
 ### Fixed
 
 * dbt: job namespaces for given dbt run match each other [@mobuchowski](https://github.com/mobuchowski)
+* Fix Breaking SnowflakeOperator Changes from OSS Airflow [@denimalpaca](https://github.com/denimalpaca)
 
 ## [0.5.1](https://github.com/OpenLineage/OpenLineage/compare/0.4.0...0.5.1)
 ### Added
