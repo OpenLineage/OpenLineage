@@ -24,7 +24,7 @@ implementation 'io.openlineage:openlineage-java:0.5.2'
 
 ```java
 // Connect to http://localhost:8080
-OpenLineageClient client = Clients.newClient();
+OpenLineageClient client = new OpenLineageClient();
 
 // Define a simple OpenLineage START or COMPLETE event
 OpenLineage.RunEvent startOrCompleteRun = ...
@@ -44,26 +44,29 @@ You can override the default configuration of the client via environment variabl
 creating a new client:
 
 ```java
-String url = "http://localhost:5000";
-String apiKey = "f38d2189-c603-4b46-bdea-e573a3b5a7d5";
-
-OpenLineageClient client = Clients.newClient(url, apiKey);
+OpenLineageClient client = OpenLineageClient.builder()
+  .url("http://localhost:5000")
+  .apiKey("f38d2189-c603-4b46-bdea-e573a3b5a7d5")
+  .build();
 ```
 
 To configure the client with query params appended on each HTTP request, use:
 
 ```java
-URI uri = new URIBuilder("http://localhost:5000")
-  .addParameter("param0", "value0")
-  .addParameter("param1", "value2")
-  .build();
+Map<String, String> queryParamsToAppend = Map.of(
+  "param0","value0",
+  "param1", "value1"
+);
 
-// Connect to http://localhost:5000
-OpenLineageClient client = Clients.newClient(uri.toURL());
+// Connect to http://localhost:5000;
+OpenLineageClient client = OpenLineageClient.builder()
+  .url("http://localhost:5000", queryParamsToAppend)
+  .apiKey("f38d2189-c603-4b46-bdea-e573a3b5a7d5")
+  .build();
 
 // Define a simple OpenLineage START or COMPLETE event
 OpenLineage.RunEvent startOrCompleteRun = ...
 
-// Emit OpenLineage event to http://localhost:5000/api/v1/lineage?param0=value0&param1=value2
+// Emit OpenLineage event to http://localhost:5000/api/v1/lineage?param0=value0&param1=value1
 client.emit(startOrCompleteRun);
 ```
