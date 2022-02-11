@@ -5,6 +5,8 @@
 * Python implements Transport interface - HTTP and Kafka transports are available [@mobuchowski](https://github.com/mobuchowski)
 * Airflow: custom extractors lookup uses only get_operator_classnames method [@mobuchowski](https://github.com/mobuchowski)
 * README.md created at OpenLineage/integrations for compatibility matrix [@howardyoo](https://github.com/howardyoo)
+* Add HTTP client to `openlineage-java` lib [@wslulciuc](https://github.com/wslulciuc)
+
 
 ## [0.6.2](https://github.com/OpenLineage/OpenLineage/compare/0.6.1...0.6.2)
 ### Added
@@ -62,7 +64,6 @@
 * Support for dbt-spark adapter [@mobuchowski](https://github.com/mobuchowski)
 * **New** `backend` to proxy OpenLineage events to one or more event streams 🎉 [@mandy-chessell](https://github.com/mandy-chessell) [@wslulciuc](https://github.com/wslulciuc)
 * Add Spark extensibility API with support for custom Dataset and custom facet builders [@collado-mike](https://github.com/collado-mike)
-* Add HTTP client to `openlineage-java` lib [@wslulciuc](https://github.com/wslulciuc)
 
 ### Fixed
 * airflow: fix import failures when dependencies for bigquery, dbt, great_expectations extractors are missing [@lukaszlaszko](https://github.com/lukaszlaszko)
