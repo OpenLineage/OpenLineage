@@ -23,12 +23,12 @@ public class OpenLineageClientException extends RuntimeException {
   private static final long serialVersionUID = 1L;
 
   /** Constructs a {@code OpenLineageClientException} with the message {@code message}. */
-  OpenLineageClientException(@Nullable final String message) {
+  public OpenLineageClientException(@Nullable final String message) {
     super(message);
   }
 
   /** Constructs a {@code OpenLineageClientException} with the cause {@code cause}. */
-  OpenLineageClientException(@Nullable final Throwable cause) {
+  public OpenLineageClientException(@Nullable final Throwable cause) {
     super(cause);
   }
 
@@ -36,7 +36,8 @@ public class OpenLineageClientException extends RuntimeException {
    * Constructs a {@code OpenLineageClientException} with the message {@code message} and the cause
    * {@code cause}.
    */
-  OpenLineageClientException(@Nullable final String message, @Nullable final Throwable cause) {
+  public OpenLineageClientException(
+      @Nullable final String message, @Nullable final Throwable cause) {
     super(message, cause);
   }
 }

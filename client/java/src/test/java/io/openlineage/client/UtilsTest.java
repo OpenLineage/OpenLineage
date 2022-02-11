@@ -14,7 +14,6 @@
 
 package io.openlineage.client;
 
-import static org.apache.http.HttpHeaders.AUTHORIZATION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
@@ -24,8 +23,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import java.net.URL;
-import org.apache.http.Header;
-import org.apache.http.client.methods.HttpGet;
 import org.junit.jupiter.api.Test;
 
 /** Unit tests for {@link Utils}. */
@@ -73,22 +70,6 @@ public class UtilsTest {
   @Test
   public void testToUrl_throwsOnNull() {
     assertThatNullPointerException().isThrownBy(() -> Utils.toUrl(null));
-  }
-
-  @Test
-  public void testAddAuthTo() {
-    final HttpGet httpGet = new HttpGet();
-    Utils.addAuthTo(httpGet, API_KEY);
-    assertThat(httpGet.containsHeader(AUTHORIZATION)).isTrue();
-
-    final Header authHeader = httpGet.getFirstHeader(AUTHORIZATION);
-    assertThat(authHeader.getValue()).isEqualTo(HTTP_AUTH_HEADER_VALUE);
-  }
-
-  @Test
-  public void testAddAuthTo_throwsOnNull() {
-    assertThatNullPointerException().isThrownBy(() -> Utils.addAuthTo(null, API_KEY));
-    assertThatNullPointerException().isThrownBy(() -> Utils.addAuthTo(new HttpGet(), null));
   }
 
   @JsonAutoDetect(fieldVisibility = Visibility.ANY)

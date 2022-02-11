@@ -15,27 +15,45 @@
 package io.openlineage.client;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
-import static org.apache.http.HttpHeaders.AUTHORIZATION;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import lombok.NonNull;
-import org.apache.http.client.methods.HttpRequestBase;
 
 /** Utilities class for {@link OpenLineageClient}. */
 public final class Utils {
   private Utils() {}
 
   private static final ObjectMapper MAPPER = newObjectMapper();
+
+  private static final ObjectMapper YML = new ObjectMapper(new YAMLFactory());
+  private static final String OPENLINEAGE_YML = "openlineage.yml";
+  private static final Path[] OPENLINEAGE_YML_PATHS =
+      new Path[] {
+        // ...
+        Paths.get(System.getProperty("user.dir") + File.separatorChar + OPENLINEAGE_YML),
+        // ...
+        Paths.get(
+            System.getProperty("user.home")
+                + File.separatorChar
+                + ".openlineage"
+                + File.separatorChar
+                + OPENLINEAGE_YML),
+      };
 
   /** Returns a new {@link ObjectMapper} instance. */
   public static ObjectMapper newObjectMapper() {
@@ -79,12 +97,16 @@ public final class Utils {
     }
   }
 
-  /**
-   * Adds the provided {@code apiKey} as an {@code Authorization} HTTP header to the specified
-   * {@link HttpRequestBase} object.
-   */
-  public static void addAuthTo(
-      @NonNull final HttpRequestBase request, @NonNull final String apiKey) {
-    request.addHeader(AUTHORIZATION, "Bearer " + apiKey);
+  public static OpenLineageYaml loadOpenLineageYaml() {
+    try {
+      for (final Path path : OPENLINEAGE_YML_PATHS) {
+        if (Files.exists(path)) {
+          return YML.readValue(path.toFile(), OpenLineageYaml.class);
+        }
+      }
+      throw new IllegalArgumentException();
+    } catch (IOException e) {
+      throw new OpenLineageClientException(e);
+    }
   }
 }

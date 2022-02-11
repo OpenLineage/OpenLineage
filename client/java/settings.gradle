@@ -12,6 +12,6 @@
  * limitations under the License.
  */
 
-rootProject.name = 'openlineage-client'
+rootProject.name = 'openlineage-java'
 
 include('generator')

@@ -38,11 +38,14 @@ dependencies {
     implementation "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
     implementation "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
     implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${jacksonVersion}"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${jacksonVersion}"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
     implementation 'com.google.code.findbugs:jsr305:3.0.2'
     implementation 'org.apache.httpcomponents:httpclient:4.5.13'
+    implementation 'org.apache.kafka:kafka-clients:2.8.0'
     implementation 'org.slf4j:slf4j-api:1.7.33'
+    implementation 'org.yaml:snakeyaml:1.8'
     implementation "org.projectlombok:lombok:${lombokVersion}"
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 

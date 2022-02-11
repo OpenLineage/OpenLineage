@@ -1,43 +1,22 @@
 package io.openlineage.client;
 
-import java.net.URL;
-import javax.annotation.Nullable;
+import io.openlineage.client.transports.ConsoleTransport;
+import io.openlineage.client.transports.Transport;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
 /** HTTP client used to emit {@link OpenLineage.RunEvent}s to HTTP backend. */
 @Slf4j
 public final class OpenLineageClient {
-  static final URL DEFAULT_OPENLINEAGE_URL = Utils.toUrl("http://localhost:8080");
-
-  final OpenLineageHttp http;
+  final Transport transport;
 
   /** Creates a new {@code OpenLineageClient} object. */
   public OpenLineageClient() {
-    this(
-        Utils.toUrl(System.getProperty("OPENLINEAGE_URL", DEFAULT_OPENLINEAGE_URL.toString())),
-        System.getenv("OPENLINEAGE_API_KEY"));
+    this(new ConsoleTransport());
   }
 
-  /** Creates a new {@code OpenLineageClient} object with the given {@code url} string. */
-  public OpenLineageClient(@NonNull final String urlString) {
-    this(Utils.toUrl(urlString), null);
-  }
-
-  /** Creates a new {@code OpenLineageClient} object with the given {@code url}. */
-  public OpenLineageClient(@NonNull final URL url) {
-    this(url, null);
-  }
-
-  /**
-   * Creates a new {@code OpenLineageClient} object with the given {@code url} and {@code apiKey}.
-   */
-  public OpenLineageClient(@NonNull final URL url, @Nullable final String apiKey) {
-    this(OpenLineageHttp.create(url, apiKey));
-  }
-
-  OpenLineageClient(@NonNull final OpenLineageHttp http) {
-    this.http = http;
+  OpenLineageClient(@NonNull final Transport transport) {
+    this.transport = transport;
   }
 
   /**
@@ -47,7 +26,15 @@ public final class OpenLineageClient {
    * @param runEvent The run event to emit.
    */
   public void emit(@NonNull OpenLineage.RunEvent runEvent) {
-    http.post(http.url("/lineage"), Utils.toJson(runEvent));
+    transport.emit(runEvent);
+  }
+
+  /**
+   * Returns an new {@link OpenLineageClient.Builder} object for building {@link
+   * OpenLineageClient}s.
+   */
+  public static Builder builder() {
+    return new Builder();
   }
 
   /**
@@ -62,24 +49,15 @@ public final class OpenLineageClient {
    * }</pre>
    */
   public static final class Builder {
-    private URL url;
-    private @Nullable String apiKey;
+    private static final Transport DEFAULT_TRANSPORT = new ConsoleTransport();
+    private Transport transport;
 
     private Builder() {
-      this.url = DEFAULT_OPENLINEAGE_URL;
+      this.transport = DEFAULT_TRANSPORT;
     }
 
-    public Builder url(@NonNull String urlString) {
-      return url(Utils.toUrl(urlString));
-    }
-
-    public Builder url(@NonNull URL url) {
-      this.url = url;
-      return this;
-    }
-
-    public Builder apiKey(@Nullable String apiKey) {
-      this.apiKey = apiKey;
+    public Builder transport(@NonNull Transport transport) {
+      this.transport = transport;
       return this;
     }
 
@@ -88,15 +66,7 @@ public final class OpenLineageClient {
      * OpenLineageClient.Builder}.
      */
     public OpenLineageClient build() {
-      return new OpenLineageClient(url, apiKey);
+      return new OpenLineageClient(transport);
     }
-  }
-
-  /**
-   * Returns an new {@link OpenLineageClient.Builder} object for building {@link
-   * OpenLineageClient}s.
-   */
-  public static Builder builder() {
-    return new Builder();
   }
 }
