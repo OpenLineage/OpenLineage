@@ -131,7 +131,7 @@ public class TableContentChangeVisitorTest {
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
       visitor.apply(logicalPlan);
 
-      Map<String, OpenLineage.DefaultDatasetFacet> expectedFacets;
+      Map<String, OpenLineage.DatasetFacet> expectedFacets;
       if (stateChange == null) {
         expectedFacets = Collections.emptyMap();
       } else {

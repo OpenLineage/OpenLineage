@@ -169,10 +169,23 @@ class Assertion:
 @attr.s
 class DataQualityAssertionsDatasetFacet(BaseFacet):
     """
-    This facet represents of asserted expectations on dataset or it's column
+    This facet represents asserted expectations on dataset or it's column
     """
     assertions: List[Assertion] = attr.ib()
 
     @staticmethod
     def _get_schema() -> str:
         return "#/definitions/DataQualityAssertionsDatasetFacet"  # noqa
+
+
+@attr.s
+class SourceCodeJobFacet(BaseFacet):
+    """
+    This facet represents source code that the job executed.
+    """
+    language: str = attr.ib()  # language that the code was written in
+    source: str = attr.ib()  # source code text
+
+    @staticmethod
+    def _get_schema() -> str:
+        return SCHEMA_URI + "#/definitions/SourceCodeJobFacet"

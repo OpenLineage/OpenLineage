@@ -158,6 +158,7 @@ class DbtArtifactProcessor:
         self,
         producer: str,
         project_dir: str,
+        job_namespace: str,
         profile_name: Optional[str] = None,
         target: Optional[str] = None,
         skip_errors: bool = False,
@@ -171,7 +172,7 @@ class DbtArtifactProcessor:
         self.jinja_environment = None
         self.logger = logger
 
-        self.job_namespace = ""
+        self.job_namespace = job_namespace
         self.dataset_namespace = ""
         self.skip_errors = skip_errors
         self.project = self.load_yaml_with_jinja(os.path.join(project_dir, 'dbt_project.yml'))
@@ -222,7 +223,6 @@ class DbtArtifactProcessor:
 
         self.extract_adapter_type(profile)
         self.extract_dataset_namespace(profile)
-        self.extract_job_namespace(profile)
 
         nodes = {}
         # Filter non-model or test nodes
@@ -657,12 +657,6 @@ class DbtArtifactProcessor:
 
     def extract_dataset_namespace(self, profile: Dict):
         self.dataset_namespace = self.extract_namespace(profile)
-
-    def extract_job_namespace(self, profile: Dict):
-        self.job_namespace = os.environ.get(
-            'OPENLINEAGE_NAMESPACE',
-            self.extract_namespace(profile)
-        )
 
     def extract_namespace(self, profile: Dict) -> str:
         """Extract namespace from profile's type"""

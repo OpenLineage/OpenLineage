@@ -10,7 +10,7 @@
                 }
             },
             "name": "db.default.jaffle_shop.stg_customers.build.run",
-            "namespace": "spark://localhost:10000"
+            "namespace": "job-namespace"
         },
         "outputs": [
             {
@@ -67,7 +67,7 @@
                 }
             },
             "name": "db.default.jaffle_shop.stg_orders.build.run",
-            "namespace": "spark://localhost:10000"
+            "namespace": "job-namespace"
         },
         "outputs": [
             {
@@ -129,7 +129,7 @@
                 }
             },
             "name": "db.default.jaffle_shop.stg_payments.build.run",
-            "namespace": "spark://localhost:10000"
+            "namespace": "job-namespace"
         },
         "outputs": [
             {
@@ -289,7 +289,7 @@
                 }
             },
             "name": "db.default.jaffle_shop.customers.build.run",
-            "namespace": "spark://localhost:10000"
+            "namespace": "job-namespace"
         },
         "outputs": [
             {
@@ -438,7 +438,7 @@
                 }
             },
             "name": "db.default.jaffle_shop.orders.build.run",
-            "namespace": "spark://localhost:10000"
+            "namespace": "job-namespace"
         },
         "outputs": [
             {
@@ -585,7 +585,7 @@
         "job": {
             "facets": {},
             "name": "db.default.jaffle_shop.orders.build.test",
-            "namespace": "spark://localhost:10000"
+            "namespace": "job-namespace"
         },
         "outputs": [],
         "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -628,7 +628,7 @@
         "job": {
             "facets": {},
             "name": "db.default.jaffle_shop.stg_customers.build.test",
-            "namespace": "spark://localhost:10000"
+            "namespace": "job-namespace"
         },
         "outputs": [],
         "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -676,7 +676,7 @@
         "job": {
             "facets": {},
             "name": "db.default.jaffle_shop.stg_payments.build.test",
-            "namespace": "spark://localhost:10000"
+            "namespace": "job-namespace"
         },
         "outputs": [],
         "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -727,7 +727,7 @@
         "job": {
             "facets": {},
             "name": "db.default.jaffle_shop.stg_orders.build.test",
-            "namespace": "spark://localhost:10000"
+            "namespace": "job-namespace"
         },
         "outputs": [],
         "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -770,7 +770,7 @@
         "job": {
             "facets": {},
             "name": "db.default.jaffle_shop.customers.build.test",
-            "namespace": "spark://localhost:10000"
+            "namespace": "job-namespace"
         },
         "outputs": [],
         "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -796,7 +796,7 @@
                 }
             },
             "name": "db.default.jaffle_shop.stg_customers.build.run",
-            "namespace": "spark://localhost:10000"
+            "namespace": "job-namespace"
         },
         "outputs": [
             {
@@ -853,7 +853,7 @@
                 }
             },
             "name": "db.default.jaffle_shop.stg_orders.build.run",
-            "namespace": "spark://localhost:10000"
+            "namespace": "job-namespace"
         },
         "outputs": [
             {
@@ -915,7 +915,7 @@
                 }
             },
             "name": "db.default.jaffle_shop.stg_payments.build.run",
-            "namespace": "spark://localhost:10000"
+            "namespace": "job-namespace"
         },
         "outputs": [
             {
@@ -1075,7 +1075,7 @@
                 }
             },
             "name": "db.default.jaffle_shop.customers.build.run",
-            "namespace": "spark://localhost:10000"
+            "namespace": "job-namespace"
         },
         "outputs": [
             {
@@ -1221,7 +1221,7 @@
                 }
             },
             "name": "db.default.jaffle_shop.orders.build.run",
-            "namespace": "spark://localhost:10000"
+            "namespace": "job-namespace"
         },
         "outputs": [
             {
@@ -1365,7 +1365,7 @@
         "job": {
             "facets": {},
             "name": "db.default.jaffle_shop.orders.build.test",
-            "namespace": "spark://localhost:10000"
+            "namespace": "job-namespace"
         },
         "outputs": [],
         "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -1408,7 +1408,7 @@
         "job": {
             "facets": {},
             "name": "db.default.jaffle_shop.stg_customers.build.test",
-            "namespace": "spark://localhost:10000"
+            "namespace": "job-namespace"
         },
         "outputs": [],
         "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -1456,7 +1456,7 @@
         "job": {
             "facets": {},
             "name": "db.default.jaffle_shop.stg_payments.build.test",
-            "namespace": "spark://localhost:10000"
+            "namespace": "job-namespace"
         },
         "outputs": [],
         "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -1504,7 +1504,7 @@
         "job": {
             "facets": {},
             "name": "db.default.jaffle_shop.stg_orders.build.test",
-            "namespace": "spark://localhost:10000"
+            "namespace": "job-namespace"
         },
         "outputs": [],
         "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
@@ -1547,7 +1547,7 @@
         "job": {
             "facets": {},
             "name": "db.default.jaffle_shop.customers.build.test",
-            "namespace": "spark://localhost:10000"
+            "namespace": "job-namespace"
         },
         "outputs": [],
         "producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",

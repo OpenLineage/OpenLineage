@@ -5,6 +5,7 @@ package io.openlineage.spark.agent.lifecycle;
 import com.google.common.collect.ImmutableList;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.Dataset;
+import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -12,6 +13,7 @@ import io.openlineage.spark3.agent.lifecycle.plan.AlterTableVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.CreateReplaceVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.CreateTableLikeCommandVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2ScanRelationVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.DropTableVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.TableContentChangeVisitor;
 import java.util.List;
@@ -32,6 +34,17 @@ class Spark3VisitorFactoryImpl extends BaseVisitorFactory {
         .add(new CreateTableLikeCommandVisitor(context))
         .add(new DropTableVisitor(context))
         .add(new AlterTableVisitor(context))
+        .build();
+  }
+
+  @Override
+  public List<PartialFunction<LogicalPlan, List<OpenLineage.InputDataset>>> getInputVisitors(
+      OpenLineageContext context) {
+    DatasetFactory<InputDataset> inputFactory = DatasetFactory.input(context.getOpenLineage());
+    return ImmutableList.<PartialFunction<LogicalPlan, List<InputDataset>>>builder()
+        .addAll(super.getInputVisitors(context))
+        .add(new DataSourceV2RelationVisitor(context, inputFactory))
+        .add(new DataSourceV2ScanRelationVisitor(context, inputFactory))
         .build();
   }
 

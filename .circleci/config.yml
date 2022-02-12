@@ -75,6 +75,7 @@ jobs:
       - run: ./gradlew --no-daemon --stacktrace build
       - run: ./gradlew --no-daemon jacocoTestReport
       - run: bash <(curl -s https://codecov.io/bash)
+      - run: ./gradlew javadoc
       - store_test_results:
           path: client/java/build/test-results/test
       - store_artifacts:
@@ -132,13 +133,14 @@ jobs:
             - v1-release-client-java-{{ .Branch }}-{{ .Revision }}
             - v1-release-client-java-{{ .Branch }}
       - run: |
-          cd ../../client/java
-          ./gradlew  --no-daemon publishToMavenLocal
-          cd -
           # Get, then decode the GPG private key used to sign *.jar
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
           export RELEASE_PASSWORD=$(echo $SONATYPE_PASSWORD)
           export RELEASE_USERNAME=$(echo $SONATYPE_USER)
+
+          cd ../../client/java
+          ./gradlew --no-daemon publishToMavenLocal
+          cd -
           # Publish *.jar
           ./gradlew --no-daemon publish
 
@@ -179,6 +181,7 @@ jobs:
           when: on_fail
           command: cat integration/spark/build/test-results/test/TEST-*.xml
       - run: ./gradlew --no-daemon jacocoTestReport
+      - run: ./gradlew javadoc
       - store_test_results:
           path: integration/spark/build/test-results/test
       - store_artifacts:

@@ -26,6 +26,7 @@ import io.openlineage.spark.agent.lifecycle.plan.LogicalRDDVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRelationVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.OptimizedCreateHiveTableAsSelectCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.SaveIntoDataSourceCommandVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.SqlDWDatabricksVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.TruncateTableCommandVisitor;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -47,6 +48,9 @@ abstract class BaseVisitorFactory implements VisitorFactory {
     }
     if (KafkaRelationVisitor.hasKafkaClasses()) {
       list.add(new KafkaRelationVisitor(context, factory));
+    }
+    if (SqlDWDatabricksVisitor.hasSqlDWDatabricksClasses()) {
+      list.add(new SqlDWDatabricksVisitor(context, factory));
     }
     return list;
   }

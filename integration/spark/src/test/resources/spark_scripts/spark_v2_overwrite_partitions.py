@@ -24,9 +24,10 @@ df = spark.createDataFrame([
     {'a': 4, 'b': 5, 'c': 6}
 ])
 df.createOrReplaceTempView('temp')
+spark.sql("CREATE TABLE local.db.source USING iceberg AS SELECT * FROM temp")
 
 spark.sql("CREATE TABLE local.db.tbl (a long, b  long) PARTITIONED BY (c long)")
 spark.sql("INSERT INTO local.db.tbl PARTITION (c=1) VALUES (2, 3)")
-spark.sql("INSERT OVERWRITE TABLE local.db.tbl PARTITION(c) SELECT * FROM temp")
+spark.sql("INSERT OVERWRITE TABLE local.db.tbl PARTITION(c) SELECT * FROM local.db.source")
 
 

@@ -166,12 +166,29 @@ dependencies {
 }
 
 sourceSets {
-    main.java.srcDirs = ["src/main/common/java", "src/main/spark2/java"]
-    test.java.srcDirs = ["src/test/common/java", "src/test/spark2/java"]
+    main.java.srcDirs = ["src/main/common/java"]
+    test.java.srcDirs = ["src/test/common/java"]
 
-    spark3{
+    spark2 {
         java {
-            srcDirs = ["src/main/common/java", "src/main/spark3/java"]
+            srcDirs = ["src/main/spark2/java"]
+            compileClasspath = sourceSets.main.compileClasspath + sourceSets.main.output
+            annotationProcessorPath = configurations.lombok
+            destinationDirectory.set(file("$buildDir/classes/java/main/"))
+        }
+    }
+    spark2Test {
+        java {
+            srcDirs = ["src/test/spark2/java"]
+            compileClasspath = sourceSets.test.compileClasspath + sourceSets.test.output
+            annotationProcessorPath = configurations.lombok
+            destinationDirectory.set(file("$buildDir/classes/java/test/"))
+        }
+    }
+
+    spark3 {
+        java {
+            srcDirs = ["src/main/spark3/java"]
             compileClasspath = configurations.spark3 + sourceSets.main.output
             annotationProcessorPath = configurations.lombok
             destinationDirectory.set(file("$buildDir/classes/java/main/"))
@@ -181,7 +198,7 @@ sourceSets {
     spark3Test {
         java {
             srcDirs = ["src/test/common/java", "src/test/spark3/java"]
-            compileClasspath = configurations.spark3Test + sourceSets.main.output
+            compileClasspath = configurations.spark3Test + sourceSets.main.output + sourceSets.test.output + sourceSets.spark3.output
             annotationProcessorPath = configurations.lombok
             destinationDirectory.set(file("$buildDir/classes/java/test/"))
         }
@@ -224,7 +241,8 @@ def commonTestConfiguration = {
             'openlineage.spark.jar': "${archivesBaseName}-${project.version}.jar",
             'kafka.package.version': kafkaPackage(scalaVersion, project.getProperty('spark.version'))
     ]
-    classpath =  project.sourceSets.test.runtimeClasspath + (isSpark3 ? configurations.spark3Test : configurations.spark2Test)
+    classpath =  project.sourceSets.test.runtimeClasspath +
+            (isSpark3 ? configurations.spark3Test : configurations.spark2Test)
 }
 
 test {

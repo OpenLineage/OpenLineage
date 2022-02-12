@@ -3,7 +3,7 @@
 	    "eventTime": "{{ is_datetime(result) }}",
         "eventType": "START",
         "job": {
-            "namespace": "bigquery",
+            "namespace": "job-namespace",
             "name": "random-gcp-project.dbt_test1.dbt_bigquery_test.test_first_dbt_model.build.run"
         },
         "run": {
@@ -15,7 +15,7 @@
         "eventType": "START",
         "job": {
             "name": "random-gcp-project.dbt_test1.dbt_bigquery_test.test_first_dbt_model.build.test",
-            "namespace": "bigquery"
+            "namespace": "job-namespace"
         },
         "run": {
             "runId": "{{ any(result) }}"
@@ -34,7 +34,7 @@
         "job": {
             "facets": {},
             "name": "random-gcp-project.dbt_test1.dbt_bigquery_test.test_first_dbt_model.build.run",
-            "namespace": "bigquery"
+            "namespace": "job-namespace"
         },
         "inputs": [],
         "run": {
@@ -83,7 +83,7 @@
         "job": {
             "facets": {},
             "name": "random-gcp-project.dbt_test1.dbt_bigquery_test.test_first_dbt_model.build.test",
-            "namespace": "bigquery"
+            "namespace": "job-namespace"
         },
         "outputs": [],
         "run": {

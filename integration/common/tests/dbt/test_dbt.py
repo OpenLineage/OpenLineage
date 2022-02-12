@@ -51,6 +51,7 @@ def serialize(inst, field, value):
 def test_dbt_parse_and_compare_event(path, parent_run_metadata):
     processor = DbtArtifactProcessor(
         producer='https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt',
+        job_namespace='job-namespace',
         project_dir=path
     )
     processor.dbt_run_metadata = parent_run_metadata
@@ -77,6 +78,7 @@ def test_dbt_parse_dbt_test_event(mock_datetime, mock_uuid, parent_run_metadata)
 
     processor = DbtArtifactProcessor(
         producer='https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt',
+        job_namespace='dbt-test-namespace',
         project_dir='tests/dbt/test',
     )
     processor.dbt_run_metadata = parent_run_metadata
@@ -100,7 +102,7 @@ def test_dbt_parse_dbt_test_event(mock_datetime, mock_uuid, parent_run_metadata)
         "DB_NAME": "foo_db_name",
         "USER_NAME": "foo_user",
         "PASSWORD": "foo_password",
-        "SCHEMA": "foo_schema"
+        "SCHEMA": "foo_schema",
     }
 )
 def test_dbt_parse_profile_with_env_vars(mock_uuid, parent_run_metadata):
@@ -112,6 +114,7 @@ def test_dbt_parse_profile_with_env_vars(mock_uuid, parent_run_metadata):
         producer='https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt',
         project_dir='tests/dbt/env_vars',
         target='prod',
+        job_namespace="ol-namespace"
     )
     processor.dbt_run_metadata = parent_run_metadata
 
@@ -221,6 +224,7 @@ def test_seed_snapshot_nodes_do_not_throw():
     processor = DbtArtifactProcessor(
         producer='https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt',
         project_dir='tests/dbt/test',
+        job_namespace='job-namespace'
     )
 
     # Should just skip processing

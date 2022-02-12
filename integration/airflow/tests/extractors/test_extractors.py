@@ -18,7 +18,7 @@ def test_env_extractors():
     os.environ['OPENLINEAGE_EXTRACTOR_TestOperator'] = \
         'openlineage.airflow.extractors.postgres_extractor.PostgresExtractor'
 
-    assert len(Extractors().extractors) == 6
+    assert len(Extractors().extractors) == 7
     del os.environ['OPENLINEAGE_EXTRACTOR_TestOperator']
 
 

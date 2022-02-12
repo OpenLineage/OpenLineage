@@ -94,6 +94,6 @@ public class OpenLineageSparkListenerTest {
     ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
 
-    verify(emitter, times(1)).emit(lineageEvent.capture());
+    verify(emitter, times(2)).emit(lineageEvent.capture());
   }
 }

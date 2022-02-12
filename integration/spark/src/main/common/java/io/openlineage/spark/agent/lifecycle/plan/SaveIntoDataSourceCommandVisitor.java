@@ -2,9 +2,12 @@
 
 package io.openlineage.spark.agent.lifecycle.plan;
 
+import static io.openlineage.spark.agent.facets.TableStateChangeFacet.StateChange.OVERWRITE;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.facets.TableStateChangeFacet;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
@@ -15,6 +18,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.SQLContext;
+import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.SaveIntoDataSourceCommand;
@@ -97,6 +101,9 @@ public class SaveIntoDataSourceCommandVisitor
                   ImmutableMap.<String, OpenLineage.DatasetFacet>builder();
               if (ds.getFacets().getAdditionalProperties() != null) {
                 facetsMap.putAll(ds.getFacets().getAdditionalProperties());
+              }
+              if (SaveMode.Overwrite == command.mode()) {
+                facetsMap.put("tableStateChange", new TableStateChangeFacet(OVERWRITE));
               }
               ds.getFacets().getAdditionalProperties().putAll(facetsMap.build());
             })
