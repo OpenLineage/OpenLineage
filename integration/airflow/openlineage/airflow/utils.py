@@ -29,6 +29,10 @@ log = logging.getLogger(__name__)
 _NOMINAL_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
 
+def openlineage_job_name(dag_id: str, task_id: str) -> str:
+    return f'{dag_id}.{task_id}'
+
+
 class JobIdMapping:
     # job_name here is OL job name - aka combination of dag_id and task_id
 

@@ -3,23 +3,22 @@ import os
 
 from airflow.operators.bash_operator import BashOperator
 from airflow.utils.dates import days_ago
+from pkg_resources import parse_version
 
-from openlineage.airflow.utils import JobIdMapping
+from airflow.version import version as AIRFLOW_VERSION
 
 try:
     from airflow.utils.db import create_session
 except ImportError:
     from airflow.utils.session import create_session
 
-# do not need airflow integration
-from airflow import DAG
 
-
-def lineage_parent_id(run_id, task):
-    with create_session() as session:
-        job_name = f"{task.dag_id}.{task.task_id}"
-        ids = str(JobIdMapping.get(job_name, run_id, session))
-        return f"{os.getenv('OPENLINEAGE_NAMESPACE')}/{job_name}/{ids}"
+if parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"):
+    from openlineage.airflow import DAG
+    PLUGIN_MACRO = "{{ lineage_parent_id(run_id, task) }}"
+else:
+    from airflow import DAG
+    PLUGIN_MACRO = "{{ macros.OpenLineagePlugin.lineage_parent_id(run_id, task) }}"
 
 
 PROJECT_DIR = "/opt/data/dbt/testproject"
@@ -39,9 +38,6 @@ dag = DAG(
     schedule_interval='@once',
     default_args=default_args,
     description='Runs dbt model build.',
-    user_defined_macros={
-        "lineage_parent_id": lineage_parent_id
-    }
 )
 
 t1 = BashOperator(
@@ -56,7 +52,7 @@ t2 = BashOperator(
     bash_command=f"dbt-ol run --project-dir={PROJECT_DIR} --profiles-dir={PROFILE_DIR}",
     env={
         **os.environ,
-        "OPENLINEAGE_PARENT_ID": "{{ lineage_parent_id(run_id, task) }}"
+        "OPENLINEAGE_PARENT_ID": PLUGIN_MACRO
     }
 )
 
