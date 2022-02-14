@@ -1,4 +1,4 @@
-# OpenLineage Spark Agent
+# OpenLineage Spark Listener
 
 The OpenLineage Spark Agent uses jvm instrumentation to emit OpenLineage metadata.
 
