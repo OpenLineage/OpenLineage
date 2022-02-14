@@ -1,6 +1,7 @@
 package io.openlineage.spark.agent.lifecycle;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -63,7 +64,6 @@ class LogicalPlanSerializerTest {
 
   @Test
   public void testSerializeLogicalPlan() throws IOException {
-    SparkSession session = SparkSession.builder().master("local").getOrCreate();
     String jdbcUrl = "jdbc:postgresql://postgreshost:5432/sparkdata";
     String sparkTableName = "my_spark_table";
     scala.collection.immutable.Map<String, String> map =
@@ -80,7 +80,7 @@ class LogicalPlanSerializerTest {
                 }),
             new Partition[] {},
             new JDBCOptions(jdbcUrl, sparkTableName, map),
-            session);
+            mock(SparkSession.class));
     LogicalRelation logicalRelation =
         new LogicalRelation(
             relation,
@@ -212,7 +212,6 @@ class LogicalPlanSerializerTest {
 
   @Test
   public void testSerializeBigQueryPlan() throws IOException {
-    SparkSession session = SparkSession.builder().master("local").getOrCreate();
     String query = "SELECT date FROM bigquery-public-data.google_analytics_sample.test";
     System.setProperty("GOOGLE_CLOUD_PROJECT", "test_serialization");
     SparkBigQueryConfig config =
@@ -237,7 +236,7 @@ class LogicalPlanSerializerTest {
         new BigQueryRelation(
             config,
             TableInfo.newBuilder(TableId.of("dataset", "test"), new TestTableDefinition()).build(),
-            SQLContext.getOrCreate(session.sparkContext()));
+            mock(SQLContext.class));
 
     LogicalRelation logicalRelation =
         new LogicalRelation(
