@@ -11,4 +11,4 @@ chmod +x ~/docker-compose
 sudo mv ~/docker-compose /usr/local/bin/docker-compose
 docker-compose --version
 
-echo "DONE!
+echo "DONE!"
