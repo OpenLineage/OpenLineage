@@ -54,7 +54,7 @@ public class OptimizedCreateHiveTableAsSelectCommandVisitor
     CatalogTable table = command.tableDesc();
     DatasetIdentifier datasetIdentifier = PathUtils.fromCatalogTable(table);
     StructType schema = outputSchema(ScalaConversionUtils.fromSeq(command.outputColumns()));
-    Map<String, OpenLineage.DefaultDatasetFacet> facets =
+    Map<String, OpenLineage.DatasetFacet> facets =
         (SaveMode.Overwrite == command.mode())
             ? Collections.singletonMap(
                 "tableStateChange", new TableStateChangeFacet(StateChange.OVERWRITE))

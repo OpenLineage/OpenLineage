@@ -28,7 +28,7 @@ public class CreateDataSourceTableAsSelectCommandVisitor
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
     CreateDataSourceTableAsSelectCommand command = (CreateDataSourceTableAsSelectCommand) x;
     CatalogTable catalogTable = command.table();
-    Map<String, OpenLineage.DefaultDatasetFacet> facetMap =
+    Map<String, OpenLineage.DatasetFacet> facetMap =
         Collections.singletonMap("tableStateChange", new TableStateChangeFacet(StateChange.CREATE));
 
     return Collections.singletonList(

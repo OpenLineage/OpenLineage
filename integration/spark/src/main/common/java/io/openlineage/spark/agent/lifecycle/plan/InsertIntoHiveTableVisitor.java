@@ -40,7 +40,7 @@ public class InsertIntoHiveTableVisitor
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
     InsertIntoHiveTable cmd = (InsertIntoHiveTable) x;
     CatalogTable table = cmd.table();
-    Map<String, OpenLineage.DefaultDatasetFacet> facets =
+    Map<String, OpenLineage.DatasetFacet> facets =
         cmd.overwrite()
             ? Collections.singletonMap(
                 "tableStateChange", new TableStateChangeFacet(StateChange.OVERWRITE))

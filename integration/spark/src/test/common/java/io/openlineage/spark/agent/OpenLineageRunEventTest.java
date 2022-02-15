@@ -56,7 +56,7 @@ public class OpenLineageRunEventTest {
     OpenLineage.SQLJobFacet sqlJobFacet = ol.newSQLJobFacet("SELECT * FROM test");
 
     OpenLineage.JobFacets jobFacets =
-        ol.newJobFacets(sourceCodeLocationJobFacet, sqlJobFacet, documentationJobFacet);
+        ol.newJobFacets(sqlJobFacet, sourceCodeLocationJobFacet, documentationJobFacet);
     OpenLineage.Job job = ol.newJob("namespace", "jobName", jobFacets);
     List<OpenLineage.InputDataset> inputs =
         Arrays.asList(

@@ -30,7 +30,7 @@ public class InsertIntoHiveDirVisitor
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
     InsertIntoHiveDirCommand cmd = (InsertIntoHiveDirCommand) x;
     Optional<URI> optionalUri = ScalaConversionUtils.asJavaOptional(cmd.storage().locationUri());
-    Map<String, OpenLineage.DefaultDatasetFacet> facets =
+    Map<String, OpenLineage.DatasetFacet> facets =
         cmd.overwrite()
             ? Collections.singletonMap(
                 "tableStateChange", new TableStateChangeFacet(StateChange.OVERWRITE))
