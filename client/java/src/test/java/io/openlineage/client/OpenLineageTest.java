@@ -56,7 +56,8 @@ public class OpenLineageTest {
     Job job = ol.newJob(namespace, name, jobFacets);
     List<InputDataset> inputs = Arrays.asList(ol.newInputDataset("ins", "input", null, null));
     List<OutputDataset> outputs = Arrays.asList(ol.newOutputDataset("ons", "output", null, null));
-    RunEvent runStateUpdate = ol.newRunEvent(OpenLineage.RunEvent.EventType.START, now, run, job, inputs, outputs);
+    RunEvent runStateUpdate =
+        ol.newRunEvent(OpenLineage.RunEvent.EventType.START, now, run, job, inputs, outputs);
 
     String json = mapper.writeValueAsString(runStateUpdate);
     RunEvent read = mapper.readValue(json, RunEvent.class);
@@ -107,39 +108,65 @@ public class OpenLineageTest {
     JobFacets jobFacets = ol.newJobFacetsBuilder().build();
     Job job = ol.newJobBuilder().namespace(namespace).name(name).facets(jobFacets).build();
 
-    List<InputDataset> inputs = Arrays.asList(ol.newInputDatasetBuilder().namespace("ins").name("input")
-        .facets(ol.newDatasetFacetsBuilder().version(ol.newDatasetVersionDatasetFacet("input-version")).build())
-        .inputFacets(
-            ol.newInputDatasetInputFacetsBuilder().dataQualityMetrics(
-                ol.newDataQualityMetricsInputDatasetFacetBuilder()
-                  .rowCount(10L)
-                  .bytes(20L)
-                  .columnMetrics(
-                      ol.newDataQualityMetricsInputDatasetFacetColumnMetricsBuilder()
-                        .put("mycol",
-                            ol.newDataQualityMetricsInputDatasetFacetColumnMetricsAdditionalBuilder()
-                            .count(10D).distinctCount(10L).max(30D).min(5D).nullCount(1L).sum(3000D).quantiles(
-                                ol.newDataQualityMetricsInputDatasetFacetColumnMetricsAdditionalQuantilesBuilder().put("25", 52D).build())
-                            .build())
+    List<InputDataset> inputs =
+        Arrays.asList(
+            ol.newInputDatasetBuilder()
+                .namespace("ins")
+                .name("input")
+                .facets(
+                    ol.newDatasetFacetsBuilder()
+                        .version(ol.newDatasetVersionDatasetFacet("input-version"))
                         .build())
-                .build()
-            ).build())
-        .build());
-    List<OutputDataset> outputs = Arrays.asList(ol.newOutputDatasetBuilder().namespace("ons").name("output")
-        .facets(ol.newDatasetFacetsBuilder().version(ol.newDatasetVersionDatasetFacet("output-version")).build())
-        .outputFacets(
-            ol.newOutputDatasetOutputFacetsBuilder()
-                .outputStatistics(ol.newOutputStatisticsOutputDatasetFacet(10L, 20L)).build())
-        .build());
+                .inputFacets(
+                    ol.newInputDatasetInputFacetsBuilder()
+                        .dataQualityMetrics(
+                            ol.newDataQualityMetricsInputDatasetFacetBuilder()
+                                .rowCount(10L)
+                                .bytes(20L)
+                                .columnMetrics(
+                                    ol.newDataQualityMetricsInputDatasetFacetColumnMetricsBuilder()
+                                        .put(
+                                            "mycol",
+                                            ol.newDataQualityMetricsInputDatasetFacetColumnMetricsAdditionalBuilder()
+                                                .count(10D)
+                                                .distinctCount(10L)
+                                                .max(30D)
+                                                .min(5D)
+                                                .nullCount(1L)
+                                                .sum(3000D)
+                                                .quantiles(
+                                                    ol.newDataQualityMetricsInputDatasetFacetColumnMetricsAdditionalQuantilesBuilder()
+                                                        .put("25", 52D)
+                                                        .build())
+                                                .build())
+                                        .build())
+                                .build())
+                        .build())
+                .build());
+    List<OutputDataset> outputs =
+        Arrays.asList(
+            ol.newOutputDatasetBuilder()
+                .namespace("ons")
+                .name("output")
+                .facets(
+                    ol.newDatasetFacetsBuilder()
+                        .version(ol.newDatasetVersionDatasetFacet("output-version"))
+                        .build())
+                .outputFacets(
+                    ol.newOutputDatasetOutputFacetsBuilder()
+                        .outputStatistics(ol.newOutputStatisticsOutputDatasetFacet(10L, 20L))
+                        .build())
+                .build());
 
-    RunEvent runStateUpdate = ol.newRunEventBuilder()
-        .eventType(OpenLineage.RunEvent.EventType.START)
-        .eventTime(now)
-        .run(run)
-        .job(job)
-        .inputs(inputs)
-        .outputs(outputs)
-        .build();
+    RunEvent runStateUpdate =
+        ol.newRunEventBuilder()
+            .eventType(OpenLineage.RunEvent.EventType.START)
+            .eventTime(now)
+            .run(run)
+            .job(job)
+            .inputs(inputs)
+            .outputs(outputs)
+            .build();
     ObjectMapper mapper = new ObjectMapper();
     mapper.registerModule(new JavaTimeModule());
     mapper.setSerializationInclusion(Include.NON_NULL);
@@ -180,7 +207,7 @@ public class OpenLineageTest {
       assertEquals("ons", outputDataset.getNamespace());
       assertEquals("output", outputDataset.getName());
       assertEquals("output-version", outputDataset.getFacets().getVersion().getDatasetVersion());
-      
+
       assertEquals(roundTrip(json), roundTrip(mapper.writeValueAsString(read)));
       assertEquals((Long) 10L, outputDataset.getOutputFacets().getOutputStatistics().getRowCount());
       assertEquals((Long) 20L, outputDataset.getOutputFacets().getOutputStatistics().getSize());

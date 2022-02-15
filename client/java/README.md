@@ -42,10 +42,21 @@ Use the following options to configure the client:
 * Environment variables
 
 > **Note:** By default, the client will give you sane defaults, but you can easily override them.
+>
+
+`YAML`
+
+```yaml
+transport:
+  type: <type>
+  # ... transport specific configuration
+```
+
+> **Note:** For a full list of supported transports, see [`transports`](https://github.com/OpenLineage/OpenLineage/tree/main/client/java/src/main/java/io/openlineage/client/transports).
 
 ## Transports
 
-### [`HttpTransport`]()
+### [`HttpTransport`](https://github.com/OpenLineage/OpenLineage/tree/main/client/java/src/main/java/io/openlineage/client/transports/HttpTransport.java)
 
 ```yaml
 transport:
@@ -96,7 +107,7 @@ OpenLineage.RunEvent startOrCompleteRun = ...
 client.emit(startOrCompleteRun);
 ```
 
-### [`KafkaTransport`]()
+### [`KafkaTransport`](https://github.com/OpenLineage/OpenLineage/tree/main/client/java/src/main/java/io/openlineage/client/transports/KafkaTransport.java)
 
 ```yaml
 transport:
@@ -127,4 +138,17 @@ OpenLineageClient client = OpenLineageClient.builder()
       // Handle emit error here
     }
   }).build();
+```
+
+## Defining Your Own Transport
+
+```java
+OpenLineageClient client = OpenLineageClient.builder()
+  .transport(
+    new MyTransport() {
+      @Override
+      public void emit(OpenLineage.RunEvent runEvent) {
+        // Add emit logic here
+      }
+    }).build();
 ```
