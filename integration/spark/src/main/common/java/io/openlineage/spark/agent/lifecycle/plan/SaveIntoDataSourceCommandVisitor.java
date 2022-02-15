@@ -2,12 +2,9 @@
 
 package io.openlineage.spark.agent.lifecycle.plan;
 
-import static io.openlineage.spark.agent.facets.TableStateChangeFacet.StateChange.OVERWRITE;
-
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.facets.TableStateChangeFacet;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
@@ -95,17 +92,38 @@ public class SaveIntoDataSourceCommandVisitor
                     relation, relation.schema().toAttributes(), Option.empty(), x.isStreaming())))
         .orElse(Collections.emptyList()).stream()
         // constructed datasets don't include the output stats, so add that facet here
-        .peek(
+        .map(
             ds -> {
               Builder<String, OpenLineage.DatasetFacet> facetsMap =
                   ImmutableMap.<String, OpenLineage.DatasetFacet>builder();
               if (ds.getFacets().getAdditionalProperties() != null) {
                 facetsMap.putAll(ds.getFacets().getAdditionalProperties());
               }
-              if (SaveMode.Overwrite == command.mode()) {
-                facetsMap.put("tableStateChange", new TableStateChangeFacet(OVERWRITE));
-              }
               ds.getFacets().getAdditionalProperties().putAll(facetsMap.build());
+              if (SaveMode.Overwrite == command.mode()) {
+                // rebuild whole dataset with a LifecycleStateChange facet added
+                OpenLineage.DatasetFacets facets =
+                    context
+                        .getOpenLineage()
+                        .newDatasetFacets(
+                            ds.getFacets().getDocumentation(),
+                            ds.getFacets().getDataSource(),
+                            ds.getFacets().getSchema(),
+                            context
+                                .getOpenLineage()
+                                .newLifecycleStateChangeDatasetFacet(
+                                    OpenLineage.LifecycleStateChangeDatasetFacet
+                                        .LifecycleStateChange.OVERWRITE,
+                                    null));
+
+                OpenLineage.OutputDataset newDs =
+                    context
+                        .getOpenLineage()
+                        .newOutputDataset(
+                            ds.getNamespace(), ds.getName(), facets, ds.getOutputFacets());
+                return newDs;
+              }
+              return ds;
             })
         .collect(Collectors.toList());
   }

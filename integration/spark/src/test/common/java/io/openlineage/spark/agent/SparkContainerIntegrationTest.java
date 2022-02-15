@@ -18,6 +18,7 @@ import java.util.stream.Stream;
 import lombok.SneakyThrows;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -69,6 +70,8 @@ public class SparkContainerIntegrationTest {
     mockServerClient
         .when(request("/api/v1/lineage"))
         .respond(org.mockserver.model.HttpResponse.response().withStatusCode(201));
+
+    Awaitility.await().until(openLineageClientMockContainer::isRunning);
   }
 
   @AfterEach
@@ -98,7 +101,7 @@ public class SparkContainerIntegrationTest {
 
   private static MockServerContainer makeMockServerContainer() {
     return new MockServerContainer(
-            DockerImageName.parse("jamesdbloom/mockserver:mockserver-5.11.2"))
+            DockerImageName.parse("jamesdbloom/mockserver:mockserver-5.12.0"))
         .withNetwork(network)
         .withNetworkAliases("openlineageclient");
   }
@@ -143,6 +146,8 @@ public class SparkContainerIntegrationTest {
                   "spark.extraListeners=" + OpenLineageSparkListener.class.getName(),
                   "--conf",
                   "spark.sql.warehouse.dir=/tmp/warehouse",
+                  "--conf",
+                  "spark.sql.shuffle.partitions=1",
                   "--jars",
                   "/opt/libs/"
                       + System.getProperty("openlineage.spark.jar")
