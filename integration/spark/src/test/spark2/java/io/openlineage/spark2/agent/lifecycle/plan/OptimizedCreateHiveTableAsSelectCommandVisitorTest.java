@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 package io.openlineage.spark2.agent.lifecycle.plan;
 
 import static io.openlineage.spark.agent.facets.TableStateChangeFacet.StateChange.OVERWRITE;

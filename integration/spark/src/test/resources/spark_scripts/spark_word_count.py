@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
 from pyspark.sql import SparkSession
 
 spark = SparkSession.builder.master("local").appName("Open Lineage Integration Word Count").getOrCreate()

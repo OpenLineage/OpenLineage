@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
 #!/usr/bin/env bash
 #
 # see: https://github.com/vishnubob/wait-for-it

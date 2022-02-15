@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
 import os, time
 from pyspark.sql import SparkSession
 
