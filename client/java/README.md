@@ -41,6 +41,19 @@ Use the following options to configure the client:
 * An `openlineage.yml` under `.openlineage/` in the user's home directory (ex: `~/.openlineage/openlineage.yml`)
 * Environment variables
 
+> **Note:** By default, the client will give you sane defaults, but you can easily override them.
+
+## Transports
+
+### [`HttpTransport`]()
+
+```yaml
+transport:
+  type: HTTP
+  url: http://localhost:5000
+  apiKey: f38d2189-c603-4b46-bdea-e573a3b5a7d5
+```
+
 Use the following environment variables to configure the `HttpTransport`:
 
 * `OPENLINEAGE_URL`: the URL for the HTTP transport (default: `http://localhost:8080`)
@@ -83,18 +96,7 @@ OpenLineage.RunEvent startOrCompleteRun = ...
 client.emit(startOrCompleteRun);
 ```
 
-### `YAML`
-
-`HttpTransport` configuration:
-
-```yaml
-transport:
-  type: HTTP
-  url: http://localhost:5000
-  apiKey: f38d2189-c603-4b46-bdea-e573a3b5a7d5
-```
-
-`KafkaTransport` configuration:
+### [`KafkaTransport`]()
 
 ```yaml
 transport:
@@ -107,4 +109,22 @@ transport:
     retries: 3
     key.serializer: org.apache.kafka.common.serialization.StringSerializer
     value.serializer: org.apache.kafka.common.serialization.StringSerializer
+```
+
+## Error Handling
+
+```java
+// Connect to http://localhost:5000
+OpenLineageClient client = OpenLineageClient.builder()
+  .transport(
+    HttpTransport.builder()
+      .url("http://localhost:5000")
+      .apiKey("f38d2189-c603-4b46-bdea-e573a3b5a7d5")
+      .build())
+  .registerErrorHandler(new EmitErrorHandler() {
+    @Override
+    public void handleError(Throwable throwable) {
+      // Handle emit error here
+    }
+  }).build();
 ```
