@@ -10,8 +10,10 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.facets.TableProviderFacet;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
+import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
@@ -25,6 +27,9 @@ import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.Table;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
+import org.apache.spark.sql.types.IntegerType$;
+import org.apache.spark.sql.types.Metadata;
+import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,16 +44,24 @@ public class PlanUtils3Test {
   DataSourceV2Relation dataSourceV2Relation = mock(DataSourceV2Relation.class);
   TableCatalog tableCatalog = mock(TableCatalog.class);
   Identifier identifier = mock(Identifier.class);
-  StructType schema = mock(StructType.class);
-  Map<String, OpenLineage.DatasetFacet> facets;
+  StructType schema =
+      new StructType(
+          new StructField[] {
+            new StructField(
+                "field",
+                IntegerType$.MODULE$,
+                false,
+                new Metadata(new scala.collection.immutable.HashMap<>()))
+          });
   Table table = mock(Table.class);
   Map<String, String> tableProperties;
 
   @BeforeEach
   public void setUp() {
     tableProperties = new HashMap<>();
-    facets = new HashMap<>();
     when(openLineageContext.getSparkSession()).thenReturn(Optional.of(sparkSession));
+    when(openLineageContext.getOpenLineage())
+        .thenReturn(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI));
     when(dataSourceV2Relation.catalog()).thenReturn(Option.apply(tableCatalog));
     when(dataSourceV2Relation.identifier()).thenReturn(Option.apply(identifier));
     when(dataSourceV2Relation.schema()).thenReturn(schema);
@@ -59,18 +72,41 @@ public class PlanUtils3Test {
   @Test
   public void testFromDataSourceV2Relation() {
     try (MockedStatic<CatalogUtils3> mocked = mockStatic(CatalogUtils3.class)) {
-      DatasetIdentifier di = mock(DatasetIdentifier.class);
-      OpenLineage.Dataset dataset = mock(OpenLineage.Dataset.class);
+      try (MockedStatic<PlanUtils> mockedPlanUtils = mockStatic(PlanUtils.class)) {
+        DatasetIdentifier di = mock(DatasetIdentifier.class);
+        when(di.getNamespace()).thenReturn("file://tmp");
+        when(di.getName()).thenReturn("name");
 
-      when(CatalogUtils3.getDatasetIdentifier(
-              sparkSession, tableCatalog, identifier, tableProperties))
-          .thenReturn(di);
-      when(datasetFactory.getDataset(di, schema, facets)).thenReturn(dataset);
+        OpenLineage.DatasetFacets datasetFacets = mock(OpenLineage.DatasetFacets.class);
+        OpenLineage.Dataset dataset = mock(OpenLineage.Dataset.class);
+        OpenLineage.SchemaDatasetFacet schemaDatasetFacet =
+            mock(OpenLineage.SchemaDatasetFacet.class);
+        OpenLineage.DatasourceDatasetFacet datasourceDatasetFacet =
+            mock(OpenLineage.DatasourceDatasetFacet.class);
+        OpenLineage openLineage = mock(OpenLineage.class);
+        when(openLineageContext.getOpenLineage()).thenReturn(openLineage);
+        OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
+            mock(OpenLineage.DatasetFacetsBuilder.class);
+        when(openLineage.newDatasetFacetsBuilder()).thenReturn(datasetFacetsBuilder);
+        when(PlanUtils.schemaFacet(openLineage, schema)).thenReturn(schemaDatasetFacet);
+        when(PlanUtils.datasourceFacet(openLineage, di.getNamespace()))
+            .thenReturn(datasourceDatasetFacet);
+        when(datasetFacetsBuilder.schema(schemaDatasetFacet)).thenReturn(datasetFacetsBuilder);
+        when(datasetFacetsBuilder.dataSource(datasourceDatasetFacet))
+            .thenReturn(datasetFacetsBuilder);
+        when(datasetFacetsBuilder.build()).thenReturn(datasetFacets);
 
-      assertEquals(
-          Collections.singletonList(dataset),
-          PlanUtils3.fromDataSourceV2Relation(
-              datasetFactory, openLineageContext, dataSourceV2Relation, facets));
+        when(CatalogUtils3.getDatasetIdentifier(
+                sparkSession, tableCatalog, identifier, tableProperties))
+            .thenReturn(di);
+        when(datasetFactory.getDataset(di.getName(), di.getNamespace(), datasetFacets))
+            .thenReturn(dataset);
+
+        assertEquals(
+            Collections.singletonList(dataset),
+            PlanUtils3.fromDataSourceV2Relation(
+                datasetFactory, openLineageContext, dataSourceV2Relation));
+      }
     }
   }
 
@@ -83,12 +119,12 @@ public class PlanUtils3Test {
       when(CatalogUtils3.getDatasetIdentifier(
               sparkSession, tableCatalog, identifier, tableProperties))
           .thenThrow(new UnsupportedCatalogException("exception"));
-      when(datasetFactory.getDataset(di, schema, facets)).thenReturn(dataset);
+      when(datasetFactory.getDataset(di, schema)).thenReturn(dataset);
 
       assertEquals(
           Collections.emptyList(),
           PlanUtils3.fromDataSourceV2Relation(
-              datasetFactory, openLineageContext, dataSourceV2Relation, facets));
+              datasetFactory, openLineageContext, dataSourceV2Relation));
     }
   }
 
@@ -99,7 +135,7 @@ public class PlanUtils3Test {
         IllegalArgumentException.class,
         () ->
             PlanUtils3.fromDataSourceV2Relation(
-                datasetFactory, openLineageContext, dataSourceV2Relation, new HashMap<>()));
+                datasetFactory, openLineageContext, dataSourceV2Relation));
   }
 
   @Test
@@ -110,11 +146,12 @@ public class PlanUtils3Test {
         IllegalArgumentException.class,
         () ->
             PlanUtils3.fromDataSourceV2Relation(
-                datasetFactory, openLineageContext, dataSourceV2Relation, new HashMap<>()));
+                datasetFactory, openLineageContext, dataSourceV2Relation));
   }
 
   @Test
   public void testIncludeProviderFacet() {
+    Map<String, OpenLineage.DatasetFacet> facets = new HashMap<>();
     try (MockedStatic<CatalogUtils3> mocked = mockStatic(CatalogUtils3.class)) {
       TableProviderFacet tableProviderFacet = new TableProviderFacet("iceberg", "parquet");
       when(CatalogUtils3.getTableProviderFacet(tableCatalog, tableProperties))
@@ -127,6 +164,7 @@ public class PlanUtils3Test {
 
   @Test
   public void testIncludeProviderFacetWhenNoProvider() {
+    Map<String, OpenLineage.DatasetFacet> facets = new HashMap<>();
     try (MockedStatic<CatalogUtils3> mocked = mockStatic(CatalogUtils3.class)) {
       when(CatalogUtils3.getTableProviderFacet(tableCatalog, tableProperties))
           .thenReturn(Optional.empty());

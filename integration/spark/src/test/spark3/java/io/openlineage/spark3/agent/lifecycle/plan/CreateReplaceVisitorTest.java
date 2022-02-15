@@ -2,8 +2,6 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan;
 
-import static io.openlineage.spark.agent.facets.TableStateChangeFacet.StateChange.CREATE;
-import static io.openlineage.spark.agent.facets.TableStateChangeFacet.StateChange.OVERWRITE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -13,7 +11,6 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.client.OpenLineageClient;
-import io.openlineage.spark.agent.facets.TableStateChangeFacet;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -67,7 +64,10 @@ class CreateReplaceVisitorTest {
     when(logicalPlan.tableName()).thenReturn(tableName);
     when(logicalPlan.tableSchema()).thenReturn(schema);
     when(logicalPlan.properties()).thenReturn(commandProperties);
-    verifyApply((LogicalPlan) logicalPlan, commandProperties, CREATE);
+    verifyApply(
+        (LogicalPlan) logicalPlan,
+        commandProperties,
+        OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE);
   }
 
   @Test
@@ -77,7 +77,10 @@ class CreateReplaceVisitorTest {
     when(logicalPlan.tableName()).thenReturn(tableName);
     when(logicalPlan.tableSchema()).thenReturn(schema);
     when(logicalPlan.properties()).thenReturn(commandProperties);
-    verifyApply((LogicalPlan) logicalPlan, commandProperties, OVERWRITE);
+    verifyApply(
+        (LogicalPlan) logicalPlan,
+        commandProperties,
+        OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
   }
 
   @Test
@@ -87,7 +90,10 @@ class CreateReplaceVisitorTest {
     when(logicalPlan.tableName()).thenReturn(tableName);
     when(logicalPlan.tableSchema()).thenReturn(schema);
     when(logicalPlan.properties()).thenReturn(commandProperties);
-    verifyApply((LogicalPlan) logicalPlan, commandProperties, OVERWRITE);
+    verifyApply(
+        (LogicalPlan) logicalPlan,
+        commandProperties,
+        OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
   }
 
   @Test
@@ -97,13 +103,16 @@ class CreateReplaceVisitorTest {
     when(logicalPlan.tableName()).thenReturn(tableName);
     when(logicalPlan.tableSchema()).thenReturn(schema);
     when(logicalPlan.properties()).thenReturn(commandProperties);
-    verifyApply((LogicalPlan) logicalPlan, commandProperties, CREATE);
+    verifyApply(
+        (LogicalPlan) logicalPlan,
+        commandProperties,
+        OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE);
   }
 
   private void verifyApply(
       LogicalPlan logicalPlan,
       Map<String, String> tableProperties,
-      TableStateChangeFacet.StateChange expectedStateChange) {
+      OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange lifecycleStateChange) {
     DatasetIdentifier di = new DatasetIdentifier("table", "db");
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
       when(PlanUtils3.getDatasetIdentifier(
@@ -117,8 +126,8 @@ class CreateReplaceVisitorTest {
 
       assertEquals(1, outputDatasets.size());
       assertEquals(
-          new TableStateChangeFacet(expectedStateChange),
-          outputDatasets.get(0).getFacets().getAdditionalProperties().get("tableStateChange"));
+          lifecycleStateChange,
+          outputDatasets.get(0).getFacets().getLifecycleStateChange().getLifecycleStateChange());
       assertEquals("table", outputDatasets.get(0).getName());
       assertEquals("db", outputDatasets.get(0).getNamespace());
     }

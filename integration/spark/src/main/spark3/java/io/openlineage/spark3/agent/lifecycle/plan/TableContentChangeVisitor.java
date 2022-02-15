@@ -2,10 +2,7 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan;
 
-import static io.openlineage.spark.agent.facets.TableStateChangeFacet.StateChange.OVERWRITE;
-
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.facets.TableStateChangeFacet;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.IcebergHandler;
@@ -48,15 +45,16 @@ public class TableContentChangeVisitor
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
     NamedRelation table;
     Map<String, OpenLineage.DatasetFacet> facetMap = new HashMap<>();
+    boolean includeOverwriteFacet = false;
 
     // INSERT OVERWRITE TABLE SQL statement is translated into InsertIntoTable logical operator.
     if (x instanceof OverwriteByExpression) {
       table = ((OverwriteByExpression) x).table();
-      includeOverwriteFacet(facetMap);
+      includeOverwriteFacet = true;
     } else if (x instanceof InsertIntoStatement) {
       table = (NamedRelation) ((InsertIntoStatement) x).table();
       if (((InsertIntoStatement) x).overwrite()) {
-        includeOverwriteFacet(facetMap);
+        includeOverwriteFacet = true;
       }
     } else if (new IcebergHandler().hasClasses() && x instanceof ReplaceData) {
       // DELETE FROM on ICEBERG HAS START ELEMENT WITH ReplaceData AND COMPLETE ONE WITH
@@ -70,14 +68,18 @@ public class TableContentChangeVisitor
       table = (NamedRelation) ((MergeIntoTable) x).targetTable();
     } else {
       table = ((OverwritePartitionsDynamic) x).table();
-      includeOverwriteFacet(facetMap);
+      includeOverwriteFacet = true;
     }
 
-    return PlanUtils3.fromDataSourceV2Relation(
-        outputDataset(), context, (DataSourceV2Relation) table, facetMap);
-  }
-
-  private void includeOverwriteFacet(Map<String, OpenLineage.DatasetFacet> facetMap) {
-    facetMap.put("tableStateChange", new TableStateChangeFacet(OVERWRITE));
+    if (includeOverwriteFacet) {
+      return PlanUtils3.fromDataSourceV2Relation(
+          outputDataset(),
+          context,
+          (DataSourceV2Relation) table,
+          OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
+    } else {
+      return PlanUtils3.fromDataSourceV2Relation(
+          outputDataset(), context, (DataSourceV2Relation) table);
+    }
   }
 }

@@ -2,7 +2,6 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan;
 
-import static io.openlineage.spark.agent.facets.TableStateChangeFacet.StateChange.OVERWRITE;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -13,13 +12,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.facets.TableStateChangeFacet;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.spark.sql.catalyst.plans.logical.DeleteFromTable;
 import org.apache.spark.sql.catalyst.plans.logical.InsertIntoStatement;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -51,14 +46,16 @@ public class TableContentChangeVisitorTest {
   public void testApplyForOverwriteByExpression() {
     OverwriteByExpression logicalPlan = mock(OverwriteByExpression.class);
     when(logicalPlan.table()).thenReturn(dataSourceV2Relation);
-    verify(logicalPlan, OVERWRITE);
+    verify(
+        logicalPlan, OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
   }
 
   @Test
   public void testApplyForOverwritePartitionsDynamic() {
     OverwritePartitionsDynamic logicalPlan = mock(OverwritePartitionsDynamic.class);
     when(logicalPlan.table()).thenReturn(dataSourceV2Relation);
-    verify(logicalPlan, OVERWRITE);
+    verify(
+        logicalPlan, OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
   }
 
   @Test
@@ -66,35 +63,36 @@ public class TableContentChangeVisitorTest {
     InsertIntoStatement logicalPlan = mock(InsertIntoStatement.class);
     when(logicalPlan.table()).thenReturn(dataSourceV2Relation);
     when(logicalPlan.overwrite()).thenReturn(true);
-    verify(logicalPlan, OVERWRITE);
+    verify(
+        logicalPlan, OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
   }
 
   @Test
   public void testApplyForDeleteFromTable() {
     DeleteFromTable logicalPlan = mock(DeleteFromTable.class);
     when(logicalPlan.table()).thenReturn(dataSourceV2Relation);
-    verify(logicalPlan, null);
+    verify(logicalPlan);
   }
 
   @Test
   public void testApplyForUpdateTable() {
     UpdateTable logicalPlan = mock(UpdateTable.class);
     when(logicalPlan.table()).thenReturn(dataSourceV2Relation);
-    verify(logicalPlan, null);
+    verify(logicalPlan);
   }
 
   @Test
   public void testApplyForReplaceData() {
     ReplaceData logicalPlan = mock(ReplaceData.class);
     when(logicalPlan.table()).thenReturn(dataSourceV2Relation);
-    verify(logicalPlan, null);
+    verify(logicalPlan);
   }
 
   @Test
   public void testApplyForMergeIntoTable() {
     MergeIntoTable logicalPlan = mock(MergeIntoTable.class);
     when(logicalPlan.targetTable()).thenReturn(dataSourceV2Relation);
-    verify(logicalPlan, null);
+    verify(logicalPlan);
   }
 
   @Test
@@ -108,10 +106,7 @@ public class TableContentChangeVisitorTest {
       mocked.verify(
           () ->
               PlanUtils3.fromDataSourceV2Relation(
-                  any(DatasetFactory.class),
-                  eq(openLineageContext),
-                  eq(dataSourceV2Relation),
-                  eq(new HashMap<>())),
+                  any(DatasetFactory.class), eq(openLineageContext), eq(dataSourceV2Relation)),
           times(1));
     }
   }
@@ -127,24 +122,31 @@ public class TableContentChangeVisitorTest {
     assertFalse(visitor.isDefinedAt(mock(LogicalPlan.class)));
   }
 
-  private void verify(LogicalPlan logicalPlan, TableStateChangeFacet.StateChange stateChange) {
+  private void verify(
+      LogicalPlan logicalPlan,
+      OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange lifecycleStateChange) {
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
       visitor.apply(logicalPlan);
 
-      Map<String, OpenLineage.DatasetFacet> expectedFacets;
-      if (stateChange == null) {
-        expectedFacets = Collections.emptyMap();
-      } else {
-        expectedFacets =
-            Collections.singletonMap("tableStateChange", new TableStateChangeFacet(stateChange));
-      }
       mocked.verify(
           () ->
               PlanUtils3.fromDataSourceV2Relation(
                   any(DatasetFactory.class),
                   eq(openLineageContext),
                   eq(dataSourceV2Relation),
-                  eq(expectedFacets)),
+                  eq(lifecycleStateChange)),
+          times(1));
+    }
+  }
+
+  private void verify(LogicalPlan logicalPlan) {
+    try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
+      visitor.apply(logicalPlan);
+
+      mocked.verify(
+          () ->
+              PlanUtils3.fromDataSourceV2Relation(
+                  any(DatasetFactory.class), eq(openLineageContext), eq(dataSourceV2Relation)),
           times(1));
     }
   }
