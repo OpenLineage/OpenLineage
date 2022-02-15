@@ -26,6 +26,10 @@ _extractors = list(
             try_import_from_string(
                 'openlineage.airflow.extractors.python_extractor.PythonExtractor'
             ),
+            try_import_from_string(
+                'openlineage.airflow.extractors.bash_extractor.BashExtractor'
+            ),
+
         ],
     )
 )
