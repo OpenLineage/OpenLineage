@@ -6,24 +6,25 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.facets.TableProviderFacet;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Optional;
 import org.apache.iceberg.spark.SparkCatalog;
+import org.apache.spark.sql.RuntimeConfig;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import scala.collection.immutable.Map;
 
-@ExtendWith(SparkAgentTestExtension.class)
 public class IcebergHandlerTest {
 
   private IcebergHandler icebergHandler = new IcebergHandler();
+  private SparkSession sparkSession = mock(SparkSession.class);
+  private RuntimeConfig runtimeConfig = mock(RuntimeConfig.class);
 
   @ParameterizedTest
   @CsvSource({
@@ -32,16 +33,21 @@ public class IcebergHandlerTest {
   })
   public void testGetDatasetIdentifierForHadoop(
       String warehouseConf, String namespace, String name) {
-    SparkSession session = SparkSession.builder().master("local").getOrCreate();
-    session.conf().set("spark.sql.catalog.test.type", "hadoop");
-    session.conf().set("spark.sql.catalog.test.warehouse", warehouseConf);
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map2<>(
+                "spark.sql.catalog.test.type",
+                "hadoop",
+                "spark.sql.catalog.test.warehouse",
+                warehouseConf));
 
     SparkCatalog sparkCatalog = mock(SparkCatalog.class);
     when(sparkCatalog.name()).thenReturn("test");
 
     DatasetIdentifier datasetIdentifier =
         icebergHandler.getDatasetIdentifier(
-            session,
+            sparkSession,
             sparkCatalog,
             Identifier.of(new String[] {"database", "schema"}, "table"),
             new HashMap<>());
@@ -52,16 +58,20 @@ public class IcebergHandlerTest {
 
   @Test
   public void testGetDatasetIdentifierForHive() {
-    SparkSession session = SparkSession.builder().master("local").getOrCreate();
-    session.conf().set("spark.sql.catalog.test.type", "hive");
-    session.conf().set("spark.sql.catalog.test.uri", "thrift://metastore-host:10001");
-
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map2<>(
+                "spark.sql.catalog.test.type",
+                "hive",
+                "spark.sql.catalog.test.uri",
+                "thrift://metastore-host:10001"));
     SparkCatalog sparkCatalog = mock(SparkCatalog.class);
     when(sparkCatalog.name()).thenReturn("test");
 
     DatasetIdentifier datasetIdentifier =
         icebergHandler.getDatasetIdentifier(
-            session,
+            sparkSession,
             sparkCatalog,
             Identifier.of(new String[] {"database", "schema"}, "table"),
             new HashMap<>());

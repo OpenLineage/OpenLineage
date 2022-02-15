@@ -5,62 +5,80 @@ package io.openlineage.spark3.agent.lifecycle.plan;
 import static io.openlineage.spark.agent.facets.TableStateChangeFacet.StateChange.CREATE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.facets.TableStateChangeFacet;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.net.URI;
 import java.util.List;
 import java.util.Optional;
+import lombok.SneakyThrows;
+import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.catalyst.TableIdentifier$;
 import org.apache.spark.sql.catalyst.catalog.CatalogStorageFormat;
+import org.apache.spark.sql.catalyst.catalog.CatalogTable;
+import org.apache.spark.sql.catalyst.catalog.SessionCatalog;
 import org.apache.spark.sql.execution.command.CreateTableLikeCommand;
+import org.apache.spark.sql.internal.SessionState;
 import org.apache.spark.sql.types.IntegerType$;
 import org.apache.spark.sql.types.Metadata;
 import org.apache.spark.sql.types.StringType$;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import scala.Option;
 import scala.Option$;
 import scala.collection.Map$;
 import scala.collection.immutable.HashMap;
 
-@ExtendWith(SparkAgentTestExtension.class)
 class CreateTableLikeCommandVisitorTest {
+
+  private SparkSession sparkSession = mock(SparkSession.class);
+  private SessionState sessionState = mock(SessionState.class);
+  private SessionCatalog sessionCatalog = mock(SessionCatalog.class);
+  private String database = "default";
+  private TableIdentifier sourceTableIdentifier =
+      TableIdentifier$.MODULE$.apply("table", Option.apply(database));
+  private TableIdentifier targetTableIdentifier =
+      TableIdentifier$.MODULE$.apply("newtable", Option.apply(database));
+  private StructType schema =
+      new StructType(
+          new StructField[] {
+            new StructField("key", IntegerType$.MODULE$, false, new Metadata(new HashMap<>())),
+            new StructField("value", StringType$.MODULE$, false, new Metadata(new HashMap<>()))
+          });
+
   @Test
+  @SneakyThrows
   void testCreateTableLikeCommand() {
-    SparkSession session =
-        SparkSession.builder()
-            .config("spark.sql.warehouse.dir", "/tmp/warehouse")
-            .master("local")
-            .getOrCreate();
-    String database = session.catalog().currentDatabase();
+    CatalogTable sourceCatalogTable = mock(CatalogTable.class);
 
-    StructType schema =
-        new StructType(
-            new StructField[] {
-              new StructField("key", IntegerType$.MODULE$, false, new Metadata(new HashMap<>())),
-              new StructField("value", StringType$.MODULE$, false, new Metadata(new HashMap<>()))
-            });
-
-    session.catalog().createTable("table", "csv", schema, Map$.MODULE$.empty());
+    when(sparkSession.sparkContext()).thenReturn(mock(SparkContext.class));
+    when(sparkSession.sessionState()).thenReturn(sessionState);
+    when(sessionState.catalog()).thenReturn(sessionCatalog);
+    when(sessionCatalog.getTempViewOrPermanentTableMetadata(sourceTableIdentifier))
+        .thenReturn(sourceCatalogTable);
+    when(sessionCatalog.defaultTablePath(targetTableIdentifier))
+        .thenReturn(new URI("/tmp/warehouse/newtable"));
+    when(sourceCatalogTable.schema()).thenReturn(schema);
 
     CreateTableLikeCommandVisitor visitor =
         new CreateTableLikeCommandVisitor(
             OpenLineageContext.builder()
-                .sparkSession(Optional.of(session))
-                .sparkContext(session.sparkContext())
+                .sparkSession(Optional.of(sparkSession))
+                .sparkContext(sparkSession.sparkContext())
                 .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
                 .build());
 
     CreateTableLikeCommand command =
         new CreateTableLikeCommand(
-            TableIdentifier$.MODULE$.apply("newtable", Option.apply(database)),
-            TableIdentifier$.MODULE$.apply("table", Option.apply(database)),
+            targetTableIdentifier,
+            sourceTableIdentifier,
             CatalogStorageFormat.empty(),
             Option$.MODULE$.empty(),
             Map$.MODULE$.empty(),

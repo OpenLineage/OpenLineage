@@ -1,5 +1,3 @@
-# SPDX-License-Identifier: Apache-2.0
-
 #!/bin/bash
 #
 # see: https://github.com/vishnubob/wait-for-it

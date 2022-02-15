@@ -5,6 +5,8 @@ package io.openlineage.spark2.agent.lifecycle.plan;
 import static io.openlineage.spark.agent.facets.TableStateChangeFacet.StateChange.OVERWRITE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
@@ -15,6 +17,7 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.spark.Partition;
+import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier$;
@@ -31,8 +34,8 @@ import org.apache.spark.sql.types.Metadata;
 import org.apache.spark.sql.types.StringType$;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.postgresql.Driver;
 import scala.Option;
 import scala.Tuple2;
@@ -40,12 +43,17 @@ import scala.collection.Map$;
 import scala.collection.Seq$;
 import scala.collection.immutable.HashMap;
 
-@ExtendWith(SparkAgentTestExtension.class)
 class OptimizedCreateHiveTableAsSelectCommandVisitorTest {
+
+  SparkSession session = mock(SparkSession.class);
+
+  @BeforeEach
+  public void setUp() {
+    when(session.sparkContext()).thenReturn(mock(SparkContext.class));
+  }
 
   @Test
   void testOptimizedCreateHiveTableAsSelectCommand() {
-    SparkSession session = SparkSession.builder().master("local").getOrCreate();
     OptimizedCreateHiveTableAsSelectCommandVisitor visitor =
         new OptimizedCreateHiveTableAsSelectCommandVisitor(
             SparkAgentTestExtension.newContext(session));
