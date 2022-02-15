@@ -14,6 +14,7 @@ from airflow.models import TaskInstance, DAG
 from airflow.utils.state import State
 
 from openlineage.airflow.extractors.bigquery_extractor import BigQueryExtractor
+from openlineage.airflow.facets import ExternalQueryJobFacet
 from openlineage.airflow.utils import safe_import_airflow, choose_based_on_version
 from openlineage.client.facet import OutputStatisticsOutputDatasetFacet
 from openlineage.common.provider.bigquery import BigQueryJobRunFacet, \
@@ -131,6 +132,11 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
             billedBytes=111149056,
             properties=json.dumps(job_details)
         ) == task_meta.run_facets['bigQuery_job']
+
+        assert ExternalQueryJobFacet(
+            externalQueryId=bq_job_id,
+            source="bigquery"
+        ) == task_meta.job_facets['externalQuery']
 
         mock_client.return_value.close.assert_called()
 

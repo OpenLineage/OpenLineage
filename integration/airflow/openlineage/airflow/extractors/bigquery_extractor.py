@@ -7,6 +7,7 @@ from typing import Optional, List
 
 import attr
 
+from openlineage.airflow.facets import ExternalQueryJobFacet
 from openlineage.client.facet import SqlJobFacet
 from openlineage.common.provider.bigquery import BigQueryDatasetsProvider, BigQueryErrorRunFacet
 from openlineage.common.sql import SqlParser
@@ -68,15 +69,19 @@ class BigQueryExtractor(BaseExtractor):
         inputs = stats.inputs
         output = stats.output
         run_facets = stats.run_facets
+        job_facets = {
+            "sql": SqlJobFacet(context.sql),
+            "externalQuery": ExternalQueryJobFacet(
+                externalQueryId=bigquery_job_id, source="bigquery"
+            )
+        }
 
         return TaskMetadata(
             name=get_job_name(task=self.operator),
             inputs=[ds.to_openlineage_dataset() for ds in inputs],
             outputs=[output.to_openlineage_dataset()] if output else [],
             run_facets=run_facets,
-            job_facets={
-                "sql": SqlJobFacet(context.sql)
-            }
+            job_facets=job_facets
         )
 
     def _get_xcom_bigquery_job_id(self, task_instance):

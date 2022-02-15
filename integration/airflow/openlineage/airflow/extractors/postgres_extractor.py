@@ -1,8 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0.
+import logging
 from contextlib import closing
 from typing import Optional, List
 from urllib.parse import urlparse
 
+from openlineage.airflow.facets import ExternalQueryJobFacet
 from openlineage.airflow.utils import (
     get_normalized_postgres_connection_uri,
     get_connection, safe_import_airflow
@@ -27,6 +29,8 @@ _ORDINAL_POSITION = 3
 # Use 'udt_name' which is the underlying type of column
 # (ex: int4, timestamp, varchar, etc)
 _UDT_NAME = 4
+
+logger = logging.getLogger(__name__)
 
 
 class PostgresExtractor(BaseExtractor):
@@ -84,13 +88,28 @@ class PostgresExtractor(BaseExtractor):
             )
         ]
 
+        task_name = f"{self.operator.dag_id}.{self.operator.task_id}"
+        job_facets = {
+            'sql': SqlJobFacet(self.operator.sql)
+        }
+
+        query_ids = self._get_query_ids()
+        if len(query_ids) == 1:
+            job_facets['externalQuery'] = ExternalQueryJobFacet(
+                externalQueryId=query_ids[0],
+                source=source.name
+            )
+        elif len(query_ids) > 1:
+            logger.warning(
+                f"Found more than one query id for task {task_name}: {query_ids} "
+                "This might indicate that this task might be better as multiple jobs"
+            )
+
         return TaskMetadata(
-            name=f"{self.operator.dag_id}.{self.operator.task_id}",
+            name=task_name,
             inputs=[ds.to_openlineage_dataset() for ds in inputs],
             outputs=[ds.to_openlineage_dataset() for ds in outputs],
-            job_facets={
-                'sql': SqlJobFacet(self.operator.sql)
-            }
+            job_facets=job_facets
         )
 
     def _get_connection_uri(self):
@@ -182,3 +201,6 @@ class PostgresExtractor(BaseExtractor):
                         )
 
         return list(schemas_by_table.values())
+
+    def _get_query_ids(self) -> List[str]:
+        return []

@@ -3,10 +3,13 @@
 import os
 from unittest import mock
 
+import pytest
 from airflow.contrib.operators.snowflake_operator import SnowflakeOperator
 from airflow.models import Connection
 from airflow import DAG
 from airflow.utils.dates import days_ago
+from airflow.version import version as AIRFLOW_VERSION
+from pkg_resources import parse_version
 
 from openlineage.common.models import (
     DbTableName,
@@ -121,6 +124,22 @@ def test_extract(get_connection, mock_get_table_schemas):
     assert task_metadata.name == f"{DAG_ID}.{TASK_ID}"
     assert task_metadata.inputs == expected_inputs
     assert task_metadata.outputs == []
+
+
+@pytest.mark.skipif(parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"), reason="Airflow 2+ test")  # noqa
+@mock.patch('openlineage.airflow.extractors.snowflake_extractor.SnowflakeExtractor._get_table_schemas')  # noqa
+@mock.patch('openlineage.airflow.extractors.postgres_extractor.get_connection')
+def test_extract_query_ids(get_connection, mock_get_table_schemas):
+    conn = Connection()
+    conn.parse_from_uri(uri=CONN_URI)
+    get_connection.return_value = conn
+
+    TASK.get_hook = mock.MagicMock()
+    TASK.query_ids = ["1500100900"]
+
+    task_metadata = SnowflakeExtractor(TASK).extract()
+
+    assert task_metadata.job_facets["externalQuery"].externalQueryId == "1500100900"
 
 
 @mock.patch('snowflake.connector.connect')
