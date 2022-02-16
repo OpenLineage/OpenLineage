@@ -24,6 +24,7 @@
 * Add generic facet to collect environmental properties (EnvironmentFacet) [@harishsune](https://github.com/harishsune)
 * OpenLineage sensor for OpenLineage-Dagster integration [@dalinkim](https://github.com/dalinkim)
 * Java-client: make generator generate enums as well [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+* Added `UnknownOperatorAttributeRunFacet` to Airflow integration to record operators that don't produce lineage [@collado-mike](https://github.com/collado-mike)
 
 ### Fixed
 
