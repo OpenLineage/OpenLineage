@@ -117,6 +117,8 @@ Example of valid name is `BigQueryStatisticsJobFacet` and it's key `bigQuery_sta
 
 - **sourceCodeLocation**: Captures the source code location and version (example: git sha) of the job.
 
+- **sourceCode**: Captures language (ex. python) and actual source code of the job.
+
 - **sql**: Capture the SQL query if this job is a SQL query.
 
 #### Dataset Facets

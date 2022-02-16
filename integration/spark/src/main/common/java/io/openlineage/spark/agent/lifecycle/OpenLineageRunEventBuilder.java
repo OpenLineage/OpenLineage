@@ -305,7 +305,7 @@ class OpenLineageRunEventBuilder {
     RunFacetsBuilder runFacetsBuilder = openLineage.newRunFacetsBuilder();
     parentRunFacet.ifPresent(runFacetsBuilder::parent);
     OpenLineage.JobFacets jobFacets =
-        buildFacets(nodes, jobFacetBuilders, openLineage.newJobFacets(null, null, null));
+        buildFacets(nodes, jobFacetBuilders, openLineage.newJobFacetsBuilder().build());
     List<InputDataset> inputDatasets = buildInputDatasets(nodes);
     List<OutputDataset> outputDatasets = buildOutputDatasets(nodes);
     openLineageContext
