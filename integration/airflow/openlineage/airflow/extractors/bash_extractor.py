@@ -2,6 +2,7 @@ import os
 from typing import Optional, List
 
 from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
+from openlineage.airflow.facets import UnknownOperatorAttributeRunFacet, UnknownOperatorInstance
 from openlineage.client.facet import SourceCodeJobFacet
 
 
@@ -28,6 +29,21 @@ class BashExtractor(BaseExtractor):
                     "bash",
                     # We're on worker and should have access to DAG files
                     self.operator.bash_command
+                )
+            },
+            run_facets={
+
+                # The BashOperator is recorded as an "unknownSource" even though we have an
+                # extractor, as the <i>data lineage</i> cannot be determined from the operator
+                # directly.
+                "unknownSourceAttribute": UnknownOperatorAttributeRunFacet(
+                    unknownItems=[
+                        UnknownOperatorInstance(
+                            name="BashOperator",
+                            properties={attr: value
+                                        for attr, value in self.operator.__dict__.items()}
+                        )
+                    ]
                 )
             }
         )

@@ -1,10 +1,6 @@
  [{
  		"eventType": "START",
- 		"inputs": [{
- 			"facets": {},
- 			"name": "dataset",
- 			"namespace": "test"
- 		}],
+ 		"inputs": [],
  		"job": {
  			"facets": {
  				"documentation": {
@@ -30,9 +26,7 @@
 						{
 							"name": "TestUnknownDummyOperator",
 							"type": "operator",
-							"properties": {
-								"task_id": "unknown_operator"
-							}
+							"properties": {}
 						}
 					]
 				}

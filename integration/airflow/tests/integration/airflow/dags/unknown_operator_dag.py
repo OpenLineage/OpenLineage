@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
+from typing import Any
 
-from airflow.operators.dummy_operator import DummyOperator
+from airflow.models import BaseOperator
 from airflow.utils.decorators import apply_defaults
 from airflow.utils.dates import days_ago
 
@@ -12,11 +13,15 @@ else:
     from airflow import DAG
 
 
-class TestUnknownDummyOperator(DummyOperator):
+class TestUnknownDummyOperator(BaseOperator):
 
     @apply_defaults
     def __init__(self, *args, **kwargs):
         super(TestUnknownDummyOperator, self).__init__(*args, **kwargs)
+
+    def execute(self, context: Any):
+        for i in range(10):
+            print(i)
 
 
 default_args = {
@@ -33,7 +38,6 @@ dag = DAG(
     default_args=default_args,
     description='Test unknown_operator dag.'
 )
-
 
 
 t1 = TestUnknownDummyOperator(

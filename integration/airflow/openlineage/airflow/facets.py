@@ -37,7 +37,7 @@ class UnknownOperatorInstance:
     """
     name: str = attr.ib()
     properties: Dict[str, object] = attr.ib()
-    type: str = "operator"
+    type: str = attr.ib(default="operator")
 
 
 @attr.s

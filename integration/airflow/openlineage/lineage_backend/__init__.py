@@ -107,7 +107,7 @@ class Backend:
                     unknownItems=[
                         UnknownOperatorInstance(
                             name=task.__class__.__name__,
-                            properties=self.operator
+                            properties={attr: value for attr, value in task.__dict__.items()}
                         )
                     ]
                 )
