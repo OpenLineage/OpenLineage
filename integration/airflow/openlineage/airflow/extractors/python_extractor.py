@@ -3,9 +3,9 @@ import inspect
 import logging
 from typing import Optional, List, Callable
 
-from openlineage.client.facet import SourceCodeJobFacet
 from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
 from openlineage.airflow.facets import UnknownOperatorAttributeRunFacet, UnknownOperatorInstance
+from openlineage.client.facet import SourceCodeJobFacet
 
 
 log = logging.getLogger(__name__)
