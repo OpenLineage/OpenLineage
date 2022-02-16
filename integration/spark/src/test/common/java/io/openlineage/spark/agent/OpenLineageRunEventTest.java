@@ -100,7 +100,7 @@ public class OpenLineageRunEventTest {
                     .outputStatistics(ol.newOutputStatisticsOutputDatasetFacet(10L, 20L))
                     .build()));
     OpenLineage.RunEvent runStateUpdate =
-        ol.newRunEvent("START", dateTime, run, job, inputs, outputs);
+        ol.newRunEvent(OpenLineage.RunEvent.EventType.START, dateTime, run, job, inputs, outputs);
 
     Map<String, Object> actualJson =
         mapper.readValue(mapper.writeValueAsString(runStateUpdate), mapTypeReference);

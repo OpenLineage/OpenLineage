@@ -234,7 +234,7 @@ public class SparkReadWriteIntegTest {
     List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
     ObjectAssert<RunEvent> completionEvent =
         assertThat(events)
-            .filteredOn(e -> e.getEventType().equals("COMPLETE"))
+            .filteredOn(e -> e.getEventType().equals(RunEvent.EventType.COMPLETE))
             .isNotEmpty()
             .filteredOn(e -> !e.getInputs().isEmpty())
             .isNotEmpty()
@@ -320,7 +320,10 @@ public class SparkReadWriteIntegTest {
     List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
     Optional<OpenLineage.RunEvent> completionEvent =
         events.stream()
-            .filter(e -> e.getEventType().equals("COMPLETE") && !e.getInputs().isEmpty())
+            .filter(
+                e ->
+                    e.getEventType().equals(RunEvent.EventType.COMPLETE)
+                        && !e.getInputs().isEmpty())
             .findFirst();
     assertTrue(completionEvent.isPresent());
     OpenLineage.RunEvent event = completionEvent.get();
@@ -383,7 +386,7 @@ public class SparkReadWriteIntegTest {
     Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(4))
         .emit(lineageEvent.capture());
     OpenLineage.RunEvent completeEvent = lineageEvent.getAllValues().get(2);
-    assertThat(completeEvent).hasFieldOrPropertyWithValue("eventType", "COMPLETE");
+    assertThat(completeEvent).hasFieldOrPropertyWithValue("eventType", RunEvent.EventType.COMPLETE);
     assertThat(completeEvent.getInputs())
         .singleElement()
         .hasFieldOrPropertyWithValue("name", csvPath)
@@ -428,7 +431,7 @@ public class SparkReadWriteIntegTest {
     Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(4))
         .emit(lineageEvent.capture());
     OpenLineage.RunEvent completeEvent = lineageEvent.getAllValues().get(2);
-    assertThat(completeEvent).hasFieldOrPropertyWithValue("eventType", "COMPLETE");
+    assertThat(completeEvent).hasFieldOrPropertyWithValue("eventType", RunEvent.EventType.COMPLETE);
     String kafkaNamespace =
         "kafka://"
             + kafkaContainer.getHost()
@@ -474,7 +477,7 @@ public class SparkReadWriteIntegTest {
     Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(4))
         .emit(lineageEvent.capture());
     OpenLineage.RunEvent completeEvent = lineageEvent.getAllValues().get(2);
-    assertThat(completeEvent).hasFieldOrPropertyWithValue("eventType", "COMPLETE");
+    assertThat(completeEvent).hasFieldOrPropertyWithValue("eventType", RunEvent.EventType.COMPLETE);
     String kafkaNamespace =
         "kafka://"
             + kafkaContainer.getHost()
