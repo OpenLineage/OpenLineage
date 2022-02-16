@@ -14,15 +14,15 @@ import os
 import copy
 
 from airflow.models import DAG as AIRFLOW_DAG
-from airflow.utils.db import create_session
 from airflow.utils.state import State
 
 from openlineage.airflow.extractors.manager import ExtractorManager
+from openlineage.airflow.macros import lineage_run_id, lineage_parent_id
 from openlineage.airflow.utils import (
     JobIdMapping,
     DagUtils,
     get_custom_facets,
-    new_lineage_run_id, get_task_location
+    new_lineage_run_id, get_task_location, openlineage_job_name
 )
 
 from openlineage.airflow.adapter import OpenLineageAdapter, _DAG_DEFAULT_NAMESPACE
@@ -40,70 +40,6 @@ extractor_manager = ExtractorManager()
 def has_lineage_backend_setup():
     from airflow.configuration import conf
     return conf.get("lineage", "backend") == "openlineage.lineage_backend.OpenLineageBackend"
-
-
-def lineage_run_id(run_id, task):
-    """
-    Macro function which returns the generated run id for a given task. This
-    can be used to forward the run id from a task to a child run so the job
-    hierarchy is preserved. Invoke as a jinja template, e.g.
-
-    PythonOperator(
-        task_id='render_template',
-        python_callable=my_task_function,
-        op_args=['{{ lineage_run_id(run_id, task) }}'], # lineage_run_id macro invoked
-        provide_context=False,
-        dag=dag
-    )
-
-    :param run_id:
-    :param task:
-    :return:
-    """
-    with create_session() as session:
-        name = openlineage_job_name(task.dag_id, task.task_id)
-        ids = JobIdMapping.get(name, run_id, session)
-        if ids is None:
-            return ""
-        elif isinstance(ids, list):
-            return "" if len(ids) == 0 else ids[0]
-        else:
-            return str(ids)
-
-
-def lineage_parent_id(run_id, task):
-    """
-    Macro function which returns the generated job and run id for a given task. This
-    can be used to forward the ids from a task to a child run so the job
-    hierarchy is preserved. Child run can create ParentRunFacet from those ids.
-    Invoke as a jinja template, e.g.
-
-    PythonOperator(
-        task_id='render_template',
-        python_callable=my_task_function,
-        op_args=['{{ lineage_parent_id(run_id, task) }}'], # lineage_run_id macro invoked
-        provide_context=False,
-        dag=dag
-    )
-
-    :param run_id:
-    :param task:
-    :return:
-    """
-    with create_session() as session:
-        job_name = openlineage_job_name(task.dag_id, task.task_id)
-        ids = JobIdMapping.get(job_name, run_id, session)
-        if ids is None:
-            return ""
-        elif isinstance(ids, list):
-            run_id = "" if len(ids) == 0 else ids[0]
-        else:
-            run_id = str(ids)
-        return f"{_DAG_NAMESPACE}/{job_name}/{run_id}"
-
-
-def openlineage_job_name(dag_id: str, task_id: str) -> str:
-    return f'{dag_id}.{task_id}'
 
 
 class DAG(AIRFLOW_DAG):
