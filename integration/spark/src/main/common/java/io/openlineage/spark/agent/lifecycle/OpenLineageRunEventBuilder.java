@@ -237,7 +237,7 @@ class OpenLineageRunEventBuilder {
       RunEventBuilder runEventBuilder,
       JobBuilder jobBuilder,
       SparkListenerSQLExecutionStart event) {
-    runEventBuilder.eventType("START");
+    runEventBuilder.eventType(OpenLineage.RunEvent.EventType.START);
     return buildRun(parentRunFacet, runEventBuilder, jobBuilder, event, Optional.empty());
   }
 
@@ -246,7 +246,7 @@ class OpenLineageRunEventBuilder {
       RunEventBuilder runEventBuilder,
       JobBuilder jobBuilder,
       SparkListenerSQLExecutionEnd event) {
-    runEventBuilder.eventType("COMPLETE");
+    runEventBuilder.eventType(OpenLineage.RunEvent.EventType.COMPLETE);
     return buildRun(parentRunFacet, runEventBuilder, jobBuilder, event, Optional.empty());
   }
 
@@ -255,7 +255,7 @@ class OpenLineageRunEventBuilder {
       RunEventBuilder runEventBuilder,
       JobBuilder jobBuilder,
       SparkListenerJobStart event) {
-    runEventBuilder.eventType("START");
+    runEventBuilder.eventType(OpenLineage.RunEvent.EventType.START);
     return buildRun(
         parentRunFacet,
         runEventBuilder,
@@ -269,7 +269,10 @@ class OpenLineageRunEventBuilder {
       RunEventBuilder runEventBuilder,
       JobBuilder jobBuilder,
       SparkListenerJobEnd event) {
-    runEventBuilder.eventType(event.jobResult() instanceof JobFailed ? "FAIL" : "COMPLETE");
+    runEventBuilder.eventType(
+        event.jobResult() instanceof JobFailed
+            ? OpenLineage.RunEvent.EventType.FAIL
+            : OpenLineage.RunEvent.EventType.COMPLETE);
     return buildRun(
         parentRunFacet,
         runEventBuilder,

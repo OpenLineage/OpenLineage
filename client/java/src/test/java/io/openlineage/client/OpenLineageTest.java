@@ -57,7 +57,7 @@ public class OpenLineageTest {
     Job job = ol.newJob(namespace, name, jobFacets);
     List<InputDataset> inputs = Arrays.asList(ol.newInputDataset("ins", "input", null, null));
     List<OutputDataset> outputs = Arrays.asList(ol.newOutputDataset("ons", "output", null, null));
-    RunEvent runStateUpdate = ol.newRunEvent("START", now, run, job, inputs, outputs);
+    RunEvent runStateUpdate = ol.newRunEvent(OpenLineage.RunEvent.EventType.START, now, run, job, inputs, outputs);
 
 
     String json = mapper.writeValueAsString(runStateUpdate);
@@ -133,7 +133,7 @@ public class OpenLineageTest {
         .build());
 
     RunEvent runStateUpdate = ol.newRunEventBuilder()
-        .eventType("START")
+        .eventType(OpenLineage.RunEvent.EventType.START)
         .eventTime(now)
         .run(run)
         .job(job)
@@ -192,7 +192,7 @@ public class OpenLineageTest {
       assertEquals(runId, readServer.getRun().getRunId());
       assertEquals(name, readServer.getJob().getName());
       assertEquals(namespace, readServer.getJob().getNamespace());
-      assertEquals(runStateUpdate.getEventType(), readServer.getEventType());
+      assertEquals(runStateUpdate.getEventType().name(), readServer.getEventType().name());
       assertEquals(runStateUpdate.getEventTime(), readServer.getEventTime());
 
       assertEquals(json, mapper.writeValueAsString(readServer));
