@@ -164,6 +164,7 @@ jobs:
         type: string
     working_directory: ~/openlineage/integration/spark
     machine: true
+    resource_class: large
     environment:
       TESTCONTAINERS_RYUK_DISABLED: "true"
       JDK8_HOME: /usr/lib/jvm/java-8-openjdk-amd64
@@ -238,6 +239,7 @@ jobs:
         type: string
     working_directory: ~/openlineage/integration/spark
     machine: true
+    resource_class: large
     environment:
       TESTCONTAINERS_RYUK_DISABLED: "true"
       JDK8_HOME: /usr/lib/jvm/java-8-openjdk-amd64
@@ -311,6 +313,7 @@ jobs:
   integration-test-integration-airflow:
     working_directory: ~/openlineage/integration/
     machine: true
+    resource_class: large
     steps:
       - *checkout_project_root
       - gcp-cli/install
@@ -323,6 +326,7 @@ jobs:
   integration-test-integration-airflow-2:
     working_directory: ~/openlineage/integration/
     machine: true
+    resource_class: large
     steps:
       - *checkout_project_root
       - gcp-cli/install
