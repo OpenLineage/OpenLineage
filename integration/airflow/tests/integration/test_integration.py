@@ -46,9 +46,10 @@ def wait_for_dag(dag_id):
 
     log.info(f"DAG '{dag_id}' state set to '{state}'.")
     if state == 'failed':
-        sys.exit(1)
+        return False
     elif state != "success":
         raise Exception('Retry!')
+    return True
 
 
 def check_matches(expected_events, actual_events) -> bool:
@@ -131,7 +132,8 @@ def setup_db():
 def test_integration(dag_id, request_path):
     log.info(f"Checking dag {dag_id}")
     # (1) Wait for DAG to complete
-    wait_for_dag(dag_id)
+    if not wait_for_dag(dag_id):
+        sys.exit(1)
     # (2) Read expected events
     with open(request_path, 'r') as f:
         expected_events = json.load(f)
@@ -148,8 +150,8 @@ def test_integration(dag_id, request_path):
 def test_integration_ordered(dag_id, request_dir: str):
     log.info(f"Checking dag {dag_id}")
     # (1) Wait for DAG to complete
-    wait_for_dag(dag_id)
-
+    if not wait_for_dag(dag_id):
+        sys.exit(1)
     # (2) Find and read events in given directory on order of file names.
     #     The events have to arrive at the server in the same order.
     event_files = sorted(

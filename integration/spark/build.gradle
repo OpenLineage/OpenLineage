@@ -229,7 +229,7 @@ tasks.register('copyDependencies', Copy) {
 
 def commonTestConfiguration = {
     forkEvery 1
-    maxParallelForks 3
+    maxParallelForks 5
     testLogging {
         events "passed", "skipped", "failed"
         showStandardStreams = true
