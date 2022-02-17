@@ -133,13 +133,14 @@ jobs:
             - v1-release-client-java-{{ .Branch }}-{{ .Revision }}
             - v1-release-client-java-{{ .Branch }}
       - run: |
-          cd ../../client/java
-          ./gradlew  --no-daemon publishToMavenLocal
-          cd -
           # Get, then decode the GPG private key used to sign *.jar
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
           export RELEASE_PASSWORD=$(echo $SONATYPE_PASSWORD)
           export RELEASE_USERNAME=$(echo $SONATYPE_USER)
+
+          cd ../../client/java
+          ./gradlew --no-daemon publishToMavenLocal
+          cd -
           # Publish *.jar
           ./gradlew --no-daemon publish
 
@@ -163,6 +164,7 @@ jobs:
         type: string
     working_directory: ~/openlineage/integration/spark
     machine: true
+    resource_class: large
     environment:
       TESTCONTAINERS_RYUK_DISABLED: "true"
       JDK8_HOME: /usr/lib/jvm/java-8-openjdk-amd64
@@ -237,6 +239,7 @@ jobs:
         type: string
     working_directory: ~/openlineage/integration/spark
     machine: true
+    resource_class: large
     environment:
       TESTCONTAINERS_RYUK_DISABLED: "true"
       JDK8_HOME: /usr/lib/jvm/java-8-openjdk-amd64
@@ -310,6 +313,7 @@ jobs:
   integration-test-integration-airflow:
     working_directory: ~/openlineage/integration/
     machine: true
+    resource_class: large
     steps:
       - *checkout_project_root
       - gcp-cli/install
@@ -322,6 +326,7 @@ jobs:
   integration-test-integration-airflow-2:
     working_directory: ~/openlineage/integration/
     machine: true
+    resource_class: large
     steps:
       - *checkout_project_root
       - gcp-cli/install

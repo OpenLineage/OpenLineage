@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
 import pytest
 from openlineage.client.facet import DataSourceDatasetFacet, SchemaDatasetFacet, SchemaField
 from openlineage.client.run import Dataset as OpenLineageDataset

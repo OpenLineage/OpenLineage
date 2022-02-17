@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 package com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.connector.common;
 
 import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.BigQuery;

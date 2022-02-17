@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 package io.openlineage.spark.agent;
 
 import static org.mockito.Mockito.mock;
@@ -28,21 +30,24 @@ import org.apache.spark.sql.execution.SparkPlanInfo;
 import org.apache.spark.sql.execution.datasources.InsertIntoHadoopFsRelationCommand;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import scala.Option;
 import scala.collection.Map$;
 import scala.collection.Seq$;
 
-@ExtendWith(SparkAgentTestExtension.class)
 public class OpenLineageSparkListenerTest {
+
   @Test
-  public void testSqlEventWithJobEventEmitsOnce(SparkSession sparkSession) {
+  public void testSqlEventWithJobEventEmitsOnce() {
+    SparkSession sparkSession = mock(SparkSession.class);
+    SparkContext sparkContext = mock(SparkContext.class);
     EventEmitter emitter = mock(EventEmitter.class);
     QueryExecution qe = mock(QueryExecution.class);
     LogicalPlan query = UnresolvedRelation$.MODULE$.apply(TableIdentifier.apply("tableName"));
     SparkPlan plan = mock(SparkPlan.class);
 
+    when(sparkSession.sparkContext()).thenReturn(sparkContext);
+    when(sparkContext.appName()).thenReturn("appName");
     when(qe.optimizedPlan())
         .thenReturn(
             new InsertIntoHadoopFsRelationCommand(
@@ -60,7 +65,7 @@ public class OpenLineageSparkListenerTest {
                 Seq$.MODULE$.<String>empty()));
 
     when(qe.executedPlan()).thenReturn(plan);
-    when(plan.sparkContext()).thenReturn(SparkContext.getOrCreate());
+    when(plan.sparkContext()).thenReturn(sparkContext);
     when(plan.nodeName()).thenReturn("execute");
 
     OpenLineageContext olContext =

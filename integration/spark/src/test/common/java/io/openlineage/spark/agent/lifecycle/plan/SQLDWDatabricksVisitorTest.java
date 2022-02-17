@@ -1,6 +1,8 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
@@ -8,9 +10,9 @@ import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.List;
+import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.SparkSession$;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -19,9 +21,8 @@ import org.apache.spark.sql.sources.BaseRelation;
 import org.apache.spark.sql.types.StringType$;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import scala.Option;
 import scala.collection.Seq$;
 
@@ -75,16 +76,16 @@ class TestSqlDWDatabricksVisitor extends SqlDWDatabricksVisitor {
   }
 }
 
-@ExtendWith(SparkAgentTestExtension.class)
 class SQLDWDatabricksVisitorTest {
-  @AfterEach
-  public void tearDown() {
-    SparkSession$.MODULE$.cleanupAnyExistingSession();
+  SparkSession session = mock(SparkSession.class);
+
+  @BeforeEach
+  public void setUp() {
+    when(session.sparkContext()).thenReturn(mock(SparkContext.class));
   }
 
   @Test
   void testSQLDWRelation() {
-    SparkSession session = SparkSession.builder().master("local").getOrCreate();
     String inputName = "\"dbo\".\"table1\"";
     String inputJdbcUrl =
         "jdbc:sqlserver://MYTESTSERVER.database.windows.net:1433;database=MYTESTDB";
@@ -124,7 +125,6 @@ class SQLDWDatabricksVisitorTest {
 
   @Test
   void testSQLDWRelationComplexQuery() {
-    SparkSession session = SparkSession.builder().master("local").getOrCreate();
     String inputName = "(SELECT * FROM dbo.table1) q";
     String inputJdbcUrl =
         "jdbc:sqlserver://MYTESTSERVER.database.windows.net:1433;database=MYTESTDB";
@@ -164,7 +164,6 @@ class SQLDWDatabricksVisitorTest {
 
   @Test
   void testSQLDWRelationBadJdbcUrl() {
-    SparkSession session = SparkSession.builder().master("local").getOrCreate();
     String inputName = "dbo.mytable";
     String inputJdbcUrl = "sqlserver://MYTESTSERVER.database.windows.net:1433;database=MYTESTDB";
 

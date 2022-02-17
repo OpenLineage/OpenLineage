@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import com.google.cloud.spark.bigquery.BigQueryRelation;

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
 from great_expectations_provider.operators.great_expectations import GreatExpectationsOperator
 
 from airflow.utils.dates import days_ago

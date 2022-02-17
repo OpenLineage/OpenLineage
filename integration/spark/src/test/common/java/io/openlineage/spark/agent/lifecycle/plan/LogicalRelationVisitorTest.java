@@ -1,6 +1,10 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
@@ -9,8 +13,8 @@ import io.openlineage.spark.api.DatasetFactory;
 import java.net.URI;
 import java.util.List;
 import org.apache.spark.Partition;
+import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.SparkSession$;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
@@ -19,8 +23,7 @@ import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 import org.apache.spark.sql.types.StringType$;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.postgresql.Driver;
@@ -29,11 +32,13 @@ import scala.Tuple2;
 import scala.collection.Seq$;
 import scala.collection.immutable.Map$;
 
-@ExtendWith(SparkAgentTestExtension.class)
 class LogicalRelationVisitorTest {
-  @AfterEach
-  public void tearDown() {
-    SparkSession$.MODULE$.cleanupAnyExistingSession();
+
+  SparkSession session = mock(SparkSession.class);
+
+  @BeforeEach
+  public void setUp() {
+    when(session.sparkContext()).thenReturn(mock(SparkContext.class));
   }
 
   @ParameterizedTest
@@ -45,7 +50,6 @@ class LogicalRelationVisitorTest {
         "mysql://localhost/sparkdata"
       })
   void testApply(String connectionUri) {
-    SparkSession session = SparkSession.builder().master("local").getOrCreate();
     LogicalRelationVisitor visitor =
         new LogicalRelationVisitor(
             SparkAgentTestExtension.newContext(session),

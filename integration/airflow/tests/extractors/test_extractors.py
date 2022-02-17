@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
 import os
 
 
@@ -16,7 +18,7 @@ def test_env_extractors():
     os.environ['OPENLINEAGE_EXTRACTOR_TestOperator'] = \
         'openlineage.airflow.extractors.postgres_extractor.PostgresExtractor'
 
-    assert len(Extractors().extractors) == 6
+    assert len(Extractors().extractors) == 8
     del os.environ['OPENLINEAGE_EXTRACTOR_TestOperator']
 
 

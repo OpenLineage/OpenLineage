@@ -1,14 +1,4 @@
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-License-Identifier: Apache-2.0.
 
 import os
 from typing import Dict, List, Optional
@@ -179,10 +169,23 @@ class Assertion:
 @attr.s
 class DataQualityAssertionsDatasetFacet(BaseFacet):
     """
-    This facet represents of asserted expectations on dataset or it's column
+    This facet represents asserted expectations on dataset or it's column
     """
     assertions: List[Assertion] = attr.ib()
 
     @staticmethod
     def _get_schema() -> str:
         return "#/definitions/DataQualityAssertionsDatasetFacet"  # noqa
+
+
+@attr.s
+class SourceCodeJobFacet(BaseFacet):
+    """
+    This facet represents source code that the job executed.
+    """
+    language: str = attr.ib()  # language that the code was written in
+    source: str = attr.ib()  # source code text
+
+    @staticmethod
+    def _get_schema() -> str:
+        return SCHEMA_URI + "#/definitions/SourceCodeJobFacet"
