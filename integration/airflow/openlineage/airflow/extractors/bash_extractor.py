@@ -1,9 +1,9 @@
 import os
 from typing import Optional, List
 
+from openlineage.client.facet import SourceCodeJobFacet
 from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
 from openlineage.airflow.facets import UnknownOperatorAttributeRunFacet, UnknownOperatorInstance
-from openlineage.client.facet import SourceCodeJobFacet
 
 
 class BashExtractor(BaseExtractor):

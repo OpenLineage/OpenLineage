@@ -3,6 +3,7 @@
 import logging
 import uuid
 import time
+
 from pkg_resources import parse_version
 
 from airflow.lineage.backend import LineageBackend
