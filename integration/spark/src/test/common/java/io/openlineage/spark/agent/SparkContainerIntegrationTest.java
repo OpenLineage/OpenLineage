@@ -7,6 +7,7 @@ import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.JsonBody.json;
 
 import com.google.common.collect.ImmutableMap;
+import io.openlineage.spark.agent.util.LogMessageWaitExtraTimeStrategy;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -37,7 +38,6 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.containers.MockServerContainer;
 import org.testcontainers.containers.Network;
-import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
@@ -116,7 +116,11 @@ public class SparkContainerIntegrationTest {
         .withFileSystemBind("build/libs", "/opt/libs")
         .withFileSystemBind("build/dependencies", "/opt/dependencies")
         .withLogConsumer(SparkContainerIntegrationTest::consumeOutput)
-        .waitingFor(Wait.forLogMessage(".*ShutdownHookManager: Shutdown hook called.*", 1))
+        .waitingFor(
+            new LogMessageWaitExtraTimeStrategy()
+                .withExtraWaitingTime(Duration.of(3, ChronoUnit.SECONDS))
+                .withRegEx(".*ShutdownHookManager: Shutdown hook called.*")
+                .withTimes(1))
         .withStartupTimeout(Duration.of(5, ChronoUnit.MINUTES))
         .dependsOn(openLineageClientMockContainer)
         .withReuse(true)
