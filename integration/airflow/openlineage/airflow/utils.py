@@ -135,8 +135,8 @@ def _filtered_query_params(k: str):
     unfiltered_snowflake_keys = ["extra__snowflake__warehouse",
                                  "extra__snowflake__account",
                                  "extra__snowflake__database"]
-    filtered_key_substrings = ["aws_access_key_id", 
-                               "aws_secret_access_key", 
+    filtered_key_substrings = ["aws_access_key_id",
+                               "aws_secret_access_key",
                                "extra__snowflake__"]
     return k not in unfiltered_snowflake_keys and \
         any(substr in k for substr in filtered_key_substrings)
