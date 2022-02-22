@@ -7,7 +7,6 @@ import static org.junit.Assert.assertEquals;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
-import io.openlineage.spark.agent.facets.TableStateChangeFacet;
 import java.util.List;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier;
@@ -88,11 +87,8 @@ public class TruncateTableCommandVisitorTest {
         .hasFieldOrPropertyWithValue("name", "/tmp/warehouse/truncate_table")
         .hasFieldOrPropertyWithValue("namespace", "file");
 
-    TableStateChangeFacet tableStateChangeFacet =
-        ((TableStateChangeFacet)
-            datasets.get(0).getFacets().getAdditionalProperties().get("tableStateChange"));
-
-    assertThat(
-        tableStateChangeFacet.getStateChange().equals(TableStateChangeFacet.StateChange.TRUNCATE));
+    assertEquals(
+        OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.TRUNCATE,
+        datasets.get(0).getFacets().getLifecycleStateChange().getLifecycleStateChange());
   }
 }
