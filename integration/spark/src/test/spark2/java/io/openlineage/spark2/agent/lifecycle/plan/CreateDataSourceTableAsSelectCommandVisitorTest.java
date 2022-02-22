@@ -2,7 +2,6 @@
 
 package io.openlineage.spark2.agent.lifecycle.plan;
 
-import static io.openlineage.spark.agent.facets.TableStateChangeFacet.StateChange.CREATE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -10,7 +9,6 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
-import io.openlineage.spark.agent.facets.TableStateChangeFacet;
 import io.openlineage.spark.agent.lifecycle.plan.CreateDataSourceTableAsSelectCommandVisitor;
 import java.net.URI;
 import java.util.List;
@@ -77,8 +75,8 @@ class CreateDataSourceTableAsSelectCommandVisitorTest {
     OpenLineage.OutputDataset outputDataset = datasets.get(0);
 
     assertEquals(
-        new TableStateChangeFacet(CREATE),
-        outputDataset.getFacets().getAdditionalProperties().get("tableStateChange"));
+        OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE,
+        outputDataset.getFacets().getLifecycleStateChange().getLifecycleStateChange());
     assertEquals("directory", outputDataset.getName());
     assertEquals("s3://bucket", outputDataset.getNamespace());
   }

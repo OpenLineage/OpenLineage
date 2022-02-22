@@ -46,8 +46,8 @@
           "type" : "long"
         } ]
       },
-      "tableStateChange": {
-        "stateChange": "overwrite"
+      "lifecycleStateChange": {
+        "lifecycleStateChange": "OVERWRITE"
       }
     }
   } ]

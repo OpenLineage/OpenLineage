@@ -46,7 +46,7 @@ fi
 echo "Copying spec files from commit $PREV_SPEC_COMMIT"
 
 # Mark last commit on which we finished copying spec
-cat "$CIRCLE_SHA1" > "$WEBSITE_COMMIT_FILE"
+echo "$CIRCLE_SHA1" > "$WEBSITE_COMMIT_FILE"
 
 # Copy changed spec fils to target location
 git diff --name-only HEAD~1 HEAD 'spec/*.json' | while read LINE; do
