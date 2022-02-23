@@ -310,7 +310,7 @@ jobs:
             - ./dist/*.whl
             - ./dist/*.tar.gz
 
-  integration-test-integration-airflow:
+  integration-test-integration-airflow-1-10:
     working_directory: ~/openlineage/integration/
     machine: true
     resource_class: large
@@ -323,7 +323,11 @@ jobs:
       - run: docker build -f airflow/Dockerfile.tests -t openlineage-airflow-base .
       - run: ./airflow/tests/integration/docker/up.sh
 
-  integration-test-integration-airflow-2:
+
+  integration-test-integration-airflow:
+    parameters:
+      airflow-image:
+        type: string
     working_directory: ~/openlineage/integration/
     machine: true
     resource_class: large
@@ -334,7 +338,7 @@ jobs:
       - run: ../.circleci/get-docker-compose.sh
       - run: cp -r ../client/python python
       - run: docker build -f airflow/Dockerfile.tests -t openlineage-airflow-base .
-      - run: ./airflow/tests/integration/docker/up-2.sh
+      - run: AIRFLOW_IMAGE=<< parameters.airflow-image >> ./airflow/tests/integration/docker/up-2.sh
 
   unit-test-integration-dagster:
     working_directory: ~/openlineage/integration/dagster
@@ -475,7 +479,7 @@ workflows:
             - unit-test-integration-common
       - unit-test-integration-airflow-1
       - unit-test-integration-airflow-2
-      - integration-test-integration-airflow:
+      - integration-test-integration-airflow-1-10:
           context: integration-tests
           requires:
             - unit-test-integration-airflow-1
@@ -484,7 +488,10 @@ workflows:
           filters:
             branches:
               ignore: /pull\/[0-9]+/
-      - integration-test-integration-airflow-2:
+      - integration-test-integration-airflow:
+          matrix:
+            parameters:
+              airflow-image: ['apache/airflow:2.1.3', 'apache/airflow:2.2.3']
           context: integration-tests
           requires:
             - unit-test-integration-airflow-2

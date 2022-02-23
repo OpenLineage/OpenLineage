@@ -5,7 +5,9 @@ x-airflow-base: &airflow-base
     context: .
     target: airflow
     dockerfile: Dockerfile.2
-  environment:
+    args:
+      AIRFLOW_IMAGE: ${AIRFLOW_IMAGE}
+  environment: &airflow-common-env
     DB_BACKEND: postgresql+psycopg2
     DB_HOST: postgres
     DB_PORT: 5432
@@ -24,6 +26,8 @@ x-airflow-base: &airflow-base
     AIRFLOW_CONN_FOOD_DELIVERY_DB: postgres://food_delivery:food_delivery@postgres:5432/food_delivery
     AIRFLOW_CONN_BQ_CONN: google-cloud-platform://?extra__google_cloud_platform__project=openlineage-ci&extra__google_cloud_platform__key_path=%2Fopt%2Fconfig%2Fgcloud%2Fgcloud-service-key.json
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "False"
+    BIGQUERY_PREFIX: ${BIGQUERY_PREFIX}
+    BIGQUERY_DBT_DATASET: ${BIGQUERY_DBT_DATASET}_dbt
     GOOGLE_APPLICATION_CREDENTIALS: /opt/config/gcloud/gcloud-service-key.json
     OPENLINEAGE_URL: http://backend:5000
     OPENLINEAGE_NAMESPACE: food_delivery
@@ -40,27 +44,17 @@ services:
       context: .
       target: integration
       dockerfile: Dockerfile.2
+      args:
+        AIRFLOW_IMAGE: ${AIRFLOW_IMAGE}
+    environment:
+      BIGQUERY_PREFIX: ${BIGQUERY_PREFIX}
+      BIGQUERY_DBT_DATASET: ${BIGQUERY_DBT_DATASET}_dbt
     volumes:
       - ./docker/wait-for-it.sh:/wait-for-it.sh
     depends_on:
-      - airflow
+      - airflow_scheduler
       - backend
     entrypoint: ["./wait-for-it.sh", "backend:5000", "--", "./entrypoint.sh"]
-
-  airflow:
-    <<: *airflow-base
-    ports:
-      - "8080:8080"
-    command: webserver
-    depends_on:
-      - airflow_scheduler
-      - postgres
-    healthcheck:
-      test: [ "CMD", "curl", "--fail", "http://localhost:8080/health" ]
-      interval: 10s
-      timeout: 10s
-      retries: 5
-    restart: always
 
   airflow_scheduler:
     <<: *airflow-base

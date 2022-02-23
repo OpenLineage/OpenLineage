@@ -6,7 +6,7 @@ bigquery:
             method: service-account
             keyfile: /opt/config/gcloud/gcloud-service-key.json
             project: openlineage-ci
-            dataset: dbt_test1
+            dataset: "{{ env_var('BIGQUERY_DBT_DATASET') }}"
             threads: 2
             timeout_seconds: 300
             location: EU

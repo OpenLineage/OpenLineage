@@ -1,18 +1,19 @@
 # SPDX-License-Identifier: Apache-2.0.
-import typing
+import os
 import logging
 from dateutil.parser import parse
 from jinja2 import Environment
+from typing import Any, Optional
 
 
 log = logging.getLogger(__name__)
 
 
-def any(result: typing.Any):
+def any(result: Any):
     return result
 
 
-def is_datetime(result: typing.Any):
+def is_datetime(result: Any):
     try:
         x = parse(result)  # noqa
         return "true"
@@ -21,10 +22,25 @@ def is_datetime(result: typing.Any):
     return "false"
 
 
+def env_var(var: str, default: Optional[str] = None) -> str:
+    """The env_var() function. Return the environment variable named 'var'.
+    If there is no such environment variable set, return the default.
+    If the default is None, raise an exception for an undefined variable.
+    """
+    if var in os.environ:
+        return os.environ[var]
+    elif default is not None:
+        return default
+    else:
+        msg = f"Env var required but not provided: '{var}'"
+        raise Exception(msg)
+
+
 def setup_jinja() -> Environment:
     env = Environment()
     env.globals['any'] = any
     env.globals['is_datetime'] = is_datetime
+    env.globals['env_var'] = env_var
     return env
 
 
