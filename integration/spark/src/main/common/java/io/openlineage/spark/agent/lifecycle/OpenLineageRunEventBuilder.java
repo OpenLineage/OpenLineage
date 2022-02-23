@@ -167,7 +167,7 @@ class OpenLineageRunEventBuilder {
   @NonNull private final Collection<CustomFacetBuilder<?, ? extends JobFacet>> jobFacetBuilders;
 
   private final UnknownEntryFacetListener unknownEntryFacetListener =
-      new UnknownEntryFacetListener();
+      UnknownEntryFacetListener.getInstance();
   private final Map<Integer, ActiveJob> jobMap = new HashMap<>();
   private final Map<Integer, Stage> stageMap = new HashMap<>();
 
