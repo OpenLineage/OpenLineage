@@ -3,7 +3,9 @@
 package io.openlineage.spark.agent.util;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.Dataset;
 import io.openlineage.spark.agent.client.OpenLineageClient;
+import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -15,6 +17,7 @@ import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import scala.PartialFunction;
@@ -27,6 +30,7 @@ import scala.runtime.AbstractPartialFunction;
  */
 @Slf4j
 public class PlanUtils {
+
   public static final String SLASH_DELIMITER_USER_PASSWORD_REGEX =
       "[A-Za-z0-9_%]+//?[A-Za-z0-9_%]*@";
   public static final String COLON_DELIMITER_USER_PASSWORD_REGEX =
@@ -48,6 +52,20 @@ public class PlanUtils {
       return fn.apply(arg);
     }
     return Collections.emptyList();
+  }
+
+  public static <D extends Dataset> Collection<D> matchNode(
+      List<PartialFunction<Object, Collection<D>>> visitors, Object event, LogicalPlan node) {
+    return visitors.stream()
+        .filter(v -> v instanceof AbstractQueryPlanDatasetBuilder && v.isDefinedAt(event))
+        .map(
+            v ->
+                ((AbstractQueryPlanDatasetBuilder<Object, LogicalPlan, D>) v)
+                    .asQueryPlanVisitor(event))
+        .filter(v -> v.isDefinedAt(node))
+        .map(v -> v.apply(node))
+        .findFirst()
+        .orElse(Collections.emptyList());
   }
 
   /**

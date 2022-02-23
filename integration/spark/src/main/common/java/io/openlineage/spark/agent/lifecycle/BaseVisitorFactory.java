@@ -23,9 +23,7 @@ import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHiveTableVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.KafkaRelationVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LoadDataCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRDDVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.LogicalRelationVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.OptimizedCreateHiveTableAsSelectCommandVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.SaveIntoDataSourceCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.SqlDWDatabricksVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.TruncateTableCommandVisitor;
 import io.openlineage.spark.api.DatasetFactory;
@@ -41,7 +39,6 @@ abstract class BaseVisitorFactory implements VisitorFactory {
       List<PartialFunction<LogicalPlan, List<D>>> getBaseCommonVisitors(
           OpenLineageContext context, DatasetFactory<D> factory) {
     List<PartialFunction<LogicalPlan, List<D>>> list = new ArrayList<>();
-    list.add(new LogicalRelationVisitor(context, factory));
     list.add(new LogicalRDDVisitor(context, factory));
     if (BigQueryNodeVisitor.hasBigQueryClasses()) {
       list.add(new BigQueryNodeVisitor(context, factory));
@@ -80,7 +77,6 @@ abstract class BaseVisitorFactory implements VisitorFactory {
     list.add(new InsertIntoDataSourceDirVisitor(context));
     list.add(new InsertIntoDataSourceVisitor(context));
     list.add(new InsertIntoHadoopFsRelationVisitor(context));
-    list.add(new SaveIntoDataSourceCommandVisitor(context));
     list.add(new CreateDataSourceTableAsSelectCommandVisitor(context));
     list.add(new AppendDataVisitor(context));
     list.add(new InsertIntoDirVisitor(context));
