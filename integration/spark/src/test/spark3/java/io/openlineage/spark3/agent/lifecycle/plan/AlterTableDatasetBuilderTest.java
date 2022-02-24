@@ -11,8 +11,8 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
-import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.List;
 import java.util.Optional;
@@ -31,7 +31,7 @@ import org.mockito.MockedStatic;
 import scala.collection.immutable.HashMap;
 import scala.collection.immutable.Map;
 
-public class AlterTableVisitorTest {
+public class AlterTableDatasetBuilderTest {
 
   OpenLineageContext openLineageContext =
       OpenLineageContext.builder()
@@ -47,9 +47,8 @@ public class AlterTableVisitorTest {
   DatasetIdentifier di = new DatasetIdentifier("table", "db");
   Identifier identifier = mock(Identifier.class);
   AlterTable alterTable = mock(AlterTable.class);
-  DatasetFactory<OpenLineage.OutputDataset> datasetFactory = mock(DatasetFactory.class);
 
-  AlterTableVisitor visitor = new AlterTableVisitor(openLineageContext);
+  AlterTableDatasetBuilder builder = new AlterTableDatasetBuilder(openLineageContext);
 
   @BeforeEach
   public void setUp() {
@@ -62,7 +61,7 @@ public class AlterTableVisitorTest {
   @SneakyThrows
   public void testApplyWhenTableNotFound() {
     when(tableCatalog.loadTable(identifier)).thenThrow(mock(NoSuchTableException.class));
-    List<OpenLineage.OutputDataset> outputDatasets = visitor.apply(alterTable);
+    List<OpenLineage.OutputDataset> outputDatasets = builder.apply(alterTable);
     assertEquals(0, outputDatasets.size());
   }
 
@@ -78,7 +77,7 @@ public class AlterTableVisitorTest {
               ScalaConversionUtils.<String, String>fromMap(tableProperties)))
           .thenReturn(Optional.empty());
 
-      List<OpenLineage.OutputDataset> outputDatasets = visitor.apply(alterTable);
+      List<OpenLineage.OutputDataset> outputDatasets = builder.apply(alterTable);
       assertEquals(0, outputDatasets.size());
     }
   }
@@ -95,11 +94,38 @@ public class AlterTableVisitorTest {
               ScalaConversionUtils.<String, String>fromMap(tableProperties)))
           .thenReturn(Optional.of(di));
 
-      List<OpenLineage.OutputDataset> outputDatasets = visitor.apply(alterTable);
+      List<OpenLineage.OutputDataset> outputDatasets = builder.apply(alterTable);
 
       assertEquals(1, outputDatasets.size());
       assertEquals("table", outputDatasets.get(0).getName());
       assertEquals("db", outputDatasets.get(0).getNamespace());
+    }
+  }
+
+  @Test
+  @SneakyThrows
+  public void testApplyDatasetVersionIncluded() {
+    when(tableCatalog.loadTable(identifier)).thenReturn(table);
+    try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
+      try (MockedStatic mockCatalog = mockStatic(CatalogUtils3.class)) {
+        when(CatalogUtils3.getDatasetVersion(
+                tableCatalog,
+                identifier,
+                ScalaConversionUtils.<String, String>fromMap(tableProperties)))
+            .thenReturn(Optional.of("v2"));
+
+        when(PlanUtils3.getDatasetIdentifier(
+                openLineageContext,
+                tableCatalog,
+                identifier,
+                ScalaConversionUtils.<String, String>fromMap(tableProperties)))
+            .thenReturn(Optional.of(di));
+
+        List<OpenLineage.OutputDataset> outputDatasets = builder.apply(alterTable);
+
+        assertEquals(1, outputDatasets.size());
+        assertEquals("v2", outputDatasets.get(0).getFacets().getVersion().getDatasetVersion());
+      }
     }
   }
 }

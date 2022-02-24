@@ -23,32 +23,9 @@
           "name" : "c",
           "type" : "long"
         } ]
-      }
+      },
+      "version" : {}
     }
   } ],
-  "outputs" : [ {
-    "namespace" : "file",
-    "name" : "/tmp/v2_overwrite/db.tbl",
-    "facets" : {
-      "dataSource" : {
-        "name" : "file",
-        "uri" : "file"
-      },
-      "schema" : {
-        "fields" : [ {
-          "name" : "a",
-          "type" : "long"
-        }, {
-          "name" : "b",
-          "type" : "long"
-        }, {
-          "name" : "c",
-          "type" : "long"
-        } ]
-      },
-      "lifecycleStateChange": {
-        "lifecycleStateChange": "OVERWRITE"
-      }
-    }
-  } ]
+  "outputs" : [ ]
 }

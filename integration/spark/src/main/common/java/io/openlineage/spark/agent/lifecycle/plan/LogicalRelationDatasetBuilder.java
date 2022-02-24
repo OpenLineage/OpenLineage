@@ -11,6 +11,7 @@ import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
@@ -49,12 +50,12 @@ import scala.collection.JavaConversions;
  * complete list of datasets referenced.
  */
 @Slf4j
-public class LogicalRelationVisitor<D extends OpenLineage.Dataset>
+public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
     extends AbstractQueryPlanDatasetBuilder<SparkListenerEvent, LogicalRelation, D> {
 
   private final DatasetFactory<D> datasetFactory;
 
-  public LogicalRelationVisitor(
+  public LogicalRelationDatasetBuilder(
       OpenLineageContext context, DatasetFactory<D> datasetFactory, boolean searchDependencies) {
     super(context, searchDependencies);
     this.datasetFactory = datasetFactory;
@@ -97,6 +98,15 @@ public class LogicalRelationVisitor<D extends OpenLineage.Dataset>
             session -> {
               Configuration hadoopConfig =
                   session.sessionState().newHadoopConfWithOptions(relation.options());
+
+              OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
+                  context.getOpenLineage().newDatasetFacetsBuilder();
+              getDatasetVersion(x)
+                  .map(
+                      version ->
+                          datasetFacetsBuilder.version(
+                              context.getOpenLineage().newDatasetVersionDatasetFacet(version)));
+
               return JavaConversions.asJavaCollection(relation.location().rootPaths()).stream()
                   .map(p -> PlanUtils.getDirectoryPath(p, hadoopConfig))
                   .distinct()
@@ -105,11 +115,17 @@ public class LogicalRelationVisitor<D extends OpenLineage.Dataset>
                         // TODO- refactor this to return a single partitioned dataset based on
                         // static
                         // static partitions in the relation
-                        return datasetFactory.getDataset(p.toUri(), relation.schema());
+                        return datasetFactory.getDataset(
+                            p.toUri(), relation.schema(), datasetFacetsBuilder);
                       })
                   .collect(Collectors.toList());
             })
         .orElse(Collections.emptyList());
+  }
+
+  protected Optional<String> getDatasetVersion(LogicalRelation x) {
+    // not implemented
+    return Optional.empty();
   }
 
   private List<D> handleJdbcRelation(LogicalRelation x) {
