@@ -4,7 +4,6 @@ from contextlib import closing
 from typing import Optional, List
 from urllib.parse import urlparse
 
-from openlineage.airflow.facets import ExternalQueryJobFacet
 from openlineage.airflow.utils import (
     get_normalized_postgres_connection_uri,
     get_connection, safe_import_airflow
@@ -13,7 +12,7 @@ from openlineage.airflow.extractors.base import (
     BaseExtractor,
     TaskMetadata
 )
-from openlineage.client.facet import SqlJobFacet
+from openlineage.client.facet import SqlJobFacet, ExternalQueryRunFacet
 from openlineage.common.models import (
     DbTableName,
     DbTableSchema,
@@ -89,13 +88,14 @@ class PostgresExtractor(BaseExtractor):
         ]
 
         task_name = f"{self.operator.dag_id}.{self.operator.task_id}"
+        run_facets = {}
         job_facets = {
             'sql': SqlJobFacet(self.operator.sql)
         }
 
         query_ids = self._get_query_ids()
         if len(query_ids) == 1:
-            job_facets['externalQuery'] = ExternalQueryJobFacet(
+            run_facets['externalQuery'] = ExternalQueryRunFacet(
                 externalQueryId=query_ids[0],
                 source=source.name
             )
@@ -109,6 +109,7 @@ class PostgresExtractor(BaseExtractor):
             name=task_name,
             inputs=[ds.to_openlineage_dataset() for ds in inputs],
             outputs=[ds.to_openlineage_dataset() for ds in outputs],
+            run_facets=run_facets,
             job_facets=job_facets
         )
 

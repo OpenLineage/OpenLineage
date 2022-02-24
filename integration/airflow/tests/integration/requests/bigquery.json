@@ -42,14 +42,18 @@
         "facets": {
             "sql": {
                 "query": "\n    CREATE TABLE IF NOT EXISTS `openlineage-ci.airflow_integration.{{ env_var('BIGQUERY_PREFIX') }}_popular_orders_day_of_week` (\n      order_day_of_week INTEGER NOT NULL,\n      order_placed_on   TIMESTAMP NOT NULL,\n      orders_placed     INTEGER NOT NULL\n    );"
-            },
-            "externalQuery": {
-                "externalQueryId": "{{ any(result) }}",
-                "source": "bigquery"
             }
         },
         "name": "bigquery_orders_popular_day_of_week.bigquery_if_not_exists",
         "namespace": "food_delivery"
+    },
+    "run": {
+        "facets": {
+            "externalQuery": {
+              "externalQueryId": "{{ any(result) }}",
+              "source": "bigquery"
+            }
+        }
     },
     "outputs": [{
 		"facets": {
@@ -128,15 +132,19 @@
 		"facets": {
 			"sql": {
 				"query": "\n    INSERT INTO `openlineage-ci.airflow_integration.{{ env_var('BIGQUERY_PREFIX') }}_popular_orders_day_of_week` (order_day_of_week, order_placed_on, orders_placed)\n    SELECT EXTRACT(DAYOFWEEK FROM order_placed_on) AS order_day_of_week,\n        order_placed_on,\n        COUNT(*) AS orders_placed\n    FROM airflow_integration.{{ env_var('BIGQUERY_PREFIX') }}_top_delivery_times\n    GROUP BY order_placed_on;"
-			},
-            "externalQuery": {
-                "externalQueryId": "{{ any(result) }}",
-                "source": "bigquery"
-            }
+			}
 		},
 		"name": "bigquery_orders_popular_day_of_week.bigquery_insert",
 		"namespace": "food_delivery"
 	},
+    "run": {
+        "facets": {
+            "externalQuery": {
+              "externalQueryId": "{{ any(result) }}",
+              "source": "bigquery"
+            }
+        }
+    },
 	"outputs": [{
 		"facets": {
 			"dataSource": {

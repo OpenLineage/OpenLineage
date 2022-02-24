@@ -139,7 +139,7 @@ def test_extract_query_ids(get_connection, mock_get_table_schemas):
 
     task_metadata = SnowflakeExtractor(TASK).extract()
 
-    assert task_metadata.job_facets["externalQuery"].externalQueryId == "1500100900"
+    assert task_metadata.run_facets["externalQuery"].externalQueryId == "1500100900"
 
 
 @mock.patch('snowflake.connector.connect')

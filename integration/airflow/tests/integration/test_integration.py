@@ -56,11 +56,12 @@ def wait_for_dag(dag_id) -> bool:
 
 def check_matches(expected_events, actual_events) -> bool:
     for expected in expected_events:
+        expected_job_name = env.from_string(expected['job']['name']).render()
         is_compared = False
         for actual in actual_events:
             # Try to find matching event by eventType and job name
             if expected['eventType'] == actual['eventType'] and \
-                    expected['job']['name'] == actual['job']['name']:
+                    expected_job_name == actual['job']['name']:
                 is_compared = True
                 if not match(expected, actual):
                     log.info(f"failed to compare expected {expected}\nwith actual {actual}")
@@ -68,7 +69,7 @@ def check_matches(expected_events, actual_events) -> bool:
                 break
         if not is_compared:
             log.info(f"not found event comparable to {expected['eventType']} "
-                     f"- {expected['job']['name']}")
+                     f"- {expected_job_name}")
             return False
     return True
 
@@ -141,7 +142,7 @@ def test_integration(dag_id, request_path):
         sys.exit(1)
     # (2) Read expected events
     with open(request_path, 'r') as f:
-        expected_events = json.loads(env.from_string(f.read()).render())
+        expected_events = json.load(f)
 
     # (3) Get actual events
     actual_events = get_events()
@@ -166,7 +167,7 @@ def test_integration_ordered(dag_id, request_dir: str):
     expected_events = []
     for file in event_files:
         with open(os.path.join(request_dir, file), 'r') as f:
-            expected_events.append(json.loads(env.from_string(f.read()).render()))
+            expected_events.append(json.load(f))
 
     # (3) Get actual events with job names starting with dag_id
     actual_events = get_events(dag_id)

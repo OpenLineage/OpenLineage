@@ -27,9 +27,3 @@ class AirflowVersionRunFacet(BaseFacet):
 @attr.s
 class AirflowRunArgsRunFacet(BaseFacet):
     externalTrigger: bool = attr.ib(default=False)
-
-
-@attr.s
-class ExternalQueryJobFacet(BaseFacet):
-    externalQueryId: str = attr.ib()
-    source: str = attr.ib()
