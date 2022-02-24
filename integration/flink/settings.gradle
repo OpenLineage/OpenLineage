@@ -1,3 +1,2 @@
 rootProject.name = 'openlineage-flink'
-include 'examples:stateful'
 
