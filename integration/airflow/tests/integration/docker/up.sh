@@ -23,18 +23,7 @@ if [[ -n "$CI" ]]; then
   chmod 644 gcloud/gcloud-service-key.json
 fi
 
-# maybe overkill
 OPENLINEAGE_AIRFLOW_WHL=$(docker run openlineage-airflow-base:latest sh -c "ls /whl/openlineage*")
-OPENLINEAGE_AIRFLOW_WHL_ALL=$(docker run openlineage-airflow-base:latest sh -c "ls /whl/*")
-
-# Add revision to requirements.txt
-cat > requirements.txt <<EOL
-airflow-provider-great-expectations==0.0.8
-great-expectations==0.13.42
-dbt-bigquery==0.20.1
-${OPENLINEAGE_AIRFLOW_WHL}
-EOL
-
 
 # Add revision to integration-requirements.txt
 cat > integration-requirements.txt <<EOL
@@ -49,5 +38,5 @@ python-dateutil==2.8.2
 ${OPENLINEAGE_AIRFLOW_WHL}
 EOL
 
-docker-compose down
+docker-compose down -v
 docker-compose up -V --build --force-recreate --exit-code-from integration

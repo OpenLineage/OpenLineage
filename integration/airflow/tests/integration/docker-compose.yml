@@ -37,7 +37,6 @@ services:
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/dags:/opt/bitnami/airflow/dags
       - ./airflow/config/log_config.py:/opt/bitnami/airflow/config/log_config.py
-      - ./requirements.txt:/bitnami/python/requirements.txt
       - ./gcloud:/opt/config/gcloud
       - ./data:/opt/data
     depends_on:
@@ -71,11 +70,11 @@ services:
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/dags:/opt/bitnami/airflow/dags
       - ./airflow/config/log_config.py:/opt/bitnami/airflow/config/log_config.py
-      - ./requirements.txt:/bitnami/python/requirements.txt
       - ./gcloud:/opt/config/gcloud
       - ./data:/opt/data
     depends_on:
       - airflow_worker
+      - postgres
 
   airflow_worker:
     build:
@@ -101,9 +100,11 @@ services:
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/dags:/opt/bitnami/airflow/dags
       - ./airflow/config/log_config.py:/opt/bitnami/airflow/config/log_config.py
-      - ./requirements.txt:/bitnami/python/requirements.txt
       - ./gcloud:/opt/config/gcloud
       - ./data:/opt/data
+    depends_on:
+      - postgres
+      - redis
 
   backend:
     build:
