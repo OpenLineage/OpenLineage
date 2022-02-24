@@ -340,7 +340,7 @@ class OpenLineageRunEventBuilder {
     log.info(
         "Visiting query plan {} with input dataset builders {}",
         openLineageContext.getQueryExecution(),
-        inputDatasetQueryPlanVisitors);
+        inputDatasetBuilders.stream().map(el -> el.getClass()).collect(Collectors.toList()));
 
     Function1<LogicalPlan, List<InputDataset>> inputVisitor =
         visitLogicalPlan(PlanUtils.merge(inputDatasetQueryPlanVisitors));
@@ -408,7 +408,7 @@ class OpenLineageRunEventBuilder {
     log.info(
         "Visiting query plan {} with output dataset builders {}",
         openLineageContext.getQueryExecution(),
-        outputDatasetBuilders);
+        outputDatasetBuilders.stream().map(el -> el.getClass()).collect(Collectors.toList()));
     Function1<LogicalPlan, List<OutputDataset>> visitor =
         visitLogicalPlan(PlanUtils.merge(outputDatasetQueryPlanVisitors));
     List<OutputDataset> datasets =
@@ -452,16 +452,24 @@ class OpenLineageRunEventBuilder {
 
   private <T> Stream<T> buildDatasets(
       List<Object> nodes, Collection<PartialFunction<Object, List<T>>> builders) {
-    PartialFunction<Object, List<T>> fn = PlanUtils.merge(builders);
     return nodes.stream()
         .flatMap(
-            event -> {
-              if (fn.isDefinedAt(event)) {
-                return fn.apply(event).stream();
-              } else {
-                return Stream.empty();
-              }
-            });
+            event ->
+                builders.stream()
+                    .filter(
+                        builder -> {
+                          try {
+                            log.info(
+                                "{} isDefinedAT {} returned {}",
+                                builder.getClass(),
+                                event.getClass(),
+                                builder.isDefinedAt(event));
+                            return builder.isDefinedAt(event);
+                          } catch (ClassCastException e) {
+                          }
+                          return false;
+                        })
+                    .flatMap(builder -> builder.apply(event).stream()));
   }
 
   /**

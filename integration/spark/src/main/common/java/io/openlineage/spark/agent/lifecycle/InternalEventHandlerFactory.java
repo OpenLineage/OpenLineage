@@ -14,8 +14,6 @@ import io.openlineage.spark.agent.facets.builder.ErrorFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.LogicalPlanRunFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.OutputStatisticsOutputDatasetFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.SparkVersionFacetBuilder;
-import io.openlineage.spark.agent.lifecycle.plan.LogicalRelationVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.SaveIntoDataSourceCommandVisitor;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -28,6 +26,7 @@ import java.util.Spliterators;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+import lombok.SneakyThrows;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import scala.PartialFunction;
 
@@ -115,23 +114,28 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
   }
 
   @Override
+  @SneakyThrows
   public Collection<PartialFunction<Object, List<InputDataset>>> createInputDatasetBuilder(
       OpenLineageContext context) {
+    DatasetFactory<InputDataset> datasetFactory = DatasetFactory.input(context.getOpenLineage());
+
     return ImmutableList.<PartialFunction<Object, List<InputDataset>>>builder()
         .addAll(
             generate(eventHandlerFactories, factory -> factory.createInputDatasetBuilder(context)))
-        .add(new LogicalRelationVisitor(context, DatasetFactory.input(context.getOpenLineage())))
+        .addAll(DatasetBuilderFactoryProvider.getInstance().getInputBuilders(context))
         .build();
   }
 
   @Override
+  @SneakyThrows
   public Collection<PartialFunction<Object, List<OutputDataset>>> createOutputDatasetBuilder(
       OpenLineageContext context) {
+    DatasetFactory<OutputDataset> datasetFactory = DatasetFactory.output(context.getOpenLineage());
+
     return ImmutableList.<PartialFunction<Object, List<OutputDataset>>>builder()
         .addAll(
             generate(eventHandlerFactories, factory -> factory.createOutputDatasetBuilder(context)))
-        .add(new LogicalRelationVisitor(context, DatasetFactory.output(context.getOpenLineage())))
-        .add(new SaveIntoDataSourceCommandVisitor(context))
+        .addAll(DatasetBuilderFactoryProvider.getInstance().getOutputBuilders(context))
         .build();
   }
 

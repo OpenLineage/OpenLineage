@@ -3,14 +3,15 @@
 package io.openlineage.spark3.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark.api.QueryPlanVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.IcebergHandler;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.analysis.NamedRelation;
 import org.apache.spark.sql.catalyst.plans.logical.DeleteFromTable;
 import org.apache.spark.sql.catalyst.plans.logical.InsertIntoStatement;
@@ -23,15 +24,16 @@ import org.apache.spark.sql.catalyst.plans.logical.UpdateTable;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 
 @Slf4j
-public class TableContentChangeVisitor
-    extends QueryPlanVisitor<LogicalPlan, OpenLineage.OutputDataset> {
+public class TableContentChangeDatasetBuilder
+    extends AbstractQueryPlanDatasetBuilder<
+        SparkListenerEvent, LogicalPlan, OpenLineage.OutputDataset> {
 
-  public TableContentChangeVisitor(OpenLineageContext context) {
+  public TableContentChangeDatasetBuilder(OpenLineageContext context) {
     super(context);
   }
 
   @Override
-  public boolean isDefinedAt(LogicalPlan x) {
+  public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
     return (x instanceof OverwriteByExpression)
         || (x instanceof OverwritePartitionsDynamic)
         || (x instanceof DeleteFromTable)
@@ -82,6 +84,8 @@ public class TableContentChangeVisitor
                   null));
     }
 
+    // FIXME: missing test for this I suppose
+    PlanUtils3.includeDatasetVersion(context, datasetFacetsBuilder, (DataSourceV2Relation) table);
     return PlanUtils3.fromDataSourceV2Relation(
         outputDataset(), context, (DataSourceV2Relation) table, datasetFacetsBuilder);
   }

@@ -13,9 +13,11 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import lombok.SneakyThrows;
 import org.apache.spark.sql.catalyst.plans.logical.DeleteFromTable;
 import org.apache.spark.sql.catalyst.plans.logical.InsertIntoStatement;
@@ -31,19 +33,19 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
-public class TableContentChangeVisitorTest {
+public class TableContentChangeDatasetBuilderTest {
 
   OpenLineageContext openLineageContext = mock(OpenLineageContext.class);
   DataSourceV2Relation dataSourceV2Relation = mock(DataSourceV2Relation.class);
   OpenLineage openLineage;
-  TableContentChangeVisitor visitor;
+  TableContentChangeDatasetBuilder builder;
 
   @BeforeEach
   @SneakyThrows
   public void setUp() {
     openLineage = mock(OpenLineage.class);
     when(openLineageContext.getOpenLineage()).thenReturn(openLineage);
-    visitor = new TableContentChangeVisitor(openLineageContext);
+    builder = new TableContentChangeDatasetBuilder(openLineageContext);
   }
 
   @Test
@@ -108,41 +110,51 @@ public class TableContentChangeVisitorTest {
   }
 
   @Test
-  public void testIsDefined() {
-    assertTrue(visitor.isDefinedAt(mock(OverwriteByExpression.class)));
-    assertTrue(visitor.isDefinedAt(mock(OverwritePartitionsDynamic.class)));
-    assertTrue(visitor.isDefinedAt(mock(InsertIntoStatement.class)));
-    assertTrue(visitor.isDefinedAt(mock(DeleteFromTable.class)));
-    assertTrue(visitor.isDefinedAt(mock(UpdateTable.class)));
-    assertTrue(visitor.isDefinedAt(mock(ReplaceData.class)));
-    assertFalse(visitor.isDefinedAt(mock(LogicalPlan.class)));
+  public void testIsDefinedAtLogicalPlan() {
+    assertTrue(builder.isDefinedAtLogicalPlan(mock(OverwriteByExpression.class)));
+    assertTrue(builder.isDefinedAtLogicalPlan(mock(OverwritePartitionsDynamic.class)));
+    assertTrue(builder.isDefinedAtLogicalPlan(mock(InsertIntoStatement.class)));
+    assertTrue(builder.isDefinedAtLogicalPlan(mock(DeleteFromTable.class)));
+    assertTrue(builder.isDefinedAtLogicalPlan(mock(UpdateTable.class)));
+    assertTrue(builder.isDefinedAtLogicalPlan(mock(ReplaceData.class)));
+    assertFalse(builder.isDefinedAtLogicalPlan(mock(LogicalPlan.class)));
   }
 
   private void verify(
       LogicalPlan logicalPlan,
       OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange lifecycleStateChange) {
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
-      OpenLineage.Dataset dataset = mock(OpenLineage.Dataset.class);
-      OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
-          mock(OpenLineage.DatasetFacetsBuilder.class);
-      OpenLineage.LifecycleStateChangeDatasetFacet lifecycleStateChangeDatasetFacet =
-          mock(OpenLineage.LifecycleStateChangeDatasetFacet.class);
+      try (MockedStatic mockedVersions = mockStatic(DatasetVersionDatasetFacetUtils.class)) {
+        OpenLineage.Dataset dataset = mock(OpenLineage.OutputDataset.class);
+        OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
+            mock(OpenLineage.DatasetFacetsBuilder.class);
+        OpenLineage.LifecycleStateChangeDatasetFacet lifecycleStateChangeDatasetFacet =
+            mock(OpenLineage.LifecycleStateChangeDatasetFacet.class);
+        OpenLineage.DatasetVersionDatasetFacet datasetVersionDatasetFacet =
+            mock(OpenLineage.DatasetVersionDatasetFacet.class);
 
-      when(openLineage.newDatasetFacetsBuilder()).thenReturn(datasetFacetsBuilder);
-      when(openLineage.newLifecycleStateChangeDatasetFacet(lifecycleStateChange, null))
-          .thenReturn(lifecycleStateChangeDatasetFacet);
+        when(openLineage.newDatasetFacetsBuilder()).thenReturn(datasetFacetsBuilder);
+        when(openLineage.newLifecycleStateChangeDatasetFacet(lifecycleStateChange, null))
+            .thenReturn(lifecycleStateChangeDatasetFacet);
+        when(openLineage.newDatasetVersionDatasetFacet("v2"))
+            .thenReturn(datasetVersionDatasetFacet);
 
-      when(PlanUtils3.fromDataSourceV2Relation(
-              any(), eq(openLineageContext), eq(dataSourceV2Relation), eq(datasetFacetsBuilder)))
-          .thenReturn(Collections.singletonList(dataset));
+        when(PlanUtils3.fromDataSourceV2Relation(
+                any(), eq(openLineageContext), eq(dataSourceV2Relation), eq(datasetFacetsBuilder)))
+            .thenReturn(Collections.singletonList(dataset));
+        when(DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(
+                dataSourceV2Relation))
+            .thenReturn(Optional.of("v2"));
 
-      List<OpenLineage.OutputDataset> datasetList = visitor.apply(logicalPlan);
+        List<OpenLineage.OutputDataset> datasetList = builder.apply(logicalPlan);
 
-      assertEquals(1, datasetList.size());
-      assertEquals(dataset, datasetList.get(0));
-      if (lifecycleStateChange != null) {
-        Mockito.verify(datasetFacetsBuilder)
-            .lifecycleStateChange(eq(lifecycleStateChangeDatasetFacet));
+        assertEquals(1, datasetList.size());
+        assertEquals(dataset, datasetList.get(0));
+        Mockito.verify(datasetFacetsBuilder).version(eq(datasetVersionDatasetFacet));
+        if (lifecycleStateChange != null) {
+          Mockito.verify(datasetFacetsBuilder)
+              .lifecycleStateChange(eq(lifecycleStateChangeDatasetFacet));
+        }
       }
     }
   }

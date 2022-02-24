@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreType;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.introspect.ClassIntrospector;
@@ -58,7 +59,11 @@ class LogicalPlanSerializer {
     try {
       return mapper.writeValueAsString(x);
     } catch (Throwable e) {
-      return "Unable to serialize: " + e.getMessage();
+      try {
+        return mapper.writeValueAsString("Unable to serialize: " + e.getMessage());
+      } catch (JsonProcessingException ex) {
+        return "\"Unable to serialize error message\"";
+      }
     }
   }
 

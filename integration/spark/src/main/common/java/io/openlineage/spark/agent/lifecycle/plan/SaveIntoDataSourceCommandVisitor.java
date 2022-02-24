@@ -119,6 +119,7 @@ public class SaveIntoDataSourceCommandVisitor
                         .newDatasetFacets(
                             ds.getFacets().getDocumentation(),
                             ds.getFacets().getDataSource(),
+                            ds.getFacets().getVersion(),
                             ds.getFacets().getSchema(),
                             context
                                 .getOpenLineage()

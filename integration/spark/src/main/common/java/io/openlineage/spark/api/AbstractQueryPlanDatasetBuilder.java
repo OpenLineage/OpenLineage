@@ -10,6 +10,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 
@@ -26,6 +27,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
  * @param <P>
  * @param <D>
  */
+@Slf4j
 public abstract class AbstractQueryPlanDatasetBuilder<T, P extends LogicalPlan, D extends Dataset>
     extends AbstractGenericArgPartialFunction<T, D> {
   protected final OpenLineageContext context;
@@ -68,6 +70,7 @@ public abstract class AbstractQueryPlanDatasetBuilder<T, P extends LogicalPlan, 
 
       @Override
       public List<D> apply(LogicalPlan x) {
+        log.info("AbstractQueryPlanDatasetBuilder: apply on {}", builder.getClass().getName());
         unknownEntryFacetListener.accept(x);
         return builder.apply((P) x);
       }
@@ -81,14 +84,16 @@ public abstract class AbstractQueryPlanDatasetBuilder<T, P extends LogicalPlan, 
    * @param logicalPlan
    * @return
    */
-  protected boolean isDefinedAtLogicalPlan(LogicalPlan logicalPlan) {
+  public boolean isDefinedAtLogicalPlan(LogicalPlan logicalPlan) {
     Type genericSuperclass = getClass().getGenericSuperclass();
+    log.info("Checking isDefinedAtLogicalPlan for {}", genericSuperclass.getTypeName());
     if (!(genericSuperclass instanceof ParameterizedType)) {
       return false;
     }
     Type[] typeArgs = ((ParameterizedType) genericSuperclass).getActualTypeArguments();
     if (typeArgs != null && typeArgs.length > 1) {
       Type arg = typeArgs[1];
+      log.info("check if is isAssignableFrom {}", logicalPlan.getClass());
       return ((Class) arg).isAssignableFrom(logicalPlan.getClass());
     }
     return false;

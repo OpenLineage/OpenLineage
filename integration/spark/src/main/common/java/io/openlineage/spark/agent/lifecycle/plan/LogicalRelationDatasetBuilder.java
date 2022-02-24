@@ -11,6 +11,7 @@ import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
@@ -49,12 +50,13 @@ import scala.collection.JavaConversions;
  * complete list of datasets referenced.
  */
 @Slf4j
-public class LogicalRelationVisitor<D extends OpenLineage.Dataset>
+public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
     extends AbstractQueryPlanDatasetBuilder<SparkListenerEvent, LogicalRelation, D> {
 
   private final DatasetFactory<D> datasetFactory;
 
-  public LogicalRelationVisitor(OpenLineageContext context, DatasetFactory<D> datasetFactory) {
+  public LogicalRelationDatasetBuilder(
+      OpenLineageContext context, DatasetFactory<D> datasetFactory) {
     super(context);
     this.datasetFactory = datasetFactory;
   }
@@ -69,6 +71,7 @@ public class LogicalRelationVisitor<D extends OpenLineage.Dataset>
 
   @Override
   public List<D> apply(LogicalRelation logRel) {
+    log.info("Apply called on LogicalRelationVisitor");
     if (logRel.relation() instanceof HadoopFsRelation) {
       return handleHadoopFsRelation(logRel);
     } else if (logRel.relation() instanceof JDBCRelation) {
@@ -91,6 +94,15 @@ public class LogicalRelationVisitor<D extends OpenLineage.Dataset>
   private List<D> handleHadoopFsRelation(LogicalRelation x) {
     HadoopFsRelation relation = (HadoopFsRelation) x.relation();
     Configuration hadoopConfig = context.getSparkContext().hadoopConfiguration();
+
+    OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
+        context.getOpenLineage().newDatasetFacetsBuilder();
+    getDatasetVersion(x)
+        .map(
+            version ->
+                datasetFacetsBuilder.version(
+                    context.getOpenLineage().newDatasetVersionDatasetFacet(version)));
+
     return JavaConversions.asJavaCollection(relation.location().rootPaths()).stream()
         .map(p -> PlanUtils.getDirectoryPath(p, hadoopConfig))
         .distinct()
@@ -98,9 +110,14 @@ public class LogicalRelationVisitor<D extends OpenLineage.Dataset>
             p -> {
               // TODO- refactor this to return a single partitioned dataset based on static
               // static partitions in the relation
-              return datasetFactory.getDataset(p.toUri(), relation.schema());
+              return datasetFactory.getDataset(p.toUri(), relation.schema(), datasetFacetsBuilder);
             })
         .collect(Collectors.toList());
+  }
+
+  protected Optional<String> getDatasetVersion(LogicalRelation x) {
+    // not implemented
+    return Optional.empty();
   }
 
   private List<D> handleJdbcRelation(LogicalRelation x) {
