@@ -1,14 +1,14 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 package io.openlineage.spark3.agent.lifecycle.plan;
 
-import static io.openlineage.spark.agent.facets.TableStateChangeFacet.StateChange.CREATE;
-import static io.openlineage.spark.agent.facets.TableStateChangeFacet.StateChange.OVERWRITE;
-
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.facets.TableStateChangeFacet;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
+import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.Collections;
 import java.util.HashMap;
@@ -48,10 +48,10 @@ public class CreateReplaceVisitor extends QueryPlanVisitor<LogicalPlan, OpenLine
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
     TableCatalog tableCatalog;
     Map<String, String> tableProperties;
-    Map<String, OpenLineage.DatasetFacet> facetMap = new HashMap<>();
     Identifier identifier;
     StructType schema;
-    TableStateChangeFacet.StateChange stateChange;
+    OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange lifecycleStateChange;
+    Map<String, OpenLineage.DatasetFacet> facetMap = new HashMap<>();
 
     if (x instanceof CreateTableAsSelect) {
       CreateTableAsSelect command = (CreateTableAsSelect) x;
@@ -59,40 +59,53 @@ public class CreateReplaceVisitor extends QueryPlanVisitor<LogicalPlan, OpenLine
       tableProperties = ScalaConversionUtils.<String, String>fromMap(command.properties());
       identifier = command.tableName();
       schema = command.tableSchema();
-      stateChange = CREATE;
+      lifecycleStateChange =
+          OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE;
     } else if (x instanceof CreateV2Table) {
       CreateV2Table command = (CreateV2Table) x;
       tableCatalog = command.catalog();
       tableProperties = ScalaConversionUtils.<String, String>fromMap(command.properties());
       identifier = command.tableName();
       schema = command.tableSchema();
-      stateChange = CREATE;
+      lifecycleStateChange =
+          OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE;
     } else if (x instanceof ReplaceTable) {
       ReplaceTable command = (ReplaceTable) x;
       tableCatalog = command.catalog();
       tableProperties = ScalaConversionUtils.<String, String>fromMap(command.properties());
       identifier = command.tableName();
       schema = command.tableSchema();
-      stateChange = OVERWRITE;
+      lifecycleStateChange =
+          OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE;
     } else {
       ReplaceTableAsSelect command = (ReplaceTableAsSelect) x;
       tableCatalog = command.catalog();
       tableProperties = ScalaConversionUtils.<String, String>fromMap(command.properties());
       identifier = command.tableName();
       schema = command.tableSchema();
-      stateChange = OVERWRITE;
+      lifecycleStateChange =
+          OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE;
     }
-
-    facetMap.put("tableStateChange", new TableStateChangeFacet(stateChange));
-    PlanUtils3.includeProviderFacet(tableCatalog, tableProperties, facetMap);
 
     Optional<DatasetIdentifier> di =
         PlanUtils3.getDatasetIdentifier(context, tableCatalog, identifier, tableProperties);
 
-    if (di.isPresent()) {
-      return Collections.singletonList(outputDataset().getDataset(di.get(), schema, facetMap));
-    } else {
+    if (!di.isPresent()) {
       return Collections.emptyList();
     }
+
+    OpenLineage openLineage = context.getOpenLineage();
+    OpenLineage.DatasetFacetsBuilder builder =
+        openLineage
+            .newDatasetFacetsBuilder()
+            .schema(PlanUtils.schemaFacet(openLineage, schema))
+            .lifecycleStateChange(
+                openLineage.newLifecycleStateChangeDatasetFacet(lifecycleStateChange, null))
+            .dataSource(PlanUtils.datasourceFacet(openLineage, di.get().getNamespace()));
+
+    CatalogUtils3.getTableProviderFacet(tableCatalog, tableProperties)
+        .map(provider -> builder.put("tableProvider", provider));
+    return Collections.singletonList(
+        outputDataset().getDataset(di.get().getName(), di.get().getNamespace(), builder.build()));
   }
 }

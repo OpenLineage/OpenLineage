@@ -1,13 +1,18 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 package io.openlineage.spark.agent;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.lifecycle.StaticExecutionContextFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Optional;
 import net.bytebuddy.agent.ByteBuddyAgent;
+import org.apache.commons.beanutils.BeanUtils;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.SparkSession$;
 import org.junit.jupiter.api.extension.AfterEachCallback;
@@ -18,6 +23,7 @@ import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
 import org.mockito.Mockito;
+import org.slf4j.LoggerFactory;
 
 /**
  * JUnit extension that invokes the {@link SparkAgent} by installing the {@link ByteBuddyAgent} to
@@ -43,6 +49,14 @@ public class SparkAgentTestExtension
   @Override
   public void beforeEach(ExtensionContext context) throws Exception {
     Mockito.reset(OPEN_LINEAGE_SPARK_CONTEXT);
+    Mockito.doAnswer(
+            (arg) -> {
+              LoggerFactory.getLogger(getClass())
+                  .info("Emit called with arg {}", BeanUtils.describe(arg));
+              return null;
+            })
+        .when(OPEN_LINEAGE_SPARK_CONTEXT)
+        .emit(any(RunEvent.class));
   }
 
   @Override

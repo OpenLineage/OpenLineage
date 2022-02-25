@@ -1,10 +1,11 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 package io.openlineage.spark.api;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PlanUtils;
 import java.net.URI;
-import java.util.Map;
 import org.apache.spark.sql.types.StructType;
 
 /**
@@ -131,19 +132,20 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
    *
    * @param ident
    * @param schema
-   * @param facets
+   * @param lifecycleStateChange
    * @return
    */
   public D getDataset(
-      DatasetIdentifier ident, StructType schema, Map<String, OpenLineage.DatasetFacet> facets) {
+      DatasetIdentifier ident,
+      StructType schema,
+      OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange lifecycleStateChange) {
     OpenLineage.DatasetFacetsBuilder builder =
         openLineage
             .newDatasetFacetsBuilder()
             .schema(PlanUtils.schemaFacet(openLineage, schema))
+            .lifecycleStateChange(
+                openLineage.newLifecycleStateChangeDatasetFacet(lifecycleStateChange, null))
             .dataSource(PlanUtils.datasourceFacet(openLineage, ident.getNamespace()));
-
-    facets.forEach((key, facet) -> builder.put(key, facet));
-
     return getDataset(ident.getName(), ident.getNamespace(), builder.build());
   }
 

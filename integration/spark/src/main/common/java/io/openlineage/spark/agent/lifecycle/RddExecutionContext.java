@@ -202,7 +202,7 @@ class RddExecutionContext implements ExecutionContext {
     OpenLineage.RunEvent event =
         ol.newRunEventBuilder()
             .eventTime(toZonedTime(jobStart.time()))
-            .eventType("START")
+            .eventType(OpenLineage.RunEvent.EventType.START)
             .inputs(buildInputs(inputs))
             .outputs(buildOutputs(outputs))
             .run(ol.newRunBuilder().runId(runId).facets(buildRunFacets(null)).build())
@@ -390,10 +390,10 @@ class RddExecutionContext implements ExecutionContext {
     return path;
   }
 
-  protected String getEventType(JobResult jobResult) {
+  protected OpenLineage.RunEvent.EventType getEventType(JobResult jobResult) {
     if (jobResult.getClass().getSimpleName().startsWith("JobSucceeded")) {
-      return "COMPLETE";
+      return OpenLineage.RunEvent.EventType.COMPLETE;
     }
-    return "FAIL";
+    return OpenLineage.RunEvent.EventType.FAIL;
   }
 }

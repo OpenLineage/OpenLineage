@@ -22,8 +22,8 @@
           "type" : "string"
         } ]
       },
-      "tableStateChange": {
-        "stateChange": "overwrite"
+      "lifecycleStateChange": {
+        "lifecycleStateChange": "OVERWRITE"
       }
     }
   } ]

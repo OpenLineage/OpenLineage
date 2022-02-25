@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
 # OpenLineage dbt integration
 
 Wrapper script for dbt for automatic metadata collection

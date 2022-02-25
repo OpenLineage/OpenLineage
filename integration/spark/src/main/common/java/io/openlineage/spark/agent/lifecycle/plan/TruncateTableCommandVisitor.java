@@ -1,8 +1,9 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.OutputDataset;
-import io.openlineage.spark.agent.facets.TableStateChangeFacet;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
@@ -47,9 +48,13 @@ public class TruncateTableCommandVisitor
                   .dataSource(
                       PlanUtils.datasourceFacet(
                           context.getOpenLineage(), datasetIdentifier.getNamespace()))
-                  .put(
-                      "tableStateChange",
-                      new TableStateChangeFacet(TableStateChangeFacet.StateChange.TRUNCATE))
+                  .lifecycleStateChange(
+                      context
+                          .getOpenLineage()
+                          .newLifecycleStateChangeDatasetFacet(
+                              OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange
+                                  .TRUNCATE,
+                              null))
                   .build()));
 
     } else {

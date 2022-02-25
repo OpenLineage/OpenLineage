@@ -164,6 +164,7 @@ jobs:
         type: string
     working_directory: ~/openlineage/integration/spark
     machine: true
+    resource_class: large
     environment:
       TESTCONTAINERS_RYUK_DISABLED: "true"
       JDK8_HOME: /usr/lib/jvm/java-8-openjdk-amd64
@@ -238,6 +239,7 @@ jobs:
         type: string
     working_directory: ~/openlineage/integration/spark
     machine: true
+    resource_class: large
     environment:
       TESTCONTAINERS_RYUK_DISABLED: "true"
       JDK8_HOME: /usr/lib/jvm/java-8-openjdk-amd64
@@ -311,6 +313,7 @@ jobs:
   integration-test-integration-airflow:
     working_directory: ~/openlineage/integration/
     machine: true
+    resource_class: large
     steps:
       - *checkout_project_root
       - gcp-cli/install
@@ -323,6 +326,7 @@ jobs:
   integration-test-integration-airflow-2:
     working_directory: ~/openlineage/integration/
     machine: true
+    resource_class: large
     steps:
       - *checkout_project_root
       - gcp-cli/install
@@ -332,6 +336,32 @@ jobs:
       - run: docker build -f airflow/Dockerfile.tests -t openlineage-airflow-base .
       - run: ./airflow/tests/integration/docker/up-2.sh
 
+  unit-test-integration-dagster:
+    working_directory: ~/openlineage/integration/dagster
+    docker:
+      - image: circleci/python:3.6
+    steps:
+      - *checkout_project_root
+      - *install_python_client
+      - run: pip install -e .[dev]
+      - run: flake8
+      - run: pytest --cov=openlineage tests/
+      - run: bash <(curl -s https://codecov.io/bash)
+
+  build-integration-dagster:
+    working_directory: ~/openlineage/integration/dagster
+    docker:
+      - image: circleci/python:3.6
+    <<: *param_build_tag
+    steps:
+      - *checkout_project_root
+      - *install_python_client
+      - run: python setup.py egg_info -b "<< parameters.build_tag >>" sdist bdist_wheel
+      - persist_to_workspace:
+          root: .
+          paths:
+            - ./dist/*.whl
+            - ./dist/*.tar.gz
 
   publish-snapshot-python:
     working_directory: ~/openlineage
@@ -471,6 +501,12 @@ workflows:
       - build-integration-dbt:
           <<: *only_on_main
           build_tag: ".dev<< pipeline.number >>"
+      - unit-test-integration-dagster
+      - build-integration-dagster:
+          <<: *only_on_main
+          build_tag: ".dev<< pipeline.number >>"
+          requires:
+            - unit-test-integration-dagster
       - publish-snapshot-python:
           <<: *only_on_main
           context: release
@@ -479,6 +515,7 @@ workflows:
             - build-integration-common
             - build-integration-airflow
             - build-integration-dbt
+            - build-integration-dagster
       - publish-spec:
           <<: *only_on_main
           context: release
@@ -504,6 +541,8 @@ workflows:
           <<: *only_on_release
       - build-integration-dbt:
           <<: *only_on_release
+      - build-integration-dagster:
+          <<: *only_on_release
       - release-python:
           <<: *only_on_release
           context: release
@@ -512,3 +551,4 @@ workflows:
             - build-integration-common
             - build-integration-airflow
             - build-integration-dbt
+            - build-integration-dagster

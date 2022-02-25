@@ -1,14 +1,15 @@
-package io.openlineage.spark.agent.lifecycle.plan;
+/* SPDX-License-Identifier: Apache-2.0 */
 
-import static io.openlineage.spark.agent.facets.TableStateChangeFacet.StateChange.OVERWRITE;
+package io.openlineage.spark.agent.lifecycle.plan;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.facets.TableStateChangeFacet;
+import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
+import java.net.URI;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
@@ -65,6 +66,15 @@ public class SaveIntoDataSourceCommandVisitor
       return KafkaRelationVisitor.createKafkaDatasets(
           outputDataset(), command.dataSource(), command.options(), command.mode(), x.schema());
     }
+
+    if (command.dataSource().getClass().getName().contains("DeltaDataSource")) {
+      if (command.options().contains("path")) {
+        URI uri = URI.create(command.options().get("path").get());
+        return Collections.singletonList(
+            outputDataset().getDataset(PathUtils.fromURI(uri, "file"), command.schema()));
+      }
+    }
+
     SQLContext sqlContext = context.getSparkSession().get().sqlContext();
     try {
       if (command.dataSource() instanceof RelationProvider) {
@@ -93,17 +103,38 @@ public class SaveIntoDataSourceCommandVisitor
                     relation, relation.schema().toAttributes(), Option.empty(), x.isStreaming())))
         .orElse(Collections.emptyList()).stream()
         // constructed datasets don't include the output stats, so add that facet here
-        .peek(
+        .map(
             ds -> {
               Builder<String, OpenLineage.DatasetFacet> facetsMap =
                   ImmutableMap.<String, OpenLineage.DatasetFacet>builder();
               if (ds.getFacets().getAdditionalProperties() != null) {
                 facetsMap.putAll(ds.getFacets().getAdditionalProperties());
               }
-              if (SaveMode.Overwrite == command.mode()) {
-                facetsMap.put("tableStateChange", new TableStateChangeFacet(OVERWRITE));
-              }
               ds.getFacets().getAdditionalProperties().putAll(facetsMap.build());
+              if (SaveMode.Overwrite == command.mode()) {
+                // rebuild whole dataset with a LifecycleStateChange facet added
+                OpenLineage.DatasetFacets facets =
+                    context
+                        .getOpenLineage()
+                        .newDatasetFacets(
+                            ds.getFacets().getDocumentation(),
+                            ds.getFacets().getDataSource(),
+                            ds.getFacets().getSchema(),
+                            context
+                                .getOpenLineage()
+                                .newLifecycleStateChangeDatasetFacet(
+                                    OpenLineage.LifecycleStateChangeDatasetFacet
+                                        .LifecycleStateChange.OVERWRITE,
+                                    null));
+
+                OpenLineage.OutputDataset newDs =
+                    context
+                        .getOpenLineage()
+                        .newOutputDataset(
+                            ds.getNamespace(), ds.getName(), facets, ds.getOutputFacets());
+                return newDs;
+              }
+              return ds;
             })
         .collect(Collectors.toList());
   }

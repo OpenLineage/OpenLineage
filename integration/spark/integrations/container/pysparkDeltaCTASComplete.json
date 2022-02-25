@@ -43,8 +43,8 @@
             }
           ]
         },
-        "tableStateChange" : {
-          "stateChange" : "create"
+        "lifecycleStateChange" : {
+          "lifecycleStateChange" : "CREATE"
         }
       },
       "name": "/tmp/delta/tbl",

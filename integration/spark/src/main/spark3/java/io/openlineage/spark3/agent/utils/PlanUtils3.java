@@ -1,14 +1,16 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 package io.openlineage.spark3.agent.utils;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.facets.TableProviderFacet;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
+import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.UnsupportedCatalogException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -58,14 +60,15 @@ public class PlanUtils3 {
 
   public static <D extends OpenLineage.Dataset> List<D> fromDataSourceV2Relation(
       DatasetFactory<D> datasetFactory, OpenLineageContext context, DataSourceV2Relation relation) {
-    return fromDataSourceV2Relation(datasetFactory, context, relation, new HashMap<>());
+    return fromDataSourceV2Relation(
+        datasetFactory, context, relation, context.getOpenLineage().newDatasetFacetsBuilder());
   }
 
   public static <D extends OpenLineage.Dataset> List<D> fromDataSourceV2Relation(
       DatasetFactory<D> datasetFactory,
       OpenLineageContext context,
       DataSourceV2Relation relation,
-      Map<String, OpenLineage.DatasetFacet> facets) {
+      OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder) {
 
     if (relation.identifier().isEmpty()) {
       throw new IllegalArgumentException(
@@ -79,16 +82,22 @@ public class PlanUtils3 {
     TableCatalog tableCatalog = (TableCatalog) relation.catalog().get();
 
     Map<String, String> tableProperties = relation.table().properties();
-
-    includeProviderFacet(tableCatalog, tableProperties, facets);
-    Optional<DatasetIdentifier> datasetIdentifier =
+    Optional<DatasetIdentifier> di =
         PlanUtils3.getDatasetIdentifier(context, tableCatalog, identifier, tableProperties);
 
-    if (datasetIdentifier.isPresent()) {
-      return Collections.singletonList(
-          datasetFactory.getDataset(datasetIdentifier.get(), relation.schema(), facets));
-    } else {
+    if (!di.isPresent()) {
       return Collections.emptyList();
     }
+
+    OpenLineage openLineage = context.getOpenLineage();
+    datasetFacetsBuilder
+        .schema(PlanUtils.schemaFacet(openLineage, relation.schema()))
+        .dataSource(PlanUtils.datasourceFacet(openLineage, di.get().getNamespace()));
+
+    CatalogUtils3.getTableProviderFacet(tableCatalog, tableProperties)
+        .map(provider -> datasetFacetsBuilder.put("tableProvider", provider));
+    return Collections.singletonList(
+        datasetFactory.getDataset(
+            di.get().getName(), di.get().getNamespace(), datasetFacetsBuilder.build()));
   }
 }

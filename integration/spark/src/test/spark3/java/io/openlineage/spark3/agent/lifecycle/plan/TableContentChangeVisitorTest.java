@@ -1,23 +1,22 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 package io.openlineage.spark3.agent.lifecycle.plan;
 
-import static io.openlineage.spark.agent.facets.TableStateChangeFacet.StateChange.OVERWRITE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.facets.TableStateChangeFacet;
-import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
+import lombok.SneakyThrows;
 import org.apache.spark.sql.catalyst.plans.logical.DeleteFromTable;
 import org.apache.spark.sql.catalyst.plans.logical.InsertIntoStatement;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -30,17 +29,19 @@ import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
 public class TableContentChangeVisitorTest {
 
   OpenLineageContext openLineageContext = mock(OpenLineageContext.class);
   DataSourceV2Relation dataSourceV2Relation = mock(DataSourceV2Relation.class);
-  OpenLineage openLineage = mock(OpenLineage.class);
-
+  OpenLineage openLineage;
   TableContentChangeVisitor visitor;
 
   @BeforeEach
+  @SneakyThrows
   public void setUp() {
+    openLineage = mock(OpenLineage.class);
     when(openLineageContext.getOpenLineage()).thenReturn(openLineage);
     visitor = new TableContentChangeVisitor(openLineageContext);
   }
@@ -49,14 +50,16 @@ public class TableContentChangeVisitorTest {
   public void testApplyForOverwriteByExpression() {
     OverwriteByExpression logicalPlan = mock(OverwriteByExpression.class);
     when(logicalPlan.table()).thenReturn(dataSourceV2Relation);
-    verify(logicalPlan, OVERWRITE);
+    verify(
+        logicalPlan, OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
   }
 
   @Test
   public void testApplyForOverwritePartitionsDynamic() {
     OverwritePartitionsDynamic logicalPlan = mock(OverwritePartitionsDynamic.class);
     when(logicalPlan.table()).thenReturn(dataSourceV2Relation);
-    verify(logicalPlan, OVERWRITE);
+    verify(
+        logicalPlan, OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
   }
 
   @Test
@@ -64,7 +67,8 @@ public class TableContentChangeVisitorTest {
     InsertIntoStatement logicalPlan = mock(InsertIntoStatement.class);
     when(logicalPlan.table()).thenReturn(dataSourceV2Relation);
     when(logicalPlan.overwrite()).thenReturn(true);
-    verify(logicalPlan, OVERWRITE);
+    verify(
+        logicalPlan, OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
   }
 
   @Test
@@ -100,18 +104,7 @@ public class TableContentChangeVisitorTest {
     InsertIntoStatement logicalPlan = mock(InsertIntoStatement.class);
     when(logicalPlan.table()).thenReturn(dataSourceV2Relation);
     when(logicalPlan.overwrite()).thenReturn(false);
-
-    try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
-      visitor.apply(logicalPlan);
-      mocked.verify(
-          () ->
-              PlanUtils3.fromDataSourceV2Relation(
-                  any(DatasetFactory.class),
-                  eq(openLineageContext),
-                  eq(dataSourceV2Relation),
-                  eq(new HashMap<>())),
-          times(1));
-    }
+    verify(logicalPlan, null);
   }
 
   @Test
@@ -125,25 +118,32 @@ public class TableContentChangeVisitorTest {
     assertFalse(visitor.isDefinedAt(mock(LogicalPlan.class)));
   }
 
-  private void verify(LogicalPlan logicalPlan, TableStateChangeFacet.StateChange stateChange) {
+  private void verify(
+      LogicalPlan logicalPlan,
+      OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange lifecycleStateChange) {
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
-      visitor.apply(logicalPlan);
+      OpenLineage.Dataset dataset = mock(OpenLineage.Dataset.class);
+      OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
+          mock(OpenLineage.DatasetFacetsBuilder.class);
+      OpenLineage.LifecycleStateChangeDatasetFacet lifecycleStateChangeDatasetFacet =
+          mock(OpenLineage.LifecycleStateChangeDatasetFacet.class);
 
-      Map<String, OpenLineage.DatasetFacet> expectedFacets;
-      if (stateChange == null) {
-        expectedFacets = Collections.emptyMap();
-      } else {
-        expectedFacets =
-            Collections.singletonMap("tableStateChange", new TableStateChangeFacet(stateChange));
+      when(openLineage.newDatasetFacetsBuilder()).thenReturn(datasetFacetsBuilder);
+      when(openLineage.newLifecycleStateChangeDatasetFacet(lifecycleStateChange, null))
+          .thenReturn(lifecycleStateChangeDatasetFacet);
+
+      when(PlanUtils3.fromDataSourceV2Relation(
+              any(), eq(openLineageContext), eq(dataSourceV2Relation), eq(datasetFacetsBuilder)))
+          .thenReturn(Collections.singletonList(dataset));
+
+      List<OpenLineage.OutputDataset> datasetList = visitor.apply(logicalPlan);
+
+      assertEquals(1, datasetList.size());
+      assertEquals(dataset, datasetList.get(0));
+      if (lifecycleStateChange != null) {
+        Mockito.verify(datasetFacetsBuilder)
+            .lifecycleStateChange(eq(lifecycleStateChangeDatasetFacet));
       }
-      mocked.verify(
-          () ->
-              PlanUtils3.fromDataSourceV2Relation(
-                  any(DatasetFactory.class),
-                  eq(openLineageContext),
-                  eq(dataSourceV2Relation),
-                  eq(expectedFacets)),
-          times(1));
     }
   }
 }

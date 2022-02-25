@@ -3,8 +3,11 @@
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.5.2...HEAD)
 
 ### Added
-* Extract source code of PythonOperator code similar to SQL facet [@mobuchowski](https://github.com/mobuchowski)
+* Extract source code of PythonOperator and BashOperator similar to SQL facet [@mobuchowski](https://github.com/mobuchowski)
+* OpenLineage sensor for OpenLineage-Dagster integration [@dalinkim](https://github.com/dalinkim)
 
+### Fixed
+* Removed AWS secret keys and extraneous snowflake parameters from connection uri [@collado-mike](https://github.com/collado-mike)
 
 ## [0.5.2](https://github.com/OpenLineage/OpenLineage/compare/0.5.1...0.5.2)
 ### Added
@@ -21,6 +24,9 @@
 
 * dbt: job namespaces for given dbt run match each other [@mobuchowski](https://github.com/mobuchowski)
 * Fix Breaking SnowflakeOperator Changes from OSS Airflow [@denimalpaca](https://github.com/denimalpaca)
+
+### Fixed
+* Made corrections to account for DeltaDataSource handling [@collado-mike](https://github.com/collado-mike)
 
 ## [0.5.1](https://github.com/OpenLineage/OpenLineage/compare/0.4.0...0.5.1)
 ### Added

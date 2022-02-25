@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 package io.openlineage.spark.api;
 
 import io.openlineage.client.OpenLineage.DatasetFacet;

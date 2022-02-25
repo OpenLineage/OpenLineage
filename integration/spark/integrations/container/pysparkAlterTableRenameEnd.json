@@ -28,9 +28,12 @@
           "type" : "string"
         } ]
       },
-      "previousTableName" : {
-        "previousTableURI" : "/tmp/alter_test/alter_table_test",
-        "currentTableURI" : "/tmp/alter_test/alter_table_test_new"
+      "lifecycleStateChange" : {
+        "lifecycleStateChange" : "RENAME",
+        "previousIdentifier" : {
+          "name" : "/tmp/alter_test/alter_table_test",
+          "namespace" : "file"
+        }
       }
     }
   } ]

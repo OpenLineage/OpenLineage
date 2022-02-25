@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
 import os
 
 os.makedirs("/tmp/ctas_load", exist_ok=True)

@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
 <div align="center">
   <img src="./doc/openlineage-logo.png" width="375px" />
   <a href="https://lfaidata.foundation/projects">
@@ -55,6 +57,7 @@ OpenLineage repository contains integrations with several systems.
 
 - [Apache Spark](https://github.com/OpenLineage/OpenLineage/tree/main/integration/spark)
 - [Apache Airflow](https://github.com/OpenLineage/OpenLineage/tree/main/integration/airflow)
+- [Dagster](https://github.com/OpenLineage/OpenLineage/tree/main/integration/dagster)
 - [dbt](https://github.com/OpenLineage/OpenLineage/tree/main/integration/dbt)
 
 ## Related projects

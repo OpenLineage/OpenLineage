@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 package io.openlineage.spark.agent.lifecycle;
 
 import static io.openlineage.spark.agent.util.ScalaConversionUtils.fromSeq;
@@ -235,7 +237,7 @@ class OpenLineageRunEventBuilder {
       RunEventBuilder runEventBuilder,
       JobBuilder jobBuilder,
       SparkListenerSQLExecutionStart event) {
-    runEventBuilder.eventType("START");
+    runEventBuilder.eventType(OpenLineage.RunEvent.EventType.START);
     return buildRun(parentRunFacet, runEventBuilder, jobBuilder, event, Optional.empty());
   }
 
@@ -244,7 +246,7 @@ class OpenLineageRunEventBuilder {
       RunEventBuilder runEventBuilder,
       JobBuilder jobBuilder,
       SparkListenerSQLExecutionEnd event) {
-    runEventBuilder.eventType("COMPLETE");
+    runEventBuilder.eventType(OpenLineage.RunEvent.EventType.COMPLETE);
     return buildRun(parentRunFacet, runEventBuilder, jobBuilder, event, Optional.empty());
   }
 
@@ -253,7 +255,7 @@ class OpenLineageRunEventBuilder {
       RunEventBuilder runEventBuilder,
       JobBuilder jobBuilder,
       SparkListenerJobStart event) {
-    runEventBuilder.eventType("START");
+    runEventBuilder.eventType(OpenLineage.RunEvent.EventType.START);
     return buildRun(
         parentRunFacet,
         runEventBuilder,
@@ -267,7 +269,10 @@ class OpenLineageRunEventBuilder {
       RunEventBuilder runEventBuilder,
       JobBuilder jobBuilder,
       SparkListenerJobEnd event) {
-    runEventBuilder.eventType(event.jobResult() instanceof JobFailed ? "FAIL" : "COMPLETE");
+    runEventBuilder.eventType(
+        event.jobResult() instanceof JobFailed
+            ? OpenLineage.RunEvent.EventType.FAIL
+            : OpenLineage.RunEvent.EventType.COMPLETE);
     return buildRun(
         parentRunFacet,
         runEventBuilder,
@@ -303,7 +308,7 @@ class OpenLineageRunEventBuilder {
     RunFacetsBuilder runFacetsBuilder = openLineage.newRunFacetsBuilder();
     parentRunFacet.ifPresent(runFacetsBuilder::parent);
     OpenLineage.JobFacets jobFacets =
-        buildFacets(nodes, jobFacetBuilders, openLineage.newJobFacets(null, null, null));
+        buildFacets(nodes, jobFacetBuilders, openLineage.newJobFacetsBuilder().build());
     List<InputDataset> inputDatasets = buildInputDatasets(nodes);
     List<OutputDataset> outputDatasets = buildOutputDatasets(nodes);
     openLineageContext
