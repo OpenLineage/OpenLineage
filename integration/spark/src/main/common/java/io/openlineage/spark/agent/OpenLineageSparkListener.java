@@ -36,6 +36,7 @@ import org.apache.spark.SparkEnv$;
 import org.apache.spark.rdd.PairRDDFunctions;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.scheduler.ActiveJob;
+import org.apache.spark.scheduler.SparkListenerApplicationEnd;
 import org.apache.spark.scheduler.SparkListenerApplicationStart;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
@@ -274,6 +275,12 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     sparkSqlExecutionRegistry.clear();
     rddExecutionRegistry.clear();
     outputs.clear();
+  }
+
+  @Override
+  public void onApplicationEnd(SparkListenerApplicationEnd applicationEnd) {
+    close();
+    super.onApplicationEnd(applicationEnd);
   }
 
   /** To close the underlying resources. */

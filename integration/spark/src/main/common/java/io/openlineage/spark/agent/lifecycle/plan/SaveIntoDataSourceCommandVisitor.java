@@ -5,9 +5,11 @@ package io.openlineage.spark.agent.lifecycle.plan;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
+import java.net.URI;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
@@ -64,6 +66,15 @@ public class SaveIntoDataSourceCommandVisitor
       return KafkaRelationVisitor.createKafkaDatasets(
           outputDataset(), command.dataSource(), command.options(), command.mode(), x.schema());
     }
+
+    if (command.dataSource().getClass().getName().contains("DeltaDataSource")) {
+      if (command.options().contains("path")) {
+        URI uri = URI.create(command.options().get("path").get());
+        return Collections.singletonList(
+            outputDataset().getDataset(PathUtils.fromURI(uri, "file"), command.schema()));
+      }
+    }
+
     SQLContext sqlContext = context.getSparkSession().get().sqlContext();
     try {
       if (command.dataSource() instanceof RelationProvider) {
