@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunEvent;
+import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.lifecycle.StaticExecutionContextFactory;
 import java.io.IOException;
@@ -68,7 +69,7 @@ public class DeltaDataSourceTest {
     List<RunEvent> events = lineageEvent.getAllValues();
     Optional<RunEvent> completionEvent =
         events.stream()
-            .filter(e -> e.getEventType().equals("COMPLETE") && !e.getOutputs().isEmpty())
+            .filter(e -> e.getEventType().equals(EventType.COMPLETE) && !e.getOutputs().isEmpty())
             .findFirst();
     assertTrue(completionEvent.isPresent());
     OpenLineage.RunEvent event = completionEvent.get();
