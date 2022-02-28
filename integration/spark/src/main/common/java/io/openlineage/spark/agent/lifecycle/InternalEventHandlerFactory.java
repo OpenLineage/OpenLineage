@@ -3,6 +3,7 @@
 package io.openlineage.spark.agent.lifecycle;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableList.Builder;
 import io.openlineage.client.OpenLineage.DatasetFacet;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.InputDatasetFacet;
@@ -10,6 +11,7 @@ import io.openlineage.client.OpenLineage.JobFacet;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.OutputDatasetFacet;
 import io.openlineage.client.OpenLineage.RunFacet;
+import io.openlineage.spark.agent.facets.builder.DatabricksEnvironmentFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.ErrorFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.LogicalPlanRunFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.OutputStatisticsOutputDatasetFacetBuilder;
@@ -151,14 +153,20 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
   @Override
   public Collection<CustomFacetBuilder<?, ? extends RunFacet>> createRunFacetBuilders(
       OpenLineageContext context) {
-    return ImmutableList.<CustomFacetBuilder<?, ? extends RunFacet>>builder()
-        .addAll(
-            generate(eventHandlerFactories, factory -> factory.createRunFacetBuilders((context))))
-        .add(
-            new ErrorFacetBuilder(),
-            new LogicalPlanRunFacetBuilder(context),
-            new SparkVersionFacetBuilder(context))
-        .build();
+    Builder<CustomFacetBuilder<?, ? extends RunFacet>> listBuilder;
+    listBuilder =
+        ImmutableList.<CustomFacetBuilder<?, ? extends RunFacet>>builder()
+            .addAll(
+                generate(
+                    eventHandlerFactories, factory -> factory.createRunFacetBuilders((context))))
+            .add(
+                new ErrorFacetBuilder(),
+                new LogicalPlanRunFacetBuilder(context),
+                new SparkVersionFacetBuilder(context));
+    if (DatabricksEnvironmentFacetBuilder.isDatabricksRuntime()) {
+      listBuilder.add(new DatabricksEnvironmentFacetBuilder(context));
+    }
+    return listBuilder.build();
   }
 
   @Override
