@@ -2,18 +2,16 @@ package io.openlineage.spark.agent.facets.builder;
 
 import com.databricks.backend.daemon.dbutils.MountInfo;
 import com.databricks.dbutils_v1.DbfsUtils;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.type.CollectionType;
 import io.openlineage.spark.agent.facets.EnvironmentFacet;
 import io.openlineage.spark.agent.models.DatabricksMountpoint;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.BiConsumer;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import scala.collection.JavaConversions;
 
@@ -21,11 +19,10 @@ import scala.collection.JavaConversions;
  * {@link CustomFacetBuilder} that generates a {@link EnvironmentFacet} when using OpenLineage on
  * Databricks.
  */
+@Slf4j
 public class DatabricksEnvironmentFacetBuilder
     extends CustomFacetBuilder<SparkListenerJobStart, EnvironmentFacet> {
-  private static HashMap<String, Object> dbProperties;
-  private static final org.slf4j.Logger log =
-      org.slf4j.LoggerFactory.getLogger(DatabricksEnvironmentFacetBuilder.class);
+  private HashMap<String, Object> dbProperties;
   private final OpenLineageContext openLineageContext;
   private Class dbutilsClass;
   private DbfsUtils dbutils;
@@ -44,15 +41,6 @@ public class DatabricksEnvironmentFacetBuilder
     consumer.accept(
         "environment-properties",
         new EnvironmentFacet(getDatabricksEnvironmentalAttributes(event)));
-  }
-
-  private static <T> List<T> jsonArrayToObjectList(String json, Class<T> tClass)
-      throws IOException {
-    ObjectMapper mapper = new ObjectMapper();
-    CollectionType listType =
-        mapper.getTypeFactory().constructCollectionType(ArrayList.class, tClass);
-    List<T> ts = mapper.readValue(json, listType);
-    return ts;
   }
 
   private HashMap<String, Object> getDatabricksEnvironmentalAttributes(
