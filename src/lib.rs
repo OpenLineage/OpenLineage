@@ -1,9 +1,10 @@
+mod bigquery;
 use std::collections::HashSet;
 
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
 use sqlparser::ast::{Query, Select, SetExpr, Statement, TableFactor, With};
-use sqlparser::dialect::SnowflakeDialect;
+use self::bigquery::BigQueryDialect;
 use sqlparser::parser::Parser;
 
 #[derive(Debug, PartialEq)]
@@ -138,7 +139,7 @@ fn parse_stmt(stmt: &Statement, context: &mut Context) -> Result<(), String> {
 }
 
 fn parse_sql(sql: &str) -> Result<QueryMetadata, String> {
-    let dialect = SnowflakeDialect;
+    let dialect = BigQueryDialect;
     let ast = match Parser::parse_sql(&dialect, sql) {
         Ok(k) => k,
         Err(e) => return Err(e.to_string().to_owned()),
@@ -174,9 +175,7 @@ fn parser(_py: Python, m: &PyModule) -> PyResult<()> {
 
 #[cfg(test)]
 mod tests {
-    use sqlparser::ast::Query;
-
-    use crate::{parse_sql, QueryMetadata};
+    use crate::{QueryMetadata, parse_sql};
 
     #[test]
     fn insert_values() {
@@ -289,7 +288,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_simple_cte() {
+    fn parse_simple_cte() {
         assert_eq!(
             parse_sql("
                 WITH sum_trans as (
@@ -312,7 +311,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_bugged_cte() {
+    fn parse_bugged_cte() {
         assert_eq!(
             parse_sql("
                 WITH sum_trans (
@@ -331,7 +330,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_recursive_cte() {
+    fn parse_recursive_cte() {
         assert_eq!(parse_sql("
             WITH RECURSIVE subordinates AS
             (SELECT employee_id,
@@ -353,7 +352,7 @@ mod tests {
     }
 
     #[test]
-    fn test_multiple_ctes() {
+    fn multiple_ctes() {
         assert_eq!(parse_sql("
             WITH customers AS (
                 SELECT * FROM DEMO_DB.public.stg_customers
@@ -371,112 +370,146 @@ mod tests {
         })
     }
 
-    // #[test]
-    // fn merge_subquery_when_not_matched() {
-    //     assert_eq!(parse_sql("
-    //     MERGE INTO s.bar as dest
-    //     USING (
-    //         SELECT *
-    //         FROM
-    //         s.foo
-    //     ) as stg
-    //     ON dest.D = stg.D
-    //       AND dest.E = stg.E
-    //     WHEN NOT MATCHED THEN
-    //     INSERT (
-    //       A,
-    //       B,
-    //       C)
-    //     VALUES
-    //     (
-    //         stg.A
-    //         ,stg.B
-    //         ,stg.C
-    //     )").unwrap(), QueryMetadata{
-    //         inputs: vec![String::from("s.foo")],
-    //         output: Some(String::from("s.bar"))
-    //     });
-    // }
+    #[test]
+    fn select_bigquery_excaping() {
+        assert_eq!(parse_sql("
+            SELECT * 
+            FROM `random-project`.`dbt_test1`.`source_table` 
+            WHERE id = 1
+        ").unwrap(), QueryMetadata {
+            inputs: vec![String::from("`random-project`.`dbt_test1`.`source_table`")],
+            output: None
+        })
+    }
 
-    // #[test]
-    // fn test_tpcds_cte_query() {
-    //     assert_eq!(parse_sql("
-    //     WITH year_total AS
-    //         (SELECT c_customer_id customer_id,
-    //                 c_first_name customer_first_name,
-    //                 c_last_name customer_last_name,
-    //                 c_preferred_cust_flag customer_preferred_cust_flag,
-    //                 c_birth_country customer_birth_country,
-    //                 c_login customer_login,
-    //                 c_email_address customer_email_address,
-    //                 d_year dyear,
-    //                 Sum(((ss_ext_list_price - ss_ext_wholesale_cost - ss_ext_discount_amt)
-    //                     + ss_ext_sales_price) / 2) year_total,
-    //                 's' sale_type
-    //         FROM src.customer,
-    //             store_sales,
-    //             date_dim
-    //         WHERE c_customer_sk = ss_customer_sk
-    //             AND ss_sold_date_sk = d_date_sk GROUP  BY c_customer_id,
-    //                                                     c_first_name,
-    //                                                     c_last_name,
-    //                                                     c_preferred_cust_flag,
-    //                                                     c_birth_country,
-    //                                                     c_login,
-    //                                                     c_email_address,
-    //                                                     d_year)
-    //     SELECT t_s_secyear.customer_id,
-    //         t_s_secyear.customer_first_name,
-    //         t_s_secyear.customer_last_name,
-    //         t_s_secyear.customer_preferred_cust_flag
-    //     FROM year_total t_s_firstyear,
-    //         year_total t_s_secyear,
-    //         year_total t_c_firstyear,
-    //         year_total t_c_secyear,
-    //         year_total t_w_firstyear,
-    //         year_total t_w_secyear
-    //     WHERE t_s_secyear.customer_id = t_s_firstyear.customer_id
-    //         AND t_s_firstyear.customer_id = t_c_secyear.customer_id
-    //         AND t_s_firstyear.customer_id = t_c_firstyear.customer_id
-    //         AND t_s_firstyear.customer_id = t_w_firstyear.customer_id
-    //         AND t_s_firstyear.customer_id = t_w_secyear.customer_id
-    //         AND t_s_firstyear.sale_type = 's'
-    //         AND t_c_firstyear.sale_type = 'c'
-    //         AND t_w_firstyear.sale_type = 'w'
-    //         AND t_s_secyear.sale_type = 's'
-    //         AND t_c_secyear.sale_type = 'c'
-    //         AND t_w_secyear.sale_type = 'w'
-    //         AND t_s_firstyear.dyear = 2001
-    //         AND t_s_secyear.dyear = 2001 + 1
-    //         AND t_c_firstyear.dyear = 2001
-    //         AND t_c_secyear.dyear = 2001 + 1
-    //         AND t_w_firstyear.dyear = 2001
-    //         AND t_w_secyear.dyear = 2001 + 1
-    //         AND t_s_firstyear.year_total > 0
-    //         AND t_c_firstyear.year_total > 0
-    //         AND t_w_firstyear.year_total > 0
-    //         AND CASE WHEN
-    //                 t_c_firstyear.year_total > 0 THEN t_c_secyear.year_total / t_c_firstyear.year_total
-    //                 ELSE NULL
-    //             END > CASE WHEN
-    //                 t_s_firstyear.year_total > 0 THEN t_s_secyear.year_total / t_s_firstyear.year_total
-    //                 ELSE NULL
-    //             END
-    //         AND CASE WHEN
-    //                 t_c_firstyear.year_total > 0 THEN t_c_secyear.year_total / t_c_firstyear.year_total
-    //                 ELSE NULL
-    //             END > CASE WHEN
-    //                 t_w_firstyear.year_total > 0 THEN t_w_secyear.year_total / t_w_firstyear.year_total
-    //                 ELSE NULL
-    //             END
-    //         ORDER  BY t_s_secyear.customer_id,
-    //                 t_s_secyear.customer_first_name,
-    //                 t_s_secyear.customer_last_name,
-    //                 t_s_secyear.customer_preferred_cust_flag
-    //     LIMIT 100;
-    //     ").unwrap(), QueryMetadata{
-    //         inputs: vec![],
-    //         output: None
-    //     })
-    // }
+    #[test]
+    #[ignore = "EXTRACT not supported"]
+    fn insert_nested_select() {
+        assert_eq!(parse_sql("
+            INSERT INTO popular_orders_day_of_week (order_day_of_week, order_placed_on,orders_placed)
+            SELECT EXTRACT(ISODOW FROM order_placed_on) AS order_day_of_week,
+                order_placed_on,
+                COUNT(*) AS orders_placed
+            FROM top_delivery_times
+            GROUP BY order_placed_on;
+        ").unwrap(), QueryMetadata {
+            inputs: vec![String::from("top_delivery_times")],
+            output: Some(String::from("popular_orders_day_of_week"))
+        })
+    }
+
+    #[test]
+    #[ignore = "MERGE not supported"]
+    fn merge_subquery_when_not_matched() {
+        assert_eq!(parse_sql("
+        MERGE INTO s.bar as dest
+        USING (
+            SELECT *
+            FROM
+            s.foo
+        ) as stg
+        ON dest.D = stg.D
+          AND dest.E = stg.E
+        WHEN NOT MATCHED THEN
+        INSERT (
+          A,
+          B,
+          C)
+        VALUES
+        (
+            stg.A
+            ,stg.B
+            ,stg.C
+        )").unwrap(), QueryMetadata{
+            inputs: vec![String::from("s.foo")],
+            output: Some(String::from("s.bar"))
+        });
+    }
+
+    #[test]
+    fn test_tpcds_cte_query() {
+        assert_eq!(parse_sql("
+        WITH year_total AS
+            (SELECT c_customer_id customer_id,
+                    c_first_name customer_first_name,
+                    c_last_name customer_last_name,
+                    c_preferred_cust_flag customer_preferred_cust_flag,
+                    c_birth_country customer_birth_country,
+                    c_login customer_login,
+                    c_email_address customer_email_address,
+                    d_year dyear,
+                    Sum(((ss_ext_list_price - ss_ext_wholesale_cost - ss_ext_discount_amt)
+                        + ss_ext_sales_price) / 2) year_total,
+                    's' sale_type
+            FROM src.customer,
+                store_sales,
+                date_dim
+            WHERE c_customer_sk = ss_customer_sk
+                AND ss_sold_date_sk = d_date_sk GROUP  BY c_customer_id,
+                                                        c_first_name,
+                                                        c_last_name,
+                                                        c_preferred_cust_flag,
+                                                        c_birth_country,
+                                                        c_login,
+                                                        c_email_address,
+                                                        d_year)
+        SELECT t_s_secyear.customer_id,
+            t_s_secyear.customer_first_name,
+            t_s_secyear.customer_last_name,
+            t_s_secyear.customer_preferred_cust_flag
+        FROM year_total t_s_firstyear,
+            year_total t_s_secyear,
+            year_total t_c_firstyear,
+            year_total t_c_secyear,
+            year_total t_w_firstyear,
+            year_total t_w_secyear
+        WHERE t_s_secyear.customer_id = t_s_firstyear.customer_id
+            AND t_s_firstyear.customer_id = t_c_secyear.customer_id
+            AND t_s_firstyear.customer_id = t_c_firstyear.customer_id
+            AND t_s_firstyear.customer_id = t_w_firstyear.customer_id
+            AND t_s_firstyear.customer_id = t_w_secyear.customer_id
+            AND t_s_firstyear.sale_type = 's'
+            AND t_c_firstyear.sale_type = 'c'
+            AND t_w_firstyear.sale_type = 'w'
+            AND t_s_secyear.sale_type = 's'
+            AND t_c_secyear.sale_type = 'c'
+            AND t_w_secyear.sale_type = 'w'
+            AND t_s_firstyear.dyear = 2001
+            AND t_s_secyear.dyear = 2001 + 1
+            AND t_c_firstyear.dyear = 2001
+            AND t_c_secyear.dyear = 2001 + 1
+            AND t_w_firstyear.dyear = 2001
+            AND t_w_secyear.dyear = 2001 + 1
+            AND t_s_firstyear.year_total > 0
+            AND t_c_firstyear.year_total > 0
+            AND t_w_firstyear.year_total > 0
+            AND CASE WHEN
+                    t_c_firstyear.year_total > 0 THEN t_c_secyear.year_total / t_c_firstyear.year_total
+                    ELSE NULL
+                END > CASE WHEN
+                    t_s_firstyear.year_total > 0 THEN t_s_secyear.year_total / t_s_firstyear.year_total
+                    ELSE NULL
+                END
+            AND CASE WHEN
+                    t_c_firstyear.year_total > 0 THEN t_c_secyear.year_total / t_c_firstyear.year_total
+                    ELSE NULL
+                END > CASE WHEN
+                    t_w_firstyear.year_total > 0 THEN t_w_secyear.year_total / t_w_firstyear.year_total
+                    ELSE NULL
+                END
+            ORDER  BY t_s_secyear.customer_id,
+                    t_s_secyear.customer_first_name,
+                    t_s_secyear.customer_last_name,
+                    t_s_secyear.customer_preferred_cust_flag
+        LIMIT 100;
+        ").unwrap(), QueryMetadata{
+            inputs: vec![
+                String::from("date_dim"), 
+                String::from("src.customer"), 
+                String::from("store_sales")
+            ],
+            output: None
+        })
+    }
+
 }
