@@ -21,6 +21,8 @@ fi
 if [[ -n "$CI" ]]; then
   echo $GCLOUD_SERVICE_KEY > gcloud/gcloud-service-key.json
   chmod 644 gcloud/gcloud-service-key.json
+  mkdir -p airflow/logs
+  chmod a+rwx -R airflow/logs
 fi
 
 # maybe overkill
@@ -29,6 +31,7 @@ OPENLINEAGE_AIRFLOW_WHL_ALL=$(docker run openlineage-airflow-base:latest sh -c "
 
 # Add revision to requirements.txt
 cat > requirements.txt <<EOL
+apache-airflow[celery]==1.10.15
 airflow-provider-great-expectations==0.0.8
 great-expectations==0.13.42
 dbt-bigquery==0.20.1
@@ -50,4 +53,7 @@ ${OPENLINEAGE_AIRFLOW_WHL}
 EOL
 
 docker-compose down
-docker-compose up -V --build --force-recreate --exit-code-from integration
+
+# Run airflow-init first, because rest of airflow containers can die if the database is not prepared.
+docker-compose up -V --build --abort-on-container-exit airflow_init postgres
+docker-compose up --build --exit-code-from integration --scale airflow_init=0
