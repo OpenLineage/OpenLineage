@@ -48,7 +48,6 @@ public class ContextFactory {
             .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
             .queryExecution(queryExecution)
             .build();
-
     OpenLineageRunEventBuilder runEventBuilder =
         new OpenLineageRunEventBuilder(olContext, handlerFactory);
     return new SparkSQLExecutionContext(

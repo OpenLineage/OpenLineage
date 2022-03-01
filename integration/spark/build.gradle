@@ -85,6 +85,7 @@ dependencies {
         exclude group: 'com.fasterxml.jackson.core'
         exclude group: 'com.fasterxml.jackson.datatype'
     }
+
     implementation 'org.javassist:javassist:3.27.0-GA'
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.0.3'
     implementation ("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonDatatypeVersion}"){
@@ -102,6 +103,7 @@ dependencies {
     }
     compileOnly "org.apache.spark:spark-hive_2.11:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql-kafka-0-10_2.11:${sparkVersion}"
+    compileOnly "com.databricks:dbutils-api_${scalaVersion}:0.0.5"
 
     testImplementation platform('org.junit:junit-bom:5.7.1')
     testImplementation "org.postgresql:postgresql:${postgresqlVersion}"
@@ -207,8 +209,8 @@ sourceSets {
     }
 }
 
-compileJava.finalizedBy compileSpark3Java
-compileTestJava.finalizedBy compileSpark3TestJava
+compileJava.finalizedBy compileSpark2Java, compileSpark3Java
+compileTestJava.finalizedBy compileSpark2TestJava, compileSpark3TestJava
 
 task sourceJar(type: Jar) {
     classifier 'sources'
