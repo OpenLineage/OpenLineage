@@ -342,7 +342,7 @@ class OpenLineageRunEventBuilder {
         openLineageContext.getQueryExecution(),
         inputDatasetQueryPlanVisitors);
 
-    Function1<LogicalPlan, List<InputDataset>> inputVisitor =
+    Function1<LogicalPlan, Collection<InputDataset>> inputVisitor =
         visitLogicalPlan(PlanUtils.merge(inputDatasetQueryPlanVisitors));
 
     List<OpenLineage.InputDataset> datasets =
@@ -353,7 +353,7 @@ class OpenLineageRunEventBuilder {
                     .map(
                         qe ->
                             fromSeq(qe.optimizedPlan().map(inputVisitor)).stream()
-                                .flatMap(List::stream)
+                                .flatMap(Collection::stream)
                                 .map(((Class<InputDataset>) InputDataset.class)::cast))
                     .orElse(Stream.empty()))
             .collect(Collectors.toList());
@@ -390,8 +390,8 @@ class OpenLineageRunEventBuilder {
    * @param <D>
    * @return
    */
-  private <D> Function1<LogicalPlan, List<D>> visitLogicalPlan(
-      PartialFunction<LogicalPlan, List<D>> inputVisitor) {
+  private <D> Function1<LogicalPlan, Collection<D>> visitLogicalPlan(
+      PartialFunction<LogicalPlan, Collection<D>> inputVisitor) {
     return ScalaConversionUtils.toScalaFn(
         node ->
             inputVisitor
@@ -409,7 +409,7 @@ class OpenLineageRunEventBuilder {
         "Visiting query plan {} with output dataset builders {}",
         openLineageContext.getQueryExecution(),
         outputDatasetBuilders);
-    Function1<LogicalPlan, List<OutputDataset>> visitor =
+    Function1<LogicalPlan, Collection<OutputDataset>> visitor =
         visitLogicalPlan(PlanUtils.merge(outputDatasetQueryPlanVisitors));
     List<OutputDataset> datasets =
         Stream.concat(
@@ -417,7 +417,7 @@ class OpenLineageRunEventBuilder {
                 openLineageContext
                     .getQueryExecution()
                     .map(qe -> visitor.apply(qe.optimizedPlan()))
-                    .map(List::stream)
+                    .map(Collection::stream)
                     .orElse(Stream.empty()))
             .collect(Collectors.toList());
 
@@ -452,16 +452,13 @@ class OpenLineageRunEventBuilder {
 
   private <T> Stream<T> buildDatasets(
       List<Object> nodes, Collection<PartialFunction<Object, List<T>>> builders) {
-    PartialFunction<Object, List<T>> fn = PlanUtils.merge(builders);
     return nodes.stream()
         .flatMap(
-            event -> {
-              if (fn.isDefinedAt(event)) {
-                return fn.apply(event).stream();
-              } else {
-                return Stream.empty();
-              }
-            });
+            event ->
+                builders.stream()
+                    .filter(pfn -> pfn.isDefinedAt(event))
+                    .map(pfn -> pfn.apply(event))
+                    .flatMap(Collection::stream));
   }
 
   /**

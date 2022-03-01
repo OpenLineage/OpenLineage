@@ -94,7 +94,7 @@ class LogicalRelationVisitorTest {
             .queryExecution(qe)
             .build();
     LogicalRelationVisitor<OutputDataset> visitor =
-        new LogicalRelationVisitor<>(context, DatasetFactory.output(openLineage));
+        new LogicalRelationVisitor<>(context, DatasetFactory.output(openLineage), true);
     List<OutputDataset> datasets =
         visitor.apply(new SparkListenerJobStart(1, 1, Seq$.MODULE$.empty(), null));
     assertEquals(1, datasets.size());

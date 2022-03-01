@@ -54,8 +54,9 @@ public class LogicalRelationVisitor<D extends OpenLineage.Dataset>
 
   private final DatasetFactory<D> datasetFactory;
 
-  public LogicalRelationVisitor(OpenLineageContext context, DatasetFactory<D> datasetFactory) {
-    super(context);
+  public LogicalRelationVisitor(
+      OpenLineageContext context, DatasetFactory<D> datasetFactory, boolean searchDependencies) {
+    super(context, searchDependencies);
     this.datasetFactory = datasetFactory;
   }
 

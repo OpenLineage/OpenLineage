@@ -41,7 +41,7 @@ class AbstractQueryPlanDatasetBuilderTest {
     OpenLineageContext context = createContext(session, openLineage);
     AbstractQueryPlanDatasetBuilder<SparkListenerJobEnd, LocalRelation, InputDataset> builder =
         new AbstractQueryPlanDatasetBuilder<SparkListenerJobEnd, LocalRelation, InputDataset>(
-            context) {
+            context, true) {
           @Override
           public List<InputDataset> apply(LocalRelation logicalPlan) {
             return Collections.singletonList(expected);
@@ -67,7 +67,7 @@ class AbstractQueryPlanDatasetBuilderTest {
     OpenLineageContext context = createContext(session, openLineage);
     AbstractQueryPlanDatasetBuilder<SparkListenerJobEnd, LocalRelation, InputDataset> builder =
         new AbstractQueryPlanDatasetBuilder<SparkListenerJobEnd, LocalRelation, InputDataset>(
-            context) {
+            context, true) {
           @Override
           public List<InputDataset> apply(LocalRelation local) {
             return Collections.singletonList(expected);

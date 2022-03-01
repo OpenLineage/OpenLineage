@@ -3,6 +3,7 @@ package io.openlineage.spark.api;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.Dataset;
 import io.openlineage.spark.agent.lifecycle.UnknownEntryFacetListener;
+import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -10,8 +11,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import scala.PartialFunction;
 
 /**
  * {@link AbstractQueryPlanDatasetBuilder} serves as a bridge between the Abstract*DatasetBuilders
@@ -32,8 +35,11 @@ public abstract class AbstractQueryPlanDatasetBuilder<T, P extends LogicalPlan, 
   private final UnknownEntryFacetListener unknownEntryFacetListener =
       UnknownEntryFacetListener.getInstance();
 
-  public AbstractQueryPlanDatasetBuilder(OpenLineageContext context) {
+  private final boolean searchDependencies;
+
+  public AbstractQueryPlanDatasetBuilder(OpenLineageContext context, boolean searchDependencies) {
     this.context = context;
+    this.searchDependencies = searchDependencies;
   }
 
   protected DatasetFactory<OpenLineage.OutputDataset> outputDataset() {
@@ -50,11 +56,18 @@ public abstract class AbstractQueryPlanDatasetBuilder<T, P extends LogicalPlan, 
     return context
         .getQueryExecution()
         .map(
-            qe ->
-                ScalaConversionUtils.fromSeq(qe.optimizedPlan().collect(asQueryPlanVisitor(event)))
-                    .stream()
+            qe -> {
+              QueryPlanVisitor<LogicalPlan, D> visitor = asQueryPlanVisitor(event);
+              if (searchDependencies) {
+                return ScalaConversionUtils.fromSeq(qe.optimizedPlan().collect(visitor)).stream()
                     .flatMap(Collection::stream)
-                    .collect(Collectors.toList()))
+                    .collect(Collectors.toList());
+              } else if (visitor.isDefinedAt(qe.optimizedPlan())) {
+                return visitor.apply(qe.optimizedPlan());
+              } else {
+                return Collections.<D>emptyList();
+              }
+            })
         .orElseGet(Collections::emptyList);
   }
 
@@ -63,7 +76,7 @@ public abstract class AbstractQueryPlanDatasetBuilder<T, P extends LogicalPlan, 
     return new QueryPlanVisitor<L, D>(context) {
       @Override
       public boolean isDefinedAt(LogicalPlan x) {
-        return isDefinedAtLogicalPlan(x);
+        return builder.isDefinedAt(event) && isDefinedAtLogicalPlan(x);
       }
 
       @Override
@@ -72,6 +85,26 @@ public abstract class AbstractQueryPlanDatasetBuilder<T, P extends LogicalPlan, 
         return builder.apply((P) x);
       }
     };
+  }
+
+  protected PartialFunction<LogicalPlan, Collection<D>> delegate(
+      Collection<PartialFunction<LogicalPlan, List<D>>> visitors,
+      Collection<? extends PartialFunction<Object, Collection<D>>> builders,
+      T event) {
+
+    return PlanUtils.merge(
+        Stream.concat(
+                visitors.stream(),
+                builders.stream()
+                    .filter(
+                        builder ->
+                            builder instanceof AbstractQueryPlanDatasetBuilder
+                                && builder.isDefinedAt(event))
+                    .map(
+                        builder ->
+                            ((AbstractQueryPlanDatasetBuilder<Object, LogicalPlan, D>) builder)
+                                .asQueryPlanVisitor(event)))
+            .collect(Collectors.toList()));
   }
 
   /**

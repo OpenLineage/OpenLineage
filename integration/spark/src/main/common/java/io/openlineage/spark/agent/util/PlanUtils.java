@@ -3,9 +3,7 @@
 package io.openlineage.spark.agent.util;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.client.OpenLineage.Dataset;
 import io.openlineage.spark.agent.client.OpenLineageClient;
-import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -14,10 +12,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import scala.PartialFunction;
@@ -46,26 +44,13 @@ public class PlanUtils {
    * @param <R>
    * @return
    */
-  public static <T, R> List<R> applyFirst(List<? extends PartialFunction<T, List<R>>> fns, T arg) {
-    PartialFunction<T, List<R>> fn = merge(fns);
+  public static <T, R> Collection<R> applyAll(
+      List<? extends PartialFunction<T, ? extends Collection<R>>> fns, T arg) {
+    PartialFunction<T, Collection<R>> fn = merge(fns);
     if (fn.isDefinedAt(arg)) {
       return fn.apply(arg);
     }
     return Collections.emptyList();
-  }
-
-  public static <D extends Dataset> Collection<D> matchNode(
-      List<PartialFunction<Object, Collection<D>>> visitors, Object event, LogicalPlan node) {
-    return visitors.stream()
-        .filter(v -> v instanceof AbstractQueryPlanDatasetBuilder && v.isDefinedAt(event))
-        .map(
-            v ->
-                ((AbstractQueryPlanDatasetBuilder<Object, LogicalPlan, D>) v)
-                    .asQueryPlanVisitor(event))
-        .filter(v -> v.isDefinedAt(node))
-        .map(v -> v.apply(node))
-        .findFirst()
-        .orElse(Collections.emptyList());
   }
 
   /**
@@ -75,32 +60,34 @@ public class PlanUtils {
    *
    * @param fns
    * @param <T>
-   * @param <R>
+   * @param <D>
    * @return
    */
-  public static <T, R> PartialFunction<T, R> merge(
-      Collection<? extends PartialFunction<T, R>> fns) {
-    return fns.stream()
-        .map(
-            pfn ->
-                new AbstractPartialFunction<T, R>() {
-                  @Override
-                  public boolean isDefinedAt(T x) {
-                    try {
-                      return pfn.isDefinedAt(x);
-                    } catch (ClassCastException e) {
-                      return false;
-                    }
-                  }
+  public static <T, D> PartialFunction<T, Collection<D>> merge(
+      Collection<? extends PartialFunction<T, ? extends Collection<D>>> fns) {
+    return new AbstractPartialFunction<T, Collection<D>>() {
+      @Override
+      public boolean isDefinedAt(T x) {
+        return fns.stream().filter(pfn -> isDefinedAt(x, pfn)).findFirst().isPresent();
+      }
 
-                  @Override
-                  public R apply(T x) {
-                    return pfn.apply(x);
-                  }
-                })
-        .map(PartialFunction.class::cast)
-        .reduce(PartialFunction::orElse)
-        .orElse(PartialFunction$.MODULE$.empty());
+      private boolean isDefinedAt(T x, PartialFunction<T, ? extends Collection<D>> pfn) {
+        try {
+          return pfn.isDefinedAt(x);
+        } catch (ClassCastException e) {
+          return false;
+        }
+      }
+
+      @Override
+      public Collection<D> apply(T x) {
+        return fns.stream()
+            .filter(pfn -> isDefinedAt(x, pfn))
+            .map(pfn -> pfn.apply(x))
+            .flatMap(Collection::stream)
+            .collect(Collectors.toList());
+      }
+    };
   }
 
   /**

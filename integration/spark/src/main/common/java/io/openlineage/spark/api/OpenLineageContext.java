@@ -65,6 +65,9 @@ public class OpenLineageContext {
   List<PartialFunction<LogicalPlan, List<InputDataset>>> inputDatasetQueryPlanVisitors =
       new ArrayList<>();
 
+  @Default @NonNull
+  List<PartialFunction<Object, Collection<InputDataset>>> inputDatasetBuilders = new ArrayList<>();
+
   /**
    * A non-null, but potentially empty, list of {@link LogicalPlan} visitors that can extract {@link
    * OutputDataset}s from plan nodes. Useful for delegating from general output visitors to more

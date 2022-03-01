@@ -7,7 +7,7 @@ import com.google.common.collect.ImmutableMap.Builder;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.spark.agent.util.PathUtils;
-import io.openlineage.spark.agent.util.PlanUtils;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.net.URI;
@@ -39,7 +39,7 @@ public class SaveIntoDataSourceCommandVisitor
         SparkListenerEvent, SaveIntoDataSourceCommand, OutputDataset> {
 
   public SaveIntoDataSourceCommandVisitor(OpenLineageContext context) {
-    super(context);
+    super(context, false);
   }
 
   @Override
@@ -48,6 +48,15 @@ public class SaveIntoDataSourceCommandVisitor
         && x instanceof SaveIntoDataSourceCommand
         && (((SaveIntoDataSourceCommand) x).dataSource() instanceof SchemaRelationProvider
             || ((SaveIntoDataSourceCommand) x).dataSource() instanceof RelationProvider);
+  }
+
+  @Override
+  public boolean isDefinedAt(SparkListenerEvent x) {
+    return super.isDefinedAt(x)
+        && context
+            .getQueryExecution()
+            .filter(qe -> isDefinedAtLogicalPlan(qe.optimizedPlan()))
+            .isPresent();
   }
 
   public List<OutputDataset> apply(SaveIntoDataSourceCommand cmd) {
@@ -107,11 +116,14 @@ public class SaveIntoDataSourceCommandVisitor
       }
       throw ex;
     }
-    return PlanUtils.matchNode(
-            context.getOutputDatasetBuilders(),
-            event,
-            new LogicalRelation(
-                relation, relation.schema().toAttributes(), Option.empty(), command.isStreaming()))
+    LogicalRelation logicalRelation =
+        new LogicalRelation(
+            relation, relation.schema().toAttributes(), Option.empty(), command.isStreaming());
+    return delegate(
+            context.getOutputDatasetQueryPlanVisitors(), context.getOutputDatasetBuilders(), event)
+        .applyOrElse(
+            logicalRelation,
+            ScalaConversionUtils.toScalaFn((lp) -> Collections.<OutputDataset>emptyList()))
         .stream()
         // constructed datasets don't include the output stats, so add that facet here
         .map(
