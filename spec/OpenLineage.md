@@ -127,7 +127,9 @@ Example of valid name is `BigQueryStatisticsJobFacet` and it's key `bigQuery_sta
 
 - **dataSource**: Captures the Database instance containing this datasets (ex: Database schema. Object store bucket, ...)
 
-- **lifecycleState**: Captures the lifecycle states of the dataset like: alter, create, drop, overwrite, rename, truncate.
+- **lifecycleStateChange**: Captures the lifecycle states of the dataset like: alter, create, drop, overwrite, rename, truncate.
+
+- **version**: Captures the dataset version when versioning is defined by database (ex. Iceberg snapshot ID)
 
 #### Input Dataset Facets
 
