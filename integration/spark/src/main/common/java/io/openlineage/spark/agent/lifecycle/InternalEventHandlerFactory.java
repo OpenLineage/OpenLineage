@@ -129,6 +129,7 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
                 new LogicalRelationVisitor(
                     context, DatasetFactory.input(context.getOpenLineage()), true))
             .add(new CommandPlanVisitor(context))
+            .addAll(DatasetBuilderFactoryProvider.getInstance().getInputBuilders(context))
             .build();
     context.getInputDatasetBuilders().addAll(builders);
     return builders;
@@ -146,6 +147,7 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
                 new LogicalRelationVisitor(
                     context, DatasetFactory.output(context.getOpenLineage()), false))
             .add(new SaveIntoDataSourceCommandVisitor(context))
+            .addAll(DatasetBuilderFactoryProvider.getInstance().getInputBuilders(context))
             .build();
     context.getOutputDatasetBuilders().addAll(outputDatasetBuilders);
     return outputDatasetBuilders;

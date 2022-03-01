@@ -340,7 +340,7 @@ class OpenLineageRunEventBuilder {
     log.info(
         "Visiting query plan {} with input dataset builders {}",
         openLineageContext.getQueryExecution(),
-        inputDatasetQueryPlanVisitors);
+        inputDatasetBuilders);
 
     Function1<LogicalPlan, Collection<InputDataset>> inputVisitor =
         visitLogicalPlan(PlanUtils.merge(inputDatasetQueryPlanVisitors));
@@ -456,7 +456,14 @@ class OpenLineageRunEventBuilder {
         .flatMap(
             event ->
                 builders.stream()
-                    .filter(pfn -> pfn.isDefinedAt(event))
+                    .filter(
+                        pfn -> {
+                          try {
+                            return pfn.isDefinedAt(event);
+                          } catch (ClassCastException e) {
+                            return false;
+                          }
+                        })
                     .map(pfn -> pfn.apply(event))
                     .flatMap(Collection::stream));
   }
