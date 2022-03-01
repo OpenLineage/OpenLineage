@@ -14,7 +14,7 @@ try:
 except Exception:
     # Create placeholder for GreatExpectationsOperator
     GreatExpectationsOperator = None
-    log.warning('Did not find great_expectations_provider library or failed to import it')
+    log.info('Did not find great_expectations_provider library or failed to import it')
     _has_great_expectations = False
 
 

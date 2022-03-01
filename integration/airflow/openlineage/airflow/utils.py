@@ -6,7 +6,6 @@ import os
 import subprocess
 from uuid import uuid4
 from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
-from warnings import warn
 
 from airflow.version import version as AIRFLOW_VERSION
 
@@ -231,7 +230,6 @@ def import_from_string(path: str):
         module = importlib.import_module(module_path)
         return getattr(module, target)
     except Exception as e:
-        logging.info(e)
         raise ImportError(f"Failed to import {path}") from e
 
 
@@ -239,7 +237,7 @@ def try_import_from_string(path: str):
     try:
         return import_from_string(path)
     except ImportError as e:
-        warn(e.msg)
+        logging.info(e.msg)
         return None
 
 
