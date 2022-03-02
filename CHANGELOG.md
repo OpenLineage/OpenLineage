@@ -1,13 +1,23 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.5.2...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.6.0...HEAD)
 
+## [0.6.0](https://github.com/OpenLineage/OpenLineage/compare/0.5.2...0.6.0)
 ### Added
-* Extract source code of PythonOperator and BashOperator similar to SQL facet [@mobuchowski](https://github.com/mobuchowski)
+* Extract source code of PythonOperator code similar to SQL facet [@mobuchowski](https://github.com/mobuchowski)
+* Add DatasetLifecycleStateDatasetFacet to spec [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+* Airflow: extract source code from BashOperator [@mobuchowski](https://github.com/mobuchowski)
+* Add generic facet to collect environmental properties (EnvironmentFacet) [@harishsune](https://github.com/harishsune)
+* Update Airflow connection parsing to exclude AWS keys and extraneous Snowflake params [@collado-mike](https://github.com/collado-mike)
 * OpenLineage sensor for OpenLineage-Dagster integration [@dalinkim](https://github.com/dalinkim)
+* Java-client: make generator generate enums as well [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
 
 ### Fixed
-* Removed AWS secret keys and extraneous snowflake parameters from connection uri [@collado-mike](https://github.com/collado-mike)
+
+* Airflow: increase import timeout in tests, fix exit from integration [@mobuchowski](https://github.com/mobuchowski)
+* Reduce logging level for import errors to info [@rossturk](https://github.com/rossturk)
+* Remove AWS secret keys and extraneous Snowflake parameters from connection uri [@collado-mike](https://github.com/collado-mike)
+* Convert to LifecycleStateChangeDatasetFacet [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
 
 ## [0.5.2](https://github.com/OpenLineage/OpenLineage/compare/0.5.1...0.5.2)
 ### Added
