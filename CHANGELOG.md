@@ -16,6 +16,10 @@
 ### Fixed
 * Catch possible failures when emitting events and log them [@mobuchowski](https://github.com/mobuchowski)
 
+### Fixed
+* dbt: jinja2 code using do extensions does not crash [@mobuchowski](https://github.com/mobuchowski)
+
+
 ## [0.6.0](https://github.com/OpenLineage/OpenLineage/compare/0.5.2...0.6.0)
 ### Added
 * Extract source code of PythonOperator code similar to SQL facet [@mobuchowski](https://github.com/mobuchowski)
@@ -27,7 +31,6 @@
 * Added `UnknownOperatorAttributeRunFacet` to Airflow integration to record operators that don't produce lineage [@collado-mike](https://github.com/collado-mike)
 
 ### Fixed
-
 * Airflow: increase import timeout in tests, fix exit from integration [@mobuchowski](https://github.com/mobuchowski)
 * Reduce logging level for import errors to info [@rossturk](https://github.com/rossturk)
 * Remove AWS secret keys and extraneous Snowflake parameters from connection uri [@collado-mike](https://github.com/collado-mike)
