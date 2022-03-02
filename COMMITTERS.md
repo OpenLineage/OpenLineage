@@ -12,18 +12,21 @@ new pull requests into master.
 The current OpenLineage committers are:
 
 
-| Name           | Email |
-| -------------- | -----------------|
-| Julien Le Dem | |
-| Mandy Chessell | |
+| Name               | Email |
+| ------------------ | -----------------|
+| Julien Le Dem      | |
+| Mandy Chessell     | |
 | Daniel Henneberger | |
-| Drew Banin | |
-| James Campbell | |
-| Ryan Blue | |
-| Willy Lulciuc | |
-| Zhamak Dehghani | |
-| Michael Collado | |
-| Maciej Obuchowski| |
+| Drew Banin         | |
+| James Campbell     | |
+| Ryan Blue          | |
+| Willy Lulciuc      | |
+| Zhamak Dehghani    | |
+| Michael Collado    | |
+| Maciej Obuchowski  | |
+| Paweł Leszczyński  | |
+| Will Johnson       | |
+| Michael Robinson   | |
 
 To understand how to become an OpenLineage committer.
 see the [OpenLineage Governance Guide](GOVERNANCE.md).
