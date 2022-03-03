@@ -348,7 +348,7 @@ jobs:
       - run: ../.circleci/get-docker-compose.sh
       - run: cp -r ../client/python python
       - run: docker build -f airflow/Dockerfile.tests -t openlineage-airflow-base .
-      - run: ./airflow/tests/failures/docker/up.sh
+      - run: ./airflow/tests/integration/docker/up-failure.sh
 
   unit-test-integration-dagster:
     working_directory: ~/openlineage/integration/dagster

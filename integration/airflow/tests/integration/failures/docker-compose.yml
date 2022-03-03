@@ -2,9 +2,9 @@ version: "3.7"
 
 x-airflow-common: &airflow-common
   build:
-    context: .
+    context: ../
     target: airflow
-    dockerfile: Dockerfile
+    dockerfile: Dockerfile.2
   environment: &airflow-common-env
     DB_BACKEND: postgresql+psycopg2
     DB_HOST: postgres
@@ -22,7 +22,7 @@ x-airflow-common: &airflow-common
     AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
     AIRFLOW__CORE__LOAD_EXAMPLES: "False"
-    AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT: 120.0
+    AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT: 120
     AIRFLOW__LINEAGE__BACKEND: openlineage.lineage_backend.OpenLineageBackend
     AIRFLOW_CONN_FOOD_DELIVERY_DB: postgres://food_delivery:food_delivery@postgres:5432/food_delivery
     AIRFLOW_CONN_BQ_CONN: google-cloud-platform://?extra__google_cloud_platform__project=openlineage-ci&extra__google_cloud_platform__key_path=%2Fopt%2Fconfig%2Fgcloud%2Fgcloud-service-key.json
@@ -38,15 +38,15 @@ x-airflow-common: &airflow-common
 services:
   integration:
     build:
-      context: .
+      context: ../
       target: integration
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.2
     volumes:
       - ./docker/wait-for-it.sh:/wait-for-it.sh
     depends_on:
       - airflow
       - backend
-    entrypoint: ["./wait-for-it.sh", "backend:5000", "--", "./entrypoint.sh"]
+    entrypoint: ["./wait-for-it.sh", "backend:5000", "--", "python", "test_failure.py"]
 
   airflow:
     <<: *airflow-common
@@ -85,7 +85,7 @@ services:
 
   backend:
     build:
-      context: server
+      context: ../server
       dockerfile: Dockerfile
     environment:
       - FLASK_APP=app.py
@@ -122,4 +122,4 @@ services:
       - FOOD_DELIVERY_DB=food_delivery
       - ALLOW_EMPTY_PASSWORD=yes
     volumes:
-      - ./docker/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+      - ../docker/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh

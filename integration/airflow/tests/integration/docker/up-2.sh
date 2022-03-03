@@ -21,8 +21,8 @@ fi
 if [[ -n "$CI" ]]; then
   echo $GCLOUD_SERVICE_KEY > gcloud/gcloud-service-key.json
   chmod 644 gcloud/gcloud-service-key.json
-  mkdir -p airflow/logs
-  chmod a+rwx -R airflow/logs
+  mkdir -p tests/airflow/logs
+  chmod a+rwx -R tests/airflow/logs
 fi
 
 # maybe overkill
@@ -58,6 +58,6 @@ AIRFLOW_VERSION=${AIRFLOW_IMAGE##*:}
 export BIGQUERY_PREFIX=${AIRFLOW_VERSION//./_}
 export BIGQUERY_DBT_DATASET=${AIRFLOW_VERSION//./_}_dbt
 
-docker-compose -f docker-compose-2.yml down
-docker-compose -f docker-compose-2.yml up --build --abort-on-container-exit airflow_init postgres
-docker-compose -f docker-compose-2.yml up --build --exit-code-from integration --scale airflow_init=0
+docker-compose -f tests/docker-compose-2.yml down
+docker-compose -f tests/docker-compose-2.yml up --build --abort-on-container-exit airflow_init postgres
+docker-compose -f tests/docker-compose-2.yml up --build --exit-code-from integration --scale airflow_init=0

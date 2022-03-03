@@ -2,6 +2,7 @@
 
 import logging
 import sys
+import time
 
 from flask import Flask, request, g, jsonify
 import sqlite3
@@ -80,3 +81,17 @@ def lineage():
         logger.info(f"GOT {len(received_requests)} requests for job {job_name}")
 
         return jsonify(received_requests), 200
+
+
+@app.route("/error/api/v1/lineage", methods=['GET', 'POST'])
+def error_lineage():
+    logger.warning("Called error endpoint")
+    return "", 500
+
+
+@app.route("/timeout/api/v1/lineage", methods=['GET', 'POST'])
+def timeout_lineage():
+    logger.warning("Called timeout endpoint")
+    time.sleep(15)
+    return jsonify({}), 200
+
