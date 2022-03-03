@@ -1,6 +1,7 @@
+ARG AIRFLOW_IMAGE=apache/airflow:2.2.3
 FROM openlineage-airflow-base:latest AS build
 
-FROM apache/airflow:2.1.3 AS airflow
+FROM $AIRFLOW_IMAGE AS airflow
 COPY --from=build /app/wheel /whl
 USER root
 RUN apt-get update && \

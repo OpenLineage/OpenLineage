@@ -1,6 +1,4 @@
-# SPDX-License-Identifier: Apache-2.0
-
-
+import os
 import time
 
 from airflow.operators.python_operator import PythonOperator
@@ -37,13 +35,14 @@ dag = DAG(
 
 PROJECT_ID = 'openlineage-ci'
 DATASET_ID = 'airflow_integration'
+PREFIX = os.environ['BIGQUERY_PREFIX'] + "_"
 CONNECTION = 'bq_conn'
 
 t1 = BigQueryOperator(
     task_id='bigquery_if_not_exists',
     bigquery_conn_id=CONNECTION,
     sql=f'''
-    CREATE TABLE IF NOT EXISTS `{PROJECT_ID}.{DATASET_ID}.popular_orders_day_of_week` (
+    CREATE TABLE IF NOT EXISTS `{PROJECT_ID}.{DATASET_ID}.{PREFIX}popular_orders_day_of_week` (
       order_day_of_week INTEGER NOT NULL,
       order_placed_on   TIMESTAMP NOT NULL,
       orders_placed     INTEGER NOT NULL
@@ -56,7 +55,7 @@ t2 = BigQueryOperator(
     task_id='bigquery_empty_table',
     bigquery_conn_id='bq_conn',
     sql=f'''
-    CREATE TABLE IF NOT EXISTS `{PROJECT_ID}.{DATASET_ID}.top_delivery_times` (
+    CREATE TABLE IF NOT EXISTS `{PROJECT_ID}.{DATASET_ID}.{PREFIX}top_delivery_times` (
       order_placed_on     TIMESTAMP NOT NULL,
     );''',
     use_legacy_sql=False,
@@ -73,7 +72,7 @@ t3 = BigQueryOperator(
     task_id='bigquery_seed',
     bigquery_conn_id='bq_conn',
     sql=f'''
-    INSERT INTO `{PROJECT_ID}.{DATASET_ID}.top_delivery_times` (order_placed_on) VALUES
+    INSERT INTO `{PROJECT_ID}.{DATASET_ID}.{PREFIX}top_delivery_times` (order_placed_on) VALUES
     (TIMESTAMP('2008-12-25 15:30:00+00')),
     (TIMESTAMP('2008-12-25 15:32:00+00')),
     (TIMESTAMP('2008-12-26 15:30:00+00'))''',
@@ -85,11 +84,11 @@ t4 = BigQueryOperator(
     task_id='bigquery_insert',
     bigquery_conn_id='bq_conn',
     sql=f'''
-    INSERT INTO `{PROJECT_ID}.{DATASET_ID}.popular_orders_day_of_week` (order_day_of_week, order_placed_on, orders_placed)
+    INSERT INTO `{PROJECT_ID}.{DATASET_ID}.{PREFIX}popular_orders_day_of_week` (order_day_of_week, order_placed_on, orders_placed)
     SELECT EXTRACT(DAYOFWEEK FROM order_placed_on) AS order_day_of_week,
         order_placed_on,
         COUNT(*) AS orders_placed
-    FROM airflow_integration.top_delivery_times
+    FROM airflow_integration.{PREFIX}top_delivery_times
     GROUP BY order_placed_on;''',
     use_legacy_sql=False,
     dag=dag
@@ -99,7 +98,7 @@ t5 = BigQueryOperator(
     task_id='bigquery_truncate_top_delivery_times',
     bigquery_conn_id='bq_conn',
     sql=f'''
-    TRUNCATE TABLE `{PROJECT_ID}.{DATASET_ID}.top_delivery_times`;''',
+    TRUNCATE TABLE `{PROJECT_ID}.{DATASET_ID}.{PREFIX}top_delivery_times`;''',
     use_legacy_sql=False,
     dag=dag
 )
@@ -108,7 +107,7 @@ t6 = BigQueryOperator(
     task_id='bigquery_truncate_popular_orders_day_of_week',
     bigquery_conn_id='bq_conn',
     sql=f'''
-    TRUNCATE TABLE `{PROJECT_ID}.{DATASET_ID}.popular_orders_day_of_week`;''',
+    TRUNCATE TABLE `{PROJECT_ID}.{DATASET_ID}.{PREFIX}popular_orders_day_of_week`;''',
     use_legacy_sql=False,
     dag=dag
 )

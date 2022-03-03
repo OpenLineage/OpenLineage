@@ -49,6 +49,15 @@ python-dateutil==2.8.2
 ${OPENLINEAGE_AIRFLOW_WHL}
 EOL
 
+# string operator: from variable AIRFLOW_IMAGE
+#  ##   <-- greedy front trim
+#  *    <-- matches anything
+#  :    <-- until the last ':'
+AIRFLOW_VERSION=${AIRFLOW_IMAGE##*:}
+
+export BIGQUERY_PREFIX=${AIRFLOW_VERSION//./_}
+export BIGQUERY_DBT_DATASET=${AIRFLOW_VERSION//./_}_dbt
+
 docker-compose -f docker-compose-2.yml down
 docker-compose -f docker-compose-2.yml up --build --abort-on-container-exit airflow_init postgres
 docker-compose -f docker-compose-2.yml up --build --exit-code-from integration --scale airflow_init=0
