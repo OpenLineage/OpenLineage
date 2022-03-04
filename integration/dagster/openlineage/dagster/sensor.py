@@ -146,7 +146,6 @@ def _handle_pipeline_event(
         _ADAPTER.start_pipeline(pipeline_name, pipeline_run_id, timestamp, repository_name)
         running_pipelines[pipeline_run_id] = RunningPipeline(repository_name=repository_name)
     elif dagster_event_type == DagsterEventType.RUN_SUCCESS:
-        running_pipelines.get(pipeline_run_id)
         _ADAPTER.complete_pipeline(pipeline_name, pipeline_run_id, timestamp, repository_name)
         running_pipelines.pop(pipeline_run_id, None)
     elif dagster_event_type == DagsterEventType.RUN_FAILURE:
