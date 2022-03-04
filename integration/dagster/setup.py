@@ -26,7 +26,7 @@ DAGSTER_VERSION = "0.13.8"
 requirements = [
     "attrs>=19.3",
     "cattrs",
-    f"dagster>={DAGSTER_VERSION}",
+    "dagster>=0.13.8,<0.14.3",
     f"openlineage-python=={__version__}",
 ]
 
@@ -35,7 +35,6 @@ extras_require = {
         "pytest",
         "pytest-cov",
         "flake8",
-        f"dagster>={DAGSTER_VERSION}",
     ],
 }
 
