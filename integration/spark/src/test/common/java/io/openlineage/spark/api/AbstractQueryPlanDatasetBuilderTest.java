@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
+import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerStageCompleted;
 import org.apache.spark.sql.SparkSession;
@@ -65,19 +66,29 @@ class AbstractQueryPlanDatasetBuilderTest {
     InputDataset expected = openLineage.newInputDataset("namespace", "the_name", null, null);
 
     OpenLineageContext context = createContext(session, openLineage);
-    AbstractQueryPlanDatasetBuilder<SparkListenerJobEnd, LocalRelation, InputDataset> builder =
-        new AbstractQueryPlanDatasetBuilder<SparkListenerJobEnd, LocalRelation, InputDataset>(
-            context, true) {
-          @Override
-          public List<InputDataset> apply(LocalRelation local) {
-            return Collections.singletonList(expected);
-          }
-        };
+    MyNonGenericInputDatasetBuilder builder =
+        new MyNonGenericInputDatasetBuilder(context, true, expected);
 
     SparkListenerJobEnd jobEnd = new SparkListenerJobEnd(1, 2, null);
     Assertions.assertTrue(((PartialFunction) builder).isDefinedAt(jobEnd));
     Collection<InputDataset> datasets = builder.apply(jobEnd);
     assertThat(datasets).isNotEmpty().contains(expected);
+  }
+
+  static class MyNonGenericInputDatasetBuilder
+      extends AbstractQueryPlanDatasetBuilder<SparkListenerEvent, LocalRelation, InputDataset> {
+    InputDataset expected;
+
+    public MyNonGenericInputDatasetBuilder(
+        OpenLineageContext context, boolean searchDependencies, InputDataset expected) {
+      super(context, searchDependencies);
+      this.expected = expected;
+    }
+
+    @Override
+    public List<InputDataset> apply(LocalRelation logicalPlan) {
+      return Collections.singletonList(expected);
+    }
   }
 
   private OpenLineageContext createContext(SparkSession session, OpenLineage openLineage) {
