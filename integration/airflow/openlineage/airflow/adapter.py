@@ -190,14 +190,9 @@ class OpenLineageAdapter:
                 _DAG_NAMESPACE,
                 job_name
             )})
-<<<<<<< HEAD
 
         if run_facets:
             facets.update(run_facets)
-=======
-        if custom_facets:
-            facets.update(custom_facets)
->>>>>>> f6c48332 (Update openlineage airflow adapter to include run facets for complete events)
 
         return Run(run_id, facets)
 
