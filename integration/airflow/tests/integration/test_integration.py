@@ -119,8 +119,11 @@ def get_events(job_name: str = None):
     return received_requests
 
 
+@retry(
+    wait_fixed=2000,
+    stop_max_delay=15000
+)
 def setup_db():
-    time.sleep(10)
     global airflow_db_conn
     airflow_db_conn = psycopg2.connect(
         host="postgres",
