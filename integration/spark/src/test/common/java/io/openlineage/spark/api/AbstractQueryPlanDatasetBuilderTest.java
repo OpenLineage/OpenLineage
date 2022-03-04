@@ -91,6 +91,43 @@ class AbstractQueryPlanDatasetBuilderTest {
     }
   }
 
+  @Test
+  public void testApplyOnBuilderWithGenericArg() {
+    SparkSession session =
+        SparkSession.builder()
+            .config("spark.sql.warehouse.dir", "/tmp/warehouse")
+            .master("local")
+            .getOrCreate();
+    OpenLineage openLineage = new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
+    InputDataset expected = openLineage.newInputDataset("namespace", "the_name", null, null);
+
+    OpenLineageContext context = createContext(session, openLineage);
+    MyGenericArgInputDatasetBuilder<SparkListenerJobEnd> builder =
+        new MyGenericArgInputDatasetBuilder<>(context, true, expected);
+
+    SparkListenerJobEnd jobEnd = new SparkListenerJobEnd(1, 2, null);
+
+    // Even though our instance of builder is parameterized with SparkListenerJobEnd, it's not
+    // *compiled* with that argument, so the isDefinedAt method fails to resolve the type arg
+    Assertions.assertFalse(((PartialFunction) builder).isDefinedAt(jobEnd));
+  }
+
+  static class MyGenericArgInputDatasetBuilder<E extends SparkListenerEvent>
+      extends AbstractQueryPlanDatasetBuilder<E, LocalRelation, InputDataset> {
+    InputDataset expected;
+
+    public MyGenericArgInputDatasetBuilder(
+        OpenLineageContext context, boolean searchDependencies, InputDataset expected) {
+      super(context, searchDependencies);
+      this.expected = expected;
+    }
+
+    @Override
+    public List<InputDataset> apply(LocalRelation logicalPlan) {
+      return Collections.singletonList(expected);
+    }
+  }
+
   private OpenLineageContext createContext(SparkSession session, OpenLineage openLineage) {
     QueryExecution queryExecution =
         session

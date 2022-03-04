@@ -7,6 +7,7 @@ import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -122,6 +123,9 @@ public abstract class AbstractQueryPlanDatasetBuilder<T, P extends LogicalPlan, 
     Type[] typeArgs = ((ParameterizedType) genericSuperclass).getActualTypeArguments();
     if (typeArgs != null && typeArgs.length > 1) {
       Type arg = typeArgs[1];
+      if (arg instanceof TypeVariable) {
+        return false;
+      }
       return ((Class) arg).isAssignableFrom(logicalPlan.getClass());
     }
     return false;
