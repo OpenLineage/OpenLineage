@@ -5,14 +5,16 @@ package io.openlineage.spark.agent.lifecycle.plan;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.JdbcUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.HadoopFsRelation;
@@ -20,7 +22,6 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 import scala.collection.JavaConversions;
-import scala.runtime.AbstractFunction0;
 
 /**
  * {@link LogicalPlan} visitor that attempts to extract a {@link OpenLineage.Dataset} from a {@link
@@ -49,17 +50,18 @@ import scala.runtime.AbstractFunction0;
  */
 @Slf4j
 public class LogicalRelationVisitor<D extends OpenLineage.Dataset>
-    extends QueryPlanVisitor<LogicalRelation, D> {
+    extends AbstractQueryPlanDatasetBuilder<SparkListenerEvent, LogicalRelation, D> {
 
   private final DatasetFactory<D> datasetFactory;
 
-  public LogicalRelationVisitor(OpenLineageContext context, DatasetFactory<D> datasetFactory) {
-    super(context);
+  public LogicalRelationVisitor(
+      OpenLineageContext context, DatasetFactory<D> datasetFactory, boolean searchDependencies) {
+    super(context, searchDependencies);
     this.datasetFactory = datasetFactory;
   }
 
   @Override
-  public boolean isDefinedAt(LogicalPlan x) {
+  public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
     return x instanceof LogicalRelation
         && (((LogicalRelation) x).relation() instanceof HadoopFsRelation
             || ((LogicalRelation) x).relation() instanceof JDBCRelation
@@ -67,8 +69,7 @@ public class LogicalRelationVisitor<D extends OpenLineage.Dataset>
   }
 
   @Override
-  public List<D> apply(LogicalPlan x) {
-    LogicalRelation logRel = (LogicalRelation) x;
+  public List<D> apply(LogicalRelation logRel) {
     if (logRel.relation() instanceof HadoopFsRelation) {
       return handleHadoopFsRelation(logRel);
     } else if (logRel.relation() instanceof JDBCRelation) {
@@ -79,7 +80,7 @@ public class LogicalRelationVisitor<D extends OpenLineage.Dataset>
     throw new IllegalArgumentException(
         "Expected logical plan to be either HadoopFsRelation, JDBCRelation, "
             + "or CatalogTable but was "
-            + x);
+            + logRel);
   }
 
   private List<D> handleCatalogTable(LogicalRelation logRel) {
@@ -121,13 +122,7 @@ public class LogicalRelationVisitor<D extends OpenLineage.Dataset>
             .jdbcOptions()
             .parameters()
             .get(JDBCOptions.JDBC_TABLE_NAME())
-            .getOrElse(
-                new AbstractFunction0<String>() {
-                  @Override
-                  public String apply() {
-                    return "COMPLEX";
-                  }
-                });
+            .getOrElse(ScalaConversionUtils.toScalaFn(() -> "COMPLEX"));
     // strip the jdbc: prefix from the url. this leaves us with a url like
     // postgresql://<hostname>:<port>/<database_name>?params
     // we don't parse the URI here because different drivers use different connection

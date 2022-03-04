@@ -12,6 +12,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -27,6 +28,7 @@ import scala.runtime.AbstractPartialFunction;
  */
 @Slf4j
 public class PlanUtils {
+
   public static final String SLASH_DELIMITER_USER_PASSWORD_REGEX =
       "[A-Za-z0-9_%]+//?[A-Za-z0-9_%]*@";
   public static final String COLON_DELIMITER_USER_PASSWORD_REGEX =
@@ -42,8 +44,9 @@ public class PlanUtils {
    * @param <R>
    * @return
    */
-  public static <T, R> List<R> applyFirst(List<? extends PartialFunction<T, List<R>>> fns, T arg) {
-    PartialFunction<T, List<R>> fn = merge(fns);
+  public static <T, R> Collection<R> applyAll(
+      List<? extends PartialFunction<T, ? extends Collection<R>>> fns, T arg) {
+    PartialFunction<T, Collection<R>> fn = merge(fns);
     if (fn.isDefinedAt(arg)) {
       return fn.apply(arg);
     }
@@ -57,32 +60,34 @@ public class PlanUtils {
    *
    * @param fns
    * @param <T>
-   * @param <R>
+   * @param <D>
    * @return
    */
-  public static <T, R> PartialFunction<T, R> merge(
-      Collection<? extends PartialFunction<T, R>> fns) {
-    return fns.stream()
-        .map(
-            pfn ->
-                new AbstractPartialFunction<T, R>() {
-                  @Override
-                  public boolean isDefinedAt(T x) {
-                    try {
-                      return pfn.isDefinedAt(x);
-                    } catch (ClassCastException e) {
-                      return false;
-                    }
-                  }
+  public static <T, D> PartialFunction<T, Collection<D>> merge(
+      Collection<? extends PartialFunction<T, ? extends Collection<D>>> fns) {
+    return new AbstractPartialFunction<T, Collection<D>>() {
+      @Override
+      public boolean isDefinedAt(T x) {
+        return fns.stream().filter(pfn -> isDefinedAt(x, pfn)).findFirst().isPresent();
+      }
 
-                  @Override
-                  public R apply(T x) {
-                    return pfn.apply(x);
-                  }
-                })
-        .map(PartialFunction.class::cast)
-        .reduce(PartialFunction::orElse)
-        .orElse(PartialFunction$.MODULE$.empty());
+      private boolean isDefinedAt(T x, PartialFunction<T, ? extends Collection<D>> pfn) {
+        try {
+          return pfn.isDefinedAt(x);
+        } catch (ClassCastException e) {
+          return false;
+        }
+      }
+
+      @Override
+      public Collection<D> apply(T x) {
+        return fns.stream()
+            .filter(pfn -> isDefinedAt(x, pfn))
+            .map(pfn -> pfn.apply(x))
+            .flatMap(Collection::stream)
+            .collect(Collectors.toList());
+      }
+    };
   }
 
   /**

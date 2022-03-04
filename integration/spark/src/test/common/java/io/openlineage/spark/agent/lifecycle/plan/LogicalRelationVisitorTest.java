@@ -7,16 +7,19 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.SparkAgentTestExtension;
+import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.api.DatasetFactory;
+import io.openlineage.spark.api.OpenLineageContext;
 import java.net.URI;
 import java.util.List;
 import org.apache.spark.Partition;
 import org.apache.spark.SparkContext;
+import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
+import org.apache.spark.sql.execution.QueryExecution;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
@@ -50,10 +53,7 @@ class LogicalRelationVisitorTest {
         "mysql://localhost/sparkdata"
       })
   void testApply(String connectionUri) {
-    LogicalRelationVisitor visitor =
-        new LogicalRelationVisitor(
-            SparkAgentTestExtension.newContext(session),
-            DatasetFactory.output(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI)));
+    OpenLineage openLineage = new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
     String jdbcUrl = "jdbc:" + connectionUri;
     String sparkTableName = "my_spark_table";
     JDBCRelation relation =
@@ -69,8 +69,9 @@ class LogicalRelationVisitorTest {
                     .$plus$eq(Tuple2.apply("driver", Driver.class.getName()))
                     .result()),
             session);
-    List<OpenLineage.Dataset> datasets =
-        visitor.apply(
+    QueryExecution qe = mock(QueryExecution.class);
+    when(qe.optimizedPlan())
+        .thenReturn(
             new LogicalRelation(
                 relation,
                 Seq$.MODULE$
@@ -86,8 +87,18 @@ class LogicalRelationVisitorTest {
                     .result(),
                 Option.empty(),
                 false));
+    OpenLineageContext context =
+        OpenLineageContext.builder()
+            .sparkContext(mock(SparkContext.class))
+            .openLineage(openLineage)
+            .queryExecution(qe)
+            .build();
+    LogicalRelationVisitor<OutputDataset> visitor =
+        new LogicalRelationVisitor<>(context, DatasetFactory.output(openLineage), true);
+    List<OutputDataset> datasets =
+        visitor.apply(new SparkListenerJobStart(1, 1, Seq$.MODULE$.empty(), null));
     assertEquals(1, datasets.size());
-    OpenLineage.Dataset ds = datasets.get(0);
+    OutputDataset ds = datasets.get(0);
     assertEquals(connectionUri, ds.getNamespace());
     assertEquals(sparkTableName, ds.getName());
     assertEquals(URI.create(connectionUri), ds.getFacets().getDataSource().getUri());

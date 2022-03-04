@@ -28,7 +28,7 @@ public class InsertIntoDataSourceVisitor
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
     InsertIntoDataSourceCommand command = (InsertIntoDataSourceCommand) x;
 
-    return PlanUtils.applyFirst(
+    return PlanUtils.applyAll(
             context.getOutputDatasetQueryPlanVisitors(), command.logicalRelation())
         .stream()
         // constructed datasets don't include the output stats, so add that facet here

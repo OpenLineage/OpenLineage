@@ -6,6 +6,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -64,6 +65,9 @@ public class OpenLineageContext {
   List<PartialFunction<LogicalPlan, List<InputDataset>>> inputDatasetQueryPlanVisitors =
       new ArrayList<>();
 
+  @Default @NonNull
+  List<PartialFunction<Object, Collection<InputDataset>>> inputDatasetBuilders = new ArrayList<>();
+
   /**
    * A non-null, but potentially empty, list of {@link LogicalPlan} visitors that can extract {@link
    * OutputDataset}s from plan nodes. Useful for delegating from general output visitors to more
@@ -71,6 +75,10 @@ public class OpenLineageContext {
    */
   @Default @NonNull
   List<PartialFunction<LogicalPlan, List<OutputDataset>>> outputDatasetQueryPlanVisitors =
+      new ArrayList<>();
+
+  @Default @NonNull
+  List<PartialFunction<Object, Collection<OutputDataset>>> outputDatasetBuilders =
       new ArrayList<>();
 
   /** Optional {@link QueryExecution} for runs that are Spark SQL queries. */
