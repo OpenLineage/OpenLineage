@@ -76,6 +76,11 @@ dependencies {
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
+    implementation("io.openlineage:openlineage-java:${project.version}"){
+        exclude group: 'com.fasterxml.jackson.core'
+        exclude group: 'com.fasterxml.jackson.datatype'
+    }
+
     implementation "org.apache.flink:flink-java:$flinkVersion"
     implementation "org.apache.flink:flink-streaming-java_2.12:$flinkVersion"
     implementation "org.apache.flink:flink-runtime-web_2.12:$flinkVersion"
