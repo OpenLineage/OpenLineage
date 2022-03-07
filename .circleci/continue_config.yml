@@ -309,6 +309,9 @@ jobs:
       - run: cp -r ../client/python python
       - run: docker build -f airflow/Dockerfile.tests -t openlineage-airflow-base .
       - run: ./airflow/tests/integration/docker/up.sh
+      - store_artifacts:
+          path: integration/airflow/tests/integration/tests/airflow/logs
+          destination: airflow-logs
 
 
   integration-test-integration-airflow:
@@ -326,6 +329,9 @@ jobs:
       - run: cp -r ../client/python python
       - run: docker build -f airflow/Dockerfile.tests -t openlineage-airflow-base .
       - run: AIRFLOW_IMAGE=<< parameters.airflow-image >> ./airflow/tests/integration/docker/up-2.sh
+      - store_artifacts:
+          path: integration/airflow/tests/integration/tests/airflow/logs
+          destination: airflow-logs
 
   integration-test-integration-airflow-failure:
     working_directory: ~/openlineage/integration/
@@ -336,6 +342,9 @@ jobs:
       - run: cp -r ../client/python python
       - run: docker build -f airflow/Dockerfile.tests -t openlineage-airflow-base .
       - run: ./airflow/tests/integration/docker/up-failure.sh
+      - store_artifacts:
+          path: integration/airflow/tests/integration/failures/airflow/logs
+          destination: airflow-logs
 
   unit-test-integration-dagster:
     working_directory: ~/openlineage/integration/dagster
