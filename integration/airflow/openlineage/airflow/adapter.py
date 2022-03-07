@@ -11,6 +11,8 @@ from openlineage.client import OpenLineageClient, OpenLineageClientOptions, set_
 from openlineage.client.facet import DocumentationJobFacet, SourceCodeLocationJobFacet, \
     NominalTimeRunFacet, ParentRunFacet, BaseFacet
 from openlineage.client.run import RunEvent, RunState, Run, Job
+import requests.exceptions
+
 
 _DAG_DEFAULT_OWNER = 'anonymous'
 _DAG_DEFAULT_NAMESPACE = 'default'
@@ -51,6 +53,12 @@ class OpenLineageAdapter:
             else:
                 self._client = OpenLineageClient.from_environment()
         return self._client
+
+    def emit(self, event: RunEvent):
+        try:
+            return self.get_or_create_openlineage_client().emit(event)
+        except requests.exceptions.RequestException:
+            log.exception(f"Failed to emit OpenLineage event of id {event.run.runId}")
 
     def start_task(
         self,
@@ -93,7 +101,7 @@ class OpenLineageAdapter:
             outputs=task.outputs if task else None,
             producer=_PRODUCER
         )
-        self.get_or_create_openlineage_client().emit(event)
+        self.emit(event)
         return event.run.runId
 
     def complete_task(
@@ -124,7 +132,7 @@ class OpenLineageAdapter:
             outputs=task.outputs,
             producer=_PRODUCER
         )
-        self.get_or_create_openlineage_client().emit(event)
+        self.emit(event)
 
     def fail_task(
         self,
@@ -153,7 +161,7 @@ class OpenLineageAdapter:
             outputs=task.outputs,
             producer=_PRODUCER
         )
-        self.get_or_create_openlineage_client().emit(event)
+        self.emit(event)
 
     @staticmethod
     def _build_run(

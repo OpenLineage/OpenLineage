@@ -35,7 +35,6 @@ extras_require = {
         "pytest",
         "pytest-cov",
         "flake8",
-        f"dagster>={DAGSTER_VERSION}",
     ],
 }
 

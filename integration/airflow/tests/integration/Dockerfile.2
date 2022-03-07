@@ -17,6 +17,4 @@ COPY integration-requirements.txt integration-requirements.txt
 COPY *.py ./
 COPY requests requests
 RUN pip install --use-deprecated=legacy-resolver --user -r integration-requirements.txt
-COPY docker/entrypoint.sh entrypoint.sh
 COPY docker/wait-for-it.sh wait-for-it.sh
-ENTRYPOINT ["/entrypoint.sh"]

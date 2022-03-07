@@ -21,8 +21,8 @@ fi
 if [[ -n "$CI" ]]; then
   echo $GCLOUD_SERVICE_KEY > gcloud/gcloud-service-key.json
   chmod 644 gcloud/gcloud-service-key.json
-  mkdir -p airflow/logs
-  chmod a+rwx -R airflow/logs
+  mkdir -p tests/airflow/logs
+  chmod a+rwx -R tests/airflow/logs
 fi
 
 # maybe overkill
@@ -52,8 +52,8 @@ python-dateutil==2.8.2
 ${OPENLINEAGE_AIRFLOW_WHL}
 EOL
 
-docker-compose down
+docker-compose -f tests/docker-compose.yml down
 
 # Run airflow-init first, because rest of airflow containers can die if the database is not prepared.
-docker-compose up -V --build --abort-on-container-exit airflow_init postgres
-docker-compose up --build --exit-code-from integration --scale airflow_init=0
+docker-compose -f tests/docker-compose.yml up  -V --build --abort-on-container-exit airflow_init postgres
+docker-compose -f tests/docker-compose.yml up --build --exit-code-from integration --scale airflow_init=0
