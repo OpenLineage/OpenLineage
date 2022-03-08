@@ -1,7 +1,6 @@
 package io.openlineage.flink.visitor;
 
 import io.openlineage.client.OpenLineage;
-
 import java.net.URI;
 
 public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
@@ -38,13 +37,14 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
 
   public D getDataset(String name, String namespace) {
     OpenLineage.DatasetFacetsBuilder builder =
-            openLineage
-                    .newDatasetFacetsBuilder()
-                    .dataSource(openLineage
-                            .newDatasourceDatasetFacetBuilder()
-                            .uri(URI.create(""))
-                            .name(namespace)
-                            .build());
+        openLineage
+            .newDatasetFacetsBuilder()
+            .dataSource(
+                openLineage
+                    .newDatasourceDatasetFacetBuilder()
+                    .uri(URI.create(""))
+                    .name(namespace)
+                    .build());
     return getDataset(name, namespace, builder.build());
   }
 
