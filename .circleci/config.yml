@@ -527,7 +527,9 @@ workflows:
       - build-integration-dbt:
           <<: *only_on_main
           build_tag: ".dev<< pipeline.number >>"
-      - unit-test-integration-dagster
+      - unit-test-integration-dagster:
+          requires:
+            - build-client-python
       - build-integration-dagster:
           <<: *only_on_main
           build_tag: ".dev<< pipeline.number >>"
