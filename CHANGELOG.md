@@ -1,6 +1,10 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.6.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.6.1...HEAD)
+
+## [0.6.1](https://github.com/OpenLineage/OpenLineage/compare/0.6.0...0.6.1)
+### Fixed
+* Catch possible failures when emitting events and log them [@mobuchowski](https://github.com/mobuchowski)
 
 ## [0.6.0](https://github.com/OpenLineage/OpenLineage/compare/0.5.2...0.6.0)
 ### Added
