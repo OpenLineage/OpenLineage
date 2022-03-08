@@ -110,6 +110,7 @@ public class OpenLineageTest {
     Job job = ol.newJobBuilder().namespace(namespace).name(name).facets(jobFacets).build();
 
     List<InputDataset> inputs = Arrays.asList(ol.newInputDatasetBuilder().namespace("ins").name("input")
+        .facets(ol.newDatasetFacetsBuilder().version(ol.newDatasetVersionDatasetFacet("input-version")).build())
         .inputFacets(
             ol.newInputDatasetInputFacetsBuilder().dataQualityMetrics(
                 ol.newDataQualityMetricsInputDatasetFacetBuilder()
@@ -127,6 +128,7 @@ public class OpenLineageTest {
             ).build())
         .build());
     List<OutputDataset> outputs = Arrays.asList(ol.newOutputDatasetBuilder().namespace("ons").name("output")
+        .facets(ol.newDatasetFacetsBuilder().version(ol.newDatasetVersionDatasetFacet("output-version")).build())
         .outputFacets(
             ol.newOutputDatasetOutputFacetsBuilder()
                 .outputStatistics(ol.newOutputStatisticsOutputDatasetFacet(10L, 20L)).build())
@@ -160,6 +162,7 @@ public class OpenLineageTest {
       InputDataset inputDataset = runStateUpdate.getInputs().get(0);
       assertEquals("ins", inputDataset.getNamespace());
       assertEquals("input", inputDataset.getName());
+      assertEquals("input-version", inputDataset.getFacets().getVersion().getDatasetVersion());
 
       DataQualityMetricsInputDatasetFacet dq = inputDataset.getInputFacets().getDataQualityMetrics();
       assertEquals((Long)10L, dq.getRowCount());
@@ -177,7 +180,8 @@ public class OpenLineageTest {
       OutputDataset outputDataset = runStateUpdate.getOutputs().get(0);
       assertEquals("ons", outputDataset.getNamespace());
       assertEquals("output", outputDataset.getName());
-
+      assertEquals("output-version", outputDataset.getFacets().getVersion().getDatasetVersion());
+      
       assertEquals(roundTrip(json), roundTrip(mapper.writeValueAsString(read)));
       assertEquals((Long)10L, outputDataset.getOutputFacets().getOutputStatistics().getRowCount());
       assertEquals((Long)20L, outputDataset.getOutputFacets().getOutputStatistics().getSize());
