@@ -4,25 +4,7 @@
     "namespace" : "testV2Commands",
     "name" : "open_lineage_integration_v2_commands.replace_data"
   },
-  "inputs" : [ {
-    "namespace" : "file",
-    "name" : "/tmp/v2_merge/db.updates",
-    "facets" : {
-      "dataSource" : {
-        "name" : "file",
-        "uri" : "file"
-      },
-      "schema" : {
-        "fields" : [ {
-          "name" : "event_id",
-          "type" : "long"
-        }, {
-          "name" : "updated_at",
-          "type" : "long"
-        } ]
-      }
-    }
-  } ],
+  "inputs" : [  ],
   "outputs" : [ {
     "namespace" : "file",
     "name" : "/tmp/v2_merge/db.events",
@@ -39,7 +21,8 @@
           "name" : "last_updated_at",
           "type" : "long"
         } ]
-      }
+      },
+      "version" : {}
     }
   } ]
 }

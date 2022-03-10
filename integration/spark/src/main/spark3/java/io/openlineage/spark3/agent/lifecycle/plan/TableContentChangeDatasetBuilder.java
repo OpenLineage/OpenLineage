@@ -3,13 +3,12 @@
 package io.openlineage.spark3.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark.api.QueryPlanVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.IcebergHandler;
+import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.analysis.NamedRelation;
 import org.apache.spark.sql.catalyst.plans.logical.DeleteFromTable;
@@ -23,15 +22,15 @@ import org.apache.spark.sql.catalyst.plans.logical.UpdateTable;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 
 @Slf4j
-public class TableContentChangeVisitor
-    extends QueryPlanVisitor<LogicalPlan, OpenLineage.OutputDataset> {
+public class TableContentChangeDatasetBuilder
+    extends AbstractQueryPlanOutputDatasetBuilder<LogicalPlan> {
 
-  public TableContentChangeVisitor(OpenLineageContext context) {
-    super(context);
+  public TableContentChangeDatasetBuilder(OpenLineageContext context) {
+    super(context, false);
   }
 
   @Override
-  public boolean isDefinedAt(LogicalPlan x) {
+  public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
     return (x instanceof OverwriteByExpression)
         || (x instanceof OverwritePartitionsDynamic)
         || (x instanceof DeleteFromTable)
@@ -44,7 +43,6 @@ public class TableContentChangeVisitor
   @Override
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
     NamedRelation table;
-    Map<String, OpenLineage.DatasetFacet> facetMap = new HashMap<>();
     boolean includeOverwriteFacet = false;
 
     // INSERT OVERWRITE TABLE SQL statement is translated into InsertIntoTable logical operator.
@@ -82,6 +80,8 @@ public class TableContentChangeVisitor
                   null));
     }
 
+    DatasetVersionDatasetFacetUtils.includeDatasetVersion(
+        context, datasetFacetsBuilder, (DataSourceV2Relation) table);
     return PlanUtils3.fromDataSourceV2Relation(
         outputDataset(), context, (DataSourceV2Relation) table, datasetFacetsBuilder);
   }

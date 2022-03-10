@@ -14,6 +14,7 @@ import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.List;
 import java.util.Optional;
@@ -32,7 +33,7 @@ import org.mockito.MockedStatic;
 import scala.collection.immutable.HashMap;
 import scala.collection.immutable.Map;
 
-class CreateReplaceVisitorTest {
+class CreateReplaceVisitorDatasetBuilderTest {
 
   OpenLineageContext openLineageContext =
       OpenLineageContext.builder()
@@ -41,7 +42,7 @@ class CreateReplaceVisitorTest {
           .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
           .build();
 
-  CreateReplaceVisitor visitor = new CreateReplaceVisitor(openLineageContext);
+  CreateReplaceDatasetBuilder visitor = new CreateReplaceDatasetBuilder(openLineageContext);
 
   TableCatalog catalogTable = mock(TableCatalog.class);
   StructType schema = new StructType();
@@ -50,11 +51,11 @@ class CreateReplaceVisitorTest {
 
   @Test
   public void testIsDefined() {
-    assertTrue(visitor.isDefinedAt(mock(CreateTableAsSelect.class)));
-    assertTrue(visitor.isDefinedAt(mock(ReplaceTableAsSelect.class)));
-    assertTrue(visitor.isDefinedAt(mock(ReplaceTable.class)));
-    assertTrue(visitor.isDefinedAt(mock(CreateV2Table.class)));
-    assertFalse(visitor.isDefinedAt(mock(LogicalPlan.class)));
+    assertTrue(visitor.isDefinedAtLogicalPlan(mock(CreateTableAsSelect.class)));
+    assertTrue(visitor.isDefinedAtLogicalPlan(mock(ReplaceTableAsSelect.class)));
+    assertTrue(visitor.isDefinedAtLogicalPlan(mock(ReplaceTable.class)));
+    assertTrue(visitor.isDefinedAtLogicalPlan(mock(CreateV2Table.class)));
+    assertFalse(visitor.isDefinedAtLogicalPlan(mock(LogicalPlan.class)));
   }
 
   @Test
@@ -107,6 +108,70 @@ class CreateReplaceVisitorTest {
         (LogicalPlan) logicalPlan,
         commandProperties,
         OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE);
+  }
+
+  @Test
+  public void testApplyDatasetVersionIncluded() {
+    ReplaceTable logicalPlan = mock(ReplaceTable.class);
+    when(logicalPlan.catalog()).thenReturn(catalogTable);
+    when(logicalPlan.tableName()).thenReturn(tableName);
+    when(logicalPlan.tableSchema()).thenReturn(schema);
+    when(logicalPlan.properties()).thenReturn(commandProperties);
+
+    DatasetIdentifier di = new DatasetIdentifier("table", "db");
+    try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
+      try (MockedStatic mockedCatalog = mockStatic(CatalogUtils3.class)) {
+        when(CatalogUtils3.getDatasetVersion(
+                catalogTable,
+                Identifier.of(new String[] {"db"}, "table"),
+                ScalaConversionUtils.<String, String>fromMap(commandProperties)))
+            .thenReturn(Optional.of("v2"));
+
+        when(PlanUtils3.getDatasetIdentifier(
+                openLineageContext,
+                catalogTable,
+                tableName,
+                ScalaConversionUtils.<String, String>fromMap(commandProperties)))
+            .thenReturn(Optional.of(di));
+
+        List<OpenLineage.OutputDataset> outputDatasets = visitor.apply(logicalPlan);
+
+        assertEquals(1, outputDatasets.size());
+        assertEquals("v2", outputDatasets.get(0).getFacets().getVersion().getDatasetVersion());
+      }
+    }
+  }
+
+  @Test
+  public void testApplyDatasetVersionMissing() {
+    ReplaceTable logicalPlan = mock(ReplaceTable.class);
+    when(logicalPlan.catalog()).thenReturn(catalogTable);
+    when(logicalPlan.tableName()).thenReturn(tableName);
+    when(logicalPlan.tableSchema()).thenReturn(schema);
+    when(logicalPlan.properties()).thenReturn(commandProperties);
+
+    DatasetIdentifier di = new DatasetIdentifier("table", "db");
+    try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
+      try (MockedStatic mockedCatalog = mockStatic(CatalogUtils3.class)) {
+        when(CatalogUtils3.getDatasetVersion(
+                catalogTable,
+                Identifier.of(new String[] {"db"}, "table"),
+                ScalaConversionUtils.<String, String>fromMap(commandProperties)))
+            .thenReturn(Optional.empty());
+
+        when(PlanUtils3.getDatasetIdentifier(
+                openLineageContext,
+                catalogTable,
+                tableName,
+                ScalaConversionUtils.<String, String>fromMap(commandProperties)))
+            .thenReturn(Optional.of(di));
+
+        List<OpenLineage.OutputDataset> outputDatasets = visitor.apply(logicalPlan);
+
+        assertEquals(1, outputDatasets.size());
+        assertEquals(null, outputDatasets.get(0).getFacets().getVersion());
+      }
+    }
   }
 
   private void verifyApply(
