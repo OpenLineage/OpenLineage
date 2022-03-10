@@ -8,36 +8,73 @@ orbs:
   path-filtering: circleci/path-filtering@0.1.1
   continuation: circleci/continuation@0.2.0
 
+jobs:
+  determine_changed_modules:
+    docker:
+      - image: cimg/go:1.17.8
+    steps:
+      - checkout
+      - run:
+          name: Install yq
+          command: go install "github.com/mikefarah/yq/v4@latest"
+      - run: |
+          # Based on the changed files (or if we are on the main branch), generate a yaml file with
+          # a list of workflow files. Use those files to build a workflow with a union of all tasks
+
+          function check_change () {
+            MOD=$1
+            shift
+            if [ $(git diff --name-only main $MOD | wc -l) -gt 0 ]; then
+              echo "Change found in $MOD"
+              if [ "$1" == "*" ]; then
+                ls -d $PWD/.circleci/workflows/* > workflow_files.txt
+              else
+                rm -f workflow_files.txt
+                for ln in $@; do
+                  echo "$PWD/.circleci/workflows/$ln" >> workflow_files.txt
+                done
+              fi
+            fi
+          }
+
+          # If we are on the main branch, run all of the workflows
+          if [ "$CIRCLE_BRANCH" == "main" ]; then
+            ls -d $PWD/.circleci/workflows/* > workflow_files.txt
+          else
+            # Changes to the spec require all workflows to run
+            check_change spec "*"
+
+            check_change client/java/ openlineage-java.yml
+            check_change integrations/spark/ openlineage-java.yml
+            check_change client/python/ openlineage-integration-python.yml openlineage-integration-dbt.yml openlineage-integration-dagster.yml openlineage-integration-airflow.yml
+            check_change integrations/common/ openlineage-integration-python.yml openlineage-integration-airflow.yml
+            check_change integrations/airflow/ openlineage-integration-python.yml openlineage-integration-airflow.yml
+            check_change integrations/dagster/ openlineage-integration-python.yml openlineage-integration-dagster.yml
+            check_change integrations/dbt/ openlineage-integration-python.yml openlineage-integration-dbt.yml
+            check_change proxy openlineage-proxy.yml
+          fi
+
+          FILES=$(cat workflow_files.txt| tr "\n" " ")
+
+          # yq eval-all the workflow files specified in the workflow_files.txt file.
+          # Collect all the jobs from each workflow except for the "workflow_complete" job and
+          # create a union of all jobs.
+          # Collect the "workflow_complete" job from each workflow and concatenate the "requires"
+          # section of each and create a single "workflow_complete" job that is the union of all.
+          # The output of this is a circleci configuration with a single workflow called "build"
+          # that contains the union of all jobs plus the "workflow_complete" job that depends on
+          # all required jobs.
+          #
+          # This configuration is piped into yq along with the continue_config.yml file and the
+          # union of the two files is output to complete_config.yml
+          yq eval-all '.workflows | . as $wf ireduce({}; . * $wf) |
+              (map(.jobs[] | select(has("workflow_complete") | not)) | . as $item ireduce ([]; (. *+ $item) ))
+              + [(map(.jobs[] | select(has("workflow_complete"))) | .[] as $item ireduce ({}; . *+ $item))] | {"workflows": {"build": {"jobs": .}}}' $FILES | \
+          yq eval-all '. as $wf ireduce({}; . * $wf)' .circleci/continue_config.yml - > complete_config.yml
+      - continuation/continue:
+          configuration_path: complete_config.yml
+
 workflows:
   schedule_workflow:
     jobs:
-      - continuation/continue:
-          configuration_path: ./continue_config.yml
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
-            branches:
-              only: main
-
-      # the path-filtering/filter job determines which pipeline
-      # parameters to update.
-      # This only triggers on branches other than main and never for tags
-      - path-filtering/filter:
-          filters:
-            branches:
-              ignore: main
-          name: check-updated-files
-          # 3-column, whitespace-delimited mapping. One mapping per
-          # line:
-          # <regex path-to-test> <parameter-to-set> <value-of-pipeline-parameter>
-          mapping: |
-            spec/.* build-all true
-            client/java/.* build-all-java true
-            integrations/spark/.* build-all-java true
-            client/python/.* build-all-python true
-            integrations/common/.* build-airflow true
-            integrations/airflow/.* build-airflow true
-            integrations/dagster/.* build-dagster true
-            integrations/dbt/.* build-dbt true
-          base-revision: main
-          config-path: .circleci/continue_config.yml
+      - determine_changed_modules
