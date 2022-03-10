@@ -29,17 +29,17 @@ OpenLineage is an [LF AI & Data Foundation](https://lfaidata.foundation/projects
 
 ### Before
 
-![Before OpenLineage](doc/before-ol.svg)
-
 - Duplication of effort: Each project has to instrument all jobs
 - Integrations are external and can break with new versions
 
-### With OpenLineage
+![Before OpenLineage](doc/before-ol.svg)
 
-![With OpenLineage](doc/with-ol.svg)
+### With OpenLineage
 
 - Effort of integration is shared
 - Integration can be pushed in each project: no need to play catch up
+
+![With OpenLineage](doc/with-ol.svg)
 
 ## Scope
 OpenLineage defines the metadata for running jobs and the corresponding events.
