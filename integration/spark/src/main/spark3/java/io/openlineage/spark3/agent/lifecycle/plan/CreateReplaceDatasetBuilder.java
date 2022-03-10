@@ -6,12 +6,11 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark.api.QueryPlanVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -30,14 +29,15 @@ import org.apache.spark.sql.types.StructType;
  * {@link OpenLineage.Dataset} being written.
  */
 @Slf4j
-public class CreateReplaceVisitor extends QueryPlanVisitor<LogicalPlan, OpenLineage.OutputDataset> {
+public class CreateReplaceDatasetBuilder
+    extends AbstractQueryPlanOutputDatasetBuilder<LogicalPlan> {
 
-  public CreateReplaceVisitor(OpenLineageContext context) {
-    super(context);
+  public CreateReplaceDatasetBuilder(OpenLineageContext context) {
+    super(context, false);
   }
 
   @Override
-  public boolean isDefinedAt(LogicalPlan x) {
+  public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
     return (x instanceof CreateTableAsSelect)
         || (x instanceof ReplaceTable)
         || (x instanceof ReplaceTableAsSelect)
@@ -51,7 +51,6 @@ public class CreateReplaceVisitor extends QueryPlanVisitor<LogicalPlan, OpenLine
     Identifier identifier;
     StructType schema;
     OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange lifecycleStateChange;
-    Map<String, OpenLineage.DatasetFacet> facetMap = new HashMap<>();
 
     if (x instanceof CreateTableAsSelect) {
       CreateTableAsSelect command = (CreateTableAsSelect) x;
@@ -102,6 +101,11 @@ public class CreateReplaceVisitor extends QueryPlanVisitor<LogicalPlan, OpenLine
             .lifecycleStateChange(
                 openLineage.newLifecycleStateChangeDatasetFacet(lifecycleStateChange, null))
             .dataSource(PlanUtils.datasourceFacet(openLineage, di.get().getNamespace()));
+
+    Optional<String> datasetVersion =
+        CatalogUtils3.getDatasetVersion(tableCatalog, identifier, tableProperties);
+    datasetVersion.ifPresent(
+        version -> builder.version(openLineage.newDatasetVersionDatasetFacet(version)));
 
     CatalogUtils3.getTableProviderFacet(tableCatalog, tableProperties)
         .map(provider -> builder.put("tableProvider", provider));

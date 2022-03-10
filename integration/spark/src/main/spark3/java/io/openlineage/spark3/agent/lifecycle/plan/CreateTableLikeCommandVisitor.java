@@ -34,6 +34,7 @@ public class CreateTableLikeCommandVisitor
   @Override
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
     CreateTableLikeCommand command = (CreateTableLikeCommand) x;
+
     return context
         .getSparkSession()
         .map(

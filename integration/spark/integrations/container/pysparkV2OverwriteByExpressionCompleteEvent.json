@@ -22,6 +22,7 @@
           "type" : "long"
         } ]
       },
+      "version" : {},
       "lifecycleStateChange": {
         "lifecycleStateChange": "OVERWRITE"
       }

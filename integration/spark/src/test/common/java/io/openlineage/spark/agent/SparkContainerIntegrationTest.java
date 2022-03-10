@@ -294,7 +294,8 @@ public class SparkContainerIntegrationTest {
         "spark_v2_merge_into_table.py:pysparkV2MergeIntoTableStartEvent.json:pysparkV2MergeIntoTableCompleteEvent.json:true",
         "spark_v2_drop.py:pysparkV2DropTableStartEvent.json:pysparkV2DropTableCompleteEvent.json:true",
         "spark_v2_alter.py:pysparkV2AlterTableStartEvent.json:pysparkV2AlterTableCompleteEvent.json:true",
-        "spark_v2_append.py:pysparkV2AppendDataStartEvent.json:pysparkV2AppendDataCompleteEvent.json:true"
+        "spark_v2_append.py:pysparkV2AppendDataStartEvent.json:pysparkV2AppendDataCompleteEvent.json:true",
+        "spark_write_delta_table_version.py:pysparkWriteDeltaTableVersionStart.json:pysparkWriteDeltaTableVersionEnd.json:false"
       },
       delimiter = ':')
   public void testV2Commands(
@@ -339,6 +340,18 @@ public class SparkContainerIntegrationTest {
   public void testOptimizedCreateAsSelectAndLoad() {
     runPysparkContainerWithDefaultConf("testOptimizedCreateAsSelectAndLoad", "spark_octas_load.py");
     verifyEvents("pysparkOCTASStart.json", "pysparkOCTASEnd.json");
+  }
+
+  @Test
+  @EnabledIfSystemProperty(named = "spark.version", matches = SPARK_3) // Spark version >= 3.*
+  public void testWriteIcebergTableVersion() {
+    makePysparkContainerWithDefaultConf(
+            "testWriteIcebergTableVersion",
+            "--packages",
+            "org.apache.iceberg:iceberg-spark3-runtime:0.12.0",
+            "/opt/spark_scripts/spark_write_iceberg_table_version.py")
+        .start();
+    verifyEvents("pysparkWriteIcebergTableVersionEnd.json");
   }
 
   @Test

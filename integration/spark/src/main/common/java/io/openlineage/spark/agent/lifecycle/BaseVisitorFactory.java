@@ -7,7 +7,6 @@ import io.openlineage.client.OpenLineage.Dataset;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.spark.agent.lifecycle.plan.AlterTableAddColumnsCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.AlterTableRenameCommandVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.AppendDataVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.CreateDataSourceTableAsSelectCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.CreateDataSourceTableCommandVisitor;
@@ -65,9 +64,11 @@ abstract class BaseVisitorFactory implements VisitorFactory {
   @Override
   public List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>> getOutputVisitors(
       OpenLineageContext context) {
+    DatasetFactory<OpenLineage.OutputDataset> factory =
+        DatasetFactory.output(context.getOpenLineage());
 
     List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>> outputCommonVisitors =
-        getCommonVisitors(context, DatasetFactory.output(context.getOpenLineage()));
+        getCommonVisitors(context, factory);
     List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>> list =
         new ArrayList<>(outputCommonVisitors);
 
@@ -75,7 +76,6 @@ abstract class BaseVisitorFactory implements VisitorFactory {
     list.add(new InsertIntoDataSourceVisitor(context));
     list.add(new InsertIntoHadoopFsRelationVisitor(context));
     list.add(new CreateDataSourceTableAsSelectCommandVisitor(context));
-    list.add(new AppendDataVisitor(context));
     list.add(new InsertIntoDirVisitor(context));
     if (InsertIntoHiveTableVisitor.hasHiveClasses()) {
       list.add(new InsertIntoHiveTableVisitor(context));

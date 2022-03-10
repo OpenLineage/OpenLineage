@@ -16,11 +16,7 @@ import io.openlineage.spark.agent.facets.builder.ErrorFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.LogicalPlanRunFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.OutputStatisticsOutputDatasetFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.SparkVersionFacetBuilder;
-import io.openlineage.spark.agent.lifecycle.plan.CommandPlanVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.LogicalRelationVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.SaveIntoDataSourceCommandVisitor;
 import io.openlineage.spark.api.CustomFacetBuilder;
-import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
 import java.util.Collection;
@@ -125,10 +121,6 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
             .addAll(
                 generate(
                     eventHandlerFactories, factory -> factory.createInputDatasetBuilder(context)))
-            .add(
-                new LogicalRelationVisitor(
-                    context, DatasetFactory.input(context.getOpenLineage()), true))
-            .add(new CommandPlanVisitor(context))
             .addAll(DatasetBuilderFactoryProvider.getInstance().getInputBuilders(context))
             .build();
     context.getInputDatasetBuilders().addAll(builders);
@@ -143,11 +135,7 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
             .addAll(
                 generate(
                     eventHandlerFactories, factory -> factory.createOutputDatasetBuilder(context)))
-            .add(
-                new LogicalRelationVisitor(
-                    context, DatasetFactory.output(context.getOpenLineage()), false))
-            .add(new SaveIntoDataSourceCommandVisitor(context))
-            .addAll(DatasetBuilderFactoryProvider.getInstance().getInputBuilders(context))
+            .addAll(DatasetBuilderFactoryProvider.getInstance().getOutputBuilders(context))
             .build();
     context.getOutputDatasetBuilders().addAll(outputDatasetBuilders);
     return outputDatasetBuilders;
