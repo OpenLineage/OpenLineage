@@ -26,24 +26,29 @@ The core lineage model is extensible by defining specific facets to enrich those
 OpenLineage is an [LF AI & Data Foundation](https://lfaidata.foundation/projects/openlineage) sandbox project under active development and we'd love your help!
 
 ## Problem
- ![Problem](doc/problem.png)
 
 ### Before
+
+![Before OpenLineage](doc/before-ol.svg)
+
 - Duplication of effort: Each project has to instrument all jobs
 - Integrations are external and can break with new versions
 
 ### With OpenLineage
+
+![With OpenLineage](doc/with-ol.svg)
+
 - Effort of integration is shared
 - Integration can be pushed in each project: no need to play catch up
 
 ## Scope
 OpenLineage defines the metadata for running jobs and the corresponding events.
 A configurable backend allows to choose what protocol to send the events to.
- ![Scope](doc/Scope.png)
+ ![Scope](doc/scope.svg)
 
 ## Core model
 
- ![Model](doc/OpenLineageModel.svg)
+ ![Model](doc/datamodel.svg)
 
  A facet is an atomic piece of metadata attached to one of the core entities.
  See the spec for more details.
