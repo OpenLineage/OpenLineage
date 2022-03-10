@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import sys
+from typing import List
 
 import psycopg2
 import time
@@ -117,6 +118,7 @@ def get_events(job_name: str = None):
     )
     r.raise_for_status()
     received_requests = r.json()
+    log.info(f"Requests: {received_requests}")
     return received_requests
 
 
@@ -186,7 +188,11 @@ if __name__ == '__main__':
     test_integration('postgres_orders_popular_day_of_week', 'requests/postgres.json')
     test_integration('great_expectations_validation', 'requests/great_expectations.json')
     test_integration('bigquery_orders_popular_day_of_week', 'requests/bigquery.json')
-    test_integration('dbt_dag', 'requests/dbt.json')
+    test_integration('dbt_bigquery', 'requests/dbt_bigquery.json')
     test_integration('source_code_dag', 'requests/source_code.json')
     test_integration('custom_extractor', 'requests/custom_extractor.json')
     test_integration_ordered('event_order', 'requests/order')
+    if os.getenv('AIRFLOW_VERSION', '') == '2.2.4':
+        test_integration('dbt_snowflake', 'requests/dbt_snowflake.json')
+        test_integration('snowflake', 'requests/snowflake.json')
+

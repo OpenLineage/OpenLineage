@@ -58,6 +58,9 @@ Naming hierarchy:
  * Schema: {schema name} => unique within the database
  * Table: {table name} => unique within the schema
 
+Database, schema, table or column names are uppercase in Snowflake.
+Clients should make sure that they are sending those as uppercase.
+
 Identifier:
  * Namespace: snowflake://{account name}
    * Scheme = snowflake

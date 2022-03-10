@@ -1,0 +1,58 @@
+[{
+	"eventType": "START",
+	"inputs": [],
+	"job": {
+		"facets": {
+			"documentation": {
+				"description": "Determines the popular day of week orders are placed."
+			}
+		},
+		"name": "snowflake.snowflake_insert",
+		"namespace": "food_delivery"
+	},
+	"outputs": [{
+		"facets": {
+			"dataSource": {
+				"name": "snowflake://{{ env_var('SNOWFLAKE_ACCOUNT_ID') }}",
+				"uri": "{{ any(result) }}"
+			},
+			"schema": {
+				"fields": [{
+					"name": "ORD",
+					"type": "NUMBER"
+				}, {
+					"name": "STR",
+					"type": "TEXT"
+				}, {
+					"name": "NUM",
+					"type": "NUMBER"
+				}]
+			}
+		},
+		"name": "SANDBOX.OPENLINEAGE.TEST_ORDERS",
+		"namespace": "snowflake://{{ env_var('SNOWFLAKE_ACCOUNT_ID') }}"
+	}],
+	"run": {
+		"facets": {
+			"nominalTime": {
+				"nominalStartTime": "{{ any(result) }}"
+			},
+			"parentRun": {
+				"job": {
+					"name": "snowflake.snowflake_insert",
+					"namespace": "food_delivery"
+				}
+			}
+		}
+	}
+}, {
+	"eventType": "COMPLETE",
+	"job": {
+		"facets": {},
+		"name": "snowflake.snowflake_insert",
+		"namespace": "food_delivery"
+	},
+	"run": {
+		"facets": {}
+	}
+}]

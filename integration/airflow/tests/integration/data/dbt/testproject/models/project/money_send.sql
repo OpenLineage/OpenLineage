@@ -6,4 +6,4 @@ from {{ ref('users') }}
 left join {{ ref('transactions') }}
 on users.user_id=transactions.user_id
 where leg='b'
-group by user_id, currency
+group by users.user_id, currency

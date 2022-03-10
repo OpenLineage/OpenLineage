@@ -27,7 +27,11 @@ x-airflow-base: &airflow-base
     OPENLINEAGE_URL: http://backend:5000
     OPENLINEAGE_EXTRACTOR_CustomOperator: custom_extractor.CustomExtractor
     BIGQUERY_PREFIX: airflow_1
-    BIGQUERY_DBT_DATASET: airflow_1_dbt
+    DBT_DATASET_PREFIX: airflow_1_dbt
+    SNOWFLAKE_ACCOUNT_ID: ${SNOWFLAKE_ACCOUNT_ID}
+    SNOWFLAKE_USER: ${SNOWFLAKE_USER}
+    SNOWFLAKE_PASSWORD: ${SNOWFLAKE_PASSWORD}
+    AIRFLOW_CONN_SNOWFLAKE_CONN: "snowflake://${SNOWFLAKE_USER}:${SNOWFLAKE_PASSWORD}@${SNOWFLAKE_URI}/OPENLINEAGE?account=${SNOWFLAKE_ACCOUNT_ID}&database=SANDBOX&region=us-east-1&warehouse=DEMO&role=OPENLINEAGE"
   volumes:
     - ./airflow/config/log_config.py:/opt/airflow/config/log_config.py
     - ./airflow/dags:/opt/airflow/dags
@@ -46,7 +50,7 @@ services:
       - backend
     environment:
       - BIGQUERY_PREFIX=airflow_1
-      - BIGQUERY_DBT_DATASET=airflow_1_dbt
+      - DBT_DATASET_PREFIX=airflow_1_dbt
     entrypoint: ["./wait-for-it.sh", "backend:5000", "--", "python", "test_integration.py"]
 
   airflow:

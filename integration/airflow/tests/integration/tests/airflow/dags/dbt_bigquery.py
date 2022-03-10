@@ -37,19 +37,24 @@ default_args = {
 }
 
 dag = DAG(
-    'dbt_dag',
+    'dbt_bigquery',
     schedule_interval='@once',
     default_args=default_args,
     description='Runs dbt model build.',
     user_defined_macros={
-        "lineage_parent_id": lineage_parent_id
-    }
+        "lineage_parent_id": lineage_parent_id,
+    },
 )
 
 t1 = BashOperator(
     task_id='dbt_seed',
     dag=dag,
-    bash_command=f"dbt seed --full-refresh --project-dir={PROJECT_DIR} --profiles-dir={PROFILE_DIR}"
+    bash_command=f"dbt seed --full-refresh --project-dir={PROJECT_DIR} --profiles-dir={PROFILE_DIR}",
+    env={
+        **os.environ,
+        "OPENLINEAGE_PARENT_ID": "{{ lineage_parent_id(run_id, task) }}",
+        "DBT_PROFILE": "bigquery"
+    }
 )
 
 t2 = BashOperator(
@@ -58,7 +63,8 @@ t2 = BashOperator(
     bash_command=f"dbt-ol run --project-dir={PROJECT_DIR} --profiles-dir={PROFILE_DIR}",
     env={
         **os.environ,
-        "OPENLINEAGE_PARENT_ID": "{{ lineage_parent_id(run_id, task) }}"
+        "OPENLINEAGE_PARENT_ID": "{{ lineage_parent_id(run_id, task) }}",
+        "DBT_PROFILE": "bigquery"
     }
 )
 
