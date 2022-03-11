@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0.
+import logging
 from contextlib import closing
 from typing import Optional, List
 from urllib.parse import urlparse
@@ -11,7 +12,7 @@ from openlineage.airflow.extractors.base import (
     BaseExtractor,
     TaskMetadata
 )
-from openlineage.client.facet import SqlJobFacet
+from openlineage.client.facet import SqlJobFacet, ExternalQueryRunFacet
 from openlineage.common.models import (
     DbTableName,
     DbTableSchema,
@@ -27,6 +28,8 @@ _ORDINAL_POSITION = 3
 # Use 'udt_name' which is the underlying type of column
 # (ex: int4, timestamp, varchar, etc)
 _UDT_NAME = 4
+
+logger = logging.getLogger(__name__)
 
 
 class PostgresExtractor(BaseExtractor):
@@ -84,13 +87,30 @@ class PostgresExtractor(BaseExtractor):
             )
         ]
 
+        task_name = f"{self.operator.dag_id}.{self.operator.task_id}"
+        run_facets = {}
+        job_facets = {
+            'sql': SqlJobFacet(self.operator.sql)
+        }
+
+        query_ids = self._get_query_ids()
+        if len(query_ids) == 1:
+            run_facets['externalQuery'] = ExternalQueryRunFacet(
+                externalQueryId=query_ids[0],
+                source=source.name
+            )
+        elif len(query_ids) > 1:
+            logger.warning(
+                f"Found more than one query id for task {task_name}: {query_ids} "
+                "This might indicate that this task might be better as multiple jobs"
+            )
+
         return TaskMetadata(
-            name=f"{self.operator.dag_id}.{self.operator.task_id}",
+            name=task_name,
             inputs=[ds.to_openlineage_dataset() for ds in inputs],
             outputs=[ds.to_openlineage_dataset() for ds in outputs],
-            job_facets={
-                'sql': SqlJobFacet(self.operator.sql)
-            }
+            run_facets=run_facets,
+            job_facets=job_facets
         )
 
     def _get_connection_uri(self):
@@ -182,3 +202,6 @@ class PostgresExtractor(BaseExtractor):
                         )
 
         return list(schemas_by_table.values())
+
+    def _get_query_ids(self) -> List[str]:
+        return []

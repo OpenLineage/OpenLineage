@@ -15,7 +15,7 @@ from airflow.utils.state import State
 
 from openlineage.airflow.extractors.bigquery_extractor import BigQueryExtractor
 from openlineage.airflow.utils import safe_import_airflow, choose_based_on_version
-from openlineage.client.facet import OutputStatisticsOutputDatasetFacet
+from openlineage.client.facet import OutputStatisticsOutputDatasetFacet, ExternalQueryRunFacet
 from openlineage.common.provider.bigquery import BigQueryJobRunFacet, \
     BigQueryStatisticsDatasetFacet, BigQueryErrorRunFacet
 from openlineage.common.utils import get_from_nullable_chain
@@ -125,12 +125,17 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
             size=321
         ) == task_meta.outputs[0].outputFacets['outputStatistics']
 
-        assert len(task_meta.run_facets) == 1
+        assert len(task_meta.run_facets) == 2
         assert BigQueryJobRunFacet(
             cached=False,
             billedBytes=111149056,
             properties=json.dumps(job_details)
         ) == task_meta.run_facets['bigQuery_job']
+
+        assert ExternalQueryRunFacet(
+            externalQueryId=bq_job_id,
+            source="bigquery"
+        ) == task_meta.run_facets['externalQuery']
 
         mock_client.return_value.close.assert_called()
 
@@ -210,9 +215,14 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
         assert task_meta.inputs is not None
         assert task_meta.outputs is not None
 
-        assert len(task_meta.run_facets) == 1
+        assert len(task_meta.run_facets) == 2
         assert task_meta.run_facets['bigQuery_job'] \
                == BigQueryJobRunFacet(cached=True)
+
+        assert ExternalQueryRunFacet(
+            externalQueryId=bq_job_id,
+            source="bigquery"
+        ) == task_meta.run_facets['externalQuery']
 
     @mock.patch(choose_based_on_version(
         airflow_1_version="airflow.contrib.operators.bigquery_operator.BigQueryHook",
