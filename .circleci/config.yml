@@ -53,24 +53,30 @@ jobs:
             check_change integrations/dbt/ openlineage-integration-python.yml openlineage-integration-dbt.yml
             check_change proxy openlineage-proxy.yml
           fi
-
+          touch workflow_files.txt
           FILES=$(cat workflow_files.txt| tr "\n" " ")
 
-          # yq eval-all the workflow files specified in the workflow_files.txt file.
-          # Collect all the jobs from each workflow except for the "workflow_complete" job and
-          # create a union of all jobs.
-          # Collect the "workflow_complete" job from each workflow and concatenate the "requires"
-          # section of each and create a single "workflow_complete" job that is the union of all.
-          # The output of this is a circleci configuration with a single workflow called "build"
-          # that contains the union of all jobs plus the "workflow_complete" job that depends on
-          # all required jobs.
-          #
-          # This configuration is piped into yq along with the continue_config.yml file and the
-          # union of the two files is output to complete_config.yml
-          yq eval-all '.workflows | . as $wf ireduce({}; . * $wf) |
-              (map(.jobs[] | select(has("workflow_complete") | not)) | . as $item ireduce ([]; (. *+ $item) ))
-              + [(map(.jobs[] | select(has("workflow_complete"))) | .[] as $item ireduce ({}; . *+ $item))] | {"workflows": {"build": {"jobs": .}}}' $FILES | \
-          yq eval-all '. as $wf ireduce({}; . * $wf)' .circleci/continue_config.yml - > complete_config.yml
+          # If no changes, generate a no-op build
+          if [ "$FILES" == "" ]; then
+            echo '{"workflows": {"no-op": {"jobs": ["workflow_complete"]}}}' | yq -P eval-all '. as $wf ireduce({}; . * $wf)' .circleci/continue_config.yml - > complete_config.yml
+          else
+            # yq eval-all the workflow files specified in the workflow_files.txt file.
+            # Collect all the jobs from each workflow except for the "workflow_complete" job and
+            # create a union of all jobs.
+            # Collect the "workflow_complete" job from each workflow and concatenate the "requires"
+            # section of each and create a single "workflow_complete" job that is the union of all.
+            # The output of this is a circleci configuration with a single workflow called "build"
+            # that contains the union of all jobs plus the "workflow_complete" job that depends on
+            # all required jobs.
+            #
+            # This configuration is piped into yq along with the continue_config.yml file and the
+            # union of the two files is output to complete_config.yml
+
+            yq eval-all '.workflows | . as $wf ireduce({}; . * $wf) |
+                (map(.jobs[] | select(has("workflow_complete") | not)) | . as $item ireduce ([]; (. *+ $item) ))
+                + [(map(.jobs[] | select(has("workflow_complete"))) | .[] as $item ireduce ({}; . *+ $item))] | {"workflows": {"build": {"jobs": .}}}' $FILES | \
+            yq eval-all '. as $wf ireduce({}; . * $wf)' .circleci/continue_config.yml - > complete_config.yml
+          fi
       - continuation/continue:
           configuration_path: complete_config.yml
 
