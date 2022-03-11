@@ -2,20 +2,6 @@
 
 #!/bin/bash
 #
-# Licensed to the Apache Software Foundation (ASF) under one or more
-# contributor license agreements.  See the NOTICE file distributed with
-# this work for additional information regarding copyright ownership.
-# The ASF licenses this file to You under the Apache License, Version 2.0
-# (the "License"); you may not use this file except in compliance with
-# the License.  You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 #
 # NOTE: This script was inspired by https://github.com/MarquezProject/marquez/blob/main/new-version.sh
 #
@@ -182,10 +168,22 @@ perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./proxy/gradle.properties
 echo "version ${NEXT_VERSION}" > integration/spark/src/test/resources/io/openlineage/spark/agent/client/version.properties
 
 # (7) Prepare next development version commit
-git commit -sam "Prepare next development version"
+git commit -sam "Prepare next development version ${NEXT_VERSION}"
 
-# (8) Push commits and tag
-if [[ ! ${PUSH} = "false" ]]; then
+# (8) Check for commits in log
+COMMITS=false
+MESSAGE_1=$(git log -1 --grep="Prepare for release ${RELEASE_VERSION}" --pretty=format:%s)
+MESSAGE_2=$(git log -1 --grep="Prepare next development version ${NEXT_VERSION}" --pretty=format:%s)
+
+if [[ $MESSAGE_1 ]] && [[ $MESSAGE_2 ]]; then
+  COMMITS=true
+else
+  echo "one or both commits failed; exiting..."
+  exit 0
+fi
+
+# (9) Push commits and tag
+if [[ $COMMITS = "true" ]] && [[ ! ${PUSH} = "false" ]]; then
   git push origin main && git push origin "${RELEASE_VERSION}"
 else
   echo "...skipping push; to push manually, use 'git push origin main && git push origin "${RELEASE_VERSION}"'"
