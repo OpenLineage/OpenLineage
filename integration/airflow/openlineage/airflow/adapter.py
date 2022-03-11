@@ -92,7 +92,12 @@ class OpenLineageAdapter:
             eventType=RunState.START,
             eventTime=event_time,
             run=self._build_run(
-                run_id, parent_run_id, job_name, nominal_start_time, nominal_end_time, run_facets
+                run_id,
+                parent_run_id,
+                job_name,
+                nominal_start_time,
+                nominal_end_time,
+                run_facets=run_facets
             ),
             job=self._build_job(
                 job_name, job_description, code_location, task.job_facets
@@ -123,7 +128,8 @@ class OpenLineageAdapter:
             eventType=RunState.COMPLETE,
             eventTime=end_time,
             run=self._build_run(
-                run_id
+                run_id,
+                run_facets=task.run_facets
             ),
             job=self._build_job(
                 job_name, job_facets=task.job_facets
@@ -152,7 +158,8 @@ class OpenLineageAdapter:
             eventType=RunState.FAIL,
             eventTime=end_time,
             run=self._build_run(
-                run_id
+                run_id,
+                run_facets=task.run_facets
             ),
             job=self._build_job(
                 job_name
@@ -170,7 +177,7 @@ class OpenLineageAdapter:
         job_name: Optional[str] = None,
         nominal_start_time: Optional[str] = None,
         nominal_end_time: Optional[str] = None,
-        custom_facets: Dict[str, Type[BaseFacet]] = None
+        run_facets: Dict[str, BaseFacet] = None
     ) -> Run:
         facets = {}
         if nominal_start_time:
@@ -184,8 +191,8 @@ class OpenLineageAdapter:
                 job_name
             )})
 
-        if custom_facets:
-            facets.update(custom_facets)
+        if run_facets:
+            facets.update(run_facets)
 
         return Run(run_id, facets)
 

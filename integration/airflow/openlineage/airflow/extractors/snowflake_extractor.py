@@ -34,16 +34,10 @@ class SnowflakeExtractor(PostgresExtractor):
         return 'snowflake'
 
     def _get_database(self) -> str:
-        if hasattr(self.operator, 'get_db_hook'):
-            return self.operator.get_db_hook()._get_conn_params()['database']
-        else:
-            return self.operator.get_hook()._get_conn_params()['database']
+        return self._get_hook()._get_conn_params()['database']
 
     def _get_authority(self) -> str:
-        if hasattr(self.operator, 'get_db_hook'):
-            return self.operator.get_db_hook()._get_conn_params()['account']
-        else:
-            return self.operator.get_hook()._get_conn_params()['account']
+        return self._get_hook()._get_conn_params()['account']
 
     def _get_hook(self):
         if hasattr(self.operator, 'get_db_hook'):
@@ -56,3 +50,8 @@ class SnowflakeExtractor(PostgresExtractor):
 
     def _get_connection_uri(self):
         return get_connection_uri(self.conn)
+
+    def _get_query_ids(self) -> List[str]:
+        if hasattr(self.operator, 'query_ids'):
+            return self.operator.query_ids
+        return []

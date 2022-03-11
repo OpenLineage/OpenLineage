@@ -68,22 +68,23 @@ class BigQueryExtractor(BaseExtractor):
         inputs = stats.inputs
         output = stats.output
         run_facets = stats.run_facets
+        job_facets = {
+            "sql": SqlJobFacet(context.sql)
+        }
 
         return TaskMetadata(
             name=get_job_name(task=self.operator),
             inputs=[ds.to_openlineage_dataset() for ds in inputs],
             outputs=[output.to_openlineage_dataset()] if output else [],
             run_facets=run_facets,
-            job_facets={
-                "sql": SqlJobFacet(context.sql)
-            }
+            job_facets=job_facets
         )
 
     def _get_xcom_bigquery_job_id(self, task_instance):
         bigquery_job_id = task_instance.xcom_pull(
             task_ids=task_instance.task_id, key='job_id')
 
-        log.info(f"bigquery_job_id: {bigquery_job_id}")
+        log.debug(f"bigquery_job_id: {bigquery_job_id}")
         return bigquery_job_id
 
     def parse_sql_context(self) -> SqlContext:

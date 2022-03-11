@@ -69,7 +69,7 @@ class Backend:
             run_id=run_id,
             job_name=job_name,
             end_time=DagUtils.to_iso_8601(self._now_ms()),
-            task=task_metadata
+            task=task_metadata,
         )
 
     def _extract_metadata(self, dag_id, dagrun, task, task_instance=None):
