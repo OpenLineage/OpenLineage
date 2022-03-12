@@ -10,7 +10,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 pyo3 = "0.15.1"
-sqlparser = "0.14.0"
+sqlparser = {git = "https://github.com/mobuchowski/sqlparser-rs", branch="add-merge-statement"}
 
 [features]
 extension-module = ["pyo3/extension-module"]

@@ -3,13 +3,13 @@ use std::collections::HashSet;
 
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
-use sqlparser::ast::{Query, Select, SetExpr, Statement, TableFactor, With};
+use sqlparser::ast::{Query, Select, SetExpr, Statement, TableAlias, TableFactor, With};
 use self::bigquery::BigQueryDialect;
 use sqlparser::parser::Parser;
 
 #[derive(Debug, PartialEq)]
 struct Context {
-    ctes: HashSet<String>,
+    aliases: HashSet<String>,
     inputs: HashSet<String>,
     output: Option<String>,
 }
@@ -17,14 +17,18 @@ struct Context {
 impl Context {
     fn new() -> Context {
         Context {
-            ctes: HashSet::new(),
+            aliases: HashSet::new(),
             inputs: HashSet::new(),
             output: None,
         }
     }
 
+    fn add_alias(&mut self, alias: &TableAlias) {
+        self.aliases.insert(alias.name.value.clone());
+    }
+
     fn add_input(&mut self, table: &String) {
-        if !self.ctes.contains(table) {
+        if !self.aliases.contains(table) {
             self.inputs.insert(table.clone());
         }
     }
@@ -54,35 +58,32 @@ impl From<Context> for QueryMetadata {
 
 fn parse_with(with: &With, context: &mut Context) -> Result<(), String> {
     for cte in &with.cte_tables {
-        context.ctes.insert(cte.alias.name.value.clone());
+        context.add_alias(&cte.alias);
         parse_query(&cte.query, context)?;
     }
     Ok(())
 }
 
+fn parse_table_factor(table: &TableFactor) -> Result<String, String> {
+    match &table {
+        TableFactor::Table { name, .. } => {
+            Ok(name.to_string())
+        }
+        _ => {
+            return Err(String::from(
+                "TableFactor other than straight table not implemented",
+            ))
+        }
+    }
+}
+
 fn parse_select(select: &Select, context: &mut Context) -> Result<(), String> {
     for table in &select.from {
-        match &table.relation {
-            TableFactor::Table { name, .. } => {
-                context.add_input(&name.to_string());
-            }
-            _ => {
-                return Err(String::from(
-                    "TableFactor other than straight table not implemented",
-                ))
-            }
-        }
+        let table_factor = parse_table_factor(&table.relation)?;
+        context.add_input(&table_factor);
         for join in &table.joins {
-            match &join.relation {
-                TableFactor::Table { name, .. } => {
-                    context.add_input(&name.to_string());
-                }
-                _ => {
-                    return Err(String::from(
-                        "TableFactor other than straight table not implemented",
-                    ))
-                }
-            }
+            let join_relation = parse_table_factor(&join.relation)?;
+            context.add_input(&join_relation);
         }
     }
     Ok(())
@@ -132,6 +133,23 @@ fn parse_stmt(stmt: &Statement, context: &mut Context) -> Result<(), String> {
             println!("Tabelka {}", table_name);
             parse_query(source, context)?;
             context.set_output(&table_name.to_string());
+            Ok(())
+        }
+        Statement::Merge {
+            table,
+            source,
+            alias,
+            on,
+            clauses
+        } => {
+            let table_factor = parse_table_factor(table)?;
+            context.set_output(&table_factor);
+            parse_setexpr(source, context)?;
+
+            if let Some(a) = alias {
+                context.add_alias(a);
+            }
+
             Ok(())
         }
         _ => Err(String::from("not a insert")),
@@ -383,7 +401,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "EXTRACT not supported"]
     fn insert_nested_select() {
         assert_eq!(parse_sql("
             INSERT INTO popular_orders_day_of_week (order_day_of_week, order_placed_on,orders_placed)
@@ -399,7 +416,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "MERGE not supported"]
     fn merge_subquery_when_not_matched() {
         assert_eq!(parse_sql("
         MERGE INTO s.bar as dest
