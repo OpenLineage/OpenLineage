@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -83,7 +84,16 @@ public class PlanUtils {
       public Collection<D> apply(T x) {
         return fns.stream()
             .filter(pfn -> isDefinedAt(x, pfn))
-            .map(pfn -> pfn.apply(x))
+            .map(
+                pfn -> {
+                  try {
+                    return pfn.apply(x);
+                  } catch (RuntimeException e) {
+                    log.error("Apply failed:", e);
+                    return null;
+                  }
+                })
+            .filter(Objects::nonNull)
             .flatMap(Collection::stream)
             .collect(Collectors.toList());
       }

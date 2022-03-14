@@ -7,14 +7,10 @@ import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.JsonBody.json;
 
 import com.google.common.collect.ImmutableMap;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.SneakyThrows;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
@@ -37,10 +33,8 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.containers.MockServerContainer;
 import org.testcontainers.containers.Network;
-import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 
 @Tag("integration-test")
 @Testcontainers
@@ -50,7 +44,7 @@ public class SparkContainerIntegrationTest {
 
   @Container
   private static final MockServerContainer openLineageClientMockContainer =
-      makeMockServerContainer();
+      SparkContainerUtils.makeMockServerContainer(network);
 
   private static final String SPARK_3 = "(3.*)";
   private static final String SPARK_ABOVE_EQUAL_2_4_8 =
@@ -99,93 +93,13 @@ public class SparkContainerIntegrationTest {
     network.close();
   }
 
-  private static MockServerContainer makeMockServerContainer() {
-    return new MockServerContainer(
-            DockerImageName.parse("jamesdbloom/mockserver:mockserver-5.12.0"))
-        .withNetwork(network)
-        .withNetworkAliases("openlineageclient");
-  }
-
-  private static GenericContainer<?> makePysparkContainer(String... command) {
-    return new GenericContainer<>(
-            DockerImageName.parse("godatadriven/pyspark:" + System.getProperty("spark.version")))
-        .withNetwork(network)
-        .withNetworkAliases("spark")
-        .withFileSystemBind("src/test/resources/test_data", "/test_data")
-        .withFileSystemBind("src/test/resources/spark_scripts", "/opt/spark_scripts")
-        .withFileSystemBind("build/libs", "/opt/libs")
-        .withFileSystemBind("build/dependencies", "/opt/dependencies")
-        .withLogConsumer(SparkContainerIntegrationTest::consumeOutput)
-        .waitingFor(Wait.forLogMessage(".*ShutdownHookManager: Shutdown hook called.*", 1))
-        .withStartupTimeout(Duration.of(5, ChronoUnit.MINUTES))
-        .dependsOn(openLineageClientMockContainer)
-        .withReuse(true)
-        .withCommand(command);
-  }
-
-  private static GenericContainer<?> makeKafkaContainer() {
-    return new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.0.0"))
-        .withNetworkAliases("kafka")
-        .withNetwork(network);
-  }
-
-  private static GenericContainer<?> makePysparkContainerWithDefaultConf(
-      String namespace, String... command) {
-    return makePysparkContainer(
-        Stream.of(
-                new String[] {
-                  "--master",
-                  "local",
-                  "--conf",
-                  "spark.openlineage.host=" + "http://openlineageclient:1080",
-                  "--conf",
-                  "spark.openlineage.url="
-                      + "http://openlineageclient:1080/api/v1/namespaces/"
-                      + namespace,
-                  "--conf",
-                  "spark.extraListeners=" + OpenLineageSparkListener.class.getName(),
-                  "--conf",
-                  "spark.sql.warehouse.dir=/tmp/warehouse",
-                  "--conf",
-                  "spark.sql.shuffle.partitions=1",
-                  "--jars",
-                  "/opt/libs/"
-                      + System.getProperty("openlineage.spark.jar")
-                      + ",/opt/dependencies/spark-sql-kafka-*.jar"
-                      + ",/opt/dependencies/kafka-*.jar"
-                      + ",/opt/dependencies/spark-token-provider-*.jar"
-                      + ",/opt/dependencies/commons-pool2-*.jar"
-                },
-                command)
-            .flatMap(Stream::of)
-            .toArray(String[]::new));
-  }
-
-  private static void runPysparkContainerWithDefaultConf(String namespace, String pysparkFile) {
-    makePysparkContainerWithDefaultConf(namespace, "/opt/spark_scripts/" + pysparkFile).start();
-  }
-
-  private static void consumeOutput(org.testcontainers.containers.output.OutputFrame of) {
-    try {
-      switch (of.getType()) {
-        case STDOUT:
-          System.out.write(of.getBytes());
-          break;
-        case STDERR:
-          System.err.write(of.getBytes());
-          break;
-        case END:
-          System.out.println(of.getUtf8String());
-          break;
-      }
-    } catch (IOException ioe) {
-      throw new RuntimeException(ioe);
-    }
-  }
-
   @Test
   public void testPysparkWordCountWithCliArgs() {
-    runPysparkContainerWithDefaultConf("testPysparkWordCountWithCliArgs", "spark_word_count.py");
+    SparkContainerUtils.runPysparkContainerWithDefaultConf(
+        network,
+        openLineageClientMockContainer,
+        "testPysparkWordCountWithCliArgs",
+        "spark_word_count.py");
     verifyEvents(
         "pysparkWordCountWithCliArgsStartEvent.json",
         "pysparkWordCountWithCliArgsCompleteEvent.json");
@@ -193,7 +107,8 @@ public class SparkContainerIntegrationTest {
 
   @Test
   public void testPysparkRddToTable() {
-    runPysparkContainerWithDefaultConf("testPysparkRddToTable", "spark_rdd_to_table.py");
+    SparkContainerUtils.runPysparkContainerWithDefaultConf(
+        network, openLineageClientMockContainer, "testPysparkRddToTable", "spark_rdd_to_table.py");
     verifyEvents(
         "pysparkRddToCsvStartEvent.json",
         "pysparkRddToCsvCompleteEvent.json",
@@ -203,11 +118,13 @@ public class SparkContainerIntegrationTest {
 
   @Test
   public void testPysparkKafkaReadWrite() {
-    kafka = makeKafkaContainer();
+    kafka = SparkContainerUtils.makeKafkaContainer(network);
     kafka.start();
 
     pyspark =
-        makePysparkContainerWithDefaultConf(
+        SparkContainerUtils.makePysparkContainerWithDefaultConf(
+            network,
+            openLineageClientMockContainer,
             "testPysparkKafkaReadWriteTest",
             "--packages",
             System.getProperty("kafka.package.version"),
@@ -223,7 +140,7 @@ public class SparkContainerIntegrationTest {
 
   @Test
   public void testPysparkKafkaReadAssign() {
-    kafka = makeKafkaContainer();
+    kafka = SparkContainerUtils.makeKafkaContainer(network);
     kafka.start();
 
     ImmutableMap<String, Object> kafkaProps =
@@ -233,8 +150,11 @@ public class SparkContainerIntegrationTest {
     AdminClient admin = AdminClient.create(kafkaProps);
     admin.createTopics(
         Arrays.asList(new NewTopic("topicA", 1, (short) 0), new NewTopic("topicB", 1, (short) 0)));
-    runPysparkContainerWithDefaultConf(
-        "testPysparkKafkaReadAssignTest", "spark_kafk_assign_read.py");
+    SparkContainerUtils.runPysparkContainerWithDefaultConf(
+        network,
+        openLineageClientMockContainer,
+        "testPysparkKafkaReadAssignTest",
+        "spark_kafk_assign_read.py");
 
     verifyEvents(
         "pysparkKafkaAssignReadStartEvent.json", "pysparkKafkaAssignReadCompleteEvent.json");
@@ -242,21 +162,26 @@ public class SparkContainerIntegrationTest {
 
   @Test
   public void testPysparkSQLHiveTest() {
-    runPysparkContainerWithDefaultConf("testPysparkSQLHiveTest", "spark_hive.py");
+    SparkContainerUtils.runPysparkContainerWithDefaultConf(
+        network, openLineageClientMockContainer, "testPysparkSQLHiveTest", "spark_hive.py");
     verifyEvents("pysparkHiveStartEvent.json", "pysparkHiveCompleteEvent.json");
   }
 
   @Test
   public void testPysparkSQLOverwriteDirHiveTest() {
-    runPysparkContainerWithDefaultConf(
-        "testPysparkSQLHiveOverwriteDirTest", "spark_overwrite_hive.py");
+    SparkContainerUtils.runPysparkContainerWithDefaultConf(
+        network,
+        openLineageClientMockContainer,
+        "testPysparkSQLHiveOverwriteDirTest",
+        "spark_overwrite_hive.py");
     verifyEvents(
         "pysparkHiveOverwriteDirStartEvent.json", "pysparkHiveOverwriteDirCompleteEvent.json");
   }
 
   @Test
   public void testCreateAsSelectAndLoad() {
-    runPysparkContainerWithDefaultConf("testCreateAsSelectAndLoad", "spark_ctas_load.py");
+    SparkContainerUtils.runPysparkContainerWithDefaultConf(
+        network, openLineageClientMockContainer, "testCreateAsSelectAndLoad", "spark_ctas_load.py");
     verifyEvents(
         "pysparkCTASStart.json",
         "pysparkCTASEnd.json",
@@ -270,7 +195,9 @@ public class SparkContainerIntegrationTest {
       matches = SPARK_ABOVE_EQUAL_2_4_8) // Spark version >= 2.4.8
   public void testCTASDelta() {
     pyspark =
-        makePysparkContainerWithDefaultConf(
+        SparkContainerUtils.makePysparkContainerWithDefaultConf(
+            network,
+            openLineageClientMockContainer,
             "testCTASDelta",
             "--packages",
             "io.delta:delta-core_2.12:1.0.0",
@@ -304,7 +231,9 @@ public class SparkContainerIntegrationTest {
       String expectedCompleteEvent,
       String isIceberg) {
     pyspark =
-        makePysparkContainerWithDefaultConf(
+        SparkContainerUtils.makePysparkContainerWithDefaultConf(
+            network,
+            openLineageClientMockContainer,
             "testV2Commands",
             "--packages",
             Boolean.valueOf(isIceberg)
@@ -317,19 +246,22 @@ public class SparkContainerIntegrationTest {
 
   @Test
   public void testCreateTable() {
-    runPysparkContainerWithDefaultConf("testCreateTable", "spark_create_table.py");
+    SparkContainerUtils.runPysparkContainerWithDefaultConf(
+        network, openLineageClientMockContainer, "testCreateTable", "spark_create_table.py");
     verifyEvents("pysparkCreateTableStartEvent.json", "pysparkCreateTableCompleteEvent.json");
   }
 
   @Test
   public void testDropTable() {
-    runPysparkContainerWithDefaultConf("testDropTable", "spark_drop_table.py");
+    SparkContainerUtils.runPysparkContainerWithDefaultConf(
+        network, openLineageClientMockContainer, "testDropTable", "spark_drop_table.py");
     verifyEvents("pysparkDropTableStartEvent.json");
   }
 
   @Test
   public void testTruncateTable() {
-    runPysparkContainerWithDefaultConf("testTruncateTable", "spark_truncate_table.py");
+    SparkContainerUtils.runPysparkContainerWithDefaultConf(
+        network, openLineageClientMockContainer, "testTruncateTable", "spark_truncate_table.py");
     verifyEvents("pysparkTruncateTableStartEvent.json", "pysparkTruncateTableCompleteEvent.json");
   }
 
@@ -338,14 +270,20 @@ public class SparkContainerIntegrationTest {
       named = "spark.version",
       matches = SPARK_ABOVE_EQUAL_2_4_8) // Spark version >= 2.4.8
   public void testOptimizedCreateAsSelectAndLoad() {
-    runPysparkContainerWithDefaultConf("testOptimizedCreateAsSelectAndLoad", "spark_octas_load.py");
+    SparkContainerUtils.runPysparkContainerWithDefaultConf(
+        network,
+        openLineageClientMockContainer,
+        "testOptimizedCreateAsSelectAndLoad",
+        "spark_octas_load.py");
     verifyEvents("pysparkOCTASStart.json", "pysparkOCTASEnd.json");
   }
 
   @Test
   @EnabledIfSystemProperty(named = "spark.version", matches = SPARK_3) // Spark version >= 3.*
   public void testWriteIcebergTableVersion() {
-    makePysparkContainerWithDefaultConf(
+    SparkContainerUtils.makePysparkContainerWithDefaultConf(
+            network,
+            openLineageClientMockContainer,
             "testWriteIcebergTableVersion",
             "--packages",
             "org.apache.iceberg:iceberg-spark3-runtime:0.12.0",
@@ -356,7 +294,8 @@ public class SparkContainerIntegrationTest {
 
   @Test
   public void testAlterTable() {
-    runPysparkContainerWithDefaultConf("testAlterTable", "spark_alter_table.py");
+    SparkContainerUtils.runPysparkContainerWithDefaultConf(
+        network, openLineageClientMockContainer, "testAlterTable", "spark_alter_table.py");
     verifyEvents("pysparkAlterTableAddColumnsEnd.json", "pysparkAlterTableRenameEnd.json");
   }
 

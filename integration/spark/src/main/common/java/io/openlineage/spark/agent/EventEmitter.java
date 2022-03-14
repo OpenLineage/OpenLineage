@@ -62,7 +62,8 @@ public class EventEmitter {
       ResponseMessage resp = client.post(lineageURI, event);
       if (!resp.completedSuccessfully()) {
         log.error(
-            "Could not emit lineage: {}",
+            "Could not emit lineage [responseCode={}]: {}",
+            resp.getResponseCode(),
             mapper.writeValueAsString(event),
             new OpenLineageHttpException(resp, resp.getError()));
       } else {
