@@ -1,16 +1,19 @@
 [package]
-name = "parser"
+name = "openlineage_sql"
+description = "Library extracting source and destination tables from sql statements"
 version = "0.1.0"
 edition = "2021"
+authors = ["Maciej Obuchowski <obuchowski.maciej@gmail.com>"]
+keywords = ["sql", "lineage", "openlineage"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
-name = "parser"
+name = "openlineage_sql"
 crate-type = ["cdylib"]
 
 [dependencies]
 pyo3 = "0.15.1"
-sqlparser = {git = "https://github.com/mobuchowski/sqlparser-rs", branch="add-merge-statement"}
+sqlparser = {git = "https://github.com/sqlparser-rs/sqlparser-rs", branch="main"}
 
 [features]
 extension-module = ["pyo3/extension-module"]
