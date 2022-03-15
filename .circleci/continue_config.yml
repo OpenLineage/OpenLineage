@@ -150,7 +150,8 @@ jobs:
       spark-version:
         type: string
     working_directory: ~/openlineage/integration/spark
-    machine: true
+    machine:
+      image: ubuntu-2004:current
     resource_class: large
     environment:
       TESTCONTAINERS_RYUK_DISABLED: "true"
@@ -163,6 +164,9 @@ jobs:
             - v1-integration-spark-{{ .Branch }}
       - attach_workspace:
           at: .
+      - run: |
+          sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
+          sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
       - run: (cd ./../../client/java/ && ./gradlew --no-daemon --stacktrace publishToMavenLocal)
       - run: ./gradlew --no-daemon --stacktrace build -Pspark.version=<< parameters.spark-version >>
       - run:
@@ -225,7 +229,8 @@ jobs:
       spark-version:
         type: string
     working_directory: ~/openlineage/integration/spark
-    machine: true
+    machine:
+      image: ubuntu-2004:current
     resource_class: large
     environment:
       TESTCONTAINERS_RYUK_DISABLED: "true"
@@ -236,6 +241,9 @@ jobs:
           keys:
             - v1-integration-spark-{{ .Branch }}-{{ .Revision }}
             - v1-integration-spark-{{ .Branch }}
+      - run: |
+          sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
+          sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
       - run: (cd ./../../client/java/ && ./gradlew --no-daemon --stacktrace publishToMavenLocal)
       - run: ./gradlew --no-daemon --info integrationTest -Pspark.version=<< parameters.spark-version >>
       - run:
