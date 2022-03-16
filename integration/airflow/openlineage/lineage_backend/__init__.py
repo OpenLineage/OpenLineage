@@ -3,6 +3,7 @@
 import logging
 import uuid
 import time
+
 from pkg_resources import parse_version
 
 from airflow.lineage.backend import LineageBackend
@@ -97,8 +98,21 @@ class Backend:
             self.log.warning(
                 f'Unable to find an extractor. {task_info}')
         from openlineage.airflow.extractors.base import TaskMetadata
+        from openlineage.airflow.facets import UnknownOperatorAttributeRunFacet, \
+            UnknownOperatorInstance
+
         return TaskMetadata(
-            name=self._openlineage_job_name(dag_id, task.task_id)
+            name=self._openlineage_job_name(dag_id, task.task_id),
+            run_facets={
+                "unknownSourceAttribute": UnknownOperatorAttributeRunFacet(
+                    unknownItems=[
+                        UnknownOperatorInstance(
+                            name=task.__class__.__name__,
+                            properties={attr: value for attr, value in task.__dict__.items()}
+                        )
+                    ]
+                )
+            }
         )
 
     def _extract(self, extractor, task_instance):

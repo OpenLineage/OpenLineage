@@ -36,6 +36,20 @@
       },
       "name": "source_code_dag.python_task",
       "namespace": "food_delivery"
+    },
+    "run": {
+      "facets": {
+        "unknownSourceAttribute": {
+          "unknownItems": [
+            {
+              "type": "operator",
+              "name": "PythonOperator",
+              "properties": {
+              }
+            }
+          ]
+        }
+      }
     }
   },
   {
@@ -49,6 +63,20 @@
       },
       "name": "source_code_dag.bash_task",
       "namespace": "food_delivery"
+    },
+    "run": {
+      "facets": {
+        "unknownSourceAttribute": {
+          "unknownItems": [
+            {
+              "type": "operator",
+              "name": "BashOperator",
+              "properties": {
+              }
+            }
+          ]
+        }
+      }
     }
   }
 ]

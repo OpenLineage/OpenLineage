@@ -1,0 +1,44 @@
+{
+  "$schema" : "https://json-schema.org/draft/2020-12/schema",
+  "$id" : "https://openlineage.io/spec/facets/1-0-0/UnknownSourceAttributeRunFacet.json",
+  "$defs" : {
+    "UnknownSourceAttributeRunFacet" : {
+      "allOf" : [ {
+        "$ref" : "https://openlineage.io/spec/1-0-2/OpenLineage.json#/$defs/RunFacet"
+      }, {
+        "type" : "object",
+        "properties" : {
+          "unknownItems": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties":  {
+                "type": {
+                  "type": "string",
+                  "description": "The 'type' of unknown property we've collected information about. This will be particular to the system reporting OpenLineage information, such as 'extractor' in Airflow, or 'logicalPlanNode' in Spark",
+                },
+                "name": {
+                  "type": "string",
+                  "description": "A descriptive name of the property we've collected information about. This might be a class name or some other human-readable text that identifies this particular instance of the given type"
+                },
+                "properties": {
+                  "type": "object"
+                }
+              },
+              "additionalProperties": true,
+              "required": ["type", "name"]
+            }
+          }
+        },
+        "required" : [ "unknownItems" ]
+      } ],
+      "type" : "object"
+    }
+  },
+  "type" : "object",
+  "properties" : {
+    "nominalTime" : {
+      "$ref" : "#/$defs/UnknownSourceAttributeRunFacet"
+    }
+  }
+}

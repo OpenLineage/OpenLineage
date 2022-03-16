@@ -4,6 +4,7 @@ import logging
 from typing import Optional, List, Callable
 
 from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
+from openlineage.airflow.facets import UnknownOperatorAttributeRunFacet, UnknownOperatorInstance
 from openlineage.client.facet import SourceCodeJobFacet
 
 
@@ -21,23 +22,41 @@ class PythonExtractor(BaseExtractor):
         return ["PythonOperator"]
 
     def extract(self) -> Optional[TaskMetadata]:
+        collect_source = True
         if os.environ.get(
             "OPENLINEAGE_AIRFLOW_DISABLE_SOURCE_CODE", "False"
         ).lower() in ('true', '1', 't'):
-            return None
+            collect_source = False
 
         source_code = self.get_source_code(self.operator.python_callable)
-        if source_code:
-            return TaskMetadata(
-                name=f"{self.operator.dag_id}.{self.operator.task_id}",
-                job_facets={
-                    "sourceCode": SourceCodeJobFacet(
-                        "python",
-                        # We're on worker and should have access to DAG files
-                        source_code
-                    )
-                }
-            )
+        job_facet = {}
+        if collect_source and source_code:
+            job_facet = {
+                "sourceCode": SourceCodeJobFacet(
+                    "python",
+                    # We're on worker and should have access to DAG files
+                    source_code
+                )
+            }
+        return TaskMetadata(
+            name=f"{self.operator.dag_id}.{self.operator.task_id}",
+            job_facets=job_facet,
+            run_facets={
+
+                # The BashOperator is recorded as an "unknownSource" even though we have an
+                # extractor, as the <i>data lineage</i> cannot be determined from the operator
+                # directly.
+                "unknownSourceAttribute": UnknownOperatorAttributeRunFacet(
+                    unknownItems=[
+                        UnknownOperatorInstance(
+                            name="PythonOperator",
+                            properties={attr: value
+                                        for attr, value in self.operator.__dict__.items()}
+                        )
+                    ]
+                )
+            }
+        )
 
     def get_source_code(self, callable: Callable) -> Optional[str]:
         try:

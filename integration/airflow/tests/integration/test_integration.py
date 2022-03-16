@@ -191,6 +191,7 @@ if __name__ == '__main__':
     test_integration('dbt_bigquery', 'requests/dbt_bigquery.json')
     test_integration('source_code_dag', 'requests/source_code.json')
     test_integration('custom_extractor', 'requests/custom_extractor.json')
+    test_integration('unknown_operator_dag', 'requests/unknown_operator.json')
     test_integration_ordered('event_order', 'requests/order')
     if os.getenv('AIRFLOW_VERSION', '') == '2.2.4':
         test_integration('dbt_snowflake', 'requests/dbt_snowflake.json')

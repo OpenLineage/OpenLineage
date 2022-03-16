@@ -9,6 +9,7 @@ from airflow.utils.db import create_session
 from airflow.utils.state import State
 from openlineage.airflow.extractors import TaskMetadata, BaseExtractor
 from openlineage.airflow.extractors.extractors import Extractors
+from openlineage.airflow.facets import UnknownOperatorAttributeRunFacet, UnknownOperatorInstance
 from openlineage.airflow.utils import (
     JobIdMapping,
     get_location,
@@ -314,7 +315,17 @@ class DAG(AIRFLOW_DAG):
                 f'Unable to find an extractor. {task_info}')
 
         return TaskMetadata(
-            name=openlineage_job_name(self.dag_id, task.task_id)
+            name=openlineage_job_name(self.dag_id, task.task_id),
+            run_facets={
+                "unknownSourceAttribute": UnknownOperatorAttributeRunFacet(
+                    unknownItems=[
+                        UnknownOperatorInstance(
+                            name=task.__class__.__name__,
+                            properties={attr: value for attr, value in task.__dict__.items()}
+                        )
+                    ]
+                )
+            }
         )
 
     def _extract(self, extractor, task_instance) -> Optional[TaskMetadata]:
