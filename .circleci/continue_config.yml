@@ -3,29 +3,6 @@ version: 2.1
 orbs:
   gcp-cli: circleci/gcp-cli@2.2.0
 
-parameters:
-  build-all:
-    type: boolean
-    default: false
-  build-all-java:
-    type: boolean
-    default: false
-  build-all-python:
-    type: boolean
-    default: false
-  build-airflow:
-    type: boolean
-    default: false
-  build-dagster:
-    type: boolean
-    default: false
-  build-dbt:
-    type: boolean
-    default: false
-  build-spark:
-    type: boolean
-    default: false
-
 checkout_project_root: &checkout_project_root
   # Override checkout path to project root (see: https://circleci.com/docs/2.0/configuration-reference/#checkout)
   checkout:
