@@ -1,0 +1,15 @@
+workflows:
+  openlineage-integration-python:
+    jobs:
+      - unit-test-client-python
+      - build-client-python:
+          filters:
+            branches:
+              only: main
+          build_tag: ".dev<< pipeline.number >>"
+          requires:
+            - unit-test-client-python
+      - workflow_complete:
+          requires:
+            - build-client-python
+            - unit-test-client-python
