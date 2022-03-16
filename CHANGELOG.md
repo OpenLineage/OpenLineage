@@ -1,6 +1,16 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.6.1...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.6.2...HEAD)
+
+## [0.6.2](https://github.com/OpenLineage/OpenLineage/compare/0.6.1...0.6.2)
+### Added
+* CI: add integration tests for Airflow's SnowflakeOperator and dbt-snowflake [@mobuchowski](https://github.com/mobuchowski)
+* Introduce DatasetVersion facet in spec [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+* Airflow: add external query id facet [@mobuchowski](https://github.com/mobuchowski)
+
+### Fixed
+* Complete Fix of Snowflake Extractor get_hook() Bug [@denimalpaca](https://github.com/denimalpaca)
+* Update artwork [@rossturk](https://github.com/rossturk)
 
 ## [0.6.1](https://github.com/OpenLineage/OpenLineage/compare/0.6.0...0.6.1)
 ### Fixed
@@ -12,7 +22,6 @@
 * Add DatasetLifecycleStateDatasetFacet to spec [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
 * Airflow: extract source code from BashOperator [@mobuchowski](https://github.com/mobuchowski)
 * Add generic facet to collect environmental properties (EnvironmentFacet) [@harishsune](https://github.com/harishsune)
-* Update Airflow connection parsing to exclude AWS keys and extraneous Snowflake params [@collado-mike](https://github.com/collado-mike)
 * OpenLineage sensor for OpenLineage-Dagster integration [@dalinkim](https://github.com/dalinkim)
 * Java-client: make generator generate enums as well [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
 
@@ -38,8 +47,6 @@
 
 * dbt: job namespaces for given dbt run match each other [@mobuchowski](https://github.com/mobuchowski)
 * Fix Breaking SnowflakeOperator Changes from OSS Airflow [@denimalpaca](https://github.com/denimalpaca)
-
-### Fixed
 * Made corrections to account for DeltaDataSource handling [@collado-mike](https://github.com/collado-mike)
 
 ## [0.5.1](https://github.com/OpenLineage/OpenLineage/compare/0.4.0...0.5.1)
