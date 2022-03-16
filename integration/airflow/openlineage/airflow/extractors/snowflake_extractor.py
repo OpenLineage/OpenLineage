@@ -20,13 +20,16 @@ class SnowflakeExtractor(PostgresExtractor):
         return ['SnowflakeOperator']
 
     def _information_schema_query(self, table_names: str) -> str:
+        database = self.operator.database
+        if not database:
+            database = self._get_database()
         return f"""
         SELECT table_schema,
                table_name,
                column_name,
                ordinal_position,
                data_type
-          FROM {self.operator.database}.information_schema.columns
+          FROM {database}.information_schema.columns
          WHERE table_name IN ({table_names});
         """
 
@@ -47,6 +50,14 @@ class SnowflakeExtractor(PostgresExtractor):
 
     def _conn_id(self):
         return self.operator.snowflake_conn_id
+
+    def _normalize_identifiers(self, table: str):
+        """
+        Snowflake keeps it's table names in uppercase, so we need to normalize
+        them before use: see
+        https://community.snowflake.com/s/question/0D50Z00009SDHEoSAP/is-there-case-insensitivity-for-table-name-or-column-names  # noqa
+        """
+        return table.upper()
 
     def _get_connection_uri(self):
         return get_connection_uri(self.conn)

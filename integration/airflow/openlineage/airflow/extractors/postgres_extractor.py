@@ -136,6 +136,10 @@ class PostgresExtractor(BaseExtractor):
     def _conn_id(self):
         return self.operator.postgres_conn_id
 
+    def _normalize_identifiers(self, table: str):
+        # For SnowflakeExtractor
+        return table
+
     def _information_schema_query(self, table_names: str) -> str:
         return f"""
         SELECT table_schema,
@@ -172,14 +176,16 @@ class PostgresExtractor(BaseExtractor):
         with closing(hook.get_conn()) as conn:
             with closing(conn.cursor()) as cursor:
                 table_names_as_str = ",".join(map(
-                    lambda name: f"'{name.name}'", table_names
+                    lambda name: f"'{self._normalize_identifiers(name.name)}'", table_names
                 ))
                 cursor.execute(
                     self._information_schema_query(table_names_as_str)
                 )
                 for row in cursor.fetchall():
-                    table_schema_name: str = row[_TABLE_SCHEMA]
-                    table_name: DbTableName = DbTableName(row[_TABLE_NAME])
+                    table_schema_name: str = self._normalize_identifiers(row[_TABLE_SCHEMA])
+                    table_name: DbTableName = DbTableName(
+                        self._normalize_identifiers(row[_TABLE_NAME])
+                    )
                     table_column: DbColumn = DbColumn(
                         name=row[_COLUMN_NAME],
                         type=row[_UDT_NAME],

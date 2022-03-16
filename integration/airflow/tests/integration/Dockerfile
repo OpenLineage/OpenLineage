@@ -1,6 +1,6 @@
 FROM openlineage-airflow-base:latest AS build
 
-FROM apache/airflow:1.10.15-python3.6 AS airflow
+FROM apache/airflow:1.10.15-python3.7 AS airflow
 COPY --from=build /app/wheel /whl
 USER root
 RUN sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 467B942D3A79BD29  # Mysql fix for https://github.com/apache/airflow/issues/20911

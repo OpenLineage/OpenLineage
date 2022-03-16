@@ -2,7 +2,7 @@ name: 'testproject'
 version: '1.0.0'
 config-version: 2
 
-profile: 'bigquery'
+profile: "{{ env_var('DBT_PROFILE') }}"
 
 # These configurations specify where dbt should look for different types of files.
 # The `source-paths` config, for example, states that models in this project can be

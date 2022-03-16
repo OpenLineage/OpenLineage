@@ -10,7 +10,6 @@ log = logging.getLogger(__name__)
 
 
 def any(result: Any):
-    log.error(f"Filling result with ANY {result}")
     return result
 
 

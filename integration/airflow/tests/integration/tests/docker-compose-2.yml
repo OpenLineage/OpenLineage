@@ -27,11 +27,15 @@ x-airflow-base: &airflow-base
     AIRFLOW_CONN_BQ_CONN: google-cloud-platform://?extra__google_cloud_platform__project=openlineage-ci&extra__google_cloud_platform__key_path=%2Fopt%2Fconfig%2Fgcloud%2Fgcloud-service-key.json
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "False"
     BIGQUERY_PREFIX: ${BIGQUERY_PREFIX}
-    BIGQUERY_DBT_DATASET: ${BIGQUERY_DBT_DATASET}_dbt
+    DBT_DATASET_PREFIX: ${DBT_DATASET_PREFIX}_dbt
     GOOGLE_APPLICATION_CREDENTIALS: /opt/config/gcloud/gcloud-service-key.json
     OPENLINEAGE_URL: http://backend:5000
     OPENLINEAGE_NAMESPACE: food_delivery
     OPENLINEAGE_EXTRACTOR_CustomOperator: custom_extractor.CustomExtractor
+    SNOWFLAKE_ACCOUNT_ID: ${SNOWFLAKE_ACCOUNT_ID}
+    SNOWFLAKE_USER: ${SNOWFLAKE_USER}
+    SNOWFLAKE_PASSWORD: ${SNOWFLAKE_PASSWORD}
+    AIRFLOW_CONN_SNOWFLAKE_CONN: "snowflake://${SNOWFLAKE_USER}:${SNOWFLAKE_PASSWORD}@${SNOWFLAKE_URI}/OPENLINEAGE?account=${SNOWFLAKE_ACCOUNT_ID}&database=SANDBOX&region=us-east-1&warehouse=DEMO&role=OPENLINEAGE"
   volumes:
       - ./airflow/config/log_config.py:/opt/airflow/config/log_config.py
       - ./airflow/logs:/opt/airflow/logs
@@ -48,7 +52,9 @@ services:
         AIRFLOW_IMAGE: ${AIRFLOW_IMAGE}
     environment:
       BIGQUERY_PREFIX: ${BIGQUERY_PREFIX}
-      BIGQUERY_DBT_DATASET: ${BIGQUERY_DBT_DATASET}_dbt
+      DBT_DATASET_PREFIX: ${DBT_DATASET_PREFIX}_dbt
+      AIRFLOW_VERSION: ${AIRFLOW_VERSION}
+      SNOWFLAKE_ACCOUNT_ID: ${SNOWFLAKE_ACCOUNT_ID}
     volumes:
       - ./docker/wait-for-it.sh:/wait-for-it.sh
     depends_on:
@@ -82,6 +88,9 @@ services:
     environment:
       - FLASK_APP=app.py
       - FLASK_RUN_PORT=5000
+      - SERVER_EVENTS=/opt/airflow/events
+    volumes:
+      - ./events:/opt/airflow/events
 
   airflow_init:
     <<: *airflow-base

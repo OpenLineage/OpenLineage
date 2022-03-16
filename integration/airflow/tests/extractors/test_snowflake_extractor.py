@@ -22,32 +22,32 @@ from openlineage.airflow.extractors.snowflake_extractor import SnowflakeExtracto
 CONN_ID = 'food_delivery_db'
 CONN_URI = 'snowflake://localhost:5432/food_delivery'
 
-DB_NAME = 'food_delivery'
-DB_SCHEMA_NAME = 'public'
-DB_TABLE_NAME = DbTableName('discounts')
+DB_NAME = 'FOOD_DELIVERY'
+DB_SCHEMA_NAME = 'PUBLIC'
+DB_TABLE_NAME = DbTableName('DISCOUNTS')
 DB_TABLE_COLUMNS = [
     DbColumn(
-        name='id',
+        name='ID',
         type='int4',
         ordinal_position=1
     ),
     DbColumn(
-        name='amount_off',
+        name='AMOUNT_OFF',
         type='int4',
         ordinal_position=2
     ),
     DbColumn(
-        name='customer_email',
+        name='CUSTOMER_EMAIL',
         type='varchar',
         ordinal_position=3
     ),
     DbColumn(
-        name='starts_on',
+        name='STARTS_ON',
         type='timestamp',
         ordinal_position=4
     ),
     DbColumn(
-        name='ends_on',
+        name='ENDS_ON',
         type='timestamp',
         ordinal_position=5
     )
@@ -149,11 +149,11 @@ def test_get_table_schemas(mock_conn):
 
     # (2) Mock calls to postgres
     rows = [
-        (DB_SCHEMA_NAME, DB_TABLE_NAME.name, 'id', 1, 'int4'),
-        (DB_SCHEMA_NAME, DB_TABLE_NAME.name, 'amount_off', 2, 'int4'),
-        (DB_SCHEMA_NAME, DB_TABLE_NAME.name, 'customer_email', 3, 'varchar'),
-        (DB_SCHEMA_NAME, DB_TABLE_NAME.name, 'starts_on', 4, 'timestamp'),
-        (DB_SCHEMA_NAME, DB_TABLE_NAME.name, 'ends_on', 5, 'timestamp')
+        (DB_SCHEMA_NAME, DB_TABLE_NAME.name, 'ID', 1, 'int4'),
+        (DB_SCHEMA_NAME, DB_TABLE_NAME.name, 'AMOUNT_OFF', 2, 'int4'),
+        (DB_SCHEMA_NAME, DB_TABLE_NAME.name, 'CUSTOMER_EMAIL', 3, 'varchar'),
+        (DB_SCHEMA_NAME, DB_TABLE_NAME.name, 'STARTS_ON', 4, 'timestamp'),
+        (DB_SCHEMA_NAME, DB_TABLE_NAME.name, 'ENDS_ON', 5, 'timestamp')
     ]
 
     TASK.get_hook.return_value \

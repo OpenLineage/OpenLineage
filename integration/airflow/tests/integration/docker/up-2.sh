@@ -32,8 +32,11 @@ OPENLINEAGE_AIRFLOW_WHL_ALL=$(docker run openlineage-airflow-base:latest sh -c "
 # Add revision to requirements.txt
 cat > requirements.txt <<EOL
 airflow-provider-great-expectations==0.0.8
+apache-airflow-providers-snowflake==2.5.1
 great-expectations==0.13.42
-dbt-bigquery==0.20.1
+dbt-core==1.0.1
+dbt-bigquery==1.0.0
+dbt-snowflake==1.0.0
 ${OPENLINEAGE_AIRFLOW_WHL}
 EOL
 
@@ -55,8 +58,10 @@ EOL
 #  :    <-- until the last ':'
 AIRFLOW_VERSION=${AIRFLOW_IMAGE##*:}
 
-export BIGQUERY_PREFIX=${AIRFLOW_VERSION//./_}
-export BIGQUERY_DBT_DATASET=${AIRFLOW_VERSION//./_}_dbt
+# Remove -python3.7 from the tag
+export AIRFLOW_VERSION=${AIRFLOW_VERSION::-10}
+export BIGQUERY_PREFIX=$(echo "$AIRFLOW_VERSION" | tr "-" "_" | tr "." "_")
+export DBT_DATASET_PREFIX=$(echo "$AIRFLOW_VERSION" | tr "-" "_" | tr "." "_")_dbt
 
 docker-compose -f tests/docker-compose-2.yml down
 docker-compose -f tests/docker-compose-2.yml up --build --abort-on-container-exit airflow_init postgres
