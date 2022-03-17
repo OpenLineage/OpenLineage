@@ -52,8 +52,8 @@ apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: "com.diffplug.spotless"
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
 }
 
 archivesBaseName='openlineage-flink'
@@ -76,6 +76,11 @@ dependencies {
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
+    implementation("io.openlineage:openlineage-java:${project.version}"){
+        exclude group: 'com.fasterxml.jackson.core'
+        exclude group: 'com.fasterxml.jackson.datatype'
+    }
+
     implementation "org.apache.flink:flink-java:$flinkVersion"
     implementation "org.apache.flink:flink-streaming-java_2.12:$flinkVersion"
     implementation "org.apache.flink:flink-runtime-web_2.12:$flinkVersion"
@@ -89,7 +94,7 @@ dependencies {
     }
     compileOnly "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
     compileOnly "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
-    compileOnly "com.fasterxml.jackson.module:jackson-module-scala_2.11:${jacksonModuleScalaVersion}"
+    compileOnly "com.fasterxml.jackson.module:jackson-module-scala_2.12:${jacksonModuleScalaVersion}"
 
     testImplementation platform('org.junit:junit-bom:5.7.1')
     testImplementation 'org.hamcrest:hamcrest-library:2.2'
@@ -138,7 +143,7 @@ def commonTestConfiguration = {
     systemProperties = [
             'junit.platform.output.capture.stdout': 'true',
             'junit.platform.output.capture.stderr': 'true',
-            'openlineage.flink.jar': "${archivesBaseName}-${project.version}.jar",
+            '.flink.jar': "${archivesBaseName}-${project.version}.jar",
     ]
     classpath =  project.sourceSets.test.runtimeClasspath
 }
