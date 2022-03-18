@@ -5,10 +5,13 @@ from openlineage.client.transport.transport import Transport, Config, TransportF
 from openlineage.client.transport.factory import DefaultTransportFactory
 from openlineage.client.transport.http import HttpTransport, HttpConfig
 from openlineage.client.transport.kafka import KafkaTransport, KafkaConfig
+from openlineage.client.transport.console import ConsoleTransport
+
 
 _factory = DefaultTransportFactory()
 _factory.register_transport(HttpTransport.kind, HttpTransport)
 _factory.register_transport(KafkaTransport.kind, KafkaTransport)
+_factory.register_transport(ConsoleTransport.kind, ConsoleTransport)
 
 
 def get_default_factory():

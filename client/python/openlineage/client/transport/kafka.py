@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0.
 from typing import Dict
 
 import attr
@@ -17,8 +18,8 @@ class KafkaConfig(Config):
     # Topic on which we should send messages
     topic: str = attr.ib()
 
-    # Flush by default. The process that emits can be killed in some cases - for example
-    # in Airflow integration.
+    # Set to true if Kafka should flush after each event. The process that emits can be killed in
+    # some cases - for example in Airflow integration, so flushing is desirable there.
     flush: bool = attr.ib(default=True)
 
     @classmethod

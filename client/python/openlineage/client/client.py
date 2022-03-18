@@ -32,7 +32,7 @@ class OpenLineageClient:
         transport: Optional[Transport] = None,
     ):
         if url:
-            # Backwards compatibility: if URL is set, use old path to initialize
+            # Backwards compatibility: if URL or options is set, use old path to initialize
             # HTTP transport.
             if not options:
                 options = OpenLineageClientOptions()
@@ -50,13 +50,10 @@ class OpenLineageClient:
         options: OpenLineageClientOptions,
         session: Session
     ):
-        self.transport = HttpTransport(HttpConfig(
+        self.transport = HttpTransport(HttpConfig.from_options(
             url=url,
-            timeout=options.timeout,
-            verify=options.verify,
-            api_key=options.api_key,
-            session=session,
-            adapter=options.adapter
+            options=options,
+            session=session
         ))
 
     def emit(self, event: RunEvent):

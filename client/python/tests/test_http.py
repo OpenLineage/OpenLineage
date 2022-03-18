@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0.
 import datetime
 import uuid
 from unittest.mock import patch
@@ -15,12 +16,15 @@ def test_http_loads_full_config():
         "type": "http",
         "url": "http://backend:5000/api/v1/lineage",
         "verify": False,
-        "api_key": "1500100900",
+        "auth": {
+            "type": "api_key",
+            "api_key": "1500100900"
+        },
     })
 
     assert config.url == "http://backend:5000/api/v1/lineage"
     assert config.verify is False
-    assert config.api_key == "1500100900"
+    assert config.auth.api_key == "1500100900"
     assert isinstance(config.session, Session)
     assert config.adapter is None
 
@@ -32,7 +36,7 @@ def test_http_loads_minimal_config():
     })
     assert config.url == "http://backend:5000/api/v1/lineage"
     assert config.verify is True
-    assert config.api_key is None
+    assert not hasattr(config.auth, 'api_key')
     assert isinstance(config.session, Session)
     assert config.adapter is None
 

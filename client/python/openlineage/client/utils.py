@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: Apache-2.0.
+import inspect
+from typing import Type
+
 import attr
 import importlib
 from warnings import warn
@@ -18,6 +22,15 @@ def try_import_from_string(path: str):
     except ImportError as e:
         warn(e.msg)
         return None
+
+
+def try_import_subclass_from_string(path: str, clazz: Type):
+    subclass = try_import_from_string(path)
+    if not inspect.isclass(subclass) or not issubclass(subclass, clazz):
+        raise TypeError(
+            f"Import path {path} - {str(subclass)} has to be class, and subclass of {str(clazz)}"
+        )
+    return subclass
 
 
 # Filter dictionary to get only those key: value pairs that have

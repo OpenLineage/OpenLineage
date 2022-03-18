@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0.
 from openlineage.client.run import RunEvent
 from openlineage.client.transport import Transport, Config, register_transport
 
