@@ -68,12 +68,12 @@ jobs:
             check_change spec "*"
 
             check_change client/java/ openlineage-java.yml
-            check_change integrations/spark/ openlineage-java.yml
+            check_change integration/spark/ openlineage-java.yml
             check_change client/python/ openlineage-integration-python.yml openlineage-integration-dbt.yml openlineage-integration-dagster.yml openlineage-integration-airflow.yml
-            check_change integrations/common/ openlineage-integration-python.yml openlineage-integration-airflow.yml
-            check_change integrations/airflow/ openlineage-integration-python.yml openlineage-integration-airflow.yml
-            check_change integrations/dagster/ openlineage-integration-python.yml openlineage-integration-dagster.yml
-            check_change integrations/dbt/ openlineage-integration-python.yml openlineage-integration-dbt.yml
+            check_change integration/common/ openlineage-integration-python.yml openlineage-integration-airflow.yml openlineage-integration-dbt.yml
+            check_change integration/airflow/ openlineage-integration-python.yml openlineage-integration-airflow.yml
+            check_change integration/dagster/ openlineage-integration-python.yml openlineage-integration-dagster.yml
+            check_change integration/dbt/ openlineage-integration-python.yml openlineage-integration-dbt.yml
             check_change proxy openlineage-proxy.yml
           fi
           touch workflow_files.txt
