@@ -52,7 +52,6 @@ jobs:
               if [ "$1" == "*" ]; then
                 ls -d $PWD/.circleci/workflows/* > workflow_files.txt
               else
-                rm -f workflow_files.txt
                 for ln in $@; do
                   echo "$PWD/.circleci/workflows/$ln" >> workflow_files.txt
                 done
@@ -77,7 +76,7 @@ jobs:
             check_change proxy openlineage-proxy.yml
           fi
           touch workflow_files.txt
-          FILES=$(cat workflow_files.txt| tr "\n" " ")
+          FILES=$(sort workflow_files.txt | uniq | tr "\n" " ")
 
           # If no changes, generate a no-op build
           if [ "$FILES" == "" ]; then
