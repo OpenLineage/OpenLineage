@@ -64,9 +64,21 @@ public class SqlDWDatabricksVisitor<D extends OpenLineage.Dataset>
     String tableName;
     try {
       tableName = (String) FieldUtils.readField(relation, "tableNameOrSubquery", true);
-    } catch (IllegalAccessException e) {
-      log.warn("Unable to discover SQLDW tableNameOrSubquery property");
-      return Optional.empty();
+    } catch (IllegalAccessException | IllegalArgumentException e) {
+      try {
+        // In the Spark 2 version of this package, they used a more complex
+        // name rather than tableNameOrSubquery
+        log.debug("tableNameOrSubquery is not found. Trying Spark2 field");
+        tableName =
+            (String)
+                FieldUtils.readField(
+                    relation,
+                    "com$databricks$spark$sqldw$SqlDWRelation$$tableNameOrSubquery",
+                    true);
+      } catch (IllegalAccessException | IllegalArgumentException secondException) {
+        log.warn("Unable to discover SQLDW tableNameOrSubquery property");
+        return Optional.empty();
+      }
     }
     // The Synapse connector will return a table name wrapped in double quotes
     // or you could have a query string (e.g. (SELECT * FROM table)q)
