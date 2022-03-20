@@ -178,7 +178,7 @@ pub fn parse_sql(sql: &str) -> Result<QueryMetadata, String> {
 
 // Parses SQL.
 #[pyfunction]
-pub fn parse(sql: &str) -> PyResult<QueryMetadata> {
+fn parse(sql: &str) -> PyResult<QueryMetadata> {
     match parse_sql(sql) {
         Ok(ok) => Ok(ok),
         Err(err) => Err(PyRuntimeError::new_err(err)),
@@ -187,7 +187,8 @@ pub fn parse(sql: &str) -> PyResult<QueryMetadata> {
 
 /// A Python module implemented in Rust.
 #[pymodule]
-pub fn openlineage_sql(_py: Python, m: &PyModule) -> PyResult<()> {
+fn openlineage_sql(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(parse, m)?)?;
+    m.add_class::<QueryMetadata>();
     Ok(())
 }
