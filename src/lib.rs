@@ -4,7 +4,8 @@ use std::collections::HashSet;
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
 use sqlparser::ast::{Query, Select, SetExpr, Statement, TableAlias, TableFactor, With};
-use self::bigquery::BigQueryDialect;
+use sqlparser::dialect::SnowflakeDialect;
+use bigquery::BigQueryDialect;
 use sqlparser::parser::Parser;
 
 #[derive(Debug, PartialEq)]
@@ -132,7 +133,6 @@ fn parse_stmt(stmt: &Statement, context: &mut Context) -> Result<(), String> {
             table: _,
             on: _,
         } => {
-            println!("Tabelka {}", table_name);
             parse_query(source, context)?;
             context.set_output(&table_name.to_string());
             Ok(())
@@ -164,7 +164,6 @@ pub fn parse_sql(sql: &str) -> Result<QueryMetadata, String> {
         Ok(k) => k,
         Err(e) => return Err(e.to_string().to_owned()),
     };
-    println!("AST: {:?}", ast);
 
     if ast.is_empty() {
         return Err(String::from("Empty statement list"));
@@ -179,7 +178,7 @@ pub fn parse_sql(sql: &str) -> Result<QueryMetadata, String> {
 
 // Parses SQL.
 #[pyfunction]
-fn parse(sql: &str) -> PyResult<QueryMetadata> {
+pub fn parse(sql: &str) -> PyResult<QueryMetadata> {
     match parse_sql(sql) {
         Ok(ok) => Ok(ok),
         Err(err) => Err(PyRuntimeError::new_err(err)),
@@ -188,11 +187,7 @@ fn parse(sql: &str) -> PyResult<QueryMetadata> {
 
 /// A Python module implemented in Rust.
 #[pymodule]
-fn openlineage_sql(_py: Python, m: &PyModule) -> PyResult<()> {
+pub fn openlineage_sql(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(parse, m)?)?;
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
 }

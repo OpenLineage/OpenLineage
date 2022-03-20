@@ -9,12 +9,27 @@ keywords = ["sql", "lineage", "openlineage"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
 name = "openlineage_sql"
-crate-type = ["cdylib"]
+crate-type = ["rlib", "cdylib"]
 
 [dependencies]
-pyo3 = "0.15.1"
+pyo3 = {version = "0.16.1", features = ["extension-module", "abi3", "abi3-py37"]}
 sqlparser = {git = "https://github.com/sqlparser-rs/sqlparser-rs", branch="main"}
+
+[build-dependencies]
+pyo3-build-config = {version = "0.16.1"}
 
 [features]
 extension-module = ["pyo3/extension-module"]
 default = ["extension-module"]
+
+[target.x86_64-apple-darwin]
+rustflags = [
+    "-C", "link-arg=-undefined",
+    "-C", "link-arg=dynamic_lookup",
+]
+
+[target.aarch64-apple-darwin]
+rustflags = [
+    "-C", "link-arg=-undefined",
+    "-C", "link-arg=dynamic_lookup",
+]
