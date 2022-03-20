@@ -2,11 +2,11 @@ mod bigquery;
 use std::collections::HashSet;
 use std::fmt::format;
 
+use bigquery::BigQueryDialect;
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
 use sqlparser::ast::{Expr, Query, Select, SetExpr, Statement, TableAlias, TableFactor, With};
 use sqlparser::dialect::SnowflakeDialect;
-use bigquery::BigQueryDialect;
 use sqlparser::parser::Parser;
 
 #[derive(Debug, PartialEq)]
@@ -73,9 +73,11 @@ fn parse_table_factor(table: &TableFactor, context: &mut Context) -> Result<(), 
         TableFactor::Table { name, .. } => {
             context.add_input(&name.to_string());
             Ok(())
-        },
+        }
         TableFactor::Derived {
-            lateral, subquery, alias
+            lateral,
+            subquery,
+            alias,
         } => {
             parse_query(subquery, context)?;
             if let Some(a) = alias {
@@ -83,17 +85,19 @@ fn parse_table_factor(table: &TableFactor, context: &mut Context) -> Result<(), 
             }
             Ok(())
         }
-        _ => {
-            Err(format!("TableFactor other than table or subquery not implemented: {table}"))
-        }
+        _ => Err(format!(
+            "TableFactor other than table or subquery not implemented: {table}"
+        )),
     }
 }
 
 fn get_table_name_from_table_factor(table: &TableFactor) -> Result<String, String> {
-    if let TableFactor::Table { name, ..} = table {
+    if let TableFactor::Table { name, .. } = table {
         Ok(name.to_string())
     } else {
-        Err(format!("Name can be got only from simple table, got {table}"))
+        Err(format!(
+            "Name can be got only from simple table, got {table}"
+        ))
     }
 }
 
@@ -113,7 +117,12 @@ fn parse_setexpr(setexpr: &SetExpr, context: &mut Context) -> Result<(), String>
         SetExpr::Values(_) => (),
         SetExpr::Insert(stmt) => parse_stmt(stmt, context)?,
         SetExpr::Query(q) => parse_query(q, context)?,
-        SetExpr::SetOperation{op, all, left, right} => {
+        SetExpr::SetOperation {
+            op,
+            all,
+            left,
+            right,
+        } => {
             parse_setexpr(&left, context)?;
             parse_setexpr(&right, context)?;
         }
@@ -157,7 +166,7 @@ fn parse_stmt(stmt: &Statement, context: &mut Context) -> Result<(), String> {
             source,
             alias,
             on,
-            clauses
+            clauses,
         } => {
             let table_name = get_table_name_from_table_factor(table)?;
             context.set_output(&table_name);

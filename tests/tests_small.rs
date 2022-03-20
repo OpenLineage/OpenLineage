@@ -1,4 +1,4 @@
-use openlineage_sql::{QueryMetadata, parse_sql};
+use openlineage_sql::{parse_sql, QueryMetadata};
 
 #[test]
 fn insert_values() {
@@ -64,12 +64,14 @@ fn select_from_schema_table() {
 #[test]
 fn select_join() {
     assert_eq!(
-        parse_sql("
+        parse_sql(
+            "
                 SELECT col0, col1, col2
                 FROM table0
                 JOIN table1
                 ON t1.col0 = t2.col0"
-        ).unwrap(),
+        )
+        .unwrap(),
         QueryMetadata {
             inputs: vec![String::from("table0"), String::from("table1")],
             output: None
@@ -80,12 +82,14 @@ fn select_join() {
 #[test]
 fn select_inner_join() {
     assert_eq!(
-        parse_sql("
+        parse_sql(
+            "
                 SELECT col0, col1, col2
                 FROM table0
                 INNER JOIN table1
                 ON t1.col0 = t2.col0"
-        ).unwrap(),
+        )
+        .unwrap(),
         QueryMetadata {
             inputs: vec![String::from("table0"), String::from("table1")],
             output: None
@@ -96,13 +100,14 @@ fn select_inner_join() {
 #[test]
 fn select_left_join() {
     assert_eq!(
-        parse_sql("
+        parse_sql(
+            "
             SELECT col0, col1, col2
             FROM table0
             LEFT JOIN table1
             ON t1.col0 = t2.col0"
         )
-            .unwrap(),
+        .unwrap(),
         QueryMetadata {
             inputs: vec![String::from("table0"), String::from("table1")],
             output: None
@@ -113,7 +118,8 @@ fn select_left_join() {
 #[test]
 fn parse_simple_cte() {
     assert_eq!(
-        parse_sql("
+        parse_sql(
+            "
                 WITH sum_trans as (
                     SELECT user_id, COUNT(*) as cnt, SUM(amount) as balance
                     FROM transactions
@@ -125,7 +131,8 @@ fn parse_simple_cte() {
                     FROM sum_trans
                     WHERE count > 1000 OR balance > 100000;
                 "
-        ).unwrap(),
+        )
+        .unwrap(),
         QueryMetadata {
             inputs: vec![String::from("transactions")],
             output: Some(String::from("potential_fraud"))
@@ -136,7 +143,8 @@ fn parse_simple_cte() {
 #[test]
 fn parse_bugged_cte() {
     assert_eq!(
-        parse_sql("
+        parse_sql(
+            "
                 WITH sum_trans (
                     SELECT user_id, COUNT(*) as cnt, SUM(amount) as balance
                     FROM transactions
@@ -147,14 +155,17 @@ fn parse_bugged_cte() {
                 SELECT user_id, cnt, balance
                 FROM sum_trans
                 WHERE count > 1000 OR balance > 100000;"
-        ).unwrap_err(),
+        )
+        .unwrap_err(),
         "sql parser error: Expected ), found: user_id"
     )
 }
 
 #[test]
 fn parse_recursive_cte() {
-    assert_eq!(parse_sql("
+    assert_eq!(
+        parse_sql(
+            "
             WITH RECURSIVE subordinates AS
             (SELECT employee_id,
                 manager_id,
@@ -168,15 +179,21 @@ fn parse_recursive_cte() {
             INNER JOIN subordinates s ON s.employee_id = e.manager_id)
             INSERT INTO sub_employees (employee_id, manager_id, full_name)
             SELECT employee_id, manager_id, full_name FROM subordinates;
-        ").unwrap(), QueryMetadata{
-        inputs: vec![String::from("employees")],
-        output: Some(String::from("sub_employees"))
-    })
+        "
+        )
+        .unwrap(),
+        QueryMetadata {
+            inputs: vec![String::from("employees")],
+            output: Some(String::from("sub_employees"))
+        }
+    )
 }
 
 #[test]
 fn multiple_ctes() {
-    assert_eq!(parse_sql("
+    assert_eq!(
+        parse_sql(
+            "
             WITH customers AS (
                 SELECT * FROM DEMO_DB.public.stg_customers
             ),
@@ -187,22 +204,35 @@ fn multiple_ctes() {
             FROM customers c
             JOIN orders o
             ON c.id = o.customer_id
-        ").unwrap(), QueryMetadata {
-        inputs: vec![String::from("DEMO_DB.public.stg_customers"), String::from("DEMO_DB.public.stg_orders")],
-        output: None
-    })
+        "
+        )
+        .unwrap(),
+        QueryMetadata {
+            inputs: vec![
+                String::from("DEMO_DB.public.stg_customers"),
+                String::from("DEMO_DB.public.stg_orders")
+            ],
+            output: None
+        }
+    )
 }
 
 #[test]
 fn select_bigquery_excaping() {
-    assert_eq!(parse_sql("
+    assert_eq!(
+        parse_sql(
+            "
             SELECT *
             FROM `random-project`.`dbt_test1`.`source_table`
             WHERE id = 1
-        ").unwrap(), QueryMetadata {
-        inputs: vec![String::from("`random-project`.`dbt_test1`.`source_table`")],
-        output: None
-    })
+        "
+        )
+        .unwrap(),
+        QueryMetadata {
+            inputs: vec![String::from("`random-project`.`dbt_test1`.`source_table`")],
+            output: None
+        }
+    )
 }
 
 #[test]
@@ -222,7 +252,9 @@ fn insert_nested_select() {
 
 #[test]
 fn merge_subquery_when_not_matched() {
-    assert_eq!(parse_sql("
+    assert_eq!(
+        parse_sql(
+            "
         MERGE INTO s.bar as dest
         USING (
             SELECT *
@@ -241,8 +273,12 @@ fn merge_subquery_when_not_matched() {
             stg.A
             ,stg.B
             ,stg.C
-        )").unwrap(), QueryMetadata{
-        inputs: vec![String::from("s.foo")],
-        output: Some(String::from("s.bar"))
-    });
+        )"
+        )
+        .unwrap(),
+        QueryMetadata {
+            inputs: vec![String::from("s.foo")],
+            output: Some(String::from("s.bar"))
+        }
+    );
 }

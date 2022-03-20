@@ -1,4 +1,4 @@
-use openlineage_sql::{QueryMetadata, parse_sql};
+use openlineage_sql::{parse_sql, QueryMetadata};
 
 #[test]
 fn test_tpcds_cte_query() {
@@ -88,7 +88,9 @@ fn test_tpcds_cte_query() {
 
 #[test]
 fn test_tcpds_query1() {
-    assert_eq!(parse_sql("
+    assert_eq!(
+        parse_sql(
+            "
         WITH customer_total_return
              AS (SELECT sr_customer_sk     AS ctr_customer_sk,
                         sr_store_sk        AS ctr_store_sk,
@@ -110,21 +112,26 @@ fn test_tcpds_query1() {
                AND s_state = 'TN'
                AND ctr1.ctr_customer_sk = c_customer_sk
         ORDER  BY c_customer_id
-        LIMIT 100;").unwrap(), QueryMetadata {
-        inputs: vec![
-            String::from("customer"),
-            String::from("date_dim"),
-            String::from("store"),
-            String::from("store_returns"),
-        ],
-        output: None
-    })
+        LIMIT 100;"
+        )
+        .unwrap(),
+        QueryMetadata {
+            inputs: vec![
+                String::from("customer"),
+                String::from("date_dim"),
+                String::from("store"),
+                String::from("store_returns"),
+            ],
+            output: None
+        }
+    )
 }
-
 
 #[test]
 fn test_tcpds_query2() {
-    assert_eq!(parse_sql("
+    assert_eq!(
+        parse_sql(
+            "
     WITH wscs
          AS (SELECT sold_date_sk,
                     sales_price
@@ -202,12 +209,16 @@ fn test_tcpds_query2() {
             WHERE  date_dim.d_week_seq = wswscs.d_week_seq
                    AND d_year = 1998 + 1) z
     WHERE  d_week_seq1 = d_week_seq2 - 53
-    ORDER  BY d_week_seq1;").unwrap(), QueryMetadata {
-        inputs: vec![
-            String::from("catalog_sales"),
-            String::from("date_dim"),
-            String::from("web_sales"),
-        ],
-        output: None
-    })
+    ORDER  BY d_week_seq1;"
+        )
+        .unwrap(),
+        QueryMetadata {
+            inputs: vec![
+                String::from("catalog_sales"),
+                String::from("date_dim"),
+                String::from("web_sales"),
+            ],
+            output: None
+        }
+    )
 }
