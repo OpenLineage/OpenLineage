@@ -1,9 +1,10 @@
 mod bigquery;
 use std::collections::HashSet;
+use std::fmt::format;
 
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
-use sqlparser::ast::{Query, Select, SetExpr, Statement, TableAlias, TableFactor, With};
+use sqlparser::ast::{Expr, Query, Select, SetExpr, Statement, TableAlias, TableFactor, With};
 use sqlparser::dialect::SnowflakeDialect;
 use bigquery::BigQueryDialect;
 use sqlparser::parser::Parser;
@@ -67,26 +68,40 @@ fn parse_with(with: &With, context: &mut Context) -> Result<(), String> {
     Ok(())
 }
 
-fn parse_table_factor(table: &TableFactor) -> Result<String, String> {
-    match &table {
+fn parse_table_factor(table: &TableFactor, context: &mut Context) -> Result<(), String> {
+    match table {
         TableFactor::Table { name, .. } => {
-            Ok(name.to_string())
+            context.add_input(&name.to_string());
+            Ok(())
+        },
+        TableFactor::Derived {
+            lateral, subquery, alias
+        } => {
+            parse_query(subquery, context)?;
+            if let Some(a) = alias {
+                context.add_alias(a);
+            }
+            Ok(())
         }
         _ => {
-            return Err(String::from(
-                "TableFactor other than straight table not implemented",
-            ))
+            Err(format!("TableFactor other than table or subquery not implemented: {table}"))
         }
+    }
+}
+
+fn get_table_name_from_table_factor(table: &TableFactor) -> Result<String, String> {
+    if let TableFactor::Table { name, ..} = table {
+        Ok(name.to_string())
+    } else {
+        Err(format!("Name can be got only from simple table, got {table}"))
     }
 }
 
 fn parse_select(select: &Select, context: &mut Context) -> Result<(), String> {
     for table in &select.from {
-        let table_factor = parse_table_factor(&table.relation)?;
-        context.add_input(&table_factor);
+        parse_table_factor(&table.relation, context)?;
         for join in &table.joins {
-            let join_relation = parse_table_factor(&join.relation)?;
-            context.add_input(&join_relation);
+            parse_table_factor(&join.relation, context)?;
         }
     }
     Ok(())
@@ -144,8 +159,8 @@ fn parse_stmt(stmt: &Statement, context: &mut Context) -> Result<(), String> {
             on,
             clauses
         } => {
-            let table_factor = parse_table_factor(table)?;
-            context.set_output(&table_factor);
+            let table_name = get_table_name_from_table_factor(table)?;
+            context.set_output(&table_name);
             parse_setexpr(source, context)?;
 
             if let Some(a) = alias {
