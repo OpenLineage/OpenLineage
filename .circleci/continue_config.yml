@@ -14,6 +14,9 @@ install_python_client: &install_python_client
 install_integration_common: &install_integration_common
   run: (cd ~/openlineage/integration/common && pip install . --user)
 
+install_sql_parser: &install_sql_parser
+  run: pip install target/wheels/*.whls
+
 param_build_tag: &param_build_tag
     parameters:
       build_tag:
@@ -190,7 +193,10 @@ jobs:
       - image: circleci/python:3.6
     steps:
       - *checkout_project_root
+      - attach_workspace:
+          at: .
       - *install_python_client
+      - *install_sql_parser
       - run: pip install -e .[dev]
       - run: flake8
       - run: pytest --cov=openlineage tests/
@@ -259,6 +265,18 @@ jobs:
           key: v1-integration-spark-{{ .Branch }}-{{ .Revision }}
           paths:
             - ~/.gradle
+
+  integration-test-integration-sql:
+    working_directory: ~/openlineage/integration/sql
+    docker:
+      - image: circleci/python:3.7
+    steps:
+      - *checkout_project_root
+      - attach_workspace:
+          at: .
+      - run: pip install -r requirements.txt
+      - run: pip install target/wheels/openlineage_sql-0.1.0-cp37-abi3-manylinux_2_24_x86_64.whl
+      - run: pytest -vv tests/python
 
   unit-test-integration-airflow-1:
     working_directory: ~/openlineage/integration/airflow
@@ -454,6 +472,24 @@ jobs:
 
           # Publish *.jar
           ./gradlew publish
+
+  build-openlineage-sql:
+    parameters:
+      image:
+        type: string
+    working_directory: ~/openlineage/integration/sql
+    docker:
+      - image: << parameters.image >>
+    steps:
+      - *checkout_project_root
+      - run: /opt/python/cp37-cp37m/bin/python -m pip install maturin
+      - run: curl https://sh.rustup.rs -sSf | sh -s -- -y
+      - run: source $HOME/.cargo/env && /opt/python/cp37-cp37m/bin/maturin build
+      - persist_to_workspace:
+          root: .
+          paths:
+            - ./target/wheels/*.whl
+
 
   workflow_complete:
     working_directory: ~/openlineage
