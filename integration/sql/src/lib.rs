@@ -4,8 +4,9 @@ use std::collections::HashSet;
 use bigquery::BigQueryDialect;
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
-use sqlparser::ast::{Expr, Ident, Query, Select, SelectItem, SetExpr, Statement, TableAlias, TableFactor, With};
-use sqlparser::ast::Expr::Case;
+use sqlparser::ast::{
+    Expr, Ident, Query, Select, SelectItem, SetExpr, Statement, TableAlias, TableFactor, With,
+};
 use sqlparser::parser::Parser;
 
 #[derive(Debug, PartialEq)]
@@ -110,7 +111,7 @@ fn parse_expr(expr: &Expr, context: &mut Context) -> Result<(), String> {
     match expr {
         Expr::Subquery(query) => {
             parse_query(query, context)?;
-        },
+        }
 
         Expr::Identifier(_) => {}
         Expr::CompoundIdentifier(_) => {}
@@ -119,16 +120,20 @@ fn parse_expr(expr: &Expr, context: &mut Context) -> Result<(), String> {
         Expr::IsDistinctFrom(_, _) => {}
         Expr::IsNotDistinctFrom(_, _) => {}
         Expr::InList { .. } => {}
-        Expr::InSubquery { expr, subquery, negated } => {
+        Expr::InSubquery {
+            expr: _,
+            subquery,
+            negated: _,
+        } => {
             parse_query(subquery, context)?;
         }
         Expr::InUnnest { .. } => {}
         Expr::Between { .. } => {}
-        Expr::BinaryOp { left, op, right } => {
+        Expr::BinaryOp { left, op: _, right } => {
             parse_expr(left, context)?;
             parse_expr(right, context)?;
         }
-        Expr::UnaryOp { op, expr } => {
+        Expr::UnaryOp { op: _, expr } => {
             parse_expr(expr, context)?;
         }
         Expr::Cast { .. } => {}
@@ -142,7 +147,12 @@ fn parse_expr(expr: &Expr, context: &mut Context) -> Result<(), String> {
         Expr::TypedString { .. } => {}
         Expr::MapAccess { .. } => {}
         Expr::Function(_) => {}
-        Expr::Case { operand, conditions, results, else_result } => {
+        Expr::Case {
+            operand: _,
+            conditions,
+            results: _,
+            else_result: _,
+        } => {
             for condition in conditions {
                 parse_expr(condition, context)?;
             }
@@ -163,12 +173,12 @@ fn parse_select(select: &Select, context: &mut Context) -> Result<(), String> {
     for projection in &select.projection {
         match projection {
             SelectItem::UnnamedExpr(expr) => {
-                parse_expr(&expr, context);
-            },
+                parse_expr(&expr, context)?;
+            }
             SelectItem::ExprWithAlias { expr, alias } => {
                 parse_expr(&expr, context)?;
                 context.add_ident_alias(&alias);
-            },
+            }
             _ => {}
         }
     }
