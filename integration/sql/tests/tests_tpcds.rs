@@ -579,7 +579,9 @@ fn test_tcpds_query_5() {
 
 #[test]
 fn test_tcpds_query_6() {
-    assert_eq!(parse_sql("
+    assert_eq!(
+        parse_sql(
+            "
         SELECT a.ca_state state,
                Count(*)   cnt
         FROM   customer_address a,
@@ -602,21 +604,27 @@ fn test_tcpds_query_6() {
         HAVING Count(*) >= 10
         ORDER  BY cnt
         LIMIT 100;
-    ").unwrap(), QueryMetadata {
-        inputs: vec![
-            String::from("customer"),
-            String::from("customer_address"),
-            String::from("date_dim"),
-            String::from("item"),
-            String::from("store_sales"),
-        ],
-        output: None
-    })
+    "
+        )
+        .unwrap(),
+        QueryMetadata {
+            inputs: vec![
+                String::from("customer"),
+                String::from("customer_address"),
+                String::from("date_dim"),
+                String::from("item"),
+                String::from("store_sales"),
+            ],
+            output: None
+        }
+    )
 }
 
 #[test]
 fn test_tcpds_query_7() {
-    assert_eq!(parse_sql("
+    assert_eq!(
+        parse_sql(
+            "
         SELECT i_item_id,
                Avg(ss_quantity)    agg1,
                Avg(ss_list_price)  agg2,
@@ -640,21 +648,27 @@ fn test_tcpds_query_7() {
         GROUP  BY i_item_id
         ORDER  BY i_item_id
         LIMIT 100;
-    ").unwrap(), QueryMetadata {
-        inputs: vec![
-            String::from("customer_demographics"),
-            String::from("date_dim"),
-            String::from("item"),
-            String::from("promotion"),
-            String::from("store_sales"),
-        ],
-        output: None
-    })
+    "
+        )
+        .unwrap(),
+        QueryMetadata {
+            inputs: vec![
+                String::from("customer_demographics"),
+                String::from("date_dim"),
+                String::from("item"),
+                String::from("promotion"),
+                String::from("store_sales"),
+            ],
+            output: None
+        }
+    )
 }
 
 #[test]
 fn test_tcpds_query_8() {
-    assert_eq!(parse_sql("
+    assert_eq!(
+        parse_sql(
+            "
         SELECT s_store_name,
                        Sum(ss_net_profit)
         FROM   store_sales,
@@ -697,21 +711,27 @@ fn test_tcpds_query_8() {
         GROUP  BY s_store_name
         ORDER  BY s_store_name
         LIMIT 100;
-    ").unwrap(), QueryMetadata {
-        inputs: vec![
-            String::from("customer"),
-            String::from("customer_address"),
-            String::from("date_dim"),
-            String::from("store"),
-            String::from("store_sales"),
-        ],
-        output: None
-    })
+    "
+        )
+        .unwrap(),
+        QueryMetadata {
+            inputs: vec![
+                String::from("customer"),
+                String::from("customer_address"),
+                String::from("date_dim"),
+                String::from("store"),
+                String::from("store_sales"),
+            ],
+            output: None
+        }
+    )
 }
 
 #[test]
 fn test_tcpds_query_9() {
-    assert_eq!(parse_sql("
+    assert_eq!(
+        parse_sql(
+            "
         SELECT CASE
                  WHEN (SELECT Count(*)
                        FROM   store_sales
@@ -774,11 +794,12 @@ fn test_tcpds_query_9() {
                END bucket5
         FROM   reason
         WHERE  r_reason_sk = 1;
-    ").unwrap(), QueryMetadata {
-        inputs: vec![
-            String::from("reason"),
-            String::from("store_sales"),
-        ],
-        output: None
-    })
+    "
+        )
+        .unwrap(),
+        QueryMetadata {
+            inputs: vec![String::from("reason"), String::from("store_sales"),],
+            output: None
+        }
+    )
 }
