@@ -431,3 +431,280 @@ fn test_tcpds_query_4() {
         }
     )
 }
+
+#[test]
+fn test_tcpds_query_5() {
+    assert_eq!(parse_sql("
+        WITH ssr AS
+        (
+                 SELECT   s_store_id,
+                          Sum(sales_price) AS sales,
+                          Sum(profit)      AS profit,
+                          Sum(return_amt)  AS returns1,
+                          Sum(net_loss)    AS profit_loss
+                 FROM     (
+                                 SELECT ss_store_sk             AS store_sk,
+                                        ss_sold_date_sk         AS date_sk,
+                                        ss_ext_sales_price      AS sales_price,
+                                        ss_net_profit           AS profit,
+                                        Cast(0 AS DECIMAL(7,2)) AS return_amt,
+                                        Cast(0 AS DECIMAL(7,2)) AS net_loss
+                                 FROM   store_sales
+                                 UNION ALL
+                                 SELECT sr_store_sk             AS store_sk,
+                                        sr_returned_date_sk     AS date_sk,
+                                        Cast(0 AS DECIMAL(7,2)) AS sales_price,
+                                        Cast(0 AS DECIMAL(7,2)) AS profit,
+                                        sr_return_amt           AS return_amt,
+                                        sr_net_loss             AS net_loss
+                                 FROM   store_returns ) salesreturns,
+                          date_dim,
+                          store
+                 WHERE    date_sk = d_date_sk
+                 AND      d_date BETWEEN Cast('2002-08-22' AS DATE) AND      (
+                                   Cast('2002-08-22' AS DATE) + INTERVAL '14' day)
+                 AND      store_sk = s_store_sk
+                 GROUP BY s_store_id) , csr AS
+        (
+                 SELECT   cp_catalog_page_id,
+                          sum(sales_price) AS sales,
+                          sum(profit)      AS profit,
+                          sum(return_amt)  AS returns1,
+                          sum(net_loss)    AS profit_loss
+                 FROM     (
+                                 SELECT cs_catalog_page_sk      AS page_sk,
+                                        cs_sold_date_sk         AS date_sk,
+                                        cs_ext_sales_price      AS sales_price,
+                                        cs_net_profit           AS profit,
+                                        cast(0 AS decimal(7,2)) AS return_amt,
+                                        cast(0 AS decimal(7,2)) AS net_loss
+                                 FROM   catalog_sales
+                                 UNION ALL
+                                 SELECT cr_catalog_page_sk      AS page_sk,
+                                        cr_returned_date_sk     AS date_sk,
+                                        cast(0 AS decimal(7,2)) AS sales_price,
+                                        cast(0 AS decimal(7,2)) AS profit,
+                                        cr_return_amount        AS return_amt,
+                                        cr_net_loss             AS net_loss
+                                 FROM   catalog_returns ) salesreturns,
+                          date_dim,
+                          catalog_page
+                 WHERE    date_sk = d_date_sk
+                 AND      d_date BETWEEN cast('2002-08-22' AS date) AND      (
+                                   cast('2002-08-22' AS date) + INTERVAL '14' day)
+                 AND      page_sk = cp_catalog_page_sk
+                 GROUP BY cp_catalog_page_id) , wsr AS
+        (
+                 SELECT   web_site_id,
+                          sum(sales_price) AS sales,
+                          sum(profit)      AS profit,
+                          sum(return_amt)  AS returns1,
+                          sum(net_loss)    AS profit_loss
+                 FROM     (
+                                 SELECT ws_web_site_sk          AS wsr_web_site_sk,
+                                        ws_sold_date_sk         AS date_sk,
+                                        ws_ext_sales_price      AS sales_price,
+                                        ws_net_profit           AS profit,
+                                        cast(0 AS decimal(7,2)) AS return_amt,
+                                        cast(0 AS decimal(7,2)) AS net_loss
+                                 FROM   web_sales
+                                 UNION ALL
+                                 SELECT          ws_web_site_sk          AS wsr_web_site_sk,
+                                                 wr_returned_date_sk     AS date_sk,
+                                                 cast(0 AS decimal(7,2)) AS sales_price,
+                                                 cast(0 AS decimal(7,2)) AS profit,
+                                                 wr_return_amt           AS return_amt,
+                                                 wr_net_loss             AS net_loss
+                                 FROM            web_returns
+                                 LEFT OUTER JOIN web_sales
+                                 ON              (
+                                                                 wr_item_sk = ws_item_sk
+                                                 AND             wr_order_number = ws_order_number) ) salesreturns,
+                          date_dim,
+                          web_site
+                 WHERE    date_sk = d_date_sk
+                 AND      d_date BETWEEN cast('2002-08-22' AS date) AND      (
+                                   cast('2002-08-22' AS date) + INTERVAL '14' day)
+                 AND      wsr_web_site_sk = web_site_sk
+                 GROUP BY web_site_id)
+        SELECT
+                 channel ,
+                 id ,
+                 sum(sales)   AS sales ,
+                 sum(returns1) AS returns1 ,
+                 sum(profit)  AS profit
+        FROM     (
+                        SELECT 'store channel' AS channel ,
+                               'store'
+                                      || s_store_id AS id ,
+                               sales ,
+                               returns1 ,
+                               (profit - profit_loss) AS profit
+                        FROM   ssr
+                        UNION ALL
+                        SELECT 'catalog channel' AS channel ,
+                               'catalog_page'
+                                      || cp_catalog_page_id AS id ,
+                               sales ,
+                               returns1 ,
+                               (profit - profit_loss) AS profit
+                        FROM   csr
+                        UNION ALL
+                        SELECT 'web channel' AS channel ,
+                               'web_site'
+                                      || web_site_id AS id ,
+                               sales ,
+                               returns1 ,
+                               (profit - profit_loss) AS profit
+                        FROM   wsr ) x
+        GROUP BY rollup (channel, id)
+        ORDER BY channel ,
+                 id
+        LIMIT 100; ").unwrap(), QueryMetadata {
+        inputs: vec![
+            String::from("catalog_page"),
+            String::from("catalog_returns"),
+            String::from("catalog_sales"),
+            String::from("date_dim"),
+            String::from("store"),
+            String::from("store_returns"),
+            String::from("store_sales"),
+            String::from("web_returns"),
+            String::from("web_sales"),
+            String::from("web_site")
+        ],
+        output: None
+    })
+}
+
+#[test]
+fn test_tcpds_query_6() {
+    assert_eq!(parse_sql("
+        SELECT a.ca_state state,
+               Count(*)   cnt
+        FROM   customer_address a,
+               customer c,
+               store_sales s,
+               date_dim d,
+               item i
+        WHERE  a.ca_address_sk = c.c_current_addr_sk
+               AND c.c_customer_sk = s.ss_customer_sk
+               AND s.ss_sold_date_sk = d.d_date_sk
+               AND s.ss_item_sk = i.i_item_sk
+               AND d.d_month_seq = (SELECT DISTINCT ( d_month_seq )
+                                    FROM   date_dim
+                                    WHERE  d_year = 1998
+                                           AND d_moy = 7)
+               AND i.i_current_price > 1.2 * (SELECT Avg(j.i_current_price)
+                                              FROM   item j
+                                              WHERE  j.i_category = i.i_category)
+        GROUP  BY a.ca_state
+        HAVING Count(*) >= 10
+        ORDER  BY cnt
+        LIMIT 100;
+    ").unwrap(), QueryMetadata {
+        inputs: vec![
+            String::from("customer"),
+            String::from("customer_address"),
+            String::from("date_dim"),
+            String::from("item"),
+            String::from("store_sales"),
+        ],
+        output: None
+    })
+}
+
+#[test]
+fn test_tcpds_query_7() {
+    assert_eq!(parse_sql("
+        SELECT i_item_id,
+               Avg(ss_quantity)    agg1,
+               Avg(ss_list_price)  agg2,
+               Avg(ss_coupon_amt)  agg3,
+               Avg(ss_sales_price) agg4
+        FROM   store_sales,
+               customer_demographics,
+               date_dim,
+               item,
+               promotion
+        WHERE  ss_sold_date_sk = d_date_sk
+               AND ss_item_sk = i_item_sk
+               AND ss_cdemo_sk = cd_demo_sk
+               AND ss_promo_sk = p_promo_sk
+               AND cd_gender = 'F'
+               AND cd_marital_status = 'W'
+               AND cd_education_status = '2 yr Degree'
+               AND ( p_channel_email = 'N'
+                      OR p_channel_event = 'N' )
+               AND d_year = 1998
+        GROUP  BY i_item_id
+        ORDER  BY i_item_id
+        LIMIT 100;
+    ").unwrap(), QueryMetadata {
+        inputs: vec![
+            String::from("customer_demographics"),
+            String::from("date_dim"),
+            String::from("item"),
+            String::from("promotion"),
+            String::from("store_sales"),
+        ],
+        output: None
+    })
+}
+
+#[test]
+fn test_tcpds_query_8() {
+    assert_eq!(parse_sql("
+        SELECT s_store_name,
+                       Sum(ss_net_profit)
+        FROM   store_sales,
+               date_dim,
+               store,
+               (SELECT ca_zip
+                FROM   (SELECT Substr(ca_zip, 1, 5) ca_zip
+                        FROM   customer_address
+                        WHERE  Substr(ca_zip, 1, 5) IN ( '67436', '26121', '38443',
+                                                         '63157',
+                                                         '68856', '19485', '86425',
+                                                         '26741',
+                                                         '70991', '60899', '63573',
+                                                         '47556',
+                                                         '56193', '93314', '87827',
+                                                         '62017',
+                                                         '85067', '95390', '48091',
+                                                         '43224',
+                                                         '22322', '86959', '68519',
+                                                         '14308',
+                                                         '46501', '81131', '34056',
+                                                         '61991',
+                                                         '19896', '87804', '65774',
+                                                         '92564' )
+                        INTERSECT
+                        SELECT ca_zip
+                        FROM   (SELECT Substr(ca_zip, 1, 5) ca_zip,
+                                       Count(*)             cnt
+                                FROM   customer_address,
+                                       customer
+                                WHERE  ca_address_sk = c_current_addr_sk
+                                       AND c_preferred_cust_flag = 'Y'
+                                GROUP  BY ca_zip
+                                HAVING Count(*) > 10)A1)A2) V1
+        WHERE  ss_store_sk = s_store_sk
+               AND ss_sold_date_sk = d_date_sk
+               AND d_qoy = 2
+               AND d_year = 2000
+               AND ( Substr(s_zip, 1, 2) = Substr(V1.ca_zip, 1, 2) )
+        GROUP  BY s_store_name
+        ORDER  BY s_store_name
+        LIMIT 100;
+    ").unwrap(), QueryMetadata {
+        inputs: vec![
+            String::from("customer"),
+            String::from("customer_address"),
+            String::from("date_dim"),
+            String::from("store"),
+            String::from("store_sales"),
+        ],
+        output: None
+    })
+}
