@@ -4,7 +4,8 @@ use std::collections::HashSet;
 use bigquery::BigQueryDialect;
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
-use sqlparser::ast::{Query, Select, SetExpr, Statement, TableAlias, TableFactor, With};
+use sqlparser::ast::{Expr, Ident, Query, Select, SelectItem, SetExpr, Statement, TableAlias, TableFactor, With};
+use sqlparser::ast::Expr::Case;
 use sqlparser::parser::Parser;
 
 #[derive(Debug, PartialEq)]
@@ -23,8 +24,12 @@ impl Context {
         }
     }
 
-    fn add_alias(&mut self, alias: &TableAlias) {
+    fn add_table_alias(&mut self, alias: &TableAlias) {
         self.aliases.insert(alias.name.value.clone());
+    }
+
+    fn add_ident_alias(&mut self, alias: &Ident) {
+        self.aliases.insert(alias.value.clone());
     }
 
     fn add_input(&mut self, table: &String) {
@@ -60,7 +65,7 @@ impl From<Context> for QueryMetadata {
 
 fn parse_with(with: &With, context: &mut Context) -> Result<(), String> {
     for cte in &with.cte_tables {
-        context.add_alias(&cte.alias);
+        context.add_table_alias(&cte.alias);
         parse_query(&cte.query, context)?;
     }
     Ok(())
@@ -79,7 +84,7 @@ fn parse_table_factor(table: &TableFactor, context: &mut Context) -> Result<(), 
         } => {
             parse_query(subquery, context)?;
             if let Some(a) = alias {
-                context.add_alias(a);
+                context.add_table_alias(a);
             }
             Ok(())
         }
@@ -99,7 +104,75 @@ fn get_table_name_from_table_factor(table: &TableFactor) -> Result<String, Strin
     }
 }
 
+/// Process expression in case where we want to extract lineage (for eg. in subqueries)
+/// This means most enum types are untouched, where in other contexts they'd be processed.
+fn parse_expr(expr: &Expr, context: &mut Context) -> Result<(), String> {
+    match expr {
+        Expr::Subquery(query) => {
+            parse_query(query, context)?;
+        },
+
+        Expr::Identifier(_) => {}
+        Expr::CompoundIdentifier(_) => {}
+        Expr::IsNull(_) => {}
+        Expr::IsNotNull(_) => {}
+        Expr::IsDistinctFrom(_, _) => {}
+        Expr::IsNotDistinctFrom(_, _) => {}
+        Expr::InList { .. } => {}
+        Expr::InSubquery { expr, subquery, negated } => {
+            parse_query(subquery, context)?;
+        }
+        Expr::InUnnest { .. } => {}
+        Expr::Between { .. } => {}
+        Expr::BinaryOp { left, op, right } => {
+            parse_expr(left, context)?;
+            parse_expr(right, context)?;
+        }
+        Expr::UnaryOp { op, expr } => {
+            parse_expr(expr, context)?;
+        }
+        Expr::Cast { .. } => {}
+        Expr::TryCast { .. } => {}
+        Expr::Extract { .. } => {}
+        Expr::Substring { .. } => {}
+        Expr::Trim { .. } => {}
+        Expr::Collate { .. } => {}
+        Expr::Nested(_) => {}
+        Expr::Value(_) => {}
+        Expr::TypedString { .. } => {}
+        Expr::MapAccess { .. } => {}
+        Expr::Function(_) => {}
+        Expr::Case { operand, conditions, results, else_result } => {
+            for condition in conditions {
+                parse_expr(condition, context)?;
+            }
+        }
+        Expr::Exists(_) => {}
+        Expr::ListAgg(_) => {}
+        Expr::GroupingSets(_) => {}
+        Expr::Cube(_) => {}
+        Expr::Rollup(_) => {}
+        Expr::Tuple(_) => {}
+        Expr::ArrayIndex { .. } => {}
+        Expr::Array(_) => {}
+    }
+    Ok(())
+}
+
 fn parse_select(select: &Select, context: &mut Context) -> Result<(), String> {
+    for projection in &select.projection {
+        match projection {
+            SelectItem::UnnamedExpr(expr) => {
+                parse_expr(&expr, context);
+            },
+            SelectItem::ExprWithAlias { expr, alias } => {
+                parse_expr(&expr, context)?;
+                context.add_ident_alias(&alias);
+            },
+            _ => {}
+        }
+    }
+
     for table in &select.from {
         parse_table_factor(&table.relation, context)?;
         for join in &table.joins {
@@ -171,7 +244,7 @@ fn parse_stmt(stmt: &Statement, context: &mut Context) -> Result<(), String> {
             parse_setexpr(source, context)?;
 
             if let Some(a) = alias {
-                context.add_alias(a);
+                context.add_table_alias(a);
             }
 
             Ok(())
