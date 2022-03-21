@@ -1,12 +1,10 @@
 mod bigquery;
 use std::collections::HashSet;
-use std::fmt::format;
 
 use bigquery::BigQueryDialect;
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
-use sqlparser::ast::{Expr, Query, Select, SetExpr, Statement, TableAlias, TableFactor, With};
-use sqlparser::dialect::SnowflakeDialect;
+use sqlparser::ast::{Query, Select, SetExpr, Statement, TableAlias, TableFactor, With};
 use sqlparser::parser::Parser;
 
 #[derive(Debug, PartialEq)]
@@ -75,7 +73,7 @@ fn parse_table_factor(table: &TableFactor, context: &mut Context) -> Result<(), 
             Ok(())
         }
         TableFactor::Derived {
-            lateral,
+            lateral: _,
             subquery,
             alias,
         } => {
@@ -118,8 +116,8 @@ fn parse_setexpr(setexpr: &SetExpr, context: &mut Context) -> Result<(), String>
         SetExpr::Insert(stmt) => parse_stmt(stmt, context)?,
         SetExpr::Query(q) => parse_query(q, context)?,
         SetExpr::SetOperation {
-            op,
-            all,
+            op: _,
+            all: _,
             left,
             right,
         } => {
@@ -165,8 +163,8 @@ fn parse_stmt(stmt: &Statement, context: &mut Context) -> Result<(), String> {
             table,
             source,
             alias,
-            on,
-            clauses,
+            on: _,
+            clauses: _,
         } => {
             let table_name = get_table_name_from_table_factor(table)?;
             context.set_output(&table_name);
@@ -213,6 +211,6 @@ fn parse(sql: &str) -> PyResult<QueryMetadata> {
 #[pymodule]
 fn openlineage_sql(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(parse, m)?)?;
-    m.add_class::<QueryMetadata>();
+    m.add_class::<QueryMetadata>()?;
     Ok(())
 }
