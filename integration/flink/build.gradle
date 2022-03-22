@@ -297,9 +297,9 @@ assemble {
 
 task createVersionProperties(dependsOn: processResources) {
     doLast {
-        File dir = new File("$buildDir/resources/main/io/openlineage/flink/")
+        File dir = new File("$buildDir/resources/main/io/openlineage/flink/agent/client/")
         dir.mkdirs()
-        new File("$buildDir/resources/main/io/openlineage/flink/version.properties").withWriter { w ->
+        new File("$buildDir/resources/main/io/openlineage/flink/agent/client/version.properties").withWriter { w ->
             Properties p = new Properties()
             p['version'] = project.version.toString()
             p.store w, null
