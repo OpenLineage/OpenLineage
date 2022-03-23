@@ -24,6 +24,7 @@ import io.openlineage.spark.agent.lifecycle.plan.LoadDataCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRDDVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.OptimizedCreateHiveTableAsSelectCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.SqlDWDatabricksVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.SqlExecutionRDDVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.TruncateTableCommandVisitor;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -58,6 +59,7 @@ abstract class BaseVisitorFactory implements VisitorFactory {
       OpenLineageContext context) {
     List<PartialFunction<LogicalPlan, List<OpenLineage.InputDataset>>> inputVisitors =
         new ArrayList<>(getCommonVisitors(context, DatasetFactory.input(context.getOpenLineage())));
+    inputVisitors.add(new SqlExecutionRDDVisitor(context));
     return inputVisitors;
   }
 
