@@ -89,7 +89,7 @@ class LogicalPlanRunFacetBuilderTest {
     assertThat(
             builder.isDefinedAt(
                 new SparkListenerJobStart(1, 1L, Seq$.MODULE$.empty(), new Properties())))
-        .isFalse();
+        .isTrue();
   }
 
   @Test
