@@ -1,4 +1,4 @@
-use openlineage_sql::{parse_sql, QueryMetadata};
+use openlineage_sql::{parse_sql, SqlMeta};
 
 #[test]
 fn test_tpcds_cte_query() {
@@ -76,13 +76,13 @@ fn test_tpcds_cte_query() {
                     t_s_secyear.customer_last_name,
                     t_s_secyear.customer_preferred_cust_flag
         LIMIT 100;
-        ").unwrap(), QueryMetadata {
-        inputs: vec![
+        ").unwrap(), SqlMeta {
+        in_tables: vec![
             String::from("date_dim"),
             String::from("src.customer"),
             String::from("store_sales"),
         ],
-        output: None,
+        out_tables: None,
     })
 }
 
@@ -115,14 +115,14 @@ fn test_tcpds_query_1() {
         LIMIT 100;"
         )
         .unwrap(),
-        QueryMetadata {
-            inputs: vec![
+        SqlMeta {
+            in_tables: vec![
                 String::from("customer"),
                 String::from("date_dim"),
                 String::from("store"),
                 String::from("store_returns"),
             ],
-            output: None
+            out_tables: None
         }
     )
 }
@@ -212,13 +212,13 @@ fn test_tcpds_query_2() {
     ORDER  BY d_week_seq1;"
         )
         .unwrap(),
-        QueryMetadata {
-            inputs: vec![
+        SqlMeta {
+            in_tables: vec![
                 String::from("catalog_sales"),
                 String::from("date_dim"),
                 String::from("web_sales"),
             ],
-            output: None
+            out_tables: None
         }
     )
 }
@@ -249,13 +249,13 @@ fn test_tcpds_query_3() {
         "
         )
         .unwrap(),
-        QueryMetadata {
-            inputs: vec![
+        SqlMeta {
+            in_tables: vec![
                 String::from("date_dim"),
                 String::from("item"),
                 String::from("store_sales"),
             ],
-            output: None
+            out_tables: None
         }
     )
 }
@@ -419,15 +419,15 @@ fn test_tcpds_query_4() {
         "
         )
         .unwrap(),
-        QueryMetadata {
-            inputs: vec![
+        SqlMeta {
+            in_tables: vec![
                 String::from("catalog_sales"),
                 String::from("customer"),
                 String::from("date_dim"),
                 String::from("store_sales"),
                 String::from("web_sales")
             ],
-            output: None
+            out_tables: None
         }
     )
 }
@@ -560,8 +560,8 @@ fn test_tcpds_query_5() {
         GROUP BY rollup (channel, id)
         ORDER BY channel ,
                  id
-        LIMIT 100; ").unwrap(), QueryMetadata {
-        inputs: vec![
+        LIMIT 100; ").unwrap(), SqlMeta {
+        in_tables: vec![
             String::from("catalog_page"),
             String::from("catalog_returns"),
             String::from("catalog_sales"),
@@ -573,7 +573,7 @@ fn test_tcpds_query_5() {
             String::from("web_sales"),
             String::from("web_site")
         ],
-        output: None
+        out_tables: None
     })
 }
 
@@ -607,15 +607,15 @@ fn test_tcpds_query_6() {
     "
         )
         .unwrap(),
-        QueryMetadata {
-            inputs: vec![
+        SqlMeta {
+            in_tables: vec![
                 String::from("customer"),
                 String::from("customer_address"),
                 String::from("date_dim"),
                 String::from("item"),
                 String::from("store_sales"),
             ],
-            output: None
+            out_tables: None
         }
     )
 }
@@ -651,15 +651,15 @@ fn test_tcpds_query_7() {
     "
         )
         .unwrap(),
-        QueryMetadata {
-            inputs: vec![
+        SqlMeta {
+            in_tables: vec![
                 String::from("customer_demographics"),
                 String::from("date_dim"),
                 String::from("item"),
                 String::from("promotion"),
                 String::from("store_sales"),
             ],
-            output: None
+            out_tables: None
         }
     )
 }
@@ -714,15 +714,15 @@ fn test_tcpds_query_8() {
     "
         )
         .unwrap(),
-        QueryMetadata {
-            inputs: vec![
+        SqlMeta {
+            in_tables: vec![
                 String::from("customer"),
                 String::from("customer_address"),
                 String::from("date_dim"),
                 String::from("store"),
                 String::from("store_sales"),
             ],
-            output: None
+            out_tables: None
         }
     )
 }
@@ -797,9 +797,9 @@ fn test_tcpds_query_9() {
     "
         )
         .unwrap(),
-        QueryMetadata {
-            inputs: vec![String::from("reason"), String::from("store_sales"),],
-            output: None
+        SqlMeta {
+            in_tables: vec![String::from("reason"), String::from("store_sales"),],
+            out_tables: None
         }
     )
 }

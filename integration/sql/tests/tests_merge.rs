@@ -1,4 +1,4 @@
-use openlineage_sql::{parse_sql, QueryMetadata};
+use openlineage_sql::{parse_sql, SqlMeta};
 
 #[test]
 fn merge_subquery_when_not_matched() {
@@ -26,9 +26,9 @@ fn merge_subquery_when_not_matched() {
         )"
         )
         .unwrap(),
-        QueryMetadata {
-            inputs: vec![String::from("s.foo")],
-            output: Some(String::from("s.bar"))
+        SqlMeta {
+            in_tables: vec![String::from("s.foo")],
+            out_tables: Some(String::from("s.bar"))
         }
     );
 }

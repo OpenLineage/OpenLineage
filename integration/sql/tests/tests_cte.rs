@@ -1,4 +1,4 @@
-use openlineage_sql::{parse_sql, QueryMetadata};
+use openlineage_sql::{parse_sql, SqlMeta};
 
 #[test]
 fn parse_simple_cte() {
@@ -18,9 +18,9 @@ fn parse_simple_cte() {
                 "
         )
         .unwrap(),
-        QueryMetadata {
-            inputs: vec![String::from("transactions")],
-            output: Some(String::from("potential_fraud"))
+        SqlMeta {
+            in_tables: vec![String::from("transactions")],
+            out_tables: Some(String::from("potential_fraud"))
         }
     );
 }
@@ -67,9 +67,9 @@ fn parse_recursive_cte() {
         "
         )
         .unwrap(),
-        QueryMetadata {
-            inputs: vec![String::from("employees")],
-            output: Some(String::from("sub_employees"))
+        SqlMeta {
+            in_tables: vec![String::from("employees")],
+            out_tables: Some(String::from("sub_employees"))
         }
     )
 }
@@ -92,12 +92,12 @@ fn multiple_ctes() {
         "
         )
         .unwrap(),
-        QueryMetadata {
-            inputs: vec![
+        SqlMeta {
+            in_tables: vec![
                 String::from("DEMO_DB.public.stg_customers"),
                 String::from("DEMO_DB.public.stg_orders")
             ],
-            output: None
+            out_tables: None
         }
     )
 }

@@ -9,7 +9,7 @@ import attr
 
 from openlineage.client.facet import SqlJobFacet
 from openlineage.common.provider.bigquery import BigQueryDatasetsProvider, BigQueryErrorRunFacet
-from openlineage.common.sql import SqlParser
+from openlineage.common.sql import parse
 
 from openlineage.airflow.extractors.base import (
     BaseExtractor,

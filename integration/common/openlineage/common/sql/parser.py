@@ -7,7 +7,7 @@ import sqlparse
 from sqlparse.sql import T, TokenList, Parenthesis, Identifier, IdentifierList
 from sqlparse.tokens import Punctuation
 
-from openlineage.common.models import DbTableName
+from openlineage.common.models import DbTableMeta
 
 log = logging.getLogger(__name__)
 
@@ -38,7 +38,7 @@ def _get_tables(
         tokens,
         idx,
         default_schema: Optional[str] = None
-) -> Tuple[int, List[DbTableName]]:
+) -> Tuple[int, List[DbTableMeta]]:
     # Extract table identified by preceding SQL keyword at '_is_in_table'
     def parse_ident(ident: Identifier) -> str:
         # Extract table name from possible schema.table naming
@@ -84,22 +84,22 @@ def _get_tables(
     else:
         tables.append(parse_ident(token))
 
-    return idx, [DbTableName(table) for table in tables]
+    return idx, [DbTableMeta(table) for table in tables]
 
 
 class SqlMeta:
-    def __init__(self, in_tables: List[DbTableName], out_tables: List[DbTableName]):
+    def __init__(self, in_tables: List[DbTableMeta], out_tables: List[DbTableMeta]):
         self.in_tables = in_tables
         self.out_tables = out_tables
 
     def __repr__(self):
         return f"SqlMeta({self.in_tables!r},{self.out_tables!r})"
 
-    def add_in_tables(self, in_tables: List[DbTableName]):
+    def add_in_tables(self, in_tables: List[DbTableMeta]):
         for in_table in in_tables:
             self.in_tables.append(in_table)
 
-    def add_out_tables(self, out_tables: List[DbTableName]):
+    def add_out_tables(self, out_tables: List[DbTableMeta]):
         for out_table in out_tables:
             self.out_tables.append(out_table)
 
@@ -115,29 +115,6 @@ class SqlParser:
         self.ctes = set()
         self.intables = set()
         self.outtables = set()
-
-    @classmethod
-    def parse(cls, sql: str, default_schema: Optional[str] = None) -> SqlMeta:
-        if sql is None:
-            raise ValueError("A sql statement must be provided.")
-
-        # Tokenize the SQL statement
-        sql_statements = sqlparse.parse(sql)
-
-        sql_parser = cls(default_schema)
-        sql_meta = SqlMeta([], [])
-
-        for sql_statement in sql_statements:
-            tokens = TokenList(sql_statement.tokens)
-            log.debug(f"Successfully tokenized sql statement: {tokens}")
-
-            result = sql_parser.recurse(tokens)
-
-            # Add the in / out tables (if any) to the sql meta
-            sql_meta.add_in_tables(result.in_tables)
-            sql_meta.add_out_tables(result.out_tables)
-
-        return sql_meta
 
     def recurse(self, tokens: TokenList) -> SqlMeta:
         in_tables, out_tables = set(), set()
@@ -191,3 +168,26 @@ class SqlParser:
             # Parse CTE using recursion.
             return cte_name.value, self.recurse(TokenList(parens.tokens)).in_tables
         raise RuntimeError(f"Parens {parens} are not Parenthesis at index {gidx}")
+
+
+def parse(sql: str, default_schema: Optional[str] = None) -> SqlMeta:
+    if sql is None:
+        raise ValueError("A sql statement must be provided.")
+
+    # Tokenize the SQL statement
+    sql_statements = sqlparse.parse(sql)
+
+    sql_parser = SqlParser(default_schema)
+    sql_meta = SqlMeta([], [])
+
+    for sql_statement in sql_statements:
+        tokens = TokenList(sql_statement.tokens)
+        log.debug(f"Successfully tokenized sql statement: {tokens}")
+
+        result = sql_parser.recurse(tokens)
+
+        # Add the in / out tables (if any) to the sql meta
+        sql_meta.add_in_tables(result.in_tables)
+        sql_meta.add_out_tables(result.out_tables)
+
+    return sql_meta

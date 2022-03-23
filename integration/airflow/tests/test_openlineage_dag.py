@@ -19,7 +19,7 @@ from airflow.utils.state import State
 from airflow.version import version as AIRFLOW_VERSION
 from openlineage.common.dataset import Source, Dataset
 from openlineage.common.models import (
-    DbTableName,
+    DbTableMeta,
     DbTableSchema,
     DbColumn
 )
@@ -384,7 +384,7 @@ class TestFixtureDummyExtractorOnComplete(BaseExtractor):
         inputs = [
             Dataset.from_table_schema(self.source, DbTableSchema(
                 schema_name='schema',
-                table_name=DbTableName('extract_on_complete_input1'),
+                table_name=DbTableMeta('extract_on_complete_input1'),
                 columns=[DbColumn(
                     name='field1',
                     type='text',

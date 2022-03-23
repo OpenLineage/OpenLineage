@@ -12,7 +12,7 @@ from airflow.version import version as AIRFLOW_VERSION
 from pkg_resources import parse_version
 
 from openlineage.common.models import (
-    DbTableName,
+    DbTableMeta,
     DbTableSchema,
     DbColumn
 )
@@ -24,7 +24,7 @@ CONN_URI = 'snowflake://localhost:5432/food_delivery'
 
 DB_NAME = 'FOOD_DELIVERY'
 DB_SCHEMA_NAME = 'PUBLIC'
-DB_TABLE_NAME = DbTableName('DISCOUNTS')
+DB_TABLE_NAME = DbTableMeta('DISCOUNTS')
 DB_TABLE_COLUMNS = [
     DbColumn(
         name='ID',

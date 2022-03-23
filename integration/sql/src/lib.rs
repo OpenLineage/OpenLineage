@@ -45,21 +45,60 @@ impl Context {
 }
 
 #[pyclass]
-#[derive(Debug, PartialEq)]
-pub struct QueryMetadata {
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct DbTableMeta {
     #[pyo3(get)]
-    pub inputs: Vec<String>,
+    database: Option<String>,
     #[pyo3(get)]
-    pub output: Option<String>,
+    schema: Option<String>,
+    #[pyo3(get)]
+    name: String,
+    // ..columns
 }
 
-impl From<Context> for QueryMetadata {
+#[pymethods]
+impl DbTableMeta {
+    #[new]
+    fn new(name: String) -> Self {
+        let mut split = name.split(".").map(|x| String::from(x)).collect::<Vec<String>>();
+        split.reverse();
+        DbTableMeta {
+            database: split.get(2).cloned(),
+            schema: split.get(1).cloned(),
+            name: split.get(0).unwrap().clone(),
+        }
+    }
+    pub fn qualified_name(&self) -> String {
+        format!(
+            "{}{}{}",
+            self.database.as_ref().unwrap_or(&String::from("")),
+            self.schema.as_ref().unwrap_or(&String::from("")),
+            self.name
+        )
+    }
+}
+
+#[pyclass]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct SqlMeta {
+    #[pyo3(get)]
+    pub in_tables: Vec<DbTableMeta>,
+    #[pyo3(get)]
+    pub out_tables: Vec<DbTableMeta>,
+}
+
+impl From<Context> for SqlMeta {
     fn from(ctx: Context) -> Self {
         let mut inputs: Vec<String> = ctx.inputs.into_iter().collect();
+        let outputs: Vec<String> = if ctx.output.is_some() {
+            vec![ctx.output.unwrap()]
+        } else {
+            vec![]
+        };
         inputs.sort();
-        QueryMetadata {
-            inputs: inputs,
-            output: ctx.output,
+        SqlMeta {
+            in_tables: inputs.iter().map(|x| DbTableMeta::new(x.clone())).collect(),
+            out_tables: outputs.iter().map(|x| DbTableMeta::new(x.clone())).collect()
         }
     }
 }
@@ -263,7 +302,7 @@ fn parse_stmt(stmt: &Statement, context: &mut Context) -> Result<(), String> {
     }
 }
 
-pub fn parse_sql(sql: &str) -> Result<QueryMetadata, String> {
+pub fn parse_sql(sql: &str) -> Result<SqlMeta, String> {
     let dialect = BigQueryDialect;
     let ast = match Parser::parse_sql(&dialect, sql) {
         Ok(k) => k,
@@ -278,12 +317,12 @@ pub fn parse_sql(sql: &str) -> Result<QueryMetadata, String> {
     let stmt = ast.first();
 
     parse_stmt(stmt.unwrap(), &mut context)?;
-    Ok(QueryMetadata::from(context))
+    Ok(SqlMeta::from(context))
 }
 
 // Parses SQL.
 #[pyfunction]
-fn parse(sql: &str) -> PyResult<QueryMetadata> {
+fn parse(sql: &str) -> PyResult<SqlMeta> {
     match parse_sql(sql) {
         Ok(ok) => Ok(ok),
         Err(err) => Err(PyRuntimeError::new_err(err)),
@@ -294,6 +333,7 @@ fn parse(sql: &str) -> PyResult<QueryMetadata> {
 #[pymodule]
 fn openlineage_sql(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(parse, m)?)?;
-    m.add_class::<QueryMetadata>()?;
+    m.add_class::<SqlMeta>()?;
+    m.add_class::<DbTableMeta>()?;
     Ok(())
 }

@@ -10,7 +10,7 @@ from typing import Tuple, Optional, Dict, List
 from google.cloud.bigquery import Client
 
 from openlineage.common.dataset import Dataset, Source
-from openlineage.common.models import DbTableSchema, DbColumn, DbTableName
+from openlineage.common.models import DbTableSchema, DbColumn, DbTableMeta
 from openlineage.common.schema import GITHUB_LOCATION
 from openlineage.common.utils import get_from_nullable_chain
 from openlineage.client.facet import BaseFacet, OutputStatisticsOutputDatasetFacet, \
@@ -257,7 +257,7 @@ class BigQueryDatasetsProvider:
         return DbTableSchema(
             schema_name=table.get('tableReference').get('projectId') + '.' +
             table.get('tableReference').get('datasetId'),
-            table_name=DbTableName(table.get('tableReference').get('tableId')),
+            table_name=DbTableMeta(table.get('tableReference').get('tableId')),
             columns=columns
         )
 

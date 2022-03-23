@@ -20,7 +20,7 @@ class DbColumn:
                           {self.description!r},{self.ordinal_position!r})"
 
 
-class DbTableName:
+class DbTableMeta:
     def __init__(self, value: str):
         parts = value.strip().split('.')
         if len(parts) > 3:
@@ -88,7 +88,7 @@ class DbTableName:
 
 
 class DbTableSchema:
-    def __init__(self, schema_name: str, table_name: DbTableName,
+    def __init__(self, schema_name: str, table_name: DbTableMeta,
                  columns: [DbColumn]):
         self.schema_name = schema_name
         self.table_name = table_name

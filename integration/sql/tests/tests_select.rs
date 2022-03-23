@@ -1,12 +1,12 @@
-use openlineage_sql::{parse_sql, QueryMetadata};
+use openlineage_sql::{parse_sql, SqlMeta};
 
 #[test]
 fn select_simple() {
     assert_eq!(
         parse_sql("SELECT * FROM table0;").unwrap(),
-        QueryMetadata {
-            inputs: vec![String::from("table0")],
-            output: None
+        SqlMeta {
+            in_tables: vec![String::from("table0")],
+            out_tables: None
         }
     )
 }
@@ -14,9 +14,9 @@ fn select_simple() {
 fn select_from_schema_table() {
     assert_eq!(
         parse_sql("SELECT * FROM schema0.table0;").unwrap(),
-        QueryMetadata {
-            inputs: vec![String::from("schema0.table0")],
-            output: None
+        SqlMeta {
+            in_tables: vec![String::from("schema0.table0")],
+            out_tables: None
         }
     )
 }
@@ -31,9 +31,9 @@ fn select_join() {
                 ON t1.col0 = t2.col0"
         )
         .unwrap(),
-        QueryMetadata {
-            inputs: vec![String::from("table0"), String::from("table1")],
-            output: None
+        SqlMeta {
+            in_tables: vec![String::from("table0"), String::from("table1")],
+            out_tables: None
         }
     )
 }
@@ -49,9 +49,9 @@ fn select_inner_join() {
                 ON t1.col0 = t2.col0"
         )
         .unwrap(),
-        QueryMetadata {
-            inputs: vec![String::from("table0"), String::from("table1")],
-            output: None
+        SqlMeta {
+            in_tables: vec![String::from("table0"), String::from("table1")],
+            out_tables: None
         }
     )
 }
@@ -67,9 +67,9 @@ fn select_left_join() {
             ON t1.col0 = t2.col0"
         )
         .unwrap(),
-        QueryMetadata {
-            inputs: vec![String::from("table0"), String::from("table1")],
-            output: None
+        SqlMeta {
+            in_tables: vec![String::from("table0"), String::from("table1")],
+            out_tables: None
         }
     )
 }
@@ -85,9 +85,9 @@ fn select_bigquery_excaping() {
         "
         )
         .unwrap(),
-        QueryMetadata {
-            inputs: vec![String::from("`random-project`.`dbt_test1`.`source_table`")],
-            output: None
+        SqlMeta {
+            in_tables: vec![String::from("`random-project`.`dbt_test1`.`source_table`")],
+            out_tables: None
         }
     )
 }
