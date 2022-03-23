@@ -77,6 +77,7 @@ def make_pipeline_run_with_external_pipeline_origin(
         repository_name: str,
 ):
     return PipelineRun(
+        pipeline_name="test",
         execution_plan_snapshot_id="123",
         external_pipeline_origin=ExternalPipelineOrigin(
             external_repository_origin=ExternalRepositoryOrigin(
