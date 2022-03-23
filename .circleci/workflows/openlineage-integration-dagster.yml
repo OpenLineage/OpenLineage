@@ -3,7 +3,7 @@ workflows:
     jobs:
       - unit-test-integration-dagster:
           requires:
-            - build-client-python
+            - unit-test-client-python
       - build-integration-dagster:
           filters:
             branches:
