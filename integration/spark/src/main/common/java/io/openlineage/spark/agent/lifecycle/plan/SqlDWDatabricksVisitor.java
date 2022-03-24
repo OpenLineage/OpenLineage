@@ -4,6 +4,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.List;
@@ -34,6 +35,9 @@ public class SqlDWDatabricksVisitor<D extends OpenLineage.Dataset>
   private static final Pattern dbJdbcPattern = Pattern.compile("database=([^;]*);?");
   private static final Pattern serverJdbcPattern = Pattern.compile("jdbc:([^;]*);?");
   private static final String DATABRICKS_CLASS_NAME = "com.databricks.spark.sqldw.SqlDWRelation";
+  private static final String SPARK3_TABLE_FIELD_NAME = "tableNameOrSubquery";
+  private static final String SPARK2_TABLE_FIELD_NAME =
+      "com$databricks$spark$sqldw$SqlDWRelation$$tableNameOrSubquery";
 
   public SqlDWDatabricksVisitor(OpenLineageContext context, DatasetFactory<D> factory) {
     super(context);
@@ -61,25 +65,29 @@ public class SqlDWDatabricksVisitor<D extends OpenLineage.Dataset>
   }
 
   private Optional<String> getName(BaseRelation relation) {
-    String tableName;
+    String tableName = "";
+    // The Databricks SqlDwRelation has a tableNameOrSubQuery field that
+    // is defined as com$databricks$spark$sqldw$SqlDWRelation$$tableNameOrSubquery
+    // in their Spark 2 implementation. Therefore, we have to check for either
+    // of those fields to extract the
     try {
-      tableName = (String) FieldUtils.readField(relation, "tableNameOrSubquery", true);
-    } catch (IllegalAccessException | IllegalArgumentException e) {
-      try {
-        // In the Spark 2 version of this package, they used a more complex
-        // name rather than tableNameOrSubquery
-        log.debug("tableNameOrSubquery is not found. Trying Spark2 field");
-        tableName =
-            (String)
-                FieldUtils.readField(
-                    relation,
-                    "com$databricks$spark$sqldw$SqlDWRelation$$tableNameOrSubquery",
-                    true);
-      } catch (IllegalAccessException | IllegalArgumentException secondException) {
-        log.warn("Unable to discover SQLDW tableNameOrSubquery property");
-        return Optional.empty();
+      List<Field> relationFields = FieldUtils.getAllFieldsList(relation.getClass());
+      for (Field f : relationFields) {
+        if (f.getName().equals(SPARK3_TABLE_FIELD_NAME)) {
+          tableName = (String) FieldUtils.readField(relation, SPARK3_TABLE_FIELD_NAME, true);
+        } else if (f.getName().equals(SPARK2_TABLE_FIELD_NAME)) {
+          tableName = (String) FieldUtils.readField(relation, SPARK2_TABLE_FIELD_NAME, true);
+        }
       }
+    } catch (IllegalAccessException | IllegalArgumentException e) {
+      log.warn("Unable to discover SQLDW tableNameOrSubquery property");
+      return Optional.empty();
     }
+    if (tableName == "") {
+      log.warn("Unable to discover SQLDW tableNameOrSubquery property");
+      return Optional.empty();
+    }
+
     // The Synapse connector will return a table name wrapped in double quotes
     // or you could have a query string (e.g. (SELECT * FROM table)q)
     if (tableName.startsWith("\"") && tableName.endsWith("\"")) {
