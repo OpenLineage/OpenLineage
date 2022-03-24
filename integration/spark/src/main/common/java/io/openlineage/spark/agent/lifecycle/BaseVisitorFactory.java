@@ -59,7 +59,9 @@ abstract class BaseVisitorFactory implements VisitorFactory {
       OpenLineageContext context) {
     List<PartialFunction<LogicalPlan, List<OpenLineage.InputDataset>>> inputVisitors =
         new ArrayList<>(getCommonVisitors(context, DatasetFactory.input(context.getOpenLineage())));
-    inputVisitors.add(new SqlExecutionRDDVisitor(context));
+    if (VisitorFactory.classPresent("org.apache.spark.sql.execution.SQLExecutionRDD")) {
+      inputVisitors.add(new SqlExecutionRDDVisitor(context));
+    }
     return inputVisitors;
   }
 
