@@ -60,14 +60,14 @@ public class SaveIntoDataSourceCommandVisitor
   }
 
   public List<OutputDataset> apply(SaveIntoDataSourceCommand cmd) {
-    return Collections.emptyList();
+    // intentionally unimplemented
+    throw new UnsupportedOperationException("apply(LogicalPlay) is not implemented");
   }
 
   @Override
-  public List<OpenLineage.OutputDataset> apply(SparkListenerEvent event) {
+  public List<OpenLineage.OutputDataset> apply(
+      SparkListenerEvent event, SaveIntoDataSourceCommand command) {
     BaseRelation relation;
-    SaveIntoDataSourceCommand command =
-        (SaveIntoDataSourceCommand) context.getQueryExecution().get().optimizedPlan();
 
     // Kafka has some special handling because the Source and Sink relations require different
     // options. A KafkaRelation for writes uses the "topic" option, while the same relation for

@@ -7,6 +7,7 @@ import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.function.BiConsumer;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
+import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 
@@ -26,6 +27,7 @@ public class LogicalPlanRunFacetBuilder extends CustomFacetBuilder<Object, Logic
   public boolean isDefinedAt(Object x) {
     return (x instanceof SparkListenerSQLExecutionEnd
             || x instanceof SparkListenerSQLExecutionStart
+            || x instanceof SparkListenerJobStart
             || x instanceof SparkListenerJobEnd)
         && openLineageContext.getQueryExecution().isPresent();
   }

@@ -243,7 +243,8 @@ def commonTestConfiguration = {
             'junit.platform.output.capture.stderr': 'true',
             'spark.version'                       : project.getProperty('spark.version'),
             'openlineage.spark.jar': "${archivesBaseName}-${project.version}.jar",
-            'kafka.package.version': kafkaPackage(scalaVersion, project.getProperty('spark.version'))
+            'kafka.package.version': kafkaPackage(scalaVersion, project.getProperty('spark.version')),
+            'mockserver.logLevel': 'ERROR'
     ]
     classpath =  project.sourceSets.test.runtimeClasspath +
             (isSpark3 ? configurations.spark3Test : configurations.spark2Test)

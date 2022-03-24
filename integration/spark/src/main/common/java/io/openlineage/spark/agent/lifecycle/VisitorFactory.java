@@ -18,6 +18,16 @@ import scala.PartialFunction;
  */
 interface VisitorFactory {
 
+  static boolean classPresent(String className) {
+    try {
+      Thread.currentThread().getContextClassLoader().loadClass(className);
+      return true;
+    } catch (Exception e) {
+      // swallow
+    }
+    return false;
+  }
+
   List<PartialFunction<LogicalPlan, List<OpenLineage.InputDataset>>> getInputVisitors(
       OpenLineageContext context);
 

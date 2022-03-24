@@ -41,9 +41,7 @@ public class AppendDataDatasetBuilder extends AbstractQueryPlanOutputDatasetBuil
   }
 
   @Override
-  public List<OpenLineage.OutputDataset> apply(SparkListenerEvent event) {
-    // Needs to cast to logical plan despite IntelliJ claiming otherwise.
-    AppendData appendData = (AppendData) context.getQueryExecution().get().optimizedPlan();
+  public List<OpenLineage.OutputDataset> apply(SparkListenerEvent event, AppendData appendData) {
     LogicalPlan logicalPlan = (LogicalPlan) (appendData).table();
 
     return delegate(
