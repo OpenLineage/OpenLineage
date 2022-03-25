@@ -1,51 +1,95 @@
 mod bigquery;
-use std::collections::HashSet;
 
-use bigquery::BigQueryDialect;
-use pyo3::exceptions::PyRuntimeError;
+use std::collections::hash_map::DefaultHasher;
+use std::collections::HashSet;
+use std::hash::{Hash, Hasher};
+
+pub use bigquery::BigQueryDialect;
+use pyo3::basic::CompareOp;
+use pyo3::exceptions::{PyRuntimeError, PyTypeError};
 use pyo3::prelude::*;
 use sqlparser::ast::{
     Expr, Ident, Query, Select, SelectItem, SetExpr, Statement, TableAlias, TableFactor, With,
 };
+use sqlparser::dialect::{Dialect, PostgreSqlDialect, SnowflakeDialect};
 use sqlparser::parser::Parser;
 
-#[derive(Debug, PartialEq)]
+pub trait CanonicalDialect: Dialect {
+    fn canonical_name(&mut self, name: String) -> String;
+    fn as_base(&self) -> &dyn Dialect;
+}
+
+impl<T: Dialect> CanonicalDialect for T {
+    fn canonical_name(&mut self, name: String) -> String {
+        if self.is_delimited_identifier_start(name.chars().next().unwrap()) {
+            let mut chars = name.chars();
+            chars.next();
+            chars.next_back();
+            chars.as_str().to_string()
+        } else {
+            name
+        }
+    }
+    fn as_base(&self) -> &dyn Dialect {
+        self
+    }
+}
+
+#[derive(Debug)]
 struct Context {
-    aliases: HashSet<String>,
-    inputs: HashSet<String>,
-    output: Option<String>,
+    aliases: HashSet<DbTableMeta>,
+    inputs: HashSet<DbTableMeta>,
+    output: Option<DbTableMeta>,
+    default_schema: Option<String>,
+    dialect: Box<dyn CanonicalDialect>,
 }
 
 impl Context {
-    fn new() -> Context {
+    fn default() -> Context {
         Context {
             aliases: HashSet::new(),
             inputs: HashSet::new(),
             output: None,
+            default_schema: None,
+            dialect: Box::new(SnowflakeDialect),
+        }
+    }
+
+    fn new(dialect: Box<dyn CanonicalDialect>, default_schema: Option<&str>) -> Context {
+        Context {
+            aliases: HashSet::new(),
+            inputs: HashSet::new(),
+            output: None,
+            default_schema: default_schema.map(|x| String::from(x)),
+            dialect,
         }
     }
 
     fn add_table_alias(&mut self, alias: &TableAlias) {
-        self.aliases.insert(alias.name.value.clone());
+        let name = DbTableMeta::new(alias.name.value.clone(), self);
+        self.aliases.insert(name);
     }
 
     fn add_ident_alias(&mut self, alias: &Ident) {
-        self.aliases.insert(alias.value.clone());
+        let name = DbTableMeta::new(alias.value.clone(), self);
+        self.aliases.insert(name);
     }
 
     fn add_input(&mut self, table: &String) {
-        if !self.aliases.contains(table) {
-            self.inputs.insert(table.clone());
+        let name = DbTableMeta::new(table.clone(), self);
+        if !self.aliases.contains(&name) {
+            self.inputs.insert(name);
         }
     }
 
     fn set_output(&mut self, output: &String) {
-        self.output = Some(output.clone());
+        let name = output.clone();
+        self.output = Some(DbTableMeta::new(name, self));
     }
 }
 
 #[pyclass]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct DbTableMeta {
     #[pyo3(get)]
     database: Option<String>,
@@ -56,25 +100,61 @@ pub struct DbTableMeta {
     // ..columns
 }
 
-#[pymethods]
 impl DbTableMeta {
-    #[new]
-    fn new(name: String) -> Self {
-        let mut split = name.split(".").map(|x| String::from(x)).collect::<Vec<String>>();
+    fn new(name: String, context: &mut Context) -> Self {
+        let mut split = name
+            .split(".")
+            .map(|x| context.dialect.canonical_name(String::from(x)))
+            .collect::<Vec<String>>();
         split.reverse();
         DbTableMeta {
             database: split.get(2).cloned(),
-            schema: split.get(1).cloned(),
+            schema: split.get(1).cloned().or(context.default_schema.clone()),
             name: split.get(0).unwrap().clone(),
         }
     }
+}
+
+#[pymethods]
+impl DbTableMeta {
+    #[new]
+    pub fn py_new(name: String) -> Self {
+        DbTableMeta::new(name, &mut Context::default())
+    }
+
     pub fn qualified_name(&self) -> String {
         format!(
             "{}{}{}",
-            self.database.as_ref().unwrap_or(&String::from("")),
-            self.schema.as_ref().unwrap_or(&String::from("")),
+            self.database
+                .as_ref()
+                .map(|x| format!("{}.", x))
+                .unwrap_or(String::from("")),
+            self.schema
+                .as_ref()
+                .map(|x| format!("{}.", x))
+                .unwrap_or(String::from("")),
             self.name
         )
+    }
+
+    fn __richcmp__(&self, other: &Self, op: CompareOp) -> PyResult<bool> {
+        match op {
+            CompareOp::Eq => Ok(self.qualified_name() == other.qualified_name()),
+            CompareOp::Ne => Ok(self.qualified_name() == other.qualified_name()),
+            _ => Err(PyTypeError::new_err(format!(
+                "can't use operator {op:?} on DbTableMeta"
+            ))),
+        }
+    }
+
+    fn __repr__(&self) -> String {
+        self.qualified_name()
+    }
+
+    fn __hash__(&self) -> isize {
+        let mut hasher = DefaultHasher::new();
+        self.hash(&mut hasher);
+        hasher.finish() as isize
     }
 }
 
@@ -89,16 +169,16 @@ pub struct SqlMeta {
 
 impl From<Context> for SqlMeta {
     fn from(ctx: Context) -> Self {
-        let mut inputs: Vec<String> = ctx.inputs.into_iter().collect();
-        let outputs: Vec<String> = if ctx.output.is_some() {
+        let outputs: Vec<DbTableMeta> = if ctx.output.is_some() {
             vec![ctx.output.unwrap()]
         } else {
             vec![]
         };
+        let mut inputs: Vec<DbTableMeta> = ctx.inputs.into_iter().collect();
         inputs.sort();
         SqlMeta {
-            in_tables: inputs.iter().map(|x| DbTableMeta::new(x.clone())).collect(),
-            out_tables: outputs.iter().map(|x| DbTableMeta::new(x.clone())).collect()
+            in_tables: inputs,
+            out_tables: outputs,
         }
     }
 }
@@ -302,9 +382,12 @@ fn parse_stmt(stmt: &Statement, context: &mut Context) -> Result<(), String> {
     }
 }
 
-pub fn parse_sql(sql: &str) -> Result<SqlMeta, String> {
-    let dialect = BigQueryDialect;
-    let ast = match Parser::parse_sql(&dialect, sql) {
+pub fn parse_sql(
+    sql: &str,
+    dialect: Box<dyn CanonicalDialect>,
+    default_schema: Option<&str>,
+) -> Result<SqlMeta, String> {
+    let ast = match Parser::parse_sql(dialect.as_base(), sql) {
         Ok(k) => k,
         Err(e) => return Err(e.to_string().to_owned()),
     };
@@ -313,7 +396,7 @@ pub fn parse_sql(sql: &str) -> Result<SqlMeta, String> {
         return Err(String::from("Empty statement list"));
     }
 
-    let mut context = Context::new();
+    let mut context = Context::new(dialect, default_schema);
     let stmt = ast.first();
 
     parse_stmt(stmt.unwrap(), &mut context)?;
@@ -322,8 +405,19 @@ pub fn parse_sql(sql: &str) -> Result<SqlMeta, String> {
 
 // Parses SQL.
 #[pyfunction]
-fn parse(sql: &str) -> PyResult<SqlMeta> {
-    match parse_sql(sql) {
+fn parse(sql: &str, dialect: Option<&str>, default_schema: Option<&str>) -> PyResult<SqlMeta> {
+    let parser_dialect: Box<dyn CanonicalDialect> = if let Some(d) = dialect {
+        match d {
+            "bigquery" => Box::new(BigQueryDialect),
+            "snowflake" => Box::new(SnowflakeDialect),
+            "postgres" => Box::new(PostgreSqlDialect {}),
+            _ => Box::new(PostgreSqlDialect {}),
+        }
+    } else {
+        Box::new(PostgreSqlDialect {})
+    };
+
+    match parse_sql(sql, parser_dialect, default_schema) {
         Ok(ok) => Ok(ok),
         Err(err) => Err(PyRuntimeError::new_err(err)),
     }

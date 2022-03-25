@@ -1,8 +1,12 @@
-use openlineage_sql::{parse_sql, SqlMeta};
+use openlineage_sql::SqlMeta;
+
+#[macro_use]
+mod test_utils;
+use test_utils::*;
 
 #[test]
 fn test_tpcds_cte_query() {
-    assert_eq!(parse_sql("
+    assert_eq!(test_sql("
         WITH year_total AS
             (SELECT c_customer_id customer_id,
                     c_first_name customer_first_name,
@@ -76,20 +80,20 @@ fn test_tpcds_cte_query() {
                     t_s_secyear.customer_last_name,
                     t_s_secyear.customer_preferred_cust_flag
         LIMIT 100;
-        ").unwrap(), SqlMeta {
-        in_tables: vec![
-            String::from("date_dim"),
-            String::from("src.customer"),
-            String::from("store_sales"),
-        ],
-        out_tables: None,
+        "), SqlMeta {
+        in_tables: tables(vec![
+            "date_dim",
+            "store_sales",
+            "src.customer",
+        ]),
+        out_tables: vec![],
     })
 }
 
 #[test]
 fn test_tcpds_query_1() {
     assert_eq!(
-        parse_sql(
+        test_sql(
             "
         WITH customer_total_return
              AS (SELECT sr_customer_sk     AS ctr_customer_sk,
@@ -113,16 +117,10 @@ fn test_tcpds_query_1() {
                AND ctr1.ctr_customer_sk = c_customer_sk
         ORDER  BY c_customer_id
         LIMIT 100;"
-        )
-        .unwrap(),
+        ),
         SqlMeta {
-            in_tables: vec![
-                String::from("customer"),
-                String::from("date_dim"),
-                String::from("store"),
-                String::from("store_returns"),
-            ],
-            out_tables: None
+            in_tables: tables(vec!["customer", "date_dim", "store", "store_returns",]),
+            out_tables: vec![]
         }
     )
 }
@@ -130,7 +128,7 @@ fn test_tcpds_query_1() {
 #[test]
 fn test_tcpds_query_2() {
     assert_eq!(
-        parse_sql(
+        test_sql(
             "
     WITH wscs
          AS (SELECT sold_date_sk,
@@ -210,15 +208,10 @@ fn test_tcpds_query_2() {
                    AND d_year = 1998 + 1) z
     WHERE  d_week_seq1 = d_week_seq2 - 53
     ORDER  BY d_week_seq1;"
-        )
-        .unwrap(),
+        ),
         SqlMeta {
-            in_tables: vec![
-                String::from("catalog_sales"),
-                String::from("date_dim"),
-                String::from("web_sales"),
-            ],
-            out_tables: None
+            in_tables: tables(vec!["catalog_sales", "date_dim", "web_sales",]),
+            out_tables: vec![]
         }
     )
 }
@@ -226,7 +219,7 @@ fn test_tcpds_query_2() {
 #[test]
 fn test_tcpds_query_3() {
     assert_eq!(
-        parse_sql(
+        test_sql(
             "
         SELECT dt.d_year,
                item.i_brand_id          brand_id,
@@ -247,15 +240,10 @@ fn test_tcpds_query_3() {
                   brand_id
         LIMIT 100;
         "
-        )
-        .unwrap(),
+        ),
         SqlMeta {
-            in_tables: vec![
-                String::from("date_dim"),
-                String::from("item"),
-                String::from("store_sales"),
-            ],
-            out_tables: None
+            in_tables: tables(vec!["date_dim", "item", "store_sales",]),
+            out_tables: vec![]
         }
     )
 }
@@ -263,7 +251,7 @@ fn test_tcpds_query_3() {
 #[test]
 fn test_tcpds_query_4() {
     assert_eq!(
-        parse_sql(
+        test_sql(
             "
             WITH year_total
              AS (SELECT c_customer_id                       customer_id,
@@ -417,24 +405,23 @@ fn test_tcpds_query_4() {
                   t_s_secyear.customer_preferred_cust_flag
         LIMIT 100;
         "
-        )
-        .unwrap(),
+        ),
         SqlMeta {
-            in_tables: vec![
-                String::from("catalog_sales"),
-                String::from("customer"),
-                String::from("date_dim"),
-                String::from("store_sales"),
-                String::from("web_sales")
-            ],
-            out_tables: None
+            in_tables: tables(vec![
+                "catalog_sales",
+                "customer",
+                "date_dim",
+                "store_sales",
+                "web_sales"
+            ]),
+            out_tables: vec![]
         }
     )
 }
 
 #[test]
 fn test_tcpds_query_5() {
-    assert_eq!(parse_sql("
+    assert_eq!(test_sql("
         WITH ssr AS
         (
                  SELECT   s_store_id,
@@ -560,27 +547,27 @@ fn test_tcpds_query_5() {
         GROUP BY rollup (channel, id)
         ORDER BY channel ,
                  id
-        LIMIT 100; ").unwrap(), SqlMeta {
-        in_tables: vec![
-            String::from("catalog_page"),
-            String::from("catalog_returns"),
-            String::from("catalog_sales"),
-            String::from("date_dim"),
-            String::from("store"),
-            String::from("store_returns"),
-            String::from("store_sales"),
-            String::from("web_returns"),
-            String::from("web_sales"),
-            String::from("web_site")
-        ],
-        out_tables: None
+        LIMIT 100; "), SqlMeta {
+        in_tables: tables(vec![
+            "catalog_page",
+            "catalog_returns",
+            "catalog_sales",
+            "date_dim",
+            "store",
+            "store_returns",
+            "store_sales",
+            "web_returns",
+            "web_sales",
+            "web_site"
+        ]),
+        out_tables: vec![]
     })
 }
 
 #[test]
 fn test_tcpds_query_6() {
     assert_eq!(
-        parse_sql(
+        test_sql(
             "
         SELECT a.ca_state state,
                Count(*)   cnt
@@ -605,17 +592,16 @@ fn test_tcpds_query_6() {
         ORDER  BY cnt
         LIMIT 100;
     "
-        )
-        .unwrap(),
+        ),
         SqlMeta {
-            in_tables: vec![
-                String::from("customer"),
-                String::from("customer_address"),
-                String::from("date_dim"),
-                String::from("item"),
-                String::from("store_sales"),
-            ],
-            out_tables: None
+            in_tables: tables(vec![
+                "customer",
+                "customer_address",
+                "date_dim",
+                "item",
+                "store_sales",
+            ]),
+            out_tables: vec![]
         }
     )
 }
@@ -623,7 +609,7 @@ fn test_tcpds_query_6() {
 #[test]
 fn test_tcpds_query_7() {
     assert_eq!(
-        parse_sql(
+        test_sql(
             "
         SELECT i_item_id,
                Avg(ss_quantity)    agg1,
@@ -649,17 +635,16 @@ fn test_tcpds_query_7() {
         ORDER  BY i_item_id
         LIMIT 100;
     "
-        )
-        .unwrap(),
+        ),
         SqlMeta {
-            in_tables: vec![
-                String::from("customer_demographics"),
-                String::from("date_dim"),
-                String::from("item"),
-                String::from("promotion"),
-                String::from("store_sales"),
-            ],
-            out_tables: None
+            in_tables: tables(vec![
+                "customer_demographics",
+                "date_dim",
+                "item",
+                "promotion",
+                "store_sales",
+            ]),
+            out_tables: vec![]
         }
     )
 }
@@ -667,7 +652,7 @@ fn test_tcpds_query_7() {
 #[test]
 fn test_tcpds_query_8() {
     assert_eq!(
-        parse_sql(
+        test_sql(
             "
         SELECT s_store_name,
                        Sum(ss_net_profit)
@@ -712,17 +697,16 @@ fn test_tcpds_query_8() {
         ORDER  BY s_store_name
         LIMIT 100;
     "
-        )
-        .unwrap(),
+        ),
         SqlMeta {
-            in_tables: vec![
-                String::from("customer"),
-                String::from("customer_address"),
-                String::from("date_dim"),
-                String::from("store"),
-                String::from("store_sales"),
-            ],
-            out_tables: None
+            in_tables: tables(vec![
+                "customer",
+                "customer_address",
+                "date_dim",
+                "store",
+                "store_sales",
+            ]),
+            out_tables: vec![]
         }
     )
 }
@@ -730,7 +714,7 @@ fn test_tcpds_query_8() {
 #[test]
 fn test_tcpds_query_9() {
     assert_eq!(
-        parse_sql(
+        test_sql(
             "
         SELECT CASE
                  WHEN (SELECT Count(*)
@@ -795,11 +779,10 @@ fn test_tcpds_query_9() {
         FROM   reason
         WHERE  r_reason_sk = 1;
     "
-        )
-        .unwrap(),
+        ),
         SqlMeta {
-            in_tables: vec![String::from("reason"), String::from("store_sales"),],
-            out_tables: None
+            in_tables: tables(vec!["reason", "store_sales"]),
+            out_tables: vec![]
         }
     )
 }

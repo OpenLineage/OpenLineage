@@ -17,7 +17,7 @@ def test_parse_simple_select():
     )
 
     log.debug("parse() successful.")
-    assert sql_meta.in_tables[0].qualified_name == DbTableMeta('table0').qualified_name
+    assert sql_meta.in_tables[0].qualified_name() == DbTableMeta('table0').qualified_name()
     assert sql_meta.out_tables == []
 
 
@@ -252,7 +252,7 @@ def test_parse_default_schema():
         SELECT col0, col1, col2
           FROM table0
         ''',
-        'public'
+        default_schema="public"
     )
     assert sql_meta.in_tables == [DbTableMeta('public.table0')]
 
@@ -263,7 +263,7 @@ def test_ignores_default_schema_when_non_default_schema():
         SELECT col0, col1, col2
           FROM transactions.table0
         ''',
-        'public'
+        default_schema="public"
     )
     assert sql_meta.in_tables == [DbTableMeta('transactions.table0')]
 
@@ -278,7 +278,7 @@ def test_parser_integration():
               FROM top_delivery_times
              GROUP BY order_placed_on;
         """,
-        "public"
+        default_schema="public"
     )
     assert sql_meta.in_tables == [DbTableMeta('public.top_delivery_times')]
 
@@ -286,7 +286,8 @@ def test_parser_integration():
 def test_bigquery_escaping():
     sql_meta = parse(
         "select * from `random-project`.`dbt_test1`.`source_table` where id = 1",
-        "public"
+        dialect="bigquery",
+        default_schema="public"
     )
     assert sql_meta.in_tables == [DbTableMeta('random-project.dbt_test1.source_table')]
 

@@ -1,9 +1,13 @@
-use openlineage_sql::{parse_sql, SqlMeta};
+#[macro_use]
+mod test_utils;
+
+use openlineage_sql::SqlMeta;
+use test_utils::*;
 
 #[test]
 fn merge_subquery_when_not_matched() {
     assert_eq!(
-        parse_sql(
+        test_sql(
             "
         MERGE INTO s.bar as dest
         USING (
@@ -24,11 +28,10 @@ fn merge_subquery_when_not_matched() {
             ,stg.B
             ,stg.C
         )"
-        )
-        .unwrap(),
+        ),
         SqlMeta {
-            in_tables: vec![String::from("s.foo")],
-            out_tables: Some(String::from("s.bar"))
+            in_tables: table("s.foo"),
+            out_tables: table("s.bar")
         }
     );
 }

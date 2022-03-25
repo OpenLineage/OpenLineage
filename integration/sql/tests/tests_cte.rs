@@ -1,9 +1,14 @@
 use openlineage_sql::{parse_sql, SqlMeta};
+use sqlparser::dialect::PostgreSqlDialect;
+
+#[macro_use]
+mod test_utils;
+use test_utils::*;
 
 #[test]
 fn parse_simple_cte() {
     assert_eq!(
-        parse_sql(
+        test_sql(
             "
                 WITH sum_trans as (
                     SELECT user_id, COUNT(*) as cnt, SUM(amount) as balance
@@ -15,12 +20,11 @@ fn parse_simple_cte() {
                 SELECT user_id, cnt, balance
                     FROM sum_trans
                     WHERE count > 1000 OR balance > 100000;
-                "
-        )
-        .unwrap(),
+                ",
+        ),
         SqlMeta {
-            in_tables: vec![String::from("transactions")],
-            out_tables: Some(String::from("potential_fraud"))
+            in_tables: table("transactions"),
+            out_tables: table("potential_fraud")
         }
     );
 }
@@ -39,7 +43,9 @@ fn parse_bugged_cte() {
                 INSERT INTO potential_fraud (user_id, cnt, balance)
                 SELECT user_id, cnt, balance
                 FROM sum_trans
-                WHERE count > 1000 OR balance > 100000;"
+                WHERE count > 1000 OR balance > 100000;",
+            Box::new(PostgreSqlDialect {}),
+            None
         )
         .unwrap_err(),
         "sql parser error: Expected ), found: user_id"
@@ -49,7 +55,7 @@ fn parse_bugged_cte() {
 #[test]
 fn parse_recursive_cte() {
     assert_eq!(
-        parse_sql(
+        test_sql(
             "
             WITH RECURSIVE subordinates AS
             (SELECT employee_id,
@@ -65,11 +71,10 @@ fn parse_recursive_cte() {
             INSERT INTO sub_employees (employee_id, manager_id, full_name)
             SELECT employee_id, manager_id, full_name FROM subordinates;
         "
-        )
-        .unwrap(),
+        ),
         SqlMeta {
-            in_tables: vec![String::from("employees")],
-            out_tables: Some(String::from("sub_employees"))
+            in_tables: table("employees"),
+            out_tables: table("sub_employees")
         }
     )
 }
@@ -77,7 +82,7 @@ fn parse_recursive_cte() {
 #[test]
 fn multiple_ctes() {
     assert_eq!(
-        parse_sql(
+        test_sql(
             "
             WITH customers AS (
                 SELECT * FROM DEMO_DB.public.stg_customers
@@ -90,14 +95,13 @@ fn multiple_ctes() {
             JOIN orders o
             ON c.id = o.customer_id
         "
-        )
-        .unwrap(),
+        ),
         SqlMeta {
-            in_tables: vec![
-                String::from("DEMO_DB.public.stg_customers"),
-                String::from("DEMO_DB.public.stg_orders")
-            ],
-            out_tables: None
+            in_tables: tables(vec![
+                "DEMO_DB.public.stg_customers",
+                "DEMO_DB.public.stg_orders"
+            ]),
+            out_tables: vec![]
         }
     )
 }

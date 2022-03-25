@@ -170,7 +170,7 @@ class SqlParser:
         raise RuntimeError(f"Parens {parens} are not Parenthesis at index {gidx}")
 
 
-def parse(sql: str, default_schema: Optional[str] = None) -> SqlMeta:
+def parse(sql: str, dialect: Optional[str] = None, default_schema: Optional[str] = None) -> SqlMeta:
     if sql is None:
         raise ValueError("A sql statement must be provided.")
 
