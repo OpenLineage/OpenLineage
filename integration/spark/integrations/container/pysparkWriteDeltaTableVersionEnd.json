@@ -6,7 +6,7 @@
   },
   "outputs" : [ {
     "namespace" : "file",
-    "name" : "/tmp/write_delta_table_version",
+    "name" : "/tmp/versioned_table",
     "facets" : {
       "dataSource" : {
         "name" : "file",

@@ -140,8 +140,8 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   /** called by the SparkListener when a spark-sql (Dataset api) execution starts */
   private static void sparkSQLExecStart(SparkListenerSQLExecutionStart startEvent) {
-    ExecutionContext context = getSparkSQLExecutionContext(startEvent.executionId());
-    context.start(startEvent);
+    getSparkSQLExecutionContext(startEvent.executionId())
+        .ifPresent(context -> context.start(startEvent));
   }
 
   /** called by the SparkListener when a spark-sql (Dataset api) execution ends */
@@ -171,32 +171,29 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
             .collect(Collectors.toSet());
     jobMetrics.addJobStages(jobStart.jobId(), stages);
 
-    ExecutionContext context =
-        Optional.ofNullable(getSqlExecutionId(jobStart.properties()))
-            .map(Optional::of)
-            .orElseGet(
-                () ->
-                    asJavaOptional(
-                            SparkSession.getDefaultSession()
-                                .map(sparkContextFromSession)
-                                .orElse(activeSparkContext))
-                        .flatMap(
-                            ctx ->
-                                Optional.ofNullable(ctx.dagScheduler())
-                                    .map(ds -> ds.jobIdToActiveJob().get(jobStart.jobId()))
-                                    .flatMap(ScalaConversionUtils::asJavaOptional))
-                        .map(job -> getSqlExecutionId(job.properties())))
-            .map(
-                id -> {
-                  long executionId = Long.parseLong(id);
-                  return getExecutionContext(jobStart.jobId(), executionId);
-                })
-            .orElseGet(() -> getExecutionContext(jobStart.jobId()));
-
-    // set it in the rddExecutionRegistry so jobEnd is called
-    rddExecutionRegistry.put(jobStart.jobId(), context);
-    activeJob.ifPresent(context::setActiveJob);
-    context.start(jobStart);
+    Optional.ofNullable(getSqlExecutionId(jobStart.properties()))
+        .map(Optional::of)
+        .orElseGet(
+            () ->
+                asJavaOptional(
+                        SparkSession.getDefaultSession()
+                            .map(sparkContextFromSession)
+                            .orElse(activeSparkContext))
+                    .flatMap(
+                        ctx ->
+                            Optional.ofNullable(ctx.dagScheduler())
+                                .map(ds -> ds.jobIdToActiveJob().get(jobStart.jobId()))
+                                .flatMap(ScalaConversionUtils::asJavaOptional))
+                    .map(job -> getSqlExecutionId(job.properties())))
+        .map(Long::parseLong)
+        .map(id -> getExecutionContext(jobStart.jobId(), id))
+        .orElseGet(() -> getExecutionContext(jobStart.jobId()))
+        .ifPresent(
+            context -> {
+              // set it in the rddExecutionRegistry so jobEnd is called
+              activeJob.ifPresent(context::setActiveJob);
+              context.start(jobStart);
+            });
   }
 
   private String getSqlExecutionId(Properties properties) {
@@ -207,7 +204,9 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   @Override
   public void onJobEnd(SparkListenerJobEnd jobEnd) {
     ExecutionContext context = rddExecutionRegistry.remove(jobEnd.jobId());
-    if (context != null) context.end(jobEnd);
+    if (context != null) {
+      context.end(jobEnd);
+    }
     jobMetrics.cleanUp(jobEnd.jobId());
   }
 
@@ -216,19 +215,24 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     jobMetrics.addMetrics(taskEnd.stageId(), taskEnd.taskMetrics());
   }
 
-  public static ExecutionContext getSparkSQLExecutionContext(long executionId) {
-    return sparkSqlExecutionRegistry.computeIfAbsent(
-        executionId, (e) -> contextFactory.createSparkSQLExecutionContext(executionId));
+  public static Optional<ExecutionContext> getSparkSQLExecutionContext(long executionId) {
+    return Optional.ofNullable(
+        sparkSqlExecutionRegistry.computeIfAbsent(
+            executionId,
+            (e) -> contextFactory.createSparkSQLExecutionContext(executionId).orElse(null)));
   }
 
-  public static ExecutionContext getExecutionContext(int jobId) {
-    return rddExecutionRegistry.computeIfAbsent(
-        jobId, (e) -> contextFactory.createRddExecutionContext(jobId));
+  public static Optional<ExecutionContext> getExecutionContext(int jobId) {
+    return Optional.ofNullable(
+        rddExecutionRegistry.computeIfAbsent(
+            jobId, (e) -> contextFactory.createRddExecutionContext(jobId)));
   }
 
-  public static ExecutionContext getExecutionContext(int jobId, long executionId) {
-    ExecutionContext executionContext = getSparkSQLExecutionContext(executionId);
-    rddExecutionRegistry.put(jobId, executionContext);
+  public static Optional<ExecutionContext> getExecutionContext(int jobId, long executionId) {
+    Optional<ExecutionContext> executionContext = getSparkSQLExecutionContext(executionId);
+    if (executionContext.isPresent()) {
+      rddExecutionRegistry.put(jobId, executionContext.get());
+    }
     return executionContext;
   }
 
