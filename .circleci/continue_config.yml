@@ -14,6 +14,9 @@ install_python_client: &install_python_client
 install_integration_common: &install_integration_common
   run: (cd ~/openlineage/integration/common && pip install . --user)
 
+install_sql_parser: &install_sql_parser
+  run: pip install target/wheels/*.whl
+
 param_build_tag: &param_build_tag
     parameters:
       build_tag:
@@ -190,7 +193,11 @@ jobs:
       - image: cimg/python:3.7
     steps:
       - *checkout_project_root
+      - attach_workspace:
+          at: .
       - *install_python_client
+      - run: pip debug --verbose
+      - *install_sql_parser
       - run: pip install -e .[dev]
       - run: flake8
       - run: pytest --cov=openlineage tests/
@@ -283,7 +290,7 @@ jobs:
       - *checkout_project_root
       - *install_python_client
       - *install_integration_common
-      - run: pip install -e .[dev,airflow-2] --constraint="https://raw.githubusercontent.com/apache/airflow/constraints-2.1.3/constraints-3.7.txt"
+      - run: pip install -e .[dev,airflow-2] --constraint="https://raw.githubusercontent.com/apache/airflow/constraints-2.1.4/constraints-3.7.txt"
       - run: flake8 --exclude tests/integration,tests/failures
       - run: airflow db init
       - run: pytest --cov=openlineage --ignore tests/integration --ignore tests/failures --ignore tests/test_openlineage_dag.py tests/
@@ -457,6 +464,25 @@ jobs:
 
           # Publish *.jar
           ./gradlew publish
+
+  build-integration-sql:
+    parameters:
+      image:
+        type: string
+      resource_class:
+        type: string
+    working_directory: ~/openlineage/integration/sql
+    machine:
+      image: ubuntu-2004:current
+    resource_class: << parameters.resource_class >>
+    steps:
+      - *checkout_project_root
+      - run: docker run -it -v $PWD:/code << parameters.image >> bash -c 'cd /code; bash script/build.sh'
+      - persist_to_workspace:
+          root: .
+          paths:
+            - ./target/wheels/*.whl
+
 
   workflow_complete:
     working_directory: ~/openlineage

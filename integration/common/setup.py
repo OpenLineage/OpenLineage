@@ -18,6 +18,9 @@ requirements = [
 ]
 
 extras_require = {
+    "sql": [
+        f"openlineage_sql=={__version__}"
+    ],
     "bigquery": [
         "google-api-core>=1.26.3",
         "google-auth>=1.30.0",

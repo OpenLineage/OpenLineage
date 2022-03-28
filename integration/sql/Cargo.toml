@@ -1,0 +1,23 @@
+[package]
+name = "openlineage_sql"
+description = "Library extracting source and destination tables from sql statements"
+version = "0.7.0"
+edition = "2021"
+authors = ["Maciej Obuchowski <obuchowski.maciej@gmail.com>"]
+keywords = ["sql", "lineage", "openlineage"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "openlineage_sql"
+crate-type = ["rlib", "cdylib"]
+
+[dependencies]
+pyo3 = {version = "0.16.1", features = ["extension-module", "abi3", "abi3-py37"]}
+sqlparser = {git = "https://github.com/mobuchowski/sqlparser-rs", branch="add-select-into"}
+
+[build-dependencies]
+pyo3-build-config = {version = "0.16.1"}
+
+[features]
+extension-module = ["pyo3/extension-module"]
+default = ["extension-module"]

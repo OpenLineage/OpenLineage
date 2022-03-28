@@ -3,7 +3,8 @@
 import pytest
 from openlineage.client.facet import DataSourceDatasetFacet, SchemaDatasetFacet, SchemaField
 from openlineage.client.run import Dataset as OpenLineageDataset
-from openlineage.common.models import DbTableName, DbColumn, DbTableSchema
+from openlineage.common.models import DbColumn, DbTableSchema
+from openlineage.common.sql import DbTableMeta
 from openlineage.common.dataset import Source, Dataset
 
 
@@ -19,7 +20,7 @@ def source():
 @pytest.fixture
 def table_schema(source):
     schema_name = 'public'
-    table_name = DbTableName('discounts')
+    table_name = DbTableMeta('discounts')
     columns = [
         DbColumn(
             name='id',

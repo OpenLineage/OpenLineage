@@ -9,7 +9,7 @@ import attr
 
 from openlineage.client.facet import SqlJobFacet
 from openlineage.common.provider.bigquery import BigQueryDatasetsProvider, BigQueryErrorRunFacet
-from openlineage.common.sql import SqlParser
+from openlineage.common.sql import parse
 
 from openlineage.airflow.extractors.base import (
     BaseExtractor,
@@ -89,7 +89,7 @@ class BigQueryExtractor(BaseExtractor):
 
     def parse_sql_context(self) -> SqlContext:
         try:
-            sql_meta = SqlParser.parse(self.operator.sql, None)
+            sql_meta = parse(self.operator.sql, None)
             log.debug(f"bigquery sql parsed and obtained meta: {sql_meta}")
             return SqlContext(
                 sql=self.operator.sql,

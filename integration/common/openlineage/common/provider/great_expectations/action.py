@@ -29,7 +29,7 @@ from openlineage.common.provider.great_expectations.facets import \
 from openlineage.common.provider.great_expectations.results import EXPECTATIONS_PARSERS, \
     COLUMN_EXPECTATIONS_PARSER, \
     GreatExpectationsAssertion
-from openlineage.common.sql import SqlParser
+from openlineage.common.sql import parse
 
 
 class OpenLineageValidationAction(ValidationAction):
@@ -180,7 +180,7 @@ class OpenLineageValidationAction(ValidationAction):
         metadata = MetaData()
         if data_asset.generated_table_name is not None:
             custom_sql = data_asset.batch_kwargs.get('query')
-            parsed_sql = SqlParser.parse(custom_sql)
+            parsed_sql = parse(custom_sql)
             return [
                 self._get_sql_table(data_asset, metadata, t.schema, t.name,
                                     validation_result_suite) for t in
