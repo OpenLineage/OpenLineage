@@ -25,7 +25,7 @@ A library that integrates [Airflow `DAGs`]() with [OpenLineage](https://openline
 
 ## Requirements
 
-- [Python 3.6.0](https://www.python.org/downloads)
+- [Python 3.7](https://www.python.org/downloads)
 - [Airflow 1.10.12+](https://pypi.org/project/apache-airflow)
 - (experimental) [Airflow 2.1+](https://pypi.org/project/apache-airflow)
 
