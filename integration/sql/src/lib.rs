@@ -7,6 +7,7 @@ use std::hash::{Hash, Hasher};
 pub use bigquery::BigQueryDialect;
 use pyo3::basic::CompareOp;
 use pyo3::exceptions::{PyRuntimeError, PyTypeError};
+use pyo3::impl_::pyfunction::wrap_pyfunction;
 use pyo3::prelude::*;
 use sqlparser::ast::{
     Expr, Ident, Query, Select, SelectItem, SetExpr, Statement, TableAlias, TableFactor, With,
@@ -122,6 +123,7 @@ impl DbTableMeta {
         DbTableMeta::new(name, &mut Context::default())
     }
 
+    #[getter(qualified_name)]
     pub fn qualified_name(&self) -> String {
         format!(
             "{}{}{}",
@@ -302,6 +304,10 @@ fn parse_select(select: &Select, context: &mut Context) -> Result<(), String> {
         }
     }
 
+    if let Some(into) = &select.into {
+        context.set_output(&into.name.to_string())
+    }
+
     for table in &select.from {
         parse_table_factor(&table.relation, context)?;
         for join in &table.joins {
@@ -378,7 +384,37 @@ fn parse_stmt(stmt: &Statement, context: &mut Context) -> Result<(), String> {
 
             Ok(())
         }
-        _ => Err(String::from("not a insert")),
+        Statement::CreateTable {
+            or_replace: _,
+            temporary: _,
+            external: _,
+            if_not_exists: _,
+            name,
+            columns: _,
+            constraints: _,
+            hive_distribution: _,
+            hive_formats: _,
+            table_properties: _,
+            with_options: _,
+            file_format: _,
+            location: _,
+            query,
+            without_rowid: _,
+            like,
+            engine: _,
+            default_charset: _,
+            collation: _,
+        } => {
+            if let Some(boxed_query) = query {
+                parse_query(boxed_query.as_ref(), context)?;
+            }
+            if let Some(like_table) = like {
+                context.add_input(&like_table.to_string());
+            }
+            context.set_output(&name.to_string());
+            Ok(())
+        }
+        _ => Ok(()),
     }
 }
 
@@ -423,10 +459,16 @@ fn parse(sql: &str, dialect: Option<&str>, default_schema: Option<&str>) -> PyRe
     }
 }
 
+#[pyfunction]
+fn provider() -> String {
+    "rust".to_string()
+}
+
 /// A Python module implemented in Rust.
 #[pymodule]
 fn openlineage_sql(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(parse, m)?)?;
+    m.add_function(wrap_pyfunction!(provider, m)?)?;
     m.add_class::<SqlMeta>()?;
     m.add_class::<DbTableMeta>()?;
     Ok(())

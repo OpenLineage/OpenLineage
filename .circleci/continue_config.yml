@@ -15,7 +15,7 @@ install_integration_common: &install_integration_common
   run: (cd ~/openlineage/integration/common && pip install . --user)
 
 install_sql_parser: &install_sql_parser
-  run: pip install target/wheels/*.whls
+  run: pip install target/wheels/*.whl
 
 param_build_tag: &param_build_tag
     parameters:
@@ -196,6 +196,7 @@ jobs:
       - attach_workspace:
           at: .
       - *install_python_client
+      - run: pip debug --verbose
       - *install_sql_parser
       - run: pip install -e .[dev]
       - run: flake8
@@ -265,18 +266,6 @@ jobs:
           key: v1-integration-spark-{{ .Branch }}-{{ .Revision }}
           paths:
             - ~/.gradle
-
-  integration-test-integration-sql:
-    working_directory: ~/openlineage/integration/sql
-    docker:
-      - image: circleci/python:3.7
-    steps:
-      - *checkout_project_root
-      - attach_workspace:
-          at: .
-      - run: pip install -r requirements.txt
-      - run: pip install target/wheels/openlineage_sql-0.1.0-cp37-abi3-manylinux_2_24_x86_64.whl
-      - run: pytest -vv tests/python
 
   unit-test-integration-airflow-1:
     working_directory: ~/openlineage/integration/airflow
@@ -473,7 +462,7 @@ jobs:
           # Publish *.jar
           ./gradlew publish
 
-  build-openlineage-sql:
+  build-integration-sql:
     parameters:
       image:
         type: string

@@ -2,11 +2,14 @@ workflows:
   openlineage-integration-airflow:
     jobs:
       - build-integration-sql:
-        parameters:
-          image: "quay.io/pypa/manylinux_2_24_x86_64"
-      - unit-test-integration-common
-        requires:
-          - build-integration-sql
+          matrix:
+            parameters:
+              image: [
+                "quay.io/pypa/manylinux_2_24_x86_64"
+              ]
+      - unit-test-integration-common:
+          requires:
+            - build-integration-sql
       - build-integration-common:
           filters:
             branches:

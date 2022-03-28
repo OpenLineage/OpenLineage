@@ -12,6 +12,10 @@ from openlineage.common.models import DbTableMeta
 log = logging.getLogger(__name__)
 
 
+def provider():
+    return "python"
+
+
 def _is_in_table(token):
     return _match_on(token, [
         'FROM',

@@ -27,7 +27,7 @@ fn merge_subquery_when_not_matched() {
             stg.A
             ,stg.B
             ,stg.C
-        )"
+        )",
         ),
         SqlMeta {
             in_tables: table("s.foo"),

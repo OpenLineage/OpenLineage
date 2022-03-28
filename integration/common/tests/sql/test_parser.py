@@ -3,7 +3,7 @@
 import logging
 
 import pytest
-from openlineage.common.sql import parse, DbTableMeta
+from openlineage.common.sql import parse, DbTableMeta, provider
 
 log = logging.getLogger(__name__)
 
@@ -17,7 +17,7 @@ def test_parse_simple_select():
     )
 
     log.debug("parse() successful.")
-    assert sql_meta.in_tables[0].qualified_name() == DbTableMeta('table0').qualified_name()
+    assert sql_meta.in_tables[0].qualified_name == DbTableMeta('table0').qualified_name
     assert sql_meta.out_tables == []
 
 
@@ -226,7 +226,7 @@ def test_parse_recursive_cte():
     assert sql_meta.out_tables == [DbTableMeta('sub_employees')]
 
 
-@pytest.mark.skip(reason="no support for this right now")
+@pytest.mark.skipif(provider() == "python", reason="no support for this in python parser")
 def test_multiple_ctes():
     sql_meta = parse('''
     WITH customers AS (
@@ -292,6 +292,7 @@ def test_bigquery_escaping():
     assert sql_meta.in_tables == [DbTableMeta('random-project.dbt_test1.source_table')]
 
 
+@pytest.mark.skipif(provider() == "rust", reason="multi statements not yet supported in Rust")
 def test_parse_multi_statement():
     sql_meta = parse(
         """
@@ -299,9 +300,7 @@ def test_parse_multi_statement():
         CREATE TABLE schema1.table1(
           col0 VARCHAR(64),
           col1 VARCHAR(64)
-        )
-        DISTKEY(a)
-        INTERLEAVED SORTKEY(col0,col1);
+        );
         INSERT INTO schema1.table1(col0, col1)
           SELECT col0, col1
             FROM schema0.table0;
