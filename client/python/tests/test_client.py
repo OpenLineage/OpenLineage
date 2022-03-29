@@ -34,17 +34,17 @@ def test_client_fails_to_create_with_wrong_url():
 
 def test_client_passes_to_create_with_valid_url():
     session = MagicMock()
-    assert OpenLineageClient(url="http://196.168.0.1", session=session).url == \
+    assert OpenLineageClient(url="http://196.168.0.1", session=session).transport.url == \
            "http://196.168.0.1"
-    assert OpenLineageClient(url="http://196.168.0.1", session=session).url == \
+    assert OpenLineageClient(url="http://196.168.0.1", session=session).transport.url == \
            "http://196.168.0.1"
-    assert OpenLineageClient(url="http://example.com  ", session=session).url == \
+    assert OpenLineageClient(url="http://example.com  ", session=session).transport.url == \
            "http://example.com"
-    assert OpenLineageClient(url=" http://example.com", session=session).url == \
+    assert OpenLineageClient(url=" http://example.com", session=session).transport.url == \
            "http://example.com"
-    assert OpenLineageClient(url="  http://marquez:5000  ", session=session).url == \
+    assert OpenLineageClient(url="  http://marquez:5000  ", session=session).transport.url == \
            "http://marquez:5000"
-    assert OpenLineageClient(url="  https://marquez  ", session=session).url == \
+    assert OpenLineageClient(url="  https://marquez  ", session=session).transport.url == \
            "https://marquez"
 
 
@@ -71,3 +71,19 @@ def test_client_sends_proper_json_with_minimal_event():
         timeout=5.0,
         verify=True
     )
+
+
+def test_client_uses_passed_transport():
+    transport = MagicMock()
+    client = OpenLineageClient(transport=transport)
+    assert client.transport == transport
+
+    client.emit(event=RunEvent(
+            RunState.START,
+            "2020-01-01",
+            Run("69f4acab-b87d-4fc0-b27b-8ea950370ff3"),
+            Job("openlineage", "job"),
+            "producer"
+        )
+    )
+    client.transport.emit.assert_called_once()

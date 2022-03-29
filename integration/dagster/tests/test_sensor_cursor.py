@@ -9,26 +9,29 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
 import json
 import uuid
 from unittest.mock import patch
 
 from dagster import SensorDefinition, build_sensor_context, DagsterEventType
 from dagster.core.test_utils import instance_for_test
-
 from openlineage.dagster.cursor import OpenLineageCursor, RunningPipeline, RunningStep
-from openlineage.dagster.sensor import openlineage_sensor
 from .conftest import make_test_event_log_record
 
 
+@patch.dict(os.environ, {"OPENLINEAGE_URL": "http://mock-url:5000"})
 def test_basic_sensor_def():
+    from openlineage.dagster.sensor import openlineage_sensor  # noqa: E402
     sensor_def = openlineage_sensor()
     assert isinstance(sensor_def, SensorDefinition)
     assert not sensor_def.targets
 
 
+@patch.dict(os.environ, {"OPENLINEAGE_URL": "http://mock-url:5000"})
 @patch("openlineage.dagster.sensor.get_event_log_records")
 def test_cursor_update_with_after_storage_id(mock_event_log_records):
+    from openlineage.dagster.sensor import openlineage_sensor  # noqa: E402
     with instance_for_test() as instance:
         context = build_sensor_context(instance=instance, repository_name="hello")
         openlineage_sensor(after_storage_id=100).evaluate_tick(context)
@@ -43,6 +46,7 @@ def test_cursor_update_with_after_storage_id(mock_event_log_records):
 @patch("openlineage.dagster.sensor.make_step_run_id")
 @patch("openlineage.dagster.sensor.get_event_log_records")
 def test_cursor_update_with_successful_run(mock_event_log_records, mock_step_run_id, mock_adapter):  # noqa: E501
+    from openlineage.dagster.sensor import openlineage_sensor  # noqa: E402
     with instance_for_test() as instance:
         ol_sensor_def = openlineage_sensor(record_filter_limit=1)
 
@@ -124,6 +128,7 @@ def test_cursor_update_with_successful_run(mock_event_log_records, mock_step_run
 @patch("openlineage.dagster.sensor.make_step_run_id")
 @patch("openlineage.dagster.sensor.get_event_log_records")
 def test_cursor_update_with_failing_run(mock_event_log_records, mock_step_run_id, mock_adapter):
+    from openlineage.dagster.sensor import openlineage_sensor  # noqa: E402
     with instance_for_test() as instance:
         ol_sensor_def = openlineage_sensor(record_filter_limit=1)
 
@@ -204,6 +209,7 @@ def test_cursor_update_with_failing_run(mock_event_log_records, mock_step_run_id
 @patch("openlineage.dagster.sensor.make_step_run_id")
 @patch("openlineage.dagster.sensor.get_event_log_records")
 def test_cursor_update_with_exception_raised(mock_event_log_records, mock_step_run_id, mock_adapter):  # noqa: E501
+    from openlineage.dagster.sensor import openlineage_sensor  # noqa: E402
     with instance_for_test() as instance:
         pipeline_run_id = str(uuid.uuid4())
         step_key = "an_op"
