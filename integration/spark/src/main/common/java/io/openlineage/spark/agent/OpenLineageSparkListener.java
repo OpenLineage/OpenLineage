@@ -11,10 +11,8 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.lifecycle.ContextFactory;
 import io.openlineage.spark.agent.lifecycle.ExecutionContext;
-import io.openlineage.spark.agent.transformers.PairRDDFunctionsTransformer;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.io.PrintWriter;
-import java.lang.reflect.Field;
 import java.net.URISyntaxException;
 import java.time.ZonedDateTime;
 import java.util.Collections;
@@ -33,7 +31,6 @@ import org.apache.spark.SparkContext;
 import org.apache.spark.SparkContext$;
 import org.apache.spark.SparkEnv;
 import org.apache.spark.SparkEnv$;
-import org.apache.spark.rdd.PairRDDFunctions;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.scheduler.ActiveJob;
 import org.apache.spark.scheduler.SparkListenerApplicationEnd;
@@ -72,61 +69,10 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   private final Function0<Option<SparkContext>> activeSparkContext =
       ScalaConversionUtils.toScalaFn(SparkContext$.MODULE$::getActive);
 
-  /** called by the agent on init with the provided argument */
+  /** called by the tests */
   public static void init(ContextFactory contextFactory) {
     OpenLineageSparkListener.contextFactory = contextFactory;
     clear();
-  }
-
-  /**
-   * Entrypoint for SparkSQLExecutionContext
-   *
-   * <p>called through the agent when creating the Spark context We register a new SparkListener
-   *
-   * @param context the spark contextStaticExecutionContextFactory
-   */
-  @SuppressWarnings("unused")
-  public static void instrument(SparkContext context) {
-    log.info("Initializing OpenLineage SparkContext listener...");
-    OpenLineageSparkListener listener = new OpenLineageSparkListener();
-    log.debug(
-        "Initialized OpenLineage listener with \nspark version: {}\njava.version: {}\nconfiguration: {}",
-        context.version(),
-        System.getProperty("java.version"),
-        context.conf());
-    context.addSparkListener(listener);
-  }
-
-  /**
-   * Entry point for PairRDDFunctionsTransformer
-   *
-   * <p>called through the agent when writing with the RDD API as the RDDs do not contain the output
-   * information
-   *
-   * @see PairRDDFunctionsTransformer
-   * @param pairRDDFunctions the wrapping RDD containing the rdd to save
-   * @param conf the write config
-   */
-  @SuppressWarnings("unused")
-  public static void registerOutput(PairRDDFunctions<?, ?> pairRDDFunctions, Configuration conf) {
-    try {
-      log.info("Initializing OpenLineage PairRDDFunctions listener...");
-      Field[] declaredFields = pairRDDFunctions.getClass().getDeclaredFields();
-      for (Field field : declaredFields) {
-        if (field.getName().endsWith("self") && RDD.class.isAssignableFrom(field.getType())) {
-          field.setAccessible(true);
-          try {
-            RDD<?> rdd = (RDD<?>) field.get(pairRDDFunctions);
-            outputs.put(rdd, conf);
-          } catch (IllegalArgumentException | IllegalAccessException e) {
-            e.printStackTrace(System.out);
-          }
-        }
-      }
-    } catch (Exception e) {
-      log.error("Could not initialize OpenLineage PairRDDFunctions listener", e);
-      emitError(e);
-    }
   }
 
   @Override
