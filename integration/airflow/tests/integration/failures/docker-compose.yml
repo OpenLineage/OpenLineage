@@ -30,7 +30,6 @@ x-airflow-common: &airflow-common
     GOOGLE_APPLICATION_CREDENTIALS: /opt/config/gcloud/gcloud-service-key.json
     OPENLINEAGE_URL: ${OPENLINEAGE_URL}
     OPENLINEAGE_NAMESPACE: food_delivery
-    OPENLINEAGE_EXTRACTOR_BashOperator: custom_extractor.BashExtractor
   volumes:
       - ./airflow/config/log_config.py:/opt/airflow/config/log_config.py
       - ./airflow/logs:/opt/airflow/logs
@@ -48,6 +47,10 @@ services:
       - airflow_scheduler
       - backend
     entrypoint: ["./wait-for-it.sh", "backend:5000", "--", "python", "test_failure.py"]
+
+  airflow:
+    <<: *airflow-common
+    command: webserver
 
   airflow_scheduler:
     <<: *airflow-common

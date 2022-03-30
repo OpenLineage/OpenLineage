@@ -78,8 +78,6 @@ def check_matches_ordered(expected_events, actual_events) -> bool:
     for index, expected in enumerate(expected_events):
         # Actual events have to be in the same order as expected events
         actual = actual_events[index]
-        log.info(f"Actual {actual}")
-        log.info(f"Actual {expected}")
         if expected['eventType'] == actual['eventType'] and \
                 expected['job']['name'] == actual['job']['name']:
             if not match(expected, actual):
@@ -174,7 +172,7 @@ def test_integration_ordered(dag_id, request_dir: str):
     expected_events = []
     for file in event_files:
         with open(os.path.join(request_dir, file), 'r') as f:
-            expected_events = json.load(f)
+            expected_events.append(json.load(f))
 
     # (3) Get actual events with job names starting with dag_id
     actual_events = get_events(dag_id)
