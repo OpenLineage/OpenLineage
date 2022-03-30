@@ -35,10 +35,10 @@ extras_require = {
         "airflow-provider-great-expectations==0.0.8",
     ],
     "airflow-2": [
-        "apache-airflow==2.1.3",
-        "apache-airflow-providers-postgres==2.0.0",
-        "apache-airflow-providers-snowflake==2.1.0",
-        "apache-airflow-providers-google==5.0.0",
+        "apache-airflow==2.1.4",
+        "apache-airflow-providers-postgres>=2.0.0",
+        "apache-airflow-providers-snowflake>=2.1.0",
+        "apache-airflow-providers-google>=5.0.0",
         "airflow-provider-great-expectations==0.0.8",
     ],
 }

@@ -20,76 +20,13 @@ class DbColumn:
                           {self.description!r},{self.ordinal_position!r})"
 
 
-class DbTableName:
-    def __init__(self, value: str):
-        parts = value.strip().split('.')
-        if len(parts) > 3:
-            raise ValueError(
-                f"Expected 'database.schema.table', found '{value}'."
-            )
-        self.database = self._get_database(parts)
-        self.schema = self._get_schema(parts)
-        self.name = self._get_table(parts)
-        self.qualified_name = self._get_qualified_name()
-
-    def has_database(self) -> bool:
-        return self.database is not None
-
-    def has_schema(self) -> bool:
-        return self.schema is not None
-
-    def _get_database(self, parts) -> str:
-        # {database.schema.table}
-        return parts[0] if len(parts) == 3 else None
-
-    def _get_schema(self, parts) -> str:
-        # {database.schema.table) or {schema.table}
-        return parts[1] if len(parts) == 3 else (
-            parts[0] if len(parts) == 2 else None
-        )
-
-    def _get_table(self, parts) -> str:
-        # {database.schema.table} or {schema.table} or {table}
-        return parts[2] if len(parts) == 3 else (
-            parts[1] if len(parts) == 2 else parts[0]
-        )
-
-    def _get_qualified_name(self) -> str:
-        return (
-            f"{self.database}.{self.schema}.{self.name}"
-            if self.has_database() else (
-                f"{self.schema}.{self.name}" if self.has_schema() else None
-            )
-        )
-
-    def __hash__(self):
-        return hash((self.database, self.schema, self.name, self.qualified_name))
-
-    def __eq__(self, other):
-        return self.database == other.database and \
-               self.schema == other.schema and \
-               self.name == other.name and \
-               self.qualified_name == other.qualified_name
-
-    def __repr__(self):
-        # Return the string representation of the instance
-        return (
-            f"DbTableName({self.database!r},{self.schema!r},"
-            f"{self.name!r},{self.qualified_name!r})"
-        )
-
-    def __str__(self):
-        # Return the fully qualified table name as the string representation
-        # of this object, otherwise the table name only
-        return (
-            self.qualified_name
-            if (self.has_database() or self.has_schema()) else self.name
-        )
-
-
 class DbTableSchema:
-    def __init__(self, schema_name: str, table_name: DbTableName,
-                 columns: [DbColumn]):
+    def __init__(
+        self,
+        schema_name: str,
+        table_name: "DbTableMeta",  # noqa: F821
+        columns: [DbColumn]
+    ):
         self.schema_name = schema_name
         self.table_name = table_name
         self.columns = columns
