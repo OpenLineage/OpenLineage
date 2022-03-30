@@ -4,6 +4,7 @@ package io.openlineage.spark.api;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRelationDatasetBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.columnLineage.ColumnLevelLineageUtils;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PlanUtils;
 import java.net.URI;
@@ -174,6 +175,9 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
                     .getOpenLineage()
                     .newLifecycleStateChangeDatasetFacet(lifecycleStateChange, null))
             .dataSource(PlanUtils.datasourceFacet(context.getOpenLineage(), ident.getNamespace()));
+
+     ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, schema).ifPresent(facet ->
+     builder.columnLineage(facet));
 
     return getDataset(ident.getName(), ident.getNamespace(), builder.build());
   }

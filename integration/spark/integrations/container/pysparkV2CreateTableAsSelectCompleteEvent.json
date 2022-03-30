@@ -22,7 +22,35 @@
           "type" : "long"
         } ]
       },
-      "version" : {}
+      "version" : {},
+      "columnLineage": {
+        "fields": {
+          "a": [
+            {
+              "namespace" : "file",
+              "name" : "/tmp/v2/db.source1",
+              "field": "a"
+            },
+            {
+              "namespace" : "file",
+              "name" : "/tmp/v2/db.source2",
+              "field": "a"
+            }
+          ],
+          "b": [
+            {
+              "namespace" : "file",
+              "name" : "/tmp/v2/db.source1",
+              "field": "b"
+            },
+            {
+              "namespace" : "file",
+              "name" : "/tmp/v2/db.source2",
+              "field": "b"
+            }
+          ]
+        }
+      }
     }
   } ]
 }
