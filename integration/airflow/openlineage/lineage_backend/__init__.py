@@ -1,5 +1,8 @@
+# SPDX-License-Identifier: Apache-2.0
+
 import uuid
 import time
+
 from pkg_resources import parse_version
 
 from airflow.lineage.backend import LineageBackend
@@ -65,7 +68,7 @@ class Backend:
             run_id=run_id,
             job_name=job_name,
             end_time=DagUtils.to_iso_8601(self._now_ms()),
-            task=task_metadata
+            task=task_metadata,
         )
 
     @staticmethod

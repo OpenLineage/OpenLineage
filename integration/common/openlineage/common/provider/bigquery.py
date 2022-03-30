@@ -1,14 +1,4 @@
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-License-Identifier: Apache-2.0.
 
 import json
 import logging
@@ -23,7 +13,8 @@ from openlineage.common.dataset import Dataset, Source
 from openlineage.common.models import DbTableSchema, DbColumn, DbTableName
 from openlineage.common.schema import GITHUB_LOCATION
 from openlineage.common.utils import get_from_nullable_chain
-from openlineage.client.facet import BaseFacet, OutputStatisticsOutputDatasetFacet
+from openlineage.client.facet import BaseFacet, OutputStatisticsOutputDatasetFacet, \
+    ExternalQueryRunFacet
 
 _BIGQUERY_CONN_URL = 'bigquery'
 
@@ -114,7 +105,10 @@ class BigQueryDatasetsProvider:
                 run_stat_facet, dataset_stat_facet = self._get_output_statistics(props)
 
                 run_facets.update({
-                    "bigQuery_job": run_stat_facet
+                    "bigQuery_job": run_stat_facet,
+                    "externalQuery": ExternalQueryRunFacet(
+                        externalQueryId=job_id, source="bigquery"
+                    )
                 })
                 inputs = self._get_input_from_bq(props)
                 output = self._get_output_from_bq(props)

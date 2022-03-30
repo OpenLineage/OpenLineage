@@ -1,27 +1,15 @@
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-License-Identifier: Apache-2.0.
 
-import os
 import logging
-from urllib.parse import urljoin
+from typing import Optional
 
 import attr
 from requests import Session
 from requests.adapters import HTTPAdapter
-from urllib3.util.url import parse_url
 
-from openlineage.client import constants
 from openlineage.client.run import RunEvent
-from openlineage.client.serde import Serde
+from openlineage.client.transport import Transport, get_default_factory
+from openlineage.client.transport.http import HttpTransport, HttpConfig
 
 
 @attr.s
@@ -37,55 +25,45 @@ log = logging.getLogger(__name__)
 
 class OpenLineageClient:
     def __init__(
-            self,
-            url: str,
-            options: OpenLineageClientOptions = OpenLineageClientOptions(),
-            session: Session = None
+        self,
+        url: Optional[str] = None,
+        options: Optional[OpenLineageClientOptions] = None,
+        session: Optional[Session] = None,
+        transport: Optional[Transport] = None,
     ):
-        url = url.strip()
-        try:
-            parsed = parse_url(url)
-            if not (parsed.scheme and parsed.netloc):
-                raise ValueError(f"Need valid url for OpenLineageClient, passed {url}")
-        except Exception as e:
-            raise ValueError(f"Need valid url for OpenLineageClient, passed {url}. Exception: {e}")
-        self.url = url
-        self.options = options
-        self.session = session if session else Session()
-        self.session.headers['Content-Type'] = 'application/json'
+        if url:
+            # Backwards compatibility: if URL or options is set, use old path to initialize
+            # HTTP transport.
+            if not options:
+                options = OpenLineageClientOptions()
+            if not session:
+                session = Session()
+            self._initialize_url(url, options, session)
+        elif transport:
+            self.transport = transport
+        else:
+            self.transport = get_default_factory().create()
 
-        if self.options.api_key:
-            self._add_auth(options.api_key)
-        if self.options.adapter:
-            self.session.mount(self.url, options.adapter)
+    def _initialize_url(
+        self,
+        url: str,
+        options: OpenLineageClientOptions,
+        session: Session
+    ):
+        self.transport = HttpTransport(HttpConfig.from_options(
+            url=url,
+            options=options,
+            session=session
+        ))
 
     def emit(self, event: RunEvent):
-        data = Serde.to_json(event)
-        if log.isEnabledFor(logging.DEBUG):
-            log.debug(f"Sending openlineage event {event}")
-        resp = self.session.post(
-            urljoin(self.url, 'api/v1/lineage'),
-            data,
-            timeout=self.options.timeout,
-            verify=self.options.verify
-        )
-        resp.raise_for_status()
-        return resp
-
-    def _add_auth(self, api_key: str):
-        self.session.headers.update({
-            "Authorization": f"Bearer {api_key}"
-        })
+        if not isinstance(event, RunEvent):
+            raise ValueError("`emit` only accepts RunEvent class")
+        if not self.transport:
+            log.error("Tried to emit OpenLineage event, but transport is not configured.")
+        else:
+            self.transport.emit(event)
 
     @classmethod
     def from_environment(cls):
-        server_url = os.getenv("OPENLINEAGE_URL", constants.DEFAULT_OPENLINEAGE_URL)
-        if server_url:
-            log.info(f"Constructing openlineage client to send events to {server_url}")
-        return OpenLineageClient(
-            url=server_url,
-            options=OpenLineageClientOptions(
-                timeout=constants.DEFAULT_TIMEOUT_MS / 1000,
-                api_key=os.getenv("OPENLINEAGE_API_KEY", None)
-            )
-        )
+        return cls(transport=get_default_factory().create())

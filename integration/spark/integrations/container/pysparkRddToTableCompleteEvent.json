@@ -53,8 +53,8 @@
           "name": "file",
           "uri": "file"
         },
-        "tableStateChange": {
-          "stateChange": "overwrite"
+        "lifecycleStateChange": {
+          "lifecycleStateChange": "OVERWRITE"
         }
       },
       "outputFacets": {

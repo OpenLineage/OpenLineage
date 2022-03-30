@@ -1,6 +1,7 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 package io.openlineage.spark.agent.lifecycle.plan;
 
-import static io.openlineage.spark.agent.facets.TableStateChangeFacet.StateChange.CREATE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -8,7 +9,6 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
-import io.openlineage.spark.agent.facets.TableStateChangeFacet;
 import io.openlineage.spark.agent.lifecycle.CatalogTableTestUtils;
 import java.util.List;
 import org.apache.spark.SparkContext;
@@ -43,8 +43,8 @@ public class CreateTableCommandVisitorTest {
     assertEquals(1, outputDataset.getFacets().getSchema().getFields().size());
 
     assertEquals(
-        new TableStateChangeFacet(CREATE),
-        outputDataset.getFacets().getAdditionalProperties().get("tableStateChange"));
+        OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE,
+        outputDataset.getFacets().getLifecycleStateChange().getLifecycleStateChange());
     assertEquals("/some-location", outputDataset.getName());
     assertEquals("file", outputDataset.getNamespace());
   }

@@ -1,10 +1,12 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 package io.openlineage.spark.api;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.lifecycle.plan.LogicalRelationDatasetBuilder;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PlanUtils;
 import java.net.URI;
-import java.util.Map;
 import org.apache.spark.sql.types.StructType;
 
 /**
@@ -12,10 +14,10 @@ import org.apache.spark.sql.types.StructType;
  * {@link io.openlineage.client.OpenLineage.OutputDataset}s. This allows {@link QueryPlanVisitor}s
  * that may identify input or output datasets (e.g., a {@link
  * io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeVisitor} or {@link
- * io.openlineage.spark.agent.lifecycle.plan.LogicalRelationVisitor}) to be reused in the
- * construction of both input and output datasets, allowing each to focus on extracting the
- * identifier and general {@link io.openlineage.client.OpenLineage.DatasetFacet}s, while delegating
- * to the factory to construct the correct instance.
+ * LogicalRelationDatasetBuilder}) to be reused in the construction of both input and output
+ * datasets, allowing each to focus on extracting the identifier and general {@link
+ * io.openlineage.client.OpenLineage.DatasetFacet}s, while delegating to the factory to construct
+ * the correct instance.
  *
  * <p>Ideally, this would be a sealed class. We emulate that by using a private constructor and
  * provide two static factory methods - {@link #input(OpenLineage)} and {@link
@@ -85,6 +87,24 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
   }
 
   /**
+   * Given a {@link URI}, construct a valid {@link OpenLineage.Dataset} following the expected
+   * naming conventions.
+   *
+   * @param outputPath
+   * @param schema
+   * @return
+   */
+  public D getDataset(
+      URI outputPath, StructType schema, OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder) {
+    String namespace = PlanUtils.namespaceUri(outputPath);
+    datasetFacetsBuilder
+        .schema(PlanUtils.schemaFacet(openLineage, schema))
+        .dataSource(PlanUtils.datasourceFacet(openLineage, namespace));
+
+    return getDataset(outputPath.getPath(), namespace, datasetFacetsBuilder.build());
+  }
+
+  /**
    * Construct a dataset {@link OpenLineage.Dataset} given a name, namespace, and preconstructed
    * {@link OpenLineage.DatasetFacets}.
    *
@@ -131,19 +151,20 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
    *
    * @param ident
    * @param schema
-   * @param facets
+   * @param lifecycleStateChange
    * @return
    */
   public D getDataset(
-      DatasetIdentifier ident, StructType schema, Map<String, OpenLineage.DatasetFacet> facets) {
+      DatasetIdentifier ident,
+      StructType schema,
+      OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange lifecycleStateChange) {
     OpenLineage.DatasetFacetsBuilder builder =
         openLineage
             .newDatasetFacetsBuilder()
             .schema(PlanUtils.schemaFacet(openLineage, schema))
+            .lifecycleStateChange(
+                openLineage.newLifecycleStateChangeDatasetFacet(lifecycleStateChange, null))
             .dataSource(PlanUtils.datasourceFacet(openLineage, ident.getNamespace()));
-
-    facets.forEach((key, facet) -> builder.put(key, facet));
-
     return getDataset(ident.getName(), ident.getNamespace(), builder.build());
   }
 

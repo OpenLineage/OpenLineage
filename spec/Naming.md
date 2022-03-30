@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
 # Naming
 
 We define the unique name strategy per resource to ensure it is followed uniformly independently from who is producing metadata and we can connect lineage from various sources.
@@ -55,6 +57,9 @@ Naming hierarchy:
  * Database: {database name} => unique across the account
  * Schema: {schema name} => unique within the database
  * Table: {table name} => unique within the schema
+
+Database, schema, table or column names are uppercase in Snowflake.
+Clients should make sure that they are sending those as uppercase.
 
 Identifier:
  * Namespace: snowflake://{account name}

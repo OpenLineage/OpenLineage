@@ -1,19 +1,9 @@
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-License-Identifier: Apache-2.0.
 import os
 import logging
-from typing import Any, Optional
 from dateutil.parser import parse
 from jinja2 import Environment
+from typing import Any, Optional
 
 
 log = logging.getLogger(__name__)
@@ -35,7 +25,6 @@ def is_datetime(result: Any):
 def env_var(var: str, default: Optional[str] = None) -> str:
     """The env_var() function. Return the environment variable named 'var'.
     If there is no such environment variable set, return the default.
-
     If the default is None, raise an exception for an undefined variable.
     """
     if var in os.environ:
@@ -74,6 +63,7 @@ def match(expected, result) -> bool:
                 return False
     elif isinstance(expected, list):
         if len(expected) != len(result):
+            log.error(f"Length does not match: expected {len(expected)} result: {result}")
             return False
 
         # Try to resolve case where we have wrongly sorted lists by looking at name attr
@@ -82,18 +72,27 @@ def match(expected, result) -> bool:
             if 'name' in x:
                 matched = False
                 for y in result:
-                    if 'name' in y and x['name'] == y['name']:
-                        if not match(x, y):
-                            return False
-                        matched = True
-                        break
+                    if 'name' in y:
+                        expected_name = env.from_string(x['name']).render()
+                        result_name = env.from_string(y['name']).render()
+                        if expected_name == result_name:
+                            if not match(x, y):
+                                log.error(f"List not matched {x} where {y}")
+                                return False
+                    matched = True
+                    break
                 if not matched:
+                    log.error(
+                        f"List not matched - no same stuff for {x} "
+                        f"in expected: {expected} result {result}"
+                    )
                     return False
             else:
                 if not match(x, result[i]):
+                    log.error(f"List not matched expected: {x} result: {result[i]}")
                     return False
     elif isinstance(expected, str):
-        if expected.lstrip().startswith('{{'):
+        if '{{' in expected:
             # Evaluate jinja: in some cases, we want to check only if key exists, or if
             # value has the right type
             rendered = env.from_string(expected).render(result=result)
@@ -102,7 +101,9 @@ def match(expected, result) -> bool:
             log.error(f"Rendered value {rendered} does not equal 'true' or {result}")
             return False
         elif expected != result:
+            log.error(f"Expected value {expected} does not equal result {result}")
             return False
     elif expected != result:
+        log.error(f"Object of type {type(expected)}: {expected} does not match {result}")
         return False
     return True

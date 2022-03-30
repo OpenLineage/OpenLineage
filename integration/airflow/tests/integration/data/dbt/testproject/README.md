@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
 Welcome to your new dbt project!
 
 ### Using the starter project

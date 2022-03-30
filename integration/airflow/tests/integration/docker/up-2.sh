@@ -1,16 +1,6 @@
 #!/bin/bash
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-License-Identifier: Apache-2.0.
 #
 # Usage: $ ./up.sh
 
@@ -31,8 +21,8 @@ fi
 if [[ -n "$CI" ]]; then
   echo $GCLOUD_SERVICE_KEY > gcloud/gcloud-service-key.json
   chmod 644 gcloud/gcloud-service-key.json
-  mkdir -p airflow/logs
-  chmod a+rwx -R airflow/logs
+  mkdir -p tests/airflow/logs
+  chmod a+rwx -R tests/airflow/logs
 fi
 
 # maybe overkill
@@ -42,8 +32,11 @@ OPENLINEAGE_AIRFLOW_WHL_ALL=$(docker run openlineage-airflow-base:latest sh -c "
 # Add revision to requirements.txt
 cat > requirements.txt <<EOL
 airflow-provider-great-expectations==0.0.8
+apache-airflow-providers-snowflake==2.5.1
 great-expectations==0.13.42
-dbt-bigquery==0.20.1
+dbt-core==1.0.1
+dbt-bigquery==1.0.0
+dbt-snowflake==1.0.0
 ${OPENLINEAGE_AIRFLOW_WHL}
 EOL
 
@@ -65,10 +58,11 @@ EOL
 #  :    <-- until the last ':'
 AIRFLOW_VERSION=${AIRFLOW_IMAGE##*:}
 
-export BIGQUERY_PREFIX=${AIRFLOW_VERSION//./_}
-export BIGQUERY_DBT_DATASET=${AIRFLOW_VERSION//./_}_dbt
+# Remove -python3.7 from the tag
+export AIRFLOW_VERSION=${AIRFLOW_VERSION::-10}
+export BIGQUERY_PREFIX=$(echo "$AIRFLOW_VERSION" | tr "-" "_" | tr "." "_")
+export DBT_DATASET_PREFIX=$(echo "$AIRFLOW_VERSION" | tr "-" "_" | tr "." "_")_dbt
 
-
-docker-compose -f docker-compose-2.yml down
-docker-compose -f docker-compose-2.yml up --build --abort-on-container-exit airflow_init postgres
-docker-compose -f docker-compose-2.yml up --build --exit-code-from integration --scale airflow_init=0
+docker-compose -f tests/docker-compose-2.yml down
+docker-compose -f tests/docker-compose-2.yml up --build --abort-on-container-exit airflow_init postgres
+docker-compose -f tests/docker-compose-2.yml up --build --exit-code-from integration --scale airflow_init=0

@@ -10,14 +10,14 @@ Maven:
 <dependency>
     <groupId>io.openlineage</groupId>
     <artifactId>openlineage-spark</artifactId>
-    <version>0.5.2</version>
+    <version>0.6.2</version>
 </dependency>
 ```
 
 or Gradle:
 
 ```groovy
-implementation 'io.openlineage:openlineage-spark:0.5.2'
+implementation 'io.openlineage:openlineage-spark:0.6.2'
 ```
 
 ## Getting started
@@ -50,7 +50,7 @@ from pyspark.sql import SparkSession
 
 spark = (SparkSession.builder.master('local')
          .appName('sample_spark')
-         .config('spark.jars.packages', 'io.openlineage:openlineage-spark:0.5.2')
+         .config('spark.jars.packages', 'io.openlineage:openlineage-spark:0.6.2')
          .config('spark.extraListeners', 'io.openlineage.spark.agent.OpenLineageSparkListener')
          .config('spark.openlineage.url', 'http://{openlineage.client.host}/api/v1/namespaces/spark_integration/')
          .getOrCreate())
@@ -66,7 +66,7 @@ container):
 ```python
 from pyspark.sql import SparkSession
 
-file = "/home/jovyan/openlineage/libs/openlineage-spark-0.5.2.jar"
+file = "/home/jovyan/openlineage/libs/openlineage-spark-0.6.2.jar"
 
 spark = (SparkSession.builder.master('local').appName('rdd_to_dataframe')
              .config('spark.jars', file)
@@ -76,24 +76,6 @@ spark = (SparkSession.builder.master('local').appName('rdd_to_dataframe')
              .getOrCreate())
 ```
 
-# OpenLineageSparkListener as a java agent
-Configuring SparkListener as a java agent that needs to be added to
-the JVM startup parameters. Setup in a pyspark notebook looks like the following:
-
-```python
-from pyspark.sql import SparkSession
-
-file = "/home/jovyan/openlineage/libs/openlineage-spark-0.5.2.jar"
-
-spark = (SparkSession.builder.master('local').appName('rdd_to_dataframe')
-         .config('spark.driver.extraJavaOptions',
-                 f"-javaagent:{file}=http://{openlineage.client.host}/api/v1/namespaces/spark_integration/")
-         .config('spark.jars.packages', 'org.postgresql:postgresql:42.2.+')
-         .config('spark.sql.repl.eagerEval.enabled', 'true')
-         .getOrCreate())
-```
-When running on a real cluster, the openlineage-spark jar has to be in a known location on the master
-node of the cluster and its location referenced in the `spark.driver.extraJavaOptions` parameter.
 ## Arguments
 
 ### Spark Listener
@@ -111,19 +93,6 @@ The following parameters can be specified
 | spark.openlineage.parentRunId | The RunId of the parent job that initiated this Spark job | xxxx-xxxx-xxxx-xxxx |
 | spark.openlineage.apiKey | An API key to be used when sending events to the OpenLineage server | abcdefghijk |
 | spark.openlineage.url.param.xyz | A url parameter (replace xyz) and value to be included in requests to the OpenLineage API server | abcdefghijk |
-
-### Java Agent
-The java agent accepts an argument in the form of a uri. It includes the location of OpenLineage client, the
-namespace name, the parent job name, and a parent run id. The run id will be emitted as a parent run
-facet.
-```
-{openlineage.client.host}/api/v1/namespaces/{namespace}/job/{job_name}/runs/{run_uuid}?api_key={api_key}"
-
-```
-For example:
-```
-https://openlineage.client.host/api/v1/namespaces/foo/job/spark.submit_job/runs/a95858ad-f9b5-46d7-8f1c-ca9f58f68978"
-```
 
 # Build
 
@@ -147,7 +116,7 @@ To run the integration tests, from the current directory run:
 ./gradlew integrationTest
 ```
 
-## Build spark agent jar
+## Build jar
 
 ```sh
 ./gradlew shadowJar

@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
 import io.openlineage.spark.agent.facets.TableProviderFacet;
@@ -20,6 +22,12 @@ public interface CatalogHandler {
       Map<String, String> properties);
 
   default Optional<TableProviderFacet> getTableProviderFacet(Map<String, String> properties) {
+    return Optional.empty();
+  }
+
+  /** Try to find string that uniquely identifies version of a dataset. */
+  default Optional<String> getDatasetVersion(
+      TableCatalog catalog, Identifier identifier, Map<String, String> properties) {
     return Optional.empty();
   }
 

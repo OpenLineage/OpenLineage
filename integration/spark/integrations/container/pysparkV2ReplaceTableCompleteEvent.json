@@ -22,8 +22,9 @@
           "type" : "string"
         } ]
       },
-      "tableStateChange": {
-        "stateChange": "overwrite"
+      "version" : {},
+      "lifecycleStateChange": {
+        "lifecycleStateChange": "OVERWRITE"
       }
     }
   } ]

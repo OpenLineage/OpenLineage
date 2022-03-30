@@ -1,15 +1,5 @@
 /*
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * SPDX-License-Identifier: Apache-2.0.
  */
 
 import org.apache.tools.ant.filters.ReplaceTokens
@@ -95,6 +85,7 @@ dependencies {
         exclude group: 'com.fasterxml.jackson.core'
         exclude group: 'com.fasterxml.jackson.datatype'
     }
+
     implementation 'org.javassist:javassist:3.27.0-GA'
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.0.3'
     implementation ("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonDatatypeVersion}"){
@@ -112,6 +103,7 @@ dependencies {
     }
     compileOnly "org.apache.spark:spark-hive_2.11:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql-kafka-0-10_2.11:${sparkVersion}"
+    compileOnly "com.databricks:dbutils-api_${scalaVersion}:0.0.5"
 
     testImplementation platform('org.junit:junit-bom:5.7.1')
     testImplementation "org.postgresql:postgresql:${postgresqlVersion}"
@@ -122,11 +114,13 @@ dependencies {
     testImplementation "org.testcontainers:mockserver:${testcontainersVersion}"
     testImplementation "org.testcontainers:kafka:${testcontainersVersion}"
     testImplementation "org.apache.kafka:kafka-clients:2.6.0"
-    testImplementation('org.mock-server:mockserver-client-java:5.11.2') {
+    testImplementation('org.mock-server:mockserver-client-java:5.12.0') {
         exclude group: 'com.google.guava', module: 'guava'
         exclude group: 'com.fasterxml.jackson.core'
         exclude group: 'com.fasterxml.jackson.datatype'
+        exclude group: 'com.fasterxml.jackson.dataformat'
     }
+    testImplementation group: 'org.awaitility', name: 'awaitility', version: '4.1.1'
     testCompile "org.assertj:assertj-core:${assertjVersion}"
     testCompile "org.junit.jupiter:junit-jupiter:${junit5Version}"
     testCompile "org.junit.jupiter:junit-jupiter-params:${junit5Version}"
@@ -215,8 +209,8 @@ sourceSets {
     }
 }
 
-compileJava.finalizedBy compileSpark3Java
-compileTestJava.finalizedBy compileSpark3TestJava
+compileJava.finalizedBy compileSpark2Java, compileSpark3Java
+compileTestJava.finalizedBy compileSpark2TestJava, compileSpark3TestJava
 
 task sourceJar(type: Jar) {
     classifier 'sources'
@@ -239,7 +233,7 @@ tasks.register('copyDependencies', Copy) {
 
 def commonTestConfiguration = {
     forkEvery 1
-    maxParallelForks 3
+    maxParallelForks 5
     testLogging {
         events "passed", "skipped", "failed"
         showStandardStreams = true
@@ -249,7 +243,8 @@ def commonTestConfiguration = {
             'junit.platform.output.capture.stderr': 'true',
             'spark.version'                       : project.getProperty('spark.version'),
             'openlineage.spark.jar': "${archivesBaseName}-${project.version}.jar",
-            'kafka.package.version': kafkaPackage(scalaVersion, project.getProperty('spark.version'))
+            'kafka.package.version': kafkaPackage(scalaVersion, project.getProperty('spark.version')),
+            'mockserver.logLevel': 'ERROR'
     ]
     classpath =  project.sourceSets.test.runtimeClasspath +
             (isSpark3 ? configurations.spark3Test : configurations.spark2Test)
@@ -391,8 +386,6 @@ shadowJar {
 
     manifest {
         attributes(
-                "Premain-Class": 'io.openlineage.spark.agent.SparkAgent',
-                "Agent-Class": 'io.openlineage.spark.agent.SparkAgent',
                 'Created-By': "Gradle ${gradle.gradleVersion}",
                 'Built-By': System.getProperty('user.name'),
                 'Build-Jdk': System.getProperty('java.version'),

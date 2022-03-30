@@ -40,8 +40,8 @@
           "type" : "long"
         } ]
       },
-      "tableStateChange" : {
-        "stateChange" : "create"
+      "lifecycleStateChange" : {
+        "lifecycleStateChange" : "CREATE"
       }
     }
   } ]

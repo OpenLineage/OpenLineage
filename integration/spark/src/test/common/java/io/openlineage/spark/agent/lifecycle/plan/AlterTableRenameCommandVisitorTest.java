@@ -1,10 +1,11 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
-import io.openlineage.spark.agent.facets.PreviousTableNameFacet;
 import java.util.List;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier;
@@ -81,12 +82,11 @@ public class AlterTableRenameCommandVisitorTest {
         .hasFieldOrPropertyWithValue("name", "/tmp/warehouse/new_table")
         .hasFieldOrPropertyWithValue("namespace", "file");
 
-    PreviousTableNameFacet previousTableNameFacet =
-        ((PreviousTableNameFacet)
-            datasets.get(0).getFacets().getAdditionalProperties().get("previousTableName"));
+    OpenLineage.LifecycleStateChangeDatasetFacetPreviousIdentifier previousIdentifier =
+        datasets.get(0).getFacets().getLifecycleStateChange().getPreviousIdentifier();
 
-    assertThat(previousTableNameFacet.getPreviousTableUri()).isEqualTo("/tmp/warehouse/old_table");
-    assertThat(previousTableNameFacet.getCurrentTableUri()).isEqualTo("/tmp/warehouse/new_table");
+    assertThat(previousIdentifier.getName()).isEqualTo("/tmp/warehouse/old_table");
+    assertThat(previousIdentifier.getNamespace()).isEqualTo("file");
   }
 
   @Test

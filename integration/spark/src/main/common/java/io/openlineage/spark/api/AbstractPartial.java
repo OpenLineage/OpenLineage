@@ -1,7 +1,10 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 package io.openlineage.spark.api;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 
 /**
  * Non-public interface - a generalization of {@link scala.PartialFunction$} that can be extended
@@ -24,6 +27,9 @@ interface AbstractPartial<T> {
     Type[] typeArgs = ((ParameterizedType) genericSuperclass).getActualTypeArguments();
     if (typeArgs != null && typeArgs.length > 0) {
       Type arg = typeArgs[0];
+      if (arg instanceof TypeVariable) {
+        return false;
+      }
       return ((Class) arg).isAssignableFrom(x.getClass());
     }
     return false;

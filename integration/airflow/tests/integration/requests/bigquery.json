@@ -47,6 +47,14 @@
         "name": "bigquery_orders_popular_day_of_week.bigquery_if_not_exists",
         "namespace": "food_delivery"
     },
+    "run": {
+        "facets": {
+            "externalQuery": {
+              "externalQueryId": "{{ any(result) }}",
+              "source": "bigquery"
+            }
+        }
+    },
     "outputs": [{
 		"facets": {
 			"dataSource": {
@@ -129,6 +137,14 @@
 		"name": "bigquery_orders_popular_day_of_week.bigquery_insert",
 		"namespace": "food_delivery"
 	},
+    "run": {
+        "facets": {
+            "externalQuery": {
+              "externalQueryId": "{{ any(result) }}",
+              "source": "bigquery"
+            }
+        }
+    },
 	"outputs": [{
 		"facets": {
 			"dataSource": {

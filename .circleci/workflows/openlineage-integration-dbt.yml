@@ -1,0 +1,11 @@
+workflows:
+  openlineage-integration-dbt:
+    jobs:
+      - build-integration-dbt:
+          filters:
+            branches:
+              only: main
+          build_tag: ".dev<< pipeline.number >>"
+      - workflow_complete:
+          requires:
+            - build-integration-dbt

@@ -36,7 +36,9 @@ def test_extract_dag_code():
 @patch.dict(os.environ, {"OPENLINEAGE_AIRFLOW_DISABLE_SOURCE_CODE": "True"})
 def test_extract_dag_code_env_disables_on_true():
     extractor = PythonExtractor(python_task_getcwd)
-    assert extractor.extract() is None
+    metadata = extractor.extract()
+    assert metadata is not None
+    assert "sourceCode" not in metadata.job_facets
 
 
 @patch.dict(os.environ, {"OPENLINEAGE_AIRFLOW_DISABLE_SOURCE_CODE": "asdftgeragdsfgawef"})

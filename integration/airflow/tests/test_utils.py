@@ -1,15 +1,7 @@
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-License-Identifier: Apache-2.0.
 import os
+from urllib.parse import parse_qs, urlparse
+
 import pendulum
 import datetime
 from airflow.models import Connection
@@ -27,6 +19,7 @@ from openlineage.airflow.utils import (
 AIRFLOW_VERSION = '1.10.12'
 AIRFLOW_CONN_ID = 'test_db'
 AIRFLOW_CONN_URI = 'postgres://localhost:5432/testdb'
+SNOWFLAKE_CONN_URI = 'snowflake://12345.us-east-1.snowflakecomputing.com/MyTestRole?extra__snowflake__account=12345&extra__snowflake__database=TEST_DB&extra__snowflake__insecure_mode=false&extra__snowflake__region=us-east-1&extra__snowflake__role=MyTestRole&extra__snowflake__warehouse=TEST_WH&extra__snowflake__aws_access_key_id=123456&extra__snowflake__aws_secret_access_key=abcdefg' # NOQA
 
 
 def test_get_connection_uri():
@@ -57,6 +50,23 @@ def test_get_connection():
     assert conn.port == 5432
     assert conn.conn_type == 'postgres'
     assert conn
+
+
+def test_get_connection_filter_qs_params():
+    conn = Connection(conn_id='snowflake', uri=SNOWFLAKE_CONN_URI)
+    uri = get_connection_uri(conn)
+    parsed = urlparse(uri)
+    qs_dict = parse_qs(parsed.query)
+    assert not any(k in qs_dict.keys()
+                   for k in ['extra__snowflake__insecure_mode',
+                             'extra__snowflake__region',
+                             'extra__snowflake__role',
+                             'extra__snowflake__aws_access_key_id',
+                             'extra__snowflake__aws_secret_access_key'])
+    assert all(k in qs_dict.keys()
+               for k in ['extra__snowflake__account',
+                         'extra__snowflake__database',
+                         'extra__snowflake__warehouse'])
 
 
 def test_get_location_no_file_path():

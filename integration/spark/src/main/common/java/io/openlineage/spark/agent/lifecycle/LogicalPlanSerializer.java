@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 package io.openlineage.spark.agent.lifecycle;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
@@ -7,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreType;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.introspect.ClassIntrospector;
@@ -52,11 +55,22 @@ class LogicalPlanSerializer {
     mapper.setMixInResolver(new LogicalPlanMixinResolver());
   }
 
+  /**
+   * Returns valid JSON string
+   *
+   * @param x
+   * @return
+   */
   public String serialize(LogicalPlan x) {
     try {
       return mapper.writeValueAsString(x);
     } catch (Throwable e) {
-      return "Unable to serialize: " + e.getMessage();
+      try {
+        return mapper.writeValueAsString(
+            "Unable to serialize logical plan due to: " + e.getMessage());
+      } catch (JsonProcessingException ex) {
+        return "\"Unable to serialize error message\"";
+      }
     }
   }
 

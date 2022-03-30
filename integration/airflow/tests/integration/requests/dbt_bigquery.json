@@ -1,0 +1,254 @@
+[
+    {
+        "eventType": "START",
+        "inputs": [],
+        "run": {},
+        "job": {
+            "facets": {},
+            "name": "openlineage-ci.{{ env_var('DBT_DATASET_PREFIX') }}.testproject.money_received",
+            "namespace": "food_delivery"
+        },
+        "outputs": [
+            {
+                "facets": {},
+                "name": "openlineage-ci.{{ env_var('DBT_DATASET_PREFIX') }}.money_received",
+                "namespace": "bigquery",
+                "outputFacets": {}
+            }
+        ]
+    },
+    {
+        "eventType": "START",
+        "inputs": [],
+        "run": {},
+        "job": {
+            "facets": {},
+            "name": "openlineage-ci.{{ env_var('DBT_DATASET_PREFIX') }}.testproject.money_send",
+            "namespace": "food_delivery"
+        },
+        "outputs": [
+            {
+                "facets": {},
+                "name": "openlineage-ci.{{ env_var('DBT_DATASET_PREFIX') }}.money_send",
+                "namespace": "bigquery",
+                "outputFacets": {}
+            }
+        ]
+    },
+    {
+        "eventType": "START",
+        "inputs": [
+            {
+                "facets": {},
+                "name": "openlineage-ci.{{ env_var('DBT_DATASET_PREFIX') }}.money_received",
+                "namespace": "bigquery"
+            },
+            {
+                "facets": {},
+                "name": "openlineage-ci.{{ env_var('DBT_DATASET_PREFIX') }}.money_send",
+                "namespace": "bigquery"
+            }
+        ],
+        "job": {
+            "facets": {},
+            "name": "openlineage-ci.{{ env_var('DBT_DATASET_PREFIX') }}.testproject.balance",
+            "namespace": "food_delivery"
+        },
+        "outputs": [
+            {
+                "facets": {},
+                "name": "openlineage-ci.{{ env_var('DBT_DATASET_PREFIX') }}.balance",
+                "namespace": "bigquery",
+                "outputFacets": {}
+            }
+        ]
+    },
+    {
+        "eventType": "COMPLETE",
+        "inputs": [],
+        "run": {
+            "facets": {
+                "parent": {
+                    "job": {"name": "dbt-run-testproject", "namespace": "food_delivery"},
+                    "run": {}
+                }
+		    }
+        },
+        "job": {
+            "facets": {
+                "sql": {
+                    "query": "select\n    users.user_id,\n    transactions.currency,\n    sum(transactions.amount) as amount\nfrom `openlineage-ci`.`{{ env_var('DBT_DATASET_PREFIX') }}`.`users`\nleft join `openlineage-ci`.`{{ env_var('DBT_DATASET_PREFIX') }}`.`transactions`\non users.user_id=transactions.user_id\nwhere leg='c'\ngroup by users.user_id, currency"
+                }
+            },
+            "name": "openlineage-ci.{{ env_var('DBT_DATASET_PREFIX') }}.testproject.money_received",
+            "namespace": "food_delivery"
+        },
+        "outputs": [
+            {
+                "facets": {
+                    "dataSource": {
+                        "name": "bigquery",
+                        "uri": "bigquery"
+                    },
+                    "schema": {
+                        "fields": [
+                            {
+                                "name": "user_id"
+                            },
+                            {
+                                "name": "currency"
+                            },
+                            {
+                                "name": "amount"
+                            }
+                        ]
+                    }
+                },
+                "name": "openlineage-ci.{{ env_var('DBT_DATASET_PREFIX') }}.money_received",
+                "namespace": "bigquery",
+                "outputFacets": {}
+            }
+        ]
+    },
+    {
+        "eventType": "COMPLETE",
+        "inputs": [],
+        "run": {
+            "facets": {
+                "parent": {
+                    "job": {"name": "dbt-run-testproject", "namespace": "food_delivery"},
+                    "run": {}
+                }
+		    }
+        },
+        "job": {
+            "facets": {
+                "sql": {
+                    "query": "select\n    users.user_id,\n    transactions.currency,\n    sum(transactions.amount) as amount\nfrom `openlineage-ci`.`{{ env_var('DBT_DATASET_PREFIX') }}`.`users`\nleft join `openlineage-ci`.`{{ env_var('DBT_DATASET_PREFIX') }}`.`transactions`\non users.user_id=transactions.user_id\nwhere leg='b'\ngroup by users.user_id, currency"
+                }
+            },
+            "name": "openlineage-ci.{{ env_var('DBT_DATASET_PREFIX') }}.testproject.money_send",
+            "namespace": "food_delivery"
+        },
+        "outputs": [
+            {
+                "facets": {
+                    "dataSource": {
+                        "name": "bigquery",
+                        "uri": "bigquery"
+                    },
+                    "schema": {
+                        "fields": [
+                            {
+                                "name": "user_id"
+                            },
+                            {
+                                "name": "currency"
+                            },
+                            {
+                                "name": "amount"
+                            }
+                        ]
+                    }
+                },
+                "name": "openlineage-ci.{{ env_var('DBT_DATASET_PREFIX') }}.money_send",
+                "namespace": "bigquery",
+                "outputFacets": {}
+            }
+        ]
+    },
+    {
+        "eventType": "COMPLETE",
+        "run": {
+            "facets": {
+                "parent": {
+                    "job": {"name": "dbt-run-testproject", "namespace": "food_delivery"},
+                    "run": {}
+                }
+		    }
+        },
+        "inputs": [
+            {
+                "facets": {
+                    "dataSource": {
+                        "name": "bigquery",
+                        "uri": "bigquery"
+                    },
+                    "schema": {
+                        "fields": [
+                            {
+                                "name": "user_id"
+                            },
+                            {
+                                "name": "currency"
+                            },
+                            {
+                                "name": "amount"
+                            }
+                        ]
+                    }
+                },
+                "name": "openlineage-ci.{{ env_var('DBT_DATASET_PREFIX') }}.money_received",
+                "namespace": "bigquery"
+            },
+            {
+                "facets": {
+                    "dataSource": {
+                        "name": "bigquery",
+                        "uri": "bigquery"
+                    },
+                    "schema": {
+                        "fields": [
+                            {
+                                "name": "user_id"
+                            },
+                            {
+                                "name": "currency"
+                            },
+                            {
+                                "name": "amount"
+                            }
+                        ]
+                    }
+                },
+                "name": "openlineage-ci.{{ env_var('DBT_DATASET_PREFIX') }}.money_send",
+                "namespace": "bigquery"
+            }
+        ],
+        "job": {
+            "facets": {
+                "sql": {
+                    "query": "select\n    ifnull(money_received.user_id, money_send.user_id) as user_id,\n    ifnull(money_received.currency, money_send.currency) as currency,\n    ifnull(money_received.amount, 0) - ifnull(money_send.amount, 0) as balance\nfrom `openlineage-ci`.`{{ env_var('DBT_DATASET_PREFIX') }}`.`money_received`\nfull outer join `openlineage-ci`.`{{ env_var('DBT_DATASET_PREFIX') }}`.`money_send`\non money_received.user_id=money_send.user_id\nand money_received.currency=money_send.currency"
+                }
+            },
+            "name": "openlineage-ci.{{ env_var('DBT_DATASET_PREFIX') }}.testproject.balance",
+            "namespace": "food_delivery"
+        },
+        "outputs": [
+            {
+                "facets": {
+                    "dataSource": {
+                        "name": "bigquery",
+                        "uri": "bigquery"
+                    },
+                    "schema": {
+                        "fields": [
+                            {
+                                "name": "user_id"
+                            },
+                            {
+                                "name": "currency"
+                            },
+                            {
+                                "name": "amount"
+                            }
+                        ]
+                    }
+                },
+                "name": "openlineage-ci.{{ env_var('DBT_DATASET_PREFIX') }}.balance",
+                "namespace": "bigquery",
+                "outputFacets": {}
+            }
+        ]
+    }
+]

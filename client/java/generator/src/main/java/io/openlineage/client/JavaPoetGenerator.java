@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 package io.openlineage.client;
 
 import static io.openlineage.client.TypeResolver.titleCase;
@@ -187,6 +189,10 @@ public class JavaPoetGenerator {
 
     com.squareup.javapoet.AnnotationSpec.Builder jsonPropertyOrder = AnnotationSpec.builder(JsonPropertyOrder.class);
     for (ResolvedField f : type.getProperties()) {
+      if (f.getType() instanceof TypeResolver.EnumResolvedType) {
+        modelClassBuilder.addType(enumClass((TypeResolver.EnumResolvedType)f.getType()));
+      }
+
       modelClassBuilder.addField(getTypeName(f.getType()), f.getName(), PRIVATE, FINAL);
       MethodSpec getter = getter(f)
           .addModifiers(PUBLIC)
@@ -219,6 +225,13 @@ public class JavaPoetGenerator {
     MethodSpec modelConstructor = modelConstructor(type);
     modelClassBuilder.addMethod(modelConstructor);
     return modelClassBuilder.build();
+  }
+
+  private TypeSpec enumClass(TypeResolver.EnumResolvedType type) {
+    TypeSpec.Builder enumBuilder = TypeSpec.enumBuilder(type.getName())
+        .addModifiers(PUBLIC);
+    type.getValues().forEach(v -> enumBuilder.addEnumConstant(v));
+    return enumBuilder.build();
   }
 
   private TypeSpec builderClass(ObjectResolvedType type) {
@@ -528,6 +541,11 @@ public class JavaPoetGenerator {
       @Override
       public TypeName visit(ArrayResolvedType arrayType) {
         return ParameterizedTypeName.get(ClassName.get(List.class), getTypeName(arrayType.getItems()));
+      }
+
+      @Override
+      public TypeName visit(TypeResolver.EnumResolvedType enumType) {
+         return ClassName.get(containerClass, enumType.getParentName() + "." + enumType.getName());
       }
     });
   }

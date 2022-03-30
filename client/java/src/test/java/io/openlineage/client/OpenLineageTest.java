@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 package io.openlineage.client;
 
 import static org.junit.Assert.assertEquals;
@@ -55,7 +57,7 @@ public class OpenLineageTest {
     Job job = ol.newJob(namespace, name, jobFacets);
     List<InputDataset> inputs = Arrays.asList(ol.newInputDataset("ins", "input", null, null));
     List<OutputDataset> outputs = Arrays.asList(ol.newOutputDataset("ons", "output", null, null));
-    RunEvent runStateUpdate = ol.newRunEvent("START", now, run, job, inputs, outputs);
+    RunEvent runStateUpdate = ol.newRunEvent(OpenLineage.RunEvent.EventType.START, now, run, job, inputs, outputs);
 
 
     String json = mapper.writeValueAsString(runStateUpdate);
@@ -108,6 +110,7 @@ public class OpenLineageTest {
     Job job = ol.newJobBuilder().namespace(namespace).name(name).facets(jobFacets).build();
 
     List<InputDataset> inputs = Arrays.asList(ol.newInputDatasetBuilder().namespace("ins").name("input")
+        .facets(ol.newDatasetFacetsBuilder().version(ol.newDatasetVersionDatasetFacet("input-version")).build())
         .inputFacets(
             ol.newInputDatasetInputFacetsBuilder().dataQualityMetrics(
                 ol.newDataQualityMetricsInputDatasetFacetBuilder()
@@ -125,13 +128,14 @@ public class OpenLineageTest {
             ).build())
         .build());
     List<OutputDataset> outputs = Arrays.asList(ol.newOutputDatasetBuilder().namespace("ons").name("output")
+        .facets(ol.newDatasetFacetsBuilder().version(ol.newDatasetVersionDatasetFacet("output-version")).build())
         .outputFacets(
             ol.newOutputDatasetOutputFacetsBuilder()
                 .outputStatistics(ol.newOutputStatisticsOutputDatasetFacet(10L, 20L)).build())
         .build());
 
     RunEvent runStateUpdate = ol.newRunEventBuilder()
-        .eventType("START")
+        .eventType(OpenLineage.RunEvent.EventType.START)
         .eventTime(now)
         .run(run)
         .job(job)
@@ -158,6 +162,7 @@ public class OpenLineageTest {
       InputDataset inputDataset = runStateUpdate.getInputs().get(0);
       assertEquals("ins", inputDataset.getNamespace());
       assertEquals("input", inputDataset.getName());
+      assertEquals("input-version", inputDataset.getFacets().getVersion().getDatasetVersion());
 
       DataQualityMetricsInputDatasetFacet dq = inputDataset.getInputFacets().getDataQualityMetrics();
       assertEquals((Long)10L, dq.getRowCount());
@@ -175,7 +180,8 @@ public class OpenLineageTest {
       OutputDataset outputDataset = runStateUpdate.getOutputs().get(0);
       assertEquals("ons", outputDataset.getNamespace());
       assertEquals("output", outputDataset.getName());
-
+      assertEquals("output-version", outputDataset.getFacets().getVersion().getDatasetVersion());
+      
       assertEquals(roundTrip(json), roundTrip(mapper.writeValueAsString(read)));
       assertEquals((Long)10L, outputDataset.getOutputFacets().getOutputStatistics().getRowCount());
       assertEquals((Long)20L, outputDataset.getOutputFacets().getOutputStatistics().getSize());
@@ -190,7 +196,7 @@ public class OpenLineageTest {
       assertEquals(runId, readServer.getRun().getRunId());
       assertEquals(name, readServer.getJob().getName());
       assertEquals(namespace, readServer.getJob().getNamespace());
-      assertEquals(runStateUpdate.getEventType(), readServer.getEventType());
+      assertEquals(runStateUpdate.getEventType().name(), readServer.getEventType().name());
       assertEquals(runStateUpdate.getEventTime(), readServer.getEventTime());
 
       assertEquals(json, mapper.writeValueAsString(readServer));

@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 package io.openlineage.spark.agent.facets.builder;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -87,7 +89,7 @@ class LogicalPlanRunFacetBuilderTest {
     assertThat(
             builder.isDefinedAt(
                 new SparkListenerJobStart(1, 1L, Seq$.MODULE$.empty(), new Properties())))
-        .isFalse();
+        .isTrue();
   }
 
   @Test

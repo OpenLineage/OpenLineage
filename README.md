@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
 <div align="center">
   <img src="./doc/openlineage-logo.png" width="375px" />
   <a href="https://lfaidata.foundation/projects">
@@ -24,24 +26,29 @@ The core lineage model is extensible by defining specific facets to enrich those
 OpenLineage is an [LF AI & Data Foundation](https://lfaidata.foundation/projects/openlineage) sandbox project under active development and we'd love your help!
 
 ## Problem
- ![Problem](doc/problem.png)
 
 ### Before
+
 - Duplication of effort: Each project has to instrument all jobs
 - Integrations are external and can break with new versions
 
+![Before OpenLineage](doc/before-ol.svg)
+
 ### With OpenLineage
+
 - Effort of integration is shared
 - Integration can be pushed in each project: no need to play catch up
+
+![With OpenLineage](doc/with-ol.svg)
 
 ## Scope
 OpenLineage defines the metadata for running jobs and the corresponding events.
 A configurable backend allows to choose what protocol to send the events to.
- ![Scope](doc/Scope.png)
+ ![Scope](doc/scope.svg)
 
 ## Core model
 
- ![Model](doc/OpenLineageModel.svg)
+ ![Model](doc/datamodel.svg)
 
  A facet is an atomic piece of metadata attached to one of the core entities.
  See the spec for more details.
@@ -55,6 +62,7 @@ OpenLineage repository contains integrations with several systems.
 
 - [Apache Spark](https://github.com/OpenLineage/OpenLineage/tree/main/integration/spark)
 - [Apache Airflow](https://github.com/OpenLineage/OpenLineage/tree/main/integration/airflow)
+- [Dagster](https://github.com/OpenLineage/OpenLineage/tree/main/integration/dagster)
 - [dbt](https://github.com/OpenLineage/OpenLineage/tree/main/integration/dbt)
 
 ## Related projects

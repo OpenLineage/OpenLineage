@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
 import io.openlineage.spark.agent.facets.TableProviderFacet;
@@ -57,6 +59,14 @@ public class CatalogUtils3 {
     Optional<CatalogHandler> catalogHandler = getCatalogHandler(catalog);
     return catalogHandler.isPresent()
         ? catalogHandler.get().getTableProviderFacet(properties)
+        : Optional.empty();
+  }
+
+  public static Optional<String> getDatasetVersion(
+      TableCatalog catalog, Identifier identifier, Map<String, String> properties) {
+    Optional<CatalogHandler> catalogHandler = getCatalogHandler(catalog);
+    return catalogHandler.isPresent()
+        ? catalogHandler.get().getDatasetVersion(catalog, identifier, properties)
         : Optional.empty();
   }
 

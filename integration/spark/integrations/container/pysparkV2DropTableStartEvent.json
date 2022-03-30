@@ -14,8 +14,8 @@
           "name": "file",
           "uri": "file"
         },
-        "tableStateChange": {
-          "stateChange": "drop"
+        "lifecycleStateChange": {
+          "lifecycleStateChange": "DROP"
         }
       }
     }
