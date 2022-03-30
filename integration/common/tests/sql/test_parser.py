@@ -178,6 +178,7 @@ def test_parse_simple_insert_into_select():
     assert sql_meta.out_tables == [DbTableMeta('table1')]
 
 
+@pytest.mark.skipif(provider() == "rust", reason="sqlparser-rs requires additional keyword")
 def test_parse_simple_insert():
     sql_meta = parse(
         '''
@@ -190,6 +191,7 @@ def test_parse_simple_insert():
     assert sql_meta.out_tables == [DbTableMeta('table0')]
 
 
+@pytest.mark.skipif(provider() == "rust", reason="sqlparser-rs requires additional keyword")
 def test_parse_simple_insert_select():
     sql_meta = parse(
         '''
@@ -353,7 +355,18 @@ def test_create_table():
     assert sql_meta.out_tables == [DbTableMeta("Persons")]
 
 
-@pytest.mark.skipif(provider() == "rust", reason="rust parser does not support multiple stmts")
+@pytest.mark.skipif(provider() == "python", reason="python does not understand DDL")
+def test_create_table_if_not_exists():
+    sql_meta = parse("""
+    CREATE TABLE IF NOT EXISTS popular_orders_day_of_week (
+      order_day_of_week VARCHAR(64) NOT NULL,
+      order_placed_on   TIMESTAMP NOT NULL,
+      orders_placed     INTEGER NOT NULL
+    )""")
+    assert sql_meta.in_tables == []
+    assert sql_meta.out_tables == [DbTableMeta("popular_orders_day_of_week")]
+
+
 def test_parse_multi_statement():
     sql_meta = parse(
         """
@@ -361,9 +374,7 @@ def test_parse_multi_statement():
         CREATE TABLE schema1.table1(
           col0 VARCHAR(64),
           col1 VARCHAR(64)
-        )
-        DISTKEY(a)
-        INTERLEAVED SORTKEY(col0,col1);
+        );
         INSERT INTO schema1.table1(col0, col1)
           SELECT col0, col1
             FROM schema0.table0;

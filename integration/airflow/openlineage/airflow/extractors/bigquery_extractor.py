@@ -120,7 +120,7 @@ class BigQueryExtractor(BaseExtractor):
 
     def parse_sql_context(self) -> SqlContext:
         try:
-            sql_meta = parse(self.operator.sql, None)
+            sql_meta = parse(self.operator.sql, dialect='bigquery')
             log.debug(f"bigquery sql parsed and obtained meta: {sql_meta}")
             return SqlContext(
                 sql=self.operator.sql,

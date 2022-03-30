@@ -1,6 +1,5 @@
 [{
     "eventType": "START",
-    "inputs": [],
     "job": {
         "facets": {
             "documentation": {
@@ -13,7 +12,6 @@
         "name": "mysql_orders_popular_day_of_week.mysql_if_not_exists",
         "namespace": "food_delivery"
     },
-    "outputs": [],
     "run": {
         "facets": {
             "airflow_runArgs": {
@@ -24,18 +22,6 @@
 },
 {
     "eventType": "START",
-    "inputs": [
-        {
-            "facets": {
-                "dataSource": {
-                    "name": "mysql://mysql:3306",
-                    "uri": "mysql://mysql:3306/food_delivery"
-                }
-            },
-            "name": "food_delivery.top_delivery_times",
-            "namespace": "mysql://mysql:3306"
-        }
-    ],
     "job": {
         "facets": {
             "documentation": {
@@ -58,7 +44,6 @@
 },
 {
     "eventType": "COMPLETE",
-    "inputs": [],
     "job": {
         "facets": {
             "sql": {
@@ -68,7 +53,28 @@
         "name": "mysql_orders_popular_day_of_week.mysql_if_not_exists",
         "namespace": "food_delivery"
     },
-    "outputs": []
+	"outputs": [{
+		"facets": {
+			"dataSource": {
+				"name": "mysql://mysql:3306",
+				"uri": "mysql://mysql:3306/food_delivery"
+			},
+			"schema": {
+				"fields": [{
+					"name": "order_day_of_week",
+					"type": "varchar"
+				}, {
+					"name": "order_placed_on",
+					"type": "timestamp"
+				}, {
+					"name": "orders_placed",
+					"type": "int4"
+				}]
+			}
+		},
+		"name": "food_delivery.popular_orders_day_of_week",
+		"namespace": "mysql://mysql:3306"
+	}]
 },
 {
 	"eventType": "COMPLETE",
