@@ -12,10 +12,12 @@ with open("README.md") as readme_file:
 requirements = [
     "attrs>=19.3.0",
     "requests>=2.20.0",
+    "pyyaml>=5.1.0"
 ]
 
 extras_require = {
-    "tests": ["pytest", "pytest-cov", "mock", "flake8", "requests"],
+    "tests": ["pytest", "pytest-cov", "mock", "flake8", "requests", "pyyaml"],
+    "kafka": ["confluent-kafka"],
 }
 extras_require["dev"] = set(sum(extras_require.values(), []))
 
@@ -30,7 +32,7 @@ setup(
     include_package_data=True,
     install_requires=requirements,
     extras_require=extras_require,
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     zip_safe=False,
     keywords="openlineage",
 )

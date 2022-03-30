@@ -2,7 +2,7 @@
 
 __version__ = "0.7.0"
 
-DEFAULT_TIMEOUT_MS = 10000
+DEFAULT_TIMEOUT_MS = 5000
 DEFAULT_NAMESPACE_NAME = 'default'
 DEFAULT_OPENLINEAGE_URL = 'http://localhost:5000'
 DEFAULT_PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/{__version__}/client/python"
