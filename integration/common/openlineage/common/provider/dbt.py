@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
 import collections
 import datetime
 import json
@@ -298,7 +300,10 @@ class DbtArtifactProcessor:
 
     @staticmethod
     def setup_jinja() -> Environment:
-        env = Environment(undefined=SkipUndefined)
+        env = Environment(
+            extensions=["jinja2.ext.do"],
+            undefined=SkipUndefined
+        )
         # When using env vars for Redshift port, it must be "{{ env_var('PORT') | as_number }}"
         # otherwise Redshift driver will complain, hence the need to add the "as_number" filter
         env.filters.update({"as_number": lambda x: x})

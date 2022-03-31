@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 package io.openlineage.spark.agent.lifecycle;
 
 import static java.util.Optional.ofNullable;
@@ -33,10 +35,16 @@ import scala.collection.JavaConversions;
  * which may point to parseable data sources.
  */
 @Slf4j
-class UnknownEntryFacetListener implements Consumer<LogicalPlan> {
+public class UnknownEntryFacetListener implements Consumer<LogicalPlan> {
 
   private final Map<LogicalPlan, Object> visitedNodes = new IdentityHashMap<>();
   private final LogicalPlanSerializer planSerializer = new LogicalPlanSerializer();
+
+  private static final UnknownEntryFacetListener INSTANCE = new UnknownEntryFacetListener();
+
+  public static UnknownEntryFacetListener getInstance() {
+    return INSTANCE;
+  }
 
   @Override
   public void accept(LogicalPlan logicalPlan) {

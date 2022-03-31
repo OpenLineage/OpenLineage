@@ -1,14 +1,4 @@
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-License-Identifier: Apache-2.0.
 
 import json
 import logging
@@ -78,22 +68,23 @@ class BigQueryExtractor(BaseExtractor):
         inputs = stats.inputs
         output = stats.output
         run_facets = stats.run_facets
+        job_facets = {
+            "sql": SqlJobFacet(context.sql)
+        }
 
         return TaskMetadata(
             name=get_job_name(task=self.operator),
             inputs=[ds.to_openlineage_dataset() for ds in inputs],
             outputs=[output.to_openlineage_dataset()] if output else [],
             run_facets=run_facets,
-            job_facets={
-                "sql": SqlJobFacet(context.sql)
-            }
+            job_facets=job_facets
         )
 
     def _get_xcom_bigquery_job_id(self, task_instance):
         bigquery_job_id = task_instance.xcom_pull(
             task_ids=task_instance.task_id, key='job_id')
 
-        log.info(f"bigquery_job_id: {bigquery_job_id}")
+        log.debug(f"bigquery_job_id: {bigquery_job_id}")
         return bigquery_job_id
 
     def parse_sql_context(self) -> SqlContext:

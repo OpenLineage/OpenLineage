@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 package io.openlineage.spark.agent;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -56,7 +58,11 @@ public class OpenLineageRunEventTest {
     OpenLineage.SQLJobFacet sqlJobFacet = ol.newSQLJobFacet("SELECT * FROM test");
 
     OpenLineage.JobFacets jobFacets =
-        ol.newJobFacets(sqlJobFacet, sourceCodeLocationJobFacet, documentationJobFacet);
+        ol.newJobFacetsBuilder()
+            .sourceCodeLocation(sourceCodeLocationJobFacet)
+            .sql(sqlJobFacet)
+            .documentation(documentationJobFacet)
+            .build();
     OpenLineage.Job job = ol.newJob("namespace", "jobName", jobFacets);
     List<OpenLineage.InputDataset> inputs =
         Arrays.asList(
@@ -98,7 +104,7 @@ public class OpenLineageRunEventTest {
                     .outputStatistics(ol.newOutputStatisticsOutputDatasetFacet(10L, 20L))
                     .build()));
     OpenLineage.RunEvent runStateUpdate =
-        ol.newRunEvent("START", dateTime, run, job, inputs, outputs);
+        ol.newRunEvent(OpenLineage.RunEvent.EventType.START, dateTime, run, job, inputs, outputs);
 
     Map<String, Object> actualJson =
         mapper.readValue(mapper.writeValueAsString(runStateUpdate), mapTypeReference);

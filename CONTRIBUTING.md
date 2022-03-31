@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
 # Contributing to OpenLineage
 
 This project welcomes contributors from any organization or background, provided they are
@@ -67,6 +69,22 @@ In the description provide the following sections:
  - Proposed implementation (How?): Quick description of how do you propose to implement it. Are you proposing a new facet?
 
 This can be just a couple paragraphs to start with.
+
+## New Integrations
+New integrations should be added under the [./integrations](/integrations) folder. Each module
+should have its own build configuration (e.g., `build.gradle` for a Gradle project, `setup.py` for 
+python, etc.) with appropriate unit tests and integration tests (when possible).
+
+Adding a new integration requires updating the CI build configuration with a new workflow. Job
+definitions, orbs, parameters, etc. shoudl be added to the
+[.circleci/continue_config.yml](`continue_config.yml`) file. Workflow definition files are added to
+the [.circleci/workflows](.circleci/workflows) directory. Each workflow file adheres to the CircleCI
+config.yml schema, including only the workflows subschema (see
+[https://circleci.com/docs/2.0/configuration-reference/#workflows](the CircleCI docs) for the schema
+specification). Each workflow must include a `workflow_complete` job that `requires` each terminal
+required step in the workflow (e.g., you might depend on `run-feature-integration-tests` as the
+final step in the workflow). Job names must be unique across all workflows, as ultimately the
+workflows are merged into a single config file. See existing workflows for examples.
 
 ## First-Time Contributors
 

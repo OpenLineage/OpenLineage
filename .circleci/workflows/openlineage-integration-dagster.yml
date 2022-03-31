@@ -1,0 +1,17 @@
+workflows:
+  openlineage-integration-dagster:
+    jobs:
+      - unit-test-integration-dagster:
+          requires:
+            - unit-test-client-python
+      - build-integration-dagster:
+          filters:
+            branches:
+              only: main
+          build_tag: ".dev<< pipeline.number >>"
+          requires:
+            - unit-test-integration-dagster
+      - workflow_complete:
+          requires:
+            - build-integration-dagster
+            - unit-test-integration-dagster

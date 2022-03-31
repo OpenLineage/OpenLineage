@@ -1,14 +1,5 @@
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-License-Identifier: Apache-2.0.
+import logging
 from contextlib import closing
 from typing import Optional, List
 from urllib.parse import urlparse
@@ -21,7 +12,7 @@ from openlineage.airflow.extractors.base import (
     BaseExtractor,
     TaskMetadata
 )
-from openlineage.client.facet import SqlJobFacet
+from openlineage.client.facet import SqlJobFacet, ExternalQueryRunFacet
 from openlineage.common.models import (
     DbTableName,
     DbTableSchema,
@@ -37,6 +28,8 @@ _ORDINAL_POSITION = 3
 # Use 'udt_name' which is the underlying type of column
 # (ex: int4, timestamp, varchar, etc)
 _UDT_NAME = 4
+
+logger = logging.getLogger(__name__)
 
 
 class PostgresExtractor(BaseExtractor):
@@ -94,13 +87,30 @@ class PostgresExtractor(BaseExtractor):
             )
         ]
 
+        task_name = f"{self.operator.dag_id}.{self.operator.task_id}"
+        run_facets = {}
+        job_facets = {
+            'sql': SqlJobFacet(self.operator.sql)
+        }
+
+        query_ids = self._get_query_ids()
+        if len(query_ids) == 1:
+            run_facets['externalQuery'] = ExternalQueryRunFacet(
+                externalQueryId=query_ids[0],
+                source=source.name
+            )
+        elif len(query_ids) > 1:
+            logger.warning(
+                f"Found more than one query id for task {task_name}: {query_ids} "
+                "This might indicate that this task might be better as multiple jobs"
+            )
+
         return TaskMetadata(
-            name=f"{self.operator.dag_id}.{self.operator.task_id}",
+            name=task_name,
             inputs=[ds.to_openlineage_dataset() for ds in inputs],
             outputs=[ds.to_openlineage_dataset() for ds in outputs],
-            job_facets={
-                'sql': SqlJobFacet(self.operator.sql)
-            }
+            run_facets=run_facets,
+            job_facets=job_facets
         )
 
     def _get_connection_uri(self):
@@ -125,6 +135,10 @@ class PostgresExtractor(BaseExtractor):
 
     def _conn_id(self):
         return self.operator.postgres_conn_id
+
+    def _normalize_identifiers(self, table: str):
+        # For SnowflakeExtractor
+        return table
 
     def _information_schema_query(self, table_names: str) -> str:
         return f"""
@@ -162,14 +176,16 @@ class PostgresExtractor(BaseExtractor):
         with closing(hook.get_conn()) as conn:
             with closing(conn.cursor()) as cursor:
                 table_names_as_str = ",".join(map(
-                    lambda name: f"'{name.name}'", table_names
+                    lambda name: f"'{self._normalize_identifiers(name.name)}'", table_names
                 ))
                 cursor.execute(
                     self._information_schema_query(table_names_as_str)
                 )
                 for row in cursor.fetchall():
-                    table_schema_name: str = row[_TABLE_SCHEMA]
-                    table_name: DbTableName = DbTableName(row[_TABLE_NAME])
+                    table_schema_name: str = self._normalize_identifiers(row[_TABLE_SCHEMA])
+                    table_name: DbTableName = DbTableName(
+                        self._normalize_identifiers(row[_TABLE_NAME])
+                    )
                     table_column: DbColumn = DbColumn(
                         name=row[_COLUMN_NAME],
                         type=row[_UDT_NAME],
@@ -192,3 +208,6 @@ class PostgresExtractor(BaseExtractor):
                         )
 
         return list(schemas_by_table.values())
+
+    def _get_query_ids(self) -> List[str]:
+        return []

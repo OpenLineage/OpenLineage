@@ -1,9 +1,13 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 package io.openlineage.client;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.Objects;
@@ -21,7 +25,15 @@ public class SchemaParser {
         return new RefType(pointer);
       } else if (typeJson.has("type")) {
         String typeName = typeJson.get("type").asText();
-        if (typeName.equals("string") || typeName.equals("integer") || typeName.equals("number") || typeName.equals("boolean")) {
+        if (typeName.equals("string") && typeJson.has("enum")) {
+          Iterator<JsonNode> valuesIterator = typeJson.get("enum").elements();
+          Iterable<JsonNode> valuesIterable = () -> valuesIterator;
+          List<String> values = StreamSupport
+              .stream(valuesIterable.spliterator(), false)
+              .map(jsonNode -> jsonNode.asText())
+              .collect(Collectors.toList());
+          return new EnumType(values);
+        } else if (typeName.equals("string") || typeName.equals("integer") || typeName.equals("number") || typeName.equals("boolean")) {
           return new PrimitiveType(typeName, typeJson.has("format") ? typeJson.get("format").asText() : null);
         } else if (typeName.equals("object") && (typeJson.has("properties") || typeJson.has("additionalProperties") || typeJson.has("patternProperties"))) {
           List<Field> fields = new ArrayList<Field>();
@@ -84,6 +96,8 @@ public class SchemaParser {
     T visit(ObjectType objectType);
 
     T visit(ArrayType arrayType);
+
+    T visit(EnumType enumType);
 
     T visit(OneOfType oneOfType);
 
@@ -404,6 +418,31 @@ public class SchemaParser {
     public int hashCode() {
       return Objects.hash(items);
     }
+  }
+
+  static class EnumType implements Type {
+
+    private List<String> values;
+
+    public EnumType(List<String> values) {
+      super();
+      this.values = values;
+    }
+
+    @Override
+    public <T> T accept(TypeVisitor<T> visitor) {
+      return visitor.visit(this);
+    }
+
+    @Override
+    public String toString() {
+      return "EnumType{values=(" + String.join(",", values)  + ")}";
+    }
+
+    public List<String> getValues() {
+      return values;
+    }
+
   }
 
 }

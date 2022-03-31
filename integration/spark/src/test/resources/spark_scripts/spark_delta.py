@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
 import os
 from pyspark.sql import SparkSession
 
@@ -8,7 +10,6 @@ spark = SparkSession.builder \
     .appName("Open Lineage Integration Delta") \
     .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
     .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
-    .config("packages", "io.delta:delta-core_2.12:1.0.0") \
     .config("spark.sql.warehouse.dir", "file:/tmp/delta/") \
     .getOrCreate()
 spark.sparkContext.setLogLevel('info')

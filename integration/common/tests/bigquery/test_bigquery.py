@@ -1,6 +1,9 @@
+# SPDX-License-Identifier: Apache-2.0
+
 import json
 from unittest.mock import MagicMock
 
+from openlineage.client.facet import ExternalQueryRunFacet
 from openlineage.common.dataset import Dataset, Source, Field
 from openlineage.common.provider.bigquery import BigQueryDatasetsProvider, BigQueryJobRunFacet
 
@@ -37,6 +40,10 @@ def test_bq_job_information():
             cached=False,
             billedBytes=111149056,
             properties=json.dumps(job_details)
+        ),
+        'externalQuery': ExternalQueryRunFacet(
+            externalQueryId='job_id',
+            source='bigquery'
         )
     }
     assert statistics.inputs == [

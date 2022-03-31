@@ -1,13 +1,17 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 package io.openlineage.spark.agent;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.lifecycle.StaticExecutionContextFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Optional;
-import net.bytebuddy.agent.ByteBuddyAgent;
+import org.apache.commons.beanutils.BeanUtils;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.SparkSession$;
 import org.junit.jupiter.api.extension.AfterEachCallback;
@@ -18,19 +22,9 @@ import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
 import org.mockito.Mockito;
+import org.slf4j.LoggerFactory;
 
-/**
- * JUnit extension that invokes the {@link SparkAgent} by installing the {@link ByteBuddyAgent} to
- * instrument classes. This will allow the {@link java.lang.instrument.ClassFileTransformer}s in the
- * {@link openlineage.spark.agent.transformers} package to transform the byte code of target classes
- * as they're loaded.
- *
- * <p>Note that this extension has to be annotated on any class that interacts with any of the
- * transformed classes (i.e., {@link org.apache.spark.SparkContext}, {@link
- * org.apache.spark.sql.SparkSession}, etc.). Once a class has been loaded, it won't go through the
- * {@link java.lang.instrument.ClassFileTransformer} process again. If a test doesn't use this
- * extension and ends up running before other Spark tests, those subsequent tests will fail.
- */
+/** JUnit extension that sets up SparkSession for OpenLineage context. */
 public class SparkAgentTestExtension
     implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback, ParameterResolver {
   public static final EventEmitter OPEN_LINEAGE_SPARK_CONTEXT = mock(EventEmitter.class);
@@ -43,6 +37,14 @@ public class SparkAgentTestExtension
   @Override
   public void beforeEach(ExtensionContext context) throws Exception {
     Mockito.reset(OPEN_LINEAGE_SPARK_CONTEXT);
+    Mockito.doAnswer(
+            (arg) -> {
+              LoggerFactory.getLogger(getClass())
+                  .info("Emit called with arg {}", BeanUtils.describe(arg));
+              return null;
+            })
+        .when(OPEN_LINEAGE_SPARK_CONTEXT)
+        .emit(any(RunEvent.class));
   }
 
   @Override

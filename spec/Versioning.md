@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
 # Versioning
 ## Context
 the OpenLineage spec gets versioned and published.

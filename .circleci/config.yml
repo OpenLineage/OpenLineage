@@ -1,514 +1,108 @@
 version: 2.1
 
+setup: true
+
+# the continuation orb is required to continue a pipeline based on
+# the path of an updated fileset
 orbs:
-  gcp-cli: circleci/gcp-cli@2.2.0
-
-checkout_project_root: &checkout_project_root
-  # Override checkout path to project root (see: https://circleci.com/docs/2.0/configuration-reference/#checkout)
-  checkout:
-    path: ~/openlineage
-
-install_python_client: &install_python_client
-  run: (cd ~/openlineage/client/python && pip install . --user)
-
-install_integration_common: &install_integration_common
-  run: (cd ~/openlineage/integration/common && pip install . --user)
-
-only_on_main: &only_on_main
-  filters:
-    branches:
-      only: main
-
-# Only trigger CI job on release (=X.Y.Z) with possible (rcX)
-only_on_release: &only_on_release
-  filters:
-    tags:
-      only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
-    branches:
-      ignore: /.*/
-
-param_build_tag: &param_build_tag
-    parameters:
-      build_tag:
-        default: ""
-        type: string
+  continuation: circleci/continuation@0.2.0
 
 jobs:
-  unit-test-client-python:
-    working_directory: ~/openlineage/client/python
+  # Determine the modules that have changed and trigger a series of workflow tasks as necessary.
+  # We merge multiple workflows from files in the workflows subdirectory based on the changed
+  # modules. A single module changed may require tests and builds in multiple downstream modules.
+  # For example, a change to the python client requires building the airflow, common, and dagster
+  # modules. Changing the spec requires building everything.
+  # Note that we don't use the path-filtering orb because we require this dynamic combination of
+  # workflows. The path-filtering orb will let us set some boolean parameters (e.g., airflow: true),
+  # but we can't stitch together multiple workflows and create cross-workflow dependencies. E.g.,
+  # it's possible to create a workflow for the python client and one for the airflow library, but we
+  # can't create an airflow workflow and a python client workflow and have the airflow workflow
+  # depend on the python client workflow if both boolean parameters happen to be true. We could
+  # simply make each workflow include its dependencies, but then we'll end up with duplicate steps
+  # (e.g., if the python client changes it triggers the airflow, common, and dagster modules;
+  # including dependencies means that each module would run the python client tests).
+  #
+  # The workflow files in the subdirectory are yaml files that adhere to the schema of the worfklows
+  # section of a circleci config.yml file. See the spec here: https://circleci.com/docs/2.0/configuration-reference/#workflows
+  # In addition, each workflow should include a job called "workflow_complete". This workflow_complete
+  # is defined as a no-op job in the continue_config.yml file. The job should have dependencies on
+  # each required terminal step in the workflow. E.g., the Java workflow requires the Spark
+  # integration test step which is the last required step in the workflow. All of the
+  # workflow_complete jobs will be merged together so the final workflow will hava a single
+  # workflow_complete job that depends on all of the required terminal steps in each executed
+  # workflow
+  determine_changed_modules:
     docker:
-      - image: circleci/python:3.6
+      - image: cimg/go:1.17.8
     steps:
-      - *checkout_project_root
-      - run: pip install -e .[dev]
-      - run: python -m flake8 --extend-ignore=F401
-      - run: python -m pytest --cov=openlineage tests/
-      - run: bash <(curl -s https://codecov.io/bash)
-
-  build-client-python:
-    working_directory: ~/openlineage/client/python
-    docker:
-      - image: circleci/python:3.6
-    parameters:
-      build_tag:
-        default: ""
-        type: string
-    steps:
-      - *checkout_project_root
-      - run: python setup.py egg_info -b "<< parameters.build_tag >>" sdist bdist_wheel
-      - persist_to_workspace:
-          root: .
-          paths:
-            - ./dist/*.tar.gz
-            - ./dist/*.whl
-
-  build-client-java:
-    working_directory: ~/openlineage/client/java
-    docker:
-      - image: cimg/openjdk:11.0
-    steps:
-      - *checkout_project_root
-      - restore_cache:
-          keys:
-            - v1-client-java-{{ .Branch }}-{{ .Revision }}
-            - v1-client-java-{{ .Branch }}
-      - run: ./gradlew --no-daemon --stacktrace build
-      - run: ./gradlew --no-daemon jacocoTestReport
-      - run: bash <(curl -s https://codecov.io/bash)
-      - run: ./gradlew javadoc
-      - store_test_results:
-          path: client/java/build/test-results/test
-      - store_artifacts:
-          path: build/reports/tests/test
-          destination: test-report
-      - save_cache:
-          key: v1-client-java-{{ .Branch }}-{{ .Revision }}
-          paths:
-            - ~/.gradle
-
-  release-client-java:
-    working_directory: ~/openlineage/client/java
-    docker:
-      - image: cimg/openjdk:11.0
-    steps:
-      - *checkout_project_root
-      - run: |
-          # Get, then decode the GPG private key used to sign *.jar
-          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
-          export RELEASE_PASSWORD=$(echo $SONATYPE_PASSWORD)
-          export RELEASE_USERNAME=$(echo $SONATYPE_USER)
-
-          # publish jar to maven local so it can be found by dependents
-          ./gradlew publishToMavenLocal
-
-          # Publish *.jar
-          ./gradlew --no-daemon publish
-      - save_cache:
-          key: v1-release-client-java-{{ .Branch }}-{{ .Revision }}
-          paths:
-            - ~/.m2
-
-  publish-snapshot-client-java:
-    working_directory: ~/openlineage/client/java
-    docker:
-      - image: cimg/openjdk:11.0
-    steps:
-      - *checkout_project_root
-      - run: |
-          # Get, then decode the GPG private key used to sign *.jar
-          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
-          export RELEASE_PASSWORD=$(echo $ARTIFACTORY_PASSWORD)
-          export RELEASE_USERNAME=$(echo $ARTIFACTORY_USERNAME)
-          # Publish *.jar
-          ./gradlew --no-daemon publish
-
-  release-integration-spark:
-    working_directory: ~/openlineage/integration/spark
-    docker:
-      - image: circleci/openjdk:8-jdk
-    steps:
-      - *checkout_project_root
-      - restore_cache:
-          keys:
-            - v1-release-client-java-{{ .Branch }}-{{ .Revision }}
-            - v1-release-client-java-{{ .Branch }}
-      - run: |
-          # Get, then decode the GPG private key used to sign *.jar
-          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
-          export RELEASE_PASSWORD=$(echo $SONATYPE_PASSWORD)
-          export RELEASE_USERNAME=$(echo $SONATYPE_USER)
-
-          cd ../../client/java
-          ./gradlew --no-daemon publishToMavenLocal
-          cd -
-          # Publish *.jar
-          ./gradlew --no-daemon publish
-
-  publish-snapshot-integration-spark:
-    working_directory: ~/openlineage/integration/spark
-    docker:
-      - image: circleci/openjdk:8-jdk
-    steps:
-      - *checkout_project_root
-      - run: |
-          # Get, then decode the GPG private key used to sign *.jar
-          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
-          export RELEASE_PASSWORD=$(echo $ARTIFACTORY_PASSWORD)
-          export RELEASE_USERNAME=$(echo $ARTIFACTORY_USERNAME)
-          # Publish *.jar
-          ./gradlew --no-daemon publish
-
-  build-integration-spark:
-    parameters:
-      spark-version:
-        type: string
-    working_directory: ~/openlineage/integration/spark
-    machine: true
-    environment:
-      TESTCONTAINERS_RYUK_DISABLED: "true"
-      JDK8_HOME: /usr/lib/jvm/java-8-openjdk-amd64
-    steps:
-      - *checkout_project_root
-      - restore_cache:
-          keys:
-            - v1-integration-spark-{{ .Branch }}-{{ .Revision }}
-            - v1-integration-spark-{{ .Branch }}
-      - attach_workspace:
-          at: .
-      - run: (cd ./../../client/java/ && ./gradlew --no-daemon --stacktrace publishToMavenLocal)
-      - run: ./gradlew --no-daemon --stacktrace build -Pspark.version=<< parameters.spark-version >>
+      - checkout
       - run:
-          when: on_fail
-          command: cat integration/spark/build/test-results/test/TEST-*.xml
-      - run: ./gradlew --no-daemon jacocoTestReport
-      - run: ./gradlew javadoc
-      - store_test_results:
-          path: integration/spark/build/test-results/test
-      - store_artifacts:
-          path: build/reports/tests/test
-          destination: test-report
-      - save_cache:
-          key: v1-integration-spark-{{ .Branch }}-{{ .Revision }}
-          paths:
-            - ~/.gradle
-
-  unit-test-integration-common:
-    working_directory: ~/openlineage/integration/common
-    docker:
-      - image: circleci/python:3.6
-    steps:
-      - *checkout_project_root
-      - *install_python_client
-      - run: pip install -e .[dev]
-      - run: flake8
-      - run: pytest --cov=openlineage tests/
-      - run: bash <(curl -s https://codecov.io/bash)
-
-  build-integration-common:
-    working_directory: ~/openlineage/integration/common
-    docker:
-      - image: circleci/python:3.6
-    <<: *param_build_tag
-    steps:
-      - *checkout_project_root
-      - run: python setup.py egg_info -b "<< parameters.build_tag >>" sdist bdist_wheel
-      - persist_to_workspace:
-          root: .
-          paths:
-            - ./dist/*.whl
-            - ./dist/*.tar.gz
-
-  build-integration-dbt:
-    working_directory: ~/openlineage/integration/dbt
-    docker:
-      - image: circleci/python:3.6
-    <<: *param_build_tag
-    steps:
-      - *checkout_project_root
-      - run: python setup.py egg_info -b "<< parameters.build_tag >>" sdist bdist_wheel
-      - persist_to_workspace:
-          root: .
-          paths:
-            - ./dist/*.whl
-            - ./dist/*.tar.gz
-
-  integration-test-integration-spark:
-    parameters:
-      spark-version:
-        type: string
-    working_directory: ~/openlineage/integration/spark
-    machine: true
-    environment:
-      TESTCONTAINERS_RYUK_DISABLED: "true"
-      JDK8_HOME: /usr/lib/jvm/java-8-openjdk-amd64
-    steps:
-      - *checkout_project_root
-      - restore_cache:
-          keys:
-            - v1-integration-spark-{{ .Branch }}-{{ .Revision }}
-            - v1-integration-spark-{{ .Branch }}
-      - run: (cd ./../../client/java/ && ./gradlew --no-daemon --stacktrace publishToMavenLocal)
-      - run: ./gradlew --no-daemon --info integrationTest -Pspark.version=<< parameters.spark-version >>
-      - run:
-          when: on_fail
-          command: cat integration/spark/build/test-results/integrationTest/TEST-*.xml
-      - run: ./gradlew --no-daemon jacocoTestReport
-      - store_test_results:
-          path: integration/spark/build/test-results/integrationTest
-      - store_artifacts:
-          path: integration/spark/build/reports/tests/integrationTest
-          destination: test-report
-      - save_cache:
-          key: v1-integration-spark-{{ .Branch }}-{{ .Revision }}
-          paths:
-            - ~/.gradle
-
-  unit-test-integration-airflow-1:
-    working_directory: ~/openlineage/integration/airflow
-    docker:
-      - image: circleci/python:3.6
-    steps:
-      - *checkout_project_root
-      - *install_python_client
-      - *install_integration_common
-      - run: pip install --upgrade pip==20.2.4
-      - run: pip install -e .[dev,airflow-1] --constraint="https://raw.githubusercontent.com/apache/airflow/constraints-1.10.15/constraints-3.6.txt"
-      - run: flake8 --exclude integration
-      - run: airflow initdb
-      - run: pytest --cov=openlineage --ignore tests/integration tests/
-      - run: bash <(curl -s https://codecov.io/bash)
-
-  unit-test-integration-airflow-2:
-    working_directory: ~/openlineage/integration/airflow
-    docker:
-      - image: circleci/python:3.6
-    steps:
-      - *checkout_project_root
-      - *install_python_client
-      - *install_integration_common
-      - run: pip install -e .[dev,airflow-2] --constraint="https://raw.githubusercontent.com/apache/airflow/constraints-2.1.3/constraints-3.6.txt"
-      - run: flake8 --exclude integration
-      - run: airflow db init
-      - run: pytest --cov=openlineage --ignore tests/integration --ignore tests/test_openlineage_dag.py tests/
-      - run: bash <(curl -s https://codecov.io/bash)
-
-  build-integration-airflow:
-    working_directory: ~/openlineage/integration/airflow
-    docker:
-      - image: circleci/python:3.6
-    <<: *param_build_tag
-    steps:
-      - *checkout_project_root
-      - *install_python_client
-      - *install_integration_common
-      - run: python setup.py egg_info -b "<< parameters.build_tag >>" sdist bdist_wheel
-      - persist_to_workspace:
-          root: .
-          paths:
-            - ./dist/*.whl
-            - ./dist/*.tar.gz
-
-  integration-test-integration-airflow:
-    working_directory: ~/openlineage/integration/
-    machine: true
-    steps:
-      - *checkout_project_root
-      - gcp-cli/install
-      - gcp-cli/initialize
-      - run: ../.circleci/get-docker-compose.sh
-      - run: cp -r ../client/python python
-      - run: docker build -f airflow/Dockerfile.tests -t openlineage-airflow-base .
-      - run: ./airflow/tests/integration/docker/up.sh
-
-  integration-test-integration-airflow-2:
-    working_directory: ~/openlineage/integration/
-    machine: true
-    steps:
-      - *checkout_project_root
-      - gcp-cli/install
-      - gcp-cli/initialize
-      - run: ../.circleci/get-docker-compose.sh
-      - run: cp -r ../client/python python
-      - run: docker build -f airflow/Dockerfile.tests -t openlineage-airflow-base .
-      - run: ./airflow/tests/integration/docker/up-2.sh
-
-
-  publish-snapshot-python:
-    working_directory: ~/openlineage
-    docker:
-      - image: circleci/python:3.6
-    steps:
-      - *checkout_project_root
-      - attach_workspace:
-          at: .
-      - run: pip install wheel twine
-      - run: python -m twine upload --non-interactive --verbose -u $ARTIFACTORY_USERNAME -p $ARTIFACTORY_PASSWORD --repository-url https://datakin.jfrog.io/artifactory/api/pypi/pypi-public-libs-release dist/*
-
-  release-python:
-    working_directory: ~/openlineage
-    docker:
-      - image: circleci/python:3.6
-    steps:
-      - *checkout_project_root
-      - attach_workspace:
-          at: .
-      - run: pip install wheel twine
-      - run: python -m twine upload --non-interactive --verbose --repository pypi dist/*
-
-  publish-spec:
-    working_directory: ~/openlineage
-    docker:
-      - image: cimg/base:2021.07
-    steps:
-      - *checkout_project_root
-      - add_ssh_keys:
-          fingerprints:
-            - "1c:d1:da:e8:76:d7:f7:04:31:07:18:fd:55:ca:e1:2e"
-      - run: spec/release.sh
-
-  build-proxy-backend:
-    working_directory: ~/openlineage/proxy
-    docker:
-      - image: cimg/openjdk:11.0
-    steps:
-      - *checkout_project_root
-      - restore_cache:
-          keys:
-            - v1-proxy-{{ .Branch }}-{{ .Revision }}
-            - v1-proxy-{{ .Branch }}
-      - run: ./gradlew --no-daemon --stacktrace build
-      - run: ./gradlew --no-daemon jacocoTestReport
-      - run: bash <(curl -s https://codecov.io/bash)
-      - store_test_results:
-          path: proxy/build/test-results/test
-      - store_artifacts:
-          path: build/reports/tests/test
-          destination: test-report
-      - save_cache:
-          key: v1-proxy-{{ .Branch }}-{{ .Revision }}
-          paths:
-            - ~/.gradle
-
-  release-proxy-backend:
-    working_directory: ~/openlineage/proxy
-    docker:
-      - image: cimg/openjdk:11.0
-    steps:
-      - *checkout_project_root
+          name: Install yq
+          command: go install "github.com/mikefarah/yq/v4@latest"
       - run: |
-          # Get, then decode the GPG private key used to sign *.jar
-          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
-          export RELEASE_PASSWORD=$(echo $SONATYPE_PASSWORD)
-          export RELEASE_USERNAME=$(echo $SONATYPE_USER)
+          # Based on the changed files (or if we are on the main branch), generate a yaml file with
+          # a list of workflow files. Use those files to build a workflow with a union of all tasks
 
-          # publish jar to maven local so it can be found by dependents
-          ./gradlew publishToMavenLocal
+          function check_change () {
+            MOD=$1
+            shift
+            if [ $(git diff --name-only main $MOD | wc -l) -gt 0 ]; then
+              echo "Change found in $MOD"
+              if [ "$1" == "*" ]; then
+                ls -d $PWD/.circleci/workflows/* > workflow_files.txt
+              else
+                for ln in $@; do
+                  echo "$PWD/.circleci/workflows/$ln" >> workflow_files.txt
+                done
+              fi
+            fi
+          }
 
-          # Publish *.jar
-          ./gradlew publish
+          # If we are on the main branch, run all of the workflows
+          if [ "$CIRCLE_BRANCH" == "main" ]; then
+            ls -d $PWD/.circleci/workflows/* > workflow_files.txt
+          else
+            # Changes to the spec require all workflows to run
+            check_change spec "*"
+
+            check_change client/java/ openlineage-java.yml
+            check_change integration/spark/ openlineage-java.yml
+            check_change client/python/ openlineage-integration-python.yml openlineage-integration-dbt.yml openlineage-integration-dagster.yml openlineage-integration-airflow.yml
+            check_change integration/common/ openlineage-integration-python.yml openlineage-integration-airflow.yml openlineage-integration-dbt.yml
+            check_change integration/airflow/ openlineage-integration-python.yml openlineage-integration-airflow.yml
+            check_change integration/dagster/ openlineage-integration-python.yml openlineage-integration-dagster.yml
+            check_change integration/dbt/ openlineage-integration-python.yml openlineage-integration-dbt.yml
+            check_change proxy openlineage-proxy.yml
+          fi
+          touch workflow_files.txt
+          FILES=$(sort workflow_files.txt | uniq | tr "\n" " ")
+            
+          # If no changes, generate a no-op build
+          if [ "$FILES" == "" ]; then
+            echo '{"workflows": {"no-op": {"jobs": ["workflow_complete"]}}}' | yq -P eval-all '. as $wf ireduce({}; . * $wf)' .circleci/continue_config.yml - > complete_config.yml
+          else
+            # yq eval-all the workflow files specified in the workflow_files.txt file.
+            # Collect all the jobs from each workflow except for the "workflow_complete" job and
+            # create a union of all jobs.
+            # Collect the "workflow_complete" job from each workflow and concatenate the "requires"
+            # section of each and create a single "workflow_complete" job that is the union of all.
+            # The output of this is a circleci configuration with a single workflow called "build"
+            # that contains the union of all jobs plus the "workflow_complete" job that depends on
+            # all required jobs.
+            #
+            # This configuration is piped into yq along with the continue_config.yml file and the
+            # union of the two files is output to complete_config.yml
+
+            yq eval-all '.workflows | . as $wf ireduce({}; . * $wf) |
+                (map(.jobs[] | select(has("workflow_complete") | not)) | . as $item ireduce ([]; (. *+ $item) ))
+                + [(map(.jobs[] | select(has("workflow_complete"))) | .[] as $item ireduce ({}; . *+ $item))] | {"workflows": {"build": {"jobs": .}}}' $FILES | \
+            yq eval-all '. as $wf ireduce({}; . * $wf)' .circleci/continue_config.yml - > complete_config.yml
+          fi
+      - continuation/continue:
+          configuration_path: complete_config.yml
 
 workflows:
-  openlineage:
+  schedule_workflow:
     jobs:
-      - build-client-java
-      - publish-snapshot-client-java:
-          <<: *only_on_main
-          context: release
-          requires:
-            - build-client-java
-      - build-integration-spark:
-          matrix:
-            parameters:
-              spark-version: [ '2.4.1', '3.1.2' ]
-      - integration-test-integration-spark:
-          matrix:
-            parameters:
-              spark-version: [ '2.4.1', '3.1.2' ]
-          requires:
-            - build-integration-spark
-      - publish-snapshot-integration-spark:
-          <<: *only_on_main
-          context: release
-          requires:
-            - integration-test-integration-spark
-      - unit-test-client-python
-      - build-client-python:
-          <<: *only_on_main
-          build_tag: ".dev<< pipeline.number >>"
-          requires:
-            - unit-test-client-python
-      - unit-test-integration-common
-      - build-integration-common:
-          <<: *only_on_main
-          build_tag: ".dev<< pipeline.number >>"
-          requires:
-            - unit-test-integration-common
-      - unit-test-integration-airflow-1
-      - unit-test-integration-airflow-2
-      - integration-test-integration-airflow:
-          context: integration-tests
-          requires:
-            - unit-test-integration-airflow-1
-            - unit-test-integration-common
-            - unit-test-client-python
-          filters:
-            branches:
-              ignore: /pull\/[0-9]+/
-      - integration-test-integration-airflow-2:
-          context: integration-tests
-          requires:
-            - unit-test-integration-airflow-2
-            - unit-test-integration-common
-            - unit-test-client-python
-          filters:
-            branches:
-              ignore: /pull\/[0-9]+/
-      - build-integration-airflow:
-          <<: *only_on_main
-          build_tag: ".dev<< pipeline.number >>"
-          requires:
-            - integration-test-integration-airflow
-      - build-integration-dbt:
-          <<: *only_on_main
-          build_tag: ".dev<< pipeline.number >>"
-      - publish-snapshot-python:
-          <<: *only_on_main
-          context: release
-          requires:
-            - build-client-python
-            - build-integration-common
-            - build-integration-airflow
-            - build-integration-dbt
-      - publish-spec:
-          <<: *only_on_main
-          context: release
-      - build-proxy-backend
-  release:
-    jobs:
-      - release-client-java:
-          <<: *only_on_release
-          context: release
-      - release-integration-spark:
-          <<: *only_on_release
-          context: release
-          requires:
-            - release-client-java
-      - release-proxy-backend:
-          <<: *only_on_release
-          context: release
-      - build-client-python:
-          <<: *only_on_release
-      - build-integration-common:
-          <<: *only_on_release
-      - build-integration-airflow:
-          <<: *only_on_release
-      - build-integration-dbt:
-          <<: *only_on_release
-      - release-python:
-          <<: *only_on_release
-          context: release
-          requires:
-            - build-client-python
-            - build-integration-common
-            - build-integration-airflow
-            - build-integration-dbt
+      - determine_changed_modules

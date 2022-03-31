@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 package io.openlineage.spark.agent.lifecycle;
 
 import static io.openlineage.spark.agent.util.ScalaConversionUtils.fromSeq;
@@ -165,7 +167,7 @@ class OpenLineageRunEventBuilder {
   @NonNull private final Collection<CustomFacetBuilder<?, ? extends JobFacet>> jobFacetBuilders;
 
   private final UnknownEntryFacetListener unknownEntryFacetListener =
-      new UnknownEntryFacetListener();
+      UnknownEntryFacetListener.getInstance();
   private final Map<Integer, ActiveJob> jobMap = new HashMap<>();
   private final Map<Integer, Stage> stageMap = new HashMap<>();
 
@@ -235,7 +237,7 @@ class OpenLineageRunEventBuilder {
       RunEventBuilder runEventBuilder,
       JobBuilder jobBuilder,
       SparkListenerSQLExecutionStart event) {
-    runEventBuilder.eventType("START");
+    runEventBuilder.eventType(OpenLineage.RunEvent.EventType.START);
     return buildRun(parentRunFacet, runEventBuilder, jobBuilder, event, Optional.empty());
   }
 
@@ -244,7 +246,7 @@ class OpenLineageRunEventBuilder {
       RunEventBuilder runEventBuilder,
       JobBuilder jobBuilder,
       SparkListenerSQLExecutionEnd event) {
-    runEventBuilder.eventType("COMPLETE");
+    runEventBuilder.eventType(OpenLineage.RunEvent.EventType.COMPLETE);
     return buildRun(parentRunFacet, runEventBuilder, jobBuilder, event, Optional.empty());
   }
 
@@ -253,7 +255,7 @@ class OpenLineageRunEventBuilder {
       RunEventBuilder runEventBuilder,
       JobBuilder jobBuilder,
       SparkListenerJobStart event) {
-    runEventBuilder.eventType("START");
+    runEventBuilder.eventType(OpenLineage.RunEvent.EventType.START);
     return buildRun(
         parentRunFacet,
         runEventBuilder,
@@ -267,7 +269,10 @@ class OpenLineageRunEventBuilder {
       RunEventBuilder runEventBuilder,
       JobBuilder jobBuilder,
       SparkListenerJobEnd event) {
-    runEventBuilder.eventType(event.jobResult() instanceof JobFailed ? "FAIL" : "COMPLETE");
+    runEventBuilder.eventType(
+        event.jobResult() instanceof JobFailed
+            ? OpenLineage.RunEvent.EventType.FAIL
+            : OpenLineage.RunEvent.EventType.COMPLETE);
     return buildRun(
         parentRunFacet,
         runEventBuilder,
@@ -303,7 +308,7 @@ class OpenLineageRunEventBuilder {
     RunFacetsBuilder runFacetsBuilder = openLineage.newRunFacetsBuilder();
     parentRunFacet.ifPresent(runFacetsBuilder::parent);
     OpenLineage.JobFacets jobFacets =
-        buildFacets(nodes, jobFacetBuilders, openLineage.newJobFacets(null, null, null));
+        buildFacets(nodes, jobFacetBuilders, openLineage.newJobFacetsBuilder().build());
     List<InputDataset> inputDatasets = buildInputDatasets(nodes);
     List<OutputDataset> outputDatasets = buildOutputDatasets(nodes);
     openLineageContext
@@ -335,9 +340,9 @@ class OpenLineageRunEventBuilder {
     log.info(
         "Visiting query plan {} with input dataset builders {}",
         openLineageContext.getQueryExecution(),
-        inputDatasetQueryPlanVisitors);
+        inputDatasetBuilders);
 
-    Function1<LogicalPlan, List<InputDataset>> inputVisitor =
+    Function1<LogicalPlan, Collection<InputDataset>> inputVisitor =
         visitLogicalPlan(PlanUtils.merge(inputDatasetQueryPlanVisitors));
 
     List<OpenLineage.InputDataset> datasets =
@@ -348,7 +353,7 @@ class OpenLineageRunEventBuilder {
                     .map(
                         qe ->
                             fromSeq(qe.optimizedPlan().map(inputVisitor)).stream()
-                                .flatMap(List::stream)
+                                .flatMap(Collection::stream)
                                 .map(((Class<InputDataset>) InputDataset.class)::cast))
                     .orElse(Stream.empty()))
             .collect(Collectors.toList());
@@ -385,8 +390,8 @@ class OpenLineageRunEventBuilder {
    * @param <D>
    * @return
    */
-  private <D> Function1<LogicalPlan, List<D>> visitLogicalPlan(
-      PartialFunction<LogicalPlan, List<D>> inputVisitor) {
+  private <D> Function1<LogicalPlan, Collection<D>> visitLogicalPlan(
+      PartialFunction<LogicalPlan, Collection<D>> inputVisitor) {
     return ScalaConversionUtils.toScalaFn(
         node ->
             inputVisitor
@@ -404,7 +409,7 @@ class OpenLineageRunEventBuilder {
         "Visiting query plan {} with output dataset builders {}",
         openLineageContext.getQueryExecution(),
         outputDatasetBuilders);
-    Function1<LogicalPlan, List<OutputDataset>> visitor =
+    Function1<LogicalPlan, Collection<OutputDataset>> visitor =
         visitLogicalPlan(PlanUtils.merge(outputDatasetQueryPlanVisitors));
     List<OutputDataset> datasets =
         Stream.concat(
@@ -412,7 +417,7 @@ class OpenLineageRunEventBuilder {
                 openLineageContext
                     .getQueryExecution()
                     .map(qe -> visitor.apply(qe.optimizedPlan()))
-                    .map(List::stream)
+                    .map(Collection::stream)
                     .orElse(Stream.empty()))
             .collect(Collectors.toList());
 
@@ -447,16 +452,20 @@ class OpenLineageRunEventBuilder {
 
   private <T> Stream<T> buildDatasets(
       List<Object> nodes, Collection<PartialFunction<Object, List<T>>> builders) {
-    PartialFunction<Object, List<T>> fn = PlanUtils.merge(builders);
     return nodes.stream()
         .flatMap(
-            event -> {
-              if (fn.isDefinedAt(event)) {
-                return fn.apply(event).stream();
-              } else {
-                return Stream.empty();
-              }
-            });
+            event ->
+                builders.stream()
+                    .filter(
+                        pfn -> {
+                          try {
+                            return pfn.isDefinedAt(event);
+                          } catch (ClassCastException e) {
+                            return false;
+                          }
+                        })
+                    .map(pfn -> pfn.apply(event))
+                    .flatMap(Collection::stream));
   }
 
   /**

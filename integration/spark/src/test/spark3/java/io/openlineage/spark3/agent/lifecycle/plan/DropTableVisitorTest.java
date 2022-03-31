@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 package io.openlineage.spark3.agent.lifecycle.plan;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -7,7 +9,6 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.client.OpenLineageClient;
-import io.openlineage.spark.agent.facets.TableStateChangeFacet;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -73,8 +74,8 @@ public class DropTableVisitorTest {
 
       assertEquals(1, outputDatasets.size());
       assertEquals(
-          new TableStateChangeFacet(TableStateChangeFacet.StateChange.DROP),
-          outputDatasets.get(0).getFacets().getAdditionalProperties().get("tableStateChange"));
+          OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.DROP,
+          outputDatasets.get(0).getFacets().getLifecycleStateChange().getLifecycleStateChange());
       assertEquals("table", outputDatasets.get(0).getName());
       assertEquals("db", outputDatasets.get(0).getNamespace());
     }

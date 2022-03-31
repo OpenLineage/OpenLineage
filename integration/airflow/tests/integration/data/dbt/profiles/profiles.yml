@@ -6,8 +6,23 @@ bigquery:
             method: service-account
             keyfile: /opt/config/gcloud/gcloud-service-key.json
             project: openlineage-ci
-            dataset: dbt_test1
+            dataset: "{{ env_var('DBT_DATASET_PREFIX') }}"
             threads: 2
             timeout_seconds: 300
             location: EU
             priority: interactive
+snowflake:
+    target: prod
+    outputs:
+        prod:
+          type: snowflake
+          account: "{{ env_var('SNOWFLAKE_ACCOUNT_ID') }}.us-east-1"
+          user: "{{ env_var('SNOWFLAKE_USER') }}"
+          password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+          role: OPENLINEAGE
+          database: SANDBOX
+          warehouse: DEMO
+          schema: "OPENLINEAGE"
+          threads: 1
+          client_session_keep_alive: False
+          query_tag: "dbt"

@@ -1,16 +1,6 @@
 #!/bin/bash
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-License-Identifier: Apache-2.0.
 #
 # Usage: $ ./up.sh
 
@@ -31,6 +21,8 @@ fi
 if [[ -n "$CI" ]]; then
   echo $GCLOUD_SERVICE_KEY > gcloud/gcloud-service-key.json
   chmod 644 gcloud/gcloud-service-key.json
+  mkdir -p tests/airflow/logs
+  chmod a+rwx -R tests/airflow/logs
 fi
 
 # maybe overkill
@@ -39,6 +31,7 @@ OPENLINEAGE_AIRFLOW_WHL_ALL=$(docker run openlineage-airflow-base:latest sh -c "
 
 # Add revision to requirements.txt
 cat > requirements.txt <<EOL
+apache-airflow[celery]==1.10.15
 airflow-provider-great-expectations==0.0.8
 great-expectations==0.13.42
 dbt-bigquery==0.20.1
@@ -59,5 +52,8 @@ python-dateutil==2.8.2
 ${OPENLINEAGE_AIRFLOW_WHL}
 EOL
 
-docker-compose down
-docker-compose up -V --build --force-recreate --exit-code-from integration
+docker-compose -f tests/docker-compose.yml down
+
+# Run airflow-init first, because rest of airflow containers can die if the database is not prepared.
+docker-compose -f tests/docker-compose.yml up  -V --build --abort-on-container-exit airflow_init postgres
+docker-compose -f tests/docker-compose.yml up --build --exit-code-from integration --scale airflow_init=0

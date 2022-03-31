@@ -1,13 +1,13 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 package io.openlineage.spark3.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.facets.TableStateChangeFacet;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -29,21 +29,22 @@ public class DropTableVisitor extends QueryPlanVisitor<DropTable, OpenLineage.Ou
 
   @Override
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
-    Map<String, OpenLineage.DatasetFacet> facetMap = new HashMap<>();
     ResolvedTable resolvedTable = ((ResolvedTable) ((DropTable) x).child());
     TableCatalog tableCatalog = resolvedTable.catalog();
     Map<String, String> tableProperties = resolvedTable.table().properties();
     Identifier identifier = resolvedTable.identifier();
     StructType schema = resolvedTable.schema();
 
-    facetMap.put(
-        "tableStateChange", new TableStateChangeFacet(TableStateChangeFacet.StateChange.DROP));
-
     Optional<DatasetIdentifier> di =
         PlanUtils3.getDatasetIdentifier(context, tableCatalog, identifier, tableProperties);
 
     if (di.isPresent()) {
-      return Collections.singletonList(outputDataset().getDataset(di.get(), schema, facetMap));
+      return Collections.singletonList(
+          outputDataset()
+              .getDataset(
+                  di.get(),
+                  schema,
+                  OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.DROP));
     } else {
       return Collections.emptyList();
     }

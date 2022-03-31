@@ -1,34 +1,22 @@
 FROM openlineage-airflow-base:latest AS build
 
-FROM bitnami/airflow-scheduler:1.10.15 AS scheduler
+FROM apache/airflow:1.10.15-python3.7 AS airflow
 COPY --from=build /app/wheel /whl
 USER root
+RUN sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 467B942D3A79BD29  # Mysql fix for https://github.com/apache/airflow/issues/20911
 RUN apt-get update && \
     apt-get install -y git build-essential
-USER 1001
-RUN cd /opt/bitnami/airflow/ && . ./venv/bin/activate && python -m pip install --upgrade pip
-
-FROM bitnami/airflow-worker:1.10.15 AS worker
-COPY --from=build /app/wheel /whl
-USER root
-RUN apt-get update && \
-    apt-get install -y git build-essential
-USER 1001
-RUN cd /opt/bitnami/airflow/ && . ./venv/bin/activate && python -m pip install --upgrade pip
-
-FROM bitnami/airflow:1.10.15 AS airflow
-COPY --from=build /app/wheel /whl
-USER root
-RUN apt-get update && \
-    apt-get install -y git build-essential
-USER 1001
-RUN cd /opt/bitnami/airflow/ && . ./venv/bin/activate && python -m pip install --upgrade pip
+RUN mkdir -p /opt/airflow
+COPY data /opt/data
+RUN chown -R airflow:airflow /opt/airflow
+RUN chmod -R 777 /opt/data
+USER airflow
+COPY requirements.txt requirements.txt
+RUN pip install --user -r requirements.txt
 
 FROM openlineage-airflow-base:latest AS integration
 COPY integration-requirements.txt integration-requirements.txt
 COPY *.py ./
 COPY requests requests
 RUN pip install --use-deprecated=legacy-resolver --user -r integration-requirements.txt
-COPY docker/entrypoint.sh entrypoint.sh
 COPY docker/wait-for-it.sh wait-for-it.sh
-ENTRYPOINT ["/entrypoint.sh"]

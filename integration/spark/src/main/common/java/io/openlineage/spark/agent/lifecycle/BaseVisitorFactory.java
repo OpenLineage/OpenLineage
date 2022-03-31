@@ -1,12 +1,13 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+
 package io.openlineage.spark.agent.lifecycle;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.Dataset;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.spark.agent.lifecycle.plan.AlterTableAddColumnsCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.AlterTableRenameCommandVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.AppendDataVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.CommandPlanVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.CreateDataSourceTableAsSelectCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.CreateDataSourceTableCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.CreateHiveTableAsSelectCommandVisitor;
@@ -21,10 +22,9 @@ import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHiveTableVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.KafkaRelationVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LoadDataCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRDDVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.LogicalRelationVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.OptimizedCreateHiveTableAsSelectCommandVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.SaveIntoDataSourceCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.SqlDWDatabricksVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.SqlExecutionRDDVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.TruncateTableCommandVisitor;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -35,11 +35,9 @@ import scala.PartialFunction;
 
 abstract class BaseVisitorFactory implements VisitorFactory {
 
-  protected <D extends OpenLineage.Dataset>
-      List<PartialFunction<LogicalPlan, List<D>>> getBaseCommonVisitors(
-          OpenLineageContext context, DatasetFactory<D> factory) {
+  protected <D extends Dataset> List<PartialFunction<LogicalPlan, List<D>>> getBaseCommonVisitors(
+      OpenLineageContext context, DatasetFactory<D> factory) {
     List<PartialFunction<LogicalPlan, List<D>>> list = new ArrayList<>();
-    list.add(new LogicalRelationVisitor(context, factory));
     list.add(new LogicalRDDVisitor(context, factory));
     if (BigQueryNodeVisitor.hasBigQueryClasses()) {
       list.add(new BigQueryNodeVisitor(context, factory));
@@ -53,34 +51,35 @@ abstract class BaseVisitorFactory implements VisitorFactory {
     return list;
   }
 
-  public abstract <D extends OpenLineage.Dataset>
-      List<PartialFunction<LogicalPlan, List<D>>> getCommonVisitors(
-          OpenLineageContext context, DatasetFactory<D> factory);
+  public abstract <D extends Dataset> List<PartialFunction<LogicalPlan, List<D>>> getCommonVisitors(
+      OpenLineageContext context, DatasetFactory<D> factory);
 
   @Override
   public List<PartialFunction<LogicalPlan, List<InputDataset>>> getInputVisitors(
       OpenLineageContext context) {
     List<PartialFunction<LogicalPlan, List<OpenLineage.InputDataset>>> inputVisitors =
         new ArrayList<>(getCommonVisitors(context, DatasetFactory.input(context.getOpenLineage())));
-    inputVisitors.add(new CommandPlanVisitor(context));
+    if (VisitorFactory.classPresent("org.apache.spark.sql.execution.SQLExecutionRDD")) {
+      inputVisitors.add(new SqlExecutionRDDVisitor(context));
+    }
     return inputVisitors;
   }
 
   @Override
   public List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>> getOutputVisitors(
       OpenLineageContext context) {
+    DatasetFactory<OpenLineage.OutputDataset> factory =
+        DatasetFactory.output(context.getOpenLineage());
 
     List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>> outputCommonVisitors =
-        getCommonVisitors(context, DatasetFactory.output(context.getOpenLineage()));
+        getCommonVisitors(context, factory);
     List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>> list =
         new ArrayList<>(outputCommonVisitors);
 
     list.add(new InsertIntoDataSourceDirVisitor(context));
     list.add(new InsertIntoDataSourceVisitor(context));
     list.add(new InsertIntoHadoopFsRelationVisitor(context));
-    list.add(new SaveIntoDataSourceCommandVisitor(context));
     list.add(new CreateDataSourceTableAsSelectCommandVisitor(context));
-    list.add(new AppendDataVisitor(context));
     list.add(new InsertIntoDirVisitor(context));
     if (InsertIntoHiveTableVisitor.hasHiveClasses()) {
       list.add(new InsertIntoHiveTableVisitor(context));

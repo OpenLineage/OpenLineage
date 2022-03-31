@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
 ---
 name: Integration
 about: Propose a new integration
