@@ -386,8 +386,6 @@ shadowJar {
 
     manifest {
         attributes(
-                "Premain-Class": 'io.openlineage.spark.agent.SparkAgent',
-                "Agent-Class": 'io.openlineage.spark.agent.SparkAgent',
                 'Created-By': "Gradle ${gradle.gradleVersion}",
                 'Built-By': System.getProperty('user.name'),
                 'Build-Jdk': System.getProperty('java.version'),

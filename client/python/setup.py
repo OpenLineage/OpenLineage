@@ -12,10 +12,12 @@ with open("README.md") as readme_file:
 requirements = [
     "attrs>=19.3.0",
     "requests>=2.20.0",
+    "pyyaml>=5.1.0"
 ]
 
 extras_require = {
-    "tests": ["pytest", "pytest-cov", "mock", "flake8", "requests"],
+    "tests": ["pytest", "pytest-cov", "mock", "flake8", "requests", "pyyaml"],
+    "kafka": ["confluent-kafka"],
 }
 extras_require["dev"] = set(sum(extras_require.values(), []))
 

@@ -40,5 +40,8 @@ class Serde:
 
     @classmethod
     def to_json(cls, obj):
-        return json.dumps(cls.to_dict(obj), sort_keys=True,
-                          default=lambda o: f"<<non-serializable: {type(o).__qualname__}>>")
+        return json.dumps(
+            cls.to_dict(obj),
+            sort_keys=True,
+            default=lambda o: f"<<non-serializable: {type(o).__qualname__}>>"
+        )
