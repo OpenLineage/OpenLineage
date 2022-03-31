@@ -144,6 +144,7 @@ public class SaveIntoDataSourceCommandVisitor
                             ds.getFacets().getDataSource(),
                             ds.getFacets().getVersion(),
                             ds.getFacets().getSchema(),
+                            null,
                             context
                                 .getOpenLineage()
                                 .newLifecycleStateChangeDatasetFacet(
