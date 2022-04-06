@@ -10,10 +10,10 @@ from airflow import DAG
 
 from openlineage.airflow.utils import safe_import_airflow, get_connection
 from openlineage.common.models import (
-    DbTableName,
     DbTableSchema,
     DbColumn
 )
+from openlineage.common.sql import DbTableMeta
 from openlineage.common.dataset import Source, Dataset
 from openlineage.airflow.extractors.postgres_extractor import PostgresExtractor
 
@@ -33,7 +33,7 @@ CONN_URI_WITHOUT_USERPASS = 'postgres://localhost:5432/food_delivery'
 
 DB_NAME = 'food_delivery'
 DB_SCHEMA_NAME = 'public'
-DB_TABLE_NAME = DbTableName('discounts')
+DB_TABLE_NAME = DbTableMeta('discounts')
 DB_TABLE_COLUMNS = [
     DbColumn(
         name='id',
