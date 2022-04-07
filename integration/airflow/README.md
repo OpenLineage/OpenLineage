@@ -131,12 +131,12 @@ There are two ways to register them for use in `openlineage-airflow`.
 
 First one, is to provide environment variable in pattern of 
 ```
-OPENLINEAGE_EXTRACTOR_<operator>=full.path.to.ExtractorClass
+OPENLINEAGE_EXTRACTOR_<name>=full.path.to.ExtractorClass
 ```
 
 For example: 
 ```
-OPENLINEAGE_EXTRACTOR_PostgresOperator=openlineage.airflow.extractors.postgres_extractor.PostgresExtractor
+OPENLINEAGE_EXTRACTOR_POSTGRES_OPERATOR=openlineage.airflow.extractors.postgres_extractor.PostgresExtractor
 ```
 
 Second one - working in Airflow 1.10.x only - is to register all additional operator-extractor pairings by 
