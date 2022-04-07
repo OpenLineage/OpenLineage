@@ -4,6 +4,7 @@
 ### Added
 * Python implements Transport interface - HTTP and Kafka transports are available [@mobuchowski](https://github.com/mobuchowski)
 * Added README.md in OpenLineage/integrations containing compatibility matrix [@howardyoo](https://github.com/howardyoo)
+* Airflow: custom extractors lookup uses only get_operator_classnames method [@mobuchowski](https://github.com/mobuchowski)
 
 ## [0.6.2](https://github.com/OpenLineage/OpenLineage/compare/0.6.1...0.6.2)
 ### Added
