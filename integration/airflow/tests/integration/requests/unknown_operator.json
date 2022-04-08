@@ -17,7 +17,7 @@
  				},
  				"parentRun": {
  					"job": {
- 						"name": "unknown_operator_dag.unknown_operator",
+ 						"name": "unknown_operator_dag",
  						"namespace": "food_delivery"
  					}
  				},
