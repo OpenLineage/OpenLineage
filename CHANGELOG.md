@@ -11,6 +11,7 @@
 ### Fixed
 * Complete Fix of Snowflake Extractor get_hook() Bug [@denimalpaca](https://github.com/denimalpaca)
 * Update artwork [@rossturk](https://github.com/rossturk)
+* Airflow tasks in a DAG now report a common ParentRunFacet [@collado-mike](https://github.com/collado-mike)
 
 ## [0.6.1](https://github.com/OpenLineage/OpenLineage/compare/0.6.0...0.6.1)
 ### Fixed
