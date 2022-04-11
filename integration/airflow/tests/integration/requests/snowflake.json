@@ -39,7 +39,7 @@
 			},
 			"parentRun": {
 				"job": {
-					"name": "snowflake.snowflake_insert",
+					"name": "snowflake",
 					"namespace": "food_delivery"
 				}
 			}
