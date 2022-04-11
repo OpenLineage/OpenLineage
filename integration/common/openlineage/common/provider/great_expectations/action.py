@@ -203,7 +203,10 @@ class OpenLineageValidationAction(ValidationAction):
             batch = data_asset.active_batch
             batch_data = batch["data"]
             table_name = batch["batch_spec"]["table_name"]
-            schema_name = batch["batch_spec"]["schema_name"]
+            try:
+                schema_name = batch["batch_spec"]["schema_name"]
+            except KeyError:
+                schema_name = None
             return [
                 self._get_sql_table(
                     batch_data,
@@ -218,7 +221,7 @@ class OpenLineageValidationAction(ValidationAction):
         self,
         data_asset: [SqlAlchemyDataset, SqlAlchemyBatchData],
         meta: MetaData,
-        schema: str,
+        schema: Optional[str],
         table_name: str,
         validation_result_suite: ExpectationSuiteValidationResult
     ) -> Optional[OLDataset]:
