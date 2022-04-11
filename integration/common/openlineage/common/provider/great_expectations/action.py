@@ -160,7 +160,6 @@ class OpenLineageValidationAction(ValidationAction):
         :param validation_result_suite:
         :return:
         """
-        self.log.info(f"data_asset type: {data_asset}")
         if data_asset.batch_kwargs.__contains__("path"):
             path = data_asset.batch_kwargs.get("path")
             if path.startswith("/"):
