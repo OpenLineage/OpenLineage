@@ -11,7 +11,6 @@ import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.lifecycle.StaticExecutionContextFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Optional;
-import net.bytebuddy.agent.ByteBuddyAgent;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.SparkSession$;
@@ -25,18 +24,7 @@ import org.junit.jupiter.api.extension.ParameterResolver;
 import org.mockito.Mockito;
 import org.slf4j.LoggerFactory;
 
-/**
- * JUnit extension that invokes the {@link SparkAgent} by installing the {@link ByteBuddyAgent} to
- * instrument classes. This will allow the {@link java.lang.instrument.ClassFileTransformer}s in the
- * {@link openlineage.spark.agent.transformers} package to transform the byte code of target classes
- * as they're loaded.
- *
- * <p>Note that this extension has to be annotated on any class that interacts with any of the
- * transformed classes (i.e., {@link org.apache.spark.SparkContext}, {@link
- * org.apache.spark.sql.SparkSession}, etc.). Once a class has been loaded, it won't go through the
- * {@link java.lang.instrument.ClassFileTransformer} process again. If a test doesn't use this
- * extension and ends up running before other Spark tests, those subsequent tests will fail.
- */
+/** JUnit extension that sets up SparkSession for OpenLineage context. */
 public class SparkAgentTestExtension
     implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback, ParameterResolver {
   public static final EventEmitter OPEN_LINEAGE_SPARK_CONTEXT = mock(EventEmitter.class);

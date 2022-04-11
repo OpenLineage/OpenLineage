@@ -72,8 +72,9 @@ class Extractors:
         # We import the module provided and get type using importlib then.
         for key, value in os.environ.items():
             if key.startswith("OPENLINEAGE_EXTRACTOR_"):
-                operator = key[22:]
-                self.extractors[operator] = import_from_string(value)
+                extractor = import_from_string(value)
+                for operator_class in extractor.get_operator_classnames():
+                    self.extractors[operator_class] = extractor
 
     def add_extractor(self, operator: str, extractor: Type):
         self.extractors[operator] = extractor

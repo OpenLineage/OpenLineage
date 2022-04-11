@@ -25,7 +25,7 @@ A library that integrates [Airflow `DAGs`]() with [OpenLineage](https://openline
 
 ## Requirements
 
-- [Python 3.6.0](https://www.python.org/downloads)
+- [Python 3.7](https://www.python.org/downloads)
 - [Airflow 1.10.12+](https://pypi.org/project/apache-airflow)
 - (experimental) [Airflow 2.1+](https://pypi.org/project/apache-airflow)
 
@@ -131,12 +131,12 @@ There are two ways to register them for use in `openlineage-airflow`.
 
 First one, is to provide environment variable in pattern of 
 ```
-OPENLINEAGE_EXTRACTOR_<operator>=full.path.to.ExtractorClass
+OPENLINEAGE_EXTRACTOR_<name>=full.path.to.ExtractorClass
 ```
 
 For example: 
 ```
-OPENLINEAGE_EXTRACTOR_PostgresOperator=openlineage.airflow.extractors.postgres_extractor.PostgresExtractor
+OPENLINEAGE_EXTRACTOR_POSTGRES_OPERATOR=openlineage.airflow.extractors.postgres_extractor.PostgresExtractor
 ```
 
 Second one - working in Airflow 1.10.x only - is to register all additional operator-extractor pairings by 
