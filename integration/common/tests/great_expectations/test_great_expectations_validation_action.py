@@ -345,9 +345,6 @@ def test_dataset_from_pandas_source(tmpdir):
 
 def test_dataset_from_sql_source_v3_api(test_db_file, tmpdir):
     connection_url = f"sqlite:///{test_db_file}"
-    engine = create_engine(connection_url)
-
-    ds = SqlAlchemyDataset(table_name=TABLE_NAME, engine=engine)
 
     store_defaults = FilesystemStoreBackendDefaults(root_directory=tmpdir)
     store_defaults.stores[store_defaults.expectations_store_name]["store_backend"] = {
