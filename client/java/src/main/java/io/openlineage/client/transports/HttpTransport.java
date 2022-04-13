@@ -33,7 +33,7 @@ public final class HttpTransport extends Transport implements Closeable {
 
   private final HttpClient http;
   private final URL url;
-  private @Nullable final String apiKey;
+  private @Nullable final TokenProvider tokenProvider;
 
   public HttpTransport(@NonNull final HttpConfig httpConfig) {
     super(Type.HTTP);
@@ -47,7 +47,7 @@ public final class HttpTransport extends Transport implements Closeable {
     } catch (URISyntaxException | MalformedURLException e) {
       throw new OpenLineageClientException(e);
     }
-    this.apiKey = httpConfig.getApiKey();
+    this.tokenProvider = httpConfig.getAuth();
   }
 
   @Override
@@ -61,8 +61,8 @@ public final class HttpTransport extends Transport implements Closeable {
       request.addHeader(CONTENT_TYPE, APPLICATION_JSON.toString());
       request.setEntity(new StringEntity(eventAsJson, APPLICATION_JSON));
 
-      if (apiKey != null) {
-        request.addHeader(AUTHORIZATION, "Bearer " + apiKey);
+      if (tokenProvider != null) {
+        request.addHeader(AUTHORIZATION, tokenProvider.getToken());
       }
 
       final HttpResponse response = http.execute(request);
@@ -106,7 +106,7 @@ public final class HttpTransport extends Transport implements Closeable {
     private static final URL DEFAULT_OPENLINEAGE_URL = Utils.toUrl("http://localhost:8080");
 
     private URL url;
-    private @Nullable String apiKey;
+    private @Nullable TokenProvider tokenProvider;
 
     private Builder() {
       this.url = DEFAULT_OPENLINEAGE_URL;
@@ -135,8 +135,15 @@ public final class HttpTransport extends Transport implements Closeable {
       return this;
     }
 
+    public Builder tokenProvider(@Nullable TokenProvider tokenProvider) {
+      this.tokenProvider = tokenProvider;
+      return this;
+    }
+
     public Builder apiKey(@Nullable String apiKey) {
-      this.apiKey = apiKey;
+      final ApiKeyTokenProvider apiKeyTokenProvider = new ApiKeyTokenProvider();
+      apiKeyTokenProvider.setApiKey(apiKey);
+      this.tokenProvider = apiKeyTokenProvider;
       return this;
     }
 
@@ -147,7 +154,7 @@ public final class HttpTransport extends Transport implements Closeable {
     public HttpTransport build() {
       final HttpConfig httpConfig = new HttpConfig();
       httpConfig.setUrl(url);
-      httpConfig.setApiKey(apiKey);
+      httpConfig.setAuth(tokenProvider);
       return new HttpTransport(httpConfig);
     }
   }

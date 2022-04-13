@@ -10,14 +10,14 @@ Maven:
 <dependency>
     <groupId>io.openlineage</groupId>
     <artifactId>openlineage-java</artifactId>
-    <version>0.5.2</version>
+    <version>0.7.0</version>
 </dependency>
 ```
 
 or Gradle:
 
 ```groovy
-implementation 'io.openlineage:openlineage-java:0.5.2'
+implementation 'io.openlineage:openlineage-java:0.7.0'
 ```
 
 ## Usage
@@ -121,6 +121,8 @@ transport:
     key.serializer: org.apache.kafka.common.serialization.StringSerializer
     value.serializer: org.apache.kafka.common.serialization.StringSerializer
 ```
+
+KafkaTransport depends on you to provide artifact `org.apache.kafka:kafka-clients:3.1.0` or compatible on your classpath.
 
 ## Error Handling
 

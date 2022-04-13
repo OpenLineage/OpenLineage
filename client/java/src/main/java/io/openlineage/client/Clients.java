@@ -9,7 +9,11 @@ public final class Clients {
 
   /** Returns a new {@code OpenLineageClient} object. */
   public static OpenLineageClient newClient() {
-    final OpenLineageYaml openLineageYaml = Utils.loadOpenLineageYaml();
+    return newClient(new DefaultConfigPathProvider());
+  }
+
+  public static OpenLineageClient newClient(ConfigPathProvider configPathProvider) {
+    final OpenLineageYaml openLineageYaml = Utils.loadOpenLineageYaml(configPathProvider);
     final TransportFactory factory = new TransportFactory(openLineageYaml.getTransportConfig());
     final Transport transport = factory.build();
     // ...

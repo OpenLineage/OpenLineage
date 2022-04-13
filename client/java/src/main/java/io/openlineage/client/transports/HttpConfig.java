@@ -11,5 +11,5 @@ import lombok.ToString;
 @ToString
 public final class HttpConfig implements TransportConfig {
   @Getter @Setter private URL url;
-  @Getter @Setter private @Nullable String apiKey;
+  @Getter @Setter private @Nullable TokenProvider auth;
 }

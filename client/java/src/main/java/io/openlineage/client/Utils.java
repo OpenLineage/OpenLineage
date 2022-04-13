@@ -24,14 +24,12 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import lombok.NonNull;
 
 /** Utilities class for {@link OpenLineageClient}. */
@@ -41,19 +39,6 @@ public final class Utils {
   private static final ObjectMapper MAPPER = newObjectMapper();
 
   private static final ObjectMapper YML = new ObjectMapper(new YAMLFactory());
-  private static final String OPENLINEAGE_YML = "openlineage.yml";
-  private static final Path[] OPENLINEAGE_YML_PATHS =
-      new Path[] {
-        // ...
-        Paths.get(System.getProperty("user.dir") + File.separatorChar + OPENLINEAGE_YML),
-        // ...
-        Paths.get(
-            System.getProperty("user.home")
-                + File.separatorChar
-                + ".openlineage"
-                + File.separatorChar
-                + OPENLINEAGE_YML),
-      };
 
   /** Returns a new {@link ObjectMapper} instance. */
   public static ObjectMapper newObjectMapper() {
@@ -97,9 +82,9 @@ public final class Utils {
     }
   }
 
-  public static OpenLineageYaml loadOpenLineageYaml() {
+  public static OpenLineageYaml loadOpenLineageYaml(ConfigPathProvider configPathProvider) {
     try {
-      for (final Path path : OPENLINEAGE_YML_PATHS) {
+      for (final Path path : configPathProvider.getPaths()) {
         if (Files.exists(path)) {
           return YML.readValue(path.toFile(), OpenLineageYaml.class);
         }
