@@ -4,7 +4,7 @@ package io.openlineage.spark.api;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRelationDatasetBuilder;
-import io.openlineage.spark.agent.lifecycle.plan.columnLineage.ColumnLevelLineageUtils;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PlanUtils;
 import java.net.URI;

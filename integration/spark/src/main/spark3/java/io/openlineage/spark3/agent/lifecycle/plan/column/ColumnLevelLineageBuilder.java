@@ -1,5 +1,6 @@
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacetFields;
@@ -16,7 +17,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
@@ -53,10 +53,9 @@ public class ColumnLevelLineageBuilder {
    * @param attributeName
    */
   public void addInput(ExprId exprId, DatasetIdentifier datasetIdentifier, String attributeName) {
-    if (!inputs.containsKey(exprId)) {
-      inputs.put(exprId, new LinkedList<>());
-    }
-    inputs.get(exprId).add(Pair.of(datasetIdentifier, attributeName));
+    inputs
+        .computeIfAbsent(exprId, k -> new LinkedList<>())
+        .add(Pair.of(datasetIdentifier, attributeName));
   }
 
   /**
@@ -80,43 +79,45 @@ public class ColumnLevelLineageBuilder {
    * @param child
    */
   public void addDependency(ExprId parent, ExprId child) {
-    if (!exprDependencies.containsKey(parent)) {
-      exprDependencies.put(parent, new HashSet<>());
-    }
-    exprDependencies.get(parent).add(child);
+    exprDependencies.computeIfAbsent(parent, k -> new HashSet<>()).add(child);
   }
 
   public boolean hasOutputs() {
     return !outputs.isEmpty();
   }
 
-  @SneakyThrows
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     ObjectMapper mapper = new ObjectMapper();
-    sb.append("Inputs: ").append(mapper.writeValueAsString(inputs)).append(System.lineSeparator());
-    sb.append("Dependencies: ")
-        .append(
-            mapper.writeValueAsString(
-                exprDependencies.entrySet().stream()
-                    .collect(
-                        Collectors.toMap(
-                            Map.Entry::getKey,
-                            e -> e.toString())) // need to call toString method explicitly
-                ))
-        .append(System.lineSeparator());
+    try {
+      sb.append("Inputs: ")
+          .append(mapper.writeValueAsString(inputs))
+          .append(System.lineSeparator());
+      sb.append("Dependencies: ")
+          .append(
+              mapper.writeValueAsString(
+                  exprDependencies.entrySet().stream()
+                      .collect(
+                          Collectors.toMap(
+                              Map.Entry::getKey,
+                              e -> e.toString())) // need to call toString method explicitly
+                  ))
+          .append(System.lineSeparator());
 
-    sb.append("Outputs: ")
-        .append(
-            mapper.writeValueAsString(
-                outputs.entrySet().stream()
-                    .collect(
-                        Collectors.toMap(
-                            Map.Entry::getKey,
-                            e -> e.toString())) // need to call toString method explicitly
-                ))
-        .append(System.lineSeparator());
+      sb.append("Outputs: ")
+          .append(
+              mapper.writeValueAsString(
+                  outputs.entrySet().stream()
+                      .collect(
+                          Collectors.toMap(
+                              Map.Entry::getKey,
+                              e -> e.toString())) // need to call toString method explicitly
+                  ))
+          .append(System.lineSeparator());
+    } catch (JsonProcessingException e) {
+      sb.append("Unable to serialize: ").append(e.toString());
+    }
 
     return sb.toString();
   }
@@ -183,9 +184,10 @@ public class ColumnLevelLineageBuilder {
     dependentInputs.add(outputExprId);
     boolean continueSearch = true;
 
+    Set<ExprId> newDependentInputs = new HashSet<>(Arrays.asList(outputExprId));
     while (continueSearch) {
-      Set<ExprId> newDependentInputs =
-          dependentInputs.stream()
+      newDependentInputs =
+          newDependentInputs.stream()
               .filter(exprId -> exprDependencies.containsKey(exprId))
               .flatMap(exprId -> exprDependencies.get(exprId).stream())
               .filter(exprId -> !dependentInputs.contains(exprId)) // filter already added

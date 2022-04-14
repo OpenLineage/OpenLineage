@@ -9,7 +9,7 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
-import io.openlineage.spark3.agent.lifecycle.plan.columnLineage.ColumnLevelLineageUtils;
+import io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.Collections;
 import java.util.List;

@@ -106,6 +106,7 @@ public class ColumnLevelLineageUtilsNonV2CatalogTest {
     spark.sql("INSERT INTO t2 SELECT * FROM t1");
 
     LogicalPlan plan = LastQueryExecutionSparkEventListener.getLastExecutedLogicalPlan().get();
+    log.info(plan.prettyJson());
     when(queryExecution.optimizedPlan()).thenReturn(plan);
     OpenLineage.ColumnLineageDatasetFacet facet =
         ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, schema).get();

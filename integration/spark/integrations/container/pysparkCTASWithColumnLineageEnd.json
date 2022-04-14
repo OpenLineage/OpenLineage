@@ -1,13 +1,31 @@
 {
   "eventType" : "COMPLETE",
   "job" : {
-    "namespace" : "testV2Commands",
-    "name" : "open_lineage_integration_v2_commands.atomic_create_table_as_select"
+    "namespace" : "testCreateAsSelectAndLoad",
+    "name" : "open_lineage_integration_cta_s_load.execute_create_hive_table_as_select_command"
   },
-  "inputs" : [ ],
+  "inputs" : [ {
+    "namespace" : "file",
+    "name" : "/tmp/ctas_load/temp",
+    "facets" : {
+      "dataSource" : {
+        "name" : "file",
+        "uri" : "file"
+      },
+      "schema" : {
+        "fields" : [ {
+          "name" : "a",
+          "type" : "long"
+        }, {
+          "name" : "b",
+          "type" : "long"
+        } ]
+      }
+    }
+  } ],
   "outputs" : [ {
     "namespace" : "file",
-    "name" : "/tmp/v2/db.target",
+    "name" : "/tmp/ctas_load/tbl1",
     "facets" : {
       "dataSource" : {
         "name" : "file",
@@ -22,19 +40,16 @@
           "type" : "long"
         } ]
       },
-      "version" : {},
+      "lifecycleStateChange" : {
+        "lifecycleStateChange" : "CREATE"
+      },
       "columnLineage": {
         "fields": {
           "a": {
             "inputFields": [
               {
                 "namespace": "file",
-                "name": "/tmp/v2/db.source1",
-                "field": "a"
-              },
-              {
-                "namespace": "file",
-                "name": "/tmp/v2/db.source2",
+                "name": "/tmp/ctas_load/temp",
                 "field": "a"
               }
             ]
@@ -43,12 +58,7 @@
             "inputFields": [
               {
                 "namespace": "file",
-                "name": "/tmp/v2/db.source1",
-                "field": "b"
-              },
-              {
-                "namespace": "file",
-                "name": "/tmp/v2/db.source2",
+                "name": "/tmp/ctas_load/temp",
                 "field": "b"
               }
             ]
