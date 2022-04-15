@@ -2,6 +2,7 @@
 import time
 import os
 import copy
+import uuid
 from typing import Optional
 
 from airflow.models import DAG as AIRFLOW_DAG
@@ -152,6 +153,7 @@ class DAG(AIRFLOW_DAG):
     # scheduler, where tasks are actually started
     def _register_dagrun(self, dagrun, is_external_trigger: bool, execution_date: str):
         self.log.debug(f"self.task_dict: {self.task_dict}")
+        parent_run_id = str(uuid.uuid3(uuid.NAMESPACE_URL, f'{self.dag_id}.{dagrun.run_id}'))
         # Register each task in the DAG
         for task_id, task in self.task_dict.items():
             t = self._now_ms()
@@ -166,7 +168,8 @@ class DAG(AIRFLOW_DAG):
                     job_name,
                     self.description,
                     DagUtils.to_iso_8601(self._now_ms()),
-                    dagrun.run_id,
+                    self.dag_id,
+                    parent_run_id,
                     self._get_location(task),
                     DagUtils.get_start_time(execution_date),
                     DagUtils.get_end_time(execution_date, self.following_schedule(execution_date)),
