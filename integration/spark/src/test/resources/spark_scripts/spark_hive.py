@@ -13,6 +13,8 @@ spark = SparkSession.builder \
     .getOrCreate()
 spark.sparkContext.setLogLevel('info')
 
-spark.sql("CREATE TABLE IF NOT EXISTS test (key INT, value STRING) USING hive");
-spark.sql("INSERT INTO test VALUES (1, 'a'), (2, 'b'), (3, 'c')");
-result = spark.sql("SELECT count(*) from test");
+spark.sql("CREATE TABLE IF NOT EXISTS test (key INT, value STRING) USING hive")
+spark.sql("CREATE TABLE IF NOT EXISTS target (key INT, value STRING) USING hive")
+spark.sql("INSERT INTO test VALUES (1, 'a'), (2, 'b'), (3, 'c')")
+
+spark.sql("INSERT INTO target SELECT * from test WHERE value > 1")
