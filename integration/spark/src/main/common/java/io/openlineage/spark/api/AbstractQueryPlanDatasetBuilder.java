@@ -44,11 +44,11 @@ public abstract class AbstractQueryPlanDatasetBuilder<T, P extends LogicalPlan, 
   }
 
   protected DatasetFactory<OpenLineage.OutputDataset> outputDataset() {
-    return DatasetFactory.output(context.getOpenLineage());
+    return DatasetFactory.output(context);
   }
 
   protected DatasetFactory<OpenLineage.InputDataset> inputDataset() {
-    return DatasetFactory.input(context.getOpenLineage());
+    return DatasetFactory.input(context);
   }
 
   public abstract List<D> apply(P p);
