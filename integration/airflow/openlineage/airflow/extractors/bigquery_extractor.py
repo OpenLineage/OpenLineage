@@ -4,8 +4,10 @@ import json
 import logging
 import traceback
 from typing import Optional, List
+from airflow.version import version as AIRFLOW_VERSION
 
 import attr
+from pkg_resources import parse_version
 
 from openlineage.client.facet import SqlJobFacet
 from openlineage.common.provider.bigquery import BigQueryDatasetsProvider, BigQueryErrorRunFacet
@@ -15,7 +17,8 @@ from openlineage.airflow.extractors.base import (
     BaseExtractor,
     TaskMetadata
 )
-from openlineage.airflow.utils import get_job_name
+from openlineage.airflow.utils import get_job_name, try_import_from_string
+from google.cloud.bigquery import Client
 
 _BIGQUERY_CONN_URL = 'bigquery'
 
@@ -64,7 +67,9 @@ class BigQueryExtractor(BaseExtractor):
                 }
             )
 
-        stats = BigQueryDatasetsProvider().get_facets(bigquery_job_id)
+        client = self._get_client()
+
+        stats = BigQueryDatasetsProvider(client=client).get_facets(bigquery_job_id)
         inputs = stats.inputs
         output = stats.output
         run_facets = stats.run_facets
@@ -79,6 +84,28 @@ class BigQueryExtractor(BaseExtractor):
             run_facets=run_facets,
             job_facets=job_facets
         )
+
+    def _get_client(self):
+        # Get client using Airflow hook - this way we use the same credentials as Airflow
+        if hasattr(self.operator, 'hook') and self.operator.hook:
+            hook = self.operator.hook
+        elif parse_version(AIRFLOW_VERSION) >= parse_version("2.0.0"):
+            BigQueryHook = try_import_from_string(
+                'airflow.providers.google.cloud.operators.bigquery.BigQueryHook'
+            )
+            if BigQueryHook is not None:
+                hook = BigQueryHook(
+                    gcp_conn_id=self.operator.gcp_conn_id,
+                    use_legacy_sql=self.operator.use_legacy_sql,
+                    delegate_to=self.operator.delegate_to,
+                    location=self.operator.location,
+                    impersonation_chain=self.operator.impersonation_chain,
+                )
+                return hook.get_client(
+                    project_id=hook.project_id,
+                    location=hook.location
+                )
+        return Client()
 
     def _get_xcom_bigquery_job_id(self, task_instance):
         bigquery_job_id = task_instance.xcom_pull(
