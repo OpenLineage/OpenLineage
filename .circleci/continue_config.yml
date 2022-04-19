@@ -468,25 +468,66 @@ jobs:
 workflows:
   release:
     # Only trigger CI job on release (=X.Y.Z) with possible (rcX)
-    when:
-      matches:
-        value: << pipeline.git.tag >>
-        pattern: ^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$
     jobs:
       - release-client-java:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+            branches:
+              ignore: /.*/
           context: release
       - release-integration-spark:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+            branches:
+              ignore: /.*/
           context: release
           requires:
             - release-client-java
       - release-proxy-backend:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+            branches:
+              ignore: /.*/
           context: release
-      - build-client-python
-      - build-integration-common
-      - build-integration-airflow
-      - build-integration-dbt
-      - build-integration-dagster
+      - build-client-python:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+            branches:
+              ignore: /.*/
+      - build-integration-common:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+            branches:
+              ignore: /.*/
+      - build-integration-airflow:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+            branches:
+              ignore: /.*/
+      - build-integration-dbt:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+            branches:
+              ignore: /.*/
+      - build-integration-dagster:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+            branches:
+              ignore: /.*/
       - release-python:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+            branches:
+              ignore: /.*/
           context: release
           requires:
             - build-client-python
