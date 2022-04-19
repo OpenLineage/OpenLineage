@@ -66,6 +66,7 @@ class OpenLineageAdapter:
         job_name: str,
         job_description: str,
         event_time: str,
+        parent_job_name: Optional[str],
         parent_run_id: Optional[str],
         code_location: Optional[str],
         nominal_start_time: str,
@@ -79,6 +80,8 @@ class OpenLineageAdapter:
         :param job_name: globally unique identifier of task in dag
         :param job_description: user provided description of job
         :param event_time:
+        :param parent_job_name: the name of the parent job (typically the DAG,
+                but possibly a task group)
         :param parent_run_id: identifier of job spawning this task
         :param code_location: file path or URL of DAG file
         :param nominal_start_time: scheduled time of dag run
@@ -93,6 +96,7 @@ class OpenLineageAdapter:
             eventTime=event_time,
             run=self._build_run(
                 run_id,
+                parent_job_name,
                 parent_run_id,
                 job_name,
                 nominal_start_time,
@@ -173,6 +177,7 @@ class OpenLineageAdapter:
     @staticmethod
     def _build_run(
         run_id: str,
+        parent_job_name: Optional[str] = None,
         parent_run_id: Optional[str] = None,
         job_name: Optional[str] = None,
         nominal_start_time: Optional[str] = None,
@@ -188,7 +193,7 @@ class OpenLineageAdapter:
             facets.update({"parentRun": ParentRunFacet.create(
                 parent_run_id,
                 _DAG_NAMESPACE,
-                job_name
+                parent_job_name or job_name
             )})
 
         if run_facets:

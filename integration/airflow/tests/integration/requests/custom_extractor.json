@@ -21,7 +21,7 @@
  				},
  				"parentRun": {
  					"job": {
- 						"name": "custom_extractor.custom_extractor",
+ 						"name": "custom_extractor",
  						"namespace": "food_delivery"
  					}
  				}
