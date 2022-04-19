@@ -1,8 +1,8 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.7.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.7.1...HEAD)
  
-## [0.7.0](https://github.com/OpenLineage/OpenLineage/compare/0.6.2...0.7.0)
+## [0.7.1](https://github.com/OpenLineage/OpenLineage/compare/0.6.2...0.7.1)
 ### Added
 * Python implements Transport interface - HTTP and Kafka transports are available ([#530](https://github.com/OpenLineage/OpenLineage/pull/530)) [@mobuchowski](https://github.com/mobuchowski)
 * Add UnknownOperatorAttributeRunFacet and support in lineage backend ([#547](https://github.com/OpenLineage/OpenLineage/pull/547)) [@collado-mike](https://github.com/collado-mike)
@@ -18,6 +18,7 @@
 * Airflow: remove redundant logging from GE import ([#657](https://github.com/OpenLineage/OpenLineage/pull/657)) [@mobuchowski](https://github.com/mobuchowski)
 * Fix Shebang issue in Spark's wait-for-it.sh ([#658](https://github.com/OpenLineage/OpenLineage/pull/658)) [@mobuchowski](https://github.com/mobuchowski)
 * Update parent_run_id to be a uuid from the dag name and run_id ([#664](https://github.com/OpenLineage/OpenLineage/pull/664)) [@collado-mike](https://github.com/collado-mike)
+* Spark: fix time zone inconsistency in testSerializeRunEvent ([#681](https://github.com/OpenLineage/OpenLineage/pull/681)) [@sekikn](https://github.com/sekikn)
 
 ## [0.6.2](https://github.com/OpenLineage/OpenLineage/compare/0.6.1...0.6.2)
 ### Added
