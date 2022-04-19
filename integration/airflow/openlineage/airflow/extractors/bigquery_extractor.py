@@ -89,6 +89,10 @@ class BigQueryExtractor(BaseExtractor):
         # Get client using Airflow hook - this way we use the same credentials as Airflow
         if hasattr(self.operator, 'hook') and self.operator.hook:
             hook = self.operator.hook
+            return hook.get_client(
+                project_id=hook.project_id,
+                location=hook.location
+            )
         elif parse_version(AIRFLOW_VERSION) >= parse_version("2.0.0"):
             BigQueryHook = try_import_from_string(
                 'airflow.providers.google.cloud.operators.bigquery.BigQueryHook'
