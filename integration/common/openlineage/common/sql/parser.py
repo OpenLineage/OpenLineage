@@ -83,7 +83,7 @@ class DbTableMeta:
 
 
 def _is_in_table(token):
-    return _match_on(token, [
+    return token.match(T.Keyword, [
         'FROM',
         'INNER JOIN',
         'JOIN',
@@ -97,62 +97,84 @@ def _is_in_table(token):
 
 
 def _is_out_table(token):
-    return _match_on(token, ['INTO'])
+    return token.match(T.DML, ['INSERT', 'UPDATE']) or token.match(T.Keyword, ['INTO'])
 
 
-def _match_on(token, keywords):
-    return token.match(T.Keyword, values=keywords)
+def _parse_ident(ident: Identifier, default_schema: Optional[str] = None) -> str:
+    # Extract table name from possible schema.table naming
+    token_list = ident.flatten()
+    table_name = next(token_list).value
+    try:
+        # Determine if the table contains the schema
+        # separated by a dot (format: 'schema.table')
+        dot = next(token_list)
+        if dot.match(Punctuation, '.'):
+            table_name += dot.value
+            table_name += next(token_list).value
+            # And again, to match bigquery's 'database.schema.table'
+            try:
+                dot = next(token_list)
+                if dot.match(Punctuation, '.'):
+                    table_name += dot.value
+                    table_name += next(token_list).value
+            except StopIteration:
+                # Do not insert database name if it's not specified
+                pass
+        elif default_schema:
+            table_name = f'{default_schema}.{table_name}'
+    except StopIteration:
+        if default_schema:
+            table_name = f'{default_schema}.{table_name}'
+
+    table_name = table_name.replace('`', '')
+    return table_name
 
 
-def _get_tables(
+def _parse_ident_list(token: IdentifierList, default_schema: Optional[str] = None) -> List[str]:
+    # Handle "comma separated joins" as opposed to explicit JOIN keyword
+    tables = []
+    gidx = 0
+    tables.append(_parse_ident(token.token_first(skip_ws=True, skip_cm=True), default_schema))
+    gidx, punc = token.token_next(gidx, skip_ws=True, skip_cm=True)
+    while punc and punc.value == ',':
+        gidx, name = token.token_next(gidx, skip_ws=True, skip_cm=True)
+        tables.append(_parse_ident(name, default_schema))
+        gidx, punc = token.token_next(gidx)
+    return tables
+
+
+def _get_in_tables(
         tokens,
         idx,
         default_schema: Optional[str] = None
 ) -> Tuple[int, List[DbTableMeta]]:
     # Extract table identified by preceding SQL keyword at '_is_in_table'
-    def parse_ident(ident: Identifier) -> str:
-        # Extract table name from possible schema.table naming
-        token_list = ident.flatten()
-        table_name = next(token_list).value
-        try:
-            # Determine if the table contains the schema
-            # separated by a dot (format: 'schema.table')
-            dot = next(token_list)
-            if dot.match(Punctuation, '.'):
-                table_name += dot.value
-                table_name += next(token_list).value
-
-                # And again, to match bigquery's 'database.schema.table'
-                try:
-                    dot = next(token_list)
-                    if dot.match(Punctuation, '.'):
-                        table_name += dot.value
-                        table_name += next(token_list).value
-                except StopIteration:
-                    # Do not insert database name if it's not specified
-                    pass
-            elif default_schema:
-                table_name = f'{default_schema}.{table_name}'
-        except StopIteration:
-            if default_schema:
-                table_name = f'{default_schema}.{table_name}'
-
-        table_name = table_name.replace('`', '')
-        return table_name
-
     idx, token = tokens.token_next(idx=idx)
     tables = []
     if isinstance(token, IdentifierList):
-        # Handle "comma separated joins" as opposed to explicit JOIN keyword
-        gidx = 0
-        tables.append(parse_ident(token.token_first(skip_ws=True, skip_cm=True)))
-        gidx, punc = token.token_next(gidx, skip_ws=True, skip_cm=True)
-        while punc and punc.value == ',':
-            gidx, name = token.token_next(gidx, skip_ws=True, skip_cm=True)
-            tables.append(parse_ident(name))
-            gidx, punc = token.token_next(gidx)
+        tables = _parse_ident_list(token, default_schema)
     else:
-        tables.append(parse_ident(token))
+        tables.append(_parse_ident(token, default_schema))
+
+    return idx, [DbTableMeta(table) for table in tables]
+
+
+def _get_out_tables(
+        tokens,
+        idx,
+        default_schema: Optional[str] = None
+) -> Tuple[int, List[DbTableMeta]]:
+    # Extract table identified by preceding SQL keyword at '_is_out_table'
+    idx, token = tokens.token_next(idx=idx)
+    # Consume all keywords until reaching to an identifier since keywords
+    # can be a sequence (e.g., `INSERT INTO`) in the case of out table.
+    while token.is_keyword:
+        idx, token = tokens.token_next(idx=idx)
+    tables = []
+    if isinstance(token, IdentifierList):
+        tables = _parse_ident_list(token, default_schema)
+    else:
+        tables.append(_parse_ident(token, default_schema))
 
     return idx, [DbTableMeta(table) for table in tables]
 
@@ -198,12 +220,12 @@ class SqlParser:
                     if intable not in self.ctes:
                         in_tables.add(intable)
             elif _is_in_table(token):
-                idx, extracted_tables = _get_tables(tokens, idx, self.default_schema)
+                idx, extracted_tables = _get_in_tables(tokens, idx, self.default_schema)
                 for table in extracted_tables:
                     if table.name not in self.ctes:
                         in_tables.add(table)
             elif _is_out_table(token):
-                idx, extracted_tables = _get_tables(tokens, idx, self.default_schema)
+                idx, extracted_tables = _get_out_tables(tokens, idx, self.default_schema)
                 out_tables.add(extracted_tables[0])  # assuming only one out_table
 
             idx, token = tokens.token_next_by(t=T.Keyword, idx=idx)
