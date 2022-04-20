@@ -178,6 +178,42 @@ def test_parse_simple_insert_into_select():
     assert sql_meta.out_tables == [DbTableMeta('table1')]
 
 
+def test_parse_simple_insert():
+    sql_meta = parse(
+        '''
+        INSERT table0 (col0, col1, col2)
+        VALUES (val0, val1, val2);
+        '''
+    )
+
+    assert sql_meta.in_tables == []
+    assert sql_meta.out_tables == [DbTableMeta('table0')]
+
+
+def test_parse_simple_insert_select():
+    sql_meta = parse(
+        '''
+        INSERT table1 (col0, col1, col2)
+        SELECT col0, col1, col2
+          FROM table0;
+        '''
+    )
+
+    assert sql_meta.in_tables == [DbTableMeta('table0')]
+    assert sql_meta.out_tables == [DbTableMeta('table1')]
+
+
+def test_parse_simple_update():
+    sql_meta = parse(
+        '''
+        UPDATE table0 SET col0 = val0 WHERE col1 = val1
+        '''
+    )
+
+    assert sql_meta.in_tables == []
+    assert sql_meta.out_tables == [DbTableMeta('table0')]
+
+
 def test_parse_simple_cte():
     sql_meta = parse(
         '''
