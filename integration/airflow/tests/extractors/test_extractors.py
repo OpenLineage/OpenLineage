@@ -1,10 +1,19 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
+from typing import List, Optional
 
-
-from openlineage.airflow.extractors import Extractors
+from openlineage.airflow.extractors import Extractors, BaseExtractor, TaskMetadata
 from openlineage.airflow.extractors.postgres_extractor import PostgresExtractor
+
+
+class FakeExtractor(BaseExtractor):
+    def extract(self) -> Optional[TaskMetadata]:
+        return None
+
+    @classmethod
+    def get_operator_classnames(cls) -> List[str]:
+        return ['TestOperator']
 
 
 def test_basic_extractor():
@@ -15,8 +24,10 @@ def test_basic_extractor():
 
 
 def test_env_extractors():
+    assert len(Extractors().extractors) == 7
+
     os.environ['OPENLINEAGE_EXTRACTOR_TestOperator'] = \
-        'openlineage.airflow.extractors.postgres_extractor.PostgresExtractor'
+        'tests.extractors.test_extractors.FakeExtractor'
 
     assert len(Extractors().extractors) == 8
     del os.environ['OPENLINEAGE_EXTRACTOR_TestOperator']
