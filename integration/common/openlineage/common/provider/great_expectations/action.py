@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-
+import copy
 import logging
 import os
 from collections import defaultdict
@@ -108,7 +108,11 @@ class OpenLineageValidationAction(ValidationAction):
         self.log = logging.getLogger(self.__class__.__module__ + '.' + self.__class__.__name__)
 
         datasets = []
-        if isinstance(data_asset.execution_engine, SqlAlchemyExecutionEngine):
+        if isinstance(data_asset, SqlAlchemyDataset):
+            datasets = self._fetch_datasets_from_sql_source(data_asset, validation_result_suite)
+        elif isinstance(data_asset, PandasDataset):
+            datasets = self._fetch_datasets_from_pandas_source(data_asset, validation_result_suite)
+        elif isinstance(data_asset.execution_engine, SqlAlchemyExecutionEngine):
             datasets = self._fetch_datasets_from_sql_source(data_asset, validation_result_suite)
         elif isinstance(data_asset.execution_engine, PandasExecutionEngine):
             datasets = self._fetch_datasets_from_pandas_source(data_asset, validation_result_suite)
@@ -119,10 +123,14 @@ class OpenLineageValidationAction(ValidationAction):
                 self.parent_job_namespace,
                 self.parent_job_name
             )})
+
+        # workaround for GE v2 and v3 API difference
+        suite_meta = copy.deepcopy(validation_result_suite.meta)
+        if 'expectation_suite_meta' not in suite_meta:
+            suite_meta['expectation_suite_meta'] = validation_result_suite.meta
         run_facets.update(
             {"great_expectations_meta": GreatExpectationsRunFacet(
-                **validation_result_suite.meta,
-                expectation_suite_meta=validation_result_suite.meta
+                **suite_meta,
             )})
         job_facets = {}
         if self.job_description:
