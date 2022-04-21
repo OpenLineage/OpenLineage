@@ -46,8 +46,7 @@ services:
   integration:
     build:
       context: ../
-      target: integration
-      dockerfile: Dockerfile.2
+      dockerfile: Dockerfile.integration
       args:
         AIRFLOW_IMAGE: ${AIRFLOW_IMAGE}
     environment:

@@ -1,18 +1,12 @@
 FROM python:3.7-slim
-RUN mkdir /app
-ADD airflow/setup.py /app
-ADD airflow/README.md /app
+RUN mkdir /tmp/openlineage-integration-airflow
 COPY python /tmp/openlineage-client-python
 COPY common /tmp/openlineage-integration-common
 COPY dbt /tmp/openlineage-integration-dbt
-RUN cd /tmp/openlineage-client-python && pip wheel --no-deps --wheel-dir=/tmp/openlineage-client-python/wheel .
-RUN cd /tmp/openlineage-integration-common && pip wheel --no-deps --wheel-dir=/tmp/openlineage-integration-common/wheel .
-RUN cd /tmp/openlineage-integration-dbt && pip wheel --no-deps --wheel-dir=/tmp/openlineage-integration-dbt/wheel .
-COPY airflow/openlineage /app/openlineage
-WORKDIR /app
-RUN ls -halt /tmp/openlineage-client-python/wheel
-RUN pip wheel --no-deps --wheel-dir=/app/wheel -e /tmp/openlineage-client-python .[tests]
-RUN pip wheel --no-deps --wheel-dir=/app/wheel -e /tmp/openlineage-integration-common .[tests]
-RUN pip wheel --no-deps --wheel-dir=/app/wheel -e /tmp/openlineage-integration-dbt .[tests]
-RUN cp -R /app/wheel /whl
-RUN cp /tmp/openlineage-integration-common/wheel/openlineage_integration_common* /whl
+RUN cd /tmp/openlineage-client-python && pip wheel --no-deps --wheel-dir=/whl .[tests]
+RUN cd /tmp/openlineage-integration-common && pip wheel --no-deps --wheel-dir=/whl .[tests]
+RUN cd /tmp/openlineage-integration-dbt && pip wheel --no-deps --wheel-dir=/whl .[tests]
+ADD airflow/setup.py /tmp/openlineage-integration-airflow
+ADD airflow/README.md /tmp/openlineage-integration-airflow
+ADD airflow/openlineage /tmp/openlineage-integration-airflow/openlineage
+RUN cd /tmp/openlineage-integration-airflow && pip wheel --no-deps --wheel-dir=/whl .[tests]

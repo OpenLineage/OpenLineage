@@ -42,7 +42,7 @@ services:
   integration:
     build:
       context: ..
-      target: integration
+      dockerfile: Dockerfile.integration
     volumes:
       - ./docker/wait-for-it.sh:/wait-for-it.sh
     depends_on:
