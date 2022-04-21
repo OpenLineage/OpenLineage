@@ -53,13 +53,13 @@ class LogicalRelationDatasetBuilderTest {
   OpenLineageContext openLineageContext = mock(OpenLineageContext.class);
   LogicalRelationDatasetBuilder builder =
       new LogicalRelationDatasetBuilder(
-          openLineageContext,
-          DatasetFactory.output(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI)),
-          false);
+          openLineageContext, DatasetFactory.output(openLineageContext), false);
 
   @BeforeEach
   public void setUp() {
     when(session.sparkContext()).thenReturn(mock(SparkContext.class));
+    when(openLineageContext.getOpenLineage())
+        .thenReturn(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI));
   }
 
   @ParameterizedTest
@@ -112,7 +112,8 @@ class LogicalRelationDatasetBuilderTest {
             .queryExecution(qe)
             .build();
     LogicalRelationDatasetBuilder visitor =
-        new LogicalRelationDatasetBuilder<>(context, DatasetFactory.output(openLineage), false);
+        new LogicalRelationDatasetBuilder<>(
+            context, DatasetFactory.output(openLineageContext), false);
     List<OutputDataset> datasets =
         visitor.apply(new SparkListenerJobStart(1, 1, Seq$.MODULE$.empty(), null));
     assertEquals(1, datasets.size());
@@ -130,7 +131,6 @@ class LogicalRelationDatasetBuilderTest {
     Configuration hadoopConfig = mock(Configuration.class);
     SparkContext sparkContext = mock(SparkContext.class);
     FileIndex fileIndex = mock(FileIndex.class);
-    OpenLineage openLineage = mock(OpenLineage.class);
     SessionState sessionState = mock(SessionState.class);
     Path p1 = new Path("/tmp/path1");
     Path p2 = new Path("/tmp/path2");
@@ -138,8 +138,6 @@ class LogicalRelationDatasetBuilderTest {
     when(logicalRelation.relation()).thenReturn(hadoopFsRelation);
     when(openLineageContext.getSparkContext()).thenReturn(sparkContext);
     when(openLineageContext.getSparkSession()).thenReturn(Optional.of(session));
-    when(openLineageContext.getOpenLineage()).thenReturn(openLineage);
-    when(openLineage.newDatasetFacetsBuilder()).thenReturn(new OpenLineage.DatasetFacetsBuilder());
     when(session.sessionState()).thenReturn(sessionState);
     when(sessionState.newHadoopConfWithOptions(any())).thenReturn(hadoopConfig);
     when(hadoopFsRelation.location()).thenReturn(fileIndex);
