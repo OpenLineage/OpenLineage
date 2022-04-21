@@ -17,7 +17,7 @@ import org.apache.spark.sql.execution.SQLExecutionRDD;
 public class SqlExecutionRDDVisitor extends AbstractRDDNodeVisitor<LogicalRDD, InputDataset> {
 
   public SqlExecutionRDDVisitor(@NonNull OpenLineageContext context) {
-    super(context, DatasetFactory.input(context.getOpenLineage()));
+    super(context, DatasetFactory.input(context));
   }
 
   @Override
