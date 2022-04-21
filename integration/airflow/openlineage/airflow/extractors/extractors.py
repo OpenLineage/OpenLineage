@@ -1,11 +1,11 @@
 # SPDX-License-Identifier: Apache-2.0
-
+import logging
 import os
 
 from typing import Type, Optional
 
 from openlineage.airflow.extractors.base import BaseExtractor
-from openlineage.airflow.utils import import_from_string, try_import_from_string
+from openlineage.airflow.utils import try_import_from_string
 
 _extractors = list(
     filter(
@@ -58,7 +58,7 @@ class Extractors:
         env_extractors = os.getenv("OPENLINEAGE_EXTRACTORS")
         if env_extractors is not None:
             for extractor in env_extractors.split(';'):
-                extractor = import_from_string(extractor)
+                extractor = try_import_from_string(extractor)
                 for operator_class in extractor.get_operator_classnames():
                     self.extractors[operator_class] = extractor
 
@@ -69,7 +69,9 @@ class Extractors:
         # We import the module provided and get type using importlib then.
         for key, value in os.environ.items():
             if key.startswith("OPENLINEAGE_EXTRACTOR_") and value != "":
-                extractor = import_from_string(value)
+                extractor = try_import_from_string(value)
+                if not extractor:
+                    logging.warning(f"Unable to load extractor '{value}' for discovered configuration key {key}")  # noqa: E501
                 for operator_class in extractor.get_operator_classnames():
                     self.extractors[operator_class] = extractor
 
