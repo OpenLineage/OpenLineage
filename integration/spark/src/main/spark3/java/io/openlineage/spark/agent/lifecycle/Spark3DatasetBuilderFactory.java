@@ -22,8 +22,7 @@ public class Spark3DatasetBuilderFactory implements DatasetBuilderFactory {
   @Override
   public Collection<PartialFunction<Object, List<OpenLineage.InputDataset>>> getInputBuilders(
       OpenLineageContext context) {
-    DatasetFactory<OpenLineage.InputDataset> datasetFactory =
-        DatasetFactory.input(context.getOpenLineage());
+    DatasetFactory<OpenLineage.InputDataset> datasetFactory = DatasetFactory.input(context);
     return ImmutableList.<PartialFunction<Object, List<OpenLineage.InputDataset>>>builder()
         .add(new LogicalRelationDatasetBuilder(context, datasetFactory, true))
         .add(new CommandPlanVisitor(context))
@@ -35,8 +34,7 @@ public class Spark3DatasetBuilderFactory implements DatasetBuilderFactory {
   @Override
   public Collection<PartialFunction<Object, List<OpenLineage.OutputDataset>>> getOutputBuilders(
       OpenLineageContext context) {
-    DatasetFactory<OpenLineage.OutputDataset> datasetFactory =
-        DatasetFactory.output(context.getOpenLineage());
+    DatasetFactory<OpenLineage.OutputDataset> datasetFactory = DatasetFactory.output(context);
     ImmutableList.Builder builder =
         ImmutableList.<PartialFunction<Object, List<OpenLineage.OutputDataset>>>builder()
             .add(new LogicalRelationDatasetBuilder(context, datasetFactory, false))

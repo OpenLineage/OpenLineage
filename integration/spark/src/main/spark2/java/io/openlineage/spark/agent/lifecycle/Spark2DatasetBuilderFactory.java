@@ -16,9 +16,7 @@ public class Spark2DatasetBuilderFactory implements DatasetBuilderFactory {
   public Collection<PartialFunction<Object, List<OpenLineage.InputDataset>>> getInputBuilders(
       OpenLineageContext context) {
     return ImmutableList.<PartialFunction<Object, List<OpenLineage.InputDataset>>>builder()
-        .add(
-            new LogicalRelationDatasetBuilder(
-                context, DatasetFactory.input(context.getOpenLineage()), true))
+        .add(new LogicalRelationDatasetBuilder(context, DatasetFactory.input(context), true))
         .add(new CommandPlanVisitor(context))
         .build();
   }
@@ -27,9 +25,7 @@ public class Spark2DatasetBuilderFactory implements DatasetBuilderFactory {
   public Collection<PartialFunction<Object, List<OpenLineage.OutputDataset>>> getOutputBuilders(
       OpenLineageContext context) {
     return ImmutableList.<PartialFunction<Object, List<OpenLineage.OutputDataset>>>builder()
-        .add(
-            new LogicalRelationDatasetBuilder(
-                context, DatasetFactory.output(context.getOpenLineage()), false))
+        .add(new LogicalRelationDatasetBuilder(context, DatasetFactory.output(context), false))
         .add(new SaveIntoDataSourceCommandVisitor(context))
         .build();
   }
