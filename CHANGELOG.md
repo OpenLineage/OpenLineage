@@ -1,6 +1,9 @@
 # Changelog
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.7.1...HEAD)
+### Added
+* Support for HiveTableRelation as input source in Spark integration [@collado-mike](https://github.com/collado-mike)
+
 ### Fixed
 * GreatExpectations: Fixed bug when invoking GreatExpectations using v2 API [@collado-mike](https://github.com/collado-mike)
  
