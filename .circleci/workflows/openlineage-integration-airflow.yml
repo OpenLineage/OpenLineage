@@ -57,16 +57,6 @@ workflows:
           filters:
             branches:
               ignore: /pull\/[0-9]+/
-      - integration-test-integration-airflow-failure:
-          context: integration-tests
-          requires:
-            - unit-test-integration-airflow-2
-            - unit-test-integration-common
-            - unit-test-client-python
-            - build-integration-sql-x86
-          filters:
-            branches:
-              ignore: /pull\/[0-9]+/
       - build-integration-airflow:
           filters:
             branches:
@@ -77,6 +67,5 @@ workflows:
       - workflow_complete:
           requires:
             - build-integration-airflow
-            - integration-test-integration-airflow-failure
             - integration-test-integration-airflow
             - integration-test-integration-airflow-1-10

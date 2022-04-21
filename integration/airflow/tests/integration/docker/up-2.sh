@@ -10,11 +10,6 @@ set -e
 project_root=$(git rev-parse --show-toplevel)
 cd "${project_root}"/integration/airflow/tests/integration
 
-if [[ "$(docker images -q openlineage-airflow-base:latest 2> /dev/null)" == "" ]]; then
-  echo "Please run 'docker build -f Dockerfile.tests -t openlineage-airflow-base .' at base folder"
-  exit 1
-fi
-
 if [[ ! -f gcloud/gcloud-service-key.json ]]; then
   mkdir -p gcloud
 fi
@@ -24,10 +19,6 @@ if [[ -n "$CI" ]]; then
   mkdir -p tests/airflow/logs
   chmod a+rwx -R tests/airflow/logs
 fi
-
-# maybe overkill
-OPENLINEAGE_AIRFLOW_WHL=$(docker run openlineage-airflow-base:latest sh -c "ls /whl/openlineage*")
-OPENLINEAGE_AIRFLOW_WHL_ALL=$(docker run openlineage-airflow-base:latest sh -c "ls /whl/*")
 
 # Add revision to requirements.txt
 cat > requirements.txt <<EOL
@@ -39,7 +30,6 @@ great-expectations==0.13.42
 dbt-core==1.0.1
 dbt-bigquery==1.0.0
 dbt-snowflake==1.0.0
-${OPENLINEAGE_AIRFLOW_WHL}
 EOL
 
 # Add revision to integration-requirements.txt
@@ -52,7 +42,6 @@ retrying==1.3.3
 pytest==6.2.2
 jinja2==3.0.2
 python-dateutil==2.8.2
-${OPENLINEAGE_AIRFLOW_WHL}
 EOL
 
 # string operator: from variable AIRFLOW_IMAGE
@@ -62,10 +51,32 @@ EOL
 AIRFLOW_VERSION=${AIRFLOW_IMAGE##*:}
 
 # Remove -python3.7 from the tag
-export AIRFLOW_VERSION=${AIRFLOW_VERSION::-10}
+export AIRFLOW_VERSION=${AIRFLOW_VERSION::${#AIRFLOW_VERSION}-10}
 export BIGQUERY_PREFIX=$(echo "$AIRFLOW_VERSION" | tr "-" "_" | tr "." "_")
 export DBT_DATASET_PREFIX=$(echo "$AIRFLOW_VERSION" | tr "-" "_" | tr "." "_")_dbt
 
+./docker/volumes.sh tests
+
+FAILED=0
 docker-compose -f tests/docker-compose-2.yml down
-docker-compose -f tests/docker-compose-2.yml up --build --abort-on-container-exit airflow_init postgres
-docker-compose -f tests/docker-compose-2.yml up --build --exit-code-from integration --scale airflow_init=0
+docker-compose -f tests/docker-compose-2.yml up -V --build --abort-on-container-exit airflow_init postgres
+docker-compose -f tests/docker-compose-2.yml up --build --exit-code-from integration --scale airflow_init=0 || FAILED=1
+
+docker-compose -f tests/docker-compose-2.yml -f failures/docker-compose.yml down
+docker-compose -f tests/docker-compose-2.yml -f failures/docker-compose.yml up -V --build --abort-on-container-exit airflow_init postgres
+OPENLINEAGE_URL="http://backend:5000/error/" docker-compose -f tests/docker-compose-2.yml -f failures/docker-compose.yml up --build --exit-code-from integration --scale airflow_init=0 || FAILED=1
+docker-compose -f tests/docker-compose-2.yml -f failures/docker-compose.yml down
+
+docker-compose -f tests/docker-compose-2.yml -f failures/docker-compose.yml up -V --build --abort-on-container-exit airflow_init postgres
+OPENLINEAGE_URL="http://backend:5000/timeout/" docker-compose -f tests/docker-compose-2.yml -f failures/docker-compose.yml up --build --exit-code-from integration --scale airflow_init=0 || FAILED=1
+docker-compose -f tests/docker-compose-2.yml -f failures/docker-compose.yml down
+
+docker-compose -f tests/docker-compose-2.yml -f failures/docker-compose.yml up -V --build --abort-on-container-exit airflow_init postgres
+OPENLINEAGE_URL="http://network-partition:5000/" docker-compose -f tests/docker-compose-2.yml -f failures/docker-compose.yml up --build --exit-code-from integration --scale airflow_init=0 || FAILED=1
+docker-compose -f tests/docker-compose-2.yml -f failures/docker-compose.yml down
+
+docker create --name openlineage-volume-helper -v tests_airflow_logs:/opt/airflow/logs busybox
+docker cp openlineage-volume-helper:/opt/airflow/logs tests/airflow/
+docker rm openlineage-volume-helper
+
+exit $FAILED

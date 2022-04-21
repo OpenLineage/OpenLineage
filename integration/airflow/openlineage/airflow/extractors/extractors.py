@@ -68,7 +68,7 @@ class Extractors:
         # The value in extractor map is extractor class type - it needs to be instantiated.
         # We import the module provided and get type using importlib then.
         for key, value in os.environ.items():
-            if key.startswith("OPENLINEAGE_EXTRACTOR_"):
+            if key.startswith("OPENLINEAGE_EXTRACTOR_") and value != "":
                 extractor = import_from_string(value)
                 for operator_class in extractor.get_operator_classnames():
                     self.extractors[operator_class] = extractor

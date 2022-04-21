@@ -1,8 +1,6 @@
 ARG AIRFLOW_IMAGE=apache/airflow:2.2.4-python3.7
-FROM openlineage-airflow-base:latest AS build
 
 FROM $AIRFLOW_IMAGE AS airflow
-COPY --from=build /app/wheel /whl
 USER root
 RUN apt-get update && \
     apt-get install -y git build-essential
@@ -10,13 +8,21 @@ COPY data /opt/data
 RUN chmod -R 777 /opt/data
 USER airflow
 COPY requirements.txt requirements.txt
+RUN pip install -U setuptools
 RUN pip install --user -r requirements.txt
+COPY docker/entrypoint.sh /entrypoint.sh
+ENTRYPOINT ["/usr/bin/dumb-init", "--", "/entrypoint.sh", "/entrypoint"]
 
-FROM openlineage-airflow-base:latest AS integration
+FROM python:3.7-slim AS integration
 RUN apt-get update && \
     apt-get install -y python3-dev default-libmysqlclient-dev build-essential
+RUN mkdir /app
+WORKDIR /app
 COPY integration-requirements.txt integration-requirements.txt
 COPY *.py ./
 COPY requests requests
+RUN pip install -U setuptools
 RUN pip install --use-deprecated=legacy-resolver --user -r integration-requirements.txt
 COPY docker/wait-for-it.sh wait-for-it.sh
+COPY docker/entrypoint.sh entrypoint.sh
+ENTRYPOINT ["./entrypoint.sh"]

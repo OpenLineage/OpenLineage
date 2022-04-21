@@ -18,12 +18,12 @@ x-airflow-base: &airflow-base
     AIRFLOW__LINEAGE__BACKEND: openlineage.lineage_backend.OpenLineageBackend
     AIRFLOW_CONN_FOOD_DELIVERY_DB: postgres://food_delivery:food_delivery@postgres:5432/food_delivery
     AIRFLOW_CONN_MYSQL_CONN: mysql://food_delivery:food_delivery@mysql:3306/food_delivery
-    AIRFLOW_CONN_BQ_CONN: google-cloud-platform://?extra__google_cloud_platform__project=openlineage-ci&extra__google_cloud_platform__key_path=%2Fopt%2Fconfig%2Fgcloud%2Fgcloud-service-key.json
+    AIRFLOW_CONN_BQ_CONN: google-cloud-platform://?extra__google_cloud_platform__project=openlineage-ci&extra__google_cloud_platform__key_path=%2Fopt%2Fopenlineage-utils%2Fgcloud%2Fgcloud-service-key.json
     AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
     AIRFLOW__CORE__LOGGING_CONFIG_CLASS: log_config.LOGGING_CONFIG
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
     AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432
-    GOOGLE_APPLICATION_CREDENTIALS: /opt/config/gcloud/gcloud-service-key.json
+    GOOGLE_APPLICATION_CREDENTIALS: /opt/openlineage-utils/gcloud/gcloud-service-key.json
     OPENLINEAGE_NAMESPACE: food_delivery
     OPENLINEAGE_URL: http://backend:5000
     OPENLINEAGE_EXTRACTOR_CustomOperator: custom_extractor.CustomExtractor
@@ -34,10 +34,11 @@ x-airflow-base: &airflow-base
     SNOWFLAKE_PASSWORD: ${SNOWFLAKE_PASSWORD}
     AIRFLOW_CONN_SNOWFLAKE_CONN: "snowflake://${SNOWFLAKE_USER}:${SNOWFLAKE_PASSWORD}@${SNOWFLAKE_URI}/OPENLINEAGE?account=${SNOWFLAKE_ACCOUNT_ID}&database=SANDBOX&region=us-east-1&warehouse=DEMO&role=OPENLINEAGE"
   volumes:
-    - ./airflow/config/log_config.py:/opt/airflow/config/log_config.py
-    - ./airflow/dags:/opt/airflow/dags
-    - ./airflow/logs:/opt/airflow/logs
-    - ../gcloud:/opt/config/gcloud
+    - airflow_config:/opt/airflow/config
+    - airflow_dags:/opt/airflow/dags
+    - airflow_logs:/opt/airflow/logs
+    - utils:/opt/openlineage-utils
+    - openlineage:/opt/openlineage
 
 services:
   integration:
@@ -45,14 +46,15 @@ services:
       context: ..
       target: integration
     volumes:
-      - ./docker/wait-for-it.sh:/wait-for-it.sh
+      - utils:/opt/openlineage-utils
+      - openlineage:/opt/openlineage
     depends_on:
       - airflow
       - backend
     environment:
       - BIGQUERY_PREFIX=airflow_1
       - DBT_DATASET_PREFIX=airflow_1_dbt
-    entrypoint: ["./wait-for-it.sh", "backend:5000", "--", "python", "test_integration.py"]
+    command: ["./wait-for-it.sh", "backend:5000", "--", "python", "test_integration.py"]
 
   airflow:
     <<: *airflow-base
@@ -114,7 +116,7 @@ services:
       - FOOD_DELIVERY_DB=food_delivery
       - ALLOW_EMPTY_PASSWORD=yes
     volumes:
-      - ../docker/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+      - db-init:/docker-entrypoint-initdb.d
 
   redis:
     image: redis:latest
@@ -138,4 +140,13 @@ services:
       - MYSQL_ALLOW_EMPTY_PASSWORD=true
       - MYSQL_ONETIME_PASSWORD=
     volumes:
-      - ../docker/init-db-mysql.sh:/docker-entrypoint-initdb.d/init-db-mysql.sh
+      - mysql-init:/docker-entrypoint-initdb.d
+
+volumes:
+  utils:
+  db-init:
+  airflow_dags:
+  airflow_config:
+  airflow_logs:
+  openlineage:
+  mysql-init:
