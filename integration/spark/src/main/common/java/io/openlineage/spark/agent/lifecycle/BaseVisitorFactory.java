@@ -13,6 +13,7 @@ import io.openlineage.spark.agent.lifecycle.plan.CreateDataSourceTableCommandVis
 import io.openlineage.spark.agent.lifecycle.plan.CreateHiveTableAsSelectCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.CreateTableCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.DropTableCommandVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.HiveTableRelationVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDataSourceDirVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDataSourceVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDirVisitor;
@@ -47,6 +48,9 @@ abstract class BaseVisitorFactory implements VisitorFactory {
     }
     if (SqlDWDatabricksVisitor.hasSqlDWDatabricksClasses()) {
       list.add(new SqlDWDatabricksVisitor(context, factory));
+    }
+    if (InsertIntoHiveTableVisitor.hasHiveClasses()) {
+      list.add(new HiveTableRelationVisitor<>(context, factory));
     }
     return list;
   }
