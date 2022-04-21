@@ -99,10 +99,13 @@ class TestSqlDWDatabricksVisitor extends SqlDWDatabricksVisitor {
 
 class SQLDWDatabricksVisitorTest {
   SparkSession session = mock(SparkSession.class);
+  OpenLineageContext context = mock(OpenLineageContext.class);
 
   @BeforeEach
   public void setUp() {
     when(session.sparkContext()).thenReturn(mock(SparkContext.class));
+    when(context.getOpenLineage())
+        .thenReturn(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI));
   }
 
   @Test
@@ -134,8 +137,7 @@ class SQLDWDatabricksVisitorTest {
 
     TestSqlDWDatabricksVisitor visitor =
         new TestSqlDWDatabricksVisitor(
-            SparkAgentTestExtension.newContext(session),
-            DatasetFactory.output(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI)));
+            SparkAgentTestExtension.newContext(session), DatasetFactory.output(context));
     List<OpenLineage.Dataset> datasets = visitor.apply(lr);
 
     assertEquals(1, datasets.size());
@@ -173,8 +175,7 @@ class SQLDWDatabricksVisitorTest {
 
     TestSqlDWDatabricksVisitor visitor =
         new TestSqlDWDatabricksVisitor(
-            SparkAgentTestExtension.newContext(session),
-            DatasetFactory.output(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI)));
+            SparkAgentTestExtension.newContext(session), DatasetFactory.output(context));
     List<OpenLineage.Dataset> datasets = visitor.apply(lr);
 
     assertEquals(1, datasets.size());
@@ -212,8 +213,7 @@ class SQLDWDatabricksVisitorTest {
 
     TestSqlDWDatabricksVisitor visitor =
         new TestSqlDWDatabricksVisitor(
-            SparkAgentTestExtension.newContext(session),
-            DatasetFactory.output(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI)));
+            SparkAgentTestExtension.newContext(session), DatasetFactory.output(context));
     List<OpenLineage.Dataset> datasets = visitor.apply(lr);
 
     assertEquals(1, datasets.size());
@@ -247,8 +247,7 @@ class SQLDWDatabricksVisitorTest {
 
     TestSqlDWDatabricksVisitor visitor =
         new TestSqlDWDatabricksVisitor(
-            SparkAgentTestExtension.newContext(session),
-            DatasetFactory.output(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI)));
+            SparkAgentTestExtension.newContext(session), DatasetFactory.output(context));
     List<OpenLineage.Dataset> datasets = visitor.apply(lr);
 
     assertEquals(0, datasets.size());
