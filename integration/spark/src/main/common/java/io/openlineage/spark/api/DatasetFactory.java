@@ -20,17 +20,17 @@ import org.apache.spark.sql.types.StructType;
  * the correct instance.
  *
  * <p>Ideally, this would be a sealed class. We emulate that by using a private constructor and
- * provide two static factory methods - {@link #input(OpenLineage)} and {@link
- * #output(OpenLineage)}.
+ * provide two static factory methods - {@link #input(OpenLineageContext)} and {@link
+ * #output(OpenLineageContext)}.
  *
  * @param <D> the implementation of {@link io.openlineage.client.OpenLineage.Dataset} constructed by
  *     this factory
  */
 public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
-  private final OpenLineage openLineage;
+  private final OpenLineageContext context;
 
-  private DatasetFactory(OpenLineage openLineage) {
-    this.openLineage = openLineage;
+  private DatasetFactory(OpenLineageContext context) {
+    this.context = context;
   }
 
   abstract OpenLineage.Builder<D> datasetBuilder(
@@ -40,14 +40,19 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
    * Create a {@link DatasetFactory} that constructs only {@link
    * io.openlineage.client.OpenLineage.InputDataset}s.
    *
-   * @param client
+   * @param context
    * @return
    */
-  public static DatasetFactory<OpenLineage.InputDataset> input(OpenLineage client) {
-    return new DatasetFactory<OpenLineage.InputDataset>(client) {
+  public static DatasetFactory<OpenLineage.InputDataset> input(OpenLineageContext context) {
+    return new DatasetFactory<OpenLineage.InputDataset>(context) {
       public OpenLineage.Builder<OpenLineage.InputDataset> datasetBuilder(
           String name, String namespace, OpenLineage.DatasetFacets datasetFacet) {
-        return client.newInputDatasetBuilder().namespace(namespace).name(name).facets(datasetFacet);
+        return context
+            .getOpenLineage()
+            .newInputDatasetBuilder()
+            .namespace(namespace)
+            .name(name)
+            .facets(datasetFacet);
       }
     };
   }
@@ -56,14 +61,15 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
    * Create a {@link DatasetFactory} that constructs only {@link
    * io.openlineage.client.OpenLineage.OutputDataset}s.
    *
-   * @param client
+   * @param context
    * @return
    */
-  public static DatasetFactory<OpenLineage.OutputDataset> output(OpenLineage client) {
-    return new DatasetFactory<OpenLineage.OutputDataset>(client) {
+  public static DatasetFactory<OpenLineage.OutputDataset> output(OpenLineageContext context) {
+    return new DatasetFactory<OpenLineage.OutputDataset>(context) {
       public OpenLineage.Builder<OpenLineage.OutputDataset> datasetBuilder(
           String name, String namespace, OpenLineage.DatasetFacets datasetFacet) {
-        return client
+        return context
+            .getOpenLineage()
             .newOutputDatasetBuilder()
             .namespace(namespace)
             .name(name)
@@ -82,7 +88,7 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
    * @return
    */
   public D getDataset(String name, String namespace, StructType schema) {
-    OpenLineage.DatasetFacets datasetFacet = datasetFacet(openLineage, schema, namespace);
+    OpenLineage.DatasetFacets datasetFacet = datasetFacet(schema, namespace);
     return datasetBuilder(name, namespace, datasetFacet).build();
   }
 
@@ -98,8 +104,8 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
       URI outputPath, StructType schema, OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder) {
     String namespace = PlanUtils.namespaceUri(outputPath);
     datasetFacetsBuilder
-        .schema(PlanUtils.schemaFacet(openLineage, schema))
-        .dataSource(PlanUtils.datasourceFacet(openLineage, namespace));
+        .schema(PlanUtils.schemaFacet(context.getOpenLineage(), schema))
+        .dataSource(PlanUtils.datasourceFacet(context.getOpenLineage(), namespace));
 
     return getDataset(outputPath.getPath(), namespace, datasetFacetsBuilder.build());
   }
@@ -127,7 +133,7 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
    */
   public D getDataset(URI outputPath, StructType schema) {
     String namespace = PlanUtils.namespaceUri(outputPath);
-    OpenLineage.DatasetFacets datasetFacet = datasetFacet(openLineage, schema, namespace);
+    OpenLineage.DatasetFacets datasetFacet = datasetFacet(schema, namespace);
     return getDataset(outputPath.getPath(), namespace, datasetFacet);
   }
 
@@ -140,8 +146,8 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
    * @return
    */
   public D getDataset(DatasetIdentifier ident, StructType schema) {
-    OpenLineage.DatasetFacets datasetFacet =
-        datasetFacet(openLineage, schema, ident.getNamespace());
+    OpenLineage.DatasetFacets datasetFacet = datasetFacet(schema, ident.getNamespace());
+
     return getDataset(ident.getName(), ident.getNamespace(), datasetFacet);
   }
 
@@ -159,12 +165,16 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
       StructType schema,
       OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange lifecycleStateChange) {
     OpenLineage.DatasetFacetsBuilder builder =
-        openLineage
+        context
+            .getOpenLineage()
             .newDatasetFacetsBuilder()
-            .schema(PlanUtils.schemaFacet(openLineage, schema))
+            .schema(PlanUtils.schemaFacet(context.getOpenLineage(), schema))
             .lifecycleStateChange(
-                openLineage.newLifecycleStateChangeDatasetFacet(lifecycleStateChange, null))
-            .dataSource(PlanUtils.datasourceFacet(openLineage, ident.getNamespace()));
+                context
+                    .getOpenLineage()
+                    .newLifecycleStateChangeDatasetFacet(lifecycleStateChange, null))
+            .dataSource(PlanUtils.datasourceFacet(context.getOpenLineage(), ident.getNamespace()));
+
     return getDataset(ident.getName(), ident.getNamespace(), builder.build());
   }
 
@@ -183,17 +193,18 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
   /**
    * Construct a {@link OpenLineage.DatasetFacets} given a schema and a namespace.
    *
-   * @param openLineage
    * @param schema
    * @param namespaceUri
    * @return
    */
-  private static OpenLineage.DatasetFacets datasetFacet(
-      OpenLineage openLineage, StructType schema, String namespaceUri) {
-    return openLineage
-        .newDatasetFacetsBuilder()
-        .schema(PlanUtils.schemaFacet(openLineage, schema))
-        .dataSource(PlanUtils.datasourceFacet(openLineage, namespaceUri))
-        .build();
+  private OpenLineage.DatasetFacets datasetFacet(StructType schema, String namespaceUri) {
+    OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
+        context
+            .getOpenLineage()
+            .newDatasetFacetsBuilder()
+            .schema(PlanUtils.schemaFacet(context.getOpenLineage(), schema))
+            .dataSource(PlanUtils.datasourceFacet(context.getOpenLineage(), namespaceUri));
+
+    return datasetFacetsBuilder.build();
   }
 }
