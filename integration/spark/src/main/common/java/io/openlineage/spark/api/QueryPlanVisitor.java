@@ -62,11 +62,11 @@ public abstract class QueryPlanVisitor<T extends LogicalPlan, D extends OpenLine
   }
 
   protected DatasetFactory<OpenLineage.OutputDataset> outputDataset() {
-    return DatasetFactory.output(context.getOpenLineage());
+    return DatasetFactory.output(context);
   }
 
   protected DatasetFactory<OpenLineage.InputDataset> inputDataset() {
-    return DatasetFactory.input(context.getOpenLineage());
+    return DatasetFactory.input(context);
   }
 
   private final Logger logger = LoggerFactory.getLogger(getClass());

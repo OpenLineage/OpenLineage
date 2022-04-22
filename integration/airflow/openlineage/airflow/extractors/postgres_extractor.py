@@ -14,11 +14,10 @@ from openlineage.airflow.extractors.base import (
 )
 from openlineage.client.facet import SqlJobFacet, ExternalQueryRunFacet
 from openlineage.common.models import (
-    DbTableName,
     DbTableSchema,
     DbColumn
 )
-from openlineage.common.sql import SqlMeta, SqlParser
+from openlineage.common.sql import SqlMeta, parse, DbTableMeta
 from openlineage.common.dataset import Source, Dataset
 
 _TABLE_SCHEMA = 0
@@ -45,7 +44,7 @@ class PostgresExtractor(BaseExtractor):
 
     def extract(self) -> TaskMetadata:
         # (1) Parse sql statement to obtain input / output tables.
-        sql_meta: SqlMeta = SqlParser.parse(self.operator.sql, self.default_schema)
+        sql_meta: SqlMeta = parse(self.operator.sql, self.default_schema)
 
         # (2) Get database connection
         self.conn = get_connection(self._conn_id())
@@ -162,7 +161,7 @@ class PostgresExtractor(BaseExtractor):
         )
 
     def _get_table_schemas(
-            self, table_names: [DbTableName]
+            self, table_names: [DbTableMeta]
     ) -> [DbTableSchema]:
         # Avoid querying postgres by returning an empty array
         # if no table names have been provided.
@@ -183,7 +182,7 @@ class PostgresExtractor(BaseExtractor):
                 )
                 for row in cursor.fetchall():
                     table_schema_name: str = self._normalize_identifiers(row[_TABLE_SCHEMA])
-                    table_name: DbTableName = DbTableName(
+                    table_name: DbTableMeta = DbTableMeta(
                         self._normalize_identifiers(row[_TABLE_NAME])
                     )
                     table_column: DbColumn = DbColumn(

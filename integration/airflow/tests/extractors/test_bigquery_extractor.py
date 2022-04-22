@@ -8,10 +8,13 @@ import uuid
 from datetime import datetime
 
 import mock
+from pkg_resources import parse_version
 import pytz
+import pytest
 from airflow.utils import timezone
 from airflow.models import TaskInstance, DAG
 from airflow.utils.state import State
+from airflow.version import version as AIRFLOW_VERSION
 
 from openlineage.airflow.extractors.bigquery_extractor import BigQueryExtractor
 from openlineage.airflow.utils import safe_import_airflow, choose_based_on_version
@@ -29,6 +32,7 @@ BigQueryExecuteQueryOperator = safe_import_airflow(
 )
 
 
+@pytest.mark.skipif(parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"), reason="Airflow 2+ test")  # noqa
 class TestBigQueryExtractorE2E(unittest.TestCase):
     def setUp(self):
         log.debug("TestBigQueryExtractorE2E.setup(): ")
@@ -50,6 +54,8 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
 
         bq_job_id = "foo.bq.job_id"
 
+        mock_client = mock.MagicMock()
+
         mock_hook.return_value \
             .run_query.return_value = bq_job_id
 
@@ -58,15 +64,17 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
             .cursor.return_value \
             .run_query.return_value = bq_job_id
 
-        mock_client.return_value \
-            .get_job.return_value \
-            ._properties = job_details
+        project_id = "test"
+        mock_hook.return_value.project_id = project_id
+        mock_hook.return_value.location = "US"
+        mock_hook.return_value.get_client.return_value = mock_client
 
-        mock_client.return_value \
-            .get_table.side_effect = [table_details, out_details]
+        mock_client.get_job.return_value._properties = job_details
+
+        mock_client.get_table.side_effect = [table_details, out_details]
 
         # To make sure hasattr "sees" close and calls it
-        mock_client.return_value.close.return_value
+        mock_client.close.return_value
 
         execution_date = datetime.utcnow().replace(tzinfo=pytz.utc)
         dag = DAG(dag_id='TestBigQueryExtractorE2E')
@@ -96,8 +104,12 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
         task_instance.run()
 
         task_meta = bq_extractor.extract_on_complete(task_instance)
-        mock_client.return_value \
-            .get_job.assert_called_once_with(job_id=bq_job_id)
+
+        mock_hook.return_value.get_client.assert_called_with(
+            project_id=project_id,
+            location="US"
+        )
+        mock_client.get_job.assert_called_once_with(job_id=bq_job_id)
 
         assert task_meta.inputs is not None
         assert len(task_meta.inputs) == 1
@@ -137,7 +149,7 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
             source="bigquery"
         ) == task_meta.run_facets['externalQuery']
 
-        mock_client.return_value.close.assert_called()
+        mock_client.close.assert_called()
 
     def read_dataset_json(self, file):
         client_mock = self.Client_mock()
@@ -160,8 +172,7 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
         airflow_1_version="airflow.contrib.operators.bigquery_operator.BigQueryHook",
         airflow_2_version='airflow.providers.google.cloud.operators.bigquery.BigQueryHook'
     ))
-    @mock.patch('openlineage.common.provider.bigquery.Client')
-    def test_extract_cached(self, mock_client, mock_hook):
+    def test_extract_cached(self, mock_hook):
         bq_job_id = "foo.bq.job_id"
 
         mock_hook.return_value \
@@ -176,12 +187,16 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
             "tests/extractors/cached_job_details.json"
         )
 
-        mock_client.return_value \
-            .get_job.return_value \
-            ._properties = job_details
-        # To make sure hasattr "sees" close and calls it
-        mock_client.return_value.close.return_value
+        mock_client = mock.MagicMock()
 
+        project_id = "test"
+        mock_hook.return_value.project_id = project_id
+        mock_hook.return_value.location = "US"
+        mock_hook.return_value.get_client.return_value = mock_client
+
+        mock_client.get_job.return_value._properties = job_details
+        # To make sure hasattr "sees" close and calls it
+        mock_client.close.return_value
         mock.seal(mock_client)
 
         execution_date = datetime.utcnow().replace(tzinfo=pytz.utc)
@@ -216,6 +231,7 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
         assert task_meta.outputs is not None
 
         assert len(task_meta.run_facets) == 2
+        print(task_meta.run_facets.keys())
         assert task_meta.run_facets['bigQuery_job'] \
                == BigQueryJobRunFacet(cached=True)
 
@@ -228,8 +244,7 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
         airflow_1_version="airflow.contrib.operators.bigquery_operator.BigQueryHook",
         airflow_2_version='airflow.providers.google.cloud.operators.bigquery.BigQueryHook'
     ))
-    @mock.patch('openlineage.common.provider.bigquery.Client')
-    def test_extract_error(self, mock_client, mock_hook):
+    def test_extract_error(self, mock_hook):
         bq_job_id = "foo.bq.job_id"
 
         mock_hook.return_value \
@@ -240,13 +255,14 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
             .cursor.return_value \
             .run_query.return_value = bq_job_id
 
-        mock_client.return_value \
-            .get_job.side_effects = [Exception("bq error")]
+        mock_client = mock.MagicMock()
 
-        # To make sure hasattr "sees" close and calls it
-        mock_client.return_value.close.return_value
+        project_id = "test"
+        mock_hook.return_value.project_id = project_id
+        mock_hook.return_value.location = "US"
+        mock_hook.return_value.get_client.return_value = mock_client
 
-        mock.seal(mock_hook)
+        mock_client.get_job.side_effects = [Exception("bq error")]
 
         execution_date = datetime.utcnow().replace(tzinfo=pytz.utc)
         dag = DAG(dag_id='TestBigQueryExtractorE2E')
@@ -281,14 +297,12 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
         assert task_meta.run_facets['bigQuery_error'] == BigQueryErrorRunFacet(
             clientError=mock.ANY
         )
-        mock_client.return_value.get_job.assert_called_once_with(job_id=bq_job_id)
+        mock_client.get_job.assert_called_once_with(job_id=bq_job_id)
 
         assert task_meta.inputs is not None
         assert len(task_meta.inputs) == 0
         assert task_meta.outputs is not None
         assert len(task_meta.outputs) == 0
-
-        mock_client.return_value.close.assert_called()
 
 
 class TestBigQueryExtractor(unittest.TestCase):
