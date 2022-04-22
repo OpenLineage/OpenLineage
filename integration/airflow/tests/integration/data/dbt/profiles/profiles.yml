@@ -4,7 +4,7 @@ bigquery:
         prod:
             type: bigquery
             method: service-account
-            keyfile: /opt/config/gcloud/gcloud-service-key.json
+            keyfile: /opt/openlineage-utils/gcloud/gcloud-service-key.json
             project: openlineage-ci
             dataset: "{{ env_var('DBT_DATASET_PREFIX') }}"
             threads: 2
