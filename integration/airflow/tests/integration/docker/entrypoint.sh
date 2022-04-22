@@ -10,6 +10,8 @@ pip install -U setuptools
 
 (cd /opt/openlineage/airflow && pip install --no-deps -e .)
 
+(cd /opt/openlineage/dbt && pip install --user .)
+
 ENTRYPOINT=$1
 shift
 

@@ -41,6 +41,7 @@ docker cp failures/airflow/dags openlineage-volume-helper:/opt/airflow/failed_da
 
 docker cp ../../../airflow openlineage-volume-helper:/opt/openlineage/
 docker cp ../../../common openlineage-volume-helper:/opt/openlineage/
+docker cp ../../../dbt openlineage-volume-helper:/opt/openlineage/
 docker cp ../../../../client/python openlineage-volume-helper:/opt/openlineage/
 
 docker rm openlineage-volume-helper

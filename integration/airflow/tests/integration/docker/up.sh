@@ -50,7 +50,7 @@ docker-compose -f tests/docker-compose.yml down
 docker-compose -f tests/docker-compose.yml up  -V --build --abort-on-container-exit airflow_init postgres
 docker-compose -f tests/docker-compose.yml up --build --exit-code-from integration --scale airflow_init=0 || FAILED=1
 
-docker create --name openlineage-volume-helper $AIRFLOW_VOLUME:/opt/airflow busybox
+docker create --name openlineage-volume-helper -v tests_airflow_logs:/opt/airflow/logs busybox
 docker cp openlineage-volume-helper:/opt/airflow/logs tests/airflow/
 docker rm openlineage-volume-helper
 
