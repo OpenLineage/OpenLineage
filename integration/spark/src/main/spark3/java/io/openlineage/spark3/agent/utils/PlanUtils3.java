@@ -35,6 +35,23 @@ import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 public class PlanUtils3 {
 
   public static Optional<DatasetIdentifier> getDatasetIdentifier(
+      OpenLineageContext context, DataSourceV2Relation relation) {
+    return Optional.of(relation)
+        .filter(r -> r.identifier() != null)
+        .filter(r -> r.identifier().isDefined())
+        .filter(r -> r.catalog() != null)
+        .filter(r -> r.catalog().isDefined())
+        .filter(r -> r.catalog().get() instanceof TableCatalog)
+        .flatMap(
+            r ->
+                PlanUtils3.getDatasetIdentifier(
+                    context,
+                    (TableCatalog) r.catalog().get(),
+                    r.identifier().get(),
+                    r.table().properties()));
+  }
+
+  public static Optional<DatasetIdentifier> getDatasetIdentifier(
       OpenLineageContext context,
       TableCatalog catalog,
       Identifier identifier,
