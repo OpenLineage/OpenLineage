@@ -164,7 +164,11 @@ public class SparkContainerIntegrationTest {
   public void testPysparkSQLHiveTest() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network, openLineageClientMockContainer, "testPysparkSQLHiveTest", "spark_hive.py");
-    verifyEvents("pysparkHiveStartEvent.json", "pysparkHiveCompleteEvent.json");
+    verifyEvents(
+        "pysparkHiveStartEvent.json",
+        "pysparkHiveCompleteEvent.json",
+        "pysparkHiveSelectStartEvent.json",
+        "pysparkHiveSelectEndEvent.json");
   }
 
   @Test

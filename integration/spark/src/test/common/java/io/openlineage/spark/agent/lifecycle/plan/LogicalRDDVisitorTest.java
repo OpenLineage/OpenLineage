@@ -3,12 +3,15 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
+import io.openlineage.spark.api.OpenLineageContext;
 import java.nio.file.Path;
 import java.util.List;
 import org.apache.hadoop.io.LongWritable;
@@ -32,6 +35,7 @@ import org.apache.spark.sql.types.StringType$;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
@@ -41,7 +45,14 @@ import scala.collection.immutable.HashMap;
 @ExtendWith(SparkAgentTestExtension.class)
 class LogicalRDDVisitorTest {
 
-  private JobConf jobConf;
+  JobConf jobConf;
+  OpenLineageContext context = mock(OpenLineageContext.class);
+
+  @BeforeEach
+  public void setUp() {
+    when(context.getOpenLineage())
+        .thenReturn(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI));
+  }
 
   @AfterEach
   public void tearDown() {
@@ -53,8 +64,7 @@ class LogicalRDDVisitorTest {
     SparkSession session = SparkSession.builder().master("local").getOrCreate();
     LogicalRDDVisitor visitor =
         new LogicalRDDVisitor(
-            SparkAgentTestExtension.newContext(session),
-            DatasetFactory.output(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI)));
+            SparkAgentTestExtension.newContext(session), DatasetFactory.output(context));
     StructType schema =
         new StructType(
             new StructField[] {

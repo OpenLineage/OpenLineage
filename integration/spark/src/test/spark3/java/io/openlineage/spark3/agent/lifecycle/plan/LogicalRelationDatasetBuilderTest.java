@@ -33,9 +33,7 @@ public class LogicalRelationDatasetBuilderTest {
   SparkSession session = mock(SparkSession.class);
   LogicalRelationDatasetBuilder visitor =
       new LogicalRelationDatasetBuilder(
-          openLineageContext,
-          DatasetFactory.output(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI)),
-          false);
+          openLineageContext, DatasetFactory.output(openLineageContext), false);
   OpenLineage.DatasetVersionDatasetFacet facet = mock(OpenLineage.DatasetVersionDatasetFacet.class);
   OpenLineage openLineage = mock(OpenLineage.class);
 
@@ -52,6 +50,8 @@ public class LogicalRelationDatasetBuilderTest {
     when(logicalRelation.relation()).thenReturn(hadoopFsRelation);
     when(openLineageContext.getSparkContext()).thenReturn(sparkContext);
     when(openLineageContext.getSparkSession()).thenReturn(Optional.of(session));
+    when(openLineageContext.getOpenLineage())
+        .thenReturn(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI));
     when(facet.getDatasetVersion()).thenReturn(SOME_VERSION);
     when(session.sessionState()).thenReturn(sessionState);
     when(sessionState.newHadoopConfWithOptions(any())).thenReturn(hadoopConfig);
@@ -61,7 +61,6 @@ public class LogicalRelationDatasetBuilderTest {
             scala.collection.JavaConverters.collectionAsScalaIterableConverter(Arrays.asList(path))
                 .asScala()
                 .toSeq());
-    when(openLineageContext.getOpenLineage()).thenReturn(openLineage);
     when(openLineage.newDatasetFacetsBuilder()).thenReturn(new OpenLineage.DatasetFacetsBuilder());
     when(openLineage.newDatasetVersionDatasetFacet(SOME_VERSION)).thenReturn(facet);
 
