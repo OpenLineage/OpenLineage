@@ -24,12 +24,12 @@ def test_basic_extractor():
 
 
 def test_env_extractors():
-    assert len(Extractors().extractors) == 7
+    assert len(Extractors().extractors) == 8
 
     os.environ['OPENLINEAGE_EXTRACTOR_TestOperator'] = \
         'tests.extractors.test_extractors.FakeExtractor'
 
-    assert len(Extractors().extractors) == 8
+    assert len(Extractors().extractors) == 9
     del os.environ['OPENLINEAGE_EXTRACTOR_TestOperator']
 
 
