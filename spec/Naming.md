@@ -30,6 +30,22 @@ Identifier:
  * Unique name: {database}.{schema}.{table}
    * URI =  postgres://{host}:{port}/{database}.{schema}.{table}
 
+#### MySQL:
+Datasource hierarchy:
+ * Host
+ * Port
+
+Naming hierarchy:
+ * Database
+ * Table
+
+Identifier:
+ * Namespace: mysql://{host}:{port} of the service instance.
+   * Scheme = mysql
+   * Authority = {host}:{port}
+ * Unique name: {database}.{table}
+   * URI =  mysql://{host}:{port}/{database}.{table}
+
 #### Redshift:
 Datasource hierarchy:
  * Host: examplecluster.\<XXXXXXXXXXXX>.us-west-2.redshift.amazonaws.com
