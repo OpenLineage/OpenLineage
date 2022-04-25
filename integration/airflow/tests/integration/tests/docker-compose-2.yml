@@ -32,7 +32,7 @@ x-airflow-base: &airflow-base
     GOOGLE_APPLICATION_CREDENTIALS: /opt/config/gcloud/gcloud-service-key.json
     OPENLINEAGE_URL: http://backend:5000
     OPENLINEAGE_NAMESPACE: food_delivery
-    OPENLINEAGE_EXTRACTOR_CustomOperator: custom_extractor.CustomExtractor
+    OPENLINEAGE_EXTRACTORS: custom_extractor.CustomExtractor
     SNOWFLAKE_ACCOUNT_ID: ${SNOWFLAKE_ACCOUNT_ID}
     SNOWFLAKE_USER: ${SNOWFLAKE_USER}
     SNOWFLAKE_PASSWORD: ${SNOWFLAKE_PASSWORD}
