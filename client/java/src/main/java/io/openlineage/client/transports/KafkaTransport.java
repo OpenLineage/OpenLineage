@@ -14,10 +14,16 @@ public final class KafkaTransport extends Transport {
   private final KafkaProducer<String, String> producer;
 
   public KafkaTransport(@NonNull final KafkaConfig kafkaConfig) {
+    this(new KafkaProducer<>(kafkaConfig.getProperties()), kafkaConfig);
+  }
+
+  public KafkaTransport(
+      @NonNull final KafkaProducer<String, String> kafkaProducer,
+      @NonNull final KafkaConfig kafkaConfig) {
     super(Type.KAFKA);
     this.topicName = kafkaConfig.getTopicName();
     this.localServerId = kafkaConfig.getLocalServerId();
-    this.producer = new KafkaProducer<>(kafkaConfig.getProperties());
+    this.producer = kafkaProducer;
   }
 
   @Override

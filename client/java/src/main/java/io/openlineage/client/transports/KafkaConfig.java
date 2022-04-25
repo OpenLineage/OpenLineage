@@ -11,7 +11,6 @@ import lombok.ToString;
 public final class KafkaConfig implements TransportConfig {
   @Getter @Setter private String topicName;
   @Getter @Setter private String localServerId;
-  @Getter @Setter private String bootstrapServerUrl;
   @Getter @Setter private Properties properties;
 
   public boolean hasLocalServerId() {

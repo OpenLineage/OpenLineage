@@ -11,9 +11,8 @@ import io.openlineage.client.OpenLineageClientException;
 import io.openlineage.client.Utils;
 import java.io.Closeable;
 import java.io.IOException;
-import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.Collections;
 import java.util.Map;
 import javax.annotation.Nullable;
@@ -32,19 +31,22 @@ public final class HttpTransport extends Transport implements Closeable {
   private static final String API_V1 = "/api/v1";
 
   private final HttpClient http;
-  private final URL url;
+  private final URI uri;
   private @Nullable final TokenProvider tokenProvider;
 
   public HttpTransport(@NonNull final HttpConfig httpConfig) {
+    this(HttpClientBuilder.create().build(), httpConfig);
+  }
+
+  public HttpTransport(@NonNull final HttpClient httpClient, @NonNull final HttpConfig httpConfig) {
     super(Type.HTTP);
-    this.http = HttpClientBuilder.create().build();
+    this.http = httpClient;
     try {
-      this.url =
-          new URIBuilder(httpConfig.getUrl().toURI())
+      this.uri =
+          new URIBuilder(httpConfig.getUrl())
               .setPath(httpConfig.getUrl().getPath() + API_V1 + "/lineage")
-              .build()
-              .toURL();
-    } catch (URISyntaxException | MalformedURLException e) {
+              .build();
+    } catch (URISyntaxException e) {
       throw new OpenLineageClientException(e);
     }
     this.tokenProvider = httpConfig.getAuth();
@@ -53,10 +55,10 @@ public final class HttpTransport extends Transport implements Closeable {
   @Override
   public void emit(@NonNull OpenLineage.RunEvent runEvent) {
     final String eventAsJson = Utils.toJson(runEvent);
-    log.debug("POST {}: {}", url, eventAsJson);
+    log.debug("POST {}: {}", uri, eventAsJson);
     try {
       final HttpPost request = new HttpPost();
-      request.setURI(url.toURI());
+      request.setURI(uri);
       request.addHeader(ACCEPT, APPLICATION_JSON.toString());
       request.addHeader(CONTENT_TYPE, APPLICATION_JSON.toString());
       request.setEntity(new StringEntity(eventAsJson, APPLICATION_JSON));
@@ -67,7 +69,7 @@ public final class HttpTransport extends Transport implements Closeable {
 
       final HttpResponse response = http.execute(request);
       throwOnHttpError(response);
-    } catch (URISyntaxException | IOException e) {
+    } catch (IOException e) {
       throw new OpenLineageClientException(e);
     }
   }
@@ -103,35 +105,42 @@ public final class HttpTransport extends Transport implements Closeable {
    * }</pre>
    */
   public static final class Builder {
-    private static final URL DEFAULT_OPENLINEAGE_URL = Utils.toUrl("http://localhost:8080");
+    private static final URI DEFAULT_OPENLINEAGE_URI = Utils.toUri("http://localhost:8080");
 
-    private URL url;
+    private URI uri;
+
+    private @Nullable HttpClient httpClient;
     private @Nullable TokenProvider tokenProvider;
 
     private Builder() {
-      this.url = DEFAULT_OPENLINEAGE_URL;
+      this.uri = DEFAULT_OPENLINEAGE_URI;
     }
 
-    public Builder url(@NonNull String urlAsString) {
-      return url(Utils.toUrl(urlAsString));
+    public Builder uri(@NonNull String urlAsString) {
+      return uri(Utils.toUri(urlAsString));
     }
 
-    public Builder url(@NonNull String urlAsString, @NonNull Map<String, String> queryParams) {
-      return url(Utils.toUrl(urlAsString), queryParams);
+    public Builder uri(@NonNull String urlAsString, @NonNull Map<String, String> queryParams) {
+      return uri(Utils.toUri(urlAsString), queryParams);
     }
 
-    public Builder url(@NonNull URL url) {
-      return url(url, Collections.emptyMap());
+    public Builder uri(@NonNull URI uri) {
+      return uri(uri, Collections.emptyMap());
     }
 
-    public Builder url(@NonNull URL url, @NonNull Map<String, String> queryParams) {
+    public Builder uri(@NonNull URI uri, @NonNull Map<String, String> queryParams) {
       try {
-        final URIBuilder builder = new URIBuilder(url.toURI());
+        final URIBuilder builder = new URIBuilder(uri);
         queryParams.forEach(builder::addParameter);
-        this.url = builder.build().toURL();
-      } catch (URISyntaxException | MalformedURLException e) {
+        this.uri = builder.build();
+      } catch (URISyntaxException e) {
         throw new OpenLineageClientException(e);
       }
+      return this;
+    }
+
+    public Builder http(@NonNull HttpClient httpClient) {
+      this.httpClient = httpClient;
       return this;
     }
 
@@ -153,8 +162,11 @@ public final class HttpTransport extends Transport implements Closeable {
      */
     public HttpTransport build() {
       final HttpConfig httpConfig = new HttpConfig();
-      httpConfig.setUrl(url);
+      httpConfig.setUrl(uri);
       httpConfig.setAuth(tokenProvider);
+      if (httpClient != null) {
+        return new HttpTransport(httpClient, httpConfig);
+      }
       return new HttpTransport(httpConfig);
     }
   }

@@ -241,4 +241,13 @@ jacocoTestReport {
         html.enabled = true
         html.destination = file(coverageDir)
     }
+
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                    "io/openlineage/client/OpenLineage.class",
+                    "io/openlineage/client/OpenLineage\$*.class"
+            ])
+        }))
+    }
 }

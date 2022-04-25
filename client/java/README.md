@@ -62,13 +62,10 @@ transport:
 transport:
   type: HTTP
   url: http://localhost:5000
-  apiKey: f38d2189-c603-4b46-bdea-e573a3b5a7d5
+  auth:
+    type: api_key
+    api_key: f38d2189-c603-4b46-bdea-e573a3b5a7d5
 ```
-
-Use the following environment variables to configure the `HttpTransport`:
-
-* `OPENLINEAGE_URL`: the URL for the HTTP transport (default: `http://localhost:8080`)
-* `OPENLINEAGE_API_KEY`: the API key to be set on each HTTP request
 
 You can override the default configuration of the `HttpTransport` via environment variables by specifying the URL and API key when
 creating a new client:
@@ -106,6 +103,13 @@ OpenLineage.RunEvent startOrCompleteRun = ...
 // Emit OpenLineage event to http://localhost:5000/api/v1/lineage?param0=value0&param1=value1
 client.emit(startOrCompleteRun);
 ```
+
+Alternatively, use the following environment variables to configure the `HttpTransport`:
+
+* `OPENLINEAGE_URL`: the URL for the HTTP transport (default: `http://localhost:8080`)
+* `OPENLINEAGE_API_KEY`: the API key to be set on each HTTP request
+
+Not everything will be supported while using this method.
 
 ### [`KafkaTransport`](https://github.com/OpenLineage/OpenLineage/tree/main/client/java/src/main/java/io/openlineage/client/transports/KafkaTransport.java)
 

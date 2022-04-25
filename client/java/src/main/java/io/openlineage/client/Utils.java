@@ -26,8 +26,8 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import lombok.NonNull;
@@ -69,14 +69,15 @@ public final class Utils {
     }
   }
 
-  /** Converts the provided {@code urlString} to an {@link URL} object. */
-  public static URL toUrl(@NonNull final String urlString) {
+  /** Converts the provided {@code urlString} to an {@link URI} object. */
+  public static URI toUri(@NonNull final String urlString) {
     try {
       final String urlStringWithNoTrailingSlash =
           (urlString.endsWith("/") ? urlString.substring(0, urlString.length() - 1) : urlString);
-      return new URL(urlStringWithNoTrailingSlash);
-    } catch (MalformedURLException e) {
-      final AssertionError error = new AssertionError("Malformed URL: " + urlString);
+      return new URI(urlStringWithNoTrailingSlash);
+    } catch (URISyntaxException e) {
+      final OpenLineageClientException error =
+          new OpenLineageClientException("Malformed URI: " + urlString);
       error.initCause(e);
       throw error;
     }

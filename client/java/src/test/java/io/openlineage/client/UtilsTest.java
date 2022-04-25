@@ -22,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
-import java.net.URL;
+import java.net.URI;
 import org.junit.jupiter.api.Test;
 
 /** Unit tests for {@link Utils}. */
@@ -62,14 +62,14 @@ public class UtilsTest {
   @Test
   public void testToUrl() throws Exception {
     final String urlString = "http://test.com:8080";
-    final URL expected = new URL(urlString);
-    final URL actual = Utils.toUrl(urlString);
+    final URI expected = new URI(urlString);
+    final URI actual = Utils.toUri(urlString);
     assertThat(actual).isEqualTo(expected);
   }
 
   @Test
   public void testToUrl_throwsOnNull() {
-    assertThatNullPointerException().isThrownBy(() -> Utils.toUrl(null));
+    assertThatNullPointerException().isThrownBy(() -> Utils.toUri(null));
   }
 
   @JsonAutoDetect(fieldVisibility = Visibility.ANY)

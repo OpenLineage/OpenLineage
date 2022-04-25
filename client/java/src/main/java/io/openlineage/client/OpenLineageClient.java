@@ -15,7 +15,7 @@ public final class OpenLineageClient {
     this(new ConsoleTransport());
   }
 
-  OpenLineageClient(@NonNull final Transport transport) {
+  public OpenLineageClient(@NonNull final Transport transport) {
     this.transport = transport;
   }
 

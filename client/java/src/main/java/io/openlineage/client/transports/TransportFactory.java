@@ -36,7 +36,6 @@ public final class TransportFactory {
         // Set the local server ID to the lineage source when not specified
         kafkaConfig.setLocalServerId(DEFAULT_LINEAGE_SOURCE);
       }
-      kafkaConfig.getProperties().put("bootstrap.servers", kafkaConfig.getBootstrapServerUrl());
       kafkaConfig.getProperties().put("server.id", kafkaConfig.getLocalServerId());
       return new KafkaTransport(kafkaConfig);
     } else {
