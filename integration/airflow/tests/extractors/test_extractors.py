@@ -34,24 +34,24 @@ def test_basic_extractor():
 
 
 def test_env_add_extractor():
-    assert len(Extractors().extractors) == 7
+    assert len(Extractors().extractors) == 8
     with patch.dict(os.environ, {"OPENLINEAGE_EXTRACTORS": "tests.extractors.test_extractors.FakeExtractor"}):  # noqa
-        assert len(Extractors().extractors) == 8
-
-
-def test_env_multiple_extractors():
-    assert len(Extractors().extractors) == 7
-    with patch.dict(os.environ, {"OPENLINEAGE_EXTRACTORS": "tests.extractors.test_extractors.FakeExtractor;tests.extractors.test_extractors.AnotherFakeExtractor"}):  # noqa
         assert len(Extractors().extractors) == 9
 
 
+def test_env_multiple_extractors():
+    assert len(Extractors().extractors) == 8
+    with patch.dict(os.environ, {"OPENLINEAGE_EXTRACTORS": "tests.extractors.test_extractors.FakeExtractor;tests.extractors.test_extractors.AnotherFakeExtractor"}):  # noqa
+        assert len(Extractors().extractors) == 10
+
+
 def test_env_old_method_extractors():
-    assert len(Extractors().extractors) == 7
+    assert len(Extractors().extractors) == 8
 
     os.environ['OPENLINEAGE_EXTRACTOR_TestOperator'] = \
         'tests.extractors.test_extractors.FakeExtractor'
 
-    assert len(Extractors().extractors) == 8
+    assert len(Extractors().extractors) == 9
     del os.environ['OPENLINEAGE_EXTRACTOR_TestOperator']
 
 

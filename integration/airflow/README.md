@@ -117,6 +117,7 @@ suited to extract metadata from particular operator (or operators).
 `openlineage-airflow` provides extractors for
 
 * `PostgresOperator`
+* `MySqlOperator`
 * `BigQueryOperator`
 * `SnowflakeOperator`
 * `GreatExpectationsOperator`

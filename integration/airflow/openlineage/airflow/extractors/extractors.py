@@ -15,6 +15,9 @@ _extractors = list(
                 'openlineage.airflow.extractors.postgres_extractor.PostgresExtractor'
             ),
             try_import_from_string(
+                'openlineage.airflow.extractors.mysql_extractor.MySqlExtractor'
+            ),
+            try_import_from_string(
                 'openlineage.airflow.extractors.bigquery_extractor.BigQueryExtractor'
             ),
             try_import_from_string(
