@@ -143,6 +143,18 @@ The OpenLineage team aim to create regular official release of OpenLineage.
 
 In between official releases, the latest build is also available to developers in GitHub.
 
+### Release process
+
+Anyone may request a new release of the project in the #general channel.
+
+After one is proposed, committers have 48 hours to give a +1 or -1.
+
+Three +1s authorize the release.
+
+Alternatively, if after 2 days the release has received at least one +1 and no -1s, the release is also authorized.
+
+If the proposed release receives no +1s in two days, it is not authorized and the proposer must make a new request to reset the clock.
+
 ## Conflict resolution and voting
 
 In general, we prefer that technical issues and committer membership are amicably worked out
