@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerJobStart;
+import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
+import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 import scala.collection.JavaConversions;
 
 /**
@@ -21,7 +23,7 @@ import scala.collection.JavaConversions;
  */
 @Slf4j
 public class DatabricksEnvironmentFacetBuilder
-    extends CustomFacetBuilder<SparkListenerJobStart, EnvironmentFacet> {
+    extends CustomFacetBuilder<Object, EnvironmentFacet> {
   private HashMap<String, Object> dbProperties;
   private final OpenLineageContext openLineageContext;
   private Class dbutilsClass;
@@ -31,20 +33,38 @@ public class DatabricksEnvironmentFacetBuilder
     this.openLineageContext = openLineageContext;
   }
 
+  @Override
+  public boolean isDefinedAt(Object x) {
+    return (x instanceof SparkListenerSQLExecutionEnd
+        || x instanceof SparkListenerSQLExecutionStart
+        || x instanceof SparkListenerJobStart);
+  }
+
   public static boolean isDatabricksRuntime() {
     return System.getenv().containsKey("DATABRICKS_RUNTIME_VERSION");
   }
 
   @Override
-  protected void build(
-      SparkListenerJobStart event, BiConsumer<String, ? super EnvironmentFacet> consumer) {
-    consumer.accept(
-        "environment-properties",
-        new EnvironmentFacet(getDatabricksEnvironmentalAttributes(event)));
+  protected void build(Object event, BiConsumer<String, ? super EnvironmentFacet> consumer) {
+    if (event instanceof SparkListenerJobStart) {
+      SparkListenerJobStart jobStart = (SparkListenerJobStart) event;
+      consumer.accept(
+          "environment-properties",
+          new EnvironmentFacet(getDatabricksJobStartProperties(jobStart)));
+    } else if (event instanceof SparkListenerSQLExecutionStart) {
+      SparkListenerSQLExecutionStart executionStart = (SparkListenerSQLExecutionStart) event;
+      consumer.accept(
+          "environment-properties",
+          new EnvironmentFacet(getDatabricksSqlStartProperties(executionStart)));
+    } else if (event instanceof SparkListenerSQLExecutionEnd) {
+      SparkListenerSQLExecutionEnd executionEnd = (SparkListenerSQLExecutionEnd) event;
+      consumer.accept(
+          "environment-properties",
+          new EnvironmentFacet(getDatabricksSqlEndProperties(executionEnd)));
+    }
   }
 
-  private HashMap<String, Object> getDatabricksEnvironmentalAttributes(
-      SparkListenerJobStart jobStart) {
+  private HashMap<String, Object> getDatabricksJobStartProperties(SparkListenerJobStart jobStart) {
     dbProperties = new HashMap<>();
     // These are useful properties to extract if they are available
 
@@ -59,7 +79,8 @@ public class DatabricksEnvironmentFacetBuilder
             "user",
             "userId",
             "spark.databricks.clusterUsageTags.clusterName",
-            "spark.databricks.clusterUsageTags.azureSubscriptionId");
+            "spark.databricks.clusterUsageTags.azureSubscriptionId",
+            "spark.sql.execution.parent");
     dbPropertiesKeys.stream()
         .forEach(
             (p) -> {
@@ -90,5 +111,19 @@ public class DatabricksEnvironmentFacetBuilder
       mountpoints.add(new DatabricksMountpoint(mount.mountPoint(), mount.source()));
     }
     return mountpoints;
+  }
+
+  private HashMap<String, Object> getDatabricksSqlStartProperties(
+      SparkListenerSQLExecutionStart event) {
+    dbProperties = new HashMap<>();
+    dbProperties.put("execution-id", String.valueOf(event.executionId()));
+    return dbProperties;
+  }
+
+  private HashMap<String, Object> getDatabricksSqlEndProperties(
+      SparkListenerSQLExecutionEnd event) {
+    dbProperties = new HashMap<>();
+    dbProperties.put("execution-id", String.valueOf(event.executionId()));
+    return dbProperties;
   }
 }
