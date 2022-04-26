@@ -15,6 +15,9 @@ _extractors = list(
                 'openlineage.airflow.extractors.postgres_extractor.PostgresExtractor'
             ),
             try_import_from_string(
+                'openlineage.airflow.extractors.mysql_extractor.MySqlExtractor'
+            ),
+            try_import_from_string(
                 'openlineage.airflow.extractors.bigquery_extractor.BigQueryExtractor'
             ),
             try_import_from_string(
@@ -66,6 +69,16 @@ class Extractors:
             for operator_class in patcher.get_operator_classnames():
                 self.patchers[operator_class] = patcher
 
+        # Comma-separated extractors in OPENLINEAGE_EXTRACTORS variable.
+        # Extractors should
+        env_extractors = os.getenv("OPENLINEAGE_EXTRACTORS")
+        if env_extractors is not None:
+            for extractor in env_extractors.split(';'):
+                extractor = import_from_string(extractor)
+                for operator_class in extractor.get_operator_classnames():
+                    self.extractors[operator_class] = extractor
+
+        # Previous way of adding extractors
         # Adding operator: extractor pairs registered via environmental variable in pattern
         # OPENLINEAGE_EXTRACTOR_<operator>=<path.to.ExtractorClass>
         # The value in extractor map is extractor class type - it needs to be instantiated.
