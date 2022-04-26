@@ -25,10 +25,6 @@ def lineage_run_id(run_id, task):
         provide_context=False,
         dag=dag
     )
-
-    :param run_id:
-    :param task:
-    :return:
     """
     with get_create_session()() as session:
         name = openlineage_job_name(task.dag_id, task.task_id)
@@ -55,10 +51,6 @@ def lineage_parent_id(run_id, task):
         provide_context=False,
         dag=dag
     )
-
-    :param run_id:
-    :param task:
-    :return:
     """
     with get_create_session()() as session:
         job_name = openlineage_job_name(task.dag_id, task.task_id)

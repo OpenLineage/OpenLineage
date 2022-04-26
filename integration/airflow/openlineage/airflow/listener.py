@@ -36,12 +36,10 @@ class ActiveRunManager:
         self.run_data[self._pk(task_instance)] = ActiveRun(run_id, task_instance.task)
 
     def get_active_run(self, task_instance: "TaskInstance") -> Optional[ActiveRun]:
-        pk = self._pk(task_instance)
-        if pk not in self.run_data:
-            return None
-        return self.run_data[pk]
+        return self.run_data.get(self._pk(task_instance))
 
-    def _pk(self, ti: "TaskInstance"):
+    @staticmethod
+    def _pk(ti: "TaskInstance"):
         return ti.dag_id + ti.task_id + ti.run_id
 
 
@@ -69,7 +67,7 @@ def execute_in_thread(target: Callable, kwargs=None):
 @hookimpl
 def on_task_instance_running(previous_state, task_instance: "TaskInstance", session: "Session"):
     if not hasattr(task_instance, 'task'):
-        log.warning(f"No task set for TI object {id(task_instance)}")
+        log.warning(f"No task set for TI object task_id: {task_instance.task_id} - dag_id: {task_instance.dag_id} - run_id {task_instance.run_id}")  # noqa
         return
 
     dagrun = task_instance.dag_run
@@ -78,6 +76,7 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
 
     run_id = str(uuid.uuid4())
     run_data_holder.set_active_run(task_instance, run_id)
+    parent_run_id = str(uuid.uuid3(uuid.NAMESPACE_URL, f'{dag.dag_id}.{dagrun.run_id}'))
 
     def on_running():
         task_metadata = extractor_manager.extract_metadata(dagrun, task)
@@ -87,7 +86,8 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
             job_name=get_job_name(task),
             job_description=dag.description,
             event_time=DagUtils.get_start_time(task_instance.start_date),
-            parent_run_id=dagrun.run_id,
+            parent_job_name=dag.dag_id,
+            parent_run_id=parent_run_id,
             code_location=get_task_location(task),
             nominal_start_time=DagUtils.get_start_time(dagrun.execution_date),
             nominal_end_time=DagUtils.to_iso_8601(task_instance.end_date),

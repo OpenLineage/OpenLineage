@@ -717,7 +717,7 @@ def test_openlineage_dag_adds_custom_facets(
             "parentRun": ParentRunFacet.create(
                 runId=parent_run_id,
                 namespace=DAG_NAMESPACE,
-                name=job_id
+                name=DAG_ID
             ),
             "airflow_runArgs": AirflowRunArgsRunFacet(False),
             "airflow_version": AirflowVersionRunFacet(

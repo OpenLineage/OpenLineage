@@ -189,7 +189,6 @@ def test_integration_ordered(dag_id, request_dir: str):
 if __name__ == '__main__':
     setup_db()
     test_integration('postgres_orders_popular_day_of_week', 'requests/postgres.json')
-    test_integration('mysql_orders_popular_day_of_week', 'requests/mysql.json')
     test_integration('great_expectations_validation', 'requests/great_expectations.json')
     test_integration('bigquery_orders_popular_day_of_week', 'requests/bigquery.json')
     test_integration('dbt_bigquery', 'requests/dbt_bigquery.json')
@@ -198,6 +197,7 @@ if __name__ == '__main__':
     test_integration('unknown_operator_dag', 'requests/unknown_operator.json')
     test_integration_ordered('event_order', 'requests/order')
     if os.getenv('AIRFLOW_VERSION', '') == '2.2.4':
+        test_integration('mysql_orders_popular_day_of_week', 'requests/mysql.json')
         test_integration('dbt_snowflake', 'requests/dbt_snowflake.json')
         test_integration('snowflake', 'requests/snowflake.json')
 

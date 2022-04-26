@@ -3,7 +3,6 @@ import time
 import os
 import copy
 import uuid
-from typing import Optional
 
 from airflow.models import DAG as AIRFLOW_DAG
 from airflow.utils.state import State
@@ -94,7 +93,8 @@ class DAG(AIRFLOW_DAG):
                     job_name,
                     self.description,
                     DagUtils.to_iso_8601(self._now_ms()),
-                    dagrun.run_id,
+                    self.dag_id,
+                    parent_run_id,
                     get_task_location(task),
                     DagUtils.get_start_time(execution_date),
                     DagUtils.get_end_time(execution_date, self.following_schedule(execution_date)),
@@ -161,12 +161,14 @@ class DAG(AIRFLOW_DAG):
         run_id = new_lineage_run_id(dagrun.run_id, task.task_id)
 
         if not task_run_id:
+            parent_run_id = str(uuid.uuid3(uuid.NAMESPACE_URL, f'{self.dag_id}.{dagrun.run_id}'))
             task_run_id = _ADAPTER.start_task(
                 run_id,
                 job_name,
                 self.description,
                 DagUtils.to_iso_8601(task_instance.start_date),
-                dagrun.run_id,
+                self.dag_id,
+                parent_run_id,
                 get_task_location(task),
                 DagUtils.to_iso_8601(task_instance.start_date),
                 DagUtils.to_iso_8601(task_instance.end_date),
