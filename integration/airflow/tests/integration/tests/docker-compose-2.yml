@@ -24,6 +24,7 @@ x-airflow-base: &airflow-base
     AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT: 120
     AIRFLOW__LINEAGE__BACKEND: openlineage.lineage_backend.OpenLineageBackend
     AIRFLOW_CONN_FOOD_DELIVERY_DB: postgres://food_delivery:food_delivery@postgres:5432/food_delivery
+    AIRFLOW_CONN_MYSQL_CONN: mysql://food_delivery:food_delivery@mysql:3306/food_delivery
     AIRFLOW_CONN_BQ_CONN: google-cloud-platform://?extra__google_cloud_platform__project=openlineage-ci&extra__google_cloud_platform__key_path=%2Fopt%2Fconfig%2Fgcloud%2Fgcloud-service-key.json
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "False"
     BIGQUERY_PREFIX: ${BIGQUERY_PREFIX}
@@ -31,7 +32,7 @@ x-airflow-base: &airflow-base
     GOOGLE_APPLICATION_CREDENTIALS: /opt/config/gcloud/gcloud-service-key.json
     OPENLINEAGE_URL: http://backend:5000
     OPENLINEAGE_NAMESPACE: food_delivery
-    OPENLINEAGE_EXTRACTOR_CustomOperator: custom_extractor.CustomExtractor
+    OPENLINEAGE_EXTRACTORS: custom_extractor.CustomExtractor
     SNOWFLAKE_ACCOUNT_ID: ${SNOWFLAKE_ACCOUNT_ID}
     SNOWFLAKE_USER: ${SNOWFLAKE_USER}
     SNOWFLAKE_PASSWORD: ${SNOWFLAKE_PASSWORD}
@@ -123,3 +124,16 @@ services:
       - ALLOW_EMPTY_PASSWORD=yes
     volumes:
       - ../docker/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+
+  mysql:
+    image: mysql:8
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_USER=food_delivery
+      - MYSQL_PASSWORD=food_delivery
+      - MYSQL_DATABASE=food_delivery
+      - MYSQL_ALLOW_EMPTY_PASSWORD=true
+      - MYSQL_ONETIME_PASSWORD=
+    volumes:
+      - ../docker/init-db-mysql.sh:/docker-entrypoint-initdb.d/init-db-mysql.sh

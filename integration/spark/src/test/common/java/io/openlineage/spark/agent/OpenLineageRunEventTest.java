@@ -30,7 +30,7 @@ public class OpenLineageRunEventTest {
   public void testSerializeRunEvent() throws IOException, URISyntaxException {
     ObjectMapper mapper = OpenLineageClient.createMapper();
 
-    ZonedDateTime dateTime = ZonedDateTime.parse("2021-01-01T00:00:01.000000000+02:00[UTC]");
+    ZonedDateTime dateTime = ZonedDateTime.parse("2021-01-01T00:00:01.000000000+00:00[UTC]");
     OpenLineage ol =
         new OpenLineage(
             new URI(

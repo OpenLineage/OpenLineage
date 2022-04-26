@@ -36,6 +36,7 @@ class Backend:
         dag = context['dag']
         dagrun = context['dag_run']
         task_instance = context['task_instance']
+        dag_run_id = str(uuid.uuid3(uuid.NAMESPACE_URL, f'{dag.dag_id}.{dagrun.run_id}'))
 
         run_id = str(uuid.uuid4())
         job_name = get_job_name(operator)
@@ -53,8 +54,9 @@ class Backend:
                 job_name=job_name,
                 job_description=dag.description,
                 event_time=DagUtils.get_start_time(task_instance.start_date),
-                parent_run_id=dagrun.run_id,
-                code_location=get_task_location(operator),
+                parent_job_name=dag.dag_id,
+                parent_run_id=dag_run_id,
+                code_location=self._get_location(operator),
                 nominal_start_time=DagUtils.get_start_time(dagrun.execution_date),
                 nominal_end_time=DagUtils.to_iso_8601(task_instance.end_date),
                 task=task_metadata,

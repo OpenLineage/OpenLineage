@@ -46,6 +46,7 @@ EOL
 cat > integration-requirements.txt <<EOL
 requests==2.24.0
 psycopg2-binary==2.9.2
+mysqlclient>=1.3.6
 httplib2>=0.18.1
 retrying==1.3.3
 pytest==6.2.2

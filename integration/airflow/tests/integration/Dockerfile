@@ -15,6 +15,8 @@ COPY requirements.txt requirements.txt
 RUN pip install --user -r requirements.txt
 
 FROM openlineage-airflow-base:latest AS integration
+RUN apt-get update && \
+    apt-get install -y python3-dev default-libmysqlclient-dev build-essential
 COPY integration-requirements.txt integration-requirements.txt
 COPY *.py ./
 COPY requests requests
