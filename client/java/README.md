@@ -117,9 +117,9 @@ Not everything will be supported while using this method.
 transport:
   type: Kafka
   topicName: openlineage.events
-  bootstrapServerUrl: localhost:9092
   # Kafka properties (see: http://kafka.apache.org/0100/documentation.html#producerconfigs)
   properties:
+    bootstrap.servers: localhost:9092,another.host:9092
     acks: all
     retries: 3
     key.serializer: org.apache.kafka.common.serialization.StringSerializer
