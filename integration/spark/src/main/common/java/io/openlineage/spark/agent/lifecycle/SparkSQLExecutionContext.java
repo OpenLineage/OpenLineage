@@ -13,6 +13,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.SparkContext;
@@ -133,6 +134,13 @@ class SparkSQLExecutionContext implements ExecutionContext {
 
   @Override
   public void start(SparkListenerJobStart jobStart) {
+    // TODO HOW DO I GET THIS TO BE THE REAL ID?
+    String x = (String) jobStart.properties().get("spark.sql.execution.parent");
+    Optional<UUID> parentExecutionId = Optional.empty();
+    if (x != null) {
+      // TODO: Fix this with a real execution id
+      parentExecutionId = convertToUUID("38400000-8cf0-11bd-b23e-10b96e4ef00d");
+    }
     log.debug("SparkListenerJobStart - executionId: " + executionId);
     jobId = Optional.of(jobStart.jobId());
     if (!olContext.getQueryExecution().isPresent()) {
@@ -141,7 +149,9 @@ class SparkSQLExecutionContext implements ExecutionContext {
     }
     RunEvent event =
         runEventBuilder.buildRun(
-            buildParentFacet(),
+            parentExecutionId.isPresent()
+                ? buildParentFacet(parentExecutionId, "test")
+                : buildParentFacet(),
             openLineage.newRunEventBuilder().eventTime(toZonedTime(jobStart.time())),
             buildJob(olContext.getQueryExecution().get()),
             jobStart);
@@ -183,6 +193,12 @@ class SparkSQLExecutionContext implements ExecutionContext {
                     runId, eventEmitter.getParentJobName(), eventEmitter.getJobNamespace()));
   }
 
+  private Optional<OpenLineage.ParentRunFacet> buildParentFacet(
+      Optional<UUID> parentRunID, String parentJobName) {
+    return parentRunID.map(
+        runId -> PlanUtils.parentRunFacet(runId, parentJobName, eventEmitter.getJobNamespace()));
+  }
+
   protected ZonedDateTime toZonedTime(long time) {
     Instant i = Instant.ofEpochMilli(time);
     return ZonedDateTime.ofInstant(i, ZoneOffset.UTC);
@@ -203,5 +219,13 @@ class SparkSQLExecutionContext implements ExecutionContext {
             sparkContext.appName().replaceAll(CAMEL_TO_SNAKE_CASE, "_$1").toLowerCase(Locale.ROOT)
                 + "."
                 + node.nodeName().replaceAll(CAMEL_TO_SNAKE_CASE, "_$1").toLowerCase(Locale.ROOT));
+  }
+
+  private static Optional<UUID> convertToUUID(String uuid) {
+    try {
+      return Optional.ofNullable(uuid).map(UUID::fromString);
+    } catch (Exception e) {
+      return Optional.empty();
+    }
   }
 }
