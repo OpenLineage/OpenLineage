@@ -20,6 +20,9 @@ requirements = [
 ]
 
 extras_require = {
+    "sql": [
+        f"openlineage-integration-common[sql]=={__version__}",
+    ],
     "tests": [
         "pytest",
         "pytest-cov",

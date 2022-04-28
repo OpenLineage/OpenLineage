@@ -63,7 +63,7 @@ def match(expected, result) -> bool:
                 return False
     elif isinstance(expected, list):
         if len(expected) != len(result):
-            log.error(f"Length does not match: expected {len(expected)} result: {result}")
+            log.error(f"Length does not match: expected {len(expected)} result: {len(result)}")
             return False
 
         # Try to resolve case where we have wrongly sorted lists by looking at name attr

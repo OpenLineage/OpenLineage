@@ -1,6 +1,5 @@
 [{
     "eventType": "START",
-    "inputs": [],
     "job": {
         "facets": {
             "documentation": {
@@ -13,7 +12,6 @@
         "name": "postgres_orders_popular_day_of_week.postgres_if_not_exists",
         "namespace": "food_delivery"
     },
-    "outputs": [],
     "run": {
         "facets": {
             "airflow_runArgs": {
@@ -24,18 +22,6 @@
 },
 {
     "eventType": "START",
-    "inputs": [
-        {
-            "facets": {
-                "dataSource": {
-                    "name": "postgres://postgres:5432",
-                    "uri": "postgres://postgres:5432/food_delivery"
-                }
-            },
-            "name": "food_delivery.public.top_delivery_times",
-            "namespace": "postgres://postgres:5432"
-        }
-    ],
     "job": {
         "facets": {
             "documentation": {
@@ -68,7 +54,24 @@
         "name": "postgres_orders_popular_day_of_week.postgres_if_not_exists",
         "namespace": "food_delivery"
     },
-    "outputs": []
+    "outputs": [{
+		"facets": {
+			"schema": {
+				"fields": [{
+					"name": "order_day_of_week",
+					"type": "varchar"
+				}, {
+					"name": "order_placed_on",
+					"type": "timestamp"
+				}, {
+					"name": "orders_placed",
+					"type": "int4"
+				}]
+			}
+		},
+		"name": "food_delivery.public.popular_orders_day_of_week",
+		"namespace": "postgres://postgres:5432"
+	}]
 },
 {
 	"eventType": "COMPLETE",
