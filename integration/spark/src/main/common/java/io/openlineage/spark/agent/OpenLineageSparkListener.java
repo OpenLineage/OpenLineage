@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.UUID;
 import java.util.WeakHashMap;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -101,6 +102,18 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   /** called by the SparkListener when a job starts */
   @Override
   public void onJobStart(SparkListenerJobStart jobStart) {
+    if (jobStart.properties().contains("spark.sql.execution.parent")) {
+      Long parentExecutionId =
+          Long.parseLong(jobStart.properties().getProperty("spark.sql.execution.parent"));
+      Optional<ExecutionContext> parentExecutionContext =
+          getSparkSQLExecutionContext(parentExecutionId);
+      if (parentExecutionContext.isPresent()) {
+        UUID parentRunId = parentExecutionContext.get().getRunId();
+        jobStart
+            .properties()
+            .setProperty("openlineage.databricks.parentRun", parentRunId.toString());
+      }
+    }
     Optional<ActiveJob> activeJob =
         asJavaOptional(
                 SparkSession.getDefaultSession()

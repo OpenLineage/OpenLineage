@@ -2,6 +2,7 @@
 
 package io.openlineage.spark.agent.lifecycle;
 
+import java.util.UUID;
 import org.apache.spark.scheduler.ActiveJob;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
@@ -33,4 +34,6 @@ public interface ExecutionContext {
   void end(SparkListenerSQLExecutionEnd sqlEnd);
 
   void end(SparkListenerStageCompleted stageCompleted);
+
+  UUID getRunId();
 }

@@ -228,4 +228,8 @@ class SparkSQLExecutionContext implements ExecutionContext {
       return Optional.empty();
     }
   }
+
+  public UUID getRunId() {
+    return olContext.getOpenLineage().getRunId();
+  };
 }

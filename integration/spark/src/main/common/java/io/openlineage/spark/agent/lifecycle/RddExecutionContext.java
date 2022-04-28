@@ -396,4 +396,8 @@ class RddExecutionContext implements ExecutionContext {
     }
     return OpenLineage.RunEvent.EventType.FAIL;
   }
+
+  public UUID getRunId() {
+    return runId;
+  };
 }
