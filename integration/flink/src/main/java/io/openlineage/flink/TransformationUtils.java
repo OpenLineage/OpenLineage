@@ -1,10 +1,8 @@
 package io.openlineage.flink;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.streaming.api.transformations.LegacySinkTransformation;
@@ -18,11 +16,6 @@ import org.apache.flink.streaming.api.transformations.SourceTransformation;
  */
 @Slf4j
 public class TransformationUtils {
-
-  private final List<Object> sources = new ArrayList<>();
-  private final List<Object> sinks = new ArrayList<>();
-
-  private final Set<String> processedTransformations = new HashSet<>();
 
   public List<SinkLineage> convertToVisitable(List<Transformation<?>> transformations) {
     List<SinkLineage> lineages = new ArrayList<>();
