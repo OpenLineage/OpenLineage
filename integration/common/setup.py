@@ -18,6 +18,9 @@ requirements = [
 ]
 
 extras_require = {
+    "sql": [
+        f"openlineage_sql=={__version__}"
+    ],
     "bigquery": [
         "google-api-core>=1.26.3",
         "google-auth>=1.30.0",
@@ -40,10 +43,15 @@ extras_require = {
         "flake8",
         "pandas",
         "jinja2",
-        "python-dateutil"
+        "python-dateutil",
     ],
 }
 extras_require["dev"] = set(sum(extras_require.values(), []))
+extras_require["dev_no_parser"] = set(
+    sum({
+        k: extras_require[k] for k in extras_require.keys() if k not in ["sql", "dev"]
+    }.values(), [])
+)
 
 setup(
     name="openlineage-integration-common",
@@ -52,7 +60,7 @@ setup(
     long_description=readme,
     long_description_content_type="text/markdown",
     author="OpenLineage",
-    packages=find_namespace_packages(include=['openlineage.*']),
+    packages=find_namespace_packages(include=["openlineage.*"]),
     include_package_data=True,
     install_requires=requirements,
     extras_require=extras_require,
