@@ -412,6 +412,24 @@ jobs:
           path: airflow/tests/integration/tests/airflow/logs
           destination: airflow-logs
 
+  integration-test-integration-airflow-failure:
+    parameters:
+      airflow-image:
+        type: string
+    working_directory: ~/openlineage/integration/
+    machine:
+      image: ubuntu-2004:current
+    steps:
+      - *checkout_project_root
+      - run: ../.circleci/get-docker-compose.sh
+      - run: cp -r ../client/python python
+      - attach_workspace:
+          at: .
+      - run: AIRFLOW_IMAGE=<< parameters.airflow-image >> ./airflow/tests/integration/docker/up-2.sh --failures
+      - store_artifacts:
+          path: airflow/tests/integration/failures/airflow/logs
+          destination: airflow-logs
+
   unit-test-integration-dagster:
     working_directory: ~/openlineage/integration/dagster
     docker:

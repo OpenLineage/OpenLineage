@@ -57,6 +57,17 @@ workflows:
           filters:
             branches:
               ignore: /pull\/[0-9]+/
+      - integration-test-integration-airflow-failure:
+          context: integration-tests
+          airflow-image: 'apache/airflow:2.2.4-python3.7'
+          requires:
+            - unit-test-integration-airflow-2
+            - unit-test-integration-common
+            - unit-test-client-python
+            - build-integration-sql-x86
+          filters:
+            branches:
+              ignore: /pull\/[0-9]+/
       - build-integration-airflow:
           filters:
             branches:

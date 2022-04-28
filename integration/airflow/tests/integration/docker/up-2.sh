@@ -6,6 +6,11 @@
 
 set -e
 
+FAILURE_TESTS="false"
+if [ "$1" == "--failures" ]; then
+  FAILURE_TESTS="true"
+fi
+
 # Change working directory to integration
 project_root=$(git rev-parse --show-toplevel)
 cd "${project_root}"/integration/airflow/tests/integration
@@ -58,22 +63,24 @@ export DBT_DATASET_PREFIX=$(echo "$AIRFLOW_VERSION" | tr "-" "_" | tr "." "_")_d
 ./docker/volumes.sh tests
 
 FAILED=0
-docker-compose -f tests/docker-compose-2.yml down
-docker-compose -f tests/docker-compose-2.yml up -V --build --abort-on-container-exit airflow_init postgres
-docker-compose -f tests/docker-compose-2.yml up --build --exit-code-from integration --scale airflow_init=0 || FAILED=1
+if [ "$FAILURE_TESTS" == "false" ]; then
+  docker-compose -f tests/docker-compose-2.yml down
+  docker-compose -f tests/docker-compose-2.yml up -V --build --abort-on-container-exit airflow_init postgres
+  docker-compose -f tests/docker-compose-2.yml up --build --exit-code-from integration --scale airflow_init=0 || FAILED=1
+else
+  docker-compose -f tests/docker-compose-2.yml -f failures/docker-compose.yml down
+  docker-compose -f tests/docker-compose-2.yml -f failures/docker-compose.yml up -V --build --abort-on-container-exit airflow_init postgres
+  OPENLINEAGE_URL="http://backend:5000/error/" docker-compose -f tests/docker-compose-2.yml -f failures/docker-compose.yml up --build --exit-code-from integration --scale airflow_init=0 || FAILED=1
+  docker-compose -f tests/docker-compose-2.yml -f failures/docker-compose.yml down
 
-docker-compose -f tests/docker-compose-2.yml -f failures/docker-compose.yml down
-docker-compose -f tests/docker-compose-2.yml -f failures/docker-compose.yml up -V --build --abort-on-container-exit airflow_init postgres
-OPENLINEAGE_URL="http://backend:5000/error/" docker-compose -f tests/docker-compose-2.yml -f failures/docker-compose.yml up --build --exit-code-from integration --scale airflow_init=0 || FAILED=1
-docker-compose -f tests/docker-compose-2.yml -f failures/docker-compose.yml down
+  docker-compose -f tests/docker-compose-2.yml -f failures/docker-compose.yml up -V --build --abort-on-container-exit airflow_init postgres
+  OPENLINEAGE_URL="http://backend:5000/timeout/" docker-compose -f tests/docker-compose-2.yml -f failures/docker-compose.yml up --build --exit-code-from integration --scale airflow_init=0 || FAILED=1
+  docker-compose -f tests/docker-compose-2.yml -f failures/docker-compose.yml down
 
-docker-compose -f tests/docker-compose-2.yml -f failures/docker-compose.yml up -V --build --abort-on-container-exit airflow_init postgres
-OPENLINEAGE_URL="http://backend:5000/timeout/" docker-compose -f tests/docker-compose-2.yml -f failures/docker-compose.yml up --build --exit-code-from integration --scale airflow_init=0 || FAILED=1
-docker-compose -f tests/docker-compose-2.yml -f failures/docker-compose.yml down
-
-docker-compose -f tests/docker-compose-2.yml -f failures/docker-compose.yml up -V --build --abort-on-container-exit airflow_init postgres
-OPENLINEAGE_URL="http://network-partition:5000/" docker-compose -f tests/docker-compose-2.yml -f failures/docker-compose.yml up --build --exit-code-from integration --scale airflow_init=0 || FAILED=1
-docker-compose -f tests/docker-compose-2.yml -f failures/docker-compose.yml down
+  docker-compose -f tests/docker-compose-2.yml -f failures/docker-compose.yml up -V --build --abort-on-container-exit airflow_init postgres
+  OPENLINEAGE_URL="http://network-partition:5000/" docker-compose -f tests/docker-compose-2.yml -f failures/docker-compose.yml up --build --exit-code-from integration --scale airflow_init=0 || FAILED=1
+  docker-compose -f tests/docker-compose-2.yml -f failures/docker-compose.yml down
+fi
 
 docker create --name openlineage-volume-helper -v tests_airflow_logs:/opt/airflow/logs busybox
 docker cp openlineage-volume-helper:/opt/airflow/logs tests/airflow/
