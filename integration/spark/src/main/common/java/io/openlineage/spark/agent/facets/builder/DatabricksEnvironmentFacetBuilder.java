@@ -48,6 +48,7 @@ public class DatabricksEnvironmentFacetBuilder
   protected void build(Object event, BiConsumer<String, ? super EnvironmentFacet> consumer) {
     if (event instanceof SparkListenerJobStart) {
       SparkListenerJobStart jobStart = (SparkListenerJobStart) event;
+      log.info(String.format("WILLJ: EnvFacet JobId:%s", Integer.toString(jobStart.jobId())));
       consumer.accept(
           "environment-properties",
           new EnvironmentFacet(getDatabricksJobStartProperties(jobStart)));
@@ -86,7 +87,7 @@ public class DatabricksEnvironmentFacetBuilder
             (p) -> {
               dbProperties.put(p, jobStart.properties().getProperty(p));
             });
-
+    dbProperties.put("willjJobId", Integer.toString(jobStart.jobId()));
     /**
      * Azure Databricks makes available a dbutils mount point to list aliased paths to cloud
      * storage. However, that dbutils object is not available inside a spark listener. We must

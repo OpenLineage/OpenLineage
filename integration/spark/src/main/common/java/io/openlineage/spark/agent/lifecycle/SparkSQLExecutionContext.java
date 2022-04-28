@@ -135,13 +135,14 @@ class SparkSQLExecutionContext implements ExecutionContext {
   @Override
   public void start(SparkListenerJobStart jobStart) {
     // TODO HOW DO I GET THIS TO BE THE REAL ID?
-    String x = (String) jobStart.properties().get("spark.sql.execution.parent");
-    Optional<UUID> parentExecutionId = Optional.empty();
-    if (x != null) {
-      // TODO: Fix this with a real execution id
-      parentExecutionId = convertToUUID("38400000-8cf0-11bd-b23e-10b96e4ef00d");
-    }
-    log.debug("SparkListenerJobStart - executionId: " + executionId);
+    // String x = (String) jobStart.properties().get("spark.sql.execution.parent");
+    // Optional<UUID> parentExecutionId = Optional.empty();
+    // if (x != null) {
+    //   // TODO: Fix this with a real execution id
+    //   parentExecutionId = convertToUUID("38400000-8cf0-11bd-b23e-10b96e4ef00d");
+    // }
+    log.info("WILLJ: Start occurred");
+    log.info("SparkListenerJobStart - executionId: " + executionId);
     jobId = Optional.of(jobStart.jobId());
     if (!olContext.getQueryExecution().isPresent()) {
       log.info("No execution info {}", olContext);
@@ -149,9 +150,10 @@ class SparkSQLExecutionContext implements ExecutionContext {
     }
     RunEvent event =
         runEventBuilder.buildRun(
-            parentExecutionId.isPresent()
-                ? buildParentFacet(parentExecutionId, "test")
-                : buildParentFacet(),
+            // parentExecutionId.isPresent()
+            //     ? buildParentFacet(parentExecutionId, "test")
+            //     : buildParentFacet(),
+            buildParentFacet(),
             openLineage.newRunEventBuilder().eventTime(toZonedTime(jobStart.time())),
             buildJob(olContext.getQueryExecution().get()),
             jobStart);
@@ -230,6 +232,6 @@ class SparkSQLExecutionContext implements ExecutionContext {
   }
 
   public UUID getRunId() {
-    return olContext.getOpenLineage().getRunId();
+    return olContext.getRunUuid();
   };
 }

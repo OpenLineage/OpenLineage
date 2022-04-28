@@ -25,9 +25,13 @@ public class DatabricksSynapseParentRunFacetBuilder
 
   @Override
   public boolean isDefinedAt(Object x) {
+    log.info("WILLJ: Synapse Parent Run is being checked");
     if (x instanceof SparkListenerJobStart) {
       SparkListenerJobStart jobStart = (SparkListenerJobStart) x;
-      return jobStart.properties().contains("openlineage.databricks.parentRun");
+      String parentRun = (String) jobStart.properties().get("openlineage.databricks.parentRun");
+      boolean hasParentRun = (parentRun != null);
+      log.info(String.format("WILLJ: HasParentRun== %s", Boolean.toString(hasParentRun)));
+      return hasParentRun;
     } else {
       return false;
     }
@@ -37,6 +41,7 @@ public class DatabricksSynapseParentRunFacetBuilder
   protected void build(
       SparkListenerJobStart event, BiConsumer<String, ? super ParentRunFacet> consumer) {
     SparkListenerJobStart jobStart = (SparkListenerJobStart) event;
+    log.info("WILLJ: Parent Run Facet Builder is Building!");
     String parentRunId = event.properties().getProperty("openlineage.databricks.parentRun");
     Optional<UUID> parentRunUuid = convertToUUID(parentRunId);
     OpenLineage openLineage = openLineageContext.getOpenLineage();
