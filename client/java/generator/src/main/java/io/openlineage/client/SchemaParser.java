@@ -6,8 +6,11 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import java.util.Objects;
 
 public class SchemaParser {
 
@@ -22,7 +25,15 @@ public class SchemaParser {
         return new RefType(pointer);
       } else if (typeJson.has("type")) {
         String typeName = typeJson.get("type").asText();
-        if (typeName.equals("string") || typeName.equals("integer") || typeName.equals("number") || typeName.equals("boolean")) {
+        if (typeName.equals("string") && typeJson.has("enum")) {
+          Iterator<JsonNode> valuesIterator = typeJson.get("enum").elements();
+          Iterable<JsonNode> valuesIterable = () -> valuesIterator;
+          List<String> values = StreamSupport
+              .stream(valuesIterable.spliterator(), false)
+              .map(jsonNode -> jsonNode.asText())
+              .collect(Collectors.toList());
+          return new EnumType(values);
+        } else if (typeName.equals("string") || typeName.equals("integer") || typeName.equals("number") || typeName.equals("boolean")) {
           return new PrimitiveType(typeName, typeJson.has("format") ? typeJson.get("format").asText() : null);
         } else if (typeName.equals("object") && (typeJson.has("properties") || typeJson.has("additionalProperties") || typeJson.has("patternProperties"))) {
           List<Field> fields = new ArrayList<Field>();
@@ -86,6 +97,8 @@ public class SchemaParser {
 
     T visit(ArrayType arrayType);
 
+    T visit(EnumType enumType);
+
     T visit(OneOfType oneOfType);
 
     T visit(AllOfType allOfType);
@@ -132,6 +145,22 @@ public class SchemaParser {
       return "RefType{pointer: " + pointer + "}";
     }
 
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      RefType refType = (RefType) o;
+      return pointer.equals(refType.pointer);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(pointer);
+    }
   }
 
   static class OneOfType implements Type {
@@ -157,6 +186,22 @@ public class SchemaParser {
       return "OneOfType{types: " + types + "}";
     }
 
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      OneOfType oneOfType = (OneOfType) o;
+      return types.equals(oneOfType.types);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(types);
+    }
   }
 
   static class AllOfType implements Type {
@@ -181,6 +226,22 @@ public class SchemaParser {
       return "AllOfType{children: " + children + "}";
     }
 
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      AllOfType allOfType = (AllOfType) o;
+      return children.equals(allOfType.children);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(children);
+    }
   }
 
   static class PrimitiveType implements Type {
@@ -216,6 +277,23 @@ public class SchemaParser {
     public String toString() {
       return "PrimitiveType{name: " + name + "}";
     }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      PrimitiveType that = (PrimitiveType) o;
+      return name.equals(that.name) && Objects.equals(format, that.format);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(name, format);
+    }
   }
 
   public static class Field {
@@ -247,6 +325,22 @@ public class SchemaParser {
       return "Field{name: " + name + ", type: " + type + "}";
     }
 
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      Field field = (Field) o;
+      return name.equals(field.name) && type.equals(field.type);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(name, type);
+    }
   }
 
   static class ObjectType implements Type {
@@ -306,6 +400,47 @@ public class SchemaParser {
     @Override
     public String toString() {
       return "ArrayType{items: " + items + "}";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      ArrayType arrayType = (ArrayType) o;
+      return items.equals(arrayType.items);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(items);
+    }
+  }
+
+  static class EnumType implements Type {
+
+    private List<String> values;
+
+    public EnumType(List<String> values) {
+      super();
+      this.values = values;
+    }
+
+    @Override
+    public <T> T accept(TypeVisitor<T> visitor) {
+      return visitor.visit(this);
+    }
+
+    @Override
+    public String toString() {
+      return "EnumType{values=(" + String.join(",", values)  + ")}";
+    }
+
+    public List<String> getValues() {
+      return values;
     }
 
   }

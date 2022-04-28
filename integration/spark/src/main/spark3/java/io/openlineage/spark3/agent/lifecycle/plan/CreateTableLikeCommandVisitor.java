@@ -2,12 +2,9 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan;
 
-import static io.openlineage.spark.agent.facets.TableStateChangeFacet.StateChange.CREATE;
 import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.facets.TableStateChangeFacet;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -16,7 +13,6 @@ import io.openlineage.spark.api.QueryPlanVisitor;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.catalog.SessionCatalog;
@@ -38,6 +34,7 @@ public class CreateTableLikeCommandVisitor
   @Override
   public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
     CreateTableLikeCommand command = (CreateTableLikeCommand) x;
+
     return context
         .getSparkSession()
         .map(
@@ -52,9 +49,14 @@ public class CreateTableLikeCommandVisitor
                   ScalaConversionUtils.<URI>asJavaOptional(command.fileFormat().locationUri())
                       .orElse(defaultLocation);
               DatasetIdentifier di = PathUtils.fromURI(location, "file");
-              Map<String, OpenLineage.DatasetFacet> facetMap =
-                  singletonMap("tableStateChange", new TableStateChangeFacet(CREATE));
-              return singletonList(outputDataset().getDataset(di, source.schema(), facetMap));
+
+              return singletonList(
+                  outputDataset()
+                      .getDataset(
+                          di,
+                          source.schema(),
+                          OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange
+                              .CREATE));
             })
         .orElse(Collections.emptyList());
   }

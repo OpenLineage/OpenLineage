@@ -3,6 +3,7 @@
 import logging
 import uuid
 import time
+
 from pkg_resources import parse_version
 
 from airflow.lineage.backend import LineageBackend
@@ -37,6 +38,7 @@ class Backend:
         dag = context['dag']
         dagrun = context['dag_run']
         task_instance = context['task_instance']
+        dag_run_id = str(uuid.uuid3(uuid.NAMESPACE_URL, f'{dag.dag_id}.{dagrun.run_id}'))
 
         run_id = str(uuid.uuid4())
         job_name = self._openlineage_job_name(dag.dag_id, operator.task_id)
@@ -54,7 +56,8 @@ class Backend:
                 job_name=job_name,
                 job_description=dag.description,
                 event_time=DagUtils.get_start_time(task_instance.start_date),
-                parent_run_id=dagrun.run_id,
+                parent_job_name=dag.dag_id,
+                parent_run_id=dag_run_id,
                 code_location=self._get_location(operator),
                 nominal_start_time=DagUtils.get_start_time(dagrun.execution_date),
                 nominal_end_time=DagUtils.to_iso_8601(task_instance.end_date),
@@ -69,7 +72,7 @@ class Backend:
             run_id=run_id,
             job_name=job_name,
             end_time=DagUtils.to_iso_8601(self._now_ms()),
-            task=task_metadata
+            task=task_metadata,
         )
 
     def _extract_metadata(self, dag_id, dagrun, task, task_instance=None):
@@ -97,8 +100,21 @@ class Backend:
             self.log.warning(
                 f'Unable to find an extractor. {task_info}')
         from openlineage.airflow.extractors.base import TaskMetadata
+        from openlineage.airflow.facets import UnknownOperatorAttributeRunFacet, \
+            UnknownOperatorInstance
+
         return TaskMetadata(
-            name=self._openlineage_job_name(dag_id, task.task_id)
+            name=self._openlineage_job_name(dag_id, task.task_id),
+            run_facets={
+                "unknownSourceAttribute": UnknownOperatorAttributeRunFacet(
+                    unknownItems=[
+                        UnknownOperatorInstance(
+                            name=task.__class__.__name__,
+                            properties={attr: value for attr, value in task.__dict__.items()}
+                        )
+                    ]
+                )
+            }
         )
 
     def _extract(self, extractor, task_instance):

@@ -7,22 +7,15 @@ import groovy.io.FileType
 
 import java.nio.file.Files
 
-buildscript {
-    repositories {
-        maven {
-            url 'https://plugins.gradle.org/m2/'
-        }
-    }
-    dependencies {
-        classpath 'com.adarshr:gradle-test-logger-plugin:2.1.1'
-        classpath 'com.github.jengelman.gradle.plugins:shadow:6.1.0'
-        classpath 'com.diffplug.spotless:spotless-plugin-gradle:5.12.1'
-    }
-}
-
 plugins {
+    id 'java'
+    id 'java-library'
     id 'maven-publish'
     id 'signing'
+    id 'jacoco'
+    id "com.adarshr.test-logger" version "2.1.1"
+    id 'com.diffplug.spotless' version '5.12.1'
+    id "com.github.johnrengelman.shadow" version "7.1.2"
 }
 
 repositories {
@@ -39,13 +32,6 @@ configurations {
     spark3.extendsFrom implementation
     lombok
 }
-
-apply plugin: 'jacoco'
-apply plugin: 'java'
-apply plugin: 'java-library'
-apply plugin: 'com.adarshr.test-logger'
-apply plugin: 'com.github.johnrengelman.shadow'
-apply plugin: "com.diffplug.spotless"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
@@ -81,10 +67,8 @@ dependencies {
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
-    implementation("io.openlineage:openlineage-java:${project.version}"){
-        exclude group: 'com.fasterxml.jackson.core'
-        exclude group: 'com.fasterxml.jackson.datatype'
-    }
+    api("io.openlineage:openlineage-java:${project.version}")
+
     implementation 'org.javassist:javassist:3.27.0-GA'
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.0.3'
     implementation ("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonDatatypeVersion}"){
@@ -102,6 +86,7 @@ dependencies {
     }
     compileOnly "org.apache.spark:spark-hive_2.11:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql-kafka-0-10_2.11:${sparkVersion}"
+    compileOnly "com.databricks:dbutils-api_${scalaVersion}:0.0.5"
 
     testImplementation platform('org.junit:junit-bom:5.7.1')
     testImplementation "org.postgresql:postgresql:${postgresqlVersion}"
@@ -112,18 +97,20 @@ dependencies {
     testImplementation "org.testcontainers:mockserver:${testcontainersVersion}"
     testImplementation "org.testcontainers:kafka:${testcontainersVersion}"
     testImplementation "org.apache.kafka:kafka-clients:2.6.0"
-    testImplementation('org.mock-server:mockserver-client-java:5.11.2') {
+    testImplementation('org.mock-server:mockserver-client-java:5.12.0') {
         exclude group: 'com.google.guava', module: 'guava'
         exclude group: 'com.fasterxml.jackson.core'
         exclude group: 'com.fasterxml.jackson.datatype'
+        exclude group: 'com.fasterxml.jackson.dataformat'
     }
-    testCompile "org.assertj:assertj-core:${assertjVersion}"
-    testCompile "org.junit.jupiter:junit-jupiter:${junit5Version}"
-    testCompile "org.junit.jupiter:junit-jupiter-params:${junit5Version}"
-    testCompile "org.mockito:mockito-core:${mockitoVersion}"
-    testCompile "org.mockito:mockito-inline:${mockitoVersion}"
-    testCompile "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
-    testCompile "org.projectlombok:lombok:${lombokVersion}"
+    testImplementation group: 'org.awaitility', name: 'awaitility', version: '4.1.1'
+    testImplementation "org.assertj:assertj-core:${assertjVersion}"
+    testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
+    testImplementation "org.junit.jupiter:junit-jupiter-params:${junit5Version}"
+    testImplementation "org.mockito:mockito-core:${mockitoVersion}"
+    testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
+    testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
+    testImplementation "org.projectlombok:lombok:${lombokVersion}"
     testCompileOnly "org.apache.spark:spark-core_2.11:${sparkVersion}"
     testCompileOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
     testCompileOnly "org.apache.spark:spark-hive_2.11:${sparkVersion}"
@@ -205,8 +192,8 @@ sourceSets {
     }
 }
 
-compileJava.finalizedBy compileSpark3Java
-compileTestJava.finalizedBy compileSpark3TestJava
+compileJava.finalizedBy compileSpark2Java, compileSpark3Java
+compileTestJava.finalizedBy compileSpark2TestJava, compileSpark3TestJava
 
 task sourceJar(type: Jar) {
     classifier 'sources'
@@ -229,7 +216,7 @@ tasks.register('copyDependencies', Copy) {
 
 def commonTestConfiguration = {
     forkEvery 1
-    maxParallelForks 3
+    maxParallelForks 5
     testLogging {
         events "passed", "skipped", "failed"
         showStandardStreams = true
@@ -239,7 +226,8 @@ def commonTestConfiguration = {
             'junit.platform.output.capture.stderr': 'true',
             'spark.version'                       : project.getProperty('spark.version'),
             'openlineage.spark.jar': "${archivesBaseName}-${project.version}.jar",
-            'kafka.package.version': kafkaPackage(scalaVersion, project.getProperty('spark.version'))
+            'kafka.package.version': kafkaPackage(scalaVersion, project.getProperty('spark.version')),
+            'mockserver.logLevel': 'ERROR'
     ]
     classpath =  project.sourceSets.test.runtimeClasspath +
             (isSpark3 ? configurations.spark3Test : configurations.spark2Test)
@@ -381,8 +369,6 @@ shadowJar {
 
     manifest {
         attributes(
-                "Premain-Class": 'io.openlineage.spark.agent.SparkAgent',
-                "Agent-Class": 'io.openlineage.spark.agent.SparkAgent',
                 'Created-By': "Gradle ${gradle.gradleVersion}",
                 'Built-By': System.getProperty('user.name'),
                 'Build-Jdk': System.getProperty('java.version'),

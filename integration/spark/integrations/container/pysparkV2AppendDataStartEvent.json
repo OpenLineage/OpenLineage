@@ -17,7 +17,8 @@
           "name" : "a",
           "type" : "long"
         }]
-      }
+      },
+      "version" : {}
     }
   }, {
     "namespace" : "file",
@@ -32,23 +33,8 @@
           "name" : "a",
           "type" : "long"
         }]
-      }
-    }
-  } ],
-  "outputs" : [ {
-    "namespace" : "file",
-    "name" : "/tmp/append_data/db.append_table",
-    "facets" : {
-      "dataSource" : {
-        "name" : "file",
-        "uri" : "file"
       },
-      "schema" : {
-        "fields" : [ {
-          "name" : "a",
-          "type" : "long"
-        }]
-      }
+      "version" : {}
     }
   } ]
 }

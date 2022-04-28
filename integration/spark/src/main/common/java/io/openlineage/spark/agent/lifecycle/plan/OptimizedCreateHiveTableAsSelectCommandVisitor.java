@@ -3,8 +3,6 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.facets.TableStateChangeFacet;
-import io.openlineage.spark.agent.facets.TableStateChangeFacet.StateChange;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -12,7 +10,6 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
@@ -56,13 +53,20 @@ public class OptimizedCreateHiveTableAsSelectCommandVisitor
     CatalogTable table = command.tableDesc();
     DatasetIdentifier datasetIdentifier = PathUtils.fromCatalogTable(table);
     StructType schema = outputSchema(ScalaConversionUtils.fromSeq(command.outputColumns()));
-    Map<String, OpenLineage.DatasetFacet> facets =
-        (SaveMode.Overwrite == command.mode())
-            ? Collections.singletonMap(
-                "tableStateChange", new TableStateChangeFacet(StateChange.OVERWRITE))
-            : Collections.emptyMap();
 
-    return Collections.singletonList(outputDataset().getDataset(datasetIdentifier, schema, facets));
+    OpenLineage.OutputDataset outputDataset;
+    if ((SaveMode.Overwrite == command.mode())) {
+      outputDataset =
+          outputDataset()
+              .getDataset(
+                  datasetIdentifier,
+                  schema,
+                  OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
+    } else {
+      outputDataset = outputDataset().getDataset(datasetIdentifier, schema);
+    }
+
+    return Collections.singletonList(outputDataset);
   }
 
   private StructType outputSchema(List<Attribute> attrs) {

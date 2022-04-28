@@ -1,0 +1,49 @@
+ [{
+ 		"eventType": "START",
+ 		"inputs": [],
+ 		"job": {
+ 			"facets": {
+ 				"documentation": {
+ 					"description": "Test unknown_operator dag."
+ 				}
+ 			},
+ 			"name": "unknown_operator_dag.unknown_operator",
+ 			"namespace": "food_delivery"
+ 		},
+ 		"run": {
+ 			"facets": {
+ 				"airflow_runArgs": {
+ 					"externalTrigger": false
+ 				},
+ 				"parentRun": {
+ 					"job": {
+ 						"name": "unknown_operator_dag",
+ 						"namespace": "food_delivery"
+ 					}
+ 				},
+				"unknownSourceAttribute": {
+					"unknownItems": [
+						{
+							"name": "TestUnknownDummyOperator",
+							"type": "operator",
+							"properties": {}
+						}
+					]
+				}
+ 			}
+ 		}
+ 	},
+ 	{
+ 		"eventType": "COMPLETE",
+ 		"inputs": [{
+ 			"facets": {},
+ 			"name": "dataset",
+ 			"namespace": "test"
+ 		}],
+ 		"job": {
+ 			"facets": {},
+ 			"name": "custom_extractor.custom_extractor",
+ 			"namespace": "food_delivery"
+ 		}
+ 	}
+ ]

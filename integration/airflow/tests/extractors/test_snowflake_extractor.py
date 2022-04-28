@@ -3,48 +3,51 @@
 import os
 from unittest import mock
 
+import pytest
 from airflow.contrib.operators.snowflake_operator import SnowflakeOperator
 from airflow.models import Connection
 from airflow import DAG
 from airflow.utils.dates import days_ago
+from airflow.version import version as AIRFLOW_VERSION
+from pkg_resources import parse_version
 
 from openlineage.common.models import (
-    DbTableName,
     DbTableSchema,
     DbColumn
 )
+from openlineage.common.sql import DbTableMeta
 from openlineage.common.dataset import Source, Dataset
 from openlineage.airflow.extractors.snowflake_extractor import SnowflakeExtractor
 
 CONN_ID = 'food_delivery_db'
 CONN_URI = 'snowflake://localhost:5432/food_delivery'
 
-DB_NAME = 'food_delivery'
-DB_SCHEMA_NAME = 'public'
-DB_TABLE_NAME = DbTableName('discounts')
+DB_NAME = 'FOOD_DELIVERY'
+DB_SCHEMA_NAME = 'PUBLIC'
+DB_TABLE_NAME = DbTableMeta('DISCOUNTS')
 DB_TABLE_COLUMNS = [
     DbColumn(
-        name='id',
+        name='ID',
         type='int4',
         ordinal_position=1
     ),
     DbColumn(
-        name='amount_off',
+        name='AMOUNT_OFF',
         type='int4',
         ordinal_position=2
     ),
     DbColumn(
-        name='customer_email',
+        name='CUSTOMER_EMAIL',
         type='varchar',
         ordinal_position=3
     ),
     DbColumn(
-        name='starts_on',
+        name='STARTS_ON',
         type='timestamp',
         ordinal_position=4
     ),
     DbColumn(
-        name='ends_on',
+        name='ENDS_ON',
         type='timestamp',
         ordinal_position=5
     )
@@ -123,6 +126,22 @@ def test_extract(get_connection, mock_get_table_schemas):
     assert task_metadata.outputs == []
 
 
+@pytest.mark.skipif(parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"), reason="Airflow 2+ test")  # noqa
+@mock.patch('openlineage.airflow.extractors.snowflake_extractor.SnowflakeExtractor._get_table_schemas')  # noqa
+@mock.patch('openlineage.airflow.extractors.postgres_extractor.get_connection')
+def test_extract_query_ids(get_connection, mock_get_table_schemas):
+    conn = Connection()
+    conn.parse_from_uri(uri=CONN_URI)
+    get_connection.return_value = conn
+
+    TASK.get_hook = mock.MagicMock()
+    TASK.query_ids = ["1500100900"]
+
+    task_metadata = SnowflakeExtractor(TASK).extract()
+
+    assert task_metadata.run_facets["externalQuery"].externalQueryId == "1500100900"
+
+
 @mock.patch('snowflake.connector.connect')
 def test_get_table_schemas(mock_conn):
     # (1) Define hook mock for testing
@@ -130,11 +149,11 @@ def test_get_table_schemas(mock_conn):
 
     # (2) Mock calls to postgres
     rows = [
-        (DB_SCHEMA_NAME, DB_TABLE_NAME.name, 'id', 1, 'int4'),
-        (DB_SCHEMA_NAME, DB_TABLE_NAME.name, 'amount_off', 2, 'int4'),
-        (DB_SCHEMA_NAME, DB_TABLE_NAME.name, 'customer_email', 3, 'varchar'),
-        (DB_SCHEMA_NAME, DB_TABLE_NAME.name, 'starts_on', 4, 'timestamp'),
-        (DB_SCHEMA_NAME, DB_TABLE_NAME.name, 'ends_on', 5, 'timestamp')
+        (DB_SCHEMA_NAME, DB_TABLE_NAME.name, 'ID', 1, 'int4'),
+        (DB_SCHEMA_NAME, DB_TABLE_NAME.name, 'AMOUNT_OFF', 2, 'int4'),
+        (DB_SCHEMA_NAME, DB_TABLE_NAME.name, 'CUSTOMER_EMAIL', 3, 'varchar'),
+        (DB_SCHEMA_NAME, DB_TABLE_NAME.name, 'STARTS_ON', 4, 'timestamp'),
+        (DB_SCHEMA_NAME, DB_TABLE_NAME.name, 'ENDS_ON', 5, 'timestamp')
     ]
 
     TASK.get_hook.return_value \

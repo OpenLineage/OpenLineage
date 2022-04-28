@@ -16,6 +16,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -56,6 +57,8 @@ public class TypeResolver {
       TypeVisitor<ResolvedType> visitor = new TypeVisitor<ResolvedType>(){
 
         String currentName = "";
+        String currentProperty;
+        String currentObjectName;
 
         @Override
         public ResolvedType visit(PrimitiveType primitiveType) {
@@ -65,6 +68,7 @@ public class TypeResolver {
         @Override
         public ResolvedType visit(ObjectType objectType) {
           List<Field> properties = objectType.getProperties();
+          currentObjectName = currentName;
           List<ResolvedField> resolvedFields = new ArrayList<>(properties.size());
           resolvedFields.addAll(resolveFields(properties));
           ObjectResolvedType objectResolvedType = new ObjectResolvedType(
@@ -82,11 +86,17 @@ public class TypeResolver {
           return objectResolvedType;
         }
 
+        @Override
+        public EnumResolvedType visit(SchemaParser.EnumType enumType) {
+          return new EnumResolvedType(currentProperty, enumType.getValues(), currentObjectName);
+        }
+
         private List<ResolvedField> resolveFields(List<Field> properties) {
           List<ResolvedField> resolvedFields = new ArrayList<>(properties.size());
           String previousCurrentName = currentName;
           for (Field property : properties) {
-            currentName = previousCurrentName + titleCase(property.getName());
+            currentProperty = titleCase(property.getName());
+            currentName = previousCurrentName + currentProperty;
             ResolvedField resolvedField = new ResolvedField(property, visit(property.getType()));
             resolvedFields.add(resolvedField);
             referencedTypes.add(resolvedField.getType().accept(new ResolvedTypeVisitor<String>() {
@@ -103,6 +113,11 @@ public class TypeResolver {
               @Override
               public String visit(ArrayResolvedType arrayType) {
                 return visit(arrayType.items);
+              }
+
+              @Override
+              public String visit(EnumResolvedType enumType) {
+                return enumType.getName();
               }
 
             }));
@@ -125,7 +140,7 @@ public class TypeResolver {
         public ResolvedType visit(AllOfType allOfType) {
           List<Type> children = allOfType.getChildren();
           List<ObjectType> castChildren = new ArrayList<>(children.size());
-          List<ResolvedField> combinedProperties = new ArrayList<>();
+          LinkedHashSet<ResolvedField> combinedProperties = new LinkedHashSet<>();
           boolean additionalProperties = false;
           ResolvedType additionalPropertiesType = null;
           Set<ObjectResolvedType> parents = new LinkedHashSet<>();
@@ -152,7 +167,7 @@ public class TypeResolver {
               }
             }
           }
-          ObjectResolvedType objectResolvedType = new ObjectResolvedType(container, castChildren, currentName, parents, combinedProperties, additionalProperties, additionalPropertiesType);
+          ObjectResolvedType objectResolvedType = new ObjectResolvedType(container, castChildren, currentName, parents, new ArrayList<>(combinedProperties), additionalProperties, additionalPropertiesType);
           String key = container + "." + objectResolvedType.getName();
           types.put(key, objectResolvedType);
           return objectResolvedType;
@@ -247,6 +262,8 @@ public class TypeResolver {
 
     T visit(ArrayResolvedType arrayType);
 
+    T visit(EnumResolvedType enumType);
+
     default T visit(ResolvedType type) {
       try {
         return type == null ? null : type.accept(this);
@@ -264,6 +281,8 @@ public class TypeResolver {
     public T visit(ObjectResolvedType objectType) { return null; }
 
     public T visit(ArrayResolvedType arrayType) { return null; }
+
+    public T visit(EnumResolvedType enumResolvedType) { return null; }
 
   }
 
@@ -288,6 +307,22 @@ public class TypeResolver {
       return visitor.visit(this);
     }
 
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      PrimitiveResolvedType that = (PrimitiveResolvedType) o;
+      return primitiveType.equals(that.primitiveType);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(primitiveType);
+    }
   }
 
   public static class ResolvedField {
@@ -315,6 +350,23 @@ public class TypeResolver {
     @Override
     public String toString() {
       return "ResolvedField{name: " + field.getName() + ", type: " + type +  "}";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      ResolvedField that = (ResolvedField) o;
+      return field.equals(that.field) && type.equals(that.type);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(field, type);
     }
   }
 
@@ -381,6 +433,26 @@ public class TypeResolver {
       return "ObjectResolvedType{" + name + "}";
     }
 
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      ObjectResolvedType that = (ObjectResolvedType) o;
+      return additionalProperties == that.additionalProperties && Objects.equals(container,
+          that.container) && objectTypes.equals(that.objectTypes) && name.equals(that.name)
+          && properties.equals(that.properties) && Objects.equals(additionalPropertiesType,
+          that.additionalPropertiesType) && parents.equals(that.parents);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(container, objectTypes, name, properties, additionalProperties,
+          additionalPropertiesType, parents);
+    }
   }
 
   static class ArrayResolvedType implements ResolvedType {
@@ -400,6 +472,58 @@ public class TypeResolver {
     @Override
     public <T> T accept(ResolvedTypeVisitor<T> visitor) {
       return visitor.visit(this);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      ArrayResolvedType that = (ArrayResolvedType) o;
+      return arrayType.equals(that.arrayType) && items.equals(that.items);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(arrayType, items);
+    }
+  }
+
+  static class EnumResolvedType implements ResolvedType {
+
+    private final String name;
+    private final List<String> values;
+    private final String parentName;
+
+    EnumResolvedType(String name, List<String> values, String parentName) {
+      this.name = name;
+      this.values = values;
+      this.parentName = parentName;
+    }
+
+    @Override
+    public <T> T accept(ResolvedTypeVisitor<T> visitor) {
+      return visitor.visit(this);
+    }
+
+    @Override
+    public String toString() {
+      return "ObjectResolvedType{" + name + ", [" +  String.join(",", values) + "]}";
+    }
+
+    public String getName() {
+      return name;
+    }
+
+    public List<String> getValues() {
+      return values;
+    }
+
+    public String getParentName() {
+      return parentName;
     }
   }
 

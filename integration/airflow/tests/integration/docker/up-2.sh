@@ -21,8 +21,8 @@ fi
 if [[ -n "$CI" ]]; then
   echo $GCLOUD_SERVICE_KEY > gcloud/gcloud-service-key.json
   chmod 644 gcloud/gcloud-service-key.json
-  mkdir -p airflow/logs
-  chmod a+rwx -R airflow/logs
+  mkdir -p tests/airflow/logs
+  chmod a+rwx -R tests/airflow/logs
 fi
 
 # maybe overkill
@@ -32,8 +32,11 @@ OPENLINEAGE_AIRFLOW_WHL_ALL=$(docker run openlineage-airflow-base:latest sh -c "
 # Add revision to requirements.txt
 cat > requirements.txt <<EOL
 airflow-provider-great-expectations==0.0.8
+apache-airflow-providers-snowflake==2.5.1
 great-expectations==0.13.42
-dbt-bigquery==0.20.1
+dbt-core==1.0.1
+dbt-bigquery==1.0.0
+dbt-snowflake==1.0.0
 ${OPENLINEAGE_AIRFLOW_WHL}
 EOL
 
@@ -41,6 +44,7 @@ EOL
 cat > integration-requirements.txt <<EOL
 requests==2.24.0
 psycopg2-binary==2.9.2
+mysqlclient>=1.3.6
 httplib2>=0.18.1
 retrying==1.3.3
 pytest==6.2.2
@@ -49,6 +53,17 @@ python-dateutil==2.8.2
 ${OPENLINEAGE_AIRFLOW_WHL}
 EOL
 
-docker-compose -f docker-compose-2.yml down
-docker-compose -f docker-compose-2.yml up --build --abort-on-container-exit airflow_init postgres
-docker-compose -f docker-compose-2.yml up --build --exit-code-from integration --scale airflow_init=0
+# string operator: from variable AIRFLOW_IMAGE
+#  ##   <-- greedy front trim
+#  *    <-- matches anything
+#  :    <-- until the last ':'
+AIRFLOW_VERSION=${AIRFLOW_IMAGE##*:}
+
+# Remove -python3.7 from the tag
+export AIRFLOW_VERSION=${AIRFLOW_VERSION::-10}
+export BIGQUERY_PREFIX=$(echo "$AIRFLOW_VERSION" | tr "-" "_" | tr "." "_")
+export DBT_DATASET_PREFIX=$(echo "$AIRFLOW_VERSION" | tr "-" "_" | tr "." "_")_dbt
+
+docker-compose -f tests/docker-compose-2.yml down
+docker-compose -f tests/docker-compose-2.yml up --build --abort-on-container-exit airflow_init postgres
+docker-compose -f tests/docker-compose-2.yml up --build --exit-code-from integration --scale airflow_init=0

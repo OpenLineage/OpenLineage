@@ -1,6 +1,4 @@
 # SPDX-License-Identifier: Apache-2.0.
-
-import os
 from typing import Dict, List, Optional
 
 import attr
@@ -189,3 +187,9 @@ class SourceCodeJobFacet(BaseFacet):
     @staticmethod
     def _get_schema() -> str:
         return SCHEMA_URI + "#/definitions/SourceCodeJobFacet"
+
+
+@attr.s
+class ExternalQueryRunFacet(BaseFacet):
+    externalQueryId: str = attr.ib()
+    source: str = attr.ib()

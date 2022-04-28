@@ -1,10 +1,65 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.5.2...HEAD)
-
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.7.1...HEAD)
 ### Added
-* Extract source code of PythonOperator and BashOperator similar to SQL facet [@mobuchowski](https://github.com/mobuchowski)
+* Support for HiveTableRelation as input source in Spark integration [@collado-mike](https://github.com/collado-mike)
+* Add HTTP and Kafka Client to `openlineage-java` lib [@wslulciuc](https://github.com/wslulciuc), [@mobuchowski](https://github.com/mobuchowski)
 
+### Fixed
+* GreatExpectations: Fixed bug when invoking GreatExpectations using v2 API [@collado-mike](https://github.com/collado-mike)
+ 
+## [0.7.1](https://github.com/OpenLineage/OpenLineage/compare/0.6.2...0.7.1)
+### Added
+* Python implements Transport interface - HTTP and Kafka transports are available ([#530](https://github.com/OpenLineage/OpenLineage/pull/530)) [@mobuchowski](https://github.com/mobuchowski)
+* Add UnknownOperatorAttributeRunFacet and support in lineage backend ([#547](https://github.com/OpenLineage/OpenLineage/pull/547)) [@collado-mike](https://github.com/collado-mike)
+* Support Spark 3.2.1 ([#607](https://github.com/OpenLineage/OpenLineage/pull/607)) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+* Add StorageDatasetFacet to spec ([#620](https://github.com/OpenLineage/OpenLineage/pull/620)) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+* Airflow: custom extractors lookup uses only get_operator_classnames method ([#656](https://github.com/OpenLineage/OpenLineage/pull/656)) [@mobuchowski](https://github.com/mobuchowski)
+* README.md created at OpenLineage/integrations for compatibility matrix ([#663](https://github.com/OpenLineage/OpenLineage/pull/663)) [@howardyoo](https://github.com/howardyoo)
+ 
+### Fixed
+* Dagster: handle updated PipelineRun in OpenLineage sensor unit test ([#624](https://github.com/OpenLineage/OpenLineage/pull/624)) [@dominiquetipton](https://github.com/dominiquetipton)
+* Delta improvements ([#626](https://github.com/OpenLineage/OpenLineage/pull/626)) [@collado-mike](https://github.com/collado-mike)
+* Fix SqlDwDatabricksVisitor for Spark2 ([#630](https://github.com/OpenLineage/OpenLineage/pull/630)) [@wjohnson](https://github.com/wjohnson)
+* Airflow: remove redundant logging from GE import ([#657](https://github.com/OpenLineage/OpenLineage/pull/657)) [@mobuchowski](https://github.com/mobuchowski)
+* Fix Shebang issue in Spark's wait-for-it.sh ([#658](https://github.com/OpenLineage/OpenLineage/pull/658)) [@mobuchowski](https://github.com/mobuchowski)
+* Update parent_run_id to be a uuid from the dag name and run_id ([#664](https://github.com/OpenLineage/OpenLineage/pull/664)) [@collado-mike](https://github.com/collado-mike)
+* Spark: fix time zone inconsistency in testSerializeRunEvent ([#681](https://github.com/OpenLineage/OpenLineage/pull/681)) [@sekikn](https://github.com/sekikn)
+
+## [0.6.2](https://github.com/OpenLineage/OpenLineage/compare/0.6.1...0.6.2)
+### Added
+* CI: add integration tests for Airflow's SnowflakeOperator and dbt-snowflake [@mobuchowski](https://github.com/mobuchowski)
+* Introduce DatasetVersion facet in spec [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+* Airflow: add external query id facet [@mobuchowski](https://github.com/mobuchowski)
+
+### Fixed
+* Complete Fix of Snowflake Extractor get_hook() Bug [@denimalpaca](https://github.com/denimalpaca)
+* Update artwork [@rossturk](https://github.com/rossturk)
+* Airflow tasks in a DAG now report a common ParentRunFacet [@collado-mike](https://github.com/collado-mike)
+
+## [0.6.1](https://github.com/OpenLineage/OpenLineage/compare/0.6.0...0.6.1)
+### Fixed
+* Catch possible failures when emitting events and log them [@mobuchowski](https://github.com/mobuchowski)
+
+### Fixed
+* dbt: jinja2 code using do extensions does not crash [@mobuchowski](https://github.com/mobuchowski)
+
+
+## [0.6.0](https://github.com/OpenLineage/OpenLineage/compare/0.5.2...0.6.0)
+### Added
+* Extract source code of PythonOperator code similar to SQL facet [@mobuchowski](https://github.com/mobuchowski)
+* Add DatasetLifecycleStateDatasetFacet to spec [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+* Airflow: extract source code from BashOperator [@mobuchowski](https://github.com/mobuchowski)
+* Add generic facet to collect environmental properties (EnvironmentFacet) [@harishsune](https://github.com/harishsune)
+* OpenLineage sensor for OpenLineage-Dagster integration [@dalinkim](https://github.com/dalinkim)
+* Java-client: make generator generate enums as well [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+* Added `UnknownOperatorAttributeRunFacet` to Airflow integration to record operators that don't produce lineage [@collado-mike](https://github.com/collado-mike)
+
+### Fixed
+* Airflow: increase import timeout in tests, fix exit from integration [@mobuchowski](https://github.com/mobuchowski)
+* Reduce logging level for import errors to info [@rossturk](https://github.com/rossturk)
+* Remove AWS secret keys and extraneous Snowflake parameters from connection uri [@collado-mike](https://github.com/collado-mike)
+* Convert to LifecycleStateChangeDatasetFacet [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
 
 ## [0.5.2](https://github.com/OpenLineage/OpenLineage/compare/0.5.1...0.5.2)
 ### Added
@@ -21,6 +76,7 @@
 
 * dbt: job namespaces for given dbt run match each other [@mobuchowski](https://github.com/mobuchowski)
 * Fix Breaking SnowflakeOperator Changes from OSS Airflow [@denimalpaca](https://github.com/denimalpaca)
+* Made corrections to account for DeltaDataSource handling [@collado-mike](https://github.com/collado-mike)
 
 ## [0.5.1](https://github.com/OpenLineage/OpenLineage/compare/0.4.0...0.5.1)
 ### Added

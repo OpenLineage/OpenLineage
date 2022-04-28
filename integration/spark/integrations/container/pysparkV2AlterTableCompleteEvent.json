@@ -21,7 +21,8 @@
           "name" : "c",
           "type" : "string"
         } ]
-      }
+      },
+      "version" : {}
     }
   } ]
 }

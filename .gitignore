@@ -154,3 +154,6 @@ cython_debug/
 *.settings/
 
 gcloud-service-key.json
+
+*.java_version
+*.DS_Store

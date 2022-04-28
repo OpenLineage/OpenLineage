@@ -8,13 +8,13 @@ import uuid
 from typing import Optional
 
 from tqdm import tqdm
-from datetime import datetime
+from datetime import datetime, timezone
 
 from openlineage.client.run import RunEvent, RunState, Run, Job
 from openlineage.client.client import OpenLineageClient, OpenLineageClientOptions
 from openlineage.common.provider.dbt import DbtArtifactProcessor, ParentRunMetadata
 
-__version__ = "0.6.0"
+__version__ = "0.8.0"
 
 from openlineage.common.utils import parse_single_arg
 
@@ -42,7 +42,7 @@ def dbt_run_event(
 ) -> RunEvent:
     return RunEvent(
         eventType=state,
-        eventTime=datetime.now().isoformat(),
+        eventTime=datetime.now(timezone.utc).isoformat(),
         run=Run(
             runId=run_id,
             facets={

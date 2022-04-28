@@ -2,6 +2,7 @@
 import time
 import os
 import copy
+import uuid
 from typing import Optional
 
 from airflow.models import DAG as AIRFLOW_DAG
@@ -9,6 +10,7 @@ from airflow.utils.db import create_session
 from airflow.utils.state import State
 from openlineage.airflow.extractors import TaskMetadata, BaseExtractor
 from openlineage.airflow.extractors.extractors import Extractors
+from openlineage.airflow.facets import UnknownOperatorAttributeRunFacet, UnknownOperatorInstance
 from openlineage.airflow.utils import (
     JobIdMapping,
     get_location,
@@ -151,6 +153,7 @@ class DAG(AIRFLOW_DAG):
     # scheduler, where tasks are actually started
     def _register_dagrun(self, dagrun, is_external_trigger: bool, execution_date: str):
         self.log.debug(f"self.task_dict: {self.task_dict}")
+        parent_run_id = str(uuid.uuid3(uuid.NAMESPACE_URL, f'{self.dag_id}.{dagrun.run_id}'))
         # Register each task in the DAG
         for task_id, task in self.task_dict.items():
             t = self._now_ms()
@@ -165,7 +168,8 @@ class DAG(AIRFLOW_DAG):
                     job_name,
                     self.description,
                     DagUtils.to_iso_8601(self._now_ms()),
-                    dagrun.run_id,
+                    self.dag_id,
+                    parent_run_id,
                     self._get_location(task),
                     DagUtils.get_start_time(execution_date),
                     DagUtils.get_end_time(execution_date, self.following_schedule(execution_date)),
@@ -314,7 +318,17 @@ class DAG(AIRFLOW_DAG):
                 f'Unable to find an extractor. {task_info}')
 
         return TaskMetadata(
-            name=openlineage_job_name(self.dag_id, task.task_id)
+            name=openlineage_job_name(self.dag_id, task.task_id),
+            run_facets={
+                "unknownSourceAttribute": UnknownOperatorAttributeRunFacet(
+                    unknownItems=[
+                        UnknownOperatorInstance(
+                            name=task.__class__.__name__,
+                            properties={attr: value for attr, value in task.__dict__.items()}
+                        )
+                    ]
+                )
+            }
         )
 
     def _extract(self, extractor, task_instance) -> Optional[TaskMetadata]:

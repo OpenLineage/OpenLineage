@@ -1,0 +1,141 @@
+version: "3.7"
+
+x-airflow-base: &airflow-base
+  build:
+    context: ..
+    target: airflow
+  environment:
+    DB_BACKEND: postgresql+psycopg2
+    DB_HOST: postgres
+    DB_PORT: 5432
+    AIRFLOW_FERNET_KEY: Z2uDm0ZL60fXNkEXG8LW99Ki2zf8wkmIltaTz1iQPDU=
+    AIRFLOW_DATABASE_HOST: postgres
+    AIRFLOW_DATABASE_NAME: airflow
+    AIRFLOW_DATABASE_USERNAME: airflow
+    AIRFLOW_DATABASE_PASSWORD: airflow
+    AIRFLOW_EXECUTOR: CeleryExecutor
+    AIRFLOW_LOAD_EXAMPLES: "no"
+    AIRFLOW__LINEAGE__BACKEND: openlineage.lineage_backend.OpenLineageBackend
+    AIRFLOW_CONN_FOOD_DELIVERY_DB: postgres://food_delivery:food_delivery@postgres:5432/food_delivery
+    AIRFLOW_CONN_MYSQL_CONN: mysql://food_delivery:food_delivery@mysql:3306/food_delivery
+    AIRFLOW_CONN_BQ_CONN: google-cloud-platform://?extra__google_cloud_platform__project=openlineage-ci&extra__google_cloud_platform__key_path=%2Fopt%2Fconfig%2Fgcloud%2Fgcloud-service-key.json
+    AIRFLOW__CELERY__BROKER_URL: redis://redis:6379/0
+    AIRFLOW__CORE__LOGGING_CONFIG_CLASS: log_config.LOGGING_CONFIG
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+    AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432
+    GOOGLE_APPLICATION_CREDENTIALS: /opt/config/gcloud/gcloud-service-key.json
+    OPENLINEAGE_NAMESPACE: food_delivery
+    OPENLINEAGE_URL: http://backend:5000
+    OPENLINEAGE_EXTRACTOR_CustomOperator: custom_extractor.CustomExtractor
+    BIGQUERY_PREFIX: airflow_1
+    DBT_DATASET_PREFIX: airflow_1_dbt
+    SNOWFLAKE_ACCOUNT_ID: ${SNOWFLAKE_ACCOUNT_ID}
+    SNOWFLAKE_USER: ${SNOWFLAKE_USER}
+    SNOWFLAKE_PASSWORD: ${SNOWFLAKE_PASSWORD}
+    AIRFLOW_CONN_SNOWFLAKE_CONN: "snowflake://${SNOWFLAKE_USER}:${SNOWFLAKE_PASSWORD}@${SNOWFLAKE_URI}/OPENLINEAGE?account=${SNOWFLAKE_ACCOUNT_ID}&database=SANDBOX&region=us-east-1&warehouse=DEMO&role=OPENLINEAGE"
+  volumes:
+    - ./airflow/config/log_config.py:/opt/airflow/config/log_config.py
+    - ./airflow/dags:/opt/airflow/dags
+    - ./airflow/logs:/opt/airflow/logs
+    - ../gcloud:/opt/config/gcloud
+
+services:
+  integration:
+    build:
+      context: ..
+      target: integration
+    volumes:
+      - ./docker/wait-for-it.sh:/wait-for-it.sh
+    depends_on:
+      - airflow
+      - backend
+    environment:
+      - BIGQUERY_PREFIX=airflow_1
+      - DBT_DATASET_PREFIX=airflow_1_dbt
+    entrypoint: ["./wait-for-it.sh", "backend:5000", "--", "python", "test_integration.py"]
+
+  airflow:
+    <<: *airflow-base
+    ports:
+      - "8080:8080"
+    command: webserver
+    depends_on:
+      - airflow_scheduler
+      - postgres
+    healthcheck:
+      test: [ "CMD", "curl", "--fail", "http://localhost:8080/health" ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    restart: always
+
+  airflow_scheduler:
+    <<: *airflow-base
+    command: scheduler
+    healthcheck:
+      test: [ "CMD-SHELL", 'airflow jobs check --job-type SchedulerJob --hostname "$${HOSTNAME}"' ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    restart: always
+
+  airflow_worker:
+    <<: *airflow-base
+    command: worker
+    restart: always
+    healthcheck:
+      test: [ "CMD-SHELL", 'celery --app airflow.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}"' ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+  backend:
+    build:
+      context: ../server
+    environment:
+      - FLASK_APP=app.py
+      - FLASK_RUN_PORT=5000
+
+  airflow_init:
+    <<: *airflow-base
+    command: initdb
+
+  postgres:
+    image: bitnami/postgresql:12.1.0
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - AIRFLOW_USER=airflow
+      - AIRFLOW_PASSWORD=airflow
+      - AIRFLOW_DB=airflow
+      - FOOD_DELIVERY_USER=food_delivery
+      - FOOD_DELIVERY_PASSWORD=food_delivery
+      - FOOD_DELIVERY_DB=food_delivery
+      - ALLOW_EMPTY_PASSWORD=yes
+    volumes:
+      - ../docker/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+
+  redis:
+    image: redis:latest
+    ports:
+      - 6379:6379
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 30s
+      retries: 50
+    restart: always
+
+  mysql:
+    image: mysql:8
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_USER=food_delivery
+      - MYSQL_PASSWORD=food_delivery
+      - MYSQL_DATABASE=food_delivery
+      - MYSQL_ALLOW_EMPTY_PASSWORD=true
+      - MYSQL_ONETIME_PASSWORD=
+    volumes:
+      - ../docker/init-db-mysql.sh:/docker-entrypoint-initdb.d/init-db-mysql.sh

@@ -5,8 +5,7 @@ import logging
 import os
 import subprocess
 from uuid import uuid4
-from urllib.parse import urlparse, urlunparse
-from warnings import warn
+from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
 
 from airflow.version import version as AIRFLOW_VERSION
 
@@ -123,7 +122,23 @@ def get_connection_uri(conn):
 
     # Remove username and password
     parsed = parsed._replace(netloc=f'{parsed.hostname}:{parsed.port}')
+    query_dict = parse_qs(parsed.query)
+    filtered_qs = {k: query_dict[k]
+                   for k in query_dict.keys()
+                   if not _filtered_query_params(k)}
+    parsed = parsed._replace(query=urlencode(filtered_qs))
     return urlunparse(parsed)
+
+
+def _filtered_query_params(k: str):
+    unfiltered_snowflake_keys = ["extra__snowflake__warehouse",
+                                 "extra__snowflake__account",
+                                 "extra__snowflake__database"]
+    filtered_key_substrings = ["aws_access_key_id",
+                               "aws_secret_access_key",
+                               "extra__snowflake__"]
+    return k not in unfiltered_snowflake_keys and \
+        any(substr in k for substr in filtered_key_substrings)
 
 
 def get_normalized_postgres_connection_uri(conn):
@@ -222,7 +237,7 @@ def try_import_from_string(path: str):
     try:
         return import_from_string(path)
     except ImportError as e:
-        warn(e.msg)
+        logging.info(e.msg)
         return None
 
 

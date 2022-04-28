@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.api.AbstractObjectAssert;
 import org.assertj.core.api.Condition;
 
@@ -19,6 +20,7 @@ import org.assertj.core.api.Condition;
  *
  * @see AbstractObjectAssert#usingRecursiveComparison()
  */
+@Slf4j
 public class MatchesMapRecursively extends Condition<Map<String, Object>> {
 
   public MatchesMapRecursively(Map<String, Object> target, Set<String> ommittedKeys) {
@@ -38,6 +40,8 @@ public class MatchesMapRecursively extends Condition<Map<String, Object>> {
   public static Predicate<List<Object>> predicate(List<Object> target, Set<String> omittedKeys) {
     return (list) -> {
       if (target.size() != list.size()) {
+        log.error(
+            "Passed list size {} does not match target list size {}", list.size(), target.size());
         return false;
       }
       for (int i = 0; i < target.size(); i++) {
@@ -56,6 +60,7 @@ public class MatchesMapRecursively extends Condition<Map<String, Object>> {
           eq = target.get(i).equals(list.get(i));
         }
         if (!eq) {
+          log.error("Passed object {} does not match target object {}", list.get(i), target.get(i));
           return false;
         }
       }
@@ -67,6 +72,7 @@ public class MatchesMapRecursively extends Condition<Map<String, Object>> {
       Map<String, Object> target, Set<String> omittedKeys) {
     return (map) -> {
       if (!map.keySet().containsAll(target.keySet())) {
+        log.error("Object keys {} does not match target keys {}", map.keySet(), target.keySet());
         return false;
       }
       for (String k : target.keySet()) {
@@ -91,6 +97,7 @@ public class MatchesMapRecursively extends Condition<Map<String, Object>> {
           eq = val.equals(target.get(k));
         }
         if (!eq) {
+          log.error("Passed object {} does not match target object {}", map.get(k), target.get(k));
           return false;
         }
       }

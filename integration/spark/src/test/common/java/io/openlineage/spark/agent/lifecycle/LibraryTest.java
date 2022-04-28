@@ -27,6 +27,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SparkSession;
@@ -36,9 +37,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import scala.Tuple2;
 
+@Slf4j
 @ExtendWith(SparkAgentTestExtension.class)
 public class LibraryTest {
-
   private final TypeReference<Map<String, Object>> mapTypeReference =
       new TypeReference<Map<String, Object>>() {};
 
@@ -120,6 +121,7 @@ public class LibraryTest {
 
     ObjectMapper objectMapper = OpenLineageClient.getObjectMapper();
     for (int i = 0; i < events.size(); i++) {
+      log.info("Iteration {}", i);
       OpenLineage.RunEvent event = events.get(i);
       Map<String, Object> snapshot =
           objectMapper.readValue(

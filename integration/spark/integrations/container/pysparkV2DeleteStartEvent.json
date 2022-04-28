@@ -5,23 +5,5 @@
     "name" : "open_lineage_integration_v2_commands.replace_data"
   },
   "inputs" : [ ],
-  "outputs" : [ {
-    "namespace" : "file",
-    "name" : "/tmp/v2_delete/db.tbl",
-    "facets" : {
-      "dataSource" : {
-        "name" : "file",
-        "uri" : "file"
-      },
-      "schema" : {
-        "fields" : [ {
-          "name" : "a",
-          "type" : "long"
-        }, {
-          "name" : "b",
-          "type" : "long"
-        } ]
-      }
-    }
-  } ]
+  "outputs" : [ ]
 }

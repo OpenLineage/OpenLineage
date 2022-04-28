@@ -25,7 +25,7 @@ A library that integrates [Airflow `DAGs`]() with [OpenLineage](https://openline
 
 ## Requirements
 
-- [Python 3.6.0](https://www.python.org/downloads)
+- [Python 3.7](https://www.python.org/downloads)
 - [Airflow 1.10.12+](https://pypi.org/project/apache-airflow)
 - (experimental) [Airflow 2.1+](https://pypi.org/project/apache-airflow)
 
@@ -117,6 +117,7 @@ suited to extract metadata from particular operator (or operators).
 `openlineage-airflow` provides extractors for
 
 * `PostgresOperator`
+* `MySqlOperator`
 * `BigQueryOperator`
 * `SnowflakeOperator`
 * `GreatExpectationsOperator`
@@ -129,14 +130,9 @@ provide custom extractors. They should derive from `BaseExtractor`.
 
 There are two ways to register them for use in `openlineage-airflow`. 
 
-First one, is to provide environment variable in pattern of 
+First one, is to add them to `OPENLINEAGE_EXTRACTORS` environment variable, separated by comma `(;)` 
 ```
-OPENLINEAGE_EXTRACTOR_<operator>=full.path.to.ExtractorClass
-```
-
-For example: 
-```
-OPENLINEAGE_EXTRACTOR_PostgresOperator=openlineage.airflow.extractors.postgres_extractor.PostgresExtractor
+OPENLINEAGE_EXTRACTORS=full.path.to.ExtractorClass;full.path.to.AnotherExtractorClass
 ```
 
 Second one - working in Airflow 1.10.x only - is to register all additional operator-extractor pairings by 

@@ -30,6 +30,22 @@ Identifier:
  * Unique name: {database}.{schema}.{table}
    * URI =  postgres://{host}:{port}/{database}.{schema}.{table}
 
+#### MySQL:
+Datasource hierarchy:
+ * Host
+ * Port
+
+Naming hierarchy:
+ * Database
+ * Table
+
+Identifier:
+ * Namespace: mysql://{host}:{port} of the service instance.
+   * Scheme = mysql
+   * Authority = {host}:{port}
+ * Unique name: {database}.{table}
+   * URI =  mysql://{host}:{port}/{database}.{table}
+
 #### Redshift:
 Datasource hierarchy:
  * Host: examplecluster.\<XXXXXXXXXXXX>.us-west-2.redshift.amazonaws.com
@@ -57,6 +73,9 @@ Naming hierarchy:
  * Database: {database name} => unique across the account
  * Schema: {schema name} => unique within the database
  * Table: {table name} => unique within the schema
+
+Database, schema, table or column names are uppercase in Snowflake.
+Clients should make sure that they are sending those as uppercase.
 
 Identifier:
  * Namespace: snowflake://{account name}
@@ -87,6 +106,23 @@ Identifier :
    * Authority = 
  * Unique name: {project id}.{dataset name}.{table name}
    * URI =   bigquery:{project id}.{schema}.{table}
+
+#### Azure Synapse:
+Datasource hierarchy:
+ * Host: \<XXXXXXXXXXXX>.sql.azuresynapse.net
+ * Port: 1433
+ * Database: SQLPool1
+ 
+Naming hierarchy:
+ * Schema
+ * Table
+
+Identifier:
+ * Namespace: sqlserver://{host}:{port};database={database};
+   * Scheme = sqlserver
+   * Authority = {host}:{port}
+ * Unique name: {schema}.{table}
+   * URI = sqlserver://{host}:{port};database={database}/{schema}.{table}
 
 ### Distributed file systems/blob stores
 #### GCS
@@ -138,6 +174,30 @@ Identifier :
    * Authority = workspace name
  * Unique name: {path}
    * URI =   hdfs://{workspace name}{path}
+
+#### ABFSS (Azure Data Lake Gen2)
+Naming hierarchy:
+ * service name => globally unique
+ * Path
+
+Identifier :
+ * Namespace: abfss://{container name}@{service name}
+   * Scheme = abfss
+   * Authority = service name
+ * Unique name: {path}
+   * URI =   abfss://{container name}@{service name}{path}
+
+#### WASBS (Azure Blob Storage)
+Naming hierarchy:
+ * service name => globally unique
+ * Path
+
+Identifier :
+ * Namespace: wasbs://{container name}@{service name}
+   * Scheme = wasbs
+   * Authority = service name
+ * Unique name: {path}
+   * URI =   wasbs://{container name}@{service name}{path}
 
 ## Jobs
 ### Context

@@ -1,9 +1,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+import os
 import sys
+import time
 
 from flask import Flask, request, g, jsonify
+from dateutil.parser import parse
 import sqlite3
 import json
 
@@ -29,6 +32,29 @@ Events are matched by job name and event type.
 
 The comparison omits fields that are not in event stored in provided file. 
 """
+
+
+DIR = os.getenv('SERVER_EVENTS', 'events')
+os.makedirs(DIR, exist_ok=True)
+
+
+# Dump events to file for easy browsing while debugging
+def dump(content):
+    event_name = "default"
+    try:
+        js = json.loads(content)
+        content = json.dumps(js, sort_keys=True, indent=4)
+
+        date = parse(js['eventTime']).date()
+        job_name = js['job']['name']
+        event_name = f"{date}-{job_name}"
+    except Exception:
+        content = str(request.data, 'UTF-8')
+    file_path = f"{DIR}/{event_name}.json"
+
+    print(f"Written event {event_name} to file {file_path}")
+    with open(file_path, 'a') as f:
+        f.write(content)
 
 
 def get_conn():
@@ -62,11 +88,14 @@ def lineage():
         logger.info(f"job_name: {job_name}")
         logger.info(json.dumps(request.json, sort_keys=True))
         conn.commit()
+        dump(request.data)
         return '', 200
     elif request.method == 'GET':
+        received_requests = []
         job_name = request.args.get("job_name")
         if job_name:
-            received_requests = conn.execute("""
+            logger.info(job_name)
+            received_requests += conn.execute("""
                 SELECT body FROM requests WHERE job_name LIKE :job_name ORDER BY created_at
             """, {
                 "job_name": f'{job_name}%'
@@ -77,6 +106,19 @@ def lineage():
             """).fetchall()
         received_requests = [json.loads(req[0]) for req in received_requests]
 
-        logger.info(f"GOT {len(received_requests)} requests for job {job_name}")
+        logger.info(f"GOT {len(received_requests)} requests for job [{job_name}]")
 
         return jsonify(received_requests), 200
+
+
+@app.route("/error/api/v1/lineage", methods=['GET', 'POST'])
+def error_lineage():
+    logger.warning("Called error endpoint")
+    return "", 500
+
+
+@app.route("/timeout/api/v1/lineage", methods=['GET', 'POST'])
+def timeout_lineage():
+    logger.warning("Called timeout endpoint")
+    time.sleep(15)
+    return jsonify({}), 200

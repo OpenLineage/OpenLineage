@@ -19,17 +19,17 @@ from airflow.utils.state import State
 from airflow.version import version as AIRFLOW_VERSION
 from openlineage.common.dataset import Source, Dataset
 from openlineage.common.models import (
-    DbTableName,
     DbTableSchema,
     DbColumn
 )
+from openlineage.common.sql import DbTableMeta
 from openlineage.airflow import DAG
 from openlineage.airflow import __version__ as OPENLINEAGE_AIRFLOW_VERSION
 from openlineage.airflow.extractors import (
     BaseExtractor, TaskMetadata
 )
 from openlineage.airflow.facets import AirflowRunArgsRunFacet, \
-    AirflowVersionRunFacet
+    AirflowVersionRunFacet, UnknownOperatorAttributeRunFacet, UnknownOperatorInstance
 from openlineage.airflow.utils import get_location, get_job_name, new_lineage_run_id
 from openlineage.client.facet import NominalTimeRunFacet, SourceCodeLocationJobFacet, \
     DocumentationJobFacet, DataSourceDatasetFacet, SchemaDatasetFacet, \
@@ -148,6 +148,7 @@ def test_openlineage_dag(
     start_time = '2016-01-01T00:00:00.000000Z'
     end_time = '2016-01-02T00:00:00.000000Z'
 
+    parent_run_id = make_parent_run_id()
     emit_calls = [
         mock.call(RunEvent(
             eventType=RunState.START,
@@ -155,10 +156,13 @@ def test_openlineage_dag(
             run=Run(run_id_completed, {
                 "nominalTime": NominalTimeRunFacet(start_time, end_time),
                 "parentRun": ParentRunFacet.create(
-                    runId=DAG_RUN_ID,
+                    runId=parent_run_id,
                     namespace=DAG_NAMESPACE,
-                    name=job_id_completed
-                )
+                    name=DAG_ID
+                ),
+                'unknownSourceAttribute': UnknownOperatorAttributeRunFacet(
+                    unknownItems=[UnknownOperatorInstance(name='DummyOperator',
+                                                          properties=mock.ANY)])
             }),
             job=Job("default", job_id_completed, {
                 "documentation": DocumentationJobFacet(DAG_DESCRIPTION),
@@ -174,10 +178,13 @@ def test_openlineage_dag(
             run=Run(run_id_failed, {
                 "nominalTime": NominalTimeRunFacet(start_time, end_time),
                 "parentRun": ParentRunFacet.create(
-                    runId=DAG_RUN_ID,
+                    runId=parent_run_id,
                     namespace=DAG_NAMESPACE,
-                    name=job_id_failed
-                )
+                    name=DAG_ID
+                ),
+                'unknownSourceAttribute': UnknownOperatorAttributeRunFacet(
+                    unknownItems=[UnknownOperatorInstance(name='DummyOperator',
+                                                          properties=mock.ANY)])
             }),
             job=Job("default", job_id_failed, {
                 "documentation": DocumentationJobFacet(DAG_DESCRIPTION),
@@ -209,7 +216,11 @@ def test_openlineage_dag(
         mock.call(RunEvent(
             eventType=RunState.COMPLETE,
             eventTime=mock.ANY,
-            run=Run(run_id_completed),
+            run=Run(run_id_completed, {
+                'unknownSourceAttribute': UnknownOperatorAttributeRunFacet(
+                    unknownItems=[UnknownOperatorInstance(name='DummyOperator',
+                                                          properties=mock.ANY)])
+            }),
             job=Job("default", job_id_completed),
             producer=PRODUCER,
             inputs=[],
@@ -218,7 +229,12 @@ def test_openlineage_dag(
         mock.call(RunEvent(
             eventType=RunState.FAIL,
             eventTime=mock.ANY,
-            run=Run(run_id_failed),
+            run=Run(run_id_failed, {
+                'unknownSourceAttribute': UnknownOperatorAttributeRunFacet(
+                    unknownItems=[UnknownOperatorInstance(name='DummyOperator',
+                                                          properties=mock.ANY)])
+
+            }),
             job=Job("default", job_id_failed),
             producer=PRODUCER,
             inputs=[],
@@ -369,7 +385,7 @@ class TestFixtureDummyExtractorOnComplete(BaseExtractor):
         inputs = [
             Dataset.from_table_schema(self.source, DbTableSchema(
                 schema_name='schema',
-                table_name=DbTableName('extract_on_complete_input1'),
+                table_name=DbTableMeta('extract_on_complete_input1'),
                 columns=[DbColumn(
                     name='field1',
                     type='text',
@@ -451,7 +467,7 @@ def test_openlineage_dag_with_extractor(
 
     start_time = '2016-01-01T00:00:00.000000Z'
     end_time = '2016-01-02T00:00:00.000000Z'
-
+    parent_run_id = make_parent_run_id(dag_id, dag_run_id)
     mock_openlineage_client.emit.assert_called_once_with(
         RunEvent(
             RunState.START,
@@ -459,9 +475,9 @@ def test_openlineage_dag_with_extractor(
             Run(run_id, {
                 "nominalTime": NominalTimeRunFacet(start_time, end_time),
                 "parentRun": ParentRunFacet.create(
-                    runId=dag_run_id,
+                    runId=parent_run_id,
                     namespace=DAG_NAMESPACE,
-                    name=job_id
+                    name=dag_id
                 )
             }),
             Job("default", job_id, {
@@ -571,7 +587,7 @@ def test_openlineage_dag_with_extract_on_complete(
 
     start_time = '2016-01-01T00:00:00.000000Z'
     end_time = '2016-01-02T00:00:00.000000Z'
-
+    parent_run_id = make_parent_run_id(dag_id, dag_run_id)
     mock_openlineage_client.emit.assert_has_calls([
         mock.call(RunEvent(
             eventType=RunState.START,
@@ -579,10 +595,13 @@ def test_openlineage_dag_with_extract_on_complete(
             run=Run(run_id, {
                 "nominalTime": NominalTimeRunFacet(start_time, end_time),
                 "parentRun": ParentRunFacet.create(
-                    runId=dag_run_id,
+                    runId=parent_run_id,
                     namespace=DAG_NAMESPACE,
-                    name=job_id
-                )
+                    name=dag_id
+                ),
+                'unknownSourceAttribute': UnknownOperatorAttributeRunFacet(
+                    unknownItems=[UnknownOperatorInstance(name='TestFixtureDummyOperator',
+                                                          properties=mock.ANY)])
             }),
             job=Job("default",  job_id, {
                 "documentation": DocumentationJobFacet(DAG_DESCRIPTION),
@@ -682,16 +701,16 @@ def test_openlineage_dag_adds_custom_facets(
     # Assert emit calls
     start_time = '2016-01-01T00:00:00.000000Z'
     end_time = '2016-01-02T00:00:00.000000Z'
-
+    parent_run_id = make_parent_run_id()
     mock_openlineage_client.emit.assert_called_once_with(RunEvent(
             eventType=RunState.START,
             eventTime=mock.ANY,
             run=Run(run_id, {
                 "nominalTime": NominalTimeRunFacet(start_time, end_time),
                 "parentRun": ParentRunFacet.create(
-                    runId=DAG_RUN_ID,
+                    runId=parent_run_id,
                     namespace=DAG_NAMESPACE,
-                    name=job_id
+                    name=DAG_ID
                 ),
                 "airflow_runArgs": AirflowRunArgsRunFacet(False),
                 "airflow_version": AirflowVersionRunFacet(
@@ -699,7 +718,11 @@ def test_openlineage_dag_adds_custom_facets(
                     taskInfo=mock.ANY,
                     airflowVersion=AIRFLOW_VERSION,
                     openlineageAirflowVersion=OPENLINEAGE_AIRFLOW_VERSION
-                )
+                ),
+                'unknownSourceAttribute': UnknownOperatorAttributeRunFacet(
+                    unknownItems=[UnknownOperatorInstance(name='DummyOperator',
+                                                          properties=mock.ANY)])
+
             }),
             job=Job("default", job_id, {
                 "documentation": DocumentationJobFacet(DAG_DESCRIPTION),
@@ -709,6 +732,10 @@ def test_openlineage_dag_adds_custom_facets(
             inputs=[],
             outputs=[]
     ))
+
+
+def make_parent_run_id(dag_id=DAG_ID, dag_run_id=DAG_RUN_ID):
+    return str(uuid.uuid3(uuid.NAMESPACE_URL, f'{dag_id}.{dag_run_id}'))
 
 
 class TestFixtureHookingDummyOperator(DummyOperator):

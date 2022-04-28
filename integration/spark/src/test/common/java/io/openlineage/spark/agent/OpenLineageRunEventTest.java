@@ -30,7 +30,7 @@ public class OpenLineageRunEventTest {
   public void testSerializeRunEvent() throws IOException, URISyntaxException {
     ObjectMapper mapper = OpenLineageClient.createMapper();
 
-    ZonedDateTime dateTime = ZonedDateTime.parse("2021-01-01T00:00:01.000000000+02:00[UTC]");
+    ZonedDateTime dateTime = ZonedDateTime.parse("2021-01-01T00:00:01.000000000+00:00[UTC]");
     OpenLineage ol =
         new OpenLineage(
             new URI(
@@ -104,7 +104,7 @@ public class OpenLineageRunEventTest {
                     .outputStatistics(ol.newOutputStatisticsOutputDatasetFacet(10L, 20L))
                     .build()));
     OpenLineage.RunEvent runStateUpdate =
-        ol.newRunEvent("START", dateTime, run, job, inputs, outputs);
+        ol.newRunEvent(OpenLineage.RunEvent.EventType.START, dateTime, run, job, inputs, outputs);
 
     Map<String, Object> actualJson =
         mapper.readValue(mapper.writeValueAsString(runStateUpdate), mapTypeReference);

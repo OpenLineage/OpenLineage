@@ -9,7 +9,7 @@ from setuptools import setup
 with open("README.md") as readme_file:
      readme = readme_file.read()
 
-__version__ = "0.6.0"
+__version__ = "0.8.0"
 
 requirements = [
     f"sqlparse>=0.2.3,<0.4",
@@ -40,7 +40,7 @@ setup(
     include_package_data=True,
     install_requires=requirements,
     extras_require=extras_require,
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     zip_safe=False,
     keywords="openlineage",
 )

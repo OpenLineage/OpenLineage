@@ -1,0 +1,254 @@
+[
+    {
+        "eventType": "START",
+        "inputs": [],
+        "run": {},
+        "job": {
+            "facets": {},
+            "name": "SANDBOX.OPENLINEAGE.testproject.money_received",
+            "namespace": "food_delivery"
+        },
+        "outputs": [
+            {
+                "facets": {},
+                "name": "SANDBOX.money_received",
+                "namespace": "snowflake://{{ env_var('SNOWFLAKE_ACCOUNT_ID')}}.us-east-1",
+                "outputFacets": {}
+            }
+        ]
+    },
+    {
+        "eventType": "START",
+        "inputs": [],
+        "run": {},
+        "job": {
+            "facets": {},
+            "name": "SANDBOX.OPENLINEAGE.testproject.money_send",
+            "namespace": "food_delivery"
+        },
+        "outputs": [
+            {
+                "facets": {},
+                "name": "SANDBOX.{{ env_var('SNOWFLAKE_ACCOUNT_ID') }}.money_send",
+                "namespace": "snowflake://{{ env_var('SNOWFLAKE_ACCOUNT_ID')}}.us-east-1",
+                "outputFacets": {}
+            }
+        ]
+    },
+    {
+        "eventType": "START",
+        "inputs": [
+            {
+                "facets": {},
+                "name": "SANDBOX.{{ env_var('SNOWFLAKE_ACCOUNT_ID' )}}.us-east-1.money_received",
+                "namespace": "snowflake://{{ env_var('SNOWFLAKE_ACCOUNT_ID')}}.us-east-1"
+            },
+            {
+                "facets": {},
+                "name": "SANDBOX.{{ env_var('SNOWFLAKE_ACCOUNT_ID' )}}.us-east-1.money_send",
+                "namespace": "snowflake://{{ env_var('SNOWFLAKE_ACCOUNT_ID')}}.us-east-1"
+            }
+        ],
+        "job": {
+            "facets": {},
+            "name": "SANDBOX.OPENLINEAGE.testproject.balance",
+            "namespace": "food_delivery"
+        },
+        "outputs": [
+            {
+                "facets": {},
+                "name": "SANDBOX.{{ env_var('SNOWFLAKE_ACCOUNT_ID' )}}.us-east-1.balance",
+                "namespace": "snowflake://{{ env_var('SNOWFLAKE_ACCOUNT_ID')}}.us-east-1",
+                "outputFacets": {}
+            }
+        ]
+    },
+    {
+        "eventType": "COMPLETE",
+        "inputs": [],
+        "run": {
+            "facets": {
+                "parent": {
+                    "job": {"name": "dbt-run-testproject", "namespace": "food_delivery"},
+                    "run": {}
+                }
+		    }
+        },
+        "job": {
+            "facets": {
+                "sql": {
+                    "query": "{{ any(result) }}"
+                }
+            },
+            "name": "SANDBOX.OPENLINEAGE.testproject.money_received",
+            "namespace": "food_delivery"
+        },
+        "outputs": [
+            {
+                "facets": {
+                    "dataSource": {
+                        "name": "snowflake://{{ env_var('SNOWFLAKE_ACCOUNT_ID')}}.us-east-1",
+                        "uri": "snowflake://{{ env_var('SNOWFLAKE_ACCOUNT_ID')}}.us-east-1"
+                    },
+                    "schema": {
+                        "fields": [
+                            {
+                                "name": "user_id"
+                            },
+                            {
+                                "name": "currency"
+                            },
+                            {
+                                "name": "amount"
+                            }
+                        ]
+                    }
+                },
+                "name": "SANDBOX.{{ env_var('SNOWFLAKE_ACCOUNT_ID')}}.us-east-1.money_received",
+                "namespace": "snowflake://{{ env_var('SNOWFLAKE_ACCOUNT_ID')}}.us-east-1",
+                "outputFacets": {}
+            }
+        ]
+    },
+    {
+        "eventType": "COMPLETE",
+        "inputs": [],
+        "run": {
+            "facets": {
+                "parent": {
+                    "job": {"name": "dbt-run-testproject", "namespace": "food_delivery"},
+                    "run": {}
+                }
+		    }
+        },
+        "job": {
+            "facets": {
+                "sql": {
+                    "query": "{{ any(result) }}"
+                }
+            },
+            "name": "SANDBOX.OPENLINEAGE.testproject.money_send",
+            "namespace": "food_delivery"
+        },
+        "outputs": [
+            {
+                "facets": {
+                    "dataSource": {
+                        "name": "snowflake://{{ env_var('SNOWFLAKE_ACCOUNT_ID')}}.us-east-1",
+                        "uri": "snowflake://{{ env_var('SNOWFLAKE_ACCOUNT_ID')}}.us-east-1"
+                    },
+                    "schema": {
+                        "fields": [
+                            {
+                                "name": "user_id"
+                            },
+                            {
+                                "name": "currency"
+                            },
+                            {
+                                "name": "amount"
+                            }
+                        ]
+                    }
+                },
+                "name": "SANDBOX.{{ env_var('SNOWFLAKE_ACCOUNT_ID')}}.us-east-1.money_send",
+                "namespace": "snowflake://{{ env_var('SNOWFLAKE_ACCOUNT_ID')}}.us-east-1",
+                "outputFacets": {}
+            }
+        ]
+    },
+    {
+        "eventType": "COMPLETE",
+        "run": {
+            "facets": {
+                "parent": {
+                    "job": {"name": "dbt-run-testproject", "namespace": "food_delivery"},
+                    "run": {}
+                }
+		    }
+        },
+        "inputs": [
+            {
+                "facets": {
+                    "dataSource": {
+                        "name": "snowflake://{{ env_var('SNOWFLAKE_ACCOUNT_ID')}}.us-east-1",
+                        "uri": "snowflake://{{ env_var('SNOWFLAKE_ACCOUNT_ID')}}.us-east-1"
+                    },
+                    "schema": {
+                        "fields": [
+                            {
+                                "name": "user_id"
+                            },
+                            {
+                                "name": "currency"
+                            },
+                            {
+                                "name": "amount"
+                            }
+                        ]
+                    }
+                },
+                "name": "SANDBOX.{{ env_var('SNOWFLAKE_ACCOUNT_ID')}}.us-east-1.money_received",
+                "namespace": "snowflake://{{ env_var('SNOWFLAKE_ACCOUNT_ID')}}.us-east-1"
+            },
+            {
+                "facets": {
+                    "dataSource": {
+                        "name": "snowflake://{{ env_var('SNOWFLAKE_ACCOUNT_ID')}}.us-east-1",
+                        "uri": "snowflake://{{ env_var('SNOWFLAKE_ACCOUNT_ID')}}.us-east-1"
+                    },
+                    "schema": {
+                        "fields": [
+                            {
+                                "name": "user_id"
+                            },
+                            {
+                                "name": "currency"
+                            },
+                            {
+                                "name": "amount"
+                            }
+                        ]
+                    }
+                },
+                "name": "SANDBOX.{{ env_var('SNOWFLAKE_ACCOUNT_ID')}}.us-east-1.money_send",
+                "namespace": "snowflake://{{ env_var('SNOWFLAKE_ACCOUNT_ID')}}.us-east-1"
+            }
+        ],
+        "job": {
+            "facets": {
+                "sql": {
+                    "query": "{{ any(result) }}"
+                }
+            },
+            "name": "SANDBOX.OPENLINEAGE.testproject.balance",
+            "namespace": "food_delivery"
+        },
+        "outputs": [
+            {
+                "facets": {
+                    "dataSource": {
+                        "name": "snowflake://{{ env_var('SNOWFLAKE_ACCOUNT_ID')}}.us-east-1",
+                        "uri": "snowflake://{{ env_var('SNOWFLAKE_ACCOUNT_ID')}}.us-east-1"
+                    },
+                    "schema": {
+                        "fields": [
+                            {
+                                "name": "user_id"
+                            },
+                            {
+                                "name": "currency"
+                            },
+                            {
+                                "name": "amount"
+                            }
+                        ]
+                    }
+                },
+                "name": "SANDBOX.{{ env_var('SNOWFLAKE_ACCOUNT_ID')}}.us-east-1.balance",
+                "namespace": "snowflake://{{ env_var('SNOWFLAKE_ACCOUNT_ID')}}.us-east-1",
+                "outputFacets": {}
+            }
+        ]
+    }
+]

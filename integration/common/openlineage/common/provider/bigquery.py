@@ -10,10 +10,12 @@ from typing import Tuple, Optional, Dict, List
 from google.cloud.bigquery import Client
 
 from openlineage.common.dataset import Dataset, Source
-from openlineage.common.models import DbTableSchema, DbColumn, DbTableName
+from openlineage.common.models import DbTableSchema, DbColumn
 from openlineage.common.schema import GITHUB_LOCATION
+from openlineage.common.sql import DbTableMeta
 from openlineage.common.utils import get_from_nullable_chain
-from openlineage.client.facet import BaseFacet, OutputStatisticsOutputDatasetFacet
+from openlineage.client.facet import BaseFacet, OutputStatisticsOutputDatasetFacet, \
+    ExternalQueryRunFacet
 
 _BIGQUERY_CONN_URL = 'bigquery'
 
@@ -104,7 +106,10 @@ class BigQueryDatasetsProvider:
                 run_stat_facet, dataset_stat_facet = self._get_output_statistics(props)
 
                 run_facets.update({
-                    "bigQuery_job": run_stat_facet
+                    "bigQuery_job": run_stat_facet,
+                    "externalQuery": ExternalQueryRunFacet(
+                        externalQueryId=job_id, source="bigquery"
+                    )
                 })
                 inputs = self._get_input_from_bq(props)
                 output = self._get_output_from_bq(props)
@@ -253,7 +258,7 @@ class BigQueryDatasetsProvider:
         return DbTableSchema(
             schema_name=table.get('tableReference').get('projectId') + '.' +
             table.get('tableReference').get('datasetId'),
-            table_name=DbTableName(table.get('tableReference').get('tableId')),
+            table_name=DbTableMeta(table.get('tableReference').get('tableId')),
             columns=columns
         )
 

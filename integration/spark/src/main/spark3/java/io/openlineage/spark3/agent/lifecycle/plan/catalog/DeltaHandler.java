@@ -8,13 +8,16 @@ import io.openlineage.spark.agent.util.PathUtils;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.connector.catalog.Identifier;
+import org.apache.spark.sql.connector.catalog.Table;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.apache.spark.sql.delta.catalog.DeltaCatalog;
+import org.apache.spark.sql.delta.catalog.DeltaTableV2;
 import scala.Option;
 
 @Slf4j
@@ -71,6 +74,19 @@ public class DeltaHandler implements CatalogHandler {
 
   public Optional<TableProviderFacet> getTableProviderFacet(Map<String, String> properties) {
     return Optional.of(new TableProviderFacet("delta", "parquet")); // Delta is always parquet
+  }
+
+  @SneakyThrows
+  public Optional<String> getDatasetVersion(
+      TableCatalog tableCatalog, Identifier identifier, Map<String, String> properties) {
+    DeltaCatalog deltaCatalog = (DeltaCatalog) tableCatalog;
+    Table table = deltaCatalog.loadTable(identifier);
+
+    if (table instanceof DeltaTableV2) {
+      DeltaTableV2 deltaTable = (DeltaTableV2) table;
+      return Optional.of(Long.toString(deltaTable.snapshot().version()));
+    }
+    return Optional.empty();
   }
 
   @Override
