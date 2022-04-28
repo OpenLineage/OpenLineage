@@ -377,6 +377,7 @@ jobs:
     working_directory: ~/openlineage/integration/
     machine:
       image: ubuntu-2004:current
+      docker_layer_caching: true
     resource_class: large
     steps:
       - *checkout_project_root
@@ -398,6 +399,7 @@ jobs:
     working_directory: ~/openlineage/integration/
     machine:
       image: ubuntu-2004:current
+      docker_layer_caching: true
     resource_class: large
     steps:
       - *checkout_project_root
@@ -419,6 +421,7 @@ jobs:
     working_directory: ~/openlineage/integration/
     machine:
       image: ubuntu-2004:current
+      docker_layer_caching: true
     steps:
       - *checkout_project_root
       - run: ../.circleci/get-docker-compose.sh
