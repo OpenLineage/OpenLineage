@@ -1,12 +1,10 @@
 package io.openlineage.flink.api;
 
 import io.openlineage.client.OpenLineage;
-import java.util.Optional;
 import java.util.UUID;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
-import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 
 /**
  * Context holder with references to several required objects during construction of an OpenLineage
@@ -21,13 +19,6 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 @Builder
 public class OpenLineageContext {
   UUID runUuid = UUID.randomUUID();
-
-  /**
-   * Optional {@link StreamExecutionEnvironment} instance, that is the context in which a streaming
-   * program is executed.
-   */
-  @Builder.Default @NonNull
-  Optional<StreamExecutionEnvironment> streamExecutionEnvironment = Optional.empty();
 
   /**
    * A non-null, preconfigured {@link OpenLineage} client instance for constructing OpenLineage
