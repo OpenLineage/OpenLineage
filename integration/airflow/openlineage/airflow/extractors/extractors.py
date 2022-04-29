@@ -33,7 +33,40 @@ _extractors = list(
                 'openlineage.airflow.extractors.bash_extractor.BashExtractor'
             ),
             try_import_from_string(
-                'openlineage.airflow.extractors.sql_check_extractor.SqlCheckExtractor'
+                'openlineage.airflow.extractors.sql_check_extractors.SqlCheckExtractor'  # noqa: E501
+            ),
+            try_import_from_string(
+                'openlineage.airflow.extractors.sql_check_extractors.SqlValueCheckExtractor'  # noqa: E501
+            ),
+            try_import_from_string(
+                'openlineage.airflow.extractors.sql_check_extractors.SqlIntervalCheckExtractor'  # noqa: E501
+            ),
+            try_import_from_string(
+                'openlineage.airflow.extractors.sql_check_extractors.SqlThresholdCheckExtractor'  # noqa: E501
+            ),
+            try_import_from_string(
+                'openlineage.airflow.extractors.snowflake_check_extractors.SnowflakeCheckExtractor'  # noqa: E501
+            ),
+            try_import_from_string(
+                'openlineage.airflow.extractors.snowflake_check_extractors.SnowflakeValueCheckExtractor'  # noqa: E501
+            ),
+            try_import_from_string(
+                'openlineage.airflow.extractors.snowflake_check_extractors.SnowflakeIntervalCheckExtractor'  # noqa: E501
+            ),
+            try_import_from_string(
+                'openlineage.airflow.extractors.snowflake_check_extractors.SnowflakeThresholdCheckExtractor'  # noqa: E501
+            ),
+            try_import_from_string(
+                'openlineage.airflow.extractors.bigquery_check_extractors.BigQueryCheckExtractor'  # noqa: E501
+            ),
+            try_import_from_string(
+                'openlineage.airflow.extractors.bigquery_check_extractors.BigQueryIntervalCheckExtractor'  # noqa: E501
+            ),
+            try_import_from_string(
+                'openlineage.airflow.extractors.bigquery_check_extractors.BigQueryValueCheckExtractor'  # noqa: E501
+            ),
+            try_import_from_string(
+                'openlineage.airflow.extractors.bigquery_check_extractors.BigQueryThresholdCheckExtractor'  # noqa: E501
             ),
         ],
     )

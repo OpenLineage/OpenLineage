@@ -20,6 +20,13 @@ from openlineage.airflow.facets import (
     AirflowVersionRunFacet,
     AirflowRunArgsRunFacet
 )
+from openlineage.client.facet import (
+    DataQualityMetricsInputDatasetFacet,
+    ColumnMetric,
+    DataQualityAssertionsDatasetFacet,
+    Assertion
+)
+
 from pendulum import from_timestamp
 
 
@@ -316,3 +323,39 @@ def safe_import_airflow(airflow_1_path: str, airflow_2_path: str):
             airflow_1_path, airflow_2_path
         )
     )
+
+
+def build_check_facets() -> dict:
+    """
+    facet_data = {
+        "columnMetrics": defaultdict(dict),
+        "rowCount": None
+    }
+    facet_data["columnMetrics"] = {}
+    data_quality_facet = DataQualityMetricsInputDatasetFacet(**facet_data)
+
+    assertion_data = {
+        "assertions": []
+    }
+    assertion_data["assertions"] = {}
+    data_quality_assertions_facet = DataQualityAssertionsDatasetFacet(**assertion_data)
+
+    return {
+        'dataQuality': data_quality_facet,
+        'dataQualityMetrics': data_quality_facet,
+        'dataQualityAssertions': data_quality_assertions_facet
+    }
+    """
+    pass
+
+
+def build_value_check_facets() -> dict:
+    pass
+
+
+def build_threshold_check_facets() -> dict:
+    pass
+
+
+def build_interval_check_facets() -> dict:
+    pass
