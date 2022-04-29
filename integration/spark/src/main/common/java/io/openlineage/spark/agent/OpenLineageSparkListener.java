@@ -87,7 +87,6 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   /** called by the SparkListener when a spark-sql (Dataset api) execution starts */
   private static void sparkSQLExecStart(SparkListenerSQLExecutionStart startEvent) {
-    log.info("WILLJ: SparkListenerSQLExecutionStart event occurred");
     getSparkSQLExecutionContext(startEvent.executionId())
         .ifPresent(context -> context.start(startEvent));
   }
@@ -103,30 +102,25 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   /** called by the SparkListener when a job starts */
   @Override
   public void onJobStart(SparkListenerJobStart jobStart) {
-    log.info("WILLJ: on Job Start triggered");
-    log.info(String.format("WILLJ: onJobStart JobId:%s", Integer.toString(jobStart.jobId())));
-    log.info(String.format("WILLJ: Properties: %s", jobStart.properties().keySet().toString()));
-    String s = (String) jobStart.properties().get("spark.sql.execution.parent");
-    log.info(String.format("WILLJ: parent id %s", s));
-    if (s != null) {
-      log.info(
-          String.format(
-              "WILLJ: Job Start has the property!! %s",
-              jobStart.properties().getProperty("spark.sql.execution.parent")));
+    // In certain situations, Spark has a spark.sql.execution.parent that references
+    // the previous execution ids. To reference this as a parentRunFacet, we need
+    // to know the existing parent Run Id
+    String sparkSqlExecutionParent =
+        (String) jobStart.properties().get("spark.sql.execution.parent");
+    if (sparkSqlExecutionParent != null) {
       Long parentExecutionId =
           Long.parseLong(jobStart.properties().getProperty("spark.sql.execution.parent"));
       Optional<ExecutionContext> parentExecutionContext =
           getSparkSQLExecutionContext(parentExecutionId);
-      log.info("WILLJ: Got the execution context!");
       if (parentExecutionContext.isPresent()) {
+        // Setting a property on the JobStart that represents:
+        // the ParentRunId (spark.openlineage.internal.parentRun)
         UUID parentRunId = parentExecutionContext.get().getRunId();
         jobStart
             .properties()
-            .setProperty("openlineage.databricks.parentRun", parentRunId.toString());
-        log.info("WILLJ: Added the propery to the job start");
+            .setProperty("spark.openlineage.internal.parentRun", parentRunId.toString());
       }
     }
-    log.info("WILLJ: Past the jobstart manipulation");
     Optional<ActiveJob> activeJob =
         asJavaOptional(
                 SparkSession.getDefaultSession()
