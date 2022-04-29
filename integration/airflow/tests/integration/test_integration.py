@@ -152,7 +152,7 @@ def test_integration(dag_id, request_path):
 
     # (3) Verify events emitted
     if not check_matches(expected_events, actual_events):
-        log.info(f"failed to compare events!")
+        log.info(f"failed to compare events for dag {dag_id}!")
         sys.exit(1)
 
 
@@ -178,7 +178,7 @@ def test_integration_ordered(dag_id, request_dir: str):
     actual_events = get_events(dag_id)
 
     if not check_matches_ordered(expected_events, actual_events):
-        log.info(f"failed to compare events!")
+        log.info(f"failed to compare events for dag {dag_id}!")
         sys.exit(1)
 
     if not check_event_time_ordered(actual_events):

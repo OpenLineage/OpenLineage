@@ -73,6 +73,7 @@ jobs:
             check_change integration/airflow/ openlineage-integration-python.yml openlineage-integration-airflow.yml
             check_change integration/dagster/ openlineage-integration-python.yml openlineage-integration-dagster.yml
             check_change integration/dbt/ openlineage-integration-python.yml openlineage-integration-dbt.yml
+            check_change integration/sql/ openlineage-integration-python.yml openlineage-integration-airflow.yml
             check_change proxy openlineage-proxy.yml
           fi
           touch workflow_files.txt

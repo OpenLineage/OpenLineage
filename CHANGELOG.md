@@ -1,10 +1,13 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.7.1...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.8.0...HEAD)
+
+## [0.8.0](https://github.com/OpenLineage/OpenLineage/compare/0.7.1...0.8.0)
 ### Added
 * Airflow integration uses [new TaskInstance listener API](https://github.com/apache/airflow/blob/main/docs/apache-airflow/listeners.rst) for Airflow 2.3+ [@mobuchowski](https://github.com/mobuchowski)
 * Support for HiveTableRelation as input source in Spark integration [@collado-mike](https://github.com/collado-mike)
 * Add HTTP and Kafka Client to `openlineage-java` lib [@wslulciuc](https://github.com/wslulciuc), [@mobuchowski](https://github.com/mobuchowski)
+* New SQL parser, used by Postgres, Snowflake, Great Expectations integrations ([#644](https://github.com/OpenLineage/OpenLineage/pull/644)) [@mobuchowski](https://github.com/mobuchowski)
 
 ### Fixed
 * GreatExpectations: Fixed bug when invoking GreatExpectations using v2 API [@collado-mike](https://github.com/collado-mike)

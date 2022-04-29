@@ -52,7 +52,29 @@
         },
         "name": "mysql_orders_popular_day_of_week.mysql_if_not_exists",
         "namespace": "food_delivery"
-    }
+    },
+	"outputs": [{
+		"facets": {
+			"dataSource": {
+				"name": "mysql://mysql:3306",
+				"uri": "mysql://mysql:3306/food_delivery"
+			},
+			"schema": {
+				"fields": [{
+					"name": "order_day_of_week",
+					"type": "varchar"
+				}, {
+					"name": "order_placed_on",
+					"type": "timestamp"
+				}, {
+					"name": "orders_placed",
+					"type": "int4"
+				}]
+			}
+		},
+		"name": "food_delivery.popular_orders_day_of_week",
+		"namespace": "mysql://mysql:3306"
+	}]
 },
 {
 	"eventType": "COMPLETE",
