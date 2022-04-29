@@ -33,6 +33,8 @@ OPENLINEAGE_AIRFLOW_WHL_ALL=$(docker run openlineage-airflow-base:latest sh -c "
 cat > requirements.txt <<EOL
 airflow-provider-great-expectations==0.0.8
 apache-airflow-providers-snowflake==2.5.1
+apache-airflow-providers-postgres==3.0.0
+apache-airflow-providers-google==6.7.0
 great-expectations==0.13.42
 dbt-core==1.0.1
 dbt-bigquery==1.0.0

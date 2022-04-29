@@ -18,6 +18,10 @@ log = logging.getLogger(__name__)
 _NOMINAL_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
 
+def openlineage_job_name(dag_id: str, task_id: str) -> str:
+    return f'{dag_id}.{task_id}'
+
+
 class JobIdMapping:
     # job_name here is OL job name - aka combination of dag_id and task_id
 
@@ -100,6 +104,16 @@ def get_location(file_path) -> str:
         return None
 
     return f'{base_url}/blob/{commit_id}/{repo_relative_path}{file_name}'
+
+
+def get_task_location(task):
+    try:
+        if hasattr(task, 'file_path') and task.file_path:
+            return get_location(task.file_path)
+        else:
+            return get_location(task.dag.fileloc)
+    except Exception:
+        return None
 
 
 def execute_git(cwd, params):
@@ -219,7 +233,7 @@ class DagUtils:
         if not dt:
             return None
         if isinstance(dt, int):
-            dt = from_timestamp(dt/1000.0)
+            dt = from_timestamp(dt / 1000.0)
 
         return dt.strftime(_NOMINAL_TIME_FORMAT)
 

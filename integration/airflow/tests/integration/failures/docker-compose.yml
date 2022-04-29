@@ -44,24 +44,13 @@ services:
     volumes:
       - ./docker/wait-for-it.sh:/wait-for-it.sh
     depends_on:
-      - airflow
+      - airflow_scheduler
       - backend
     entrypoint: ["./wait-for-it.sh", "backend:5000", "--", "python", "test_failure.py"]
 
   airflow:
     <<: *airflow-common
-    ports:
-      - "8080:8080"
     command: webserver
-    depends_on:
-      - airflow_scheduler
-      - postgres
-    healthcheck:
-      test: [ "CMD", "curl", "--fail", "http://localhost:8080/health" ]
-      interval: 10s
-      timeout: 10s
-      retries: 5
-    restart: always
 
   airflow_scheduler:
     <<: *airflow-common
