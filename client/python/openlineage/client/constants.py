@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0.
 
-__version__ = "0.9.0"
+__version__ = "0.8.1"
 
 DEFAULT_TIMEOUT_MS = 5000
 DEFAULT_NAMESPACE_NAME = 'default'
