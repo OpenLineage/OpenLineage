@@ -178,16 +178,23 @@ def get_connection(conn_id):
         conn.parse_from_uri(uri=conn_uri)
         return conn
 
+    # Airflow 2: use secrets backend.
+    if parse_version(AIRFLOW_VERSION) >= parse_version("2.0.0"):
+        try:
+            return Connection.get_connection_from_secrets(conn_id)
+        except Exception:
+            # Deliberate pass to try getting it via query
+            pass
+
     create_session = safe_import_airflow(
         airflow_1_path="airflow.utils.db.create_session",
         airflow_2_path="airflow.utils.session.create_session",
     )
 
     with create_session() as session:
-        return (session
-                .query(Connection)
-                .filter(Connection.conn_id == conn_id)
-                .first())
+        return session.query(Connection)\
+            .filter(Connection.conn_id == conn_id)\
+            .first()
 
 
 def get_job_name(task):
