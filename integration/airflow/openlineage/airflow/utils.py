@@ -6,13 +6,17 @@ import json
 import logging
 import os
 import subprocess
+<<<<<<< HEAD
 from typing import TYPE_CHECKING, Type, Dict, Any
+=======
+from pkg_resources import parse_version
+from pendulum import from_timestamp
+>>>>>>> 766693e0 (Fix flake8 errors in utils.py)
 from uuid import uuid4
 from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
-from typing import Optional
-
 from airflow.version import version as AIRFLOW_VERSION
 
+<<<<<<< HEAD
 from pkg_resources import parse_version
 
 from openlineage.airflow.facets import (
@@ -26,8 +30,10 @@ from openlineage.client.facet import (
     DataQualityAssertionsDatasetFacet,
     Assertion
 )
+=======
+from openlineage.airflow.facets import AirflowVersionRunFacet, AirflowRunArgsRunFacet
+>>>>>>> 766693e0 (Fix flake8 errors in utils.py)
 
-from pendulum import from_timestamp
 
 
 if TYPE_CHECKING:
@@ -326,26 +332,6 @@ def safe_import_airflow(airflow_1_path: str, airflow_2_path: str):
 
 
 def build_check_facets() -> dict:
-    """
-    facet_data = {
-        "columnMetrics": defaultdict(dict),
-        "rowCount": None
-    }
-    facet_data["columnMetrics"] = {}
-    data_quality_facet = DataQualityMetricsInputDatasetFacet(**facet_data)
-
-    assertion_data = {
-        "assertions": []
-    }
-    assertion_data["assertions"] = {}
-    data_quality_assertions_facet = DataQualityAssertionsDatasetFacet(**assertion_data)
-
-    return {
-        'dataQuality': data_quality_facet,
-        'dataQualityMetrics': data_quality_facet,
-        'dataQualityAssertions': data_quality_assertions_facet
-    }
-    """
     pass
 
 
