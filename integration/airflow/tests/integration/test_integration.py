@@ -64,11 +64,11 @@ def check_matches(expected_events, actual_events) -> bool:
                     expected_job_name == actual['job']['name']:
                 is_compared = True
                 if not match(expected, actual):
-                    log.info(f"failed to compare expected {expected}\nwith actual {actual}")
+                    log.error(f"failed to compare expected {expected}\nwith actual {actual}")
                     return False
                 break
         if not is_compared:
-            log.info(f"not found event comparable to {expected['eventType']} "
+            log.error(f"not found event comparable to {expected['eventType']} "
                      f"- {expected_job_name}")
             return False
     return True
@@ -84,7 +84,7 @@ def check_matches_ordered(expected_events, actual_events) -> bool:
                 log.info(f"failed to compare expected {expected}\nwith actual {actual}")
                 return False
             break
-        log.info(f"Wrong order of events: expected {expected['eventType']} - "
+        log.error(f"Wrong order of events: expected {expected['eventType']} - "
                  f"{expected['job']['name']}\ngot {actual['eventType']} - {actual['job']['name']}")
         return False
     return True
@@ -117,7 +117,7 @@ def get_events(job_name: str = None):
     )
     r.raise_for_status()
     received_requests = r.json()
-    log.info(f"Requests: {received_requests}")
+    log.debug(f"Requests: {received_requests}")
     return received_requests
 
 
@@ -152,7 +152,7 @@ def test_integration(dag_id, request_path):
 
     # (3) Verify events emitted
     if not check_matches(expected_events, actual_events):
-        log.info(f"failed to compare events for dag {dag_id}!")
+        log.error(f"failed to compare events for dag {dag_id}!")
         sys.exit(1)
 
 
@@ -178,11 +178,11 @@ def test_integration_ordered(dag_id, request_dir: str):
     actual_events = get_events(dag_id)
 
     if not check_matches_ordered(expected_events, actual_events):
-        log.info(f"failed to compare events for dag {dag_id}!")
+        log.error(f"failed to compare events for dag {dag_id}!")
         sys.exit(1)
 
     if not check_event_time_ordered(actual_events):
-        log.info(f"failed on event timestamp order!")
+        log.error(f"failed on event timestamp order!")
         sys.exit(1)
 
 
