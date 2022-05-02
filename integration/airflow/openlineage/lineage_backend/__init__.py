@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
 
-import logging
 import uuid
 import time
 
@@ -13,10 +12,8 @@ from airflow.version import version as AIRFLOW_VERSION
 class Backend:
     def __init__(self):
         from openlineage.airflow.adapter import OpenLineageAdapter
-        from openlineage.airflow.extractors.extractors import Extractors
-        self.extractors = {}
-        self.extractor_mapper = Extractors()
-        self.log = logging.getLogger()
+        from openlineage.airflow.extractors.manager import ExtractorManager
+        self.extractor_manager = ExtractorManager()
         self.adapter = OpenLineageAdapter()
     """
     Send OpenLineage events to lineage backend via airflow's LineageBackend mechanism.
@@ -34,19 +31,20 @@ class Backend:
         Send_lineage ignores manually provided inlets and outlets. The data collection mechanism
         is automatic, and bases on the passed context.
         """
-        from openlineage.airflow.utils import DagUtils, get_custom_facets
+        from openlineage.airflow.utils import DagUtils, get_custom_facets, \
+            get_job_name, get_task_location
         dag = context['dag']
         dagrun = context['dag_run']
         task_instance = context['task_instance']
         dag_run_id = str(uuid.uuid3(uuid.NAMESPACE_URL, f'{dag.dag_id}.{dagrun.run_id}'))
 
         run_id = str(uuid.uuid4())
-        job_name = self._openlineage_job_name(dag.dag_id, operator.task_id)
+        job_name = get_job_name(operator)
 
-        task_metadata = self._extract_metadata(
-            dag_id=dag.dag_id,
+        task_metadata = self.extractor_manager.extract_metadata(
             dagrun=dagrun,
             task=operator,
+            complete=True,
             task_instance=task_instance
         )
 
@@ -58,7 +56,7 @@ class Backend:
                 event_time=DagUtils.get_start_time(task_instance.start_date),
                 parent_job_name=dag.dag_id,
                 parent_run_id=dag_run_id,
-                code_location=self._get_location(operator),
+                code_location=get_task_location(operator),
                 nominal_start_time=DagUtils.get_start_time(dagrun.execution_date),
                 nominal_end_time=DagUtils.to_iso_8601(task_instance.end_date),
                 task=task_metadata,
@@ -75,85 +73,6 @@ class Backend:
             task=task_metadata,
         )
 
-    def _extract_metadata(self, dag_id, dagrun, task, task_instance=None):
-        extractor = self._get_extractor(task)
-        task_info = f'task_type={task.__class__.__name__} ' \
-            f'airflow_dag_id={dag_id} ' \
-            f'task_id={task.task_id} ' \
-            f'airflow_run_id={dagrun.run_id} '
-        if extractor:
-            try:
-                self.log.debug(
-                    f'Using extractor {extractor.__class__.__name__} {task_info}')
-                task_metadata = self._extract(extractor, task_instance)
-                self.log.debug(
-                    f"Found task metadata for operation {task.task_id}: {task_metadata}"
-                )
-                if task_metadata:
-                    return task_metadata
-
-            except Exception as e:
-                self.log.exception(
-                    f'Failed to extract metadata {e} {task_info}',
-                )
-        else:
-            self.log.warning(
-                f'Unable to find an extractor. {task_info}')
-        from openlineage.airflow.extractors.base import TaskMetadata
-        from openlineage.airflow.facets import UnknownOperatorAttributeRunFacet, \
-            UnknownOperatorInstance
-
-        return TaskMetadata(
-            name=self._openlineage_job_name(dag_id, task.task_id),
-            run_facets={
-                "unknownSourceAttribute": UnknownOperatorAttributeRunFacet(
-                    unknownItems=[
-                        UnknownOperatorInstance(
-                            name=task.__class__.__name__,
-                            properties={attr: value for attr, value in task.__dict__.items()}
-                        )
-                    ]
-                )
-            }
-        )
-
-    def _extract(self, extractor, task_instance):
-        if task_instance:
-            task_metadata = extractor.extract_on_complete(task_instance)
-            if task_metadata:
-                return task_metadata
-
-        return extractor.extract()
-
-    def _get_extractor(self, task):
-        if task.task_id in self.extractors:
-            return self.extractors[task.task_id]
-        extractor = self.extractor_mapper.get_extractor_class(task.__class__)
-        self.log.debug(f'extractor for {task.__class__} is {extractor}')
-        if extractor:
-            self.extractors[task.task_id] = extractor(task)
-            return self.extractors[task.task_id]
-        return None
-
-    @classmethod
-    def _openlineage_job_name_from_task_instance(cls, task_instance):
-        return cls._openlineage_job_name(task_instance.dag_id, task_instance.task_id)
-
-    @staticmethod
-    def _openlineage_job_name(dag_id: str, task_id: str) -> str:
-        return f'{dag_id}.{task_id}'
-
-    @staticmethod
-    def _get_location(task):
-        from openlineage.airflow.utils import get_location
-        try:
-            if hasattr(task, 'file_path') and task.file_path:
-                return get_location(task.file_path)
-            else:
-                return get_location(task.dag.fileloc)
-        except Exception:
-            return None
-
     @staticmethod
     def _now_ms():
         return int(round(time.time() * 1000))
@@ -166,6 +85,9 @@ class OpenLineageBackend(LineageBackend):
 
     @classmethod
     def send_lineage(cls, *args, **kwargs):
+        # Do not use LineageBackend approach when we can use plugins
+        if parse_version(AIRFLOW_VERSION) >= parse_version("2.3.0.dev0"):
+            return
         if not cls.backend:
             cls.backend = Backend()
         return cls.backend.send_lineage(*args, **kwargs)

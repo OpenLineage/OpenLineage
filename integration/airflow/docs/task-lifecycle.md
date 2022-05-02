@@ -2,7 +2,7 @@
 
 # Airflow task lifecycle
 
-This document describes the airflow task lifecycle and describes how marquez hooks into tasks to obtain information.
+This document describes the airflow task lifecycle and describes how OpenLineage hooks into tasks to obtain information.
 
 ## Airflow lifecycle overview
 https://airflow.apache.org/docs/apache-airflow/stable/concepts.html#task-lifecycle
@@ -16,6 +16,7 @@ The happy flow consists of the following stages:
 4. Running (worker picked up a task and is now running it)
 5. Success/Skipped/Failed (task completed, OpenLineage is notified of the task's actual start/stop time with the status of the task instance)
 
-## OpenLineage Interaction
-The OpenLineage airflow integration is only called from the scheduler instance. The scheduler periodically polls task instances to check the states of the current tasks. When the scheduler finds a state transitions in a `success`, `skipped`, or `failed` state, it notifies the dag via a `handle_callback` function. 
-Since OpenLineage relies on the scheduler to be notified of a state transition, there may be a delay from when a task transitions state to when it is reported to OpenLineage backend.
+## OpenLineage Interaction (Airflow 2.3+)
+OpenLineage integration is an Airflow Plugin that provides listener instance.
+Listeners are running on Airflow workers, and are invoked by Airflow when task starts and finishes, also when task fails.
+[More information about listeners in Airflow docs.](https://github.com/apache/airflow/blob/main/docs/apache-airflow/listeners.rst)
