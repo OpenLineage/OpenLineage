@@ -149,7 +149,7 @@ Anyone may request a new release of the project in the #general channel.
 
 After one is proposed, committers have 48 hours to give a +1 or -1.
 
-Three +1s authorize the release.
+A total of three +1s, taking into account -1s and excluding votes by the proposer, authorize the release.
 
 Alternatively, if after 2 days the release has received at least one +1 and no -1s, the release is also authorized.
 
