@@ -4,6 +4,8 @@ set -x
 
 pip install -U setuptools
 
+(cd /opt/openlineage/sql && pip install target/wheels/*.whl)
+
 (cd /opt/openlineage/python && pip install --no-deps -e .)
 
 (cd /opt/openlineage/common && pip install --no-deps -e .)

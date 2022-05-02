@@ -39,9 +39,13 @@ docker cp tests/airflow/dags openlineage-volume-helper:/opt/airflow/
 
 docker cp failures/airflow/dags openlineage-volume-helper:/opt/airflow/failed_dags
 
+docker cp ../../../sql openlineage-volume-helper:/opt/openlineage/
 docker cp ../../../airflow openlineage-volume-helper:/opt/openlineage/
 docker cp ../../../common openlineage-volume-helper:/opt/openlineage/
 docker cp ../../../dbt openlineage-volume-helper:/opt/openlineage/
 docker cp ../../../../client/python openlineage-volume-helper:/opt/openlineage/
 
+docker run --rm -v $LIBS_VOLUME:/opt/openlineage busybox chmod -R 777 /opt/openlineage
+
+docker run -v $LIBS_VOLUME:/code quay.io/pypa/manylinux2014_x86_64 bash -c 'cd /code/sql; bash script/build.sh'
 docker rm openlineage-volume-helper

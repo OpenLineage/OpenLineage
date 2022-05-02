@@ -4,9 +4,11 @@ FROM $AIRFLOW_IMAGE AS airflow
 USER root
 RUN apt-get update && \
     apt-get install -y git build-essential
+
 COPY data /opt/data
 RUN chmod -R 777 /opt/data
 USER airflow
+
 COPY requirements.txt requirements.txt
 RUN pip install -U setuptools
 RUN pip install --user -r requirements.txt
