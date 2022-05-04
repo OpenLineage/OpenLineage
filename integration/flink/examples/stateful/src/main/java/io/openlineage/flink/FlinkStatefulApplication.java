@@ -2,6 +2,7 @@ package io.openlineage.flink;
 
 import io.openlineage.flink.avro.event.InputEvent;
 import org.apache.flink.api.java.utils.ParameterTool;
+import org.apache.flink.core.execution.JobListener;
 import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 
@@ -28,7 +29,13 @@ public class FlinkStatefulApplication {
                 .process(new StatefulCounter()).name("process").uid("process")
                 .sinkTo(aKafkaSink(parameters.getRequired("output-topic"))).name("kafka-sink").uid("kafka-sink");
 
-        env.registerJobListener(new OpenLineageFlinkJobListener(env));
+
+        // we use this app to test open lineage flink integration so it cannot make use of OpenLineageFlinkJobListener classes
+        JobListener openlineageJobListener = (JobListener) Class.forName("io.openlineage.flink.OpenLineageFlinkJobListener")
+                .getConstructor(StreamExecutionEnvironment.class)
+                    .newInstance(env);
+
+        env.registerJobListener(openlineageJobListener);
         env.execute("flink-examples-stateful");
     }
 }
