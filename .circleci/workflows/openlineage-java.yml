@@ -3,6 +3,9 @@ workflows:
     jobs:
       - build-client-java
       - publish-snapshot-client-java:
+          filters:
+            branches:
+              only: main
           context: release
           requires:
             - build-client-java

@@ -9,7 +9,7 @@ from setuptools import setup, find_namespace_packages
 with open("README.md") as readme_file:
     readme = readme_file.read()
 
-__version__ = "0.8.0"
+__version__ = "0.9.0"
 
 requirements = [
     "attrs>=19.3",
@@ -63,4 +63,7 @@ setup(
     python_requires=">=3.7",
     zip_safe=False,
     keywords="openlineage",
+    entry_points={
+        "airflow.plugins": ["OpenLineagePlugin = openlineage.airflow.plugin:OpenLineagePlugin"]
+    }
 )

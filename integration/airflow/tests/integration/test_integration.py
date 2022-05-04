@@ -3,14 +3,13 @@ import json
 import logging
 import os
 import sys
-from typing import List
 
 import psycopg2
 import time
 import requests
 from retrying import retry
-from openlineage.common.test import match, setup_jinja
 
+from openlineage.common.test import match, setup_jinja
 
 env = setup_jinja()
 
@@ -140,8 +139,10 @@ def setup_db():
 def test_integration(dag_id, request_path):
     log.info(f"Checking dag {dag_id}")
     # (1) Wait for DAG to complete
-    if not wait_for_dag(dag_id):
+    result = wait_for_dag(dag_id)
+    if not result:
         sys.exit(1)
+
     # (2) Read expected events
     with open(request_path, 'r') as f:
         expected_events = json.load(f)
@@ -158,8 +159,10 @@ def test_integration(dag_id, request_path):
 def test_integration_ordered(dag_id, request_dir: str):
     log.info(f"Checking dag {dag_id}")
     # (1) Wait for DAG to complete
-    if not wait_for_dag(dag_id):
+    result = wait_for_dag(dag_id)
+    if not result:
         sys.exit(1)
+
     # (2) Find and read events in given directory on order of file names.
     #     The events have to arrive at the server in the same order.
     event_files = sorted(
@@ -186,7 +189,6 @@ def test_integration_ordered(dag_id, request_dir: str):
 if __name__ == '__main__':
     setup_db()
     test_integration('postgres_orders_popular_day_of_week', 'requests/postgres.json')
-    test_integration('mysql_orders_popular_day_of_week', 'requests/mysql.json')
     test_integration('great_expectations_validation', 'requests/great_expectations.json')
     test_integration('bigquery_orders_popular_day_of_week', 'requests/bigquery.json')
     test_integration('dbt_bigquery', 'requests/dbt_bigquery.json')
@@ -195,6 +197,7 @@ if __name__ == '__main__':
     test_integration('unknown_operator_dag', 'requests/unknown_operator.json')
     test_integration_ordered('event_order', 'requests/order')
     if os.getenv('AIRFLOW_VERSION', '') == '2.2.4':
+        test_integration('mysql_orders_popular_day_of_week', 'requests/mysql.json')
         test_integration('dbt_snowflake', 'requests/dbt_snowflake.json')
         test_integration('snowflake', 'requests/snowflake.json')
 

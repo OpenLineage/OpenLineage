@@ -11,9 +11,6 @@ checkout_project_root: &checkout_project_root
 install_python_client: &install_python_client
   run: (cd ~/openlineage/client/python && pip install . --user)
 
-install_integration_common: &install_integration_common
-  run: (cd ~/openlineage/integration/common && pip install . --user)
-
 param_build_tag: &param_build_tag
   parameters:
     build_tag:
@@ -368,7 +365,7 @@ jobs:
       - *checkout_project_root
       - *install_python_client
       - install_integration_common:
-          install_parser: true
+          install_parser: false
       - run: python setup.py egg_info -b "<< parameters.build_tag >>" sdist bdist_wheel
       - persist_to_workspace:
           root: .
@@ -600,6 +597,24 @@ workflows:
               only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
             branches:
               ignore: /.*/
+      - build-integration-sql:
+          name: build-integration-sql-x86
+          image: "quay.io/pypa/manylinux2014_x86_64"
+          resource_class: "medium"
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+            branches:
+              ignore: /.*/
+      - build-integration-sql:
+          name: build-integration-sql-arm
+          image: "quay.io/pypa/manylinux2014_aarch64"
+          resource_class: "arm.medium"
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+            branches:
+              ignore: /.*/
       - release-python:
           filters:
             tags:
@@ -613,3 +628,5 @@ workflows:
             - build-integration-airflow
             - build-integration-dbt
             - build-integration-dagster
+            - build-integration-sql-x86
+            - build-integration-sql-arm
