@@ -1,0 +1,14 @@
+{
+  "inputs": [
+    {
+      "namespace" : "kafka:9092",
+      "name" : "io.openlineage.flink.kafka.input"
+    }
+  ],
+  "outputs": [
+    {
+      "namespace" : "kafka:9092",
+      "name" : "io.openlineage.flink.kafka.output"
+    }
+  ]
+}
