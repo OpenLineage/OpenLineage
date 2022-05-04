@@ -13,7 +13,7 @@ crate-type = ["rlib", "cdylib"]
 
 [dependencies]
 pyo3 = {version = "0.16.4", features = ["extension-module", "abi3", "abi3-py37"]}
-sqlparser = {version = "0.16.0"}
+sqlparser = {git = "https://github.com/mobuchowski/sqlparser-rs", branch = "sqlp-release"}
 
 [build-dependencies]
 pyo3-build-config = {version = "0.16.4"}

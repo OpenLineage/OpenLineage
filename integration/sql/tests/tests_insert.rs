@@ -153,6 +153,82 @@ fn insert_overwrite_multiple_subqueries() {
 }
 
 #[test]
+fn insert_overwrite_partition() {
+    assert_eq!(
+        test_sql_dialect(
+            "
+            INSERT OVERWRITE TABLE d_d_n.g_d_t_r
+            PARTITION (ds = '2022-02-24')
+            SELECT
+                u.u_i,
+                g.d_r
+            FROM
+                (SELECT * FROM d_d_n.u_t_250 WHERE ds = '2022-02-24') u
+            JOIN
+                (SELECT * FROM d_n_p.g_d_r WHERE ds = '2022-02-24') g
+            ON
+                u.u_i = g.u_i
+        ",
+            "hive"
+        ),
+        SqlMeta {
+            in_tables: tables(vec!["d_d_n.u_t_250", "d_n_p.g_d_r"]),
+            out_tables: table("d_d_n.g_d_t_r")
+        }
+    )
+}
+
+#[test]
+fn insert_overwrite_hive_sets() {
+    assert_eq!(
+        test_sql_dialect(
+            "
+                SET hive.auto.convert.join=false;
+                SET hive.tez.auto.reducer.parallelism=false;
+                SET mapred.reduce.tasks=150;
+                INSERT OVERWRITE TABLE d_d_p.d_f_s
+                PARTITION (ds = '2022-05-01')
+                  SELECT
+                      T1.p_id,
+                      T1.u_id,
+                      T1.p_u,
+                      T1.id,
+                      T2.s_s_t,
+                      T2.g_j_t,
+                      T2.s_st_ts
+                      FROM d_p.f_p_s AS T1
+                      INNER JOIN
+                        (SELECT
+                           fpsm.p_id,
+                           fpsm.u_id,
+                           fpsm.p_u,
+                           MIN(fpsm.started) AS s_s_t,
+                           MIN(fpsm.joined) AS g_j_t,
+                           MIN(fpsm.stopped) AS s_st_ts,
+                           MIN(fpsm.ds) as ds
+                           from d_p.f_p_s_merged  AS fpsm
+                           WHERE fpsm.ds = '2022-05-01'
+                           GROUP BY
+                               fpsm.p_id,
+                               fpsm.u_id,
+                               fpsm.p_u
+                        ) AS T2
+                        ON T1.p_id = T2.p_id
+                        AND T1.u_id = T2.u_id
+                        AND T1.p_u = T2.p_u
+                        AND T1.started = T2.s_s_t
+                        AND T1.ds = '2022-05-01'
+        ",
+            "hive"
+        ),
+        SqlMeta {
+            in_tables: tables(vec!["d_p.f_p_s", "d_p.f_p_s_merged"]),
+            out_tables: table("d_d_p.d_f_s")
+        }
+    )
+}
+
+#[test]
 fn insert_group_by() {
     assert_eq!(
         test_sql(
@@ -346,6 +422,136 @@ fn test_triple_statements_insert_insert_insert() {
         SqlMeta {
             in_tables: table("a.a"),
             out_tables: tables(vec!["a.a", "b.b", "c.c"]),
+        }
+    )
+}
+
+#[test]
+fn insert_overwrite_multiple_unions() {
+    assert_eq!(
+        test_sql(
+            "
+            INSERT OVERWRITE TABLE d_d_n.a_p_s_v
+            PARTITION (ds = '2022-05-01')
+            SELECT
+                sub.p_i,
+                sub.u_i,
+                sub.uk,
+                MIN(sub.f_s_i) AS session_id,
+                MIN(sub.f_s_s_t) AS s_s_t,
+                SUM(sub.s_c_1d) AS s_c_1d,
+                SUM(sub.s_c_7d) AS s_c_7d,
+                SUM(sub.s_c_28d) AS s_c_28d,
+                SUM(sub.s_c_inf) AS s_c_inf,
+                SUM(sub.t_s_s_1d) AS t_s_s_1d,
+                SUM(sub.t_s_s_7d) AS t_s_s_7d,
+                SUM(sub.t_s_s_28d) AS t_s_s_28d,
+                SUM(sub.t_s_s_inf) AS t_s_s_inf,
+                SUM(sub.dl) AS dl,
+                MIN(sub.f_a_d) AS f_a_d,
+                MAX(sub.l_a_d) AS l_a_d
+            FROM
+                (
+                SELECT
+                    p_i,
+                    u_i,
+                    uk,
+                    f_s_i,
+                    f_s_s_t,
+                    session_cnt AS s_c_1d,
+                    session_cnt AS s_c_7d,
+                    session_cnt AS s_c_28d,
+                    session_cnt AS s_c_inf,
+                    t_s_s AS t_s_s_1d,
+                    t_s_s AS t_s_s_7d,
+                    t_s_s AS t_s_s_28d,
+                    t_s_s AS t_s_s_inf,
+                    1 AS dl,
+                    '2022-05-01' AS f_a_d,
+                    '2022-05-01' AS l_a_d
+                FROM
+                    d_d_n.d_p_s_v
+                WHERE
+                    ds = '2022-05-01'
+                UNION ALL
+                SELECT
+                    p_i,
+                    u_i,
+                    uk,
+                    f_s_i,
+                    f_s_s_t,
+                    0 AS s_c_1d,
+                    s_c_7d AS s_c_7d,
+                    s_c_28d AS s_c_28d,
+                    s_c_inf AS s_c_inf,
+                    0 AS t_s_s_1d,
+                    t_s_s_7d AS t_s_s_7d,
+                    t_s_s_28d AS t_s_s_28d,
+                    t_s_s_inf AS t_s_s_inf,
+                    (dl % 549755813888) * 2 AS dl,
+                    f_a_d AS f_a_d,
+                    l_a_d AS l_a_d
+                FROM
+                    d_d_n.a_p_s_v
+                WHERE
+                    ds = '2022-04-30'
+                    AND l_a_d >= DATE_ADD('2022-05-01', -56)
+                UNION ALL
+                SELECT
+                    p_i,
+                    u_i,
+                    uk,
+                    f_s_i,
+                    f_s_s_t,
+                    0 AS s_c_1d,
+                    -s_c_1d AS s_c_7d,
+                    0 AS s_c_28d,
+                    0 AS s_c_inf,
+                    0 AS t_s_s_1d,
+                    -t_s_s_1d AS t_s_s_7d,
+                    0 AS t_s_s_28d,
+                    0 AS t_s_s_inf,
+                    0 AS dl,
+                    f_a_d,
+                    l_a_d
+                FROM
+                    d_d_n.a_p_s_v
+                WHERE
+                    ds = '2022-04-24'
+                    AND l_a_d >= DATE_ADD('2022-05-01', -56)
+                UNION ALL
+                SELECT
+                    p_i,
+                    u_i,
+                    uk,
+                    f_s_i,
+                    f_s_s_t,
+                    0 AS s_c_1d,
+                    0 AS s_c_7d,
+                    -s_c_1d AS s_c_28d,
+                    0 AS s_c_inf,
+                    0 AS t_s_s_1d,
+                    0 AS t_s_s_7d,
+                    -t_s_s_1d AS t_s_s_28d,
+                    0 AS t_s_s_inf,
+                    0 AS dl,
+                    f_a_d,
+                    l_a_d
+                FROM
+                    d_d_n.a_p_s_v
+                WHERE
+                    ds = '2022-04-03'
+                    AND l_a_d >= DATE_ADD('2022-05-01', -56)
+                ) sub
+            GROUP BY
+                sub.p_i,
+                sub.u_i,
+                sub.uk
+        "
+        ),
+        SqlMeta {
+            in_tables: tables(vec!["d_d_n.a_p_s_v", "d_d_n.d_p_s_v"]),
+            out_tables: table("d_d_n.a_p_s_v")
         }
     )
 }

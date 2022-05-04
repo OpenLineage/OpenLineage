@@ -1,3 +1,5 @@
+extern crate core;
+
 use openlineage_sql::{parse_sql, SqlMeta};
 use sqlparser::dialect::PostgreSqlDialect;
 
@@ -102,6 +104,86 @@ fn multiple_ctes() {
                 "DEMO_DB.public.stg_orders"
             ]),
             out_tables: vec![]
+        }
+    )
+}
+
+#[test]
+fn cte_insert_overwrite() {
+    assert_eq!(
+        test_sql(
+            "
+            WITH g_s AS (
+              SELECT
+                p_i,
+                u_i,
+                uk,
+                started,
+                COALESCE(stopped, updated) AS stopped,
+                CASE WHEN started > MAX(
+                  FROM_UNIXTIME(
+                    UNIX_TIMESTAMP(
+                      COALESCE(stopped, updated)
+                    ) + 30
+                  )
+                ) OVER(
+                  PARTITION BY p_i,
+                  u_i,
+                  uk
+                  ORDER BY
+                    started,
+                    COALESCE(stopped, updated) ROWS BETWEEN UNBOUNDED PRECEDING
+                    AND 1 PRECEDING
+                ) THEN 1 ELSE 0 END gr_st
+              FROM
+                d_n.f_p_s
+              WHERE
+                ds = 'ds'
+            ),
+            grps AS (
+              SELECT
+                p_i,
+                u_i,
+                uk,
+                started,
+                stopped,
+                SUM(gr_st) OVER(
+                  PARTITION BY p_i,
+                  u_i,
+                  uk
+                  ORDER BY
+                    started,
+                    stopped
+                ) AS grp
+              FROM
+                g_s
+            ) INSERT OVERWRITE TABLE dev_d_n.f_p_s_m PARTITION (ds = 'ds')
+            SELECT
+              grps.p_i,
+              grps.u_i,
+              grps.uk,
+              MIN(grps.started) AS started,
+              MIN(tps.joined) AS joined,
+              MAX(grps.stopped) AS stopped,
+              COLLECT_LIST(tps.id) AS s_i_l,
+              COLLECT_LIST(tps.p_i_i) AS p_i_i_l
+            FROM
+              grps
+              INNER JOIN d_n.f_p_s fps ON grps.p_i = tps.p_i
+              AND grps.u_i = tps.u_i
+              AND grps.uk = tps.uk
+              AND tps.ds = 'ds'
+              AND grps.started = tps.started
+            GROUP BY
+              grps.p_i,
+              grps.u_i,
+              grps.uk,
+              grps.grp
+        "
+        ),
+        SqlMeta {
+            in_tables: table("d_n.f_p_s"),
+            out_tables: table("dev_d_n.f_p_s_m")
         }
     )
 }
