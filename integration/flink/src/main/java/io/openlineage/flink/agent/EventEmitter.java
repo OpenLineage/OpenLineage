@@ -2,6 +2,8 @@
 
 package io.openlineage.flink.agent;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.flink.agent.client.OpenLineageClient;
 import io.openlineage.flink.agent.client.OpenLineageHttpException;
@@ -24,7 +26,7 @@ public class EventEmitter {
   @Getter private String parentJobName;
   @Getter private Optional<UUID> parentRunId;
 
-  //  private final ObjectMapper mapper = OpenLineageClient.createMapper();
+  private final ObjectMapper mapper = OpenLineageClient.createMapper();
 
   public EventEmitter(ArgumentParser argument) throws URISyntaxException {
     this.client = OpenLineageClient.create(argument.getApiKey(), ForkJoinPool.commonPool());
@@ -56,17 +58,16 @@ public class EventEmitter {
   public void emit(OpenLineage.RunEvent event) {
     try {
       // Todo: move to async client
-      log.debug("Posting LineageEvent {}", event);
       ResponseMessage resp = client.post(lineageURI, event);
       if (!resp.completedSuccessfully()) {
-        //        log.error(
-        //            "Could not emit lineage: {}",
-        //            mapper.writeValueAsString(event),
-        //            new OpenLineageHttpException(resp, resp.getError()));
+        log.error(
+            "Could not emit lineage: {}",
+            mapper.writeValueAsString(event),
+            new OpenLineageHttpException(resp, resp.getError()));
       } else {
         log.info("Lineage completed successfully: {} {}", resp, "mapper.writeValueAsString(event)");
       }
-    } catch (OpenLineageHttpException /* | JsonProcessingException */ e) {
+    } catch (OpenLineageHttpException | JsonProcessingException e) {
       log.error("Could not emit lineage w/ exception", e);
     }
   }
