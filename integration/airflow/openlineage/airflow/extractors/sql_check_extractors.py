@@ -4,7 +4,7 @@ from typing import List
 
 from openlineage.airflow.extractors.postgres_extractor import PostgresExtractor
 from openlineage.common.dataset import Dataset, Field
-from openlineage.airflow.utils import (
+from facet_builders import (
     build_check_facets,
     build_value_check_facets,
     build_interval_check_facets,
@@ -16,6 +16,8 @@ logger = logging.getLogger(__name__)
 
 
 class BaseSqlCheckExtractor(PostgresExtractor):
+    default_schema = 'public'
+
     def __init__(self, operator):
         super().__init__(operator)
 
@@ -98,6 +100,18 @@ class SqlIntervalCheckExtractor(BaseSqlCheckExtractor):
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
         return ['SQLIntervalCheckOperator']
+
+    def _build_facets(self) -> dict:
+        return build_interval_check_facets()
+
+
+class SqlColumnCheckExtractor(BaseSqlCheckExtractor):
+    def __init__(self, operator):
+        super().__init__(operator)
+
+    @classmethod
+    def get_operator_classnames(cls) -> List[str]:
+        return ['SQLColumnCheckOperator']
 
     def _build_facets(self) -> dict:
         return build_interval_check_facets()

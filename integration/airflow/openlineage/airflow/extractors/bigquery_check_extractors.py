@@ -2,24 +2,28 @@ import logging
 import traceback
 
 from abc import abstractmethod
+from sqlalchemy import MetaData, Table
 from typing import List, Optional
 
 from openlineage.airflow.extractors.base import TaskMetadata
 from openlineage.airflow.extractors.bigquery_extractor import BigQueryExtractor
-from openlineage.airflow.utils import (
-    get_job_name,
+from openlineage.airflow.utils import get_job_name
+from openlineage.client.facet import SqlJobFacet
+from openlineage.common.dataset import Dataset, Field
+from openlineage.common.provider.bigquery import BigQueryDatasetsProvider, BigQueryErrorRunFacet
+from facet_builders import (
     build_check_facets,
     build_value_check_facets,
     build_interval_check_facets,
     build_threshold_check_facets
 )
-from openlineage.client.facet import SqlJobFacet
-from openlineage.common.provider.bigquery import BigQueryDatasetsProvider, BigQueryErrorRunFacet
 
 logger = logging.getLogger(__name__)
 
 
 class BaseBigQueryCheckExtractor(BigQueryExtractor):
+    default_schema = 'public'
+
     def __init__(self, operator):
         super().__init__(operator)
 

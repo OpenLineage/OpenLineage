@@ -28,7 +28,7 @@ class PostgresExtractor(SqlExtractor):
     def _get_scheme(self):
         return 'postgres'
 
-    def _get_input_tables(self, source, database, sql_meta) -> List[Dataset]:
+    def _get_input_tables(self, source, database, sql_meta, task_instance) -> List[Dataset]:
         return [
             Dataset.from_table(
                 source=source,
@@ -41,7 +41,7 @@ class PostgresExtractor(SqlExtractor):
         ]
 
     def _get_output_tables(self, source, database, sql_meta) -> List[Dataset]:
-        [
+        return [
             Dataset.from_table_schema(
                 source=source,
                 table_schema=out_table_schema,
