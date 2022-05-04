@@ -83,7 +83,7 @@ public class OpenLineageFlinkJobListener implements JobListener {
     @Override
     public void clear() {
       archive = new ArrayList<>(this);
-      clear();
+      super.clear();
     }
   }
 }
