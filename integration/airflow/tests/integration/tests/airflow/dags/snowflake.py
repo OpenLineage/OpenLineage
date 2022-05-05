@@ -51,7 +51,8 @@ t2 = SnowflakeOperator(
     INSERT INTO test_orders (ord, str, num) VALUES
     (1, 'b', 15),
     (2, 'a', 21),
-    (3, 'b', 7);''',
+    (3, 'b', 7);
+    ''',
     dag=dag
 )
 
