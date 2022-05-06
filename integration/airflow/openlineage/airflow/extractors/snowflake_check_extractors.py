@@ -17,7 +17,7 @@ class BaseSnowflakeCheckExtractor(SnowflakeExtractor):
     def __init__(self, operator):
         super().__init__(operator)
 
-    def _get_input_tables(self, source, database, sql_meta, task_instance):
+    def _get_input_tables(self, source, database, sql_meta):
         inputs = []
         for in_table_schema in self._get_table_schemas(sql_meta.in_tables):
             table_name = self._normalize_identifiers(in_table_schema.table_name.name)
@@ -27,7 +27,7 @@ class BaseSnowflakeCheckExtractor(SnowflakeExtractor):
                 schema_name=in_table_schema.schema_name,
                 database_name=database
             )
-            ds.input_facets = self._build_facets(task_instance)
+            ds.input_facets = self._build_facets()
 
             table = Table(
                 table_name,
@@ -37,7 +37,7 @@ class BaseSnowflakeCheckExtractor(SnowflakeExtractor):
             ds.fields = [
                 Field(
                     name=key,
-                    type=str(col.type) if col.type is not None else 'UNKNOWN',
+                    type=str(col.type) if col.type is not None else "UNKNOWN",
                     description=col.doc
                 ) for key, col in table.columns.items()
             ]
@@ -49,7 +49,7 @@ class BaseSnowflakeCheckExtractor(SnowflakeExtractor):
         return []
 
     @abstractmethod
-    def _build_facets(self, task_instance) -> dict:
+    def _build_facets(self) -> dict:
         pass
 
 
@@ -59,9 +59,9 @@ class SnowflakeCheckExtractor(BaseSnowflakeCheckExtractor):
 
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
-        return ['SnowflakeCheckOperator']
+        return ["SnowflakeCheckOperator"]
 
-    def _build_facets(self, task_instance) -> dict:
+    def _build_facets(self) -> dict:
         return None
 
 
@@ -71,9 +71,9 @@ class SnowflakeValueCheckExtractor(BaseSnowflakeCheckExtractor):
 
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
-        return ['SnowflakeValueCheckOperator']
+        return ["SnowflakeValueCheckOperator"]
 
-    def _build_facets(self, task_instance) -> dict:
+    def _build_facets(self) -> dict:
         return None
 
 
@@ -83,9 +83,9 @@ class SnowflakeThresholdCheckExtractor(BaseSnowflakeCheckExtractor):
 
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
-        return ['SnowflakeThresholdCheckOperator']
+        return ["SnowflakeThresholdCheckOperator"]
 
-    def _build_facets(self, task_instance) -> dict:
+    def _build_facets(self) -> dict:
         return None
 
 
@@ -95,9 +95,9 @@ class SnowflakeIntervalCheckExtractor(BaseSnowflakeCheckExtractor):
 
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
-        return ['SnowflakeIntervalCheckOperator']
+        return ["SnowflakeIntervalCheckOperator"]
 
-    def _build_facets(self, task_instance) -> dict:
+    def _build_facets(self) -> dict:
         return None
 
 
@@ -107,11 +107,14 @@ class SnowflakeColumnCheckExtractor(BaseSnowflakeCheckExtractor):
 
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
-        return ['SnowflakeColumnCheckOperator']
+        return ["SnowflakeColumnCheckOperator"]
 
-    def _build_facets(self, task_instance) -> dict:
-        column_mapping = task_instance.xcom_pull(
-            task_ids=task_instance.task_id,
-            key='sql_column_check_operator_results'
+    def _build_facets(self) -> dict:
+        column_mapping = self.operator.column_mapping
+        """
+        .xcom_pull(
+            task_ids=.task_id,
+            key="sql_column_check_operator_results"
         )
+        """
         return build_column_check_facets(column_mapping)

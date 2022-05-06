@@ -56,8 +56,8 @@ class BaseExtractor(ABC, LoggingMixin):
         assert (self.operator.__class__.__name__ in self.get_operator_classnames())
 
     @abstractmethod
-    def extract(self, task_instance=None) -> Optional[TaskMetadata]:
+    def extract(self) -> Optional[TaskMetadata]:
         pass
 
     def extract_on_complete(self, task_instance) -> Optional[TaskMetadata]:
-        return self.extract(task_instance)
+        return self.extract()
