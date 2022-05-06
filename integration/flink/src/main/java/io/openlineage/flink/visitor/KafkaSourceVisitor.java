@@ -2,16 +2,15 @@ package io.openlineage.flink.visitor;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.flink.api.OpenLineageContext;
-import java.lang.reflect.Field;
+import io.openlineage.flink.utils.AvroSchemaUtils;
+import io.openlineage.flink.visitor.wrapper.KafkaSourceWrapper;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.flink.connector.kafka.source.KafkaSource;
-import org.apache.flink.connector.kafka.source.enumerator.subscriber.KafkaSubscriber;
 
 @Slf4j
 public class KafkaSourceVisitor extends Visitor<OpenLineage.InputDataset> {
@@ -27,21 +26,28 @@ public class KafkaSourceVisitor extends Visitor<OpenLineage.InputDataset> {
 
   @Override
   public List<OpenLineage.InputDataset> apply(Object kafkaSource) {
-    var source = (KafkaSource<?>) kafkaSource;
     try {
-      Field subscriberField = FieldUtils.getField(KafkaSource.class, "subscriber", true);
-      KafkaSubscriber kafkaSubscriber = (KafkaSubscriber) subscriberField.get(source);
-      Field topicsField =
-          FieldUtils.getField(
-              kafkaSubscriber.getClass().asSubclass(kafkaSubscriber.getClass()), "topics", true);
-      List<String> topics = (List<String>) topicsField.get(kafkaSubscriber);
-      Field props = FieldUtils.getField(KafkaSource.class, "props", true);
-      Properties properties = (Properties) props.get(source);
-      String bootStrapServers = properties.getProperty("bootstrap.servers");
+      KafkaSourceWrapper wrapper = KafkaSourceWrapper.of((KafkaSource<?>) kafkaSource);
+      List<String> topics = wrapper.getTopics();
+      Properties properties = wrapper.getProps();
+      String bootstrapServers = properties.getProperty("bootstrap.servers");
 
       topics.forEach(topic -> log.debug("Kafka input topic: {}", topic));
       return topics.stream()
-          .map(topic -> inputDataset().getDataset(topic, bootStrapServers))
+          .map(
+              topic -> {
+                OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
+                    inputDataset().getDatasetFacetsBuilder(topic, bootstrapServers);
+                // The issue here is that we assign dataset a schema that we're trying to read with.
+                // The read schema may be in mismatch with real dataset schema.
+                wrapper
+                    .getAvroSchema()
+                    .map(
+                        schema ->
+                            datasetFacetsBuilder.schema(
+                                AvroSchemaUtils.convert(context.getOpenLineage(), schema)));
+                return inputDataset().getDataset(topic, bootstrapServers, datasetFacetsBuilder);
+              })
           .collect(Collectors.toList());
     } catch (IllegalAccessException e) {
       log.error("Can't access the field. ", e);
