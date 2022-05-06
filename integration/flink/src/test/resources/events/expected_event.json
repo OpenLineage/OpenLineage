@@ -1,14 +1,46 @@
 {
   "inputs": [
     {
-      "namespace" : "kafka:9092",
-      "name" : "io.openlineage.flink.kafka.input"
+      "namespace": "kafka:9092",
+      "name": "io.openlineage.flink.kafka.input",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "id",
+              "type": "string"
+            },
+            {
+              "name": "version",
+              "type": "long"
+            }
+          ]
+        }
+      }
     }
   ],
   "outputs": [
     {
-      "namespace" : "kafka:9092",
-      "name" : "io.openlineage.flink.kafka.output"
+      "namespace": "kafka:9092",
+      "name": "io.openlineage.flink.kafka.output",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "id",
+              "type": "string"
+            },
+            {
+              "name": "version",
+              "type": "long"
+            },
+            {
+              "name": "counter",
+              "type": "long"
+            }
+          ]
+        }
+      }
     }
   ]
 }
