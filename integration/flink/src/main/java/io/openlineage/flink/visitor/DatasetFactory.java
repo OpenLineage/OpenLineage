@@ -35,17 +35,24 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
     };
   }
 
+  public OpenLineage.DatasetFacetsBuilder getDatasetFacetsBuilder(String name, String namespace) {
+    return openLineage
+        .newDatasetFacetsBuilder()
+        .dataSource(
+            openLineage
+                .newDatasourceDatasetFacetBuilder()
+                .uri(URI.create(""))
+                .name(namespace)
+                .build());
+  }
+
+  public D getDataset(
+      String name, String namespace, OpenLineage.DatasetFacetsBuilder facetsBuilder) {
+    return getDataset(name, namespace, facetsBuilder.build());
+  }
+
   public D getDataset(String name, String namespace) {
-    OpenLineage.DatasetFacetsBuilder builder =
-        openLineage
-            .newDatasetFacetsBuilder()
-            .dataSource(
-                openLineage
-                    .newDatasourceDatasetFacetBuilder()
-                    .uri(URI.create(""))
-                    .name(namespace)
-                    .build());
-    return getDataset(name, namespace, builder.build());
+    return getDataset(name, namespace, getDatasetFacetsBuilder(name, namespace).build());
   }
 
   public D getDataset(String name, String namespace, OpenLineage.DatasetFacets datasetFacet) {
