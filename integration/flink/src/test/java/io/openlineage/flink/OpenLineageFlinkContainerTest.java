@@ -1,15 +1,16 @@
 package io.openlineage.flink;
 
 import static java.nio.file.Files.readAllBytes;
+import static org.awaitility.Awaitility.await;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.JsonBody.json;
 
 import com.google.common.io.Resources;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Arrays;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -49,7 +50,7 @@ public class OpenLineageFlinkContainerTest {
 
   @Container
   private static final GenericContainer generateEvents =
-      FlinkContainerUtils.makeGenerateEventsContainer(network, kafka);
+      FlinkContainerUtils.makeGenerateEventsContainer(network, schemaRegistry);
 
   private static final GenericContainer jobManager =
       FlinkContainerUtils.makeFlinkJobManagerContainer(
@@ -68,7 +69,7 @@ public class OpenLineageFlinkContainerTest {
         .when(request("/api/v1/lineage"))
         .respond(org.mockserver.model.HttpResponse.response().withStatusCode(201));
 
-    Awaitility.await().until(openLineageClientMockContainer::isRunning);
+    await().until(openLineageClientMockContainer::isRunning);
   }
 
   @AfterAll
@@ -89,21 +90,25 @@ public class OpenLineageFlinkContainerTest {
   @Test
   @SneakyThrows
   public void testOpenLineageEventSent() {
-    // taskManager container should depend on jobManager, but we want to finish based on action
-    // occurred in jobManager
-    new Thread(
-            () -> {
-              jobManager.start();
-              taskManager.stop();
-            })
-        .run();
     taskManager.start();
+    await()
+        .atMost(Duration.ofMinutes(2))
+        .until(() -> jobManager.getLogs().contains("New checkpoint encountered"));
 
     mockServerClient.verify(
         request()
             .withPath("/api/v1/lineage")
             .withBody(
-                readJson(Path.of(Resources.getResource("events/expected_event.json").getPath()))));
+                readJson(Path.of(Resources.getResource("events/expected_event.json").getPath()))),
+        request()
+            .withPath("/api/v1/lineage")
+            .withBody(
+                json(
+                    readJson(
+                            Path.of(
+                                Resources.getResource("events/expected_event_checkpoints.json")
+                                    .getPath()))
+                        .getValue())));
   }
 
   @SneakyThrows
