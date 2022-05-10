@@ -127,6 +127,8 @@ suited to extract metadata from particular operator (or operators).
 * `GreatExpectationsOperator`
 * `PythonOperator`
 
+SQL Operators utilize SQL parser. There is experimental SQL parser, activated if you install [openlineage-sql](https://pypi.org/project/openlineage-sql) on your Airflow worker.
+
 #### Custom Extractors
 
 If your DAGs contain additional operators from which you want to extract lineage data, fear not - you can always

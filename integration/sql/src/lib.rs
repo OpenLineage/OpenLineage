@@ -377,15 +377,7 @@ fn parse_stmt(stmt: &Statement, context: &mut Context) -> Result<(), String> {
             Ok(())
         }
         Statement::Insert {
-            or: _,
-            table_name,
-            columns: _,
-            overwrite: _,
-            source,
-            partitioned: _,
-            after_columns: _,
-            table: _,
-            on: _,
+            table_name, source, ..
         } => {
             parse_query(source, context)?;
             context.add_output(&table_name.to_string());
@@ -395,8 +387,7 @@ fn parse_stmt(stmt: &Statement, context: &mut Context) -> Result<(), String> {
             table,
             source,
             alias,
-            on: _,
-            clauses: _,
+            ..
         } => {
             let table_name = get_table_name_from_table_factor(table)?;
             context.add_output(&table_name);
@@ -409,25 +400,7 @@ fn parse_stmt(stmt: &Statement, context: &mut Context) -> Result<(), String> {
             Ok(())
         }
         Statement::CreateTable {
-            or_replace: _,
-            temporary: _,
-            external: _,
-            if_not_exists: _,
-            name,
-            columns: _,
-            constraints: _,
-            hive_distribution: _,
-            hive_formats: _,
-            table_properties: _,
-            with_options: _,
-            file_format: _,
-            location: _,
-            query,
-            without_rowid: _,
-            like,
-            engine: _,
-            default_charset: _,
-            collation: _,
+            name, query, like, ..
         } => {
             if let Some(boxed_query) = query {
                 parse_query(boxed_query.as_ref(), context)?;
@@ -462,6 +435,21 @@ fn parse_stmt(stmt: &Statement, context: &mut Context) -> Result<(), String> {
     }
 }
 
+pub fn get_dialect(name: &str) -> Box<dyn CanonicalDialect> {
+    match name {
+        "bigquery" => Box::new(BigQueryDialect),
+        "snowflake" => Box::new(SnowflakeDialect),
+        "postgres" => Box::new(PostgreSqlDialect {}),
+        "postgresql" => Box::new(PostgreSqlDialect {}),
+        "hive" => Box::new(HiveDialect {}),
+        "mysql" => Box::new(MySqlDialect {}),
+        "mssql" => Box::new(MsSqlDialect {}),
+        "sqlite" => Box::new(SQLiteDialect {}),
+        "ansi" => Box::new(AnsiDialect {}),
+        _ => Box::new(GenericDialect),
+    }
+}
+
 pub fn parse_sql(
     sql: &str,
     dialect: Box<dyn CanonicalDialect>,
@@ -487,17 +475,7 @@ pub fn parse_sql(
 #[pyfunction]
 fn parse(sql: &str, dialect: Option<&str>, default_schema: Option<&str>) -> PyResult<SqlMeta> {
     let parser_dialect: Box<dyn CanonicalDialect> = if let Some(d) = dialect {
-        match d {
-            "bigquery" => Box::new(BigQueryDialect),
-            "snowflake" => Box::new(SnowflakeDialect),
-            "postgres" => Box::new(PostgreSqlDialect {}),
-            "hive" => Box::new(HiveDialect {}),
-            "mysql" => Box::new(MySqlDialect {}),
-            "mssql" => Box::new(MsSqlDialect {}),
-            "sqlite" => Box::new(SQLiteDialect {}),
-            "ansi" => Box::new(AnsiDialect {}),
-            _ => Box::new(GenericDialect),
-        }
+        get_dialect(d)
     } else {
         Box::new(GenericDialect)
     };

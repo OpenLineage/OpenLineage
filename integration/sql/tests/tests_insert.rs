@@ -81,11 +81,11 @@ fn insert_overwrite_table() {
     assert_eq!(
         test_sql(
             "\
-        INSERT OVERWRITE TABLE schema.daily_play_sessions_v2
+        INSERT OVERWRITE TABLE schema.dps
         PARTITION (ds = '2022-03-30')
         SELECT
-            platform_id,
-            universe_id,
+            pid,
+            uid,
             pii_userid,
             NULL as session_id,
             NULL as session_start_ts,
@@ -93,18 +93,18 @@ fn insert_overwrite_table() {
             SUM(
                 UNIX_TIMESTAMP(stopped) - UNIX_TIMESTAMP(joined)
             ) AS time_spent_sec
-        FROM schema.fct_play_sessions_merged
+        FROM schema.fpsm
         WHERE ds = '2022-03-30'
             AND UNIX_TIMESTAMP(stopped) - UNIX_TIMESTAMP(joined) BETWEEN 0 AND 28800
         GROUP BY
-            platform_id,
-            universe_id,
+            pid,
+            uid,
             pii_userid
     "
         ),
         SqlMeta {
-            in_tables: table("schema.fct_play_sessions_merged"),
-            out_tables: table("schema.daily_play_sessions_v2")
+            in_tables: table("schema.fpsm"),
+            out_tables: table("schema.dps")
         }
     )
 }
@@ -148,6 +148,83 @@ fn insert_overwrite_multiple_subqueries() {
         SqlMeta {
             in_tables: tables(vec!["table2", "table3", "table4"]),
             out_tables: table("mytable")
+        }
+    )
+}
+
+#[test]
+fn insert_overwrite_partition() {
+    assert_eq!(
+        test_sql_dialect(
+            "
+            INSERT OVERWRITE TABLE d_d_n.g_d_t_r
+            PARTITION (ds = '2022-02-24')
+            SELECT
+                u.u_i,
+                g.d_r
+            FROM
+                (SELECT * FROM d_d_n.u_t_250 WHERE ds = '2022-02-24') u
+            JOIN
+                (SELECT * FROM d_n_p.g_d_r WHERE ds = '2022-02-24') g
+            ON
+                u.u_i = g.u_i
+        ",
+            "hive"
+        ),
+        SqlMeta {
+            in_tables: tables(vec!["d_d_n.u_t_250", "d_n_p.g_d_r"]),
+            out_tables: table("d_d_n.g_d_t_r")
+        }
+    )
+}
+
+#[test]
+fn set_before_insert() {
+    assert_eq!(
+        test_sql_dialect(
+            "
+                SET hive.something=false;
+                INSERT INTO TABLE a.b.c VALUES (1, 2, 3);
+            ",
+            "hive"
+        ),
+        SqlMeta {
+            in_tables: vec![],
+            out_tables: table("a.b.c")
+        }
+    )
+}
+
+#[test]
+fn insert_overwrite_hive_sets_large() {
+    assert_eq!(
+        test_sql_dialect(
+            "
+                SET hive.auto.convert.join=false;
+                SET hive.tez.auto.reducer.parallelism=false;
+                SET mapred.reduce.tasks=150;
+                INSERT OVERWRITE TABLE d_d_p.d_f_s
+                PARTITION (ds = '2022-05-01')
+                  SELECT
+                      T1.p_id,
+                      T2.s_st_ts
+                      FROM d_p.f_p_s AS T1
+                      INNER JOIN
+                        (SELECT
+                           fpsm.p_id,
+                           MIN(fpsm.ds) as ds
+                           from d_p.f_p_s_merged  AS fpsm
+                           WHERE fpsm.ds = '2022-05-01'
+                           GROUP BY
+                               fpsm.p_id
+                        ) AS T2
+                        ON T1.p_id = T2.p_id
+        ",
+            "hive"
+        ),
+        SqlMeta {
+            in_tables: tables(vec!["d_p.f_p_s", "d_p.f_p_s_merged"]),
+            out_tables: table("d_d_p.d_f_s")
         }
     )
 }
@@ -346,6 +423,200 @@ fn test_triple_statements_insert_insert_insert() {
         SqlMeta {
             in_tables: table("a.a"),
             out_tables: tables(vec!["a.a", "b.b", "c.c"]),
+        }
+    )
+}
+
+#[test]
+fn insert_overwrite_multiple_unions() {
+    assert_eq!(
+        test_sql(
+            "
+            INSERT OVERWRITE TABLE d_d_n.a_p_s_v
+            PARTITION (ds = '2022-05-01')
+            SELECT
+                sub.p_i,
+                MIN(sub.f_a_d) AS session_id,
+                MAX(sub.l_a_d) AS l_a_d
+            FROM
+                (
+                SELECT
+                    p_i,
+                    f_a_d,
+                    l_a_d
+                FROM
+                    d_d_n.d_p_s_v
+                WHERE
+                    ds = '2022-05-01'
+                UNION ALL
+                SELECT
+                    p_i,
+                    f_a_d,
+                    l_a_d
+                FROM
+                    d_d_n.a_p_s_v
+                WHERE
+                    ds = '2022-04-30'
+                    AND l_a_d >= DATE_ADD('2022-05-01', -56)
+                UNION ALL
+                SELECT
+                    p_i,
+                    f_a_d,
+                    l_a_d
+                FROM
+                    d_d_n.a_p_s_v
+                WHERE
+                    ds = '2022-04-24'
+                    AND l_a_d >= DATE_ADD('2022-05-01', -56)
+                UNION ALL
+                SELECT
+                    p_i,
+                    f_a_d,
+                    l_a_d
+                FROM
+                    d_d_n.a_p_s_v
+                WHERE
+                    ds = '2022-04-03'
+                    AND l_a_d >= DATE_ADD('2022-05-01', -56)
+                ) sub
+            GROUP BY
+                sub.p_i,
+                sub.u_i
+        "
+        ),
+        SqlMeta {
+            in_tables: tables(vec!["d_d_n.a_p_s_v", "d_d_n.d_p_s_v"]),
+            out_tables: table("d_d_n.a_p_s_v")
+        }
+    )
+}
+
+#[test]
+fn insert_overwrite_partition_dates() {
+    assert_eq!(
+        test_sql(
+            "\
+        INSERT OVERWRITE TABLE ddw.aps2
+        PARTITION (ds = '2022-05-01')
+        SELECT
+            sub.pid,
+            sub.uid,
+            sub.userkey,
+            MIN(sub.fs_id) AS session_id,
+            MIN(sub.fs_start_ts) AS session_start_ts,
+            SUM(sub.sc_1d) AS sc_1d,
+            SUM(sub.sc_7d) AS sc_7d,
+            SUM(sub.sc_28d) AS sc_28d,
+            SUM(sub.sc_inf) AS session_cnt_inf,
+            SUM(sub.tss_1d) AS tss_1d,
+            SUM(sub.tss_7d) AS tss_7d,
+            SUM(sub.tss_28d) AS tss_28d,
+            SUM(sub.tss_inf) AS tss_inf,
+            SUM(sub.datelist) AS datelist,
+            MIN(sub.fad) AS fad,
+            MAX(sub.lad) AS lad
+        FROM
+            (
+            SELECT
+                pid,
+                uid,
+                userkey,
+                fs_id,
+                fs_start_ts,
+                session_cnt AS session_cnt_1d,
+                session_cnt AS session_cnt_7d,
+                session_cnt AS session_cnt_28d,
+                session_cnt AS session_cnt_inf,
+                tss AS tss_1d,
+                tss AS tss_7d,
+                tss AS tss_28d,
+                tss AS tss_inf,
+                1 AS datelist,
+                '2022-05-01' AS fad,
+                '2022-05-01' AS lad
+            FROM
+                ddw.dps
+            WHERE
+                ds = '2022-05-01'
+            UNION ALL
+            SELECT
+                pid,
+                uid,
+                userkey,
+                fs_id,
+                fs_start_ts,
+                0 AS session_cnt_1d,
+                session_cnt_7d AS session_cnt_7d,
+                session_cnt_28d AS session_cnt_28d,
+                session_cnt_inf AS session_cnt_inf,
+                0 AS tss_1d,
+                tss_7d AS tss_7d,
+                tss_28d AS tss_28d,
+                tss_inf AS tss_inf,
+                (datelist % 549755813888) * 2 AS datelist,
+                fad AS fad,
+                lad AS lad
+            FROM
+                ddw.aps2
+            WHERE
+                ds = '2022-04-30'
+                AND lad >= DATE_ADD('2022-05-01', -56)
+            UNION ALL
+            SELECT
+                pid,
+                uid,
+                userkey,
+                fs_id,
+                fs_start_ts,
+                0 AS session_cnt_1d,
+                -session_cnt_1d AS session_cnt_7d,
+                0 AS session_cnt_28d,
+                0 AS session_cnt_inf,
+                0 AS tss_1d,
+                -tss_1d AS tss_7d,
+                0 AS tss_28d,
+                0 AS tss_inf,
+                0 AS datelist,
+                fad,
+                lad
+            FROM
+                ddw.aps2
+            WHERE
+                ds = '2022-04-24'
+                AND lad >= DATE_ADD('2022-05-01', -56)
+            UNION ALL
+            SELECT
+                pid,
+                uid,
+                userkey,
+                fs_id,
+                fs_start_ts,
+                0 AS session_cnt_1d,
+                0 AS session_cnt_7d,
+                -session_cnt_1d AS session_cnt_28d,
+                0 AS session_cnt_inf,
+                0 AS tss_1d,
+                0 AS tss_7d,
+                -tss_1d AS tss_28d,
+                0 AS tss_inf,
+                0 AS datelist,
+                fad,
+                lad
+            FROM
+                ddw.aps2
+            WHERE
+                ds = '2022-04-03'
+                AND lad >= DATE_ADD('2022-05-01', -56)
+            ) sub
+        GROUP BY
+            sub.pid,
+            sub.uid,
+            sub.userkey
+        "
+        ),
+        SqlMeta {
+            in_tables: tables(vec!["ddw.aps2", "ddw.dps"]),
+            out_tables: table("ddw.aps2")
         }
     )
 }
