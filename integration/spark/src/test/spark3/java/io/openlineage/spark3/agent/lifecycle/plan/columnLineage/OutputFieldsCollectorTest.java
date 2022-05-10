@@ -1,0 +1,122 @@
+package io.openlineage.spark3.agent.lifecycle.plan.columnLineage;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.when;
+
+import java.util.Arrays;
+import org.apache.spark.sql.catalyst.expressions.Attribute;
+import org.apache.spark.sql.catalyst.expressions.ExprId;
+import org.apache.spark.sql.catalyst.expressions.NamedExpression;
+import org.apache.spark.sql.catalyst.plans.logical.Aggregate;
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.catalyst.plans.logical.Project;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import scala.collection.Seq;
+import scala.collection.Seq$;
+
+public class OutputFieldsCollectorTest {
+
+  LogicalPlan plan = mock(LogicalPlan.class);
+  OutputFieldsCollector collector = new OutputFieldsCollector(plan);
+  ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
+
+  Attribute attr1 = mock(Attribute.class);
+  Attribute attr2 = mock(Attribute.class);
+  ExprId exprId1 = mock(ExprId.class);
+  ExprId exprId2 = mock(ExprId.class);
+
+  Seq<Attribute> attrs =
+      scala.collection.JavaConverters.collectionAsScalaIterableConverter(
+              Arrays.asList(attr1, attr2))
+          .asScala()
+          .toSeq();
+
+  @BeforeEach
+  public void setup() {
+    when(attr1.name()).thenReturn("name1");
+    when(attr1.exprId()).thenReturn(exprId1);
+
+    when(attr2.name()).thenReturn("name2");
+    when(attr2.exprId()).thenReturn(exprId2);
+
+    when(plan.output()).thenReturn((Seq<Attribute>) Seq$.MODULE$.empty());
+    when(builder.hasOutputs()).thenReturn(true);
+  }
+
+  @Test
+  public void verifyOutputAttributeIsCollected() {
+    when(plan.output()).thenReturn(attrs);
+
+    collector.collect(builder);
+
+    Mockito.verify(builder, times(1)).addOutput(exprId1, "name1");
+    Mockito.verify(builder, times(1)).addOutput(exprId2, "name2");
+  }
+
+  @Test
+  public void verifyAggregateExpressionsAreCollected() {
+    NamedExpression namedExpression = mock(NamedExpression.class);
+    ExprId exprId = mock(ExprId.class);
+
+    when(namedExpression.name()).thenReturn("some-name");
+    when(namedExpression.exprId()).thenReturn(exprId);
+
+    Aggregate aggregate = mock(Aggregate.class);
+    when(aggregate.output()).thenReturn((Seq<Attribute>) Seq$.MODULE$.empty());
+    when(aggregate.aggregateExpressions())
+        .thenReturn(
+            scala.collection.JavaConverters.collectionAsScalaIterableConverter(
+                    Arrays.asList(namedExpression))
+                .asScala()
+                .toSeq());
+
+    new OutputFieldsCollector(aggregate).collect(builder);
+
+    Mockito.verify(builder, times(1)).addOutput(exprId, "some-name");
+  }
+
+  @Test
+  public void verifyProjectListIsCollected() {
+    NamedExpression namedExpression = mock(NamedExpression.class);
+    ExprId exprId = mock(ExprId.class);
+
+    when(namedExpression.name()).thenReturn("some-name");
+    when(namedExpression.exprId()).thenReturn(exprId);
+
+    Project project = mock(Project.class);
+    when(project.output()).thenReturn((Seq<Attribute>) Seq$.MODULE$.empty());
+    when(project.projectList())
+        .thenReturn(
+            scala.collection.JavaConverters.collectionAsScalaIterableConverter(
+                    Arrays.asList(namedExpression))
+                .asScala()
+                .toSeq());
+
+    new OutputFieldsCollector(project).collect(builder);
+
+    Mockito.verify(builder, times(1)).addOutput(exprId, "some-name");
+  }
+
+  @Test
+  public void verifyChildrenOutputIsCollectedWhenNoDirectOutput() {
+    LogicalPlan childPlan = mock(LogicalPlan.class);
+    when(childPlan.output()).thenReturn(attrs);
+
+    when(plan.output()).thenReturn((Seq<Attribute>) Seq$.MODULE$.empty());
+    when(builder.hasOutputs()).thenReturn(false).thenReturn(true);
+    when(plan.children())
+        .thenReturn(
+            scala.collection.JavaConverters.collectionAsScalaIterableConverter(
+                    Arrays.asList(childPlan))
+                .asScala()
+                .toSeq());
+
+    new OutputFieldsCollector(plan).collect(builder);
+
+    Mockito.verify(builder, times(1)).addOutput(exprId1, "name1");
+    Mockito.verify(builder, times(1)).addOutput(exprId2, "name2");
+  }
+}
