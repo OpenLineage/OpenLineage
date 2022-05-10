@@ -2,6 +2,7 @@ extern crate core;
 
 use openlineage_sql::{parse_sql, SqlMeta};
 use sqlparser::dialect::PostgreSqlDialect;
+use std::sync::Arc;
 
 #[macro_use]
 mod test_utils;
@@ -46,7 +47,7 @@ fn parse_bugged_cte() {
                 SELECT user_id, cnt, balance
                 FROM sum_trans
                 WHERE count > 1000 OR balance > 100000;",
-            Box::new(PostgreSqlDialect {}),
+            Arc::new(PostgreSqlDialect {}),
             None
         )
         .unwrap_err(),
@@ -84,8 +85,7 @@ fn parse_recursive_cte() {
 #[test]
 fn multiple_ctes() {
     assert_eq!(
-        test_sql(
-            "
+        test_sql("
             WITH customers AS (
                 SELECT * FROM DEMO_DB.public.stg_customers
             ),
@@ -96,9 +96,7 @@ fn multiple_ctes() {
             FROM customers c
             JOIN orders o
             ON c.id = o.customer_id
-        "
-        ),
-        SqlMeta {
+        "), SqlMeta {
             in_tables: tables(vec![
                 "DEMO_DB.public.stg_customers",
                 "DEMO_DB.public.stg_orders"
