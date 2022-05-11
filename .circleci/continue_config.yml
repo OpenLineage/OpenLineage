@@ -2,6 +2,7 @@ version: 2.1
 
 orbs:
   gcp-cli: circleci/gcp-cli@2.2.0
+  rust: circleci/rust@1.6.0
 
 checkout_project_root: &checkout_project_root
   # Override checkout path to project root (see: https://circleci.com/docs/2.0/configuration-reference/#checkout)
@@ -254,17 +255,20 @@ jobs:
         type: string
       resource_class:
         type: string
+      run_tests:
+        type: boolean
     working_directory: ~/openlineage/integration/sql
     machine:
       image: ubuntu-2004:current
     resource_class: << parameters.resource_class >>
     steps:
       - *checkout_project_root
-      - run: docker run -it -v $PWD:/code << parameters.image >> bash -c 'cd /code; bash script/build.sh'
+      - run: docker run -it -v $PWD:/code << parameters.image >> bash -c 'cd /code; RUN_TESTS=<<parameters.run_tests>> bash script/build.sh'
       - persist_to_workspace:
           root: .
           paths:
             - ./target/wheels/*.whl
+            - ./target/wheels/*.tar.gz
       - store_artifacts:
           path: ./target/wheels
           destination: sql-artifacts
@@ -598,18 +602,18 @@ workflows:
             branches:
               ignore: /.*/
       - build-integration-sql:
-          name: build-integration-sql-x86
-          image: "quay.io/pypa/manylinux2014_x86_64"
-          resource_class: "medium"
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
-            branches:
-              ignore: /.*/
-      - build-integration-sql:
-          name: build-integration-sql-arm
-          image: "quay.io/pypa/manylinux2014_aarch64"
-          resource_class: "arm.medium"
+          matrix:
+            parameters:
+              image: [
+                "quay.io/pypa/manylinux2014_x86_64",
+                "quay.io/pypa/manylinux2014_i686",
+                "quay.io/pypa/manylinux_2_24_x86_64",
+                "quay.io/pypa/manylinux_2_24_i686",
+                "messense/manylinux2014-cross:aarch64",
+                "messense/manylinux_2_24-cross:aarch64",
+              ]
+              resource_class: ["medium"]
+              run_tests: [false]
           filters:
             tags:
               only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
@@ -628,5 +632,4 @@ workflows:
             - build-integration-airflow
             - build-integration-dbt
             - build-integration-dagster
-            - build-integration-sql-x86
-            - build-integration-sql-arm
+            - build-integration-sql

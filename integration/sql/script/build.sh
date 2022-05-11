@@ -17,9 +17,20 @@ python -m pip install maturin
 
 # Install Rust
 curl https://sh.rustup.rs -sSf | sh -s -- -y
+source $HOME/.cargo/env
 
 # Disable incremental compilation, since it causes issues.
 export CARGO_INCREMENTAL=0
 
-# Run test and build release wheels.
-source $HOME/.cargo/env && cargo test --no-default-features && maturin build --release
+# Run test if indicated to do so.
+if [[ -z ${RUN_TESTS} ]]; then
+  cargo test --no-default-features
+fi
+
+# Build release wheels
+maturin build --out target/wheels
+
+# Verify that it imports properly
+pip install openlineage-sql --no-index --find-links target/wheels --force-reinstall
+python -c "import openlineage_sql"
+echo "all good"

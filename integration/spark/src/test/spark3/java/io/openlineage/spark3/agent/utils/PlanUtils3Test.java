@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.connector.catalog.CatalogPlugin;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.Table;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
@@ -198,5 +199,46 @@ public class PlanUtils3Test {
         () ->
             PlanUtils3.getDatasetIdentifier(
                 openLineageContext, tableCatalog, identifier, tableProperties));
+  }
+
+  @Test
+  public void testGetDatasetIdentifierFromV2Relation() {
+    DatasetIdentifier di = mock(DatasetIdentifier.class);
+    try (MockedStatic<CatalogUtils3> mocked = mockStatic(CatalogUtils3.class)) {
+      when(CatalogUtils3.getDatasetIdentifier(
+              sparkSession, tableCatalog, identifier, tableProperties))
+          .thenReturn(di);
+      assertEquals(
+          di, PlanUtils3.getDatasetIdentifier(openLineageContext, dataSourceV2Relation).get());
+    }
+  }
+
+  @Test
+  public void testGetDatasetIdentifierFromV2RelationWithMissingIdentifier() {
+    when(dataSourceV2Relation.identifier()).thenReturn(null).thenReturn(Option.empty());
+    assertEquals(
+        Optional.empty(),
+        PlanUtils3.getDatasetIdentifier(openLineageContext, dataSourceV2Relation));
+    assertEquals(
+        Optional.empty(),
+        PlanUtils3.getDatasetIdentifier(openLineageContext, dataSourceV2Relation));
+  }
+
+  @Test
+  public void testGetDatasetIdentifierFromV2RelationWithMissingCatalog() {
+    when(dataSourceV2Relation.catalog())
+        .thenReturn(null)
+        .thenReturn(Option.empty())
+        .thenReturn(Option.apply(mock(CatalogPlugin.class)));
+
+    assertEquals(
+        Optional.empty(),
+        PlanUtils3.getDatasetIdentifier(openLineageContext, dataSourceV2Relation));
+    assertEquals(
+        Optional.empty(),
+        PlanUtils3.getDatasetIdentifier(openLineageContext, dataSourceV2Relation));
+    assertEquals(
+        Optional.empty(),
+        PlanUtils3.getDatasetIdentifier(openLineageContext, dataSourceV2Relation));
   }
 }
