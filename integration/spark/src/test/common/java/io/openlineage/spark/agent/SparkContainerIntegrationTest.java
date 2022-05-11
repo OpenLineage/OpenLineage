@@ -164,7 +164,11 @@ public class SparkContainerIntegrationTest {
   public void testPysparkSQLHiveTest() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network, openLineageClientMockContainer, "testPysparkSQLHiveTest", "spark_hive.py");
-    verifyEvents("pysparkHiveStartEvent.json", "pysparkHiveCompleteEvent.json");
+    verifyEvents(
+        "pysparkHiveStartEvent.json",
+        "pysparkHiveCompleteEvent.json",
+        "pysparkHiveSelectStartEvent.json",
+        "pysparkHiveSelectEndEvent.json");
   }
 
   @Test
@@ -200,10 +204,31 @@ public class SparkContainerIntegrationTest {
             openLineageClientMockContainer,
             "testCTASDelta",
             "--packages",
-            "io.delta:delta-core_2.12:1.0.0",
+            getDeltaPackageName(),
             "/opt/spark_scripts/spark_delta.py");
     pyspark.start();
     verifyEvents("pysparkDeltaCTASComplete.json");
+  }
+
+  /*
+   * Alter table differs between Spark 3.1 and Spark 3.2.
+   * Delta support for 3.2 is also limited.
+   * These test should only apply for Spark 3.1
+   */
+  @EnabledIfSystemProperty(named = "spark.version", matches = "(3.1.*)")
+  @ParameterizedTest
+  @CsvSource(
+      value = {
+        "spark_v2_alter.py:pysparkV2AlterTableStartEvent.json:pysparkV2AlterTableCompleteEvent.json:true",
+        "spark_write_delta_table_version.py:pysparkWriteDeltaTableVersionStart.json:pysparkWriteDeltaTableVersionEnd.json:false"
+      },
+      delimiter = ':')
+  public void testAlterTableSpark_3_1(
+      String pysparkScript,
+      String expectedStartEvent,
+      String expectedCompleteEvent,
+      String isIceberg) {
+    testV2Commands(pysparkScript, expectedStartEvent, expectedCompleteEvent, isIceberg);
   }
 
   @EnabledIfSystemProperty(named = "spark.version", matches = SPARK_3) // Spark version >= 3.*
@@ -220,9 +245,7 @@ public class SparkContainerIntegrationTest {
         "spark_v2_update.py:pysparkV2UpdateStartEvent.json:pysparkV2UpdateCompleteEvent.json:true",
         "spark_v2_merge_into_table.py:pysparkV2MergeIntoTableStartEvent.json:pysparkV2MergeIntoTableCompleteEvent.json:true",
         "spark_v2_drop.py:pysparkV2DropTableStartEvent.json:pysparkV2DropTableCompleteEvent.json:true",
-        "spark_v2_alter.py:pysparkV2AlterTableStartEvent.json:pysparkV2AlterTableCompleteEvent.json:true",
         "spark_v2_append.py:pysparkV2AppendDataStartEvent.json:pysparkV2AppendDataCompleteEvent.json:true",
-        "spark_write_delta_table_version.py:pysparkWriteDeltaTableVersionStart.json:pysparkWriteDeltaTableVersionEnd.json:false"
       },
       delimiter = ':')
   public void testV2Commands(
@@ -236,12 +259,29 @@ public class SparkContainerIntegrationTest {
             openLineageClientMockContainer,
             "testV2Commands",
             "--packages",
-            Boolean.valueOf(isIceberg)
-                ? "org.apache.iceberg:iceberg-spark3-runtime:0.12.0"
-                : "io.delta:delta-core_2.12:1.0.0",
+            Boolean.valueOf(isIceberg) ? getIcebergPackageName() : getDeltaPackageName(),
             "/opt/spark_scripts/" + pysparkScript);
     pyspark.start();
     verifyEvents(expectedStartEvent, expectedCompleteEvent);
+  }
+
+  private String getIcebergPackageName() {
+    String sparkVersion = System.getProperty("spark.version");
+    if (sparkVersion.startsWith("3.1")) {
+      return "org.apache.iceberg:iceberg-spark-runtime-3.1_2.12:0.13.0";
+    } else if (sparkVersion.startsWith("3.2")) {
+      return "org.apache.iceberg:iceberg-spark-runtime-3.2_2.12:0.13.0";
+    }
+    // return previously used package name
+    return "org.apache.iceberg:iceberg-spark3-runtime:0.12.0";
+  }
+
+  private String getDeltaPackageName() {
+    String sparkVersion = System.getProperty("spark.version");
+    if (sparkVersion.startsWith("3.2")) {
+      return "io.delta:delta-core_2.12:1.1.0";
+    }
+    return "io.delta:delta-core_2.12:1.0.0";
   }
 
   @Test
@@ -286,7 +326,7 @@ public class SparkContainerIntegrationTest {
             openLineageClientMockContainer,
             "testWriteIcebergTableVersion",
             "--packages",
-            "org.apache.iceberg:iceberg-spark3-runtime:0.12.0",
+            getIcebergPackageName(),
             "/opt/spark_scripts/spark_write_iceberg_table_version.py")
         .start();
     verifyEvents("pysparkWriteIcebergTableVersionEnd.json");

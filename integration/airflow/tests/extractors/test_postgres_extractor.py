@@ -10,10 +10,10 @@ from airflow import DAG
 
 from openlineage.airflow.utils import safe_import_airflow, get_connection
 from openlineage.common.models import (
-    DbTableName,
     DbTableSchema,
     DbColumn
 )
+from openlineage.common.sql import DbTableMeta
 from openlineage.common.dataset import Source, Dataset
 from openlineage.airflow.extractors.postgres_extractor import PostgresExtractor
 
@@ -33,7 +33,7 @@ CONN_URI_WITHOUT_USERPASS = 'postgres://localhost:5432/food_delivery'
 
 DB_NAME = 'food_delivery'
 DB_SCHEMA_NAME = 'public'
-DB_TABLE_NAME = DbTableName('discounts')
+DB_TABLE_NAME = DbTableMeta('discounts')
 DB_TABLE_COLUMNS = [
     DbColumn(
         name='id',
@@ -127,9 +127,6 @@ def test_extract(get_connection, mock_get_table_schemas):
             fields=[]
         ).to_openlineage_dataset()]
 
-    # Set the environment variable for the connection
-    os.environ[f"AIRFLOW_CONN_{CONN_ID.upper()}"] = CONN_URI
-
     task_metadata = PostgresExtractor(TASK).extract()
 
     assert task_metadata.name == f"{DAG_ID}.{TASK_ID}"
@@ -168,15 +165,7 @@ def test_extract_authority_uri(get_connection, mock_get_table_schemas):
 
 @mock.patch('psycopg2.connect')
 def test_get_table_schemas(mock_conn):
-    # (1) Define a simple hook class for testing
-    class TestPostgresHook(PostgresHook):
-        conn_name_attr = 'test_conn_id'
-
-        def __init__(self, *args, **kwargs):
-            super(TestPostgresHook, self).__init__(*args, **kwargs)
-            self.schema = ''
-
-    # (2) Mock calls to postgres
+    # (1) Mock calls to postgres
     rows = [
         (DB_SCHEMA_NAME, DB_TABLE_NAME.name, 'id', 1, 'int4'),
         (DB_SCHEMA_NAME, DB_TABLE_NAME.name, 'amount_off', 2, 'int4'),
@@ -189,11 +178,10 @@ def test_get_table_schemas(mock_conn):
         .cursor.return_value \
         .fetchall.return_value = rows
 
-    # (3) Mock conn for hook
-    hook = TestPostgresHook()
-    hook.conn = mock_conn
+    # (2) Set the environment variable for the connection
+    os.environ[f"AIRFLOW_CONN_{CONN_ID.upper()}"] = CONN_URI
 
-    # (4) Extract table schemas for task
+    # (3) Extract table schemas for task
     extractor = PostgresExtractor(TASK)
     table_schemas = extractor._get_table_schemas(table_names=[DB_TABLE_NAME])
 

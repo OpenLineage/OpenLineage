@@ -44,16 +44,16 @@ public abstract class AbstractQueryPlanDatasetBuilder<T, P extends LogicalPlan, 
   }
 
   protected DatasetFactory<OpenLineage.OutputDataset> outputDataset() {
-    return DatasetFactory.output(context.getOpenLineage());
+    return DatasetFactory.output(context);
   }
 
   protected DatasetFactory<OpenLineage.InputDataset> inputDataset() {
-    return DatasetFactory.input(context.getOpenLineage());
+    return DatasetFactory.input(context);
   }
 
   public abstract List<D> apply(P p);
 
-  public List<D> apply(T event) {
+  public final List<D> apply(T event) {
     return context
         .getQueryExecution()
         .map(
@@ -83,9 +83,13 @@ public abstract class AbstractQueryPlanDatasetBuilder<T, P extends LogicalPlan, 
       @Override
       public List<D> apply(LogicalPlan x) {
         unknownEntryFacetListener.accept(x);
-        return builder.apply((P) x);
+        return builder.apply(event, (P) x);
       }
     };
+  }
+
+  protected List<D> apply(T event, P plan) {
+    return apply(plan);
   }
 
   protected PartialFunction<LogicalPlan, Collection<D>> delegate(

@@ -22,8 +22,7 @@ public class Spark3DatasetBuilderFactory implements DatasetBuilderFactory {
   @Override
   public Collection<PartialFunction<Object, List<OpenLineage.InputDataset>>> getInputBuilders(
       OpenLineageContext context) {
-    DatasetFactory<OpenLineage.InputDataset> datasetFactory =
-        DatasetFactory.input(context.getOpenLineage());
+    DatasetFactory<OpenLineage.InputDataset> datasetFactory = DatasetFactory.input(context);
     return ImmutableList.<PartialFunction<Object, List<OpenLineage.InputDataset>>>builder()
         .add(new LogicalRelationDatasetBuilder(context, datasetFactory, true))
         .add(new CommandPlanVisitor(context))
@@ -35,16 +34,32 @@ public class Spark3DatasetBuilderFactory implements DatasetBuilderFactory {
   @Override
   public Collection<PartialFunction<Object, List<OpenLineage.OutputDataset>>> getOutputBuilders(
       OpenLineageContext context) {
-    DatasetFactory<OpenLineage.OutputDataset> datasetFactory =
-        DatasetFactory.output(context.getOpenLineage());
-    return ImmutableList.<PartialFunction<Object, List<OpenLineage.OutputDataset>>>builder()
-        .add(new LogicalRelationDatasetBuilder(context, datasetFactory, true))
-        .add(new SaveIntoDataSourceCommandVisitor(context))
-        .add(new AppendDataDatasetBuilder(context, datasetFactory))
-        .add(new DataSourceV2RelationOutputDatasetBuilder(context, datasetFactory))
-        .add(new TableContentChangeDatasetBuilder(context))
-        .add(new CreateReplaceDatasetBuilder(context))
-        .add(new AlterTableDatasetBuilder(context))
-        .build();
+    DatasetFactory<OpenLineage.OutputDataset> datasetFactory = DatasetFactory.output(context);
+    ImmutableList.Builder builder =
+        ImmutableList.<PartialFunction<Object, List<OpenLineage.OutputDataset>>>builder()
+            .add(new LogicalRelationDatasetBuilder(context, datasetFactory, false))
+            .add(new SaveIntoDataSourceCommandVisitor(context))
+            .add(new AppendDataDatasetBuilder(context, datasetFactory))
+            .add(new DataSourceV2RelationOutputDatasetBuilder(context, datasetFactory))
+            .add(new TableContentChangeDatasetBuilder(context))
+            .add(new CreateReplaceDatasetBuilder(context));
+
+    if (hasAlterTableClass()) {
+      builder.add(new AlterTableDatasetBuilder(context));
+    }
+
+    return builder.build();
+  }
+
+  private boolean hasAlterTableClass() {
+    try {
+      Spark3DatasetBuilderFactory.class
+          .getClassLoader()
+          .loadClass("org.apache.spark.sql.catalyst.plans.logical.AlterTable");
+      return true;
+    } catch (Exception e) {
+      // swallow- we don't care
+    }
+    return false;
   }
 }

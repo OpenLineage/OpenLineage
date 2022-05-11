@@ -10,14 +10,14 @@ Maven:
 <dependency>
     <groupId>io.openlineage</groupId>
     <artifactId>openlineage-spark</artifactId>
-    <version>0.6.2</version>
+    <version>0.8.1</version>
 </dependency>
 ```
 
 or Gradle:
 
 ```groovy
-implementation 'io.openlineage:openlineage-spark:0.6.2'
+implementation 'io.openlineage:openlineage-spark:0.8.1'
 ```
 
 ## Getting started
@@ -50,7 +50,7 @@ from pyspark.sql import SparkSession
 
 spark = (SparkSession.builder.master('local')
          .appName('sample_spark')
-         .config('spark.jars.packages', 'io.openlineage:openlineage-spark:0.6.2')
+         .config('spark.jars.packages', 'io.openlineage:openlineage-spark:0.8.1')
          .config('spark.extraListeners', 'io.openlineage.spark.agent.OpenLineageSparkListener')
          .config('spark.openlineage.url', 'http://{openlineage.client.host}/api/v1/namespaces/spark_integration/')
          .getOrCreate())
@@ -66,7 +66,7 @@ container):
 ```python
 from pyspark.sql import SparkSession
 
-file = "/home/jovyan/openlineage/libs/openlineage-spark-0.6.2.jar"
+file = "/home/jovyan/openlineage/libs/openlineage-spark-0.8.1.jar"
 
 spark = (SparkSession.builder.master('local').appName('rdd_to_dataframe')
              .config('spark.jars', file)
@@ -76,30 +76,12 @@ spark = (SparkSession.builder.master('local').appName('rdd_to_dataframe')
              .getOrCreate())
 ```
 
-# OpenLineageSparkListener as a java agent
-Configuring SparkListener as a java agent that needs to be added to
-the JVM startup parameters. Setup in a pyspark notebook looks like the following:
-
-```python
-from pyspark.sql import SparkSession
-
-file = "/home/jovyan/openlineage/libs/openlineage-spark-0.6.2.jar"
-
-spark = (SparkSession.builder.master('local').appName('rdd_to_dataframe')
-         .config('spark.driver.extraJavaOptions',
-                 f"-javaagent:{file}=http://{openlineage.client.host}/api/v1/namespaces/spark_integration/")
-         .config('spark.jars.packages', 'org.postgresql:postgresql:42.2.+')
-         .config('spark.sql.repl.eagerEval.enabled', 'true')
-         .getOrCreate())
-```
-When running on a real cluster, the openlineage-spark jar has to be in a known location on the master
-node of the cluster and its location referenced in the `spark.driver.extraJavaOptions` parameter.
 ## Arguments
 
 ### Spark Listener
 The SparkListener reads its configuration from SparkConf parameters. These can be specified on the
 command line (e.g., `--conf "spark.openlineage.url=http://{openlineage.client.host}/api/v1/namespaces/my_namespace/job/the_job"`)
-or from the `conf/spark-defaults.conf` file. 
+or from the `conf/spark-defaults.conf` file.
 
 The following parameters can be specified
 | Parameter | Definition | Example |
@@ -112,19 +94,6 @@ The following parameters can be specified
 | spark.openlineage.apiKey | An API key to be used when sending events to the OpenLineage server | abcdefghijk |
 | spark.openlineage.url.param.xyz | A url parameter (replace xyz) and value to be included in requests to the OpenLineage API server | abcdefghijk |
 
-### Java Agent
-The java agent accepts an argument in the form of a uri. It includes the location of OpenLineage client, the
-namespace name, the parent job name, and a parent run id. The run id will be emitted as a parent run
-facet.
-```
-{openlineage.client.host}/api/v1/namespaces/{namespace}/job/{job_name}/runs/{run_uuid}?api_key={api_key}"
-
-```
-For example:
-```
-https://openlineage.client.host/api/v1/namespaces/foo/job/spark.submit_job/runs/a95858ad-f9b5-46d7-8f1c-ca9f58f68978"
-```
-
 # Build
 
 ## Java 8
@@ -132,6 +101,15 @@ https://openlineage.client.host/api/v1/namespaces/foo/job/spark.submit_job/runs/
 Testing requires a Java 8 JVM to test the scala spark components.
 
 `export JAVA_HOME=`/usr/libexec/java_home -v 1.8`
+
+## Preparation
+
+Before testing or building jar, run the following command from the client/java directory
+to install the openlineage-java jar, on which this module depends:
+
+```sh
+$ ./gradlew publishToMavenLocal
+```
 
 ## Testing
 
@@ -147,7 +125,7 @@ To run the integration tests, from the current directory run:
 ./gradlew integrationTest
 ```
 
-## Build spark agent jar
+## Build jar
 
 ```sh
 ./gradlew shadowJar
@@ -156,10 +134,10 @@ To run the integration tests, from the current directory run:
 # Extending
 The Spark library is intended to support extension by supporting custom implementations of a handful
 of interfaces. Nearly every extension interface extends or mimics Scala's `PartialFunction`. The
-`isDefinedAt(Object x)` method determines whether a given input is a valid input to the function. 
-A default implementation of `isDefinedAt(Object x)` is provided, which checks the generic type 
+`isDefinedAt(Object x)` method determines whether a given input is a valid input to the function.
+A default implementation of `isDefinedAt(Object x)` is provided, which checks the generic type
 arguments of the concrete class, if concrete type arguments are given, and determines if the input
-argument matches the generic type. For example the following class is automatically defined for an 
+argument matches the generic type. For example the following class is automatically defined for an
 input argument of type `MyDataset`
 
 ```
@@ -173,14 +151,14 @@ The following APIs are still evolving and may change over time, based on user fe
 ###[`OpenLineageEventHandlerFactory`](src/main/common/java/io/openlineage/spark/api/OpenLineageEventHandlerFactory.java)
 This interface defines the main entrypoint to the extension codebase. Custom implementations
 are registered by following Java's [`ServiceLoader` conventions](https://docs.oracle.com/javase/8/docs/api/java/util/ServiceLoader.html).
-A file called `io.openlineage.spark.api.OpenLineageEventHandlerFactory` must exist in the 
-application or jar's `META-INF/service` directory. Each line of that file must be the fully 
+A file called `io.openlineage.spark.api.OpenLineageEventHandlerFactory` must exist in the
+application or jar's `META-INF/service` directory. Each line of that file must be the fully
 qualified class name of a concrete implementation of `OpenLineageEventHandlerFactory`. More than one
-implementation can be present in a single file. This might be useful to separate extensions that 
+implementation can be present in a single file. This might be useful to separate extensions that
 are targeted toward different environments - e.g., one factory may contain Azure-specific extensions,
-while another factory may contain GCP extensions. 
+while another factory may contain GCP extensions.
 
-The `OpenLineageEventHandlerFactory` interface makes heavy use of default methods. Implementations 
+The `OpenLineageEventHandlerFactory` interface makes heavy use of default methods. Implementations
 may override any or all of the following methods
 ```java
 /**
@@ -194,43 +172,43 @@ Collection<PartialFunction<LogicalPlan, List<InputDataset>>> createInputDatasetQ
 Collection<PartialFunction<LogicalPlan, List<OutputDataset>>> createOutputDatasetQueryPlanVisitors(OpenLineageContext context);
 
 /**
- * Return a collection of PartialFunctions that can generate InputDatasets from one of the 
+ * Return a collection of PartialFunctions that can generate InputDatasets from one of the
  * pre-defined Spark types accessible from SparkListenerEvents (see below)
  */
 Collection<PartialFunction<Object, List<InputDataset>>> createInputDatasetBuilder(OpenLineageContext context);
 
 /**
- * Return a collection of PartialFunctions that can generate OutputDatasets from one of the 
+ * Return a collection of PartialFunctions that can generate OutputDatasets from one of the
  * pre-defined Spark types accessible from SparkListenerEvents (see below)
  */
 Collection<PartialFunction<Object, List<OutputDataset>>> createOutputDatasetBuilder(OpenLineageContext context);
 
 /**
- * Return a collection of CustomFacetBuilders that can generate InputDatasetFacets from one of the 
+ * Return a collection of CustomFacetBuilders that can generate InputDatasetFacets from one of the
  * pre-defined Spark types accessible from SparkListenerEvents (see below)
- */ 
+ */
 Collection<CustomFacetBuilder<?, ? extends InputDatasetFacet>> createInputDatasetFacetBuilders(OpenLineageContext context);
 
 /**
- * Return a collection of CustomFacetBuilders that can generate OutputDatasetFacets from one of the 
+ * Return a collection of CustomFacetBuilders that can generate OutputDatasetFacets from one of the
  * pre-defined Spark types accessible from SparkListenerEvents (see below)
  */
 Collection<CustomFacetBuilder<?, ? extends OutputDatasetFacet>>createOutputDatasetFacetBuilders(OpenLineageContext context);
 
 /**
- * Return a collection of CustomFacetBuilders that can generate DatasetFacets from one of the 
+ * Return a collection of CustomFacetBuilders that can generate DatasetFacets from one of the
  * pre-defined Spark types accessible from SparkListenerEvents (see below)
  */
 Collection<CustomFacetBuilder<?, ? extends DatasetFacet>> createDatasetFacetBuilders(OpenLineageContext context);
 
 /**
- * Return a collection of CustomFacetBuilders that can generate RunFacets from one of the 
+ * Return a collection of CustomFacetBuilders that can generate RunFacets from one of the
  * pre-defined Spark types accessible from SparkListenerEvents (see below)
  */
 Collection<CustomFacetBuilder<?, ? extends RunFacet>> createRunFacetBuilders(OpenLineageContext context);
 
 /**
- * Return a collection of CustomFacetBuilders that can generate JobFacets from one of the 
+ * Return a collection of CustomFacetBuilders that can generate JobFacets from one of the
  * pre-defined Spark types accessible from SparkListenerEvents (see below)
  */
 Collection<CustomFacetBuilder<?, ? extends JobFacet>> createJobFacetBuilders(OpenLineageContext context);
@@ -242,46 +220,46 @@ for specifics on each method.
 
 ### [`QueryPlanVisitor`](src/main/common/java/io/openlineage/spark/api/QueryPlanVisitor.java)
 QueryPlanVisitors evaluate nodes of a Spark `LogicalPlan` and attempt to generate `InputDataset`s or
-`OutputDataset`s from the information found in the `LogicalPlan` nodes. This is the most common 
-abstraction present in the OpenLineage Spark library and many examples can be found in the 
-`io.openlineage.spark.agent.lifecycle.plan` package - examples include the 
+`OutputDataset`s from the information found in the `LogicalPlan` nodes. This is the most common
+abstraction present in the OpenLineage Spark library and many examples can be found in the
+`io.openlineage.spark.agent.lifecycle.plan` package - examples include the
 [`BigQueryNodeVisitor`](src/main/common/java/io/openlineage/spark/agent/lifecycle/plan/BigQueryNodeVisitor.java),
 the [`KafkaRelationVisitor`](src/main/common/java/io/openlineage/spark/agent/lifecycle/plan/KafkaRelationVisitor.java)
 and the [`InsertIntoHiveTableVisitor`](src/main/common/java/io/openlineage/spark/agent/lifecycle/plan/InsertIntoHiveTableVisitor.java).
 
 `QueryPlanVisitor`s implement Scala's `PartialFunction` interface and are tested against every node
-of a Spark query's optimized `LogicalPlan`. Each invocation will expect either an `InputDataset` 
-or an `OutputDataset`. If a node can be either an `InputDataset` or an `OutputDataset`, the 
-constructor should accept a `DatasetFactory` so that the correct dataset type is generated at 
-runtime. 
+of a Spark query's optimized `LogicalPlan`. Each invocation will expect either an `InputDataset`
+or an `OutputDataset`. If a node can be either an `InputDataset` or an `OutputDataset`, the
+constructor should accept a `DatasetFactory` so that the correct dataset type is generated at
+runtime.
 
 `QueryPlanVisitor`s can attach facets to the Datasets created, e.g., `SchemaDatasetFacet` and
 `DatasourceDatasetFacet` are typically attached to the dataset when it is created. Custom facets
-can also be attached, though `CustomFacetBuilder`s _may_ override facets attached directly to the 
+can also be attached, though `CustomFacetBuilder`s _may_ override facets attached directly to the
 dataset.
 
 ### [`InputDatasetBuilder`s](integration/spark/src/main/common/java/io/openlineage/spark/api/AbstractInputDatasetBuilder.java) and [`OutputDatasetBuilder`s](integration/spark/src/main/common/java/io/openlineage/spark/api/AbstractOutputDatasetBuilder.java)
-Similar to the `QueryPlanVisitor`s, `InputDatasetBuilder`s and `OutputDatasetBuilder`s are 
+Similar to the `QueryPlanVisitor`s, `InputDatasetBuilder`s and `OutputDatasetBuilder`s are
 `PartialFunction`s defined for a specific input (see below for the list of Spark listener events and
-scheduler objects that can be passed to a builder) that can generate either an `InputDataset` or an 
+scheduler objects that can be passed to a builder) that can generate either an `InputDataset` or an
 `OutputDataset`. Though not strictly necessary, the abstract base classes
-[`AbstractInputDatasetBuilder`s](integration/spark/src/main/common/java/io/openlineage/spark/api/AbstractInputDatasetBuilder.java) 
+[`AbstractInputDatasetBuilder`s](integration/spark/src/main/common/java/io/openlineage/spark/api/AbstractInputDatasetBuilder.java)
 and [`AbstractOutputDatasetBuilder`s](integration/spark/src/main/common/java/io/openlineage/spark/api/AbstractOutputDatasetBuilder.java)
 are available for builders to extend.
 
 ### [`CustomFacetBuilder`](src/main/common/java/io/openlineage/spark/api/CustomFacetBuilder.java)
 CustomFacetBuilders evaluate Spark event types and scheduler objects (see below) to construct custom
 facets. CustomFacetBuilders are used to create `InputDatsetFacet`s, `OutputDatsetFacet`s,
-`DatsetFacet`s, `RunFacet`s, and `JobFacet`s. A few examples can be found in the 
+`DatsetFacet`s, `RunFacet`s, and `JobFacet`s. A few examples can be found in the
 [`io.openlineage.spark.agent.facets.builder`](src/main/common/java/io/openlineage/spark/agent/facets/builder)
 package, including the [`ErrorFacetBuilder`](src/main/common/java/io/openlineage/spark/agent/facets/builder/ErrorFacetBuilder.java)
 and the [`LogicalPlanRunFacetBuilder`](src/main/common/java/io/openlineage/spark/agent/facets/builder/LogicalPlanRunFacetBuilder.java).
 `CustomFacetBuilder`s are not `PartialFunction` implementations, but do define the `isDefinedAt(Object)`
 method to determine whether a given input is valid for the function. They implement the `BiConsumer`
-interface, accepting the valid input argument, and a `BiConsumer<String, Facet>` consumer, which 
+interface, accepting the valid input argument, and a `BiConsumer<String, Facet>` consumer, which
 accepts the name and value of any custom facet that should be attached to the OpenLineage run.
-There is no limit to the number of facets that can be reported by a given `CustomFacetBuilder`. 
-Facet names that conflict will overwrite previously reported facets if they are reported for the 
+There is no limit to the number of facets that can be reported by a given `CustomFacetBuilder`.
+Facet names that conflict will overwrite previously reported facets if they are reported for the
 same Spark event.
 Though not strictly necessary, the following abstract base classes are available for extension:
 * [`AbstractJobFacetBuilder`s](integration/spark/src/main/common/java/io/openlineage/spark/api/AbstractJobFacetBuilder.java)
@@ -290,20 +268,20 @@ Though not strictly necessary, the following abstract base classes are available
 * [`AbstractOutputDatasetFacetBuilder`s](integration/spark/src/main/common/java/io/openlineage/spark/api/AbstractOutputDatasetFacetBuilder.java)
 * [`AbstractDatasetFacetBuilder`s](integration/spark/src/main/common/java/io/openlineage/spark/api/AbstractDatasetFacetBuilder.java)
 
-Input/Output/Dataset facets returned are attached to _any_ Input/Output Dataset found for a given 
-Spark event. Typically, a Spark job only has one `OutputDataset`, so any `OutputDatasetFacet` 
+Input/Output/Dataset facets returned are attached to _any_ Input/Output Dataset found for a given
+Spark event. Typically, a Spark job only has one `OutputDataset`, so any `OutputDatasetFacet`
 generated will be attached to that `OutputDataset`. However, Spark jobs often have multiple
 `InputDataset`s. Typically, an `InputDataset` is read within a single Spark `Stage`, and any metrics
-pertaining to that dataset may be present in the `StageInfo#taskMetrics()` for that `Stage`. 
+pertaining to that dataset may be present in the `StageInfo#taskMetrics()` for that `Stage`.
 Accumulators pertaining to a dataset should be reported in the task metrics for a stage so that the
 `CustomFacetBuilder` can match against the `StageInfo` and retrieve the task metrics for that stage
 when generating the `InputDatasetFacet`. Other facet information is often found by analyzing the
 `RDD` that reads the raw data for a dataset. `CustomFacetBuilder`s that generate these facets should
-be defined for the specific subclass of `RDD` that is used to read the target dataset - e.g., 
-`HadoopRDD`, `BigQueryRDD`, or `JdbcRDD`. 
+be defined for the specific subclass of `RDD` that is used to read the target dataset - e.g.,
+`HadoopRDD`, `BigQueryRDD`, or `JdbcRDD`.
 
 ### Function Argument Types
-`CustomFacetBuilder`s and dataset builders can be defined for the following set of Spark listener 
+`CustomFacetBuilder`s and dataset builders can be defined for the following set of Spark listener
 event types and scheduler types:
 
 * `org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart`
@@ -315,8 +293,8 @@ event types and scheduler types:
 * `org.apache.spark.scheduler.StageInfo`
 * `org.apache.spark.scheduler.ActiveJob`
 
-Note that `RDD`s are "unwrapped" prior to being evaluated by builders, so there's no need to, e.g., 
+Note that `RDD`s are "unwrapped" prior to being evaluated by builders, so there's no need to, e.g.,
 check a `MapPartitionsRDD`'s dependencies. The `RDD` for each `Stage` can be evaluated when a
-`org.apache.spark.scheduler.SparkListenerStageCompleted` event occurs. When a 
+`org.apache.spark.scheduler.SparkListenerStageCompleted` event occurs. When a
 `org.apache.spark.scheduler.SparkListenerJobEnd` event is encountered, the last `Stage` for the
-`ActiveJob` can be evaluated. 
+`ActiveJob` can be evaluated.

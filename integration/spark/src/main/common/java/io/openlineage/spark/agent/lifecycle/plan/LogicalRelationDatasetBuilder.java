@@ -9,12 +9,14 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -92,35 +94,65 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
 
   private List<D> handleHadoopFsRelation(LogicalRelation x) {
     HadoopFsRelation relation = (HadoopFsRelation) x.relation();
-    return context
-        .getSparkSession()
-        .map(
-            session -> {
-              Configuration hadoopConfig =
-                  session.sessionState().newHadoopConfWithOptions(relation.options());
+    try {
+      return context
+          .getSparkSession()
+          .map(
+              session -> {
+                Configuration hadoopConfig =
+                    session.sessionState().newHadoopConfWithOptions(relation.options());
 
-              OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
-                  context.getOpenLineage().newDatasetFacetsBuilder();
-              getDatasetVersion(x)
-                  .map(
-                      version ->
-                          datasetFacetsBuilder.version(
-                              context.getOpenLineage().newDatasetVersionDatasetFacet(version)));
+                OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
+                    context.getOpenLineage().newDatasetFacetsBuilder();
+                getDatasetVersion(x)
+                    .map(
+                        version ->
+                            datasetFacetsBuilder.version(
+                                context.getOpenLineage().newDatasetVersionDatasetFacet(version)));
 
-              return JavaConversions.asJavaCollection(relation.location().rootPaths()).stream()
-                  .map(p -> PlanUtils.getDirectoryPath(p, hadoopConfig))
-                  .distinct()
-                  .map(
-                      p -> {
-                        // TODO- refactor this to return a single partitioned dataset based on
-                        // static
-                        // static partitions in the relation
-                        return datasetFactory.getDataset(
-                            p.toUri(), relation.schema(), datasetFacetsBuilder);
-                      })
-                  .collect(Collectors.toList());
-            })
-        .orElse(Collections.emptyList());
+                return JavaConversions.asJavaCollection(relation.location().rootPaths()).stream()
+                    .map(p -> PlanUtils.getDirectoryPath(p, hadoopConfig))
+                    .distinct()
+                    .map(
+                        p -> {
+                          // TODO- refactor this to return a single partitioned dataset based on
+                          // static
+                          // static partitions in the relation
+                          return datasetFactory.getDataset(
+                              p.toUri(), relation.schema(), datasetFacetsBuilder);
+                        })
+                    .collect(Collectors.toList());
+              })
+          .orElse(Collections.emptyList());
+    } catch (Exception e) {
+      if (e.getClass()
+          .getName()
+          .equals(
+              "com.databricks.backend.daemon.data.client.adl.AzureCredentialNotFoundException")) {
+        // This is a fallback that can occur when hadoop configurations cannot be
+        // reached. This occurs in Azure Databricks when credential passthrough
+        // is enabled and you're attempting to get the data lake credentials.
+        // The Spark Listener context cannot use the user credentials
+        // thus we need a fallback.
+        // This is similar to the InsertIntoHadoopRelationVisitor's process for getting
+        // Datasets
+        List<D> inputDatasets = new ArrayList<D>();
+        List<Path> paths =
+            JavaConversions.asJavaCollection(relation.location().rootPaths()).stream()
+                .collect(Collectors.toList());
+
+        for (Path p : paths) {
+          inputDatasets.add(datasetFactory.getDataset(p.toUri(), relation.schema()));
+        }
+        if (inputDatasets.size() == 0) {
+          return Collections.emptyList();
+        } else {
+          return inputDatasets;
+        }
+      } else {
+        throw e;
+      }
+    }
   }
 
   protected Optional<String> getDatasetVersion(LogicalRelation x) {
@@ -141,10 +173,12 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
             .getOrElse(ScalaConversionUtils.toScalaFn(() -> "COMPLEX"));
     // strip the jdbc: prefix from the url. this leaves us with a url like
     // postgresql://<hostname>:<port>/<database_name>?params
-    // we don't parse the URI here because different drivers use different connection
+    // we don't parse the URI here because different drivers use different
+    // connection
     // formats that aren't always amenable to how Java parses URIs. E.g., the oracle
     // driver format looks like oracle:<drivertype>:<user>/<password>@<database>
-    // whereas postgres, mysql, and sqlserver use the scheme://hostname:port/db format.
+    // whereas postgres, mysql, and sqlserver use the scheme://hostname:port/db
+    // format.
     String url = JdbcUtils.sanitizeJdbcUrl(relation.jdbcOptions().url());
     return Collections.singletonList(datasetFactory.getDataset(tableName, url, relation.schema()));
   }

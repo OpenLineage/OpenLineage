@@ -70,9 +70,8 @@ public class CommandPlanVisitor
   }
 
   @Override
-  public List<InputDataset> apply(SparkListenerEvent event) {
-    Optional<LogicalPlan> input =
-        context.getQueryExecution().flatMap(qe -> getInput(qe.optimizedPlan()));
+  public List<InputDataset> apply(SparkListenerEvent event, LogicalPlan plan) {
+    Optional<LogicalPlan> input = getInput(plan);
     PartialFunction<LogicalPlan, Collection<InputDataset>> delegateFn =
         delegate(
             context.getInputDatasetQueryPlanVisitors(), context.getInputDatasetBuilders(), event);

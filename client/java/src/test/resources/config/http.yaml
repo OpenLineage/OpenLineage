@@ -1,0 +1,6 @@
+transport:
+  type: http
+  url: http://localhost:5050
+  auth:
+    type: api_key
+    apiKey: random_token

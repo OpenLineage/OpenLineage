@@ -26,7 +26,7 @@ public class SparkContainerUtils {
       MockServerContainer mockServerContainer,
       String... command) {
     return new GenericContainer<>(
-            DockerImageName.parse("godatadriven/pyspark:" + System.getProperty("spark.version")))
+            DockerImageName.parse("bitnami/spark:" + System.getProperty("spark.version")))
         .withNetwork(network)
         .withNetworkAliases("spark")
         .withFileSystemBind("src/test/resources/test_data", "/test_data")
@@ -74,6 +74,7 @@ public class SparkContainerUtils {
         mockServerContainer,
         Stream.of(
                 new String[] {
+                  "./bin/spark-submit",
                   "--master",
                   "local",
                   "--conf",
@@ -86,6 +87,12 @@ public class SparkContainerUtils {
                   "spark.sql.warehouse.dir=/tmp/warehouse",
                   "--conf",
                   "spark.sql.shuffle.partitions=1",
+                  "--conf",
+                  "spark.driver.extraJavaOptions=-Dderby.system.home=/tmp/derby",
+                  "--conf",
+                  "spark.sql.warehouse.dir=/tmp/warehouse",
+                  "--conf",
+                  "spark.jars.ivy=/tmp/.ivy2/",
                   "--jars",
                   "/opt/libs/"
                       + System.getProperty("openlineage.spark.jar")

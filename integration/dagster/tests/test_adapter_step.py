@@ -22,8 +22,8 @@ from .conftest import PRODUCER
 
 
 @patch("openlineage.dagster.adapter.to_utc_iso_8601")
-@patch("openlineage.dagster.adapter.OpenLineageClient.emit")
-def test_start_pipeline(mock_client_emit, mock_to_utc_iso_8601):
+@patch("openlineage.dagster.adapter.OpenLineageClient.from_environment")
+def test_start_pipeline(mock_client, mock_to_utc_iso_8601):
     event_time = "2022-01-01T00:00:00.000000Z"
     mock_to_utc_iso_8601.return_value = event_time
 
@@ -37,7 +37,7 @@ def test_start_pipeline(mock_client_emit, mock_to_utc_iso_8601):
     adapter.start_step(pipeline_name, pipeline_run_id, timestamp, step_run_id, step_key)
 
     mock_to_utc_iso_8601.assert_called_once_with(timestamp)
-    mock_client_emit.assert_called_once_with(
+    mock_client.return_value.emit.assert_called_once_with(
         RunEvent(
             eventType=RunState.START,
             eventTime=event_time,
@@ -68,8 +68,8 @@ def test_start_pipeline(mock_client_emit, mock_to_utc_iso_8601):
 
 
 @patch("openlineage.dagster.adapter.to_utc_iso_8601")
-@patch("openlineage.dagster.adapter.OpenLineageClient.emit")
-def test_complete_step(mock_client_emit, mock_to_utc_iso_8601):
+@patch("openlineage.dagster.adapter.OpenLineageClient.from_environment")
+def test_complete_step(mock_client, mock_to_utc_iso_8601):
     event_time = "2022-01-01T00:00:00.000000Z"
     mock_to_utc_iso_8601.return_value = event_time
 
@@ -83,7 +83,7 @@ def test_complete_step(mock_client_emit, mock_to_utc_iso_8601):
     adapter.complete_step(pipeline_name, pipeline_run_id, timestamp, step_run_id, step_key)
 
     mock_to_utc_iso_8601.assert_called_once_with(timestamp)
-    mock_client_emit.assert_called_once_with(
+    mock_client.return_value.emit.assert_called_once_with(
         RunEvent(
             eventType=RunState.COMPLETE,
             eventTime=event_time,
@@ -114,8 +114,8 @@ def test_complete_step(mock_client_emit, mock_to_utc_iso_8601):
 
 
 @patch("openlineage.dagster.adapter.to_utc_iso_8601")
-@patch("openlineage.dagster.adapter.OpenLineageClient.emit")
-def test_fail_step(mock_client_emit, mock_to_utc_iso_8601):
+@patch("openlineage.dagster.adapter.OpenLineageClient.from_environment")
+def test_fail_step(mock_client, mock_to_utc_iso_8601):
     event_time = "2022-01-01T00:00:00.000000Z"
     mock_to_utc_iso_8601.return_value = event_time
 
@@ -129,7 +129,7 @@ def test_fail_step(mock_client_emit, mock_to_utc_iso_8601):
     adapter.fail_step(pipeline_name, pipeline_run_id, timestamp, step_run_id, step_key)
 
     mock_to_utc_iso_8601.assert_called_once_with(timestamp)
-    mock_client_emit.assert_called_once_with(
+    mock_client.return_value.emit.assert_called_once_with(
         RunEvent(
             eventType=RunState.FAIL,
             eventTime=event_time,

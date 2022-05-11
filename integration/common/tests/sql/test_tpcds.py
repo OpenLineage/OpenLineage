@@ -1,11 +1,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
-from openlineage.common.sql import SqlParser
-from openlineage.common.models import DbTableName
+from openlineage.common.sql import parse, DbTableMeta
 
 
 def test_tpcds_cte_query():
-    sql_meta = SqlParser.parse(
+    sql_meta = parse(
         """
 WITH year_total AS
     (SELECT c_customer_id customer_id,
@@ -83,8 +82,8 @@ LIMIT 100;
 """
     )
     assert set(sql_meta.in_tables) == {
-        DbTableName("src.customer"),
-        DbTableName("store_sales"),
-        DbTableName("date_dim")
+        DbTableMeta("src.customer"),
+        DbTableMeta("store_sales"),
+        DbTableMeta("date_dim")
     }
     assert len(sql_meta.out_tables) == 0

@@ -13,6 +13,7 @@ import io.openlineage.spark.agent.lifecycle.plan.CreateDataSourceTableCommandVis
 import io.openlineage.spark.agent.lifecycle.plan.CreateHiveTableAsSelectCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.CreateTableCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.DropTableCommandVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.HiveTableRelationVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDataSourceDirVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDataSourceVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDirVisitor;
@@ -24,6 +25,7 @@ import io.openlineage.spark.agent.lifecycle.plan.LoadDataCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRDDVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.OptimizedCreateHiveTableAsSelectCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.SqlDWDatabricksVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.SqlExecutionRDDVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.TruncateTableCommandVisitor;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -47,6 +49,9 @@ abstract class BaseVisitorFactory implements VisitorFactory {
     if (SqlDWDatabricksVisitor.hasSqlDWDatabricksClasses()) {
       list.add(new SqlDWDatabricksVisitor(context, factory));
     }
+    if (InsertIntoHiveTableVisitor.hasHiveClasses()) {
+      list.add(new HiveTableRelationVisitor<>(context, factory));
+    }
     return list;
   }
 
@@ -57,15 +62,17 @@ abstract class BaseVisitorFactory implements VisitorFactory {
   public List<PartialFunction<LogicalPlan, List<InputDataset>>> getInputVisitors(
       OpenLineageContext context) {
     List<PartialFunction<LogicalPlan, List<OpenLineage.InputDataset>>> inputVisitors =
-        new ArrayList<>(getCommonVisitors(context, DatasetFactory.input(context.getOpenLineage())));
+        new ArrayList<>(getCommonVisitors(context, DatasetFactory.input(context)));
+    if (VisitorFactory.classPresent("org.apache.spark.sql.execution.SQLExecutionRDD")) {
+      inputVisitors.add(new SqlExecutionRDDVisitor(context));
+    }
     return inputVisitors;
   }
 
   @Override
   public List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>> getOutputVisitors(
       OpenLineageContext context) {
-    DatasetFactory<OpenLineage.OutputDataset> factory =
-        DatasetFactory.output(context.getOpenLineage());
+    DatasetFactory<OpenLineage.OutputDataset> factory = DatasetFactory.output(context);
 
     List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>> outputCommonVisitors =
         getCommonVisitors(context, factory);

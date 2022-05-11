@@ -10,3 +10,6 @@
 build
 
 bin
+
+src/main/java/io/openlineage/client/OpenLineage.java
+src/main/java/io/openlineage/server/*

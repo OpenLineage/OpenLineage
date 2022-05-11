@@ -26,7 +26,7 @@ if [[ -n "$CI" ]]; then
 fi
 
 # maybe overkill
-OPENLINEAGE_AIRFLOW_WHL=$(docker run openlineage-airflow-base:latest sh -c "ls /whl/openlineage*")
+OPENLINEAGE_AIRFLOW_WHL=$(docker run openlineage-airflow-base:latest sh -c "ls /whl/openlineage*.whl")
 OPENLINEAGE_AIRFLOW_WHL_ALL=$(docker run openlineage-airflow-base:latest sh -c "ls /whl/*")
 
 # Add revision to requirements.txt
@@ -44,6 +44,7 @@ cat > integration-requirements.txt <<EOL
 requests==2.24.0
 setuptools==34.0.0
 psycopg2-binary==2.9.2
+mysqlclient>=1.3.6
 httplib2>=0.18.1
 retrying==1.3.3
 pytest==6.2.2

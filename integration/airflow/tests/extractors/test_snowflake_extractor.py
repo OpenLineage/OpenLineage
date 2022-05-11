@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0.
 
-import os
 from unittest import mock
 
 import pytest
@@ -12,10 +11,10 @@ from airflow.version import version as AIRFLOW_VERSION
 from pkg_resources import parse_version
 
 from openlineage.common.models import (
-    DbTableName,
     DbTableSchema,
     DbColumn
 )
+from openlineage.common.sql import DbTableMeta
 from openlineage.common.dataset import Source, Dataset
 from openlineage.airflow.extractors.snowflake_extractor import SnowflakeExtractor
 
@@ -24,7 +23,7 @@ CONN_URI = 'snowflake://localhost:5432/food_delivery'
 
 DB_NAME = 'FOOD_DELIVERY'
 DB_SCHEMA_NAME = 'PUBLIC'
-DB_TABLE_NAME = DbTableName('DISCOUNTS')
+DB_TABLE_NAME = DbTableMeta('DISCOUNTS')
 DB_TABLE_COLUMNS = [
     DbColumn(
         name='ID',
@@ -116,9 +115,6 @@ def test_extract(get_connection, mock_get_table_schemas):
             fields=[]
         ).to_openlineage_dataset()]
 
-    # Set the environment variable for the connection
-    os.environ[f"AIRFLOW_CONN_{CONN_ID.upper()}"] = CONN_URI
-
     task_metadata = SnowflakeExtractor(TASK).extract()
 
     assert task_metadata.name == f"{DAG_ID}.{TASK_ID}"
@@ -142,8 +138,7 @@ def test_extract_query_ids(get_connection, mock_get_table_schemas):
     assert task_metadata.run_facets["externalQuery"].externalQueryId == "1500100900"
 
 
-@mock.patch('snowflake.connector.connect')
-def test_get_table_schemas(mock_conn):
+def test_get_table_schemas():
     # (1) Define hook mock for testing
     TASK.get_hook = mock.MagicMock()
 

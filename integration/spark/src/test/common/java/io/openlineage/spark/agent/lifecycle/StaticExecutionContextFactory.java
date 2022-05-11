@@ -114,9 +114,9 @@ public class StaticExecutionContextFactory extends ContextFactory {
   }
 
   @Override
-  public ExecutionContext createSparkSQLExecutionContext(long executionId) {
+  public Optional<ExecutionContext> createSparkSQLExecutionContext(long executionId) {
     return Optional.ofNullable(SQLExecution.getQueryExecution(executionId))
-        .<SparkSQLExecutionContext>map(
+        .map(
             qe -> {
               SparkSession session = qe.sparkSession();
               SQLContext sqlContext = qe.sparkPlan().sqlContext();
@@ -170,20 +170,6 @@ public class StaticExecutionContextFactory extends ContextFactory {
                   }
                 }
               };
-            })
-        .orElseGet(
-            () -> {
-              OpenLineageContext olContext =
-                  OpenLineageContext.builder()
-                      .sparkContext(SparkContext.getOrCreate())
-                      .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
-                      .build();
-
-              return new SparkSQLExecutionContext(
-                  executionId,
-                  openLineageEventEmitter,
-                  olContext,
-                  new OpenLineageRunEventBuilder(olContext, new InternalEventHandlerFactory()));
             });
   }
 

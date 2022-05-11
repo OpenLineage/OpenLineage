@@ -25,7 +25,7 @@ A library that integrates [Airflow `DAGs`]() with [OpenLineage](https://openline
 
 ## Requirements
 
-- [Python 3.6.0](https://www.python.org/downloads)
+- [Python 3.7](https://www.python.org/downloads)
 - [Airflow 1.10.12+](https://pypi.org/project/apache-airflow)
 - (experimental) [Airflow 2.1+](https://pypi.org/project/apache-airflow)
 
@@ -43,7 +43,28 @@ To install from source, run:
 $ python3 setup.py install
 ```
 
-## Usage
+## Setup
+
+### Airflow 2.3+
+
+Integration automatically registers itself for Airflow 2.3 if it's installed on Airflow worker's python.
+This means you don't have to do anything besides configuring it, which is described in Configuration section.
+
+### Airflow 2.1 - 2.2
+
+This method has limited support: 
+it does not support tracking failed jobs, and job starts are registered only when job ends.
+
+Set your LineageBackend in your [airflow.cfg](https://airflow.apache.org/docs/apache-airflow/stable/howto/set-config.html) or via environmental variable `AIRFLOW__LINEAGE__BACKEND`
+to 
+```
+openlineage.lineage_backend.OpenLineageBackend
+```
+
+In contrast to integration via subclassing `DAG`, `LineageBackend` based approach collects all metadata 
+for task on each task completion.
+
+OpenLineageBackend does not take into account manually configured inlets and outlets. 
 
 ### Airflow 1.10+
 
@@ -61,24 +82,7 @@ When enabled, the library will:
 3. Collect task run-level metadata (execution time, state, parameters, etc)
 4. On DAG **complete**, also mark the task as _complete_ in OpenLineage
 
-### Airflow 2.1+ (*experimental*)
-
-Set your LineageBackend in your [airflow.cfg](https://airflow.apache.org/docs/apache-airflow/stable/howto/set-config.html) or via environmental variable `AIRFLOW__LINEAGE__BACKEND`
-to 
-```
-openlineage.lineage_backend.OpenLineageBackend
-```
-
-In contrast to integration via subclassing `DAG`, `LineageBackend` based approach collects all metadata 
-for task on each task completion.
-
-OpenLineageBackend does not take into account manually configured inlets and outlets. 
-
-Support for Airflow 2.1+ is currently experimental, and has some caveats: 
-it does not support tracking failed jobs, and job starts are registered only when job ends.
-
 ## Configuration
-
 
 ### `HTTP` Backend Environment Variables
 
@@ -117,10 +121,13 @@ suited to extract metadata from particular operator (or operators).
 `openlineage-airflow` provides extractors for
 
 * `PostgresOperator`
+* `MySqlOperator`
 * `BigQueryOperator`
 * `SnowflakeOperator`
 * `GreatExpectationsOperator`
 * `PythonOperator`
+
+SQL Operators utilize SQL parser. There is experimental SQL parser, activated if you install [openlineage-sql](https://pypi.org/project/openlineage-sql) on your Airflow worker.
 
 #### Custom Extractors
 
@@ -129,14 +136,9 @@ provide custom extractors. They should derive from `BaseExtractor`.
 
 There are two ways to register them for use in `openlineage-airflow`. 
 
-First one, is to provide environment variable in pattern of 
+First one, is to add them to `OPENLINEAGE_EXTRACTORS` environment variable, separated by comma `(;)` 
 ```
-OPENLINEAGE_EXTRACTOR_<operator>=full.path.to.ExtractorClass
-```
-
-For example: 
-```
-OPENLINEAGE_EXTRACTOR_PostgresOperator=openlineage.airflow.extractors.postgres_extractor.PostgresExtractor
+OPENLINEAGE_EXTRACTORS=full.path.to.ExtractorClass;full.path.to.AnotherExtractorClass
 ```
 
 Second one - working in Airflow 1.10.x only - is to register all additional operator-extractor pairings by 
@@ -190,10 +192,13 @@ job runs and dataset inputs/outputs. To propagate the job hierarchy, tasks must 
 id so that the downstream process can report the [ParentRunFacet](https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#/definitions/ParentRunFacet)
 with the proper run id.
 
-The `lineage_run_id` macro exists to inject the run id of a given task into the arguments sent to a
-remote processing job's Airflow operator. The macro requires the DAG run_id and the task to access
-the generated run id for that task. For example, a Spark job can be triggered using the
-`DataProcPySparkOperator` with the correct parent run id using the following configuration:
+The `lineage_run_id` and `lineage_parent_id` macros exists to inject the run id or whole parent run information
+of a given task into the arguments sent to a  remote processing job's Airflow operator. The macro requires the 
+DAG run_id and the task to access the generated run id for that task. For example, a Spark job can be triggered
+using the `DataProcPySparkOperator` with the correct parent run id using the following configuration:
+
+Airflow 1.10:
+
 ```python
 t1 = DataProcPySparkOperator(
     task_id=job_name,
@@ -204,6 +209,20 @@ t1 = DataProcPySparkOperator(
             f"-javaagent:{jar}={os.environ.get('OPENLINEAGE_URL')}/api/v1/namespaces/{os.getenv('OPENLINEAGE_NAMESPACE', 'default')}/jobs/{job_name}/runs/{{{{lineage_run_id(run_id, task)}}}}?api_key={os.environ.get('OPENLINEAGE_API_KEY')}"
         dag=dag)
 ```
+
+Airflow 2.0+:
+
+```python
+t1 = DataProcPySparkOperator(
+    task_id=job_name,
+    #required pyspark configuration,
+    job_name=job_name,
+    dataproc_pyspark_properties={
+        'spark.driver.extraJavaOptions':
+            f"-javaagent:{jar}={os.environ.get('OPENLINEAGE_URL')}/api/v1/namespaces/{os.getenv('OPENLINEAGE_NAMESPACE', 'default')}/jobs/{job_name}/runs/{{{{macros.OpenLineagePlugin.lineage_run_id(run_id, task)}}}}?api_key={os.environ.get('OPENLINEAGE_API_KEY')}"
+        dag=dag)
+```
+
 ## Development
 
 To install all dependencies for _local_ development:
