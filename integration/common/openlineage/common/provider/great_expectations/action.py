@@ -35,7 +35,7 @@ from openlineage.common.provider.great_expectations.results import \
     EXPECTATIONS_PARSERS, \
     COLUMN_EXPECTATIONS_PARSER, \
     GreatExpectationsAssertion
-from openlineage.common.sql.parser import parse
+from openlineage.common.sql import parse
 from sqlalchemy import MetaData, Table
 from sqlalchemy.engine import Connection
 

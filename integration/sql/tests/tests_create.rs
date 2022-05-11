@@ -50,3 +50,17 @@ fn test_create_and_insert() {
         }
     )
 }
+
+#[test]
+fn create_and_insert_multiple_stmts() {
+    assert_eq!(
+        test_multiple_sql(vec![
+            "CREATE TABLE Persons (key int, value varchar(255));",
+            "INSERT INTO Persons SELECT key, value FROM temp.table;"
+        ]),
+        SqlMeta {
+            in_tables: tables(vec!["temp.table"]),
+            out_tables: table("Persons")
+        }
+    )
+}

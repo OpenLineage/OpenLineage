@@ -262,16 +262,19 @@ class SqlParser:
         raise RuntimeError(f"Parens {parens} are not Parenthesis at index {gidx}")
 
 
+# Do not import this directly. Instead, import openlineage.common.sql.parse
 def parse(
-    sql: str,
+    sql: List[str],
     dialect: Optional[str] = None,
     default_schema: Optional[str] = None
 ) -> SqlMeta:
     if sql is None:
         raise ValueError("A sql statement must be provided.")
 
-    # Tokenize the SQL statement
-    sql_statements = sqlparse.parse(sql)
+    sql_statements = []
+    for statement in sql:
+        # Tokenize the SQL statement
+        sql_statements += sqlparse.parse(statement)
 
     sql_parser = SqlParser(default_schema)
     sql_meta = SqlMeta([], [])

@@ -382,3 +382,18 @@ def test_parse_multi_statement():
     )
     assert sql_meta.in_tables == [DbTableMeta('schema0.table0')]
     assert sql_meta.out_tables == [DbTableMeta('schema1.table1')]
+
+
+def test_parse_statement_list():
+    sql_meta = parse(["""
+        DROP TABLE IF EXISTS schema1.table1;
+        CREATE TABLE schema1.table1(
+          col0 VARCHAR(64),
+          col1 VARCHAR(64)
+        );""", """
+        INSERT INTO schema1.table1(col0, col1)
+          SELECT col0, col1
+            FROM schema0.table0;
+        """])
+    assert sql_meta.in_tables == [DbTableMeta('schema0.table0')]
+    assert sql_meta.out_tables == [DbTableMeta('schema1.table1')]
