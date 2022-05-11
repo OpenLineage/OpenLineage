@@ -2,7 +2,25 @@
   "inputs": [
     {
       "namespace": "kafka:9092",
-      "name": "io.openlineage.flink.kafka.input",
+      "name": "io.openlineage.flink.kafka.input1",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "id",
+              "type": "string"
+            },
+            {
+              "name": "version",
+              "type": "long"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "namespace": "kafka:9092",
+      "name": "io.openlineage.flink.kafka.input2",
       "facets": {
         "schema": {
           "fields": [
