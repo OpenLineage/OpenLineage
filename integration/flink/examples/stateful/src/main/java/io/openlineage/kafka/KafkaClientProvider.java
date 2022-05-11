@@ -15,9 +15,9 @@ public class KafkaClientProvider {
     private KafkaClientProvider() {
     }
 
-    public static KafkaSource<InputEvent> aKafkaSource(String topic) {
+    public static KafkaSource<InputEvent> aKafkaSource(String... topics) {
         return KafkaSource.<InputEvent>builder()
-                .setTopics(topic)
+                .setTopics(topics)
                 .setProperties(fromResource("kafka-consumer.conf").toProperties())
                 .setBootstrapServers("kafka:9092")
                 .setValueOnlyDeserializer(ConfluentRegistryAvroDeserializationSchema
