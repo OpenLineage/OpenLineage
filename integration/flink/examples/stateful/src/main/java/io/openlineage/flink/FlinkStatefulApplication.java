@@ -13,6 +13,8 @@ import static org.apache.flink.streaming.api.environment.CheckpointConfig.Extern
 
 public class FlinkStatefulApplication {
 
+    private static final String TOPIC_PARAM_SEPARATOR = ",";
+
     public static void main(String[] args) throws Exception {
         ParameterTool parameters = ParameterTool.fromArgs(args);
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
@@ -24,7 +26,7 @@ public class FlinkStatefulApplication {
         env.getCheckpointConfig().setMinPauseBetweenCheckpoints(parameters.getInt("min.pause.between.checkpoints", 1_000));
         env.getCheckpointConfig().setCheckpointTimeout(parameters.getInt("checkpoint.timeout", 90_000));
 
-        env.fromSource(aKafkaSource(parameters.getRequired("input-topic")), noWatermarks(), "kafka-source").uid("kafka-source")
+        env.fromSource(aKafkaSource(parameters.getRequired("input-topics").split(TOPIC_PARAM_SEPARATOR)), noWatermarks(), "kafka-source").uid("kafka-source")
                 .keyBy(InputEvent::getId)
                 .process(new StatefulCounter()).name("process").uid("process")
                 .sinkTo(aKafkaSink(parameters.getRequired("output-topic"))).name("kafka-sink").uid("kafka-sink");
