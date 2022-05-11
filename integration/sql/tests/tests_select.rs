@@ -1,4 +1,5 @@
 use openlineage_sql::{parse_sql, BigQueryDialect, SqlMeta};
+use std::sync::Arc;
 
 #[macro_use]
 mod test_utils;
@@ -84,7 +85,7 @@ fn select_bigquery_excaping() {
             FROM `random-project`.`dbt_test1`.`source_table`
             WHERE id = 1
             ",
-            Box::new(BigQueryDialect),
+            Arc::new(BigQueryDialect),
             None
         )
         .unwrap(),

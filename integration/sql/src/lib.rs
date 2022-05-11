@@ -3,6 +3,7 @@ mod bigquery;
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashSet;
 use std::hash::{Hash, Hasher};
+use std::sync::Arc;
 
 pub use bigquery::BigQueryDialect;
 use pyo3::basic::CompareOp;
@@ -18,12 +19,12 @@ use sqlparser::dialect::{
 use sqlparser::parser::Parser;
 
 pub trait CanonicalDialect: Dialect {
-    fn canonical_name(&mut self, name: String) -> Option<String>;
+    fn canonical_name(&self, name: String) -> Option<String>;
     fn as_base(&self) -> &dyn Dialect;
 }
 
 impl<T: Dialect> CanonicalDialect for T {
-    fn canonical_name(&mut self, name: String) -> Option<String> {
+    fn canonical_name(&self, name: String) -> Option<String> {
         match name.chars().next() {
             Some(x) => {
                 if self.is_delimited_identifier_start(x) {
@@ -68,7 +69,7 @@ struct Context {
     // we're using this default as it.
     default_schema: Option<String>,
     // Dialect used in this statements.
-    dialect: Box<dyn CanonicalDialect>,
+    dialect: Arc<dyn CanonicalDialect>,
 }
 
 impl Context {
@@ -78,11 +79,11 @@ impl Context {
             inputs: HashSet::new(),
             outputs: HashSet::new(),
             default_schema: None,
-            dialect: Box::new(SnowflakeDialect),
+            dialect: Arc::new(SnowflakeDialect),
         }
     }
 
-    fn new(dialect: Box<dyn CanonicalDialect>, default_schema: Option<&str>) -> Context {
+    fn new(dialect: Arc<dyn CanonicalDialect>, default_schema: Option<&str>) -> Context {
         Context {
             aliases: HashSet::new(),
             inputs: HashSet::new(),
@@ -224,10 +225,10 @@ impl SqlMeta {
     }
 }
 
-impl From<Context> for SqlMeta {
-    fn from(ctx: Context) -> Self {
-        let mut outputs: Vec<DbTableMeta> = ctx.outputs.into_iter().collect();
-        let mut inputs: Vec<DbTableMeta> = ctx.inputs.into_iter().collect();
+impl SqlMeta {
+    fn new(inputs: Vec<DbTableMeta>, outputs: Vec<DbTableMeta>) -> Self {
+        let mut inputs: Vec<DbTableMeta> = inputs.clone();
+        let mut outputs: Vec<DbTableMeta> = outputs.clone();
         inputs.sort();
         outputs.sort();
         SqlMeta {
@@ -383,20 +384,10 @@ fn parse_stmt(stmt: &Statement, context: &mut Context) -> Result<(), String> {
             context.add_output(&table_name.to_string());
             Ok(())
         }
-        Statement::Merge {
-            table,
-            source,
-            alias,
-            ..
-        } => {
+        Statement::Merge { table, source, .. } => {
             let table_name = get_table_name_from_table_factor(table)?;
             context.add_output(&table_name);
-            parse_setexpr(source, context)?;
-
-            if let Some(a) = alias {
-                context.add_table_alias(a);
-            }
-
+            parse_table_factor(source, context)?;
             Ok(())
         }
         Statement::CreateTable {
@@ -435,52 +426,76 @@ fn parse_stmt(stmt: &Statement, context: &mut Context) -> Result<(), String> {
     }
 }
 
-pub fn get_dialect(name: &str) -> Box<dyn CanonicalDialect> {
+pub fn get_dialect(name: &str) -> Arc<dyn CanonicalDialect> {
     match name {
-        "bigquery" => Box::new(BigQueryDialect),
-        "snowflake" => Box::new(SnowflakeDialect),
-        "postgres" => Box::new(PostgreSqlDialect {}),
-        "postgresql" => Box::new(PostgreSqlDialect {}),
-        "hive" => Box::new(HiveDialect {}),
-        "mysql" => Box::new(MySqlDialect {}),
-        "mssql" => Box::new(MsSqlDialect {}),
-        "sqlite" => Box::new(SQLiteDialect {}),
-        "ansi" => Box::new(AnsiDialect {}),
-        _ => Box::new(GenericDialect),
+        "bigquery" => Arc::new(BigQueryDialect),
+        "snowflake" => Arc::new(SnowflakeDialect),
+        "postgres" => Arc::new(PostgreSqlDialect {}),
+        "postgresql" => Arc::new(PostgreSqlDialect {}),
+        "hive" => Arc::new(HiveDialect {}),
+        "mysql" => Arc::new(MySqlDialect {}),
+        "mssql" => Arc::new(MsSqlDialect {}),
+        "sqlite" => Arc::new(SQLiteDialect {}),
+        "ansi" => Arc::new(AnsiDialect {}),
+        _ => Arc::new(GenericDialect),
     }
+}
+
+pub fn get_generic_dialect(name: Option<&str>) -> Arc<dyn CanonicalDialect> {
+    if let Some(d) = name {
+        get_dialect(d)
+    } else {
+        Arc::new(GenericDialect)
+    }
+}
+
+pub fn parse_multiple_statements(
+    sql: Vec<&str>,
+    dialect: Arc<dyn CanonicalDialect>,
+    default_schema: Option<&str>,
+) -> Result<SqlMeta, String> {
+    let mut inputs: HashSet<DbTableMeta> = HashSet::new();
+    let mut outputs: HashSet<DbTableMeta> = HashSet::new();
+
+    for statement in sql {
+        let ast = match Parser::parse_sql(dialect.as_base(), statement) {
+            Ok(k) => k,
+            Err(e) => return Err(e.to_string()),
+        };
+
+        if ast.is_empty() {
+            return Err(String::from("Empty statement list"));
+        }
+
+        for stmt in ast {
+            let mut context = Context::new(dialect.clone(), default_schema);
+            parse_stmt(&stmt, &mut context)?;
+            for input in context.inputs.iter() {
+                inputs.insert(input.clone());
+            }
+            for output in context.outputs.iter() {
+                outputs.insert(output.clone());
+            }
+        }
+    }
+    Ok(SqlMeta::new(
+        inputs.into_iter().collect(),
+        outputs.into_iter().collect(),
+    ))
 }
 
 pub fn parse_sql(
     sql: &str,
-    dialect: Box<dyn CanonicalDialect>,
+    dialect: Arc<dyn CanonicalDialect>,
     default_schema: Option<&str>,
 ) -> Result<SqlMeta, String> {
-    let ast = match Parser::parse_sql(dialect.as_base(), sql) {
-        Ok(k) => k,
-        Err(e) => return Err(e.to_string()),
-    };
-
-    if ast.is_empty() {
-        return Err(String::from("Empty statement list"));
-    }
-
-    let mut context = Context::new(dialect, default_schema);
-    for stmt in ast {
-        parse_stmt(&stmt, &mut context)?;
-    }
-    Ok(SqlMeta::from(context))
+    parse_multiple_statements(vec![sql], dialect, default_schema)
 }
 
 // Parses SQL.
 #[pyfunction]
-fn parse(sql: &str, dialect: Option<&str>, default_schema: Option<&str>) -> PyResult<SqlMeta> {
-    let parser_dialect: Box<dyn CanonicalDialect> = if let Some(d) = dialect {
-        get_dialect(d)
-    } else {
-        Box::new(GenericDialect)
-    };
-
-    match parse_sql(sql, parser_dialect, default_schema) {
+fn parse(sql: Vec<&str>, dialect: Option<&str>, default_schema: Option<&str>) -> PyResult<SqlMeta> {
+    match parse_multiple_statements(sql, get_generic_dialect(dialect), default_schema) {
         Ok(ok) => Ok(ok),
         Err(err) => Err(PyRuntimeError::new_err(err)),
     }
