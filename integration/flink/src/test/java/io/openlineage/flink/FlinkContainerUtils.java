@@ -65,7 +65,7 @@ public class FlinkContainerUtils {
         .withEnv("KAFKA_BROKER_ID", "1")
         .withEnv(
             "KAFKA_CREATE_TOPICS",
-            "io.openlineage.flink.kafka.input:1:1,io.openlineage.flink.kafka.output:1:1")
+            "io.openlineage.flink.kafka.input1:1:1,io.openlineage.flink.kafka.input2:1:1,io.openlineage.flink.kafka.output:1:1")
         .withEnv(
             "KAFKA_LOG4J_LOGGERS",
             "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO")
@@ -108,7 +108,7 @@ public class FlinkContainerUtils {
             .withCommand(
                 "standalone-job "
                     + "--job-classname io.openlineage.flink.FlinkStatefulApplication "
-                    + "--input-topic io.openlineage.flink.kafka.input "
+                    + "--input-topics io.openlineage.flink.kafka.input1,io.openlineage.flink.kafka.input2 "
                     + "--output-topic io.openlineage.flink.kafka.output "
                     + "--flink.openlineage.url http://openlineageclient:1080/api/v1")
             .withEnv(
