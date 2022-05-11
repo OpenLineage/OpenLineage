@@ -73,7 +73,7 @@ services:
     container_name: jobmanager
     ports:
       - "18081:8081"
-    command: standalone-job --job-classname io.openlineage.flink.FlinkStatefulApplication --input-topic "io.openlineage.flink.kafka.input" --output-topic "io.openlineage.flink.kafka.output"
+    command: standalone-job --job-classname io.openlineage.flink.FlinkStatefulApplication --input-topics "io.openlineage.flink.kafka.input" --output-topic "io.openlineage.flink.kafka.output"
     volumes:
       - ../../build/libs:/opt/flink/usrlib
     environment:
