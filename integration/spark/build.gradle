@@ -59,8 +59,9 @@ ext {
     mockitoVersion = '3.11.2'
     testcontainersVersion = '1.15.3'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
-    sparkVersionShort = sparkVersion.startsWith('3') ? sparkVersion.subString(0, 3) : '2'
-    scalaVersion = sparkVersion.startsWith('3') ? '2.12' : '2.11'
+    currentSparkVersion = project.getProperty('spark.version')
+    sparkVersionShort = currentSparkVersion.startsWith('3') ? currentSparkVersion.substring(0, 3) : '2'
+    scalaVersion = project.getProperty('spark.version').startsWith('3') ? '2.12' : '2.11'
     kafkaPackage = { scalaVersion, sparkVersion ->
         return "org.apache.spark:spark-sql-kafka-0-10_${scalaVersion}:${sparkVersion}"
     }
@@ -229,7 +230,7 @@ sourceSets {
     spark32Test {
         java {
             srcDirs = ["src/test/common/java", "src/test/spark32/java"]
-            compileClasspath = configurations.spark32Test + sourceSets.main.output + sourceSets.test.output + sourceSets.spark3.output
+            compileClasspath = configurations.spark32Test + sourceSets.main.output + sourceSets.test.output + sourceSets.spark32.output
             annotationProcessorPath = configurations.lombok
             destinationDirectory.set(file("$buildDir/classes/java/test/"))
         }
@@ -254,7 +255,7 @@ tasks.register('copyDependencies', Copy) {
     delete layout.buildDirectory.dir("dependencies")
     def config = { sparkVersionShort ->
         if (sparkVersionShort == "3.2") return configurations.spark32Test
-        else if (sparkVersionShort == "3.1") return configurations.spark3Test
+        if (sparkVersionShort == "3.1") return configurations.spark3Test
         if (sparkVersionShort == "2") return configurations.spark2Test
     }
 

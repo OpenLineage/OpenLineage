@@ -1,4 +1,5 @@
-package io.openlineage.spark.agent.lifecycle;
+package io.openlineage.spark.agent.lifecycle;print("_________________________________${sparkVersionShort}_________________________-")
+exit
 
 import com.google.common.collect.ImmutableList;
 import io.openlineage.client.OpenLineage;
@@ -6,7 +7,6 @@ import io.openlineage.spark.agent.lifecycle.plan.CommandPlanVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.SaveIntoDataSourceCommandVisitor;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark3.agent.lifecycle.plan.AlterTableDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.AppendDataDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.CreateReplaceDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationInputDatasetBuilder;
@@ -44,9 +44,9 @@ public class Spark3DatasetBuilderFactory implements DatasetBuilderFactory {
             .add(new TableContentChangeDatasetBuilder(context))
             .add(new CreateReplaceDatasetBuilder(context));
 
-    if (hasAlterTableClass()) {
-      builder.add(new AlterTableDatasetBuilder(context));
-    }
+//    if (hasAlterTableClass()) {
+//      builder.add(new AlterTableDatasetBuilder(context));
+//    }
 
     return builder.build();
   }
