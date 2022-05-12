@@ -143,6 +143,7 @@ dependencies {
     spark32Test kafkaPackage('2.12', spark32Version)
     spark32Test "org.apache.iceberg:iceberg-spark3-runtime:0.12.1"
     spark32Test "io.delta:delta-core_2.12:1.0.0"
+    spark32Test 'commons-beanutils:commons-beanutils:1.9.4'
 
     spark2Test "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
     spark2Test "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
@@ -280,10 +281,10 @@ def commonTestConfiguration = {
             'kafka.package.version'               : kafkaPackage(scalaVersion, project.getProperty('spark.version')),
             'mockserver.logLevel'                 : 'ERROR'
     ]
-    def config = { version -> if (version == "3.2") {return configuration.spark32Test}
-                                                else {  if (version == "3.1") {return configuration.spark3Test}
-                                                        else (version == "2"){return configuration.spark2Test}}}
-    classpath = project.sourceSets.test.runtimeClasspath + configurations.spark2Test
+    def config = { version -> if (version == "3.2") {return configurations.spark32Test}
+                                                else {  if (version == "3.1") {return configurations.spark3Test}
+                                                        else (version == "2"){return configurations.spark2Test}}}
+    classpath = project.sourceSets.test.runtimeClasspath + config(sparkVersionShort)
 }
 
 test {

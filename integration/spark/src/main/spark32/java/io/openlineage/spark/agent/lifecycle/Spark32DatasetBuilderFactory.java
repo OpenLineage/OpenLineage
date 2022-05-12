@@ -1,5 +1,4 @@
-package io.openlineage.spark.agent.lifecycle;print("_________________________________${sparkVersionShort}_________________________-")
-exit
+package io.openlineage.spark.agent.lifecycle;
 
 import com.google.common.collect.ImmutableList;
 import io.openlineage.client.OpenLineage;
@@ -7,18 +6,18 @@ import io.openlineage.spark.agent.lifecycle.plan.CommandPlanVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.SaveIntoDataSourceCommandVisitor;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark3.agent.lifecycle.plan.AppendDataDatasetBuilder;
-import io.openlineage.spark3.agent.lifecycle.plan.CreateReplaceDatasetBuilder;
-import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationInputDatasetBuilder;
-import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationOutputDatasetBuilder;
-import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2ScanRelationInputDatasetBuilder;
-import io.openlineage.spark3.agent.lifecycle.plan.LogicalRelationDatasetBuilder;
-import io.openlineage.spark3.agent.lifecycle.plan.TableContentChangeDatasetBuilder;
+import io.openlineage.spark32.agent.lifecycle.plan.AppendDataDatasetBuilder;
+import io.openlineage.spark32.agent.lifecycle.plan.CreateReplaceDatasetBuilder;
+import io.openlineage.spark32.agent.lifecycle.plan.DataSourceV2RelationInputDatasetBuilder;
+import io.openlineage.spark32.agent.lifecycle.plan.DataSourceV2RelationOutputDatasetBuilder;
+import io.openlineage.spark32.agent.lifecycle.plan.DataSourceV2ScanRelationInputDatasetBuilder;
+import io.openlineage.spark32.agent.lifecycle.plan.LogicalRelationDatasetBuilder;
+import io.openlineage.spark32.agent.lifecycle.plan.TableContentChangeDatasetBuilder;
 import java.util.Collection;
 import java.util.List;
 import scala.PartialFunction;
 
-public class Spark3DatasetBuilderFactory implements DatasetBuilderFactory {
+public class Spark32DatasetBuilderFactory implements DatasetBuilderFactory {
   @Override
   public Collection<PartialFunction<Object, List<OpenLineage.InputDataset>>> getInputBuilders(
       OpenLineageContext context) {
@@ -44,16 +43,12 @@ public class Spark3DatasetBuilderFactory implements DatasetBuilderFactory {
             .add(new TableContentChangeDatasetBuilder(context))
             .add(new CreateReplaceDatasetBuilder(context));
 
-//    if (hasAlterTableClass()) {
-//      builder.add(new AlterTableDatasetBuilder(context));
-//    }
-
     return builder.build();
   }
 
   private boolean hasAlterTableClass() {
     try {
-      Spark3DatasetBuilderFactory.class
+      Spark32DatasetBuilderFactory.class
           .getClassLoader()
           .loadClass("org.apache.spark.sql.catalyst.plans.logical.AlterTable");
       return true;

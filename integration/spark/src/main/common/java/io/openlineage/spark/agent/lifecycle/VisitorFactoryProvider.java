@@ -11,6 +11,9 @@ class VisitorFactoryProvider {
   private static final String SPARK3_FACTORY_NAME =
       "io.openlineage.spark.agent.lifecycle.Spark3VisitorFactoryImpl";
 
+  private static final String SPARK32_FACTORY_NAME =
+    "io.openlineage.spark.agent.lifecycle.Spark32VisitorFactoryImpl";
+
   static VisitorFactory getInstance() {
     return getInstance(package$.MODULE$.SPARK_VERSION());
   }
@@ -19,6 +22,8 @@ class VisitorFactoryProvider {
     try {
       if (version.startsWith("2.")) {
         return (VisitorFactory) Class.forName(SPARK2_FACTORY_NAME).newInstance();
+      } else if (version.startsWith("3.2")) {
+        return (VisitorFactory) Class.forName(SPARK32_FACTORY_NAME).newInstance();
       } else {
         return (VisitorFactory) Class.forName(SPARK3_FACTORY_NAME).newInstance();
       }

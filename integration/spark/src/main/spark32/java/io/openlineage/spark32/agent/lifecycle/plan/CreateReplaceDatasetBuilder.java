@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
-package io.openlineage.spark3.agent.lifecycle.plan;
+package io.openlineage.spark32.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
@@ -8,8 +8,8 @@ import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
-import io.openlineage.spark3.agent.utils.PlanUtils3;
+import io.openlineage.spark32.agent.lifecycle.plan.catalog.CatalogUtils3;
+import io.openlineage.spark32.agent.utils.PlanUtils3;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;

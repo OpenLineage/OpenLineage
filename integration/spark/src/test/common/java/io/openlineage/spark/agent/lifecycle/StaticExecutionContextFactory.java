@@ -119,11 +119,11 @@ public class StaticExecutionContextFactory extends ContextFactory {
         .map(
             qe -> {
               SparkSession session = qe.sparkSession();
-              SQLContext sqlContext = qe.sparkPlan().sqlContext();
+              SparkContext context = qe.sparkPlan().sparkContext();
               OpenLineageContext olContext =
                   OpenLineageContext.builder()
                       .sparkSession(Optional.of(session))
-                      .sparkContext(sqlContext.sparkContext())
+                      .sparkContext(context)
                       .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
                       .queryExecution(qe)
                       .build();

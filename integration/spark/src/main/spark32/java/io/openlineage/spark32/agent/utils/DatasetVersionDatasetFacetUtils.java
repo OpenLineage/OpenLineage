@@ -1,10 +1,10 @@
-package io.openlineage.spark3.agent.utils;
+package io.openlineage.spark32.agent.utils;
 
 import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptional;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
+import io.openlineage.spark32.agent.lifecycle.plan.catalog.CatalogUtils3;
 import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
@@ -62,7 +62,7 @@ public class DatasetVersionDatasetFacetUtils {
 
   protected static boolean hasDeltaClasses() {
     try {
-      io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils.class
+      DatasetVersionDatasetFacetUtils.class
           .getClassLoader()
           .loadClass("org.apache.spark.sql.delta.files.TahoeLogFileIndex");
       return true;

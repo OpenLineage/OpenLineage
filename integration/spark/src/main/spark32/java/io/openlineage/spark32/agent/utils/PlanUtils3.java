@@ -1,4 +1,4 @@
-package io.openlineage.spark3.agent.utils;
+package io.openlineage.spark32.agent.utils;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.facets.TableProviderFacet;
@@ -6,13 +6,14 @@ import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
-import io.openlineage.spark3.agent.lifecycle.plan.catalog.IcebergHandler;
-import io.openlineage.spark3.agent.lifecycle.plan.catalog.UnsupportedCatalogException;
+import io.openlineage.spark32.agent.lifecycle.plan.catalog.CatalogUtils3;
+import io.openlineage.spark32.agent.lifecycle.plan.catalog.IcebergHandler;
+import io.openlineage.spark32.agent.lifecycle.plan.catalog.UnsupportedCatalogException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.analysis.NamedRelation;

@@ -56,6 +56,7 @@ import org.junit.jupiter.api.Test;
 import org.postgresql.Driver;
 import scala.Option;
 import scala.Tuple2;
+import scala.collection.IndexedSeq;
 import scala.collection.Seq;
 import scala.collection.Seq$;
 import scala.collection.immutable.HashMap;
@@ -155,6 +156,10 @@ class LogicalPlanSerializerTest {
           @Override
           public boolean canEqual(Object that) {
             return false;
+          }
+
+          public LogicalPlan withNewChildrenInternal(IndexedSeq<LogicalPlan> logicalPlanIndexedSeq) {
+            return null;
           }
         };
     LogicalPlanSerializer logicalPlanSerializer = new LogicalPlanSerializer();

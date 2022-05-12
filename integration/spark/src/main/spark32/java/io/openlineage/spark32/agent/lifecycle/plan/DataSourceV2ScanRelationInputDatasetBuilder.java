@@ -1,11 +1,11 @@
-package io.openlineage.spark3.agent.lifecycle.plan;
+package io.openlineage.spark32.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.api.AbstractQueryPlanInputDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
-import io.openlineage.spark3.agent.utils.PlanUtils3;
+import io.openlineage.spark32.agent.utils.DatasetVersionDatasetFacetUtils;
+import io.openlineage.spark32.agent.utils.PlanUtils3;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;

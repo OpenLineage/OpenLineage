@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
-package io.openlineage.spark3.agent.lifecycle.plan.catalog;
+package io.openlineage.spark32.agent.lifecycle.plan.catalog;
 
 import io.openlineage.spark.agent.facets.TableProviderFacet;
 import io.openlineage.spark.agent.util.DatasetIdentifier;

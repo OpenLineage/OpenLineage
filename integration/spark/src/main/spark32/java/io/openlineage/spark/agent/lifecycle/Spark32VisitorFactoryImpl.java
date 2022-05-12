@@ -9,13 +9,13 @@ import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark3.agent.lifecycle.plan.CreateTableLikeCommandVisitor;
-import io.openlineage.spark3.agent.lifecycle.plan.DropTableVisitor;
+import io.openlineage.spark32.agent.lifecycle.plan.CreateTableLikeCommandVisitor;
+import io.openlineage.spark32.agent.lifecycle.plan.DropTableVisitor;
 import java.util.List;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import scala.PartialFunction;
 
-class Spark3VisitorFactoryImpl extends BaseVisitorFactory {
+class Spark32VisitorFactoryImpl extends BaseVisitorFactory {
 
   @Override
   public List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>> getOutputVisitors(
