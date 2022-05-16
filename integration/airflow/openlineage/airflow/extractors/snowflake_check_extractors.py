@@ -17,6 +17,15 @@ class BaseSnowflakeCheckExtractor(SnowflakeExtractor):
     def __init__(self, operator):
         super().__init__(operator)
 
+    def extract_on_complete(self, task_instance):
+        logger.info("Calling extract from snowflake check extractor extract_on_complete")
+        metadata = self.create_metadata()
+        logger.info(f"Recreated metadata: {metadata}")
+        return metadata
+
+    def extract(self):
+        pass
+
     def _get_input_tables(self, source, database, sql_meta):
         inputs = []
         for in_table_schema in self._get_table_schemas(sql_meta.in_tables):
@@ -28,6 +37,7 @@ class BaseSnowflakeCheckExtractor(SnowflakeExtractor):
                 database_name=database
             )
             ds.input_facets = self._build_facets()
+            logger.info(f"Build input facets: {ds.input_facets}")
 
             table = Table(
                 table_name,
@@ -111,10 +121,4 @@ class SnowflakeColumnCheckExtractor(BaseSnowflakeCheckExtractor):
 
     def _build_facets(self) -> dict:
         column_mapping = self.operator.column_mapping
-        """
-        .xcom_pull(
-            task_ids=.task_id,
-            key="sql_column_check_operator_results"
-        )
-        """
         return build_column_check_facets(column_mapping)

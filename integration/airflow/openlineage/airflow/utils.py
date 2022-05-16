@@ -6,24 +6,14 @@ import json
 import logging
 import os
 import subprocess
-<<<<<<< HEAD
-<<<<<<< HEAD
 from typing import TYPE_CHECKING, Type, Dict, Any
-=======
 from pkg_resources import parse_version
 from pendulum import from_timestamp
->>>>>>> 766693e0 (Fix flake8 errors in utils.py)
-=======
 from collections import defaultdict
 from pkg_resources import parse_version
->>>>>>> 42f1da8b (Major updates on extractors)
 from uuid import uuid4
 from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
 from airflow.version import version as AIRFLOW_VERSION
-
-<<<<<<< HEAD
-from pkg_resources import parse_version
-
 from openlineage.airflow.facets import (
     AirflowMappedTaskRunFacet,
     AirflowVersionRunFacet,
@@ -35,20 +25,6 @@ from openlineage.client.facet import (
     DataQualityAssertionsDatasetFacet,
     Assertion
 )
-=======
-from openlineage.airflow.facets import AirflowVersionRunFacet, AirflowRunArgsRunFacet
-<<<<<<< HEAD
->>>>>>> 766693e0 (Fix flake8 errors in utils.py)
-
-=======
-from openlineage.client.facet import (
-    DataQualityMetricsInputDatasetFacet,
-    ColumnMetric,
-    DataQualityAssertionsDatasetFacet,
-    Assertion
-)
-from pendulum import from_timestamp
->>>>>>> 42f1da8b (Major updates on extractors)
 
 
 if TYPE_CHECKING:
@@ -347,26 +323,6 @@ def safe_import_airflow(airflow_1_path: str, airflow_2_path: str):
 
 
 def build_check_facets() -> dict:
-    """
-    facet_data = {
-        "columnMetrics": defaultdict(dict),
-        "rowCount": None
-    }
-    facet_data["columnMetrics"] = {}
-    data_quality_facet = DataQualityMetricsInputDatasetFacet(**facet_data)
-
-    assertion_data = {
-        "assertions": []
-    }
-    assertion_data["assertions"] = {}
-    data_quality_assertions_facet = DataQualityAssertionsDatasetFacet(**assertion_data)
-
-    return {
-        'dataQuality': data_quality_facet,
-        'dataQualityMetrics': data_quality_facet,
-        'dataQualityAssertions': data_quality_assertions_facet
-    }
-    """
     pass
 
 
@@ -380,49 +336,3 @@ def build_threshold_check_facets() -> dict:
 
 def build_interval_check_facets() -> dict:
     pass
-
-
-def build_column_check_facets(column_mapping) -> dict:
-    facet_data = {"columnMetrics": defaultdict(dict)}
-    assertion_data = {"assertions": []}
-    for col_name, checks in column_mapping.items():
-        for check, check_values in checks.items():
-            facet_key = map_facet_name(check)
-            facet_data["columnMetrics"][col_name][facet_key] = check_values["result"]
-
-            assertion_data["assertions"].append(
-                Assertion(
-                    assertion=check,
-                    success=check_values["success"],
-                    column=col_name
-                )
-            )
-        facet_data["columnMetrics"][col_name] = ColumnMetric(
-            **facet_data["columnMetrics"][col_name]
-        )
-
-    data_quality_facet = DataQualityMetricsInputDatasetFacet(**facet_data)
-    data_quality_assertions_facet = DataQualityAssertionsDatasetFacet(**assertion_data)
-
-    return {
-        "dataQuality": data_quality_facet,
-        "dataQualityMetrics": data_quality_facet,
-        "dataQualityAssertions": data_quality_assertions_facet
-    }
-
-
-def map_facet_name(check_name) -> str:
-    if "null" in check_name:
-        return "nullCount"
-    elif "distinct" in check_name:
-        return "distinctCount"
-    elif "sum" in check_name:
-        return "sum"
-    elif "count" in check_name:
-        return "count"
-    elif "min" in check_name:
-        return "min"
-    elif "max" in check_name:
-        return "max"
-    elif "quantiles" in check_name:
-        return "quantiles"

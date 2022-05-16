@@ -60,4 +60,7 @@ class BaseExtractor(ABC, LoggingMixin):
         pass
 
     def extract_on_complete(self, task_instance) -> Optional[TaskMetadata]:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info("Calling extract from base extract_on_complete")
         return self.extract()
