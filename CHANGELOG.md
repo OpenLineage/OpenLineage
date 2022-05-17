@@ -12,6 +12,7 @@
 
 * `PostgresOperator` fails to retrieve host and conn during extraction [@mobuchowski](https://github.com/mobuchowski)
 * SQL parser accepts lists of sql statements [@mobuchowski](https://github.com/mobuchowski)
+* Missing schema when writing to Delta tables in Databricks [@collado-mike](https://github.com/collado-mike)
 
 ## [0.8.1](https://github.com/OpenLineage/OpenLineage/compare/0.7.1...0.8.1)
 ### Added
