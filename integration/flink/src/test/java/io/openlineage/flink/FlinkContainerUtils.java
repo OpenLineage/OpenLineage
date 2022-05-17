@@ -12,7 +12,6 @@ import lombok.SneakyThrows;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.MockServerContainer;
 import org.testcontainers.containers.Network;
-import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.lifecycle.Startable;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
@@ -100,11 +99,8 @@ public class FlinkContainerUtils {
     GenericContainer<?> container =
         genericContainer(network, FLINK_IMAGE, "jobmanager")
             .withExposedPorts(8081)
-            .withCopyFileToContainer(
-                MountableFile.forHostPath(getOpenLineageJarPath()),
-                "/opt/flink/lib/openlineage.jar")
-            .withCopyFileToContainer(
-                MountableFile.forHostPath(getExampleAppJarPath()), "/opt/flink/lib/example-app.jar")
+            .withFileSystemBind(getOpenLineageJarPath(), "/opt/flink/lib/openlineage.jar")
+            .withFileSystemBind(getExampleAppJarPath(), "/opt/flink/lib/example-app.jar")
             .withCommand(
                 "standalone-job "
                     + "--job-classname io.openlineage.flink.FlinkStatefulApplication "
@@ -116,7 +112,6 @@ public class FlinkContainerUtils {
                 "jobmanager.rpc.address: jobmanager"
                     + System.lineSeparator()
                     + "openlineage.host: http://openlineageclient:1080")
-            .waitingFor(Wait.forLogMessage(".*Lineage completed successfully.*", 1))
             .withStartupTimeout(Duration.of(5, ChronoUnit.MINUTES))
             .dependsOn(startables);
 
@@ -126,10 +121,8 @@ public class FlinkContainerUtils {
   static GenericContainer<?> makeFlinkTaskManagerContainer(
       Network network, List<Startable> startables) {
     return genericContainer(network, FLINK_IMAGE, "taskmanager")
-        .withCopyFileToContainer(
-            MountableFile.forHostPath(getOpenLineageJarPath()), "/opt/flink/lib/openlineage.jar")
-        .withCopyFileToContainer(
-            MountableFile.forHostPath(getExampleAppJarPath()), "/opt/flink/lib/example-app.jar")
+        .withFileSystemBind(getOpenLineageJarPath(), "/opt/flink/lib/openlineage.jar")
+        .withFileSystemBind(getExampleAppJarPath(), "/opt/flink/lib/example-app.jar")
         .withEnv(
             "FLINK_PROPERTIES",
             "jobmanager.rpc.address: jobmanager"
