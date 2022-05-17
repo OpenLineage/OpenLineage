@@ -2,6 +2,16 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.8.1...HEAD)
 
+### Added
+
+* `openlineage-airflow` now supports getting credentials from [Airflows secrets backend](https://airflow.apache.org/docs/apache-airflow/stable/security/secrets/secrets-backend/index.html) [@mobuchowski](https://github.com/mobuchowski)
+* `openlineage-spark` now supports [Azure Databricks Credential Passthrough](https://docs.microsoft.com/en-us/azure/databricks/security/credential-passthrough) [@wjohnson](https://github.com/wjohnson)
+
+### Fixed
+
+* `PostgresOperator` fails to retrieve host and conn during extraction [@mobuchowski](https://github.com/mobuchowski)
+* SQL parser accepts lists of sql statements [@mobuchowski](https://github.com/mobuchowski)
+
 ## [0.8.1](https://github.com/OpenLineage/OpenLineage/compare/0.7.1...0.8.1)
 ### Added
 * Airflow integration uses [new TaskInstance listener API](https://github.com/apache/airflow/blob/main/docs/apache-airflow/listeners.rst) for Airflow 2.3+ ([#508](https://github.com/OpenLineage/OpenLineage/pull/508)) [@mobuchowski](https://github.com/mobuchowski)
