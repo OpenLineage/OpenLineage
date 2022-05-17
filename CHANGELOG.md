@@ -6,6 +6,7 @@
 
 * `openlineage-airflow` now supports getting credentials from [Airflows secrets backend](https://airflow.apache.org/docs/apache-airflow/stable/security/secrets/secrets-backend/index.html) [@mobuchowski](https://github.com/mobuchowski)
 * `openlineage-spark` now supports [Azure Databricks Credential Passthrough](https://docs.microsoft.com/en-us/azure/databricks/security/credential-passthrough) [@wjohnson](https://github.com/wjohnson)
+* `openlineage-spark` detects datasets wrapped by `ExternalRDD`s [@collado-mike](https://github.com/collado-mike)
 
 ### Fixed
 
