@@ -23,6 +23,7 @@ import org.apache.spark.Partition;
 import org.apache.spark.api.python.PythonRDD;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.execution.SQLExecutionRDD;
 import org.apache.spark.sql.sources.BaseRelation;
 import scala.PartialFunction;
 import scala.runtime.AbstractPartialFunction;
@@ -90,6 +91,9 @@ class LogicalPlanSerializer {
   @JsonIgnoreProperties({"child", "containsChild", "canonicalized", "constraints"})
   abstract class ChildMixIn {}
 
+  @JsonIgnoreProperties({"sqlConfigs", "sqlConfExecutorSide"})
+  public static class SqlConfigMixin {}
+
   @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "id")
   public static class PythonRDDMixin {
     @JsonIgnore private PythonRDDMixin asJavaRDD;
@@ -139,7 +143,8 @@ class LogicalPlanSerializer {
           ImmutableMap.<Class, Class>builder()
               .put(PythonRDD.class, PythonRDDMixin.class)
               .put(ClassLoader.class, IgnoredType.class)
-              .put(RDD.class, RDDMixin.class);
+              .put(RDD.class, RDDMixin.class)
+              .put(SQLExecutionRDD.class, SqlConfigMixin.class);
       try {
         Class<?> c = PolymorficMixIn.class.getClassLoader().loadClass("java.lang.Module");
         builder.put(c, IgnoredType.class);
