@@ -196,7 +196,7 @@ if __name__ == '__main__':
     test_integration('custom_extractor', 'requests/custom_extractor.json')
     test_integration('unknown_operator_dag', 'requests/unknown_operator.json')
     test_integration_ordered('event_order', 'requests/order')
-    if os.getenv('AIRFLOW_VERSION', '') == '2.2.4':
+    if os.getenv('AIRFLOW_VERSION', '') == '2.3.0':
         test_integration('mysql_orders_popular_day_of_week', 'requests/mysql.json')
         test_integration('dbt_snowflake', 'requests/dbt_snowflake.json')
         test_integration('snowflake', 'requests/snowflake.json')

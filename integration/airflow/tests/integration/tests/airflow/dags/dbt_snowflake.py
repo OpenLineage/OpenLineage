@@ -5,6 +5,7 @@ import os
 
 from airflow.operators.bash_operator import BashOperator
 from airflow.utils.dates import days_ago
+from pkg_resources import parse_version
 
 from openlineage.airflow.utils import JobIdMapping
 
@@ -37,7 +38,7 @@ default_args = {
     'email': ['datascience@example.com']
 }
 
-if AIRFLOW_VERSION == '2.2.4':
+if parse_version(AIRFLOW_VERSION) == parse_version("2.3.0"):
     dag = DAG(
         'dbt_snowflake',
         schedule_interval='@once',
