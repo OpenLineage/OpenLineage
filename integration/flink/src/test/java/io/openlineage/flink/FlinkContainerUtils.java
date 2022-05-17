@@ -19,11 +19,10 @@ import org.testcontainers.utility.MountableFile;
 public class FlinkContainerUtils {
 
   private static final String CONFLUENT_VERSION = "6.2.1";
-  private static final String SCHEMA_REGISTRY_IMAGE =
-      "confluentinc/cp-schema-registry:" + CONFLUENT_VERSION;
+  private static final String SCHEMA_REGISTRY_IMAGE = "eugenetea/schema-registry-arm64:latest";
   private static final String KAFKA_IMAGE = "wurstmeister/kafka:2.13-2.8.1";
   private static final String ZOOKEEPER_IMAGE = "confluentinc/cp-zookeeper:" + CONFLUENT_VERSION;
-  private static final String FLINK_IMAGE = "flink:1.14.2-scala_2.12-java11";
+  private static final String FLINK_IMAGE = "flink:1.14.4-scala_2.12-java11";
 
   static MockServerContainer makeMockServerContainer(Network network) {
     return new MockServerContainer(
@@ -95,7 +94,7 @@ public class FlinkContainerUtils {
   }
 
   static GenericContainer<?> makeFlinkJobManagerContainer(
-      Network network, List<Startable> startables) {
+      String jobName, Network network, List<Startable> startables) {
     GenericContainer<?> container =
         genericContainer(network, FLINK_IMAGE, "jobmanager")
             .withExposedPorts(8081)
@@ -104,9 +103,10 @@ public class FlinkContainerUtils {
             .withCopyFileToContainer(
                 MountableFile.forHostPath(Resources.getResource("openlineage.yml").getPath()),
                 "/opt/flink/lib/openlineage.yml")
+            .withFileSystemBind("data/iceberg", "/tmp/warehouse/db/")
             .withCommand(
                 "standalone-job "
-                    + "--job-classname io.openlineage.flink.FlinkStatefulApplication "
+                    + String.format("--job-classname %s ", jobName)
                     + "--input-topics io.openlineage.flink.kafka.input1,io.openlineage.flink.kafka.input2 "
                     + "--output-topic io.openlineage.flink.kafka.output ")
             .withEnv("FLINK_PROPERTIES", "jobmanager.rpc.address: jobmanager")
@@ -122,11 +122,12 @@ public class FlinkContainerUtils {
     return genericContainer(network, FLINK_IMAGE, "taskmanager")
         .withFileSystemBind(getOpenLineageJarPath(), "/opt/flink/lib/openlineage.jar")
         .withFileSystemBind(getExampleAppJarPath(), "/opt/flink/lib/example-app.jar")
+        .withFileSystemBind("data/iceberg", "/tmp/warehouse/db/")
         .withEnv(
             "FLINK_PROPERTIES",
             "jobmanager.rpc.address: jobmanager"
                 + System.lineSeparator()
-                + "taskmanager.numberOfTaskSlots: 1")
+                + "taskmanager.numberOfTaskSlots: 2")
         .withCommand("taskmanager")
         .dependsOn(startables);
   }

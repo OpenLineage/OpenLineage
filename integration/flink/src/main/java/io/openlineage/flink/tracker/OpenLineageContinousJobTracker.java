@@ -1,7 +1,7 @@
 package io.openlineage.flink.tracker;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.openlineage.client.shaded.com.fasterxml.jackson.databind.DeserializationFeature;
+import io.openlineage.client.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.flink.agent.facets.CheckpointFacet;
 import io.openlineage.flink.agent.lifecycle.FlinkExecutionContext;
 import io.openlineage.flink.tracker.restapi.Checkpoints;

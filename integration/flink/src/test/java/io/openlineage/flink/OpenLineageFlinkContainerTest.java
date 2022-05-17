@@ -12,11 +12,13 @@ import java.util.Arrays;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.matchers.MatchType;
+import org.mockserver.model.HttpRequest;
 import org.mockserver.model.JsonBody;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.MockServerContainer;
@@ -52,12 +54,9 @@ public class OpenLineageFlinkContainerTest {
   private static final GenericContainer generateEvents =
       FlinkContainerUtils.makeGenerateEventsContainer(network, schemaRegistry);
 
-  private static final GenericContainer jobManager =
-      FlinkContainerUtils.makeFlinkJobManagerContainer(
-          network, Arrays.asList(generateEvents, openLineageClientMockContainer));
+  private static GenericContainer jobManager;
 
-  private static final GenericContainer taskManager =
-      FlinkContainerUtils.makeFlinkTaskManagerContainer(network, Arrays.asList(jobManager));
+  private static GenericContainer taskManager;
 
   @BeforeAll
   public static void setup() {
@@ -70,6 +69,21 @@ public class OpenLineageFlinkContainerTest {
         .respond(org.mockserver.model.HttpResponse.response().withStatusCode(201));
 
     await().until(openLineageClientMockContainer::isRunning);
+  }
+
+  @AfterEach
+  public void cleanup() {
+    mockServerClient.reset();
+    try {
+      if (taskManager != null) taskManager.stop();
+    } catch (Exception e2) {
+      log.error("Unable to shut down taskmanager container", e2);
+    }
+    try {
+      if (jobManager != null) jobManager.stop();
+    } catch (Exception e2) {
+      log.error("Unable to shut down jobmanager container", e2);
+    }
   }
 
   @AfterAll
@@ -87,28 +101,37 @@ public class OpenLineageFlinkContainerTest {
     network.close();
   }
 
-  @Test
-  @SneakyThrows
-  public void testOpenLineageEventSent() {
+  void runUntilCheckpoint(String jobName) {
+    jobManager =
+        FlinkContainerUtils.makeFlinkJobManagerContainer(
+            jobName, network, Arrays.asList(generateEvents, openLineageClientMockContainer));
+    taskManager =
+        FlinkContainerUtils.makeFlinkTaskManagerContainer(network, Arrays.asList(jobManager));
     taskManager.start();
     await()
-        .atMost(Duration.ofMinutes(2))
+        .atMost(Duration.ofMinutes(5))
         .until(() -> jobManager.getLogs().contains("New checkpoint encountered"));
+  }
 
+  public HttpRequest getEvent(String path) {
+    return request()
+        .withPath("/api/v1/lineage")
+        .withBody(readJson(Path.of(Resources.getResource(path).getPath())));
+  }
+
+  @Test
+  @SneakyThrows
+  public void testOpenLineageEventSentForKafkaJob() {
+    runUntilCheckpoint("io.openlineage.flink.FlinkStatefulApplication");
     mockServerClient.verify(
-        request()
-            .withPath("/api/v1/lineage")
-            .withBody(
-                readJson(Path.of(Resources.getResource("events/expected_event.json").getPath()))),
-        request()
-            .withPath("/api/v1/lineage")
-            .withBody(
-                json(
-                    readJson(
-                            Path.of(
-                                Resources.getResource("events/expected_event_checkpoints.json")
-                                    .getPath()))
-                        .getValue())));
+        getEvent("events/expected_event.json"), getEvent("events/expected_event_checkpoints.json"));
+  }
+
+  @Test
+  @SneakyThrows
+  public void testOpenLineageEventSentForIcebergJob() {
+    runUntilCheckpoint("io.openlineage.flink.FlinkIcebergApplication");
+    mockServerClient.verify(getEvent("events/expected_iceberg.json"));
   }
 
   @SneakyThrows
