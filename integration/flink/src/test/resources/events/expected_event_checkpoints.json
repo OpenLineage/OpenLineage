@@ -1,10 +1,11 @@
 {
+  "eventType" : "OTHER",
   "run": {
     "facets" : {
       "checkpoints": {
         "completed": "${json-unit.any-number}",
         "failed": 0,
-        "in-progress": 0,
+        "in_progress": "${json-unit.any-number}",
         "restored": 0,
         "total": "${json-unit.any-number}"
       }
