@@ -1,10 +1,13 @@
 package io.openlineage.flink.agent.lifecycle;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.RunEvent;
+import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.flink.SinkLineage;
 import io.openlineage.flink.TransformationUtils;
 import io.openlineage.flink.agent.EventEmitter;
 import io.openlineage.flink.agent.client.OpenLineageClient;
+import io.openlineage.flink.agent.facets.CheckpointFacet;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.visitor.Visitor;
 import io.openlineage.flink.visitor.VisitorFactory;
@@ -12,22 +15,26 @@ import io.openlineage.flink.visitor.VisitorFactoryImpl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.dag.Transformation;
-import org.apache.flink.core.execution.JobClient;
 
 @Slf4j
 public class FlinkExecutionContext implements ExecutionContext {
 
-  private final JobID jobId;
+  @Getter private final JobID jobId;
   private final EventEmitter eventEmitter;
   private final OpenLineageContext openLineageContext;
 
-  public FlinkExecutionContext(JobID jobId, EventEmitter eventEmitter) {
+  @Getter private final List<Transformation<?>> transformations;
+
+  public FlinkExecutionContext(
+      JobID jobId, EventEmitter eventEmitter, List<Transformation<?>> transformations) {
     this.jobId = jobId;
     this.eventEmitter = eventEmitter;
+    this.transformations = transformations;
     this.openLineageContext =
         OpenLineageContext.builder()
             .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
@@ -35,9 +42,29 @@ public class FlinkExecutionContext implements ExecutionContext {
   }
 
   @Override
-  public void onJobSubmitted(JobClient jobClient, List<Transformation<?>> transformations) {
-    log.debug("JobClient - jobId: {}", jobClient.getJobID());
+  public void onJobSubmitted() {
+    log.debug("JobClient - jobId: {}", jobId);
+    RunEvent runEvent = buildEventForEventType(EventType.START).build();
+    log.debug("Posting event for onJobSubmitted {}: {}", jobId, runEvent);
+    eventEmitter.emit(runEvent);
+  }
 
+  @Override
+  public void onJobCheckpoint(CheckpointFacet facet) {
+    log.debug("JobClient - jobId: {}", jobId);
+    RunEvent runEvent =
+        buildEventForEventType(EventType.OTHER)
+            .run(
+                new OpenLineage.RunBuilder()
+                    .facets(new OpenLineage.RunFacetsBuilder().put("checkpoints", facet).build())
+                    .build())
+            .build();
+    // TODO: introduce better event type than OTHER
+    log.debug("Posting event for onJobCheckpoint {}: {}", jobId, runEvent);
+    eventEmitter.emit(runEvent);
+  }
+
+  public OpenLineage.RunEventBuilder buildEventForEventType(EventType eventType) {
     TransformationUtils converter = new TransformationUtils();
     List<SinkLineage> sinkLineages = converter.convertToVisitable(transformations);
 
@@ -50,21 +77,16 @@ public class FlinkExecutionContext implements ExecutionContext {
       outputDatasets.addAll(getOutputDatasets(visitorFactory, lineage.getSink()));
     }
 
-    OpenLineage.RunEvent runEvent =
-        openLineageContext
-            .getOpenLineage()
-            .newRunEventBuilder()
-            .inputs(inputDatasets)
-            .outputs(outputDatasets)
-            .build();
-
-    log.debug("Posting event for onJobSubmitted {}: {}", jobId, runEvent);
-    eventEmitter.emit(runEvent);
+    return openLineageContext
+        .getOpenLineage()
+        .newRunEventBuilder()
+        .inputs(inputDatasets)
+        .outputs(outputDatasets)
+        .eventType(eventType);
   }
 
   @Override
-  public void onJobExecuted(
-      JobExecutionResult jobExecutionResult, List<Transformation<?>> transformations) {}
+  public void onJobExecuted(JobExecutionResult jobExecutionResult) {}
 
   private List<OpenLineage.InputDataset> getInputDatasets(
       VisitorFactory visitorFactory, List<Object> sources) {
