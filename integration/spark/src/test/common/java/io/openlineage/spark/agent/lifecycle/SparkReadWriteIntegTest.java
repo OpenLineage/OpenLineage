@@ -55,6 +55,7 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
@@ -331,6 +332,37 @@ public class SparkReadWriteIntegTest {
     assertEquals(1, inputs.size());
     assertEquals("file", inputs.get(0).getNamespace());
     assertEquals(testFile.toAbsolutePath().getParent().toString(), inputs.get(0).getName());
+  }
+
+  @Test
+  public void testWithExternalRdd(@TempDir Path tmpDir, SparkSession spark)
+      throws InterruptedException, TimeoutException, IOException {
+    Path testFile = writeTestDataToFile(tmpDir);
+    JavaRDD<String> stringRdd =
+        new JavaSparkContext(spark.sparkContext()).textFile(testFile.toString());
+    Dataset<Row> jsonDf = spark.read().json(stringRdd);
+
+    String outputPath = tmpDir.toAbsolutePath() + "/output_data";
+    String jsonPath = "file://" + outputPath;
+    jsonDf.write().json(jsonPath);
+    // wait for event processing to complete
+    StaticExecutionContextFactory.waitForExecutionEnd();
+
+    ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
+        ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(6))
+        .emit(lineageEvent.capture());
+    OpenLineage.RunEvent completeEvent = lineageEvent.getAllValues().get(5);
+    assertThat(completeEvent).hasFieldOrPropertyWithValue("eventType", RunEvent.EventType.COMPLETE);
+    assertThat(completeEvent.getInputs())
+        .first()
+        .hasFieldOrPropertyWithValue("name", testFile.getParent().toString())
+        .hasFieldOrPropertyWithValue("namespace", "file");
+
+    assertThat(completeEvent.getOutputs())
+        .first()
+        .hasFieldOrPropertyWithValue("name", outputPath)
+        .hasFieldOrPropertyWithValue("namespace", "file");
   }
 
   @Test
