@@ -10,6 +10,7 @@ This file recognizes the people who have make an important contribution to OpenL
 
 | Name           | Email or GitHub Id |
 | -------------- | -----------------
+| Howard Yoo | howardyoo |
 
 
 
