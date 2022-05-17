@@ -91,6 +91,7 @@ dependencies {
     testImplementation "org.testcontainers:junit-jupiter:${testcontainersVersion}"
     testImplementation 'org.mock-server:mockserver-client-java:5.12.0'
     testImplementation group: 'org.awaitility', name: 'awaitility', version: '4.1.1'
+    testImplementation 'com.github.tomakehurst:wiremock:2.27.2'
 
     testCompile "org.assertj:assertj-core:${assertjVersion}"
     testCompile "org.junit.jupiter:junit-jupiter:${junit5Version}"
