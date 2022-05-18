@@ -1,6 +1,19 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.8.1...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.8.2...HEAD)
+
+### Fixed
+* Missing schema when writing to Delta tables in Databricks [@collado-mike](https://github.com/collado-mike)
+
+## [0.8.2](https://github.com/OpenLineage/OpenLineage/compare/0.8.1...0.8.2)
+### Added
+* `openlineage-airflow` now supports getting credentials from [Airflows secrets backend](https://airflow.apache.org/docs/apache-airflow/stable/security/secrets/secrets-backend/index.html) [#723](https://github.com/OpenLineage/OpenLineage/pull/723) [@mobuchowski](https://github.com/mobuchowski)
+* `openlineage-spark` now supports [Azure Databricks Credential Passthrough](https://docs.microsoft.com/en-us/azure/databricks/security/credential-passthrough) [#595](https://github.com/OpenLineage/OpenLineage/pull/595) [@wjohnson](https://github.com/wjohnson)
+* `openlineage-spark` detects datasets wrapped by `ExternalRDD`s [#746](https://github.com/OpenLineage/OpenLineage/pull/746) [@collado-mike](https://github.com/collado-mike)
+
+### Fixed
+* `PostgresOperator` fails to retrieve host and conn during extraction [#705](https://github.com/OpenLineage/OpenLineage/pull/705) [@sekikn](https://github.com/sekikn)
+* SQL parser accepts lists of sql statements [#734](https://github.com/OpenLineage/OpenLineage/issues/734) [@mobuchowski](https://github.com/mobuchowski)
 
 ## [0.8.1](https://github.com/OpenLineage/OpenLineage/compare/0.7.1...0.8.1)
 ### Added

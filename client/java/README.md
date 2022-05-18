@@ -10,14 +10,14 @@ Maven:
 <dependency>
     <groupId>io.openlineage</groupId>
     <artifactId>openlineage-java</artifactId>
-    <version>0.7.0</version>
+    <version>0.8.2</version>
 </dependency>
 ```
 
 or Gradle:
 
 ```groovy
-implementation 'io.openlineage:openlineage-java:0.7.0'
+implementation 'io.openlineage:openlineage-java:0.8.2'
 ```
 
 ## Usage
@@ -55,6 +55,8 @@ transport:
 > **Note:** For a full list of supported transports, see [`transports`](https://github.com/OpenLineage/OpenLineage/tree/main/client/java/src/main/java/io/openlineage/client/transports).
 
 ## Transports
+
+The `Transport` abstraction defines an `emit()` method for   `OpenLineage.RunEvent`. There are three built-in transports: `ConsoleTransport`, `HttpTransport`, and `KafkaTransport`.
 
 ### [`HttpTransport`](https://github.com/OpenLineage/OpenLineage/tree/main/client/java/src/main/java/io/openlineage/client/transports/HttpTransport.java)
 

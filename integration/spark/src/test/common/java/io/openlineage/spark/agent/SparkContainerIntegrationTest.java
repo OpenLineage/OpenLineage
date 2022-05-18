@@ -210,6 +210,23 @@ public class SparkContainerIntegrationTest {
     verifyEvents("pysparkDeltaCTASComplete.json");
   }
 
+  @Test
+  @EnabledIfSystemProperty(
+      named = "spark.version",
+      matches = SPARK_ABOVE_EQUAL_2_4_8) // Spark version >= 2.4.8
+  public void testDeltaSaveAsTable() {
+    pyspark =
+        SparkContainerUtils.makePysparkContainerWithDefaultConf(
+            network,
+            openLineageClientMockContainer,
+            "testDeltaSaveAsTable",
+            "--packages",
+            getDeltaPackageName(),
+            "/opt/spark_scripts/spark_delta_save_as_table.py");
+    pyspark.start();
+    verifyEvents("pysparkDeltaSaveAsTableComplete.json");
+  }
+
   /*
    * Alter table differs between Spark 3.1 and Spark 3.2.
    * Delta support for 3.2 is also limited.
