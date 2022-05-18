@@ -10,7 +10,11 @@ import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.lifecycle.StaticExecutionContextFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.SparkSession$;
@@ -40,11 +44,24 @@ public class SparkAgentTestExtension
     Mockito.doAnswer(
             (arg) -> {
               LoggerFactory.getLogger(getClass())
-                  .info("Emit called with arg {}", BeanUtils.describe(arg));
+                  .info(
+                      "Emit called with args {}",
+                      Arrays.stream(arg.getArguments())
+                          .map(this::describe)
+                          .collect(Collectors.toList()));
               return null;
             })
         .when(OPEN_LINEAGE_SPARK_CONTEXT)
         .emit(any(RunEvent.class));
+  }
+
+  private Map describe(Object arg) {
+    try {
+      return BeanUtils.describe(arg);
+    } catch (Exception e) {
+      LoggerFactory.getLogger(getClass()).error("Unable to describe event {}", arg, e);
+      return new HashMap();
+    }
   }
 
   @Override
