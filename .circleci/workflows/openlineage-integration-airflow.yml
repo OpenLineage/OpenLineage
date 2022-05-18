@@ -2,12 +2,18 @@ workflows:
   openlineage-integration-airflow:
     jobs:
       - build-integration-sql:
+          name: "build-integration-sql-x86"
           image: "quay.io/pypa/manylinux2014_x86_64"
           resource_class: "medium"
           run_tests: true
+      - build-integration-sql:
+          name: "build-integration-sql-arm"
+          image: "quay.io/pypa/manylinux2014_aarch64"
+          resource_class: "arm.medium"
+          run_tests: true
       - unit-test-integration-common:
           requires:
-            - build-integration-sql
+            - build-integration-sql-x86
           matrix:
             parameters:
               install_parser: [true, false]
@@ -21,18 +27,18 @@ workflows:
       - unit-test-integration-airflow-1:
           install_parser: true
           requires:
-            - build-integration-sql
+            - build-integration-sql-x86
       - unit-test-integration-airflow-2:
           install_parser: true
           requires:
-            - build-integration-sql
+            - build-integration-sql-x86
       - integration-test-integration-airflow-1-10:
           context: integration-tests
           requires:
             - unit-test-integration-airflow-1
             - unit-test-integration-common
             - unit-test-client-python
-            - build-integration-sql
+            - build-integration-sql-x86
           filters:
             branches:
               ignore: /pull\/[0-9]+/
@@ -49,7 +55,7 @@ workflows:
             - unit-test-integration-airflow-2
             - unit-test-integration-common
             - unit-test-client-python
-            - build-integration-sql
+            - build-integration-sql-x86
           filters:
             branches:
               ignore: /pull\/[0-9]+/
@@ -59,7 +65,7 @@ workflows:
             - unit-test-integration-airflow-2
             - unit-test-integration-common
             - unit-test-client-python
-            - build-integration-sql
+            - build-integration-sql-x86
           filters:
             branches:
               ignore: /pull\/[0-9]+/
