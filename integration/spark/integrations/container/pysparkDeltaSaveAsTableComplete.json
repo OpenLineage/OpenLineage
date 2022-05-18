@@ -1,0 +1,44 @@
+{
+  "eventType": "COMPLETE",
+  "job": {
+    "name": "open_lineage_delta_save_as_table.execute_create_data_source_table_as_select_command",
+    "namespace": "testDeltaSaveAsTable"
+  },
+  "inputs": [],
+  "outputs": [
+    {
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "title",
+              "type": "string"
+            },
+            {
+              "name": "year",
+              "type": "integer"
+            },
+            {
+              "name": "cast",
+              "type": "array"
+            },
+            {
+              "name": "genres",
+              "type": "array"
+            }
+          ]
+        },
+        "lifecycleStateChange" : {
+          "lifecycleStateChange" : "CREATE"
+        }
+      },
+      "name": "/tmp/delta/movies",
+      "namespace": "file"
+    }
+  ],
+  "run": {}
+}
