@@ -23,7 +23,7 @@ Follow the steps below to enable Open Lineage on Databricks.
     * Copies the init script to the dbfs folder
 * Create an interactive or job cluster with the relevant spark configs:
     ```
-    spark.openlineage.version 1
+    spark.openlineage.version v1
     spark.openlineage.namespace YOURNAMESPACE
     spark.openlineage.host https://YOURHOST
     ```
@@ -40,7 +40,7 @@ A successful initialization will emit logs in the Log4j output that look similar
 ```
 YY/MM/DD HH:mm:ss INFO SparkContext: Registered listener io.openlineage.spark.agent.OpenLineageSparkListener
 
-YY/MM/DD HH:mm:ss INFO OpenLineageContext: Init OpenLineageContext: Args: ArgumentParser(host=https://YOURHOST, version=1, namespace=YOURNAMESPACE, jobName=default, parentRunId=null, apiKey=Optional.empty) URI: https://YOURHOST/api/1/lineage
+YY/MM/DD HH:mm:ss INFO OpenLineageContext: Init OpenLineageContext: Args: ArgumentParser(host=https://YOURHOST, version=v1, namespace=YOURNAMESPACE, jobName=default, parentRunId=null, apiKey=Optional.empty) URI: https://YOURHOST/api/v1/lineage
 
 YY/MM/DD HH:mm:ss INFO AsyncEventQueue: Process of event SparkListenerApplicationStart(Databricks Shell,Some(app-XXX-0000),YYYY,root,None,None,None) by listener OpenLineageSparkListener took Xs.
 ```
