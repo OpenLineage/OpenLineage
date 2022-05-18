@@ -12,7 +12,8 @@ workflows:
             - build-integration-airflow
             - build-integration-dbt
             - build-integration-dagster
-            - build-integration-sql
+            - build-integration-sql-x86
+            - build-integration-sql-arm
       - publish-spec:
           filters:
             branches:
