@@ -196,11 +196,11 @@ jobs:
       - run: ./gradlew --no-daemon --stacktrace build -Pspark.version=<< parameters.spark-version >>
       - run:
           when: on_fail
-          command: cat integration/spark/build/test-results/test/TEST-*.xml
+          command: cat build/test-results/test/TEST-*.xml
       - run: ./gradlew --no-daemon jacocoTestReport
       - run: ./gradlew javadoc
       - store_test_results:
-          path: integration/spark/build/test-results/test
+          path: build/test-results/test
       - store_artifacts:
           path: build/reports/tests/test
           destination: test-report
