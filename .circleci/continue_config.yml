@@ -308,15 +308,15 @@ jobs:
           sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
           sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
       - run: (cd ./../../client/java/ && ./gradlew --no-daemon --stacktrace publishToMavenLocal)
-      - run: ./gradlew --no-daemon --info integrationTest -Pspark.version=<< parameters.spark-version >>
+      - run: ./gradlew --no-daemon integrationTest -Pspark.version=<< parameters.spark-version >>
       - run:
           when: on_fail
-          command: cat integration/spark/build/test-results/integrationTest/TEST-*.xml
+          command: cat build/test-results/integrationTest/TEST-*.xml
       - run: ./gradlew --no-daemon jacocoTestReport
       - store_test_results:
-          path: integration/spark/build/test-results/integrationTest
+          path: build/test-results/integrationTest
       - store_artifacts:
-          path: integration/spark/build/reports/tests/integrationTest
+          path: build/reports/tests/integrationTest
           destination: test-report
       - save_cache:
           key: v1-integration-spark-{{ .Branch }}-{{ .Revision }}
@@ -603,17 +603,31 @@ workflows:
               ignore: /.*/
       - build-integration-sql:
           matrix:
+            alias: build-integration-sql-x86
             parameters:
               image: [
                 "quay.io/pypa/manylinux2014_x86_64",
                 "quay.io/pypa/manylinux2014_i686",
                 "quay.io/pypa/manylinux_2_24_x86_64",
                 "quay.io/pypa/manylinux_2_24_i686",
-                "messense/manylinux2014-cross:aarch64",
-                "messense/manylinux_2_24-cross:aarch64",
               ]
               resource_class: ["medium"]
               run_tests: [false]
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+            branches:
+              ignore: /.*/
+      - build-integration-sql:
+          matrix:
+            alias: build-integration-sql-arm
+            parameters:
+              image: [
+                "quay.io/pypa/manylinux2014_aarch64",
+                "quay.io/pypa/manylinux_2_24_aarch64",
+              ]
+              resource_class: [ "arm.medium" ]
+              run_tests: [ false ]
           filters:
             tags:
               only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
@@ -632,4 +646,5 @@ workflows:
             - build-integration-airflow
             - build-integration-dbt
             - build-integration-dagster
-            - build-integration-sql
+            - build-integration-sql-x86
+            - build-integration-sql-arm

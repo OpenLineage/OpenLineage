@@ -24,10 +24,13 @@ import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Module;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Provides;
 import com.google.common.collect.ImmutableMap;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.DatasetFacets;
 import io.openlineage.client.OpenLineage.DefaultRunFacet;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.RunEvent;
+import io.openlineage.client.OpenLineage.SchemaDatasetFacet;
+import io.openlineage.client.OpenLineage.SchemaDatasetFacetFields;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.util.PlanUtils;
@@ -46,6 +49,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.FileInputFormat;
@@ -58,6 +62,7 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
+import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.expressions.GenericRow;
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema;
@@ -428,6 +433,43 @@ public class SparkReadWriteIntegTest {
         .singleElement()
         .hasFieldOrPropertyWithValue("name", outputPath)
         .hasFieldOrPropertyWithValue("namespace", "file");
+  }
+
+  @Test
+  public void testCreateDataSourceTableAsSelect(@TempDir Path tmpDir, SparkSession spark)
+      throws InterruptedException, TimeoutException, IOException {
+    Path testFile = writeTestDataToFile(tmpDir);
+    JavaRDD<String> stringRdd =
+        new JavaSparkContext(spark.sparkContext()).textFile(testFile.toString());
+    Dataset<Row> jsonDf = spark.read().json(stringRdd);
+
+    jsonDf.write().format("parquet").mode(SaveMode.Overwrite).saveAsTable("parquetTable");
+    // wait for event processing to complete
+    StaticExecutionContextFactory.waitForExecutionEnd();
+
+    ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
+        ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(6))
+        .emit(lineageEvent.capture());
+    OpenLineage.RunEvent completeEvent = lineageEvent.getAllValues().get(5);
+    assertThat(completeEvent).hasFieldOrPropertyWithValue("eventType", RunEvent.EventType.COMPLETE);
+    assertThat(completeEvent.getInputs())
+        .first()
+        .hasFieldOrPropertyWithValue("name", testFile.getParent().toString())
+        .hasFieldOrPropertyWithValue("namespace", "file");
+    String warehouseDir = spark.sqlContext().conf().getConfString("spark.sql.warehouse.dir");
+    assertThat(completeEvent.getOutputs())
+        .first()
+        .hasFieldOrPropertyWithValue(
+            "name", new org.apache.hadoop.fs.Path(warehouseDir).toUri().getPath() + "/parquettable")
+        .hasFieldOrPropertyWithValue("namespace", "file")
+        .extracting(OutputDataset::getFacets)
+        .extracting(DatasetFacets::getSchema)
+        .extracting(
+            SchemaDatasetFacet::getFields,
+            InstanceOfAssertFactories.list(SchemaDatasetFacetFields.class))
+        .map(f -> Pair.of(f.getName(), f.getType()))
+        .containsExactlyInAnyOrder(Pair.of("name", "string"), Pair.of("age", "long"));
   }
 
   @Test

@@ -11,6 +11,7 @@ import java.util.List;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.command.CreateDataSourceTableAsSelectCommand;
+import org.apache.spark.sql.types.StructType;
 
 /**
  * {@link LogicalPlan} visitor that matches an {@link CreateDataSourceTableAsSelectCommand} and
@@ -28,11 +29,16 @@ public class CreateDataSourceTableAsSelectCommandVisitor
     CreateDataSourceTableAsSelectCommand command = (CreateDataSourceTableAsSelectCommand) x;
     CatalogTable catalogTable = command.table();
 
+    // Sometimes the schema is missing from the catalog (e.g., when the table doesn't yet exist)
+    StructType schema = catalogTable.schema();
+    if (schema.fields().length == 0 && command.query().schema().fields().length > 0) {
+      schema = command.query().schema();
+    }
     return Collections.singletonList(
         outputDataset()
             .getDataset(
                 PathUtils.fromCatalogTable(catalogTable),
-                catalogTable.schema(),
+                schema,
                 OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE));
   }
 }
