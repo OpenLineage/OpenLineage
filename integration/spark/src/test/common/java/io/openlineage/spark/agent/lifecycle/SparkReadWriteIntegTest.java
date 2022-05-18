@@ -61,6 +61,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.sql.AnalysisException;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SaveMode;
@@ -86,6 +87,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.utility.DockerImageName;
 import scala.Tuple2;
@@ -283,6 +285,7 @@ public class SparkReadWriteIntegTest {
     if (!fileCreated) {
       throw new RuntimeException("Unable to create json input file");
     }
+    LoggerFactory.getLogger(getClass()).debug("Writing test json data to {}", testFile);
     ObjectMapper mapper = new ObjectMapper();
     try (FileOutputStream writer = new FileOutputStream(testFile.toFile());
         JsonGenerator jsonWriter = mapper.getJsonFactory().createJsonGenerator(writer)) {
@@ -305,7 +308,7 @@ public class SparkReadWriteIntegTest {
 
   @Test
   public void testInsertIntoDataSourceDirVisitor(@TempDir Path tempDir, SparkSession spark)
-      throws IOException, InterruptedException, TimeoutException {
+      throws IOException, InterruptedException, TimeoutException, AnalysisException {
     Path testFile = writeTestDataToFile(tempDir);
     Path parquetDir = tempDir.resolve("parquet").toAbsolutePath();
     // Two events from CreateViewCommand
@@ -448,7 +451,7 @@ public class SparkReadWriteIntegTest {
         new JavaSparkContext(spark.sparkContext()).textFile(testFile.toString());
     Dataset<Row> jsonDf = spark.read().json(stringRdd);
 
-    jsonDf.write().format("parquet").mode(SaveMode.Overwrite).saveAsTable("parquetTable");
+    jsonDf.write().format("parquet").mode(SaveMode.Overwrite).saveAsTable("testCreateDataSource");
     // wait for event processing to complete
     StaticExecutionContextFactory.waitForExecutionEnd();
 
@@ -466,7 +469,8 @@ public class SparkReadWriteIntegTest {
     assertThat(completeEvent.getOutputs())
         .first()
         .hasFieldOrPropertyWithValue(
-            "name", new org.apache.hadoop.fs.Path(warehouseDir).toUri().getPath() + "/parquettable")
+            "name",
+            new org.apache.hadoop.fs.Path(warehouseDir).toUri().getPath() + "/testcreatedatasource")
         .hasFieldOrPropertyWithValue("namespace", "file")
         .extracting(OutputDataset::getFacets)
         .extracting(DatasetFacets::getSchema)
