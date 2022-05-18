@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
@@ -309,6 +310,7 @@ public class SparkReadWriteIntegTest {
     Path parquetDir = tempDir.resolve("parquet").toAbsolutePath();
     // Two events from CreateViewCommand
     spark.read().json("file://" + testFile.toAbsolutePath()).createOrReplaceTempView("testdata");
+
     spark.sql(
         "INSERT OVERWRITE DIRECTORY '"
             + parquetDir
@@ -321,7 +323,10 @@ public class SparkReadWriteIntegTest {
     ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
 
-    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(8))
+    // The CreateView action completes quickly enough that it is sometimes missed in CI (the
+    // execution id is no longer in the QueryExecution map). That makes this test sometimes flaky
+    // if we expect an exact count.
+    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, atLeast(4))
         .emit(lineageEvent.capture());
     List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
     Optional<OpenLineage.RunEvent> completionEvent =
