@@ -9,7 +9,7 @@ orbs:
 
 # optional parameter when triggering to
 # only run a particular type of integration
-paramters:
+parameters:
   integration-type:
     type: enum
     default: "*"
