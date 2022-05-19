@@ -53,19 +53,24 @@ class ExtractorManager:
             self.log.warning(
                 f'Unable to find an extractor. {task_info}')
 
-        return TaskMetadata(
-            name=get_job_name(task),
-            run_facets={
-                "unknownSourceAttribute": UnknownOperatorAttributeRunFacet(
-                    unknownItems=[
-                        UnknownOperatorInstance(
-                            name=task.__class__.__name__,
-                            properties={attr: value for attr, value in task.__dict__.items()}
-                        )
-                    ]
-                )
-            }
-        )
+            # Only include the unkonwnSourceAttribute facet if there is no extractor
+            return TaskMetadata(
+                name=get_job_name(task),
+                run_facets={
+                    "unknownSourceAttribute": UnknownOperatorAttributeRunFacet(
+                        unknownItems=[
+                            UnknownOperatorInstance(
+                                name=task.__class__.__name__,
+                                properties={
+                                    attr: value for attr, value in task.__dict__.items()
+                                },
+                            )
+                        ]
+                    )
+                },
+            )
+
+        return TaskMetadata(name=get_job_name(task))
 
     def _get_extractor(self, task) -> Optional[BaseExtractor]:
         if task.task_id in self.extractors:
