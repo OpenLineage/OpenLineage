@@ -268,7 +268,14 @@ jobs:
           root: .
           paths:
             - ./target/wheels/*.whl
-            - ./target/wheels/*.tar.gz
+      - when:
+          condition:
+            equal: [ "quay.io/pypa/manylinux2014_x86_64", << parameters.image >> ]
+          steps:
+            - persist_to_workspace:
+                root: .
+                paths:
+                  - ./target/wheels/*.tar.gz
       - store_artifacts:
           path: ./target/wheels
           destination: sql-artifacts
