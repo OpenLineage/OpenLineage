@@ -9,7 +9,7 @@ from setuptools import setup, find_namespace_packages
 with open("README.md") as readme_file:
     readme = readme_file.read()
 
-__version__ = "0.8.2"
+__version__ = "0.9.0"
 
 requirements = [
     "attrs>=19.3",
