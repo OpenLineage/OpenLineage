@@ -9,11 +9,19 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.lifecycle.StaticExecutionContextFactory;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.io.File;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.SparkSession$;
+import org.apache.spark.sql.catalog.Table;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -40,15 +48,40 @@ public class SparkAgentTestExtension
     Mockito.doAnswer(
             (arg) -> {
               LoggerFactory.getLogger(getClass())
-                  .info("Emit called with arg {}", BeanUtils.describe(arg));
+                  .info(
+                      "Emit called with args {}",
+                      Arrays.stream(arg.getArguments())
+                          .map(this::describe)
+                          .collect(Collectors.toList()));
               return null;
             })
         .when(OPEN_LINEAGE_SPARK_CONTEXT)
         .emit(any(RunEvent.class));
   }
 
+  private Map describe(Object arg) {
+    try {
+      return BeanUtils.describe(arg);
+    } catch (Exception e) {
+      LoggerFactory.getLogger(getClass()).error("Unable to describe event {}", arg, e);
+      return new HashMap();
+    }
+  }
+
   @Override
   public void afterEach(ExtensionContext context) throws Exception {
+    try {
+      ScalaConversionUtils.asJavaOptional(SparkSession.getActiveSession())
+          .ifPresent(
+              session -> {
+                Table[] tables = (Table[]) session.catalog().listTables().collect();
+                Arrays.stream(tables)
+                    .filter(Table::isTemporary)
+                    .forEach(table -> session.catalog().dropTempView(table.name()));
+              });
+    } catch (Exception e) {
+      // ignore
+    }
     SparkSession$.MODULE$.cleanupAnyExistingSession();
   }
 
@@ -64,12 +97,21 @@ public class SparkAgentTestExtension
       ParameterContext parameterContext, ExtensionContext extensionContext)
       throws ParameterResolutionException {
     SparkSession$.MODULE$.cleanupAnyExistingSession();
+    String testName = parameterContext.getDeclaringExecutable().getName();
+    String warehouseDir =
+        new File("spark-warehouse/")
+            .getAbsoluteFile()
+            .toPath()
+            .resolve(testName)
+            .resolve(String.valueOf(Instant.now().getEpochSecond()))
+            .toString();
     return SparkSession.builder()
         .master("local[*]")
-        .appName(parameterContext.getDeclaringExecutable().getName())
+        .appName(testName)
         .config("spark.extraListeners", OpenLineageSparkListener.class.getName())
         .config("spark.driver.host", "127.0.0.1")
         .config("spark.driver.bindAddress", "127.0.0.1")
+        .config("spark.sql.warehouse.dir", warehouseDir)
         .getOrCreate();
   }
 

@@ -196,11 +196,11 @@ jobs:
       - run: ./gradlew --no-daemon --stacktrace build -Pspark.version=<< parameters.spark-version >>
       - run:
           when: on_fail
-          command: cat integration/spark/build/test-results/test/TEST-*.xml
+          command: cat build/test-results/test/TEST-*.xml
       - run: ./gradlew --no-daemon jacocoTestReport
       - run: ./gradlew javadoc
       - store_test_results:
-          path: integration/spark/build/test-results/test
+          path: build/test-results/test
       - store_artifacts:
           path: build/reports/tests/test
           destination: test-report
@@ -268,7 +268,14 @@ jobs:
           root: .
           paths:
             - ./target/wheels/*.whl
-            - ./target/wheels/*.tar.gz
+      - when:
+          condition:
+            equal: [ "quay.io/pypa/manylinux2014_x86_64", << parameters.image >> ]
+          steps:
+            - persist_to_workspace:
+                root: .
+                paths:
+                  - ./target/wheels/*.tar.gz
       - store_artifacts:
           path: ./target/wheels
           destination: sql-artifacts
@@ -608,8 +615,6 @@ workflows:
               image: [
                 "quay.io/pypa/manylinux2014_x86_64",
                 "quay.io/pypa/manylinux2014_i686",
-                "quay.io/pypa/manylinux_2_24_x86_64",
-                "quay.io/pypa/manylinux_2_24_i686",
               ]
               resource_class: ["medium"]
               run_tests: [false]
@@ -624,7 +629,6 @@ workflows:
             parameters:
               image: [
                 "quay.io/pypa/manylinux2014_aarch64",
-                "quay.io/pypa/manylinux_2_24_aarch64",
               ]
               resource_class: [ "arm.medium" ]
               run_tests: [ false ]
