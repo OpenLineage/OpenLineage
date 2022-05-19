@@ -615,8 +615,6 @@ workflows:
               image: [
                 "quay.io/pypa/manylinux2014_x86_64",
                 "quay.io/pypa/manylinux2014_i686",
-                "quay.io/pypa/manylinux_2_24_x86_64",
-                "quay.io/pypa/manylinux_2_24_i686",
               ]
               resource_class: ["medium"]
               run_tests: [false]
@@ -631,7 +629,6 @@ workflows:
             parameters:
               image: [
                 "quay.io/pypa/manylinux2014_aarch64",
-                "quay.io/pypa/manylinux_2_24_aarch64",
               ]
               resource_class: [ "arm.medium" ]
               run_tests: [ false ]
