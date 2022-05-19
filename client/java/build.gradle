@@ -40,16 +40,16 @@ configurations {
 }
 
 dependencies {
-    compileOnly "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
-    compileOnly "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
-    compileOnly "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
-    compileOnly "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${jacksonVersion}"
-    compileOnly "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${jacksonVersion}"
-    compileOnly "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
+    implementation "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
+    implementation "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
+    implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
+    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${jacksonVersion}"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${jacksonVersion}"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
+    implementation 'org.apache.httpcomponents:httpclient:4.5.13'
+    implementation 'org.yaml:snakeyaml:1.30'
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
-    compileOnly 'org.apache.httpcomponents:httpclient:4.5.13'
     compileOnly 'org.slf4j:slf4j-api:1.7.36'
-    compileOnly 'org.yaml:snakeyaml:1.30'
     compileOnly 'org.apache.kafka:kafka-clients:3.1.0'
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
@@ -119,7 +119,7 @@ test {
 shadowJar {
     minimize()
     classifier = ''
-    relocate 'com.fasterxml.jackson.core', 'io.openlineage.client.shaded.com.fasterxml.jackson.core'
+    relocate 'com.fasterxml.jackson', 'io.openlineage.client.shaded.com.fasterxml.jackson'
     relocate 'org.apache.httpcomponents', 'io.openlineage.client.shaded.org.apache.httpcomponents'
     relocate 'org.yaml', 'io.openlineage.client.shaded.org.yaml'
 
