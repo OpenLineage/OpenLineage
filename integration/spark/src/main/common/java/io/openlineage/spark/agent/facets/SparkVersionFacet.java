@@ -2,9 +2,9 @@
 
 package io.openlineage.spark.agent.facets;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.client.OpenLineageClient;
+import io.openlineage.client.shaded.com.fasterxml.jackson.annotation.JsonProperty;
+import io.openlineage.spark.agent.EventEmitter;
 import lombok.Getter;
 import lombok.NonNull;
 import org.apache.spark.SparkContext;
@@ -18,7 +18,7 @@ public class SparkVersionFacet extends OpenLineage.DefaultRunFacet {
   private String openlineageSparkVersion;
 
   public SparkVersionFacet(@NonNull SparkContext sparkContext) {
-    super(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
+    super(EventEmitter.OPEN_LINEAGE_PRODUCER_URI);
     this.sparkVersion = sparkContext.version();
     this.openlineageSparkVersion = this.getClass().getPackage().getImplementationVersion();
   }

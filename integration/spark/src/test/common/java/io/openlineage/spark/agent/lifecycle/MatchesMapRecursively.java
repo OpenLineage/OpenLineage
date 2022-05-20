@@ -2,7 +2,7 @@
 
 package io.openlineage.spark.agent.lifecycle;
 
-import io.openlineage.spark.agent.client.OpenLineageClient;
+import io.openlineage.spark.agent.EventEmitter;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -90,7 +90,7 @@ public class MatchesMapRecursively extends Condition<Map<String, Object>> {
               MatchesMapRecursively.predicate((List<Object>) target.get(k), omittedKeys)
                   .test((List<Object>) val);
         } else if (k.equals("_producer") || k.equals("producer")) {
-          eq = OpenLineageClient.OPEN_LINEAGE_CLIENT_URI.toString().equals(val);
+          eq = EventEmitter.OPEN_LINEAGE_PRODUCER_URI.toString().equals(val);
         } else if (val == null) {
           eq = true;
         } else {

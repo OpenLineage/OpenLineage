@@ -42,10 +42,15 @@ public final class HttpTransport extends Transport implements Closeable {
     super(Type.HTTP);
     this.http = httpClient;
     try {
-      this.uri =
-          new URIBuilder(httpConfig.getUrl())
-              .setPath(httpConfig.getUrl().getPath() + API_V1 + "/lineage")
-              .build();
+      URI configUri = httpConfig.getUrl();
+      if (configUri.getPath() != null && !configUri.getPath().equals("")) {
+        this.uri = httpConfig.getUrl();
+      } else {
+        this.uri =
+            new URIBuilder(httpConfig.getUrl())
+                .setPath(httpConfig.getUrl().getPath() + API_V1 + "/lineage")
+                .build();
+      }
     } catch (URISyntaxException e) {
       throw new OpenLineageClientException(e);
     }

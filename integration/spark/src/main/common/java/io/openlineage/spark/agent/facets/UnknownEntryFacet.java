@@ -2,10 +2,10 @@
 
 package io.openlineage.spark.agent.facets;
 
-import static io.openlineage.spark.agent.client.OpenLineageClient.OPEN_LINEAGE_CLIENT_URI;
+import static io.openlineage.spark.agent.EventEmitter.OPEN_LINEAGE_PRODUCER_URI;
 
-import com.fasterxml.jackson.annotation.JsonRawValue;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.shaded.com.fasterxml.jackson.annotation.JsonRawValue;
 import java.util.List;
 import java.util.Map;
 import lombok.EqualsAndHashCode;
@@ -16,7 +16,7 @@ import lombok.Value;
 public class UnknownEntryFacet extends OpenLineage.DefaultRunFacet {
 
   public UnknownEntryFacet(FacetEntry output, List<FacetEntry> inputs) {
-    super(OPEN_LINEAGE_CLIENT_URI);
+    super(OPEN_LINEAGE_PRODUCER_URI);
     this.output = output;
     this.inputs = inputs;
   }

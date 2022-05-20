@@ -3,7 +3,7 @@
 package io.openlineage.spark.agent.facets;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.client.OpenLineageClient;
+import io.openlineage.spark.agent.EventEmitter;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import lombok.Builder;
@@ -14,7 +14,7 @@ public class ErrorFacet extends OpenLineage.DefaultRunFacet {
 
   @Builder
   public ErrorFacet(@NonNull Exception exception) {
-    super(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
+    super(EventEmitter.OPEN_LINEAGE_PRODUCER_URI);
     this.exception = exception;
   }
 

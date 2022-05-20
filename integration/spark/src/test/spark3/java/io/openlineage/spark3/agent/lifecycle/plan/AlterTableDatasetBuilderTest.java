@@ -8,7 +8,7 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.client.OpenLineageClient;
+import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -37,7 +37,7 @@ public class AlterTableDatasetBuilderTest {
       OpenLineageContext.builder()
           .sparkSession(Optional.of(mock(SparkSession.class)))
           .sparkContext(mock(SparkContext.class))
-          .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
+          .openLineage(new OpenLineage(EventEmitter.OPEN_LINEAGE_PRODUCER_URI))
           .build();
 
   TableCatalog tableCatalog = mock(TableCatalog.class);

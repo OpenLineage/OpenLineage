@@ -6,7 +6,7 @@ import static org.mockito.Mockito.mock;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunFacet;
-import io.openlineage.spark.agent.client.OpenLineageClient;
+import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
@@ -78,7 +78,7 @@ public class TestOpenLineageEventHandlerFactory implements OpenLineageEventHandl
     private final String message;
 
     public TestRunFacet(String message) {
-      super(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
+      super(EventEmitter.OPEN_LINEAGE_PRODUCER_URI);
       this.message = message;
     }
   }

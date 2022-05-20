@@ -30,6 +30,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import lombok.NonNull;
 
 /** Utilities class for {@link OpenLineageClient}. */
@@ -67,6 +68,25 @@ public final class Utils {
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }
+  }
+
+  public static <T> T convertValue(Object fromValue, Class<T> toValueType) {
+    return MAPPER.convertValue(fromValue, toValueType);
+  }
+
+  /**
+   * Create a new instance of the facets container with all values merged from the original
+   * facetsContainer and the given facets Map, with precedence given to the facets Map.
+   */
+  public static <T, F> T mergeFacets(Map<String, F> facetsMap, T facetsContainer, Class<T> klass) {
+    if (facetsContainer == null) {
+      return MAPPER.convertValue(facetsMap, klass);
+    }
+
+    Map<String, F> targetMap =
+        MAPPER.convertValue(facetsContainer, new TypeReference<Map<String, F>>() {});
+    targetMap.putAll(facetsMap);
+    return MAPPER.convertValue(targetMap, klass);
   }
 
   /** Converts the provided {@code urlString} to an {@link URI} object. */

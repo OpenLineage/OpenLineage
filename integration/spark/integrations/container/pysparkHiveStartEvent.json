@@ -32,26 +32,6 @@
     "run": {
         "facets": {
             "spark.logicalPlan": {},
-            "spark_unknown": {
-                "inputs": [
-                    {
-                        "description": {},
-                        "inputAttributes": [],
-                        "outputAttributes": [
-                            {
-                                "metadata": {},
-                                "name": "key",
-                                "type": "integer"
-                            },
-                            {
-                                "metadata": {},
-                                "name": "value",
-                                "type": "string"
-                            }
-                        ]
-                    }
-                ]
-            },
             "spark_version": {
                 "spark-version": "${json-unit.any-string}",
                 "openlineage-spark-version": "${json-unit.any-string}"

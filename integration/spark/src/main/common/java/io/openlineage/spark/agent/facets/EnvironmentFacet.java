@@ -1,8 +1,8 @@
 package io.openlineage.spark.agent.facets;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.client.OpenLineageClient;
+import io.openlineage.client.shaded.com.fasterxml.jackson.annotation.JsonProperty;
+import io.openlineage.spark.agent.EventEmitter;
 import java.util.Map;
 
 /**
@@ -14,7 +14,7 @@ public class EnvironmentFacet extends OpenLineage.DefaultRunFacet {
   private Map<String, Object> properties;
 
   public EnvironmentFacet(Map<String, Object> environmentDetails) {
-    super(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
+    super(EventEmitter.OPEN_LINEAGE_PRODUCER_URI);
     this.properties = environmentDetails;
   }
 }
