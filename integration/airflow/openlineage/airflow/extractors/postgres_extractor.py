@@ -28,29 +28,6 @@ class PostgresExtractor(SqlExtractor):
     def _get_scheme(self):
         return 'postgres'
 
-    def _get_input_tables(self, source, database, sql_meta) -> List[Dataset]:
-        return [
-            Dataset.from_table(
-                source=source,
-                table_name=in_table_schema.table_name.name,
-                schema_name=in_table_schema.schema_name,
-                database_name=database
-            ) for in_table_schema in self._get_table_schemas(
-                sql_meta.in_tables
-            )
-        ]
-
-    def _get_output_tables(self, source, database, sql_meta) -> List[Dataset]:
-        return [
-            Dataset.from_table_schema(
-                source=source,
-                table_schema=out_table_schema,
-                database_name=database
-            ) for out_table_schema in self._get_table_schemas(
-                sql_meta.out_tables
-            )
-        ]
-
     def _get_database(self) -> str:
         if self.conn.schema:
             return self.conn.schema
