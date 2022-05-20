@@ -35,7 +35,7 @@ public class SparkContainerUtils {
         .withFileSystemBind("build/dependencies", "/opt/dependencies")
         .withLogConsumer(SparkContainerUtils::consumeOutput)
         .waitingFor(Wait.forLogMessage(waitMessage, 1))
-        .withStartupTimeout(Duration.of(5, ChronoUnit.MINUTES))
+        .withStartupTimeout(Duration.of(10, ChronoUnit.MINUTES))
         .dependsOn(mockServerContainer)
         .withReuse(true)
         .withCommand(command);

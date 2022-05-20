@@ -2,6 +2,7 @@
 
 package io.openlineage.spark.agent.lifecycle;
 
+import static io.openlineage.client.OpenLineage.RunEvent;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -12,6 +13,8 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.Field;
 import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.MockBigQueryRelationProvider;
@@ -26,14 +29,12 @@ import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Provides;
 import com.google.common.collect.ImmutableMap;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.DatasetFacets;
-import io.openlineage.client.OpenLineage.DefaultRunFacet;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
-import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.SchemaDatasetFacet;
 import io.openlineage.client.OpenLineage.SchemaDatasetFacetFields;
+import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
-import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.TestOpenLineageEventHandlerFactory;
 import java.io.FileOutputStream;
@@ -50,6 +51,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
@@ -77,8 +79,6 @@ import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.api.ObjectAssert;
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -87,7 +87,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
-import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.utility.DockerImageName;
 import scala.Tuple2;
@@ -95,6 +94,7 @@ import scala.collection.immutable.HashMap;
 
 @ExtendWith(SparkAgentTestExtension.class)
 @Tag("integration-test")
+@Slf4j
 public class SparkReadWriteIntegTest {
 
   private final KafkaContainer kafkaContainer =
@@ -189,24 +189,20 @@ public class SparkReadWriteIntegTest {
             TestOpenLineageEventHandlerFactory.TEST_FACET_KEY,
             facet ->
                 assertThat(facet)
-                    .isInstanceOf(DefaultRunFacet.class)
-                    .extracting(
-                        "additionalProperties",
-                        InstanceOfAssertFactories.map(String.class, Object.class))
-                    .containsKey("message"));
-    List<OpenLineage.InputDataset> inputs = events.get(2).getInputs();
+                    .isInstanceOf(TestOpenLineageEventHandlerFactory.TestRunFacet.class)
+                    .hasFieldOrProperty("message"));
+    List<InputDataset> inputs = events.get(2).getInputs();
     assertEquals(1, inputs.size());
     assertEquals("bigquery", inputs.get(0).getNamespace());
     assertEquals(BigQueryUtil.friendlyTableName(tableId), inputs.get(0).getName());
 
-    List<OpenLineage.OutputDataset> outputs = events.get(2).getOutputs();
+    List<OutputDataset> outputs = events.get(2).getOutputs();
     assertEquals(1, outputs.size());
-    OpenLineage.OutputDataset output = outputs.get(0);
+    OutputDataset output = outputs.get(0);
     assertEquals("file", output.getNamespace());
     assertEquals(outputDir, output.getName());
-    OpenLineage.SchemaDatasetFacet schemaDatasetFacet =
-        PlanUtils.schemaFacet(
-            new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI), tableSchema);
+    SchemaDatasetFacet schemaDatasetFacet =
+        PlanUtils.schemaFacet(new OpenLineage(EventEmitter.OPEN_LINEAGE_PRODUCER_URI), tableSchema);
     assertThat(output.getFacets().getSchema())
         .usingRecursiveComparison()
         .isEqualTo(schemaDatasetFacet);
@@ -235,12 +231,11 @@ public class SparkReadWriteIntegTest {
     // wait for event processing to complete
     StaticExecutionContextFactory.waitForExecutionEnd();
 
-    ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
-        ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+    ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(RunEvent.class);
 
     Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(6))
         .emit(lineageEvent.capture());
-    List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
+    List<RunEvent> events = lineageEvent.getAllValues();
     ObjectAssert<RunEvent> completionEvent =
         assertThat(events)
             .filteredOn(e -> e.getEventType().equals(RunEvent.EventType.COMPLETE))
@@ -285,7 +280,7 @@ public class SparkReadWriteIntegTest {
     if (!fileCreated) {
       throw new RuntimeException("Unable to create json input file");
     }
-    LoggerFactory.getLogger(getClass()).debug("Writing test json data to {}", testFile);
+    log.debug("Writing test json data to {}", testFile);
     ObjectMapper mapper = new ObjectMapper();
     try (FileOutputStream writer = new FileOutputStream(testFile.toFile());
         JsonGenerator jsonWriter = mapper.getJsonFactory().createJsonGenerator(writer)) {
@@ -341,7 +336,7 @@ public class SparkReadWriteIntegTest {
             .findFirst();
     assertTrue(completionEvent.isPresent());
     OpenLineage.RunEvent event = completionEvent.get();
-    List<OpenLineage.InputDataset> inputs = event.getInputs();
+    List<InputDataset> inputs = event.getInputs();
     assertEquals(1, inputs.size());
     assertEquals("file", inputs.get(0).getNamespace());
     assertEquals(testFile.toAbsolutePath().getParent().toString(), inputs.get(0).getName());

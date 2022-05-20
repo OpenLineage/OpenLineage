@@ -19,10 +19,6 @@
       "credentialsFile": 6,
       "accessToken": 6,
       "filter": 6,
-      "maxParallelism": {
-        "isPresent": true,
-        "asInt": 2
-      },
       "defaultParallelism": 10,
       "temporaryGcsBucket": 6,
       "persistentGcsBucket": 6,
@@ -34,10 +30,6 @@
       "materializationProject": 6,
       "materializationDataset": 6,
       "partitionField": 6,
-      "partitionExpirationMs": {
-        "isPresent": true,
-        "asLong": 2
-      },
       "partitionRequireFilter": 6,
       "partitionType": 6,
       "clusteredFields": 6,

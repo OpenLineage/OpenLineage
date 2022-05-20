@@ -4,7 +4,6 @@ package io.openlineage.spark.agent.lifecycle;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.EventEmitter;
-import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
@@ -23,16 +22,12 @@ public class ContextFactory {
     handlerFactory = new InternalEventHandlerFactory();
   }
 
-  public void close() {
-    openLineageEventEmitter.close();
-  }
-
   public ExecutionContext createRddExecutionContext(int jobId) {
     OpenLineageContext olContext =
         OpenLineageContext.builder()
             .sparkSession(ScalaConversionUtils.asJavaOptional(SparkSession.getActiveSession()))
             .sparkContext(SparkContext.getOrCreate())
-            .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
+            .openLineage(new OpenLineage(EventEmitter.OPEN_LINEAGE_PRODUCER_URI))
             .build();
     return new RddExecutionContext(olContext, jobId, openLineageEventEmitter);
   }
@@ -46,7 +41,7 @@ public class ContextFactory {
                   OpenLineageContext.builder()
                       .sparkSession(Optional.of(sparkSession))
                       .sparkContext(sparkSession.sparkContext())
-                      .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
+                      .openLineage(new OpenLineage(EventEmitter.OPEN_LINEAGE_PRODUCER_URI))
                       .queryExecution(queryExecution)
                       .build();
               OpenLineageRunEventBuilder runEventBuilder =

@@ -8,13 +8,13 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.Resources;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.Utils;
+import io.openlineage.client.shaded.com.fasterxml.jackson.core.JsonProcessingException;
+import io.openlineage.client.shaded.com.fasterxml.jackson.core.type.TypeReference;
+import io.openlineage.client.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
-import io.openlineage.spark.agent.client.OpenLineageClient;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Paths;
@@ -119,7 +119,7 @@ public class LibraryTest {
     List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
     assertEquals(2, events.size());
 
-    ObjectMapper objectMapper = OpenLineageClient.getObjectMapper();
+    ObjectMapper objectMapper = Utils.newObjectMapper();
     for (int i = 0; i < events.size(); i++) {
       log.info("Iteration {}", i);
       OpenLineage.RunEvent event = events.get(i);
@@ -173,8 +173,7 @@ public class LibraryTest {
   private void verifySerialization(List<OpenLineage.RunEvent> events)
       throws JsonProcessingException {
     for (OpenLineage.RunEvent event : events) {
-      assertNotNull(
-          "Event can serialize", OpenLineageClient.getObjectMapper().writeValueAsString(event));
+      assertNotNull("Event can serialize", Utils.newObjectMapper().writeValueAsString(event));
     }
   }
 }

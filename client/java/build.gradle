@@ -47,6 +47,7 @@ dependencies {
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${jacksonVersion}"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
     implementation 'org.apache.httpcomponents:httpclient:4.5.13'
+    implementation 'commons-logging:commons-logging:1.2'
     implementation 'org.yaml:snakeyaml:1.30'
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
     compileOnly 'org.slf4j:slf4j-api:1.7.36'
@@ -121,7 +122,11 @@ shadowJar {
     classifier = ''
     relocate 'com.fasterxml.jackson', 'io.openlineage.client.shaded.com.fasterxml.jackson'
     relocate 'org.apache.httpcomponents', 'io.openlineage.client.shaded.org.apache.httpcomponents'
+    relocate 'org.apache.http', 'io.openlineage.client.shaded.org.apache.http'
+    relocate 'org.apache.commons.codec', 'io.openlineage.client.shaded.org.apache.commons.codec'
     relocate 'org.yaml', 'io.openlineage.client.shaded.org.yaml'
+
+    exclude 'META-INF/maven/**'
 
     manifest {
         attributes(

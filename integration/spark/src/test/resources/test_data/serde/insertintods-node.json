@@ -20,10 +20,6 @@
         "credentialsFile": 7,
         "accessToken": 7,
         "filter": 7,
-        "maxParallelism": {
-          "isPresent": true,
-          "asInt": 2
-        },
         "defaultParallelism": 10,
         "temporaryGcsBucket": 7,
         "persistentGcsBucket": 7,
@@ -35,10 +31,6 @@
         "materializationProject": 7,
         "materializationDataset": 7,
         "partitionField": 7,
-        "partitionExpirationMs": {
-          "isPresent": true,
-          "asLong": 2
-        },
         "partitionRequireFilter": 7,
         "partitionType": 7,
         "clusteredFields": 7,

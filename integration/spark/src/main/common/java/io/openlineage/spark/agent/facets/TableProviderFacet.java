@@ -2,10 +2,10 @@
 
 package io.openlineage.spark.agent.facets;
 
-import static io.openlineage.spark.agent.client.OpenLineageClient.OPEN_LINEAGE_CLIENT_URI;
+import static io.openlineage.spark.agent.EventEmitter.OPEN_LINEAGE_PRODUCER_URI;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.shaded.com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.NonNull;
 
@@ -23,7 +23,7 @@ public class TableProviderFacet extends OpenLineage.DefaultDatasetFacet {
   private String format;
 
   public TableProviderFacet(@NonNull String provider, @NonNull String format) {
-    super(OPEN_LINEAGE_CLIENT_URI);
+    super(OPEN_LINEAGE_PRODUCER_URI);
     this.provider = provider;
     this.format = format;
   }

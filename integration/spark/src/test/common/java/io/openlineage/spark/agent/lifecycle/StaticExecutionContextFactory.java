@@ -7,7 +7,6 @@ import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.OpenLineageSparkListener;
-import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.net.URI;
 import java.time.ZoneOffset;
@@ -77,7 +76,7 @@ public class StaticExecutionContextFactory extends ContextFactory {
         new RddExecutionContext(
             OpenLineageContext.builder()
                 .sparkContext(SparkContext.getOrCreate())
-                .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
+                .openLineage(new OpenLineage(EventEmitter.OPEN_LINEAGE_PRODUCER_URI))
                 .build(),
             jobId,
             openLineageEventEmitter) {
@@ -124,7 +123,7 @@ public class StaticExecutionContextFactory extends ContextFactory {
                   OpenLineageContext.builder()
                       .sparkSession(Optional.of(session))
                       .sparkContext(sqlContext.sparkContext())
-                      .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
+                      .openLineage(new OpenLineage(EventEmitter.OPEN_LINEAGE_PRODUCER_URI))
                       .queryExecution(qe)
                       .build();
               OpenLineageRunEventBuilder runEventBuilder =

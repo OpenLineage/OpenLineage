@@ -11,7 +11,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.client.OpenLineageClient;
+import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
@@ -34,7 +34,7 @@ public class AppendDataDatasetBuilderTest {
       OpenLineageContext.builder()
           .sparkSession(Optional.of(mock(SparkSession.class)))
           .sparkContext(mock(SparkContext.class))
-          .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
+          .openLineage(new OpenLineage(EventEmitter.OPEN_LINEAGE_PRODUCER_URI))
           .build();
   DatasetFactory<OpenLineage.OutputDataset> factory = mock(DatasetFactory.class);
   AppendDataDatasetBuilder builder = new AppendDataDatasetBuilder(context, factory);

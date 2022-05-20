@@ -4,8 +4,7 @@ package io.openlineage.spark.agent.lifecycle;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
-import io.openlineage.spark.agent.client.DatasetParser;
-import io.openlineage.spark.agent.client.DatasetParser.DatasetParseResult;
+import io.openlineage.spark.agent.lifecycle.DatasetParser.DatasetParseResult;
 import io.openlineage.spark.api.AbstractInputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.io.IOException;

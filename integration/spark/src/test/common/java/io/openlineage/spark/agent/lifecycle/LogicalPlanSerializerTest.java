@@ -16,7 +16,6 @@ import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.Tabl
 import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.TableId;
 import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.TableInfo;
 import com.google.cloud.spark.bigquery.repackaged.com.google.common.collect.ImmutableMap;
-import io.openlineage.spark.agent.client.OpenLineageClient;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Path;
@@ -64,7 +63,7 @@ import scala.collection.immutable.Map$;
 class LogicalPlanSerializerTest {
   private final TypeReference<Map<String, Object>> mapTypeReference =
       new TypeReference<Map<String, Object>>() {};
-  private final ObjectMapper objectMapper = OpenLineageClient.createMapper();
+  private final ObjectMapper objectMapper = new ObjectMapper();
   private final LogicalPlanSerializer logicalPlanSerializer = new LogicalPlanSerializer();
 
   @Test
