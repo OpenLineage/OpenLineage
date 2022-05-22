@@ -13,10 +13,10 @@
 server:
   applicationConnectors:
     - type: http
-      port: ${OPENLINEAGE_PROXY_PORT:-5000}
+      port: ${OPENLINEAGE_PROXY_PORT:-8880}
   adminConnectors:
     - type: http
-      port: ${OPENLINEAGE_PROXY_ADMIN_PORT:-5001}
+      port: ${OPENLINEAGE_PROXY_ADMIN_PORT:-8881}
 
 logging:
   level: ${LOG_LEVEL:-INFO}

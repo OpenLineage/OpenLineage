@@ -222,3 +222,116 @@ class OpenLineageAdapter:
             facets = {**facets, **job_facets}
 
         return Job(_DAG_NAMESPACE, job_name, facets)
+
+    # HOWARD
+    def start_dagrun(
+        self,
+        run_id: str,
+        job_name: str,
+        job_description: str,
+        event_time: str,
+        parent_job_name: Optional[str],
+        parent_run_id: Optional[str],
+        code_location: Optional[str],
+        nominal_start_time: str,
+        nominal_end_time: str,
+        run_facets: Optional[Dict[str, Type[BaseFacet]]] = None,  # Custom run facets
+    ) -> str:
+        """
+        Emits openlineage event of type START
+        :param run_id: globally unique identifier of dagrun
+        :param job_name: globally unique identifier of dag -> probably dag_id should be this one
+        :param job_description: user provided description of dagrun (if exists)
+        :param event_time:
+        :param parent_job_name: the name of the parent job (typically the DAG,
+                but possibly a task group) -> maybe we may not need this?
+        :param parent_run_id: identifier of job spawning this task -> maybe we do not need this
+        :param code_location: file path or URL of DAG file
+        :param nominal_start_time: scheduled time of dag run
+        :param nominal_end_time: following schedule of dag run
+        :param run_facets:
+        :return:
+        """
+
+        event = RunEvent(
+            eventType=RunState.START,
+            eventTime=event_time,
+            run=self._build_run(
+                run_id,
+                parent_job_name,
+                parent_run_id,
+                job_name,
+                nominal_start_time,
+                nominal_end_time,
+                run_facets=run_facets
+            ),
+            job=self._build_job(
+                job_name, job_description, code_location, None
+            ),
+            inputs=None,        # dag run does not have input / outputs
+            outputs=None,
+            producer=_PRODUCER
+        )
+        self.emit(event)
+        return event.run.runId
+
+    # HOWARD
+    def complete_dagrun(
+        self,
+        run_id: str,
+        job_name: str,
+        end_time: str,
+    ):
+        """
+        Emits openlineage event of type COMPLETE
+        :param run_id: globally unique identifier of task in dag run
+        :param job_name: globally unique identifier of task between dags
+        :param end_time: time of task completion
+        :param task: metadata container with information extracted from operator
+        """
+
+        event = RunEvent(
+            eventType=RunState.COMPLETE,
+            eventTime=end_time,
+            run=self._build_run(
+                run_id,
+                run_facets=None
+            ),
+            job=self._build_job(
+                job_name, job_facets=None
+            ),
+            inputs=None,
+            outputs=None,
+            producer=_PRODUCER
+        )
+        self.emit(event)
+
+    # HOWARD
+    def fail_dagrun(
+        self,
+        run_id: str,
+        job_name: str,
+        end_time: str,
+    ):
+        """
+        Emits openlineage event of type FAIL
+        :param run_id: globally unique identifier of task in dag run
+        :param job_name: globally unique identifier of task between dags
+        :param end_time: time of task completion
+        :param task: metadata container with information extracted from operator
+        """
+        event = RunEvent(
+            eventType=RunState.FAIL,
+            eventTime=end_time,
+            run=self._build_run(
+                run_id,
+                run_facets=None
+            ),
+            job=self._build_job(
+                job_name
+            ),
+            inputs=None,
+            outputs=None,
+            producer=_PRODUCER
+        )
+        self.emit(event)

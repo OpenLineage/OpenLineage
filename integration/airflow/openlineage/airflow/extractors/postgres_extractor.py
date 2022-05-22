@@ -43,6 +43,7 @@ class PostgresExtractor(BaseExtractor):
         return ['PostgresOperator']
 
     def extract(self) -> TaskMetadata:
+        print(">>>>>> PostgresOperator -> EXTRACT")
         # (1) Parse sql statement to obtain input / output tables.
         logger.debug(f"Sending SQL to parser: {self.operator.sql}")
         sql_meta: SqlMeta = parse(self.operator.sql, self.default_schema)

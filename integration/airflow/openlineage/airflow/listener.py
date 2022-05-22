@@ -12,7 +12,7 @@ from openlineage.airflow.extractors import ExtractorManager
 from openlineage.airflow.utils import DagUtils, get_task_location, get_job_name, get_custom_facets
 
 if TYPE_CHECKING:
-    from airflow.models import TaskInstance, BaseOperator
+    from airflow.models import TaskInstance, DagRun, BaseOperator
     from sqlalchemy.orm import Session
 
 
@@ -37,6 +37,16 @@ class ActiveRunManager:
 
     def get_active_run(self, task_instance: "TaskInstance") -> Optional[ActiveRun]:
         return self.run_data.get(self._pk(task_instance))
+
+    # HOWARD
+    def set_active_run_id(self, dagrun: "DagRun", run_id: str):
+        self.run_data[dagrun.dag_id + dagrun.run_id] = run_id
+    
+    def get_active_run_id(self, dagrun: "DagRun") -> Optional[str]:
+        return self.run_data.get(dagrun.dag_id + dagrun.run_id)
+
+    def clear_active_run_id(self, dagrun: "DagRun"):
+        self.run_data.pop(dagrun.dag_id + dagrun.run_id)
 
     @staticmethod
     def _pk(ti: "TaskInstance"):
@@ -139,3 +149,59 @@ def on_task_instance_failed(previous_state, task_instance: "TaskInstance", sessi
             task=task_metadata
         )
     execute_in_thread(on_failure)
+
+# HOWARD
+@hookimpl
+def on_dagrun_running(previous_state, dagrun: "DagRun", session: "Session"):
+    if not hasattr(dagrun, 'run_id'):
+        log.warning(f"No run_id set for DagRun object dag_id: {dagrun.dag_id} - {dagrun.run_id}")  # noqa
+        return
+    def on_running():
+        log.info(f">>>>>> ON_RUNNING {dagrun.dag_id} : {dagrun.run_id}")
+        log.info("prev status " + previous_state)
+        run_id = str(uuid.uuid4())
+        run_data_holder.set_active_run_id(dagrun, run_id)
+        dag = dagrun.get_dag()
+
+        adapter.start_dagrun(
+            run_id=run_id,
+            job_name=dagrun.dag_id,
+            job_description=dagrun.get_dag().description,
+            event_time=DagUtils.get_start_time(dagrun.start_date),
+            parent_job_name=None,           # none for now - might have something in the future
+            parent_run_id=None,             # dagrun does not have parent, but dag does.
+            code_location=dag.fileloc,
+            nominal_start_time=DagUtils.get_start_time(dagrun.execution_date),
+            nominal_end_time=DagUtils.to_iso_8601(dagrun.end_date),
+        )
+    execute_in_thread(on_running)
+
+@hookimpl
+def on_dagrun_success(previous_state, dagrun: "DagRun", session):
+
+    def on_success():
+        log.info(f">>>>>> ON_SUCCESS {dagrun.dag_id} : {dagrun.run_id}")
+        log.info("prev status " + previous_state)
+        run_id = run_data_holder.get_active_run_id(dagrun)
+        adapter.complete_dagrun(
+            run_id=run_id,
+            job_name=dagrun.dag_id,
+            end_time=DagUtils.to_iso_8601(dagrun.end_date),
+        )
+        run_data_holder.clear_active_run_id(dagrun)
+    execute_in_thread(on_success)
+
+@hookimpl
+def on_dagrun_failed(previous_state, dagrun: "DagRun", session):
+
+    def on_failed():
+        log.info(f">>>>>> ON_FAILED {dagrun.dag_id} : {dagrun.run_id}")
+        log.info("prev status " + previous_state)
+        run_id = run_data_holder.get_active_run_id(dagrun)
+        adapter.fail_dagrun(
+            run_id=run_id,
+            job_name=dagrun.dag_id,
+            end_time=DagUtils.to_iso_8601(dagrun.end_date),
+        )
+        run_data_holder.clear_active_run_id(dagrun)
+    execute_in_thread(on_failed)
