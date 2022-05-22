@@ -159,12 +159,13 @@ def on_dagrun_running(previous_state, dagrun: "DagRun", session: "Session"):
     def on_running():
         log.info(f">>>>>> ON_RUNNING {dagrun.dag_id} : {dagrun.run_id}")
         log.info("prev status " + previous_state)
-        run_id = str(uuid.uuid4())
+        run_id = str(uuid.uuid3(uuid.NAMESPACE_URL, f'{dagrun.dag_id}.{dagrun.run_id}'))
         run_data_holder.set_active_run_id(dagrun, run_id)
         dag = dagrun.get_dag()
 
         adapter.start_dagrun(
             run_id=run_id,
+            dagrun_id=dagrun.run_id,
             job_name=dagrun.dag_id,
             job_description=dagrun.get_dag().description,
             event_time=DagUtils.get_start_time(dagrun.start_date),

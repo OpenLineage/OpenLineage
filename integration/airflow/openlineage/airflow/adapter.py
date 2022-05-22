@@ -198,7 +198,7 @@ class OpenLineageAdapter:
 
         if run_facets:
             facets.update(run_facets)
-
+            
         return Run(run_id, facets)
 
     @staticmethod
@@ -227,6 +227,7 @@ class OpenLineageAdapter:
     def start_dagrun(
         self,
         run_id: str,
+        dagrun_id: str,
         job_name: str,
         job_description: str,
         event_time: str,
@@ -253,6 +254,25 @@ class OpenLineageAdapter:
         :return:
         """
 
+        facets = {}
+
+        if run_id:
+            facets.update({"run": {"runId": run_id}})
+
+        # create dagrun related facets by hand
+        if dagrun_id:
+            facets.update({"airflow_DAGRun": {
+                    "dag_id": job_name,
+                    "run_id": dagrun_id,
+                    "dag_desc": job_description,
+                    "namespace": _DAG_NAMESPACE,
+                    "dagfileloc": code_location,
+                }
+            })
+
+        if run_facets:
+            facets.update(run_facets)
+
         event = RunEvent(
             eventType=RunState.START,
             eventTime=event_time,
@@ -263,7 +283,7 @@ class OpenLineageAdapter:
                 job_name,
                 nominal_start_time,
                 nominal_end_time,
-                run_facets=run_facets
+                run_facets=facets
             ),
             job=self._build_job(
                 job_name, job_description, code_location, None
