@@ -17,12 +17,37 @@ from openlineage.airflow.utils import (
     get_connection,
     DagUtils,
     SafeStrDict,
+    build_table_check_facets,
+    build_column_check_facets
 )
 
 AIRFLOW_VERSION = '1.10.12'
 AIRFLOW_CONN_ID = 'test_db'
 AIRFLOW_CONN_URI = 'postgres://localhost:5432/testdb'
-SNOWFLAKE_CONN_URI = 'snowflake://12345.us-east-1.snowflakecomputing.com/MyTestRole?extra__snowflake__account=12345&extra__snowflake__database=TEST_DB&extra__snowflake__insecure_mode=false&extra__snowflake__region=us-east-1&extra__snowflake__role=MyTestRole&extra__snowflake__warehouse=TEST_WH&extra__snowflake__aws_access_key_id=123456&extra__snowflake__aws_secret_access_key=abcdefg' # NOQA
+SNOWFLAKE_CONN_URI = 'snowflake://12345.us-east-1.snowflakecomputing.com/MyTestRole?extra__snowflake__account=12345&extra__snowflake__database=TEST_DB&extra__snowflake__insecure_mode=false&extra__snowflake__region=us-east-1&extra__snowflake__role=MyTestRole&extra__snowflake__warehouse=TEST_WH&extra__snowflake__aws_access_key_id=123456&extra__snowflake__aws_secret_access_key=abcdefg'  # NOQA
+COLUMN_CHECK_MAPPING = {
+    "X": {
+        "null_check": {
+            "pass_value": 0,
+            "tolerance": 0.0,
+            "result": 0,
+            "success": True
+        },
+        "distinct_check": {
+            "pass_value": 5,
+            "tolerance": 0.0,
+            "result": 6,
+            "success": False
+        }
+    }
+}
+TABLE_CHECK_MAPPING = {
+    "row_count_check": {
+        "pass_value": 9,
+        "result": 9,
+        "success": True
+    }
+}
 
 
 def test_get_connection_uri():
@@ -122,3 +147,27 @@ def test_safe_dict():
         def __str__(self):
             raise NotImplementedError
     assert str(SafeStrDict({'a': NotImplemented()})) == str({})
+def test_build_table_check_facets():
+    facets = build_table_check_facets(TABLE_CHECK_MAPPING)
+    data_quality_facet = facets["dataQuality"]
+    assertions_facet = facets["dataQualityAssertions"]
+    assert data_quality_facet.rowCount == 9
+    assert data_quality_facet.bytes is None
+    assert assertions_facet[0].assertion == "row_count_check"
+    assert assertions_facet[0].success
+
+
+def test_build_column_check_facets():
+    facets = build_column_check_facets(COLUMN_CHECK_MAPPING)
+    data_quality_facet = facets["dataQuality"]
+    assertions_facet = facets["dataQualityAssertions"]
+    assert data_quality_facet.columnMetrics.get("X").nullCount == 0
+    assert data_quality_facet.columnMetrics.get("x").distinctCount == 6
+    assert data_quality_facet.rowCount is None
+    assert data_quality_facet.bytes is None
+    assert assertions_facet[0].assertion == "null_check"
+    assert assertions_facet[0].success
+    assert assertions_facet[0].column == "X"
+    assert assertions_facet[1].assertion == "distinct_check"
+    assert not assertions_facet[1].success
+    assert assertions_facet[1].column == "X"
