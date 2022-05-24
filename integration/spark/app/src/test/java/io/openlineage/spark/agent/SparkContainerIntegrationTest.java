@@ -199,6 +199,14 @@ public class SparkContainerIntegrationTest {
   }
 
   @Test
+  @EnabledIfSystemProperty(named = "spark.version", matches = SPARK_3) // Spark version >= 3.*
+  public void testCachedDataset() {
+    SparkContainerUtils.runPysparkContainerWithDefaultConf(
+        network, openLineageClientMockContainer, "cachedDataset", "spark_cached.py");
+    verifyEvents("pysparkCachedDatasetComplete.json");
+  }
+
+  @Test
   @EnabledIfSystemProperty(
       named = "spark.version",
       matches = SPARK_ABOVE_EQUAL_2_4_8) // Spark version >= 2.4.8

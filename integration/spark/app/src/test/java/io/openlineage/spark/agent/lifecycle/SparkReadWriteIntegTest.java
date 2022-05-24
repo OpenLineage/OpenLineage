@@ -83,6 +83,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
@@ -569,6 +570,69 @@ public class SparkReadWriteIntegTest {
                     .hasFieldOrPropertyWithValue("name", "oneTopic")
                     .hasFieldOrPropertyWithValue("namespace", kafkaNamespace),
             dataset -> assertThat(dataset.getName()).isEqualTo("twoTopic"));
+  }
+
+  @Test
+  @EnabledIfSystemProperty(named = "spark.version", matches = "(3.*)") // Spark version >= 3.*
+  public void testCacheReadFromFileWriteToParquet(@TempDir Path writeDir, SparkSession spark)
+      throws InterruptedException, TimeoutException, IOException {
+    Path testFile = writeTestDataToFile(writeDir);
+    Path tableOneDir = writeDir.resolve("table1");
+
+    spark
+        .read()
+        .json("file://" + testFile.toAbsolutePath().toString())
+        .createOrReplaceTempView("raw_json");
+    spark.sql("CACHE TABLE cached_json AS SELECT * FROM raw_json WHERE age > 100");
+    Dataset<Row> df = spark.sql("SELECT * FROM cached_json");
+    df.collect();
+
+    Path sqliteFile = writeDir.resolve("output/database");
+    sqliteFile.getParent().toFile().mkdir();
+    df.write().parquet(tableOneDir.toAbsolutePath().toString());
+
+    // wait for event processing to complete
+    StaticExecutionContextFactory.waitForExecutionEnd();
+
+    ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
+        ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+
+    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, atLeast(12))
+        .emit(lineageEvent.capture());
+    List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
+    ObjectAssert<RunEvent> completionEvent =
+        assertThat(events)
+            .filteredOn(e -> e.getEventType().equals(RunEvent.EventType.COMPLETE))
+            .isNotEmpty()
+            .filteredOn(e -> !e.getInputs().isEmpty())
+            .isNotEmpty()
+            .filteredOn(e -> !e.getOutputs().isEmpty())
+            .isNotEmpty()
+            .filteredOn(e -> e.getOutputs().stream().anyMatch(o -> o.getOutputFacets() != null))
+            .isNotEmpty()
+            .first();
+    completionEvent
+        .extracting(RunEvent::getInputs, InstanceOfAssertFactories.list(InputDataset.class))
+        .hasSize(1)
+        .first()
+        .hasFieldOrPropertyWithValue("namespace", "file")
+        .hasFieldOrPropertyWithValue("name", testFile.toAbsolutePath().getParent().toString());
+
+    completionEvent
+        .extracting(RunEvent::getOutputs, InstanceOfAssertFactories.list(OutputDataset.class))
+        .hasSize(1)
+        .first()
+        .hasFieldOrPropertyWithValue("namespace", "file")
+        .hasFieldOrPropertyWithValue("name", tableOneDir.toAbsolutePath().toString())
+        .satisfies(
+            d -> {
+              // Spark rowCount metrics currently only working in Spark 3.x
+              if (spark.version().startsWith("3")) {
+                assertThat(d.getOutputFacets().getOutputStatistics())
+                    .isNotNull()
+                    .hasFieldOrPropertyWithValue("rowCount", 2L);
+              }
+            });
   }
 
   private CompletableFuture sendMessage(
