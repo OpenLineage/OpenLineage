@@ -21,7 +21,7 @@ snowflake:
           password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
           role: OPENLINEAGE
           database: SANDBOX
-          warehouse: DEMO
+          warehouse: ROBOTS
           schema: "OPENLINEAGE"
           threads: 1
           client_session_keep_alive: False
