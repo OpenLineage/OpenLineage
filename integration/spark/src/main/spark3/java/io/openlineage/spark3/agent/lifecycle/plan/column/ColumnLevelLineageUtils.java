@@ -1,4 +1,4 @@
-package io.openlineage.spark3.agent.lifecycle.plan.columnLineage;
+package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.api.OpenLineageContext;

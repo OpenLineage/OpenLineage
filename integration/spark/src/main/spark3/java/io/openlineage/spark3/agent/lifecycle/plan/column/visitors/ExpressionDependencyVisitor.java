@@ -1,6 +1,6 @@
-package io.openlineage.spark3.agent.lifecycle.plan.columnLineage.customVisitors;
+package io.openlineage.spark3.agent.lifecycle.plan.column.visitors;
 
-import io.openlineage.spark3.agent.lifecycle.plan.columnLineage.ColumnLevelLineageBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 
 /**

@@ -1,4 +1,4 @@
-package io.openlineage.spark3.agent.lifecycle.plan.columnLineage.customVisitors;
+package io.openlineage.spark3.agent.lifecycle.plan.column.visitors;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -6,7 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import io.openlineage.spark3.agent.lifecycle.plan.columnLineage.ColumnLevelLineageBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import java.util.Arrays;
 import java.util.Collection;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
