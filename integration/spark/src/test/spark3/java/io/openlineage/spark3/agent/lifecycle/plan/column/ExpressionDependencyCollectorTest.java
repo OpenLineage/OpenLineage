@@ -68,8 +68,7 @@ public class ExpressionDependencyCollectorTest {
             mock(LogicalPlan.class));
     LogicalPlan plan = new CreateTableAsSelect(null, null, null, project, null, null, false);
 
-    ExpressionDependencyCollector collector = new ExpressionDependencyCollector(plan);
-    collector.collect(builder);
+    ExpressionDependencyCollector.collect(plan, builder);
 
     verify(builder, times(1)).addDependency(aliasExprId1, exprId1);
     verify(builder, times(1)).addDependency(aliasExprId2, exprId2);
@@ -84,8 +83,7 @@ public class ExpressionDependencyCollectorTest {
             mock(LogicalPlan.class));
     LogicalPlan plan = new CreateTableAsSelect(null, null, null, aggregate, null, null, false);
 
-    ExpressionDependencyCollector collector = new ExpressionDependencyCollector(plan);
-    collector.collect(builder);
+    ExpressionDependencyCollector.collect(plan, builder);
 
     verify(builder, times(1)).addDependency(aliasExprId1, exprId1);
   }
@@ -121,8 +119,7 @@ public class ExpressionDependencyCollectorTest {
     Project project = new Project(toScalaSeq(Arrays.asList(rootAlias)), mock(LogicalPlan.class));
     LogicalPlan plan = new CreateTableAsSelect(null, null, null, project, null, null, false);
 
-    ExpressionDependencyCollector collector = new ExpressionDependencyCollector(plan);
-    collector.collect(builder);
+    ExpressionDependencyCollector.collect(plan, builder);
 
     verify(builder, times(1)).addDependency(rootAliasExprId, exprId1);
     verify(builder, times(1)).addDependency(rootAliasExprId, exprId2);

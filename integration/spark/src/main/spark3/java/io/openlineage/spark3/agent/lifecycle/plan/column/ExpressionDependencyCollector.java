@@ -23,15 +23,10 @@ import org.apache.spark.sql.catalyst.plans.logical.Project;
 @Slf4j
 public class ExpressionDependencyCollector {
 
-  private final LogicalPlan plan;
-  private final List<ExpressionDependencyVisitor> expressionDependencyVisitors =
+  private static final List<ExpressionDependencyVisitor> expressionDependencyVisitors =
       Arrays.asList(new UnionDependencyVisitor(), new IcebergMergeIntoDependencyVisitor());
 
-  ExpressionDependencyCollector(LogicalPlan plan) {
-    this.plan = plan;
-  }
-
-  void collect(ColumnLevelLineageBuilder builder) {
+  static void collect(LogicalPlan plan, ColumnLevelLineageBuilder builder) {
     plan.foreach(
         node -> {
           expressionDependencyVisitors.stream()
