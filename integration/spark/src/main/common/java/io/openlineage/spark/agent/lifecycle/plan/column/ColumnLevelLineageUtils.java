@@ -6,7 +6,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.package$;
-import org.apache.spark.sql.types.StructType;
 
 @Slf4j
 public class ColumnLevelLineageUtils {
@@ -17,16 +16,18 @@ public class ColumnLevelLineageUtils {
    * @return
    */
   public static Optional<OpenLineage.ColumnLineageDatasetFacet> buildColumnLineageDatasetFacet(
-      OpenLineageContext context, StructType schema) {
+      OpenLineageContext context, OpenLineage.SchemaDatasetFacet schemaFacet) {
     // if Spark3 include column lineage
     if (!package$.MODULE$.SPARK_VERSION().startsWith("2")) {
       try {
         return (Optional<OpenLineage.ColumnLineageDatasetFacet>)
             Class.forName(
-                    "io.openlineage.spark3.agent.lifecycle.plan.columnLineage.ColumnLevelLineageUtils")
+                    "io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelLineageUtils")
                 .getMethod(
-                    "buildColumnLineageDatasetFacet", OpenLineageContext.class, StructType.class)
-                .invoke(null, context, schema);
+                    "buildColumnLineageDatasetFacet",
+                    OpenLineageContext.class,
+                    OpenLineage.SchemaDatasetFacet.class)
+                .invoke(null, context, schemaFacet);
       } catch (ClassNotFoundException
           | NoSuchMethodException
           | IllegalAccessException

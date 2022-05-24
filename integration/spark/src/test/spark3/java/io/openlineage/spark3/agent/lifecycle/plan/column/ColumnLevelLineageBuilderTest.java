@@ -9,27 +9,22 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
-import org.apache.spark.sql.types.IntegerType$;
-import org.apache.spark.sql.types.Metadata;
-import org.apache.spark.sql.types.StructField;
-import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import scala.collection.immutable.HashMap;
 
 class ColumnLevelLineageBuilderTest {
 
   OpenLineageContext context = mock(OpenLineageContext.class);
   OpenLineage openLineage = new OpenLineage(EventEmitter.OPEN_LINEAGE_PRODUCER_URI);
-  StructType schema =
-      new StructType(
-          new StructField[] {
-            new StructField("a", IntegerType$.MODULE$, false, new Metadata(new HashMap<>())),
-            new StructField("b", IntegerType$.MODULE$, false, new Metadata(new HashMap<>()))
-          });
+  OpenLineage.SchemaDatasetFacet schema =
+      openLineage.newSchemaDatasetFacet(
+          Arrays.asList(
+              openLineage.newSchemaDatasetFacetFieldsBuilder().name("a").type("int").build(),
+              openLineage.newSchemaDatasetFacetFieldsBuilder().name("b").type("int").build()));
   ColumnLevelLineageBuilder builder = new ColumnLevelLineageBuilder(schema, context);
 
   ExprId rootExprId = mock(ExprId.class);

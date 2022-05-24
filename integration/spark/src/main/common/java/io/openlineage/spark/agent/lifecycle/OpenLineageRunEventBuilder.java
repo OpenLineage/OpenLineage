@@ -23,6 +23,7 @@ import io.openlineage.client.OpenLineage.RunEventBuilder;
 import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.client.OpenLineage.RunFacets;
 import io.openlineage.client.OpenLineage.RunFacetsBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.CustomFacetBuilder;
@@ -417,18 +418,21 @@ class OpenLineageRunEventBuilder {
           event -> datasetFacetBuilders.forEach(fn -> fn.accept(event, datasetFacetsMap::put)));
       return datasets.stream()
           .map(
-              ds ->
-                  openLineage
-                      .newOutputDatasetBuilder()
-                      .name(ds.getName())
-                      .namespace(ds.getNamespace())
-                      .outputFacets(
-                          mergeFacets(
-                              outputFacetsMap,
-                              ds.getOutputFacets(),
-                              OutputDatasetOutputFacets.class))
-                      .facets(mergeFacets(datasetFacetsMap, ds.getFacets(), DatasetFacets.class))
-                      .build())
+              ds -> {
+                Map<String, DatasetFacet> dsFacetsMap = new HashMap(datasetFacetsMap);
+                ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(
+                        openLineageContext, ds.getFacets().getSchema())
+                    .ifPresent(facet -> dsFacetsMap.put("columnLineage", facet));
+                return openLineage
+                    .newOutputDatasetBuilder()
+                    .name(ds.getName())
+                    .namespace(ds.getNamespace())
+                    .outputFacets(
+                        mergeFacets(
+                            outputFacetsMap, ds.getOutputFacets(), OutputDatasetOutputFacets.class))
+                    .facets(mergeFacets(dsFacetsMap, ds.getFacets(), DatasetFacets.class))
+                    .build();
+              })
           .collect(Collectors.toList());
     }
     return datasets;

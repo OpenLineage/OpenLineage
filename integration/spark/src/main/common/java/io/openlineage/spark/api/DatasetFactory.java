@@ -4,7 +4,6 @@ package io.openlineage.spark.api;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRelationDatasetBuilder;
-import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PlanUtils;
 import java.net.URI;
@@ -162,7 +161,6 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
    * @return
    */
   public D getDataset(
-      // OpenLineageContext context,
       DatasetIdentifier ident,
       StructType schema,
       OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange lifecycleStateChange) {
@@ -176,9 +174,6 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
                     .getOpenLineage()
                     .newLifecycleStateChangeDatasetFacet(lifecycleStateChange, null))
             .dataSource(PlanUtils.datasourceFacet(context.getOpenLineage(), ident.getNamespace()));
-
-    ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, schema)
-        .ifPresent(facet -> builder.columnLineage(facet));
 
     return getDataset(ident.getName(), ident.getNamespace(), builder.build());
   }
@@ -209,9 +204,6 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
             .newDatasetFacetsBuilder()
             .schema(PlanUtils.schemaFacet(context.getOpenLineage(), schema))
             .dataSource(PlanUtils.datasourceFacet(context.getOpenLineage(), namespaceUri));
-
-    ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, schema)
-        .ifPresent(facet -> datasetFacetsBuilder.columnLineage(facet));
 
     return datasetFacetsBuilder.build();
   }

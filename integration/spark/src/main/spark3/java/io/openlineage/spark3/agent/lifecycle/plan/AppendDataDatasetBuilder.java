@@ -6,7 +6,6 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
 import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -40,16 +39,8 @@ public class AppendDataDatasetBuilder extends AbstractQueryPlanOutputDatasetBuil
     LogicalPlan logicalPlan = (LogicalPlan) ((AppendData) x).table();
 
     if (logicalPlan instanceof DataSourceV2Relation) {
-      DataSourceV2Relation relation = (DataSourceV2Relation) logicalPlan;
-      List<OpenLineage.OutputDataset> outputDatasets =
-          new DataSourceV2RelationOutputDatasetBuilder(context, factory)
-              .apply((DataSourceV2Relation) logicalPlan);
-
-      return ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, relation.schema())
-          .filter(facet -> outputDatasets.stream().findFirst().isPresent())
-          .map(facet -> ColumnLevelLineageUtils.rewriteOutputDataset(outputDatasets.get(0), facet))
-          .map(el -> Collections.singletonList(el))
-          .orElse(outputDatasets);
+      return new DataSourceV2RelationOutputDatasetBuilder(context, factory)
+          .apply((DataSourceV2Relation) logicalPlan);
     } else {
       return Collections.emptyList();
     }

@@ -10,13 +10,11 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange;
 import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
-import io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.List;
 import java.util.Optional;
@@ -50,7 +48,6 @@ class CreateReplaceVisitorDatasetBuilderTest {
   StructType schema = new StructType();
   Map<String, String> commandProperties = new HashMap<>();
   Identifier tableName = Identifier.of(new String[] {"db"}, "table");
-  DatasetIdentifier di = new DatasetIdentifier("table", "db");
 
   @Test
   public void testIsDefined() {
@@ -68,8 +65,10 @@ class CreateReplaceVisitorDatasetBuilderTest {
     when(logicalPlan.tableName()).thenReturn(tableName);
     when(logicalPlan.tableSchema()).thenReturn(schema);
     when(logicalPlan.properties()).thenReturn(commandProperties);
-
-    verifyApply(logicalPlan, LifecycleStateChange.CREATE);
+    verifyApply(
+        (LogicalPlan) logicalPlan,
+        commandProperties,
+        OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE);
   }
 
   @Test
@@ -79,8 +78,10 @@ class CreateReplaceVisitorDatasetBuilderTest {
     when(logicalPlan.tableName()).thenReturn(tableName);
     when(logicalPlan.tableSchema()).thenReturn(schema);
     when(logicalPlan.properties()).thenReturn(commandProperties);
-
-    verifyApply(logicalPlan, LifecycleStateChange.OVERWRITE);
+    verifyApply(
+        (LogicalPlan) logicalPlan,
+        commandProperties,
+        OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
   }
 
   @Test
@@ -90,8 +91,10 @@ class CreateReplaceVisitorDatasetBuilderTest {
     when(logicalPlan.tableName()).thenReturn(tableName);
     when(logicalPlan.tableSchema()).thenReturn(schema);
     when(logicalPlan.properties()).thenReturn(commandProperties);
-
-    verifyApply(logicalPlan, LifecycleStateChange.OVERWRITE);
+    verifyApply(
+        (LogicalPlan) logicalPlan,
+        commandProperties,
+        OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE);
   }
 
   @Test
@@ -101,8 +104,10 @@ class CreateReplaceVisitorDatasetBuilderTest {
     when(logicalPlan.tableName()).thenReturn(tableName);
     when(logicalPlan.tableSchema()).thenReturn(schema);
     when(logicalPlan.properties()).thenReturn(commandProperties);
-
-    verifyApply(logicalPlan, LifecycleStateChange.CREATE);
+    verifyApply(
+        (LogicalPlan) logicalPlan,
+        commandProperties,
+        OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE);
   }
 
   @Test
@@ -113,45 +118,26 @@ class CreateReplaceVisitorDatasetBuilderTest {
     when(logicalPlan.tableSchema()).thenReturn(schema);
     when(logicalPlan.properties()).thenReturn(commandProperties);
 
+    DatasetIdentifier di = new DatasetIdentifier("table", "db");
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
       try (MockedStatic mockedCatalog = mockStatic(CatalogUtils3.class)) {
-        try (MockedStatic columnLineageUtils = mockStatic(ColumnLevelLineageUtils.class)) {
-          mockGetDatasetVersion(Optional.of("v2"));
-          mockGetDatasetIdentifier(Optional.of(di));
-          mockColumnLineage(Optional.empty());
+        when(CatalogUtils3.getDatasetVersion(
+                catalogTable,
+                Identifier.of(new String[] {"db"}, "table"),
+                ScalaConversionUtils.<String, String>fromMap(commandProperties)))
+            .thenReturn(Optional.of("v2"));
 
-          List<OpenLineage.OutputDataset> outputDatasets = visitor.apply(logicalPlan);
+        when(PlanUtils3.getDatasetIdentifier(
+                openLineageContext,
+                catalogTable,
+                tableName,
+                ScalaConversionUtils.<String, String>fromMap(commandProperties)))
+            .thenReturn(Optional.of(di));
 
-          assertEquals(1, outputDatasets.size());
-          assertEquals("v2", outputDatasets.get(0).getFacets().getVersion().getDatasetVersion());
-        }
-      }
-    }
-  }
+        List<OpenLineage.OutputDataset> outputDatasets = visitor.apply(logicalPlan);
 
-  @Test
-  public void testApplyColumnLineageFacetIncluded() {
-    ReplaceTable logicalPlan = mock(ReplaceTable.class);
-    when(logicalPlan.catalog()).thenReturn(catalogTable);
-    when(logicalPlan.tableName()).thenReturn(tableName);
-    when(logicalPlan.tableSchema()).thenReturn(schema);
-    when(logicalPlan.properties()).thenReturn(commandProperties);
-
-    OpenLineage.ColumnLineageDatasetFacet columnLineageDatasetFacet =
-        mock(OpenLineage.ColumnLineageDatasetFacet.class);
-
-    try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
-      try (MockedStatic mockedCatalog = mockStatic(CatalogUtils3.class)) {
-        try (MockedStatic columnLineageUtils = mockStatic(ColumnLevelLineageUtils.class)) {
-          mockGetDatasetVersion(Optional.of("v2"));
-          mockGetDatasetIdentifier(Optional.of(di));
-          mockColumnLineage(Optional.of(columnLineageDatasetFacet));
-
-          List<OpenLineage.OutputDataset> outputDatasets = visitor.apply(logicalPlan);
-
-          assertEquals(
-              columnLineageDatasetFacet, outputDatasets.get(0).getFacets().getColumnLineage());
-        }
+        assertEquals(1, outputDatasets.size());
+        assertEquals("v2", outputDatasets.get(0).getFacets().getVersion().getDatasetVersion());
       }
     }
   }
@@ -164,36 +150,51 @@ class CreateReplaceVisitorDatasetBuilderTest {
     when(logicalPlan.tableSchema()).thenReturn(schema);
     when(logicalPlan.properties()).thenReturn(commandProperties);
 
+    DatasetIdentifier di = new DatasetIdentifier("table", "db");
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
       try (MockedStatic mockedCatalog = mockStatic(CatalogUtils3.class)) {
-        try (MockedStatic columnLineageUtils = mockStatic(ColumnLevelLineageUtils.class)) {
-          mockGetDatasetVersion(Optional.empty());
-          mockGetDatasetIdentifier(Optional.of(di));
+        when(CatalogUtils3.getDatasetVersion(
+                catalogTable,
+                Identifier.of(new String[] {"db"}, "table"),
+                ScalaConversionUtils.<String, String>fromMap(commandProperties)))
+            .thenReturn(Optional.empty());
 
-          List<OpenLineage.OutputDataset> outputDatasets = visitor.apply(logicalPlan);
-
-          assertEquals(1, outputDatasets.size());
-          assertEquals(null, outputDatasets.get(0).getFacets().getVersion());
-        }
-      }
-    }
-  }
-
-  private void verifyApply(LogicalPlan logicalPlan, LifecycleStateChange lifecycleStateChange) {
-    try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
-      try (MockedStatic columnLineageUtils = mockStatic(ColumnLevelLineageUtils.class)) {
-        mockGetDatasetIdentifier(Optional.of(di));
-        mockColumnLineage(Optional.empty());
+        when(PlanUtils3.getDatasetIdentifier(
+                openLineageContext,
+                catalogTable,
+                tableName,
+                ScalaConversionUtils.<String, String>fromMap(commandProperties)))
+            .thenReturn(Optional.of(di));
 
         List<OpenLineage.OutputDataset> outputDatasets = visitor.apply(logicalPlan);
 
         assertEquals(1, outputDatasets.size());
-        assertEquals(
-            lifecycleStateChange,
-            outputDatasets.get(0).getFacets().getLifecycleStateChange().getLifecycleStateChange());
-        assertEquals("table", outputDatasets.get(0).getName());
-        assertEquals("db", outputDatasets.get(0).getNamespace());
+        assertEquals(null, outputDatasets.get(0).getFacets().getVersion());
       }
+    }
+  }
+
+  private void verifyApply(
+      LogicalPlan logicalPlan,
+      Map<String, String> tableProperties,
+      OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange lifecycleStateChange) {
+    DatasetIdentifier di = new DatasetIdentifier("table", "db");
+    try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
+      when(PlanUtils3.getDatasetIdentifier(
+              openLineageContext,
+              catalogTable,
+              tableName,
+              ScalaConversionUtils.<String, String>fromMap(tableProperties)))
+          .thenReturn(Optional.of(di));
+
+      List<OpenLineage.OutputDataset> outputDatasets = visitor.apply(logicalPlan);
+
+      assertEquals(1, outputDatasets.size());
+      assertEquals(
+          lifecycleStateChange,
+          outputDatasets.get(0).getFacets().getLifecycleStateChange().getLifecycleStateChange());
+      assertEquals("table", outputDatasets.get(0).getName());
+      assertEquals("db", outputDatasets.get(0).getNamespace());
     }
   }
 
@@ -201,31 +202,15 @@ class CreateReplaceVisitorDatasetBuilderTest {
   public void testApplyWhenNoDatasetIdentifierReturned() {
     CreateTableAsSelect logicalPlan = mock(CreateTableAsSelect.class);
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
-      mockGetDatasetIdentifier(Optional.empty());
+      when(PlanUtils3.getDatasetIdentifier(
+              openLineageContext,
+              catalogTable,
+              tableName,
+              ScalaConversionUtils.<String, String>fromMap(logicalPlan.properties())))
+          .thenReturn(Optional.empty());
+
       List<OpenLineage.OutputDataset> outputDatasets = visitor.apply(logicalPlan);
       assertEquals(0, outputDatasets.size());
     }
-  }
-
-  private void mockGetDatasetIdentifier(Optional<DatasetIdentifier> di) {
-    when(PlanUtils3.getDatasetIdentifier(
-            openLineageContext,
-            catalogTable,
-            tableName,
-            ScalaConversionUtils.<String, String>fromMap(commandProperties)))
-        .thenReturn(di);
-  }
-
-  private void mockGetDatasetVersion(Optional<String> version) {
-    when(CatalogUtils3.getDatasetVersion(
-            catalogTable,
-            Identifier.of(new String[] {"db"}, "table"),
-            ScalaConversionUtils.<String, String>fromMap(commandProperties)))
-        .thenReturn(version);
-  }
-
-  private void mockColumnLineage(Optional<OpenLineage.ColumnLineageDatasetFacet> facet) {
-    when(ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(openLineageContext, schema))
-        .thenReturn(facet);
   }
 }

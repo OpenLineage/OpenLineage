@@ -6,7 +6,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.OutputDataset;
-import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
@@ -146,9 +145,7 @@ public class SaveIntoDataSourceCommandVisitor
                             ds.getFacets().getVersion(),
                             ds.getFacets().getSchema(),
                             null,
-                            ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(
-                                    context, relation.schema())
-                                .orElse(null),
+                            null,
                             context
                                 .getOpenLineage()
                                 .newLifecycleStateChangeDatasetFacet(
