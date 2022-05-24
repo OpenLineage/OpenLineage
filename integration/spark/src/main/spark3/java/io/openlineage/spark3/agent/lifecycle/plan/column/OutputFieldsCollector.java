@@ -12,17 +12,7 @@ import org.apache.spark.sql.catalyst.plans.logical.Project;
 /** Class created to collect output fields with the corresponding ExprId from LogicalPlan. */
 class OutputFieldsCollector {
 
-  private final LogicalPlan plan;
-
-  OutputFieldsCollector(LogicalPlan plan) {
-    this.plan = plan;
-  }
-
-  void collect(ColumnLevelLineageBuilder builder) {
-    collect(plan, builder);
-  }
-
-  private void collect(LogicalPlan plan, ColumnLevelLineageBuilder builder) {
+  static void collect(LogicalPlan plan, ColumnLevelLineageBuilder builder) {
     List<NamedExpression> expressions =
         ScalaConversionUtils.fromSeq(plan.output()).stream()
             .filter(attr -> attr instanceof Attribute)

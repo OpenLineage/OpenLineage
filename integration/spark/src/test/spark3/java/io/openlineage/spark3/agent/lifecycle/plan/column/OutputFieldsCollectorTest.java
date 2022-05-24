@@ -20,7 +20,6 @@ import scala.collection.Seq$;
 public class OutputFieldsCollectorTest {
 
   LogicalPlan plan = mock(LogicalPlan.class);
-  OutputFieldsCollector collector = new OutputFieldsCollector(plan);
   ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
 
   Attribute attr1 = mock(Attribute.class);
@@ -50,7 +49,7 @@ public class OutputFieldsCollectorTest {
   public void verifyOutputAttributeIsCollected() {
     when(plan.output()).thenReturn(attrs);
 
-    collector.collect(builder);
+    OutputFieldsCollector.collect(plan, builder);
 
     Mockito.verify(builder, times(1)).addOutput(exprId1, "name1");
     Mockito.verify(builder, times(1)).addOutput(exprId2, "name2");
@@ -73,7 +72,7 @@ public class OutputFieldsCollectorTest {
                 .asScala()
                 .toSeq());
 
-    new OutputFieldsCollector(aggregate).collect(builder);
+    OutputFieldsCollector.collect(aggregate, builder);
 
     Mockito.verify(builder, times(1)).addOutput(exprId, "some-name");
   }
@@ -95,7 +94,7 @@ public class OutputFieldsCollectorTest {
                 .asScala()
                 .toSeq());
 
-    new OutputFieldsCollector(project).collect(builder);
+    OutputFieldsCollector.collect(project, builder);
 
     Mockito.verify(builder, times(1)).addOutput(exprId, "some-name");
   }
@@ -114,7 +113,7 @@ public class OutputFieldsCollectorTest {
                 .asScala()
                 .toSeq());
 
-    new OutputFieldsCollector(plan).collect(builder);
+    OutputFieldsCollector.collect(plan, builder);
 
     Mockito.verify(builder, times(1)).addOutput(exprId1, "name1");
     Mockito.verify(builder, times(1)).addOutput(exprId2, "name2");

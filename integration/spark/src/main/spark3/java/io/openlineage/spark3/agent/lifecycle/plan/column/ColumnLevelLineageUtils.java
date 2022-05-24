@@ -24,9 +24,9 @@ public class ColumnLevelLineageUtils {
     ColumnLevelLineageBuilder builder = new ColumnLevelLineageBuilder(outputSchema, context);
     LogicalPlan plan = context.getQueryExecution().get().optimizedPlan();
 
-    new ExpressionDependencyCollector(plan).collect(builder);
-    new OutputFieldsCollector(plan).collect(builder);
-    new InputFieldsCollector(plan, context).collect(builder);
+    ExpressionDependencyCollector.collect(plan, builder);
+    OutputFieldsCollector.collect(plan, builder);
+    InputFieldsCollector.collect(context, plan, builder);
 
     OpenLineage.ColumnLineageDatasetFacetBuilder facetBuilder =
         context.getOpenLineage().newColumnLineageDatasetFacetBuilder();
