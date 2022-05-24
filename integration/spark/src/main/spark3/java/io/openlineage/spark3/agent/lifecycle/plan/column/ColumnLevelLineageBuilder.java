@@ -1,4 +1,4 @@
-package io.openlineage.spark3.agent.lifecycle.plan.columnLineage;
+package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.client.OpenLineage;

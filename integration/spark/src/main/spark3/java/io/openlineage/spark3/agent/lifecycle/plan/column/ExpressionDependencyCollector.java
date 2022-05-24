@@ -1,9 +1,9 @@
-package io.openlineage.spark3.agent.lifecycle.plan.columnLineage;
+package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
-import io.openlineage.spark3.agent.lifecycle.plan.columnLineage.customVisitors.ExpressionDependencyVisitor;
-import io.openlineage.spark3.agent.lifecycle.plan.columnLineage.customVisitors.IcebergMergeIntoDependencyVisitor;
-import io.openlineage.spark3.agent.lifecycle.plan.columnLineage.customVisitors.UnionDependencyVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.ExpressionDependencyVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.IcebergMergeIntoDependencyVisitor;
+import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.UnionDependencyVisitor;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;

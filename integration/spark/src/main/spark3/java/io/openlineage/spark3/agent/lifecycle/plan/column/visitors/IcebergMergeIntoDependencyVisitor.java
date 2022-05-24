@@ -1,9 +1,9 @@
-package io.openlineage.spark3.agent.lifecycle.plan.columnLineage.customVisitors;
+package io.openlineage.spark3.agent.lifecycle.plan.column.visitors;
 
-import static io.openlineage.spark3.agent.lifecycle.plan.columnLineage.ExpressionDependencyCollector.traverseExpression;
+import static io.openlineage.spark3.agent.lifecycle.plan.column.ExpressionDependencyCollector.traverseExpression;
 
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
-import io.openlineage.spark3.agent.lifecycle.plan.columnLineage.ColumnLevelLineageBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
