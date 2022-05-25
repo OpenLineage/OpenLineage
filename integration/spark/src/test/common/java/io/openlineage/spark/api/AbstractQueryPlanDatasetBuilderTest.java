@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
-import io.openlineage.spark.agent.client.OpenLineageClient;
+import io.openlineage.spark.agent.EventEmitter;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -36,7 +36,7 @@ class AbstractQueryPlanDatasetBuilderTest {
             .config("spark.sql.warehouse.dir", "/tmp/warehouse")
             .master("local")
             .getOrCreate();
-    OpenLineage openLineage = new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
+    OpenLineage openLineage = new OpenLineage(EventEmitter.OPEN_LINEAGE_PRODUCER_URI);
     InputDataset expected = openLineage.newInputDataset("namespace", "the_name", null, null);
 
     OpenLineageContext context = createContext(session, openLineage);
@@ -62,7 +62,7 @@ class AbstractQueryPlanDatasetBuilderTest {
             .config("spark.sql.warehouse.dir", "/tmp/warehouse")
             .master("local")
             .getOrCreate();
-    OpenLineage openLineage = new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
+    OpenLineage openLineage = new OpenLineage(EventEmitter.OPEN_LINEAGE_PRODUCER_URI);
     InputDataset expected = openLineage.newInputDataset("namespace", "the_name", null, null);
 
     OpenLineageContext context = createContext(session, openLineage);
@@ -98,7 +98,7 @@ class AbstractQueryPlanDatasetBuilderTest {
             .config("spark.sql.warehouse.dir", "/tmp/warehouse")
             .master("local")
             .getOrCreate();
-    OpenLineage openLineage = new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
+    OpenLineage openLineage = new OpenLineage(EventEmitter.OPEN_LINEAGE_PRODUCER_URI);
     InputDataset expected = openLineage.newInputDataset("namespace", "the_name", null, null);
 
     OpenLineageContext context = createContext(session, openLineage);

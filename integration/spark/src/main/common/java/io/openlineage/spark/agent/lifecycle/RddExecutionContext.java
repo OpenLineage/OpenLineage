@@ -5,11 +5,9 @@ import static scala.collection.JavaConversions.asJavaCollection;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.OpenLineageSparkListener;
-import io.openlineage.spark.agent.client.DatasetParser;
-import io.openlineage.spark.agent.client.DatasetParser.DatasetParseResult;
-import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.facets.ErrorFacet;
 import io.openlineage.spark.agent.facets.SparkVersionFacet;
+import io.openlineage.spark.agent.lifecycle.DatasetParser.DatasetParseResult;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -198,7 +196,7 @@ class RddExecutionContext implements ExecutionContext {
 
   @Override
   public void start(SparkListenerJobStart jobStart) {
-    OpenLineage ol = new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
+    OpenLineage ol = new OpenLineage(EventEmitter.OPEN_LINEAGE_PRODUCER_URI);
     OpenLineage.RunEvent event =
         ol.newRunEventBuilder()
             .eventTime(toZonedTime(jobStart.time()))
@@ -215,7 +213,7 @@ class RddExecutionContext implements ExecutionContext {
 
   @Override
   public void end(SparkListenerJobEnd jobEnd) {
-    OpenLineage ol = new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
+    OpenLineage ol = new OpenLineage(EventEmitter.OPEN_LINEAGE_PRODUCER_URI);
     OpenLineage.RunEvent event =
         ol.newRunEventBuilder()
             .eventTime(toZonedTime(jobEnd.time()))

@@ -2,34 +2,34 @@
 
 package io.openlineage.spark.agent;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.client.OpenLineageClient;
-import io.openlineage.spark.agent.client.OpenLineageHttpException;
-import io.openlineage.spark.agent.client.ResponseMessage;
+import io.openlineage.client.OpenLineageClient;
+import io.openlineage.client.OpenLineageClientException;
+import io.openlineage.client.Utils;
+import io.openlineage.client.transports.HttpTransport;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.StringJoiner;
 import java.util.UUID;
-import java.util.concurrent.ForkJoinPool;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class EventEmitter {
+
+  public static final URI OPEN_LINEAGE_PRODUCER_URI = getProducerUri();
   @Getter private OpenLineageClient client;
   @Getter private URI lineageURI;
   @Getter private String jobNamespace;
   @Getter private String parentJobName;
   @Getter private Optional<UUID> parentRunId;
 
-  private final ObjectMapper mapper = OpenLineageClient.createMapper();
-
   public EventEmitter(ArgumentParser argument) throws URISyntaxException {
-    this.client = OpenLineageClient.create(argument.getApiKey(), ForkJoinPool.commonPool());
     // Extract url parameters other than api_key to append to lineageURI
     String queryParams = null;
     if (argument.getUrlParams().isPresent()) {
@@ -50,6 +50,11 @@ public class EventEmitter {
     this.jobNamespace = argument.getNamespace();
     this.parentJobName = argument.getJobName();
     this.parentRunId = convertToUUID(argument.getParentRunId());
+
+    HttpTransport.Builder builder = HttpTransport.builder().uri(this.lineageURI);
+    argument.getApiKey().ifPresent(builder::apiKey);
+
+    this.client = OpenLineageClient.builder().transport(builder.build()).build();
     log.info(
         String.format(
             "Init OpenLineageContext: Args: %s URI: %s", argument, lineageURI.toString()));
@@ -57,25 +62,28 @@ public class EventEmitter {
 
   public void emit(OpenLineage.RunEvent event) {
     try {
-      // Todo: move to async client
-      log.debug("Posting LineageEvent {}", event);
-      ResponseMessage resp = client.post(lineageURI, event);
-      if (!resp.completedSuccessfully()) {
-        log.error(
-            "Could not emit lineage [responseCode={}]: {}",
-            resp.getResponseCode(),
-            mapper.writeValueAsString(event),
-            new OpenLineageHttpException(resp, resp.getError()));
-      } else {
-        log.info("Lineage completed successfully: {} {}", resp, mapper.writeValueAsString(event));
-      }
-    } catch (OpenLineageHttpException | JsonProcessingException e) {
-      log.error("Could not emit lineage w/ exception", e);
+      this.client.emit(event);
+      log.info("Emitting lineage completed successfully: {}", Utils.toJson(event));
+    } catch (OpenLineageClientException exception) {
+      log.error("Could not emit lineage w/ exception", exception);
     }
   }
 
-  public void close() {
-    client.close();
+  private static URI getProducerUri() {
+    return URI.create(
+        String.format(
+            "https://github.com/OpenLineage/OpenLineage/tree/%s/integration/spark", getVersion()));
+  }
+
+  private static String getVersion() {
+    try {
+      Properties properties = new Properties();
+      InputStream is = EventEmitter.class.getResourceAsStream("version.properties");
+      properties.load(is);
+      return properties.getProperty("version");
+    } catch (IOException exception) {
+      return "main";
+    }
   }
 
   private static Optional<UUID> convertToUUID(String uuid) {

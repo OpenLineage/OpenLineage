@@ -67,14 +67,12 @@ dependencies {
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
-    api("io.openlineage:openlineage-java:${project.version}")
+    implementation("io.openlineage:openlineage-java:${project.version}"){
+        exclude group: 'com.fasterxml.jackson'
+    }
 
     implementation 'org.javassist:javassist:3.27.0-GA'
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.0.3'
-    implementation ("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonDatatypeVersion}"){
-        exclude group: 'com.fasterxml.jackson.core'
-        exclude group: 'com.fasterxml.jackson.datatype'
-    }
     compileOnly "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
     compileOnly "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
     compileOnly "com.fasterxml.jackson.module:jackson-module-scala_2.11:${jacksonModuleScalaVersion}"
@@ -361,7 +359,6 @@ shadowJar {
     relocate 'org.apache.httpcomponents.client5', 'openlineage.org.apache.httpcomponents.client5'
     relocate 'javassist', 'openlineage.javassist'
     relocate 'org.apache.hc', 'openlineage.hc'
-    relocate 'com.fasterxml.jackson.datatype.jsr310', 'openlineage.jackson.datatype.jsr310'
     relocate 'org.apache.commons.codec', 'openlineage.commons.codec'
     dependencies {
         exclude(dependency('org.slf4j::'))
@@ -385,9 +382,9 @@ assemble {
 
 task createVersionProperties(dependsOn: processResources) {
     doLast {
-        File dir = new File("$buildDir/resources/main/io/openlineage/spark/agent/client/")
+        File dir = new File("$buildDir/resources/main/io/openlineage/spark/agent/")
         dir.mkdirs();
-        new File("$buildDir/resources/main/io/openlineage/spark/agent/client/version.properties").withWriter { w ->
+        new File("$buildDir/resources/main/io/openlineage/spark/agent/version.properties").withWriter { w ->
             Properties p = new Properties()
             p['version'] = project.version.toString()
             p.store w, null

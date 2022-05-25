@@ -4,8 +4,8 @@ package io.openlineage.spark.agent.lifecycle;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunEvent;
+import io.openlineage.client.Utils;
 import io.openlineage.spark.agent.EventEmitter;
-import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.time.Instant;
@@ -34,8 +34,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
   private final OpenLineageContext olContext;
   private final EventEmitter eventEmitter;
   private final OpenLineageRunEventBuilder runEventBuilder;
-  private final OpenLineage openLineage =
-      new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
+  private final OpenLineage openLineage = new OpenLineage(EventEmitter.OPEN_LINEAGE_PRODUCER_URI);
 
   private AtomicBoolean started = new AtomicBoolean(false);
   private AtomicBoolean finished = new AtomicBoolean(false);
@@ -85,7 +84,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
             buildJob(olContext.getQueryExecution().get()),
             endEvent);
 
-    log.debug("Posting event for end {}: {}", executionId, event);
+    log.debug("Posting event for end {}: {}", executionId, Utils.toJson(event));
     eventEmitter.emit(event);
   }
 

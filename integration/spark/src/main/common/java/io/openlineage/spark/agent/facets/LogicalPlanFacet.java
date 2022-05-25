@@ -2,9 +2,9 @@
 
 package io.openlineage.spark.agent.facets;
 
-import com.fasterxml.jackson.annotation.JsonRawValue;
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.client.OpenLineageClient;
+import io.openlineage.client.shaded.com.fasterxml.jackson.annotation.JsonRawValue;
+import io.openlineage.spark.agent.EventEmitter;
 import lombok.Builder;
 import lombok.ToString;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -15,7 +15,7 @@ public class LogicalPlanFacet extends OpenLineage.DefaultRunFacet {
 
   @Builder
   public LogicalPlanFacet(LogicalPlan plan) {
-    super(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
+    super(EventEmitter.OPEN_LINEAGE_PRODUCER_URI);
     this.plan = plan;
   }
 

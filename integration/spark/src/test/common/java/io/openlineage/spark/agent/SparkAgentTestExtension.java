@@ -7,7 +7,6 @@ import static org.mockito.Mockito.mock;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunEvent;
-import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.lifecycle.StaticExecutionContextFactory;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -119,7 +118,7 @@ public class SparkAgentTestExtension
     return OpenLineageContext.builder()
         .sparkSession(Optional.of(sparkSession))
         .sparkContext(sparkSession.sparkContext())
-        .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
+        .openLineage(new OpenLineage(EventEmitter.OPEN_LINEAGE_PRODUCER_URI))
         .build();
   }
 }

@@ -7,7 +7,7 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.client.OpenLineageClient;
+import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -51,7 +51,7 @@ public class LogicalRelationDatasetBuilderTest {
     when(openLineageContext.getSparkContext()).thenReturn(sparkContext);
     when(openLineageContext.getSparkSession()).thenReturn(Optional.of(session));
     when(openLineageContext.getOpenLineage())
-        .thenReturn(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI));
+        .thenReturn(new OpenLineage(EventEmitter.OPEN_LINEAGE_PRODUCER_URI));
     when(facet.getDatasetVersion()).thenReturn(SOME_VERSION);
     when(session.sessionState()).thenReturn(sessionState);
     when(sessionState.newHadoopConfWithOptions(any())).thenReturn(hadoopConfig);

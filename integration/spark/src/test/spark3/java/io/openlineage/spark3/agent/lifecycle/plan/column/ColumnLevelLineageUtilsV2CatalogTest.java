@@ -7,7 +7,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.client.OpenLineageClient;
+import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.utils.LastQueryExecutionSparkEventListener;
 import java.util.Arrays;
@@ -83,7 +83,7 @@ public class ColumnLevelLineageUtilsV2CatalogTest {
         OpenLineageContext.builder()
             .sparkSession(Optional.of(spark))
             .sparkContext(spark.sparkContext())
-            .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
+            .openLineage(new OpenLineage(EventEmitter.OPEN_LINEAGE_PRODUCER_URI))
             .queryExecution(queryExecution)
             .build();
 

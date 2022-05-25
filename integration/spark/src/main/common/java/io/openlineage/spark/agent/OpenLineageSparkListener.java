@@ -8,7 +8,6 @@ import static io.openlineage.spark.agent.util.SparkConfUtils.findSparkConfigKey;
 import static io.openlineage.spark.agent.util.SparkConfUtils.findSparkUrlParams;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.agent.lifecycle.ContextFactory;
 import io.openlineage.spark.agent.lifecycle.ExecutionContext;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -187,7 +186,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   }
 
   public static void emitError(Exception e) {
-    OpenLineage ol = new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
+    OpenLineage ol = new OpenLineage(EventEmitter.OPEN_LINEAGE_PRODUCER_URI);
     try {
       contextFactory.openLineageEventEmitter.emit(buildErrorLineageEvent(ol, errorRunFacet(e, ol)));
     } catch (Exception ex) {
@@ -236,7 +235,6 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   /** To close the underlying resources. */
   public static void close() {
     clear();
-    OpenLineageSparkListener.contextFactory.close();
   }
 
   /**

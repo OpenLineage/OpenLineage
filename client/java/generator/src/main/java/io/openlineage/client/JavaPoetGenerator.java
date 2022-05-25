@@ -216,6 +216,11 @@ public class JavaPoetGenerator {
           .addCode("return $N;", fieldName)
           .addAnnotation(AnnotationSpec.builder(JsonAnyGetter.class).build())
           .build());
+
+      modelClassBuilder.addMethod(MethodSpec
+        .methodBuilder("with" + titleCase(fieldName))
+        .addJavadoc("Get object with additional properties")
+        .build());
       modelClassBuilder.addField(
           FieldSpec.builder(additionalPropertiesType, fieldName, PRIVATE, FINAL)
               .addAnnotation(JsonAnySetter.class)

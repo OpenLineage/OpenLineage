@@ -6,8 +6,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.OutputDatasetFacet;
+import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.JobMetricsHolder;
-import io.openlineage.spark.agent.client.OpenLineageClient;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Collections;
 import java.util.HashMap;
@@ -45,7 +45,7 @@ class OutputStatisticsOutputDatasetFacetBuilderTest {
     OutputStatisticsOutputDatasetFacetBuilder builder =
         new OutputStatisticsOutputDatasetFacetBuilder(
             OpenLineageContext.builder()
-                .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
+                .openLineage(new OpenLineage(EventEmitter.OPEN_LINEAGE_PRODUCER_URI))
                 .sparkContext(sparkContext)
                 .build());
     assertThat(builder.isDefinedAt(new SparkListenerJobEnd(1, 1L, JobSucceeded$.MODULE$))).isTrue();
@@ -57,7 +57,7 @@ class OutputStatisticsOutputDatasetFacetBuilderTest {
     OutputStatisticsOutputDatasetFacetBuilder builder =
         new OutputStatisticsOutputDatasetFacetBuilder(
             OpenLineageContext.builder()
-                .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
+                .openLineage(new OpenLineage(EventEmitter.OPEN_LINEAGE_PRODUCER_URI))
                 .sparkContext(sparkContext)
                 .build());
     JobMetricsHolder.getInstance().addJobStages(1, Collections.singleton(1));
