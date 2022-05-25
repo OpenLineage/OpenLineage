@@ -9,7 +9,8 @@ from facet_builders import (
     build_value_check_facets,
     build_interval_check_facets,
     build_threshold_check_facets,
-    build_column_check_facets
+    build_column_check_facets,
+    build_table_check_facets
 )
 from sqlalchemy import MetaData, Table
 
@@ -117,3 +118,16 @@ class SqlColumnCheckExtractor(BaseSqlCheckExtractor):
     def _build_facets(self) -> dict:
         column_mapping = self.operator.column_mapping
         return build_column_check_facets(column_mapping)
+
+
+class SqlTableCheckExtractor(BaseSqlCheckExtractor):
+    def __init__(self, operator):
+        super().__init__(operator)
+
+    @classmethod
+    def get_operator_classnames(cls) -> List[str]:
+        return ['SQLTableCheckOperator']
+
+    def _build_facets(self) -> dict:
+        checks = self.operator.checks
+        return build_table_check_facets(checks)
