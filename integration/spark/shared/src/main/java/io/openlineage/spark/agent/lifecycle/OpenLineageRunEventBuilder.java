@@ -5,7 +5,7 @@
 
 package io.openlineage.spark.agent.lifecycle;
 
-import static io.openlineage.client.Utils.mergeFacets;
+import static io.openlineage.client.OpenLineageClientUtils.mergeFacets;
 import static io.openlineage.spark.agent.util.ScalaConversionUtils.fromSeq;
 import static io.openlineage.spark.agent.util.ScalaConversionUtils.toScalaFn;
 

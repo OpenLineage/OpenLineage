@@ -23,7 +23,8 @@ public final class Clients {
     if (Boolean.parseBoolean(isDisabled)) {
       return OpenLineageClient.builder().transport(new NoopTransport()).build();
     }
-    final OpenLineageYaml openLineageYaml = Utils.loadOpenLineageYaml(configPathProvider);
+    final OpenLineageYaml openLineageYaml =
+        OpenLineageClientUtils.loadOpenLineageYaml(configPathProvider);
     final TransportFactory factory = new TransportFactory(openLineageYaml.getTransportConfig());
     final Transport transport = factory.build();
     // ...

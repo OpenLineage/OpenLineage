@@ -16,7 +16,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.Resources;
 import io.openlineage.client.OpenLineage;
-import io.openlineage.client.Utils;
+import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import java.io.IOException;
 import java.net.URL;
@@ -122,7 +122,7 @@ class LibraryTest {
     List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
     assertEquals(2, events.size());
 
-    ObjectMapper objectMapper = Utils.newObjectMapper();
+    ObjectMapper objectMapper = OpenLineageClientUtils.newObjectMapper();
     for (int i = 0; i < events.size(); i++) {
       log.info("Iteration {}", i);
       OpenLineage.RunEvent event = events.get(i);
@@ -176,7 +176,9 @@ class LibraryTest {
   private void verifySerialization(List<OpenLineage.RunEvent> events)
       throws JsonProcessingException {
     for (OpenLineage.RunEvent event : events) {
-      assertNotNull("Event can serialize", Utils.newObjectMapper().writeValueAsString(event));
+      assertNotNull(
+          "Event can serialize",
+          OpenLineageClientUtils.newObjectMapper().writeValueAsString(event));
     }
   }
 }
