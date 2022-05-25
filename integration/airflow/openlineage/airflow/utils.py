@@ -338,6 +338,15 @@ def build_interval_check_facets() -> dict:
     pass
 
 def build_table_check_facets(table_mapping) -> dict:
+    """
+    Function should expect to take the table_mapping in the following form:
+    {
+        'row_count_check': {
+            'pass_value': 100,
+            'tolerance': .05
+        }
+    }
+    """
     facet_data = {}
     assertion_data = {"assertions": []}
     for table_name, checks in table_mapping.items():
@@ -362,6 +371,20 @@ def build_table_check_facets(table_mapping) -> dict:
 
 
 def build_column_check_facets(column_mapping) -> dict:
+    """
+    Function should expect the column_mapping to take the following form:
+    {
+        'col_name': {
+            'null_check': {
+                'pass_value': 0,
+            },
+            'min': {
+                'pass_value': 5,
+                'tolerance': 0.2,
+            }
+        }
+    }
+    """
     facet_data = {"columnMetrics": defaultdict(dict)}
     assertion_data = {"assertions": []}
     for col_name, checks in column_mapping.items():
