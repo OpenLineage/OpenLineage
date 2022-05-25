@@ -7,6 +7,7 @@ from openlineage.common.dataset import Dataset, Field
 
 from openlineage.airflow.utils import (
     build_column_check_facets,
+    build_table_check_facets
 )
 from sqlalchemy import MetaData, Table
 
@@ -123,3 +124,16 @@ class SnowflakeColumnCheckExtractor(BaseSnowflakeCheckExtractor):
     def _build_facets(self) -> dict:
         column_mapping = self.operator.column_mapping
         return build_column_check_facets(column_mapping)
+
+
+class SnowflakeTableCheckExtractor(BaseSnowflakeCheckExtractor):
+    def __init__(self, operator):
+        super().__init__(operator)
+
+    @classmethod
+    def get_operator_classnames(cls) -> List[str]:
+        return ["SnowflakeTableCheckOperator"]
+
+    def _build_facets(self) -> dict:
+        checks = self.operator.checks
+        return build_table_check_facets(checks)
