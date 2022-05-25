@@ -7,6 +7,7 @@ import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptiona
 import static io.openlineage.spark.agent.util.SparkConfUtils.findSparkConfigKey;
 import static io.openlineage.spark.agent.util.SparkConfUtils.findSparkUrlParams;
 
+import io.openlineage.client.Environment;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.lifecycle.ContextFactory;
 import io.openlineage.spark.agent.lifecycle.ExecutionContext;
@@ -68,6 +69,8 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   private final Function0<Option<SparkContext>> activeSparkContext =
       ScalaConversionUtils.toScalaFn(SparkContext$.MODULE$::getActive);
 
+  private static final boolean isDisabled = checkIfDisabled();
+
   /** called by the tests */
   public static void init(ContextFactory contextFactory) {
     OpenLineageSparkListener.contextFactory = contextFactory;
@@ -76,6 +79,9 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   @Override
   public void onOtherEvent(SparkListenerEvent event) {
+    if (isDisabled) {
+      return;
+    }
     if (event instanceof SparkListenerSQLExecutionStart) {
       sparkSQLExecStart((SparkListenerSQLExecutionStart) event);
     } else if (event instanceof SparkListenerSQLExecutionEnd) {
@@ -100,6 +106,9 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   /** called by the SparkListener when a job starts */
   @Override
   public void onJobStart(SparkListenerJobStart jobStart) {
+    if (isDisabled) {
+      return;
+    }
     Optional<ActiveJob> activeJob =
         asJavaOptional(
                 SparkSession.getDefaultSession()
@@ -148,6 +157,9 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   /** called by the SparkListener when a job ends */
   @Override
   public void onJobEnd(SparkListenerJobEnd jobEnd) {
+    if (isDisabled) {
+      return;
+    }
     ExecutionContext context = rddExecutionRegistry.remove(jobEnd.jobId());
     if (context != null) {
       context.end(jobEnd);
@@ -157,6 +169,9 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   @Override
   public void onTaskEnd(SparkListenerTaskEnd taskEnd) {
+    if (isDisabled) {
+      return;
+    }
     jobMetrics.addMetrics(taskEnd.stageId(), taskEnd.taskMetrics());
   }
 
@@ -244,7 +259,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
    */
   @Override
   public void onApplicationStart(SparkListenerApplicationStart applicationStart) {
-    if (contextFactory != null) {
+    if (contextFactory != null || isDisabled) {
       return;
     }
     SparkEnv sparkEnv = SparkEnv$.MODULE$.get();
@@ -260,6 +275,11 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
           "Open lineage listener instantiated, but no configuration could be found. "
               + "Lineage events will not be collected");
     }
+  }
+
+  private static boolean checkIfDisabled() {
+    String isDisabled = Environment.getEnvironmentVariable("OPENLINEAGE_DISABLED");
+    return Boolean.parseBoolean(isDisabled);
   }
 
   private ArgumentParser parseConf(SparkConf conf) {

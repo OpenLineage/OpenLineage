@@ -7,7 +7,8 @@ public abstract class Transport {
   enum Type {
     CONSOLE,
     HTTP,
-    KAFKA
+    KAFKA,
+    NOOP
   };
 
   private final Type type;
