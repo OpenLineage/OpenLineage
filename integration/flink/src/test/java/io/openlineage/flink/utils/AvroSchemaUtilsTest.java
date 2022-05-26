@@ -1,9 +1,10 @@
 package io.openlineage.flink.utils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.flink.agent.client.OpenLineageClient;
+import java.net.URI;
 import java.util.List;
 import org.apache.avro.Schema;
 import org.apache.avro.SchemaBuilder;
@@ -33,7 +34,7 @@ public class AvroSchemaUtilsTest {
           .stringDefault("")
           .endRecord();
 
-  OpenLineage openLineage = new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
+  OpenLineage openLineage = new OpenLineage(mock(URI.class));
 
   @Test
   public void testConvert() {
