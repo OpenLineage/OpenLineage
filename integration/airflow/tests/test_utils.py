@@ -162,7 +162,7 @@ def test_build_column_check_facets():
     data_quality_facet = facets["dataQuality"]
     assertions_facet = facets["dataQualityAssertions"]
     assert data_quality_facet.columnMetrics.get("X").nullCount == 0
-    assert data_quality_facet.columnMetrics.get("x").distinctCount == 6
+    assert data_quality_facet.columnMetrics.get("X").distinctCount == 6
     assert data_quality_facet.rowCount is None
     assert data_quality_facet.bytes is None
     assert assertions_facet[0].assertion == "null_check"
