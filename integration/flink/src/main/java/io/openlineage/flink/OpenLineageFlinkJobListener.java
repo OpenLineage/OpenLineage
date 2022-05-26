@@ -1,13 +1,11 @@
 package io.openlineage.flink;
 
 import io.openlineage.flink.agent.ArgumentParser;
-import io.openlineage.flink.agent.EventEmitter;
 import io.openlineage.flink.agent.lifecycle.FlinkExecutionContext;
 import io.openlineage.flink.agent.lifecycle.FlinkExecutionContextFactory;
 import io.openlineage.flink.tracker.OpenLineageContinousJobTracker;
 import io.openlineage.flink.tracker.OpenLineageContinousJobTrackerFactory;
 import java.lang.reflect.Field;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -58,14 +56,11 @@ public class OpenLineageFlinkJobListener implements JobListener {
                 .getValue();
 
         FlinkExecutionContext context =
-            FlinkExecutionContextFactory.getContext(
-                jobClient.getJobID(), new EventEmitter(args), transformations);
+            FlinkExecutionContextFactory.getContext(jobClient.getJobID(), transformations);
 
         jobContexts.put(jobClient.getJobID(), context);
         context.onJobSubmitted();
         log.info("Job submitted");
-      } catch (URISyntaxException e) {
-        log.error("Unable to parse open lineage endpoint. Lineage events will not be collected", e);
       } catch (IllegalAccessException e) {
         log.error("Can't access the field. ", e);
       }
