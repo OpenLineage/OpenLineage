@@ -1,4 +1,5 @@
 {
+  "eventType" : "START",
   "inputs": [
     {
       "namespace": "kafka:9092",
