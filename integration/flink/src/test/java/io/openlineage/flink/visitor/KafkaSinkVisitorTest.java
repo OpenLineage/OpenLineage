@@ -6,9 +6,9 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.flink.agent.client.OpenLineageClient;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.visitor.wrapper.KafkaSinkWrapper;
+import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
@@ -27,7 +27,7 @@ public class KafkaSinkVisitorTest {
   KafkaSink kafkaSink = mock(KafkaSink.class);
   Properties props = new Properties();
   KafkaSinkWrapper wrapper = mock(KafkaSinkWrapper.class);
-  OpenLineage openLineage = new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
+  OpenLineage openLineage = new OpenLineage(mock(URI.class));
   Schema schema =
       SchemaBuilder.record("OutputEvent")
           .namespace("io.openlineage.flink.avro.event")
