@@ -3,7 +3,7 @@
 from unittest import mock
 
 import pytest
-from airflow.contrib.operators.snowflake_operator import SnowflakeOperator
+from airflow.providers.snowflake.operators.snowflake import SnowflakeCheckOperator
 from airflow.models import Connection
 from airflow import DAG
 from airflow.utils.dates import days_ago
@@ -11,12 +11,12 @@ from airflow.version import version as AIRFLOW_VERSION
 from pkg_resources import parse_version
 
 from openlineage.common.models import (
-    DbTableSchema,
-    DbColumn
-)
+        DbTableSchema,
+        DbColumn
+    )
 from openlineage.common.sql import DbTableMeta
 from openlineage.common.dataset import Source, Dataset
-from openlineage.airflow.extractors.snowflake_extractor import SnowflakeExtractor
+from openlineage.airflow.extractors.snowflake_check_extractor import SnowflakeCheckExtractor
 
 CONN_ID = 'food_delivery_db'
 CONN_URI = 'snowflake://localhost:5432/food_delivery'
@@ -25,72 +25,72 @@ DB_NAME = 'FOOD_DELIVERY'
 DB_SCHEMA_NAME = 'PUBLIC'
 DB_TABLE_NAME = DbTableMeta('DISCOUNTS')
 DB_TABLE_COLUMNS = [
-    DbColumn(
-        name='ID',
-        type='int4',
-        ordinal_position=1
-    ),
-    DbColumn(
-        name='AMOUNT_OFF',
-        type='int4',
-        ordinal_position=2
-    ),
-    DbColumn(
-        name='CUSTOMER_EMAIL',
-        type='varchar',
-        ordinal_position=3
-    ),
-    DbColumn(
-        name='STARTS_ON',
-        type='timestamp',
-        ordinal_position=4
-    ),
-    DbColumn(
-        name='ENDS_ON',
-        type='timestamp',
-        ordinal_position=5
-    )
-]
+        DbColumn(
+            name='ID',
+            type='int4',
+            ordinal_position=1
+        ),
+        DbColumn(
+            name='AMOUNT_OFF',
+            type='int4',
+            ordinal_position=2
+        ),
+        DbColumn(
+            name='CUSTOMER_EMAIL',
+            type='varchar',
+            ordinal_position=3
+        ),
+        DbColumn(
+            name='STARTS_ON',
+            type='timestamp',
+            ordinal_position=4
+        ),
+        DbColumn(
+            name='ENDS_ON',
+            type='timestamp',
+            ordinal_position=5
+        )
+    ]
 DB_TABLE_SCHEMA = DbTableSchema(
-    schema_name=DB_SCHEMA_NAME,
-    table_name=DB_TABLE_NAME,
-    columns=DB_TABLE_COLUMNS
-)
+        schema_name=DB_SCHEMA_NAME,
+        table_name=DB_TABLE_NAME,
+        columns=DB_TABLE_COLUMNS
+    )
 NO_DB_TABLE_SCHEMA = []
 
-SQL = f"SELECT * FROM {DB_NAME}.{DB_TABLE_NAME.name};"
+SQL = f"SELECT IF COUNT(*) == 10 THEN 0 ELSE 1 END FROM {DB_NAME}.{DB_TABLE_NAME.name};"
 
 DAG_ID = 'email_discounts'
 DAG_OWNER = 'datascience'
 DAG_DEFAULT_ARGS = {
-    'owner': DAG_OWNER,
-    'depends_on_past': False,
-    'start_date': days_ago(7),
-    'email_on_failure': False,
-    'email_on_retry': False,
-    'email': ['datascience@example.com']
-}
+        'owner': DAG_OWNER,
+        'depends_on_past': False,
+        'start_date': days_ago(7),
+        'email_on_failure': False,
+        'email_on_retry': False,
+        'email': ['datascience@example.com']
+    }
 DAG_DESCRIPTION = 'Email discounts to customers that have experienced order delays daily'
 
 DAG = dag = DAG(
-    DAG_ID,
-    schedule_interval='@weekly',
-    default_args=DAG_DEFAULT_ARGS,
-    description=DAG_DESCRIPTION
-)
+        DAG_ID,
+        schedule_interval='@weekly',
+        default_args=DAG_DEFAULT_ARGS,
+        description=DAG_DESCRIPTION
+    )
 
-TASK_ID = 'select'
-TASK = SnowflakeOperator(
-    task_id=TASK_ID,
-    snowflake_conn_id=CONN_ID,
-    sql=SQL,
-    dag=DAG
-)
+TASK_ID = 'row_count_check'
+TASK = SnowflakeCheckOperator(
+        task_id=TASK_ID,
+        snowflake_conn_id=CONN_ID,
+        sql=SQL,
+        dag=DAG
+    )
 
 
 @mock.patch('openlineage.airflow.extractors.snowflake_extractor.SnowflakeExtractor._get_table_schemas')  # noqa
 @mock.patch('openlineage.airflow.extractors.postgres_extractor.get_connection')
-def test_extract(get_connection, mock_get_table_schemas):
+def test_extract_on_complete(get_connection, mock_get_table_schemas):
     mock_get_table_schemas.side_effect = \
         [[DB_TABLE_SCHEMA], NO_DB_TABLE_SCHEMA]
 
@@ -115,7 +115,7 @@ def test_extract(get_connection, mock_get_table_schemas):
             fields=[]
         ).to_openlineage_dataset()]
 
-    task_metadata = SnowflakeExtractor(TASK).extract()
+    task_metadata = SnowflakeCheckExtractor(TASK).extract_on_complete()
 
     assert task_metadata.name == f"{DAG_ID}.{TASK_ID}"
     assert task_metadata.inputs == expected_inputs
@@ -133,7 +133,7 @@ def test_extract_query_ids(get_connection, mock_get_table_schemas):
     TASK.get_hook = mock.MagicMock()
     TASK.query_ids = ["1500100900"]
 
-    task_metadata = SnowflakeExtractor(TASK).extract()
+    task_metadata = SnowflakeCheckExtractor(TASK).extract()
 
     assert task_metadata.run_facets["externalQuery"].externalQueryId == "1500100900"
 
@@ -157,7 +157,7 @@ def test_get_table_schemas():
         .fetchall.return_value = rows
 
     # (3) Extract table schemas for task
-    extractor = SnowflakeExtractor(TASK)
+    extractor = SnowflakeCheckExtractor(TASK)
     table_schemas = extractor._get_table_schemas(table_names=[DB_TABLE_NAME])
 
     assert table_schemas == [DB_TABLE_SCHEMA]
