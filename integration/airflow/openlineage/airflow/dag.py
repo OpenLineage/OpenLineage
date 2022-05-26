@@ -36,6 +36,10 @@ def has_lineage_backend_setup():
 class DAG(AIRFLOW_DAG):
     def __init__(self, *args, **kwargs):
         self.log.info("openlineage-airflow dag starting")
+        self.log.warning(
+            "OpenLineage support for Airflow 1.10 is deprecated "
+            "and will be removed September 30th, 2022"
+        )
         macros = {}
         if kwargs.__contains__("user_defined_macros"):
             macros = kwargs["user_defined_macros"]
