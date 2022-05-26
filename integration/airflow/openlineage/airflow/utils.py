@@ -343,7 +343,9 @@ def build_table_check_facets(table_mapping) -> dict:
     {
         'row_count_check': {
             'pass_value': 100,
-            'tolerance': .05
+            'tolerance': .05,
+            'result': 101,
+            'success': True
         }
     }
     """
@@ -354,11 +356,11 @@ def build_table_check_facets(table_mapping) -> dict:
             assertion_data["assertions"].append(
                 Assertion(
                     assertion=check,
-                    success=check_values.get("success", None),
+                    success=checks[check].get("success", None),
                 )
             )
-        facet_data["row_count"] = checks.get("row_count", None)
-        facet_data["bytes"] = checks.get("bytes", None)
+        facet_data["row_count"] = checks.get("row_count_check", None).get("result")
+        facet_data["bytes"] = checks.get("bytes", None).get("result")
 
     data_quality_facet = DataQualityMetricsInputDatasetFacet(**facet_data)
     data_quality_assertions_facet = DataQualityAssertionsDatasetFacet(**assertion_data)
@@ -377,10 +379,14 @@ def build_column_check_facets(column_mapping) -> dict:
         'col_name': {
             'null_check': {
                 'pass_value': 0,
+                'result': 0,
+                'success': True
             },
             'min': {
                 'pass_value': 5,
                 'tolerance': 0.2,
+                'result': 1,
+                'success': False
             }
         }
     }
