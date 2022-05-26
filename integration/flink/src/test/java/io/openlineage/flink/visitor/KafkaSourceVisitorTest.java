@@ -6,9 +6,9 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.flink.agent.client.OpenLineageClient;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.visitor.wrapper.KafkaSourceWrapper;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -28,7 +28,7 @@ public class KafkaSourceVisitorTest {
   KafkaSourceVisitor kafkaSourceVisitor = new KafkaSourceVisitor(context);
   KafkaSourceWrapper wrapper = mock(KafkaSourceWrapper.class);
   Properties props = new Properties();
-  OpenLineage openLineage = new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
+  OpenLineage openLineage = new OpenLineage(mock(URI.class));
   Schema schema =
       SchemaBuilder.record("InputEvent")
           .namespace("io.openlineage.flink.avro.event")
