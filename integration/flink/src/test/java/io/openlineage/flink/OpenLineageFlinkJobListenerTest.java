@@ -57,7 +57,7 @@ public class OpenLineageFlinkJobListenerTest {
     listener = new OpenLineageFlinkJobListener(streamExecutionEnvironment);
     try (MockedStatic<FlinkExecutionContextFactory> contextFactory =
         mockStatic(FlinkExecutionContextFactory.class)) {
-      when(FlinkExecutionContextFactory.getContext(eq(jobId), any(), eq(transformations)))
+      when(FlinkExecutionContextFactory.getContext(eq(jobId), eq(transformations)))
           .thenReturn(context);
       doNothing().when(context).onJobSubmitted();
 
@@ -88,7 +88,7 @@ public class OpenLineageFlinkJobListenerTest {
         mockStatic(FlinkExecutionContextFactory.class)) {
       try (MockedStatic<OpenLineageContinousJobTrackerFactory> trackerFactory =
           mockStatic(OpenLineageContinousJobTrackerFactory.class)) {
-        when(FlinkExecutionContextFactory.getContext(eq(jobId), any(), any())).thenReturn(context);
+        when(FlinkExecutionContextFactory.getContext(eq(jobId), any())).thenReturn(context);
         when(OpenLineageContinousJobTrackerFactory.getTracker(readableConfig)).thenReturn(tracker);
         doNothing().when(context).onJobSubmitted();
 

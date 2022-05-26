@@ -5,8 +5,7 @@ import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.flink.SinkLineage;
 import io.openlineage.flink.TransformationUtils;
-import io.openlineage.flink.agent.EventEmitter;
-import io.openlineage.flink.agent.client.OpenLineageClient;
+import io.openlineage.flink.agent.client.EventEmitter;
 import io.openlineage.flink.agent.facets.CheckpointFacet;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.visitor.Visitor;
@@ -30,14 +29,13 @@ public class FlinkExecutionContext implements ExecutionContext {
 
   @Getter private final List<Transformation<?>> transformations;
 
-  public FlinkExecutionContext(
-      JobID jobId, EventEmitter eventEmitter, List<Transformation<?>> transformations) {
+  public FlinkExecutionContext(JobID jobId, List<Transformation<?>> transformations) {
     this.jobId = jobId;
-    this.eventEmitter = eventEmitter;
     this.transformations = transformations;
+    this.eventEmitter = new EventEmitter();
     this.openLineageContext =
         OpenLineageContext.builder()
-            .openLineage(new OpenLineage(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI))
+            .openLineage(new OpenLineage(EventEmitter.OPEN_LINEAGE_CLIENT_URI))
             .build();
   }
 
