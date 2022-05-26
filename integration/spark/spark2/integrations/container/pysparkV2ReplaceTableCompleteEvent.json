@@ -1,0 +1,31 @@
+{
+  "eventType" : "COMPLETE",
+  "job" : {
+    "namespace" : "testV2Commands",
+    "name" : "open_lineage_integration_delta.atomic_replace_table"
+  },
+  "inputs" : [ ],
+  "outputs" : [ {
+    "namespace" : "file",
+    "name" : "/tmp/v2_replace_table",
+    "facets" : {
+      "dataSource" : {
+        "name" : "file",
+        "uri" : "file"
+      },
+      "schema" : {
+        "fields" : [ {
+          "name" : "c",
+          "type" : "string"
+        }, {
+          "name" : "d",
+          "type" : "string"
+        } ]
+      },
+      "version" : {},
+      "lifecycleStateChange": {
+        "lifecycleStateChange": "OVERWRITE"
+      }
+    }
+  } ]
+}

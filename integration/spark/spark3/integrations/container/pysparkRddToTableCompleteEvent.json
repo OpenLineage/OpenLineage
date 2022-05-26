@@ -1,0 +1,68 @@
+{
+  "eventType": "COMPLETE",
+  "run": {
+    "facets": {
+    }
+  },
+  "job": {
+    "namespace": "testPysparkRddToTable",
+    "name": "spark_rdd_to_table.execute_insert_into_hadoop_fs_relation_command"
+  },
+  "inputs": [
+    {
+      "namespace": "file",
+      "name": "/test_data/rdd_to_csv_output",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "age",
+              "type": "integer"
+            }
+          ]
+        },
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        }
+      }
+    }
+  ],
+  "outputs": [
+    {
+      "namespace": "file",
+      "name": "/test_data/rdd_to_table",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "age",
+              "type": "integer"
+            }
+          ]
+        },
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "lifecycleStateChange": {
+          "lifecycleStateChange": "OVERWRITE"
+        }
+      },
+      "outputFacets": {
+        "outputStatistics": {
+          "rowCount": "${json-unit.any-number}",
+          "size": "${json-unit.any-number}"
+        }
+      }
+    }
+  ]
+}

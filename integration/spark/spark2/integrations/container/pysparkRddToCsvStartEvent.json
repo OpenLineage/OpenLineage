@@ -1,0 +1,15 @@
+{
+  "eventType" : "START",
+  "run" : {
+    "facets" : { }
+  },
+  "job": {
+    "namespace": "testPysparkRddToTable",
+    "name": "spark_rdd_to_table.map_partitions_python_list_of_random_words_and_numbers"
+  },
+  "inputs" : [ ],
+  "outputs" : [ {
+    "namespace" : "file",
+    "name" : "file:/test_data/rdd_to_csv_output"
+  } ]
+}

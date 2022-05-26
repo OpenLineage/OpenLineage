@@ -1,0 +1,40 @@
+{
+  "eventType" : "START",
+  "job" : {
+    "namespace" : "testV2Commands",
+    "name" : "open_lineage_integration_v2_commands.append_data"
+  },
+  "inputs" : [ {
+    "namespace" : "file",
+    "name" : "/tmp/append_data/db.source1",
+    "facets" : {
+      "dataSource" : {
+        "name" : "file",
+        "uri" : "file"
+      },
+      "schema" : {
+        "fields" : [ {
+          "name" : "a",
+          "type" : "long"
+        }]
+      },
+      "version" : {}
+    }
+  }, {
+    "namespace" : "file",
+    "name" : "/tmp/append_data/db.source2",
+    "facets" : {
+      "dataSource" : {
+        "name" : "file",
+        "uri" : "file"
+      },
+      "schema" : {
+        "fields" : [ {
+          "name" : "a",
+          "type" : "long"
+        }]
+      },
+      "version" : {}
+    }
+  } ]
+}

@@ -148,7 +148,7 @@ class MyDatasetDetector extends QueryPlanVisitor<MyDataset, OutputDataset> {
 ## API
 The following APIs are still evolving and may change over time, based on user feedback.
 
-###[`OpenLineageEventHandlerFactory`](src/main/common/java/io/openlineage/spark/api/OpenLineageEventHandlerFactory.java)
+###[`OpenLineageEventHandlerFactory`](srca/main/common/java/io/openlineage/spark/api/OpenLineageEventHandlerFactory.java)
 This interface defines the main entrypoint to the extension codebase. Custom implementations
 are registered by following Java's [`ServiceLoader` conventions](https://docs.oracle.com/javase/8/docs/api/java/util/ServiceLoader.html).
 A file called `io.openlineage.spark.api.OpenLineageEventHandlerFactory` must exist in the
@@ -214,18 +214,18 @@ Collection<CustomFacetBuilder<?, ? extends RunFacet>> createRunFacetBuilders(Ope
 Collection<CustomFacetBuilder<?, ? extends JobFacet>> createJobFacetBuilders(OpenLineageContext context);
 ```
 
-See the [`OpenLineageEventHandlerFactory` javadocs](src/main/common/java/io/openlineage/spark/api/OpenLineageEventHandlerFactory.java)
+See the [`OpenLineageEventHandlerFactory` javadocs](srca/main/common/java/io/openlineage/spark/api/OpenLineageEventHandlerFactory.java)
 for specifics on each method.
 
 
-### [`QueryPlanVisitor`](src/main/common/java/io/openlineage/spark/api/QueryPlanVisitor.java)
+### [`QueryPlanVisitor`](srca/main/common/java/io/openlineage/spark/api/QueryPlanVisitor.java)
 QueryPlanVisitors evaluate nodes of a Spark `LogicalPlan` and attempt to generate `InputDataset`s or
 `OutputDataset`s from the information found in the `LogicalPlan` nodes. This is the most common
 abstraction present in the OpenLineage Spark library and many examples can be found in the
 `io.openlineage.spark.agent.lifecycle.plan` package - examples include the
-[`BigQueryNodeVisitor`](src/main/common/java/io/openlineage/spark/agent/lifecycle/plan/BigQueryNodeVisitor.java),
-the [`KafkaRelationVisitor`](src/main/common/java/io/openlineage/spark/agent/lifecycle/plan/KafkaRelationVisitor.java)
-and the [`InsertIntoHiveTableVisitor`](src/main/common/java/io/openlineage/spark/agent/lifecycle/plan/InsertIntoHiveTableVisitor.java).
+[`BigQueryNodeVisitor`](srca/main/common/java/io/openlineage/spark/agent/lifecycle/plan/BigQueryNodeVisitor.java),
+the [`KafkaRelationVisitor`](srca/main/common/java/io/openlineage/spark/agent/lifecycle/plan/KafkaRelationVisitor.java)
+and the [`InsertIntoHiveTableVisitor`](srca/main/common/java/io/openlineage/spark/agent/lifecycle/plan/InsertIntoHiveTableVisitor.java).
 
 `QueryPlanVisitor`s implement Scala's `PartialFunction` interface and are tested against every node
 of a Spark query's optimized `LogicalPlan`. Each invocation will expect either an `InputDataset`
@@ -247,13 +247,13 @@ scheduler objects that can be passed to a builder) that can generate either an `
 and [`AbstractOutputDatasetBuilder`s](integration/spark/src/main/common/java/io/openlineage/spark/api/AbstractOutputDatasetBuilder.java)
 are available for builders to extend.
 
-### [`CustomFacetBuilder`](src/main/common/java/io/openlineage/spark/api/CustomFacetBuilder.java)
+### [`CustomFacetBuilder`](srca/main/common/java/io/openlineage/spark/api/CustomFacetBuilder.java)
 CustomFacetBuilders evaluate Spark event types and scheduler objects (see below) to construct custom
 facets. CustomFacetBuilders are used to create `InputDatsetFacet`s, `OutputDatsetFacet`s,
 `DatsetFacet`s, `RunFacet`s, and `JobFacet`s. A few examples can be found in the
-[`io.openlineage.spark.agent.facets.builder`](src/main/common/java/io/openlineage/spark/agent/facets/builder)
-package, including the [`ErrorFacetBuilder`](src/main/common/java/io/openlineage/spark/agent/facets/builder/ErrorFacetBuilder.java)
-and the [`LogicalPlanRunFacetBuilder`](src/main/common/java/io/openlineage/spark/agent/facets/builder/LogicalPlanRunFacetBuilder.java).
+[`io.openlineage.spark.agent.facets.builder`](srca/main/common/java/io/openlineage/spark/agent/facets/builder)
+package, including the [`ErrorFacetBuilder`](srca/main/common/java/io/openlineage/spark/agent/facets/builder/ErrorFacetBuilder.java)
+and the [`LogicalPlanRunFacetBuilder`](srca/main/common/java/io/openlineage/spark/agent/facets/builder/LogicalPlanRunFacetBuilder.java).
 `CustomFacetBuilder`s are not `PartialFunction` implementations, but do define the `isDefinedAt(Object)`
 method to determine whether a given input is valid for the function. They implement the `BiConsumer`
 interface, accepting the valid input argument, and a `BiConsumer<String, Facet>` consumer, which

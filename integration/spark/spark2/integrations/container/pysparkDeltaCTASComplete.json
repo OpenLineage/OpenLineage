@@ -1,0 +1,55 @@
+{
+  "eventType": "COMPLETE",
+  "inputs": [],
+  "job": {
+    "name": "open_lineage_integration_delta.atomic_create_table_as_select",
+    "namespace": "testCTASDelta"
+  },
+  "inputs" : [ {
+    "namespace" : "file",
+    "name" : "/tmp/delta/temp",
+    "facets" : {
+      "dataSource" : {
+        "name" : "file",
+        "uri" : "file"
+      },
+      "schema" : {
+        "fields" : [ {
+          "name" : "a",
+          "type" : "long"
+        }, {
+          "name" : "b",
+          "type" : "long"
+        } ]
+      }
+    }
+  } ],
+  "outputs": [
+    {
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "a",
+              "type": "long"
+            },
+            {
+              "name": "b",
+              "type": "long"
+            }
+          ]
+        },
+        "lifecycleStateChange" : {
+          "lifecycleStateChange" : "CREATE"
+        }
+      },
+      "name": "/tmp/delta/tbl",
+      "namespace": "file"
+    }
+  ],
+  "run": {}
+}

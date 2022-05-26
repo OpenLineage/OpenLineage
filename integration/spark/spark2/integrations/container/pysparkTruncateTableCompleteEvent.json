@@ -1,0 +1,23 @@
+{
+  "eventType": "COMPLETE",
+  "job": {
+    "namespace": "testTruncateTable",
+    "name": "open_lineage_integration_truncate_table.execute_truncate_table_command"
+  },
+  "inputs": [],
+  "outputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/truncate_test/truncate_table_test",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "lifecycleStateChange": {
+          "lifecycleStateChange": "TRUNCATE"
+        }
+      }
+    }
+  ]
+}

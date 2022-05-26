@@ -1,0 +1,23 @@
+{
+  "eventType": "START",
+  "job": {
+    "namespace": "testDropTable",
+    "name": "open_lineage_integration_drop_table.execute_drop_table_command"
+  },
+  "inputs": [],
+  "outputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/drop_test/drop_table_test",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "lifecycleStateChange": {
+          "lifecycleStateChange": "DROP"
+        }
+      }
+    }
+  ]
+}
