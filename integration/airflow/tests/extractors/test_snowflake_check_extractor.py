@@ -3,7 +3,7 @@
 from unittest import mock
 
 import pytest
-from airflow.providers.snowflake.operators.snowflake import SnowflakeCheckOperator
+from airflow.contrib.operators.snowflake_operator import SnowflakeCheckOperator
 from airflow.models import Connection
 from airflow import DAG
 from airflow.utils.dates import days_ago
