@@ -2,7 +2,7 @@ package io.openlineage.flink.agent.facets;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.openlineage.client.OpenLineage;
-import io.openlineage.flink.agent.client.OpenLineageClient;
+import io.openlineage.flink.agent.client.EventEmitter;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
@@ -27,7 +27,7 @@ public class CheckpointFacet extends OpenLineage.DefaultRunFacet {
   private final int total;
 
   public CheckpointFacet(int completed, int failed, int in_progress, int restored, int total) {
-    super(OpenLineageClient.OPEN_LINEAGE_CLIENT_URI);
+    super(EventEmitter.OPEN_LINEAGE_CLIENT_URI);
     this.completed = completed;
     this.failed = failed;
     this.in_progress = in_progress;

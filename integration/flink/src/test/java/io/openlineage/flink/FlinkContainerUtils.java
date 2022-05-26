@@ -101,17 +101,16 @@ public class FlinkContainerUtils {
             .withExposedPorts(8081)
             .withFileSystemBind(getOpenLineageJarPath(), "/opt/flink/lib/openlineage.jar")
             .withFileSystemBind(getExampleAppJarPath(), "/opt/flink/lib/example-app.jar")
+            .withCopyFileToContainer(
+                MountableFile.forHostPath(Resources.getResource("openlineage.yml").getPath()),
+                "/opt/flink/lib/openlineage.yml")
             .withCommand(
                 "standalone-job "
                     + "--job-classname io.openlineage.flink.FlinkStatefulApplication "
                     + "--input-topics io.openlineage.flink.kafka.input1,io.openlineage.flink.kafka.input2 "
-                    + "--output-topic io.openlineage.flink.kafka.output "
-                    + "--flink.openlineage.url http://openlineageclient:1080/api/v1")
-            .withEnv(
-                "FLINK_PROPERTIES",
-                "jobmanager.rpc.address: jobmanager"
-                    + System.lineSeparator()
-                    + "openlineage.host: http://openlineageclient:1080")
+                    + "--output-topic io.openlineage.flink.kafka.output ")
+            .withEnv("FLINK_PROPERTIES", "jobmanager.rpc.address: jobmanager")
+            .withEnv("OPENLINEAGE_CONFIG", "/opt/flink/lib/openlineage.yml")
             .withStartupTimeout(Duration.of(5, ChronoUnit.MINUTES))
             .dependsOn(startables);
 
