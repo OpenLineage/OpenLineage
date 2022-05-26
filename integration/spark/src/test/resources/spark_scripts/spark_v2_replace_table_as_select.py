@@ -23,7 +23,7 @@ df = spark.createDataFrame([
     {'a': 1, 'b': 2},
     {'a': 4, 'b': 5}
 ])
-df.createOrReplaceTempView('temp')
+df.write.saveAsTable('local.db.temp')
 
 spark.sql("CREATE TABLE local.db.tbl USING iceberg")
-spark.sql("REPLACE TABLE local.db.tbl USING iceberg AS SELECT * FROM temp")
+spark.sql("REPLACE TABLE local.db.tbl USING iceberg AS SELECT * FROM local.db.temp")

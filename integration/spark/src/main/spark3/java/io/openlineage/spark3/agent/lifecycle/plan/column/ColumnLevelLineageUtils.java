@@ -5,7 +5,6 @@ import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
-import org.apache.spark.sql.types.StructType;
 
 /**
  * Utility functions for detecting column level lineage within {@link
@@ -15,13 +14,13 @@ import org.apache.spark.sql.types.StructType;
 public class ColumnLevelLineageUtils {
 
   public static Optional<OpenLineage.ColumnLineageDatasetFacet> buildColumnLineageDatasetFacet(
-      OpenLineageContext context, StructType outputSchema) {
+      OpenLineageContext context, OpenLineage.SchemaDatasetFacet schemaFacet) {
     if (!context.getQueryExecution().isPresent()
         || context.getQueryExecution().get().optimizedPlan() == null) {
       return Optional.empty();
     }
 
-    ColumnLevelLineageBuilder builder = new ColumnLevelLineageBuilder(outputSchema, context);
+    ColumnLevelLineageBuilder builder = new ColumnLevelLineageBuilder(schemaFacet, context);
     LogicalPlan plan = context.getQueryExecution().get().optimizedPlan();
 
     ExpressionDependencyCollector.collect(plan, builder);
@@ -39,31 +38,5 @@ public class ColumnLevelLineageUtils {
     } else {
       return Optional.of(facetBuilder.build());
     }
-  }
-
-  public static OpenLineage.OutputDataset rewriteOutputDataset(
-      OpenLineage.OutputDataset outputDataset,
-      OpenLineage.ColumnLineageDatasetFacet columnLineageDatasetFacet) {
-    OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
-        new OpenLineage.DatasetFacetsBuilder()
-            .documentation(outputDataset.getFacets().getDocumentation())
-            .version(outputDataset.getFacets().getVersion())
-            .schema(outputDataset.getFacets().getSchema())
-            .dataSource(outputDataset.getFacets().getDataSource())
-            .lifecycleStateChange(outputDataset.getFacets().getLifecycleStateChange())
-            .storage(outputDataset.getFacets().getStorage())
-            .columnLineage(columnLineageDatasetFacet);
-
-    outputDataset
-        .getFacets()
-        .getAdditionalProperties()
-        .forEach((key, value) -> datasetFacetsBuilder.put(key, value));
-
-    return new OpenLineage.OutputDatasetBuilder()
-        .name(outputDataset.getName())
-        .namespace(outputDataset.getNamespace())
-        .outputFacets(outputDataset.getOutputFacets())
-        .facets(datasetFacetsBuilder.build())
-        .build();
   }
 }

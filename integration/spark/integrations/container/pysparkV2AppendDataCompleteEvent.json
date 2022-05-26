@@ -18,7 +18,25 @@
           "type" : "long"
         }]
       },
-      "version" : {}
+      "version" : {},
+      "columnLineage": {
+        "fields": {
+          "a": {
+            "inputFields": [
+              {
+                "namespace": "file",
+                "name": "/tmp/append_data/db.source1",
+                "field": "a"
+              },
+              {
+                "namespace": "file",
+                "name": "/tmp/append_data/db.source2",
+                "field": "a"
+              }
+            ]
+          }
+        }
+      }
     }
   } ]
 }

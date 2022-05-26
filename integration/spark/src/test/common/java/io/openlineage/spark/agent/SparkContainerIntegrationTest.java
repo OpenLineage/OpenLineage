@@ -191,6 +191,11 @@ public class SparkContainerIntegrationTest {
         "pysparkCTASEnd.json",
         "pysparkLoadStart.json",
         "pysparkLoadComplete.json");
+
+    if (System.getProperty("spark.version").matches(SPARK_3)) {
+      // verify CTAS contains column level lineage
+      verifyEvents("pysparkCTASWithColumnLineageEnd.json");
+    }
   }
 
   @Test

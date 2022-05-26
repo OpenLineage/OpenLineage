@@ -23,7 +23,6 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.QueryExecution;
 import org.apache.spark.sql.types.IntegerType$;
 import org.apache.spark.sql.types.Metadata;
-import org.apache.spark.sql.types.StringType$;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.AfterAll;
@@ -39,7 +38,13 @@ public class ColumnLevelLineageUtilsV2CatalogTest {
   QueryExecution queryExecution = mock(QueryExecution.class);
 
   OpenLineageContext context;
-  StructType schema =
+  OpenLineage openLineage = new OpenLineage(EventEmitter.OPEN_LINEAGE_PRODUCER_URI);
+  OpenLineage.SchemaDatasetFacet schemaDatasetFacet =
+      openLineage.newSchemaDatasetFacet(
+          Arrays.asList(
+              openLineage.newSchemaDatasetFacetFieldsBuilder().name("a").type("int").build(),
+              openLineage.newSchemaDatasetFacetFieldsBuilder().name("b").type("int").build()));
+  StructType structTypeSchema =
       new StructType(
           new StructField[] {
             new StructField("a", IntegerType$.MODULE$, false, new Metadata(new HashMap<>())),
@@ -95,7 +100,7 @@ public class ColumnLevelLineageUtilsV2CatalogTest {
     spark.sql("DROP TABLE IF EXISTS local.db.t");
 
     spark
-        .createDataFrame(Arrays.asList(new GenericRow(new Object[] {1, 2})), schema)
+        .createDataFrame(Arrays.asList(new GenericRow(new Object[] {1, 2})), structTypeSchema)
         .createOrReplaceTempView("temp");
   }
 
@@ -110,7 +115,7 @@ public class ColumnLevelLineageUtilsV2CatalogTest {
     LogicalPlan plan = LastQueryExecutionSparkEventListener.getLastExecutedLogicalPlan().get();
     when(queryExecution.optimizedPlan()).thenReturn(plan);
     OpenLineage.ColumnLineageDatasetFacet facet =
-        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, schema).get();
+        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, schemaDatasetFacet).get();
 
     assertColumnDependsOn(facet, "a", "file", "/tmp/column_level_lineage/db.t1", "a");
     assertColumnDependsOn(facet, "a", "file", "/tmp/column_level_lineage/db.t2", "a");
@@ -128,7 +133,7 @@ public class ColumnLevelLineageUtilsV2CatalogTest {
     LogicalPlan plan = LastQueryExecutionSparkEventListener.getLastExecutedLogicalPlan().get();
     when(queryExecution.optimizedPlan()).thenReturn(plan);
     OpenLineage.ColumnLineageDatasetFacet facet =
-        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, schema).get();
+        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, schemaDatasetFacet).get();
 
     assertColumnDependsOn(facet, "a", "file", "/tmp/column_level_lineage/db.t1", "a");
     assertColumnDependsOn(facet, "b", "file", "/tmp/column_level_lineage/db.t1", "b");
@@ -141,12 +146,11 @@ public class ColumnLevelLineageUtilsV2CatalogTest {
     spark.sql(
         "CREATE TABLE local.db.t2 USING iceberg AS (SELECT a, b, ceil(a) as `c`, abs(b) as `d` FROM local.db.t1)");
 
-    StructType outputSchema =
-        new StructType(
-            new StructField[] {
-              new StructField("c", IntegerType$.MODULE$, false, new Metadata(new HashMap<>())),
-              new StructField("d", IntegerType$.MODULE$, false, new Metadata(new HashMap<>()))
-            });
+    OpenLineage.SchemaDatasetFacet outputSchema =
+        openLineage.newSchemaDatasetFacet(
+            Arrays.asList(
+                openLineage.newSchemaDatasetFacetFieldsBuilder().name("c").type("int").build(),
+                openLineage.newSchemaDatasetFacetFieldsBuilder().name("d").type("int").build()));
 
     LogicalPlan plan = LastQueryExecutionSparkEventListener.getLastExecutedLogicalPlan().get();
     when(queryExecution.optimizedPlan()).thenReturn(plan);
@@ -163,12 +167,11 @@ public class ColumnLevelLineageUtilsV2CatalogTest {
     spark.sql("INSERT INTO local.db.t1 VALUES (1,2),(3,4),(5,6)");
     spark.sql("CREATE TABLE local.db.t2 USING iceberg AS (SELECT * FROM local.db.t1)");
 
-    StructType wrongSchema =
-        new StructType(
-            new StructField[] {
-              new StructField("x", IntegerType$.MODULE$, false, new Metadata(new HashMap<>())),
-              new StructField("y", IntegerType$.MODULE$, false, new Metadata(new HashMap<>()))
-            });
+    OpenLineage.SchemaDatasetFacet wrongSchema =
+        openLineage.newSchemaDatasetFacet(
+            Arrays.asList(
+                openLineage.newSchemaDatasetFacetFieldsBuilder().name("x").type("int").build(),
+                openLineage.newSchemaDatasetFacetFieldsBuilder().name("y").type("int").build()));
 
     LogicalPlan plan = LastQueryExecutionSparkEventListener.getLastExecutedLogicalPlan().get();
     when(queryExecution.optimizedPlan()).thenReturn(plan);
@@ -183,7 +186,8 @@ public class ColumnLevelLineageUtilsV2CatalogTest {
     OpenLineageContext context = mock(OpenLineageContext.class);
     when(context.getQueryExecution()).thenReturn(Optional.empty());
     assertEquals(
-        Optional.empty(), ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, schema));
+        Optional.empty(),
+        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, schemaDatasetFacet));
   }
 
   @Test
@@ -193,7 +197,8 @@ public class ColumnLevelLineageUtilsV2CatalogTest {
     when(context.getQueryExecution()).thenReturn(Optional.of(queryExecution));
     when(queryExecution.optimizedPlan()).thenReturn(null);
     assertEquals(
-        Optional.empty(), ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, schema));
+        Optional.empty(),
+        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, schemaDatasetFacet));
   }
 
   @Test
@@ -203,12 +208,11 @@ public class ColumnLevelLineageUtilsV2CatalogTest {
     spark.sql(
         "CREATE TABLE local.db.t2 AS SELECT CONCAT(CAST(a AS STRING), CAST(b AS STRING)) as `c`, a+b as `d` FROM local.db.t1");
 
-    StructType outputSchema =
-        new StructType(
-            new StructField[] {
-              new StructField("c", StringType$.MODULE$, false, new Metadata(new HashMap<>())),
-              new StructField("d", StringType$.MODULE$, false, new Metadata(new HashMap<>()))
-            });
+    OpenLineage.SchemaDatasetFacet outputSchema =
+        openLineage.newSchemaDatasetFacet(
+            Arrays.asList(
+                openLineage.newSchemaDatasetFacetFieldsBuilder().name("c").type("string").build(),
+                openLineage.newSchemaDatasetFacetFieldsBuilder().name("d").type("string").build()));
 
     LogicalPlan plan = LastQueryExecutionSparkEventListener.getLastExecutedLogicalPlan().get();
     when(queryExecution.optimizedPlan()).thenReturn(plan);
@@ -231,11 +235,10 @@ public class ColumnLevelLineageUtilsV2CatalogTest {
     spark.sql(
         "CREATE TABLE local.db.t AS (SELECT (local.db.t1.a + local.db.t2.a) as c FROM local.db.t1 JOIN local.db.t2 ON local.db.t1.a = local.db.t2.a)");
 
-    StructType outputSchema =
-        new StructType(
-            new StructField[] {
-              new StructField("c", IntegerType$.MODULE$, false, new Metadata(new HashMap<>())),
-            });
+    OpenLineage.SchemaDatasetFacet outputSchema =
+        openLineage.newSchemaDatasetFacet(
+            Arrays.asList(
+                openLineage.newSchemaDatasetFacetFieldsBuilder().name("c").type("int").build()));
 
     LogicalPlan plan = LastQueryExecutionSparkEventListener.getLastExecutedLogicalPlan().get();
     when(queryExecution.optimizedPlan()).thenReturn(plan);
@@ -252,11 +255,10 @@ public class ColumnLevelLineageUtilsV2CatalogTest {
     spark.sql("CREATE TABLE local.db.t1 USING iceberg AS SELECT * FROM temp");
     spark.sql("CREATE TABLE local.db.t2 AS (SELECT max(a) as a FROM local.db.t1 GROUP BY a)");
 
-    StructType outputSchema =
-        new StructType(
-            new StructField[] {
-              new StructField("a", IntegerType$.MODULE$, false, new Metadata(new HashMap<>())),
-            });
+    OpenLineage.SchemaDatasetFacet outputSchema =
+        openLineage.newSchemaDatasetFacet(
+            Arrays.asList(
+                openLineage.newSchemaDatasetFacetFieldsBuilder().name("a").type("int").build()));
 
     LogicalPlan plan = LastQueryExecutionSparkEventListener.getLastExecutedLogicalPlan().get();
     when(queryExecution.optimizedPlan()).thenReturn(plan);
@@ -274,12 +276,11 @@ public class ColumnLevelLineageUtilsV2CatalogTest {
             "WITH t2(a,b) AS (SELECT * FROM local.db.t1) SELECT a AS c, b AS d FROM t2 WHERE t2.a = 1")
         .collect();
 
-    StructType outputSchema =
-        new StructType(
-            new StructField[] {
-              new StructField("c", IntegerType$.MODULE$, false, new Metadata(new HashMap<>())),
-              new StructField("d", IntegerType$.MODULE$, false, new Metadata(new HashMap<>()))
-            });
+    OpenLineage.SchemaDatasetFacet outputSchema =
+        openLineage.newSchemaDatasetFacet(
+            Arrays.asList(
+                openLineage.newSchemaDatasetFacetFieldsBuilder().name("c").type("int").build(),
+                openLineage.newSchemaDatasetFacetFieldsBuilder().name("d").type("int").build()));
 
     LogicalPlan plan = LastQueryExecutionSparkEventListener.getLastExecutedLogicalPlan().get();
     when(queryExecution.optimizedPlan()).thenReturn(plan);

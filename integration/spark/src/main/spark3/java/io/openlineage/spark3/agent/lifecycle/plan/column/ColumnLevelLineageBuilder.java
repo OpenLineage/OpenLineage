@@ -1,8 +1,10 @@
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacetFields;
+import io.openlineage.client.Utils;
+import io.openlineage.client.shaded.com.fasterxml.jackson.core.JsonProcessingException;
+import io.openlineage.client.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Arrays;
@@ -16,13 +18,10 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
-import org.apache.spark.sql.types.StructField;
-import org.apache.spark.sql.types.StructType;
 
 /**
  * Builder class used to store information required to build {@link
@@ -36,11 +35,11 @@ public class ColumnLevelLineageBuilder {
 
   private Map<ExprId, Set<ExprId>> exprDependencies = new HashMap<>();
   private Map<ExprId, List<Pair<DatasetIdentifier, String>>> inputs = new HashMap<>();
-  private Map<StructField, ExprId> outputs = new HashMap<>();
-  private final StructType schema;
+  private Map<OpenLineage.SchemaDatasetFacetFields, ExprId> outputs = new HashMap<>();
+  private final OpenLineage.SchemaDatasetFacet schema;
   private final OpenLineageContext context;
 
-  ColumnLevelLineageBuilder(StructType schema, OpenLineageContext context) {
+  ColumnLevelLineageBuilder(OpenLineage.SchemaDatasetFacet schema, OpenLineageContext context) {
     this.schema = schema;
     this.context = context;
   }
@@ -53,10 +52,9 @@ public class ColumnLevelLineageBuilder {
    * @param attributeName
    */
   public void addInput(ExprId exprId, DatasetIdentifier datasetIdentifier, String attributeName) {
-    if (!inputs.containsKey(exprId)) {
-      inputs.put(exprId, new LinkedList<>());
-    }
-    inputs.get(exprId).add(Pair.of(datasetIdentifier, attributeName));
+    inputs
+        .computeIfAbsent(exprId, k -> new LinkedList<>())
+        .add(Pair.of(datasetIdentifier, attributeName));
   }
 
   /**
@@ -66,8 +64,8 @@ public class ColumnLevelLineageBuilder {
    * @param attributeName
    */
   public void addOutput(ExprId exprId, String attributeName) {
-    Arrays.stream(schema.fields())
-        .filter(field -> field.name().equals(attributeName))
+    schema.getFields().stream()
+        .filter(field -> field.getName().equals(attributeName))
         .findAny()
         .ifPresent(field -> outputs.put(field, exprId));
   }
@@ -80,43 +78,45 @@ public class ColumnLevelLineageBuilder {
    * @param child
    */
   public void addDependency(ExprId parent, ExprId child) {
-    if (!exprDependencies.containsKey(parent)) {
-      exprDependencies.put(parent, new HashSet<>());
-    }
-    exprDependencies.get(parent).add(child);
+    exprDependencies.computeIfAbsent(parent, k -> new HashSet<>()).add(child);
   }
 
   public boolean hasOutputs() {
     return !outputs.isEmpty();
   }
 
-  @SneakyThrows
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    ObjectMapper mapper = new ObjectMapper();
-    sb.append("Inputs: ").append(mapper.writeValueAsString(inputs)).append(System.lineSeparator());
-    sb.append("Dependencies: ")
-        .append(
-            mapper.writeValueAsString(
-                exprDependencies.entrySet().stream()
-                    .collect(
-                        Collectors.toMap(
-                            Map.Entry::getKey,
-                            e -> e.toString())) // need to call toString method explicitly
-                ))
-        .append(System.lineSeparator());
+    ObjectMapper mapper = Utils.newObjectMapper();
+    try {
+      sb.append("Inputs: ")
+          .append(mapper.writeValueAsString(inputs))
+          .append(System.lineSeparator());
+      sb.append("Dependencies: ")
+          .append(
+              mapper.writeValueAsString(
+                  exprDependencies.entrySet().stream()
+                      .collect(
+                          Collectors.toMap(
+                              Map.Entry::getKey,
+                              e -> e.toString())) // need to call toString method explicitly
+                  ))
+          .append(System.lineSeparator());
 
-    sb.append("Outputs: ")
-        .append(
-            mapper.writeValueAsString(
-                outputs.entrySet().stream()
-                    .collect(
-                        Collectors.toMap(
-                            Map.Entry::getKey,
-                            e -> e.toString())) // need to call toString method explicitly
-                ))
-        .append(System.lineSeparator());
+      sb.append("Outputs: ")
+          .append(
+              mapper.writeValueAsString(
+                  outputs.entrySet().stream()
+                      .collect(
+                          Collectors.toMap(
+                              Map.Entry::getKey,
+                              e -> e.toString())) // need to call toString method explicitly
+                  ))
+          .append(System.lineSeparator());
+    } catch (JsonProcessingException e) {
+      sb.append("Unable to serialize: ").append(e.toString());
+    }
 
     return sb.toString();
   }
@@ -130,14 +130,14 @@ public class ColumnLevelLineageBuilder {
     OpenLineage.ColumnLineageDatasetFacetFieldsBuilder fieldsBuilder =
         context.getOpenLineage().newColumnLineageDatasetFacetFieldsBuilder();
 
-    Arrays.stream(schema.fields())
-        .map(field -> Pair.of(field, getInputsUsedFor(field.name())))
+    schema.getFields().stream()
+        .map(field -> Pair.of(field, getInputsUsedFor(field.getName())))
         .filter(pair -> !pair.getRight().isEmpty())
         .map(pair -> Pair.of(pair.getLeft(), facetInputFields(pair.getRight())))
         .forEach(
             pair ->
                 fieldsBuilder.put(
-                    pair.getLeft().name(),
+                    pair.getLeft().getName(),
                     context
                         .getOpenLineage()
                         .newColumnLineageDatasetFacetFieldsAdditionalBuilder()
@@ -161,9 +161,9 @@ public class ColumnLevelLineageBuilder {
   }
 
   List<Pair<DatasetIdentifier, String>> getInputsUsedFor(String outputName) {
-    Optional<StructField> outputField =
-        Arrays.stream(schema.fields())
-            .filter(field -> field.name().equalsIgnoreCase(outputName))
+    Optional<OpenLineage.SchemaDatasetFacetFields> outputField =
+        schema.getFields().stream()
+            .filter(field -> field.getName().equalsIgnoreCase(outputName))
             .findAny();
 
     if (!outputField.isPresent() || !outputs.containsKey(outputField.get())) {
@@ -183,9 +183,10 @@ public class ColumnLevelLineageBuilder {
     dependentInputs.add(outputExprId);
     boolean continueSearch = true;
 
+    Set<ExprId> newDependentInputs = new HashSet<>(Arrays.asList(outputExprId));
     while (continueSearch) {
-      Set<ExprId> newDependentInputs =
-          dependentInputs.stream()
+      newDependentInputs =
+          newDependentInputs.stream()
               .filter(exprId -> exprDependencies.containsKey(exprId))
               .flatMap(exprId -> exprDependencies.get(exprId).stream())
               .filter(exprId -> !dependentInputs.contains(exprId)) // filter already added
