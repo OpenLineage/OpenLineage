@@ -51,40 +51,40 @@ _extractors = list(
                 'openlineage.airflow.extractors.sql_check_extractors.SqlIntervalCheckExtractor'  # noqa: E501
             ),
             try_import_from_string(
-                'openlineage.airflow.extractors.sql_check_extractors.SnowflakeCheckExtractor'  # noqa: E501
+                'openlineage.airflow.extractors.snowfake_check_extractors.SnowflakeCheckExtractor'  # noqa: E501
             ),
             try_import_from_string(
-                'openlineage.airflow.extractors.sql_check_extractors.SnowflakeColumnCheckExtractor'  # noqa: E501
+                'openlineage.airflow.extractors.snowfake_check_extractors.SnowflakeColumnCheckExtractor'  # noqa: E501
             ),
             try_import_from_string(
-                'openlineage.airflow.extractors.sql_check_extractors.SnowflakeTableCheckExtractor'  # noqa: E501
+                'openlineage.airflow.extractors.snowfake_check_extractors.SnowflakeTableCheckExtractor'  # noqa: E501
             ),
             try_import_from_string(
-                'openlineage.airflow.extractors.sql_check_extractors.SnowflakeValueCheckExtractor'  # noqa: E501
+                'openlineage.airflow.extractors.snowfake_check_extractors.SnowflakeValueCheckExtractor'  # noqa: E501
             ),
             try_import_from_string(
-                'openlineage.airflow.extractors.sql_check_extractors.SnowflakeThresholdCheckExtractor'  # noqa: E501
+                'openlineage.airflow.extractors.snowfake_check_extractors.SnowflakeThresholdCheckExtractor'  # noqa: E501
             ),
             try_import_from_string(
-                'openlineage.airflow.extractors.sql_check_extractors.SnowflakeIntervalCheckExtractor'  # noqa: E501
+                'openlineage.airflow.extractors.snowfake_check_extractors.SnowflakeIntervalCheckExtractor'  # noqa: E501
             ),
             try_import_from_string(
-                'openlineage.airflow.extractors.sql_check_extractors.BigQueryCheckExtractor'  # noqa: E501
+                'openlineage.airflow.extractors.bigquery_check_extractors.BigQueryCheckExtractor'  # noqa: E501
             ),
             try_import_from_string(
-                'openlineage.airflow.extractors.sql_check_extractors.BigQueryColumnCheckExtractor'  # noqa: E501
+                'openlineage.airflow.extractors.bigquery_check_extractors.BigQueryColumnCheckExtractor'  # noqa: E501
             ),
             try_import_from_string(
-                'openlineage.airflow.extractors.sql_check_extractors.BigQueryTableCheckExtractor'  # noqa: E501
+                'openlineage.airflow.extractors.bigquery_check_extractors.BigQueryTableCheckExtractor'  # noqa: E501
             ),
             try_import_from_string(
-                'openlineage.airflow.extractors.sql_check_extractors.BigQueryValueCheckExtractor'  # noqa: E501
+                'openlineage.airflow.extractors.bigquery_check_extractors.BigQueryValueCheckExtractor'  # noqa: E501
             ),
             try_import_from_string(
-                'openlineage.airflow.extractors.sql_check_extractors.BigQueryThresholdCheckExtractor'  # noqa: E501
+                'openlineage.airflow.extractors.bigquery_check_extractors.BigQueryThresholdCheckExtractor'  # noqa: E501
             ),
             try_import_from_string(
-                'openlineage.airflow.extractors.sql_check_extractors.BigQueryIntervalCheckExtractor'  # noqa: E501
+                'openlineage.airflow.extractors.bigquery_check_extractors.BigQueryIntervalCheckExtractor'  # noqa: E501
             ),
 
         ],
