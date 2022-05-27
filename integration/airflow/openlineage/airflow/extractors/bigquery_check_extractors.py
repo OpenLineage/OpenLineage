@@ -4,11 +4,9 @@ from abc import abstractmethod
 from typing import List
 
 from openlineage.airflow.extractors.bigquery_extractor import BigQueryExtractor
-from facet_builders import (
-    build_check_facets,
-    build_value_check_facets,
-    build_interval_check_facets,
-    build_threshold_check_facets
+from utils import (
+    build_column_check_facets,
+    build_table_check_facets,
 )
 
 logger = logging.getLogger(__name__)
@@ -40,7 +38,7 @@ class BigQueryCheckExtractor(BaseBigQueryCheckExtractor):
         return ['BigQueryCheckOperator']
 
     def _build_facets(self) -> dict:
-        return build_check_facets()
+        pass
 
 
 class BigQueryValueCheckExtractor(BaseBigQueryCheckExtractor):
@@ -52,7 +50,7 @@ class BigQueryValueCheckExtractor(BaseBigQueryCheckExtractor):
         return ['BigQueryValueCheckOperator']
 
     def _build_facets(self) -> dict:
-        return build_value_check_facets()
+        pass
 
 
 class BigQueryThresholdCheckExtractor(BaseBigQueryCheckExtractor):
@@ -64,7 +62,7 @@ class BigQueryThresholdCheckExtractor(BaseBigQueryCheckExtractor):
         return ['BigQueryThresholdCheckOperator']
 
     def _build_facets(self) -> dict:
-        return build_threshold_check_facets()
+        pass
 
 
 class BigQueryIntervalCheckExtractor(BaseBigQueryCheckExtractor):
@@ -76,4 +74,30 @@ class BigQueryIntervalCheckExtractor(BaseBigQueryCheckExtractor):
         return ['BigQueryIntervalCheckOperator']
 
     def _build_facets(self) -> dict:
-        return build_interval_check_facets()
+        pass
+
+
+class BigQueryColumnCheckExtractor(BaseBigQueryCheckExtractor):
+    def __init__(self, operator):
+        super().__init__(operator)
+
+    @classmethod
+    def get_operator_classnames(cls) -> List[str]:
+        return ['BigQueryColumnCheckOperator']
+
+    def _build_facets(self) -> dict:
+        column_mapping = self.operator.column_mapping
+        return build_column_check_facets(column_mapping)
+
+
+class BigQueryTableCheckExtractor(BaseBigQueryCheckExtractor):
+    def __init__(self, operator):
+        super().__init__(operator)
+
+    @classmethod
+    def get_operator_classnames(cls) -> List[str]:
+        return ['BigQueryTableCheckOperator']
+
+    def _build_facets(self) -> dict:
+        checks = self.operator.checks
+        return build_table_check_facets(checks)
