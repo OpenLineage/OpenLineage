@@ -7,7 +7,7 @@
   "outputs": [
     {
       "namespace": "file",
-      "name": "/tmp/save_into_data_source/target",
+      "name": "/tmp/save_into_data_source_target/",
       "facets": {
         "dataSource": {
           "name": "file",
@@ -26,7 +26,7 @@
           ]
         },
         "lifecycleStateChange" : {
-          "lifecycleStateChange" : "CREATE"
+          "lifecycleStateChange" : "OVERWRITE"
         }
       }
     }

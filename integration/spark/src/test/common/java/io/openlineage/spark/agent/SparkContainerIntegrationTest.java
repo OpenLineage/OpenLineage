@@ -327,6 +327,7 @@ public class SparkContainerIntegrationTest {
     verifyEvents("pysparkTruncateTableStartEvent.json", "pysparkTruncateTableCompleteEvent.json");
   }
 
+  @EnabledIfSystemProperty(named = "spark.version", matches = SPARK_3) // Spark version >= 3.*
   @Test
   public void testSaveIntoDataSourceCommand() {
     pyspark =

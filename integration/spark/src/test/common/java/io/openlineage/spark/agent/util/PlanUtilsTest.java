@@ -3,13 +3,25 @@
 package io.openlineage.spark.agent.util;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.EventEmitter;
+import java.util.Arrays;
 import java.util.stream.Stream;
+import org.apache.spark.sql.catalyst.expressions.Attribute;
+import org.apache.spark.sql.types.IntegerType$;
+import org.apache.spark.sql.types.StringType$;
+import org.apache.spark.sql.types.StructType;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class PlanUtilsTest {
+
+  OpenLineage openLineage = new OpenLineage(EventEmitter.OPEN_LINEAGE_PRODUCER_URI);
 
   @ParameterizedTest
   @MethodSource("provideJdbcUrls")
@@ -97,5 +109,24 @@ class PlanUtilsTest {
         Arguments.of(
             "jdbc:mysql://address=(host=myhost1)(port=1111)(user=sandy)(password=secret),address=(host=myhost2)(port=2222)(user=finn)(password=secret)/db",
             "mysql://address=(host=myhost1)(port=1111),address=(host=myhost2)(port=2222)/db"));
+  }
+
+  @Test
+  void testSchemaFacetWithListOfAttributes() {
+    Attribute attribute1 = mock(Attribute.class);
+    when(attribute1.name()).thenReturn("a");
+    when(attribute1.dataType()).thenReturn(StringType$.MODULE$);
+
+    Attribute attribute2 = mock(Attribute.class);
+    when(attribute2.name()).thenReturn("b");
+    when(attribute2.dataType()).thenReturn(IntegerType$.MODULE$);
+
+    StructType schema = PlanUtils.toStructType(Arrays.asList(attribute1, attribute2));
+
+    assertEquals(2, schema.size());
+    assertEquals("a", schema.fields()[0].name());
+    assertEquals("string", schema.fields()[0].dataType().typeName());
+    assertEquals("b", schema.fields()[1].name());
+    assertEquals("integer", schema.fields()[1].dataType().typeName());
   }
 }
