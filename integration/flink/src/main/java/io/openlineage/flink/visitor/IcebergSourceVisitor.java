@@ -1,8 +1,8 @@
 package io.openlineage.flink.visitor;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.flink.api.DatasetIdentifier;
 import io.openlineage.flink.api.OpenLineageContext;
-import io.openlineage.flink.utils.DatasetIdentifier;
 import io.openlineage.flink.utils.PathUtils;
 import io.openlineage.flink.visitor.wrapper.IcebergSourceWrapper;
 import java.net.URI;
