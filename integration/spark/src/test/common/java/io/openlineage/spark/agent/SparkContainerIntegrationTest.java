@@ -328,6 +328,20 @@ public class SparkContainerIntegrationTest {
   }
 
   @Test
+  public void testSaveIntoDataSourceCommand() {
+    pyspark =
+        SparkContainerUtils.makePysparkContainerWithDefaultConf(
+            network,
+            openLineageClientMockContainer,
+            "testSaveIntoDataSource",
+            "--packages",
+            getDeltaPackageName(),
+            "/opt/spark_scripts/spark_save_into_data_source.py");
+    pyspark.start();
+    verifyEvents("pysparkSaveIntoDatasourceCompleteEvent.json");
+  }
+
+  @Test
   @EnabledIfSystemProperty(
       named = "spark.version",
       matches = SPARK_ABOVE_EQUAL_2_4_8) // Spark version >= 2.4.8
