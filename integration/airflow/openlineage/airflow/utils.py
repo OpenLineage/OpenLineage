@@ -58,6 +58,18 @@ class JobIdMapping:
         return "openlineage_id_mapping-{}-{}".format(job_name, run_id)
 
 
+class SafeStrDict(dict):
+    def __str__(self):
+        castable = list()
+        for attr, val in self.items():
+            try:
+                str(attr), str(val)
+                castable.append((attr, val))
+            except (TypeError, NotImplementedError):
+                continue
+        return str(dict(castable))
+
+
 def url_to_https(url) -> str:
     # Ensure URL exists
     if not url:
