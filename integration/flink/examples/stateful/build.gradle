@@ -33,6 +33,7 @@ repositories {
 
 jar.enabled = false
 shadowJar {
+    zip64 true
     manifest {
         attributes 'Main-Class': 'io.openlineage.flink.FlinkStatefulApplication'
     }
@@ -50,21 +51,37 @@ dependencies {
     testImplementation 'org.spockframework:spock-core:2.0-groovy-3.0'
     testImplementation 'org.awaitility:awaitility:4.1.1'
 
-    def flinkVersion = '1.14.2'
-    implementation "org.apache.flink:flink-java:$flinkVersion"
-    implementation "org.apache.flink:flink-streaming-java_2.12:$flinkVersion"
+    def flinkVersion = '1.14.4'
+    def hadoopVersion = '3.3.1'
+    compileOnly "org.apache.flink:flink-java:$flinkVersion"
+    compileOnly "org.apache.flink:flink-streaming-java_2.12:$flinkVersion"
     implementation "org.apache.flink:flink-runtime-web_2.12:$flinkVersion"
+    compileOnly "org.apache.flink:flink-core:$flinkVersion"
+    implementation "org.apache.flink:flink-runtime:$flinkVersion"
+    compileOnly "org.apache.flink:flink-connector-kafka_2.12:$flinkVersion"
+    compileOnly "org.apache.flink:flink-avro-confluent-registry:$flinkVersion"
+    compileOnly "org.apache.flink:flink-avro:$flinkVersion"
+    compileOnly "org.apache.flink:flink-table:$flinkVersion"
+    compileOnly "org.apache.flink:flink-table-api-java:$flinkVersion"
+    compileOnly "org.apache.flink:flink-table-api-java-bridge_2.12:$flinkVersion"
+    compileOnly "org.apache.flink:flink-table-common:$flinkVersion"
+    implementation "org.apache.flink:flink-table-runtime_2.12:$flinkVersion"
+    implementation "org.apache.flink:flink-table-planner_2.12:$flinkVersion"
 
     implementation "com.typesafe:config:1.4.1"
     implementation "org.apache.avro:avro:1.11.0"
     implementation 'io.confluent:kafka-schema-registry-client:7.0.1'
     implementation 'io.confluent:kafka-avro-serializer:7.0.1'
     implementation 'com.github.davidmc24.gradle.plugin:gradle-avro-plugin:1.3.0'
+    implementation "org.apache.hadoop:hadoop-hdfs:$hadoopVersion"
+    implementation "org.apache.hadoop:hadoop-common:$hadoopVersion"
+    implementation("org.apache.hadoop:hadoop-minicluster:$hadoopVersion") {
+        exclude group: 'org.apache.avro', module: 'avro'
+    }
+    implementation "org.apache.avro:avro"
 
-    implementation "org.apache.flink:flink-core:$flinkVersion"
-    implementation "org.apache.flink:flink-connector-kafka_2.12:$flinkVersion"
-    implementation "org.apache.flink:flink-avro-confluent-registry:$flinkVersion"
-    implementation "org.apache.flink:flink-avro:$flinkVersion"
+    compileOnly 'org.apache.iceberg:iceberg-flink-1.14:0.13.1'
+    implementation 'org.apache.iceberg:iceberg-flink-runtime-1.14:0.13.1'
 }
 
 assemble {

@@ -26,6 +26,9 @@ repositories {
     mavenLocal()
     mavenCentral()
     maven {
+        url = "https://packages.confluent.io/maven/"
+    }
+    maven {
         url = 'https://datakin.jfrog.io/artifactory/maven-public-libs-snapshot'
     }
 }
@@ -49,7 +52,8 @@ java {
 archivesBaseName='openlineage-flink'
 
 ext {
-    flinkVersion = '1.14.2'
+    flinkVersionShort = '1.14'
+    flinkVersion = '1.14.4'
     assertjVersion = '3.20.2'
     junit5Version = '5.7.2'
     lombokVersion = '1.18.20'
@@ -69,9 +73,13 @@ dependencies {
     implementation "org.apache.flink:flink-runtime-web_2.12:$flinkVersion"
     implementation "org.apache.flink:flink-connector-kafka_2.12:$flinkVersion"
     implementation "org.apache.flink:flink-avro:$flinkVersion"
+    implementation "org.apache.flink:flink-avro-confluent-registry:$flinkVersion"
 
     implementation 'org.javassist:javassist:3.27.0-GA'
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.0.3'
+
+    implementation "org.apache.iceberg:iceberg-flink-$flinkVersionShort:0.13.1"
+    implementation "org.apache.iceberg:iceberg-flink-runtime-$flinkVersionShort:0.13.1"
 
     testImplementation platform('org.junit:junit-bom:5.7.1')
     testImplementation 'org.hamcrest:hamcrest-library:2.2'
@@ -130,8 +138,23 @@ test {
     }
 }
 
+def integrationTestConfiguration = {
+    forkEvery 1
+    maxParallelForks 1
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = true
+    }
+    systemProperties = [
+            'junit.platform.output.capture.stdout': 'true',
+            'junit.platform.output.capture.stderr': 'true',
+            '.flink.jar': "${archivesBaseName}-${project.version}.jar",
+    ]
+    classpath =  project.sourceSets.test.runtimeClasspath
+}
+
 task integrationTest(type: Test) {
-    configure commonTestConfiguration
+    configure integrationTestConfiguration
     useJUnitPlatform {
         includeTags "integration-test"
     }
