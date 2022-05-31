@@ -1,0 +1,17 @@
+{
+  "inputs": [{
+    "namespace": "file",
+    "name": "/tmp/warehouse/db/source",
+    "facets": {
+      "schema": {
+        "fields": [{
+          "name": "x",
+          "type": "INTEGER"
+        }, {
+          "name": "y",
+          "type": "INTEGER"
+        }]
+      }
+    }
+  }]
+}
