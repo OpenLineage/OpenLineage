@@ -68,7 +68,7 @@ dependencies {
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
     implementation("io.openlineage:openlineage-java:${project.version}"){
-        exclude group: 'com.fasterxml.jackson'
+        exclude group: 'com.fasterxml.jackson.core'
     }
 
     implementation 'org.javassist:javassist:3.27.0-GA'
