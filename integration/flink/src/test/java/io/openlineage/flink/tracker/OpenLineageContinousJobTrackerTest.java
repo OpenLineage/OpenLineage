@@ -89,7 +89,7 @@ public class OpenLineageContinousJobTrackerTest {
         .onJobCheckpoint(any());
 
     tracker.startTracking(context);
-    methodDone.await(3, TimeUnit.SECONDS);
+    methodDone.await(10, TimeUnit.SECONDS);
 
     verify(context, times(1)).onJobCheckpoint(eq(expectedCheckpointFacet));
     tracker.stopTracking();
