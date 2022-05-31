@@ -13,7 +13,8 @@ from openlineage.airflow.utils import (
     get_connection_uri,
     get_normalized_postgres_connection_uri,
     get_connection,
-    DagUtils
+    DagUtils,
+    SafeStrDict,
 )
 
 AIRFLOW_VERSION = '1.10.12'
@@ -110,3 +111,12 @@ def test_parse_version():
     assert parse_version("2.2.4") < parse_version("2.3.0.dev0")
     assert parse_version("1.10.15") < parse_version("2.3.0.dev0")
     assert parse_version("2.2.4.dev0") < parse_version("2.3.0.dev0")
+
+
+def test_safe_dict():
+    assert str(SafeStrDict({'a': 1})) == str({'a': 1})
+
+    class NotImplemented():
+        def __str__(self):
+            raise NotImplementedError
+    assert str(SafeStrDict({'a': NotImplemented()})) == str({})
