@@ -1,4 +1,3 @@
-import logging
 from abc import abstractmethod
 from typing import List
 
@@ -11,20 +10,16 @@ from openlineage.airflow.utils import (
 )
 from sqlalchemy import MetaData, Table
 
-logger = logging.getLogger(__name__)
-
 
 class BaseSnowflakeCheckExtractor(SnowflakeExtractor):
     def __init__(self, operator):
         super().__init__(operator)
 
     def extract_on_complete(self, task_instance):
-        metadata = self.create_metadata()
-        logger.info(f"Recreated metadata: {metadata}")
-        return metadata
+        return self.build_metadata()
 
     def extract(self):
-        pass
+        return
 
     def _get_input_tables(self, source, database, sql_meta):
         inputs = []
@@ -37,8 +32,6 @@ class BaseSnowflakeCheckExtractor(SnowflakeExtractor):
                 database_name=database
             )
             ds.input_facets = self._build_facets()
-            logger.info(f"Build input facets: {ds.input_facets}")
-            logger.info(f"Table name: {table_name}")
 
             table = Table(
                 table_name,
@@ -54,7 +47,6 @@ class BaseSnowflakeCheckExtractor(SnowflakeExtractor):
             ]
 
             inputs.append(ds)
-        logger.info(f"Inputs: {inputs}")
         return inputs
 
     def _get_output_tables(self, source, database, sql_meta):

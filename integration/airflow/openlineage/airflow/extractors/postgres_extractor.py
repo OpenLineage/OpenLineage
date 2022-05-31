@@ -22,6 +22,78 @@ class PostgresExtractor(SqlExtractor):
     def get_operator_classnames(cls) -> List[str]:
         return ['PostgresOperator']
 
+<<<<<<< HEAD
+=======
+    def extract(self) -> TaskMetadata:
+        task_name = f"{self.operator.dag_id}.{self.operator.task_id}"
+        job_facets = {
+            'sql': SqlJobFacet(self.operator.sql)
+        }
+
+        return self.build_metadata()
+
+    def build_metadata(self) -> TaskMetadata:
+        # (1) Parse sql statement to obtain input / output tables.
+        logger.debug(f"Sending SQL to parser: {self.operator.sql}")
+        sql_meta: Optional[SqlMeta] = parse(self.operator.sql, self.default_schema)
+        logger.debug(f"Got meta {sql_meta}")
+
+        if not sql_meta:
+            return TaskMetadata(
+                name=task_name,
+                inputs=[],
+                outputs=[],
+                run_facets={},
+                job_facets=job_facets
+            )
+
+        # (2) Get Airflow connection
+        self.conn = get_connection(self._conn_id())
+
+        # (3) Construct source object
+        source = Source(
+            scheme="postgres",
+            authority=self._get_authority(),
+            connection_url=self._get_connection_uri()
+        )
+
+        database = self.operator.database
+        if not database:
+            database = self._get_database()
+
+        # (4) Map input / output tables to dataset objects with source set
+        # as the current connection. We need to also fetch the schema for the
+        # input tables to format the dataset name as:
+        # {schema_name}.{table_name}
+        inputs, outputs = get_table_schemas(
+            self._get_hook(),
+            source,
+            database,
+            self._information_schema_query(sql_meta.in_tables) if sql_meta.in_tables else None,
+            self._information_schema_query(sql_meta.out_tables) if sql_meta.out_tables else None
+        )
+
+        return TaskMetadata(
+            name=task_name,
+            inputs=[ds.to_openlineage_dataset() for ds in inputs],
+            outputs=[ds.to_openlineage_dataset() for ds in outputs],
+            run_facets={},
+            job_facets=job_facets
+        )
+
+    def _get_input_tables(self, source, database, sql_meta):
+        return [
+            Dataset.from_table(
+                source=source,
+                table_name=in_table_schema.table_name.name,
+                schema_name=in_table_schema.schema_name,
+                database_name=database
+            ) for in_table_schema in self._get_table_schemas(
+                sql_meta.in_tables
+            )
+        ]
+
+>>>>>>> 2131dddb (Refactor PostgresExtractor to build metadata outside of extract or extract_on_complete, so check extractors inheriting can run that code only on complete.)
     def _get_connection_uri(self):
         return get_normalized_postgres_connection_uri(self.conn)
 
