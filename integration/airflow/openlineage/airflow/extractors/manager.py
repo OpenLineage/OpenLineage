@@ -33,16 +33,14 @@ class ExtractorManager:
             # Extracting advanced metadata is only possible when extractor for particular operator
             # is defined. Without it, we can't extract any input or output data.
             try:
-                self.log.info(
+                self.log.debug(
                     f'Using extractor {extractor.__class__.__name__} {task_info}')
                 if complete:
-                    self.log.info("Task is complete, using extract_on_complete")
                     task_metadata = extractor.extract_on_complete(task_instance)
                 else:
-                    self.log.info("Task is not complete, using extract")
                     task_metadata = extractor.extract()
 
-                self.log.info(
+                self.log.debug(
                     f"Found task metadata for operation {task.task_id}: {task_metadata}"
                 )
                 if task_metadata:
