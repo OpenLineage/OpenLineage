@@ -44,7 +44,9 @@ extras_require = {
         "pandas",
         "jinja2",
         "python-dateutil",
-        "mypy>=0.9.6"
+        "mypy>=0.9.6",
+        "types-python-dateutil",
+        "types-PyYAML"
     ],
 }
 extras_require["dev"] = set(sum(extras_require.values(), []))

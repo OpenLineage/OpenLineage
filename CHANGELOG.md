@@ -2,6 +2,7 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.8.2...HEAD)
 ### Added
+* CI: added static code anlalysis tool mypy to python source codes ([#802](https://github.com/openlineage/openlineage/issues/802)) [@howardyoo](https://github.com/howardyoo)
 * Column level lineage introduced for Spark integration ([#698](https://github.com/OpenLineage/OpenLineage/pull/698), [#645](https://github.com/OpenLineage/OpenLineage/pull/645)) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
 
 ## [0.8.2](https://github.com/OpenLineage/OpenLineage/compare/0.8.1...0.8.2)
