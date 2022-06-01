@@ -93,7 +93,8 @@ class HttpTransport(Transport):
             raise ValueError(f"Need valid url for OpenLineageClient, passed {url}. Exception: {e}")
         self.url = url
         self.session = config.session
-        self.session.headers['Content-Type'] = 'application/json'
+        if self.session:
+            self.session.headers['Content-Type'] = 'application/json'
         self.timeout = config.timeout
         self.verify = config.verify
 
@@ -102,22 +103,25 @@ class HttpTransport(Transport):
             self.set_adapter(config.adapter)
 
     def set_adapter(self, adapter: HTTPAdapter):
-        self.session.mount(self.url, adapter)
+        if self.session:
+            self.session.mount(self.url, adapter)
 
     def emit(self, event: RunEvent):
         event = Serde.to_json(event)
         if log.isEnabledFor(logging.DEBUG):
             log.debug(f"Sending openlineage event {event}")
-        resp = self.session.post(
-            urljoin(self.url, 'api/v1/lineage'),
-            event,
-            timeout=self.timeout,
-            verify=self.verify
-        )
+        if self.session:
+            resp = self.session.post(
+                urljoin(self.url, 'api/v1/lineage'),
+                event,
+                timeout=self.timeout,
+                verify=self.verify
+            )
         resp.raise_for_status()
         return resp
 
     def _add_auth(self, token_provider: TokenProvider):
-        self.session.headers.update({
-            "Authorization": token_provider.get_bearer()
-        })
+        if self.session:
+            self.session.headers.update({
+                "Authorization": token_provider.get_bearer()    # type: ignore
+            })

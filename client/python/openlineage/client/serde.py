@@ -1,15 +1,19 @@
 # SPDX-License-Identifier: Apache-2.0.
 
 import json
+import sys
+import logging
 from enum import Enum
 from typing import List, Dict
 
 import attr
 
+log = logging.getLogger(__name__)
+
 try:
     import numpy
 except ImportError:
-    numpy = None
+    log.warning("ImportError occurred when trying to import numpy module.")
 
 
 class Serde:
@@ -28,7 +32,7 @@ class Serde:
             ]))
 
         # Pandas can use numpy.int64 object
-        if numpy and isinstance(obj, numpy.int64):
+        if 'numpy' in sys.modules and isinstance(obj, numpy.int64):
             return int(obj)
         return obj
 
