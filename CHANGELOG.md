@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.9.0...HEAD)
+* CI: added static code anlalysis tool mypy to python source codes ([#802](https://github.com/openlineage/openlineage/issues/802)) [@howardyoo](https://github.com/howardyoo)
 
 ## [0.9.0](https://github.com/OpenLineage/OpenLineage/compare/0.8.2...0.9.0)
 ### Added
