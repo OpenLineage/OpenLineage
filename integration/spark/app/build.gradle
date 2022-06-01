@@ -1,0 +1,134 @@
+import org.apache.tools.ant.filters.ReplaceTokens
+import groovy.io.FileType
+
+import java.nio.file.Files
+
+
+plugins {
+    id 'java'
+    id 'java-library'
+    id "com.github.johnrengelman.shadow" version "7.1.2"
+
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven {
+        url = 'https://datakin.jfrog.io/artifactory/maven-public-libs-snapshot'
+    }
+}
+
+configurations {
+    lombok
+}
+
+archivesBaseName='openlineage-spark-app'
+
+
+ext {
+    assertjVersion = '3.20.2'
+    bigqueryVersion = '0.21.1'
+    junit5Version = '5.7.2'
+    sparkVersion = '2.4.8'
+    jacksonVersion = '2.6.7'
+    jacksonModuleScalaVersion = '2.6.7.1'
+    jacksonDatatypeVersion = '2.6.7'
+    jacksonDatabindVersion = '2.6.7.3'
+    postgresqlVersion = '42.2.19'
+    mockitoVersion = '3.11.2'
+    testcontainersVersion = '1.15.3'
+}
+
+dependencies {
+    compileOnly "org.projectlombok:lombok:${lombokVersion}"
+    annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+    implementation("io.openlineage:openlineage-java:${project.version}"){
+        exclude group: 'com.fasterxml.jackson'
+    }
+    implementation(project(path: ":shared"))
+    implementation(project(path: ":spark2"))
+    implementation(project(path: ":spark3"))
+
+    implementation 'org.javassist:javassist:3.27.0-GA'
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.0.3'
+    compileOnly "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
+    compileOnly "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
+    compileOnly "com.fasterxml.jackson.module:jackson-module-scala_2.11:${jacksonModuleScalaVersion}"
+    compileOnly "org.apache.spark:spark-core_2.11:${sparkVersion}"
+    compileOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
+    compileOnly ('com.google.cloud.spark:spark-bigquery_2.11:0.21.1') {
+        exclude group: 'com.fasterxml.jackson.core'
+        exclude group: 'com.fasterxml.jackson.module'
+    }
+    compileOnly "org.apache.spark:spark-hive_2.11:${sparkVersion}"
+    compileOnly "org.apache.spark:spark-sql-kafka-0-10_2.11:${sparkVersion}"
+    compileOnly "com.databricks:dbutils-api_2.11:0.0.5"
+
+    testImplementation platform('org.junit:junit-bom:5.7.1')
+    testImplementation "org.postgresql:postgresql:${postgresqlVersion}"
+    testImplementation 'org.hamcrest:hamcrest-library:2.2'
+    testImplementation('org.xerial:sqlite-jdbc:3.34.0')
+    testImplementation "org.testcontainers:junit-jupiter:${testcontainersVersion}"
+    testImplementation "org.testcontainers:postgresql:${testcontainersVersion}"
+    testImplementation "org.testcontainers:mockserver:${testcontainersVersion}"
+    testImplementation "org.testcontainers:kafka:${testcontainersVersion}"
+    testImplementation "org.apache.kafka:kafka-clients:2.6.0"
+    testImplementation('org.mock-server:mockserver-client-java:5.12.0') {
+        exclude group: 'com.google.guava', module: 'guava'
+        exclude group: 'com.fasterxml.jackson.core'
+        exclude group: 'com.fasterxml.jackson.datatype'
+        exclude group: 'com.fasterxml.jackson.dataformat'
+    }
+    testImplementation group: 'org.awaitility', name: 'awaitility', version: '4.1.1'
+    testImplementation "org.assertj:assertj-core:${assertjVersion}"
+    testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
+    testImplementation "org.junit.jupiter:junit-jupiter-params:${junit5Version}"
+    testImplementation "org.mockito:mockito-core:${mockitoVersion}"
+    testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
+    testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
+    testImplementation "org.projectlombok:lombok:${lombokVersion}"
+    testImplementation "org.apache.spark:spark-core_2.11:${sparkVersion}"
+    testImplementation "org.apache.spark:spark-sql_2.11:${sparkVersion}"
+    testImplementation "org.apache.spark:spark-hive_2.11:${sparkVersion}"
+    testImplementation "com.google.cloud.spark:spark-bigquery-with-dependencies_2.11:${bigqueryVersion}"
+    testImplementation project(path: ":spark3")
+    testImplementation project(path: ":spark2")
+    testImplementation project(path: ":shared")
+
+    lombok  "org.projectlombok:lombok:${lombokVersion}"
+    testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+}
+
+test {
+    useJUnitPlatform {
+        excludeTags 'integration-test'
+    }
+}
+
+task integrationTest(type: Test) {
+    useJUnitPlatform {
+        includeTags "integration-test"
+    }
+    dependsOn shadowJar
+}
+
+assemble {
+    dependsOn shadowJar
+}
+shadowJar {
+
+    minimize{
+        exclude(project(":shared"))
+        exclude(project(":spark2"))
+        exclude(project(":spark3"))
+    }
+
+    classifier = ''
+    dependencies {
+        exclude(dependency('org.slf4j::'))
+    }
+
+    zip64 true
+}
+

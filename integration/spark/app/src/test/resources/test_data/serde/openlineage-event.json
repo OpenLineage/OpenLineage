@@ -1,0 +1,73 @@
+{
+  "eventType": "START",
+  "eventTime": "2021-01-01T00:00:01Z",
+  "run": {
+    "runId": "5f24c93c-2ce9-49dc-82e7-95ab4915242f",
+    "facets": {
+      "parent": {
+        "job": {
+          "namespace": "namespace",
+          "name": "jobName"
+        }
+      }
+    }
+  },
+  "job": {
+    "namespace": "namespace",
+    "name": "jobName",
+    "facets": {
+      "documentation": {
+        "description": "test documentation"
+      },
+      "sourceCodeLocation": {
+        "type": "git",
+        "url": "https://github.com/apache/spark",
+        "repoUrl": "https://github.com/apache/spark",
+        "path": "/path/to/file",
+        "version": "v1",
+        "tag": "v1.0.0",
+        "branch": "branch"
+      },
+      "sql": {
+        "query": "SELECT * FROM test"
+      }
+    }
+  },
+  "inputs": [
+    {
+      "namespace": "ins",
+      "name": "input",
+      "inputFacets": {
+        "dataQualityMetrics": {
+          "rowCount": 10,
+          "bytes": 20,
+          "columnMetrics": {
+            "mycol": {
+              "nullCount": 1,
+              "distinctCount": 10,
+              "sum": 3000.0,
+              "count": 10.0,
+              "min": 5.0,
+              "max": 30.0,
+              "quantiles": {
+                "25": 52.0
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "outputs": [
+    {
+      "namespace": "ons",
+      "name": "output",
+      "outputFacets": {
+        "outputStatistics": {
+          "rowCount": 10,
+          "size": 20
+        }
+      }
+    }
+  ]
+}

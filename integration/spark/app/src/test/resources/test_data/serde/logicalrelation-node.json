@@ -1,0 +1,50 @@
+{
+  "@class": "org.apache.spark.sql.execution.datasources.LogicalRelation",
+  "relation": {
+    "@class": "org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation",
+    "parts": [],
+    "jdbcOptions": {
+      "asProperties": {
+        "driver": "org.postgresql.Driver",
+        "dbtable": "my_spark_table",
+        "url": "jdbc:postgresql://postgreshost:5432/sparkdata"
+      },
+      "asConnectionProperties": {},
+      "url": "jdbc:postgresql://postgreshost:5432/sparkdata",
+      "tableOrQuery": "my_spark_table",
+      "driverClass": "org.postgresql.Driver",
+      "numPartitions": null,
+      "queryTimeout": 0,
+      "partitionColumn": null,
+      "lowerBound": null,
+      "upperBound": null,
+      "fetchSize": 0,
+      "isTruncate": false,
+      "isCascadeTruncate": null,
+      "createTableOptions": "",
+      "createTableColumnTypes": null,
+      "customSchema": null,
+      "batchSize": 1000,
+      "isolationLevel": 1,
+      "sessionInitStatement": null,
+      "pushDownPredicate": true
+    },
+    "needConversion": false
+  },
+  "output": [{
+    "name": "name",
+    "nullable": false,
+    "qualifier": [],
+    "deterministic": true,
+    "resolved": true
+  }],
+  "catalogTable": null,
+  "isStreaming": false,
+  "allAttributes": {
+    "attrs": []
+  },
+  "resolved": true,
+  "statsCache": null,
+  "traceEnabled": false,
+  "canonicalizedPlan": false
+}

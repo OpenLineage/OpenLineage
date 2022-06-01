@@ -1,0 +1,137 @@
+{
+  "@class": "org.apache.spark.sql.execution.datasources.InsertIntoDataSourceCommand",
+  "logicalRelation": {
+    "@class": "org.apache.spark.sql.execution.datasources.LogicalRelation",
+    "relation": {
+      "@class": "com.google.cloud.spark.bigquery.BigQueryRelation",
+      "options": {
+        "tableId": {
+          "dataset": "test-dataset",
+          "table": "QUERY",
+          "iamresourceName": "projects/null/datasets/test-dataset/tables/QUERY"
+        },
+        "query": {
+          "present": true
+        },
+        "parentProjectId": "test_serialization",
+        "credentialsKey": {
+          "present": false
+        },
+        "credentialsFile": 7,
+        "accessToken": 7,
+        "filter": 7,
+        "defaultParallelism": 10,
+        "temporaryGcsBucket": 7,
+        "persistentGcsBucket": 7,
+        "persistentGcsPath": 7,
+        "intermediateFormat": "PARQUET",
+        "readDataFormat": "ARROW",
+        "combinePushedDownFilters": true,
+        "viewsEnabled": false,
+        "materializationProject": 7,
+        "materializationDataset": 7,
+        "partitionField": 7,
+        "partitionRequireFilter": 7,
+        "partitionType": 7,
+        "clusteredFields": 7,
+        "createDisposition": 7,
+        "optimizedEmptyProjection": true,
+        "useAvroLogicalTypes": false,
+        "loadSchemaUpdateOptions": [],
+        "materializationExpirationTimeInMinutes": 1440,
+        "maxReadRowsRetries": 3,
+        "pushAllFilters": true,
+        "tableIdWithoutThePartition": 5,
+        "partitionTypeOrDefault": "DAY",
+        "bigQueryClientConnectTimeout": 60000,
+        "bigQueryClientReadTimeout": 60000,
+        "bigQueryClientRetrySettings": {
+          "totalTimeout": {
+            "seconds": 600,
+            "negative": false,
+            "zero": false,
+            "units": ["SECONDS", "NANOS"],
+            "nano": 0
+          },
+          "initialRetryDelay": {
+            "seconds": 1,
+            "negative": false,
+            "zero": false,
+            "units": ["SECONDS", "NANOS"],
+            "nano": 250000000
+          },
+          "retryDelayMultiplier": 1.6,
+          "maxRetryDelay": {
+            "seconds": 5,
+            "negative": false,
+            "zero": false,
+            "units": ["SECONDS", "NANOS"],
+            "nano": 0
+          },
+          "maxAttempts": 0,
+          "jittered": true,
+          "initialRpcTimeout": {
+            "seconds": 60,
+            "negative": false,
+            "zero": false,
+            "units": ["SECONDS", "NANOS"],
+            "nano": 0
+          },
+          "rpcTimeoutMultiplier": 1.6,
+          "maxRpcTimeout": {
+            "seconds": 300,
+            "negative": false,
+            "zero": false,
+            "units": ["SECONDS", "NANOS"],
+            "nano": 0
+          }
+        }
+      },
+      "table": {
+        "tableId": {
+          "dataset": "dataset",
+          "table": "test",
+          "iamresourceName": "projects/null/datasets/dataset/tables/test"
+        },
+        "definition": {
+          "schema": {
+            "fields": [{
+              "name": "name",
+              "type": {
+                "standardType": "STRING"
+              }
+            }]
+          }
+        }
+      },
+      "traceEnabled": false
+    },
+    "output": [{
+      "name": "name",
+      "nullable": false,
+      "metadata": {
+        "map": {}
+      },
+      "qualifier": [],
+      "deterministic": true,
+      "resolved": true
+    }],
+    "isStreaming": false,
+    "allAttributes": {
+      "attrs": []
+    },
+    "resolved": true,
+    "traceEnabled": false,
+    "canonicalizedPlan": false
+  },
+  "query": 2,
+  "overwrite": false,
+  "allAttributes": {
+    "attrs": []
+  },
+  "resolved": true,
+  "metrics": {},
+  "streaming": false,
+  "traceEnabled": false,
+  "canonicalizedPlan": false
+}

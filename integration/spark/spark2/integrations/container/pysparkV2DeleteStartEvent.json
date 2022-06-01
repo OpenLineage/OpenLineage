@@ -1,9 +1,0 @@
-{
-  "eventType" : "START",
-  "job" : {
-    "namespace" : "testV2Commands",
-    "name" : "open_lineage_integration_v2_commands.replace_data"
-  },
-  "inputs" : [ ],
-  "outputs" : [ ]
-}

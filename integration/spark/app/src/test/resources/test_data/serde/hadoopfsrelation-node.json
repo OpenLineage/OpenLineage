@@ -1,0 +1,62 @@
+{
+  "@class": "org.apache.spark.sql.execution.datasources.LogicalRelation",
+  "relation": {
+    "@class": "org.apache.spark.sql.execution.datasources.HadoopFsRelation",
+    "location": {
+      "table": {
+        "identifier": {
+          "table": "test",
+          "database": "db",
+          "identifier": "test"
+        },
+        "tableType": {
+          "name": "MANAGED"
+        },
+        "storage": {
+          "locationUri": "/some-location",
+          "inputFormat": null,
+          "outputFormat": null,
+          "serde": null,
+          "compressed": false,
+          "properties": {}
+        },
+        "provider": null,
+        "partitionColumnNames": ["name"],
+        "bucketSpec": null,
+        "owner": "",
+        "createVersion": "v1",
+        "properties": {},
+        "stats": null,
+        "viewText": null,
+        "comment": null,
+        "unsupportedFeatures": [],
+        "tracksPartitionsInCatalog": false,
+        "schemaPreservesCase": false,
+        "ignoredProperties": {}
+      },
+      "sizeInBytes": 100,
+      "hadoopConf": {
+        "finalParameters": ["mapreduce.job.end-notification.max.retry.interval", "mapreduce.job.end-notification.max.attempts"]
+      }
+    },
+    "bucketSpec": null,
+    "fileFormat": {},
+    "options": {}
+  },
+  "output": [{
+    "name": "name",
+    "nullable": false,
+    "qualifier": [],
+    "deterministic": true,
+    "resolved": true
+  }],
+  "catalogTable": null,
+  "isStreaming": false,
+  "allAttributes": {
+    "attrs": []
+  },
+  "resolved": true,
+  "statsCache": null,
+  "traceEnabled": false,
+  "canonicalizedPlan": false
+}
