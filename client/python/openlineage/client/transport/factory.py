@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0.
 import inspect
-import os, sys
+import os
+import sys
 import logging
 from typing import Type, Union, Optional
 
