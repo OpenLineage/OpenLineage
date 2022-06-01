@@ -16,6 +16,7 @@ plugins {
     id "com.adarshr.test-logger" version "2.1.1"
     id 'com.diffplug.spotless' version '5.12.1'
     id "com.github.johnrengelman.shadow" version "7.1.2"
+    id "com.github.spotbugs" version "5.0.7"
 }
 
 repositories {
@@ -394,4 +395,22 @@ task createVersionProperties(dependsOn: processResources) {
 
 classes {
     dependsOn createVersionProperties
+}
+
+spotbugs {
+    ignoreFailures = false
+    showStackTraces = true
+    showProgress = true
+    effort = 'default'
+    reportLevel = 'default'
+    visitors = [ 'FindSqlInjection', 'SwitchFallthrough' ]
+    omitVisitors = [ 'FindNonShortCircuit' ]
+    reportsDir = file("$buildDir/spotbugs")
+    includeFilter = file("include.xml")
+    excludeFilter = file("exclude.xml")
+    baselineFile = file("baseline.xml")
+    onlyAnalyze = [ 'com.foobar.MyClass', 'com.foobar.mypkg.*' ]
+    maxHeapSize = '1g'
+    extraArgs = [ '-nested:false' ]
+    jvmArgs = [ '-Duser.language=ja' ]
 }
