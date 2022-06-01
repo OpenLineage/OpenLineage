@@ -16,7 +16,17 @@ requirements = [
 ]
 
 extras_require = {
-    "tests": ["pytest", "pytest-cov", "mock", "flake8", "requests", "pyyaml", "mypy>=0.9.6"],
+    "tests": [
+        "pytest", 
+        "pytest-cov", 
+        "mock", 
+        "flake8", 
+        "requests", 
+        "pyyaml", 
+        "mypy>=0.9.6",
+        "types-requests",
+        "types-PyYAML"
+    ],
     "kafka": ["confluent-kafka"],
 }
 extras_require["dev"] = set(sum(extras_require.values(), []))
