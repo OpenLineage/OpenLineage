@@ -24,6 +24,7 @@ extras_require = {
         "pytest-cov",
         "mock",
         "flake8",
+        "mypy>=0.9.6",
         "python-dateutil"
     ],
 }
