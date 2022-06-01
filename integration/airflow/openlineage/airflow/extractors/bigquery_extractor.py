@@ -1,17 +1,14 @@
 # SPDX-License-Identifier: Apache-2.0.
 
-import json
 import logging
 import traceback
 from typing import Optional, List
 from airflow.version import version as AIRFLOW_VERSION
 
-import attr
 from pkg_resources import parse_version
 
 from openlineage.client.facet import SqlJobFacet
 from openlineage.common.provider.bigquery import BigQueryDatasetsProvider, BigQueryErrorRunFacet
-from openlineage.common.sql import parse
 
 from openlineage.airflow.extractors.base import (
     BaseExtractor,
@@ -23,15 +20,6 @@ from google.cloud.bigquery import Client
 _BIGQUERY_CONN_URL = 'bigquery'
 
 log = logging.getLogger(__name__)
-
-
-@attr.s
-class SqlContext:
-    """Internal SQL context for holding query parser results"""
-    sql: str = attr.ib()
-    inputs: Optional[str] = attr.ib(default=None)
-    outputs: Optional[str] = attr.ib(default=None)
-    parser_error: Optional[str] = attr.ib(default=None)
 
 
 class BigQueryExtractor(BaseExtractor):
@@ -47,7 +35,6 @@ class BigQueryExtractor(BaseExtractor):
 
     def extract_on_complete(self, task_instance) -> Optional[TaskMetadata]:
         log.debug(f"extract_on_complete({task_instance})")
-        context = self.parse_sql_context()
 
         try:
             bigquery_job_id = self._get_xcom_bigquery_job_id(task_instance)
@@ -64,7 +51,6 @@ class BigQueryExtractor(BaseExtractor):
                 run_facets={
                     "bigQuery_error": BigQueryErrorRunFacet(
                         clientError=f"{e}: {traceback.format_exc()}",
-                        parserError=context.parser_error
                     )
                 }
             )
@@ -76,7 +62,7 @@ class BigQueryExtractor(BaseExtractor):
         output = stats.output
         run_facets = stats.run_facets
         job_facets = {
-            "sql": SqlJobFacet(context.sql)
+            "sql": SqlJobFacet(self.operator.sql)
         }
 
         return TaskMetadata(
@@ -119,24 +105,3 @@ class BigQueryExtractor(BaseExtractor):
 
         log.debug(f"bigquery_job_id: {bigquery_job_id}")
         return bigquery_job_id
-
-    def parse_sql_context(self) -> SqlContext:
-        try:
-            sql_meta = parse(self.operator.sql, dialect='bigquery')
-            log.debug(f"bigquery sql parsed and obtained meta: {sql_meta}")
-            return SqlContext(
-                sql=self.operator.sql,
-                inputs=json.dumps(
-                    [in_table.name for in_table in sql_meta.in_tables]
-                ),
-                outputs=json.dumps(
-                    [out_table.name for out_table in sql_meta.out_tables]
-                )
-            )
-        except Exception as e:
-            log.error(f"Cannot parse sql query. {e}",
-                      exc_info=True)
-            return SqlContext(
-                sql=self.operator.sql,
-                parser_error=f'{e}: {traceback.format_exc()}'
-            )

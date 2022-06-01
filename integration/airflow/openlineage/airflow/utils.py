@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import subprocess
+from typing import TYPE_CHECKING
 from uuid import uuid4
 from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
 
@@ -13,6 +14,11 @@ from pkg_resources import parse_version
 
 from openlineage.airflow.facets import AirflowVersionRunFacet, AirflowRunArgsRunFacet
 from pendulum import from_timestamp
+
+
+if TYPE_CHECKING:
+    from airflow.models import Connection
+
 
 log = logging.getLogger(__name__)
 _NOMINAL_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
@@ -147,7 +153,8 @@ def get_connection_uri(conn):
     parsed = urlparse(conn_uri)
 
     # Remove username and password
-    parsed = parsed._replace(netloc=f'{parsed.hostname}:{parsed.port}')
+    netloc = f'{parsed.hostname}' + (f':{parsed.port}' if parsed.port else "")
+    parsed = parsed._replace(netloc=netloc)
     query_dict = parse_qs(parsed.query)
     filtered_qs = {k: query_dict[k]
                    for k in query_dict.keys()
@@ -179,7 +186,7 @@ def get_normalized_postgres_connection_uri(conn):
     return uri
 
 
-def get_connection(conn_id):
+def get_connection(conn_id) -> "Connection":
     # TODO: We may want to throw an exception if the connection
     # does not exist (ex: AirflowConnectionException). The connection
     # URI is required when collecting metadata for a data source.
