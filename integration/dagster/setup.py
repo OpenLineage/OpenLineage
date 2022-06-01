@@ -36,6 +36,7 @@ extras_require = {
         "pytest",
         "pytest-cov",
         "flake8",
+        "mypy>=0.9.6"
     ],
 }
 
