@@ -44,7 +44,7 @@ jobs:
       - run: pip install -e .[dev]
       - run: python -m flake8 --extend-ignore=F401
       - run: python -m pytest --cov=openlineage tests/
-      - run: python -m mypy openlineage
+      - run: python -m mypy --install-types openlineage
       - run: bash <(curl -s https://codecov.io/bash)
 
   build-client-python:
@@ -234,7 +234,7 @@ jobs:
             - run: pip install -e .[dev_no_parser]
       - run: flake8
       - run: pytest --cov=openlineage tests/
-      - run: python -m mypy openlineage
+      - run: python -m mypy --install-types openlineage
       - run: bash <(curl -s https://codecov.io/bash)
 
   build-integration-common:
@@ -349,7 +349,7 @@ jobs:
       - run: flake8 --exclude tests/integration
       - run: airflow initdb
       - run: pytest --cov=openlineage --ignore tests/integration tests/
-      - run: python -m mypy openlineage
+      - run: python -m mypy --install-types openlineage
       - run: bash <(curl -s https://codecov.io/bash)
 
   unit-test-integration-airflow-2:
@@ -368,7 +368,7 @@ jobs:
       - run: flake8 --exclude tests/integration
       - run: airflow db init
       - run: pytest --cov=openlineage --ignore tests/integration --ignore tests/test_openlineage_dag.py tests/
-      - run: python -m mypy openlineage
+      - run: python -m mypy --install-types openlineage
       - run: bash <(curl -s https://codecov.io/bash)
 
   build-integration-airflow:
@@ -455,7 +455,7 @@ jobs:
       - run: pip install -e .[dev]
       - run: flake8
       - run: pytest --cov=openlineage tests/
-      - run: python -m mypy openlineage
+      - run: python -m mypy --install-types openlineage
       - run: bash <(curl -s https://codecov.io/bash)
 
   build-integration-dagster:
