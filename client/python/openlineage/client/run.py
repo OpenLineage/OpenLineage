@@ -64,5 +64,5 @@ class RunEvent:
     run: Run = attr.ib()
     job: Job = attr.ib()
     producer: str = attr.ib()
-    inputs: Optional[List[Dataset]] = attr.ib(factory=list, type=Dataset)
-    outputs: Optional[List[Dataset]] = attr.ib(factory=list, type=Dataset)
+    inputs: Optional[List[Dataset]] = attr.ib(factory=list)     # type: ignore
+    outputs: Optional[List[Dataset]] = attr.ib(factory=list)    # type: ignore
