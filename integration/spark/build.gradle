@@ -413,4 +413,6 @@ spotbugs {
     maxHeapSize = '1g'
     extraArgs = [ '-nested:false' ]
     jvmArgs = [ '-Duser.language=ja' ]
+    inputFile.from(compileSpark2Java.archiveFile)
+    inputFile.from(compileSpark3Java.archiveFile)
 }
