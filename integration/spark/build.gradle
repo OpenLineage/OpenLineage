@@ -407,11 +407,7 @@ spotbugs {
     visitors = [ 'FindSqlInjection', 'SwitchFallthrough' ]
     omitVisitors = [ 'FindNonShortCircuit' ]
     reportsDir = file("$buildDir/spotbugs")
-    includeFilter = file("include.xml")
-    excludeFilter = file("exclude.xml")
-    baselineFile = file("baseline.xml")
     maxHeapSize = '1g'
     extraArgs = [ '-nested:false' ]
     jvmArgs = [ '-Duser.language=ja' ]
-    inputFile.from(sourceJar.archiveFile)
 }
