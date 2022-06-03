@@ -23,7 +23,7 @@ class Serde:
                 {k: cls.remove_nulls_and_enums(v) for k, v in obj.items()}.items()
             ))
         if isinstance(obj, List):
-            return list(filter(lambda x: x is not None and x != {}, [
+            return list(filter(lambda x: x is not None and (isinstance(x, dict) and x != {}), [
                 cls.remove_nulls_and_enums(v) for v in obj if v is not None
             ]))
 

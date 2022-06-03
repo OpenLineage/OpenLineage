@@ -2,16 +2,22 @@
 
 package io.openlineage.spark.agent;
 
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.openlineage.client.Environment;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.lifecycle.ContextFactory;
 import io.openlineage.spark.agent.lifecycle.ExecutionContext;
 import io.openlineage.spark.agent.lifecycle.StaticExecutionContextFactory;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoHadoopFsRelationVisitor;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.net.URISyntaxException;
 import java.util.Optional;
 import java.util.Properties;
 import org.apache.hadoop.fs.Path;
@@ -30,6 +36,7 @@ import org.apache.spark.sql.execution.datasources.InsertIntoHadoopFsRelationComm
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.MockedStatic;
 import scala.Option;
 import scala.collection.Map$;
 import scala.collection.Seq$;
@@ -97,5 +104,22 @@ public class OpenLineageSparkListenerTest {
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
 
     verify(emitter, times(2)).emit(lineageEvent.capture());
+  }
+
+  @Test
+  void testOpenlineageDisableDisablesExecution() throws URISyntaxException {
+    try (MockedStatic mocked = mockStatic(Environment.class)) {
+      when(Environment.getEnvironmentVariable("OPENLINEAGE_DISABLED")).thenReturn("true");
+
+      ContextFactory contextFactory = mock(ContextFactory.class);
+
+      OpenLineageSparkListener.init(contextFactory);
+      OpenLineageSparkListener listener = new OpenLineageSparkListener();
+
+      listener.onJobStart(
+          new SparkListenerJobStart(0, 2L, Seq$.MODULE$.<StageInfo>empty(), new Properties()));
+
+      verify(contextFactory, never()).createSparkSQLExecutionContext(anyLong());
+    }
   }
 }

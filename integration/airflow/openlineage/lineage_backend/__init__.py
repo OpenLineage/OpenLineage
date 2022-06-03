@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-
+import os
 import uuid
 import time
 
@@ -87,6 +87,9 @@ class OpenLineageBackend(LineageBackend):
     def send_lineage(cls, *args, **kwargs):
         # Do not use LineageBackend approach when we can use plugins
         if parse_version(AIRFLOW_VERSION) >= parse_version("2.3.0.dev0"):
+            return
+        # Make this method a noop if OPENLINEAGE_DISABLED is set to true
+        if os.getenv("OPENLINEAGE_DISABLED", None) in [True, 'true', "True"]:
             return
         if not cls.backend:
             cls.backend = Backend()

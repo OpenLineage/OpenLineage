@@ -4,6 +4,7 @@ import os
 import logging
 from typing import Type, Union, Optional
 
+from openlineage.client.transport.noop import NoopConfig, NoopTransport
 from openlineage.client.transport.transport import Config, Transport, TransportFactory
 from openlineage.client.utils import try_import_from_string
 
@@ -25,6 +26,9 @@ class DefaultTransportFactory(TransportFactory):
         self.transports[type] = clazz
 
     def create(self) -> Transport:
+        if os.environ.get("OPENLINEAGE_DISABLED", False) in [True, "true", "True"]:
+            return NoopTransport(NoopConfig())
+
         if yaml:
             yml_config = self._try_config_from_yaml()
             if yml_config:
