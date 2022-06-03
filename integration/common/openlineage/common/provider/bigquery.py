@@ -245,9 +245,9 @@ class BigQueryDatasetsProvider:
         bq_table = self.client.get_table(table)
         if not bq_table._properties:
             return None
-        table_properties = bq_table._properties
+        table_prop = bq_table._properties
 
-        fields = get_from_nullable_chain(table, ['schema', 'fields'])
+        fields = get_from_nullable_chain(table_prop, ['schema', 'fields'])
         if not fields:
             return None
 
@@ -259,9 +259,9 @@ class BigQueryDatasetsProvider:
         ) for i in range(len(fields))]
 
         return DbTableSchema(
-            schema_name=table_properties.get('tableReference').get('projectId') + '.' +
-            table_properties.get('tableReference').get('datasetId'),
-            table_name=DbTableMeta(table_properties.get('tableReference').get('tableId')),
+            schema_name=table_prop.get('tableReference').get('projectId') + '.' +
+            table_prop.get('tableReference').get('datasetId'),
+            table_name=DbTableMeta(table_prop.get('tableReference').get('tableId')),
             columns=columns
         )
 
