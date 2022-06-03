@@ -236,8 +236,7 @@ def test_parse_simple_cte():
 
 
 def test_parse_bugged_cte():
-    with pytest.raises(RuntimeError):
-        parse(
+    assert parse(
             '''
             WITH sum_trans (
                 SELECT user_id, COUNT(*) as cnt, SUM(amount) as balance
@@ -250,7 +249,7 @@ def test_parse_bugged_cte():
               FROM sum_trans
               WHERE count > 1000 OR balance > 100000;
             '''
-        )
+    ) is None
 
 
 def test_parse_recursive_cte():
@@ -397,3 +396,36 @@ def test_parse_statement_list():
         """])
     assert sql_meta.in_tables == [DbTableMeta('schema0.table0')]
     assert sql_meta.out_tables == [DbTableMeta('schema1.table1')]
+
+
+def test_parse_copy_into_snowflake_at_syntax():
+    parse(["""
+            COPY INTO SCHEMA.SOME_MONITORING_SYSTEM
+            FROM (
+                SELECT
+                t.$1:st AS st,
+                t.$1:index AS index,
+                t.$1:cid AS cid,
+                t.$1:k8s AS k8s,
+                t.$1:cn AS cn,
+                t.$1:did AS did,
+                t.$1:tid AS tid,
+                t.$1:tn AS tn,
+                t.$1:mt AS mt,
+                t.$1:op AS op,
+                t.$1:drid AS drid,
+                t.$1:mi AS mi,
+                t.$1:q3dm17 AS q3dm17,
+                t.$1:rsd AS rsd,
+                t.$1:red AS red,
+                t.$1:rd AS rd,
+                t.$1:state AS state,
+                t.$1:es AS es,
+                t.$1:pool AS pool,
+                t.$1:queue AS queue,
+                t.$1:pw AS pw,
+                metadata$fn AS load_fn,
+                metadata$frn AS load_filerow,
+                CURRENT_TIMESTAMP AS lts
+                FROM @schema.general_finished AS t
+            )"""])
