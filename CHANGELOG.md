@@ -1,8 +1,17 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.8.2...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.9.0...HEAD)
+
+## [0.9.0](https://github.com/OpenLineage/OpenLineage/compare/0.8.2...0.9.0)
 ### Added
-* Column level lineage introduced for Spark integration ([#698](https://github.com/OpenLineage/OpenLineage/pull/698), [#645](https://github.com/OpenLineage/OpenLineage/pull/645)) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+* Spark: Column-level lineage introduced for Spark integration ([#698](https://github.com/OpenLineage/OpenLineage/pull/698), [#645](https://github.com/OpenLineage/OpenLineage/pull/645)) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+* Java: Spark to use Java client directly ([#774](https://github.com/OpenLineage/OpenLineage/pull/774)) [@mobuchowski](https://github.com/mobuchowski)
+* Clients: Add OPENLINEAGE_DISABLED environment variable which overrides config to NoopTransport ([#780](https://github.com/OpenLineage/OpenLineage/pull/780)) [@mobuchowski](https://github.com/mobuchowski)
+
+### Fixed
+* Set log to debug on unknown facet entry ([#766](https://github.com/OpenLineage/OpenLineage/pull/766)) [@wslulciuc](https://github.com/wslulciuc)
+* Dagster: pin protobuf version to 3.20 as suggested by tests ([#787](https://github.com/OpenLineage/OpenLineage/pull/787)) [@mobuchowski](https://github.com/mobuchowski)
+* Add SafeStrDict to skip failing attibutes ([#798](https://github.com/OpenLineage/OpenLineage/pull/798)) [@JDarDagran](https://github.com/JDarDagran)
 
 ## [0.8.2](https://github.com/OpenLineage/OpenLineage/compare/0.8.1...0.8.2)
 ### Added
