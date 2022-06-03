@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0.
 
-import os
 from unittest import mock
 
 import pytest
@@ -14,7 +13,7 @@ from openlineage.common.models import (
     DbColumn
 )
 from openlineage.common.sql import DbTableMeta
-from openlineage.common.dataset import Source, Dataset
+from openlineage.common.dataset import Source, Dataset, Field
 from openlineage.airflow.extractors.postgres_extractor import PostgresExtractor
 
 PostgresOperator = safe_import_airflow(
@@ -100,11 +99,19 @@ TASK = PostgresOperator(
 )
 
 
-@mock.patch('openlineage.airflow.extractors.postgres_extractor.PostgresExtractor._get_table_schemas')  # noqa
+@mock.patch('openlineage.airflow.extractors.postgres_extractor.get_table_schemas')  # noqa
 @mock.patch('openlineage.airflow.extractors.postgres_extractor.get_connection')
 def test_extract(get_connection, mock_get_table_schemas):
-    mock_get_table_schemas.side_effect = \
-        [[DB_TABLE_SCHEMA], NO_DB_TABLE_SCHEMA]
+    source = Source(
+        scheme='postgres',
+        authority='localhost:5432',
+        connection_url=CONN_URI_WITHOUT_USERPASS
+    )
+
+    mock_get_table_schemas.return_value = (
+        [Dataset.from_table_schema(source, DB_TABLE_SCHEMA, DB_NAME)],
+        [],
+    )
 
     conn = Connection(
         conn_id=CONN_ID,
@@ -119,12 +126,8 @@ def test_extract(get_connection, mock_get_table_schemas):
     expected_inputs = [
         Dataset(
             name=f"{DB_NAME}.{DB_SCHEMA_NAME}.{DB_TABLE_NAME.name}",
-            source=Source(
-                scheme='postgres',
-                authority='localhost:5432',
-                connection_url=CONN_URI_WITHOUT_USERPASS
-            ),
-            fields=[]
+            source=source,
+            fields=[Field.from_column(column) for column in DB_TABLE_COLUMNS]
         ).to_openlineage_dataset()]
 
     task_metadata = PostgresExtractor(TASK).extract()
@@ -134,12 +137,20 @@ def test_extract(get_connection, mock_get_table_schemas):
     assert task_metadata.outputs == []
 
 
-@mock.patch('openlineage.airflow.extractors.postgres_extractor.PostgresExtractor._get_table_schemas')  # noqa
+@mock.patch('openlineage.airflow.extractors.postgres_extractor.get_table_schemas')  # noqa
 @mock.patch('openlineage.airflow.extractors.postgres_extractor.get_connection')
 def test_extract_authority_uri(get_connection, mock_get_table_schemas):
 
-    mock_get_table_schemas.side_effect = \
-        [[DB_TABLE_SCHEMA], NO_DB_TABLE_SCHEMA]
+    source = Source(
+        scheme='postgres',
+        authority='localhost:5432',
+        connection_url=CONN_URI_WITHOUT_USERPASS
+    )
+
+    mock_get_table_schemas.return_value = (
+        [Dataset.from_table_schema(source, DB_TABLE_SCHEMA, DB_NAME)],
+        [],
+    )
 
     conn = Connection()
     conn.parse_from_uri(uri=CONN_URI)
@@ -148,12 +159,8 @@ def test_extract_authority_uri(get_connection, mock_get_table_schemas):
     expected_inputs = [
         Dataset(
             name=f"{DB_NAME}.{DB_SCHEMA_NAME}.{DB_TABLE_NAME.name}",
-            source=Source(
-                scheme='postgres',
-                authority='localhost:5432',
-                connection_url=CONN_URI_WITHOUT_USERPASS
-            ),
-            fields=[]
+            source=source,
+            fields=[Field.from_column(column) for column in DB_TABLE_COLUMNS]
         ).to_openlineage_dataset()]
 
     task_metadata = PostgresExtractor(TASK).extract()
@@ -161,31 +168,6 @@ def test_extract_authority_uri(get_connection, mock_get_table_schemas):
     assert task_metadata.name == f"{DAG_ID}.{TASK_ID}"
     assert task_metadata.inputs == expected_inputs
     assert task_metadata.outputs == []
-
-
-@mock.patch('psycopg2.connect')
-def test_get_table_schemas(mock_conn):
-    # (1) Mock calls to postgres
-    rows = [
-        (DB_SCHEMA_NAME, DB_TABLE_NAME.name, 'id', 1, 'int4'),
-        (DB_SCHEMA_NAME, DB_TABLE_NAME.name, 'amount_off', 2, 'int4'),
-        (DB_SCHEMA_NAME, DB_TABLE_NAME.name, 'customer_email', 3, 'varchar'),
-        (DB_SCHEMA_NAME, DB_TABLE_NAME.name, 'starts_on', 4, 'timestamp'),
-        (DB_SCHEMA_NAME, DB_TABLE_NAME.name, 'ends_on', 5, 'timestamp')
-    ]
-
-    mock_conn.return_value \
-        .cursor.return_value \
-        .fetchall.return_value = rows
-
-    # (2) Set the environment variable for the connection
-    os.environ[f"AIRFLOW_CONN_{CONN_ID.upper()}"] = CONN_URI
-
-    # (3) Extract table schemas for task
-    extractor = PostgresExtractor(TASK)
-    table_schemas = extractor._get_table_schemas(table_names=[DB_TABLE_NAME])
-
-    assert table_schemas == [DB_TABLE_SCHEMA]
 
 
 def test_get_connection_import_returns_none_if_not_exists():
