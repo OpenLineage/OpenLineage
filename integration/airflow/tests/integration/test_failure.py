@@ -76,3 +76,6 @@ if __name__ == '__main__':
     trigger_dag("test_dag")
     if not wait_for_dag("test_dag"):
         sys.exit(1)
+    trigger_dag("hanging_extractor_dag")
+    if not wait_for_dag("hanging_extractor_dag"):
+        sys.exit(1)
