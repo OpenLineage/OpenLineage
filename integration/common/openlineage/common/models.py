@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0.
 from typing import List
-from integration.common.openlineage.common.sql.parser import DbTableMeta
+from openlineage.common.sql.parser import DbTableMeta
 
 
 class DbColumn:
