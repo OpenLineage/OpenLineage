@@ -6,6 +6,7 @@ from openlineage.client import OpenLineageClient
 from openlineage.client.transport import DefaultTransportFactory, \
     get_default_factory, KafkaTransport
 from openlineage.client.transport.http import HttpTransport
+from openlineage.client.transport.noop import NoopTransport
 from tests.transport import AccumulatingTransport, FakeTransport
 
 current_path = os.path.join(os.getcwd(), "tests")
@@ -87,3 +88,23 @@ def test_transport_decorator_registers(join, listdir, yaml):
 
     transport = get_default_factory().create()
     assert isinstance(transport, FakeTransport)
+
+
+@patch.dict(os.environ, {"OPENLINEAGE_DISABLED": "true"})
+def test_env_disables_client():
+    transport = get_default_factory().create()
+    assert isinstance(transport, NoopTransport)
+
+
+@patch.dict(os.environ, {
+    "OPENLINEAGE_DISABLED": "true",
+    "OPENLINEAGE_CONFIG": "tests/config/config.yml"
+})
+def test_env_disabled_ignores_config():
+    factory = DefaultTransportFactory()
+    factory.register_transport(
+        "fake",
+        clazz="tests.transport.FakeTransport"
+    )
+    transport = factory.create()
+    assert isinstance(transport, NoopTransport)

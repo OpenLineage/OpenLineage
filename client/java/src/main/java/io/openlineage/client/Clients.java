@@ -1,5 +1,6 @@
 package io.openlineage.client;
 
+import io.openlineage.client.transports.NoopTransport;
 import io.openlineage.client.transports.Transport;
 import io.openlineage.client.transports.TransportFactory;
 
@@ -13,6 +14,10 @@ public final class Clients {
   }
 
   public static OpenLineageClient newClient(ConfigPathProvider configPathProvider) {
+    String isDisabled = Environment.getEnvironmentVariable("OPENLINEAGE_DISABLED");
+    if (Boolean.parseBoolean(isDisabled)) {
+      return OpenLineageClient.builder().transport(new NoopTransport()).build();
+    }
     final OpenLineageYaml openLineageYaml = Utils.loadOpenLineageYaml(configPathProvider);
     final TransportFactory factory = new TransportFactory(openLineageYaml.getTransportConfig());
     final Transport transport = factory.build();
