@@ -18,7 +18,7 @@ class GreatExpectationsRunFacet(BaseFacet):
     """
     great_expectations_version = attr.ib()
     expectation_suite_name: str = attr.ib()
-    run_id: Dict = attr.ib(converter=lambda x: x.to_json_dict())
+    run_id: Dict = attr.ib(converter=lambda x: x.to_json_dict())    # type: ignore
     expectation_suite_meta: Dict = attr.ib()
     validation_time: str = attr.ib()
     batch_spec: Optional[BatchSpec] = attr.ib(default=None)
