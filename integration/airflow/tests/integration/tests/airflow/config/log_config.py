@@ -90,7 +90,7 @@ LOGGING_CONFIG = {
         }
     },
     'loggers': {
-        'openlineage.airflow': {
+        'openlineage': {
             'handler': ['console'],
             'level': 'DEBUG',
             'propagate': True,

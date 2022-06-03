@@ -48,7 +48,7 @@ workflows:
               airflow-image: [
                 'apache/airflow:2.1.4-python3.7',
                 'apache/airflow:2.2.4-python3.7',
-                'apache/airflow:2.3.0b1-python3.7'
+                'apache/airflow:2.3.1-python3.7'
               ]
           context: integration-tests
           requires:
