@@ -49,28 +49,28 @@ def get_table_schemas(
                     query_schemas.append(parse_query_result(cursor))
                 else:
                     query_schemas.append([])
-    return tuple([
+    return tuple(
         [
-            Dataset.from_table_schema(
-                source=source,
-                table_schema=schema,
-                database_name=database
-            ) for schema in schemas
-        ] for schemas in query_schemas
-    ])
+            [
+                Dataset.from_table_schema(
+                    source=source, table_schema=schema, database_name=database
+                )
+                for schema in schemas
+            ]
+            for schemas in query_schemas
+        ]
+    )
 
 
 def parse_query_result(cursor) -> List[DbTableSchema]:
     schemas: Dict = {}
     for row in cursor.fetchall():
         table_schema_name: str = row[_TABLE_SCHEMA]
-        table_name: DbTableMeta = DbTableMeta(
-            row[_TABLE_NAME]
-        )
+        table_name: DbTableMeta = DbTableMeta(row[_TABLE_NAME])
         table_column: DbColumn = DbColumn(
             name=row[_COLUMN_NAME],
             type=row[_UDT_NAME],
-            ordinal_position=row[_ORDINAL_POSITION]
+            ordinal_position=row[_ORDINAL_POSITION],
         )
 
         # Attempt to get table schema
@@ -85,6 +85,6 @@ def parse_query_result(cursor) -> List[DbTableSchema]:
             schemas[table_key] = DbTableSchema(
                 schema_name=table_schema_name,
                 table_name=table_name,
-                columns=[table_column]
+                columns=[table_column],
             )
     return list(schemas.values())

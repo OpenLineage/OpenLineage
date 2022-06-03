@@ -19,8 +19,8 @@ logger = logging.getLogger(__file__)
 
 
 class SnowflakeExtractor(BaseExtractor):
-    source_type = 'SNOWFLAKE'
-    default_schema = 'PUBLIC'
+    source_type = "SNOWFLAKE"
+    default_schema = "PUBLIC"
 
     def __init__(self, operator):
         super().__init__(operator)
@@ -29,18 +29,18 @@ class SnowflakeExtractor(BaseExtractor):
 
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
-        return ['SnowflakeOperator']
+        return ["SnowflakeOperator"]
 
     def extract(self) -> TaskMetadata:
         task_name = f"{self.operator.dag_id}.{self.operator.task_id}"
         run_facets: Dict = {}
-        job_facets = {
-            'sql': SqlJobFacet(self.operator.sql)
-        }
+        job_facets = {"sql": SqlJobFacet(self.operator.sql)}
 
         # (1) Parse sql statement to obtain input / output tables.
         logger.debug(f"Sending SQL to parser: {self.operator.sql}")
-        sql_meta: Optional[SqlMeta] = parse(self.operator.sql, self.default_schema)
+        sql_meta: Optional[SqlMeta] = parse(
+            self.operator.sql, self.default_schema
+        )
         logger.debug(f"Got meta {sql_meta}")
 
         if not sql_meta:
@@ -49,7 +49,7 @@ class SnowflakeExtractor(BaseExtractor):
                 inputs=[],
                 outputs=[],
                 run_facets=run_facets,
-                job_facets=job_facets
+                job_facets=job_facets,
             )
 
         # (2) Get Airflow connection
@@ -59,9 +59,9 @@ class SnowflakeExtractor(BaseExtractor):
         # NOTE: We'll want to look into adding support for the `database`
         # property that is used to override the one defined in the connection.
         source = Source(
-            scheme='snowflake',
+            scheme="snowflake",
             authority=self._get_authority(),
-            connection_url=self._get_connection_uri()
+            connection_url=self._get_connection_uri(),
         )
 
         database = self.operator.database
@@ -76,15 +76,18 @@ class SnowflakeExtractor(BaseExtractor):
             self._get_hook(),
             source,
             database,
-            self._information_schema_query(sql_meta.in_tables) if sql_meta.in_tables else None,
-            self._information_schema_query(sql_meta.out_tables) if sql_meta.out_tables else None
+            self._information_schema_query(sql_meta.in_tables)
+            if sql_meta.in_tables
+            else None,
+            self._information_schema_query(sql_meta.out_tables)
+            if sql_meta.out_tables
+            else None,
         )
 
         query_ids = self._get_query_ids()
         if len(query_ids) == 1:
-            run_facets['externalQuery'] = ExternalQueryRunFacet(
-                externalQueryId=query_ids[0],
-                source=source.name
+            run_facets["externalQuery"] = ExternalQueryRunFacet(
+                externalQueryId=query_ids[0], source=source.name
             )
         elif len(query_ids) > 1:
             logger.warning(
@@ -97,13 +100,16 @@ class SnowflakeExtractor(BaseExtractor):
             inputs=[ds.to_openlineage_dataset() for ds in inputs],
             outputs=[ds.to_openlineage_dataset() for ds in outputs],
             run_facets=run_facets,
-            job_facets=job_facets
+            job_facets=job_facets,
         )
 
     def _information_schema_query(self, tables: List[DbTableMeta]) -> str:
-        table_names = ",".join(map(
-            lambda name: f"'{self._normalize_identifiers(name.name)}'", tables
-        ))
+        table_names = ",".join(
+            map(
+                lambda name: f"'{self._normalize_identifiers(name.name)}'",
+                tables,
+            )
+        )
         database = self.operator.database
         if not database:
             database = self._get_database()
@@ -119,19 +125,27 @@ class SnowflakeExtractor(BaseExtractor):
         return sql
 
     def _get_database(self) -> str:
-        if hasattr(self.operator, 'database') and self.operator.database is not None:
+        if (
+            hasattr(self.operator, "database")
+            and self.operator.database is not None
+        ):
             return self.operator.database
-        return self.conn.extra_dejson.get('extra__snowflake__database', '') \
-            or self.conn.extra_dejson.get('database', '')
+        return self.conn.extra_dejson.get(
+            "extra__snowflake__database", ""
+        ) or self.conn.extra_dejson.get("database", "")
 
     def _get_authority(self) -> str:
-        if hasattr(self.operator, 'account') and self.operator.account is not None:
+        if (
+            hasattr(self.operator, "account")
+            and self.operator.account is not None
+        ):
             return self.operator.account
-        return self.conn.extra_dejson.get('extra__snowflake__account', '') \
-            or self.conn.extra_dejson.get('account', '')
+        return self.conn.extra_dejson.get(
+            "extra__snowflake__account", ""
+        ) or self.conn.extra_dejson.get("account", "")
 
     def _get_hook(self):
-        if hasattr(self.operator, 'get_db_hook'):
+        if hasattr(self.operator, "get_db_hook"):
             return self.operator.get_db_hook()
         else:
             return self.operator.get_hook()
@@ -151,6 +165,6 @@ class SnowflakeExtractor(BaseExtractor):
         return get_connection_uri(self.conn)
 
     def _get_query_ids(self) -> List[str]:
-        if hasattr(self.operator, 'query_ids'):
+        if hasattr(self.operator, "query_ids"):
             return self.operator.query_ids
         return []

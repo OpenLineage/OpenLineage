@@ -10,7 +10,12 @@ from airflow.listeners import hookimpl
 
 from openlineage.airflow.adapter import OpenLineageAdapter
 from openlineage.airflow.extractors import ExtractorManager
-from openlineage.airflow.utils import DagUtils, get_task_location, get_job_name, get_custom_facets
+from openlineage.airflow.utils import (
+    DagUtils,
+    get_task_location,
+    get_job_name,
+    get_custom_facets,
+)
 
 if TYPE_CHECKING:
     from airflow.models import TaskInstance, BaseOperator
@@ -35,9 +40,13 @@ class ActiveRunManager:
         self.run_data = {}
 
     def set_active_run(self, task_instance: "TaskInstance", run_id: str):
-        self.run_data[self._pk(task_instance)] = ActiveRun(run_id, task_instance.task)
+        self.run_data[self._pk(task_instance)] = ActiveRun(
+            run_id, task_instance.task
+        )
 
-    def get_active_run(self, task_instance: "TaskInstance") -> Optional[ActiveRun]:
+    def get_active_run(
+        self, task_instance: "TaskInstance"
+    ) -> Optional[ActiveRun]:
         return self.run_data.get(self._pk(task_instance))
 
     @staticmethod
@@ -45,17 +54,13 @@ class ActiveRunManager:
         return ti.dag_id + ti.task_id + ti.run_id
 
 
-log = logging.getLogger('airflow')
+log = logging.getLogger("airflow")
 
 
 def execute_in_thread(target: Callable, kwargs=None):
     if kwargs is None:
         kwargs = {}
-    thread = threading.Thread(
-        target=target,
-        kwargs=kwargs,
-        daemon=True
-    )
+    thread = threading.Thread(target=target, kwargs=kwargs, daemon=True)
     thread.start()
 
     # Join, but ignore checking if thread stopped. If it did, then we shoudn't do anything.
@@ -73,10 +78,13 @@ adapter = OpenLineageAdapter()
 
 
 @hookimpl
-def on_task_instance_running(previous_state, task_instance: "TaskInstance", session: "Session"):
-    if not hasattr(task_instance, 'task'):
+def on_task_instance_running(
+    previous_state, task_instance: "TaskInstance", session: "Session"
+):
+    if not hasattr(task_instance, "task"):
         log.warning(
-            f"No task set for TI object task_id: {task_instance.task_id} - dag_id: {task_instance.dag_id} - run_id {task_instance.run_id}")  # noqa
+            f"No task set for TI object task_id: {task_instance.task_id} - dag_id: {task_instance.dag_id} - run_id {task_instance.run_id}"
+        )  # noqa
         return
 
     log.debug("OpenLineage listener got notification about task instance start")
@@ -86,7 +94,9 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
 
     run_id = str(uuid.uuid4())
     run_data_holder.set_active_run(task_instance, run_id)
-    parent_run_id = str(uuid.uuid3(uuid.NAMESPACE_URL, f'{dag.dag_id}.{dagrun.run_id}'))
+    parent_run_id = str(
+        uuid.uuid3(uuid.NAMESPACE_URL, f"{dag.dag_id}.{dagrun.run_id}")
+    )
 
     def on_running():
         task_metadata = extractor_manager.extract_metadata(dagrun, task)
@@ -104,16 +114,20 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
             task=task_metadata,
             run_facets={
                 **task_metadata.run_facets,
-                **get_custom_facets(task, dagrun.external_trigger)
-            }
+                **get_custom_facets(task, dagrun.external_trigger),
+            },
         )
 
     execute_in_thread(on_running)
 
 
 @hookimpl
-def on_task_instance_success(previous_state, task_instance: "TaskInstance", session):
-    log.debug("OpenLineage listener got notification about task instance success")
+def on_task_instance_success(
+    previous_state, task_instance: "TaskInstance", session
+):
+    log.debug(
+        "OpenLineage listener got notification about task instance success"
+    )
     run_data = run_data_holder.get_active_run(task_instance)
 
     dagrun = task_instance.dag_run
@@ -127,15 +141,19 @@ def on_task_instance_success(previous_state, task_instance: "TaskInstance", sess
             run_id=run_data.run_id,
             job_name=get_job_name(task),
             end_time=DagUtils.to_iso_8601(task_instance.end_date),
-            task=task_metadata
+            task=task_metadata,
         )
 
     execute_in_thread(on_success)
 
 
 @hookimpl
-def on_task_instance_failed(previous_state, task_instance: "TaskInstance", session):
-    log.debug("OpenLineage listener got notification about task instance failure")
+def on_task_instance_failed(
+    previous_state, task_instance: "TaskInstance", session
+):
+    log.debug(
+        "OpenLineage listener got notification about task instance failure"
+    )
     run_data = run_data_holder.get_active_run(task_instance)
 
     dagrun = task_instance.dag_run
@@ -150,7 +168,7 @@ def on_task_instance_failed(previous_state, task_instance: "TaskInstance", sessi
             run_id=run_data.run_id,
             job_name=get_job_name(task),
             end_time=DagUtils.to_iso_8601(task_instance.end_date),
-            task=task_metadata
+            task=task_metadata,
         )
 
     execute_in_thread(on_failure)

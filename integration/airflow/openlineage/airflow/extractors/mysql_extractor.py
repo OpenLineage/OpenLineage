@@ -6,12 +6,10 @@ from urllib.parse import urlparse
 from openlineage.airflow.extractors.dbapi_utils import get_table_schemas
 from openlineage.airflow.utils import (
     get_connection_uri,
-    get_connection, safe_import_airflow
+    get_connection,
+    safe_import_airflow,
 )
-from openlineage.airflow.extractors.base import (
-    BaseExtractor,
-    TaskMetadata
-)
+from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
 from openlineage.client.facet import SqlJobFacet
 from openlineage.common.sql import SqlMeta, parse, DbTableMeta
 from openlineage.common.dataset import Source
@@ -29,17 +27,17 @@ class MySqlExtractor(BaseExtractor):
 
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
-        return ['MySqlOperator']
+        return ["MySqlOperator"]
 
     def extract(self) -> TaskMetadata:
         task_name = f"{self.operator.dag_id}.{self.operator.task_id}"
         run_facets: Dict = {}
-        job_facets = {
-            'sql': SqlJobFacet(self.operator.sql)
-        }
+        job_facets = {"sql": SqlJobFacet(self.operator.sql)}
 
         # (1) Parse sql statement to obtain input / output tables.
-        sql_meta: Optional[SqlMeta] = parse(self.operator.sql, self.default_schema)
+        sql_meta: Optional[SqlMeta] = parse(
+            self.operator.sql, self.default_schema
+        )
 
         if not sql_meta:
             return TaskMetadata(
@@ -47,7 +45,7 @@ class MySqlExtractor(BaseExtractor):
                 inputs=[],
                 outputs=[],
                 run_facets=run_facets,
-                job_facets=job_facets
+                job_facets=job_facets,
             )
 
         # (2) Get database connection
@@ -59,7 +57,7 @@ class MySqlExtractor(BaseExtractor):
         source = Source(
             scheme=self._get_scheme(),
             authority=self._get_authority(),
-            connection_url=self._get_connection_uri()
+            connection_url=self._get_connection_uri(),
         )
 
         database = self.operator.database
@@ -74,8 +72,12 @@ class MySqlExtractor(BaseExtractor):
             self._get_hook(),
             source,
             database,
-            self._information_schema_query(sql_meta.in_tables) if sql_meta.in_tables else None,
-            self._information_schema_query(sql_meta.out_tables) if sql_meta.out_tables else None
+            self._information_schema_query(sql_meta.in_tables)
+            if sql_meta.in_tables
+            else None,
+            self._information_schema_query(sql_meta.out_tables)
+            if sql_meta.out_tables
+            else None,
         )
 
         return TaskMetadata(
@@ -83,37 +85,35 @@ class MySqlExtractor(BaseExtractor):
             inputs=[ds.to_openlineage_dataset() for ds in inputs],
             outputs=[ds.to_openlineage_dataset() for ds in outputs],
             run_facets=run_facets,
-            job_facets=job_facets
+            job_facets=job_facets,
         )
 
     def _get_connection_uri(self):
         return get_connection_uri(self.conn)
 
     def _get_scheme(self):
-        return 'mysql'
+        return "mysql"
 
     def _get_database(self) -> str:
         if self.conn.schema:
             return self.conn.schema
         else:
             parsed = urlparse(self.conn.get_uri())
-            return f'{parsed.path}'
+            return f"{parsed.path}"
 
     def _get_authority(self) -> str:
         if self.conn.host and self.conn.port:
-            return f'{self.conn.host}:{self.conn.port}'
+            return f"{self.conn.host}:{self.conn.port}"
         else:
             parsed = urlparse(self.conn.get_uri())
-            return f'{parsed.hostname}:{parsed.port}'
+            return f"{parsed.hostname}:{parsed.port}"
 
     def _conn_id(self):
         return self.operator.mysql_conn_id
 
     @staticmethod
     def _information_schema_query(tables: List[DbTableMeta]) -> str:
-        table_names = ",".join(map(
-            lambda name: f"'{name.name}'", tables
-        ))
+        table_names = ",".join(map(lambda name: f"'{name.name}'", tables))
         return f"""
         SELECT table_schema,
         table_name,
@@ -127,9 +127,9 @@ class MySqlExtractor(BaseExtractor):
     def _get_hook(self):
         MySqlHook = safe_import_airflow(
             airflow_1_path="airflow.hooks.mysql_hook.MySqlHook",
-            airflow_2_path="airflow.providers.mysql.hooks.mysql.MySqlHook"
+            airflow_2_path="airflow.providers.mysql.hooks.mysql.MySqlHook",
         )
         return MySqlHook(
             mysql_conn_id=self.operator.mysql_conn_id,
-            schema=self.operator.database
+            schema=self.operator.database,
         )
