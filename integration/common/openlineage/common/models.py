@@ -2,6 +2,7 @@
 from typing import List
 from integration.common.openlineage.common.sql.parser import DbTableMeta
 
+
 class DbColumn:
     def __init__(self, name: str, type: str,
                  description: str = None, ordinal_position: int = None):

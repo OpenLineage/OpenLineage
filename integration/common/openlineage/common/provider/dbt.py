@@ -203,7 +203,9 @@ class DbtArtifactProcessor:
         self.command = run_result['args']['which']
 
         try:
-            catalog: Optional[Dict[Any, Any]] = self.load_metadata(self.catalog_path, [1], self.logger)
+            catalog: Optional[Dict[Any, Any]] = self.load_metadata(
+                self.catalog_path, [1], self.logger
+            )
         except FileNotFoundError:
             catalog = None
 
@@ -698,7 +700,8 @@ class DbtArtifactProcessor:
         return Run(
             runId=run_id,
             facets={
-                "parent": self._dbt_run_metadata.to_openlineage() if self._dbt_run_metadata else None,
+                "parent": self._dbt_run_metadata.to_openlineage() \
+                    if self._dbt_run_metadata else None,
                 "dbt_version": self.dbt_version_facet()
             }
         )
