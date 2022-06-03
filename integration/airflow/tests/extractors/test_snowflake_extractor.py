@@ -15,11 +15,12 @@ from openlineage.common.models import (
     DbColumn
 )
 from openlineage.common.sql import DbTableMeta
-from openlineage.common.dataset import Source, Dataset
+from openlineage.common.dataset import Source, Dataset, Field
 from openlineage.airflow.extractors.snowflake_extractor import SnowflakeExtractor
 
 CONN_ID = 'food_delivery_db'
-CONN_URI = 'snowflake://localhost:5432/food_delivery'
+CONN_URI = 'snowflake://snowflake.example/db-schema?account=test_account&database=FOOD_DELIVERY&region=us-east&warehouse=snow-warehouse'  # noqa
+CONN_URI_URIPARSED = 'snowflake://snowflake.example/db-schema?account=%5B%27test_account%27%5D&database=%5B%27FOOD_DELIVERY%27%5D&region=%5B%27us-east%27%5D&warehouse=%5B%27snow-warehouse%27%5D'  # noqa
 
 DB_NAME = 'FOOD_DELIVERY'
 DB_SCHEMA_NAME = 'PUBLIC'
@@ -58,7 +59,7 @@ DB_TABLE_SCHEMA = DbTableSchema(
 )
 NO_DB_TABLE_SCHEMA = []
 
-SQL = f"SELECT * FROM {DB_NAME}.{DB_TABLE_NAME.name};"
+SQL = f"SELECT * FROM {DB_NAME}.{DB_SCHEMA_NAME}.{DB_TABLE_NAME.name};"
 
 DAG_ID = 'email_discounts'
 DAG_OWNER = 'datascience'
@@ -84,15 +85,23 @@ TASK = SnowflakeOperator(
     task_id=TASK_ID,
     snowflake_conn_id=CONN_ID,
     sql=SQL,
-    dag=DAG
+    dag=DAG,
 )
 
 
-@mock.patch('openlineage.airflow.extractors.snowflake_extractor.SnowflakeExtractor._get_table_schemas')  # noqa
-@mock.patch('openlineage.airflow.extractors.postgres_extractor.get_connection')
+@mock.patch('openlineage.airflow.extractors.snowflake_extractor.get_table_schemas')  # noqa
+@mock.patch('openlineage.airflow.extractors.snowflake_extractor.get_connection')
 def test_extract(get_connection, mock_get_table_schemas):
-    mock_get_table_schemas.side_effect = \
-        [[DB_TABLE_SCHEMA], NO_DB_TABLE_SCHEMA]
+    source = Source(
+        scheme='snowflake',
+        authority='test_account',
+        connection_url=CONN_URI_URIPARSED
+    )
+
+    mock_get_table_schemas.return_value = (
+        [Dataset.from_table_schema(source, DB_TABLE_SCHEMA, DB_NAME)],
+        [],
+    )
 
     conn = Connection()
     conn.parse_from_uri(uri=CONN_URI)
@@ -107,12 +116,8 @@ def test_extract(get_connection, mock_get_table_schemas):
     expected_inputs = [
         Dataset(
             name=f"{DB_NAME}.{DB_SCHEMA_NAME}.{DB_TABLE_NAME.name}",
-            source=Source(
-                scheme='snowflake',
-                authority='test_account',
-                connection_url=CONN_URI
-            ),
-            fields=[]
+            source=source,
+            fields=[Field.from_column(column) for column in DB_TABLE_COLUMNS]
         ).to_openlineage_dataset()]
 
     task_metadata = SnowflakeExtractor(TASK).extract()
@@ -123,41 +128,25 @@ def test_extract(get_connection, mock_get_table_schemas):
 
 
 @pytest.mark.skipif(parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"), reason="Airflow 2+ test")  # noqa
-@mock.patch('openlineage.airflow.extractors.snowflake_extractor.SnowflakeExtractor._get_table_schemas')  # noqa
-@mock.patch('openlineage.airflow.extractors.postgres_extractor.get_connection')
+@mock.patch('openlineage.airflow.extractors.snowflake_extractor.get_table_schemas')  # noqa
+@mock.patch('openlineage.airflow.extractors.snowflake_extractor.get_connection')
 def test_extract_query_ids(get_connection, mock_get_table_schemas):
+    mock_get_table_schemas.return_value = (
+        [],
+        [],
+    )
+
     conn = Connection()
     conn.parse_from_uri(uri=CONN_URI)
     get_connection.return_value = conn
 
     TASK.get_hook = mock.MagicMock()
+    TASK.get_hook.return_value._get_conn_params.return_value = {
+        'account': 'test_account',
+        'database': DB_NAME
+    }
     TASK.query_ids = ["1500100900"]
 
     task_metadata = SnowflakeExtractor(TASK).extract()
 
     assert task_metadata.run_facets["externalQuery"].externalQueryId == "1500100900"
-
-
-def test_get_table_schemas():
-    # (1) Define hook mock for testing
-    TASK.get_hook = mock.MagicMock()
-
-    # (2) Mock calls to postgres
-    rows = [
-        (DB_SCHEMA_NAME, DB_TABLE_NAME.name, 'ID', 1, 'int4'),
-        (DB_SCHEMA_NAME, DB_TABLE_NAME.name, 'AMOUNT_OFF', 2, 'int4'),
-        (DB_SCHEMA_NAME, DB_TABLE_NAME.name, 'CUSTOMER_EMAIL', 3, 'varchar'),
-        (DB_SCHEMA_NAME, DB_TABLE_NAME.name, 'STARTS_ON', 4, 'timestamp'),
-        (DB_SCHEMA_NAME, DB_TABLE_NAME.name, 'ENDS_ON', 5, 'timestamp')
-    ]
-
-    TASK.get_hook.return_value \
-        .get_conn.return_value \
-        .cursor.return_value \
-        .fetchall.return_value = rows
-
-    # (3) Extract table schemas for task
-    extractor = SnowflakeExtractor(TASK)
-    table_schemas = extractor._get_table_schemas(table_names=[DB_TABLE_NAME])
-
-    assert table_schemas == [DB_TABLE_SCHEMA]
