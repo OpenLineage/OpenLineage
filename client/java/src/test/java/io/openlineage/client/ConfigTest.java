@@ -1,14 +1,18 @@
 package io.openlineage.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.when;
 
 import io.openlineage.client.transports.HttpTransport;
+import io.openlineage.client.transports.NoopTransport;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 
 public class ConfigTest {
   @Test
@@ -17,6 +21,30 @@ public class ConfigTest {
         Paths.get(this.getClass().getClassLoader().getResource("config/http.yaml").toURI());
     OpenLineageClient client = Clients.newClient(new TestConfigPathProvider(configPath));
     assertThat(client.transport).isInstanceOf(HttpTransport.class);
+  }
+
+  @Test
+  void testDisableOverridesConfigFromYaml() throws URISyntaxException {
+    try (MockedStatic mocked = mockStatic(Environment.class)) {
+      when(Environment.getEnvironmentVariable("OPENLINEAGE_DISABLED")).thenReturn("true");
+
+      Path configPath =
+          Paths.get(this.getClass().getClassLoader().getResource("config/http.yaml").toURI());
+      OpenLineageClient client = Clients.newClient(new TestConfigPathProvider(configPath));
+      assertThat(client.transport).isInstanceOf(NoopTransport.class);
+    }
+  }
+
+  @Test
+  void testWrongDoesNotDisableConfigFromYaml() throws URISyntaxException {
+    try (MockedStatic mocked = mockStatic(Environment.class)) {
+      when(Environment.getEnvironmentVariable("OPENLINEAGE_DISABLED")).thenReturn("anything_else");
+
+      Path configPath =
+          Paths.get(this.getClass().getClassLoader().getResource("config/http.yaml").toURI());
+      OpenLineageClient client = Clients.newClient(new TestConfigPathProvider(configPath));
+      assertThat(client.transport).isInstanceOf(HttpTransport.class);
+    }
   }
 
   static class TestConfigPathProvider implements ConfigPathProvider {

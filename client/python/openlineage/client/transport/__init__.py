@@ -1,6 +1,7 @@
 # flake8: noqa
 from typing import Type
 
+from openlineage.client.transport.noop import NoopTransport
 from openlineage.client.transport.transport import Transport, Config, TransportFactory
 from openlineage.client.transport.factory import DefaultTransportFactory
 from openlineage.client.transport.http import HttpTransport, HttpConfig
@@ -12,6 +13,7 @@ _factory = DefaultTransportFactory()
 _factory.register_transport(HttpTransport.kind, HttpTransport)
 _factory.register_transport(KafkaTransport.kind, KafkaTransport)
 _factory.register_transport(ConsoleTransport.kind, ConsoleTransport)
+_factory.register_transport(NoopTransport.kind, NoopTransport)
 
 
 def get_default_factory():
