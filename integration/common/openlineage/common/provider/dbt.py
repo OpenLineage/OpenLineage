@@ -700,8 +700,8 @@ class DbtArtifactProcessor:
         return Run(
             runId=run_id,
             facets={
-                "parent": self._dbt_run_metadata.to_openlineage() \
-                    if self._dbt_run_metadata else None,
+                "parent": self._dbt_run_metadata.to_openlineage()
+                if self._dbt_run_metadata else None,
                 "dbt_version": self.dbt_version_facet()
             }
         )
