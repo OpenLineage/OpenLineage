@@ -57,6 +57,61 @@ class ActiveRunManager:
 log = logging.getLogger("airflow")
 
 
+class TaskRunner:
+    """
+    Run extractors in a separate thread. We do this because sometimes extractors execute
+    long-running tasks, such as a network call to another service (e.g., BigQuery) or execute
+    sometimes long-running database queries. The task runner starts a daemon thread and manages a
+    queue for tasks to be executed. While the queue is non-empty, the thread will pull tasks and
+    execute them. A `running` state flag tells the thread whether to keep reading from the queue
+    even if it's empty.
+    An `atexit` hook is registered to set the `running` flag to false, wait until the queue is
+    empty, and then wait for the thread to complete any tasks
+    """
+
+    def __init__(self):
+        self.queue = Queue(maxsize=0)
+        self.thread = threading.Thread(target=self.run, daemon=True)
+        self.running = True
+        self.thread.start()
+        log.info("Started OpenLineage event listener thread")
+
+    def push(self, item: Callable):
+        self.queue.put(item, False)
+
+    def run(self):
+        while self.running:
+            try:
+                item: Callable = self.queue.get(True, 5)
+                item()
+            except Empty:
+                log.debug("Nothing in the queue")
+
+    def terminate(self):
+        """
+        Terminate the running thread
+        :return:
+        """
+        log.info("Tearing down OpenLineage thread - waiting for active tasks")
+        self.running = False
+
+        # don't wait for the queue to be empty - a task may be hanging, meaning tasks at the end
+        # of the queue may never be handled, so we'd wait forever.
+        # leaving this here in case someone else thinks to add this line in the future :)
+        # self.queue.join()
+
+        self.thread.join(timeout=2)
+        log.info("OpenLineage thread torn down")
+
+
+run_data_holder = ActiveRunManager()
+extractor_manager = ExtractorManager()
+adapter = OpenLineageAdapter()
+runner = TaskRunner()
+
+atexit.register(runner.terminate)
+
+
 def execute_in_thread(target: Callable, kwargs=None):
     if kwargs is None:
         kwargs = {}
