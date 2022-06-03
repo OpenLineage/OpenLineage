@@ -436,7 +436,7 @@ jobs:
       - attach_workspace:
           at: .
       - run: docker build -f airflow/Dockerfile.tests -t openlineage-airflow-base .
-      - run: ./airflow/tests/integration/docker/up-failure.sh
+      - run: AIRFLOW_IMAGE=apache/airflow:2.3.1-python3.7 ./airflow/tests/integration/docker/up-failure.sh
       - store_artifacts:
           path: airflow/tests/integration/failures/airflow/logs
           destination: airflow-logs
