@@ -271,7 +271,7 @@ def try_import_from_string(path: str):
     try:
         return import_from_string(path)
     except ImportError as e:
-        logging.info(e.msg)
+        logging.info(e.msg)     # type: ignore
         return None
 
 

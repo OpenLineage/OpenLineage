@@ -1,7 +1,7 @@
 import os
 import inspect
 import logging
-from typing import Optional, List, Callable
+from typing import Optional, List, Callable, Dict
 
 from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
 from openlineage.airflow.facets import UnknownOperatorAttributeRunFacet, UnknownOperatorInstance
@@ -29,7 +29,7 @@ class PythonExtractor(BaseExtractor):
             collect_source = False
 
         source_code = self.get_source_code(self.operator.python_callable)
-        job_facet = {}
+        job_facet: Dict = {}
         if collect_source and source_code:
             job_facet = {
                 "sourceCode": SourceCodeJobFacet(
