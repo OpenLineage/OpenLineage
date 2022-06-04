@@ -105,7 +105,7 @@ def on_task_instance_success(previous_state, task_instance: "TaskInstance", sess
     run_data = run_data_holder.get_active_run(task_instance)
 
     dagrun = task_instance.dag_run
-    task = run_data.task
+    task = run_data.task if run_data else None
 
     def on_success():
         task_metadata = extractor_manager.extract_metadata(
@@ -125,7 +125,7 @@ def on_task_instance_failed(previous_state, task_instance: "TaskInstance", sessi
     run_data = run_data_holder.get_active_run(task_instance)
 
     dagrun = task_instance.dag_run
-    task = run_data.task
+    task = run_data.task if run_data else None
 
     def on_failure():
         task_metadata = extractor_manager.extract_metadata(

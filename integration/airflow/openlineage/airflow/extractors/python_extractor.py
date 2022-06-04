@@ -66,3 +66,4 @@ class PythonExtractor(BaseExtractor):
             return str(callable)
         except OSError:
             log.exception(f"Can't get source code facet of PythonOperator {self.operator.task_id}")
+        return None

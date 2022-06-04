@@ -7,6 +7,7 @@ from pkg_resources import parse_version
 
 from airflow.lineage.backend import LineageBackend
 from airflow.version import version as AIRFLOW_VERSION
+from typing import Optional
 
 
 class Backend:
@@ -81,7 +82,7 @@ class Backend:
 class OpenLineageBackend(LineageBackend):
     # Airflow 1.10 uses send_lineage as staticmethod, so just construct class
     # instance on first use and delegate calls to it
-    backend: Backend = None
+    backend: Optional[Backend] = None
 
     @classmethod
     def send_lineage(cls, *args, **kwargs):
