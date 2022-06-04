@@ -1,4 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0.
+from typing import List
+from openlineage.common.sql.parser import DbTableMeta
 
 
 class DbColumn:
@@ -25,7 +27,7 @@ class DbTableSchema:
         self,
         schema_name: str,
         table_name: "DbTableMeta",  # noqa: F821
-        columns: [DbColumn]
+        columns: List[DbColumn]
     ):
         self.schema_name = schema_name
         self.table_name = table_name

@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0.
 
 import logging
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Set, Any
 
 import sqlparse
 from sqlparse.sql import T, TokenList, Parenthesis, Identifier, IdentifierList
@@ -204,9 +204,9 @@ class SqlParser:
     def __init__(self, default_schema: Optional[str] = None):
         # In some cases like bigquery we can always get schema/dataset ID from client
         self.default_schema = default_schema
-        self.ctes = set()
-        self.intables = set()
-        self.outtables = set()
+        self.ctes: Set[Any] = set()
+        self.intables: Set[Any] = set()
+        self.outtables: Set[Any] = set()
 
     def recurse(self, tokens: TokenList) -> SqlMeta:
         in_tables, out_tables = set(), set()
