@@ -1,6 +1,6 @@
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
-import io.openlineage.spark.shared.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.spark.sql.catalyst.expressions.Attribute;

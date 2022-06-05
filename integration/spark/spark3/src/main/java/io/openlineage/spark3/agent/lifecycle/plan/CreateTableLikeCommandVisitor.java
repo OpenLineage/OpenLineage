@@ -5,11 +5,11 @@ package io.openlineage.spark3.agent.lifecycle.plan;
 import static java.util.Collections.singletonList;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.shared.agent.util.DatasetIdentifier;
-import io.openlineage.spark.shared.agent.util.PathUtils;
-import io.openlineage.spark.shared.agent.util.ScalaConversionUtils;
-import io.openlineage.spark.shared.api.OpenLineageContext;
-import io.openlineage.spark.shared.api.QueryPlanVisitor;
+import io.openlineage.spark.agent.util.DatasetIdentifier;
+import io.openlineage.spark.agent.util.PathUtils;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark.api.QueryPlanVisitor;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;

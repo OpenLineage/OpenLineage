@@ -1,8 +1,8 @@
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.shared.agent.Versions;
-import io.openlineage.spark.shared.api.OpenLineageContext;
+import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.utils.LastQueryExecutionSparkEventListener;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;

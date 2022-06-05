@@ -1,9 +1,9 @@
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.shared.agent.Versions;
-import io.openlineage.spark.shared.agent.util.DatasetIdentifier;
-import io.openlineage.spark.shared.api.OpenLineageContext;
+import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.util.DatasetIdentifier;
+import io.openlineage.spark.api.OpenLineageContext;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.junit.jupiter.api.BeforeEach;

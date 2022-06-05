@@ -2,7 +2,7 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
-import io.openlineage.spark.shared.agent.util.DatasetIdentifier;
+import io.openlineage.spark.agent.util.DatasetIdentifier;
 import lombok.SneakyThrows;
 import org.apache.commons.lang.reflect.FieldUtils;
 import org.apache.spark.sql.SparkSession;

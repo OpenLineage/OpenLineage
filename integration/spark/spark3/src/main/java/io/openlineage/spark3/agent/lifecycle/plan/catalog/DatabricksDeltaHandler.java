@@ -1,8 +1,8 @@
 package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
-import io.openlineage.spark.shared.agent.facets.TableProviderFacet;
-import io.openlineage.spark.shared.agent.util.DatasetIdentifier;
-import io.openlineage.spark.shared.agent.util.PathUtils;
+import io.openlineage.spark.agent.facets.TableProviderFacet;
+import io.openlineage.spark.agent.util.DatasetIdentifier;
+import io.openlineage.spark.agent.util.PathUtils;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Map;

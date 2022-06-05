@@ -1,10 +1,10 @@
 package io.openlineage.spark3.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.shared.agent.Versions;
-import io.openlineage.spark.shared.agent.util.PlanUtils;
-import io.openlineage.spark.shared.api.DatasetFactory;
-import io.openlineage.spark.shared.api.OpenLineageContext;
+import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.util.PlanUtils;
+import io.openlineage.spark.api.DatasetFactory;
+import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;

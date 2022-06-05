@@ -1,9 +1,9 @@
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
-import io.openlineage.spark.shared.agent.lifecycle.Rdds;
-import io.openlineage.spark.shared.agent.util.DatasetIdentifier;
-import io.openlineage.spark.shared.agent.util.PlanUtils;
-import io.openlineage.spark.shared.api.OpenLineageContext;
+import io.openlineage.spark.agent.lifecycle.Rdds;
+import io.openlineage.spark.agent.util.DatasetIdentifier;
+import io.openlineage.spark.agent.util.PlanUtils;
+import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import lombok.SneakyThrows;
 import org.apache.hadoop.fs.Path;

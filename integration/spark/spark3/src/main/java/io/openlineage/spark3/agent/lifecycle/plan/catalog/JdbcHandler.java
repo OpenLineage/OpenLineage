@@ -2,8 +2,8 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
-import io.openlineage.spark.shared.agent.util.DatasetIdentifier;
-import io.openlineage.spark.shared.agent.util.JdbcUtils;
+import io.openlineage.spark.agent.util.DatasetIdentifier;
+import io.openlineage.spark.agent.util.JdbcUtils;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;

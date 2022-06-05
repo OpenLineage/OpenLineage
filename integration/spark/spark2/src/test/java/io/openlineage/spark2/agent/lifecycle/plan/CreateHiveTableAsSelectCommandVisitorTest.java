@@ -3,10 +3,10 @@
 package io.openlineage.spark2.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.shared.agent.Versions;
-import io.openlineage.spark.shared.agent.lifecycle.plan.CreateHiveTableAsSelectCommandVisitor;
-import io.openlineage.spark.shared.agent.util.ScalaConversionUtils;
-import io.openlineage.spark.shared.api.OpenLineageContext;
+import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.lifecycle.plan.CreateHiveTableAsSelectCommandVisitor;
+import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.OpenLineageContext;
 import org.apache.spark.Partition;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SaveMode;

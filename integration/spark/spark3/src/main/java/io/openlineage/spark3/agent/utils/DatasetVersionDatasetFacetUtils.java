@@ -1,9 +1,9 @@
 package io.openlineage.spark3.agent.utils;
 
-import static io.openlineage.spark.shared.agent.util.ScalaConversionUtils.asJavaOptional;
+import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptional;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.shared.api.OpenLineageContext;
+import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
 import java.util.Map;
 import java.util.Optional;

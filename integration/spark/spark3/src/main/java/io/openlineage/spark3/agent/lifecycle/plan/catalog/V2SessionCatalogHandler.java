@@ -2,7 +2,7 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
-import io.openlineage.spark.shared.agent.util.DatasetIdentifier;
+import io.openlineage.spark.agent.util.DatasetIdentifier;
 import java.util.Map;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.connector.catalog.Identifier;

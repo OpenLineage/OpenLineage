@@ -1,7 +1,7 @@
 package io.openlineage.spark3.agent.utils;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.shared.api.OpenLineageContext;
+import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.connector.catalog.CatalogPlugin;

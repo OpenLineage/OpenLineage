@@ -3,9 +3,6 @@
  */
 
 import org.apache.tools.ant.filters.ReplaceTokens
-import groovy.io.FileType
-
-import java.nio.file.Files
 
 plugins {
     id 'java'
@@ -18,9 +15,22 @@ plugins {
     id "com.github.johnrengelman.shadow" version "7.1.2"
 }
 
-configurations {
-    lombok
+subprojects {
+    apply plugin: 'java'
+
+    ext {
+        lombokVersion = '1.18.20'
+        isReleaseVersion = !version.endsWith('SNAPSHOT')
+    }
+
+    dependencies {
+        compileOnly "org.projectlombok:lombok:${lombokVersion}"
+        annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+        testCompileOnly "org.projectlombok:lombok:${lombokVersion}"
+        testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+    }
 }
+
 
 repositories {
     mavenLocal()
@@ -44,8 +54,6 @@ ext {
 
 dependencies {
 
-    compileOnly "org.projectlombok:lombok:${lombokVersion}"
-    annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
     implementation(project(path:    ":app"))
     implementation(project(path: ":shared"))
     implementation(project(path: ":spark2"))
@@ -54,14 +62,6 @@ dependencies {
 //    implementation(project(path: ":shared", configuration: "shadow"))
 //    implementation(project(path: ":spark2", configuration: "shadow"))
 //    implementation(project(path: ":spark3", configuration: "shadow"))
-    implementation("io.openlineage:openlineage-java:${project.version}"){
-        exclude group: 'com.fasterxml.jackson'
-    }
-
-    implementation 'org.javassist:javassist:3.27.0-GA'
-
-    lombok  "org.projectlombok:lombok:${lombokVersion}"
-    testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 }
 
 
@@ -74,25 +74,6 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     classifier 'javadoc'
     from javadoc.destinationDir
 }
-
-//def commonTestConfiguration = {
-//    forkEvery 1
-//    maxParallelForks 5
-//    testLogging {
-//        events "passed", "skipped", "failed"
-//        showStandardStreams = true
-//    }
-//    systemProperties = [
-//            'junit.platform.output.capture.stdout': 'true',
-//            'junit.platform.output.capture.stderr': 'true',
-//            'spark.version'                       : '2.4.8',
-//            'openlineage.spark.jar'               : "${archivesBaseName}-${project.version}.jar",
-//            'kafka.package.version'               : 'org.apache.spark:spark-sql-kafka-0-10_2.11:2.4.8',
-//            'mockserver.logLevel'                 : 'ERROR'
-//    ]
-//
-//    classpath = project.sourceSets.test.runtimeClasspath
-//}
 
 test {
     useJUnitPlatform {

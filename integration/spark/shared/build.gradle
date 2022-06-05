@@ -7,8 +7,8 @@ import java.nio.file.Files
 plugins {
     id 'java'
     id 'java-library'
+    id 'java-test-fixtures'
     id "com.github.johnrengelman.shadow" version "7.1.2"
-
 }
 
 archivesBaseName='openlineage-spark-shared'
@@ -41,14 +41,8 @@ ext {
 }
 
 dependencies {
-    compileOnly "org.projectlombok:lombok:${lombokVersion}"
-    annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
-    implementation("io.openlineage:openlineage-java:${project.version}"){
-        exclude group: 'com.fasterxml.jackson'
-    }
-    compileOnly "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
-    compileOnly "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
-    compileOnly "com.fasterxml.jackson.module:jackson-module-scala_2.11:${jacksonModuleScalaVersion}"
+    api "io.openlineage:openlineage-java:${project.version}"
+
     compileOnly "org.apache.spark:spark-core_2.11:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
     compileOnly ('com.google.cloud.spark:spark-bigquery_2.11:0.21.1') {
@@ -59,51 +53,62 @@ dependencies {
     compileOnly "org.apache.spark:spark-sql-kafka-0-10_2.11:${sparkVersion}"
     compileOnly "com.databricks:dbutils-api_2.11:0.0.5"
 
-    testImplementation platform('org.junit:junit-bom:5.7.1')
-    testImplementation "org.postgresql:postgresql:${postgresqlVersion}"
-    testImplementation 'org.hamcrest:hamcrest-library:2.2'
-    testImplementation('org.xerial:sqlite-jdbc:3.34.0')
-    testImplementation "org.testcontainers:junit-jupiter:${testcontainersVersion}"
-    testImplementation "org.testcontainers:postgresql:${testcontainersVersion}"
-    testImplementation "org.testcontainers:mockserver:${testcontainersVersion}"
-    testImplementation "org.testcontainers:kafka:${testcontainersVersion}"
-    testImplementation "org.apache.kafka:kafka-clients:2.6.0"
-    testImplementation('org.mock-server:mockserver-client-java:5.12.0') {
+    testFixturesApi platform('org.junit:junit-bom:5.7.1')
+    testFixturesApi "org.junit.jupiter:junit-jupiter:${junit5Version}"
+    testFixturesApi "org.junit.jupiter:junit-jupiter-params:${junit5Version}"
+
+    testFixturesApi "org.postgresql:postgresql:${postgresqlVersion}"
+    testFixturesApi 'org.hamcrest:hamcrest-library:2.2'
+    testFixturesApi 'org.xerial:sqlite-jdbc:3.34.0'
+    testFixturesApi "org.testcontainers:junit-jupiter:${testcontainersVersion}"
+    testFixturesApi "org.testcontainers:postgresql:${testcontainersVersion}"
+    testFixturesApi "org.testcontainers:mockserver:${testcontainersVersion}"
+    testFixturesApi "org.testcontainers:kafka:${testcontainersVersion}"
+    testFixturesApi "org.apache.kafka:kafka-clients:2.6.0"
+    testFixturesApi('org.mock-server:mockserver-client-java:5.12.0') {
         exclude group: 'com.google.guava', module: 'guava'
         exclude group: 'com.fasterxml.jackson.core'
         exclude group: 'com.fasterxml.jackson.datatype'
         exclude group: 'com.fasterxml.jackson.dataformat'
     }
-    testImplementation group: 'org.awaitility', name: 'awaitility', version: '4.1.1'
-    testImplementation "org.assertj:assertj-core:${assertjVersion}"
-    testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
-    testImplementation "org.junit.jupiter:junit-jupiter-params:${junit5Version}"
-    testImplementation "org.mockito:mockito-core:${mockitoVersion}"
-    testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
-    testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
-    testImplementation "org.projectlombok:lombok:${lombokVersion}"
+    testFixturesApi group: 'org.awaitility', name: 'awaitility', version: '4.1.1'
+    testFixturesApi "org.assertj:assertj-core:${assertjVersion}"
+    testFixturesApi "org.mockito:mockito-core:${mockitoVersion}"
+    testFixturesApi "org.mockito:mockito-inline:${mockitoVersion}"
+    testFixturesApi "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
+
     testImplementation "org.apache.spark:spark-core_2.11:${sparkVersion}"
     testImplementation "org.apache.spark:spark-sql_2.11:${sparkVersion}"
     testImplementation "org.apache.spark:spark-hive_2.11:${sparkVersion}"
     testImplementation "com.google.cloud.spark:spark-bigquery-with-dependencies_2.11:${bigqueryVersion}"
-
-    lombok  "org.projectlombok:lombok:${lombokVersion}"
-    testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 }
 
+def commonTestConfiguration = {
+    forkEvery 1
+    maxParallelForks 5
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = true
+    }
+    systemProperties = [
+            'junit.platform.output.capture.stdout': 'true',
+            'junit.platform.output.capture.stderr': 'true',
+            'spark.version'                       : '2.4.8',
+            'openlineage.spark.jar'               : "${archivesBaseName}-${project.version}.jar",
+            'kafka.package.version'               : 'org.apache.spark:spark-sql-kafka-0-10_2.11:2.4.8',
+            'mockserver.logLevel'                 : 'ERROR'
+    ]
+
+    classpath = project.sourceSets.test.runtimeClasspath
+}
+
+
 test {
+    configure commonTestConfiguration
     useJUnitPlatform {
         excludeTags 'integration-test'
     }
 }
-
-task integrationTest(type: Test) {
-    useJUnitPlatform {
-        includeTags "integration-test"
-    }
-    dependsOn shadowJar
-}
-
 
 assemble {
     dependsOn shadowJar
@@ -112,8 +117,5 @@ assemble {
 shadowJar {
     minimize()
     classifier = ''
-    dependencies {
-        exclude(dependency('org.slf4j::'))
-    }
     zip64 true
 }
