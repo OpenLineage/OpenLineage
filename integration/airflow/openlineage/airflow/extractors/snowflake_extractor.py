@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import List, TYPE_CHECKING, Optional
+from typing import List, TYPE_CHECKING, Optional, Dict
 
 from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
 from openlineage.airflow.extractors.dbapi_utils import get_table_schemas
@@ -33,7 +33,7 @@ class SnowflakeExtractor(BaseExtractor):
 
     def extract(self) -> TaskMetadata:
         task_name = f"{self.operator.dag_id}.{self.operator.task_id}"
-        run_facets = {}
+        run_facets: Dict = {}
         job_facets = {
             'sql': SqlJobFacet(self.operator.sql)
         }

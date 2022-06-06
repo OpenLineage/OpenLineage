@@ -13,8 +13,8 @@ def _is_disabled():
     return os.getenv("OPENLINEAGE_DISABLED", None) in [True, 'true', "True"]
 
 
-if parse_version(AIRFLOW_VERSION) < parse_version("2.3.0.dev0") \
-        or _is_disabled():      # type: ignore
+if parse_version(AIRFLOW_VERSION) \
+        < parse_version("2.3.0.dev0") or _is_disabled():      # type: ignore
     class OpenLineagePlugin(AirflowPlugin):
         name = "OpenLineagePlugin"
         macros = [lineage_run_id, lineage_parent_id]

@@ -199,7 +199,7 @@ def get_connection(conn_id) -> "Connection":
         return conn
 
     # Airflow 2: use secrets backend.
-    if parse_version(AIRFLOW_VERSION) >= parse_version("2.0.0"):
+    if parse_version(AIRFLOW_VERSION) >= parse_version("2.0.0"):    # type: ignore
         try:
             return Connection.get_connection_from_secrets(conn_id)
         except Exception:

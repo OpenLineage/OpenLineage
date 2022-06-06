@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0.
 import logging
-from typing import Optional, List
+from typing import Optional, List, Dict
 from urllib.parse import urlparse
 
 from openlineage.airflow.extractors.dbapi_utils import get_table_schemas
@@ -33,7 +33,7 @@ class MySqlExtractor(BaseExtractor):
 
     def extract(self) -> TaskMetadata:
         task_name = f"{self.operator.dag_id}.{self.operator.task_id}"
-        run_facets = {}
+        run_facets: Dict = {}
         job_facets = {
             'sql': SqlJobFacet(self.operator.sql)
         }
