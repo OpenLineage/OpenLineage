@@ -36,8 +36,18 @@ from openlineage.common.provider.great_expectations.results import \
     COLUMN_EXPECTATIONS_PARSER, \
     GreatExpectationsAssertion
 from openlineage.common.sql import parse
-from sqlalchemy import MetaData, Table
-from sqlalchemy.engine import Connection
+
+# There is no guarantee that SqlAlchemy is available with Great Expectations.
+# Especially, it could be used only with Pandas datasets, in which case
+# we shouldn't try to import it.
+# Great Expectations itself tries hard to not import SqlAlchemy if not needed.
+try:
+    from sqlalchemy import MetaData, Table
+    from sqlalchemy.engine import Connection
+except ImportError:
+    MetaData = None
+    Table = None
+    Connection = None
 
 
 class OpenLineageValidationAction(ValidationAction):
