@@ -102,8 +102,7 @@ class BigQueryDatasetsProvider:
         run_facets = {}
         try:
             try:
-                if self.client:
-                    job = self.client.get_job(job_id=job_id)
+                job = self.client.get_job(job_id=job_id)        # type: ignore
                 props = job._properties
 
                 run_stat_facet, dataset_stat_facet = self._get_output_statistics(props)
