@@ -17,7 +17,7 @@ plugins {
     id 'com.diffplug.spotless' version '5.12.1'
     id "com.github.johnrengelman.shadow" version "7.1.2"
     // id "com.github.spotbugs" version "5.0.7"
-    id "com.github.spotbugs-base"
+    id "com.github.spotbugs-base" version "5.0.7"
 }
 
 repositories {
@@ -419,7 +419,6 @@ spotbugsMain {
         html {
             required = true
             outputLocation = file("$buildDir/reports/spotbugs/main/spotbugs.html")
-            stylesheet = 'fancy-hist.xsl'
         }
     }
 }
