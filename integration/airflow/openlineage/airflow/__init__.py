@@ -8,7 +8,7 @@ import logging
 __author__ = """OpenLineage"""
 __version__ = "0.10.0"
 
-if parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"):
+if parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"):     # type: ignore
     from openlineage.airflow.dag import DAG
     __all__ = ["DAG"]
     logging.warning(

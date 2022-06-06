@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0.
 import logging
-from typing import List, Optional
+from typing import List, Optional, Dict
 from urllib.parse import urlparse
 
 from openlineage.airflow.extractors.dbapi_utils import get_table_schemas

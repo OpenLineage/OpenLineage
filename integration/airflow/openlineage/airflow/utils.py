@@ -7,6 +7,7 @@ import subprocess
 from typing import TYPE_CHECKING
 from uuid import uuid4
 from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
+from typing import Optional
 
 from airflow.version import version as AIRFLOW_VERSION
 
@@ -76,7 +77,7 @@ class SafeStrDict(dict):
         return str(dict(castable))
 
 
-def url_to_https(url) -> str:
+def url_to_https(url) -> Optional[str]:
     # Ensure URL exists
     if not url:
         return None
@@ -97,7 +98,7 @@ def url_to_https(url) -> str:
     return base_url
 
 
-def get_location(file_path) -> str:
+def get_location(file_path) -> Optional[str]:
     # Ensure file path exists
     if not file_path:
         return None
@@ -277,7 +278,7 @@ def try_import_from_string(path: str):
     try:
         return import_from_string(path)
     except ImportError as e:
-        logging.info(e.msg)
+        logging.info(e.msg)     # type: ignore
         return None
 
 
