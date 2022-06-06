@@ -14,7 +14,7 @@ def _is_disabled():
 
 
 if parse_version(AIRFLOW_VERSION) < parse_version("2.3.0.dev0") \
-    or _is_disabled():      # type: ignore
+        or _is_disabled():      # type: ignore
     class OpenLineagePlugin(AirflowPlugin):
         name = "OpenLineagePlugin"
         macros = [lineage_run_id, lineage_parent_id]
