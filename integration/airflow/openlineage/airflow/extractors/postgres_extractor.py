@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0.
 import logging
 from contextlib import closing
-from typing import Optional, List
+from typing import Optional, List, Dict
 from urllib.parse import urlparse
 
 from openlineage.airflow.utils import (
@@ -163,15 +163,15 @@ class PostgresExtractor(BaseExtractor):
         )
 
     def _get_table_schemas(
-            self, table_names: [DbTableMeta]
-    ) -> [DbTableSchema]:
+            self, table_names: List[DbTableMeta]
+    ) -> List[DbTableSchema]:
         # Avoid querying postgres by returning an empty array
         # if no table names have been provided.
         if not table_names:
             return []
 
         # Keeps tack of the schema by table.
-        schemas_by_table = {}
+        schemas_by_table: Dict[str, DbTableSchema] = {}
 
         hook = self._get_hook()
         with closing(hook.get_conn()) as conn:

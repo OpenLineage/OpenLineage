@@ -40,7 +40,7 @@ class GreatExpectationsExtractorImpl(BaseExtractor):
 if _has_great_expectations:
     GreatExpectationsExtractor = GreatExpectationsExtractorImpl
 else:
-    class GreatExpectationsExtractor:
+    class GreatExpectationsExtractor:   # type: ignore
         def __init__(self):
             raise RuntimeError('Great Expectations provider not found')
 

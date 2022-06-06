@@ -104,7 +104,8 @@ class OpenLineageAdapter:
                 run_facets=run_facets
             ),
             job=self._build_job(
-                job_name, job_description, code_location, task.job_facets
+                job_name, job_description, code_location,
+                task.job_facets if task else None
             ),
             inputs=task.inputs if task else None,
             outputs=task.outputs if task else None,
