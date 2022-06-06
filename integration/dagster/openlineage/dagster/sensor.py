@@ -12,13 +12,14 @@
 import logging
 from typing import Optional, Dict
 
-from dagster import (
+from dagster import (   # type: ignore
     DagsterEventType,
     sensor,
     SensorDefinition,
     SensorEvaluationContext,
     SkipReason
 )
+
 from dagster.core.definitions.sensor_definition import DEFAULT_SENSOR_DAEMON_INTERVAL
 from dagster.core.events import PIPELINE_EVENTS, STEP_EVENTS
 
@@ -48,7 +49,7 @@ def openlineage_sensor(
     :param after_storage_id: storage id to use as the initial after cursor when getting event logs
     :return: OpenLineage sensor definition
     """
-    @sensor(
+    @sensor(    # type: ignore
         name=name,
         minimum_interval_seconds=minimum_interval_seconds,
         description=description,

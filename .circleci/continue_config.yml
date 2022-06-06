@@ -43,6 +43,7 @@ jobs:
       - *checkout_project_root
       - run: pip install -e .[dev]
       - run: python -m flake8 --extend-ignore=F401
+      - run: python -m mypy --ignore-missing-imports openlineage
       - run: python -m pytest --cov=openlineage tests/
       - run: bash <(curl -s https://codecov.io/bash)
 
@@ -232,6 +233,7 @@ jobs:
           steps:
             - run: pip install -e .[dev_no_parser]
       - run: flake8
+      - run: python -m mypy --ignore-missing-imports openlineage
       - run: pytest --cov=openlineage tests/
       - run: bash <(curl -s https://codecov.io/bash)
 
@@ -345,6 +347,7 @@ jobs:
       - run: pip install --upgrade pip==20.2.4
       - run: pip install -e .[dev,airflow-1] --constraint="https://raw.githubusercontent.com/apache/airflow/constraints-1.10.15/constraints-3.7.txt"
       - run: flake8 --exclude tests/integration
+      - run: python -m mypy --ignore-missing-imports openlineage
       - run: airflow initdb
       - run: pytest --cov=openlineage --ignore tests/integration tests/
       - run: bash <(curl -s https://codecov.io/bash)
@@ -363,6 +366,7 @@ jobs:
           install_parser: << parameters.install_parser >>
       - run: pip install -e .[dev,airflow-2] --constraint="https://raw.githubusercontent.com/apache/airflow/constraints-2.1.3/constraints-3.7.txt"
       - run: flake8 --exclude tests/integration
+      - run: python -m mypy --ignore-missing-imports openlineage
       - run: airflow db init
       - run: pytest --cov=openlineage --ignore tests/integration --ignore tests/test_openlineage_dag.py tests/
       - run: bash <(curl -s https://codecov.io/bash)
@@ -450,6 +454,7 @@ jobs:
       - *install_python_client
       - run: pip install -e .[dev]
       - run: flake8
+      - run: python -m mypy --ignore-missing-imports openlineage
       - run: pytest --cov=openlineage tests/
       - run: bash <(curl -s https://codecov.io/bash)
 

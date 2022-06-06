@@ -7,7 +7,7 @@ import logging
 import os
 import uuid
 from enum import Enum
-from typing import Dict, List, Optional, Tuple, TypeVar
+from typing import Dict, List, Optional, Tuple, TypeVar, Any
 
 import attr
 import yaml
@@ -166,7 +166,7 @@ class DbtArtifactProcessor:
     ):
         self.producer = producer
         self.dir = os.path.abspath(project_dir)
-        self._dbt_run_metadata = None
+        self._dbt_run_metadata: Optional[ParentRunMetadata] = None
         self.profile_name = profile_name
         self.target = target
         self.jinja_environment = None
@@ -203,7 +203,9 @@ class DbtArtifactProcessor:
         self.command = run_result['args']['which']
 
         try:
-            catalog = self.load_metadata(self.catalog_path, [1], self.logger)
+            catalog: Optional[Dict[Any, Any]] = self.load_metadata(
+                self.catalog_path, [1], self.logger
+            )
         except FileNotFoundError:
             catalog = None
 
@@ -323,15 +325,15 @@ class DbtArtifactProcessor:
         Returns copy of the dict with parsed values.
         """
         if isinstance(value, dict):
-            parsed = {}
+            parsed_dict = {}
             for key, val in value.items():
-                parsed[key] = cls.render_values_jinja(environment, val)
-            return parsed
+                parsed_dict[key] = cls.render_values_jinja(environment, val)
+            return parsed_dict      # type: ignore
         elif isinstance(value, list):
-            parsed = []
+            parsed_list = []
             for elem in value:
-                parsed.append(cls.render_values_jinja(environment, elem))
-            return parsed
+                parsed_list.append(cls.render_values_jinja(environment, elem))
+            return parsed_list      # type: ignore
         elif isinstance(value, str):
             return environment.from_string(value).render()
         else:
@@ -472,7 +474,7 @@ class DbtArtifactProcessor:
                 raise ValueError(
                     f"Model node connected to test {nodes[run['unique_id']]} not found"
                 )
-        return assertions
+        return assertions       # type: ignore
 
     def to_openlineage_events(self, *args, **kwargs) -> Optional[DbtRunResult]:
         try:
@@ -698,7 +700,8 @@ class DbtArtifactProcessor:
         return Run(
             runId=run_id,
             facets={
-                "parent": self._dbt_run_metadata.to_openlineage(),
+                "parent": self._dbt_run_metadata.to_openlineage()
+                if self._dbt_run_metadata else None,
                 "dbt_version": self.dbt_version_facet()
             }
         )
@@ -716,8 +719,8 @@ class DbtArtifactProcessor:
             return timing['started_at'], timing['completed_at']
         except IndexError:
             # Run failed: there is no timing data
-            timing = datetime.datetime.now(datetime.timezone.utc).isoformat()
-            return timing, timing
+            timing_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
+            return timing_str, timing_str
 
     @staticmethod
     def removeprefix(string: str, prefix: str) -> str:

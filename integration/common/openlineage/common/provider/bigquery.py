@@ -45,8 +45,8 @@ class BigQueryJobRunFacet(BaseFacet):
     :param properties: full property tree of bigquery run.
     """
     cached: bool = attr.ib()
-    billedBytes: int = attr.ib(default=None)
-    properties: str = attr.ib(default=None)
+    billedBytes: Optional[int] = attr.ib(default=None)
+    properties: Optional[str] = attr.ib(default=None)
 
     @staticmethod
     def _get_schema() -> str:
@@ -87,12 +87,14 @@ class BigQueryDatasetsProvider:
         client: Optional[Client] = None,
         logger: Optional[logging.Logger] = None
     ):
-        self.client = client
         if client is None:
             self.client = Client()
-        self.logger = logger
+        else:
+            self.client = client
         if logger is None:
-            self.logger = logging.getLogger(__name__)
+            self.logger: logging.Logger = logging.getLogger(__name__)
+        else:
+            self.logger = logger
 
     def get_facets(self, job_id: str) -> BigQueryFacets:
         inputs = []
@@ -100,7 +102,7 @@ class BigQueryDatasetsProvider:
         run_facets = {}
         try:
             try:
-                job = self.client.get_job(job_id=job_id)
+                job = self.client.get_job(job_id=job_id)        # type: ignore
                 props = job._properties
 
                 run_stat_facet, dataset_stat_facet = self._get_output_statistics(props)
@@ -229,8 +231,8 @@ class BigQueryDatasetsProvider:
             self.logger.warning(f'Could not extract output schema from bigquery. {e}')
         return None
 
-    def _get_table_schemas(self, tables: [str]) \
-            -> [DbTableSchema]:
+    def _get_table_schemas(self, tables: List[str]) \
+            -> List[DbTableSchema]:
         # Avoid querying BigQuery by returning an empty array
         # if no tables have been provided.
         if not tables:
@@ -241,12 +243,12 @@ class BigQueryDatasetsProvider:
     def _get_table(self, table: str) -> Optional[DbTableSchema]:
         bq_table = self.client.get_table(table)
         if not bq_table._properties:
-            return
-        table = bq_table._properties
+            return None
+        table_prop = bq_table._properties
 
-        fields = get_from_nullable_chain(table, ['schema', 'fields'])
+        fields = get_from_nullable_chain(table_prop, ['schema', 'fields'])
         if not fields:
-            return
+            return None
 
         columns = [DbColumn(
             name=fields[i].get('name'),
@@ -256,9 +258,9 @@ class BigQueryDatasetsProvider:
         ) for i in range(len(fields))]
 
         return DbTableSchema(
-            schema_name=table.get('tableReference').get('projectId') + '.' +
-            table.get('tableReference').get('datasetId'),
-            table_name=DbTableMeta(table.get('tableReference').get('tableId')),
+            schema_name=table_prop.get('tableReference').get('projectId') + '.' +
+            table_prop.get('tableReference').get('datasetId'),
+            table_name=DbTableMeta(table_prop.get('tableReference').get('tableId')),
             columns=columns
         )
 
