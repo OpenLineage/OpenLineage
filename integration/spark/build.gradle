@@ -16,7 +16,8 @@ plugins {
     id "com.adarshr.test-logger" version "2.1.1"
     id 'com.diffplug.spotless' version '5.12.1'
     id "com.github.johnrengelman.shadow" version "7.1.2"
-    id "com.github.spotbugs" version "5.0.7"
+    // id "com.github.spotbugs" version "5.0.7"
+    id "com.github.spotbugs-base"
 }
 
 repositories {
@@ -410,4 +411,15 @@ spotbugs {
     maxHeapSize = '1g'
     extraArgs = [ '-nested:false' ]
     jvmArgs = [ '-Duser.language=ja' ]
+}
+
+// Spotbugs task config
+spotbugsMain {
+    reports {
+        html {
+            required = true
+            outputLocation = file("$buildDir/reports/spotbugs/main/spotbugs.html")
+            stylesheet = 'fancy-hist.xsl'
+        }
+    }
 }
