@@ -23,7 +23,7 @@ repositories {
 configurations {
     lombok
     spark2.extendsFrom testImplementation
-//    spark3.extendsFrom testImplementation
+    spark3.extendsFrom testImplementation
 }
 
 archivesBaseName='openlineage-spark-app'
@@ -51,7 +51,7 @@ dependencies {
 
     implementation(project(path: ":shared"))
     implementation(project(path: ":spark2"))
-//    implementation(project(path: ":spark3"))
+    implementation(project(path: ":spark3"))
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.0.3'
 
     compileOnly "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
@@ -75,7 +75,7 @@ dependencies {
     }
 
 
-//    spark3 testFixtures(project(":spark3"))
+    spark3 testFixtures(project(":spark3"))
     spark2 testFixtures(project(":spark2"))
     testImplementation testFixtures(project(":shared"))
 
@@ -102,19 +102,21 @@ def commonTestConfiguration = {
     classpath = project.sourceSets.test.runtimeClasspath
 }
 
-// wrócić do jednego test z jakąś metodą zwracającą konfigurację żeby spark3 działał
 task spark2Test(type: Test) {
     useJUnitPlatform {
-        excludeTags 'integration-test'
+        excludeTags 'integration-test', "spark3"
     }
     configure commonTestConfiguration
     classpath = project.sourceSets.test.runtimeClasspath + configurations.spark2
 }
 
-//task spark3Test(type: Test) {
-//    useJUnitPlatform()
-//    classpath = configurations.getByName("spark3")
-//}
+task spark3Test(type: Test) {
+    useJUnitPlatform {
+        excludeTags 'integration-test', "spark2"
+    }
+    configure commonTestConfiguration
+    classpath = project.sourceSets.test.runtimeClasspath + configurations.spark3
+}
 
 assemble {
     dependsOn shadowJar
