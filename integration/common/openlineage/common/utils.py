@@ -30,7 +30,7 @@ def get_from_nullable_chain(source: Any, chain: List[str]) -> Optional[Any]:
                 source = getattr(source, next_key)
         return source
     except AttributeError:
-        return
+        return None
 
 
 def get_from_multiple_chains(source: Dict[str, Any], chains: List[List[str]]) -> Optional[Any]:
