@@ -54,7 +54,7 @@ class HttpConfig(Config):
     verify: bool = attr.ib(default=True)
     auth: TokenProvider = attr.ib(factory=lambda: TokenProvider({}))
     # not set by TransportFactory
-    session: Optional[Session] = attr.ib(factory=Session)
+    session: Session = attr.ib(factory=Session)
     # not set by TransportFactory
     adapter: Optional[HTTPAdapter] = attr.ib(default=None)
 
@@ -93,8 +93,7 @@ class HttpTransport(Transport):
             raise ValueError(f"Need valid url for OpenLineageClient, passed {url}. Exception: {e}")
         self.url = url
         self.session = config.session
-        if self.session:
-            self.session.headers['Content-Type'] = 'application/json'
+        self.session.headers['Content-Type'] = 'application/json'
         self.timeout = config.timeout
         self.verify = config.verify
 
@@ -103,25 +102,22 @@ class HttpTransport(Transport):
             self.set_adapter(config.adapter)
 
     def set_adapter(self, adapter: HTTPAdapter):
-        if self.session:
-            self.session.mount(self.url, adapter)
+        self.session.mount(self.url, adapter)
 
     def emit(self, event: RunEvent):
         event = Serde.to_json(event)
         if log.isEnabledFor(logging.DEBUG):
             log.debug(f"Sending openlineage event {event}")
-        if self.session:
-            resp = self.session.post(
-                urljoin(self.url, 'api/v1/lineage'),
-                event,
-                timeout=self.timeout,
-                verify=self.verify
-            )
+        resp = self.session.post(
+            urljoin(self.url, 'api/v1/lineage'),
+            event,
+            timeout=self.timeout,
+            verify=self.verify
+        )
         resp.raise_for_status()
         return resp
 
     def _add_auth(self, token_provider: TokenProvider):
-        if self.session:
-            self.session.headers.update({
-                "Authorization": token_provider.get_bearer()    # type: ignore
-            })
+        self.session.headers.update({
+            "Authorization": token_provider.get_bearer()    # type: ignore
+        })
