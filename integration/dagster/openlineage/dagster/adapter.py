@@ -12,6 +12,7 @@
 import logging
 import os
 from typing import Optional
+from typing import Dict
 
 from openlineage.client import OpenLineageClient, set_producer
 from openlineage.client.constants import DEFAULT_NAMESPACE_NAME
@@ -234,7 +235,7 @@ class OpenLineageAdapter:
             parent_run_id: Optional[str] = None,
             parent_job_name: Optional[str] = None
     ) -> Run:
-        facets = {}
+        facets: Dict = {}
         if parent_run_id:
             facets.update({
                 "parent": ParentRunFacet.create(parent_run_id, namespace, parent_job_name)
@@ -246,5 +247,5 @@ class OpenLineageAdapter:
             namespace: str,
             job_name: str
     ) -> Job:
-        facets = {}
+        facets: Dict = {}
         return Job(namespace, job_name, facets)

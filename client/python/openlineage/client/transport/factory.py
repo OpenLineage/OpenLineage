@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0.
 import inspect
 import os
+import sys
 import logging
 from typing import Type, Union, Optional
 
@@ -15,7 +16,7 @@ log = logging.getLogger(__name__)
 try:
     import yaml
 except ImportError:
-    yaml = False
+    log.warning("ImportError occurred when trying to import yaml module.")
 
 
 class DefaultTransportFactory(TransportFactory):
@@ -29,7 +30,7 @@ class DefaultTransportFactory(TransportFactory):
         if os.environ.get("OPENLINEAGE_DISABLED", False) in [True, "true", "True"]:
             return NoopTransport(NoopConfig())
 
-        if yaml:
+        if 'yaml' in sys.modules:
             yml_config = self._try_config_from_yaml()
             if yml_config:
                 return self._create_transport(yml_config)
@@ -76,7 +77,7 @@ class DefaultTransportFactory(TransportFactory):
             except Exception:
                 # Just move to read env vars
                 pass
-        return
+        return None
 
     @staticmethod
     def _find_yaml() -> Optional[str]:
@@ -109,6 +110,7 @@ class DefaultTransportFactory(TransportFactory):
         except Exception:
             # We can get different errors depending on system
             pass
+        return None
 
     @staticmethod
     def _try_http_from_env_config() -> Optional[Transport]:
@@ -118,7 +120,7 @@ class DefaultTransportFactory(TransportFactory):
         # OPENLINEAGE_URL and OPENLINEAGE_API_KEY
         if 'OPENLINEAGE_URL' not in os.environ:
             log.error("Did not find openlineage.yml and OPENLINEAGE_URL is not set")
-            return
+            return None
         config = HttpConfig(
             url=os.environ['OPENLINEAGE_URL'],
             auth=create_token_provider({

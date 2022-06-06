@@ -1,6 +1,6 @@
 import logging
 from contextlib import closing
-from typing import Optional, TYPE_CHECKING, List, Tuple
+from typing import Optional, TYPE_CHECKING, List, Tuple, Dict
 
 from openlineage.common.dataset import Source, Dataset
 from openlineage.common.models import DbTableSchema, DbColumn
@@ -61,7 +61,7 @@ def get_table_schemas(
 
 
 def parse_query_result(cursor) -> List[DbTableSchema]:
-    schemas = {}
+    schemas: Dict = {}
     for row in cursor.fetchall():
         table_schema_name: str = row[_TABLE_SCHEMA]
         table_name: DbTableMeta = DbTableMeta(

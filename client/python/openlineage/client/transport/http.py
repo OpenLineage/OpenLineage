@@ -54,7 +54,7 @@ class HttpConfig(Config):
     verify: bool = attr.ib(default=True)
     auth: TokenProvider = attr.ib(factory=lambda: TokenProvider({}))
     # not set by TransportFactory
-    session: Optional[Session] = attr.ib(factory=Session)
+    session: Session = attr.ib(factory=Session)
     # not set by TransportFactory
     adapter: Optional[HTTPAdapter] = attr.ib(default=None)
 
@@ -119,5 +119,5 @@ class HttpTransport(Transport):
 
     def _add_auth(self, token_provider: TokenProvider):
         self.session.headers.update({
-            "Authorization": token_provider.get_bearer()
+            "Authorization": token_provider.get_bearer()    # type: ignore
         })
