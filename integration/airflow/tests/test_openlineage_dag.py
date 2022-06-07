@@ -8,6 +8,10 @@ from uuid import UUID
 import mock
 import openlineage.airflow.dag
 import pytest
+from pkg_resources import parse_version
+from airflow.version import version as AIRFLOW_VERSION
+if parse_version(AIRFLOW_VERSION) > parse_version("2.0.0"):
+    pytestmark = pytest.mark.skip("Skipping tests for Airflow 2.0.0+")
 from airflow.models import (TaskInstance, DagRun)
 from airflow.operators.dummy_operator import DummyOperator
 from airflow.operators.python_operator import PythonOperator
@@ -16,7 +20,6 @@ from airflow.utils.dates import days_ago
 from airflow.utils.db import provide_session
 from airflow.utils.decorators import apply_defaults
 from airflow.utils.state import State
-from airflow.version import version as AIRFLOW_VERSION
 from openlineage.common.dataset import Source, Dataset
 from openlineage.common.models import (
     DbTableSchema,

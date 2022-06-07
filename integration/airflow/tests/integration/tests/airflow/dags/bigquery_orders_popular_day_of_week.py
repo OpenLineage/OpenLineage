@@ -40,7 +40,7 @@ CONNECTION = 'bq_conn'
 
 t1 = BigQueryOperator(
     task_id='bigquery_if_not_exists',
-    bigquery_conn_id=CONNECTION,
+    gcp_conn_id=CONNECTION,
     sql=f'''
     CREATE TABLE IF NOT EXISTS `{PROJECT_ID}.{DATASET_ID}.{PREFIX}popular_orders_day_of_week` (
       order_day_of_week INTEGER NOT NULL,
@@ -53,7 +53,7 @@ t1 = BigQueryOperator(
 
 t2 = BigQueryOperator(
     task_id='bigquery_empty_table',
-    bigquery_conn_id='bq_conn',
+    gcp_conn_id='bq_conn',
     sql=f'''
     CREATE TABLE IF NOT EXISTS `{PROJECT_ID}.{DATASET_ID}.{PREFIX}top_delivery_times` (
       order_placed_on     TIMESTAMP NOT NULL,
@@ -70,7 +70,7 @@ delay_1 = PythonOperator(
 
 t3 = BigQueryOperator(
     task_id='bigquery_seed',
-    bigquery_conn_id='bq_conn',
+    gcp_conn_id='bq_conn',
     sql=f'''
     INSERT INTO `{PROJECT_ID}.{DATASET_ID}.{PREFIX}top_delivery_times` (order_placed_on) VALUES
     (TIMESTAMP('2008-12-25 15:30:00+00')),
@@ -82,7 +82,7 @@ t3 = BigQueryOperator(
 
 t4 = BigQueryOperator(
     task_id='bigquery_insert',
-    bigquery_conn_id='bq_conn',
+    gcp_conn_id='bq_conn',
     sql=f'''
     INSERT INTO `{PROJECT_ID}.{DATASET_ID}.{PREFIX}popular_orders_day_of_week` (order_day_of_week, order_placed_on, orders_placed)
     SELECT EXTRACT(DAYOFWEEK FROM order_placed_on) AS order_day_of_week,
@@ -96,7 +96,7 @@ t4 = BigQueryOperator(
 
 t5 = BigQueryOperator(
     task_id='bigquery_truncate_top_delivery_times',
-    bigquery_conn_id='bq_conn',
+    gcp_conn_id='bq_conn',
     sql=f'''
     TRUNCATE TABLE `{PROJECT_ID}.{DATASET_ID}.{PREFIX}top_delivery_times`;''',
     use_legacy_sql=False,
@@ -105,7 +105,7 @@ t5 = BigQueryOperator(
 
 t6 = BigQueryOperator(
     task_id='bigquery_truncate_popular_orders_day_of_week',
-    bigquery_conn_id='bq_conn',
+    gcp_conn_id='bq_conn',
     sql=f'''
     TRUNCATE TABLE `{PROJECT_ID}.{DATASET_ID}.{PREFIX}popular_orders_day_of_week`;''',
     use_legacy_sql=False,
