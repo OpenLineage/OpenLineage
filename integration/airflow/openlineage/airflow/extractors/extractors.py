@@ -33,7 +33,11 @@ _extractors = list(
                 "openlineage.airflow.extractors.bash_extractor.BashExtractor"
             ),
             try_import_from_string(
+<<<<<<< HEAD
                 "openlineage.airflow.extractors.python_decorated_extractor.PythonDecoratedExtractor"
+=======
+                "openlineage.airflow.extractors.live_maps_python_decorated_extractor.LiveMapsPythonDecoratedExtractor"
+>>>>>>> 7bdb10fc (ADD LMPD extractor and LMPD to extractor.py)
             ),
         ],
     )
