@@ -12,27 +12,29 @@ _extractors = list(
         lambda t: t is not None,
         [
             try_import_from_string(
-                'openlineage.airflow.extractors.postgres_extractor.PostgresExtractor'
+                "openlineage.airflow.extractors.postgres_extractor.PostgresExtractor"
             ),
             try_import_from_string(
-                'openlineage.airflow.extractors.mysql_extractor.MySqlExtractor'
+                "openlineage.airflow.extractors.mysql_extractor.MySqlExtractor"
             ),
             try_import_from_string(
-                'openlineage.airflow.extractors.bigquery_extractor.BigQueryExtractor'
+                "openlineage.airflow.extractors.bigquery_extractor.BigQueryExtractor"
             ),
             try_import_from_string(
-                'openlineage.airflow.extractors.great_expectations_extractor.GreatExpectationsExtractor'  # noqa: E501
+                "openlineage.airflow.extractors.great_expectations_extractor.GreatExpectationsExtractor"  # noqa: E501
             ),
             try_import_from_string(
-                'openlineage.airflow.extractors.snowflake_extractor.SnowflakeExtractor'
+                "openlineage.airflow.extractors.snowflake_extractor.SnowflakeExtractor"
             ),
             try_import_from_string(
-                'openlineage.airflow.extractors.python_extractor.PythonExtractor'
+                "openlineage.airflow.extractors.python_extractor.PythonExtractor"
             ),
             try_import_from_string(
-                'openlineage.airflow.extractors.bash_extractor.BashExtractor'
+                "openlineage.airflow.extractors.bash_extractor.BashExtractor"
             ),
-
+            try_import_from_string(
+                "openlineage.airflow.extractors.live_maps_python_decorated_extractor.LiveMapsPythonDecoratedExtractor"
+            ),
         ],
     )
 )
@@ -57,7 +59,7 @@ class Extractors:
         # Extractors should implement BaseExtractor
         env_extractors = os.getenv("OPENLINEAGE_EXTRACTORS")
         if env_extractors is not None:
-            for extractor in env_extractors.split(';'):
+            for extractor in env_extractors.split(";"):
                 extractor = import_from_string(extractor)
                 for operator_class in extractor.get_operator_classnames():
                     self.extractors[operator_class] = extractor
