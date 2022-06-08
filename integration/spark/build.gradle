@@ -16,7 +16,6 @@ plugins {
     id "com.adarshr.test-logger" version "2.1.1"
     id 'com.diffplug.spotless' version '5.12.1'
     id "com.github.johnrengelman.shadow" version "7.1.2"
-    // id "com.github.spotbugs" version "5.0.7"
     id "pmd"
 }
 
@@ -150,7 +149,6 @@ dependencies {
 
     lombok  "org.projectlombok:lombok:${lombokVersion}"
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
-    // spotbugsPlugins "com.h3xstream.findsecbugs:findsecbugs-plugin:1.12.0"
 }
 
 sourceSets {
@@ -401,89 +399,15 @@ classes {
 
 pmd {
     consoleOutput = true
-    toolVersion = "6.21.0"
+    toolVersion = "6.46.0"
     rulesMinimumPriority = 5
     ruleSets = ["category/java/errorprone.xml", "category/java/bestpractices.xml"]
+    ignoreFailures = true
 }
 
-// spotbugs {
-//     ignoreFailures = false
-//     showStackTraces = true
-//     showProgress = true
-//     effort = 'default'
-//     reportLevel = 'default'
-//     visitors = [ 'FindSqlInjection', 'SwitchFallthrough' ]
-//     omitVisitors = [ 'FindNonShortCircuit' ]
-//     reportsDir = file("$buildDir/spotbugs")
-//     maxHeapSize = '1g'
-//     extraArgs = [ '-nested:false' ]
-//     jvmArgs = [ '-Duser.language=ja' ]
-// }
-
-// tasks.named('spotbugsSpark3Test').configure {
-//     dependsOn compileSpark3TestJava
-// }
-
-// tasks.named('spotbugsSpark2Test').configure {
-//     dependsOn compileSpark2TestJava
-// }
-
-// tasks.named('spotbugsSpark2Test').configure {
-//     dependsOn compileSpark2Java
-// }
-
-// tasks.named('spotbugsSpark3Test').configure {
-//     dependsOn compileSpark2TestJava
-// }
-
-// tasks.named('spotbugsSpark3Test').configure {
-//     dependsOn compileSpark2Java
-// }
-
-
-
-// tasks.named('spotbugsTest').configure {
-//     dependsOn compileSpark3TestJava
-// }
-
-// tasks.named('spotbugsTest').configure {
-//     dependsOn compileSpark2Java
-// }
-
-// tasks.named('spotbugsTest').configure {
-//     dependsOn compileSpark2TestJava
-// }
-
-// tasks.named('spotbugsSpark2').configure {
-//     dependsOn compileSpark3Java
-// }
-
-// tasks.named('compileSparkTest2Java').configure {
-//     dependsOn compileSpark2Java
-// }
-
-// tasks.named('compileSpark3Java').configure {
-//     dependsOn compileSpark3TestJava
-// }
-
-// tasks.named('compileSparkTest3Java').configure {
-//     dependsOn compileSpark2TestJava
-// }
-
-// OK:
-// tasks.named('spotbugsSpark3').configure {
-//     dependsOn compileSpark2Java
-// }
-
-// tasks.named('spotbugsSpark2Test').configure {
-//     dependsOn compileSpark3TestJava
-// }
-
-// tasks.named('spotbugsSpark2Test').configure {
-//     dependsOn compileSpark2TestJava
-// }
-
-// tasks.named('spotbugsSpark2Test').configure {
-//     dependsOn compileSpark2Java
-// }
-
+pmdMain {
+    dependsOn compileSpark2Java, compileSpark3Java
+    reports {
+        html.required = true
+    }
+}
