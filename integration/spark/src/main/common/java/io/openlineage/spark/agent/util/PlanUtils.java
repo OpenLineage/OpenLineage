@@ -22,6 +22,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.spark.rdd.HadoopRDD;
 import org.apache.spark.rdd.RDD;
+import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.execution.datasources.FileScanRDD;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
@@ -132,6 +133,22 @@ public class PlanUtils {
               .build());
     }
     return list;
+  }
+
+  /**
+   * Given a list of attributes, constructs a valid {@link OpenLineage.SchemaDatasetFacet}.
+   *
+   * @param attributes
+   * @return
+   */
+  public static StructType toStructType(List<Attribute> attributes) {
+    return new StructType(
+        attributes.stream()
+            .map(
+                attr ->
+                    new StructField(attr.name(), attr.dataType(), attr.nullable(), attr.metadata()))
+            .collect(Collectors.toList())
+            .toArray(new StructField[0]));
   }
 
   public static String namespaceUri(URI outputPath) {

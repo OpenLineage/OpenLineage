@@ -2,11 +2,16 @@
 
 package io.openlineage.spark.agent.lifecycle.plan;
 
+import static io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE;
+import static io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.spark.agent.util.PathUtils;
+import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -25,6 +30,7 @@ import org.apache.spark.sql.execution.datasources.SaveIntoDataSourceCommand;
 import org.apache.spark.sql.sources.BaseRelation;
 import org.apache.spark.sql.sources.RelationProvider;
 import org.apache.spark.sql.sources.SchemaRelationProvider;
+import org.apache.spark.sql.types.StructType;
 import scala.Option;
 
 /**
@@ -87,11 +93,16 @@ public class SaveIntoDataSourceCommandVisitor
           command.schema());
     }
 
+    StructType schema = getSchema(command);
+    LifecycleStateChange lifecycleStateChange =
+        (SaveMode.Overwrite == command.mode()) ? OVERWRITE : CREATE;
+
     if (command.dataSource().getClass().getName().contains("DeltaDataSource")) {
       if (command.options().contains("path")) {
         URI uri = URI.create(command.options().get("path").get());
         return Collections.singletonList(
-            outputDataset().getDataset(PathUtils.fromURI(uri, "file"), command.schema()));
+            outputDataset()
+                .getDataset(PathUtils.fromURI(uri, "file"), schema, lifecycleStateChange));
       }
     }
 
@@ -102,7 +113,7 @@ public class SaveIntoDataSourceCommandVisitor
         relation = p.createRelation(sqlContext, command.options());
       } else {
         SchemaRelationProvider p = (SchemaRelationProvider) command.dataSource();
-        relation = p.createRelation(sqlContext, command.options(), command.schema());
+        relation = p.createRelation(sqlContext, command.options(), schema);
       }
     } catch (Exception ex) {
       // Bad detection of errors in scala
@@ -117,8 +128,7 @@ public class SaveIntoDataSourceCommandVisitor
       throw ex;
     }
     LogicalRelation logicalRelation =
-        new LogicalRelation(
-            relation, relation.schema().toAttributes(), Option.empty(), command.isStreaming());
+        new LogicalRelation(relation, schema.toAttributes(), Option.empty(), command.isStreaming());
     return delegate(
             context.getOutputDatasetQueryPlanVisitors(), context.getOutputDatasetBuilders(), event)
         .applyOrElse(
@@ -134,34 +144,40 @@ public class SaveIntoDataSourceCommandVisitor
                 facetsMap.putAll(ds.getFacets().getAdditionalProperties());
               }
               ds.getFacets().getAdditionalProperties().putAll(facetsMap.build());
-              if (SaveMode.Overwrite == command.mode()) {
-                // rebuild whole dataset with a LifecycleStateChange facet added
-                OpenLineage.DatasetFacets facets =
-                    context
-                        .getOpenLineage()
-                        .newDatasetFacets(
-                            ds.getFacets().getDocumentation(),
-                            ds.getFacets().getDataSource(),
-                            ds.getFacets().getVersion(),
-                            ds.getFacets().getSchema(),
-                            null,
-                            null,
-                            context
-                                .getOpenLineage()
-                                .newLifecycleStateChangeDatasetFacet(
-                                    OpenLineage.LifecycleStateChangeDatasetFacet
-                                        .LifecycleStateChange.OVERWRITE,
-                                    null));
 
-                OpenLineage.OutputDataset newDs =
-                    context
-                        .getOpenLineage()
-                        .newOutputDataset(
-                            ds.getNamespace(), ds.getName(), facets, ds.getOutputFacets());
-                return newDs;
-              }
-              return ds;
+              // rebuild whole dataset with a LifecycleStateChange facet added
+              OpenLineage.DatasetFacets facets =
+                  context
+                      .getOpenLineage()
+                      .newDatasetFacets(
+                          ds.getFacets().getDocumentation(),
+                          ds.getFacets().getDataSource(),
+                          ds.getFacets().getVersion(),
+                          ds.getFacets().getSchema(),
+                          null,
+                          null,
+                          context
+                              .getOpenLineage()
+                              .newLifecycleStateChangeDatasetFacet(lifecycleStateChange, null));
+
+              OpenLineage.OutputDataset newDs =
+                  context
+                      .getOpenLineage()
+                      .newOutputDataset(
+                          ds.getNamespace(), ds.getName(), facets, ds.getOutputFacets());
+              return newDs;
             })
         .collect(Collectors.toList());
+  }
+
+  private StructType getSchema(SaveIntoDataSourceCommand command) {
+    StructType schema = command.schema();
+    if ((schema == null || schema.fields() == null || schema.fields().length == 0)
+        && command.query() != null
+        && command.query().output() != null) {
+      // get schema from logical plan's output
+      schema = PlanUtils.toStructType(ScalaConversionUtils.fromSeq(command.query().output()));
+    }
+    return schema;
   }
 }
