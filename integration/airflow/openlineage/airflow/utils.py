@@ -23,8 +23,7 @@ from openlineage.client.facet import (
     DataQualityMetricsInputDatasetFacet,
     ColumnMetric,
     DataQualityAssertionsDatasetFacet,
-    Assertion,
-    OutputStatisticsOutputDatasetFacet
+    Assertion
 )
 
 
@@ -342,10 +341,14 @@ def build_table_check_facets(table_mapping) -> dict:
     """
     Function should expect to take the table_mapping in the following form:
     {
+        'cols_sum_check': {
+            'check_statement': col_a + col_b < col_c,
+            'success': True
+        },
         'row_count_check': {
-            'pass_value': 100,
-            'tolerance': .05,
-            'result': 101,
+            'pass_value': 1000,
+            'result': 1000,
+            'tolerance': 0,
             'success': True
         }
     }
@@ -360,17 +363,15 @@ def build_table_check_facets(table_mapping) -> dict:
             )
         )
         facet_data["rowCount"] = table_mapping.get("row_count_check", {}).get("result", None)
-        facet_data["size"] = table_mapping.get("bytes", {}).get("result", None)
+        facet_data["bytes"] = table_mapping.get("bytes", {}).get("result", None)
 
-    #data_quality_facet = DataQualityMetricsInputDatasetFacet(**facet_data)
+    data_quality_facet = DataQualityMetricsInputDatasetFacet(**facet_data)
     data_quality_assertions_facet = DataQualityAssertionsDatasetFacet(**assertion_data)
-    output_statistics_facet = OutputStatisticsOutputDatasetFacet(**facet_data)
 
     return {
-        #"dataQuality": data_quality_facet,
-        #"dataQualityMetrics": data_quality_facet,
-        "dataQualityAssertions": data_quality_assertions_facet,
-        "outputstatistics": output_statistics_facet
+        "dataQuality": data_quality_facet,
+        "dataQualityMetrics": data_quality_facet,
+        "dataQualityAssertions": data_quality_assertions_facet
     }
 
 
