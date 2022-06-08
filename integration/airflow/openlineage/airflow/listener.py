@@ -1,9 +1,8 @@
 import logging
 import threading
+import time
 import uuid
 from queue import Queue, Empty
-
-import atexit
 
 import attr
 
@@ -67,7 +66,7 @@ class TaskRunner:
         self.queue = Queue(maxsize=0)
         self.thread = threading.Thread(
             target=self.run,
-            daemon=True
+            daemon=False
         )
         self.running = True
         self.thread.start()
@@ -78,11 +77,12 @@ class TaskRunner:
 
     def run(self):
         while self.running:
+            log.info("running = true")
             try:
                 item: Callable = self.queue.get(True, 5)
                 item()
             except Empty:
-                log.debug("Nothing in the queue")
+                log.info("Nothing in the queue")
 
     def terminate(self):
         """
@@ -90,23 +90,41 @@ class TaskRunner:
         :return:
         """
         log.info("Tearing down OpenLineage thread - waiting for active tasks")
-        self.running = False
+        time.sleep(2)
+        # self.running = False
 
         # don't wait for the queue to be empty - a task may be hanging, meaning tasks at the end
         # of the queue may never be handled, so we'd wait forever.
         # leaving this here in case someone else thinks to add this line in the future :)
         # self.queue.join()
 
-        self.thread.join(timeout=2)
+        # self.thread.join(timeout=5)
         log.info("OpenLineage thread torn down")
 
 
 run_data_holder = ActiveRunManager()
 extractor_manager = ExtractorManager()
 adapter = OpenLineageAdapter()
-runner = TaskRunner()
+runner = None
+monitor = None
 
-atexit.register(runner.terminate)
+
+def monitor_thread():
+    log.error("MONITOR THREAD STARTED DAEMON FALSE NOKILL")
+    main_thread = threading.main_thread()
+    main_thread.join()
+    log.error("MAIN THREAD JOINED")
+    # runner.terminate()
+
+
+def start_threads():
+    global runner
+    global monitor
+    runner = TaskRunner()
+    log.error("MONITOR THREAD GOING TO START")
+    monitor = threading.Thread(target=monitor_thread)
+    monitor.daemon = False
+    monitor.start()
 
 
 def execute_in_thread(target: Callable, kwargs=None):
@@ -115,6 +133,8 @@ def execute_in_thread(target: Callable, kwargs=None):
 
 @hookimpl
 def on_task_instance_running(previous_state, task_instance: "TaskInstance", session: "Session"):
+    log.info("OpenLineage listener notified about task instance start")
+    start_threads()
     if not hasattr(task_instance, 'task'):
         log.warning(
             f"No task set for TI object task_id: {task_instance.task_id} - dag_id: {task_instance.dag_id} - run_id {task_instance.run_id}")  # noqa
@@ -153,6 +173,8 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
 
 @hookimpl
 def on_task_instance_success(previous_state, task_instance: "TaskInstance", session):
+    log.info("OpenLineage listener notified about task instance success")
+
     run_data = run_data_holder.get_active_run(task_instance)
 
     dagrun = task_instance.dag_run
@@ -174,6 +196,8 @@ def on_task_instance_success(previous_state, task_instance: "TaskInstance", sess
 
 @hookimpl
 def on_task_instance_failed(previous_state, task_instance: "TaskInstance", session):
+    log.info("OpenLineage listener notified about task instance failed")
+
     run_data = run_data_holder.get_active_run(task_instance)
 
     dagrun = task_instance.dag_run
