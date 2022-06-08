@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.Partition;
 import org.apache.spark.api.python.PythonRDD;
 import org.apache.spark.rdd.RDD;
+import org.apache.spark.sql.catalyst.analysis.FunctionRegistry;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.SQLExecutionRDD;
 import org.apache.spark.sql.sources.BaseRelation;
@@ -144,7 +145,8 @@ class LogicalPlanSerializer {
               .put(PythonRDD.class, PythonRDDMixin.class)
               .put(ClassLoader.class, IgnoredType.class)
               .put(RDD.class, RDDMixin.class)
-              .put(SQLExecutionRDD.class, SqlConfigMixin.class);
+              .put(SQLExecutionRDD.class, SqlConfigMixin.class)
+              .put(FunctionRegistry.class, IgnoredType.class);
       try {
         Class<?> c = PolymorficMixIn.class.getClassLoader().loadClass("java.lang.Module");
         builder.put(c, IgnoredType.class);

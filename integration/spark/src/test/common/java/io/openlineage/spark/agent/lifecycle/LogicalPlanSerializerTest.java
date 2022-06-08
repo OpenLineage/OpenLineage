@@ -3,6 +3,7 @@
 package io.openlineage.spark.agent.lifecycle;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -24,12 +25,16 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nullable;
+import lombok.SneakyThrows;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.Partition;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier;
+import org.apache.spark.sql.catalyst.analysis.FunctionRegistry;
+import org.apache.spark.sql.catalyst.catalog.ExternalCatalog;
+import org.apache.spark.sql.catalyst.catalog.SessionCatalog;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
@@ -322,6 +327,55 @@ class LogicalPlanSerializerTest {
         .satisfies(
             new MatchesMapRecursively(
                 expectedBigQueryRelationNode, Collections.singleton("exprId")));
+  }
+
+  @Test
+  @SneakyThrows
+  public void testSerializeFiltersFields() {
+    LogicalPlan plan =
+        new LogicalPlan() {
+          public SessionCatalog sessionCatalog =
+              new SessionCatalog(mock(ExternalCatalog.class)) {
+                public FunctionRegistry functionRegistry = mock(FunctionRegistry.class);
+              };
+
+          @Override
+          public Seq<Attribute> output() {
+            return null;
+          }
+
+          public StructType schema() {
+            return new StructType(
+                new StructField[] {
+                  new StructField(
+                      "aString", StringType$.MODULE$, false, new Metadata(new HashMap<>()))
+                });
+          }
+
+          @Override
+          public Seq<LogicalPlan> children() {
+            return Seq$.MODULE$.empty();
+          }
+
+          @Override
+          public Object productElement(int n) {
+            return null;
+          }
+
+          @Override
+          public int productArity() {
+            return 0;
+          }
+
+          @Override
+          public boolean canEqual(Object that) {
+            return false;
+          }
+        };
+
+    assertFalse(logicalPlanSerializer.serialize(plan).contains("functionRegistry"));
+    assertFalse(
+        logicalPlanSerializer.serialize(plan).contains("Unable to serialize logical plan due to"));
   }
 
   @SuppressWarnings("rawtypes")
