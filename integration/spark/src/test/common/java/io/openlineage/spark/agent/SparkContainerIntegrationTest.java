@@ -327,6 +327,21 @@ public class SparkContainerIntegrationTest {
     verifyEvents("pysparkTruncateTableStartEvent.json", "pysparkTruncateTableCompleteEvent.json");
   }
 
+  @EnabledIfSystemProperty(named = "spark.version", matches = SPARK_3) // Spark version >= 3.*
+  @Test
+  public void testSaveIntoDataSourceCommand() {
+    pyspark =
+        SparkContainerUtils.makePysparkContainerWithDefaultConf(
+            network,
+            openLineageClientMockContainer,
+            "testSaveIntoDataSource",
+            "--packages",
+            getDeltaPackageName(),
+            "/opt/spark_scripts/spark_save_into_data_source.py");
+    pyspark.start();
+    verifyEvents("pysparkSaveIntoDatasourceCompleteEvent.json");
+  }
+
   @Test
   @EnabledIfSystemProperty(
       named = "spark.version",
