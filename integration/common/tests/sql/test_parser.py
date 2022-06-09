@@ -398,6 +398,35 @@ def test_parse_statement_list():
     assert sql_meta.out_tables == [DbTableMeta('schema1.table1')]
 
 
+def test_parse_io_with_cte():
+    sql_meta = parse(["""
+        WITH new_data AS (
+          SELECT CAST(e_t AS STRING) AS e_t
+          , CAST(parameters['pId'] AS BIGINT) AS p_id
+          , CAST(e_tm AS STRING) AS e_tm
+          , CAST(FROM_UNIXTIME(UNIX_TIMESTAMP(CONCAT(SUBSTR(e_tm, 1, 10), ' ', SUBSTR(e_tm, 12, 12)))) AS TIMESTAMP) AS e_ts
+          , CAST(tgt AS STRING) AS tgt
+          , CAST(parameters['uid'] AS STRING) AS pi_u
+          , CAST(parameters['pId'] AS STRING) AS product_id
+          , CAST(parameters['iAP'] AS STRING) AS iap
+          , CAST(parameters['ppd'] AS STRING) AS ppd
+          , CAST(parameters['sId'] AS BIGINT) AS sid
+          from d_p.e_p
+          WHERE ds = '2022-05-14'
+          AND e_t = 'aPData'
+          AND tgt IN ('bSvc', 'gPA', 'aPA')
+          AND parameters['ppd'] IN ('GPS', 'AAS', 'AS')
+        )  
+        INSERT OVERWRITE TABLE d_d_p.f_iap
+        PARTITION (ds='2022-05-14')
+        SELECT *
+        FROM new_data
+    """])
+    assert sql_meta.in_tables == [DbTableMeta('d_p.e_p')]
+    assert sql_meta.out_tables == [DbTableMeta('d_d_p.f_iap')]
+
+
+
 def test_parse_copy_into_snowflake_at_syntax():
     parse(["""
             COPY INTO SCHEMA.SOME_MONITORING_SYSTEM
