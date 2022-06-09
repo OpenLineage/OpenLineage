@@ -31,7 +31,6 @@ class PythonDecoratedExtractor(BaseExtractor):
         ]
 
     def extract(self) -> Optional[TaskMetadata]:
-        log.info(self)
 
         collect_source = True
         if os.environ.get(
