@@ -60,6 +60,9 @@ public final class HttpTransport extends Transport implements Closeable {
   @Override
   public void emit(@NonNull OpenLineage.RunEvent runEvent) {
     final String eventAsJson = Utils.toJson(runEvent);
+  }
+
+  public void emit(@NonNull String eventAsJson) {
     log.debug("POST {}: {}", uri, eventAsJson);
     try {
       final HttpPost request = new HttpPost();
