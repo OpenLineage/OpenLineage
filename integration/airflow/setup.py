@@ -15,14 +15,11 @@ requirements = [
     "attrs>=19.3",
     "requests>=2.20.0",
     "sqlparse>=0.3.1",
-    f"openlineage-integration-common=={__version__}",
+    f"openlineage-integration-common[sql]=={__version__}",
     f"openlineage-python=={__version__}",
 ]
 
 extras_require = {
-    "sql": [
-        f"openlineage-integration-common[sql]=={__version__}",
-    ],
     "tests": [
         "pytest",
         "pytest-cov",
