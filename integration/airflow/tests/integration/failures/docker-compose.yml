@@ -87,6 +87,8 @@ services:
   airflow_init:
     <<: *airflow-common
     entrypoint: /bin/bash
+    depends_on:
+      - postgres
     command: -c "airflow db init && airflow users create --username airflow --password airflow --firstname airflow --lastname airflow --email airflow@example.com --role Admin"
 
   redis:
