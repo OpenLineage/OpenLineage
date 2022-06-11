@@ -169,7 +169,7 @@ class RddExecutionContext implements ExecutionContext {
           rdd.getClass()
               .getSimpleName()
               .replaceAll("RDD\\d*$", "") // remove the trailing RDD from the class name
-              .replaceAll(CAMEL_TO_SNAKE_CASE, "_$1") // camel case to snake case
+              .replaceAll(PlanUtils.CAMEL_TO_SNAKE_CASE_REGEX, "_$1") // camel case to snake case
               .toLowerCase(Locale.ROOT);
     }
     Seq<Dependency<?>> deps = (Seq<Dependency<?>>) rdd.dependencies();
@@ -290,7 +290,7 @@ class RddExecutionContext implements ExecutionContext {
     String jobName = name + "." + suffix;
     return new OpenLineage.JobBuilder()
         .namespace(eventEmitter.getJobNamespace())
-        .name(jobName.replaceAll(CAMEL_TO_SNAKE_CASE, "_$1").toLowerCase(Locale.ROOT))
+        .name(jobName.replaceAll(PlanUtils.CAMEL_TO_SNAKE_CASE_REGEX, "_$1").toLowerCase(Locale.ROOT))
         .build();
   }
 

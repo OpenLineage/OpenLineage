@@ -25,6 +25,7 @@ import java.net.URISyntaxException;
 import java.util.Optional;
 import java.util.Properties;
 import org.apache.hadoop.fs.Path;
+import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.scheduler.StageInfo;
@@ -51,6 +52,7 @@ class OpenLineageSparkListenerTest {
   void testSqlEventWithJobEventEmitsOnce() {
     SparkSession sparkSession = mock(SparkSession.class);
     SparkContext sparkContext = mock(SparkContext.class);
+    SparkConf sparkConf = new SparkConf();
     EventEmitter emitter = mock(EventEmitter.class);
     QueryExecution qe = mock(QueryExecution.class);
     LogicalPlan query = UnresolvedRelation$.MODULE$.apply(TableIdentifier.apply("tableName"));
@@ -58,6 +60,7 @@ class OpenLineageSparkListenerTest {
 
     when(sparkSession.sparkContext()).thenReturn(sparkContext);
     when(sparkContext.appName()).thenReturn("appName");
+    when(sparkContext.conf()).thenReturn(sparkConf);
     when(qe.optimizedPlan())
         .thenReturn(
             new InsertIntoHadoopFsRelationCommand(

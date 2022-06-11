@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -23,10 +24,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.FileInputFormat;
+import org.apache.spark.SparkContext;
 import org.apache.spark.rdd.HadoopRDD;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.execution.SparkPlan;
+import org.apache.spark.sql.execution.WholeStageCodegenExec;
 import org.apache.spark.sql.execution.datasources.FileScanRDD;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
@@ -45,6 +49,13 @@ public class PlanUtils {
       "[A-Za-z0-9_%]+//?[A-Za-z0-9_%]*@";
   public static final String COLON_DELIMITER_USER_PASSWORD_REGEX =
       "([/|,])[A-Za-z0-9_%]+:?[A-Za-z0-9_%]*@";
+  /**
+   * Pattern used to match a variety of patterns in job names, including camel case and token
+   * separated (whitespace, dash, or underscore), with special handling for upper-case
+   * abbreviations, like XML or JDBC
+   */
+  public static final String CAMEL_TO_SNAKE_CASE_REGEX =
+      "[\\s\\-_]?((?<=.)[A-Z](?=[a-z\\s\\-_])|(?<=[^A-Z])[A-Z]|((?<=[\\s\\-_])[a-z\\d]))";
 
   /**
    * Merge a list of {@link PartialFunction}s and return the first value where the function is
@@ -294,5 +305,18 @@ public class PlanUtils {
       log.info("apply method failed with", e);
       return Collections.emptyList();
     }
+  }
+
+  public static String getSparkJobName(SparkContext sparkContext, SparkPlan node) {
+    // Unwrap SparkPlan from WholeStageCodegen, as that's not a descriptive or helpful job name
+    if (node instanceof WholeStageCodegenExec) {
+      node = ((WholeStageCodegenExec) node).child();
+    }
+    return sparkContext
+            .appName()
+            .replaceAll(CAMEL_TO_SNAKE_CASE_REGEX, "_$1")
+            .toLowerCase(Locale.ROOT)
+        + "."
+        + node.nodeName().replaceAll(CAMEL_TO_SNAKE_CASE_REGEX, "_$1").toLowerCase(Locale.ROOT);
   }
 }

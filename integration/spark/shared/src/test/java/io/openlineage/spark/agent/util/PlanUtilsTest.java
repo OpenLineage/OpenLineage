@@ -10,14 +10,17 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.stream.Stream;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.types.IntegerType$;
 import org.apache.spark.sql.types.StringType$;
 import org.apache.spark.sql.types.StructType;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class PlanUtilsTest {
@@ -127,5 +130,19 @@ class PlanUtilsTest {
     assertEquals("string", schema.fields()[0].dataType().typeName());
     assertEquals("b", schema.fields()[1].name());
     assertEquals("integer", schema.fields()[1].dataType().typeName());
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "A Test Application,a_test_application",
+    "MyTestApplication,my_test_application",
+    "MyXMLBasedApplication,my_xml_based_application",
+    "JDBCRelationApplication,jdbc_relation_application",
+    "Test With a Single LetterBetweenWords,test_with_a_single_letter_between_words"
+  })
+  void testCamelCaseToSnakeCase(String appName, String expected) {
+    String actual =
+        appName.replaceAll(PlanUtils.CAMEL_TO_SNAKE_CASE_REGEX, "_$1").toLowerCase(Locale.ROOT);
+    Assertions.assertEquals(expected, actual);
   }
 }

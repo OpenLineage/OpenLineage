@@ -16,7 +16,6 @@ import io.openlineage.spark.api.OpenLineageContext;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +27,6 @@ import org.apache.spark.scheduler.SparkListenerStageCompleted;
 import org.apache.spark.scheduler.SparkListenerStageSubmitted;
 import org.apache.spark.sql.execution.QueryExecution;
 import org.apache.spark.sql.execution.SparkPlan;
-import org.apache.spark.sql.execution.WholeStageCodegenExec;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 
@@ -68,7 +66,6 @@ class SparkSQLExecutionContext implements ExecutionContext {
     }
     RunEvent event =
         runEventBuilder.buildRun(
-            buildParentFacet(),
             openLineage.newRunEventBuilder().eventTime(toZonedTime(startEvent.time())),
             buildJob(olContext.getQueryExecution().get()),
             startEvent);
@@ -93,7 +90,6 @@ class SparkSQLExecutionContext implements ExecutionContext {
     }
     RunEvent event =
         runEventBuilder.buildRun(
-            buildParentFacet(),
             openLineage.newRunEventBuilder().eventTime(toZonedTime(endEvent.time())),
             buildJob(olContext.getQueryExecution().get()),
             endEvent);
@@ -115,7 +111,6 @@ class SparkSQLExecutionContext implements ExecutionContext {
     }
     RunEvent event =
         runEventBuilder.buildRun(
-            buildParentFacet(),
             openLineage.newRunEventBuilder().eventTime(ZonedDateTime.now(ZoneOffset.UTC)),
             buildJob(olContext.getQueryExecution().get()),
             stageSubmitted);
@@ -137,7 +132,6 @@ class SparkSQLExecutionContext implements ExecutionContext {
     }
     RunEvent event =
         runEventBuilder.buildRun(
-            buildParentFacet(),
             openLineage.newRunEventBuilder().eventTime(ZonedDateTime.now(ZoneOffset.UTC)),
             buildJob(olContext.getQueryExecution().get()),
             stageCompleted);
@@ -165,7 +159,6 @@ class SparkSQLExecutionContext implements ExecutionContext {
     }
     RunEvent event =
         runEventBuilder.buildRun(
-            buildParentFacet(),
             openLineage.newRunEventBuilder().eventTime(toZonedTime(jobStart.time())),
             buildJob(olContext.getQueryExecution().get()),
             jobStart);
@@ -192,7 +185,6 @@ class SparkSQLExecutionContext implements ExecutionContext {
     }
     RunEvent event =
         runEventBuilder.buildRun(
-            buildParentFacet(),
             openLineage.newRunEventBuilder().eventTime(toZonedTime(jobEnd.time())),
             buildJob(olContext.getQueryExecution().get()),
             jobEnd);
@@ -233,6 +225,6 @@ class SparkSQLExecutionContext implements ExecutionContext {
 
   // normalizes string, changes CamelCase to snake_case and replaces all non-alphanumerics with '_'
   private static String normalizeName(String name) {
-    return name.replaceAll(CAMEL_TO_SNAKE_CASE, "_$1").toLowerCase(Locale.ROOT);
+    return name.replaceAll(PlanUtils.CAMEL_TO_SNAKE_CASE_REGEX, "_$1").toLowerCase(Locale.ROOT);
   }
 }
