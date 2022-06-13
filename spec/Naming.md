@@ -124,6 +124,23 @@ Identifier:
  * Unique name: {schema}.{table}
    * URI = sqlserver://{host}:{port};database={database}/{schema}.{table}
 
+#### Azure Cosmos DB:
+Datasource hierarchy:
+azurecosmos://%s.documents.azure.com/dbs/%s
+ * Host: \<XXXXXXXXXXXX>.documents.azure.com
+ * Database
+ 
+Naming hierarchy:
+ * Schema
+ * Table
+
+Identifier:
+ * Namespace: azurecosmos://{host}.documents.azure.com/dbs/{database}
+   * Scheme = azurecosmos
+   * Authority = {host}
+ * Unique name: /colls/{table}
+   * URI = azurecosmos://{host}.documents.azure.com/dbs/{database}/colls/{table}
+
 ### Distributed file systems/blob stores
 #### GCS
 Datasource hierarchy: none, naming is global
