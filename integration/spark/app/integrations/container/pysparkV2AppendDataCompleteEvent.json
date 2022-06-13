@@ -1,0 +1,42 @@
+{
+  "eventType" : "COMPLETE",
+  "job" : {
+    "namespace" : "testV2Commands",
+    "name" : "open_lineage_integration_v2_commands.append_data"
+  },
+  "outputs" : [ {
+    "namespace" : "file",
+    "name" : "/tmp/append_data/db.append_table",
+    "facets" : {
+      "dataSource" : {
+        "name" : "file",
+        "uri" : "file"
+      },
+      "schema" : {
+        "fields" : [ {
+          "name" : "a",
+          "type" : "long"
+        }]
+      },
+      "version" : {},
+      "columnLineage": {
+        "fields": {
+          "a": {
+            "inputFields": [
+              {
+                "namespace": "file",
+                "name": "/tmp/append_data/db.source1",
+                "field": "a"
+              },
+              {
+                "namespace": "file",
+                "name": "/tmp/append_data/db.source2",
+                "field": "a"
+              }
+            ]
+          }
+        }
+      }
+    }
+  } ]
+}

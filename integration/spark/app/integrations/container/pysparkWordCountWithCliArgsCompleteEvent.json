@@ -1,0 +1,64 @@
+{
+  "eventType": "COMPLETE",
+  "run": {
+    "facets": {
+    }
+  },
+  "job": {
+    "namespace": "testPysparkWordCountWithCliArgs",
+    "name": "open_lineage_integration_word_count.execute_insert_into_hadoop_fs_relation_command"
+  },
+  "inputs": [
+    {
+      "namespace": "file",
+      "name": "/test_data",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "value",
+              "type": "string"
+            }
+          ]
+        },
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        }
+      }
+    }
+  ],
+  "outputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/test_data/test_output",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "value",
+              "type": "string"
+            },
+            {
+              "name": "count",
+              "type": "long"
+            }
+          ]
+        },
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "lifecycleStateChange": {
+          "lifecycleStateChange": "OVERWRITE"
+        }
+      },
+      "outputFacets": {
+        "outputStatistics": {
+          "rowCount": "${json-unit.any-number}",
+          "size": "${json-unit.any-number}"
+        }
+      }
+    }
+  ]
+}
