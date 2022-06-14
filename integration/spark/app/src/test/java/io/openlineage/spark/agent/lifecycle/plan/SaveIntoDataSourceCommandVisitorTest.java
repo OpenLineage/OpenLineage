@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.EventEmitter;
+import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -39,7 +40,7 @@ public class SaveIntoDataSourceCommandVisitorTest {
   @Test
   void testSchemaExtractedFromLocalRelation() {
     when(context.getOpenLineage())
-        .thenReturn(new OpenLineage(EventEmitter.OPEN_LINEAGE_PRODUCER_URI));
+        .thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
 
     Attribute attr1 = mock(Attribute.class);
     when(attr1.dataType()).thenReturn(StringType$.MODULE$);
