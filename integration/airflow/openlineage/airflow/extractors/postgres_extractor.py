@@ -103,6 +103,8 @@ class PostgresExtractor(BaseExtractor):
             return f'{self.conn.host}:{self.conn.port}'
         else:
             parsed = urlparse(self.conn.get_uri())
+            if not parsed.port:
+                return f'{parsed.hostname}'
             return f'{parsed.hostname}:{parsed.port}'
 
     def _conn_id(self):
