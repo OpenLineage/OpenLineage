@@ -191,6 +191,10 @@ shadowJar {
         exclude (project(":spark3"))
         exclude (project(":app"))
     }
+    dependencies {
+        exclude(dependency('com.fasterxml.*::'))
+        exclude(dependency('org.slf4j::'))
+    }
     classifier = ''
     // avoid conflict with any client version of that lib
     relocate 'com.github.ok2c.hc5', 'openlineage.com.github.ok2c.hc5'
