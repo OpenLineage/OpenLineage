@@ -122,12 +122,13 @@ shadowJar {
     minimize()
     classifier = ''
     relocate 'com.fasterxml.jackson', 'io.openlineage.client.shaded.com.fasterxml.jackson'
-    relocate 'org.apache.httpcomponents', 'io.openlineage.client.shaded.org.apache.httpcomponents'
-    relocate 'org.apache.http', 'io.openlineage.client.shaded.org.apache.http'
-    relocate 'org.apache.commons.codec', 'io.openlineage.client.shaded.org.apache.commons.codec'
+    relocate('org.apache', 'io.openlineage.client.shaded.org.apache') {
+        exclude  '%regex[org/apache/commons/logging/.*]' // we want to relocate all apache jars except logging which we exclude later
+    }
     relocate 'org.yaml', 'io.openlineage.client.shaded.org.yaml'
 
     exclude 'META-INF/maven/**'
+    exclude 'org/apache/commons/logging/**'
 
     manifest {
         attributes(
