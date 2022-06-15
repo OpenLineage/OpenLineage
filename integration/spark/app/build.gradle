@@ -150,11 +150,14 @@ shadowJar {
     }
     classifier = ''
     // avoid conflict with any client version of that lib
-    relocate 'com.github.ok2c.hc5', 'openlineage.com.github.ok2c.hc5'
-    relocate 'org.apache.httpcomponents.client5', 'openlineage.org.apache.httpcomponents.client5'
-    relocate 'javassist', 'openlineage.javassist'
-    relocate 'org.apache.hc', 'openlineage.hc'
-    relocate 'org.apache.commons.codec', 'openlineage.commons.codec'
+    relocate 'com.github.ok2c.hc5', 'io.openlineage.shaded.github.ok2c.hc5'
+    relocate 'org.apache.httpcomponents.client5', 'io.openlineage.shaded.apache.httpcomponents.client5'
+    relocate 'javassist', 'io.openlineage.shaded.javassist'
+    relocate 'org.apache.hc', 'io.openlineage.shaded.apache.hc'
+    relocate 'org.apache.commons.codec', 'io.openlineage.shaded.apache.commons.codec'
+    relocate 'org.apache.commons.logging', 'io.openlineage.shaded.apache.commons.logging'
+    relocate 'org.apache.http', 'io.openlineage.shaded.apache.http'
+    relocate 'org.yaml.snakeyaml', 'io.openlineage.shaded.yaml.snakeyaml'
     manifest {
         attributes(
                 'Created-By': "Gradle ${gradle.gradleVersion}",
