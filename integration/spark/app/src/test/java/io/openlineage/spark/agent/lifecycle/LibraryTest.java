@@ -11,12 +11,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.Resources;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.Utils;
-import io.openlineage.client.shaded.com.fasterxml.jackson.core.JsonProcessingException;
-import io.openlineage.client.shaded.com.fasterxml.jackson.core.type.TypeReference;
-import io.openlineage.client.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import java.io.IOException;
 import java.net.URL;
