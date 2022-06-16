@@ -38,7 +38,7 @@ public class IcebergHandler implements CatalogHandler {
 
   @Override
   public boolean isClass(TableCatalog tableCatalog) {
-    return tableCatalog instanceof SparkCatalog;
+    return (tableCatalog instanceof SparkCatalog) || (tableCatalog instanceof SparkSessionCatalog);
   }
 
   @Override
@@ -47,8 +47,7 @@ public class IcebergHandler implements CatalogHandler {
       TableCatalog tableCatalog,
       Identifier identifier,
       Map<String, String> properties) {
-    SparkCatalog sparkCatalog = (SparkCatalog) tableCatalog;
-    String catalogName = sparkCatalog.name();
+    String catalogName = tableCatalog.name();
 
     String prefix = String.format("spark.sql.catalog.%s", catalogName);
     Map<String, String> conf =
