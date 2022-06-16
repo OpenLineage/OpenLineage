@@ -16,7 +16,9 @@ See how to join [here](https://github.com/OpenLineage/OpenLineage#community)
 
 Please use the [issues][issues] section of the OpenLineage repository and search for a similar problem. If you don't find it, submit your bug, question, proposal or feature request.
 
-In the case of bugs, please provide steps to reproduce it and tag your issue with "bug"
+Use tags to indicate parts of the OpenLineage that your issue relates to.
+For example, in the case of bugs, please provide steps to reproduce it and tag your issue with `bug` and integration that has that bug, for example `integration/spark`.
+
 
 ## Contributing to the project
 
@@ -36,8 +38,8 @@ To ensure your pull request is accepted, follow these guidelines:
 * Do your best to have a [well-formed](https://frontside.com/blog/2020-7-reasons-for-good-pull-request-descriptions) pull request description for your change
 * [Keep diffs small](https://kurtisnusbaum.medium.com/stacked-diffs-keeping-phabricator-diffs-small-d9964f4dcfa6) and self-contained
 * If your change fixes a bug, please [link the issue](https://help.github.com/articles/closing-issues-using-keywords) in your pull request description
-* Your pull request title should be of the form `[CATEGORY][COMPONENT] Your title`, where `CATEGORY` is either `PROPOSAL`, or `INTEGRATION`,
-  and `COMPONENT` is one of `AIRFLOW`, `DBT`, `SPARK`, etc.
+* Your pull request title should be of the form `component: name`, where `component` is the part of openlineage repo that your PR changes. For example: `flink: add Iceberg source visitor`
+* Use tags to indicate parts of the repository that your PR refers to
 
 ### Branching
 
@@ -62,13 +64,15 @@ To ensure your pull request is accepted, follow these guidelines:
 
 ## Proposing changes
 
-Create an issue and prefix the description with "[PROPOSAL]"
+Create an issue and tag it as `proposal`
 
 In the description provide the following sections:
  - Purpose (Why?): What is the use case this is for. 
  - Proposed implementation (How?): Quick description of how do you propose to implement it. Are you proposing a new facet?
 
 This can be just a couple paragraphs to start with.
+
+Proposals that change OpenLineage specifications should be tagged as `spec`.
 
 ## New Integrations
 New integrations should be added under the [./integrations](/integrations) folder. Each module
