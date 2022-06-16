@@ -1,3 +1,6 @@
+# Copyright 2018-2022 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
+
 from unittest.mock import MagicMock
 
 from openlineage.airflow.extractors.dbapi_utils import get_table_schemas
