@@ -64,6 +64,8 @@ public class TableContentChangeDatasetBuilder
       table = (NamedRelation) ((UpdateTable) x).table();
     } else if (x instanceof MergeIntoTable) {
       table = (NamedRelation) ((MergeIntoTable) x).targetTable();
+    } else if (x instanceof DataSourceV2ScanRelation) {
+      table = ((DataSourceV2ScanRelation) x).relation();
     } else {
       table = ((OverwritePartitionsDynamic) x).table();
       includeOverwriteFacet = true;
@@ -80,9 +82,13 @@ public class TableContentChangeDatasetBuilder
                   null));
     }
 
+    DataSourceV2Relation returnTable =
+        (table instanceof DataSourceV2ScanRelation)
+            ? ((DataSourceV2ScanRelation) table).relation()
+            : (DataSourceV2Relation) table;
     DatasetVersionDatasetFacetUtils.includeDatasetVersion(
-        context, datasetFacetsBuilder, (DataSourceV2Relation) table);
+        context, datasetFacetsBuilder, returnTable);
     return PlanUtils3.fromDataSourceV2Relation(
-        outputDataset(), context, (DataSourceV2Relation) table, datasetFacetsBuilder);
+        outputDataset(), context, returnTable, datasetFacetsBuilder);
   }
 }
