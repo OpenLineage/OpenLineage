@@ -86,8 +86,10 @@ services:
 
   airflow_init:
     <<: *airflow-common
-    entrypoint: /bin/bash
     command: -c "airflow db init && airflow users create --username airflow --password airflow --firstname airflow --lastname airflow --email airflow@example.com --role Admin"
+    depends_on:
+      - postgres
+    entrypoint: ["/opt/data/wait-for-it.sh", "postgres:5432", "--", "/bin/bash"]
 
   redis:
     image: redis:latest
