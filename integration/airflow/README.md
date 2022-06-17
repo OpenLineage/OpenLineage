@@ -227,23 +227,39 @@ t1 = DataProcPySparkOperator(
 
 To install all dependencies for _local_ development:
 
+Airflow integration depends on `openlineage.sql`, `openlineage.common` & `openlineage.client.python`. You should install them first independently or try to install with following command:
+
+Airflow 1.10:
 ```bash
-# Bash
-$ pip3 install -e .[dev]
-```
-```zsh
-# escape the brackets in zsh
-$ pip3 install -e .\[dev\]
+$ pip install -r dev-requirements-1.x.txt
 ```
 
-To run the entire test suite, you'll first want to initialize the Airflow database:
-
+Airflow 2.0+:
 ```bash
-$ airflow initdb
+$ pip install -r dev-requirements-2.x.txt
 ```
-
-Then, run the test suite with:
-
+### Unit tests
+To run the entire unit test suite use below command:
 ```bash
-$ pytest
+$ tox
+```
+or choose one of the environments, e.g.:
+```bash
+$ tox -e py-airflow214
+```
+You can also skip using `tox` and run `pytest` on your own dev environment.
+### Integration tests
+Integration tests require usage of _docker compose_. There are scripts prepared to make build images and run tests easier.
+
+Airflow 1.10:
+```bash
+$ ./tests/integration/docker/up.sh
+```
+Airflow 2.0+:
+```bash
+$ AIRFLOW_IMAGE=<name-of-airflow-image> ./tests/integration/docker/up-2.sh
+```
+e.g.
+```bash
+$ AIRFLOW_IMAGE=apache/airflow:2.3.1-python3.7 ./tests/integration/docker/up-2.sh
 ```

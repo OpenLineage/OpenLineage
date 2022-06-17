@@ -337,10 +337,14 @@ class TestBigQueryExtractor(unittest.TestCase):
 
     @staticmethod
     def _get_ti(task):
+        kwargs = {}
+        if parse_version(AIRFLOW_VERSION) > parse_version("2.2.0"):
+            kwargs['run_id'] = 'test_run_id'  # change in 2.2.0
         task_instance = TaskInstance(
             task=task,
             execution_date=datetime.utcnow().replace(tzinfo=pytz.utc),
-            state=State.RUNNING)
+            state=State.RUNNING,
+            **kwargs)
         task_instance.job_id = random.randrange(10000)
 
         return task_instance

@@ -332,30 +332,12 @@ jobs:
           paths:
             - ~/.gradle
 
-  unit-test-integration-airflow-1:
+  unit-test-integration-airflow:
     parameters:
       install_parser:
         type: boolean
-    working_directory: ~/openlineage/integration/airflow
-    docker:
-      - image: cimg/python:3.7
-    steps:
-      - *checkout_project_root
-      - *install_python_client
-      - install_integration_common:
-          install_parser: true
-      - run: pip install --upgrade pip==20.2.4
-      - run: pip install -e .[dev,airflow-1] --constraint="https://raw.githubusercontent.com/apache/airflow/constraints-1.10.15/constraints-3.7.txt"
-      - run: flake8 --exclude tests/integration
-      - run: python -m mypy --ignore-missing-imports openlineage
-      - run: airflow initdb
-      - run: pytest --cov=openlineage --ignore tests/integration tests/
-      - run: bash <(curl -s https://codecov.io/bash)
-
-  unit-test-integration-airflow-2:
-    parameters:
-      install_parser:
-        type: boolean
+      airflow-version:
+        type: string
     working_directory: ~/openlineage/integration/airflow
     docker:
       - image: cimg/python:3.7
@@ -364,11 +346,18 @@ jobs:
       - *install_python_client
       - install_integration_common:
           install_parser: << parameters.install_parser >>
-      - run: pip install -e .[dev,airflow-2] --constraint="https://raw.githubusercontent.com/apache/airflow/constraints-2.1.3/constraints-3.7.txt"
-      - run: flake8 --exclude tests/integration
+      - run: pip install tox mypy==0.770
       - run: python -m mypy --ignore-missing-imports openlineage
-      - run: airflow db init
-      - run: pytest --cov=openlineage --ignore tests/integration --ignore tests/test_openlineage_dag.py tests/
+      - restore_cache:
+          keys:
+            - v1-toxenv-<< parameters.airflow-version >>-{{ checksum "setup.cfg" }}-{{ checksum "setup.py" }}
+      - run: tox -e py3-<< parameters.airflow-version >>
+      - store_test_results:
+          path: test-results
+      - save_cache:
+          paths:
+            - ./.tox
+          key: v1-toxenv-<< parameters.airflow-version >>-{{ checksum "setup.cfg" }}-{{ checksum "setup.py" }}
       - run: bash <(curl -s https://codecov.io/bash)
 
   build-integration-airflow:
@@ -406,6 +395,9 @@ jobs:
       - store_artifacts:
           path: airflow/tests/integration/tests/airflow/logs
           destination: airflow-logs
+      - store_artifacts:
+          path: airflow/tests/integration/tests/events
+          destination: events
 
   integration-test-integration-airflow:
     parameters:
@@ -428,8 +420,14 @@ jobs:
       - store_artifacts:
           path: airflow/tests/integration/tests/airflow/logs
           destination: airflow-logs
+      - store_artifacts:
+          path: airflow/tests/integration/tests/events
+          destination: events
 
   integration-test-integration-airflow-failure:
+    parameters:
+        failure-type:
+          type: string
     working_directory: ~/openlineage/integration/
     machine:
       image: ubuntu-2004:current
@@ -440,7 +438,7 @@ jobs:
       - attach_workspace:
           at: .
       - run: docker build -f airflow/Dockerfile.tests -t openlineage-airflow-base .
-      - run: AIRFLOW_IMAGE=apache/airflow:2.3.1-python3.7 ./airflow/tests/integration/docker/up-failure.sh
+      - run: AIRFLOW_IMAGE=apache/airflow:2.3.1-python3.7 ./airflow/tests/integration/docker/up-failure.sh << parameters.failure-type >>
       - store_artifacts:
           path: airflow/tests/integration/failures/airflow/logs
           destination: airflow-logs

@@ -15,14 +15,12 @@ if [[ "$(docker images -q openlineage-airflow-base:latest 2> /dev/null)" == "" ]
   exit 1
 fi
 
-if [[ -n "$CI" ]]; then
-  mkdir -p failures/airflow/logs
-  chmod a+rwx -R failures/airflow/logs
-fi
+mkdir -p failures/airflow/logs
+chmod a+rwx -R failures/airflow/logs
 
 # maybe overkill
-OPENLINEAGE_AIRFLOW_WHL=$(docker run openlineage-airflow-base:latest sh -c "ls /whl/openlineage*.whl")
-OPENLINEAGE_AIRFLOW_WHL_ALL=$(docker run openlineage-airflow-base:latest sh -c "ls /whl/*")
+OPENLINEAGE_AIRFLOW_WHL=$(docker run --rm openlineage-airflow-base:latest sh -c "ls /whl/openlineage*.whl")
+OPENLINEAGE_AIRFLOW_WHL_ALL=$(docker run --rm openlineage-airflow-base:latest sh -c "ls /whl/*")
 
 # Add revision to requirements.txt
 cat > requirements.txt <<EOL
@@ -41,15 +39,21 @@ python-dateutil==2.8.2
 ${OPENLINEAGE_AIRFLOW_WHL}
 EOL
 
-docker-compose -f failures/docker-compose.yml down
-docker-compose -f failures/docker-compose.yml up --build --abort-on-container-exit airflow_init postgres
-OPENLINEAGE_URL="http://backend:5000/error/" docker-compose -f failures/docker-compose.yml up --build --exit-code-from integration --scale airflow_init=0
-docker-compose -f failures/docker-compose.yml down
+case "$1" in
+error)
+   URL="http://backend:5000/error/"
+   ;;
+timeout)
+   URL="http://backend:5000/timeout/"
+   ;;
+network-partition)
+   URL="http://network-partition:5000/" 
+   ;;
+*)
+   echo "no URL provided"
+   ;;
+esac
 
-docker-compose -f failures/docker-compose.yml up --build --abort-on-container-exit airflow_init postgres
-OPENLINEAGE_URL="http://backend:5000/timeout/" docker-compose -f failures/docker-compose.yml up --build --exit-code-from integration --scale airflow_init=0
 docker-compose -f failures/docker-compose.yml down
-
 docker-compose -f failures/docker-compose.yml up --build --abort-on-container-exit airflow_init postgres
-OPENLINEAGE_URL="http://network-partition:5000/" docker-compose -f failures/docker-compose.yml up --build --exit-code-from integration --scale airflow_init=0
-docker-compose -f failures/docker-compose.yml down
+OPENLINEAGE_URL=$URL docker-compose -f failures/docker-compose.yml up --build --exit-code-from integration --scale airflow_init=0
