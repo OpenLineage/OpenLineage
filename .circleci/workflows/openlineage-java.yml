@@ -2,6 +2,7 @@ workflows:
   openlineage-java:
     jobs:
       - build-client-java
+      - build-integration-flink
       - publish-snapshot-client-java:
           filters:
             branches:
@@ -9,24 +10,30 @@ workflows:
           context: release
           requires:
             - build-client-java
-      - build-integration-spark:
-          matrix:
-            parameters:
-              spark-version: [ '2.4.6', '3.1.2', '3.2.1' ]
-      - integration-test-integration-spark:
-          matrix:
-            parameters:
-              spark-version: [ '2.4.6', '3.1.2', '3.2.1' ]
+      # TODO: temporar switch off
+      # - build-integration-spark:
+      #     matrix:
+      #       parameters:
+      #         spark-version: [ '2.4.6', '3.1.2', '3.2.1' ]
+      # - integration-test-integration-spark:
+      #     matrix:
+      #       parameters:
+      #         spark-version: [ '2.4.6', '3.1.2', '3.2.1' ]
+      #    requires:
+      #      - build-integration-spark
+      - integration-test-integration-flink:
           requires:
-            - build-integration-spark
-      - publish-snapshot-integration-spark:
-          filters:
-            branches:
-              only: main
-          context: release
-          requires:
-            - integration-test-integration-spark
+            - build-integration-flink
+      # - publish-snapshot-integration-spark:
+      #     filters:
+      #       branches:
+      #         only: main
+      #     context: release
+      #     requires:
+      #       - integration-test-integration-spark
       - workflow_complete:
           requires:
-            - publish-snapshot-integration-spark
-            - integration-test-integration-spark
+            #- publish-snapshot-integration-spark
+            #- integration-test-integration-spark
+            - integration-test-integration-flink
+

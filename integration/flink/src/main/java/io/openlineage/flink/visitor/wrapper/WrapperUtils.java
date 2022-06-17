@@ -7,8 +7,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.FieldUtils;
 
 /**
- * Class with utility methods related to make use of {@org.apache.commons.lang3.reflect.FieldUtils}
- * and {@org.apache.commons.lang3.reflect.MethodUtils}
+ * Class with utility methods related to make use of {@link
+ * org.apache.commons.lang3.reflect.FieldUtils} and {@link
+ * org.apache.commons.lang3.reflect.MethodUtils}
  */
 @Slf4j
 public class WrapperUtils {
@@ -16,11 +17,11 @@ public class WrapperUtils {
   /**
    * Gets a field of a given object
    *
-   * @param aClass
-   * @param object
-   * @param field
-   * @param <T>
-   * @return
+   * @param aClass class to find a field
+   * @param object object to extract field value
+   * @param field fielnd name
+   * @param <T> returned type
+   * @return field valuesrc/main/java/io/openlineage/flink/visitor/wrapper/WrapperUtils.java
    */
   public static <T> Optional<T> getFieldValue(Class aClass, Object object, String field) {
     try {
