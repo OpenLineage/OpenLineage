@@ -24,18 +24,21 @@ workflows:
           build_tag: ".dev<< pipeline.number >>"
           requires:
             - unit-test-integration-common
-      - unit-test-integration-airflow-1:
-          install_parser: true
-          requires:
-            - build-integration-sql-x86
-      - unit-test-integration-airflow-2:
-          install_parser: true
+      - unit-test-integration-airflow:
+          matrix:
+              parameters:
+                airflow-version: [
+                  'airflow-1.10.15',
+                  'airflow-2.1.4',
+                  'airflow-2.3.1'
+                ]
+                install_parser: [ true ]
           requires:
             - build-integration-sql-x86
       - integration-test-integration-airflow-1-10:
           context: integration-tests
           requires:
-            - unit-test-integration-airflow-1
+            - unit-test-integration-airflow
             - unit-test-integration-common
             - unit-test-client-python
             - build-integration-sql-x86
@@ -52,7 +55,7 @@ workflows:
               ]
           context: integration-tests
           requires:
-            - unit-test-integration-airflow-2
+            - unit-test-integration-airflow
             - unit-test-integration-common
             - unit-test-client-python
             - build-integration-sql-x86
@@ -60,9 +63,16 @@ workflows:
             branches:
               ignore: /pull\/[0-9]+/
       - integration-test-integration-airflow-failure:
+          matrix:
+            parameters:
+              failure-type: [
+                'timeout',
+                'error',
+                'network-partition'
+              ]
           context: integration-tests
           requires:
-            - unit-test-integration-airflow-2
+            - unit-test-integration-airflow
             - unit-test-integration-common
             - unit-test-client-python
             - build-integration-sql-x86
