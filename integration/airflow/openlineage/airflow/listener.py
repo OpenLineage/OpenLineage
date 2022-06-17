@@ -60,11 +60,7 @@ log = logging.getLogger("airflow")
 def execute_in_thread(target: Callable, kwargs=None):
     if kwargs is None:
         kwargs = {}
-    thread = threading.Thread(
-        target=target,
-        kwargs=kwargs,
-        daemon=True
-    )
+    thread = threading.Thread(target=target, kwargs=kwargs, daemon=True)
     thread.start()
 
     def __init__(self):
