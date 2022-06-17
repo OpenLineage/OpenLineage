@@ -1,0 +1,5 @@
+requirements.txt
+/tests/integration/tests/airflow/logs
+/tests/integration/tests/events
+/tests/integration/integration-requirements.txt
+/test-results

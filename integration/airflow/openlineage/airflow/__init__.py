@@ -10,7 +10,6 @@ __version__ = "0.10.0"
 
 if parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"):     # type: ignore
     from openlineage.airflow.dag import DAG
-    __all__ = ["DAG"]
     logging.warning(
         f'''
         OpenLineage supprot for Airflow version {AIRFLOW_VERSION}
@@ -19,3 +18,6 @@ if parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"):     # type: ignore
         in order to continue using OpenLineage.
         '''
     )
+else:
+    from airflow.models import DAG
+__all__ = ["DAG"]

@@ -62,7 +62,7 @@ services:
     depends_on:
       - airflow_scheduler
       - backend
-    entrypoint: ["./wait-for-it.sh", "backend:5000", "--", "python", "test_integration.py"]
+    entrypoint: ["./wait-for-it.sh", "backend:5000", "--", "python", '-m', 'pytest']
 
   airflow_scheduler:
     <<: *airflow-base
@@ -96,7 +96,10 @@ services:
 
   airflow_init:
     <<: *airflow-base
-    command: db init
+    entrypoint: /bin/bash
+    command: -c "airflow db init && airflow users create --username airflow --password airflow --firstname airflow --lastname airflow --email airflow@example.com --role Admin"
+    depends_on:
+      - postgres
 
   redis:
     image: redis:latest
