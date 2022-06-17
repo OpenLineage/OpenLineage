@@ -167,14 +167,14 @@ shadowJar {
     }
     classifier = ''
     // avoid conflict with any client version of that lib
-    relocate 'com.github.ok2c.hc5', 'io.openlineage.shaded.com.github.ok2c.hc5'
-    relocate 'org.apache.httpcomponents.client5', 'io.openlineage.shaded.org.apache.httpcomponents.client5'
-    relocate 'javassist', 'io.openlineage.shaded.javassist'
-    relocate 'org.apache.hc', 'io.openlineage.shaded.org.apache.hc'
-    relocate 'org.apache.commons.codec', 'io.openlineage.shaded.org.apache.commons.codec'
-    relocate 'org.apache.commons.logging', 'io.openlineage.shaded.org.apache.commons.logging'
-    relocate 'org.apache.http', 'io.openlineage.shaded.org.apache.http'
-    relocate 'org.yaml.snakeyaml', 'io.openlineage.shaded.org.yaml.snakeyaml'
+    relocate 'com.github.ok2c.hc5', 'io.openlineage.spark.shaded.com.github.ok2c.hc5'
+    relocate 'org.apache.httpcomponents.client5', 'io.openlineage.spark.shaded.org.apache.httpcomponents.client5'
+    relocate 'javassist', 'io.openlineage.spark.shaded.javassist'
+    relocate 'org.apache.hc', 'io.openlineage.spark.shaded.org.apache.hc'
+    relocate 'org.apache.commons.codec', 'io.openlineage.spark.shaded.org.apache.commons.codec'
+    relocate 'org.apache.commons.logging', 'io.openlineage.spark.shaded.org.apache.commons.logging'
+    relocate 'org.apache.http', 'io.openlineage.spark.shaded.org.apache.http'
+    relocate 'org.yaml.snakeyaml', 'io.openlineage.spark.shaded.org.yaml.snakeyaml'
     manifest {
         attributes(
                 'Created-By': "Gradle ${gradle.gradleVersion}",
