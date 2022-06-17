@@ -1,8 +1,3 @@
-<!-- SPDX-License-Identifier: Apache-2.0 -->
-
-<!-- SPDX-License-Identifier: CC-BY-4.0 -->
-<!-- Copyright Contributors to the OpenLineage project. -->
-
 # Why the DCO?
 
 We have tried to make it as easy as possible to make contributions. 

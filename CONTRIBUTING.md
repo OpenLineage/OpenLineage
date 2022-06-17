@@ -1,5 +1,3 @@
-<!-- SPDX-License-Identifier: Apache-2.0 -->
-
 # Contributing to OpenLineage
 
 This project welcomes contributors from any organization or background, provided they are
