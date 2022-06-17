@@ -3,6 +3,13 @@
 package io.openlineage.spark.agent.lifecycle;
 
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.Stack;
+import java.util.stream.Collectors;
 import org.apache.spark.Dependency;
 import org.apache.spark.rdd.HadoopRDD;
 import org.apache.spark.rdd.RDD;
@@ -13,9 +20,6 @@ import org.apache.spark.sql.execution.datasources.FileScanRDD;
 import org.apache.spark.storage.RDDInfo;
 import scala.collection.JavaConversions;
 import scala.collection.Seq;
-
-import java.util.*;
-import java.util.stream.Collectors;
 
 public class Rdds {
 

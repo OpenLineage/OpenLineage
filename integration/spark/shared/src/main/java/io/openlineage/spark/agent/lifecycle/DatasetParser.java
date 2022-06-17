@@ -2,9 +2,8 @@
 
 package io.openlineage.spark.agent.lifecycle;
 
-import lombok.Value;
-
 import java.net.URI;
+import lombok.Value;
 
 public class DatasetParser {
   public static DatasetParseResult parse(URI uri) {

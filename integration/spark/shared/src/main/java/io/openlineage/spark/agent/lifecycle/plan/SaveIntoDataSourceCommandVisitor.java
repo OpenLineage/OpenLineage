@@ -71,8 +71,7 @@ public class SaveIntoDataSourceCommandVisitor
   }
 
   @Override
-  public List<OutputDataset> apply(
-      SparkListenerEvent event, SaveIntoDataSourceCommand command) {
+  public List<OutputDataset> apply(SparkListenerEvent event, SaveIntoDataSourceCommand command) {
     BaseRelation relation;
 
     // Kafka has some special handling because the Source and Sink relations require different

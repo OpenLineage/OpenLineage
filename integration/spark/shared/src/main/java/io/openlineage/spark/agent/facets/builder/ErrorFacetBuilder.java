@@ -5,10 +5,9 @@ package io.openlineage.spark.agent.facets.builder;
 import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.spark.agent.facets.ErrorFacet;
 import io.openlineage.spark.api.CustomFacetBuilder;
+import java.util.function.BiConsumer;
 import org.apache.spark.scheduler.JobFailed;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
-
-import java.util.function.BiConsumer;
 
 /** {@link CustomFacetBuilder} that generates an {@link ErrorFacet} for job failure events. */
 public class ErrorFacetBuilder extends CustomFacetBuilder<SparkListenerJobEnd, RunFacet> {

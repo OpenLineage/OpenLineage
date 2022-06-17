@@ -2,14 +2,13 @@
 
 package io.openlineage.spark.api;
 
-import io.openlineage.client.OpenLineage.*;
-import org.apache.spark.scheduler.StageInfo;
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
-import scala.PartialFunction;
-
+import io.openlineage.client.OpenLineage;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import org.apache.spark.scheduler.StageInfo;
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import scala.PartialFunction;
 
 /**
  * Factory for the builders that generate OpenLineage components and facets from Spark events.
@@ -50,26 +49,26 @@ public interface OpenLineageEventHandlerFactory {
 
   /**
    * Create a collection of {@link PartialFunction}s that may be applied to a single {@link
-   * LogicalPlan} node to construct an {@link InputDataset}. {@link PartialFunction} implementations
-   * will typically extend {@link QueryPlanVisitor}.
+   * LogicalPlan} node to construct an {@link OpenLineage.InputDataset}. {@link PartialFunction}
+   * implementations will typically extend {@link QueryPlanVisitor}.
    *
    * @param context
    * @return
    */
-  default Collection<PartialFunction<LogicalPlan, List<InputDataset>>>
+  default Collection<PartialFunction<LogicalPlan, List<OpenLineage.InputDataset>>>
       createInputDatasetQueryPlanVisitors(OpenLineageContext context) {
     return Collections.emptyList();
   }
 
   /**
    * Create a collection of {@link PartialFunction}s that may be applied to a single {@link
-   * LogicalPlan} node to construct an {@link OutputDataset}. {@link PartialFunction}
+   * LogicalPlan} node to construct an {@link OpenLineage.OutputDataset}. {@link PartialFunction}
    * implementations will typically extend {@link QueryPlanVisitor}.
    *
    * @param context
    * @return
    */
-  default Collection<PartialFunction<LogicalPlan, List<OutputDataset>>>
+  default Collection<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>>
       createOutputDatasetQueryPlanVisitors(OpenLineageContext context) {
     return Collections.emptyList();
   }
@@ -77,51 +76,52 @@ public interface OpenLineageEventHandlerFactory {
   /**
    * Create a collection of {@link PartialFunction}s that may be applied to various Spark
    * application events and other objects (see class javadocs) that can contain information used to
-   * construct an {@link InputDataset}. Typically, implementations should extend {@link
+   * construct an {@link OpenLineage.InputDataset}. Typically, implementations should extend {@link
    * AbstractInputDatasetBuilder}.
    *
    * @param context
    * @return
    */
-  default Collection<PartialFunction<Object, List<InputDataset>>> createInputDatasetBuilder(
-      OpenLineageContext context) {
+  default Collection<PartialFunction<Object, List<OpenLineage.InputDataset>>>
+      createInputDatasetBuilder(OpenLineageContext context) {
     return Collections.emptyList();
   }
 
   /**
    * Create a collection of {@link PartialFunction}s that may be applied to various Spark
    * application events and other objects (see class javadocs) that can contain information used to
-   * construct an {@link OutputDataset}. Typically, implementations should extend {@link
+   * construct an {@link OpenLineage.OutputDataset}. Typically, implementations should extend {@link
    * AbstractOutputDatasetBuilder}.
    *
    * @param context
    * @return
    */
-  default Collection<PartialFunction<Object, List<OutputDataset>>> createOutputDatasetBuilder(
-      OpenLineageContext context) {
+  default Collection<PartialFunction<Object, List<OpenLineage.OutputDataset>>>
+      createOutputDatasetBuilder(OpenLineageContext context) {
     return Collections.emptyList();
   }
 
   /**
    * Create a collection of {@link PartialFunction}s that may be applied to various Spark
    * application events and other objects (see class javadocs) that can contain information used to
-   * construct an {@link InputDatasetFacet}s. {@link InputDatasetFacet}s created by these functions
-   * may be attached to <i>any</i> {@link InputDataset} defined for the current context - typically,
-   * there is only one {@link InputDataset} defined for a single Spark {@link
-   * org.apache.spark.scheduler.Stage}. {@link PartialFunction}s defined for a {@link
-   * org.apache.spark.scheduler.Stage} or {@link StageInfo} can be
-   * matched to a specific {@link InputDataset} if the required facet information is available. For
-   * example, a facet detailing the number of records read for an {@link InputDataset} can be
-   * constructed from the {@link StageInfo#taskMetrics()} returned by the stage where that dataset
-   * is read. If a user wants to ensure the {@link InputDatasetFacet} is targeted to a specific
-   * {@link InputDataset}, they should implement a builder that returns an {@link InputDataset} and
-   * directly attach the facet. Merging the dataset and its facets can be handled separately.
-   * Typically, implementations should extend {@link AbstractInputDatasetFacetBuilder}.
+   * construct an {@link OpenLineage.InputDatasetFacet}s. {@link OpenLineage.InputDatasetFacet}s
+   * created by these functions may be attached to <i>any</i> {@link OpenLineage.InputDataset}
+   * defined for the current context - typically, there is only one {@link OpenLineage.InputDataset}
+   * defined for a single Spark {@link org.apache.spark.scheduler.Stage}. {@link PartialFunction}s
+   * defined for a {@link org.apache.spark.scheduler.Stage} or {@link StageInfo} can be matched to a
+   * specific {@link OpenLineage.InputDataset} if the required facet information is available. For
+   * example, a facet detailing the number of records read for an {@link OpenLineage.InputDataset}
+   * can be constructed from the {@link StageInfo#taskMetrics()} returned by the stage where that
+   * dataset is read. If a user wants to ensure the {@link OpenLineage.InputDatasetFacet} is
+   * targeted to a specific {@link OpenLineage.InputDataset}, they should implement a builder that
+   * returns an {@link OpenLineage.InputDataset} and directly attach the facet. Merging the dataset
+   * and its facets can be handled separately. Typically, implementations should extend {@link
+   * AbstractInputDatasetFacetBuilder}.
    *
    * @param context
    * @return
    */
-  default Collection<CustomFacetBuilder<?, ? extends InputDatasetFacet>>
+  default Collection<CustomFacetBuilder<?, ? extends OpenLineage.InputDatasetFacet>>
       createInputDatasetFacetBuilders(OpenLineageContext context) {
     return Collections.emptyList();
   }
@@ -129,18 +129,20 @@ public interface OpenLineageEventHandlerFactory {
   /**
    * Create a collection of {@link PartialFunction}s that may be applied to various Spark
    * application events and other objects (see class javadocs) that can contain information used to
-   * construct an {@link OutputDatasetFacet}s. {@link OutputDatasetFacet}s created by these
-   * functions may be attached to <i>any</i> {@link OutputDataset} defined for the current context -
-   * typically, there is only one {@link OutputDataset} defined for a given Spark application. If a
-   * user wants to ensure the {@link OutputDatasetFacet} is targeted to a specific {@link
-   * OutputDataset}, they should implement a builder that returns an {@link OutputDataset} and
-   * directly attach the facet. Merging the dataset and its facets can be handled separately.
-   * Typically, implementations should extend {@link AbstractOutputDatasetFacetBuilder}.
+   * construct an {@link OpenLineage.OutputDatasetFacet}s. {@link OpenLineage.OutputDatasetFacet}s
+   * created by these functions may be attached to <i>any</i> {@link OpenLineage.OutputDataset}
+   * defined for the current context - typically, there is only one {@link
+   * OpenLineage.OutputDataset} defined for a given Spark application. If a user wants to ensure the
+   * {@link OpenLineage.OutputDatasetFacet} is targeted to a specific {@link
+   * OpenLineage.OutputDataset}, they should implement a builder that returns an {@link
+   * OpenLineage.OutputDataset} and directly attach the facet. Merging the dataset and its facets
+   * can be handled separately. Typically, implementations should extend {@link
+   * AbstractOutputDatasetFacetBuilder}.
    *
    * @param context
    * @return
    */
-  default Collection<CustomFacetBuilder<?, ? extends OutputDatasetFacet>>
+  default Collection<CustomFacetBuilder<?, ? extends OpenLineage.OutputDatasetFacet>>
       createOutputDatasetFacetBuilders(OpenLineageContext context) {
     return Collections.emptyList();
   }
@@ -148,34 +150,35 @@ public interface OpenLineageEventHandlerFactory {
   /**
    * Create a collection of {@link PartialFunction}s that may be applied to various Spark
    * application events and other objects (see class javadocs) that can contain information used to
-   * construct an {@link DatasetFacet}s. {@link DatasetFacet}s created by these functions may be
-   * attached to <i>any</i> {@link io.openlineage.client.OpenLineage.Dataset} defined for the
-   * current context - this will include any {@link InputDataset} or {@link OutputDataset} found in
-   * the current context. If a user wants to ensure the {@link DatasetFacet} is targeted to a
-   * specific {@link OutputDataset} or {@link InputDataset}, they should implement a builder that
-   * returns an {@link io.openlineage.client.OpenLineage.Dataset} and directly attach the facet.
-   * Merging the dataset and its facets can be handled separately. Typically, implementations should
-   * extend {@link AbstractDatasetFacetBuilder}.
+   * construct an {@link OpenLineage.DatasetFacet}s. {@link OpenLineage.DatasetFacet}s created by
+   * these functions may be attached to <i>any</i> {@link io.openlineage.client.OpenLineage.Dataset}
+   * defined for the current context - this will include any {@link OpenLineage.InputDataset} or
+   * {@link OpenLineage.OutputDataset} found in the current context. If a user wants to ensure the
+   * {@link OpenLineage.DatasetFacet} is targeted to a specific {@link OpenLineage.OutputDataset} or
+   * {@link OpenLineage.InputDataset}, they should implement a builder that returns an {@link
+   * io.openlineage.client.OpenLineage.Dataset} and directly attach the facet. Merging the dataset
+   * and its facets can be handled separately. Typically, implementations should extend {@link
+   * AbstractDatasetFacetBuilder}.
    *
    * @param context
    * @return
    */
-  default Collection<CustomFacetBuilder<?, ? extends DatasetFacet>> createDatasetFacetBuilders(
-      OpenLineageContext context) {
+  default Collection<CustomFacetBuilder<?, ? extends OpenLineage.DatasetFacet>>
+      createDatasetFacetBuilders(OpenLineageContext context) {
     return Collections.emptyList();
   }
 
   /**
    * Create a collection of {@link PartialFunction}s that may be applied to various Spark
    * application events and other objects (see class javadocs) that can contain information used to
-   * construct a {@link RunFacet} which will be attached to the current {@link
+   * construct a {@link OpenLineage.RunFacet} which will be attached to the current {@link
    * io.openlineage.client.OpenLineage.RunEvent} Typically, implementations should extend {@link
    * AbstractRunFacetBuilder}.
    *
    * @param context
    * @return
    */
-  default Collection<CustomFacetBuilder<?, ? extends RunFacet>> createRunFacetBuilders(
+  default Collection<CustomFacetBuilder<?, ? extends OpenLineage.RunFacet>> createRunFacetBuilders(
       OpenLineageContext context) {
     return Collections.emptyList();
   }
@@ -183,14 +186,14 @@ public interface OpenLineageEventHandlerFactory {
   /**
    * Create a collection of {@link PartialFunction}s that may be applied to various Spark
    * application events and other objects (see class javadocs) that can contain information used to
-   * construct a {@link JobFacet} which will be attached to the current {@link
+   * construct a {@link OpenLineage.JobFacet} which will be attached to the current {@link
    * io.openlineage.client.OpenLineage.Job}. Typically, implementations should extend {@link
    * AbstractJobFacetBuilder}.
    *
    * @param context
    * @return
    */
-  default Collection<CustomFacetBuilder<?, ? extends JobFacet>> createJobFacetBuilders(
+  default Collection<CustomFacetBuilder<?, ? extends OpenLineage.JobFacet>> createJobFacetBuilders(
       OpenLineageContext context) {
     return Collections.emptyList();
   }

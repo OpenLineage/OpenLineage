@@ -2,11 +2,20 @@
 
 package io.openlineage.spark2.agent.lifecycle.plan;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.lifecycle.plan.CreateHiveTableAsSelectCommandVisitor;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.net.URI;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 import org.apache.spark.Partition;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SaveMode;
@@ -34,16 +43,6 @@ import scala.collection.Map$;
 import scala.collection.Seq$;
 import scala.collection.immutable.HashMap;
 
-import java.net.URI;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 class CreateHiveTableAsSelectCommandVisitorTest {
 
   SparkSession session = mock(SparkSession.class);
@@ -57,11 +56,11 @@ class CreateHiveTableAsSelectCommandVisitorTest {
   void testCreateHiveTableAsSelectCommand() {
     CreateHiveTableAsSelectCommandVisitor visitor =
         new CreateHiveTableAsSelectCommandVisitor(
-                OpenLineageContext.builder()
-                        .sparkSession(Optional.of(session))
-                        .sparkContext(session.sparkContext())
-                        .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
-                        .build());
+            OpenLineageContext.builder()
+                .sparkSession(Optional.of(session))
+                .sparkContext(session.sparkContext())
+                .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+                .build());
 
     CreateHiveTableAsSelectCommand command =
         new CreateHiveTableAsSelectCommand(

@@ -9,6 +9,11 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -20,12 +25,6 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 import scala.collection.JavaConversions;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * {@link LogicalPlan} visitor that attempts to extract a {@link OpenLineage.Dataset} from a {@link
@@ -43,9 +42,8 @@ import java.util.stream.Collectors;
  * &lt;database&gt;
  * </code>.<code>&lt;tableName&gt;</code>.
  *
- * <p>{@link CatalogTable}s, if present, can be used to
- * describe the {@link OpenLineage.Dataset} if its {@link org.apache.spark.sql.sources.BaseRelation}
- * is unknown.
+ * <p>{@link CatalogTable}s, if present, can be used to describe the {@link OpenLineage.Dataset} if
+ * its {@link org.apache.spark.sql.sources.BaseRelation} is unknown.
  *
  * <p>TODO If a user specifies the {@link JDBCOptions#JDBC_QUERY_STRING()} option, we do not parse
  * the sql to determine the specific tables used. Since we return a List of {@link
@@ -59,7 +57,7 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
   private final DatasetFactory<D> datasetFactory;
 
   public LogicalRelationDatasetBuilder(
-          OpenLineageContext context, DatasetFactory<D> datasetFactory, boolean searchDependencies) {
+      OpenLineageContext context, DatasetFactory<D> datasetFactory, boolean searchDependencies) {
     super(context, searchDependencies);
     this.datasetFactory = datasetFactory;
   }

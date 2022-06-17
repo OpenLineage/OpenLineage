@@ -9,14 +9,13 @@ import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.command.DropTableCommand;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
 
 /**
  * {@link LogicalPlan} visitor that matches an {@link DropTableCommand} and extracts the output

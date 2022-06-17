@@ -104,8 +104,7 @@ class SQLDWDatabricksVisitorTest {
   @BeforeEach
   public void setUp() {
     when(session.sparkContext()).thenReturn(mock(SparkContext.class));
-    when(context.getOpenLineage())
-        .thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
+    when(context.getOpenLineage()).thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
   }
 
   @Test

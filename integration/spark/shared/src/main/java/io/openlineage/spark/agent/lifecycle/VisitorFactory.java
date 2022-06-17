@@ -4,11 +4,10 @@ package io.openlineage.spark.agent.lifecycle;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.util.List;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import scala.PartialFunction;
-
-import java.util.List;
 
 /**
  * Provides Visitors for iterating on {@link LogicalPlan}.

@@ -43,25 +43,23 @@ import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.rdd.RDD;
-import org.apache.spark.scheduler.*;
+import org.apache.spark.scheduler.ActiveJob;
+import org.apache.spark.scheduler.JobFailed;
+import org.apache.spark.scheduler.SparkListenerJobEnd;
+import org.apache.spark.scheduler.SparkListenerJobStart;
+import org.apache.spark.scheduler.SparkListenerStageCompleted;
+import org.apache.spark.scheduler.SparkListenerStageSubmitted;
+import org.apache.spark.scheduler.Stage;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 import scala.Function1;
 import scala.PartialFunction;
 
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static io.openlineage.client.Utils.mergeFacets;
-import static io.openlineage.spark.agent.util.ScalaConversionUtils.fromSeq;
-import static io.openlineage.spark.agent.util.ScalaConversionUtils.toScalaFn;
-
 /**
  * Event handler that accepts various {@link org.apache.spark.scheduler.SparkListener} events and
- * helps build up an {@link RunEvent} by passing event components to partial functions
- * that know how to convert those event components into {@link RunEvent} properties.
+ * helps build up an {@link RunEvent} by passing event components to partial functions that know how
+ * to convert those event components into {@link RunEvent} properties.
  *
  * <p>The event types that can be consumed to generate @link OpenLineage.RunEvent} properties have
  * no common supertype, so the generic argument for the function input is simply {@link Object}. The
@@ -87,34 +85,28 @@ import static io.openlineage.spark.agent.util.ScalaConversionUtils.toScalaFn;
  * org.apache.spark.sql.execution.SQLExecutionRDD}.
  *
  * <p>Any {@link RunFacet}s and {@link JobFacet}s returned by the {@link CustomFacetBuilder}s are
- * appended to the {@link OpenLineage.Run} and {@link
- * OpenLineage.Job}, respectively.
+ * appended to the {@link OpenLineage.Run} and {@link OpenLineage.Job}, respectively.
  *
  * <p><b>If</b> any {@link OpenLineage.InputDatasetBuilder}s or {@link
- * OpenLineage.OutputDatasetBuilder}s are returned from the partial functions,
- * the {@link #inputDatasetBuilders} or {@link #outputDatasetBuilders} will be invoked using the
- * same input arguments in order to construct any {@link InputDatasetFacet}s or {@link
- * OutputDatasetFacet}s to the returned dataset. {@link InputDatasetFacet}s and {@link
- * OutputDatasetFacet}s will be attached to <i>any</i> {@link
- * OpenLineage.InputDatasetBuilder} or {@link
- * OpenLineage.OutputDatasetBuilder} found for the event. This is because
- * facets may be constructed from generic information that is not specifically tied to a Dataset.
- * For example, {@link OpenLineage.OutputStatisticsOutputDatasetFacet}s are
- * created from {@link org.apache.spark.executor.TaskMetrics} attached to the last {@link
+ * OpenLineage.OutputDatasetBuilder}s are returned from the partial functions, the {@link
+ * #inputDatasetBuilders} or {@link #outputDatasetBuilders} will be invoked using the same input
+ * arguments in order to construct any {@link InputDatasetFacet}s or {@link OutputDatasetFacet}s to
+ * the returned dataset. {@link InputDatasetFacet}s and {@link OutputDatasetFacet}s will be attached
+ * to <i>any</i> {@link OpenLineage.InputDatasetBuilder} or {@link OpenLineage.OutputDatasetBuilder}
+ * found for the event. This is because facets may be constructed from generic information that is
+ * not specifically tied to a Dataset. For example, {@link
+ * OpenLineage.OutputStatisticsOutputDatasetFacet}s are created from {@link
+ * org.apache.spark.executor.TaskMetrics} attached to the last {@link
  * org.apache.spark.scheduler.StageInfo} for a given job execution. However, the {@link
- * OutputDataset} is constructed by reading the {@link
- * LogicalPlan}. There's no way to tie the output
- * metrics in the {@link org.apache.spark.scheduler.StageInfo} to the {@link
- * OutputDataset} in the {@link
- * LogicalPlan} except by inference. Similarly, input
- * metrics can be found in the {@link org.apache.spark.scheduler.StageInfo} for the stage that reads
- * a dataset and the {@link InputDataset} can usually be
- * constructed by walking the {@link RDD} dependency tree for that {@link Stage} and finding a
- * {@link org.apache.spark.sql.execution.datasources.FileScanRDD} or other concrete implementation.
- * But while there is typically only one {@link InputDataset} read
- * in a given stage, there's no guarantee of that and the {@link
- * org.apache.spark.executor.TaskMetrics} in the {@link org.apache.spark.scheduler.StageInfo} won't
- * disambiguate.
+ * OutputDataset} is constructed by reading the {@link LogicalPlan}. There's no way to tie the
+ * output metrics in the {@link org.apache.spark.scheduler.StageInfo} to the {@link OutputDataset}
+ * in the {@link LogicalPlan} except by inference. Similarly, input metrics can be found in the
+ * {@link org.apache.spark.scheduler.StageInfo} for the stage that reads a dataset and the {@link
+ * InputDataset} can usually be constructed by walking the {@link RDD} dependency tree for that
+ * {@link Stage} and finding a {@link org.apache.spark.sql.execution.datasources.FileScanRDD} or
+ * other concrete implementation. But while there is typically only one {@link InputDataset} read in
+ * a given stage, there's no guarantee of that and the {@link org.apache.spark.executor.TaskMetrics}
+ * in the {@link org.apache.spark.scheduler.StageInfo} won't disambiguate.
  *
  * <p>If a facet needs to be attached to a specific dataset, the user must take care to construct
  * both the Dataset and the Facet in the same builder.
@@ -126,8 +118,7 @@ class OpenLineageRunEventBuilder {
   @NonNull private final OpenLineageContext openLineageContext;
 
   @NonNull
-  private final Collection<PartialFunction<Object, List<InputDataset>>>
-      inputDatasetBuilders;
+  private final Collection<PartialFunction<Object, List<InputDataset>>> inputDatasetBuilders;
 
   @NonNull
   private final Collection<PartialFunction<LogicalPlan, List<InputDataset>>>
@@ -459,17 +450,13 @@ class OpenLineageRunEventBuilder {
   }
 
   /**
-   * Attach facets to a facet container, such as an {@link
-   * InputDatasetInputFacets} or an {@link
-   * OutputDatasetOutputFacets}. Facets returned by a {@link
-   * CustomFacetBuilder} may be attached to a field in the container, such as {@link
-   * InputDatasetInputFacets#dataQualityMetrics} or may be
-   * attached as a key/value pair in the {@link
-   * InputDatasetInputFacets#additionalProperties} map. The
-   * serialized JSON does not distinguish between these, but the java class does. The Java class
-   * also has some fields, such as the {@link
-   * InputDatasetInputFacets#producer} URI, which need to be
-   * included in the serialized JSON.
+   * Attach facets to a facet container, such as an {@link InputDatasetInputFacets} or an {@link
+   * OutputDatasetOutputFacets}. Facets returned by a {@link CustomFacetBuilder} may be attached to
+   * a field in the container, such as {@link InputDatasetInputFacets#dataQualityMetrics} or may be
+   * attached as a key/value pair in the {@link InputDatasetInputFacets#additionalProperties} map.
+   * The serialized JSON does not distinguish between these, but the java class does. The Java class
+   * also has some fields, such as the {@link InputDatasetInputFacets#producer} URI, which need to
+   * be included in the serialized JSON.
    *
    * <p>This methods will generate a new facet container with properties potentially overridden by
    * the values set by the custom facet generators.

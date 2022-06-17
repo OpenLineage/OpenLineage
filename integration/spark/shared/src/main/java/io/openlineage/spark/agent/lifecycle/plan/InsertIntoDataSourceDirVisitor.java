@@ -7,11 +7,10 @@ import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
-import org.apache.spark.sql.execution.command.InsertIntoDataSourceDirCommand;
-
 import java.util.Collections;
 import java.util.List;
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.execution.command.InsertIntoDataSourceDirCommand;
 
 /**
  * {@link LogicalPlan} visitor that matches an {@link InsertIntoDataSourceDirCommand} and extracts

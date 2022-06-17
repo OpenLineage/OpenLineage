@@ -8,6 +8,7 @@ plugins {
     id 'java'
     id 'java-library'
     id 'java-test-fixtures'
+    id 'com.diffplug.spotless' version '5.12.1'
     id "com.adarshr.test-logger" version "2.1.1"
     id "com.github.johnrengelman.shadow" version "7.1.2"
 }
@@ -138,6 +139,22 @@ task integrationTest(type: Test) {
 
 }
 
+spotless {
+    def disallowWildcardImports = {
+        String text = it
+        def regex = ~/import .*\.\*;/
+        def m = regex.matcher(text)
+        if (m.find()) {
+            throw new AssertionError("Wildcard imports disallowed - ${m.findAll()}")
+        }
+    }
+    java {
+        googleJavaFormat()
+        removeUnusedImports()
+        custom 'disallowWildcardImports', disallowWildcardImports
+    }
+}
+
 assemble {
     dependsOn shadowJar
 }
@@ -150,14 +167,14 @@ shadowJar {
     }
     classifier = ''
     // avoid conflict with any client version of that lib
-    relocate 'com.github.ok2c.hc5', 'io.openlineage.shaded.github.ok2c.hc5'
-    relocate 'org.apache.httpcomponents.client5', 'io.openlineage.shaded.apache.httpcomponents.client5'
+    relocate 'com.github.ok2c.hc5', 'io.openlineage.shaded.com.github.ok2c.hc5'
+    relocate 'org.apache.httpcomponents.client5', 'io.openlineage.shaded.org.apache.httpcomponents.client5'
     relocate 'javassist', 'io.openlineage.shaded.javassist'
-    relocate 'org.apache.hc', 'io.openlineage.shaded.apache.hc'
-    relocate 'org.apache.commons.codec', 'io.openlineage.shaded.apache.commons.codec'
-    relocate 'org.apache.commons.logging', 'io.openlineage.shaded.apache.commons.logging'
-    relocate 'org.apache.http', 'io.openlineage.shaded.apache.http'
-    relocate 'org.yaml.snakeyaml', 'io.openlineage.shaded.yaml.snakeyaml'
+    relocate 'org.apache.hc', 'io.openlineage.shaded.org.apache.hc'
+    relocate 'org.apache.commons.codec', 'io.openlineage.shaded.org.apache.commons.codec'
+    relocate 'org.apache.commons.logging', 'io.openlineage.shaded.org.apache.commons.logging'
+    relocate 'org.apache.http', 'io.openlineage.shaded.org.apache.http'
+    relocate 'org.yaml.snakeyaml', 'io.openlineage.shaded.org.yaml.snakeyaml'
     manifest {
         attributes(
                 'Created-By': "Gradle ${gradle.gradleVersion}",

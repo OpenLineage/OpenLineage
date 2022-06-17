@@ -7,13 +7,12 @@ import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
-import org.apache.spark.sql.hive.execution.InsertIntoHiveDirCommand;
-
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.hive.execution.InsertIntoHiveDirCommand;
 
 /**
  * {@link LogicalPlan} visitor that matches an {@link InsertIntoHiveDirCommand} and extracts the

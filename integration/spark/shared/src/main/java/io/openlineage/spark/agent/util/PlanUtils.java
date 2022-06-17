@@ -3,6 +3,7 @@
 package io.openlineage.spark.agent.util;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.Versions;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -15,7 +16,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import io.openlineage.spark.agent.Versions;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;

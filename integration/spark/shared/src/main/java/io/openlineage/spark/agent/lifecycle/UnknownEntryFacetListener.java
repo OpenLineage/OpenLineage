@@ -2,22 +2,25 @@
 
 package io.openlineage.spark.agent.lifecycle;
 
+import static java.util.Optional.ofNullable;
+import static scala.collection.JavaConversions.mapAsJavaMap;
+import static scala.collection.JavaConversions.seqAsJavaList;
+
 import io.openlineage.spark.agent.facets.LogicalPlanFacet;
 import io.openlineage.spark.agent.facets.UnknownEntryFacet;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.AttributeSet;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.types.DataType;
 import scala.collection.JavaConversions;
-
-import java.util.*;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
-
-import static java.util.Optional.ofNullable;
-import static scala.collection.JavaConversions.mapAsJavaMap;
-import static scala.collection.JavaConversions.seqAsJavaList;
 
 /**
  * Holds information about visited nodes in {@link LogicalPlan}, using {@link LogicalPlanSerializer}

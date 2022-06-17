@@ -2,8 +2,13 @@
 
 package io.openlineage.spark.agent.lifecycle.plan;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
+import java.util.Arrays;
+import java.util.List;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.execution.command.AlterTableAddColumnsCommand;
@@ -19,12 +24,6 @@ import scala.Option;
 import scala.collection.JavaConversions;
 import scala.collection.Map$;
 import scala.collection.immutable.HashMap;
-
-import java.util.Arrays;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
 
 @ExtendWith(SparkAgentTestExtension.class)
 public class AlterTableAddColumnsCommandVisitorTest {

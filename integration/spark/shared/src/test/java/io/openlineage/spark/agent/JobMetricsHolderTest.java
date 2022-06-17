@@ -7,7 +7,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
-
 import org.apache.spark.executor.TaskMetrics;
 import org.junit.jupiter.api.Test;
 
@@ -27,7 +26,9 @@ class JobMetricsHolderTest {
     // on job end event
     Map<JobMetricsHolder.Metric, Number> result = underTest.pollMetrics(0);
 
-    assertThat(result).containsEntry(JobMetricsHolder.Metric.WRITE_RECORDS, 2L).containsEntry(JobMetricsHolder.Metric.WRITE_BYTES, 110L);
+    assertThat(result)
+        .containsEntry(JobMetricsHolder.Metric.WRITE_RECORDS, 2L)
+        .containsEntry(JobMetricsHolder.Metric.WRITE_BYTES, 110L);
   }
 
   @Test
@@ -45,8 +46,12 @@ class JobMetricsHolderTest {
     Map<JobMetricsHolder.Metric, Number> job0 = underTest.pollMetrics(0);
     Map<JobMetricsHolder.Metric, Number> job1 = underTest.pollMetrics(1);
 
-    assertThat(job0).containsEntry(JobMetricsHolder.Metric.WRITE_RECORDS, 10L).containsEntry(JobMetricsHolder.Metric.WRITE_BYTES, 100L);
-    assertThat(job1).containsEntry(JobMetricsHolder.Metric.WRITE_RECORDS, 1L).containsEntry(JobMetricsHolder.Metric.WRITE_BYTES, 10L);
+    assertThat(job0)
+        .containsEntry(JobMetricsHolder.Metric.WRITE_RECORDS, 10L)
+        .containsEntry(JobMetricsHolder.Metric.WRITE_BYTES, 100L);
+    assertThat(job1)
+        .containsEntry(JobMetricsHolder.Metric.WRITE_RECORDS, 1L)
+        .containsEntry(JobMetricsHolder.Metric.WRITE_BYTES, 10L);
   }
 
   @Test
@@ -63,7 +68,9 @@ class JobMetricsHolderTest {
 
     underTest.cleanUp(0);
 
-    assertThat(jobMetrics).containsEntry(JobMetricsHolder.Metric.WRITE_RECORDS, 10L).containsEntry(JobMetricsHolder.Metric.WRITE_BYTES, 100L);
+    assertThat(jobMetrics)
+        .containsEntry(JobMetricsHolder.Metric.WRITE_RECORDS, 10L)
+        .containsEntry(JobMetricsHolder.Metric.WRITE_BYTES, 100L);
   }
 
   @Test

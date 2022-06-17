@@ -5,15 +5,14 @@ import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import org.apache.spark.rdd.HadoopRDD;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.FileScanRDD;
 import org.apache.spark.sql.types.StructType;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Base node visitor for classes that extract {@link org.apache.spark.sql.Dataset}s from {@link

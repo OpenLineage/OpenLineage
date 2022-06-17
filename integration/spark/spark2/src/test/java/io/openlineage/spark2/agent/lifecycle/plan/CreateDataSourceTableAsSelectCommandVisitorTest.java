@@ -2,10 +2,18 @@
 
 package io.openlineage.spark2.agent.lifecycle.plan;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.lifecycle.plan.CreateDataSourceTableAsSelectCommandVisitor;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.net.URI;
+import java.util.List;
+import java.util.Optional;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier$;
@@ -24,15 +32,6 @@ import scala.collection.Map$;
 import scala.collection.Seq$;
 import scala.collection.immutable.HashMap;
 
-import java.net.URI;
-import java.util.List;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 class CreateDataSourceTableAsSelectCommandVisitorTest {
 
   SparkSession session = mock(SparkSession.class);
@@ -46,11 +45,11 @@ class CreateDataSourceTableAsSelectCommandVisitorTest {
   void testCTASCommand() {
     CreateDataSourceTableAsSelectCommandVisitor visitor =
         new CreateDataSourceTableAsSelectCommandVisitor(
-                OpenLineageContext.builder()
-                        .sparkSession(Optional.of(session))
-                        .sparkContext(session.sparkContext())
-                        .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
-                        .build());
+            OpenLineageContext.builder()
+                .sparkSession(Optional.of(session))
+                .sparkContext(session.sparkContext())
+                .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+                .build());
 
     CreateDataSourceTableAsSelectCommand command =
         new CreateDataSourceTableAsSelectCommand(

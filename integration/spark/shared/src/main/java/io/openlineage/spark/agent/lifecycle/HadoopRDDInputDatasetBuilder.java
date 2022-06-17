@@ -6,6 +6,12 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.spark.api.AbstractInputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.io.IOException;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.fs.Path;
@@ -14,17 +20,7 @@ import org.apache.spark.rdd.HadoopRDD;
 import org.apache.spark.rdd.NewHadoopRDD;
 import org.apache.spark.rdd.RDD;
 
-import java.io.IOException;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
-
-/**
- * Build a collection of {@link InputDataset}s from a {@link
- * HadoopRDD}
- */
+/** Build a collection of {@link InputDataset}s from a {@link HadoopRDD} */
 @Slf4j
 public class HadoopRDDInputDatasetBuilder extends AbstractInputDatasetBuilder<RDD<?>> {
 

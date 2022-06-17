@@ -4,6 +4,13 @@ package io.openlineage.spark.api;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.lifecycle.plan.InsertIntoDirVisitor;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.NonNull;
 import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
@@ -12,20 +19,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.runtime.AbstractPartialFunction;
 
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 /**
- * Abstract partial function that can potentially extract a list of {@link
- * OpenLineage.Dataset}s (input or output) from a {@link LogicalPlan} node.
- * This is a base class for plan visitors that know how to extract {@link
- * OpenLineage.Dataset}s and their facets from particular {@link LogicalPlan}
- * nodes.
+ * Abstract partial function that can potentially extract a list of {@link OpenLineage.Dataset}s
+ * (input or output) from a {@link LogicalPlan} node. This is a base class for plan visitors that
+ * know how to extract {@link OpenLineage.Dataset}s and their facets from particular {@link
+ * LogicalPlan} nodes.
  *
  * <p>A non-null {@link OpenLineageContext} instance is a required constructor argument. The {@link
  * OpenLineageContext} offers access to a configured {@link OpenLineage} instance, for constructing

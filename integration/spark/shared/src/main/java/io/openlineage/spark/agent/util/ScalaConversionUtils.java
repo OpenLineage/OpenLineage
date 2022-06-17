@@ -2,6 +2,13 @@
 
 package io.openlineage.spark.agent.util;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import scala.Function0;
 import scala.Function1;
 import scala.Option;
@@ -11,14 +18,6 @@ import scala.collection.Seq$;
 import scala.collection.mutable.Builder;
 import scala.runtime.AbstractFunction0;
 import scala.runtime.AbstractFunction1;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
 
 /** Simple conversion utilities for dealing with Scala types */
 public class ScalaConversionUtils {

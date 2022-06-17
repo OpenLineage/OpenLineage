@@ -5,10 +5,6 @@ import io.openlineage.client.OpenLineage.Dataset;
 import io.openlineage.spark.agent.lifecycle.UnknownEntryFacetListener;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
-import org.apache.spark.scheduler.SparkListenerJobStart;
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
-import scala.PartialFunction;
-
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
@@ -17,6 +13,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.spark.scheduler.SparkListenerJobStart;
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import scala.PartialFunction;
 
 /**
  * {@link AbstractQueryPlanDatasetBuilder} serves as a bridge between the Abstract*DatasetBuilders

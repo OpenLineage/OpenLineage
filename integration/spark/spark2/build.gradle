@@ -8,6 +8,7 @@ plugins {
     id 'java'
     id 'java-library'
     id 'java-test-fixtures'
+    id 'com.diffplug.spotless' version '5.12.1'
     id "com.adarshr.test-logger" version "2.1.1"
     id "com.github.johnrengelman.shadow" version "7.1.2"
 }
@@ -105,4 +106,20 @@ shadowJar {
     minimize()
     classifier = ''
     zip64 true
+}
+
+spotless {
+    def disallowWildcardImports = {
+        String text = it
+        def regex = ~/import .*\.\*;/
+        def m = regex.matcher(text)
+        if (m.find()) {
+            throw new AssertionError("Wildcard imports disallowed - ${m.findAll()}")
+        }
+    }
+    java {
+        googleJavaFormat()
+        removeUnusedImports()
+        custom 'disallowWildcardImports', disallowWildcardImports
+    }
 }

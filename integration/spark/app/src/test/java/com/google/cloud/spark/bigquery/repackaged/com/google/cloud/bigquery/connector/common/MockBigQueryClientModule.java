@@ -3,14 +3,10 @@
 package com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.connector.common;
 
 import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.BigQuery;
-import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.connector.common.BigQueryClient;
-import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.connector.common.BigQueryConfig;
-import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.connector.common.BigQueryCredentialsSupplier;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Binder;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Module;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Provides;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Singleton;
-
 import java.util.Optional;
 
 public class MockBigQueryClientModule implements Module {

@@ -10,8 +10,8 @@ import lombok.RequiredArgsConstructor;
  * Abstract base class for {@link scala.PartialFunction}s that return an {@link
  * OpenLineage.InputDataset}.
  *
- * @see OpenLineageEventHandlerFactory for a list of event types that may
- *     be passed to this function.
+ * @see OpenLineageEventHandlerFactory for a list of event types that may be passed to this
+ *     function.
  * @param <T>
  */
 @RequiredArgsConstructor

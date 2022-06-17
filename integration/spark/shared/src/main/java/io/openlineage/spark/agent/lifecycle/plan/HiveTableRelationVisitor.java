@@ -6,12 +6,11 @@ import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
+import java.util.Collections;
+import java.util.List;
 import lombok.NonNull;
 import org.apache.spark.sql.catalyst.catalog.HiveTableRelation;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
-
-import java.util.Collections;
-import java.util.List;
 
 /**
  * Simple visitor to support {@link HiveTableRelation}s in the plan. Both input and output {@link

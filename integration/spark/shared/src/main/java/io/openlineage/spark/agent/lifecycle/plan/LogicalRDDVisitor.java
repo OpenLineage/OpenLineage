@@ -6,14 +6,13 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.lifecycle.Rdds;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.rdd.HadoopRDD;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.LogicalRDD;
-
-import java.util.List;
 
 /**
  * {@link LogicalPlan} visitor that attempts to extract {@link Path}s from a {@link HadoopRDD}

@@ -2,21 +2,19 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
-import org.apache.spark.sql.connector.catalog.Identifier;
-import org.apache.spark.sql.delta.catalog.DeltaCatalog;
-import org.apache.spark.sql.delta.catalog.DeltaTableV2;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mockito;
-
-import java.util.Collections;
-import java.util.Optional;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import java.util.Collections;
+import java.util.Optional;
+import org.apache.spark.sql.connector.catalog.Identifier;
+import org.apache.spark.sql.delta.catalog.DeltaCatalog;
+import org.apache.spark.sql.delta.catalog.DeltaTableV2;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 public class DeltaHandlerTest {
   @Test

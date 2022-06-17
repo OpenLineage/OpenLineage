@@ -4,11 +4,10 @@ package io.openlineage.spark.agent.facets;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
-import lombok.Builder;
-import lombok.NonNull;
-
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import lombok.Builder;
+import lombok.NonNull;
 
 public class ErrorFacet extends OpenLineage.DefaultRunFacet {
   private final Exception exception;

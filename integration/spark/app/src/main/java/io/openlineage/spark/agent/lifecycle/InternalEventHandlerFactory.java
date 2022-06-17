@@ -19,9 +19,6 @@ import io.openlineage.spark.agent.facets.builder.SparkVersionFacetBuilder;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
-import scala.PartialFunction;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.ServiceLoader;
@@ -30,6 +27,8 @@ import java.util.Spliterators;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import scala.PartialFunction;
 
 /**
  * Internal implementation of the {@link OpenLineageEventHandlerFactory} interface. This

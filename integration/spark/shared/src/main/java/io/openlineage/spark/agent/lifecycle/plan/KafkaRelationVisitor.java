@@ -2,6 +2,8 @@
 
 package io.openlineage.spark.agent.lifecycle.plan;
 
+import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptional;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.client.OpenLineage;
@@ -9,6 +11,16 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.net.URI;
+import java.util.List;
+import java.util.Optional;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -20,23 +32,9 @@ import org.apache.spark.sql.types.StructType;
 import scala.collection.immutable.Map;
 import scala.collection.immutable.Map$;
 
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.net.URI;
-import java.util.List;
-import java.util.Optional;
-import java.util.Spliterator;
-import java.util.Spliterators;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-
-import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptional;
-
 /**
  * {@link LogicalPlan} visitor that attempts to extract a {@link OpenLineage.Dataset} from a {@link
- * LogicalRelation}. {@link KafkaRelation} is used to extract topic
- * and bootstrap servers for Kafka
+ * LogicalRelation}. {@link KafkaRelation} is used to extract topic and bootstrap servers for Kafka
  */
 @Slf4j
 public class KafkaRelationVisitor<D extends OpenLineage.Dataset>
@@ -89,8 +87,7 @@ public class KafkaRelationVisitor<D extends OpenLineage.Dataset>
     try {
       Field sourceOptionsField = relation.getClass().getDeclaredField("sourceOptions");
       sourceOptionsField.setAccessible(true);
-      sourceOptions =
-          (Map<String, String>) sourceOptionsField.get(relation);
+      sourceOptions = (Map<String, String>) sourceOptionsField.get(relation);
     } catch (Exception e) {
       log.error("Can't extract kafka server options", e);
       sourceOptions = Map$.MODULE$.empty();

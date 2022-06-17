@@ -1,5 +1,10 @@
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.when;
+
+import java.util.Arrays;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.expressions.NamedExpression;
@@ -11,12 +16,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import scala.collection.Seq;
 import scala.collection.Seq$;
-
-import java.util.Arrays;
-
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.when;
 
 public class OutputFieldsCollectorTest {
 

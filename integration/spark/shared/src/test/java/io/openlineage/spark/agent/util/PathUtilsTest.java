@@ -2,6 +2,17 @@
 
 package io.openlineage.spark.agent.util;
 
+import static io.openlineage.spark.agent.util.PathUtils.enrichHiveMetastoreURIWithTableName;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.when;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkConf;
@@ -14,18 +25,6 @@ import org.apache.spark.sql.internal.SessionState;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import scala.Option;
-
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Optional;
-
-import static io.openlineage.spark.agent.util.PathUtils.enrichHiveMetastoreURIWithTableName;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.when;
 
 @Slf4j
 public class PathUtilsTest {
@@ -154,7 +153,8 @@ public class PathUtilsTest {
       assertThrows(IllegalArgumentException.class, () -> PathUtils.fromCatalogTable(catalogTable));
     }
 
-//    assertThrows(IllegalArgumentException.class, () -> PathUtils.fromCatalogTable(catalogTable));
+    //    assertThrows(IllegalArgumentException.class, () ->
+    // PathUtils.fromCatalogTable(catalogTable));
   }
 
   @Test

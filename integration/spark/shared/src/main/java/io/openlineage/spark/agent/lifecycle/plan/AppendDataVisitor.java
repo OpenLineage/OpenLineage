@@ -6,11 +6,10 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
-import org.apache.spark.sql.catalyst.plans.logical.AppendData;
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
-
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.spark.sql.catalyst.plans.logical.AppendData;
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 
 /**
  * {@link LogicalPlan} visitor that matches an {@link AppendData} commands and extracts the output

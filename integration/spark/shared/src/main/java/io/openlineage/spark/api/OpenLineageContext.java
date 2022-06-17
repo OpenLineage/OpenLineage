@@ -5,6 +5,11 @@ package io.openlineage.spark.api;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import lombok.Builder;
 import lombok.Builder.Default;
 import lombok.NonNull;
@@ -16,13 +21,11 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.QueryExecution;
 import scala.PartialFunction;
 
-import java.util.*;
-
 /**
  * Context holder with references to several required objects during construction of an OpenLineage
- * {@link OpenLineage.RunEvent}. An {@link OpenLineageContext} should be
- * created once for every detected Spark execution - for a Spark SQL job, that will be for each
- * {@link QueryExecution}, whereas for each Spark RDD job, that will be once for each Spark {@link
+ * {@link OpenLineage.RunEvent}. An {@link OpenLineageContext} should be created once for every
+ * detected Spark execution - for a Spark SQL job, that will be for each {@link QueryExecution},
+ * whereas for each Spark RDD job, that will be once for each Spark {@link
  * org.apache.spark.scheduler.ActiveJob}.
  *
  * <p>It should be assumed that the lists of input and output {@link QueryPlanVisitor} are mutable

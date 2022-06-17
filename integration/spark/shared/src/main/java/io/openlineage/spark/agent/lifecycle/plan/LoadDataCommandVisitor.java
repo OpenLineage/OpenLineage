@@ -6,12 +6,11 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
+import java.util.Collections;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.command.LoadDataCommand;
-
-import java.util.Collections;
-import java.util.List;
 
 /**
  * {@link LogicalPlan} visitor that matches an {@link LoadDataCommandVisitor} and extracts the

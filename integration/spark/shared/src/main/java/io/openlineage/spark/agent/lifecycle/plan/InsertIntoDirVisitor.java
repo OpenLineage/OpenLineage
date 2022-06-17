@@ -8,13 +8,12 @@ import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
-import org.apache.spark.sql.catalyst.plans.logical.InsertIntoDir;
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
-
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import org.apache.spark.sql.catalyst.plans.logical.InsertIntoDir;
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 
 /**
  * {@link LogicalPlan} visitor that matches an {@link InsertIntoDir} and extracts the output {@link

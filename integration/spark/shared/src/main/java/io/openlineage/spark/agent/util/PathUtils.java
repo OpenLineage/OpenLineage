@@ -2,6 +2,8 @@
 
 package io.openlineage.spark.agent.util;
 
+import java.net.URI;
+import java.util.Optional;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.fs.Path;
@@ -9,9 +11,6 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.internal.StaticSQLConf;
-
-import java.net.URI;
-import java.util.Optional;
 
 @Slf4j
 public class PathUtils {

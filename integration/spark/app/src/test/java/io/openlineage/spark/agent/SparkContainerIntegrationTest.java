@@ -2,7 +2,15 @@
 
 package io.openlineage.spark.agent;
 
+import static java.nio.file.Files.readAllBytes;
+import static org.mockserver.model.HttpRequest.request;
+import static org.mockserver.model.JsonBody.json;
+
 import com.google.common.collect.ImmutableMap;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
@@ -27,15 +35,6 @@ import org.testcontainers.containers.MockServerContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.stream.Collectors;
-
-import static java.nio.file.Files.readAllBytes;
-import static org.mockserver.model.HttpRequest.request;
-import static org.mockserver.model.JsonBody.json;
 
 @Tag("integration-test")
 @Testcontainers

@@ -2,14 +2,22 @@
 
 package io.openlineage.spark.agent.lifecycle;
 
-import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonIgnoreType;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.introspect.ClassIntrospector;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.Partition;
 import org.apache.spark.api.python.PythonRDD;
@@ -20,10 +28,6 @@ import org.apache.spark.sql.execution.SQLExecutionRDD;
 import org.apache.spark.sql.sources.BaseRelation;
 import scala.PartialFunction;
 import scala.runtime.AbstractPartialFunction;
-
-import java.util.List;
-import java.util.Map;
-import java.util.function.Supplier;
 
 /**
  * {@link LogicalPlan} serializer which serialize {@link LogicalPlan} to JSON string. This

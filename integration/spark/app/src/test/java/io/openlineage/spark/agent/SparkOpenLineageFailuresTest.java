@@ -1,7 +1,15 @@
 package io.openlineage.spark.agent;
 
+import static io.openlineage.spark.agent.util.TestOpenLineageEventHandlerFactory.FAILING_TABLE_NAME_FAIL_ON_APPLY;
+import static io.openlineage.spark.agent.util.TestOpenLineageEventHandlerFactory.FAILING_TABLE_NAME_FAIL_ON_IS_DEFINED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockserver.model.HttpRequest.request;
+
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.lifecycle.StaticExecutionContextFactory;
+import java.util.Arrays;
+import java.util.concurrent.TimeoutException;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.fs.FileSystem;
@@ -28,15 +36,6 @@ import org.testcontainers.containers.Network;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import scala.collection.immutable.HashMap;
-
-import java.util.Arrays;
-import java.util.concurrent.TimeoutException;
-
-import static io.openlineage.spark.agent.util.TestOpenLineageEventHandlerFactory.FAILING_TABLE_NAME_FAIL_ON_APPLY;
-import static io.openlineage.spark.agent.util.TestOpenLineageEventHandlerFactory.FAILING_TABLE_NAME_FAIL_ON_IS_DEFINED;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockserver.model.HttpRequest.request;
 
 /**
  * Class containing tests to verify that Spark job executes properly even when problems related to

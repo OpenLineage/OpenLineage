@@ -3,15 +3,14 @@
 package io.openlineage.spark.agent.lifecycle;
 
 import io.openlineage.spark.agent.Versions;
-import lombok.extern.slf4j.Slf4j;
-import org.assertj.core.api.AbstractObjectAssert;
-import org.assertj.core.api.Condition;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.api.AbstractObjectAssert;
+import org.assertj.core.api.Condition;
 
 /**
  * Custom Condition writen for recursive comparison of Map and List with ability to ignore specified

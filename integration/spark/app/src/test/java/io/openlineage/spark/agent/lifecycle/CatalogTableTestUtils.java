@@ -2,6 +2,12 @@
 
 package io.openlineage.spark.agent.lifecycle;
 
+import java.lang.reflect.Method;
+import java.net.URI;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import lombok.SneakyThrows;
 import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.catalyst.catalog.CatalogStorageFormat;
@@ -14,13 +20,6 @@ import org.apache.spark.sql.types.StructType;
 import scala.Option;
 import scala.collection.Seq$;
 import scala.collection.immutable.HashMap;
-
-import java.lang.reflect.Method;
-import java.net.URI;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 public class CatalogTableTestUtils {
 

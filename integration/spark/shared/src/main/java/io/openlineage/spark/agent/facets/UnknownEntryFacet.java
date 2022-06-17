@@ -5,10 +5,10 @@ package io.openlineage.spark.agent.facets;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.shaded.com.fasterxml.jackson.annotation.JsonRawValue;
 import io.openlineage.spark.agent.Versions;
-import lombok.EqualsAndHashCode;
-import lombok.Value;
 import java.util.List;
 import java.util.Map;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 
 @Value
 @EqualsAndHashCode(callSuper = true)

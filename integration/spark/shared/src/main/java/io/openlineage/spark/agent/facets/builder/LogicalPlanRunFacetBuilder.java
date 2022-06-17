@@ -5,12 +5,11 @@ package io.openlineage.spark.agent.facets.builder;
 import io.openlineage.spark.agent.facets.LogicalPlanFacet;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.util.function.BiConsumer;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
-
-import java.util.function.BiConsumer;
 
 /**
  * {@link CustomFacetBuilder} that generates a {@link LogicalPlanFacet} for each {@link

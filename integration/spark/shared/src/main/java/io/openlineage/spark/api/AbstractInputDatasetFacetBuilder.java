@@ -7,11 +7,10 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
 /**
- * {@link CustomFacetBuilder} that generates {@link
- * OpenLineage.InputDatasetFacet}s from input events.
+ * {@link CustomFacetBuilder} that generates {@link OpenLineage.InputDatasetFacet}s from input
+ * events.
  *
- * @see OpenLineageEventHandlerFactory for a list of event types that may
- *     be passed to this builder.
+ * @see OpenLineageEventHandlerFactory for a list of event types that may be passed to this builder.
  * @param <T>
  */
 @RequiredArgsConstructor

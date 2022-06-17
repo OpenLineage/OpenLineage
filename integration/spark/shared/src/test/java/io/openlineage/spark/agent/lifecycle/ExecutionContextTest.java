@@ -2,11 +2,10 @@
 
 package io.openlineage.spark.agent.lifecycle;
 
+import java.util.Locale;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-
-import java.util.Locale;
 
 public class ExecutionContextTest {
 

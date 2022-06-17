@@ -6,11 +6,10 @@ import io.openlineage.client.OpenLineage.OutputStatisticsOutputDatasetFacet;
 import io.openlineage.spark.agent.JobMetricsHolder;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-import org.apache.spark.scheduler.SparkListenerJobEnd;
-
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiConsumer;
+import org.apache.spark.scheduler.SparkListenerJobEnd;
 
 /**
  * Write {@link OutputStatisticsOutputDatasetFacet} if statistics are present in the job metrics.

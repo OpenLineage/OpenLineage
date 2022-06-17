@@ -7,11 +7,6 @@ import com.google.cloud.spark.bigquery.BigQueryRelationProvider;
 import com.google.cloud.spark.bigquery.DataSourceVersion;
 import com.google.cloud.spark.bigquery.GuiceInjectorCreator;
 import com.google.cloud.spark.bigquery.SparkBigQueryConfig;
-import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.BigQuery;
-import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.StandardTableDefinition;
-import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.Table;
-import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.TableId;
-import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.TableInfo;
 import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.connector.common.BigQueryClient;
 import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.connector.common.MockBigQueryClientModule;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Binder;
@@ -20,6 +15,8 @@ import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Injector;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Key;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Module;
 import com.google.cloud.spark.bigquery.v2.SparkBigQueryConnectorModule;
+import java.math.BigInteger;
+import java.util.Optional;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
@@ -33,11 +30,9 @@ import scala.collection.JavaConversions;
 import scala.collection.immutable.Map;
 import scala.runtime.AbstractFunction0;
 
-import java.math.BigInteger;
-import java.util.Optional;
-
 /**
- * Mock relation provider that uses a {@link Mockito} mock instance of {@link BigQuery} for testing.
+ * Mock relation provider that uses a {@link Mockito} mock instance of {@link
+ * com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.BigQuery} for testing.
  */
 public class MockBigQueryRelationProvider extends BigQueryRelationProvider {
   public static final BigQuery BIG_QUERY = Mockito.mock(BigQuery.class);

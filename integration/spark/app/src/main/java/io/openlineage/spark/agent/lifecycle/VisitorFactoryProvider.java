@@ -21,8 +21,8 @@ class VisitorFactoryProvider {
     } else {
       return SPARK3_FACTORY_NAME;
     }
-
   }
+
   static VisitorFactory getInstance(String version) {
     try {
       return (VisitorFactory) Class.forName(getVersion(version)).newInstance();

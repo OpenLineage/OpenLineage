@@ -2,17 +2,16 @@
 
 package io.openlineage.spark.agent.facets.builder;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.spark.agent.facets.ErrorFacet;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.spark.scheduler.JobFailed;
 import org.apache.spark.scheduler.JobSucceeded$;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.junit.jupiter.api.Test;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 class ErrorFacetBuilderTest {
 

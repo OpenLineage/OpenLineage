@@ -5,6 +5,7 @@ package io.openlineage.spark.agent.util;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 import java.util.Arrays;
 import java.util.stream.Stream;
 import org.apache.spark.sql.catalyst.expressions.Attribute;

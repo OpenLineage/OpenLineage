@@ -2,13 +2,13 @@
 
 package io.openlineage.spark.agent;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.Utils;
 import io.openlineage.client.shaded.com.fasterxml.jackson.core.type.TypeReference;
 import io.openlineage.client.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.spark.agent.lifecycle.MatchesMapRecursively;
-import org.junit.jupiter.api.Test;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -19,8 +19,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
 
 public class OpenLineageRunEventTest {
 

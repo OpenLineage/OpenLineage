@@ -2,9 +2,8 @@
 
 package io.openlineage.spark.api;
 
-import scala.runtime.AbstractPartialFunction;
-
 import java.util.Collection;
+import scala.runtime.AbstractPartialFunction;
 
 /**
  * Base implementation of {@link AbstractPartialFunction} which uses {@link

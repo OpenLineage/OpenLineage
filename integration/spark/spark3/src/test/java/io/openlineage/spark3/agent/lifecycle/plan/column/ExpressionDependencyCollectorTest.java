@@ -1,5 +1,12 @@
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.Arrays;
+import java.util.Collection;
 import org.apache.spark.sql.catalyst.expressions.Alias;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.BinaryExpression;
@@ -17,14 +24,6 @@ import org.junit.jupiter.api.Test;
 import scala.Option;
 import scala.collection.Seq;
 import scala.collection.Seq$;
-
-import java.util.Arrays;
-import java.util.Collection;
-
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 public class ExpressionDependencyCollectorTest {
 

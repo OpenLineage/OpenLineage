@@ -6,15 +6,14 @@ import io.openlineage.spark.agent.facets.EnvironmentFacet;
 import io.openlineage.spark.agent.models.DatabricksMountpoint;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.spark.scheduler.SparkListenerJobStart;
-import scala.collection.JavaConversions;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.function.BiConsumer;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.spark.scheduler.SparkListenerJobStart;
+import scala.collection.JavaConversions;
 
 /**
  * {@link CustomFacetBuilder} that generates a {@link EnvironmentFacet} when using OpenLineage on

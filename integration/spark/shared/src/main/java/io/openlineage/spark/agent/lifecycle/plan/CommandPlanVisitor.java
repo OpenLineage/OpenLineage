@@ -7,6 +7,11 @@ import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.plans.logical.InsertIntoDir;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -15,12 +20,6 @@ import org.apache.spark.sql.execution.datasources.InsertIntoDataSourceCommand;
 import org.apache.spark.sql.execution.datasources.SaveIntoDataSourceCommand;
 import scala.Function1;
 import scala.PartialFunction;
-
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * {@link LogicalPlan} visitor that extracts the input query of certain write commands that don't

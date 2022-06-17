@@ -1,21 +1,20 @@
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
-import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.Versions;
-import io.openlineage.spark.agent.util.DatasetIdentifier;
-import io.openlineage.spark.api.OpenLineageContext;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.spark.sql.catalyst.expressions.ExprId;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.util.Arrays;
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.util.DatasetIdentifier;
+import io.openlineage.spark.api.OpenLineageContext;
+import java.util.Arrays;
+import java.util.List;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.spark.sql.catalyst.expressions.ExprId;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 class ColumnLevelLineageBuilderTest {
 

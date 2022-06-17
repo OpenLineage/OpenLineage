@@ -2,6 +2,8 @@
 
 package io.openlineage.spark.agent.util;
 
+import static org.mockito.Mockito.mock;
+
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.spark.agent.Versions;
@@ -9,19 +11,16 @@ import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
 import io.openlineage.spark.api.QueryPlanVisitor;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.function.BiConsumer;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.command.CreateDataSourceTableAsSelectCommand;
 import scala.PartialFunction;
-
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.function.BiConsumer;
-
-import static org.mockito.Mockito.mock;
 
 /**
  * Test implementation - writes a custom {@link TestRunFacet} for every {@link SparkListenerJobEnd}
