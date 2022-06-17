@@ -8,6 +8,7 @@ RUN apt-get update && \
     apt-get install -y git build-essential
 RUN mkdir -p /opt/airflow
 COPY data /opt/data
+COPY docker/wait-for-it.sh /opt/data/wait-for-it.sh
 RUN chown -R airflow:airflow /opt/airflow
 RUN chmod -R 777 /opt/data
 USER airflow
