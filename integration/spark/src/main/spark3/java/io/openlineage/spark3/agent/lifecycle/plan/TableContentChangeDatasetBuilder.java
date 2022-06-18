@@ -65,8 +65,6 @@ public class TableContentChangeDatasetBuilder
       table = (NamedRelation) ((UpdateTable) x).table();
     } else if (x instanceof MergeIntoTable) {
       table = (NamedRelation) ((MergeIntoTable) x).targetTable();
-    } else if (x instanceof DataSourceV2ScanRelation) {
-      table = ((DataSourceV2ScanRelation) x).relation();
     } else {
       table = ((OverwritePartitionsDynamic) x).table();
       includeOverwriteFacet = true;
