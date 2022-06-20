@@ -19,7 +19,7 @@ on:
     branches-ignore: [master, main]
     # Remove the line above to run when pushing to master
   pull_request:
-    branches: [master, main, add-linter]
+    branches: [master, main]
 
 ###############
 # Set the Job #
