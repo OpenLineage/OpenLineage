@@ -1,0 +1,204 @@
+import org.apache.tools.ant.filters.ReplaceTokens
+import groovy.io.FileType
+
+import java.nio.file.Files
+
+
+plugins {
+    id 'java'
+    id 'java-library'
+    id 'java-test-fixtures'
+    id 'com.diffplug.spotless' version '5.12.1'
+    id "com.adarshr.test-logger" version "2.1.1"
+    id "com.github.johnrengelman.shadow" version "7.1.2"
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven {
+        url = 'https://datakin.jfrog.io/artifactory/maven-public-libs-snapshot'
+    }
+}
+
+configurations {
+    lombok
+    spark2.extendsFrom testImplementation
+    spark3.extendsFrom testImplementation
+}
+
+archivesBaseName='openlineage-spark-app'
+
+
+ext {
+    assertjVersion = '3.20.2'
+    bigqueryVersion = '0.21.1'
+    junit5Version = '5.7.2'
+    sparkVersion = '2.4.8'
+    jacksonVersion = '2.6.7'
+    jacksonModuleScalaVersion = '2.6.7.1'
+    jacksonDatatypeVersion = '2.6.7'
+    jacksonDatabindVersion = '2.6.7.3'
+    postgresqlVersion = '42.2.19'
+    mockitoVersion = '3.11.2'
+    testcontainersVersion = '1.15.3'
+    shortVersion = project.getProperty('spark.version').substring(0,3)
+    someMapProperty = [
+            "3.2": ["project": "spark3", "kafka": "org.apache.spark:spark-sql-kafka-0-10_2.12:${project.getProperty('spark.version')}"],
+            "3.1": ["project": "spark3", "kafka": "org.apache.spark:spark-sql-kafka-0-10_2.12:${project.getProperty('spark.version')}"],
+            "2.4": ["project": "spark2", "kafka": 'org.apache.spark:spark-sql-kafka-0-10_2.11:2.4.8']
+    ]
+}
+
+dependencies {
+    compileOnly "org.projectlombok:lombok:${lombokVersion}"
+    annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+    testCompileOnly "org.projectlombok:lombok:${lombokVersion}"
+    testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+
+    implementation(project(path: ":shared"))
+    implementation(project(path: ":spark2"))
+    implementation(project(path: ":spark3"))
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.0.3'
+
+    compileOnly "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
+    compileOnly "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
+    compileOnly "com.fasterxml.jackson.module:jackson-module-scala_2.11:${jacksonModuleScalaVersion}"
+    compileOnly "org.apache.spark:spark-core_2.11:${sparkVersion}"
+    compileOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
+    compileOnly ('com.google.cloud.spark:spark-bigquery_2.11:0.21.1') {
+        exclude group: 'com.fasterxml.jackson.core'
+        exclude group: 'com.fasterxml.jackson.module'
+    }
+
+    testCompileOnly "com.fasterxml.jackson.module:jackson-module-scala_2.11:${jacksonModuleScalaVersion}"
+    testCompileOnly "org.apache.spark:spark-core_2.11:${sparkVersion}"
+    testCompileOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
+    testCompileOnly "org.apache.spark:spark-hive_2.11:${sparkVersion}"
+    testCompileOnly "org.apache.spark:spark-sql-kafka-0-10_2.11:${sparkVersion}"
+    testCompileOnly('com.google.cloud.spark:spark-bigquery-with-dependencies_2.11:0.21.1') {
+        exclude group: 'com.fasterxml.jackson.core'
+        exclude group: 'com.fasterxml.jackson.module'
+    }
+
+
+    testImplementation(project(":${someMapProperty[shortVersion].project}"))
+    testImplementation testFixtures(project(":${someMapProperty[shortVersion].project}"))
+    testImplementation testFixtures(project(":shared"))
+
+    lombok  "org.projectlombok:lombok:${lombokVersion}"
+    testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+}
+
+def commonTestConfiguration = {
+    forkEvery 1
+    maxParallelForks 5
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = true
+    }
+    systemProperties = [
+            'junit.platform.output.capture.stdout': 'true',
+            'junit.platform.output.capture.stderr': 'true',
+            'spark.version'                       :  project.getProperty('spark.version'),
+            'openlineage.spark.jar'               : "${archivesBaseName}-${project.version}.jar",
+            'kafka.package.version'               : someMapProperty[shortVersion].kafka,
+            'mockserver.logLevel'                 : 'ERROR'
+    ]
+
+    classpath = project.sourceSets.test.runtimeClasspath
+}
+
+// wrócić do jednego test z jakąś metodą zwracającą konfigurację żeby spark3 działał
+task sparkTest(type: Test) {
+    useJUnitPlatform {i ->
+        excludeTags ('integration-test')
+        if(!project.getProperty('spark.version').startsWith('3')) {excludeTags 'spark3'}
+    }
+    configure commonTestConfiguration
+    classpath = project.sourceSets.test.runtimeClasspath + configurations."${someMapProperty[shortVersion].project}"
+}
+
+task copyDependencies(type: Copy) {
+    // delete the dependencies directory so we don't accidentally mix Spark 2 and Spark 3 dependencies
+    delete layout.buildDirectory.dir("dependencies")
+    def config = configurations."${someMapProperty[shortVersion].project}"
+    from config.getFiles()
+    include "*.jar"
+    into layout.buildDirectory.dir("dependencies")
+}
+
+task integrationTest(type: Test) {
+    dependsOn shadowJar, copyDependencies
+    configure commonTestConfiguration
+    useJUnitPlatform {
+        includeTags "integration-test"
+        if(!project.getProperty('spark.version').startsWith('3')) {excludeTags 'spark3'}
+    }
+
+
+}
+
+spotless {
+    def disallowWildcardImports = {
+        String text = it
+        def regex = ~/import .*\.\*;/
+        def m = regex.matcher(text)
+        if (m.find()) {
+            throw new AssertionError("Wildcard imports disallowed - ${m.findAll()}")
+        }
+    }
+    java {
+        googleJavaFormat()
+        removeUnusedImports()
+        custom 'disallowWildcardImports', disallowWildcardImports
+    }
+}
+
+assemble {
+    dependsOn shadowJar
+}
+
+shadowJar {
+    minimize(){
+        exclude (project(":shared"))
+        exclude (project(":spark2"))
+        exclude (project(":spark3"))
+    }
+    classifier = ''
+    // avoid conflict with any client version of that lib
+    relocate 'com.github.ok2c.hc5', 'io.openlineage.spark.shaded.com.github.ok2c.hc5'
+    relocate 'org.apache.httpcomponents.client5', 'io.openlineage.spark.shaded.org.apache.httpcomponents.client5'
+    relocate 'javassist', 'io.openlineage.spark.shaded.javassist'
+    relocate 'org.apache.hc', 'io.openlineage.spark.shaded.org.apache.hc'
+    relocate 'org.apache.commons.codec', 'io.openlineage.spark.shaded.org.apache.commons.codec'
+    relocate 'org.apache.commons.logging', 'io.openlineage.spark.shaded.org.apache.commons.logging'
+    relocate 'org.apache.http', 'io.openlineage.spark.shaded.org.apache.http'
+    relocate 'org.yaml.snakeyaml', 'io.openlineage.spark.shaded.org.yaml.snakeyaml'
+    manifest {
+        attributes(
+                'Created-By': "Gradle ${gradle.gradleVersion}",
+                'Built-By': System.getProperty('user.name'),
+                'Build-Jdk': System.getProperty('java.version'),
+                'Implementation-Title': project.name,
+                'Implementation-Version': project.version
+        )
+    }
+    zip64 true
+}
+
+task createVersionProperties(dependsOn: processResources) {
+    doLast {
+        File dir = new File("$buildDir/resources/main/io/openlineage/spark/agent/")
+        dir.mkdirs();
+        new File("$buildDir/resources/main/io/openlineage/spark/agent/version.properties").withWriter { w ->
+            Properties p = new Properties()
+            p['version'] = project.version.toString()
+            p.store w, null
+        }
+    }
+}
+
+classes {
+    dependsOn createVersionProperties
+}
