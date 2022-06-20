@@ -1,0 +1,138 @@
+import org.apache.tools.ant.filters.ReplaceTokens
+import groovy.io.FileType
+
+import java.nio.file.Files
+
+
+plugins {
+    id 'java'
+    id 'java-library'
+    id 'java-test-fixtures'
+    id 'com.diffplug.spotless' version '5.12.1'
+    id "com.github.johnrengelman.shadow" version "7.1.2"
+}
+
+archivesBaseName='openlineage-spark-shared'
+
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven {
+        url = 'https://datakin.jfrog.io/artifactory/maven-public-libs-snapshot'
+    }
+}
+
+configurations {
+    lombok
+}
+
+ext {
+    assertjVersion = '3.20.2'
+    bigqueryVersion = '0.21.1'
+    junit5Version = '5.7.2'
+    sparkVersion = '2.4.8'
+    jacksonVersion = '2.6.7'
+    jacksonModuleScalaVersion = '2.6.7.1'
+    jacksonDatatypeVersion = '2.6.7'
+    jacksonDatabindVersion = '2.6.7.3'
+    postgresqlVersion = '42.2.19'
+    mockitoVersion = '3.11.2'
+    testcontainersVersion = '1.15.3'
+}
+
+dependencies {
+    api "io.openlineage:openlineage-java:${project.version}"
+
+    compileOnly "org.apache.spark:spark-core_2.11:${sparkVersion}"
+    compileOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
+    compileOnly ('com.google.cloud.spark:spark-bigquery_2.11:0.21.1') {
+        exclude group: 'com.fasterxml.jackson.core'
+        exclude group: 'com.fasterxml.jackson.module'
+    }
+    compileOnly "org.apache.spark:spark-hive_2.11:${sparkVersion}"
+    compileOnly "org.apache.spark:spark-sql-kafka-0-10_2.11:${sparkVersion}"
+    compileOnly "com.databricks:dbutils-api_2.11:0.0.5"
+
+    testFixturesApi platform('org.junit:junit-bom:5.7.1')
+    testFixturesApi "org.junit.jupiter:junit-jupiter:${junit5Version}"
+    testFixturesApi "org.junit.jupiter:junit-jupiter-params:${junit5Version}"
+
+    testFixturesApi "org.postgresql:postgresql:${postgresqlVersion}"
+    testFixturesApi 'org.hamcrest:hamcrest-library:2.2'
+    testFixturesApi 'org.xerial:sqlite-jdbc:3.34.0'
+    testFixturesApi "org.testcontainers:junit-jupiter:${testcontainersVersion}"
+    testFixturesApi "org.testcontainers:postgresql:${testcontainersVersion}"
+    testFixturesApi "org.testcontainers:mockserver:${testcontainersVersion}"
+    testFixturesApi "org.testcontainers:kafka:${testcontainersVersion}"
+    testFixturesApi "org.apache.kafka:kafka-clients:2.6.0"
+    testFixturesApi('org.mock-server:mockserver-client-java:5.12.0') {
+        exclude group: 'com.google.guava', module: 'guava'
+        exclude group: 'com.fasterxml.jackson.core'
+        exclude group: 'com.fasterxml.jackson.datatype'
+        exclude group: 'com.fasterxml.jackson.dataformat'
+    }
+    testFixturesApi group: 'org.awaitility', name: 'awaitility', version: '4.1.1'
+    testFixturesApi "org.assertj:assertj-core:${assertjVersion}"
+    testFixturesApi "org.mockito:mockito-core:${mockitoVersion}"
+    testFixturesApi "org.mockito:mockito-inline:${mockitoVersion}"
+    testFixturesApi "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
+
+    testImplementation "org.apache.spark:spark-core_2.11:${sparkVersion}"
+    testImplementation "org.apache.spark:spark-sql_2.11:${sparkVersion}"
+    testImplementation "org.apache.spark:spark-hive_2.11:${sparkVersion}"
+    testImplementation "com.google.cloud.spark:spark-bigquery-with-dependencies_2.11:${bigqueryVersion}"
+}
+
+def commonTestConfiguration = {
+    forkEvery 1
+    maxParallelForks 5
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = true
+    }
+    systemProperties = [
+            'junit.platform.output.capture.stdout': 'true',
+            'junit.platform.output.capture.stderr': 'true',
+            'spark.version'                       : '2.4.8',
+            'openlineage.spark.jar'               : "${archivesBaseName}-${project.version}.jar",
+            'kafka.package.version'               : 'org.apache.spark:spark-sql-kafka-0-10_2.11:2.4.8',
+            'mockserver.logLevel'                 : 'ERROR'
+    ]
+
+    classpath = project.sourceSets.test.runtimeClasspath
+}
+
+
+test {
+    configure commonTestConfiguration
+    useJUnitPlatform {
+        excludeTags 'integration-test'
+    }
+}
+
+assemble {
+    dependsOn shadowJar
+}
+
+shadowJar {
+    minimize()
+    classifier = ''
+    zip64 true
+}
+
+spotless {
+    def disallowWildcardImports = {
+        String text = it
+        def regex = ~/import .*\.\*;/
+        def m = regex.matcher(text)
+        if (m.find()) {
+            throw new AssertionError("Wildcard imports disallowed - ${m.findAll()}")
+        }
+    }
+    java {
+        googleJavaFormat()
+        removeUnusedImports()
+        custom 'disallowWildcardImports', disallowWildcardImports
+    }
+}
