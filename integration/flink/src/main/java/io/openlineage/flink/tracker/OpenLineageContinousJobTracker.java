@@ -36,7 +36,11 @@ public class OpenLineageContinousJobTracker {
     this.trackingInterval = trackingInterval;
   }
 
-  /** Starts tracking flink JOB rest API */
+  /**
+   * Starts tracking flink JOB rest API
+   *
+   * @param context flink execution context
+   */
   public void startTracking(FlinkExecutionContext context) {
     CloseableHttpClient httpClient = HttpClients.createDefault();
 

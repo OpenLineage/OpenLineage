@@ -1,7 +1,6 @@
-package io.openlineage.flink.visitor;
+package io.openlineage.flink.api;
 
 import io.openlineage.client.OpenLineage;
-import java.net.URI;
 
 public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
   private final OpenLineage openLineage;
@@ -14,7 +13,7 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
       String name, String namespace, OpenLineage.DatasetFacets datasetFacet);
 
   public static DatasetFactory<OpenLineage.InputDataset> input(OpenLineage client) {
-    return new DatasetFactory<OpenLineage.InputDataset>(client) {
+    return new DatasetFactory<>(client) {
       public OpenLineage.Builder<OpenLineage.InputDataset> datasetBuilder(
           String name, String namespace, OpenLineage.DatasetFacets datasetFacet) {
         return client.newInputDatasetBuilder().namespace(namespace).name(name).facets(datasetFacet);
@@ -23,7 +22,7 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
   }
 
   public static DatasetFactory<OpenLineage.OutputDataset> output(OpenLineage client) {
-    return new DatasetFactory<OpenLineage.OutputDataset>(client) {
+    return new DatasetFactory<>(client) {
       public OpenLineage.Builder<OpenLineage.OutputDataset> datasetBuilder(
           String name, String namespace, OpenLineage.DatasetFacets datasetFacet) {
         return client
@@ -35,15 +34,8 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
     };
   }
 
-  public OpenLineage.DatasetFacetsBuilder getDatasetFacetsBuilder(String name, String namespace) {
-    return openLineage
-        .newDatasetFacetsBuilder()
-        .dataSource(
-            openLineage
-                .newDatasourceDatasetFacetBuilder()
-                .uri(URI.create(""))
-                .name(namespace)
-                .build());
+  public OpenLineage.DatasetFacetsBuilder getDatasetFacetsBuilder() {
+    return openLineage.newDatasetFacetsBuilder();
   }
 
   public D getDataset(
@@ -52,7 +44,7 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
   }
 
   public D getDataset(String name, String namespace) {
-    return getDataset(name, namespace, getDatasetFacetsBuilder(name, namespace).build());
+    return getDataset(name, namespace, getDatasetFacetsBuilder().build());
   }
 
   public D getDataset(String name, String namespace, OpenLineage.DatasetFacets datasetFacet) {
