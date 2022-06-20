@@ -10,6 +10,50 @@
       https://checkstyle.org/config.html#Checker
       <property name="basedir" value="${basedir}"/>
   -->
+  
+  <metadata name="org.checkstyle.principle" value="Practice What You Preach"/>
+  <metadata name="org.checkstyle.principle.description"
+            value="In our config we should use all Checks that Checkstyle has"/>
+
+  <property name="cacheFile" value="${checkstyle.cache.file}"/>
+
+  <property name="severity" value="error"/>
+
+  <property name="fileExtensions" value="java, properties, xml, vm, g, g4, dtd"/>
+
+  <!-- BeforeExecutionFileFilters is required for sources that are based on java9 -->
+  <module name="BeforeExecutionExclusionFileFilter">
+    <property name="fileNamePattern" value="module\-info\.java$" />
+  </module>
+
+  <!-- Filters -->
+  <module name="SeverityMatchFilter">
+    <!-- report all violations except ignore -->
+    <property name="severity" value="ignore"/>
+    <property name="acceptOnMatch" value="false"/>
+  </module>
+  <module name="SuppressionFilter">
+    <property name="file" value="${checkstyle.suppressions.file}"/>
+  </module>
+  <!-- Tone down the checking for test code -->
+  <module name="SuppressionSingleFilter">
+    <property name="checks" value="JavadocPackage"/>
+    <property name="files" value=".*[\\/]src[\\/](test|it)[\\/]"/>
+  </module>
+  <module name="SuppressionSingleFilter">
+    <property name="checks" value="JavadocMethod"/>
+    <property name="files" value=".*[\\/]src[\\/](test|it)[\\/].*(?&lt;!Support)\.java"/>
+  </module>
+  <module name="SuppressWarningsFilter"/>
+  <module name="SuppressWithPlainTextCommentFilter">
+    <!--
+      Use suppressions.xml for suppressions, this is only example.
+      checkFormat will prevent suppression comments from being valid.
+    -->
+    <property name="checkFormat" value="IGNORETHIS"/>
+    <property name="offCommentFormat" value="CSOFF\: .*"/>
+    <property name="onCommentFormat" value="CSON\: .*"/>
+  </module>
 
   <!-- Headers -->
   <module name="Header">
