@@ -2,6 +2,7 @@
 
 package io.openlineage.flink.utils;
 
+import io.openlineage.flink.api.DatasetIdentifier;
 import java.net.URI;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;

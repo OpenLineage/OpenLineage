@@ -1,20 +1,25 @@
 package io.openlineage.flink.visitor;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.flink.api.DatasetFactory;
 import io.openlineage.flink.api.OpenLineageContext;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 public class VisitorFactoryImpl implements VisitorFactory {
 
   @Override
   public List<Visitor<OpenLineage.InputDataset>> getInputVisitors(OpenLineageContext context) {
-    return Arrays.asList(new KafkaSourceVisitor(context), new IcebergSourceVisitor(context));
+    return Arrays.asList(
+        new KafkaSourceVisitor(context),
+        new IcebergSourceVisitor(context),
+        new LineageProviderVisitor<>(context, DatasetFactory.input(context.getOpenLineage())));
   }
 
   @Override
   public List<Visitor<OpenLineage.OutputDataset>> getOutputVisitors(OpenLineageContext context) {
-    return Collections.singletonList(new KafkaSinkVisitor(context));
+    return Arrays.asList(
+        new KafkaSinkVisitor(context),
+        new LineageProviderVisitor<>(context, DatasetFactory.output(context.getOpenLineage())));
   }
 }

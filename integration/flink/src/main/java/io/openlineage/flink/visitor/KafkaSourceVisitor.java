@@ -37,7 +37,7 @@ public class KafkaSourceVisitor extends Visitor<OpenLineage.InputDataset> {
           .map(
               topic -> {
                 OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
-                    inputDataset().getDatasetFacetsBuilder(topic, bootstrapServers);
+                    inputDataset().getDatasetFacetsBuilder();
                 // The issue here is that we assign dataset a schema that we're trying to read with.
                 // The read schema may be in mismatch with real dataset schema.
                 wrapper

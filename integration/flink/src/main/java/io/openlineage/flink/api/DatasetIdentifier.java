@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
-package io.openlineage.flink.utils;
+package io.openlineage.flink.api;
 
 import lombok.Value;
 

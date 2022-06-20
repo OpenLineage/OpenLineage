@@ -82,6 +82,7 @@ jobs:
 
             check_change client/java/ openlineage-java.yml
             check_change integration/spark/ openlineage-java.yml
+            check_change integration/flink/ openlineage-java.yml
             check_change client/python/ openlineage-integration-python.yml openlineage-integration-dbt.yml openlineage-integration-dagster.yml openlineage-integration-airflow.yml
             check_change integration/common/ openlineage-integration-python.yml openlineage-integration-airflow.yml openlineage-integration-dbt.yml
             check_change integration/airflow/ openlineage-integration-python.yml openlineage-integration-airflow.yml
