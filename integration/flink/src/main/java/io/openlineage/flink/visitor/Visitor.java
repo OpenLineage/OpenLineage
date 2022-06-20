@@ -1,6 +1,7 @@
 package io.openlineage.flink.visitor;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.flink.api.DatasetFactory;
 import io.openlineage.flink.api.OpenLineageContext;
 import java.util.List;
 import lombok.NonNull;
