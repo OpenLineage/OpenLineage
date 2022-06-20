@@ -122,7 +122,7 @@ public class FlinkContainerUtils {
     return genericContainer(network, FLINK_IMAGE, "taskmanager")
         .withFileSystemBind(getOpenLineageJarPath(), "/opt/flink/lib/openlineage.jar")
         .withFileSystemBind(getExampleAppJarPath(), "/opt/flink/lib/example-app.jar")
-        .withFileSystemBind("data/iceberg", "/tmp/warehouse/db/")
+        .withFileSystemBind("data/iceberg", "/tmp/warehouse/")
         .withEnv(
             "FLINK_PROPERTIES",
             "jobmanager.rpc.address: jobmanager"

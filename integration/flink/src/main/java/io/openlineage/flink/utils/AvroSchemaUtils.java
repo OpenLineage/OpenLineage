@@ -15,8 +15,9 @@ public class AvroSchemaUtils {
   /**
    * Converts Avro {@link Schema} to {@link OpenLineage.SchemaDatasetFacet}
    *
-   * @param avroSchema
-   * @return
+   * @param openLineage Openlineage instance
+   * @param avroSchema schema
+   * @return schema dataset facet
    */
   public static OpenLineage.SchemaDatasetFacet convert(OpenLineage openLineage, Schema avroSchema) {
     OpenLineage.SchemaDatasetFacetBuilder builder = openLineage.newSchemaDatasetFacetBuilder();

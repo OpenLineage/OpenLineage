@@ -32,7 +32,7 @@ public class KafkaSinkVisitor extends Visitor<OpenLineage.OutputDataset> {
       String topic = wrapper.getKafkaTopic();
 
       OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
-          inputDataset().getDatasetFacetsBuilder(topic, bootstrapServers);
+          outputDataset().getDatasetFacetsBuilder();
 
       wrapper
           .getAvroSchema()
