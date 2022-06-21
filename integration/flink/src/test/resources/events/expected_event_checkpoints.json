@@ -5,7 +5,7 @@
       "checkpoints": {
         "completed": "${json-unit.any-number}",
         "failed": 0,
-        "in_progress": "${json-unit.any-number}",
+        "in-progress": "${json-unit.any-number}",
         "restored": 0,
         "total": "${json-unit.any-number}"
       }
