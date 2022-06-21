@@ -58,6 +58,4 @@
   <!-- Headers -->
   <module name="Header">
     <property name="header" value="checkstyle.header"/>
-    <property name="fileExtensions" value="java, g4"/>
-    <property name="id" value="header"/>
   </module>
