@@ -264,7 +264,8 @@ pmd {
     toolVersion = "6.46.0"
     rulesMinimumPriority = 5
     // ruleSets = ["category/java/errorprone.xml", "category/java/bestpractices.xml"]
-    ruleSets = ["/Users/michael/pmd-bin-6.46.0/lib/pmd-java-6.46.0/category/java/openlineage.xml"]
+    // ruleSets = ["/Users/michael/pmd-bin-6.46.0/lib/pmd-java-6.46.0/category/java/openlineage.xml"]
+    ruleSets = ["pmd/openlineage.xml"]
     ignoreFailures = true
 }
 
