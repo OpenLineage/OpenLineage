@@ -15,7 +15,7 @@
   <metadata name="org.checkstyle.principle.description"
             value="In our config we should use all Checks that Checkstyle has"/>
 
-  <property name="cacheFile" value="${checkstyle.cache.file}"/>
+  <property name="cacheFile" value="checkstyle_cache"/>
 
   <property name="severity" value="error"/>
 
@@ -32,9 +32,9 @@
     <property name="severity" value="ignore"/>
     <property name="acceptOnMatch" value="false"/>
   </module>
-  <module name="SuppressionFilter">
+  <!-- <module name="SuppressionFilter">
     <property name="file" value="${checkstyle.suppressions.file}"/>
-  </module>
+  </module> -->
   <!-- Tone down the checking for test code -->
   <module name="SuppressionSingleFilter">
     <property name="checks" value="JavadocPackage"/>
