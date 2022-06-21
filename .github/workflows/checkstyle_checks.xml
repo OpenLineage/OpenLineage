@@ -26,8 +26,6 @@
     <property name="fileNamePattern" value="module\-info\.java$" />
   </module>
 
-  
-
   <!-- Headers -->
   <module name="Header">
     <property name="header" value="checkstyle.header"/>
