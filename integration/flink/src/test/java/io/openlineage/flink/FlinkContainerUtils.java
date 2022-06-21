@@ -103,7 +103,7 @@ public class FlinkContainerUtils {
             .withCopyFileToContainer(
                 MountableFile.forHostPath(Resources.getResource("openlineage.yml").getPath()),
                 "/opt/flink/lib/openlineage.yml")
-            .withFileSystemBind("data/iceberg", "/tmp/warehouse/db/")
+            .withFileSystemBind("data/iceberg", "/tmp/warehouse/")
             .withCommand(
                 "standalone-job "
                     + String.format("--job-classname %s ", jobName)
