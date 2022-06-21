@@ -1,7 +1,8 @@
 {
+  "eventType" : "START",
   "inputs": [{
     "namespace": "file",
-    "name": "/tmp/warehouse/db/source",
+    "name": "tmp/warehouse/db/source",
     "facets": {
       "schema": {
         "fields": [{
@@ -13,5 +14,6 @@
         }]
       }
     }
-  }]
+  }],
+  "outputs": []
 }
