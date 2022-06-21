@@ -13,7 +13,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockserver.client.MockServerClient;
@@ -58,8 +58,8 @@ public class OpenLineageFlinkContainerTest {
 
   private static GenericContainer taskManager;
 
-  @BeforeAll
-  public static void setup() {
+  @BeforeEach
+  public void setup() {
     mockServerClient =
         new MockServerClient(
             openLineageClientMockContainer.getHost(),
