@@ -41,7 +41,12 @@ public class CreateReplaceDatasetBuilder
     return (x instanceof CreateTableAsSelect)
         || (x instanceof ReplaceTable)
         || (x instanceof ReplaceTableAsSelect)
-        || (x instanceof CreateV2Table);
+        // Class CreateV2Table was removed in Spark Catalyst 3.3.0. For some reason, it is also
+        // missing on Databricks platform when Spark context is in version 3.2.1. This hacky way
+        // allows checking for the class also when it is not available on the class path
+        || x.getClass()
+            .getCanonicalName()
+            .equals("org.apache.spark.sql.catalyst.plans.logical.CreateV2Table");
   }
 
   @Override
