@@ -89,6 +89,8 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
     parent_run_id = str(uuid.uuid3(uuid.NAMESPACE_URL, f'{dag.dag_id}.{dagrun.run_id}'))
 
     def on_running():
+        task_instance.render_templates()
+
         task_metadata = extractor_manager.extract_metadata(dagrun, task)
 
         adapter.start_task(
