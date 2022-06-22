@@ -122,7 +122,7 @@ public class PlanUtils {
   }
 
   private static List<OpenLineage.SchemaDatasetFacetFields> transformFields(
-      OpenLineage openLineage, StructField[] fields) {
+      OpenLineage openLineage, StructField... fields) {
     List<OpenLineage.SchemaDatasetFacetFields> list = new ArrayList<>();
     for (StructField field : fields) {
       list.add(

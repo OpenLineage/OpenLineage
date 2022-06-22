@@ -31,6 +31,7 @@ import java.util.function.BiConsumer;
 public abstract class CustomFacetBuilder<T, F>
     implements AbstractPartial<Object>, BiConsumer<Object, BiConsumer<String, ? super F>> {
 
+  @Override
   public final void accept(Object event, BiConsumer<String, ? super F> consumer) {
     if (isDefinedAt(event)) {
       build((T) event, consumer);

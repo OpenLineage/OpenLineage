@@ -15,6 +15,7 @@ public class Versions {
             "https://github.com/OpenLineage/OpenLineage/tree/%s/integration/spark", getVersion()));
   }
 
+  @SuppressWarnings("PMD")
   private static String getVersion() {
     try {
       Properties properties = new Properties();
