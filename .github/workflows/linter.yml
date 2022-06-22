@@ -57,5 +57,5 @@ jobs:
           LINTER_RULES_PATH: /.github/workflows
           JAVA_FILE_NAME: checkstyle_checks.xml
           VALIDATE_JAVA: true
-          PYTHON_PYLINT_CONFIG_FILE: .python-lint
+          PYTHON_PYLINT_CONFIG_FILE: python-lint
           VALIDATE_PYTHON_PYLINT: true
