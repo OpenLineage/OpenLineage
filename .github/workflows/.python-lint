@@ -76,7 +76,7 @@ limit-inference-results=100
 # usually to register additional checkers.
 load-plugins=pylintfileheader
 
-file-header=pylint.header
+file-header-path=pylint.header
 
 # Pickle collected data for later comparisons.
 persistent=yes
