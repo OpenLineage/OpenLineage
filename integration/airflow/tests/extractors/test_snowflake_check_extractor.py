@@ -3,7 +3,8 @@
 from unittest import mock
 
 import pytest
-from airflow.contrib.operators.snowflake_operator import SnowflakeCheckOperator
+if parse_version(AIRFLOW_VERSION) >= parse_version("2.0.0"):
+    from airflow.providers.snowflake.operators.snowflake_operator import SnowflakeCheckOperator
 from airflow.models import Connection
 from airflow import DAG
 from airflow.utils.dates import days_ago
