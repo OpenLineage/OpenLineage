@@ -23,10 +23,22 @@ default_args = {
     'email': ['datascience@example.com']
 }
 
+
+def get_sql() -> str:
+    return '''
+    CREATE TABLE IF NOT EXISTS popular_orders_day_of_week (
+      order_day_of_week VARCHAR(64) NOT NULL,
+      order_placed_on   TIMESTAMP NOT NULL,
+      orders_placed     INTEGER NOT NULL
+    );'''
+
 dag = DAG(
     'postgres_orders_popular_day_of_week',
     schedule_interval='@once',
     default_args=default_args,
+    user_defined_macros={
+        "get_sql": get_sql
+    },
     description='Determines the popular day of week orders are placed.'
 )
 
@@ -34,12 +46,7 @@ dag = DAG(
 t1 = PostgresOperator(
     task_id='postgres_if_not_exists',
     postgres_conn_id='food_delivery_db',
-    sql='''
-    CREATE TABLE IF NOT EXISTS popular_orders_day_of_week (
-      order_day_of_week VARCHAR(64) NOT NULL,
-      order_placed_on   TIMESTAMP NOT NULL,
-      orders_placed     INTEGER NOT NULL
-    );''',
+    sql="{{ get_sql() }}",
     dag=dag
 )
 
