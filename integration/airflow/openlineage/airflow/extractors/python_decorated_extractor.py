@@ -7,13 +7,13 @@ from typing import Callable, List, Optional
 from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
 from openlineage.client.run import Dataset
 from openlineage.client.facet import SourceCodeJobFacet
-from openlineage.integration.common.openlineage.common.provider.livemaps import (
-    LiveMapsPythonDecoratedFacet,
+from openlineage.airflow.facets import (
+    PythonDecoratedFacet,
 )
+
 from openlineage.client.python.openlineage.common.constants import (
     DEFAULT_NAMESPACE_NAME,
 )
-
 
 log = logging.getLogger(__name__)
 
@@ -23,18 +23,15 @@ if not _DAG_NAMESPACE:
     _DAG_NAMESPACE = os.getenv("MARQUEZ_NAMESPACE", DEFAULT_NAMESPACE_NAME)
 
 
-class LiveMapsPythonDecoratedExtractor(BaseExtractor):
+class PythonDecoratedExtractor(BaseExtractor):
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
-        return ["_PythonDecoratedOperator"]
+        return [
+            "_PythonDecoratedOperator",
+        ]
 
     def extract(self) -> Optional[TaskMetadata]:
-        if os.environ.get("OPENLINEAGE_LIVE_MAPS", True).lower() in (
-            "true",
-            "1",
-            "t",
-        ):
-            log.info("OL_LM")
+        log.info(self)
 
         collect_source = True
         if os.environ.get(
@@ -72,7 +69,7 @@ class LiveMapsPythonDecoratedExtractor(BaseExtractor):
             )
 
         run_facet = {
-            "manualLineage": LiveMapsPythonDecoratedFacet(
+            "manualLineage": PythonDecoratedFacet(
                 database=self.operator.get_inlet_defs()[0]["database"],
                 cluster=self.operator.get_inlet_defs()[0]["cluster"],
                 connectionUrl=self.operator.get_inlet_defs()[0][
@@ -82,7 +79,7 @@ class LiveMapsPythonDecoratedExtractor(BaseExtractor):
                 source=self.operator.get_inlet_defs()[0]["source"],
             )
             if self.operator.get_inlet_defs()
-            else LiveMapsPythonDecoratedFacet(
+            else PythonDecoratedFacet(
                 database=self.operator.get_outlet_defs()[0]["database"],
                 cluster=self.operator.get_outlet_defs()[0]["cluster"],
                 connectionUrl=self.operator.get_outlet_defs()[0][
@@ -109,7 +106,7 @@ class LiveMapsPythonDecoratedExtractor(BaseExtractor):
             return str(callable)
         except OSError:
             log.exception(
-                f"Can't get source code facet of PythonOperator {self.operator.task_id}"
+                f"Can't get source code facet of _PythonDecoratedOperator {self.operator.task_id}"
             )
 
     def extract_inlets_and_outlets(self, properties):

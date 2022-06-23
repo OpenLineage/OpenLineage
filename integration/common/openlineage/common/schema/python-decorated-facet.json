@@ -1,8 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://openlineage.io/spec/facets/1-0-0/LiveMapsPythonDecoratedFacet.json",
   "$defs": {
-    "LiveMapsPythonDecoratedFacet": {
+    "PythonDecoratedFacet": {
       "allOf": [
         {
           "$ref": "https://openlineage.io/spec/1-0-2/OpenLineage.json#/$defs/BaseFacet"

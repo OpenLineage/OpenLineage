@@ -33,7 +33,7 @@ _extractors = list(
                 "openlineage.airflow.extractors.bash_extractor.BashExtractor"
             ),
             try_import_from_string(
-                "openlineage.airflow.extractors.live_maps_python_decorated_extractor.LiveMapsPythonDecoratedExtractor"
+                "openlineage.airflow.extractors.python_decorated_extractor.PythonDecoratedExtractor"
             ),
         ],
     )
