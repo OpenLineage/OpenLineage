@@ -51,6 +51,9 @@ public class PlanUtils3 {
                     r.table().properties()));
   }
 
+  // Ensure that resources like this SparkSession object are closed after use -> we
+  // don't want to close SparkSession
+  @SuppressWarnings("PMD")
   public static Optional<DatasetIdentifier> getDatasetIdentifier(
       OpenLineageContext context,
       TableCatalog catalog,

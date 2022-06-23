@@ -81,6 +81,7 @@ public class KafkaRelationVisitor<D extends OpenLineage.Dataset>
   }
 
   @Override
+  @SuppressWarnings("PMD") // we need to make sourceOptionsField accessible
   public List<D> apply(LogicalPlan x) {
     KafkaRelation relation = (KafkaRelation) ((LogicalRelation) x).relation();
     Map<String, String> sourceOptions;

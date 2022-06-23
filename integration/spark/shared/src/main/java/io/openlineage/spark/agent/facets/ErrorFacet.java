@@ -10,6 +10,7 @@ import lombok.Builder;
 import lombok.NonNull;
 
 public class ErrorFacet extends OpenLineage.DefaultRunFacet {
+  @SuppressWarnings("PMD")
   private final Exception exception;
 
   @Builder

@@ -14,7 +14,7 @@ class VisitorFactoryProviderTest {
   @ParameterizedTest
   @MethodSource("provideVersionFactory")
   void getInstance(String version, String expectedClass) {
-    String className = VisitorFactoryProvider.getVersion(version);
+    String className = VisitorFactoryProvider.getVisitorFactoryForVersion(version);
     assertThat(className).isEqualTo(expectedClass);
   }
 

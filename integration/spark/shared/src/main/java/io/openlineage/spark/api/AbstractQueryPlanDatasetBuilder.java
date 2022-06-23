@@ -55,6 +55,7 @@ public abstract class AbstractQueryPlanDatasetBuilder<T, P extends LogicalPlan, 
 
   public abstract List<D> apply(P p);
 
+  @Override
   public final List<D> apply(T event) {
     return context
         .getQueryExecution()

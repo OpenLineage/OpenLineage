@@ -5,7 +5,6 @@ package io.openlineage.spark.agent.lifecycle.plan;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
-import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Collections;
 import java.util.List;
@@ -22,12 +21,8 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 @Slf4j
 public class AppendDataDatasetBuilder extends AbstractQueryPlanOutputDatasetBuilder<AppendData> {
 
-  private final DatasetFactory<OpenLineage.OutputDataset> factory;
-
-  public AppendDataDatasetBuilder(
-      OpenLineageContext context, DatasetFactory<OpenLineage.OutputDataset> factory) {
+  public AppendDataDatasetBuilder(OpenLineageContext context) {
     super(context, false);
-    this.factory = factory;
   }
 
   @Override
