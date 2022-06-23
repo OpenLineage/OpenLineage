@@ -17,7 +17,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-public class KafkaTransportTest {
+class KafkaTransportTest {
   @Test
   void clientEmitsKafkaTransport() throws IOException {
     KafkaProducer<String, String> producer = mock(KafkaProducer.class);

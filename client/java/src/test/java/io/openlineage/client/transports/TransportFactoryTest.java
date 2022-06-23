@@ -6,7 +6,7 @@ import java.net.URI;
 import java.util.Properties;
 import org.junit.jupiter.api.Test;
 
-public class TransportFactoryTest {
+class TransportFactoryTest {
 
   @Test
   void createsConsoleTransport() {

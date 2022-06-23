@@ -26,41 +26,37 @@ import java.net.URI;
 import org.junit.jupiter.api.Test;
 
 /** Unit tests for {@link Utils}. */
-public class UtilsTest {
+class UtilsTest {
   private static final String VALUE = "test";
   private static final Object OBJECT = new Object(VALUE);
   private static final TypeReference<Object> TYPE = new TypeReference<Object>() {};
   private static final String JSON = "{\"value\":\"" + VALUE + "\"}";
 
-  // Http Auth
-  private static final String API_KEY = "PuRx8GT3huSXlheDIRUK1YUatGpLVEuL";
-  private static final String HTTP_AUTH_HEADER_VALUE = "Bearer " + API_KEY;
-
   @Test
-  public void testToJson() {
+  void testToJson() {
     final String actual = Utils.toJson(OBJECT);
     assertThat(actual).isEqualTo(JSON);
   }
 
   @Test
-  public void testToJson_throwsOnNull() {
+  void testToJson_throwsOnNull() {
     assertThatNullPointerException().isThrownBy(() -> Utils.toJson(null));
   }
 
   @Test
-  public void testFromJson() {
+  void testFromJson() {
     final Object actual = Utils.fromJson(JSON, TYPE);
     assertThat(actual).isEqualToComparingFieldByField(OBJECT);
   }
 
   @Test
-  public void testFromJson_throwsOnNull() {
+  void testFromJson_throwsOnNull() {
     assertThatNullPointerException().isThrownBy(() -> Utils.fromJson(JSON, null));
     assertThatNullPointerException().isThrownBy(() -> Utils.fromJson(null, TYPE));
   }
 
   @Test
-  public void testToUrl() throws Exception {
+  void testToUrl() throws Exception {
     final String urlString = "http://test.com:8080";
     final URI expected = new URI(urlString);
     final URI actual = Utils.toUri(urlString);
@@ -68,7 +64,7 @@ public class UtilsTest {
   }
 
   @Test
-  public void testToUrl_throwsOnNull() {
+  void testToUrl_throwsOnNull() {
     assertThatNullPointerException().isThrownBy(() -> Utils.toUri(null));
   }
 

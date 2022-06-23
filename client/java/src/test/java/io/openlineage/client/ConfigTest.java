@@ -14,7 +14,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-public class ConfigTest {
+class ConfigTest {
   @Test
   void testLoadConfigFromYaml() throws URISyntaxException {
     Path configPath =

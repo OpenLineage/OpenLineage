@@ -9,6 +9,7 @@ import java.util.List;
 public class DefaultConfigPathProvider implements ConfigPathProvider {
   private static final String OPENLINEAGE_YML = "openlineage.yml";
 
+  @Override
   public List<Path> getPaths() {
     List<Path> paths = new ArrayList<>();
 
