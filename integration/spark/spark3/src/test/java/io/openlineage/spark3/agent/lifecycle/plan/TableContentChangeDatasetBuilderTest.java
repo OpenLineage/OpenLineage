@@ -36,6 +36,7 @@ import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.Table;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
+import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -163,7 +164,8 @@ public class TableContentChangeDatasetBuilderTest {
             .thenReturn(Collections.singletonList(dataset));
         when(CatalogUtils3.getDatasetVersion(any(), any(), any())).thenReturn(Optional.of("v2"));
 
-        List<OpenLineage.OutputDataset> datasetList = builder.apply(logicalPlan);
+        List<OpenLineage.OutputDataset> datasetList =
+            builder.apply(new SparkListenerSQLExecutionEnd(1L, 1L), logicalPlan);
 
         assertEquals(1, datasetList.size());
         assertEquals(dataset, datasetList.get(0));

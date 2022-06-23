@@ -12,6 +12,7 @@ import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.plans.logical.AppendData;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
@@ -37,13 +38,13 @@ public class AppendDataDatasetBuilder extends AbstractQueryPlanOutputDatasetBuil
   }
 
   @Override
-  public List<OpenLineage.OutputDataset> apply(AppendData x) {
+  protected List<OpenLineage.OutputDataset> apply(SparkListenerEvent event, AppendData x) {
     // Needs to cast to logical plan despite IntelliJ claiming otherwise.
     LogicalPlan logicalPlan = (LogicalPlan) ((AppendData) x).table();
 
     if (logicalPlan instanceof DataSourceV2Relation) {
       return new DataSourceV2RelationOutputDatasetBuilder(context, factory)
-          .apply((DataSourceV2Relation) logicalPlan);
+          .apply(event, (DataSourceV2Relation) logicalPlan);
     } else {
       return Collections.emptyList();
     }

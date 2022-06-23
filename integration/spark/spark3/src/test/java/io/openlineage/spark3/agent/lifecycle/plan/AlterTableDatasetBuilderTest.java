@@ -27,6 +27,7 @@ import org.apache.spark.sql.catalyst.plans.logical.AlterTable;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.Table;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
+import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -64,7 +65,8 @@ public class AlterTableDatasetBuilderTest {
   @SneakyThrows
   public void testApplyWhenTableNotFound() {
     when(tableCatalog.loadTable(identifier)).thenThrow(mock(NoSuchTableException.class));
-    List<OpenLineage.OutputDataset> outputDatasets = builder.apply(alterTable);
+    List<OpenLineage.OutputDataset> outputDatasets =
+        builder.apply(new SparkListenerSQLExecutionEnd(1L, 1L), alterTable);
     assertEquals(0, outputDatasets.size());
   }
 
@@ -80,7 +82,8 @@ public class AlterTableDatasetBuilderTest {
               ScalaConversionUtils.<String, String>fromMap(tableProperties)))
           .thenReturn(Optional.empty());
 
-      List<OpenLineage.OutputDataset> outputDatasets = builder.apply(alterTable);
+      List<OpenLineage.OutputDataset> outputDatasets =
+          builder.apply(new SparkListenerSQLExecutionEnd(1L, 1L), alterTable);
       assertEquals(0, outputDatasets.size());
     }
   }
@@ -97,7 +100,8 @@ public class AlterTableDatasetBuilderTest {
               ScalaConversionUtils.<String, String>fromMap(tableProperties)))
           .thenReturn(Optional.of(di));
 
-      List<OpenLineage.OutputDataset> outputDatasets = builder.apply(alterTable);
+      List<OpenLineage.OutputDataset> outputDatasets =
+          builder.apply(new SparkListenerSQLExecutionEnd(1L, 1L), alterTable);
 
       assertEquals(1, outputDatasets.size());
       assertEquals("table", outputDatasets.get(0).getName());
@@ -124,7 +128,8 @@ public class AlterTableDatasetBuilderTest {
                 ScalaConversionUtils.<String, String>fromMap(tableProperties)))
             .thenReturn(Optional.of(di));
 
-        List<OpenLineage.OutputDataset> outputDatasets = builder.apply(alterTable);
+        List<OpenLineage.OutputDataset> outputDatasets =
+            builder.apply(new SparkListenerSQLExecutionEnd(1L, 1L), alterTable);
 
         assertEquals(1, outputDatasets.size());
         assertEquals("v2", outputDatasets.get(0).getFacets().getVersion().getDatasetVersion());

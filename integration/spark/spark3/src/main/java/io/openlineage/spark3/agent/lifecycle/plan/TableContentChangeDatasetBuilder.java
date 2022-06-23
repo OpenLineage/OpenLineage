@@ -13,6 +13,7 @@ import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.analysis.NamedRelation;
 import org.apache.spark.sql.catalyst.plans.logical.DeleteFromTable;
 import org.apache.spark.sql.catalyst.plans.logical.InsertIntoStatement;
@@ -44,7 +45,7 @@ public class TableContentChangeDatasetBuilder
   }
 
   @Override
-  public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
+  protected List<OpenLineage.OutputDataset> apply(SparkListenerEvent event, LogicalPlan x) {
     NamedRelation table;
     boolean includeOverwriteFacet = false;
 
@@ -82,9 +83,10 @@ public class TableContentChangeDatasetBuilder
                   OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE,
                   null));
     }
-
-    DatasetVersionDatasetFacetUtils.includeDatasetVersion(
-        context, datasetFacetsBuilder, (DataSourceV2Relation) table);
+    if (includeDatasetVersion(event)) {
+      DatasetVersionDatasetFacetUtils.includeDatasetVersion(
+          context, datasetFacetsBuilder, (DataSourceV2Relation) table);
+    }
     return PlanUtils3.fromDataSourceV2Relation(
         outputDataset(), context, (DataSourceV2Relation) table, datasetFacetsBuilder);
   }

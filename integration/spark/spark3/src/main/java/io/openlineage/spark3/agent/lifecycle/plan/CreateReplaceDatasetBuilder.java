@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.plans.logical.CreateTableAsSelect;
 import org.apache.spark.sql.catalyst.plans.logical.CreateV2Table;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -53,7 +54,7 @@ public class CreateReplaceDatasetBuilder
   }
 
   @Override
-  public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
+  protected List<OpenLineage.OutputDataset> apply(SparkListenerEvent event, LogicalPlan x) {
     TableCatalog tableCatalog;
     Map<String, String> tableProperties;
     Identifier identifier;
@@ -110,10 +111,12 @@ public class CreateReplaceDatasetBuilder
                 openLineage.newLifecycleStateChangeDatasetFacet(lifecycleStateChange, null))
             .dataSource(PlanUtils.datasourceFacet(openLineage, di.get().getNamespace()));
 
-    Optional<String> datasetVersion =
-        CatalogUtils3.getDatasetVersion(tableCatalog, identifier, tableProperties);
-    datasetVersion.ifPresent(
-        version -> builder.version(openLineage.newDatasetVersionDatasetFacet(version)));
+    if (includeDatasetVersion(event)) {
+      Optional<String> datasetVersion =
+          CatalogUtils3.getDatasetVersion(tableCatalog, identifier, tableProperties);
+      datasetVersion.ifPresent(
+          version -> builder.version(openLineage.newDatasetVersionDatasetFacet(version)));
+    }
 
     CatalogUtils3.getTableProviderFacet(tableCatalog, tableProperties)
         .map(provider -> builder.put("tableProvider", provider));
