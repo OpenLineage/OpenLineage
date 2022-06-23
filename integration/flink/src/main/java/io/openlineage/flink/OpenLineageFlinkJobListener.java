@@ -19,6 +19,7 @@ import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.dag.Transformation;
+import org.apache.flink.core.execution.DetachedJobExecutionResult;
 import org.apache.flink.core.execution.JobClient;
 import org.apache.flink.core.execution.JobListener;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -82,7 +83,24 @@ public class OpenLineageFlinkJobListener implements JobListener {
   @Override
   public void onJobExecuted(
       @Nullable JobExecutionResult jobExecutionResult, @Nullable Throwable throwable) {
-    log.debug("JobExecutionResult: {}", jobExecutionResult);
+    if (jobExecutionResult instanceof DetachedJobExecutionResult) {
+      jobContexts.remove(jobExecutionResult.getJobID());
+      log.warn(
+          "Job running in detached mode. Set execution.attached to true if you want to emit completed events.");
+      return;
+    }
+
+    if (jobExecutionResult != null) {
+      jobContexts.remove(jobExecutionResult.getJobID()).onJobCompleted(jobExecutionResult);
+    } else {
+      // We don't have jobId when failed, so we need to assume that only existing context is that
+      // job
+      if (jobContexts.size() == 1) {
+        Map.Entry<JobID, FlinkExecutionContext> entry =
+            jobContexts.entrySet().stream().findFirst().get();
+        jobContexts.remove(entry.getKey()).onJobFailed(throwable);
+      }
+    }
   }
 
   private void makeTransformationsArchivedList(StreamExecutionEnvironment executionEnvironment) {
