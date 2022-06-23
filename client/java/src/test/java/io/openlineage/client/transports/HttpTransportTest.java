@@ -22,7 +22,7 @@ import org.apache.http.client.methods.HttpUriRequest;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-public class HttpTransportTest {
+class HttpTransportTest {
 
   @Test
   void clientEmitsHttpTransport() throws IOException {

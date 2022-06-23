@@ -11,11 +11,8 @@ public abstract class Transport {
     NOOP
   };
 
-  private final Type type;
-
-  Transport(@NonNull final Type type) {
-    this.type = type;
-  }
+  @SuppressWarnings("PMD") // unused constructor type used for @NonNull validation
+  Transport(@NonNull final Type type) {}
 
   public abstract void emit(OpenLineage.RunEvent runEvent);
 }
