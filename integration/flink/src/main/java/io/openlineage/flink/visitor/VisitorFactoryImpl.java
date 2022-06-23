@@ -12,6 +12,7 @@ public class VisitorFactoryImpl implements VisitorFactory {
   public List<Visitor<OpenLineage.InputDataset>> getInputVisitors(OpenLineageContext context) {
     return Arrays.asList(
         new KafkaSourceVisitor(context),
+        new FlinkKafkaConsumerVisitor(context),
         new IcebergSourceVisitor(context),
         new LineageProviderVisitor<>(context, DatasetFactory.input(context.getOpenLineage())));
   }
@@ -20,6 +21,7 @@ public class VisitorFactoryImpl implements VisitorFactory {
   public List<Visitor<OpenLineage.OutputDataset>> getOutputVisitors(OpenLineageContext context) {
     return Arrays.asList(
         new KafkaSinkVisitor(context),
+        new FlinkKafkaProducerVisitor(context),
         new LineageProviderVisitor<>(context, DatasetFactory.output(context.getOpenLineage())));
   }
 }

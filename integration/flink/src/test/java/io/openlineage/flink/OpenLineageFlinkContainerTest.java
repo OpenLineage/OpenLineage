@@ -124,7 +124,14 @@ public class OpenLineageFlinkContainerTest {
   public void testOpenLineageEventSentForKafkaJob() {
     runUntilCheckpoint("io.openlineage.flink.FlinkStatefulApplication");
     mockServerClient.verify(
-        getEvent("events/expected_event.json"), getEvent("events/expected_event_checkpoints.json"));
+        getEvent("events/expected_kafka.json"), getEvent("events/expected_kafka_checkpoints.json"));
+  }
+
+  @Test
+  @SneakyThrows
+  public void testOpenLineageEventSentForLegacyKafkaJob() {
+    runUntilCheckpoint("io.openlineage.flink.FlinkStatefulApplication");
+    mockServerClient.verify(getEvent("events/expected_legacy_kafka.json"));
   }
 
   @Test
