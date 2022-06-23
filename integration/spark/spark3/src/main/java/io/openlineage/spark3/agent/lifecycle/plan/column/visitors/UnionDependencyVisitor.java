@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.spark3.agent.lifecycle.plan.column.visitors;
 
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ExpressionDependencyCollector.traverseExpression;
@@ -26,10 +31,12 @@ import org.apache.spark.sql.catalyst.plans.logical.Union;
 @Slf4j
 public class UnionDependencyVisitor implements ExpressionDependencyVisitor {
 
+  @Override
   public boolean isDefinedAt(LogicalPlan plan) {
     return plan instanceof Union;
   }
 
+  @Override
   public void apply(LogicalPlan plan, ColumnLevelLineageBuilder builder) {
     Union union = (Union) plan;
 

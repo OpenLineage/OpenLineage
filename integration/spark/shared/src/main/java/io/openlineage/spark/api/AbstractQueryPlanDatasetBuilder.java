@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.spark.api;
 
 import io.openlineage.client.OpenLineage;
@@ -55,6 +60,7 @@ public abstract class AbstractQueryPlanDatasetBuilder<T, P extends LogicalPlan, 
 
   public abstract List<D> apply(P p);
 
+  @Override
   public final List<D> apply(T event) {
     return context
         .getQueryExecution()

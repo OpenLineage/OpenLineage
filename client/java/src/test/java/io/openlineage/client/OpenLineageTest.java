@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.client;
 
@@ -26,13 +29,15 @@ import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class OpenLineageTest {
+class OpenLineageTest {
 
   ObjectMapper mapper = new ObjectMapper();
 
-  {
+  @BeforeEach
+  void setup() {
     mapper.registerModule(new JavaTimeModule());
     mapper.setSerializationInclusion(Include.NON_NULL);
     mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
@@ -41,7 +46,7 @@ public class OpenLineageTest {
   }
 
   @Test
-  public void jsonSerialization() throws JsonProcessingException {
+  void jsonSerialization() throws JsonProcessingException {
     ZonedDateTime now = ZonedDateTime.now(ZoneId.of("UTC"));
 
     URI producer = URI.create("producer");
@@ -88,7 +93,7 @@ public class OpenLineageTest {
   }
 
   @Test
-  public void factory() throws JsonProcessingException {
+  void factory() throws JsonProcessingException {
     ZonedDateTime now = ZonedDateTime.now(ZoneId.of("UTC"));
 
     URI producer = URI.create("producer");

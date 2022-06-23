@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark.agent.lifecycle;
 
@@ -23,6 +26,7 @@ class Spark2VisitorFactoryImpl extends BaseVisitorFactory {
         .build();
   }
 
+  @Override
   public <D extends OpenLineage.Dataset>
       List<PartialFunction<LogicalPlan, List<D>>> getCommonVisitors(
           OpenLineageContext context, DatasetFactory<D> factory) {

@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.spark.agent;
 
 import static io.openlineage.spark.agent.util.TestOpenLineageEventHandlerFactory.FAILING_TABLE_NAME_FAIL_ON_APPLY;

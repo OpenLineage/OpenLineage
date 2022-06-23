@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
 import io.openlineage.spark.agent.facets.TableProviderFacet;
@@ -24,6 +29,7 @@ import scala.Option;
  */
 @Slf4j
 public class DatabricksDeltaHandler implements CatalogHandler {
+  @Override
   public boolean hasClasses() {
     try {
       DeltaHandler.class
@@ -38,10 +44,8 @@ public class DatabricksDeltaHandler implements CatalogHandler {
 
   @Override
   public boolean isClass(TableCatalog tableCatalog) {
-    return tableCatalog
-        .getClass()
-        .getCanonicalName()
-        .equals("com.databricks.sql.transaction.tahoe.catalog.DeltaCatalog");
+    return "com.databricks.sql.transaction.tahoe.catalog.DeltaCatalog"
+        .equals(tableCatalog.getClass().getCanonicalName());
   }
 
   @Override
@@ -84,6 +88,7 @@ public class DatabricksDeltaHandler implements CatalogHandler {
     return PathUtils.fromPath(path, "file");
   }
 
+  @Override
   public Optional<TableProviderFacet> getTableProviderFacet(Map<String, String> properties) {
     return Optional.of(new TableProviderFacet("delta", "parquet")); // Delta is always parquet
   }

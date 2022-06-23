@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.spark3.agent.lifecycle.plan.column.visitors;
 
 import static io.openlineage.spark3.agent.lifecycle.plan.column.ExpressionDependencyCollector.traverseExpression;
@@ -28,16 +33,18 @@ public class IcebergMergeIntoDependencyVisitor implements ExpressionDependencyVi
   private static final String MERGE_INTO_CLASS_NAME =
       "org.apache.spark.sql.catalyst.plans.logical.MergeInto";
 
+  @Override
   public boolean isDefinedAt(LogicalPlan plan) {
     return Arrays.asList(MERGE_INTO_CLASS_NAME, MERGE_ROWS_CLASS_NAME)
         .contains(plan.getClass().getCanonicalName());
   }
 
+  @Override
   public void apply(LogicalPlan node, ColumnLevelLineageBuilder builder) {
     try {
       String nodeClass = node.getClass().getCanonicalName();
 
-      if (nodeClass.equals(MERGE_ROWS_CLASS_NAME)) {
+      if (MERGE_ROWS_CLASS_NAME.equals(nodeClass)) {
         Class mergeRows = Class.forName(MERGE_ROWS_CLASS_NAME);
         Seq<Seq<Expression>> matched =
             (Seq<Seq<Expression>>) mergeRows.getMethod("matchedOutputs").invoke(node);
@@ -52,7 +59,7 @@ public class IcebergMergeIntoDependencyVisitor implements ExpressionDependencyVi
                 .map(e -> Option.apply(e))
                 .collect(Collectors.toList()),
             builder);
-      } else if (nodeClass.equals(MERGE_INTO_CLASS_NAME)) {
+      } else if (MERGE_INTO_CLASS_NAME.equals(nodeClass)) {
         Class mergeInto = Class.forName("org.apache.spark.sql.catalyst.plans.logical.MergeInto");
         Class mergeIntoParamsClass =
             Class.forName("org.apache.spark.sql.catalyst.plans.logical.MergeIntoParams");

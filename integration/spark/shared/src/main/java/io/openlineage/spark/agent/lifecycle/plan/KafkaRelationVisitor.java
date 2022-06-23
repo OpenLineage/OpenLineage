@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark.agent.lifecycle.plan;
 
@@ -81,6 +84,7 @@ public class KafkaRelationVisitor<D extends OpenLineage.Dataset>
   }
 
   @Override
+  @SuppressWarnings("PMD") // we need to make sourceOptionsField accessible
   public List<D> apply(LogicalPlan x) {
     KafkaRelation relation = (KafkaRelation) ((LogicalRelation) x).relation();
     Map<String, String> sourceOptions;

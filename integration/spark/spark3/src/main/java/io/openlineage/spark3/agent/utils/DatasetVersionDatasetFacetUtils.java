@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.spark3.agent.utils;
 
 import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptional;
@@ -17,6 +22,8 @@ import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 
 @Slf4j
 public class DatasetVersionDatasetFacetUtils {
+
+  private static final String DELTA = "delta";
 
   /**
    * Check if we have all the necessary properties in DataSourceV2Relation to get dataset version.
@@ -50,7 +57,7 @@ public class DatasetVersionDatasetFacetUtils {
       asJavaOptional(logicalRelation.catalogTable());
       if (logicalRelation.catalogTable().isDefined()
           && logicalRelation.catalogTable().get().provider().isDefined()
-          && logicalRelation.catalogTable().get().provider().get().equalsIgnoreCase("delta")) {
+          && DELTA.equalsIgnoreCase(logicalRelation.catalogTable().get().provider().get())) {
         if (hasDeltaClasses() && fsRelation.location() instanceof TahoeLogFileIndex) {
           TahoeLogFileIndex fileIndex = (TahoeLogFileIndex) fsRelation.location();
           return Optional.of(Long.toString(fileIndex.getSnapshot().version()));

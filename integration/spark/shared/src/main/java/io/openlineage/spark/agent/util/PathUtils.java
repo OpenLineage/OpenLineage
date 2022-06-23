@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark.agent.util;
 
@@ -58,7 +61,7 @@ public class PathUtils {
     } else {
       if (catalogTable.storage() != null && catalogTable.storage().locationUri().isDefined()) {
         // location is present -> use it for dataset identifier with `file:/` scheme
-        return PathUtils.fromURI(catalogTable.storage().locationUri().get(), "file");
+        return PathUtils.fromURI(catalogTable.storage().locationUri().get(), DEFAULT_SCHEME);
       }
 
       try {
@@ -82,7 +85,7 @@ public class PathUtils {
             .defaultTablePath(catalogTable.identifier())
             .getPath();
 
-    return PathUtils.fromURI(new URI("file", null, path, null, null), "file");
+    return PathUtils.fromURI(new URI(DEFAULT_SCHEME, null, path, null, null), DEFAULT_SCHEME);
   }
 
   @SneakyThrows
@@ -123,7 +126,7 @@ public class PathUtils {
     Optional<String> setting =
         SparkConfUtils.findSparkConfigKey(
             sparkConf.get(), StaticSQLConf.CATALOG_IMPLEMENTATION().key());
-    if (!setting.isPresent() || !setting.get().equals("hive")) {
+    if (!setting.isPresent() || !"hive".equals(setting.get())) {
       return Optional.empty();
     }
 

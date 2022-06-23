@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
@@ -27,7 +30,6 @@ public class V2SessionCatalogHandler implements CatalogHandler {
       TableCatalog tableCatalog,
       Identifier identifier,
       Map<String, String> properties) {
-    V2SessionCatalog catalog = (V2SessionCatalog) tableCatalog;
     throw new UnsupportedCatalogException(V2SessionCatalog.class.getCanonicalName());
   }
 

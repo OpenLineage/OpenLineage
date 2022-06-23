@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark.agent.lifecycle;
 
@@ -14,7 +17,7 @@ class VisitorFactoryProviderTest {
   @ParameterizedTest
   @MethodSource("provideVersionFactory")
   void getInstance(String version, String expectedClass) {
-    String className = VisitorFactoryProvider.getVersion(version);
+    String className = VisitorFactoryProvider.getVisitorFactoryForVersion(version);
     assertThat(className).isEqualTo(expectedClass);
   }
 

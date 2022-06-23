@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
@@ -25,6 +28,9 @@ import org.apache.spark.sql.connector.catalog.TableCatalog;
 
 @Slf4j
 public class IcebergHandler implements CatalogHandler {
+
+  private static final String TYPE = "type";
+
   @Override
   public boolean hasClasses() {
     try {
@@ -64,18 +70,18 @@ public class IcebergHandler implements CatalogHandler {
                     Map.Entry::getValue));
 
     log.info(catalogConf.toString());
-    if (catalogConf.isEmpty() || !catalogConf.containsKey("type")) {
+    if (catalogConf.isEmpty() || !catalogConf.containsKey(TYPE)) {
       throw new UnsupportedCatalogException(catalogName);
     }
-    log.info(catalogConf.get("type"));
-    switch (catalogConf.get("type")) {
+    log.info(catalogConf.get(TYPE));
+    switch (catalogConf.get(TYPE)) {
       case "hadoop":
         return getHadoopIdentifier(catalogConf, identifier.toString());
       case "hive":
         return getHiveIdentifier(
             session, catalogConf.get(CatalogProperties.URI), identifier.toString());
       default:
-        throw new UnsupportedCatalogException(catalogConf.get("type"));
+        throw new UnsupportedCatalogException(catalogConf.get(TYPE));
     }
   }
 
@@ -87,7 +93,7 @@ public class IcebergHandler implements CatalogHandler {
   @SneakyThrows
   private DatasetIdentifier getHiveIdentifier(
       SparkSession session, @Nullable String confUri, String table) {
-    table = String.format("/%s", table);
+    String slashPrefixedTable = String.format("/%s", table);
     URI uri;
     if (confUri == null) {
       uri =
@@ -96,15 +102,18 @@ public class IcebergHandler implements CatalogHandler {
     } else {
       uri = new URI(confUri);
     }
-    return PathUtils.fromPath(new Path(PathUtils.enrichHiveMetastoreURIWithTableName(uri, table)));
+    return PathUtils.fromPath(
+        new Path(PathUtils.enrichHiveMetastoreURIWithTableName(uri, slashPrefixedTable)));
   }
 
+  @Override
   public Optional<TableProviderFacet> getTableProviderFacet(Map<String, String> properties) {
     String format = properties.getOrDefault("format", "");
     return Optional.of(new TableProviderFacet("iceberg", format.replace("iceberg/", "")));
   }
 
   @SneakyThrows
+  @Override
   public Optional<String> getDatasetVersion(
       TableCatalog tableCatalog, Identifier identifier, Map<String, String> properties) {
     SparkCatalog sparkCatalog = (SparkCatalog) tableCatalog;

@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.spark.agent.facets.builder;
 
 import com.databricks.backend.daemon.dbutils.MountInfo;
@@ -5,11 +10,11 @@ import com.databricks.dbutils_v1.DbfsUtils;
 import io.openlineage.spark.agent.facets.EnvironmentFacet;
 import io.openlineage.spark.agent.models.DatabricksMountpoint;
 import io.openlineage.spark.api.CustomFacetBuilder;
-import io.openlineage.spark.api.OpenLineageContext;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiConsumer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerJobStart;
@@ -22,14 +27,9 @@ import scala.collection.JavaConversions;
 @Slf4j
 public class DatabricksEnvironmentFacetBuilder
     extends CustomFacetBuilder<SparkListenerJobStart, EnvironmentFacet> {
-  private HashMap<String, Object> dbProperties;
-  private final OpenLineageContext openLineageContext;
+  private Map<String, Object> dbProperties;
   private Class dbutilsClass;
   private DbfsUtils dbutils;
-
-  public DatabricksEnvironmentFacetBuilder(OpenLineageContext openLineageContext) {
-    this.openLineageContext = openLineageContext;
-  }
 
   public static boolean isDatabricksRuntime() {
     return System.getenv().containsKey("DATABRICKS_RUNTIME_VERSION");
@@ -43,8 +43,7 @@ public class DatabricksEnvironmentFacetBuilder
         new EnvironmentFacet(getDatabricksEnvironmentalAttributes(event)));
   }
 
-  private HashMap<String, Object> getDatabricksEnvironmentalAttributes(
-      SparkListenerJobStart jobStart) {
+  private Map<String, Object> getDatabricksEnvironmentalAttributes(SparkListenerJobStart jobStart) {
     dbProperties = new HashMap<>();
     // These are useful properties to extract if they are available
 

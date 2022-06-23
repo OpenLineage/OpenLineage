@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark.agent;
 
@@ -75,7 +78,7 @@ public class ArgumentParser {
   private static Optional<Map<String, String>> getUrlParams(List<NameValuePair> nameValuePairList) {
     final Map<String, String> urlParams = new HashMap<String, String>();
     nameValuePairList.stream()
-        .filter(pair -> !(pair.getName().equals("api_key")))
+        .filter(pair -> !"api_key".equals(pair.getName()))
         .forEach(pair -> urlParams.put(pair.getName(), pair.getValue()));
 
     return urlParams.isEmpty() ? Optional.empty() : Optional.ofNullable(urlParams);

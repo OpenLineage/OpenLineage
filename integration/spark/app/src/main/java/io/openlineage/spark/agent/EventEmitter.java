@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark.agent;
 
@@ -7,13 +10,10 @@ import io.openlineage.client.OpenLineageClient;
 import io.openlineage.client.OpenLineageClientException;
 import io.openlineage.client.Utils;
 import io.openlineage.client.transports.HttpTransport;
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.StringJoiner;
 import java.util.UUID;
 import lombok.Getter;
@@ -64,23 +64,6 @@ public class EventEmitter {
       log.info("Emitting lineage completed successfully: {}", Utils.toJson(event));
     } catch (OpenLineageClientException exception) {
       log.error("Could not emit lineage w/ exception", exception);
-    }
-  }
-
-  private static URI getProducerUri() {
-    return URI.create(
-        String.format(
-            "https://github.com/OpenLineage/OpenLineage/tree/%s/integration/spark", getVersion()));
-  }
-
-  private static String getVersion() {
-    try {
-      Properties properties = new Properties();
-      InputStream is = EventEmitter.class.getResourceAsStream("version.properties");
-      properties.load(is);
-      return properties.getProperty("version");
-    } catch (IOException exception) {
-      return "main";
     }
   }
 

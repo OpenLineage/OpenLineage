@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark.api;
 
@@ -31,6 +34,7 @@ import java.util.function.BiConsumer;
 public abstract class CustomFacetBuilder<T, F>
     implements AbstractPartial<Object>, BiConsumer<Object, BiConsumer<String, ? super F>> {
 
+  @Override
   public final void accept(Object event, BiConsumer<String, ? super F> consumer) {
     if (isDefinedAt(event)) {
       build((T) event, consumer);

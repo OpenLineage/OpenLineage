@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark.agent.lifecycle.plan;
 
@@ -124,10 +127,8 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
               })
           .orElse(Collections.emptyList());
     } catch (Exception e) {
-      if (e.getClass()
-          .getName()
-          .equals(
-              "com.databricks.backend.daemon.data.client.adl.AzureCredentialNotFoundException")) {
+      if ("com.databricks.backend.daemon.data.client.adl.AzureCredentialNotFoundException"
+          .equals(e.getClass().getName())) {
         // This is a fallback that can occur when hadoop configurations cannot be
         // reached. This occurs in Azure Databricks when credential passthrough
         // is enabled and you're attempting to get the data lake credentials.
@@ -143,7 +144,7 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
         for (Path p : paths) {
           inputDatasets.add(datasetFactory.getDataset(p.toUri(), relation.schema()));
         }
-        if (inputDatasets.size() == 0) {
+        if (inputDatasets.isEmpty()) {
           return Collections.emptyList();
         } else {
           return inputDatasets;

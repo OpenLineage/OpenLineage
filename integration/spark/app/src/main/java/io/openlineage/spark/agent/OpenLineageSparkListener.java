@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark.agent;
 
@@ -209,6 +212,9 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     }
   }
 
+  @SuppressWarnings(
+      "PMD") // javadoc -> Closing a ByteArrayOutputStream has no effect. The methods in this class
+  // can be called after the stream has been closed without generating an IOException.
   private static OpenLineage.RunFacets errorRunFacet(Exception e, OpenLineage ol) {
     OpenLineage.RunFacet errorFacet = ol.newRunFacet();
     ByteArrayOutputStream buffer = new ByteArrayOutputStream();

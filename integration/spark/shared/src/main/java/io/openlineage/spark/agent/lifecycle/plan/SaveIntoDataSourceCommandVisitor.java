@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark.agent.lifecycle.plan;
 
@@ -65,6 +68,7 @@ public class SaveIntoDataSourceCommandVisitor
             .isPresent();
   }
 
+  @Override
   public List<OutputDataset> apply(SaveIntoDataSourceCommand cmd) {
     // intentionally unimplemented
     throw new UnsupportedOperationException("apply(LogicalPlay) is not implemented");

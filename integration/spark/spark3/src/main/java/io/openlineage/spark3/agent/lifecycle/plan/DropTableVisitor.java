@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark3.agent.lifecycle.plan;
 
@@ -18,7 +21,6 @@ import org.apache.spark.sql.catalyst.plans.logical.DropTable;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
-import org.apache.spark.sql.types.StructType;
 
 @Slf4j
 public class DropTableVisitor extends QueryPlanVisitor<DropTable, OpenLineage.OutputDataset> {
@@ -33,7 +35,6 @@ public class DropTableVisitor extends QueryPlanVisitor<DropTable, OpenLineage.Ou
     TableCatalog tableCatalog = resolvedTable.catalog();
     Map<String, String> tableProperties = resolvedTable.table().properties();
     Identifier identifier = resolvedTable.identifier();
-    StructType schema = resolvedTable.schema();
 
     Optional<DatasetIdentifier> di =
         PlanUtils3.getDatasetIdentifier(context, tableCatalog, identifier, tableProperties);
@@ -43,7 +44,7 @@ public class DropTableVisitor extends QueryPlanVisitor<DropTable, OpenLineage.Ou
           outputDataset()
               .getDataset(
                   di.get(),
-                  schema,
+                  resolvedTable.schema(),
                   OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.DROP));
     } else {
       return Collections.emptyList();

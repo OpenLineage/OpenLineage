@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.spark3.agent.utils;
 
 import io.openlineage.client.OpenLineage;
@@ -51,6 +56,9 @@ public class PlanUtils3 {
                     r.table().properties()));
   }
 
+  // Ensure that resources like this SparkSession object are closed after use -> we
+  // don't want to close SparkSession
+  @SuppressWarnings("PMD")
   public static Optional<DatasetIdentifier> getDatasetIdentifier(
       OpenLineageContext context,
       TableCatalog catalog,

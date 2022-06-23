@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark.agent.lifecycle.plan;
 
@@ -57,12 +60,12 @@ public class CommandPlanVisitor
   @Override
   public List<InputDataset> apply(LogicalPlan x) {
     Optional<LogicalPlan> input = getInput(x);
-    PartialFunction<LogicalPlan, Collection<InputDataset>> inputVisitors =
-        PlanUtils.merge(context.getInputDatasetQueryPlanVisitors());
     return input
         .map(
             in ->
-                ScalaConversionUtils.fromSeq(in.collect(inputVisitors)).stream()
+                ScalaConversionUtils.fromSeq(
+                        in.collect(PlanUtils.merge(context.getInputDatasetQueryPlanVisitors())))
+                    .stream()
                     .flatMap(Collection::stream)
                     .collect(Collectors.toList()))
         .orElseGet(Collections::emptyList);

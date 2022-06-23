@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark.agent.util;
 
@@ -58,7 +61,6 @@ public class SparkConfUtils {
     scala.Tuple2<String, String>[] urlConfigs = conf.getAllWithPrefix("spark." + prefix + ".");
     for (scala.Tuple2<String, String> param : urlConfigs) {
       urlParams.put(param._1, param._2);
-      System.out.println(param._1);
     }
 
     return Optional.ofNullable(urlParams);

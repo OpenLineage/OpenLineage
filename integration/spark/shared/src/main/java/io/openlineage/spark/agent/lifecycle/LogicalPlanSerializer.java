@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark.agent.lifecycle;
 
@@ -50,7 +53,7 @@ class LogicalPlanSerializer {
               Class.forName("com.fasterxml.jackson.module.scala.DefaultScalaModule$")
                   .getDeclaredField("MODULE$")
                   .get(null));
-    } catch (Throwable t) {
+    } catch (Exception t) {
       log.warn("Can't register jackson scala module for serializing LogicalPlan");
     }
 
@@ -66,7 +69,7 @@ class LogicalPlanSerializer {
   public String serialize(LogicalPlan x) {
     try {
       return mapper.writeValueAsString(x);
-    } catch (Throwable e) {
+    } catch (Exception e) {
       try {
         return mapper.writeValueAsString(
             "Unable to serialize logical plan due to: " + e.getMessage());
@@ -90,6 +93,7 @@ class LogicalPlanSerializer {
    */
   @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "id")
   @JsonIgnoreProperties({"child", "containsChild", "canonicalized", "constraints"})
+  @SuppressWarnings("PMD")
   abstract class ChildMixIn {}
 
   @JsonIgnoreProperties({"sqlConfigs", "sqlConfExecutorSide"})
@@ -97,13 +101,17 @@ class LogicalPlanSerializer {
 
   @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "id")
   public static class PythonRDDMixin {
-    @JsonIgnore private PythonRDDMixin asJavaRDD;
+    @SuppressWarnings("PMD")
+    @JsonIgnore
+    private PythonRDDMixin asJavaRDD;
   }
 
   @JsonTypeInfo(use = Id.CLASS)
   @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "id")
   public static class RDDMixin {
-    @JsonIgnore private Partition[] partitions;
+    @SuppressWarnings("PMD")
+    @JsonIgnore
+    private Partition[] partitions;
 
     @JsonIgnore
     public Boolean isEmpty() {
@@ -112,7 +120,7 @@ class LogicalPlanSerializer {
 
     @JsonIgnore
     public Partition[] getPartitions() {
-      return null;
+      return new Partition[] {};
     }
   }
 

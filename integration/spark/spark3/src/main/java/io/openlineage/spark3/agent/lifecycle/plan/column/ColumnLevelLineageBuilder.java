@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import io.openlineage.client.OpenLineage;
@@ -21,14 +26,13 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 
 /**
  * Builder class used to store information required to build {@link
  * ColumnLineageDatasetFacetFields}. Single instance of the class is passed when traversing logical
  * plan. It stores input fields, output fields and dependencies between the expressions in {@link
- * LogicalPlan}. Dependency between expressions are used to identify inputs used to evaluate
- * specific output field.
+ * org.apache.spark.sql.catalyst.plans.logical.LogicalPlan}. Dependency between expressions are used
+ * to identify inputs used to evaluate specific output field.
  */
 @Slf4j
 public class ColumnLevelLineageBuilder {
