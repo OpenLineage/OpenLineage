@@ -9,6 +9,7 @@ from openlineage.airflow import __version__ as OPENLINEAGE_AIRFLOW_VERSION
 
 from openlineage.integration.common.openlineage.schema import GITHUB_LOCATION
 
+
 @attr.s
 class AirflowVersionRunFacet(BaseFacet):
     operator: str = attr.ib()
@@ -20,6 +21,7 @@ class AirflowVersionRunFacet(BaseFacet):
     def from_task(cls, task):
         # task.__dict__ may contain values uncastable to str
         from openlineage.airflow.utils import SafeStrDict
+
         return cls(
             f"{task.__class__.__module__}.{task.__class__.__name__}",
             str(SafeStrDict(task.__dict__)),
@@ -73,4 +75,4 @@ class PythonDecoratedFacet(BaseFacet):
 
     @staticmethod
     def _get_schema() -> str:
-        return GITHUB_LOCATION + "live-maps-python-decorated-facet.json"
+        return GITHUB_LOCATION + "python-decorated-facet.json"
