@@ -1,4 +1,6 @@
+# Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
+
 from time import sleep
 from typing import Union, Optional, List
 
