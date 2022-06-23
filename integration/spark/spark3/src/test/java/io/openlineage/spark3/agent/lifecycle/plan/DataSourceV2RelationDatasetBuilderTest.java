@@ -21,13 +21,9 @@ import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.List;
 import java.util.stream.Stream;
-import org.apache.spark.scheduler.SparkListenerEvent;
-import org.apache.spark.scheduler.SparkListenerJobEnd;
-import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
-import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -76,7 +72,14 @@ public class DataSourceV2RelationDatasetBuilderTest {
         when(PlanUtils3.fromDataSourceV2Relation(factory, context, relation, datasetFacetsBuilder))
             .thenReturn(datasets);
 
-        assertEquals(datasets, builder.apply(relation));
+        if (builder instanceof DataSourceV2RelationOutputDatasetBuilder) {
+          assertEquals(
+              datasets,
+              ((DataSourceV2RelationOutputDatasetBuilder) builder)
+                  .apply(new SparkListenerSQLExecutionEnd(1L, 1L), relation));
+        } else {
+          assertEquals(datasets, builder.apply(relation));
+        }
 
         facetUtilsMockedStatic.verify(
             () ->
@@ -105,51 +108,5 @@ public class DataSourceV2RelationDatasetBuilderTest {
             context,
             factory,
             openLineage));
-  }
-
-  @ParameterizedTest
-  @MethodSource("provideBuildersWithSparkListeners")
-  public void testIsDefinedStSparkListenerEvent(
-      AbstractQueryPlanDatasetBuilder builder, SparkListenerEvent event, boolean expectedResult) {
-    assertEquals(expectedResult, builder.isDefinedAt(event));
-  }
-
-  private static Stream<Arguments> provideBuildersWithSparkListeners() {
-    OpenLineageContext context = mock(OpenLineageContext.class);
-    DatasetFactory factory = mock(DatasetFactory.class);
-
-    return Stream.of(
-        Arguments.of(
-            new DataSourceV2RelationInputDatasetBuilder(context, factory),
-            mock(SparkListenerJobStart.class),
-            true),
-        Arguments.of(
-            new DataSourceV2RelationInputDatasetBuilder(context, factory),
-            mock(SparkListenerSQLExecutionStart.class),
-            true),
-        Arguments.of(
-            new DataSourceV2RelationInputDatasetBuilder(context, factory),
-            mock(SparkListenerJobEnd.class),
-            false),
-        Arguments.of(
-            new DataSourceV2RelationInputDatasetBuilder(context, factory),
-            mock(SparkListenerSQLExecutionEnd.class),
-            false),
-        Arguments.of(
-            new DataSourceV2RelationOutputDatasetBuilder(context, factory),
-            mock(SparkListenerJobStart.class),
-            false),
-        Arguments.of(
-            new DataSourceV2RelationOutputDatasetBuilder(context, factory),
-            mock(SparkListenerSQLExecutionStart.class),
-            false),
-        Arguments.of(
-            new DataSourceV2RelationOutputDatasetBuilder(context, factory),
-            mock(SparkListenerJobEnd.class),
-            true),
-        Arguments.of(
-            new DataSourceV2RelationOutputDatasetBuilder(context, factory),
-            mock(SparkListenerSQLExecutionEnd.class),
-            true));
   }
 }

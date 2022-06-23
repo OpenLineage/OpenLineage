@@ -34,12 +34,7 @@ public class AppendDataDatasetBuilder extends AbstractQueryPlanOutputDatasetBuil
   }
 
   @Override
-  public List<OpenLineage.OutputDataset> apply(AppendData x) {
-    return Collections.emptyList();
-  }
-
-  @Override
-  public List<OpenLineage.OutputDataset> apply(SparkListenerEvent event, AppendData appendData) {
+  protected List<OpenLineage.OutputDataset> apply(SparkListenerEvent event, AppendData appendData) {
     LogicalPlan logicalPlan = (LogicalPlan) (appendData).table();
 
     return delegate(

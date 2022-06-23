@@ -13,6 +13,7 @@ import io.openlineage.spark3.agent.utils.DatasetVersionDatasetFacetUtils;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 
@@ -42,11 +43,15 @@ public class DataSourceV2RelationOutputDatasetBuilder
   }
 
   @Override
-  public List<OpenLineage.OutputDataset> apply(DataSourceV2Relation relation) {
+  protected List<OpenLineage.OutputDataset> apply(
+      SparkListenerEvent event, DataSourceV2Relation relation) {
     OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
         context.getOpenLineage().newDatasetFacetsBuilder();
 
-    DatasetVersionDatasetFacetUtils.includeDatasetVersion(context, datasetFacetsBuilder, relation);
+    if (includeDatasetVersion(event)) {
+      DatasetVersionDatasetFacetUtils.includeDatasetVersion(
+          context, datasetFacetsBuilder, relation);
+    }
     return PlanUtils3.fromDataSourceV2Relation(factory, context, relation, datasetFacetsBuilder);
   }
 }

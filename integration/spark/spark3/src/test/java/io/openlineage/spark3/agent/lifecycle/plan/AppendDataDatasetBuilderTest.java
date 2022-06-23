@@ -30,6 +30,7 @@ import org.apache.spark.sql.catalyst.analysis.NamedRelation;
 import org.apache.spark.sql.catalyst.plans.logical.AppendData;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
+import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
@@ -64,7 +65,8 @@ public class AppendDataDatasetBuilderTest {
         when(PlanUtils3.fromDataSourceV2Relation(eq(factory), eq(context), eq(relation), any()))
             .thenReturn(Collections.singletonList(dataset));
 
-        List<OpenLineage.OutputDataset> datasets = builder.apply(appendData);
+        List<OpenLineage.OutputDataset> datasets =
+            builder.apply(new SparkListenerSQLExecutionEnd(1L, 1L), appendData);
 
         assertEquals(1, datasets.size());
         assertEquals(dataset, datasets.get(0));
@@ -80,6 +82,6 @@ public class AppendDataDatasetBuilderTest {
             (NamedRelation)
                 mock(LogicalPlan.class, withSettings().extraInterfaces(NamedRelation.class)));
 
-    assertEquals(0, builder.apply(appendData).size());
+    assertEquals(0, builder.apply(new SparkListenerSQLExecutionEnd(1L, 1L), appendData).size());
   }
 }

@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import lombok.NonNull;
+import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.plans.logical.AlterTable;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.connector.catalog.Table;
@@ -32,7 +33,7 @@ public class AlterTableDatasetBuilder extends AbstractQueryPlanOutputDatasetBuil
   }
 
   @Override
-  public List<OpenLineage.OutputDataset> apply(AlterTable alterTable) {
+  protected List<OpenLineage.OutputDataset> apply(SparkListenerEvent event, AlterTable alterTable) {
     Table table;
     try {
       table = alterTable.catalog().loadTable(alterTable.ident());
@@ -52,11 +53,13 @@ public class AlterTableDatasetBuilder extends AbstractQueryPlanOutputDatasetBuil
               .schema(PlanUtils.schemaFacet(openLineage, table.schema()))
               .dataSource(PlanUtils.datasourceFacet(openLineage, di.get().getNamespace()));
 
-      Optional<String> datasetVersion =
-          CatalogUtils3.getDatasetVersion(
-              alterTable.catalog(), alterTable.ident(), table.properties());
-      datasetVersion.ifPresent(
-          version -> builder.version(openLineage.newDatasetVersionDatasetFacet(version)));
+      if (includeDatasetVersion(event)) {
+        Optional<String> datasetVersion =
+            CatalogUtils3.getDatasetVersion(
+                alterTable.catalog(), alterTable.ident(), table.properties());
+        datasetVersion.ifPresent(
+            version -> builder.version(openLineage.newDatasetVersionDatasetFacet(version)));
+      }
 
       return Collections.singletonList(
           outputDataset().getDataset(di.get().getName(), di.get().getNamespace(), builder.build()));

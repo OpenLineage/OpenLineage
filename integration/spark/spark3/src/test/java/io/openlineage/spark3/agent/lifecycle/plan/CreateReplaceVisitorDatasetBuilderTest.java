@@ -30,6 +30,7 @@ import org.apache.spark.sql.catalyst.plans.logical.ReplaceTable;
 import org.apache.spark.sql.catalyst.plans.logical.ReplaceTableAsSelect;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
+import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -137,7 +138,8 @@ class CreateReplaceVisitorDatasetBuilderTest {
                 ScalaConversionUtils.<String, String>fromMap(commandProperties)))
             .thenReturn(Optional.of(di));
 
-        List<OpenLineage.OutputDataset> outputDatasets = visitor.apply(logicalPlan);
+        List<OpenLineage.OutputDataset> outputDatasets =
+            visitor.apply(new SparkListenerSQLExecutionEnd(1L, 1L), logicalPlan);
 
         assertEquals(1, outputDatasets.size());
         assertEquals("v2", outputDatasets.get(0).getFacets().getVersion().getDatasetVersion());
@@ -169,7 +171,8 @@ class CreateReplaceVisitorDatasetBuilderTest {
                 ScalaConversionUtils.<String, String>fromMap(commandProperties)))
             .thenReturn(Optional.of(di));
 
-        List<OpenLineage.OutputDataset> outputDatasets = visitor.apply(logicalPlan);
+        List<OpenLineage.OutputDataset> outputDatasets =
+            visitor.apply(new SparkListenerSQLExecutionEnd(1L, 1L), logicalPlan);
 
         assertEquals(1, outputDatasets.size());
         assertEquals(null, outputDatasets.get(0).getFacets().getVersion());
@@ -190,7 +193,8 @@ class CreateReplaceVisitorDatasetBuilderTest {
               ScalaConversionUtils.<String, String>fromMap(tableProperties)))
           .thenReturn(Optional.of(di));
 
-      List<OpenLineage.OutputDataset> outputDatasets = visitor.apply(logicalPlan);
+      List<OpenLineage.OutputDataset> outputDatasets =
+          visitor.apply(new SparkListenerSQLExecutionEnd(1L, 1L), logicalPlan);
 
       assertEquals(1, outputDatasets.size());
       assertEquals(
@@ -212,7 +216,8 @@ class CreateReplaceVisitorDatasetBuilderTest {
               ScalaConversionUtils.<String, String>fromMap(logicalPlan.properties())))
           .thenReturn(Optional.empty());
 
-      List<OpenLineage.OutputDataset> outputDatasets = visitor.apply(logicalPlan);
+      List<OpenLineage.OutputDataset> outputDatasets =
+          visitor.apply(new SparkListenerSQLExecutionEnd(1L, 1L), logicalPlan);
       assertEquals(0, outputDatasets.size());
     }
   }
