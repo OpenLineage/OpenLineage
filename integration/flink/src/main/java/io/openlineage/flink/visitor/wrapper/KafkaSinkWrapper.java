@@ -7,8 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.Schema;
 import org.apache.flink.connector.kafka.sink.KafkaRecordSerializationSchema;
 import org.apache.flink.connector.kafka.sink.KafkaSink;
-import org.apache.flink.formats.avro.AvroSerializationSchema;
-import org.apache.flink.formats.avro.RegistryAvroSerializationSchema;
 
 /**
  * Wrapper class to extract hidden fields and call hidden methods on {@link KafkaSink} object. It
@@ -52,19 +50,8 @@ public class KafkaSinkWrapper {
   }
 
   public Optional<Schema> getAvroSchema() {
-    return WrapperUtils.getFieldValue(
-            serializationSchema.getClass(), serializationSchema, "valueSerializationSchema")
-        .filter(schema -> schema instanceof RegistryAvroSerializationSchema)
-        .map(schema -> (RegistryAvroSerializationSchema) schema)
-        .flatMap(
-            schema -> {
-              WrapperUtils.invoke(
-                  RegistryAvroSerializationSchema.class, schema, "checkAvroInitialized");
-              return WrapperUtils.invoke(AvroSerializationSchema.class, schema, "getDatumWriter");
-            })
-        .flatMap(
-            writer -> {
-              return WrapperUtils.<Schema>getFieldValue(writer.getClass(), writer, "root");
-            });
+    return AvroUtils.getRegistryAvroSchema(
+        WrapperUtils.getFieldValue(
+            serializationSchema.getClass(), serializationSchema, "valueSerializationSchema"));
   }
 }
