@@ -45,6 +45,7 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
    */
   public static DatasetFactory<OpenLineage.InputDataset> input(OpenLineageContext context) {
     return new DatasetFactory<OpenLineage.InputDataset>(context) {
+      @Override
       public OpenLineage.Builder<OpenLineage.InputDataset> datasetBuilder(
           String name, String namespace, OpenLineage.DatasetFacets datasetFacet) {
         return context
@@ -65,6 +66,7 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
    */
   public static DatasetFactory<OpenLineage.OutputDataset> output(OpenLineageContext context) {
     return new DatasetFactory<OpenLineage.OutputDataset>(context) {
+      @Override
       public OpenLineage.Builder<OpenLineage.OutputDataset> datasetBuilder(
           String name, String namespace, OpenLineage.DatasetFacets datasetFacet) {
         return context

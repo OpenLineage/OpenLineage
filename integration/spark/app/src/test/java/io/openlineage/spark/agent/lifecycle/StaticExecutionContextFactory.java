@@ -20,7 +20,6 @@ import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.sql.SQLContext;
@@ -77,13 +76,7 @@ public class StaticExecutionContextFactory extends ContextFactory {
   @Override
   public ExecutionContext createRddExecutionContext(int jobId) {
     RddExecutionContext rdd =
-        new RddExecutionContext(
-            OpenLineageContext.builder()
-                .sparkContext(SparkContext.getOrCreate())
-                .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
-                .build(),
-            jobId,
-            openLineageEventEmitter) {
+        new RddExecutionContext(openLineageEventEmitter) {
           @Override
           public void start(SparkListenerJobStart jobStart) {
             try {

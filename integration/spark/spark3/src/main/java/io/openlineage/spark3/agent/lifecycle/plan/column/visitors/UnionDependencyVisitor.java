@@ -31,10 +31,12 @@ import org.apache.spark.sql.catalyst.plans.logical.Union;
 @Slf4j
 public class UnionDependencyVisitor implements ExpressionDependencyVisitor {
 
+  @Override
   public boolean isDefinedAt(LogicalPlan plan) {
     return plan instanceof Union;
   }
 
+  @Override
   public void apply(LogicalPlan plan, ColumnLevelLineageBuilder builder) {
     Union union = (Union) plan;
 

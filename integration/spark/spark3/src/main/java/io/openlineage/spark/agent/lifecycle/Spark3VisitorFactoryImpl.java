@@ -38,6 +38,7 @@ class Spark3VisitorFactoryImpl extends BaseVisitorFactory {
         .build();
   }
 
+  @Override
   public <D extends Dataset> List<PartialFunction<LogicalPlan, List<D>>> getCommonVisitors(
       OpenLineageContext context, DatasetFactory<D> factory) {
     return super.getBaseCommonVisitors(context, factory);

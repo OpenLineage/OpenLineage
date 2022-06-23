@@ -19,7 +19,6 @@ import lombok.NonNull;
 import org.apache.spark.sql.catalyst.plans.logical.AlterTable;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.connector.catalog.Table;
-import org.apache.spark.sql.connector.catalog.TableCatalog;
 
 public class AlterTableDatasetBuilder extends AbstractQueryPlanOutputDatasetBuilder<AlterTable> {
 
@@ -34,8 +33,6 @@ public class AlterTableDatasetBuilder extends AbstractQueryPlanOutputDatasetBuil
 
   @Override
   public List<OpenLineage.OutputDataset> apply(AlterTable alterTable) {
-    TableCatalog tableCatalog = alterTable.catalog();
-
     Table table;
     try {
       table = alterTable.catalog().loadTable(alterTable.ident());
@@ -45,7 +42,7 @@ public class AlterTableDatasetBuilder extends AbstractQueryPlanOutputDatasetBuil
 
     Optional<DatasetIdentifier> di =
         PlanUtils3.getDatasetIdentifier(
-            context, tableCatalog, alterTable.ident(), table.properties());
+            context, alterTable.catalog(), alterTable.ident(), table.properties());
 
     if (di.isPresent()) {
       OpenLineage openLineage = context.getOpenLineage();
@@ -56,7 +53,8 @@ public class AlterTableDatasetBuilder extends AbstractQueryPlanOutputDatasetBuil
               .dataSource(PlanUtils.datasourceFacet(openLineage, di.get().getNamespace()));
 
       Optional<String> datasetVersion =
-          CatalogUtils3.getDatasetVersion(tableCatalog, alterTable.ident(), table.properties());
+          CatalogUtils3.getDatasetVersion(
+              alterTable.catalog(), alterTable.ident(), table.properties());
       datasetVersion.ifPresent(
           version -> builder.version(openLineage.newDatasetVersionDatasetFacet(version)));
 

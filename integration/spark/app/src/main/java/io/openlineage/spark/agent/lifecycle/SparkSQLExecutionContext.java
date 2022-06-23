@@ -34,15 +34,14 @@ import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 @Slf4j
 class SparkSQLExecutionContext implements ExecutionContext {
 
+  private static final String NO_EXECUTION_INFO = "No execution info {}";
   private final long executionId;
   private final OpenLineageContext olContext;
   private final EventEmitter eventEmitter;
   private final OpenLineageRunEventBuilder runEventBuilder;
   private final OpenLineage openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
 
-  private AtomicBoolean started = new AtomicBoolean(false);
   private AtomicBoolean finished = new AtomicBoolean(false);
-  private Optional<Integer> jobId = Optional.empty();
 
   public SparkSQLExecutionContext(
       long executionId,
@@ -55,10 +54,11 @@ class SparkSQLExecutionContext implements ExecutionContext {
     this.runEventBuilder = runEventBuilder;
   }
 
+  @Override
   public void start(SparkListenerSQLExecutionStart startEvent) {
     log.debug("SparkListenerSQLExecutionStart - executionId: {}", startEvent.executionId());
     if (!olContext.getQueryExecution().isPresent()) {
-      log.info("No execution info {}", olContext);
+      log.info(NO_EXECUTION_INFO, olContext);
       return;
     }
     RunEvent event =
@@ -72,13 +72,14 @@ class SparkSQLExecutionContext implements ExecutionContext {
     eventEmitter.emit(event);
   }
 
+  @Override
   public void end(SparkListenerSQLExecutionEnd endEvent) {
     log.debug("SparkListenerSQLExecutionEnd - executionId: {}", endEvent.executionId());
     // TODO: can we get failed event here?
     // If not, then we probably need to use this only for LogicalPlans that emit no Job events.
     // Maybe use QueryExecutionListener?
     if (!olContext.getQueryExecution().isPresent()) {
-      log.info("No execution info {}", olContext);
+      log.info(NO_EXECUTION_INFO, olContext);
       return;
     }
     RunEvent event =
@@ -96,7 +97,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
   @Override
   public void start(SparkListenerStageSubmitted stageSubmitted) {
     if (!olContext.getQueryExecution().isPresent()) {
-      log.info("No execution info {}", olContext);
+      log.info(NO_EXECUTION_INFO, olContext);
       return;
     }
     RunEvent event =
@@ -114,7 +115,7 @@ class SparkSQLExecutionContext implements ExecutionContext {
   @Override
   public void end(SparkListenerStageCompleted stageCompleted) {
     if (!olContext.getQueryExecution().isPresent()) {
-      log.info("No execution info {}", olContext);
+      log.info(NO_EXECUTION_INFO, olContext);
       return;
     }
     RunEvent event =
@@ -137,9 +138,8 @@ class SparkSQLExecutionContext implements ExecutionContext {
   @Override
   public void start(SparkListenerJobStart jobStart) {
     log.debug("SparkListenerJobStart - executionId: " + executionId);
-    jobId = Optional.of(jobStart.jobId());
     if (!olContext.getQueryExecution().isPresent()) {
-      log.info("No execution info {}", olContext);
+      log.info(NO_EXECUTION_INFO, olContext);
       return;
     }
     RunEvent event =
@@ -156,14 +156,13 @@ class SparkSQLExecutionContext implements ExecutionContext {
   @Override
   public void end(SparkListenerJobEnd jobEnd) {
     log.debug("SparkListenerJobEnd - executionId: " + executionId);
-    jobId = Optional.of(jobEnd.jobId());
     if (!finished.compareAndSet(false, true)) {
       log.debug("Event already finished, returning");
       return;
     }
 
     if (!olContext.getQueryExecution().isPresent()) {
-      log.info("No execution info {}", olContext);
+      log.info(NO_EXECUTION_INFO, olContext);
       return;
     }
     RunEvent event =

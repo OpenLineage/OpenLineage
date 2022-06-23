@@ -11,6 +11,22 @@ plugins {
     id 'com.diffplug.spotless' version '5.12.1'
     id "com.adarshr.test-logger" version "2.1.1"
     id "com.github.johnrengelman.shadow" version "7.1.2"
+    id "pmd"
+}
+
+pmd {
+    consoleOutput = true
+    toolVersion = "6.46.0"
+    rulesMinimumPriority = 5
+    ruleSetFiles = rootProject.files("pmd-openlineage.xml")
+    ruleSets = []
+    ignoreFailures = true
+}
+
+pmdMain {
+    reports {
+        html.required = true
+    }
 }
 
 repositories {

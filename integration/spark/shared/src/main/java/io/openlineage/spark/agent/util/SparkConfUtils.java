@@ -61,7 +61,6 @@ public class SparkConfUtils {
     scala.Tuple2<String, String>[] urlConfigs = conf.getAllWithPrefix("spark." + prefix + ".");
     for (scala.Tuple2<String, String> param : urlConfigs) {
       urlParams.put(param._1, param._2);
-      System.out.println(param._1);
     }
 
     return Optional.ofNullable(urlParams);

@@ -30,7 +30,6 @@ public class V2SessionCatalogHandler implements CatalogHandler {
       TableCatalog tableCatalog,
       Identifier identifier,
       Map<String, String> properties) {
-    V2SessionCatalog catalog = (V2SessionCatalog) tableCatalog;
     throw new UnsupportedCatalogException(V2SessionCatalog.class.getCanonicalName());
   }
 

@@ -16,7 +16,6 @@ import io.openlineage.spark.agent.facets.SparkVersionFacet;
 import io.openlineage.spark.agent.lifecycle.DatasetParser.DatasetParseResult;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
-import io.openlineage.spark.api.OpenLineageContext;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
@@ -57,7 +56,6 @@ import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.scheduler.SparkListenerStageCompleted;
 import org.apache.spark.scheduler.SparkListenerStageSubmitted;
-import org.apache.spark.scheduler.Stage;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 import org.apache.spark.util.SerializableJobConf;
@@ -75,7 +73,7 @@ class RddExecutionContext implements ExecutionContext {
   private List<URI> outputs = Collections.emptyList();
   private String jobSuffix;
 
-  public RddExecutionContext(OpenLineageContext context, int jobId, EventEmitter sparkContext) {
+  public RddExecutionContext(EventEmitter sparkContext) {
     this.sparkContext = sparkContext;
     sparkContextOption =
         Optional.ofNullable(
@@ -97,6 +95,7 @@ class RddExecutionContext implements ExecutionContext {
   public void end(SparkListenerStageCompleted stageCompleted) {}
 
   @Override
+  @SuppressWarnings("PMD") //  f.setAccessible(true);
   public void setActiveJob(ActiveJob activeJob) {
     RDD<?> finalRDD = activeJob.finalStage().rdd();
     this.jobSuffix = nameRDD(finalRDD);
@@ -355,19 +354,6 @@ class RddExecutionContext implements ExecutionContext {
     Collection<Dependency<?>> deps = asJavaCollection(rdd.dependencies());
     for (Dependency<?> dep : deps) {
       printRDDs(prefix + "  ", dep.rdd());
-    }
-  }
-
-  private void printStages(String prefix, Stage stage) {
-    if (stage instanceof ResultStage) {
-      ResultStage resultStage = (ResultStage) stage;
-    }
-    printRDDs(
-        prefix + "(stageId:" + stage.id() + ")-(" + stage.getClass().getSimpleName() + ")- RDD: ",
-        stage.rdd());
-    Collection<Stage> parents = asJavaCollection(stage.parents());
-    for (Stage parent : parents) {
-      printStages(prefix + " \\ ", parent);
     }
   }
 

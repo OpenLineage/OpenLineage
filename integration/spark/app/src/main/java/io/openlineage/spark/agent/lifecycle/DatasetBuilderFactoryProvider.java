@@ -15,10 +15,7 @@ public class DatasetBuilderFactoryProvider {
       "io.openlineage.spark.agent.lifecycle.Spark3DatasetBuilderFactory";
 
   static DatasetBuilderFactory getInstance() {
-    return getInstance(package$.MODULE$.SPARK_VERSION());
-  }
-
-  static DatasetBuilderFactory getInstance(String version) {
+    String version = package$.MODULE$.SPARK_VERSION();
     try {
       if (version.startsWith("2.")) {
         return (DatasetBuilderFactory) Class.forName(SPARK2_FACTORY_NAME).newInstance();

@@ -61,7 +61,7 @@ public class SqlDWDatabricksVisitor<D extends OpenLineage.Dataset>
 
   protected boolean isSqlDwRelationClass(LogicalPlan plan) {
     return plan instanceof LogicalRelation
-        && ((LogicalRelation) plan).relation().getClass().getName().equals(DATABRICKS_CLASS_NAME);
+        && DATABRICKS_CLASS_NAME.equals(((LogicalRelation) plan).relation().getClass().getName());
   }
 
   @Override
@@ -78,9 +78,9 @@ public class SqlDWDatabricksVisitor<D extends OpenLineage.Dataset>
     try {
       List<Field> relationFields = FieldUtils.getAllFieldsList(relation.getClass());
       for (Field f : relationFields) {
-        if (f.getName().equals(SPARK3_TABLE_FIELD_NAME)) {
+        if (SPARK3_TABLE_FIELD_NAME.equals(f.getName())) {
           tableName = (String) FieldUtils.readField(relation, SPARK3_TABLE_FIELD_NAME, true);
-        } else if (f.getName().equals(SPARK2_TABLE_FIELD_NAME)) {
+        } else if (SPARK2_TABLE_FIELD_NAME.equals(f.getName())) {
           tableName = (String) FieldUtils.readField(relation, SPARK2_TABLE_FIELD_NAME, true);
         }
       }
@@ -88,7 +88,7 @@ public class SqlDWDatabricksVisitor<D extends OpenLineage.Dataset>
       log.warn("Unable to discover SQLDW tableNameOrSubquery property");
       return Optional.empty();
     }
-    if (tableName == "") {
+    if ("".equals(tableName)) {
       log.warn("Unable to discover SQLDW tableNameOrSubquery property");
       return Optional.empty();
     }

@@ -26,6 +26,7 @@ class Spark2VisitorFactoryImpl extends BaseVisitorFactory {
         .build();
   }
 
+  @Override
   public <D extends OpenLineage.Dataset>
       List<PartialFunction<LogicalPlan, List<D>>> getCommonVisitors(
           OpenLineageContext context, DatasetFactory<D> factory) {
