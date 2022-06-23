@@ -167,7 +167,8 @@ fi
 perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/spark/gradle.properties
 perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./client/java/gradle.properties
 perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./proxy/gradle.properties
-echo "version ${NEXT_VERSION}" > integration/spark/src/test/resources/io/openlineage/spark/agent/client/version.properties
+echo "version ${NEXT_VERSION}" > integration/spark/spark2/src/test/resources/io/openlineage/spark/agent/version.properties
+echo "version ${NEXT_VERSION}" > integration/spark/spark3/src/test/resources/io/openlineage/spark/agent/version.properties
 
 # (7) Prepare next development version commit
 git commit -sam "Prepare next development version ${NEXT_VERSION}"
