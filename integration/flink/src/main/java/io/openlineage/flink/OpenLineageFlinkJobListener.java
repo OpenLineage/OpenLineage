@@ -36,34 +36,46 @@ public class OpenLineageFlinkJobListener implements JobListener {
   private final Map<JobID, FlinkExecutionContext> jobContexts = new HashMap<>();
 
   public OpenLineageFlinkJobListener(StreamExecutionEnvironment executionEnvironment) {
+    this(
+        executionEnvironment,
+        OpenLineageContinousJobTrackerFactory.getTracker(executionEnvironment.getConfiguration()));
+  }
+
+  public OpenLineageFlinkJobListener(
+      StreamExecutionEnvironment executionEnvironment,
+      OpenLineageContinousJobTracker continousJobTracker) {
     this.executionEnvironment = executionEnvironment;
-    this.openLineageContinousJobTracker =
-        OpenLineageContinousJobTrackerFactory.getTracker(executionEnvironment.getConfiguration());
+    this.openLineageContinousJobTracker = continousJobTracker;
     makeTransformationsArchivedList(executionEnvironment);
   }
 
   @Override
   public void onJobSubmitted(@Nullable JobClient jobClient, @Nullable Throwable throwable) {
-    if (jobClient != null) {
-      Field transformationsField =
-          FieldUtils.getField(StreamExecutionEnvironment.class, "transformations", true);
-      try {
-        ArgumentParser args =
-            ArgumentParser.parseConfiguration(
-                executionEnvironment.getConfig().getGlobalJobParameters().toMap());
-        List<Transformation<?>> transformations =
-            ((ArchivedList<Transformation<?>>) transformationsField.get(executionEnvironment))
-                .getValue();
+    if (jobClient == null) {
+      return;
+    }
 
-        FlinkExecutionContext context =
-            FlinkExecutionContextFactory.getContext(jobClient.getJobID(), transformations);
+    Field transformationsField =
+        FieldUtils.getField(StreamExecutionEnvironment.class, "transformations", true);
+    try {
+      ArgumentParser args =
+          ArgumentParser.parseConfiguration(
+              executionEnvironment.getConfig().getGlobalJobParameters().toMap());
+      List<Transformation<?>> transformations =
+          ((ArchivedList<Transformation<?>>) transformationsField.get(executionEnvironment))
+              .getValue();
 
-        jobContexts.put(jobClient.getJobID(), context);
-        context.onJobSubmitted();
-        log.info("Job submitted");
-      } catch (IllegalAccessException e) {
-        log.error("Can't access the field. ", e);
-      }
+      FlinkExecutionContext context =
+          FlinkExecutionContextFactory.getContext(jobClient.getJobID(), transformations);
+
+      jobContexts.put(jobClient.getJobID(), context);
+      context.onJobSubmitted();
+      log.info("Job submitted");
+
+      log.info("OpenLineageContinousJobTracker is starting");
+      openLineageContinousJobTracker.startTracking(context);
+    } catch (IllegalAccessException e) {
+      log.error("Can't access the field. ", e);
     }
   }
 
@@ -71,10 +83,6 @@ public class OpenLineageFlinkJobListener implements JobListener {
   public void onJobExecuted(
       @Nullable JobExecutionResult jobExecutionResult, @Nullable Throwable throwable) {
     log.debug("JobExecutionResult: {}", jobExecutionResult);
-
-    // start tracker when job execution starts
-    log.info("OpenLineageContinousJobTracker is starting");
-    openLineageContinousJobTracker.startTracking(jobContexts.get(jobExecutionResult.getJobID()));
   }
 
   private void makeTransformationsArchivedList(StreamExecutionEnvironment executionEnvironment) {
