@@ -62,7 +62,7 @@ class LogicalRDDVisitorTest {
   }
 
   @Test
-  public void testApply(@TempDir Path tmpDir) {
+  void testApply(@TempDir Path tmpDir) {
     SparkSession session = SparkSession.builder().master("local").getOrCreate();
     LogicalRDDVisitor visitor =
         new LogicalRDDVisitor(

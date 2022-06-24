@@ -19,9 +19,9 @@ import org.apache.spark.sql.delta.catalog.DeltaTableV2;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-public class DeltaHandlerTest {
+class DeltaHandlerTest {
   @Test
-  public void testGetVersionString() {
+  void testGetVersionString() {
     DeltaCatalog deltaCatalog = mock(DeltaCatalog.class);
     DeltaTableV2 deltaTable = Mockito.mock(DeltaTableV2.class, RETURNS_DEEP_STUBS);
     Identifier identifier = Identifier.of(new String[] {"database", "schema"}, "table");

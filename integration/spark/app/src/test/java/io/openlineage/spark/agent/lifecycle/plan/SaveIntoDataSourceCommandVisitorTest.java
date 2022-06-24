@@ -33,7 +33,7 @@ import scala.Predef;
 import scala.Tuple2;
 import scala.collection.Map;
 
-public class SaveIntoDataSourceCommandVisitorTest {
+class SaveIntoDataSourceCommandVisitorTest {
 
   SaveIntoDataSourceCommand command;
   OpenLineageContext context = mock(OpenLineageContext.class);

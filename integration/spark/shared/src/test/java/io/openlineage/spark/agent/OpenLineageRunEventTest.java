@@ -24,13 +24,13 @@ import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
-public class OpenLineageRunEventTest {
+class OpenLineageRunEventTest {
 
   private final TypeReference<Map<String, Object>> mapTypeReference =
       new TypeReference<Map<String, Object>>() {};
 
   @Test
-  public void testSerializeRunEvent() throws IOException, URISyntaxException {
+  void testSerializeRunEvent() throws IOException, URISyntaxException {
     ObjectMapper mapper = Utils.newObjectMapper();
 
     ZonedDateTime dateTime = ZonedDateTime.parse("2021-01-01T00:00:01.000000000+00:00[UTC]");

@@ -26,11 +26,13 @@ import scala.collection.immutable.HashMap;
 
 public class CatalogTableTestUtils {
 
+  private static final int PARAMETER_COUNT = 19;
+
   @SneakyThrows
   public static CatalogTable getCatalogTable(TableIdentifier tableIdentifier) {
     Method applyMethod =
         Arrays.stream(CatalogTable.class.getDeclaredMethods())
-            .filter(m -> m.getName().equals("apply"))
+            .filter(m -> "apply".equals(m.getName()))
             .findFirst()
             .get();
     List<Object> params = new ArrayList<>();
@@ -64,7 +66,7 @@ public class CatalogTableTestUtils {
     params.add(false);
     params.add(false);
     params.add(new HashMap<>());
-    if (applyMethod.getParameterCount() > 19) {
+    if (applyMethod.getParameterCount() > PARAMETER_COUNT) {
       params.add(Option.empty());
     }
     return (CatalogTable) applyMethod.invoke(null, params.toArray());

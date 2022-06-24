@@ -14,6 +14,11 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 class VisitorFactoryProviderTest {
 
+  private static final String IO_OPENLINEAGE_SPARK_AGENT_LIFECYCLE_SPARK_3_VISITOR_FACTORY_IMPL =
+      "io.openlineage.spark.agent.lifecycle.Spark3VisitorFactoryImpl";
+  private static final String IO_OPENLINEAGE_SPARK_AGENT_LIFECYCLE_SPARK_2_VISITOR_FACTORY_IMPL =
+      "io.openlineage.spark.agent.lifecycle.Spark2VisitorFactoryImpl";
+
   @ParameterizedTest
   @MethodSource("provideVersionFactory")
   void getInstance(String version, String expectedClass) {
@@ -23,11 +28,11 @@ class VisitorFactoryProviderTest {
 
   private static Stream<Arguments> provideVersionFactory() {
     return Stream.of(
-        Arguments.of("3.1", "io.openlineage.spark.agent.lifecycle.Spark3VisitorFactoryImpl"),
-        Arguments.of("3.0", "io.openlineage.spark.agent.lifecycle.Spark3VisitorFactoryImpl"),
-        Arguments.of("4.0", "io.openlineage.spark.agent.lifecycle.Spark3VisitorFactoryImpl"),
-        Arguments.of("1.0", "io.openlineage.spark.agent.lifecycle.Spark3VisitorFactoryImpl"),
-        Arguments.of("2.4", "io.openlineage.spark.agent.lifecycle.Spark2VisitorFactoryImpl"),
-        Arguments.of("2.7", "io.openlineage.spark.agent.lifecycle.Spark2VisitorFactoryImpl"));
+        Arguments.of("3.1", IO_OPENLINEAGE_SPARK_AGENT_LIFECYCLE_SPARK_3_VISITOR_FACTORY_IMPL),
+        Arguments.of("3.0", IO_OPENLINEAGE_SPARK_AGENT_LIFECYCLE_SPARK_3_VISITOR_FACTORY_IMPL),
+        Arguments.of("4.0", IO_OPENLINEAGE_SPARK_AGENT_LIFECYCLE_SPARK_3_VISITOR_FACTORY_IMPL),
+        Arguments.of("1.0", IO_OPENLINEAGE_SPARK_AGENT_LIFECYCLE_SPARK_3_VISITOR_FACTORY_IMPL),
+        Arguments.of("2.4", IO_OPENLINEAGE_SPARK_AGENT_LIFECYCLE_SPARK_2_VISITOR_FACTORY_IMPL),
+        Arguments.of("2.7", IO_OPENLINEAGE_SPARK_AGENT_LIFECYCLE_SPARK_2_VISITOR_FACTORY_IMPL));
   }
 }

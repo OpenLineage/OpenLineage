@@ -28,7 +28,7 @@ import scala.collection.Map$;
 import scala.collection.immutable.HashMap;
 
 @ExtendWith(SparkAgentTestExtension.class)
-public class TruncateTableCommandVisitorTest {
+class TruncateTableCommandVisitorTest {
 
   SparkSession session;
   TruncateTableCommandVisitor visitor;
@@ -55,7 +55,7 @@ public class TruncateTableCommandVisitorTest {
   }
 
   @Test
-  public void testTruncateTableCommandWhenTableDoesNotExist() {
+  void testTruncateTableCommandWhenTableDoesNotExist() {
     // make sure table does not exist
     session.sessionState().catalog().dropTable(table, true, true);
     try {
@@ -72,7 +72,7 @@ public class TruncateTableCommandVisitorTest {
   }
 
   @Test
-  public void testTruncateCommand() {
+  void testTruncateCommand() {
     // create some table
     StructType schema =
         new StructType(

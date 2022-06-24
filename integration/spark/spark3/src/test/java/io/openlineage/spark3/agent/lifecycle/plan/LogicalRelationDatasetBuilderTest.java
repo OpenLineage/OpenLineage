@@ -31,7 +31,7 @@ import org.apache.spark.sql.internal.SessionState;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-public class LogicalRelationDatasetBuilderTest {
+class LogicalRelationDatasetBuilderTest {
 
   private static final String SOME_VERSION = "version_1";
   OpenLineageContext openLineageContext = mock(OpenLineageContext.class);

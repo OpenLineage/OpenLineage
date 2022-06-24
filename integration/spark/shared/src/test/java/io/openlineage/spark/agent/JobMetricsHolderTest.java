@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 class JobMetricsHolderTest {
 
   @Test
-  public void testPollMetricsSumByJobId() {
+  void testPollMetricsSumByJobId() {
     JobMetricsHolder underTest = new JobMetricsHolder();
 
     // on job start event
@@ -35,7 +35,7 @@ class JobMetricsHolderTest {
   }
 
   @Test
-  public void testMultipleJobsPollMetricsByJobId() {
+  void testMultipleJobsPollMetricsByJobId() {
     JobMetricsHolder underTest = new JobMetricsHolder();
 
     // on job start event
@@ -58,7 +58,7 @@ class JobMetricsHolderTest {
   }
 
   @Test
-  public void testCleanupOnNotExist() {
+  void testCleanupOnNotExist() {
     JobMetricsHolder underTest = new JobMetricsHolder();
 
     // on job start event
@@ -77,7 +77,7 @@ class JobMetricsHolderTest {
   }
 
   @Test
-  public void testCleanupOnExist() {
+  void testCleanupOnExist() {
     JobMetricsHolder underTest = new JobMetricsHolder();
 
     // on job start event

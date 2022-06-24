@@ -30,74 +30,80 @@ import org.mockito.MockedStatic;
 import scala.Option;
 
 @Slf4j
-public class PathUtilsTest {
+class PathUtilsTest {
+
+  private static final String HOME_TEST = "/home/test";
+  private static final String SCHEME = "scheme";
+  private static final String FILE = "file";
+  private static final String TABLE = "table";
 
   @Test
   void testPathSeparation() {
     Path path = new Path("scheme:/asdf/fdsa");
-    assertThat(path.toUri().getScheme()).isEqualTo("scheme");
+    assertThat(path.toUri().getScheme()).isEqualTo(SCHEME);
     assertThat(path.toUri().getAuthority()).isEqualTo(null);
     assertThat(path.toUri().getPath()).isEqualTo("/asdf/fdsa");
 
     path = new Path("scheme://asdf/fdsa");
-    assertThat(path.toUri().getScheme()).isEqualTo("scheme");
+    assertThat(path.toUri().getScheme()).isEqualTo(SCHEME);
     assertThat(path.toUri().getAuthority()).isEqualTo("asdf");
     assertThat(path.toUri().getPath()).isEqualTo("/fdsa");
+  }
 
-    path = new Path("scheme:///asdf/fdsa");
-    assertThat(path.toUri().getScheme()).isEqualTo("scheme");
+  @Test
+  void testPathSeparationWithNullAuthority() {
+    Path path = new Path("scheme:///asdf/fdsa");
+    assertThat(path.toUri().getScheme()).isEqualTo(SCHEME);
     assertThat(path.toUri().getAuthority()).isEqualTo(null);
     assertThat(path.toUri().getPath()).isEqualTo("/asdf/fdsa");
 
     path = new Path("scheme:////asdf/fdsa");
-    assertThat(path.toUri().getScheme()).isEqualTo("scheme");
+    assertThat(path.toUri().getScheme()).isEqualTo(SCHEME);
     assertThat(path.toUri().getAuthority()).isEqualTo(null);
     assertThat(path.toUri().getPath()).isEqualTo("/asdf/fdsa");
   }
 
   @Test
   void testFromPathWithoutSchema() {
-    DatasetIdentifier di = PathUtils.fromPath(new Path("/home/test"));
-    assertThat(di.getName()).isEqualTo("/home/test");
-    assertThat(di.getNamespace()).isEqualTo("file");
+    DatasetIdentifier di = PathUtils.fromPath(new Path(HOME_TEST));
+    assertThat(di.getName()).isEqualTo(HOME_TEST);
+    assertThat(di.getNamespace()).isEqualTo(FILE);
 
-    di = PathUtils.fromPath(new Path("/home/test"), "hive");
-    assertThat(di.getName()).isEqualTo("/home/test");
+    di = PathUtils.fromPath(new Path(HOME_TEST), "hive");
+    assertThat(di.getName()).isEqualTo(HOME_TEST);
     assertThat(di.getNamespace()).isEqualTo("hive");
 
     di = PathUtils.fromPath(new Path("home/test"));
     assertThat(di.getName()).isEqualTo("home/test");
-    assertThat(di.getNamespace()).isEqualTo("file");
+    assertThat(di.getNamespace()).isEqualTo(FILE);
   }
 
   @Test
   void testFromPathWithSchema() {
     DatasetIdentifier di = PathUtils.fromPath(new Path("file:/home/test"));
-    assertThat(di.getName()).isEqualTo("/home/test");
-    assertThat(di.getNamespace()).isEqualTo("file");
+    assertThat(di.getName()).isEqualTo(HOME_TEST);
+    assertThat(di.getNamespace()).isEqualTo(FILE);
 
     di = PathUtils.fromPath(new Path("hdfs://namenode:8020/home/test"));
-    assertThat(di.getName()).isEqualTo("/home/test");
+    assertThat(di.getName()).isEqualTo(HOME_TEST);
     assertThat(di.getNamespace()).isEqualTo("hdfs://namenode:8020");
   }
 
   @Test
   void testFromURI() throws URISyntaxException {
     DatasetIdentifier di = PathUtils.fromURI(new URI("file:///home/test"), null);
-    assertThat(di.getName()).isEqualTo("/home/test");
-    assertThat(di.getNamespace()).isEqualTo("file");
+    assertThat(di.getName()).isEqualTo(HOME_TEST);
+    assertThat(di.getNamespace()).isEqualTo(FILE);
 
-    di = PathUtils.fromURI(new URI(null, null, "/home/test", null), "file");
-    assertThat(di.getName()).isEqualTo("/home/test");
-    assertThat(di.getNamespace()).isEqualTo("file");
+    di = PathUtils.fromURI(new URI(null, null, HOME_TEST, null), FILE);
+    assertThat(di.getName()).isEqualTo(HOME_TEST);
+    assertThat(di.getNamespace()).isEqualTo(FILE);
 
-    di =
-        PathUtils.fromURI(
-            new URI("hdfs", null, "localhost", 8020, "/home/test", null, null), "file");
-    assertThat(di.getName()).isEqualTo("/home/test");
+    di = PathUtils.fromURI(new URI("hdfs", null, "localhost", 8020, HOME_TEST, null, null), FILE);
+    assertThat(di.getName()).isEqualTo(HOME_TEST);
     assertThat(di.getNamespace()).isEqualTo("hdfs://localhost:8020");
 
-    di = PathUtils.fromURI(new URI("s3://data-bucket/path"), "file");
+    di = PathUtils.fromURI(new URI("s3://data-bucket/path"), FILE);
     assertThat(di.getName()).isEqualTo("path");
     assertThat(di.getNamespace()).isEqualTo("s3://data-bucket");
   }
@@ -113,22 +119,22 @@ public class PathUtilsTest {
     when(sparkSession.sparkContext()).thenReturn(sparkContext);
 
     CatalogTable catalogTable = mock(CatalogTable.class);
-    when(catalogTable.qualifiedName()).thenReturn("table");
+    when(catalogTable.qualifiedName()).thenReturn(TABLE);
 
     DatasetIdentifier di = PathUtils.fromCatalogTable(catalogTable, Optional.of(sparkConf));
-    assertThat(di.getName()).isEqualTo("table");
+    assertThat(di.getName()).isEqualTo(TABLE);
     assertThat(di.getNamespace()).isEqualTo("hive://10.1.0.1:9083");
 
     sparkConf.set(
         "spark.sql.hive.metastore.uris", "anotherprotocol://127.0.0.1:1010,yetanother://something");
     di = PathUtils.fromCatalogTable(catalogTable, Optional.of(sparkConf));
-    assertThat(di.getName()).isEqualTo("table");
+    assertThat(di.getName()).isEqualTo(TABLE);
     assertThat(di.getNamespace()).isEqualTo("hive://127.0.0.1:1010");
 
     sparkConf.remove("spark.sql.hive.metastore.uris");
     sparkConf.set("spark.hadoop.hive.metastore.uris", "thrift://10.1.0.1:9083");
     di = PathUtils.fromCatalogTable(catalogTable, Optional.of(sparkConf));
-    assertThat(di.getName()).isEqualTo("table");
+    assertThat(di.getName()).isEqualTo(TABLE);
     assertThat(di.getNamespace()).isEqualTo("hive://10.1.0.1:9083");
   }
 
@@ -151,13 +157,10 @@ public class PathUtilsTest {
   void testFromCatalogExceptionIsThrownWhenUnableToExtractDatasetIdentifier() {
     CatalogTable catalogTable = mock(CatalogTable.class);
     try (MockedStatic mocked = mockStatic(SparkSession.class)) {
-      mocked.when(SparkSession::active).thenThrow(new IllegalStateException("DUPA DUPA"));
+      mocked.when(SparkSession::active).thenThrow(new IllegalStateException("some message"));
       mocked.when(SparkSession::getActiveSession).thenReturn(Option.empty());
       assertThrows(IllegalArgumentException.class, () -> PathUtils.fromCatalogTable(catalogTable));
     }
-
-    //    assertThrows(IllegalArgumentException.class, () ->
-    // PathUtils.fromCatalogTable(catalogTable));
   }
 
   @Test
@@ -182,7 +185,7 @@ public class PathUtilsTest {
           PathUtils.fromCatalogTable(mock(CatalogTable.class), Optional.of(new SparkConf()));
 
       assertThat(di.getName()).isEqualTo("/warehouse/table");
-      assertThat(di.getNamespace()).isEqualTo("file");
+      assertThat(di.getNamespace()).isEqualTo(FILE);
     }
   }
 }

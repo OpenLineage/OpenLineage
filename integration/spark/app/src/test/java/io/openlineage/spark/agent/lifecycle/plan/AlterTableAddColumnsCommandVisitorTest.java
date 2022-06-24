@@ -29,8 +29,9 @@ import scala.collection.Map$;
 import scala.collection.immutable.HashMap;
 
 @ExtendWith(SparkAgentTestExtension.class)
-public class AlterTableAddColumnsCommandVisitorTest {
+class AlterTableAddColumnsCommandVisitorTest {
 
+  private static final String TABLE_1 = "table1";
   SparkSession session;
   AlterTableAddColumnsCommandVisitor visitor;
   String database;
@@ -44,7 +45,7 @@ public class AlterTableAddColumnsCommandVisitorTest {
     session
         .sessionState()
         .catalog()
-        .dropTable(new TableIdentifier("table1", Option.apply(database)), true, true);
+        .dropTable(new TableIdentifier(TABLE_1, Option.apply(database)), true, true);
   }
 
   @BeforeEach
@@ -63,16 +64,16 @@ public class AlterTableAddColumnsCommandVisitorTest {
               new StructField("col1", StringType$.MODULE$, false, new Metadata(new HashMap<>()))
             });
 
-    session.catalog().createTable("table1", "csv", schema, Map$.MODULE$.empty());
+    session.catalog().createTable(TABLE_1, "csv", schema, Map$.MODULE$.empty());
     database = session.catalog().currentDatabase();
     visitor = new AlterTableAddColumnsCommandVisitor(SparkAgentTestExtension.newContext(session));
   }
 
   @Test
-  public void testAlterTableAddColumns() {
+  void testAlterTableAddColumns() {
     AlterTableAddColumnsCommand command =
         new AlterTableAddColumnsCommand(
-            new TableIdentifier("table1", Option.apply(database)),
+            new TableIdentifier(TABLE_1, Option.apply(database)),
             JavaConversions.asScalaIterator(
                     Arrays.asList(
                             new StructField(
@@ -94,10 +95,10 @@ public class AlterTableAddColumnsCommandVisitorTest {
   }
 
   @Test
-  public void testAlterUpdateColumnsBeforeCommandRun() {
+  void testAlterUpdateColumnsBeforeCommandRun() {
     AlterTableAddColumnsCommand command =
         new AlterTableAddColumnsCommand(
-            new TableIdentifier("table1", Option.apply(database)),
+            new TableIdentifier(TABLE_1, Option.apply(database)),
             JavaConversions.asScalaIterator(
                     Arrays.asList(
                             new StructField(
