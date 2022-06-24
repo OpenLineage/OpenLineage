@@ -1,4 +1,6 @@
-# SPDX-License-Identifier: Apache-2.0.
+# Copyright 2018-2022 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
+
 import logging
 from typing import Optional, Union, List
 
@@ -7,15 +9,25 @@ log = logging.getLogger(__name__)
 
 
 try:
-    from openlineage_sql import parse as parse_sql, SqlMeta, DbTableMeta, provider  # noqa: F401
+    from openlineage_sql import (
+        parse as parse_sql,
+        SqlMeta,
+        DbTableMeta,
+        provider,
+    )  # noqa: F401
 except ImportError:
-    from openlineage.common.sql.parser import parse as parse_sql, SqlMeta, DbTableMeta, provider  # noqa: F401,E501
+    from openlineage.common.sql.parser import (
+        parse as parse_sql,
+        SqlMeta,
+        DbTableMeta,
+        provider,
+    )  # noqa: F401,E501
 
 
 def parse(
     sql: Union[List[str], str],
     dialect: Optional[str] = None,
-    default_schema: Optional[str] = None
+    default_schema: Optional[str] = None,
 ) -> Optional[SqlMeta]:
     if isinstance(sql, str):
         sql = [sql]

@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.client.transports;
 
 import static io.openlineage.client.Events.event;
@@ -22,7 +27,7 @@ import org.apache.http.client.methods.HttpUriRequest;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-public class HttpTransportTest {
+class HttpTransportTest {
 
   @Test
   void clientEmitsHttpTransport() throws IOException {

@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.client;
 
@@ -194,11 +197,18 @@ public class JavaPoetGenerator {
       }
 
       modelClassBuilder.addField(getTypeName(f.getType()), f.getName(), PRIVATE, FINAL);
-      MethodSpec getter = getter(f)
+      Builder getterBuilder = getter(f)
           .addModifiers(PUBLIC)
-          .addCode("return $N;", f.getName())
-          .build();
-      modelClassBuilder.addMethod(getter);
+          .addCode("return $N;", f.getName());
+
+      type
+          .getParents()
+          .stream()
+          .flatMap(t -> t.getProperties().stream())
+          .filter(t -> t.getName().equals(f.getName()))
+          .findAny()
+          .ifPresent(rf -> getterBuilder.addAnnotation(Override.class));
+      modelClassBuilder.addMethod(getterBuilder.build());
 
       jsonPropertyOrder.addMember("value", "$S", f.getName());
 
@@ -208,14 +218,19 @@ public class JavaPoetGenerator {
       String fieldName = "additionalProperties";
       TypeName additionalPropertiesValueType = type.getAdditionalPropertiesType() == null ? ClassName.get(Object.class) : getTypeName(type.getAdditionalPropertiesType());
       TypeName additionalPropertiesType = ParameterizedTypeName.get(ClassName.get(Map.class), ClassName.get(String.class), additionalPropertiesValueType);
-      modelClassBuilder.addMethod(MethodSpec
+      MethodSpec.Builder methodBuilder = MethodSpec
           .methodBuilder("get" + titleCase(fieldName))
           .addJavadoc("@return additional properties")
           .returns(additionalPropertiesType)
           .addModifiers(PUBLIC)
           .addCode("return $N;", fieldName)
-          .addAnnotation(AnnotationSpec.builder(JsonAnyGetter.class).build())
-          .build());
+          .addAnnotation(AnnotationSpec.builder(JsonAnyGetter.class).build());
+      type
+          .getParents()
+          .stream()
+          .findAny()
+          .ifPresent(rf -> methodBuilder.addAnnotation(Override.class));
+      modelClassBuilder.addMethod(methodBuilder.build());
 
       modelClassBuilder.addMethod(MethodSpec
         .methodBuilder("with" + titleCase(fieldName))
@@ -308,6 +323,7 @@ public class JavaPoetGenerator {
     Builder build = MethodSpec
         .methodBuilder("build")
         .addModifiers(PUBLIC)
+        .addAnnotation(Override.class)
         .returns(getTypeName(type))
         .addCode("$N __result = new $N(", type.getName(), type.getName())
         .addCode(CodeBlock.join(builderParams, ", "))
@@ -411,6 +427,7 @@ public class JavaPoetGenerator {
         MethodSpec getter = getter(f)
             .addModifiers(PUBLIC)
             .addCode("return $N;", f.getName())
+            .addAnnotation(Override.class)
             .build();
         classBuilder.addMethod(getter);
       }
@@ -478,6 +495,7 @@ public class JavaPoetGenerator {
         .addModifiers(PUBLIC)
         .addCode("return $N;", fieldName)
         .addAnnotation(AnnotationSpec.builder(JsonAnyGetter.class).build())
+        .addAnnotation(Override.class)
         .build());
     classBuilder.addField(
         FieldSpec.builder(additionalPropertiesType, fieldName, PRIVATE, FINAL)

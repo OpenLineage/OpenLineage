@@ -1,3 +1,6 @@
+# Copyright 2018-2022 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
+
 import logging
 import threading
 import uuid
@@ -55,32 +58,6 @@ class ActiveRunManager:
 
 
 log = logging.getLogger("airflow")
-
-
-def execute_in_thread(target: Callable, kwargs=None):
-    if kwargs is None:
-        kwargs = {}
-    thread = threading.Thread(target=target, kwargs=kwargs, daemon=True)
-    thread.start()
-
-    def __init__(self):
-        self.queue = Queue(maxsize=0)
-        self.thread = threading.Thread(target=self.run, daemon=True)
-        self.running = True
-        self.thread.start()
-        log.info("Started OpenLineage event listener thread")
-
-    # This will hang if this timeouts, and extractor is running non-daemon thread inside,
-    # since it will never be cleaned up. Ex. SnowflakeOperator
-    thread.join(timeout=10)
-
-
-run_data_holder = ActiveRunManager()
-extractor_manager = ExtractorManager()
-adapter = OpenLineageAdapter()
-runner = TaskRunner()
-
-atexit.register(runner.terminate)
 
 
 def execute_in_thread(target: Callable, kwargs=None):

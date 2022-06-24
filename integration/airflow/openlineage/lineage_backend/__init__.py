@@ -1,3 +1,4 @@
+# Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 import os
 import uuid
@@ -14,30 +15,35 @@ class Backend:
     def __init__(self):
         from openlineage.airflow.adapter import OpenLineageAdapter
         from openlineage.airflow.extractors.manager import ExtractorManager
+
         self.extractor_manager = ExtractorManager()
         self.adapter = OpenLineageAdapter()
+
     """
     Send OpenLineage events to lineage backend via airflow's LineageBackend mechanism.
     The start and complete events are send when task instance completes.
     """
 
     def send_lineage(
-            self,
-            operator=None,
-            inlets=None,
-            outlets=None,
-            context=None
+        self, operator=None, inlets=None, outlets=None, context=None
     ):
         """
         Send_lineage ignores manually provided inlets and outlets. The data collection mechanism
         is automatic, and bases on the passed context.
         """
-        from openlineage.airflow.utils import DagUtils, get_custom_facets, \
-            get_job_name, get_task_location
-        dag = context['dag']
-        dagrun = context['dag_run']
-        task_instance = context['task_instance']
-        dag_run_id = str(uuid.uuid3(uuid.NAMESPACE_URL, f'{dag.dag_id}.{dagrun.run_id}'))
+        from openlineage.airflow.utils import (
+            DagUtils,
+            get_custom_facets,
+            get_job_name,
+            get_task_location,
+        )
+
+        dag = context["dag"]
+        dagrun = context["dag_run"]
+        task_instance = context["task_instance"]
+        dag_run_id = str(
+            uuid.uuid3(uuid.NAMESPACE_URL, f"{dag.dag_id}.{dagrun.run_id}")
+        )
 
         run_id = str(uuid.uuid4())
         job_name = get_job_name(operator)
@@ -46,7 +52,7 @@ class Backend:
             dagrun=dagrun,
             task=operator,
             complete=True,
-            task_instance=task_instance
+            task_instance=task_instance,
         )
 
         if parse_version(AIRFLOW_VERSION) >= parse_version("2.0.0"):
@@ -58,13 +64,15 @@ class Backend:
                 parent_job_name=dag.dag_id,
                 parent_run_id=dag_run_id,
                 code_location=get_task_location(operator),
-                nominal_start_time=DagUtils.get_start_time(dagrun.execution_date),
+                nominal_start_time=DagUtils.get_start_time(
+                    dagrun.execution_date
+                ),
                 nominal_end_time=DagUtils.to_iso_8601(task_instance.end_date),
                 task=task_metadata,
                 run_facets={
                     **task_metadata.run_facets,
-                    **get_custom_facets(operator, dagrun.external_trigger)
-                }
+                    **get_custom_facets(operator, dagrun.external_trigger),
+                },
             )
 
         self.adapter.complete_task(
@@ -90,7 +98,7 @@ class OpenLineageBackend(LineageBackend):
         if parse_version(AIRFLOW_VERSION) >= parse_version("2.3.0.dev0"):
             return
         # Make this method a noop if OPENLINEAGE_DISABLED is set to true
-        if os.getenv("OPENLINEAGE_DISABLED", None) in [True, 'true', "True"]:
+        if os.getenv("OPENLINEAGE_DISABLED", None) in [True, "true", "True"]:
             return
         if not cls.backend:
             cls.backend = Backend()

@@ -29,7 +29,7 @@ class SnowflakeExtractor(BaseExtractor):
 
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
-        return ["SnowflakeOperator"]
+        return ["SnowflakeOperator", "SnowflakeOperatorAsync"]
 
     def extract(self) -> TaskMetadata:
         task_name = f"{self.operator.dag_id}.{self.operator.task_id}"

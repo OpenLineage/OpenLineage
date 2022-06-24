@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.client.transports;
 
 import static io.openlineage.client.Events.event;
@@ -17,7 +22,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-public class KafkaTransportTest {
+class KafkaTransportTest {
   @Test
   void clientEmitsKafkaTransport() throws IOException {
     KafkaProducer<String, String> producer = mock(KafkaProducer.class);
