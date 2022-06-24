@@ -31,7 +31,6 @@ subprojects {
     }
 }
 
-
 repositories {
     mavenLocal()
     mavenCentral()
@@ -53,7 +52,6 @@ ext {
 }
 
 dependencies {
-
     implementation(project(path:    ":app"))
     implementation(project(path: ":shared"))
     implementation(project(path: ":spark2"))
@@ -135,7 +133,7 @@ publishing {
 
             pom {
                 name = 'openlineage-spark'
-                description = 'Java library for OpenLineage'
+                description = 'OpenLineage Spark integration'
                 url = 'https://github.com/OpenLineage/OpenLineage'
                 licenses {
                     license {
@@ -155,6 +153,15 @@ publishing {
                     url = 'https://github.com/OpenLineage/OpenLineage'
                 }
             }
+
+            pom.withXml {
+                asNode().dependencies.'*'.findAll() {
+                    it.groupId.text() == 'spark'
+                }.each() {
+                    it.parent().remove(it)
+                }
+            }
+
         }
     }
 
