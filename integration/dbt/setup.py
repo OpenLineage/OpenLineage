@@ -10,7 +10,7 @@ from setuptools import setup
 with open("README.md") as readme_file:
      readme = readme_file.read()
 
-__version__ = "0.10.0"
+__version__ = "0.11.0"
 
 requirements = [
     f"sqlparse>=0.2.3,<0.4",
