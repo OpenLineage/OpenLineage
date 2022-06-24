@@ -20,8 +20,7 @@ public abstract class LineageStream {
     KAFKA
   }
 
-  private final Type type;
-
+  private final Type type; // NOPMD
   /**
    * The constructor sets up the type for destination for logging purposes.
    *

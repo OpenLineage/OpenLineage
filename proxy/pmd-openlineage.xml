@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+
+<ruleset name="openlineage"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+    <description>
+        Rules for Debugging OpenLineage
+    </description>
+    <rule ref="category/java/errorprone.xml">
+        <exclude name="EmptyCatchBlock"/> <!-- Openlineage should not fail Spark job -->
+        <exclude name="UseProperClassLoader"/>
+        <exclude name="AvoidInstanceofChecksInCatchClause" /> <!-- necessary for catching Scala exceptions in Java -->
+        <exclude name="BeanMembersShouldSerialize" />
+        <exclude name="AvoidFieldNameMatchingMethodName" />
+        <exclude name="AvoidDuplicateLiterals" /> <!-- duplicates exist in generated OpenLineage class within JsonPropertyOrder annotation -->
+        <exclude name="CloseResource" /> <!--- OpenLineage Transport classes wrongly identified as closeable resources -->
+    </rule>
+    <rule ref="category/java/bestpractices.xml">
+        <exclude name="GuardLogStatement" />
+        <exclude name="JUnitAssertionsShouldIncludeMessage" />
+        <exclude name="JUnitTestContainsTooManyAsserts" /> <!-- rule would require significant tests refactor while bringing a little improvement -->
+    </rule>
+</ruleset>
