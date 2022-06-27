@@ -60,6 +60,7 @@ ext {
     testcontainersVersion = '1.15.3'
     shortVersion = project.getProperty('spark.version').substring(0,3)
     someMapProperty = [
+            "3.3": ["project": "spark3", "kafka": "org.apache.spark:spark-sql-kafka-0-10_2.12:${project.getProperty('spark.version')}"],
             "3.2": ["project": "spark3", "kafka": "org.apache.spark:spark-sql-kafka-0-10_2.12:${project.getProperty('spark.version')}"],
             "3.1": ["project": "spark3", "kafka": "org.apache.spark:spark-sql-kafka-0-10_2.12:${project.getProperty('spark.version')}"],
             "2.4": ["project": "spark2", "kafka": 'org.apache.spark:spark-sql-kafka-0-10_2.11:2.4.8']
