@@ -41,10 +41,13 @@ class OpenLineageRunEventTest {
 
     UUID runId = UUID.fromString("5f24c93c-2ce9-49dc-82e7-95ab4915242f");
     OpenLineage.RunFacets runFacets =
-        ol.newRunFacets(
-            ol.newParentRunFacet(
-                ol.newParentRunFacetRun(runId), ol.newParentRunFacetJob("namespace", "jobName")),
-            null);
+        ol.newRunFacetsBuilder()
+            .parent(
+                ol.newParentRunFacet(
+                    ol.newParentRunFacetRun(runId),
+                    ol.newParentRunFacetJob("namespace", "jobName")))
+            .errorMessage(ol.newErrorMessageRunFacet("failed", "JAVA", "<stack_trace>"))
+            .build();
     OpenLineage.Run run = ol.newRun(runId, runFacets);
     OpenLineage.DocumentationJobFacet documentationJobFacet =
         ol.newDocumentationJobFacetBuilder().description("test documentation").build();

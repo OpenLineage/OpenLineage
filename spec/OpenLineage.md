@@ -111,6 +111,8 @@ Example of valid name is `BigQueryStatisticsJobFacet` and it's key `bigQuery_sta
 
 - **parent**: Captures the parent job and Run when the run was spawn from a parent run. For example in the case of Airflow, there's a run for the DAG that then spawns runs for individual tasks that would refer to the parent run as the DAG run. Similarly when a SparkOperator starts a Spark job, this creates a separate run that refers to the task run as its parent.
 
+- **errorMessage**: Captures potential error message, programming language - and optionally stack trace - with which the run failed. 
+
 #### Job Facets
 
 - **sourceCodeLocation**: Captures the source code location and version (example: git sha) of the job.
