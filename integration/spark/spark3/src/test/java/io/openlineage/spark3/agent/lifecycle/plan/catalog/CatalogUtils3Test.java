@@ -22,37 +22,37 @@ import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.junit.jupiter.api.Test;
 
-public class CatalogUtils3Test {
+class CatalogUtils3Test {
 
   @Test
-  public void testGetCatalogHandlerByProviderForIceberg() {
+  void testGetCatalogHandlerByProviderForIceberg() {
     assertTrue(
         CatalogUtils3.getCatalogHandlerByProvider("Iceberg").get() instanceof IcebergHandler);
   }
 
   @Test
-  public void testGetCatalogHandlerByProviderForDelta() {
+  void testGetCatalogHandlerByProviderForDelta() {
     assertTrue(CatalogUtils3.getCatalogHandlerByProvider("Delta").get() instanceof DeltaHandler);
   }
 
   @Test
-  public void getCatalogHandlerByProviderUnknown() {
+  void getCatalogHandlerByProviderUnknown() {
     assertEquals(Optional.empty(), CatalogUtils3.getCatalogHandlerByProvider("Unknown"));
   }
 
   @Test
-  public void testGetCatalogHandler() {
+  void testGetCatalogHandler() {
     TableCatalog tableCatalog = mock(org.apache.iceberg.spark.SparkCatalog.class);
     assertTrue(CatalogUtils3.getCatalogHandler(tableCatalog).get() instanceof IcebergHandler);
   }
 
   @Test
-  public void testGetCatalogHandlerEmpty() {
+  void testGetCatalogHandlerEmpty() {
     assertEquals(Optional.empty(), CatalogUtils3.getCatalogHandler(mock(TableCatalog.class)));
   }
 
   @Test
-  public void testGetTableProviderFacet() {
+  void testGetTableProviderFacet() {
     TableCatalog tableCatalog = mock(org.apache.iceberg.spark.SparkCatalog.class);
     Map<String, String> properties = new HashMap<>();
     assertEquals(
@@ -61,14 +61,14 @@ public class CatalogUtils3Test {
   }
 
   @Test
-  public void testGetTableProviderFacetWhenHandlerUnknown() {
+  void testGetTableProviderFacetWhenHandlerUnknown() {
     TableCatalog tableCatalog = mock(TableCatalog.class);
     Map<String, String> properties = new HashMap<>();
     assertEquals(Optional.empty(), CatalogUtils3.getTableProviderFacet(tableCatalog, properties));
   }
 
   @Test
-  public void testGetDatasetIdentifier() {
+  void testGetDatasetIdentifier() {
     CatalogHandler catalogHandler = mock(CatalogHandler.class);
     when(catalogHandler.isClass(any())).thenReturn(true);
     when(catalogHandler.getDatasetIdentifier(any(), any(), any(), any()))
@@ -87,20 +87,19 @@ public class CatalogUtils3Test {
   }
 
   @Test
-  public void testGetDatasetIdentifierWhenCatalogUnsupported() {
+  void testGetDatasetIdentifierWhenCatalogUnsupported() {
     CatalogHandler catalogHandler = mock(CatalogHandler.class);
     when(catalogHandler.isClass(any())).thenReturn(false);
 
-    UnsupportedCatalogException exception =
-        assertThrows(
-            UnsupportedCatalogException.class,
-            () -> {
-              CatalogUtils3.getDatasetIdentifier(
-                  mock(SparkSession.class),
-                  mock(TableCatalog.class),
-                  mock(Identifier.class),
-                  new HashMap<>(),
-                  Arrays.asList(catalogHandler));
-            });
+    assertThrows(
+        UnsupportedCatalogException.class,
+        () -> {
+          CatalogUtils3.getDatasetIdentifier(
+              mock(SparkSession.class),
+              mock(TableCatalog.class),
+              mock(Identifier.class),
+              new HashMap<>(),
+              Arrays.asList(catalogHandler));
+        });
   }
 }

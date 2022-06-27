@@ -140,6 +140,7 @@ public class MockBigQueryRelationProvider extends BigQueryRelationProvider {
   private static class EmptyModule implements Module {
     private EmptyModule() {}
 
+    @Override
     public void configure(Binder binder) {}
   }
 }

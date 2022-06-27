@@ -12,8 +12,16 @@
         <exclude name="UseProperClassLoader"/>
         <exclude name="AvoidInstanceofChecksInCatchClause" /> <!-- necessary for catching Scala exceptions in Java -->
         <exclude name="BeanMembersShouldSerialize" />
+        <exclude name="CloseResource" /> <!-- we don't deal with closeable resources -->
+        <exclude name="MissingSerialVersionUID" />
     </rule>
     <rule ref="category/java/bestpractices.xml">
         <exclude name="GuardLogStatement" />
+        <exclude name="JUnitAssertionsShouldIncludeMessage" />
+    </rule>
+    <rule ref="category/java/bestpractices.xml/JUnitTestContainsTooManyAsserts">
+        <properties>
+            <property name="maximumAsserts" value="10" />
+        </properties>
     </rule>
 </ruleset>

@@ -99,8 +99,14 @@ import scala.collection.immutable.HashMap;
 @ExtendWith(SparkAgentTestExtension.class)
 @Tag("integration-test")
 @Slf4j
-public class SparkReadWriteIntegTest {
+class SparkReadWriteIntegTest {
 
+  private static final String EVENT_TYPE = "eventType";
+  private static final String NAMESPACE = "namespace";
+  private static final String FILE = "file";
+  private static final String NAME = "name";
+  private static final String AGE = "age";
+  private static final String FILE_URI_PREFIX = "file://";
   private final KafkaContainer kafkaContainer =
       new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.0.0"));
 
@@ -123,15 +129,15 @@ public class SparkReadWriteIntegTest {
   }
 
   @Test
-  public void testBigQueryReadWriteToFile(@TempDir Path writeDir, SparkSession spark)
+  void testBigQueryReadWriteToFile(@TempDir Path writeDir, SparkSession spark)
       throws InterruptedException, TimeoutException {
     TableId tableId = TableId.of("testproject", "dataset", "MyTable");
     BigQuery bq = MockBigQueryRelationProvider.BIG_QUERY;
     StructType tableSchema =
         new StructType(
             new StructField[] {
-              new StructField("name", StringType$.MODULE$, false, Metadata.empty()),
-              new StructField("age", LongType$.MODULE$, false, Metadata.empty())
+              new StructField(NAME, StringType$.MODULE$, false, Metadata.empty()),
+              new StructField(AGE, LongType$.MODULE$, false, Metadata.empty())
             });
 
     MockBigQueryRelationProvider.INJECTOR.setTestModule(
@@ -164,8 +170,8 @@ public class SparkReadWriteIntegTest {
                     StandardTableDefinition.newBuilder()
                         .setSchema(
                             Schema.of(
-                                Field.of("name", StandardSQLTypeName.STRING),
-                                Field.of("age", StandardSQLTypeName.INT64)))
+                                Field.of(NAME, StandardSQLTypeName.STRING),
+                                Field.of(AGE, StandardSQLTypeName.INT64)))
                         .setNumBytes(100L)
                         .setNumRows(1000L)
                         .build()));
@@ -178,7 +184,7 @@ public class SparkReadWriteIntegTest {
             .option("parentProject", "not a project")
             .load("testproject.dataset.MyTable");
     String outputDir = writeDir.resolve("testBigQueryRead").toAbsolutePath().toUri().getPath();
-    df.write().csv("file://" + outputDir);
+    df.write().csv(FILE_URI_PREFIX + outputDir);
 
     // wait for event processing to complete
     StaticExecutionContextFactory.waitForExecutionEnd();
@@ -196,14 +202,12 @@ public class SparkReadWriteIntegTest {
                     .isInstanceOf(TestOpenLineageEventHandlerFactory.TestRunFacet.class)
                     .hasFieldOrProperty("message"));
     List<InputDataset> inputs = events.get(2).getInputs();
-    assertEquals(1, inputs.size());
     assertEquals("bigquery", inputs.get(0).getNamespace());
     assertEquals(BigQueryUtil.friendlyTableName(tableId), inputs.get(0).getName());
 
     List<OutputDataset> outputs = events.get(2).getOutputs();
-    assertEquals(1, outputs.size());
     OutputDataset output = outputs.get(0);
-    assertEquals("file", output.getNamespace());
+    assertEquals(FILE, output.getNamespace());
     assertEquals(outputDir, output.getName());
     SchemaDatasetFacet schemaDatasetFacet =
         PlanUtils.schemaFacet(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI), tableSchema);
@@ -217,11 +221,11 @@ public class SparkReadWriteIntegTest {
   }
 
   @Test
-  public void testReadFromFileWriteToJdbc(@TempDir Path writeDir, SparkSession spark)
+  void testReadFromFileWriteToJdbc(@TempDir Path writeDir, SparkSession spark)
       throws InterruptedException, TimeoutException, IOException {
     Path testFile = writeTestDataToFile(writeDir);
 
-    Dataset<Row> df = spark.read().json("file://" + testFile.toAbsolutePath().toString());
+    Dataset<Row> df = spark.read().json(FILE_URI_PREFIX + testFile.toAbsolutePath().toString());
 
     Path sqliteFile = writeDir.resolve("sqlite/database");
     sqliteFile.getParent().toFile().mkdir();
@@ -255,15 +259,15 @@ public class SparkReadWriteIntegTest {
         .extracting(RunEvent::getInputs, InstanceOfAssertFactories.list(InputDataset.class))
         .hasSize(1)
         .first()
-        .hasFieldOrPropertyWithValue("namespace", "file")
-        .hasFieldOrPropertyWithValue("name", testFile.toAbsolutePath().getParent().toString());
+        .hasFieldOrPropertyWithValue(NAMESPACE, FILE)
+        .hasFieldOrPropertyWithValue(NAME, testFile.toAbsolutePath().getParent().toString());
 
     completionEvent
         .extracting(RunEvent::getOutputs, InstanceOfAssertFactories.list(OutputDataset.class))
         .hasSize(1)
         .first()
-        .hasFieldOrPropertyWithValue("namespace", "sqlite:" + sqliteFile.toAbsolutePath().toUri())
-        .hasFieldOrPropertyWithValue("name", tableName)
+        .hasFieldOrPropertyWithValue(NAMESPACE, "sqlite:" + sqliteFile.toAbsolutePath().toUri())
+        .hasFieldOrPropertyWithValue(NAME, tableName)
         .satisfies(
             d -> {
               // Spark rowCount metrics currently only working in Spark 3.x
@@ -290,15 +294,13 @@ public class SparkReadWriteIntegTest {
         JsonGenerator jsonWriter = mapper.getJsonFactory().createJsonGenerator(writer)) {
       for (int i = 0; i < 20; i++) {
         ImmutableMap<String, Object> map =
-            ImmutableMap.of("name", UUID.randomUUID().toString(), "age", random.nextInt(100));
+            ImmutableMap.of(NAME, UUID.randomUUID().toString(), AGE, random.nextInt(100));
         mapper.writeValue(jsonWriter, map);
         writer.write('\n');
       }
-      mapper.writeValue(
-          jsonWriter, ImmutableMap.of("name", UUID.randomUUID().toString(), "age", 107));
+      mapper.writeValue(jsonWriter, ImmutableMap.of(NAME, UUID.randomUUID().toString(), AGE, 107));
       writer.write('\n');
-      mapper.writeValue(
-          jsonWriter, ImmutableMap.of("name", UUID.randomUUID().toString(), "age", 103));
+      mapper.writeValue(jsonWriter, ImmutableMap.of(NAME, UUID.randomUUID().toString(), AGE, 103));
       writer.write('\n');
       jsonWriter.flush();
     }
@@ -306,12 +308,15 @@ public class SparkReadWriteIntegTest {
   }
 
   @Test
-  public void testInsertIntoDataSourceDirVisitor(@TempDir Path tempDir, SparkSession spark)
+  void testInsertIntoDataSourceDirVisitor(@TempDir Path tempDir, SparkSession spark)
       throws IOException, InterruptedException, TimeoutException, AnalysisException {
     Path testFile = writeTestDataToFile(tempDir);
     Path parquetDir = tempDir.resolve("parquet").toAbsolutePath();
     // Two events from CreateViewCommand
-    spark.read().json("file://" + testFile.toAbsolutePath()).createOrReplaceTempView("testdata");
+    spark
+        .read()
+        .json(FILE_URI_PREFIX + testFile.toAbsolutePath())
+        .createOrReplaceTempView("testdata");
 
     spark.sql(
         "INSERT OVERWRITE DIRECTORY '"
@@ -342,12 +347,12 @@ public class SparkReadWriteIntegTest {
     OpenLineage.RunEvent event = completionEvent.get();
     List<InputDataset> inputs = event.getInputs();
     assertEquals(1, inputs.size());
-    assertEquals("file", inputs.get(0).getNamespace());
+    assertEquals(FILE, inputs.get(0).getNamespace());
     assertEquals(testFile.toAbsolutePath().getParent().toString(), inputs.get(0).getName());
   }
 
   @Test
-  public void testWithExternalRdd(@TempDir Path tmpDir, SparkSession spark)
+  void testWithExternalRdd(@TempDir Path tmpDir, SparkSession spark)
       throws InterruptedException, TimeoutException, IOException {
     Path testFile = writeTestDataToFile(tmpDir);
     JavaRDD<String> stringRdd =
@@ -355,7 +360,7 @@ public class SparkReadWriteIntegTest {
     Dataset<Row> jsonDf = spark.read().json(stringRdd);
 
     String outputPath = tmpDir.toAbsolutePath() + "/output_data";
-    String jsonPath = "file://" + outputPath;
+    String jsonPath = FILE_URI_PREFIX + outputPath;
     jsonDf.write().json(jsonPath);
     // wait for event processing to complete
     StaticExecutionContextFactory.waitForExecutionEnd();
@@ -365,20 +370,20 @@ public class SparkReadWriteIntegTest {
     Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(6))
         .emit(lineageEvent.capture());
     OpenLineage.RunEvent completeEvent = lineageEvent.getAllValues().get(5);
-    assertThat(completeEvent).hasFieldOrPropertyWithValue("eventType", RunEvent.EventType.COMPLETE);
+    assertThat(completeEvent).hasFieldOrPropertyWithValue(EVENT_TYPE, RunEvent.EventType.COMPLETE);
     assertThat(completeEvent.getInputs())
         .first()
-        .hasFieldOrPropertyWithValue("name", testFile.getParent().toString())
-        .hasFieldOrPropertyWithValue("namespace", "file");
+        .hasFieldOrPropertyWithValue(NAME, testFile.getParent().toString())
+        .hasFieldOrPropertyWithValue(NAMESPACE, FILE);
 
     assertThat(completeEvent.getOutputs())
         .first()
-        .hasFieldOrPropertyWithValue("name", outputPath)
-        .hasFieldOrPropertyWithValue("namespace", "file");
+        .hasFieldOrPropertyWithValue(NAME, outputPath)
+        .hasFieldOrPropertyWithValue(NAMESPACE, FILE);
   }
 
   @Test
-  public void testWithLogicalRdd(@TempDir Path tmpDir, SparkSession spark)
+  void testWithLogicalRdd(@TempDir Path tmpDir, SparkSession spark)
       throws InterruptedException, TimeoutException {
     StructType schema =
         new StructType(
@@ -387,7 +392,7 @@ public class SparkReadWriteIntegTest {
               new StructField("aString", StringType$.MODULE$, false, new Metadata(new HashMap<>()))
             });
     String csvPath = tmpDir.toAbsolutePath() + "/csv_data";
-    String csvUri = "file://" + csvPath;
+    String csvUri = FILE_URI_PREFIX + csvPath;
     spark
         .createDataFrame(
             Arrays.asList(
@@ -420,7 +425,7 @@ public class SparkReadWriteIntegTest {
             .map(arr -> new GenericRow(new Object[] {Integer.parseInt(arr[0]), arr[1]}));
     Dataset<Row> df = spark.createDataFrame(splitDf, schema);
     String outputPath = tmpDir.toAbsolutePath() + "/output_data";
-    String jsonPath = "file://" + outputPath;
+    String jsonPath = FILE_URI_PREFIX + outputPath;
     df.write().json(jsonPath);
     // wait for event processing to complete
     StaticExecutionContextFactory.waitForExecutionEnd();
@@ -430,20 +435,20 @@ public class SparkReadWriteIntegTest {
     Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(4))
         .emit(lineageEvent.capture());
     OpenLineage.RunEvent completeEvent = lineageEvent.getAllValues().get(2);
-    assertThat(completeEvent).hasFieldOrPropertyWithValue("eventType", RunEvent.EventType.COMPLETE);
+    assertThat(completeEvent).hasFieldOrPropertyWithValue(EVENT_TYPE, RunEvent.EventType.COMPLETE);
     assertThat(completeEvent.getInputs())
         .singleElement()
-        .hasFieldOrPropertyWithValue("name", csvPath)
-        .hasFieldOrPropertyWithValue("namespace", "file");
+        .hasFieldOrPropertyWithValue(NAME, csvPath)
+        .hasFieldOrPropertyWithValue(NAMESPACE, FILE);
 
     assertThat(completeEvent.getOutputs())
         .singleElement()
-        .hasFieldOrPropertyWithValue("name", outputPath)
-        .hasFieldOrPropertyWithValue("namespace", "file");
+        .hasFieldOrPropertyWithValue(NAME, outputPath)
+        .hasFieldOrPropertyWithValue(NAMESPACE, FILE);
   }
 
   @Test
-  public void testCreateDataSourceTableAsSelect(@TempDir Path tmpDir, SparkSession spark)
+  void testCreateDataSourceTableAsSelect(@TempDir Path tmpDir, SparkSession spark)
       throws InterruptedException, TimeoutException, IOException {
     Path testFile = writeTestDataToFile(tmpDir);
     JavaRDD<String> stringRdd =
@@ -459,29 +464,29 @@ public class SparkReadWriteIntegTest {
     Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(6))
         .emit(lineageEvent.capture());
     OpenLineage.RunEvent completeEvent = lineageEvent.getAllValues().get(5);
-    assertThat(completeEvent).hasFieldOrPropertyWithValue("eventType", RunEvent.EventType.COMPLETE);
+    assertThat(completeEvent).hasFieldOrPropertyWithValue(EVENT_TYPE, RunEvent.EventType.COMPLETE);
     assertThat(completeEvent.getInputs())
         .first()
-        .hasFieldOrPropertyWithValue("name", testFile.getParent().toString())
-        .hasFieldOrPropertyWithValue("namespace", "file");
+        .hasFieldOrPropertyWithValue(NAME, testFile.getParent().toString())
+        .hasFieldOrPropertyWithValue(NAMESPACE, FILE);
     String warehouseDir = spark.sqlContext().conf().getConfString("spark.sql.warehouse.dir");
     assertThat(completeEvent.getOutputs())
         .first()
         .hasFieldOrPropertyWithValue(
-            "name",
+            NAME,
             new org.apache.hadoop.fs.Path(warehouseDir).toUri().getPath() + "/testcreatedatasource")
-        .hasFieldOrPropertyWithValue("namespace", "file")
+        .hasFieldOrPropertyWithValue(NAMESPACE, FILE)
         .extracting(OutputDataset::getFacets)
         .extracting(DatasetFacets::getSchema)
         .extracting(
             SchemaDatasetFacet::getFields,
             InstanceOfAssertFactories.list(SchemaDatasetFacetFields.class))
         .map(f -> Pair.of(f.getName(), f.getType()))
-        .containsExactlyInAnyOrder(Pair.of("name", "string"), Pair.of("age", "long"));
+        .containsExactlyInAnyOrder(Pair.of(NAME, "string"), Pair.of(AGE, "long"));
   }
 
   @Test
-  public void testWriteWithKafkaSourceProvider(SparkSession spark)
+  void testWriteWithKafkaSourceProvider(SparkSession spark)
       throws InterruptedException, TimeoutException {
     kafkaContainer.start();
     StructType schema =
@@ -513,7 +518,7 @@ public class SparkReadWriteIntegTest {
     Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(4))
         .emit(lineageEvent.capture());
     OpenLineage.RunEvent completeEvent = lineageEvent.getAllValues().get(2);
-    assertThat(completeEvent).hasFieldOrPropertyWithValue("eventType", RunEvent.EventType.COMPLETE);
+    assertThat(completeEvent).hasFieldOrPropertyWithValue(EVENT_TYPE, RunEvent.EventType.COMPLETE);
     String kafkaNamespace =
         "kafka://"
             + kafkaContainer.getHost()
@@ -522,12 +527,12 @@ public class SparkReadWriteIntegTest {
     assertThat(completeEvent.getOutputs())
         .hasSize(1)
         .first()
-        .hasFieldOrPropertyWithValue("name", "topicA")
-        .hasFieldOrPropertyWithValue("namespace", kafkaNamespace);
+        .hasFieldOrPropertyWithValue(NAME, "topicA")
+        .hasFieldOrPropertyWithValue(NAMESPACE, kafkaNamespace);
   }
 
   @Test
-  public void testReadWithKafkaSourceProviderUsingAssignConfig(SparkSession spark)
+  void testReadWithKafkaSourceProviderUsingAssignConfig(SparkSession spark)
       throws InterruptedException, TimeoutException, ExecutionException {
     kafkaContainer.start();
     Properties p = new Properties();
@@ -559,7 +564,7 @@ public class SparkReadWriteIntegTest {
     Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(4))
         .emit(lineageEvent.capture());
     OpenLineage.RunEvent completeEvent = lineageEvent.getAllValues().get(2);
-    assertThat(completeEvent).hasFieldOrPropertyWithValue("eventType", RunEvent.EventType.COMPLETE);
+    assertThat(completeEvent).hasFieldOrPropertyWithValue(EVENT_TYPE, RunEvent.EventType.COMPLETE);
     String kafkaNamespace =
         "kafka://"
             + kafkaContainer.getHost()
@@ -570,21 +575,21 @@ public class SparkReadWriteIntegTest {
         .satisfiesExactlyInAnyOrder(
             dataset ->
                 assertThat(dataset)
-                    .hasFieldOrPropertyWithValue("name", "oneTopic")
-                    .hasFieldOrPropertyWithValue("namespace", kafkaNamespace),
+                    .hasFieldOrPropertyWithValue(NAME, "oneTopic")
+                    .hasFieldOrPropertyWithValue(NAMESPACE, kafkaNamespace),
             dataset -> assertThat(dataset.getName()).isEqualTo("twoTopic"));
   }
 
   @Test
   @EnabledIfSystemProperty(named = "spark.version", matches = "(3.*)") // Spark version >= 3.*
-  public void testCacheReadFromFileWriteToParquet(@TempDir Path writeDir, SparkSession spark)
+  void testCacheReadFromFileWriteToParquet(@TempDir Path writeDir, SparkSession spark)
       throws InterruptedException, TimeoutException, IOException {
     Path testFile = writeTestDataToFile(writeDir);
     Path tableOneDir = writeDir.resolve("table1");
 
     spark
         .read()
-        .json("file://" + testFile.toAbsolutePath().toString())
+        .json(FILE_URI_PREFIX + testFile.toAbsolutePath().toString())
         .createOrReplaceTempView("raw_json");
     spark.sql("CACHE TABLE cached_json AS SELECT * FROM raw_json WHERE age > 100");
     Dataset<Row> df = spark.sql("SELECT * FROM cached_json");
@@ -618,15 +623,15 @@ public class SparkReadWriteIntegTest {
         .extracting(RunEvent::getInputs, InstanceOfAssertFactories.list(InputDataset.class))
         .hasSize(1)
         .first()
-        .hasFieldOrPropertyWithValue("namespace", "file")
-        .hasFieldOrPropertyWithValue("name", testFile.toAbsolutePath().getParent().toString());
+        .hasFieldOrPropertyWithValue(NAMESPACE, FILE)
+        .hasFieldOrPropertyWithValue(NAME, testFile.toAbsolutePath().getParent().toString());
 
     completionEvent
         .extracting(RunEvent::getOutputs, InstanceOfAssertFactories.list(OutputDataset.class))
         .hasSize(1)
         .first()
-        .hasFieldOrPropertyWithValue("namespace", "file")
-        .hasFieldOrPropertyWithValue("name", tableOneDir.toAbsolutePath().toString())
+        .hasFieldOrPropertyWithValue(NAMESPACE, FILE)
+        .hasFieldOrPropertyWithValue(NAME, tableOneDir.toAbsolutePath().toString())
         .satisfies(
             d -> {
               // Spark rowCount metrics currently only working in Spark 3.x

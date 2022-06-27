@@ -39,12 +39,14 @@ import scala.PartialFunction;
 
 class AbstractQueryPlanDatasetBuilderTest {
 
+  private static final String LOCAL = "local";
+
   @Test
-  public void testIsDefinedOnSparkListenerEvent() {
+  void testIsDefinedOnSparkListenerEvent() {
     SparkSession session =
         SparkSession.builder()
             .config("spark.sql.warehouse.dir", "/tmp/warehouse")
-            .master("local")
+            .master(LOCAL)
             .getOrCreate();
     OpenLineage openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
     InputDataset expected = openLineage.newInputDataset("namespace", "the_name", null, null);
@@ -66,11 +68,11 @@ class AbstractQueryPlanDatasetBuilderTest {
   }
 
   @Test
-  public void testApplyOnSparkListenerEvent() {
+  void testApplyOnSparkListenerEvent() {
     SparkSession session =
         SparkSession.builder()
             .config("spark.sql.warehouse.dir", "/tmp/warehouse")
-            .master("local")
+            .master(LOCAL)
             .getOrCreate();
     OpenLineage openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
     InputDataset expected = openLineage.newInputDataset("namespace", "the_name", null, null);
@@ -102,11 +104,11 @@ class AbstractQueryPlanDatasetBuilderTest {
   }
 
   @Test
-  public void testApplyOnBuilderWithGenericArg() {
+  void testApplyOnBuilderWithGenericArg() {
     SparkSession session =
         SparkSession.builder()
             .config("spark.sql.warehouse.dir", "/tmp/warehouse")
-            .master("local")
+            .master(LOCAL)
             .getOrCreate();
     OpenLineage openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
     InputDataset expected = openLineage.newInputDataset("namespace", "the_name", null, null);
@@ -123,7 +125,7 @@ class AbstractQueryPlanDatasetBuilderTest {
   }
 
   @Test
-  public void testApplyWhenExceptionIsThrown() {
+  void testApplyWhenExceptionIsThrown() {
     OpenLineageContext context = mock(OpenLineageContext.class);
     when(context.getQueryExecution()).thenReturn(Optional.of(mock(QueryExecution.class)));
     AbstractQueryPlanDatasetBuilder<SparkListenerJobEnd, LocalRelation, InputDataset> builder =
@@ -187,7 +189,7 @@ class AbstractQueryPlanDatasetBuilderTest {
     OpenLineageContext context =
         OpenLineageContext.builder()
             .sparkContext(
-                SparkContext.getOrCreate(new SparkConf().setAppName("test").setMaster("local")))
+                SparkContext.getOrCreate(new SparkConf().setAppName("test").setMaster(LOCAL)))
             .openLineage(openLineage)
             .queryExecution(queryExecution)
             .build();

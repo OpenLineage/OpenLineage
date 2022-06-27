@@ -11,10 +11,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import org.junit.jupiter.api.Test;
 
-public class EventEmitterTest {
+class EventEmitterTest {
 
   @Test
-  public void testLineageUri() throws URISyntaxException {
+  void testLineageUri() throws URISyntaxException {
     EventEmitter ctx =
         new EventEmitter(
             ArgumentParser.parse(
@@ -24,7 +24,7 @@ public class EventEmitterTest {
   }
 
   @Test
-  public void testLineageUriWithExtraParams() throws URISyntaxException {
+  void testLineageUriWithExtraParams() throws URISyntaxException {
     EventEmitter ctx =
         new EventEmitter(
             ArgumentParser.parse(

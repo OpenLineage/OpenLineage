@@ -27,7 +27,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import scala.collection.immutable.Map;
 
-public class IcebergHandlerTest {
+class IcebergHandlerTest {
 
   private IcebergHandler icebergHandler = new IcebergHandler();
   private SparkSession sparkSession = mock(SparkSession.class);
@@ -38,8 +38,7 @@ public class IcebergHandlerTest {
     "hdfs://namenode:8020/warehouse,hdfs://namenode:8020,/warehouse/database.schema.table",
     "/tmp/warehouse,file,/tmp/warehouse/database.schema.table"
   })
-  public void testGetDatasetIdentifierForHadoop(
-      String warehouseConf, String namespace, String name) {
+  void testGetDatasetIdentifierForHadoop(String warehouseConf, String namespace, String name) {
     when(sparkSession.conf()).thenReturn(runtimeConfig);
     when(runtimeConfig.getAll())
         .thenReturn(
@@ -64,7 +63,7 @@ public class IcebergHandlerTest {
   }
 
   @Test
-  public void testGetDatasetIdentifierForHive() {
+  void testGetDatasetIdentifierForHive() {
     when(sparkSession.conf()).thenReturn(runtimeConfig);
     when(runtimeConfig.getAll())
         .thenReturn(
@@ -88,7 +87,7 @@ public class IcebergHandlerTest {
   }
 
   @Test
-  public void testGetTableProviderFacet() {
+  void testGetTableProviderFacet() {
     Optional<TableProviderFacet> tableProviderFacet =
         icebergHandler.getTableProviderFacet(Collections.singletonMap("format", "iceberg/parquet"));
     assertEquals("iceberg", tableProviderFacet.get().getProvider());
@@ -96,7 +95,7 @@ public class IcebergHandlerTest {
   }
 
   @Test
-  public void testGetTableProviderFacetWhenFormatNotProvided() {
+  void testGetTableProviderFacetWhenFormatNotProvided() {
     Optional<TableProviderFacet> tableProviderFacet =
         icebergHandler.getTableProviderFacet(new HashMap<>());
     assertEquals("iceberg", tableProviderFacet.get().getProvider());
@@ -104,7 +103,7 @@ public class IcebergHandlerTest {
   }
 
   @Test
-  public void testGetVersionString() throws NoSuchTableException {
+  void testGetVersionString() throws NoSuchTableException {
     SparkCatalog sparkCatalog = mock(SparkCatalog.class);
     SparkTable sparkTable = mock(SparkTable.class, RETURNS_DEEP_STUBS);
     Identifier identifier = Identifier.of(new String[] {"database", "schema"}, "table");

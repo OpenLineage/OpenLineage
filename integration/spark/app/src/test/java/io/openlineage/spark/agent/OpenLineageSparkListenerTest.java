@@ -44,10 +44,10 @@ import scala.Option;
 import scala.collection.Map$;
 import scala.collection.Seq$;
 
-public class OpenLineageSparkListenerTest {
+class OpenLineageSparkListenerTest {
 
   @Test
-  public void testSqlEventWithJobEventEmitsOnce() {
+  void testSqlEventWithJobEventEmitsOnce() {
     SparkSession sparkSession = mock(SparkSession.class);
     SparkContext sparkContext = mock(SparkContext.class);
     EventEmitter emitter = mock(EventEmitter.class);

@@ -44,7 +44,7 @@ class OutputStatisticsOutputDatasetFacetBuilderTest {
   }
 
   @Test
-  public void testIsDefined() {
+  void testIsDefined() {
     OutputStatisticsOutputDatasetFacetBuilder builder =
         new OutputStatisticsOutputDatasetFacetBuilder(
             OpenLineageContext.builder()
@@ -56,7 +56,7 @@ class OutputStatisticsOutputDatasetFacetBuilderTest {
   }
 
   @Test
-  public void testBuild() {
+  void testBuild() {
     OutputStatisticsOutputDatasetFacetBuilder builder =
         new OutputStatisticsOutputDatasetFacetBuilder(
             OpenLineageContext.builder()

@@ -32,8 +32,9 @@ import org.mockito.MockedStatic;
 import scala.collection.immutable.HashMap;
 import scala.collection.immutable.Map;
 
-public class DropTableVisitorTest {
+class DropTableVisitorTest {
 
+  private static final String TABLE = "table";
   OpenLineageContext openLineageContext =
       OpenLineageContext.builder()
           .sparkSession(Optional.of(mock(SparkSession.class)))
@@ -49,7 +50,7 @@ public class DropTableVisitorTest {
   StructType schema = new StructType();
   Table table = mock(Table.class);
   Map<String, String> tableProperties = new HashMap<>();
-  DatasetIdentifier di = new DatasetIdentifier("table", "db");
+  DatasetIdentifier di = new DatasetIdentifier(TABLE, "db");
 
   @BeforeEach
   public void setUp() {
@@ -57,19 +58,19 @@ public class DropTableVisitorTest {
     when(resolvedTable.catalog()).thenReturn(tableCatalog);
     when(resolvedTable.schema()).thenReturn(schema);
     when(resolvedTable.table()).thenReturn(table);
-    when(resolvedTable.identifier()).thenReturn(Identifier.of(new String[] {"db"}, "table"));
+    when(resolvedTable.identifier()).thenReturn(Identifier.of(new String[] {"db"}, TABLE));
     when(table.properties())
         .thenReturn(ScalaConversionUtils.<String, String>fromMap(tableProperties));
     when(table.name()).thenReturn("db.table");
   }
 
   @Test
-  public void testApply() {
+  void testApply() {
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
       when(PlanUtils3.getDatasetIdentifier(
               openLineageContext,
               tableCatalog,
-              Identifier.of(new String[] {"db"}, "table"),
+              Identifier.of(new String[] {"db"}, TABLE),
               ScalaConversionUtils.<String, String>fromMap(tableProperties)))
           .thenReturn(Optional.of(di));
 
@@ -79,18 +80,18 @@ public class DropTableVisitorTest {
       assertEquals(
           OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.DROP,
           outputDatasets.get(0).getFacets().getLifecycleStateChange().getLifecycleStateChange());
-      assertEquals("table", outputDatasets.get(0).getName());
+      assertEquals(TABLE, outputDatasets.get(0).getName());
       assertEquals("db", outputDatasets.get(0).getNamespace());
     }
   }
 
   @Test
-  public void testApplyWhenNoIdentifierFound() {
+  void testApplyWhenNoIdentifierFound() {
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
       when(PlanUtils3.getDatasetIdentifier(
               openLineageContext,
               tableCatalog,
-              Identifier.of(new String[] {"db"}, "table"),
+              Identifier.of(new String[] {"db"}, TABLE),
               ScalaConversionUtils.<String, String>fromMap(tableProperties)))
           .thenReturn(Optional.empty());
 

@@ -37,8 +37,16 @@ import org.junit.jupiter.api.Test;
 import scala.collection.immutable.HashMap;
 
 @Slf4j
-public class ColumnLevelLineageUtilsV2CatalogTest {
+class ColumnLevelLineageUtilsV2CatalogTest {
 
+  @SuppressWarnings("PMD")
+  private static final String LOCAL_IP = "127.0.0.1";
+
+  private static final String INT_TYPE = "int";
+  private static final String FILE = "file";
+  private static final String T1_EXPECTED_NAME = "/tmp/column_level_lineage/db.t1";
+  private static final String CREATE_T1_FROM_TEMP =
+      "CREATE TABLE local.db.t1 USING iceberg AS SELECT * FROM temp";
   SparkSession spark;
   QueryExecution queryExecution = mock(QueryExecution.class);
 
@@ -47,8 +55,8 @@ public class ColumnLevelLineageUtilsV2CatalogTest {
   OpenLineage.SchemaDatasetFacet schemaDatasetFacet =
       openLineage.newSchemaDatasetFacet(
           Arrays.asList(
-              openLineage.newSchemaDatasetFacetFieldsBuilder().name("a").type("int").build(),
-              openLineage.newSchemaDatasetFacetFieldsBuilder().name("b").type("int").build()));
+              openLineage.newSchemaDatasetFacetFieldsBuilder().name("a").type(INT_TYPE).build(),
+              openLineage.newSchemaDatasetFacetFieldsBuilder().name("b").type(INT_TYPE).build()));
   StructType structTypeSchema =
       new StructType(
           new StructField[] {
@@ -76,8 +84,8 @@ public class ColumnLevelLineageUtilsV2CatalogTest {
             .master("local[*]")
             .appName("ColumnLevelLineage")
             .config("spark.extraListeners", LastQueryExecutionSparkEventListener.class.getName())
-            .config("spark.driver.host", "127.0.0.1")
-            .config("spark.driver.bindAddress", "127.0.0.1")
+            .config("spark.driver.host", LOCAL_IP)
+            .config("spark.driver.bindAddress", LOCAL_IP)
             .config("spark.sql.catalog.spark_catalog", "org.apache.iceberg.spark.SparkCatalog")
             .config("spark.sql.catalog.spark_catalog.type", "hive")
             .config("spark.sql.catalog.local", "org.apache.iceberg.spark.SparkCatalog")
@@ -86,7 +94,7 @@ public class ColumnLevelLineageUtilsV2CatalogTest {
             .config(
                 "spark.sql.extensions",
                 "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions")
-            .config("spark.driver.extraJavaOptions", "-Dderby.system.home=/tmp/derby")
+            .config("spark.driver.extraJavaOptions", "-Dderby.system.home=/tmp/col_v2/derby")
             .getOrCreate();
 
     context =
@@ -111,8 +119,8 @@ public class ColumnLevelLineageUtilsV2CatalogTest {
 
   @Test
   @SneakyThrows
-  public void testCreateTableAsSelectWithUnion() {
-    spark.sql("CREATE TABLE local.db.t1 USING iceberg AS SELECT * FROM temp");
+  void testCreateTableAsSelectWithUnion() {
+    spark.sql(CREATE_T1_FROM_TEMP);
     spark.sql("CREATE TABLE local.db.t2 USING iceberg AS SELECT * FROM temp");
     spark.sql(
         "CREATE TABLE local.db.t USING iceberg AS (SELECT * FROM local.db.t1 UNION SELECT * FROM local.db.t2)");
@@ -122,16 +130,16 @@ public class ColumnLevelLineageUtilsV2CatalogTest {
     OpenLineage.ColumnLineageDatasetFacet facet =
         ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, schemaDatasetFacet).get();
 
-    assertColumnDependsOn(facet, "a", "file", "/tmp/column_level_lineage/db.t1", "a");
-    assertColumnDependsOn(facet, "a", "file", "/tmp/column_level_lineage/db.t2", "a");
-    assertColumnDependsOn(facet, "b", "file", "/tmp/column_level_lineage/db.t2", "b");
-    assertColumnDependsOn(facet, "b", "file", "/tmp/column_level_lineage/db.t1", "b");
+    assertColumnDependsOn(facet, "a", FILE, T1_EXPECTED_NAME, "a");
+    assertColumnDependsOn(facet, "a", FILE, "/tmp/column_level_lineage/db.t2", "a");
+    assertColumnDependsOn(facet, "b", FILE, "/tmp/column_level_lineage/db.t2", "b");
+    assertColumnDependsOn(facet, "b", FILE, T1_EXPECTED_NAME, "b");
   }
 
   @Test
   @SneakyThrows
-  public void testInsertIntoTableWithAlias() {
-    spark.sql("CREATE TABLE local.db.t1 USING iceberg AS SELECT * FROM temp");
+  void testInsertIntoTableWithAlias() {
+    spark.sql(CREATE_T1_FROM_TEMP);
     spark.sql("CREATE TABLE local.db.t2 USING iceberg AS SELECT * FROM temp");
     spark.sql("INSERT INTO local.db.t2 SELECT * FROM local.db.t1");
 
@@ -140,13 +148,13 @@ public class ColumnLevelLineageUtilsV2CatalogTest {
     OpenLineage.ColumnLineageDatasetFacet facet =
         ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, schemaDatasetFacet).get();
 
-    assertColumnDependsOn(facet, "a", "file", "/tmp/column_level_lineage/db.t1", "a");
-    assertColumnDependsOn(facet, "b", "file", "/tmp/column_level_lineage/db.t1", "b");
+    assertColumnDependsOn(facet, "a", FILE, T1_EXPECTED_NAME, "a");
+    assertColumnDependsOn(facet, "b", FILE, T1_EXPECTED_NAME, "b");
   }
 
   @Test
-  public void testUnaryExpression() {
-    spark.sql("CREATE TABLE local.db.t1 USING iceberg AS SELECT * FROM temp");
+  void testUnaryExpression() {
+    spark.sql(CREATE_T1_FROM_TEMP);
     spark.sql("INSERT INTO local.db.t1 VALUES (1,2),(3,4),(5,6)");
     spark.sql(
         "CREATE TABLE local.db.t2 USING iceberg AS (SELECT a, b, ceil(a) as `c`, abs(b) as `d` FROM local.db.t1)");
@@ -154,29 +162,29 @@ public class ColumnLevelLineageUtilsV2CatalogTest {
     OpenLineage.SchemaDatasetFacet outputSchema =
         openLineage.newSchemaDatasetFacet(
             Arrays.asList(
-                openLineage.newSchemaDatasetFacetFieldsBuilder().name("c").type("int").build(),
-                openLineage.newSchemaDatasetFacetFieldsBuilder().name("d").type("int").build()));
+                openLineage.newSchemaDatasetFacetFieldsBuilder().name("c").type(INT_TYPE).build(),
+                openLineage.newSchemaDatasetFacetFieldsBuilder().name("d").type(INT_TYPE).build()));
 
     LogicalPlan plan = LastQueryExecutionSparkEventListener.getLastExecutedLogicalPlan().get();
     when(queryExecution.optimizedPlan()).thenReturn(plan);
     OpenLineage.ColumnLineageDatasetFacet facet =
         ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, outputSchema).get();
 
-    assertColumnDependsOn(facet, "c", "file", "/tmp/column_level_lineage/db.t1", "a");
-    assertColumnDependsOn(facet, "d", "file", "/tmp/column_level_lineage/db.t1", "b");
+    assertColumnDependsOn(facet, "c", FILE, T1_EXPECTED_NAME, "a");
+    assertColumnDependsOn(facet, "d", FILE, T1_EXPECTED_NAME, "b");
   }
 
   @Test
-  public void testEmptyColumnLineageFacet() {
-    spark.sql("CREATE TABLE local.db.t1 USING iceberg AS SELECT * FROM temp");
+  void testEmptyColumnLineageFacet() {
+    spark.sql(CREATE_T1_FROM_TEMP);
     spark.sql("INSERT INTO local.db.t1 VALUES (1,2),(3,4),(5,6)");
     spark.sql("CREATE TABLE local.db.t2 USING iceberg AS (SELECT * FROM local.db.t1)");
 
     OpenLineage.SchemaDatasetFacet wrongSchema =
         openLineage.newSchemaDatasetFacet(
             Arrays.asList(
-                openLineage.newSchemaDatasetFacetFieldsBuilder().name("x").type("int").build(),
-                openLineage.newSchemaDatasetFacetFieldsBuilder().name("y").type("int").build()));
+                openLineage.newSchemaDatasetFacetFieldsBuilder().name("x").type(INT_TYPE).build(),
+                openLineage.newSchemaDatasetFacetFieldsBuilder().name("y").type(INT_TYPE).build()));
 
     LogicalPlan plan = LastQueryExecutionSparkEventListener.getLastExecutedLogicalPlan().get();
     when(queryExecution.optimizedPlan()).thenReturn(plan);
@@ -187,7 +195,7 @@ public class ColumnLevelLineageUtilsV2CatalogTest {
   }
 
   @Test
-  public void testLogicalPlanUnavailable() {
+  void testLogicalPlanUnavailable() {
     OpenLineageContext context = mock(OpenLineageContext.class);
     when(context.getQueryExecution()).thenReturn(Optional.empty());
     assertEquals(
@@ -196,7 +204,7 @@ public class ColumnLevelLineageUtilsV2CatalogTest {
   }
 
   @Test
-  public void testLogicalPlanWhenOptimizedPlanIsNull() {
+  void testLogicalPlanWhenOptimizedPlanIsNull() {
     OpenLineageContext context = mock(OpenLineageContext.class);
     QueryExecution queryExecution = mock(QueryExecution.class);
     when(context.getQueryExecution()).thenReturn(Optional.of(queryExecution));
@@ -207,8 +215,8 @@ public class ColumnLevelLineageUtilsV2CatalogTest {
   }
 
   @Test
-  public void testBinaryAndComplexExpression() {
-    spark.sql("CREATE TABLE local.db.t1 USING iceberg AS SELECT * FROM temp");
+  void testBinaryAndComplexExpression() {
+    spark.sql(CREATE_T1_FROM_TEMP);
     spark.sql("INSERT INTO local.db.t1 VALUES (1,2),(3,4),(5,6)");
     spark.sql(
         "CREATE TABLE local.db.t2 AS SELECT CONCAT(CAST(a AS STRING), CAST(b AS STRING)) as `c`, a+b as `d` FROM local.db.t1");
@@ -224,17 +232,17 @@ public class ColumnLevelLineageUtilsV2CatalogTest {
     OpenLineage.ColumnLineageDatasetFacet facet =
         ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, outputSchema).get();
 
-    assertColumnDependsOn(facet, "c", "file", "/tmp/column_level_lineage/db.t1", "a");
-    assertColumnDependsOn(facet, "c", "file", "/tmp/column_level_lineage/db.t1", "b");
-    assertColumnDependsOn(facet, "d", "file", "/tmp/column_level_lineage/db.t1", "a");
-    assertColumnDependsOn(facet, "d", "file", "/tmp/column_level_lineage/db.t1", "b");
+    assertColumnDependsOn(facet, "c", FILE, T1_EXPECTED_NAME, "a");
+    assertColumnDependsOn(facet, "c", FILE, T1_EXPECTED_NAME, "b");
+    assertColumnDependsOn(facet, "d", FILE, T1_EXPECTED_NAME, "a");
+    assertColumnDependsOn(facet, "d", FILE, T1_EXPECTED_NAME, "b");
     assertColumnDependsOnInputs(facet, "c", 2);
     assertColumnDependsOnInputs(facet, "d", 2);
   }
 
   @Test
-  public void testJoinQuery() {
-    spark.sql("CREATE TABLE local.db.t1 USING iceberg AS SELECT * FROM temp");
+  void testJoinQuery() {
+    spark.sql(CREATE_T1_FROM_TEMP);
     spark.sql("CREATE TABLE local.db.t2 USING iceberg AS SELECT * FROM temp");
 
     spark.sql(
@@ -243,39 +251,39 @@ public class ColumnLevelLineageUtilsV2CatalogTest {
     OpenLineage.SchemaDatasetFacet outputSchema =
         openLineage.newSchemaDatasetFacet(
             Arrays.asList(
-                openLineage.newSchemaDatasetFacetFieldsBuilder().name("c").type("int").build()));
+                openLineage.newSchemaDatasetFacetFieldsBuilder().name("c").type(INT_TYPE).build()));
 
     LogicalPlan plan = LastQueryExecutionSparkEventListener.getLastExecutedLogicalPlan().get();
     when(queryExecution.optimizedPlan()).thenReturn(plan);
     OpenLineage.ColumnLineageDatasetFacet facet =
         ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, outputSchema).get();
 
-    assertColumnDependsOn(facet, "c", "file", "/tmp/column_level_lineage/db.t1", "a");
-    assertColumnDependsOn(facet, "c", "file", "/tmp/column_level_lineage/db.t2", "a");
+    assertColumnDependsOn(facet, "c", FILE, T1_EXPECTED_NAME, "a");
+    assertColumnDependsOn(facet, "c", FILE, "/tmp/column_level_lineage/db.t2", "a");
     assertColumnDependsOnInputs(facet, "c", 2);
   }
 
   @Test
-  public void testAggregateQuery() {
-    spark.sql("CREATE TABLE local.db.t1 USING iceberg AS SELECT * FROM temp");
+  void testAggregateQuery() {
+    spark.sql(CREATE_T1_FROM_TEMP);
     spark.sql("CREATE TABLE local.db.t2 AS (SELECT max(a) as a FROM local.db.t1 GROUP BY a)");
 
     OpenLineage.SchemaDatasetFacet outputSchema =
         openLineage.newSchemaDatasetFacet(
             Arrays.asList(
-                openLineage.newSchemaDatasetFacetFieldsBuilder().name("a").type("int").build()));
+                openLineage.newSchemaDatasetFacetFieldsBuilder().name("a").type(INT_TYPE).build()));
 
     LogicalPlan plan = LastQueryExecutionSparkEventListener.getLastExecutedLogicalPlan().get();
     when(queryExecution.optimizedPlan()).thenReturn(plan);
     OpenLineage.ColumnLineageDatasetFacet facet =
         ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, outputSchema).get();
 
-    assertColumnDependsOn(facet, "a", "file", "/tmp/column_level_lineage/db.t1", "a");
+    assertColumnDependsOn(facet, "a", FILE, T1_EXPECTED_NAME, "a");
   }
 
   @Test
-  public void testCTEQuery() {
-    spark.sql("CREATE TABLE local.db.t1 USING iceberg AS SELECT * FROM temp");
+  void testCTEQuery() {
+    spark.sql(CREATE_T1_FROM_TEMP);
     spark
         .sql(
             "WITH t2(a,b) AS (SELECT * FROM local.db.t1) SELECT a AS c, b AS d FROM t2 WHERE t2.a = 1")
@@ -284,16 +292,16 @@ public class ColumnLevelLineageUtilsV2CatalogTest {
     OpenLineage.SchemaDatasetFacet outputSchema =
         openLineage.newSchemaDatasetFacet(
             Arrays.asList(
-                openLineage.newSchemaDatasetFacetFieldsBuilder().name("c").type("int").build(),
-                openLineage.newSchemaDatasetFacetFieldsBuilder().name("d").type("int").build()));
+                openLineage.newSchemaDatasetFacetFieldsBuilder().name("c").type(INT_TYPE).build(),
+                openLineage.newSchemaDatasetFacetFieldsBuilder().name("d").type(INT_TYPE).build()));
 
     LogicalPlan plan = LastQueryExecutionSparkEventListener.getLastExecutedLogicalPlan().get();
     when(queryExecution.optimizedPlan()).thenReturn(plan);
     OpenLineage.ColumnLineageDatasetFacet facet =
         ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, outputSchema).get();
 
-    assertColumnDependsOn(facet, "c", "file", "/tmp/column_level_lineage/db.t1", "a");
-    assertColumnDependsOn(facet, "d", "file", "/tmp/column_level_lineage/db.t1", "b");
+    assertColumnDependsOn(facet, "c", FILE, T1_EXPECTED_NAME, "a");
+    assertColumnDependsOn(facet, "d", FILE, T1_EXPECTED_NAME, "b");
     assertColumnDependsOnInputs(facet, "c", 1);
     assertColumnDependsOnInputs(facet, "d", 1);
   }

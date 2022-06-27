@@ -22,7 +22,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import scala.Option;
 
-public class CreateTableCommandVisitorTest {
+class CreateTableCommandVisitorTest {
 
   SparkSession session = mock(SparkSession.class);
   CreateTableCommandVisitor visitor;

@@ -30,7 +30,7 @@ import scala.Option;
 import scala.collection.Seq;
 import scala.collection.Seq$;
 
-public class ExpressionDependencyCollectorTest {
+class ExpressionDependencyCollectorTest {
 
   ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
 
@@ -66,7 +66,7 @@ public class ExpressionDependencyCollectorTest {
           (Seq<String>) Seq$.MODULE$.empty());
 
   @Test
-  public void testCollectFromProjectPlan() {
+  void testCollectFromProjectPlan() {
     Project project =
         new Project(
             toScalaSeq(Arrays.asList((NamedExpression) alias1, (NamedExpression) alias2)),
@@ -80,7 +80,7 @@ public class ExpressionDependencyCollectorTest {
   }
 
   @Test
-  public void testCollectFromAggregatePlan() {
+  void testCollectFromAggregatePlan() {
     Aggregate aggregate =
         new Aggregate(
             (Seq<Expression>) Seq$.MODULE$.empty(),
@@ -94,7 +94,7 @@ public class ExpressionDependencyCollectorTest {
   }
 
   @Test
-  public void testCollectTraversingExpressions() {
+  void testCollectTraversingExpressions() {
     // AggregateExpression
     AggregateExpression aggr1 = mock(AggregateExpression.class);
     AggregateExpression aggr2 = mock(AggregateExpression.class);
