@@ -12,7 +12,6 @@ import static org.mockito.Mockito.when;
 import io.openlineage.flink.agent.lifecycle.FlinkExecutionContext;
 import io.openlineage.flink.agent.lifecycle.FlinkExecutionContextFactory;
 import io.openlineage.flink.tracker.OpenLineageContinousJobTracker;
-import io.openlineage.flink.tracker.OpenLineageContinousJobTrackerFactory;
 import java.util.ArrayList;
 import java.util.HashMap;
 import lombok.SneakyThrows;
@@ -54,7 +53,10 @@ public class OpenLineageFlinkJobListenerTest {
         transformations,
         true);
 
-    listener = new OpenLineageFlinkJobListener(streamExecutionEnvironment);
+    OpenLineageContinousJobTracker tracker = mock(OpenLineageContinousJobTracker.class);
+    doNothing().when(tracker).startTracking(context);
+
+    listener = new OpenLineageFlinkJobListener(streamExecutionEnvironment, tracker);
     try (MockedStatic<FlinkExecutionContextFactory> contextFactory =
         mockStatic(FlinkExecutionContextFactory.class)) {
       when(FlinkExecutionContextFactory.getContext(eq(jobId), eq(transformations)))
@@ -63,6 +65,7 @@ public class OpenLineageFlinkJobListenerTest {
 
       listener.onJobSubmitted(jobClient, null);
       verify(context, times(1)).onJobSubmitted();
+      verify(tracker, times(1)).startTracking(context);
     }
   }
 
@@ -86,18 +89,12 @@ public class OpenLineageFlinkJobListenerTest {
 
     try (MockedStatic<FlinkExecutionContextFactory> contextFactory =
         mockStatic(FlinkExecutionContextFactory.class)) {
-      try (MockedStatic<OpenLineageContinousJobTrackerFactory> trackerFactory =
-          mockStatic(OpenLineageContinousJobTrackerFactory.class)) {
-        when(FlinkExecutionContextFactory.getContext(eq(jobId), any())).thenReturn(context);
-        when(OpenLineageContinousJobTrackerFactory.getTracker(readableConfig)).thenReturn(tracker);
-        doNothing().when(context).onJobSubmitted();
+      when(FlinkExecutionContextFactory.getContext(eq(jobId), any())).thenReturn(context);
+      doNothing().when(context).onJobSubmitted();
 
-        listener = new OpenLineageFlinkJobListener(streamExecutionEnvironment);
-        listener.onJobSubmitted(jobClient, null);
-        listener.onJobExecuted(jobExecutionResult, null);
-
-        verify(tracker, times(1)).startTracking(context);
-      }
+      listener = new OpenLineageFlinkJobListener(streamExecutionEnvironment, tracker);
+      listener.onJobSubmitted(jobClient, null);
+      listener.onJobExecuted(jobExecutionResult, null);
     }
   }
 }
