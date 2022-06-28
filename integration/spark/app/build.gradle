@@ -41,6 +41,7 @@ configurations {
     lombok
     spark2.extendsFrom testImplementation
     spark3.extendsFrom testImplementation
+    spark32.extendsFrom testImplementation
 }
 
 archivesBaseName='openlineage-spark-app'
@@ -60,7 +61,7 @@ ext {
     testcontainersVersion = '1.15.3'
     shortVersion = project.getProperty('spark.version').substring(0,3)
     someMapProperty = [
-            "3.2": ["project": "spark3", "kafka": "org.apache.spark:spark-sql-kafka-0-10_2.12:${project.getProperty('spark.version')}"],
+            "3.2": ["project": "spark32", "kafka": "org.apache.spark:spark-sql-kafka-0-10_2.12:${project.getProperty('spark.version')}"],
             "3.1": ["project": "spark3", "kafka": "org.apache.spark:spark-sql-kafka-0-10_2.12:${project.getProperty('spark.version')}"],
             "2.4": ["project": "spark2", "kafka": 'org.apache.spark:spark-sql-kafka-0-10_2.11:2.4.8']
     ]
@@ -75,6 +76,7 @@ dependencies {
     implementation(project(path: ":shared"))
     implementation(project(path: ":spark2"))
     implementation(project(path: ":spark3"))
+    implementation(project(path: ":spark32"))
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.0.3'
 
     compileOnly "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
@@ -99,7 +101,7 @@ dependencies {
 
 
     testImplementation(project(":${someMapProperty[shortVersion].project}"))
-    testImplementation testFixtures(project(":${someMapProperty[shortVersion].project}"))
+//    testImplementation testFixtures(project(":${someMapProperty[shortVersion].project}"))
     testImplementation testFixtures(project(":shared"))
 
     lombok  "org.projectlombok:lombok:${lombokVersion}"
@@ -180,6 +182,7 @@ shadowJar {
         exclude (project(":shared"))
         exclude (project(":spark2"))
         exclude (project(":spark3"))
+        exclude (project(":spark32"))
     }
     classifier = ''
     // avoid conflict with any client version of that lib

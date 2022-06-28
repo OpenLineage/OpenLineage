@@ -1,0 +1,39 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
+package io.openlineage.spark32.agent.lifecycle.plan.catalog;
+
+import io.openlineage.spark.agent.facets.TableProviderFacet;
+import io.openlineage.spark.agent.util.DatasetIdentifier;
+import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.connector.catalog.Identifier;
+import org.apache.spark.sql.connector.catalog.TableCatalog;
+
+import java.util.Map;
+import java.util.Optional;
+
+public interface CatalogHandler {
+  boolean hasClasses();
+
+  boolean isClass(TableCatalog tableCatalog);
+
+  DatasetIdentifier getDatasetIdentifier(
+      SparkSession session,
+      TableCatalog tableCatalog,
+      Identifier identifier,
+      Map<String, String> properties);
+
+  default Optional<TableProviderFacet> getTableProviderFacet(Map<String, String> properties) {
+    return Optional.empty();
+  }
+
+  /** Try to find string that uniquely identifies version of a dataset. */
+  default Optional<String> getDatasetVersion(
+      TableCatalog catalog, Identifier identifier, Map<String, String> properties) {
+    return Optional.empty();
+  }
+
+  String getName();
+}
