@@ -5,11 +5,11 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacetFields;
 import io.openlineage.client.Utils;
-import io.openlineage.client.shaded.com.fasterxml.jackson.core.JsonProcessingException;
-import io.openlineage.client.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Arrays;

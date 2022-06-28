@@ -5,8 +5,8 @@
 
 package io.openlineage.spark.agent.facets;
 
+import com.fasterxml.jackson.annotation.JsonRawValue;
 import io.openlineage.client.OpenLineage;
-import io.openlineage.client.shaded.com.fasterxml.jackson.annotation.JsonRawValue;
 import io.openlineage.spark.agent.Versions;
 import java.util.List;
 import java.util.Map;
