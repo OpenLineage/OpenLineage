@@ -298,3 +298,18 @@ check a `MapPartitionsRDD`'s dependencies. The `RDD` for each `Stage` can be eva
 `org.apache.spark.scheduler.SparkListenerStageCompleted` event occurs. When a
 `org.apache.spark.scheduler.SparkListenerJobEnd` event is encountered, the last `Stage` for the
 `ActiveJob` can be evaluated.
+
+## Contributing
+
+If contributing changes, additions or fixes to the Spark integration, please include the following header in any new `.java` files:
+
+```
+/* 
+/* Copyright 2018-2002 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0 
+*/
+```
+
+The Github Actions Super-linter is installed and configured to check for headers in new `.java` files when pull requests are opened.
+
+Thank you for your contributions to the project!
