@@ -92,7 +92,14 @@ class LogicalPlanSerializer {
    * LogicalPlan} and leaf nodes don't have child nodes in {@link LogicalPlan}
    */
   @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "id")
-  @JsonIgnoreProperties({"child", "containsChild", "canonicalized", "constraints", "data"})
+  @JsonIgnoreProperties({
+    "child",
+    "containsChild",
+    "canonicalized",
+    "constraints",
+    "data",
+    "deltaLog"
+  })
   @SuppressWarnings("PMD")
   abstract class ChildMixIn {}
 

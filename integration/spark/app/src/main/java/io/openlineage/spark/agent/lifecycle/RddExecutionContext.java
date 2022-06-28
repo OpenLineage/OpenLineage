@@ -201,6 +201,10 @@ class RddExecutionContext implements ExecutionContext {
 
   @Override
   public void start(SparkListenerJobStart jobStart) {
+    if (inputs.isEmpty() && outputs.isEmpty()) {
+      log.info("RDDs are empty: skipping sending OpenLineage event");
+      return;
+    }
     OpenLineage ol = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
     OpenLineage.RunEvent event =
         ol.newRunEventBuilder()
@@ -218,6 +222,10 @@ class RddExecutionContext implements ExecutionContext {
 
   @Override
   public void end(SparkListenerJobEnd jobEnd) {
+    if (inputs.isEmpty() && outputs.isEmpty() && !(jobEnd.jobResult() instanceof JobFailed)) {
+      log.info("RDDs are empty: skipping sending OpenLineage event");
+      return;
+    }
     OpenLineage ol = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
     OpenLineage.RunEvent event =
         ol.newRunEventBuilder()
