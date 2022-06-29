@@ -41,7 +41,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Tag("integration-test")
 @Testcontainers
-public class SparkContainerIntegrationTest {
+class SparkContainerIntegrationTest {
 
   private static final Network network = Network.newNetwork();
 
@@ -52,6 +52,8 @@ public class SparkContainerIntegrationTest {
   private static final String SPARK_3 = "(3.*)";
   private static final String SPARK_ABOVE_EQUAL_2_4_8 =
       "(3.*)|(2\\.4\\.([8,9]|\\d\\d))"; // Spark version >= 2.4.8
+  private static final String PACKAGES = "--packages";
+  private static final String SPARK_VERSION = "spark.version";
 
   private static GenericContainer<?> pyspark;
   private static GenericContainer<?> kafka;
@@ -97,7 +99,7 @@ public class SparkContainerIntegrationTest {
   }
 
   @Test
-  public void testPysparkWordCountWithCliArgs() {
+  void testPysparkWordCountWithCliArgs() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network,
         openLineageClientMockContainer,
@@ -109,7 +111,7 @@ public class SparkContainerIntegrationTest {
   }
 
   @Test
-  public void testPysparkRddToTable() {
+  void testPysparkRddToTable() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network, openLineageClientMockContainer, "testPysparkRddToTable", "spark_rdd_to_table.py");
     verifyEvents(
@@ -120,7 +122,7 @@ public class SparkContainerIntegrationTest {
   }
 
   @Test
-  public void testPysparkKafkaReadWrite() {
+  void testPysparkKafkaReadWrite() {
     kafka = SparkContainerUtils.makeKafkaContainer(network);
     kafka.start();
 
@@ -129,7 +131,7 @@ public class SparkContainerIntegrationTest {
             network,
             openLineageClientMockContainer,
             "testPysparkKafkaReadWriteTest",
-            "--packages",
+            PACKAGES,
             System.getProperty("kafka.package.version"),
             "/opt/spark_scripts/spark_kafka.py");
     pyspark.start();
@@ -142,7 +144,7 @@ public class SparkContainerIntegrationTest {
   }
 
   @Test
-  public void testPysparkKafkaReadAssign() {
+  void testPysparkKafkaReadAssign() {
     kafka = SparkContainerUtils.makeKafkaContainer(network);
     kafka.start();
 
@@ -164,7 +166,7 @@ public class SparkContainerIntegrationTest {
   }
 
   @Test
-  public void testPysparkSQLHiveTest() {
+  void testPysparkSQLHiveTest() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network, openLineageClientMockContainer, "testPysparkSQLHiveTest", "spark_hive.py");
     verifyEvents(
@@ -175,7 +177,7 @@ public class SparkContainerIntegrationTest {
   }
 
   @Test
-  public void testPysparkSQLOverwriteDirHiveTest() {
+  void testPysparkSQLOverwriteDirHiveTest() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network,
         openLineageClientMockContainer,
@@ -186,7 +188,7 @@ public class SparkContainerIntegrationTest {
   }
 
   @Test
-  public void testCreateAsSelectAndLoad() {
+  void testCreateAsSelectAndLoad() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network, openLineageClientMockContainer, "testCreateAsSelectAndLoad", "spark_ctas_load.py");
     verifyEvents(
@@ -195,15 +197,15 @@ public class SparkContainerIntegrationTest {
         "pysparkLoadStart.json",
         "pysparkLoadComplete.json");
 
-    if (System.getProperty("spark.version").matches(SPARK_3)) {
+    if (System.getProperty(SPARK_VERSION).matches(SPARK_3)) {
       // verify CTAS contains column level lineage
       verifyEvents("pysparkCTASWithColumnLineageEnd.json");
     }
   }
 
   @Test
-  @EnabledIfSystemProperty(named = "spark.version", matches = SPARK_3) // Spark version >= 3.*
-  public void testCachedDataset() {
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3) // Spark version >= 3.*
+  void testCachedDataset() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network, openLineageClientMockContainer, "cachedDataset", "spark_cached.py");
     verifyEvents("pysparkCachedDatasetComplete.json");
@@ -211,15 +213,15 @@ public class SparkContainerIntegrationTest {
 
   @Test
   @EnabledIfSystemProperty(
-      named = "spark.version",
+      named = SPARK_VERSION,
       matches = SPARK_ABOVE_EQUAL_2_4_8) // Spark version >= 2.4.8
-  public void testCTASDelta() {
+  void testCTASDelta() {
     pyspark =
         SparkContainerUtils.makePysparkContainerWithDefaultConf(
             network,
             openLineageClientMockContainer,
             "testCTASDelta",
-            "--packages",
+            PACKAGES,
             getDeltaPackageName(),
             "/opt/spark_scripts/spark_delta.py");
     pyspark.start();
@@ -228,15 +230,15 @@ public class SparkContainerIntegrationTest {
 
   @Test
   @EnabledIfSystemProperty(
-      named = "spark.version",
+      named = SPARK_VERSION,
       matches = SPARK_ABOVE_EQUAL_2_4_8) // Spark version >= 2.4.8
-  public void testDeltaSaveAsTable() {
+  void testDeltaSaveAsTable() {
     pyspark =
         SparkContainerUtils.makePysparkContainerWithDefaultConf(
             network,
             openLineageClientMockContainer,
             "testDeltaSaveAsTable",
-            "--packages",
+            PACKAGES,
             getDeltaPackageName(),
             "/opt/spark_scripts/spark_delta_save_as_table.py");
     pyspark.start();
@@ -248,7 +250,7 @@ public class SparkContainerIntegrationTest {
    * Delta support for 3.2 is also limited.
    * These test should only apply for Spark 3.1
    */
-  @EnabledIfSystemProperty(named = "spark.version", matches = "(3.1.*)")
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = "(3.1.*)")
   @ParameterizedTest
   @CsvSource(
       value = {
@@ -256,7 +258,7 @@ public class SparkContainerIntegrationTest {
         "spark_write_delta_table_version.py:pysparkWriteDeltaTableVersionStart.json:pysparkWriteDeltaTableVersionEnd.json:false"
       },
       delimiter = ':')
-  public void testAlterTableSpark_3_1(
+  void testAlterTableSpark_3_1(
       String pysparkScript,
       String expectedStartEvent,
       String expectedCompleteEvent,
@@ -264,7 +266,7 @@ public class SparkContainerIntegrationTest {
     testV2Commands(pysparkScript, expectedStartEvent, expectedCompleteEvent, isIceberg);
   }
 
-  @EnabledIfSystemProperty(named = "spark.version", matches = SPARK_3) // Spark version >= 3.*
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3) // Spark version >= 3.*
   @ParameterizedTest
   @CsvSource(
       value = {
@@ -281,7 +283,7 @@ public class SparkContainerIntegrationTest {
         "spark_v2_append.py:pysparkV2AppendDataStartEvent.json:pysparkV2AppendDataCompleteEvent.json:true",
       },
       delimiter = ':')
-  public void testV2Commands(
+  void testV2Commands(
       String pysparkScript,
       String expectedStartEvent,
       String expectedCompleteEvent,
@@ -291,7 +293,7 @@ public class SparkContainerIntegrationTest {
             network,
             openLineageClientMockContainer,
             "testV2Commands",
-            "--packages",
+            PACKAGES,
             Boolean.valueOf(isIceberg) ? getIcebergPackageName() : getDeltaPackageName(),
             "/opt/spark_scripts/" + pysparkScript);
     pyspark.start();
@@ -299,7 +301,7 @@ public class SparkContainerIntegrationTest {
   }
 
   private String getIcebergPackageName() {
-    String sparkVersion = System.getProperty("spark.version");
+    String sparkVersion = System.getProperty(SPARK_VERSION);
     if (sparkVersion.startsWith("3.1")) {
       return "org.apache.iceberg:iceberg-spark-runtime-3.1_2.12:0.13.0";
     } else if (sparkVersion.startsWith("3.2")) {
@@ -310,7 +312,7 @@ public class SparkContainerIntegrationTest {
   }
 
   private String getDeltaPackageName() {
-    String sparkVersion = System.getProperty("spark.version");
+    String sparkVersion = System.getProperty(SPARK_VERSION);
     if (sparkVersion.startsWith("3.2")) {
       return "io.delta:delta-core_2.12:1.1.0";
     }
@@ -318,35 +320,35 @@ public class SparkContainerIntegrationTest {
   }
 
   @Test
-  public void testCreateTable() {
+  void testCreateTable() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network, openLineageClientMockContainer, "testCreateTable", "spark_create_table.py");
     verifyEvents("pysparkCreateTableStartEvent.json", "pysparkCreateTableCompleteEvent.json");
   }
 
   @Test
-  public void testDropTable() {
+  void testDropTable() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network, openLineageClientMockContainer, "testDropTable", "spark_drop_table.py");
     verifyEvents("pysparkDropTableStartEvent.json");
   }
 
   @Test
-  public void testTruncateTable() {
+  void testTruncateTable() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network, openLineageClientMockContainer, "testTruncateTable", "spark_truncate_table.py");
     verifyEvents("pysparkTruncateTableStartEvent.json", "pysparkTruncateTableCompleteEvent.json");
   }
 
-  @EnabledIfSystemProperty(named = "spark.version", matches = SPARK_3) // Spark version >= 3.*
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3) // Spark version >= 3.*
   @Test
-  public void testSaveIntoDataSourceCommand() {
+  void testSaveIntoDataSourceCommand() {
     pyspark =
         SparkContainerUtils.makePysparkContainerWithDefaultConf(
             network,
             openLineageClientMockContainer,
             "testSaveIntoDataSource",
-            "--packages",
+            PACKAGES,
             getDeltaPackageName(),
             "/opt/spark_scripts/spark_save_into_data_source.py");
     pyspark.start();
@@ -355,9 +357,9 @@ public class SparkContainerIntegrationTest {
 
   @Test
   @EnabledIfSystemProperty(
-      named = "spark.version",
+      named = SPARK_VERSION,
       matches = SPARK_ABOVE_EQUAL_2_4_8) // Spark version >= 2.4.8
-  public void testOptimizedCreateAsSelectAndLoad() {
+  void testOptimizedCreateAsSelectAndLoad() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network,
         openLineageClientMockContainer,
@@ -367,13 +369,13 @@ public class SparkContainerIntegrationTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(named = "spark.version", matches = SPARK_3) // Spark version >= 3.*
-  public void testWriteIcebergTableVersion() {
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3) // Spark version >= 3.*
+  void testWriteIcebergTableVersion() {
     SparkContainerUtils.makePysparkContainerWithDefaultConf(
             network,
             openLineageClientMockContainer,
             "testWriteIcebergTableVersion",
-            "--packages",
+            PACKAGES,
             getIcebergPackageName(),
             "/opt/spark_scripts/spark_write_iceberg_table_version.py")
         .start();
@@ -381,7 +383,7 @@ public class SparkContainerIntegrationTest {
   }
 
   @Test
-  public void testAlterTable() {
+  void testAlterTable() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network, openLineageClientMockContainer, "testAlterTable", "spark_alter_table.py");
     verifyEvents("pysparkAlterTableAddColumnsEnd.json", "pysparkAlterTableRenameEnd.json");

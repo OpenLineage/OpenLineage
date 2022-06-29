@@ -43,7 +43,7 @@ class InternalEventHandlerFactoryTest {
   }
 
   @Test
-  public void testHasTestRunFacet() {
+  void testHasTestRunFacet() {
     Collection<CustomFacetBuilder<?, ? extends RunFacet>> runFacetBuilders =
         new InternalEventHandlerFactory().createRunFacetBuilders(context);
     assertThat(runFacetBuilders)

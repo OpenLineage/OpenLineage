@@ -26,8 +26,10 @@ import scala.collection.Map$;
 import scala.collection.immutable.HashMap;
 
 @ExtendWith(SparkAgentTestExtension.class)
-public class AlterTableRenameCommandVisitorTest {
+class AlterTableRenameCommandVisitorTest {
 
+  private static final String OLD_TABLE = "old_table";
+  private static final String NEW_TABLE = "new_table";
   SparkSession session;
   AlterTableRenameCommandVisitor visitor;
   String database;
@@ -41,11 +43,11 @@ public class AlterTableRenameCommandVisitorTest {
     session
         .sessionState()
         .catalog()
-        .dropTable(new TableIdentifier("old_table", Option.apply(database)), true, true);
+        .dropTable(new TableIdentifier(OLD_TABLE, Option.apply(database)), true, true);
     session
         .sessionState()
         .catalog()
-        .dropTable(new TableIdentifier("new_table", Option.apply(database)), true, true);
+        .dropTable(new TableIdentifier(NEW_TABLE, Option.apply(database)), true, true);
   }
 
   @BeforeEach
@@ -65,7 +67,7 @@ public class AlterTableRenameCommandVisitorTest {
               new StructField("a", StringType$.MODULE$, false, new Metadata(new HashMap<>()))
             });
 
-    session.catalog().createTable("old_table", "csv", schema, Map$.MODULE$.empty());
+    session.catalog().createTable(OLD_TABLE, "csv", schema, Map$.MODULE$.empty());
     visitor = new AlterTableRenameCommandVisitor(SparkAgentTestExtension.newContext(session));
   }
 
@@ -73,8 +75,8 @@ public class AlterTableRenameCommandVisitorTest {
   void testAlterRenameCommandCommand() {
     AlterTableRenameCommand command =
         new AlterTableRenameCommand(
-            new TableIdentifier("old_table", Option.apply(database)),
-            new TableIdentifier("new_table", Option.apply(database)),
+            new TableIdentifier(OLD_TABLE, Option.apply(database)),
+            new TableIdentifier(NEW_TABLE, Option.apply(database)),
             false);
     command.run(session);
 
@@ -96,8 +98,8 @@ public class AlterTableRenameCommandVisitorTest {
   void testAlterRenameCommandCommandVisitorBeforeCommandRun() {
     AlterTableRenameCommand command =
         new AlterTableRenameCommand(
-            new TableIdentifier("old_table", Option.apply(database)),
-            new TableIdentifier("new_table", Option.apply(database)),
+            new TableIdentifier(OLD_TABLE, Option.apply(database)),
+            new TableIdentifier(NEW_TABLE, Option.apply(database)),
             false);
 
     // command is not run

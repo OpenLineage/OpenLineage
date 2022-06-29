@@ -7,10 +7,10 @@ package io.openlineage.spark.agent;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.Utils;
-import io.openlineage.client.shaded.com.fasterxml.jackson.core.type.TypeReference;
-import io.openlineage.client.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.spark.agent.lifecycle.MatchesMapRecursively;
 import java.io.IOException;
 import java.net.URI;
@@ -24,13 +24,13 @@ import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
-public class OpenLineageRunEventTest {
+class OpenLineageRunEventTest {
 
   private final TypeReference<Map<String, Object>> mapTypeReference =
       new TypeReference<Map<String, Object>>() {};
 
   @Test
-  public void testSerializeRunEvent() throws IOException, URISyntaxException {
+  void testSerializeRunEvent() throws IOException, URISyntaxException {
     ObjectMapper mapper = Utils.newObjectMapper();
 
     ZonedDateTime dateTime = ZonedDateTime.parse("2021-01-01T00:00:01.000000000+00:00[UTC]");

@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 class ErrorFacetBuilderTest {
 
   @Test
-  public void testBuildErrorFacet() {
+  void testBuildErrorFacet() {
     JobFailed failure = new JobFailed(new TestException("The test exception message"));
     SparkListenerJobEnd event = new SparkListenerJobEnd(1, 1L, failure);
     ErrorFacetBuilder builder = new ErrorFacetBuilder();
@@ -37,7 +37,7 @@ class ErrorFacetBuilderTest {
   }
 
   @Test
-  public void testIsUndefinedForJobSuccess() {
+  void testIsUndefinedForJobSuccess() {
     SparkListenerJobEnd event = new SparkListenerJobEnd(1, 1L, JobSucceeded$.MODULE$);
     assertThat(new ErrorFacetBuilder().isDefinedAt(event)).isFalse();
   }

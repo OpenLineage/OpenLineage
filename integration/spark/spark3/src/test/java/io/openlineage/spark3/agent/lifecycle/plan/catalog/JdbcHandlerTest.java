@@ -19,11 +19,11 @@ import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions;
 import org.apache.spark.sql.execution.datasources.v2.jdbc.JDBCTableCatalog;
 import org.junit.jupiter.api.Test;
 
-public class JdbcHandlerTest {
+class JdbcHandlerTest {
 
   @Test
   @SneakyThrows
-  public void testGetDatasetIdentifier() {
+  void testGetDatasetIdentifier() {
     JdbcHandler handler = new JdbcHandler();
 
     JDBCTableCatalog tableCatalog = new JDBCTableCatalog();

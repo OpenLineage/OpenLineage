@@ -11,12 +11,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.Resources;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.Utils;
-import io.openlineage.client.shaded.com.fasterxml.jackson.core.JsonProcessingException;
-import io.openlineage.client.shaded.com.fasterxml.jackson.core.type.TypeReference;
-import io.openlineage.client.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import java.io.IOException;
 import java.net.URL;
@@ -42,7 +42,7 @@ import scala.Tuple2;
 
 @Slf4j
 @ExtendWith(SparkAgentTestExtension.class)
-public class LibraryTest {
+class LibraryTest {
   private final TypeReference<Map<String, Object>> mapTypeReference =
       new TypeReference<Map<String, Object>>() {};
 
@@ -95,7 +95,7 @@ public class LibraryTest {
   //  }
 
   @Test
-  public void testRdd(SparkSession spark) throws IOException {
+  void testRdd(SparkSession spark) throws IOException {
     when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getJobNamespace())
         .thenReturn("ns_name");
     when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentJobName())
@@ -162,7 +162,7 @@ public class LibraryTest {
   }
 
   @Test
-  public void testRDDName(SparkSession spark) {
+  void testRDDName(SparkSession spark) {
     JavaSparkContext sc = new JavaSparkContext(spark.sparkContext());
     JavaRDD<Integer> numbers =
         sc.parallelize(IntStream.range(1, 100).mapToObj(Integer::new).collect(Collectors.toList()));

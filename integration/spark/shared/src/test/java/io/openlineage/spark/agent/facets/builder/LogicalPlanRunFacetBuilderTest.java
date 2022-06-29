@@ -74,7 +74,7 @@ class LogicalPlanRunFacetBuilderTest {
   }
 
   @Test
-  public void testIsDefined() {
+  void testIsDefined() {
     LogicalPlanRunFacetBuilder builder =
         new LogicalPlanRunFacetBuilder(
             OpenLineageContext.builder()
@@ -96,7 +96,7 @@ class LogicalPlanRunFacetBuilderTest {
   }
 
   @Test
-  public void testIsNotDefinedWithoutQueryExecution() {
+  void testIsNotDefinedWithoutQueryExecution() {
     LogicalPlanRunFacetBuilder builder =
         new LogicalPlanRunFacetBuilder(
             OpenLineageContext.builder()
@@ -118,7 +118,7 @@ class LogicalPlanRunFacetBuilderTest {
   }
 
   @Test
-  public void testBuild() {
+  void testBuild() {
     LogicalPlanRunFacetBuilder builder =
         new LogicalPlanRunFacetBuilder(
             OpenLineageContext.builder()

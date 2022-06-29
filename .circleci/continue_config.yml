@@ -76,6 +76,7 @@ jobs:
             - v1-client-java-{{ .Branch }}
       - run: ./gradlew --no-daemon --stacktrace build
       - run: ./gradlew --no-daemon jacocoTestReport
+      - run: ./gradlew --no-daemon --info check
       - run: bash <(curl -s https://codecov.io/bash)
       - run: ./gradlew javadoc
       - store_test_results:
@@ -83,6 +84,9 @@ jobs:
       - store_artifacts:
           path: build/reports/tests/test
           destination: test-report
+      - store_artifacts:
+          path: build/reports/tests/pmd
+          destination: pmd-report
       - save_cache:
           key: v1-client-java-{{ .Branch }}-{{ .Revision }}
           paths:
@@ -199,12 +203,16 @@ jobs:
           when: on_fail
           command: cat build/test-results/test/TEST-*.xml
       - run: ./gradlew --no-daemon jacocoTestReport
+      - run: ./gradlew --no-daemon --info check
       - run: ./gradlew javadoc
       - store_test_results:
           path: build/test-results/test
       - store_artifacts:
           path: build/reports/tests/test
           destination: test-report
+      - store_artifacts:
+          path: build/reports/tests/pmd
+          destination: pmd-report
       - save_cache:
           key: v1-integration-spark-{{ .Branch }}-{{ .Revision }}
           paths:

@@ -35,7 +35,7 @@ import org.mockito.MockedStatic;
 import scala.collection.immutable.HashMap;
 import scala.collection.immutable.Map;
 
-public class AlterTableDatasetBuilderTest {
+class AlterTableDatasetBuilderTest {
 
   OpenLineageContext openLineageContext =
       OpenLineageContext.builder()
@@ -63,7 +63,7 @@ public class AlterTableDatasetBuilderTest {
 
   @Test
   @SneakyThrows
-  public void testApplyWhenTableNotFound() {
+  void testApplyWhenTableNotFound() {
     when(tableCatalog.loadTable(identifier)).thenThrow(mock(NoSuchTableException.class));
     List<OpenLineage.OutputDataset> outputDatasets =
         builder.apply(new SparkListenerSQLExecutionEnd(1L, 1L), alterTable);
@@ -72,7 +72,7 @@ public class AlterTableDatasetBuilderTest {
 
   @Test
   @SneakyThrows
-  public void testApplyWhenNoDatasetIdentifier() {
+  void testApplyWhenNoDatasetIdentifier() {
     when(tableCatalog.loadTable(identifier)).thenReturn(table);
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
       when(PlanUtils3.getDatasetIdentifier(
@@ -90,7 +90,7 @@ public class AlterTableDatasetBuilderTest {
 
   @Test
   @SneakyThrows
-  public void testApply() {
+  void testApply() {
     when(tableCatalog.loadTable(identifier)).thenReturn(table);
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
       when(PlanUtils3.getDatasetIdentifier(
@@ -111,7 +111,7 @@ public class AlterTableDatasetBuilderTest {
 
   @Test
   @SneakyThrows
-  public void testApplyDatasetVersionIncluded() {
+  void testApplyDatasetVersionIncluded() {
     when(tableCatalog.loadTable(identifier)).thenReturn(table);
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
       try (MockedStatic mockCatalog = mockStatic(CatalogUtils3.class)) {

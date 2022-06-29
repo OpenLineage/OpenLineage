@@ -46,7 +46,7 @@ class SparkVersionFacetBuilderTest {
   }
 
   @Test
-  public void testIsDefinedForSparkListenerEvents() {
+  void testIsDefinedForSparkListenerEvents() {
     SparkVersionFacetBuilder builder =
         new SparkVersionFacetBuilder(
             OpenLineageContext.builder()
@@ -69,7 +69,7 @@ class SparkVersionFacetBuilderTest {
   }
 
   @Test
-  public void testBuild() {
+  void testBuild() {
     SparkVersionFacetBuilder builder =
         new SparkVersionFacetBuilder(
             OpenLineageContext.builder()

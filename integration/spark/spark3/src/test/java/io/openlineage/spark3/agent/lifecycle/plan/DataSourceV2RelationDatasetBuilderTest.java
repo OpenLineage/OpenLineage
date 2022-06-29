@@ -30,13 +30,13 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.MockedStatic;
 
-public class DataSourceV2RelationDatasetBuilderTest {
+class DataSourceV2RelationDatasetBuilderTest {
 
   OpenLineageContext context = mock(OpenLineageContext.class);
   DatasetFactory factory = mock(DatasetFactory.class);
 
   @Test
-  public void testDataSourceV2RelationInputDatasetBuilderIsDefinedAtLogicalPlan() {
+  void testDataSourceV2RelationInputDatasetBuilderIsDefinedAtLogicalPlan() {
     DataSourceV2RelationInputDatasetBuilder builder =
         new DataSourceV2RelationInputDatasetBuilder(context, factory);
     assertFalse(builder.isDefinedAtLogicalPlan(mock(LogicalPlan.class)));
@@ -44,7 +44,7 @@ public class DataSourceV2RelationDatasetBuilderTest {
   }
 
   @Test
-  public void testDataSourceV2RelationOutputDatasetBuilderIsDefinedAtLogicalPlan() {
+  void testDataSourceV2RelationOutputDatasetBuilderIsDefinedAtLogicalPlan() {
     DataSourceV2RelationOutputDatasetBuilder builder =
         new DataSourceV2RelationOutputDatasetBuilder(context, factory);
     assertFalse(builder.isDefinedAtLogicalPlan(mock(LogicalPlan.class)));
@@ -53,7 +53,7 @@ public class DataSourceV2RelationDatasetBuilderTest {
 
   @ParameterizedTest
   @MethodSource("provideBuilders")
-  public void testIsApplied(
+  void testIsApplied(
       AbstractQueryPlanDatasetBuilder builder,
       DataSourceV2Relation relation,
       OpenLineageContext context,

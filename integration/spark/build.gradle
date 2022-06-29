@@ -31,7 +31,6 @@ subprojects {
     }
 }
 
-
 repositories {
     mavenLocal()
     mavenCentral()
@@ -50,14 +49,22 @@ archivesBaseName='openlineage-spark'
 ext {
     lombokVersion = '1.18.20'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
+    jacksonVersion = "2.13.2"
+    jacksonDatabindVersion = "2.13.2.2"
 }
 
 dependencies {
-
     implementation(project(path:    ":app"))
     implementation(project(path: ":shared"))
     implementation(project(path: ":spark2"))
     implementation(project(path: ":spark3"))
+
+    compileOnly "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
+    compileOnly "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
+    compileOnly "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
+    compileOnly "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${jacksonVersion}"
+    compileOnly "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${jacksonVersion}"
+    compileOnly "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
 }
 
 
@@ -135,7 +142,7 @@ publishing {
 
             pom {
                 name = 'openlineage-spark'
-                description = 'Java library for OpenLineage'
+                description = 'OpenLineage Spark integration'
                 url = 'https://github.com/OpenLineage/OpenLineage'
                 licenses {
                     license {
@@ -155,6 +162,15 @@ publishing {
                     url = 'https://github.com/OpenLineage/OpenLineage'
                 }
             }
+
+            pom.withXml {
+                asNode().dependencies.'*'.findAll() {
+                    it.groupId.text() == 'spark'
+                }.each() {
+                    it.parent().remove(it)
+                }
+            }
+
         }
     }
 
@@ -192,7 +208,6 @@ shadowJar {
         exclude (project(":app"))
     }
     dependencies {
-        exclude(dependency('com.fasterxml.*::'))
         exclude(dependency('org.slf4j::'))
     }
     classifier = ''
@@ -205,6 +220,7 @@ shadowJar {
     relocate 'org.apache.commons.logging', 'io.openlineage.spark.shaded.org.apache.commons.logging'
     relocate 'org.apache.http', 'io.openlineage.spark.shaded.org.apache.http'
     relocate 'org.yaml.snakeyaml', 'io.openlineage.spark.shaded.org.yaml.snakeyaml'
+    relocate 'com.fasterxml.jackson', 'io.openlineage.spark.shaded.com.fasterxml.jackson'
     manifest {
         attributes(
                 'Created-By': "Gradle ${gradle.gradleVersion}",

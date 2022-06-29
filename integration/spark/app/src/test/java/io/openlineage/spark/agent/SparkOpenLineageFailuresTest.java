@@ -50,7 +50,7 @@ import scala.collection.immutable.HashMap;
 @Testcontainers
 @ExtendWith(SparkAgentTestExtension.class)
 @Slf4j
-public class SparkOpenLineageFailuresTest {
+class SparkOpenLineageFailuresTest {
 
   private static final Network network = Network.newNetwork();
 
@@ -71,7 +71,8 @@ public class SparkOpenLineageFailuresTest {
   }
 
   @Test
-  public void testIncorrectOpenLineageEndpointUrl() {
+  @SuppressWarnings("PMD") // waiting for WaitMessage serves as an assertion
+  void testIncorrectOpenLineageEndpointUrl() {
     SparkContainerUtils.makePysparkContainerWithDefaultConf(
             network,
             "http://openlineageclient:" + INCORRECT_PORT,
@@ -83,7 +84,8 @@ public class SparkOpenLineageFailuresTest {
   }
 
   @Test
-  public void testOpenLineageEndpointResponds400() {
+  @SuppressWarnings("PMD") // waiting for WaitMessage serves as an assertion
+  void testOpenLineageEndpointResponds400() {
     configureMockServerToRespondWith(400);
 
     SparkContainerUtils.makePysparkContainerWithDefaultConf(
@@ -97,7 +99,8 @@ public class SparkOpenLineageFailuresTest {
   }
 
   @Test
-  public void testOpenLineageEndpointResponds500() {
+  @SuppressWarnings("PMD") // waiting for WaitMessage serves as an assertion
+  void testOpenLineageEndpointResponds500() {
     configureMockServerToRespondWith(500);
 
     SparkContainerUtils.makePysparkContainerWithDefaultConf(
@@ -111,7 +114,7 @@ public class SparkOpenLineageFailuresTest {
   }
 
   @Test
-  public void testOpenLineageFailingVisitor(SparkSession spark)
+  void testOpenLineageFailingVisitor(SparkSession spark)
       throws InterruptedException, TimeoutException {
     StructType schema =
         new StructType(
