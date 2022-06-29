@@ -53,18 +53,18 @@ dependencies {
 
     def flinkVersion = '1.14.4'
     def hadoopVersion = '3.3.1'
-    compileOnly "org.apache.flink:flink-java:$flinkVersion"
-    compileOnly "org.apache.flink:flink-streaming-java_2.12:$flinkVersion"
+    implementation "org.apache.flink:flink-java:$flinkVersion"
+    implementation "org.apache.flink:flink-streaming-java_2.12:$flinkVersion"
     implementation "org.apache.flink:flink-runtime-web_2.12:$flinkVersion"
-    compileOnly "org.apache.flink:flink-core:$flinkVersion"
+    implementation "org.apache.flink:flink-core:$flinkVersion"
     implementation "org.apache.flink:flink-runtime:$flinkVersion"
-    compileOnly "org.apache.flink:flink-connector-kafka_2.12:$flinkVersion"
-    compileOnly "org.apache.flink:flink-avro-confluent-registry:$flinkVersion"
-    compileOnly "org.apache.flink:flink-avro:$flinkVersion"
-    compileOnly "org.apache.flink:flink-table:$flinkVersion"
-    compileOnly "org.apache.flink:flink-table-api-java:$flinkVersion"
-    compileOnly "org.apache.flink:flink-table-api-java-bridge_2.12:$flinkVersion"
-    compileOnly "org.apache.flink:flink-table-common:$flinkVersion"
+    implementation "org.apache.flink:flink-connector-kafka_2.12:$flinkVersion"
+    implementation "org.apache.flink:flink-avro-confluent-registry:$flinkVersion"
+    implementation "org.apache.flink:flink-avro:$flinkVersion"
+    implementation "org.apache.flink:flink-table:$flinkVersion"
+    implementation "org.apache.flink:flink-table-api-java:$flinkVersion"
+    implementation "org.apache.flink:flink-table-api-java-bridge_2.12:$flinkVersion"
+    implementation "org.apache.flink:flink-table-common:$flinkVersion"
     implementation "org.apache.flink:flink-table-runtime_2.12:$flinkVersion"
     implementation "org.apache.flink:flink-table-planner_2.12:$flinkVersion"
 
