@@ -20,6 +20,7 @@ buildscript {
 plugins {
     id 'maven-publish'
     id 'signing'
+    id "com.github.johnrengelman.shadow" version "7.1.2"
 }
 
 repositories {
@@ -64,23 +65,29 @@ ext {
 
 dependencies {
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
+    compileOnly "org.apache.flink:flink-java:$flinkVersion"
+    compileOnly "org.apache.flink:flink-streaming-java_2.12:$flinkVersion"
+    compileOnly "org.apache.flink:flink-runtime-web_2.12:$flinkVersion"
+    compileOnly "org.apache.flink:flink-connector-kafka_2.12:$flinkVersion"
+    compileOnly "org.apache.flink:flink-avro:$flinkVersion"
+    compileOnly "org.apache.flink:flink-avro-confluent-registry:$flinkVersion"
+    compileOnly "org.apache.iceberg:iceberg-flink-$flinkVersionShort:0.13.1"
+    compileOnly "org.apache.iceberg:iceberg-flink-runtime-$flinkVersionShort:0.13.1"
+
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
     implementation("io.openlineage:openlineage-java:${project.version}")
-
-    implementation "org.apache.flink:flink-java:$flinkVersion"
-    implementation "org.apache.flink:flink-streaming-java_2.12:$flinkVersion"
-    implementation "org.apache.flink:flink-runtime-web_2.12:$flinkVersion"
-    implementation "org.apache.flink:flink-connector-kafka_2.12:$flinkVersion"
-    implementation "org.apache.flink:flink-avro:$flinkVersion"
-    implementation "org.apache.flink:flink-avro-confluent-registry:$flinkVersion"
-
     implementation 'org.javassist:javassist:3.27.0-GA'
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.0.3'
 
-    implementation "org.apache.iceberg:iceberg-flink-$flinkVersionShort:0.13.1"
-    implementation "org.apache.iceberg:iceberg-flink-runtime-$flinkVersionShort:0.13.1"
-
+    testImplementation "org.apache.flink:flink-java:$flinkVersion"
+    testImplementation "org.apache.flink:flink-streaming-java_2.12:$flinkVersion"
+    testImplementation "org.apache.flink:flink-runtime-web_2.12:$flinkVersion"
+    testImplementation "org.apache.flink:flink-connector-kafka_2.12:$flinkVersion"
+    testImplementation "org.apache.flink:flink-avro:$flinkVersion"
+    testImplementation "org.apache.flink:flink-avro-confluent-registry:$flinkVersion"
+    testImplementation "org.apache.iceberg:iceberg-flink-$flinkVersionShort:0.13.1"
+    testImplementation "org.apache.iceberg:iceberg-flink-runtime-$flinkVersionShort:0.13.1"
     testImplementation platform('org.junit:junit-bom:5.7.1')
     testImplementation 'org.hamcrest:hamcrest-library:2.2'
     testImplementation "org.testcontainers:mockserver:${testcontainersVersion}"
@@ -266,14 +273,17 @@ shadowJar {
     minimize()
     classifier = ''
     // avoid conflict with any client version of that lib
-    relocate 'com.github.ok2c.hc5', 'openlineage.com.github.ok2c.hc5'
-    relocate 'org.apache.httpcomponents.client5', 'openlineage.org.apache.httpcomponents.client5'
-    relocate 'javassist', 'openlineage.javassist'
-    relocate 'org.apache.hc', 'openlineage.hc'
-    relocate 'org.apache.commons.codec', 'openlineage.commons.codec'
+    relocate 'com.github.ok2c.hc5', 'io.openlineage.flink.shaded.com.github.ok2c.hc5'
+    relocate 'org.apache.httpcomponents.client5', 'io.openlineage.flink.shaded.org.apache.httpcomponents.client5'
+    relocate 'org.apache.http', 'io.openlineage.flink.shaded.org.apache.http'
+    relocate 'javassist', 'io.openlineage.flink.shaded.javassist'
+    relocate 'org.apache.hc', 'io.openlineage.flink.shaded.org.apache.hc'
+    relocate 'org.apache.commons.codec', 'io.openlineage.flink.shaded.org.apache.commons.codec'
     dependencies {
         exclude(dependency('org.slf4j::'))
     }
+
+    exclude 'org/apache/commons/logging/**'
 
     manifest {
         attributes(
