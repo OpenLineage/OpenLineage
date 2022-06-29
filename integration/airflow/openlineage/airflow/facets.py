@@ -20,9 +20,9 @@ class AirflowVersionRunFacet(BaseFacet):
     @classmethod
     def from_task(cls, task):
         # task.__dict__ may contain values uncastable to str
-        from openlineage.airflow.utils import SafeStrDict
+        from openlineage.airflow.utils import SafeStrDict, get_operator_class
         return cls(
-            f"{task.__class__.__module__}.{task.__class__.__name__}",
+            f"{get_operator_class(task).__module__}.{get_operator_class(task).__name__}",
             str(SafeStrDict(task.__dict__)),
             AIRFLOW_VERSION,
             OPENLINEAGE_AIRFLOW_VERSION,
@@ -32,6 +32,22 @@ class AirflowVersionRunFacet(BaseFacet):
 @attr.s
 class AirflowRunArgsRunFacet(BaseFacet):
     externalTrigger: bool = attr.ib(default=False)
+
+
+@attr.s
+class AirflowMappedTaskRunFacet(BaseFacet):
+    mapIndex: int = attr.ib()
+    operatorClass: str = attr.ib()
+
+    @classmethod
+    def from_task_instance(cls, task_instance):
+        task = task_instance.task
+        from openlineage.airflow.utils import get_operator_class
+
+        return cls(
+            task_instance.map_index,
+            f"{get_operator_class(task).__module__}.{get_operator_class(task).__name__}",
+        )
 
 
 @attr.s
