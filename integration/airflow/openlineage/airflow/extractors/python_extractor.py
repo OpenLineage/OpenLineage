@@ -109,7 +109,7 @@ class PythonExtractor(BaseExtractor):
             )
         return None
 
-    def extract_inlets_and_outlets(self, properties):
+    def extract_inlets_and_outlets_to_dataset(self, properties):
         return Dataset(
             namespace=properties["database"],
             name=properties["name"],
