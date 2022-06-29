@@ -152,6 +152,7 @@ class ColumnMetric:
 class DataQualityMetricsInputDatasetFacet(BaseFacet):
     rowCount: Optional[int] = attr.ib(default=None)
     bytes: Optional[int] = attr.ib(default=None)
+    metrics: Dict[str, int] = attr.ib(factory=dict)
     columnMetrics: Dict[str, ColumnMetric] = attr.ib(factory=dict)
 
     @staticmethod
