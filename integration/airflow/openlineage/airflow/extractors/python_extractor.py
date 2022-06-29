@@ -44,9 +44,9 @@ class PythonExtractor(BaseExtractor):
                 )
             }
         """
-        This allows for the collection of manual lineage data. When OPENLINEAGE_COLLECT_MANUALLY 
-        is set to true, PythonExtractor will extract Datasets, when set to false, 
-        inputs and outputs are set to empty Lists. 
+        This allows for the collection of manual lineage data. When OPENLINEAGE_COLLECT_MANUALLY
+        is set to true, PythonExtractor will extract Datasets, when set to false,
+        inputs and outputs are set to empty Lists.
         """
         collect_manual_lineage = False
         if os.environ.get("OPENLINEAGE_COLLECT_MANUALLY", "False").lower() in (
