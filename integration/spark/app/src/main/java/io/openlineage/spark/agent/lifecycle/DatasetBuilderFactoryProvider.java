@@ -7,26 +7,26 @@ package io.openlineage.spark.agent.lifecycle;
 
 import org.apache.spark.package$;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class DatasetBuilderFactoryProvider {
 
-  private static final String SPARK2_FACTORY_NAME =
-      "io.openlineage.spark.agent.lifecycle.Spark2DatasetBuilderFactory";
-  private static final String SPARK3_FACTORY_NAME =
-      "io.openlineage.spark.agent.lifecycle.Spark3DatasetBuilderFactory";
+    private static final Map<String, String> builderVersions = new HashMap<String, String>() {{
+        put("2.4", "io.openlineage.spark.agent.lifecycle.Spark2DatasetBuilderFactory");
+        put("3.1", "io.openlineage.spark.agent.lifecycle.Spark3DatasetBuilderFactory");
+        put("3.2", "io.openlineage.spark.agent.lifecycle.Spark32DatasetBuilderFactory");
+    }};
 
-  static DatasetBuilderFactory getInstance() {
-    String version = package$.MODULE$.SPARK_VERSION();
-    try {
-      if (version.startsWith("2.")) {
-        return (DatasetBuilderFactory) Class.forName(SPARK2_FACTORY_NAME).newInstance();
-      } else {
-        return (DatasetBuilderFactory) Class.forName(SPARK3_FACTORY_NAME).newInstance();
-      }
-    } catch (Exception e) {
-      throw new RuntimeException(
-          String.format(
-              "Can't instantiate dataset builder factory factory for version: %s", version),
-          e);
+    static DatasetBuilderFactory getInstance() {
+        String version = package$.MODULE$.SPARK_VERSION();
+        try {
+            return (DatasetBuilderFactory) Class.forName(builderVersions.get(version.substring(0, 3))).newInstance();
+        } catch (Exception e) {
+            throw new RuntimeException(
+                    String.format(
+                            "Can't instantiate dataset builder factory factory for version: %s", version),
+                    e);
+        }
     }
-  }
 }

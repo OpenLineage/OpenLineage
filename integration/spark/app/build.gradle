@@ -157,21 +157,21 @@ task integrationTest(type: Test) {
 
 }
 
-spotless {
-    def disallowWildcardImports = {
-        String text = it
-        def regex = ~/import .*\.\*;/
-        def m = regex.matcher(text)
-        if (m.find()) {
-            throw new AssertionError("Wildcard imports disallowed - ${m.findAll()}")
-        }
-    }
-    java {
-        googleJavaFormat()
-        removeUnusedImports()
-        custom 'disallowWildcardImports', disallowWildcardImports
-    }
-}
+//spotless {
+//    def disallowWildcardImports = {
+//        String text = it
+//        def regex = ~/import .*\.\*;/
+//        def m = regex.matcher(text)
+//        if (m.find()) {
+//            throw new AssertionError("Wildcard imports disallowed - ${m.findAll()}")
+//        }
+//    }
+//    java {
+//        googleJavaFormat()
+//        removeUnusedImports()
+//        custom 'disallowWildcardImports', disallowWildcardImports
+//    }
+//}
 
 assemble {
     dependsOn shadowJar

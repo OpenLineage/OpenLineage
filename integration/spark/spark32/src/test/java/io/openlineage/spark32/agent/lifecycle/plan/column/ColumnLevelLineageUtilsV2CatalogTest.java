@@ -125,7 +125,6 @@ class ColumnLevelLineageUtilsV2CatalogTest {
     spark.sql("CREATE TABLE local.db.t2 USING iceberg AS SELECT * FROM temp");
     spark.sql(
         "CREATE TABLE local.db.t USING iceberg AS (SELECT * FROM local.db.t1 UNION SELECT * FROM local.db.t2)");
-
     LogicalPlan plan = LastQueryExecutionSparkEventListener.getLastExecutedLogicalPlan().get();
     when(queryExecution.optimizedPlan()).thenReturn(plan);
     OpenLineage.ColumnLineageDatasetFacet facet =

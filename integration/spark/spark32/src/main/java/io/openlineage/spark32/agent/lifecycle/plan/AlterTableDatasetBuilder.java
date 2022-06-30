@@ -6,12 +6,20 @@
 package io.openlineage.spark32.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.util.DatasetIdentifier;
+import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
+import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark32.agent.lifecycle.plan.catalog.CatalogUtils3;
+import io.openlineage.spark32.agent.utils.PlanUtils3;
 import lombok.NonNull;
 import org.apache.spark.scheduler.SparkListenerEvent;
+import org.apache.spark.sql.catalyst.analysis.ResolvedTable;
+import org.apache.spark.sql.catalyst.analysis.UnresolvedTable;
 import org.apache.spark.sql.catalyst.plans.logical.AddColumns;
 import org.apache.spark.sql.catalyst.plans.logical.AlterColumn;
+import org.apache.spark.sql.catalyst.plans.logical.AlterTableCommand;
 import org.apache.spark.sql.catalyst.plans.logical.CommentOnTable;
 import org.apache.spark.sql.catalyst.plans.logical.DropColumns;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -20,11 +28,17 @@ import org.apache.spark.sql.catalyst.plans.logical.ReplaceColumns;
 import org.apache.spark.sql.catalyst.plans.logical.SetTableLocation;
 import org.apache.spark.sql.catalyst.plans.logical.SetTableProperties;
 import org.apache.spark.sql.catalyst.plans.logical.UnsetTableProperties;
+import org.apache.spark.sql.connector.catalog.Identifier;
+import org.apache.spark.sql.connector.catalog.TableCatalog;
+import org.apache.spark.sql.types.StructType;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
-public class AlterTableDatasetBuilder extends AbstractQueryPlanOutputDatasetBuilder<LogicalPlan> {
+public class AlterTableDatasetBuilder extends AbstractQueryPlanOutputDatasetBuilder<AlterTableCommand> {
+
 
     public AlterTableDatasetBuilder(@NonNull OpenLineageContext context) {
         super(context, false);
@@ -32,7 +46,7 @@ public class AlterTableDatasetBuilder extends AbstractQueryPlanOutputDatasetBuil
 
     @Override
     public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
-        return  x instanceof CommentOnTable ||
+        return x instanceof CommentOnTable ||
                 x instanceof SetTableLocation ||
                 x instanceof SetTableProperties ||
                 x instanceof UnsetTableProperties ||
@@ -44,35 +58,43 @@ public class AlterTableDatasetBuilder extends AbstractQueryPlanOutputDatasetBuil
     }
 
     @Override
-    protected List<OpenLineage.OutputDataset> apply(SparkListenerEvent event, LogicalPlan alterTableCommand) {
+    protected List<OpenLineage.OutputDataset> apply(SparkListenerEvent event, AlterTableCommand alterTableCommand) {
 
-      if (alterTableCommand instanceof CommentOnTable){
+        ResolvedTable resolvedTable = (ResolvedTable) alterTableCommand.table();
+        TableCatalog tableCatalog = resolvedTable.catalog();
+        Map<String, String> tableProperties = resolvedTable.table().properties();
+        Identifier identifier = resolvedTable.identifier();
+        StructType schema = resolvedTable.table().schema();
+        OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange lifecycleStateChange =
+                OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.ALTER;
 
-      }
-      else if (alterTableCommand instanceof SetTableLocation){
+        Optional<DatasetIdentifier> di =
+                PlanUtils3.getDatasetIdentifier(context, tableCatalog, identifier, tableProperties);
 
-      }
-      else if (alterTableCommand instanceof SetTableProperties){
+        if (!di.isPresent()) {
+            return Collections.emptyList();
+        }
 
-      }
-      else if (alterTableCommand instanceof UnsetTableProperties){
+        OpenLineage openLineage = context.getOpenLineage();
+        OpenLineage.DatasetFacetsBuilder builder =
+                openLineage
+                        .newDatasetFacetsBuilder()
+                        .schema(PlanUtils.schemaFacet(openLineage, schema))
+                        .lifecycleStateChange(
+                                openLineage.newLifecycleStateChangeDatasetFacet(lifecycleStateChange, null))
+                        .dataSource(PlanUtils.datasourceFacet(openLineage, di.get().getNamespace()));
 
-      }
-      else if (alterTableCommand instanceof AddColumns){
+        if (includeDatasetVersion(event)) {
+            Optional<String> datasetVersion =
+                    CatalogUtils3.getDatasetVersion(tableCatalog, identifier, tableProperties);
+            datasetVersion.ifPresent(
+                    version -> builder.version(openLineage.newDatasetVersionDatasetFacet(version)));
+        }
 
-      }
-      else if (alterTableCommand instanceof ReplaceColumns){
-
-      }
-      else if (alterTableCommand instanceof DropColumns){
-
-      }
-      else if (alterTableCommand instanceof RenameColumn){
-
-      }
-      else if (alterTableCommand instanceof AlterColumn){
-
-      }
-      return Collections.emptyList();
+        CatalogUtils3.getTableProviderFacet(tableCatalog, tableProperties)
+                .map(provider -> builder.put("tableProvider", provider));
+        return Collections.singletonList(
+                outputDataset().getDataset(di.get().getName(), di.get().getNamespace(), builder.build()));
     }
+
 }

@@ -50,24 +50,9 @@ public class Spark32DatasetBuilderFactory implements DatasetBuilderFactory {
             .add(new AppendDataDatasetBuilder(context, datasetFactory))
             .add(new DataSourceV2RelationOutputDatasetBuilder(context, datasetFactory))
             .add(new TableContentChangeDatasetBuilder(context))
-            .add(new CreateReplaceDatasetBuilder(context));
-
-    if (hasAlterTableClass()) {
-      builder.add(new AlterTableDatasetBuilder(context));
-    }
+            .add(new CreateReplaceDatasetBuilder(context))
+            .add(new AlterTableDatasetBuilder(context));
 
     return builder.build();
-  }
-
-  private boolean hasAlterTableClass() {
-    try {
-      Spark32DatasetBuilderFactory.class
-          .getClassLoader()
-          .loadClass("org.apache.spark.sql.catalyst.plans.logical.AlterTable");
-      return true;
-    } catch (Exception e) {
-      // swallow- we don't care
-    }
-    return false;
   }
 }
