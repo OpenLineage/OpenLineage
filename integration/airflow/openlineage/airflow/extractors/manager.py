@@ -8,7 +8,6 @@ from openlineage.airflow.utils import get_job_name, get_operator_class
 
 class ExtractorManager:
     """Class abstracting management of custom extractors."""
-
     def __init__(self):
         self.extractors = {}
         self.task_to_extractor = Extractors()

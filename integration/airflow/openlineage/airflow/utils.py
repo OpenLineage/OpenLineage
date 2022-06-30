@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, Type, Dict, Any
 from pkg_resources import parse_version
 from pendulum import from_timestamp
 from collections import defaultdict
-from pkg_resources import parse_version
 from uuid import uuid4
 from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
 from airflow.version import version as AIRFLOW_VERSION
@@ -341,29 +340,26 @@ def build_table_check_facets(table_mapping) -> dict:
     """
     Function should expect to take the table_mapping in the following form:
     {
-        'cols_sum_check': {
-            'check_statement': col_a + col_b < col_c,
-            'success': True
-        },
         'row_count_check': {
-            'pass_value': 1000,
-            'result': 1000,
-            'tolerance': 0,
+            'pass_value': 100,
+            'tolerance': .05,
+            'result': 101,
             'success': True
         }
     }
     """
     facet_data = {}
     assertion_data = {"assertions": []}
-    for check, check_values in table_mapping.items():
-        assertion_data["assertions"].append(
-            Assertion(
-                assertion=check,
-                success=table_mapping[check].get("success", None),
+    for table_name, checks in table_mapping.items():
+        for check, check_values in checks.items():
+            assertion_data["assertions"].append(
+                Assertion(
+                    assertion=check,
+                    success=checks[check].get("success", None),
+                )
             )
-        )
-        facet_data["rowCount"] = table_mapping.get("row_count_check", {}).get("result", None)
-        facet_data["bytes"] = table_mapping.get("bytes", {}).get("result", None)
+        facet_data["row_count"] = checks.get("row_count_check", None).get("result")
+        facet_data["bytes"] = checks.get("bytes", None).get("result")
 
     data_quality_facet = DataQualityMetricsInputDatasetFacet(**facet_data)
     data_quality_assertions_facet = DataQualityAssertionsDatasetFacet(**assertion_data)
