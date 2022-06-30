@@ -19,20 +19,26 @@ import org.apache.spark.sql.catalyst.analysis.NoSuchTableException;
 
 import org.apache.spark.sql.catalyst.analysis.ResolvedTable;
 import org.apache.spark.sql.catalyst.plans.logical.AlterTableCommand;
+import org.apache.spark.sql.catalyst.plans.logical.CommentOnTable;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.Table;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
+import org.apache.spark.sql.types.DataType;
+import org.apache.spark.sql.types.StringType;
+import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
-import scala.collection.immutable.HashMap;
-import scala.collection.immutable.Map;
 
+
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
+import static org.apache.spark.sql.types.DataTypes.IntegerType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
@@ -48,12 +54,12 @@ class AlterTableDatasetBuilderTest {
           .build();
 
   TableCatalog tableCatalog = mock(TableCatalog.class);
-  StructType schema = new StructType();
+  StructType schema = new StructType();//.add("a", IntegerType, true);
   Table table = mock(Table.class);
   Map<String, String> tableProperties = new HashMap<>();
   DatasetIdentifier di = new DatasetIdentifier("table", "db");
   Identifier identifier = mock(Identifier.class);
-  AlterTableCommand alterTable = mock(AlterTableCommand.class);
+  CommentOnTable alterTable = mock(CommentOnTable.class);
 
   ResolvedTable resolvedTable = mock(ResolvedTable.class);
 
@@ -64,7 +70,9 @@ class AlterTableDatasetBuilderTest {
     when(alterTable.table()).thenReturn(resolvedTable);
     when(resolvedTable.catalog()).thenReturn(tableCatalog);
     when(resolvedTable.identifier()).thenReturn(identifier);
-    when(resolvedTable.schema()).thenReturn(schema);
+    when(resolvedTable.table()).thenReturn(table);
+    when(resolvedTable.table().schema()).thenReturn(schema);
+    when(resolvedTable.table().properties()).thenReturn(tableProperties);
   }
 
   @Test
@@ -85,7 +93,7 @@ class AlterTableDatasetBuilderTest {
               openLineageContext,
               tableCatalog,
               identifier,
-              ScalaConversionUtils.<String, String>fromMap(tableProperties)))
+              tableProperties))
           .thenReturn(Optional.empty());
 
       List<OpenLineage.OutputDataset> outputDatasets =
@@ -103,7 +111,7 @@ class AlterTableDatasetBuilderTest {
               openLineageContext,
               tableCatalog,
               identifier,
-              ScalaConversionUtils.<String, String>fromMap(tableProperties)))
+              tableProperties))
           .thenReturn(Optional.of(di));
 
       List<OpenLineage.OutputDataset> outputDatasets =
@@ -124,14 +132,14 @@ class AlterTableDatasetBuilderTest {
         when(CatalogUtils3.getDatasetVersion(
                 tableCatalog,
                 identifier,
-                ScalaConversionUtils.<String, String>fromMap(tableProperties)))
+                tableProperties))
             .thenReturn(Optional.of("v2"));
 
         when(PlanUtils3.getDatasetIdentifier(
                 openLineageContext,
                 tableCatalog,
                 identifier,
-                ScalaConversionUtils.<String, String>fromMap(tableProperties)))
+                tableProperties))
             .thenReturn(Optional.of(di));
 
         List<OpenLineage.OutputDataset> outputDatasets =

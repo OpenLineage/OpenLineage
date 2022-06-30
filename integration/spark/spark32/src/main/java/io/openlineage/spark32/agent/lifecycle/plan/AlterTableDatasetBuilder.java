@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public class AlterTableDatasetBuilder extends AbstractQueryPlanOutputDatasetBuilder<AlterTableCommand> {
+public class AlterTableDatasetBuilder extends AbstractQueryPlanOutputDatasetBuilder<LogicalPlan> {
 
 
     public AlterTableDatasetBuilder(@NonNull OpenLineageContext context) {
@@ -58,9 +58,9 @@ public class AlterTableDatasetBuilder extends AbstractQueryPlanOutputDatasetBuil
     }
 
     @Override
-    protected List<OpenLineage.OutputDataset> apply(SparkListenerEvent event, AlterTableCommand alterTableCommand) {
+    protected List<OpenLineage.OutputDataset> apply(SparkListenerEvent event, LogicalPlan alterTableCommand) {
 
-        ResolvedTable resolvedTable = (ResolvedTable) alterTableCommand.table();
+        ResolvedTable resolvedTable = (ResolvedTable) ((AlterTableCommand)alterTableCommand).table();
         TableCatalog tableCatalog = resolvedTable.catalog();
         Map<String, String> tableProperties = resolvedTable.table().properties();
         Identifier identifier = resolvedTable.identifier();
