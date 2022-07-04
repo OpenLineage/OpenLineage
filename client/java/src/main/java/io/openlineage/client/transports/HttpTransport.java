@@ -25,6 +25,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.StringEntity;
@@ -40,7 +41,18 @@ public final class HttpTransport extends Transport implements Closeable {
   private @Nullable final TokenProvider tokenProvider;
 
   public HttpTransport(@NonNull final HttpConfig httpConfig) {
-    this(HttpClientBuilder.create().build(), httpConfig);
+    this(withTimeout(), httpConfig);
+  }
+
+  private static HttpClient withTimeout() {
+    int timeout = 5;
+    RequestConfig config =
+        RequestConfig.custom()
+            .setConnectTimeout(timeout * 1000)
+            .setConnectionRequestTimeout(timeout * 1000)
+            .setSocketTimeout(timeout * 1000)
+            .build();
+    return HttpClientBuilder.create().setDefaultRequestConfig(config).build();
   }
 
   public HttpTransport(@NonNull final HttpClient httpClient, @NonNull final HttpConfig httpConfig) {
