@@ -9,14 +9,13 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.util.Collections;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.plans.logical.AppendData;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
-
-import java.util.Collections;
-import java.util.List;
 
 /**
  * {@link LogicalPlan} visitor that matches an {@link AppendData} commands and extracts the output

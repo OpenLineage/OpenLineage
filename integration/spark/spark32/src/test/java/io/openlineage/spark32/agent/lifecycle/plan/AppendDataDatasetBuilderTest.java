@@ -5,26 +5,6 @@
 
 package io.openlineage.spark32.agent.lifecycle.plan;
 
-import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.Versions;
-import io.openlineage.spark.api.DatasetFactory;
-import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark32.agent.utils.DatasetVersionDatasetFacetUtils;
-import io.openlineage.spark32.agent.utils.PlanUtils3;
-import org.apache.spark.SparkContext;
-import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.catalyst.analysis.NamedRelation;
-import org.apache.spark.sql.catalyst.plans.logical.AppendData;
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
-import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
-import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
-import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -34,6 +14,25 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
+
+import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.api.DatasetFactory;
+import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark32.agent.utils.DatasetVersionDatasetFacetUtils;
+import io.openlineage.spark32.agent.utils.PlanUtils3;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import org.apache.spark.SparkContext;
+import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.catalyst.analysis.NamedRelation;
+import org.apache.spark.sql.catalyst.plans.logical.AppendData;
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
+import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
+import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 
 class AppendDataDatasetBuilderTest {
 

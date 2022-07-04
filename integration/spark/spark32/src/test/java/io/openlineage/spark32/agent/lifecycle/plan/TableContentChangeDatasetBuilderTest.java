@@ -5,10 +5,24 @@
 
 package io.openlineage.spark32.agent.lifecycle.plan;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.when;
+
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark32.agent.lifecycle.plan.catalog.CatalogUtils3;
 import io.openlineage.spark32.agent.utils.PlanUtils3;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.SneakyThrows;
 import org.apache.spark.sql.catalyst.plans.logical.DeleteFromTable;
 import org.apache.spark.sql.catalyst.plans.logical.InsertIntoStatement;
@@ -28,21 +42,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import scala.Option;
-
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.when;
 
 class TableContentChangeDatasetBuilderTest {
 

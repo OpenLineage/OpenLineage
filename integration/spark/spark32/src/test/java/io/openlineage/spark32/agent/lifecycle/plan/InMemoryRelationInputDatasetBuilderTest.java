@@ -1,7 +1,19 @@
 package io.openlineage.spark32.agent.lifecycle.plan;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.when;
+import static scala.collection.JavaConverters.collectionAsScalaIterableConverter;
+
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import lombok.SneakyThrows;
 import org.apache.commons.lang.reflect.FieldUtils;
 import org.apache.spark.scheduler.SparkListenerEvent;
@@ -16,19 +28,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import scala.collection.IndexedSeq;
-
-import java.lang.reflect.Field;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.when;
-import static scala.collection.JavaConverters.collectionAsScalaIterableConverter;
 
 class InMemoryRelationInputDatasetBuilderTest {
 

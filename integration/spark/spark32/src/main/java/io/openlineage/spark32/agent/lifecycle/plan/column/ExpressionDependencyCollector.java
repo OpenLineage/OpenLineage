@@ -9,6 +9,9 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark32.agent.lifecycle.plan.column.visitors.ExpressionDependencyVisitor;
 import io.openlineage.spark32.agent.lifecycle.plan.column.visitors.IcebergMergeIntoDependencyVisitor;
 import io.openlineage.spark32.agent.lifecycle.plan.column.visitors.UnionDependencyVisitor;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.expressions.Expression;
@@ -17,10 +20,6 @@ import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression;
 import org.apache.spark.sql.catalyst.plans.logical.Aggregate;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.Project;
-
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
 
 /**
  * Traverses LogicalPlan and collects dependencies between the expressions and operations used

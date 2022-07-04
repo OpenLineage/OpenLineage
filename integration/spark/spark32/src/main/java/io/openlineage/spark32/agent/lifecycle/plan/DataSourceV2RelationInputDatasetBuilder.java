@@ -11,11 +11,10 @@ import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark32.agent.utils.DatasetVersionDatasetFacetUtils;
 import io.openlineage.spark32.agent.utils.PlanUtils3;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
-
-import java.util.List;
 
 /**
  * Find {@link org.apache.spark.sql.sources.BaseRelation}s and {@link

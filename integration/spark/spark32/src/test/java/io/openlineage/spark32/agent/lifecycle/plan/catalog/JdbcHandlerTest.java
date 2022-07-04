@@ -5,7 +5,12 @@
 
 package io.openlineage.spark32.agent.lifecycle.plan.catalog;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import io.openlineage.spark.agent.util.DatasetIdentifier;
+import java.util.HashMap;
 import lombok.SneakyThrows;
 import org.apache.commons.lang.reflect.FieldUtils;
 import org.apache.spark.sql.SparkSession;
@@ -13,12 +18,6 @@ import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions;
 import org.apache.spark.sql.execution.datasources.v2.jdbc.JDBCTableCatalog;
 import org.junit.jupiter.api.Test;
-
-import java.util.HashMap;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class JdbcHandlerTest {
 

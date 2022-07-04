@@ -10,6 +10,10 @@ import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
 import io.openlineage.spark32.agent.utils.PlanUtils3;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.analysis.ResolvedTable;
@@ -17,11 +21,6 @@ import org.apache.spark.sql.catalyst.plans.logical.DropTable;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 @Slf4j
 public class DropTableVisitor extends QueryPlanVisitor<DropTable, OpenLineage.OutputDataset> {

@@ -9,11 +9,10 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark32.agent.utils.DatasetVersionDatasetFacetUtils;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
-
-import java.util.Optional;
 
 /**
  * Class extending {@link io.openlineage.spark.agent.lifecycle.plan.LogicalRelationDatasetBuilder}

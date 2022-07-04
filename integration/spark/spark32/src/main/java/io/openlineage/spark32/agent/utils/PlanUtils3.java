@@ -14,6 +14,10 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark32.agent.lifecycle.plan.catalog.CatalogUtils3;
 import io.openlineage.spark32.agent.lifecycle.plan.catalog.IcebergHandler;
 import io.openlineage.spark32.agent.lifecycle.plan.catalog.UnsupportedCatalogException;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.analysis.NamedRelation;
@@ -27,11 +31,6 @@ import org.apache.spark.sql.catalyst.plans.logical.V2WriteCommand;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * Utility functions for traversing a {@link

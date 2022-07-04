@@ -7,10 +7,9 @@ package io.openlineage.spark32.agent.lifecycle.plan.column;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
-
-import java.util.Optional;
 
 /**
  * Utility functions for detecting column level lineage within {@link

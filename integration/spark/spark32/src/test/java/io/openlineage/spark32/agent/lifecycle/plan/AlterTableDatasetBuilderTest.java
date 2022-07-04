@@ -5,44 +5,35 @@
 
 package io.openlineage.spark32.agent.lifecycle.plan;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.when;
+
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
-import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark32.agent.lifecycle.plan.catalog.CatalogUtils3;
 import io.openlineage.spark32.agent.utils.PlanUtils3;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.SneakyThrows;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.analysis.NoSuchTableException;
-
 import org.apache.spark.sql.catalyst.analysis.ResolvedTable;
-import org.apache.spark.sql.catalyst.plans.logical.AlterTableCommand;
 import org.apache.spark.sql.catalyst.plans.logical.CommentOnTable;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.Table;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
-import org.apache.spark.sql.types.DataType;
-import org.apache.spark.sql.types.StringType;
-import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
-
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-import static org.apache.spark.sql.types.DataTypes.IntegerType;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.when;
 
 class AlterTableDatasetBuilderTest {
 
@@ -54,7 +45,7 @@ class AlterTableDatasetBuilderTest {
           .build();
 
   TableCatalog tableCatalog = mock(TableCatalog.class);
-  StructType schema = new StructType();//.add("a", IntegerType, true);
+  StructType schema = new StructType();
   Table table = mock(Table.class);
   Map<String, String> tableProperties = new HashMap<>();
   DatasetIdentifier di = new DatasetIdentifier("table", "db");
@@ -90,10 +81,7 @@ class AlterTableDatasetBuilderTest {
     when(tableCatalog.loadTable(identifier)).thenReturn(table);
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
       when(PlanUtils3.getDatasetIdentifier(
-              openLineageContext,
-              tableCatalog,
-              identifier,
-              tableProperties))
+              openLineageContext, tableCatalog, identifier, tableProperties))
           .thenReturn(Optional.empty());
 
       List<OpenLineage.OutputDataset> outputDatasets =
@@ -108,10 +96,7 @@ class AlterTableDatasetBuilderTest {
     when(tableCatalog.loadTable(identifier)).thenReturn(table);
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
       when(PlanUtils3.getDatasetIdentifier(
-              openLineageContext,
-              tableCatalog,
-              identifier,
-              tableProperties))
+              openLineageContext, tableCatalog, identifier, tableProperties))
           .thenReturn(Optional.of(di));
 
       List<OpenLineage.OutputDataset> outputDatasets =
@@ -129,17 +114,11 @@ class AlterTableDatasetBuilderTest {
     when(tableCatalog.loadTable(identifier)).thenReturn(table);
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
       try (MockedStatic mockCatalog = mockStatic(CatalogUtils3.class)) {
-        when(CatalogUtils3.getDatasetVersion(
-                tableCatalog,
-                identifier,
-                tableProperties))
+        when(CatalogUtils3.getDatasetVersion(tableCatalog, identifier, tableProperties))
             .thenReturn(Optional.of("v2"));
 
         when(PlanUtils3.getDatasetIdentifier(
-                openLineageContext,
-                tableCatalog,
-                identifier,
-                tableProperties))
+                openLineageContext, tableCatalog, identifier, tableProperties))
             .thenReturn(Optional.of(di));
 
         List<OpenLineage.OutputDataset> outputDatasets =

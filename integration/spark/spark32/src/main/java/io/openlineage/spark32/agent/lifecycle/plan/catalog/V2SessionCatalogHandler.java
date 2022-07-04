@@ -6,12 +6,11 @@
 package io.openlineage.spark32.agent.lifecycle.plan.catalog;
 
 import io.openlineage.spark.agent.util.DatasetIdentifier;
+import java.util.Map;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.apache.spark.sql.execution.datasources.v2.V2SessionCatalog;
-
-import java.util.Map;
 
 public class V2SessionCatalogHandler implements CatalogHandler {
 

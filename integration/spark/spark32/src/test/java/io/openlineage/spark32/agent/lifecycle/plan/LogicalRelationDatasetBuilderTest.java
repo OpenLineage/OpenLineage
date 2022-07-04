@@ -5,12 +5,21 @@
 
 package io.openlineage.spark32.agent.lifecycle.plan;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.when;
+
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark32.agent.utils.DatasetVersionDatasetFacetUtils;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkContext;
@@ -21,16 +30,6 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.internal.SessionState;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.when;
 
 class LogicalRelationDatasetBuilderTest {
 

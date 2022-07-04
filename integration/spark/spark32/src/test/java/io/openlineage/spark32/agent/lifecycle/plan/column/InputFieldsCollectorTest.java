@@ -5,11 +5,23 @@
 
 package io.openlineage.spark32.agent.lifecycle.plan.column;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import io.openlineage.spark.agent.lifecycle.Rdds;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark32.agent.utils.PlanUtils3;
+import java.net.URI;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import lombok.SneakyThrows;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.rdd.RDD;
@@ -31,19 +43,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import scala.Option;
-
-import java.net.URI;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 class InputFieldsCollectorTest {
 

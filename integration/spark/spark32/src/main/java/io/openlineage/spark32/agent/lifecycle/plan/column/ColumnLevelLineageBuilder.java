@@ -12,10 +12,6 @@ import io.openlineage.client.shaded.com.fasterxml.jackson.core.JsonProcessingExc
 import io.openlineage.client.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.api.OpenLineageContext;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.spark.sql.catalyst.expressions.ExprId;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -27,6 +23,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.spark.sql.catalyst.expressions.ExprId;
 
 /**
  * Builder class used to store information required to build {@link

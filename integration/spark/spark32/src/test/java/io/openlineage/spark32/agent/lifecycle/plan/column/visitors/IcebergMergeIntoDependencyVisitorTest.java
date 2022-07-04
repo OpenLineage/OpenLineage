@@ -5,8 +5,18 @@
 
 package io.openlineage.spark32.agent.lifecycle.plan.column.visitors;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
+import static scala.collection.JavaConverters.collectionAsScalaIterableConverter;
+
 import io.openlineage.spark32.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark32.agent.lifecycle.plan.column.ExpressionDependencyCollector;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.expressions.Expression;
@@ -15,17 +25,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import scala.Option;
 import scala.collection.Seq;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.withSettings;
-import static scala.collection.JavaConverters.collectionAsScalaIterableConverter;
 
 class IcebergMergeIntoDependencyVisitorTest {
 

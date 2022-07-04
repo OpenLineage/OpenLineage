@@ -14,10 +14,9 @@ import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark32.agent.lifecycle.plan.CreateTableLikeCommandVisitor;
 import io.openlineage.spark32.agent.lifecycle.plan.DropTableVisitor;
+import java.util.List;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import scala.PartialFunction;
-
-import java.util.List;
 
 class Spark32VisitorFactoryImpl extends BaseVisitorFactory {
 

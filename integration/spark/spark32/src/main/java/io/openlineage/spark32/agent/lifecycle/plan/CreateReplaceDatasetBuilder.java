@@ -13,6 +13,10 @@ import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark32.agent.lifecycle.plan.catalog.CatalogUtils3;
 import io.openlineage.spark32.agent.utils.PlanUtils3;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.plans.logical.CreateTableAsSelect;
@@ -23,11 +27,6 @@ import org.apache.spark.sql.catalyst.plans.logical.ReplaceTableAsSelect;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.apache.spark.sql.types.StructType;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * {@link LogicalPlan} visitor that matches an {@link CreateTableAsSelect} and extracts the output

@@ -11,6 +11,10 @@ import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark32.agent.utils.PlanUtils3;
+import java.net.URI;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
@@ -23,11 +27,6 @@ import org.apache.spark.sql.execution.LogicalRDD;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2ScanRelation;
-
-import java.net.URI;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /** Traverses LogicalPlan and collect input fields with the corresponding ExprId. */
 @Slf4j

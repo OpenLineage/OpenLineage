@@ -7,12 +7,11 @@ package io.openlineage.spark32.agent.lifecycle.plan.catalog;
 
 import io.openlineage.spark.agent.facets.TableProviderFacet;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
+import java.util.Map;
+import java.util.Optional;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
-
-import java.util.Map;
-import java.util.Optional;
 
 public interface CatalogHandler {
   boolean hasClasses();

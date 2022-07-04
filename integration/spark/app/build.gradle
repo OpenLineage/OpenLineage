@@ -101,7 +101,6 @@ dependencies {
 
 
     testImplementation(project(":${someMapProperty[shortVersion].project}"))
-//    testImplementation testFixtures(project(":${someMapProperty[shortVersion].project}"))
     testImplementation testFixtures(project(":shared"))
 
     lombok  "org.projectlombok:lombok:${lombokVersion}"
@@ -157,21 +156,21 @@ task integrationTest(type: Test) {
 
 }
 
-//spotless {
-//    def disallowWildcardImports = {
-//        String text = it
-//        def regex = ~/import .*\.\*;/
-//        def m = regex.matcher(text)
-//        if (m.find()) {
-//            throw new AssertionError("Wildcard imports disallowed - ${m.findAll()}")
-//        }
-//    }
-//    java {
-//        googleJavaFormat()
-//        removeUnusedImports()
-//        custom 'disallowWildcardImports', disallowWildcardImports
-//    }
-//}
+spotless {
+    def disallowWildcardImports = {
+        String text = it
+        def regex = ~/import .*\.\*;/
+        def m = regex.matcher(text)
+        if (m.find()) {
+            throw new AssertionError("Wildcard imports disallowed - ${m.findAll()}")
+        }
+    }
+    java {
+        googleJavaFormat()
+        removeUnusedImports()
+        custom 'disallowWildcardImports', disallowWildcardImports
+    }
+}
 
 assemble {
     dependsOn shadowJar
@@ -183,6 +182,7 @@ shadowJar {
         exclude (project(":spark2"))
         exclude (project(":spark3"))
         exclude (project(":spark32"))
+        exclude ("org.mock-server:mockserver:5.13.2")
     }
     classifier = ''
     // avoid conflict with any client version of that lib

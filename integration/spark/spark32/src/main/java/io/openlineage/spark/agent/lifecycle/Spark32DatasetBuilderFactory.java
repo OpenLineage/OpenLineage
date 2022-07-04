@@ -20,10 +20,9 @@ import io.openlineage.spark32.agent.lifecycle.plan.DataSourceV2ScanRelationInput
 import io.openlineage.spark32.agent.lifecycle.plan.InMemoryRelationInputDatasetBuilder;
 import io.openlineage.spark32.agent.lifecycle.plan.LogicalRelationDatasetBuilder;
 import io.openlineage.spark32.agent.lifecycle.plan.TableContentChangeDatasetBuilder;
-import scala.PartialFunction;
-
 import java.util.Collection;
 import java.util.List;
+import scala.PartialFunction;
 
 public class Spark32DatasetBuilderFactory implements DatasetBuilderFactory {
   @Override

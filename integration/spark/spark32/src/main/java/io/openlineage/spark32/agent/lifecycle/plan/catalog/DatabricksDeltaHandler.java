@@ -8,6 +8,10 @@ package io.openlineage.spark32.agent.lifecycle.plan.catalog;
 import io.openlineage.spark.agent.facets.TableProviderFacet;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.hadoop.fs.Path;
@@ -16,11 +20,6 @@ import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 import scala.Option;
-
-import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * The DatabricksDeltaHandler is intended to support Databricks' custom DeltaCatalog which has the

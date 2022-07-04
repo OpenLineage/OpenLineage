@@ -7,6 +7,10 @@ package io.openlineage.spark32.agent.lifecycle.plan.catalog;
 
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.JdbcUtils;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.spark.sql.SparkSession;
@@ -14,11 +18,6 @@ import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions;
 import org.apache.spark.sql.execution.datasources.v2.jdbc.JDBCTableCatalog;
-
-import java.util.Arrays;
-import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class JdbcHandler implements CatalogHandler {
   @Override

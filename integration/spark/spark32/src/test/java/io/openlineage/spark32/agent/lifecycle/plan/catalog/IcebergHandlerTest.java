@@ -5,8 +5,17 @@
 
 package io.openlineage.spark32.agent.lifecycle.plan.catalog;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import io.openlineage.spark.agent.facets.TableProviderFacet;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Optional;
 import org.apache.iceberg.spark.SparkCatalog;
 import org.apache.iceberg.spark.source.SparkTable;
 import org.apache.spark.sql.RuntimeConfig;
@@ -17,16 +26,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import scala.collection.immutable.Map;
-
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class IcebergHandlerTest {
 

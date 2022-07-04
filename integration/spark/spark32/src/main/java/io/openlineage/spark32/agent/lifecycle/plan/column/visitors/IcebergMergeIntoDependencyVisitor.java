@@ -8,6 +8,10 @@ package io.openlineage.spark32.agent.lifecycle.plan.column.visitors;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark32.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark32.agent.lifecycle.plan.column.ExpressionDependencyCollector;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.expressions.Expression;
@@ -15,11 +19,6 @@ import org.apache.spark.sql.catalyst.expressions.NamedExpression;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import scala.Option;
 import scala.collection.Seq;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /** Custom visitor for `MERGE INTO TABLE` implementation of Iceberg provider. */
 @Slf4j
@@ -102,7 +101,10 @@ public class IcebergMergeIntoDependencyVisitor implements ExpressionDependencyVi
                   .filter(exprs -> exprs.size() > position)
                   .map(exprs -> ScalaConversionUtils.<Expression>fromSeq(exprs).get(position))
                   .filter(expr -> expr instanceof NamedExpression)
-                  .forEach(expr -> ExpressionDependencyCollector.traverseExpression(expr, output[position].exprId(), builder));
+                  .forEach(
+                      expr ->
+                          ExpressionDependencyCollector.traverseExpression(
+                              expr, output[position].exprId(), builder));
 
               notMatched.stream()
                   .filter(Option::isDefined)
@@ -110,7 +112,10 @@ public class IcebergMergeIntoDependencyVisitor implements ExpressionDependencyVi
                   .filter(exprs -> exprs.size() > position)
                   .map(exprs -> ScalaConversionUtils.<Expression>fromSeq(exprs).get(position))
                   .filter(expr -> expr instanceof NamedExpression)
-                  .forEach(expr -> ExpressionDependencyCollector.traverseExpression(expr, output[position].exprId(), builder));
+                  .forEach(
+                      expr ->
+                          ExpressionDependencyCollector.traverseExpression(
+                              expr, output[position].exprId(), builder));
             });
   }
 }

@@ -7,15 +7,14 @@ package io.openlineage.spark32.agent.lifecycle.plan.catalog;
 
 import io.openlineage.spark.agent.facets.TableProviderFacet;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
-import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.connector.catalog.Identifier;
-import org.apache.spark.sql.connector.catalog.TableCatalog;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.connector.catalog.Identifier;
+import org.apache.spark.sql.connector.catalog.TableCatalog;
 
 public class CatalogUtils3 {
 

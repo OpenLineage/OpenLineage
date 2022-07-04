@@ -5,12 +5,19 @@
 
 package io.openlineage.spark32.agent.lifecycle.plan;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.when;
+
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark32.agent.utils.PlanUtils3;
+import java.util.List;
+import java.util.Optional;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.analysis.ResolvedTable;
@@ -24,14 +31,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import scala.collection.immutable.HashMap;
 import scala.collection.immutable.Map;
-
-import java.util.List;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.when;
 
 class DropTableVisitorTest {
 

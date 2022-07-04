@@ -8,6 +8,9 @@ package io.openlineage.spark32.agent.lifecycle.plan.catalog;
 import io.openlineage.spark.agent.facets.TableProviderFacet;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Optional;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.fs.Path;
@@ -19,10 +22,6 @@ import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.apache.spark.sql.delta.catalog.DeltaCatalog;
 import org.apache.spark.sql.delta.catalog.DeltaTableV2;
 import scala.Option;
-
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Optional;
 
 @Slf4j
 public class DeltaHandler implements CatalogHandler {

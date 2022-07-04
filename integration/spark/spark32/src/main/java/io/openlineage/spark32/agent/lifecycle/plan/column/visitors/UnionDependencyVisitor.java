@@ -8,16 +8,15 @@ package io.openlineage.spark32.agent.lifecycle.plan.column.visitors;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark32.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark32.agent.lifecycle.plan.column.ExpressionDependencyCollector;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.Union;
-
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.stream.IntStream;
 
 /**
  * Extracts expression dependencies from UNION node in {@link LogicalPlan}. Example query 'SELECT *
@@ -57,7 +56,10 @@ public class UnionDependencyVisitor implements ExpressionDependencyVisitor {
               ExprId firstExpr = childrenAttributes.get(0).get(position).exprId();
               IntStream.range(1, children.size())
                   .mapToObj(childIndex -> childrenAttributes.get(childIndex).get(position))
-                  .forEach(attr -> ExpressionDependencyCollector.traverseExpression(attr, firstExpr, builder));
+                  .forEach(
+                      attr ->
+                          ExpressionDependencyCollector.traverseExpression(
+                              attr, firstExpr, builder));
             });
   }
 }

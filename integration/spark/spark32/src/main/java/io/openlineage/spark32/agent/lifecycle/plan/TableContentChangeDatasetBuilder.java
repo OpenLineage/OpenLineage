@@ -11,6 +11,7 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark32.agent.lifecycle.plan.catalog.IcebergHandler;
 import io.openlineage.spark32.agent.utils.DatasetVersionDatasetFacetUtils;
 import io.openlineage.spark32.agent.utils.PlanUtils3;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.analysis.NamedRelation;
@@ -23,8 +24,6 @@ import org.apache.spark.sql.catalyst.plans.logical.OverwritePartitionsDynamic;
 import org.apache.spark.sql.catalyst.plans.logical.ReplaceData;
 import org.apache.spark.sql.catalyst.plans.logical.UpdateTable;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
-
-import java.util.List;
 
 @Slf4j
 public class TableContentChangeDatasetBuilder

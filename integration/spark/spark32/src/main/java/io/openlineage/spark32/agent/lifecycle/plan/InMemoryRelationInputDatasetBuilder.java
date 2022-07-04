@@ -4,6 +4,10 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanInputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.reflect.FieldUtils;
 import org.apache.spark.scheduler.SparkListenerEvent;
@@ -13,11 +17,6 @@ import org.apache.spark.sql.execution.CachedData;
 import org.apache.spark.sql.execution.columnar.InMemoryRelation;
 import org.apache.spark.sql.internal.SharedState;
 import scala.collection.IndexedSeq;
-
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class InMemoryRelationInputDatasetBuilder

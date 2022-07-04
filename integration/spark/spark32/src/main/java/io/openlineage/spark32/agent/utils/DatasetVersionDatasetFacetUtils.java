@@ -5,9 +5,13 @@
 
 package io.openlineage.spark32.agent.utils;
 
+import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptional;
+
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark32.agent.lifecycle.plan.catalog.CatalogUtils3;
+import java.util.Map;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
@@ -15,11 +19,6 @@ import org.apache.spark.sql.delta.files.TahoeLogFileIndex;
 import org.apache.spark.sql.execution.datasources.HadoopFsRelation;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
-
-import java.util.Map;
-import java.util.Optional;
-
-import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptional;
 
 @Slf4j
 public class DatasetVersionDatasetFacetUtils {

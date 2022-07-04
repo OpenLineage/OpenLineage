@@ -5,19 +5,6 @@
 
 package io.openlineage.spark32.agent.lifecycle.plan;
 
-import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.api.DatasetFactory;
-import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark32.agent.utils.DatasetVersionDatasetFacetUtils;
-import io.openlineage.spark32.agent.utils.PlanUtils3;
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
-import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
-import org.apache.spark.sql.execution.datasources.v2.DataSourceV2ScanRelation;
-import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
-
-import java.util.List;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -25,6 +12,18 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
+
+import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.api.DatasetFactory;
+import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.spark32.agent.utils.DatasetVersionDatasetFacetUtils;
+import io.openlineage.spark32.agent.utils.PlanUtils3;
+import java.util.List;
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
+import org.apache.spark.sql.execution.datasources.v2.DataSourceV2ScanRelation;
+import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
 
 class DataSourceV2ScanRelationInputDatasetBuilderTest {
 
