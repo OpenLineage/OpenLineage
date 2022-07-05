@@ -1,32 +1,28 @@
-import logging
+# SPDX-License-Identifier: Apache-2.0
 
-from abc import abstractmethod
-from typing import List
+from typing import List, Optional, Dict
 
+from openlineage.airflow.extractors.sql_check_extractors import SqlCheckExtractor
 from openlineage.airflow.extractors.bigquery_extractor import BigQueryExtractor
-from utils import (
+from openlineage.airflow.extractors.base import TaskMetadata
+from openlineage.client.facet import BaseFacet
+from openlineage.airflow.utils import (
     build_column_check_facets,
-    build_table_check_facets,
+    build_table_check_facets
 )
 
-logger = logging.getLogger(__name__)
 
-
-class BaseBigQueryCheckExtractor(BigQueryExtractor):
+class BaseBigQueryCheckExtractor(SqlCheckExtractor, BigQueryExtractor):
     default_schema = 'public'
 
     def __init__(self, operator):
         super().__init__(operator)
 
-    def _get_inputs(self, stats):
-        inputs = stats.inputs
-        for ds in inputs:
-            ds.input_facets = self._build_facets()
-        return inputs
+    def extract(self) -> TaskMetadata:
+        return
 
-    @abstractmethod
-    def _build_facets(self) -> dict:
-        pass
+    def extract_on_complete(self, task_instance) -> Optional[TaskMetadata]:
+        return super().extract()
 
 
 class BigQueryCheckExtractor(BaseBigQueryCheckExtractor):
@@ -37,8 +33,8 @@ class BigQueryCheckExtractor(BaseBigQueryCheckExtractor):
     def get_operator_classnames(cls) -> List[str]:
         return ['BigQueryCheckOperator']
 
-    def _build_facets(self) -> dict:
-        pass
+    def _get_input_facets(self) -> Dict[str, BaseFacet]:
+        return {}
 
 
 class BigQueryValueCheckExtractor(BaseBigQueryCheckExtractor):
@@ -49,8 +45,8 @@ class BigQueryValueCheckExtractor(BaseBigQueryCheckExtractor):
     def get_operator_classnames(cls) -> List[str]:
         return ['BigQueryValueCheckOperator']
 
-    def _build_facets(self) -> dict:
-        pass
+    def _get_input_facets(self) -> Dict[str, BaseFacet]:
+        return {}
 
 
 class BigQueryThresholdCheckExtractor(BaseBigQueryCheckExtractor):
@@ -61,8 +57,8 @@ class BigQueryThresholdCheckExtractor(BaseBigQueryCheckExtractor):
     def get_operator_classnames(cls) -> List[str]:
         return ['BigQueryThresholdCheckOperator']
 
-    def _build_facets(self) -> dict:
-        pass
+    def _get_input_facets(self) -> Dict[str, BaseFacet]:
+        return {}
 
 
 class BigQueryIntervalCheckExtractor(BaseBigQueryCheckExtractor):
@@ -73,8 +69,8 @@ class BigQueryIntervalCheckExtractor(BaseBigQueryCheckExtractor):
     def get_operator_classnames(cls) -> List[str]:
         return ['BigQueryIntervalCheckOperator']
 
-    def _build_facets(self) -> dict:
-        pass
+    def _get_input_facets(self) -> Dict[str, BaseFacet]:
+        return {}
 
 
 class BigQueryColumnCheckExtractor(BaseBigQueryCheckExtractor):
@@ -85,7 +81,7 @@ class BigQueryColumnCheckExtractor(BaseBigQueryCheckExtractor):
     def get_operator_classnames(cls) -> List[str]:
         return ['BigQueryColumnCheckOperator']
 
-    def _build_facets(self) -> dict:
+    def _get_input_facets(self) -> Dict[str, BaseFacet]:
         column_mapping = self.operator.column_mapping
         return build_column_check_facets(column_mapping)
 
@@ -98,6 +94,6 @@ class BigQueryTableCheckExtractor(BaseBigQueryCheckExtractor):
     def get_operator_classnames(cls) -> List[str]:
         return ['BigQueryTableCheckOperator']
 
-    def _build_facets(self) -> dict:
+    def _get_input_facets(self) -> Dict[str, BaseFacet]:
         checks = self.operator.checks
         return build_table_check_facets(checks)

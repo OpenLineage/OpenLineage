@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0.
+from lib2to3.pytree import Base
 import logging
 from typing import List, Optional, TYPE_CHECKING, Dict, Tuple
 from urllib.parse import urlparse
@@ -66,6 +67,12 @@ class SqlExtractor(BaseExtractor):
             self._get_in_query(sql_meta.in_tables) if sql_meta.in_tables else None,
             self._get_out_query(sql_meta.out_tables) if sql_meta.out_tables else None,
         )
+
+        for ds in inputs:
+            ds.input_facets = self._get_input_facets()
+
+        for ds in outputs:
+            ds.output_facets = self._get_output_facets()
 
         db_specific_run_facets = self._get_db_specific_run_facets(
             source, inputs, outputs
@@ -137,4 +144,10 @@ class SqlExtractor(BaseExtractor):
         inputs: Tuple[List[Dataset], ...],
         outputs: Tuple[List[Dataset], ...],
     ) -> Dict[str, BaseFacet]:
+        return {}
+
+    def _get_input_facets(self) -> Dict[str, BaseFacet]:
+        return {}
+
+    def _get_output_facets(self) -> Dict[str, BaseFacet]:
         return {}
