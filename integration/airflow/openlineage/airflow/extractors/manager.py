@@ -56,7 +56,8 @@ class ExtractorManager:
                     and collect_manual_lineage
                 ):
                     self.log.exception(
-                        f"Inputs/outputs were defined but {extractor.__class__.__name__} extractor's lineage metadata is being used. Extractor metadata is prioritized over manually defined lineage."
+                        f"""Inputs/outputs were defined but {extractor.__class__.__name__} extractor's lineage metadata is being used.
+                            Extractor metadata is prioritized over manually defined lineage."""
                     )
                 if complete:
                     task_metadata = extractor.extract_on_complete(task_instance)
@@ -80,7 +81,8 @@ class ExtractorManager:
 
             if collect_manual_lineage:
                 self.log.warning(
-                    "Inputs/outputs were defined manually and no extractor was found that excepts the given operator. Collecting manual lineage from the provided input and/or output definitions."
+                    """Inputs/outputs were defined manually and no extractor was found that excepts the given operator.
+                        Collecting manual lineage from the provided input and/or output definitions."""
                 )
 
                 if len(task.get_inlet_defs()):
