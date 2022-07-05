@@ -91,10 +91,12 @@ TASK = SnowflakeOperator(
 
 
 def mock_get_hook(operator):
+    mocked = mock.MagicMock()
+    mocked.return_value.conn_name_attr = 'snowflake_conn_id'
     if hasattr(operator, 'get_db_hook'):
-        operator.get_db_hook = mock.MagicMock()
+        operator.get_db_hook = mocked
     else:
-        operator.get_hook = mock.MagicMock()
+        operator.get_hook = mocked
 
 
 def get_hook_method(operator):
@@ -103,8 +105,8 @@ def get_hook_method(operator):
     else:
         return operator.get_hook
 
-@mock.patch('openlineage.airflow.extractors.snowflake_extractor.get_table_schemas')  # noqa
-@mock.patch('openlineage.airflow.extractors.snowflake_extractor.get_connection')
+@mock.patch('openlineage.airflow.extractors.sql_extractor.get_table_schemas')  # noqa
+@mock.patch('openlineage.airflow.extractors.sql_extractor.get_connection')
 def test_extract(get_connection, mock_get_table_schemas):
     source = Source(
         scheme='snowflake',
@@ -143,8 +145,8 @@ def test_extract(get_connection, mock_get_table_schemas):
 
 
 @pytest.mark.skipif(parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"), reason="Airflow 2+ test")  # noqa
-@mock.patch('openlineage.airflow.extractors.snowflake_extractor.get_table_schemas')  # noqa
-@mock.patch('openlineage.airflow.extractors.snowflake_extractor.get_connection')
+@mock.patch('openlineage.airflow.extractors.sql_extractor.get_table_schemas')  # noqa
+@mock.patch('openlineage.airflow.extractors.sql_extractor.get_connection')
 def test_extract_query_ids(get_connection, mock_get_table_schemas):
     mock_get_table_schemas.return_value = (
         [],
