@@ -30,9 +30,6 @@ class PostgresExtractor(SqlExtractor):
             'sql': SqlJobFacet(self.operator.sql)
         }
 
-        return self.build_metadata()
-
-    def build_metadata(self) -> TaskMetadata:
         # (1) Parse sql statement to obtain input / output tables.
         logger.debug(f"Sending SQL to parser: {self.operator.sql}")
         sql_meta: Optional[SqlMeta] = parse(self.operator.sql, self.default_schema)
@@ -81,6 +78,7 @@ class PostgresExtractor(SqlExtractor):
             job_facets=job_facets
         )
 
+<<<<<<< HEAD
     def _get_input_tables(self, source, database, sql_meta):
         return [
             Dataset.from_table(
@@ -94,6 +92,8 @@ class PostgresExtractor(SqlExtractor):
         ]
 
 >>>>>>> 2131dddb (Refactor PostgresExtractor to build metadata outside of extract or extract_on_complete, so check extractors inheriting can run that code only on complete.)
+=======
+>>>>>>> a8cac33f (Revert postgres extractor as Snowflake extractor no longer inherits from it.)
     def _get_connection_uri(self):
         return get_normalized_postgres_connection_uri(self.conn)
 
