@@ -1,5 +1,6 @@
 include 'spark2'
 include 'spark3'
+include 'spark32'
 include 'shared'
 include 'app'
 

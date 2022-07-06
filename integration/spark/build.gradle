@@ -58,6 +58,7 @@ dependencies {
     implementation(project(path: ":shared"))
     implementation(project(path: ":spark2"))
     implementation(project(path: ":spark3"))
+    implementation(project(path: ":spark32"))
 
     compileOnly "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
     compileOnly "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
@@ -205,6 +206,7 @@ shadowJar {
         exclude (project(":shared"))
         exclude (project(":spark2"))
         exclude (project(":spark3"))
+        exclude (project(":spark32"))
         exclude (project(":app"))
     }
     dependencies {
