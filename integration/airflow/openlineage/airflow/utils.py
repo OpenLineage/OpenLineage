@@ -1,10 +1,12 @@
-# SPDX-License-Identifier: Apache-2.0.
+# Copyright 2018-2022 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
+
 import importlib
 import json
 import logging
 import os
 import subprocess
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Type, Dict, Any
 from uuid import uuid4
 from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
 from typing import Optional
@@ -13,12 +15,16 @@ from airflow.version import version as AIRFLOW_VERSION
 
 from pkg_resources import parse_version
 
-from openlineage.airflow.facets import AirflowVersionRunFacet, AirflowRunArgsRunFacet
+from openlineage.airflow.facets import (
+    AirflowMappedTaskRunFacet,
+    AirflowVersionRunFacet,
+    AirflowRunArgsRunFacet
+)
 from pendulum import from_timestamp
 
 
 if TYPE_CHECKING:
-    from airflow.models import Connection
+    from airflow.models import Connection, BaseOperator, TaskInstance
 
 
 log = logging.getLogger(__name__)
@@ -27,6 +33,12 @@ _NOMINAL_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
 def openlineage_job_name(dag_id: str, task_id: str) -> str:
     return f'{dag_id}.{task_id}'
+
+
+def get_operator_class(task: "BaseOperator") -> Type:
+    if task.__class__.__name__ in ('DecoratedMappedOperator', 'MappedOperator'):
+        return task.operator_class
+    return task.__class__
 
 
 class JobIdMapping:
@@ -221,11 +233,20 @@ def get_job_name(task):
     return f'{task.dag_id}.{task.task_id}'
 
 
-def get_custom_facets(task, is_external_trigger: bool):
-    return {
+def get_custom_facets(
+    task, is_external_trigger: bool, task_instance: "TaskInstance" = None
+) -> Dict[str, Any]:
+    custom_facets = {
         "airflow_runArgs": AirflowRunArgsRunFacet(is_external_trigger),
-        "airflow_version": AirflowVersionRunFacet.from_task(task)
+        "airflow_version": AirflowVersionRunFacet.from_task(task),
     }
+    # check for -1 comes from SmartSensor compatibility with dynamic task mapping
+    # this comes from Airflow code
+    if hasattr(task_instance, "map_index") and getattr(task_instance, "map_index") != -1:
+        custom_facets["airflow_mappedTask"] = AirflowMappedTaskRunFacet.from_task_instance(
+            task_instance
+        )
+    return custom_facets
 
 
 def new_lineage_run_id(dag_run_id: str, task_id: str) -> str:

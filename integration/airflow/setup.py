@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 #
-# SPDX-License-Identifier: Apache-2.0.
+# Copyright 2018-2022 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
 #
 # -*- coding: utf-8 -*-
 
@@ -9,7 +10,7 @@ from setuptools import setup, find_namespace_packages
 with open("README.md") as readme_file:
     readme = readme_file.read()
 
-__version__ = "0.10.0"
+__version__ = "0.11.0"
 
 requirements = [
     "attrs>=19.3",
@@ -36,12 +37,11 @@ extras_require = {
         "airflow-provider-great-expectations==0.0.8",
     ],
     "airflow-2": [
-        "apache-airflow==2.1.4",
         "apache-airflow-providers-postgres>=2.0.0",
         "apache-airflow-providers-mysql>=2.0.0",
         "apache-airflow-providers-snowflake>=2.1.0",
         "apache-airflow-providers-google>=5.0.0",
-        "airflow-provider-great-expectations>=0.0.8",
+        "airflow-provider-great-expectations==0.1.4",
     ],
 }
 

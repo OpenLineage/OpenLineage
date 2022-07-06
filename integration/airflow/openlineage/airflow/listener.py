@@ -1,10 +1,13 @@
+# Copyright 2018-2022 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
+
 import logging
 import threading
 import uuid
 
 import attr
 
-from typing import TYPE_CHECKING, Optional, Callable
+from typing import TYPE_CHECKING, Optional, Callable, Union
 
 from airflow.listeners import hookimpl
 
@@ -13,14 +16,14 @@ from openlineage.airflow.extractors import ExtractorManager
 from openlineage.airflow.utils import DagUtils, get_task_location, get_job_name, get_custom_facets
 
 if TYPE_CHECKING:
-    from airflow.models import TaskInstance, BaseOperator
+    from airflow.models import TaskInstance, BaseOperator, MappedOperator
     from sqlalchemy.orm import Session
 
 
 @attr.s(frozen=True)
 class ActiveRun:
     run_id: str = attr.ib()
-    task: "BaseOperator" = attr.ib()
+    task: Union["BaseOperator", "MappedOperator"] = attr.ib()
 
 
 class ActiveRunManager:
@@ -81,7 +84,6 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
 
     log.debug("OpenLineage listener got notification about task instance start")
     dagrun = task_instance.dag_run
-    task = task_instance.task
     dag = task_instance.task.dag
 
     run_id = str(uuid.uuid4())
@@ -89,6 +91,9 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
     parent_run_id = str(uuid.uuid3(uuid.NAMESPACE_URL, f'{dag.dag_id}.{dagrun.run_id}'))
 
     def on_running():
+        task_instance.render_templates()
+        task = task_instance.task
+
         task_metadata = extractor_manager.extract_metadata(dagrun, task)
 
         adapter.start_task(
@@ -104,7 +109,7 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
             task=task_metadata,
             run_facets={
                 **task_metadata.run_facets,
-                **get_custom_facets(task_instance, dagrun.external_trigger)
+                **get_custom_facets(task, dagrun.external_trigger, task_instance)
             }
         )
 

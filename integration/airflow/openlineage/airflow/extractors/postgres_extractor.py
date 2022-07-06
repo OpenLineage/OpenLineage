@@ -1,89 +1,26 @@
 # SPDX-License-Identifier: Apache-2.0.
 import logging
-from typing import List, Optional
+from typing import List
 from urllib.parse import urlparse
 
-from openlineage.airflow.extractors.dbapi_utils import get_table_schemas
 from openlineage.airflow.utils import (
     get_normalized_postgres_connection_uri,
-    get_connection, safe_import_airflow
+    safe_import_airflow
 )
-from openlineage.airflow.extractors.base import (
-    BaseExtractor,
-    TaskMetadata
-)
-from openlineage.client.facet import SqlJobFacet
-from openlineage.common.sql import SqlMeta, parse, DbTableMeta
-from openlineage.common.dataset import Source
+
+from openlineage.airflow.extractors.sql_extractor import SqlExtractor
+from openlineage.common.sql import DbTableMeta
 
 
 logger = logging.getLogger(__name__)
 
 
-class PostgresExtractor(BaseExtractor):
+class PostgresExtractor(SqlExtractor):
     default_schema = 'public'
-
-    def __init__(self, operator):
-        super().__init__(operator)
-        self.conn = None
 
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
         return ['PostgresOperator']
-
-    def extract(self) -> TaskMetadata:
-        task_name = f"{self.operator.dag_id}.{self.operator.task_id}"
-        job_facets = {
-            'sql': SqlJobFacet(self.operator.sql)
-        }
-
-        # (1) Parse sql statement to obtain input / output tables.
-        logger.debug(f"Sending SQL to parser: {self.operator.sql}")
-        sql_meta: Optional[SqlMeta] = parse(self.operator.sql, self.default_schema)
-        logger.debug(f"Got meta {sql_meta}")
-
-        if not sql_meta:
-            return TaskMetadata(
-                name=task_name,
-                inputs=[],
-                outputs=[],
-                run_facets={},
-                job_facets=job_facets
-            )
-
-        # (2) Get Airflow connection
-        self.conn = get_connection(self._conn_id())
-
-        # (3) Construct source object
-        source = Source(
-            scheme="postgres",
-            authority=self._get_authority(),
-            connection_url=self._get_connection_uri()
-        )
-
-        database = self.operator.database
-        if not database:
-            database = self._get_database()
-
-        # (4) Map input / output tables to dataset objects with source set
-        # as the current connection. We need to also fetch the schema for the
-        # input tables to format the dataset name as:
-        # {schema_name}.{table_name}
-        inputs, outputs = get_table_schemas(
-            self._get_hook(),
-            source,
-            database,
-            self._information_schema_query(sql_meta.in_tables) if sql_meta.in_tables else None,
-            self._information_schema_query(sql_meta.out_tables) if sql_meta.out_tables else None
-        )
-
-        return TaskMetadata(
-            name=task_name,
-            inputs=[ds.to_openlineage_dataset() for ds in inputs],
-            outputs=[ds.to_openlineage_dataset() for ds in outputs],
-            run_facets={},
-            job_facets=job_facets
-        )
 
     def _get_connection_uri(self):
         return get_normalized_postgres_connection_uri(self.conn)
@@ -105,9 +42,6 @@ class PostgresExtractor(BaseExtractor):
             parsed = urlparse(self.conn.get_uri())
             return f'{parsed.hostname}:{parsed.port}'
 
-    def _conn_id(self):
-        return self.operator.postgres_conn_id
-
     def _get_hook(self):
         PostgresHook = safe_import_airflow(
             airflow_1_path="airflow.hooks.postgres_hook.PostgresHook",
@@ -117,6 +51,12 @@ class PostgresExtractor(BaseExtractor):
             postgres_conn_id=self.operator.postgres_conn_id,
             schema=self.operator.database
         )
+
+    def _get_in_query(self, in_tables):
+        return self._information_schema_query(in_tables)
+
+    def _get_out_query(self, out_tables):
+        return self._information_schema_query(out_tables)
 
     @staticmethod
     def _information_schema_query(tables: List[DbTableMeta]) -> str:

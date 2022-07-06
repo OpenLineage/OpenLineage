@@ -1,0 +1,15 @@
+[{
+    "eventType": "START",
+    "job": {
+        "name": "mysql_orders_popular_day_of_week.mysql_if_not_exists"
+    },
+    "run": {
+        "facets": {
+            "airflow_version": {
+                "airflowVersion": "{{ env_var('AIRFLOW_VERSION') }}",
+                "operator": "airflow.providers.mysql.operators.mysql.MySqlOperator"
+            }
+        }
+    }
+}
+]

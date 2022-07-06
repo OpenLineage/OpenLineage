@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 #
-# SPDX-License-Identifier: Apache-2.0.
+# Copyright 2018-2022 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
 #
 # -*- coding: utf-8 -*-
 
@@ -9,7 +10,7 @@ from setuptools import setup
 with open("README.md") as readme_file:
      readme = readme_file.read()
 
-__version__ = "0.10.0"
+__version__ = "0.11.0"
 
 requirements = [
     f"sqlparse>=0.2.3,<0.4",

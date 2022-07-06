@@ -1,5 +1,3 @@
-<!-- SPDX-License-Identifier: Apache-2.0 -->
-
 # Supported Commands
 
 The page lists Spark commands which are supported by OpenLineage.

@@ -1,5 +1,8 @@
+#!/bin/bash
+#
+# Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
-
+#
 # You can run this on Windows as well, just change to a batch files.
 #
 # Note: You need the Databricks CLI installed, and you need a token configued.
@@ -7,7 +10,7 @@
 #       upload to a Databricks workspace that is not configured as your default
 #       profile for the Databricks CLI.
 #
-#!/bin/bash
+
 
 echo "Creating DBFS direcrtory"
 dbfs mkdirs dbfs:/databricks/openlineage

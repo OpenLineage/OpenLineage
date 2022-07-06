@@ -1,4 +1,5 @@
-# SPDX-License-Identifier: Apache-2.0.
+# Copyright 2018-2022 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
 
 from unittest import mock
 
@@ -99,8 +100,8 @@ TASK = PostgresOperator(
 )
 
 
-@mock.patch('openlineage.airflow.extractors.postgres_extractor.get_table_schemas')  # noqa
-@mock.patch('openlineage.airflow.extractors.postgres_extractor.get_connection')
+@mock.patch('openlineage.airflow.extractors.sql_extractor.get_table_schemas')  # noqa
+@mock.patch('openlineage.airflow.extractors.sql_extractor.get_connection')
 def test_extract(get_connection, mock_get_table_schemas):
     source = Source(
         scheme='postgres',
@@ -137,8 +138,8 @@ def test_extract(get_connection, mock_get_table_schemas):
     assert task_metadata.outputs == []
 
 
-@mock.patch('openlineage.airflow.extractors.postgres_extractor.get_table_schemas')  # noqa
-@mock.patch('openlineage.airflow.extractors.postgres_extractor.get_connection')
+@mock.patch('openlineage.airflow.extractors.sql_extractor.get_table_schemas')  # noqa
+@mock.patch('openlineage.airflow.extractors.sql_extractor.get_connection')
 def test_extract_authority_uri(get_connection, mock_get_table_schemas):
 
     source = Source(

@@ -10,14 +10,14 @@ Maven:
 <dependency>
     <groupId>io.openlineage</groupId>
     <artifactId>openlineage-spark</artifactId>
-    <version>0.9.0</version>
+    <version>0.10.0</version>
 </dependency>
 ```
 
 or Gradle:
 
 ```groovy
-implementation 'io.openlineage:openlineage-spark:0.9.0'
+implementation 'io.openlineage:openlineage-spark:0.10.0'
 ```
 
 ## Getting started
@@ -50,7 +50,7 @@ from pyspark.sql import SparkSession
 
 spark = (SparkSession.builder.master('local')
          .appName('sample_spark')
-         .config('spark.jars.packages', 'io.openlineage:openlineage-spark:0.9.0')
+         .config('spark.jars.packages', 'io.openlineage:openlineage-spark:0.10.0')
          .config('spark.extraListeners', 'io.openlineage.spark.agent.OpenLineageSparkListener')
          .config('spark.openlineage.url', 'http://{openlineage.client.host}/api/v1/namespaces/spark_integration/')
          .getOrCreate())
@@ -66,7 +66,7 @@ container):
 ```python
 from pyspark.sql import SparkSession
 
-file = "/home/jovyan/openlineage/libs/openlineage-spark-0.9.0.jar"
+file = "/home/jovyan/openlineage/libs/openlineage-spark-0.10.0.jar"
 
 spark = (SparkSession.builder.master('local').appName('rdd_to_dataframe')
              .config('spark.jars', file)
@@ -148,7 +148,7 @@ class MyDatasetDetector extends QueryPlanVisitor<MyDataset, OutputDataset> {
 ## API
 The following APIs are still evolving and may change over time, based on user feedback.
 
-###[`OpenLineageEventHandlerFactory`](src/main/common/java/io/openlineage/spark/api/OpenLineageEventHandlerFactory.java)
+###[`OpenLineageEventHandlerFactory`](shared/src/main/java/io/openlineage/spark/api/OpenLineageEventHandlerFactory.java)
 This interface defines the main entrypoint to the extension codebase. Custom implementations
 are registered by following Java's [`ServiceLoader` conventions](https://docs.oracle.com/javase/8/docs/api/java/util/ServiceLoader.html).
 A file called `io.openlineage.spark.api.OpenLineageEventHandlerFactory` must exist in the
@@ -214,18 +214,18 @@ Collection<CustomFacetBuilder<?, ? extends RunFacet>> createRunFacetBuilders(Ope
 Collection<CustomFacetBuilder<?, ? extends JobFacet>> createJobFacetBuilders(OpenLineageContext context);
 ```
 
-See the [`OpenLineageEventHandlerFactory` javadocs](src/main/common/java/io/openlineage/spark/api/OpenLineageEventHandlerFactory.java)
+See the [`OpenLineageEventHandlerFactory` javadocs](shared/src/main/java/io/openlineage/spark/api/OpenLineageEventHandlerFactory.java)
 for specifics on each method.
 
 
-### [`QueryPlanVisitor`](src/main/common/java/io/openlineage/spark/api/QueryPlanVisitor.java)
+### [`QueryPlanVisitor`](shared/src/main/java/io/openlineage/spark/api/QueryPlanVisitor.java)
 QueryPlanVisitors evaluate nodes of a Spark `LogicalPlan` and attempt to generate `InputDataset`s or
 `OutputDataset`s from the information found in the `LogicalPlan` nodes. This is the most common
 abstraction present in the OpenLineage Spark library and many examples can be found in the
 `io.openlineage.spark.agent.lifecycle.plan` package - examples include the
-[`BigQueryNodeVisitor`](src/main/common/java/io/openlineage/spark/agent/lifecycle/plan/BigQueryNodeVisitor.java),
-the [`KafkaRelationVisitor`](src/main/common/java/io/openlineage/spark/agent/lifecycle/plan/KafkaRelationVisitor.java)
-and the [`InsertIntoHiveTableVisitor`](src/main/common/java/io/openlineage/spark/agent/lifecycle/plan/InsertIntoHiveTableVisitor.java).
+[`BigQueryNodeVisitor`](shared/src/main/java/io/openlineage/spark/agent/lifecycle/plan/BigQueryNodeVisitor.java),
+the [`KafkaRelationVisitor`](shared/src/main/java/io/openlineage/spark/agent/lifecycle/plan/KafkaRelationVisitor.java)
+and the [`InsertIntoHiveTableVisitor`](shared/src/main/java/io/openlineage/spark/agent/lifecycle/plan/InsertIntoHiveTableVisitor.java).
 
 `QueryPlanVisitor`s implement Scala's `PartialFunction` interface and are tested against every node
 of a Spark query's optimized `LogicalPlan`. Each invocation will expect either an `InputDataset`
@@ -238,22 +238,22 @@ runtime.
 can also be attached, though `CustomFacetBuilder`s _may_ override facets attached directly to the
 dataset.
 
-### [`InputDatasetBuilder`s](integration/spark/src/main/common/java/io/openlineage/spark/api/AbstractInputDatasetBuilder.java) and [`OutputDatasetBuilder`s](integration/spark/src/main/common/java/io/openlineage/spark/api/AbstractOutputDatasetBuilder.java)
+### [`InputDatasetBuilder`s](shared/src/main/java/io/openlineage/spark/api/AbstractInputDatasetBuilder.java) and [`OutputDatasetBuilder`s](integration/spark/src/main/common/java/io/openlineage/spark/api/AbstractOutputDatasetBuilder.java)
 Similar to the `QueryPlanVisitor`s, `InputDatasetBuilder`s and `OutputDatasetBuilder`s are
 `PartialFunction`s defined for a specific input (see below for the list of Spark listener events and
 scheduler objects that can be passed to a builder) that can generate either an `InputDataset` or an
 `OutputDataset`. Though not strictly necessary, the abstract base classes
-[`AbstractInputDatasetBuilder`s](integration/spark/src/main/common/java/io/openlineage/spark/api/AbstractInputDatasetBuilder.java)
-and [`AbstractOutputDatasetBuilder`s](integration/spark/src/main/common/java/io/openlineage/spark/api/AbstractOutputDatasetBuilder.java)
+[`AbstractInputDatasetBuilder`s](shared/src/main/java/io/openlineage/spark/api/AbstractInputDatasetBuilder.java)
+and [`AbstractOutputDatasetBuilder`s](shared/src/main/java/io/openlineage/spark/api/AbstractOutputDatasetBuilder.java)
 are available for builders to extend.
 
-### [`CustomFacetBuilder`](src/main/common/java/io/openlineage/spark/api/CustomFacetBuilder.java)
+### [`CustomFacetBuilder`](shared/src/main/java/io/openlineage/spark/api/CustomFacetBuilder.java)
 CustomFacetBuilders evaluate Spark event types and scheduler objects (see below) to construct custom
 facets. CustomFacetBuilders are used to create `InputDatsetFacet`s, `OutputDatsetFacet`s,
 `DatsetFacet`s, `RunFacet`s, and `JobFacet`s. A few examples can be found in the
-[`io.openlineage.spark.agent.facets.builder`](src/main/common/java/io/openlineage/spark/agent/facets/builder)
-package, including the [`ErrorFacetBuilder`](src/main/common/java/io/openlineage/spark/agent/facets/builder/ErrorFacetBuilder.java)
-and the [`LogicalPlanRunFacetBuilder`](src/main/common/java/io/openlineage/spark/agent/facets/builder/LogicalPlanRunFacetBuilder.java).
+[`io.openlineage.spark.agent.facets.builder`](shared/src/main/java/io/openlineage/spark/agent/facets/builder)
+package, including the [`ErrorFacetBuilder`](shared/src/main/java/io/openlineage/spark/agent/facets/builder/ErrorFacetBuilder.java)
+and the [`LogicalPlanRunFacetBuilder`](shared/src/main/java/io/openlineage/spark/agent/facets/builder/LogicalPlanRunFacetBuilder.java).
 `CustomFacetBuilder`s are not `PartialFunction` implementations, but do define the `isDefinedAt(Object)`
 method to determine whether a given input is valid for the function. They implement the `BiConsumer`
 interface, accepting the valid input argument, and a `BiConsumer<String, Facet>` consumer, which
@@ -262,11 +262,11 @@ There is no limit to the number of facets that can be reported by a given `Custo
 Facet names that conflict will overwrite previously reported facets if they are reported for the
 same Spark event.
 Though not strictly necessary, the following abstract base classes are available for extension:
-* [`AbstractJobFacetBuilder`s](integration/spark/src/main/common/java/io/openlineage/spark/api/AbstractJobFacetBuilder.java)
-* [`AbstractRunFacetBuilder`s](integration/spark/src/main/common/java/io/openlineage/spark/api/AbstractRunFacetBuilder.java)
-* [`AbstractInputDatasetFacetBuilder`s](integration/spark/src/main/common/java/io/openlineage/spark/api/AbstractInputDatasetFacetBuilder.java)
-* [`AbstractOutputDatasetFacetBuilder`s](integration/spark/src/main/common/java/io/openlineage/spark/api/AbstractOutputDatasetFacetBuilder.java)
-* [`AbstractDatasetFacetBuilder`s](integration/spark/src/main/common/java/io/openlineage/spark/api/AbstractDatasetFacetBuilder.java)
+* [`AbstractJobFacetBuilder`s](shared/src/main/java/io/openlineage/spark/api/AbstractJobFacetBuilder.java)
+* [`AbstractRunFacetBuilder`s](shared/src/main/java/io/openlineage/spark/api/AbstractRunFacetBuilder.java)
+* [`AbstractInputDatasetFacetBuilder`s](shared/src/main/java/io/openlineage/spark/api/AbstractInputDatasetFacetBuilder.java)
+* [`AbstractOutputDatasetFacetBuilder`s](shared/src/main/java/io/openlineage/spark/api/AbstractOutputDatasetFacetBuilder.java)
+* [`AbstractDatasetFacetBuilder`s](shared/src/main/java/io/openlineage/spark/api/AbstractDatasetFacetBuilder.java)
 
 Input/Output/Dataset facets returned are attached to _any_ Input/Output Dataset found for a given
 Spark event. Typically, a Spark job only has one `OutputDataset`, so any `OutputDatasetFacet`

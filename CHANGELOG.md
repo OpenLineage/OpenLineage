@@ -1,7 +1,30 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.9.0...HEAD)
-* CI: added static code anlalysis tool mypy to python source codes ([#802](https://github.com/openlineage/openlineage/issues/802)) [@howardyoo](https://github.com/howardyoo)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.10.0...HEAD)
+
+## [0.10.0](https://github.com/OpenLineage/OpenLineage/compare/0.9.0...0.10.0) 2022-06-24
+### Added
+
+* Add static code anlalysis tool [mypy](http://mypy-lang.org) to run in CI for against all python modules ([`#802`](https://github.com/openlineage/openlineage/issues/802)) [@howardyoo](https://github.com/howardyoo)
+* Extend `SaveIntoDataSourceCommandVisitor` to extract schema from `LocalRelaiton` and `LogicalRdd` in spark integration ([`#794`](https://github.com/OpenLineage/OpenLineage/pull/794)) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+* Add `InMemoryRelationInputDatasetBuilder` for `InMemory` datasets to Spark integration ([`#818`](https://github.com/OpenLineage/OpenLineage/pull/818)) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+* Add copyright to source files [`#755`](https://github.com/OpenLineage/OpenLineage/pull/755) [@merobi-hub](https://github.com/merobi-hub)
+* Add `SnowflakeOperatorAsync` extractor support to Airflow integration [`#869`](https://github.com/OpenLineage/OpenLineage/pull/869) [@merobi-hub](https://github.com/merobi-hub)
+* Add PMD analysis to proxy project ([`#889`](https://github.com/OpenLineage/OpenLineage/pull/889)) [@howardyoo](https://github.com/howardyoo)
+
+### Changed
+
+* Skip `FunctionRegistry.class` serialization in Spark integration ([`#828`](https://github.com/OpenLineage/OpenLineage/pull/828)) [@mobuchowski](https://github.com/mobuchowski)
+* Install new `rust`-based SQL parser by default in Airflow integration ([`#835`](https://github.com/OpenLineage/OpenLineage/pull/835)) [@mobuchowski](https://github.com/mobuchowski)
+* Improve overall `pytest` and integration tests for Airflow integration ([`#851`](https://github.com/OpenLineage/OpenLineage/pull/851),[`#858`](https://github.com/OpenLineage/OpenLineage/pull/858)) [@denimalpaca](https://github.com/denimalpaca)
+* Reduce OL event payload size by excluding local data and including output node in start events ([`#881`](https://github.com/OpenLineage/OpenLineage/pull/881)) [@collado-mike](https://github.com/collado-mike)
+* Split spark integration into submodules ([`#834`](https://github.com/OpenLineage/OpenLineage/pull/834), [`#890`](https://github.com/OpenLineage/OpenLineage/pull/890)) [@tnazarew](https://github.com/tnazarew) [@mobuchowski](https://github.com/mobuchowski)
+
+### Fixed
+
+* Conditionally import `sqlalchemy` lib for Great Expectations integration ([`#826`](https://github.com/OpenLineage/OpenLineage/pull/826)) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+* Add check for missing **class** `org.apache.spark.sql.catalyst.plans.logical.CreateV2Table` in Spark integration ([`#866`](https://github.com/OpenLineage/OpenLineage/pull/866)) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+* Fix static code analysis issues ([`#867`](https://github.com/OpenLineage/OpenLineage/pull/867),[`#874`](https://github.com/OpenLineage/OpenLineage/pull/874)) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
 
 ## [0.9.0](https://github.com/OpenLineage/OpenLineage/compare/0.8.2...0.9.0)
 ### Added

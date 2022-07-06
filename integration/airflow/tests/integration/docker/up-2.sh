@@ -1,6 +1,7 @@
 #!/bin/bash
 #
-# SPDX-License-Identifier: Apache-2.0.
+# Copyright 2018-2022 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
 #
 # Usage: $ ./up.sh
 
@@ -21,13 +22,15 @@ fi
 if [[ -n "$CI" ]]; then
   echo $GCLOUD_SERVICE_KEY > gcloud/gcloud-service-key.json
   chmod 644 gcloud/gcloud-service-key.json
-  mkdir -p tests/airflow/logs
-  chmod a+rwx -R tests/airflow/logs
 fi
 
+# this makes it easier to keep proper permissions on logs
+mkdir -p tests/airflow/logs
+chmod a+rwx -R tests/airflow/logs
+
 # maybe overkill
-OPENLINEAGE_AIRFLOW_WHL=$(docker run openlineage-airflow-base:latest sh -c "ls /whl/openlineage*.whl")
-OPENLINEAGE_AIRFLOW_WHL_ALL=$(docker run openlineage-airflow-base:latest sh -c "ls /whl/*")
+OPENLINEAGE_AIRFLOW_WHL=$(docker run --rm openlineage-airflow-base:latest sh -c "ls /whl/openlineage*.whl")
+OPENLINEAGE_AIRFLOW_WHL_ALL=$(docker run --rm openlineage-airflow-base:latest sh -c "ls /whl/*")
 
 # Add revision to requirements.txt
 cat > requirements.txt <<EOL

@@ -3,7 +3,7 @@ from typing import Optional, Type
 
 from openlineage.airflow.extractors import TaskMetadata, BaseExtractor, Extractors
 from openlineage.airflow.facets import UnknownOperatorAttributeRunFacet, UnknownOperatorInstance
-from openlineage.airflow.utils import get_job_name
+from openlineage.airflow.utils import get_job_name, get_operator_class
 
 
 class ExtractorManager:
@@ -24,7 +24,7 @@ class ExtractorManager:
         task_instance=None
     ) -> TaskMetadata:
         extractor = self._get_extractor(task)
-        task_info = f'task_type={task.__class__.__name__} ' \
+        task_info = f'task_type={get_operator_class(task).__name__} ' \
             f'airflow_dag_id={task.dag_id} ' \
             f'task_id={task.task_id} ' \
             f'airflow_run_id={dagrun.run_id} '
@@ -60,7 +60,7 @@ class ExtractorManager:
                     "unknownSourceAttribute": UnknownOperatorAttributeRunFacet(
                         unknownItems=[
                             UnknownOperatorInstance(
-                                name=task.__class__.__name__,
+                                name=get_operator_class(task).__name__,
                                 properties={
                                     attr: value for attr, value in task.__dict__.items()
                                 },
@@ -75,7 +75,7 @@ class ExtractorManager:
     def _get_extractor(self, task) -> Optional[BaseExtractor]:
         if task.task_id in self.extractors:
             return self.extractors[task.task_id]
-        extractor = self.task_to_extractor.get_extractor_class(task.__class__)
+        extractor = self.task_to_extractor.get_extractor_class(get_operator_class(task))
         self.log.debug(f'extractor for {task.__class__} is {extractor}')
         if extractor:
             self.extractors[task.task_id] = extractor(task)

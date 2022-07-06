@@ -15,6 +15,22 @@ plugins {
     id 'com.diffplug.spotless' version '5.12.1'
     id "org.openapi.generator" version "5.2.0"
     id "com.github.johnrengelman.shadow" version "7.1.2"
+    id "pmd"
+}
+
+pmd {
+    consoleOutput = true
+    toolVersion = "6.46.0"
+    rulesMinimumPriority = 5
+    ruleSetFiles = rootProject.files("pmd-openlineage.xml")
+    ruleSets = []
+    ignoreFailures = true
+}
+
+pmdMain {
+    reports {
+        html.required = true
+    }
 }
 
 repositories {
@@ -49,8 +65,8 @@ dependencies {
     implementation 'org.apache.httpcomponents:httpclient:4.5.13'
     implementation 'commons-logging:commons-logging:1.2'
     implementation 'org.yaml:snakeyaml:1.30'
+    implementation 'org.slf4j:slf4j-api:1.7.36'
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
-    compileOnly 'org.slf4j:slf4j-api:1.7.36'
     compileOnly 'org.apache.kafka:kafka-clients:3.1.0'
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
@@ -116,33 +132,6 @@ compileJava.dependsOn tasks.generateCode, tasks.openApiGenerate
 
 test {
     useJUnitPlatform()
-}
-
-shadowJar {
-    minimize()
-    classifier = ''
-    relocate 'com.fasterxml.jackson', 'io.openlineage.client.shaded.com.fasterxml.jackson'
-    relocate 'org.apache.httpcomponents', 'io.openlineage.client.shaded.org.apache.httpcomponents'
-    relocate 'org.apache.http', 'io.openlineage.client.shaded.org.apache.http'
-    relocate 'org.apache.commons.codec', 'io.openlineage.client.shaded.org.apache.commons.codec'
-    relocate 'org.yaml', 'io.openlineage.client.shaded.org.yaml'
-
-    exclude 'META-INF/maven/**'
-
-    manifest {
-        attributes(
-                'Created-By': "Gradle ${gradle.gradleVersion}",
-                'Built-By': System.getProperty('user.name'),
-                'Build-Jdk': System.getProperty('java.version'),
-                'Implementation-Title': project.name,
-                'Implementation-Version': project.version
-        )
-    }
-    zip64 true
-}
-
-assemble {
-    dependsOn shadowJar
 }
 
 publishing {

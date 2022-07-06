@@ -1,0 +1,141 @@
+import org.apache.tools.ant.filters.ReplaceTokens
+import groovy.io.FileType
+
+import java.nio.file.Files
+
+
+plugins {
+    id 'java'
+    id 'java-library'
+    id 'java-test-fixtures'
+    id 'com.diffplug.spotless' version '5.12.1'
+    id "com.adarshr.test-logger" version "2.1.1"
+    id "com.github.johnrengelman.shadow" version "7.1.2"
+    id "pmd"
+}
+
+pmd {
+    consoleOutput = true
+    toolVersion = "6.46.0"
+    rulesMinimumPriority = 5
+    ruleSetFiles = rootProject.files("pmd-openlineage.xml")
+    ruleSets = []
+    ignoreFailures = true
+}
+
+pmdMain {
+    reports {
+        html.required = true
+    }
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven {
+        url = 'https://datakin.jfrog.io/artifactory/maven-public-libs-snapshot'
+    }
+}
+
+archivesBaseName='openlineage-spark-spark2'
+
+ext {
+    assertjVersion = '3.20.2'
+    bigqueryVersion = '0.21.1'
+    junit5Version = '5.7.2'
+    sparkVersion = '2.4.8'
+    jacksonVersion = '2.6.7'
+    jacksonModuleScalaVersion = '2.6.7.1'
+    jacksonDatatypeVersion = '2.6.7'
+    jacksonDatabindVersion = '2.6.7.3'
+    postgresqlVersion = '42.2.19'
+    lombokVersion = '1.18.20'
+    mockitoVersion = '3.11.2'
+    testcontainersVersion = '1.15.3'
+    isReleaseVersion = !version.endsWith('SNAPSHOT')
+}
+
+dependencies {
+    implementation(project(path: ":shared"))
+
+    compileOnly "com.fasterxml.jackson.module:jackson-module-scala_2.11:${jacksonModuleScalaVersion}"
+    compileOnly "org.apache.spark:spark-core_2.11:${sparkVersion}"
+    compileOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
+    compileOnly "org.apache.spark:spark-hive_2.11:${sparkVersion}"
+    compileOnly "org.apache.spark:spark-sql-kafka-0-10_2.11:${sparkVersion}"
+    compileOnly('com.google.cloud.spark:spark-bigquery_2.11:0.21.1') {
+        exclude group: 'com.fasterxml.jackson.core'
+        exclude group: 'com.fasterxml.jackson.module'
+    }
+
+    compileOnly "com.databricks:dbutils-api_2.11:0.0.5"
+
+    testFixturesApi "org.apache.spark:spark-core_2.11:${sparkVersion}"
+    testFixturesApi "org.apache.spark:spark-sql_2.11:${sparkVersion}"
+    testFixturesApi "org.apache.spark:spark-hive_2.11:${sparkVersion}"
+    testFixturesApi "com.google.cloud.spark:spark-bigquery-with-dependencies_2.11:${bigqueryVersion}"
+    testFixturesApi "com.fasterxml.jackson.module:jackson-module-scala_2.11:${jacksonVersion}"
+    testFixturesApi "org.apache.spark:spark-sql-kafka-0-10_2.11:${sparkVersion}"
+    testImplementation(testFixtures(project(":shared")))
+
+}
+
+def commonTestConfiguration = {
+    forkEvery 1
+    maxParallelForks 5
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = true
+    }
+    systemProperties = [
+            'junit.platform.output.capture.stdout': 'true',
+            'junit.platform.output.capture.stderr': 'true',
+            'spark.version'                       : '2.4.8',
+            'openlineage.spark.jar'               : "${archivesBaseName}-${project.version}.jar",
+            'kafka.package.version'               : 'org.apache.spark:spark-sql-kafka-0-10_2.11:2.4.8',
+            'mockserver.logLevel'                 : 'ERROR'
+    ]
+
+    classpath = project.sourceSets.test.runtimeClasspath
+}
+
+
+test {
+    configure commonTestConfiguration
+    useJUnitPlatform {
+        excludeTags 'integration-test'
+    }
+}
+
+task integrationTest(type: Test) {
+    configure commonTestConfiguration
+    useJUnitPlatform {
+        includeTags "integration-test"
+    }
+}
+
+assemble {
+    dependsOn shadowJar
+}
+
+shadowJar {
+    minimize()
+    classifier = ''
+    zip64 true
+}
+
+spotless {
+    def disallowWildcardImports = {
+        String text = it
+        def regex = ~/import .*\.\*;/
+        def m = regex.matcher(text)
+        if (m.find()) {
+            throw new AssertionError("Wildcard imports disallowed - ${m.findAll()}")
+        }
+    }
+    java {
+        googleJavaFormat()
+        removeUnusedImports()
+        custom 'disallowWildcardImports', disallowWildcardImports
+    }
+}

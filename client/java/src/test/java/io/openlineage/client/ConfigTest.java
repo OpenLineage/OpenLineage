@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -14,7 +19,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-public class ConfigTest {
+class ConfigTest {
   @Test
   void testLoadConfigFromYaml() throws URISyntaxException {
     Path configPath =

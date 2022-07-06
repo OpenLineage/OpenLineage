@@ -1,4 +1,5 @@
-# SPDX-License-Identifier: Apache-2.0.
+# Copyright 2018-2022 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
 
 from unittest import mock
 
@@ -89,8 +90,23 @@ TASK = SnowflakeOperator(
 )
 
 
-@mock.patch('openlineage.airflow.extractors.snowflake_extractor.get_table_schemas')  # noqa
-@mock.patch('openlineage.airflow.extractors.snowflake_extractor.get_connection')
+def mock_get_hook(operator):
+    mocked = mock.MagicMock()
+    mocked.return_value.conn_name_attr = 'snowflake_conn_id'
+    if hasattr(operator, 'get_db_hook'):
+        operator.get_db_hook = mocked
+    else:
+        operator.get_hook = mocked
+
+
+def get_hook_method(operator):
+    if hasattr(operator, 'get_db_hook'):
+        return operator.get_db_hook
+    else:
+        return operator.get_hook
+
+@mock.patch('openlineage.airflow.extractors.sql_extractor.get_table_schemas')  # noqa
+@mock.patch('openlineage.airflow.extractors.sql_extractor.get_connection')
 def test_extract(get_connection, mock_get_table_schemas):
     source = Source(
         scheme='snowflake',
@@ -107,8 +123,9 @@ def test_extract(get_connection, mock_get_table_schemas):
     conn.parse_from_uri(uri=CONN_URI)
     get_connection.return_value = conn
 
-    TASK.get_hook = mock.MagicMock()
-    TASK.get_hook.return_value._get_conn_params.return_value = {
+    mock_get_hook(TASK)
+
+    get_hook_method(TASK).return_value._get_conn_params.return_value = {
         'account': 'test_account',
         'database': DB_NAME
     }
@@ -128,8 +145,8 @@ def test_extract(get_connection, mock_get_table_schemas):
 
 
 @pytest.mark.skipif(parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"), reason="Airflow 2+ test")  # noqa
-@mock.patch('openlineage.airflow.extractors.snowflake_extractor.get_table_schemas')  # noqa
-@mock.patch('openlineage.airflow.extractors.snowflake_extractor.get_connection')
+@mock.patch('openlineage.airflow.extractors.sql_extractor.get_table_schemas')  # noqa
+@mock.patch('openlineage.airflow.extractors.sql_extractor.get_connection')
 def test_extract_query_ids(get_connection, mock_get_table_schemas):
     mock_get_table_schemas.return_value = (
         [],
@@ -140,11 +157,7 @@ def test_extract_query_ids(get_connection, mock_get_table_schemas):
     conn.parse_from_uri(uri=CONN_URI)
     get_connection.return_value = conn
 
-    TASK.get_hook = mock.MagicMock()
-    TASK.get_hook.return_value._get_conn_params.return_value = {
-        'account': 'test_account',
-        'database': DB_NAME
-    }
+    mock_get_hook(TASK)
     TASK.query_ids = ["1500100900"]
 
     task_metadata = SnowflakeExtractor(TASK).extract()

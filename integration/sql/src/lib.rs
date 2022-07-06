@@ -1,3 +1,6 @@
+// Copyright 2018-2022 contributors to the OpenLineage project
+// SPDX-License-Identifier: Apache-2.0
+
 mod bigquery;
 
 use std::collections::hash_map::DefaultHasher;

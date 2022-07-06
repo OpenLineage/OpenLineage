@@ -52,7 +52,7 @@ services:
     environment:
       - BIGQUERY_PREFIX=airflow_1
       - DBT_DATASET_PREFIX=airflow_1_dbt
-    entrypoint: ["./wait-for-it.sh", "backend:5000", "--", "python", "test_integration.py"]
+    entrypoint: ["./wait-for-it.sh", "backend:5000", "--", "python", "-m", "pytest"]
 
   airflow:
     <<: *airflow-base
@@ -98,6 +98,9 @@ services:
   airflow_init:
     <<: *airflow-base
     command: initdb
+    depends_on:
+      - postgres
+    entrypoint: ["/opt/data/wait-for-it.sh", "postgres:5432", "--", "airflow"]
 
   postgres:
     image: bitnami/postgresql:12.1.0
