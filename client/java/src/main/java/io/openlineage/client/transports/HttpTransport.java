@@ -24,10 +24,12 @@ import javax.annotation.Nullable;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 
@@ -35,15 +37,30 @@ import org.apache.http.util.EntityUtils;
 public final class HttpTransport extends Transport implements Closeable {
   private static final String API_V1 = "/api/v1";
 
-  private final HttpClient http;
+  private final CloseableHttpClient http;
   private final URI uri;
   private @Nullable final TokenProvider tokenProvider;
 
   public HttpTransport(@NonNull final HttpConfig httpConfig) {
-    this(HttpClientBuilder.create().build(), httpConfig);
+    this(withTimeout(httpConfig.getTimeout()), httpConfig);
   }
 
-  public HttpTransport(@NonNull final HttpClient httpClient, @NonNull final HttpConfig httpConfig) {
+  private static CloseableHttpClient withTimeout(Double timeout) {
+    if (timeout == null) {
+      timeout = 5.0D;
+    }
+    int timeoutMs = (int) (timeout * 1000);
+    RequestConfig config =
+        RequestConfig.custom()
+            .setConnectTimeout(timeoutMs)
+            .setConnectionRequestTimeout(timeoutMs)
+            .setSocketTimeout(timeoutMs)
+            .build();
+    return HttpClientBuilder.create().setDefaultRequestConfig(config).build();
+  }
+
+  public HttpTransport(
+      @NonNull final CloseableHttpClient httpClient, @NonNull final HttpConfig httpConfig) {
     super(Type.HTTP);
     this.http = httpClient;
     try {
@@ -77,8 +94,13 @@ public final class HttpTransport extends Transport implements Closeable {
         request.addHeader(AUTHORIZATION, tokenProvider.getToken());
       }
 
-      final HttpResponse response = http.execute(request);
+      CloseableHttpResponse response = http.execute(request);
       throwOnHttpError(response);
+      try {
+        EntityUtils.consume(response.getEntity());
+      } finally {
+        response.close();
+      }
     } catch (IOException e) {
       throw new OpenLineageClientException(e);
     }
@@ -93,9 +115,7 @@ public final class HttpTransport extends Transport implements Closeable {
 
   @Override
   public void close() throws IOException {
-    if (http instanceof Closeable) {
-      ((Closeable) http).close();
-    }
+    http.close();
   }
 
   /** Returns an new {@link HttpTransport.Builder} object for building {@link HttpTransport}s. */
@@ -119,7 +139,7 @@ public final class HttpTransport extends Transport implements Closeable {
 
     private URI uri;
 
-    private @Nullable HttpClient httpClient;
+    private @Nullable CloseableHttpClient httpClient;
     private @Nullable TokenProvider tokenProvider;
 
     private Builder() {
@@ -149,7 +169,7 @@ public final class HttpTransport extends Transport implements Closeable {
       return this;
     }
 
-    public Builder http(@NonNull HttpClient httpClient) {
+    public Builder http(@NonNull CloseableHttpClient httpClient) {
       this.httpClient = httpClient;
       return this;
     }

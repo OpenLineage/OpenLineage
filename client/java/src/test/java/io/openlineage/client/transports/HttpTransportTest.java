@@ -21,9 +21,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Collections;
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -31,13 +31,13 @@ class HttpTransportTest {
 
   @Test
   void clientEmitsHttpTransport() throws IOException {
-    HttpClient http = mock(HttpClient.class);
+    CloseableHttpClient http = mock(CloseableHttpClient.class);
     HttpConfig config = new HttpConfig();
     config.setUrl(URI.create("https://localhost:1500/api/v1/lineage"));
     Transport transport = new HttpTransport(http, config);
     OpenLineageClient client = new OpenLineageClient(transport);
 
-    HttpResponse response = mock(HttpResponse.class, RETURNS_DEEP_STUBS);
+    CloseableHttpResponse response = mock(CloseableHttpResponse.class, RETURNS_DEEP_STUBS);
     when(response.getStatusLine().getStatusCode()).thenReturn(200);
 
     when(http.execute(any(HttpUriRequest.class))).thenReturn(response);
@@ -49,13 +49,13 @@ class HttpTransportTest {
 
   @Test
   void httpTransportRaisesOn500() throws IOException {
-    HttpClient http = mock(HttpClient.class);
+    CloseableHttpClient http = mock(CloseableHttpClient.class);
     HttpConfig config = new HttpConfig();
     config.setUrl(URI.create("https://localhost:1500/api/v1/lineage"));
     Transport transport = new HttpTransport(http, config);
     OpenLineageClient client = new OpenLineageClient(transport);
 
-    HttpResponse response = mock(HttpResponse.class, RETURNS_DEEP_STUBS);
+    CloseableHttpResponse response = mock(CloseableHttpResponse.class, RETURNS_DEEP_STUBS);
     when(response.getStatusLine().getStatusCode()).thenReturn(500);
     when(response.getEntity()).thenReturn(mock(HttpEntity.class));
 
@@ -68,7 +68,7 @@ class HttpTransportTest {
 
   @Test
   void httpTransportRaisesOnConnectionFail() throws IOException {
-    HttpClient http = mock(HttpClient.class);
+    CloseableHttpClient http = mock(CloseableHttpClient.class);
     Transport transport = HttpTransport.builder().uri("http://localhost:1500").http(http).build();
     OpenLineageClient client = new OpenLineageClient(transport);
 
@@ -81,14 +81,14 @@ class HttpTransportTest {
 
   @Test
   void httpTransportBuilderRaisesOnBadUri() throws IOException {
-    HttpClient http = mock(HttpClient.class);
+    CloseableHttpClient http = mock(CloseableHttpClient.class);
     HttpTransport.Builder builder = HttpTransport.builder().http(http);
     assertThrows(OpenLineageClientException.class, () -> builder.uri("!http://localhost:1500!"));
   }
 
   @Test
   void httpTransportSendsAuthAndQueryParams() throws IOException {
-    HttpClient http = mock(HttpClient.class);
+    CloseableHttpClient http = mock(CloseableHttpClient.class);
     Transport transport =
         HttpTransport.builder()
             .uri("http://localhost:1500", Collections.singletonMap("param", "value"))
@@ -97,7 +97,7 @@ class HttpTransportTest {
             .build();
 
     OpenLineageClient client = new OpenLineageClient(transport);
-    HttpResponse response = mock(HttpResponse.class, RETURNS_DEEP_STUBS);
+    CloseableHttpResponse response = mock(CloseableHttpResponse.class, RETURNS_DEEP_STUBS);
 
     when(response.getStatusLine().getStatusCode()).thenReturn(200);
     when(http.execute(any(HttpUriRequest.class))).thenReturn(response);
@@ -112,5 +112,25 @@ class HttpTransportTest {
         .isEqualTo("Bearer apiKey");
     assertThat(captor.getValue().getURI())
         .isEqualTo(URI.create("http://localhost:1500/api/v1/lineage?param=value"));
+  }
+
+  @Test
+  void clientClosesNetworkResources() throws IOException {
+    CloseableHttpClient http = mock(CloseableHttpClient.class);
+    HttpConfig config = new HttpConfig();
+    config.setUrl(URI.create("https://localhost:1500/api/v1/lineage"));
+    Transport transport = new HttpTransport(http, config);
+    OpenLineageClient client = new OpenLineageClient(transport);
+
+    CloseableHttpResponse response = mock(CloseableHttpResponse.class, RETURNS_DEEP_STUBS);
+    when(response.getStatusLine().getStatusCode()).thenReturn(200);
+    when(response.getEntity().isStreaming()).thenReturn(true);
+
+    when(http.execute(any(HttpUriRequest.class))).thenReturn(response);
+
+    client.emit(event());
+
+    verify(response, times(1)).close();
+    verify(response.getEntity().getContent(), times(1)).close();
   }
 }
