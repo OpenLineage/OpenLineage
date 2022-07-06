@@ -101,10 +101,9 @@ public class PlanUtils3 {
       OpenLineageContext context,
       DataSourceV2Relation relation,
       OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder) {
-
     if (relation.identifier().isEmpty()) {
-      throw new IllegalArgumentException(
-          "Couldn't find identifier for dataset in plan " + relation);
+      log.warn("Couldn't find identifier for dataset in plan {}", relation);
+      return Collections.emptyList();
     }
     Identifier identifier = relation.identifier().get();
 
