@@ -150,6 +150,8 @@ Alternatively, if after 2 days the release has received at least one +1 and no -
 
 If the proposed release receives no +1s in two days, it is not authorized and the proposer must make a new request to reset the clock.
 
+Once a release is authorized, it will be initiated within two business days. Releases will not be made on a Friday unless doing so will address an important defect, an issue with project infrastructure, or a security vulnerability. 
+
 ## Conflict resolution and voting
 
 In general, we prefer that technical issues and committer membership are amicably worked out
