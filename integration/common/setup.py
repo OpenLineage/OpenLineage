@@ -37,6 +37,9 @@ extras_require = {
         "great_expectations>=0.13.26",
         "sqlalchemy>=1.3.24"
     ],
+    "redshift": [
+        "boto3>=1.15.0"
+    ],
     "tests": [
         "pytest",
         "pytest-cov",

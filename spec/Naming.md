@@ -51,17 +51,25 @@ Datasource hierarchy:
  * Host: examplecluster.\<XXXXXXXXXXXX>.us-west-2.redshift.amazonaws.com
  * Port: 5439
  
+OR
+
+ * Cluster identifier
+ * Region name
+ * Port (defaults to 5439)
+ 
 Naming hierarchy:
  * Database
  * Schema
  * Table
 
+One can interact with Redshift using SQL or Data API. Combination of cluster identifier + region name is the only common unique id available to both ways of interaction.
+
 Identifier:
- * Namespace: redshift://{host}:{port} of the cluster instance.
+ * Namespace: redshift://{cluster_identifier}.{region_name}:{port} of the cluster instance.
    * Scheme = redshift
-   * Authority = {host}:{port}
+   * Authority = {cluster_identifier}:{port}
  * Unique name: {database}.{schema}.{table}
-   * URI =  redshift://{host}:{port}/{database}.{schema}.{table}
+   * URI =  redshift://{cluster_identifier}.{region_name}:{port}/{database}.{schema}.{table}
   
 #### Snowflake
 See: [Object Identifiers — Snowflake Documentation](https://docs.snowflake.com/en/sql-reference/identifiers.html)

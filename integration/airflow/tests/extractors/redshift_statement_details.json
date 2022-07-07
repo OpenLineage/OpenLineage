@@ -1,0 +1,23 @@
+{
+  "ClusterIdentifier": "redshift-cluster-1",
+  "Duration": 5681587,
+  "HasResultSet": true,
+  "Id": "93022fdc-7303-4351-a8fa-1947dfd65d73",
+  "QueryString": "Select 1;",
+  "RedshiftPid": 1086520345,
+  "RedshiftQueryId": -1,
+  "ResultRows": 1,
+  "ResultSize": 11,
+  "Status": "FINISHED",
+  "ResponseMetadata": {
+    "RequestId": "30d6e60a-e1be-4eaa-a43d-1c9bf82e3896",
+    "HTTPStatusCode": 200,
+    "HTTPHeaders": {
+      "x-amzn-requestid": "30d6e60a-e1be-4eaa-a43d-1c9bf82e3896",
+      "content-type": "application/x-amz-json-1.1",
+      "content-length": "305",
+      "date": "Thu, 14 Jul 2022 10:58:57 GMT"
+    },
+    "RetryAttempts": 0
+  }
+}
