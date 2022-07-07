@@ -22,6 +22,7 @@ import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.UnsupportedCatalogException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.apache.spark.sql.SparkSession;
@@ -121,22 +122,20 @@ class PlanUtils3Test {
   @Test
   void testFromDataSourceV2RelationWhenIdentifierEmpty() {
     when(dataSourceV2Relation.identifier()).thenReturn(Option.empty());
-    assertThrows(
-        IllegalArgumentException.class,
-        () ->
-            PlanUtils3.fromDataSourceV2Relation(
-                datasetFactory, openLineageContext, dataSourceV2Relation));
+    final List<OpenLineage.Dataset> result =
+        PlanUtils3.fromDataSourceV2Relation(
+            datasetFactory, openLineageContext, dataSourceV2Relation);
+    assertEquals(0, result.size());
   }
 
   @Test
   void testFromDataSourceV2RelationWhenCatalogEmpty() {
     when(dataSourceV2Relation.identifier()).thenReturn(Option.apply(mock(Identifier.class)));
     when(dataSourceV2Relation.catalog()).thenReturn(Option.empty());
-    assertThrows(
-        IllegalArgumentException.class,
-        () ->
-            PlanUtils3.fromDataSourceV2Relation(
-                datasetFactory, openLineageContext, dataSourceV2Relation));
+    final List<OpenLineage.Dataset> result =
+        PlanUtils3.fromDataSourceV2Relation(
+            datasetFactory, openLineageContext, dataSourceV2Relation);
+    assertEquals(0, result.size());
   }
 
   @Test

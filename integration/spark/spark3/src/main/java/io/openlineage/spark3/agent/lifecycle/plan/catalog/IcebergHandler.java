@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.fs.Path;
 import org.apache.iceberg.CatalogProperties;
 import org.apache.iceberg.spark.SparkCatalog;
+import org.apache.iceberg.spark.SparkSessionCatalog;
 import org.apache.iceberg.spark.source.SparkTable;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.analysis.NoSuchTableException;
@@ -44,7 +45,7 @@ public class IcebergHandler implements CatalogHandler {
 
   @Override
   public boolean isClass(TableCatalog tableCatalog) {
-    return tableCatalog instanceof SparkCatalog;
+    return (tableCatalog instanceof SparkCatalog) || (tableCatalog instanceof SparkSessionCatalog);
   }
 
   @Override
@@ -53,8 +54,7 @@ public class IcebergHandler implements CatalogHandler {
       TableCatalog tableCatalog,
       Identifier identifier,
       Map<String, String> properties) {
-    SparkCatalog sparkCatalog = (SparkCatalog) tableCatalog;
-    String catalogName = sparkCatalog.name();
+    String catalogName = tableCatalog.name();
 
     String prefix = String.format("spark.sql.catalog.%s", catalogName);
     Map<String, String> conf =
@@ -116,11 +116,11 @@ public class IcebergHandler implements CatalogHandler {
   @Override
   public Optional<String> getDatasetVersion(
       TableCatalog tableCatalog, Identifier identifier, Map<String, String> properties) {
-    SparkCatalog sparkCatalog = (SparkCatalog) tableCatalog;
     SparkTable table;
     try {
-      table = sparkCatalog.loadTable(identifier);
-    } catch (NoSuchTableException ex) {
+      table = (SparkTable) tableCatalog.loadTable(identifier);
+    } catch (NoSuchTableException | ClassCastException e) {
+      log.error("Failed to load table from catalog: {}", identifier, e);
       return Optional.empty();
     }
 

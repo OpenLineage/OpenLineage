@@ -101,15 +101,17 @@ public class PlanUtils3 {
       OpenLineageContext context,
       DataSourceV2Relation relation,
       OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder) {
-
+    // Get identifier for dataset, or return empty list
     if (relation.identifier().isEmpty()) {
-      throw new IllegalArgumentException(
-          "Couldn't find identifier for dataset in plan " + relation);
+      log.warn("Couldn't find identifier for dataset in plan {}", relation);
+      return Collections.emptyList();
     }
     Identifier identifier = relation.identifier().get();
 
+    // Get catalog for dataset, or return empty list
     if (relation.catalog().isEmpty() || !(relation.catalog().get() instanceof TableCatalog)) {
-      throw new IllegalArgumentException("Couldn't find catalog for dataset in plan " + relation);
+      log.warn("Couldn't find catalog for dataset in plan " + relation);
+      return Collections.emptyList();
     }
     TableCatalog tableCatalog = (TableCatalog) relation.catalog().get();
 

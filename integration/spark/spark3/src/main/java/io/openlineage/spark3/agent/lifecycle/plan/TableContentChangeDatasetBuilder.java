@@ -24,6 +24,7 @@ import org.apache.spark.sql.catalyst.plans.logical.OverwritePartitionsDynamic;
 import org.apache.spark.sql.catalyst.plans.logical.ReplaceData;
 import org.apache.spark.sql.catalyst.plans.logical.UpdateTable;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
+import org.apache.spark.sql.execution.datasources.v2.DataSourceV2ScanRelation;
 
 @Slf4j
 public class TableContentChangeDatasetBuilder
@@ -73,7 +74,7 @@ public class TableContentChangeDatasetBuilder
       includeOverwriteFacet = true;
     }
 
-    OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
+    final OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
         context.getOpenLineage().newDatasetFacetsBuilder();
     if (includeOverwriteFacet) {
       datasetFacetsBuilder.lifecycleStateChange(
@@ -83,11 +84,33 @@ public class TableContentChangeDatasetBuilder
                   OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE,
                   null));
     }
+
+    // FIXME: Use 'castToDataSourceV2Relation()' to safely cast 'DataSourceV2ScanRelation' to
+    // 'DataSourceV2Relation'. We are unsure of the logic plan structure that would cause a
+    // 'ClassCastException' to be thrown; therefore, to get meaningful insight we also log the
+    // logical plan when the relation is of the type 'DataSourceV2ScanRelation'.
+    final DataSourceV2Relation returnTable =
+        (table instanceof DataSourceV2ScanRelation)
+            ? castToDataSourceV2Relation(x, table)
+            : (DataSourceV2Relation) table;
     if (includeDatasetVersion(event)) {
       DatasetVersionDatasetFacetUtils.includeDatasetVersion(
-          context, datasetFacetsBuilder, (DataSourceV2Relation) table);
+          context, datasetFacetsBuilder, returnTable);
     }
+
     return PlanUtils3.fromDataSourceV2Relation(
-        outputDataset(), context, (DataSourceV2Relation) table, datasetFacetsBuilder);
+        outputDataset(), context, returnTable, datasetFacetsBuilder);
+  }
+
+  private DataSourceV2Relation castToDataSourceV2Relation(LogicalPlan x, NamedRelation table) {
+    // Log warning, then return the underlying relation from the scan relation to avoid
+    // 'ClassCastException'.
+    log.warn(
+        "The relation '{}' is of an invalid type 'DataSourceV2ScanRelation', and should not be "
+            + "handled as an output relation. The cast operation will be applied, but the logical "
+            + "plan associated with the relation may contain an unexpected structure: {}",
+        table.name(),
+        x);
+    return ((DataSourceV2ScanRelation) table).relation();
   }
 }
