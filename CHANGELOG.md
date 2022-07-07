@@ -18,6 +18,7 @@
 
 * Dependencies bundled with `openlineage-java` lib. [`#855`](https://github.com/OpenLineage/OpenLineage/pull/855) [@collado-mike](https://github.com/collado-mike)
 * [PMD](https://pmd.github.io) reported issues [`#891`](https://github.com/OpenLineage/OpenLineage/pull/891) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+* Spark casting error and session catalog support for `iceberg` in Spark integration [`#856`](https://github.com/OpenLineage/OpenLineage/pull/856) [@wslulciuc](https://github.com/wslulciuc)
 
 ## [0.10.0](https://github.com/OpenLineage/OpenLineage/compare/0.9.0...0.10.0) 2022-06-24
 ### Added
