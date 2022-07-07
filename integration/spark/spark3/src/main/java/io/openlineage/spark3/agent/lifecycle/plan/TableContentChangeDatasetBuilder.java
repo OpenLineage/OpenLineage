@@ -85,15 +85,35 @@ public class TableContentChangeDatasetBuilder
                   null));
     }
 
-    final DataSourceV2Relation returnTable =
-        (table instanceof DataSourceV2ScanRelation)
-            ? ((DataSourceV2ScanRelation) table).relation()
-            : (DataSourceV2Relation) table;
+    // FIXME: Use 'castToDataSourceV2Relation()' to safely cast the relation to
+    // 'DataSourceV2Relation'. We are unsure of the plan structure that would cause a
+    // 'ClassCastException' to be thrown; therefore, to get meaningful insight we also log the
+    // logical plan when the relation is of the type 'DataSourceV2ScanRelation'.
+    final DataSourceV2Relation returnTable = castToDataSourceV2Relation(x, table);
     if (includeDatasetVersion(event)) {
       DatasetVersionDatasetFacetUtils.includeDatasetVersion(
           context, datasetFacetsBuilder, returnTable);
     }
+
     return PlanUtils3.fromDataSourceV2Relation(
         outputDataset(), context, returnTable, datasetFacetsBuilder);
+  }
+
+  private DataSourceV2Relation castToDataSourceV2Relation(LogicalPlan x, NamedRelation table) {
+    log.debug("Attempting to cast '{}' to 'DataSourceV2Relation'...", table.getClass());
+    // Ensure the relation is not a scan relation.
+    if (table instanceof DataSourceV2ScanRelation) {
+      // Log warning, then return the underlying relation from the scan relation to avoid
+      // 'ClassCastException'.
+      log.warn(
+          "The relation '{}' is of an invalid type 'DataSourceV2ScanRelation', and should not be "
+              + "handled as an output relation. The cast operation will be applied, but the plan "
+              + "associated with the relation may contain an unexpected structure: {}",
+          table.name(),
+          x);
+      return ((DataSourceV2ScanRelation) table).relation();
+    } else {
+      return (DataSourceV2Relation) table;
+    }
   }
 }
