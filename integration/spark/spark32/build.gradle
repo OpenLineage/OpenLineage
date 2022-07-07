@@ -93,9 +93,9 @@ def commonTestConfiguration = {
     systemProperties = [
             'junit.platform.output.capture.stdout': 'true',
             'junit.platform.output.capture.stderr': 'true',
-            'spark.version'                       : '3.1.2',
+            'spark.version'                       : '3.2.1',
             'openlineage.spark.jar'               : "${archivesBaseName}-${project.version}.jar",
-            'kafka.package.version'               : 'org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.2',
+            'kafka.package.version'               : 'org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.1',
             'mockserver.logLevel'                 : 'ERROR'
     ]
 

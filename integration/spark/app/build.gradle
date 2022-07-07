@@ -101,7 +101,9 @@ dependencies {
 
 
     testImplementation(project(":${someMapProperty[shortVersion].project}"))
-//    testImplementation testFixtures(project(":${someMapProperty[shortVersion].project}"))
+    testImplementation testFixtures(project(":${someMapProperty[shortVersion].project}")){
+        exclude group: 'org.apache.avro'
+    }
     testImplementation testFixtures(project(":shared"))
 
     lombok  "org.projectlombok:lombok:${lombokVersion}"
@@ -139,6 +141,7 @@ task sparkTest(type: Test) {
 
 task copyDependencies(type: Copy) {
     // delete the dependencies directory so we don't accidentally mix Spark 2 and Spark 3 dependencies
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     delete layout.buildDirectory.dir("dependencies")
     def config = configurations."${someMapProperty[shortVersion].project}"
     from config.getFiles()
