@@ -60,9 +60,16 @@ dependencies {
 
     implementation(project(":shared"))
 
-    compileOnly "com.google.cloud.spark:spark-bigquery_2.12:${bigqueryVersion}"
-    compileOnly "com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:${bigqueryVersion}"
-    compileOnly "org.apache.spark:spark-core_2.12:${sparkVersion}"
+    compileOnly ("com.google.cloud.spark:spark-bigquery_2.12:${bigqueryVersion}") {
+        exclude group: 'com.fasterxml.jackson.core'
+        exclude group: 'com.fasterxml.jackson.module'
+    }
+    compileOnly (group: "org.apache.avro", name: "avro-mapred", version: "1.10.2", classifier: '') {
+        force true
+    }
+    compileOnly ("org.apache.spark:spark-core_2.12:${sparkVersion}") {
+        exclude group: "org.apache.avro", module: "avro-mapred"
+    }
     compileOnly "org.apache.spark:spark-sql_2.12:${sparkVersion}"
     compileOnly "org.apache.spark:spark-hive_2.12:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql-kafka-0-10_2.12:${sparkVersion}"
@@ -71,7 +78,12 @@ dependencies {
     compileOnly "com.databricks:dbutils-api_2.12:0.0.5"
 
     testFixturesApi "com.fasterxml.jackson.module:jackson-module-scala_2.12:${jacksonVersion}"
-    testFixturesApi "org.apache.spark:spark-core_2.12:${sparkVersion}"
+    testFixturesApi (group: "org.apache.avro", name: "avro-mapred", version: "1.10.2", classifier: '') {
+        force true
+    }
+    testFixturesApi ("org.apache.spark:spark-core_2.12:${sparkVersion}") {
+        exclude group: "org.apache.avro", module: "avro-mapred"
+    }
     testFixturesApi "org.apache.spark:spark-sql_2.12:${sparkVersion}"
     testFixturesApi "org.apache.spark:spark-hive_2.12:${sparkVersion}"
     testFixturesApi "org.apache.spark:spark-catalyst_2.12:${sparkVersion}"

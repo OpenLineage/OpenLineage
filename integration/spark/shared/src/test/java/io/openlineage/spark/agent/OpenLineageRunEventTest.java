@@ -7,10 +7,10 @@ package io.openlineage.spark.agent;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.Utils;
-import io.openlineage.client.shaded.com.fasterxml.jackson.core.type.TypeReference;
-import io.openlineage.client.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.spark.agent.lifecycle.MatchesMapRecursively;
 import java.io.IOException;
 import java.net.URI;

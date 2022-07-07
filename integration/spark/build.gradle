@@ -49,8 +49,6 @@ archivesBaseName='openlineage-spark'
 ext {
     lombokVersion = '1.18.20'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
-    jacksonVersion = "2.13.2"
-    jacksonDatabindVersion = "2.13.2.2"
 }
 
 dependencies {
@@ -60,12 +58,12 @@ dependencies {
     implementation(project(path: ":spark3"))
     implementation(project(path: ":spark32"))
 
-    compileOnly "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
-    compileOnly "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
-    compileOnly "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
-    compileOnly "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${jacksonVersion}"
-    compileOnly "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${jacksonVersion}"
-    compileOnly "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
+//    compileOnly "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
+//    compileOnly "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
+//    compileOnly "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
+//    compileOnly "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${jacksonVersion}"
+//    compileOnly "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${jacksonVersion}"
+//    compileOnly "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
 }
 
 

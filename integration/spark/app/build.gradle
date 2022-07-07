@@ -101,7 +101,7 @@ dependencies {
 
 
     testImplementation(project(":${someMapProperty[shortVersion].project}"))
-//    testImplementation testFixtures(project(":${someMapProperty[shortVersion].project}"))
+    testImplementation testFixtures(project(":${someMapProperty[shortVersion].project}"))
     testImplementation testFixtures(project(":shared"))
 
     lombok  "org.projectlombok:lombok:${lombokVersion}"

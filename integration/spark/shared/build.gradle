@@ -58,7 +58,7 @@ ext {
 }
 
 dependencies {
-    api "io.openlineage:openlineage-java:${project.version}"
+    api ("io.openlineage:openlineage-java:${project.version}")
 
     compileOnly "org.apache.spark:spark-core_2.11:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"

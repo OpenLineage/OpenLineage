@@ -60,8 +60,10 @@ dependencies {
 
     implementation(project(":shared"))
 
-    compileOnly "com.google.cloud.spark:spark-bigquery_2.12:${bigqueryVersion}"
-    compileOnly "com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:${bigqueryVersion}"
+    compileOnly ("com.google.cloud.spark:spark-bigquery_2.12:${bigqueryVersion}") {
+        exclude group: 'com.fasterxml.jackson.core'
+        exclude group: 'com.fasterxml.jackson.module'
+    }
     compileOnly "org.apache.spark:spark-core_2.12:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql_2.12:${sparkVersion}"
     compileOnly "org.apache.spark:spark-hive_2.12:${sparkVersion}"

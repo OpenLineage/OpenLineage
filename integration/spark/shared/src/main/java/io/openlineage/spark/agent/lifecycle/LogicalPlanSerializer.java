@@ -54,7 +54,7 @@ class LogicalPlanSerializer {
                   .getDeclaredField("MODULE$")
                   .get(null));
     } catch (Exception t) {
-      log.warn("Can't register jackson scala module for serializing LogicalPlan");
+      log.warn("Can't register jackson scala module for serializing LogicalPlan", t);
     }
 
     mapper.setMixInResolver(new LogicalPlanMixinResolver());
