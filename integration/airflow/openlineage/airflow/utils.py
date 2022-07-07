@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import subprocess
+from collections import defaultdict
 from typing import TYPE_CHECKING, Type, Dict, Any
 from uuid import uuid4
 from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
@@ -339,9 +340,9 @@ def build_threshold_check_facets() -> dict:
 def build_interval_check_facets() -> dict:
     pass
 
-def build_table_check_facets(table_mapping) -> dict:
+def build_table_check_facets(checks) -> dict:
     """
-    Function should expect to take the table_mapping in the following form:
+    Function should expect to take the checks in the following form:
     {
         'row_count_check': {
             'pass_value': 100,
@@ -353,16 +354,15 @@ def build_table_check_facets(table_mapping) -> dict:
     """
     facet_data = {}
     assertion_data = {"assertions": []}
-    for table_name, checks in table_mapping.items():
-        for check, check_values in checks.items():
-            assertion_data["assertions"].append(
-                Assertion(
-                    assertion=check,
-                    success=checks[check].get("success", None),
-                )
+    for check, check_values in checks.items():
+        assertion_data["assertions"].append(
+            Assertion(
+                assertion=check,
+                success=check_values.get("success", None),
             )
-        facet_data["row_count"] = checks.get("row_count_check", None).get("result")
-        facet_data["bytes"] = checks.get("bytes", None).get("result")
+        )
+    facet_data["rowCount"] = checks.get("row_count_check", {}).get("result", None)
+    facet_data["bytes"] = checks.get("bytes", {}).get("result", None)
 
     data_quality_facet = DataQualityMetricsInputDatasetFacet(**facet_data)
     data_quality_assertions_facet = DataQualityAssertionsDatasetFacet(**assertion_data)
