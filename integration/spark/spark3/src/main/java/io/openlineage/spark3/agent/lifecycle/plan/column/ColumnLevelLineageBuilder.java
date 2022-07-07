@@ -23,6 +23,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
@@ -43,7 +44,9 @@ public class ColumnLevelLineageBuilder {
   private final OpenLineage.SchemaDatasetFacet schema;
   private final OpenLineageContext context;
 
-  ColumnLevelLineageBuilder(OpenLineage.SchemaDatasetFacet schema, OpenLineageContext context) {
+  ColumnLevelLineageBuilder(
+      @NonNull final OpenLineage.SchemaDatasetFacet schema,
+      @NonNull final OpenLineageContext context) {
     this.schema = schema;
     this.context = context;
   }

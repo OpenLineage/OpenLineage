@@ -116,11 +116,11 @@ public class IcebergHandler implements CatalogHandler {
   @Override
   public Optional<String> getDatasetVersion(
       TableCatalog tableCatalog, Identifier identifier, Map<String, String> properties) {
-    SparkCatalog sparkCatalog = (SparkCatalog) tableCatalog;
     SparkTable table;
     try {
-      table = sparkCatalog.loadTable(identifier);
-    } catch (NoSuchTableException ex) {
+      table = ((SparkCatalog) tableCatalog).loadTable(identifier);
+    } catch (NoSuchTableException | ClassCastException e) {
+      log.error("Failed to load table from catalog: {}", identifier, e);
       return Optional.empty();
     }
 

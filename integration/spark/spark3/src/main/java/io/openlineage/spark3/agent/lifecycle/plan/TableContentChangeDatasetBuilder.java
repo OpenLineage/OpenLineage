@@ -107,8 +107,8 @@ public class TableContentChangeDatasetBuilder
       // 'ClassCastException'.
       log.warn(
           "The relation '{}' is of an invalid type 'DataSourceV2ScanRelation', and should not be "
-              + "handled as an output relation. The cast operation will be applied, but the plan "
-              + "associated with the relation may contain an unexpected structure: {}",
+              + "handled as an output relation. The cast operation will be applied, but the logical "
+              + "plan associated with the relation may contain an unexpected structure: {}",
           table.name(),
           x);
       return ((DataSourceV2ScanRelation) table).relation();
