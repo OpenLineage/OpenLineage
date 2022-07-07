@@ -118,7 +118,7 @@ public class IcebergHandler implements CatalogHandler {
       TableCatalog tableCatalog, Identifier identifier, Map<String, String> properties) {
     SparkTable table;
     try {
-      table = ((SparkCatalog) tableCatalog).loadTable(identifier);
+      table = (SparkTable) tableCatalog.loadTable(identifier);
     } catch (NoSuchTableException | ClassCastException e) {
       log.error("Failed to load table from catalog: {}", identifier, e);
       return Optional.empty();
