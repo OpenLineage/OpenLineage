@@ -1,7 +1,8 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.10.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.11.0...HEAD)
 
+## [0.11.0](https://github.com/OpenLineage/OpenLineage/compare/0.10.0...0.11.0) 2022-07-07
 ### Added
 
 * HTTP option to override timeout and properly close connections in `openlineage-java` lib. [`#909`](https://github.com/OpenLineage/OpenLineage/pull/909) [@mobuchowski](https://github.com/mobuchowski)
