@@ -3,7 +3,6 @@
 
 import os
 import pytest
-from tkinter import E
 from typing import List, Optional
 from unittest.mock import patch
 
