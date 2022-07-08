@@ -8,6 +8,7 @@ from openlineage.airflow.utils import get_job_name, get_operator_class
 from airflow.version import version as AIRFLOW_VERSION
 from pkg_resources import parse_version
 
+
 class ExtractorManager:
     """Class abstracting management of custom extractors."""
     def __init__(self):
