@@ -53,6 +53,8 @@ class ExtractorManager:
                 if task_metadata:
                     if (not task_metadata.inputs) and (not task_metadata.outputs):
                         if collect_lineage_metadata:
+                            inlets = task.get_inlet_defs()
+                            outlets = task.get_outlet_defs()
                             self.extract_inlets_and_outlets(task_metadata, inlets, outlets)
 
                     return task_metadata
@@ -82,6 +84,8 @@ class ExtractorManager:
                 },
             )
             if collect_lineage_metadata:
+                inlets = task.get_inlet_defs()
+                outlets = task.get_outlet_defs()
                 self.extract_inlets_and_outlets(task_metadata, inlets, outlets)
             return task_metadata
 
