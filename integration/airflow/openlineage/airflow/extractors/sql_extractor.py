@@ -1,5 +1,4 @@
 # SPDX-License-Identifier: Apache-2.0.
-from lib2to3.pytree import Base
 import logging
 from typing import List, Optional, TYPE_CHECKING, Dict, Tuple
 from urllib.parse import urlparse
