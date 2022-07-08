@@ -5,6 +5,8 @@ from openlineage.airflow.extractors import TaskMetadata, BaseExtractor, Extracto
 from openlineage.airflow.facets import UnknownOperatorAttributeRunFacet, UnknownOperatorInstance
 from openlineage.airflow.utils import get_job_name, get_operator_class
 
+from airflow.version import version as AIRFLOW_VERSION
+from pkg_resources import parse_version
 
 class ExtractorManager:
     """Class abstracting management of custom extractors."""
@@ -29,8 +31,10 @@ class ExtractorManager:
             f'task_id={task.task_id} ' \
             f'airflow_run_id={dagrun.run_id} '
 
-        inlets = task.get_inlet_defs()
-        outlets = task.get_outlet_defs()
+        collect_lineage_metadata = True
+        if parse_version(AIRFLOW_VERSION) <= parse_version("2.0.0"):
+            self.log.debug("Manual extraction with inlets and outlets not supported")
+            collect_lineage_metadata = False
 
         if extractor:
             # Extracting advanced metadata is only possible when extractor for particular operator
@@ -48,7 +52,8 @@ class ExtractorManager:
                 )
                 if task_metadata:
                     if (not task_metadata.inputs) and (not task_metadata.outputs):
-                        self.extract_inlets_and_outlets(task_metadata, inlets, outlets)
+                        if collect_lineage_metadata:
+                            self.extract_inlets_and_outlets(task_metadata, inlets, outlets)
 
                     return task_metadata
 
@@ -76,7 +81,8 @@ class ExtractorManager:
                     )
                 },
             )
-            self.extract_inlets_and_outlets(task_metadata, inlets, outlets)
+            if collect_lineage_metadata:
+                self.extract_inlets_and_outlets(task_metadata, inlets, outlets)
             return task_metadata
 
         return TaskMetadata(name=get_job_name(task))
@@ -100,6 +106,7 @@ class ExtractorManager:
         from airflow.lineage.entities import Table
         from openlineage.airflow.extractors.converters import table_to_dataset
 
+        self.log.debug("Manually extracting lineage metadata from inlets and outlets")
         task_metadata.inputs = [table_to_dataset(t) for t in inlets
                                 if isinstance(t, Table)]
         task_metadata.outputs = [table_to_dataset(t) for t in outlets
