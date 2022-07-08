@@ -51,16 +51,6 @@ class Backend:
             task_instance=task_instance
         )
 
-        if inlets or outlets:
-            if (not task_metadata.inputs) and (not task_metadata.outputs):
-                from airflow.lineage.entities import Table
-                from openlineage.lineage_backend.converters import table_to_dataset
-
-                task_metadata.inputs = [table_to_dataset(t) for t in inlets
-                                        if isinstance(t, Table)]
-                task_metadata.outputs = [table_to_dataset(t) for t in outlets
-                                         if isinstance(t, Table)]
-
         if parse_version(AIRFLOW_VERSION) >= parse_version("2.0.0"):
             self.adapter.start_task(
                 run_id=run_id,
