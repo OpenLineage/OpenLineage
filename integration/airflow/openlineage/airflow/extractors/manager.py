@@ -24,7 +24,7 @@ class ExtractorManager:
         task_instance=None
     ) -> TaskMetadata:
         extractor = self._get_extractor(task)
-        task_info = f'task_type={get_operator_class(task).__name__} ' \
+        task_debug = f'task_type={get_operator_class(task).__name__} ' \
             f'airflow_dag_id={task.dag_id} ' \
             f'task_id={task.task_id} ' \
             f'airflow_run_id={dagrun.run_id} '
@@ -33,7 +33,7 @@ class ExtractorManager:
             # is defined. Without it, we can't extract any input or output data.
             try:
                 self.log.debug(
-                    f'Using extractor {extractor.__class__.__name__} {task_info}')
+                    f'Using extractor {extractor.__class__.__name__} {task_debug}')
                 if complete:
                     task_metadata = extractor.extract_on_complete(task_instance)
                 else:
@@ -47,11 +47,11 @@ class ExtractorManager:
 
             except Exception as e:
                 self.log.exception(
-                    f'Failed to extract metadata {e} {task_info}',
+                    f'Failed to extract metadata {e} {task_debug}',
                 )
         else:
             self.log.warning(
-                f'Unable to find an extractor. {task_info}')
+                f'Unable to find an extractor. {task_debug}')
 
             # Only include the unkonwnSourceAttribute facet if there is no extractor
             return TaskMetadata(
@@ -73,6 +73,7 @@ class ExtractorManager:
         return TaskMetadata(name=get_job_name(task))
 
     def _get_extractor(self, task) -> Optional[BaseExtractor]:
+        self.task_to_extractor.instantiate_abstract_extractors(task)
         if task.task_id in self.extractors:
             return self.extractors[task.task_id]
         extractor = self.task_to_extractor.get_extractor_class(get_operator_class(task))

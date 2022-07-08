@@ -1,12 +1,15 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
-import logging
+
 from typing import Type, Optional
+
+from airflow.hooks.base import BaseHook
 
 from openlineage.airflow.extractors.base import BaseExtractor
 from openlineage.airflow.utils import import_from_string, try_import_from_string
-logger = logging.getLogger(__name__)
+from openlineage.airflow.extractors.sql_check_extractors import get_check_extractors
+
 _extractors = list(
     filter(
         lambda t: t is not None,
@@ -32,65 +35,22 @@ _extractors = list(
             try_import_from_string(
                 'openlineage.airflow.extractors.bash_extractor.BashExtractor'
             ),
-            try_import_from_string(
-                'openlineage.airflow.extractors.sql_check_extractors.SqlCheckExtractor'  # noqa: E501
-            ),
-            try_import_from_string(
-                'openlineage.airflow.extractors.sql_check_extractors.SqlColumnCheckExtractor'  # noqa: E501
-            ),
-            try_import_from_string(
-                'openlineage.airflow.extractors.sql_check_extractors.SqlTableCheckExtractor'  # noqa: E501
-            ),
-            try_import_from_string(
-                'openlineage.airflow.extractors.sql_check_extractors.SqlValueCheckExtractor'  # noqa: E501
-            ),
-            try_import_from_string(
-                'openlineage.airflow.extractors.sql_check_extractors.SqlThresholdCheckExtractor'  # noqa: E501
-            ),
-            try_import_from_string(
-                'openlineage.airflow.extractors.sql_check_extractors.SqlIntervalCheckExtractor'  # noqa: E501
-            ),
-            try_import_from_string(
-                'openlineage.airflow.extractors.snowflake_check_extractors.SnowflakeCheckExtractor'  # noqa: E501
-            ),
-            try_import_from_string(
-                'openlineage.airflow.extractors.snowflake_check_extractors.SnowflakeColumnCheckExtractor'  # noqa: E501
-            ),
-            try_import_from_string(
-                'openlineage.airflow.extractors.snowflake_check_extractors.SnowflakeTableCheckExtractor'  # noqa: E501
-            ),
-            try_import_from_string(
-                'openlineage.airflow.extractors.snowflake_check_extractors.SnowflakeValueCheckExtractor'  # noqa: E501
-            ),
-            try_import_from_string(
-                'openlineage.airflow.extractors.snowflake_check_extractors.SnowflakeThresholdCheckExtractor'  # noqa: E501
-            ),
-            try_import_from_string(
-                'openlineage.airflow.extractors.snowflake_check_extractors.SnowflakeIntervalCheckExtractor'  # noqa: E501
-            ),
-            try_import_from_string(
-                'openlineage.airflow.extractors.bigquery_check_extractors.BigQueryCheckExtractor'  # noqa: E501
-            ),
-            try_import_from_string(
-                'openlineage.airflow.extractors.bigquery_check_extractors.BigQueryColumnCheckExtractor'  # noqa: E501
-            ),
-            try_import_from_string(
-                'openlineage.airflow.extractors.bigquery_check_extractors.BigQueryTableCheckExtractor'  # noqa: E501
-            ),
-            try_import_from_string(
-                'openlineage.airflow.extractors.bigquery_check_extractors.BigQueryValueCheckExtractor'  # noqa: E501
-            ),
-            try_import_from_string(
-                'openlineage.airflow.extractors.bigquery_check_extractors.BigQueryThresholdCheckExtractor'  # noqa: E501
-            ),
-            try_import_from_string(
-                'openlineage.airflow.extractors.bigquery_check_extractors.BigQueryIntervalCheckExtractor'  # noqa: E501
-            ),
-
         ],
     )
 )
 
+_extractors += get_check_extractors(
+    try_import_from_string(
+        'openlineage.airflow.extractors.sql_extractor.SqlExtractor'
+    )
+)
+
+_check_providers = {
+    "PostgresExtractor": "postgres",
+    "MySqlExtractor": "mysql",
+    "BigQueryExtractor": "gcpbigquery",
+    "SnowflakeExtractor": "snowflake",
+}
 
 class Extractors:
     """
@@ -135,3 +95,22 @@ class Extractors:
         if name in self.extractors:
             return self.extractors[name]
         return None
+
+    def instantiate_abstract_extractors(self, task) -> None:
+        if task.__class__.__name__ in (
+            "SQLCheckOperator", "SQLValueCheckOperator", "SQLThresholdCheckOperator",
+            "SQLIntervalCheckOperator", "SQLColumnCheckOperator", "SQLTableCheckOperator",
+        ):
+            for extractor in self.extractors.values():
+                conn_type = _check_providers.get(extractor.__name__, "")
+                task_conn_type = BaseHook.get_connection(task.conn_id).conn_type
+                if task_conn_type == conn_type:
+                    check_extractors = get_check_extractors(extractor)
+                    for check_extractor in check_extractors:
+                        for operator_class in check_extractor.get_operator_classnames():
+                            self.extractors[operator_class] = check_extractor
+                    else:
+                        return
+            else:
+                raise ValueError("Extractor for the given task's conn_type (%s) does not exist.", task_conn_type)
+        return

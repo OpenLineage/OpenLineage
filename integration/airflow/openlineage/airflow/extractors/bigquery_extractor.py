@@ -58,8 +58,12 @@ class BigQueryExtractor(BaseExtractor):
         client = self._get_client()
 
         stats = BigQueryDatasetsProvider(client=client).get_facets(bigquery_job_id)
-        inputs = self._get_inputs(stats)
+        inputs = stats.inputs
         output = stats.output
+
+        for ds in inputs:
+            ds.input_facets = self._get_input_facets()
+
         run_facets = stats.run_facets
         job_facets = {
             "sql": SqlJobFacet(self.operator.sql)
@@ -72,9 +76,6 @@ class BigQueryExtractor(BaseExtractor):
             run_facets=run_facets,
             job_facets=job_facets
         )
-
-    def _get_inputs(self, stats):
-        return stats.inputs
 
     def _get_client(self):
         # Get client using Airflow hook - this way we use the same credentials as Airflow
@@ -108,3 +109,6 @@ class BigQueryExtractor(BaseExtractor):
 
         log.debug(f"bigquery_job_id: {bigquery_job_id}")
         return bigquery_job_id
+
+    def _get_input_facets(self):
+        return {}
