@@ -27,6 +27,7 @@ class GreatExpectationsRunFacet(BaseFacet):
     batch_kwargs: Optional[BatchKwargs] = attr.ib(default=None)
     active_batch_definition: Union[None, IDDict, BatchDefinition] = attr.ib(default=None)
     batch_parameters = attr.ib(default=None)
+    checkpoint_name: Optional[str] = attr.ib(default=None)
 
     @staticmethod
     def _get_schema() -> str:
