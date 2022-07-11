@@ -7,6 +7,7 @@ from typing import List, Optional
 from unittest.mock import patch
 
 from airflow.models.connection import Connection
+from airflow.hooks.base import BaseHook
 
 from openlineage.airflow.extractors import Extractors, BaseExtractor, TaskMetadata
 from openlineage.airflow.extractors.postgres_extractor import PostgresExtractor
@@ -65,19 +66,15 @@ def test_adding_extractors():
     assert len(extractors.extractors) == count + 1
 
 
-@patch('airflow.hooks.base.BaseHook')
+@patch.object(BaseHook, "get_connection", return_value=Connection(conn_id="postgres_default", conn_type="postgres"))
 def test_instantiate_abstract_extractors(mock_hook):
     class SQLCheckOperator:
         conn_id = "postgres_default"
     
-    mock_hook.get_connection_from_secrets.return_value = Connection(
-        conn_id="postgres_default",
-        conn_type="postgres"
-    )
     extractors = Extractors()
     sql_check_operator = SQLCheckOperator()
     extractors.instantiate_abstract_extractors(task=sql_check_operator)
-    sql_check_extractor = extractors.extractors["SQLCheckOperator"]
+    sql_check_extractor = extractors.extractors["SQLCheckOperator"]("SQLCheckOperator")
     assert sql_check_extractor._get_scheme() == "postgres"
 
 
