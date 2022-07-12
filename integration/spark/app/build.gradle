@@ -48,14 +48,8 @@ archivesBaseName='openlineage-spark-app'
 
 
 ext {
-    assertjVersion = '3.20.2'
     bigqueryVersion = '0.21.1'
-    junit5Version = '5.7.2'
     sparkVersion = project.getProperty('spark.version')
-    jacksonVersion = '2.6.7'
-    jacksonModuleScalaVersion = '2.6.7.1'
-    jacksonDatatypeVersion = '2.6.7'
-    jacksonDatabindVersion = '2.6.7.3'
     postgresqlVersion = '42.2.19'
     mockitoVersion = '3.11.2'
     testcontainersVersion = '1.15.3'
@@ -83,21 +77,19 @@ dependencies {
 
     compileOnly "org.apache.spark:spark-core_${versions.scala}:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql_${versions.scala}:${sparkVersion}"
-    compileOnly ("com.google.cloud.spark:spark-bigquery_2.11:0.21.1") {
+    compileOnly ("com.google.cloud.spark:spark-bigquery_${versions.scala}:${bigqueryVersion}") {
         exclude group: 'com.fasterxml.jackson.core'
         exclude group: 'com.fasterxml.jackson.module'
     }
 
-//    testCompileOnly "com.fasterxml.jackson.module:jackson-module-scala_2.11:${jacksonModuleScalaVersion}"
     testFixturesApi "org.apache.spark:spark-core_${versions.scala}:${sparkVersion}"
     testFixturesApi "org.apache.spark:spark-sql_${versions.scala}:${sparkVersion}"
     testFixturesApi "org.apache.spark:spark-hive_${versions.scala}:${sparkVersion}"
     testFixturesApi "org.apache.spark:spark-sql-kafka-0-10_${versions.scala}:${sparkVersion}"
-    testFixturesApi("com.google.cloud.spark:spark-bigquery-with-dependencies_${versions.scala}:0.21.1") {
+    testFixturesApi("com.google.cloud.spark:spark-bigquery-with-dependencies_${versions.scala}:${bigqueryVersion}") {
         exclude group: 'com.fasterxml.jackson.core'
         exclude group: 'com.fasterxml.jackson.module'
     }
-
 
     testImplementation(project(":${versions.module}"))
     testImplementation testFixtures(project(":${versions.module}")){

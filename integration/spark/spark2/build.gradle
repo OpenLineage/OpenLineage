@@ -40,19 +40,11 @@ repositories {
 archivesBaseName='openlineage-spark-spark2'
 
 ext {
-    assertjVersion = '3.20.2'
     bigqueryVersion = '0.21.1'
-    junit5Version = '5.7.2'
     sparkVersion = '2.4.8'
     jacksonVersion = '2.6.7'
     jacksonModuleScalaVersion = '2.6.7.1'
-    jacksonDatatypeVersion = '2.6.7'
-    jacksonDatabindVersion = '2.6.7.3'
-    postgresqlVersion = '42.2.19'
     lombokVersion = '1.18.20'
-    mockitoVersion = '3.11.2'
-    testcontainersVersion = '1.15.3'
-    isReleaseVersion = !version.endsWith('SNAPSHOT')
 }
 
 dependencies {
@@ -63,7 +55,7 @@ dependencies {
     compileOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
     compileOnly "org.apache.spark:spark-hive_2.11:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql-kafka-0-10_2.11:${sparkVersion}"
-    compileOnly('com.google.cloud.spark:spark-bigquery_2.11:0.21.1') {
+    compileOnly("com.google.cloud.spark:spark-bigquery_2.11:${bigqueryVersion}") {
         exclude group: 'com.fasterxml.jackson.core'
         exclude group: 'com.fasterxml.jackson.module'
     }
@@ -90,9 +82,9 @@ def commonTestConfiguration = {
     systemProperties = [
             'junit.platform.output.capture.stdout': 'true',
             'junit.platform.output.capture.stderr': 'true',
-            'spark.version'                       : '2.4.8',
+            'spark.version'                       : "${sparkVersion}",
             'openlineage.spark.jar'               : "${archivesBaseName}-${project.version}.jar",
-            'kafka.package.version'               : 'org.apache.spark:spark-sql-kafka-0-10_2.11:2.4.8',
+            'kafka.package.version'               : "org.apache.spark:spark-sql-kafka-0-10_2.11:${sparkVersion}",
             'mockserver.logLevel'                 : 'ERROR'
     ]
 
