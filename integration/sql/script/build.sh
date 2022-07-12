@@ -29,7 +29,7 @@ if [[ -z ${RUN_TESTS} ]]; then
 fi
 
 # Build release wheels
-maturin build --out target/wheels
+maturin build --sdist --out target/wheels
 
 # Verify that it imports properly
 pip install openlineage-sql --no-index --find-links target/wheels --force-reinstall
