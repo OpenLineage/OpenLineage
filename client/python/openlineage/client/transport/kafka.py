@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0.
+import logging
 from typing import Dict
 
 import attr
@@ -7,6 +8,8 @@ from openlineage.client.run import RunEvent
 from openlineage.client.serde import Serde
 from openlineage.client.transport.transport import Transport, Config
 from openlineage.client.utils import get_only_specified_fields
+
+log = logging.getLogger(__name__)
 
 
 @attr.s
@@ -41,6 +44,8 @@ class KafkaTransport(Transport):
         self.producer = kafka.Producer(config.config)
         self.topic = config.topic
         self.flush = config.flush
+
+        log.debug(f"Constructing openlineage client to send events to topic {config.topic}")
 
     def emit(self, event: RunEvent):
         self.producer.produce(topic=self.topic, value=Serde.to_json(event).encode('utf-8'))

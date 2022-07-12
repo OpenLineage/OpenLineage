@@ -85,6 +85,8 @@ class HttpTransport(Transport):
 
     def __init__(self, config: HttpConfig):
         url = config.url.strip()
+
+        log.debug(f"Constructing openlineage client to send events to {url}")
         try:
             parsed = parse_url(url)
             if not (parsed.scheme and parsed.netloc):
