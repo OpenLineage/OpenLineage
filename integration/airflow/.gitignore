@@ -3,3 +3,6 @@ requirements.txt
 /tests/integration/tests/events
 /tests/integration/integration-requirements.txt
 /test-results
+/scripts/airflow/logs
+/scripts/events
+/scripts/*requirements.txt
