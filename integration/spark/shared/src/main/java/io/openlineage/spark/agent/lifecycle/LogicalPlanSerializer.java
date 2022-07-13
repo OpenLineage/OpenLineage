@@ -43,6 +43,8 @@ import scala.runtime.AbstractPartialFunction;
  */
 @Slf4j
 class LogicalPlanSerializer {
+  private static final int MAX_SERIALIZED_PLAN_LENGTH =
+      50000; // 50K UTF-8 chars should be ~200KB + some extra bytes added during json encoding
   private final ObjectMapper mapper;
 
   public LogicalPlanSerializer() {
@@ -68,7 +70,13 @@ class LogicalPlanSerializer {
    */
   public String serialize(LogicalPlan x) {
     try {
-      return mapper.writeValueAsString(x);
+      String serializedPlan = mapper.writeValueAsString(x);
+      if (serializedPlan.length() > MAX_SERIALIZED_PLAN_LENGTH) {
+        // entry is too long, we slice a substring it and send as String field
+        serializedPlan =
+            mapper.writeValueAsString(serializedPlan.substring(0, MAX_SERIALIZED_PLAN_LENGTH));
+      }
+      return serializedPlan;
     } catch (Exception e) {
       try {
         return mapper.writeValueAsString(
