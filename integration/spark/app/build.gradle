@@ -73,7 +73,7 @@ dependencies {
     implementation(project(path: ":spark3"))
     implementation(project(path: ":spark32"))
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.0.3'
-    implementation 'commons-beanutils:commons-beanutils:1.9.3'
+    compileOnly 'commons-beanutils:commons-beanutils:1.9.3'
 
     compileOnly "org.apache.spark:spark-core_${versions.scala}:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql_${versions.scala}:${sparkVersion}"
