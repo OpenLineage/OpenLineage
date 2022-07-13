@@ -11,8 +11,12 @@ class VisitorFactoryProvider {
 
   private static final String SPARK2_FACTORY_NAME =
       "io.openlineage.spark.agent.lifecycle.Spark2VisitorFactoryImpl";
+
   private static final String SPARK3_FACTORY_NAME =
       "io.openlineage.spark.agent.lifecycle.Spark3VisitorFactoryImpl";
+
+  private static final String SPARK32_FACTORY_NAME =
+      "io.openlineage.spark.agent.lifecycle.Spark32VisitorFactoryImpl";
 
   static VisitorFactory getInstance() {
     String version = package$.MODULE$.SPARK_VERSION();
@@ -27,6 +31,8 @@ class VisitorFactoryProvider {
   static String getVisitorFactoryForVersion(String version) {
     if (version.startsWith("2.")) {
       return SPARK2_FACTORY_NAME;
+    } else if (version.startsWith("3.2")) {
+      return SPARK32_FACTORY_NAME;
     } else {
       return SPARK3_FACTORY_NAME;
     }

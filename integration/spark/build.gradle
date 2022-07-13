@@ -58,6 +58,7 @@ dependencies {
     implementation(project(path: ":shared"))
     implementation(project(path: ":spark2"))
     implementation(project(path: ":spark3"))
+    implementation(project(path: ":spark32"))
 
     compileOnly "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
     compileOnly "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
@@ -205,6 +206,7 @@ shadowJar {
         exclude (project(":shared"))
         exclude (project(":spark2"))
         exclude (project(":spark3"))
+        exclude (project(":spark32"))
         exclude (project(":app"))
     }
     dependencies {
@@ -218,6 +220,7 @@ shadowJar {
     relocate 'org.apache.hc', 'io.openlineage.spark.shaded.org.apache.hc'
     relocate 'org.apache.commons.codec', 'io.openlineage.spark.shaded.org.apache.commons.codec'
     relocate 'org.apache.commons.logging', 'io.openlineage.spark.shaded.org.apache.commons.logging'
+    relocate 'org.apache.commons.beanutils', 'io.openlineage.spark.shaded.org.apache.commons.beanutils'
     relocate 'org.apache.http', 'io.openlineage.spark.shaded.org.apache.http'
     relocate 'org.yaml.snakeyaml', 'io.openlineage.spark.shaded.org.yaml.snakeyaml'
     relocate 'com.fasterxml.jackson', 'io.openlineage.spark.shaded.com.fasterxml.jackson'
