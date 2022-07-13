@@ -6,6 +6,7 @@
 package io.openlineage.spark.agent;
 
 import static java.nio.file.Files.readAllBytes;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.JsonBody.json;
 
@@ -226,6 +227,23 @@ class SparkContainerIntegrationTest {
             "/opt/spark_scripts/spark_delta.py");
     pyspark.start();
     verifyEvents("pysparkDeltaCTASComplete.json");
+  }
+
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = "3.*")
+  @Test
+  void testFilteringDeltaEvents() {
+    pyspark =
+        SparkContainerUtils.makePysparkContainerWithDefaultConf(
+            network,
+            openLineageClientMockContainer,
+            "testV2Commands",
+            PACKAGES,
+            getDeltaPackageName(),
+            "/opt/spark_scripts/spark_delta_event_filter.py");
+    pyspark.start();
+    assertEquals(
+        12,
+        mockServerClient.retrieveRecordedRequests(request().withPath("/api/v1/lineage")).length);
   }
 
   @Test

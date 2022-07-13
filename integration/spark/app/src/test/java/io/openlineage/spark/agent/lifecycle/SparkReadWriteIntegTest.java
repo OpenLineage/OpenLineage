@@ -241,7 +241,7 @@ class SparkReadWriteIntegTest {
 
     ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(RunEvent.class);
 
-    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(6))
+    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, atLeast(4))
         .emit(lineageEvent.capture());
     List<RunEvent> events = lineageEvent.getAllValues();
     ObjectAssert<RunEvent> completionEvent =
