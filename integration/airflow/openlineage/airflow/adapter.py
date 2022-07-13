@@ -3,7 +3,7 @@
 
 import os
 import logging
-from typing import Optional, Dict, Type
+from typing import Optional, Dict, Type, Mapping
 
 from openlineage.airflow import __version__ as OPENLINEAGE_AIRFLOW_VERSION
 from openlineage.airflow.extractors import TaskMetadata
@@ -13,6 +13,8 @@ from openlineage.client.facet import DocumentationJobFacet, SourceCodeLocationJo
     NominalTimeRunFacet, ParentRunFacet, BaseFacet
 from openlineage.client.run import RunEvent, RunState, Run, Job
 import requests.exceptions
+import copy
+import cattrs
 
 
 _DAG_DEFAULT_OWNER = 'anonymous'
@@ -56,6 +58,7 @@ class OpenLineageAdapter:
         return self._client
 
     def emit(self, event: RunEvent):
+        event = mask_secrets(event)
         try:
             return self.get_or_create_openlineage_client().emit(event)
         except requests.exceptions.RequestException:
@@ -224,3 +227,20 @@ class OpenLineageAdapter:
             facets = {**facets, **job_facets}
 
         return Job(_DAG_NAMESPACE, job_name, facets)
+
+
+def mask_secrets(source: Mapping) -> Mapping:
+    log = logging.getLogger()
+    log.error("STARTING MASKING")
+    try:
+        from airflow.utils.log.secrets_masker import _secrets_masker
+        sm = copy.deepcopy(_secrets_masker())
+        # we need to increase the limit as there may be more nested facets
+        # this does not influence Airflow's behavior as we deepcopy object
+        sm.MAX_RECURSION_DEPTH = 20
+        converter = cattrs.Converter()
+        klass = source.__class__
+        return cattrs.structure(sm.redact(converter.unstructure_attrs_asdict(source)), klass)
+    except Exception:
+        log.exception("Failed to mask secrets. Your logs might contain secrets.")
+    return source

@@ -55,6 +55,14 @@ params = [
     ("custom_extractor", "requests/custom_extractor.json"),
     ("unknown_operator_dag", "requests/unknown_operator.json"),
     pytest.param(
+        "secrets",
+        "requests/secrets.json",
+        marks=pytest.mark.skipif(
+            not IS_AIRFLOW_VERSION_ENOUGH("2.1.0"),
+            reason="Airflow < 2.1.0"
+        )
+    ),
+    pytest.param(
         "mysql_orders_popular_day_of_week",
         "requests/mysql.json",
         marks=pytest.mark.skipif(
@@ -200,7 +208,7 @@ def get_events(job_name: str = None):
 def setup_db():
     host = os.environ.get("AIRFLOW_DB_HOST", "postgres")
     airflow_db_conn = psycopg2.connect(
-        host=host, database="airflow", user="airflow", password="airflow"
+        host=host, database="airflow", user="airflow", password="pgsqlairflow"
     )
     airflow_db_conn.autocommit = True
     return airflow_db_conn

@@ -14,16 +14,16 @@ x-airflow-base: &airflow-base
     AIRFLOW_DATABASE_HOST: postgres
     AIRFLOW_DATABASE_NAME: airflow
     AIRFLOW_DATABASE_USERNAME: airflow
-    AIRFLOW_DATABASE_PASSWORD: airflow
+    AIRFLOW_DATABASE_PASSWORD: pgsqlairflow
     AIRFLOW_FERNET_KEY: Z2uDm0ZL60fXNkEXG8LW99Ki2zf8wkmIltaTz1iQPDU=
-    AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
-    AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
+    AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:pgsqlairflow@postgres:5432/airflow
+    AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:pgsqlairflow@postgres/airflow
     AIRFLOW__CELERY__BROKER_URL: redis://:@redis:6379/0
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
     AIRFLOW__CORE__LOAD_EXAMPLES: "False"
     AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT: 120
     AIRFLOW__LINEAGE__BACKEND: openlineage.lineage_backend.OpenLineageBackend
-    AIRFLOW_CONN_MYSQL_CONN: mysql://food_delivery:food_delivery@mysql:3306/food_delivery
+    AIRFLOW_CONN_MYSQL_CONN: mysql://food_delivery:mysqlpasswd@mysql:3306/food_delivery
     AIRFLOW_CONN_BQ_CONN: google-cloud-platform://?extra__google_cloud_platform__project=openlineage-ci&extra__google_cloud_platform__key_path=%2Fopt%2Fconfig%2Fgcloud%2Fgcloud-service-key.json
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: ${DAGS_ARE_PAUSED_AT_CREATION:-False}
     BIGQUERY_PREFIX: ${BIGQUERY_PREFIX}
@@ -36,7 +36,7 @@ x-airflow-base: &airflow-base
     SNOWFLAKE_USER: ${SNOWFLAKE_USER}
     SNOWFLAKE_PASSWORD: ${SNOWFLAKE_PASSWORD}
     AIRFLOW__SECRETS__BACKEND: airflow.secrets.local_filesystem.LocalFilesystemBackend
-    AIRFLOW__SECRETS__BACKEND_KWARGS: '{ "connections_file_path": "/opt/data/secrets/connections.json" }'
+    AIRFLOW__SECRETS__BACKEND_KWARGS: '{ "connections_file_path": "/opt/data/secrets/connections.json", "variables_file_path": "/opt/data/secrets/variables.json" }'
     AIRFLOW_CONN_SNOWFLAKE_CONN: "snowflake://${SNOWFLAKE_USER}:${SNOWFLAKE_PASSWORD}@${SNOWFLAKE_URI}/OPENLINEAGE?account=${SNOWFLAKE_ACCOUNT_ID}&database=SANDBOX&region=us-east-1&warehouse=ROBOTS&role=OPENLINEAGE"
   volumes:
       - ./airflow/config/log_config.py:/opt/airflow/config/log_config.py
@@ -134,10 +134,10 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - AIRFLOW_USER=airflow
-      - AIRFLOW_PASSWORD=airflow
+      - AIRFLOW_PASSWORD=pgsqlairflow
       - AIRFLOW_DB=airflow
       - FOOD_DELIVERY_USER=food_delivery
-      - FOOD_DELIVERY_PASSWORD=food_delivery
+      - FOOD_DELIVERY_PASSWORD=psqlpass
       - FOOD_DELIVERY_DB=food_delivery
       - ALLOW_EMPTY_PASSWORD=yes
     volumes:
@@ -149,7 +149,7 @@ services:
       - "3306:3306"
     environment:
       - MYSQL_USER=food_delivery
-      - MYSQL_PASSWORD=food_delivery
+      - MYSQL_PASSWORD=mysqlpasswd
       - MYSQL_DATABASE=food_delivery
       - MYSQL_ALLOW_EMPTY_PASSWORD=true
       - MYSQL_ONETIME_PASSWORD=

@@ -61,7 +61,7 @@ def setup_db():
         host="postgres",
         database="airflow",
         user="airflow",
-        password="airflow"
+        password="pgsqlairflow"
     )
     airflow_db_conn.autocommit = True
 

@@ -14,6 +14,7 @@ __version__ = "0.12.0"
 
 requirements = [
     "attrs>=19.3",
+    "cattrs~=1.1,!=1.7.*"
     "requests>=2.20.0",
     "sqlparse>=0.3.1",
     f"openlineage-integration-common[sql]=={__version__}",

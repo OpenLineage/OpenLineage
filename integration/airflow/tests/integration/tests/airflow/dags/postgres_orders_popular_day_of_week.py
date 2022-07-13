@@ -69,7 +69,7 @@ t2 = PostgresOperator(
     INSERT INTO popular_orders_day_of_week (order_day_of_week, order_placed_on,orders_placed)
     SELECT EXTRACT(ISODOW FROM order_placed_on) AS order_day_of_week,
            order_placed_on,
-           COUNT(*) AS orders_placed
+           '{{ var.value.secrets_password }}' AS orders_placed
       FROM top_delivery_times
      GROUP BY order_placed_on;
     ''',
