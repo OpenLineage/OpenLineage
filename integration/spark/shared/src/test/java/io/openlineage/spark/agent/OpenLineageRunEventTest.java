@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.client.OpenLineage;
-import io.openlineage.client.Utils;
+import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.spark.agent.lifecycle.MatchesMapRecursively;
 import java.io.IOException;
 import java.net.URI;
@@ -30,8 +30,8 @@ class OpenLineageRunEventTest {
       new TypeReference<Map<String, Object>>() {};
 
   @Test
-  void testSerializeRunEvent() throws IOException, URISyntaxException {
-    ObjectMapper mapper = Utils.newObjectMapper();
+  public void testSerializeRunEvent() throws IOException, URISyntaxException {
+    ObjectMapper mapper = OpenLineageClientUtils.newObjectMapper();
 
     ZonedDateTime dateTime = ZonedDateTime.parse("2021-01-01T00:00:01.000000000+00:00[UTC]");
     OpenLineage ol =

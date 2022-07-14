@@ -25,8 +25,8 @@ import java.util.Map;
 import lombok.NonNull;
 
 /** Utilities class for {@link OpenLineageClient}. */
-public final class Utils {
-  private Utils() {}
+public final class OpenLineageClientUtils {
+  private OpenLineageClientUtils() {}
 
   private static final ObjectMapper MAPPER = newObjectMapper();
 

@@ -16,47 +16,47 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import java.net.URI;
 import org.junit.jupiter.api.Test;
 
-/** Unit tests for {@link Utils}. */
-class UtilsTest {
+/** Unit tests for {@link OpenLineageClientUtils}. */
+public class OpenLineageClientUtilsTest {
   private static final String VALUE = "test";
   private static final Object OBJECT = new Object(VALUE);
   private static final TypeReference<Object> TYPE = new TypeReference<Object>() {};
   private static final String JSON = "{\"value\":\"" + VALUE + "\"}";
 
   @Test
-  void testToJson() {
-    final String actual = Utils.toJson(OBJECT);
+  public void testToJson() {
+    final String actual = OpenLineageClientUtils.toJson(OBJECT);
     assertThat(actual).isEqualTo(JSON);
   }
 
   @Test
-  void testToJson_throwsOnNull() {
-    assertThatNullPointerException().isThrownBy(() -> Utils.toJson(null));
+  public void testToJson_throwsOnNull() {
+    assertThatNullPointerException().isThrownBy(() -> OpenLineageClientUtils.toJson(null));
   }
 
   @Test
-  void testFromJson() {
-    final Object actual = Utils.fromJson(JSON, TYPE);
+  public void testFromJson() {
+    final Object actual = OpenLineageClientUtils.fromJson(JSON, TYPE);
     assertThat(actual).isEqualToComparingFieldByField(OBJECT);
   }
 
   @Test
-  void testFromJson_throwsOnNull() {
-    assertThatNullPointerException().isThrownBy(() -> Utils.fromJson(JSON, null));
-    assertThatNullPointerException().isThrownBy(() -> Utils.fromJson(null, TYPE));
+  public void testFromJson_throwsOnNull() {
+    assertThatNullPointerException().isThrownBy(() -> OpenLineageClientUtils.fromJson(JSON, null));
+    assertThatNullPointerException().isThrownBy(() -> OpenLineageClientUtils.fromJson(null, TYPE));
   }
 
   @Test
   void testToUrl() throws Exception {
     final String urlString = "http://test.com:8080";
     final URI expected = new URI(urlString);
-    final URI actual = Utils.toUri(urlString);
+    final URI actual = OpenLineageClientUtils.toUri(urlString);
     assertThat(actual).isEqualTo(expected);
   }
 
   @Test
-  void testToUrl_throwsOnNull() {
-    assertThatNullPointerException().isThrownBy(() -> Utils.toUri(null));
+  public void testToUrl_throwsOnNull() {
+    assertThatNullPointerException().isThrownBy(() -> OpenLineageClientUtils.toUri(null));
   }
 
   @JsonAutoDetect(fieldVisibility = Visibility.ANY)

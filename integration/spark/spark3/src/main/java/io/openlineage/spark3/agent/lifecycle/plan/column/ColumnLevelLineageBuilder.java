@@ -9,7 +9,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacetFields;
-import io.openlineage.client.Utils;
+import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Arrays;
@@ -95,7 +95,7 @@ public class ColumnLevelLineageBuilder {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    ObjectMapper mapper = Utils.newObjectMapper();
+    ObjectMapper mapper = OpenLineageClientUtils.newObjectMapper();
     try {
       sb.append("Inputs: ")
           .append(mapper.writeValueAsString(inputs))
