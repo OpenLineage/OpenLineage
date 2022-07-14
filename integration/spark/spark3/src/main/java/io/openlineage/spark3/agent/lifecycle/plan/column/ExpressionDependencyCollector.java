@@ -38,6 +38,7 @@ public class ExpressionDependencyCollector {
               .filter(collector -> collector.isDefinedAt(node))
               .forEach(collector -> collector.apply(node, builder));
 
+          CustomCollectorsUtils.collectExpressionDependencies(node, builder);
           List<NamedExpression> expressions = new LinkedList<>();
           if (node instanceof Project) {
             expressions.addAll(

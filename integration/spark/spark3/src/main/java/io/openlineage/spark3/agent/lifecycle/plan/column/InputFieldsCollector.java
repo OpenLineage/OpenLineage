@@ -35,6 +35,7 @@ class InputFieldsCollector {
   static void collect(
       OpenLineageContext context, LogicalPlan plan, ColumnLevelLineageBuilder builder) {
     discoverInputsFromNode(context, plan, builder);
+    CustomCollectorsUtils.collectInputs(plan, builder);
 
     // hacky way to replace `plan instanceof UnaryNode` which fails for Spark 3.2.1
     // because of java.lang.IncompatibleClassChangeError: UnaryNode, but class was expected
