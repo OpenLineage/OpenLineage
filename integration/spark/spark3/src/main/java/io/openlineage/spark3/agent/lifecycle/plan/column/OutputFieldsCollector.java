@@ -34,6 +34,8 @@ class OutputFieldsCollector {
 
     expressions.stream().forEach(expr -> builder.addOutput(expr.exprId(), expr.name()));
 
+    CustomCollectorsUtils.collectOutputs(plan, builder);
+
     if (!builder.hasOutputs()) {
       // extract outputs from the children
       ScalaConversionUtils.<LogicalPlan>fromSeq(plan.children()).stream()
