@@ -2,6 +2,7 @@ from airflow.lineage.entities import Table
 
 from openlineage.airflow.extractors.converters import table_to_dataset
 
+
 def test_table_to_dataset_conversion():
     t = Table(
         database="db",
