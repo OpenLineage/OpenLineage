@@ -56,6 +56,14 @@ public class OpenLineageFlinkJobListener implements JobListener {
       return;
     }
 
+    try {
+      start(jobClient);
+    } catch (Exception | NoClassDefFoundError | NoSuchFieldError e) {
+      log.error("Failed to notify OpenLineage about start", e);
+    }
+  }
+
+  void start(JobClient jobClient) {
     Field transformationsField =
         FieldUtils.getField(StreamExecutionEnvironment.class, "transformations", true);
     try {
@@ -83,6 +91,14 @@ public class OpenLineageFlinkJobListener implements JobListener {
   @Override
   public void onJobExecuted(
       @Nullable JobExecutionResult jobExecutionResult, @Nullable Throwable throwable) {
+    try {
+      finish(jobExecutionResult, throwable);
+    } catch (Exception | NoClassDefFoundError | NoSuchFieldError e) {
+      log.error("Failed to notify OpenLineage about complete", e);
+    }
+  }
+
+  void finish(@Nullable JobExecutionResult jobExecutionResult, @Nullable Throwable throwable) {
     if (jobExecutionResult instanceof DetachedJobExecutionResult) {
       jobContexts.remove(jobExecutionResult.getJobID());
       log.warn(

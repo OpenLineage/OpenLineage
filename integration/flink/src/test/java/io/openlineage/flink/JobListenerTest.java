@@ -27,7 +27,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-public class OpenLineageFlinkJobListenerTest {
+public class JobListenerTest {
 
   JobClient jobClient = mock(JobClient.class);
   JobID jobId = mock(JobID.class);

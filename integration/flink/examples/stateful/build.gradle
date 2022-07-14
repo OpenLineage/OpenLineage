@@ -21,7 +21,6 @@ apply plugin: 'groovy'
 apply plugin: 'com.github.johnrengelman.shadow'
 
 group 'io.openlineage.flink'
-version '1.0-SNAPSHOT'
 
 repositories {
     mavenLocal()
@@ -53,6 +52,7 @@ dependencies {
 
     def flinkVersion = '1.14.4'
     def hadoopVersion = '3.3.1'
+    implementation("io.openlineage:openlineage-java:$project.version")
     implementation "org.apache.flink:flink-java:$flinkVersion"
     implementation "org.apache.flink:flink-streaming-java_2.12:$flinkVersion"
     implementation "org.apache.flink:flink-runtime-web_2.12:$flinkVersion"

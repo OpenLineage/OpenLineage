@@ -29,7 +29,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Tag("integration-test")
 @Testcontainers
 @Slf4j
-public class OpenLineageFlinkContainerTest {
+public class ContainerTest {
 
   private static final Network network = Network.newNetwork();
   private static MockServerClient mockServerClient;

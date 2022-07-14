@@ -3,11 +3,14 @@ package io.openlineage.flink.agent.client;
 import io.openlineage.client.Clients;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClient;
+import io.openlineage.client.OpenLineageClientException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.Properties;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class EventEmitter {
 
   private final OpenLineageClient client;
@@ -25,7 +28,11 @@ public class EventEmitter {
   }
 
   public void emit(OpenLineage.RunEvent event) {
-    client.emit(event);
+    try {
+      client.emit(event);
+    } catch (OpenLineageClientException exception) {
+      log.error("Failed to emit OpenLineage event: ", exception);
+    }
   }
 
   private static URI getUri() {

@@ -11,20 +11,13 @@ import org.apache.iceberg.flink.TableLoader;
 import org.apache.iceberg.flink.sink.FlinkSink;
 import org.apache.iceberg.flink.source.FlinkSource;
 
+import static io.openlineage.flink.StreamEnvironment.setupEnv;
 import static org.apache.flink.streaming.api.environment.CheckpointConfig.ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION;
 
 public class FlinkIcebergApplication {
 
   public static void main(String[] args) throws Exception {
-    ParameterTool parameters = ParameterTool.fromArgs(args);
-    StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-
-    env.getConfig().setGlobalJobParameters(parameters);
-    env.setParallelism(parameters.getInt("parallelism", 1));
-    env.enableCheckpointing(parameters.getInt("checkpoint.interval", 1_000), CheckpointingMode.EXACTLY_ONCE);
-    env.getCheckpointConfig().enableExternalizedCheckpoints(RETAIN_ON_CANCELLATION);
-    env.getCheckpointConfig().setMinPauseBetweenCheckpoints(parameters.getInt("min.pause.between.checkpoints", 1_000));
-    env.getCheckpointConfig().setCheckpointTimeout(parameters.getInt("checkpoint.timeout", 90_000));
+    StreamExecutionEnvironment env = setupEnv(args);
 
     TableLoader sourceLoader = TableLoader.fromHadoopTable("/tmp/warehouse/db/source");
     TableLoader sinkLoader = TableLoader.fromHadoopTable("/tmp/warehouse/db/sink");
