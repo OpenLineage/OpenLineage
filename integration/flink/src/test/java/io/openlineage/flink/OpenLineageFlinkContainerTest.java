@@ -113,6 +113,16 @@ public class OpenLineageFlinkContainerTest {
         .until(() -> jobManager.getLogs().contains("New checkpoint encountered"));
   }
 
+  void runUntilFailed(String jobName) {
+    jobManager =
+        FlinkContainerUtils.makeFlinkJobManagerContainer(
+            jobName, network, Arrays.asList(generateEvents, openLineageClientMockContainer));
+    taskManager =
+        FlinkContainerUtils.makeFlinkTaskManagerContainer(network, Arrays.asList(jobManager));
+    taskManager.start();
+    await().atMost(Duration.ofMinutes(5)).until(() -> !jobManager.isRunning());
+  }
+
   public HttpRequest getEvent(String path) {
     return request()
         .withPath("/api/v1/lineage")
@@ -139,6 +149,13 @@ public class OpenLineageFlinkContainerTest {
   public void testOpenLineageEventSentForIcebergJob() {
     runUntilCheckpoint("io.openlineage.flink.FlinkIcebergApplication");
     mockServerClient.verify(getEvent("events/expected_iceberg.json"));
+  }
+
+  @Test
+  @SneakyThrows
+  public void testOpenLineageFailedEventSentForFailedJob() {
+    runUntilFailed("io.openlineage.flink.FlinkFailedApplication");
+    mockServerClient.verify(getEvent("events/expected_failed.json"));
   }
 
   @SneakyThrows

@@ -11,8 +11,10 @@ import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.visitor.Visitor;
 import io.openlineage.flink.visitor.VisitorFactory;
 import io.openlineage.flink.visitor.VisitorFactoryImpl;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +26,9 @@ import org.apache.flink.api.dag.Transformation;
 public class FlinkExecutionContext implements ExecutionContext {
 
   @Getter private final JobID jobId;
+
+  private final UUID runId;
+
   private final EventEmitter eventEmitter;
   private final OpenLineageContext openLineageContext;
 
@@ -31,6 +36,7 @@ public class FlinkExecutionContext implements ExecutionContext {
 
   public FlinkExecutionContext(JobID jobId, List<Transformation<?>> transformations) {
     this.jobId = jobId;
+    this.runId = UUID.randomUUID();
     this.transformations = transformations;
     this.eventEmitter = new EventEmitter();
     this.openLineageContext =
@@ -54,6 +60,7 @@ public class FlinkExecutionContext implements ExecutionContext {
         buildEventForEventType(EventType.OTHER)
             .run(
                 new OpenLineage.RunBuilder()
+                    .runId(runId)
                     .facets(new OpenLineage.RunFacetsBuilder().put("checkpoints", facet).build())
                     .build())
             .build();
@@ -84,7 +91,28 @@ public class FlinkExecutionContext implements ExecutionContext {
   }
 
   @Override
-  public void onJobExecuted(JobExecutionResult jobExecutionResult) {}
+  public void onJobCompleted(JobExecutionResult jobExecutionResult) {
+    OpenLineage openLineage = openLineageContext.getOpenLineage();
+    eventEmitter.emit(
+        openLineage
+            .newRunEventBuilder()
+            .run(openLineage.newRun(runId, null))
+            .eventTime(ZonedDateTime.now())
+            .eventType(EventType.COMPLETE)
+            .build());
+  }
+
+  @Override
+  public void onJobFailed(Throwable failed) {
+    OpenLineage openLineage = openLineageContext.getOpenLineage();
+    eventEmitter.emit(
+        openLineage
+            .newRunEventBuilder()
+            .run(openLineage.newRun(runId, openLineage.newRunFacetsBuilder().build()))
+            .eventTime(ZonedDateTime.now())
+            .eventType(EventType.FAIL)
+            .build());
+  }
 
   private List<OpenLineage.InputDataset> getInputDatasets(
       VisitorFactory visitorFactory, List<Object> sources) {

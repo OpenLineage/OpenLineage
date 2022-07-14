@@ -109,7 +109,8 @@ public class FlinkContainerUtils {
                     + String.format("--job-classname %s ", jobName)
                     + "--input-topics io.openlineage.flink.kafka.input1,io.openlineage.flink.kafka.input2 "
                     + "--output-topic io.openlineage.flink.kafka.output ")
-            .withEnv("FLINK_PROPERTIES", "jobmanager.rpc.address: jobmanager")
+            .withEnv(
+                "FLINK_PROPERTIES", "jobmanager.rpc.address: jobmanager\nexecution.attached: true")
             .withEnv("OPENLINEAGE_CONFIG", "/opt/flink/lib/openlineage.yml")
             .withStartupTimeout(Duration.of(5, ChronoUnit.MINUTES))
             .dependsOn(startables);

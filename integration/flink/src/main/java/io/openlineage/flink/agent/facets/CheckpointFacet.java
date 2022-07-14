@@ -1,7 +1,7 @@
 package io.openlineage.flink.agent.facets;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.openlineage.client.OpenLineage;
-import io.openlineage.client.shaded.com.fasterxml.jackson.annotation.JsonProperty;
 import io.openlineage.flink.agent.client.EventEmitter;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
