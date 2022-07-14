@@ -14,7 +14,8 @@ use test_utils::*;
 #[test]
 fn parse_copy_from() {
     assert_eq!(
-        parse_sql("
+        parse_sql(
+            "
             COPY INTO SCHEMA.SOME_MONITORING_SYSTEM
                 FROM (
                 SELECT
@@ -47,8 +48,7 @@ fn parse_copy_from() {
             Arc::new(SnowflakeDialect {}),
             None
         )
-            .unwrap_err(),
+        .unwrap_err(),
         "sql parser error: Expected FROM or TO, found: SCHEMA"
     )
 }
-
