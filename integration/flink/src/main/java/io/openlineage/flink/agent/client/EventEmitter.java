@@ -31,7 +31,7 @@ public class EventEmitter {
   private static URI getUri() {
     return URI.create(
         String.format(
-            "https://github.com/OpenLineage/OpenLineage/tree/%s/integration/spark", getVersion()));
+            "https://github.com/OpenLineage/OpenLineage/tree/%s/integration/flink", getVersion()));
   }
 
   private static String getVersion() {

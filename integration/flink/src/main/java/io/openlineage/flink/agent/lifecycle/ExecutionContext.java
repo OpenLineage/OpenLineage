@@ -9,5 +9,7 @@ public interface ExecutionContext {
 
   void onJobCheckpoint(CheckpointFacet facet);
 
-  void onJobExecuted(JobExecutionResult jobExecutionResult);
+  void onJobCompleted(JobExecutionResult jobExecutionResult);
+
+  void onJobFailed(Throwable failed);
 }
