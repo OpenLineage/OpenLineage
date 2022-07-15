@@ -5,7 +5,9 @@ import os
 import pytest
 from typing import List, Optional
 from unittest.mock import patch
+from pkg_resources import parse_version
 
+from airflow.version import version as AIRFLOW_VERSION
 from airflow.models.connection import Connection
 from airflow.hooks.base import BaseHook
 
@@ -67,15 +69,16 @@ def test_adding_extractors():
     assert len(extractors.extractors) == count + 1
 
 
-@patch.object(BaseHook, "get_connection", return_value=Connection(conn_id="postgres_default", conn_type="postgres"))  # noqa
-def test_instantiate_abstract_extractors(mock_hook):
-    class SQLCheckOperator:
-        conn_id = "postgres_default"
-    extractors = Extractors()
-    sql_check_operator = SQLCheckOperator()
-    extractors.instantiate_abstract_extractors(task=sql_check_operator)
-    sql_check_extractor = extractors.extractors["SQLCheckOperator"]("SQLCheckOperator")
-    assert sql_check_extractor._get_scheme() == "postgres"
+if parse_version(AIRFLOW_VERSION) >= parse_version("2.0.0"):     # type: ignore
+    @patch.object(BaseHook, "get_connection", return_value=Connection(conn_id="postgres_default", conn_type="postgres"))  # noqa
+    def test_instantiate_abstract_extractors(mock_hook):
+        class SQLCheckOperator:
+            conn_id = "postgres_default"
+        extractors = Extractors()
+        sql_check_operator = SQLCheckOperator()
+        extractors.instantiate_abstract_extractors(task=sql_check_operator)
+        sql_check_extractor = extractors.extractors["SQLCheckOperator"]("SQLCheckOperator")
+        assert sql_check_extractor._get_scheme() == "postgres"
 
 
 @patch('airflow.models.connection.Connection')
