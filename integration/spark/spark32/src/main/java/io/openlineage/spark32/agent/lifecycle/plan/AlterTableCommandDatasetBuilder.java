@@ -35,9 +35,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public class AlterTableDatasetCommandBuilder extends AbstractQueryPlanOutputDatasetBuilder<LogicalPlan> {
+public class AlterTableCommandDatasetBuilder extends AbstractQueryPlanOutputDatasetBuilder<LogicalPlan> {
 
-  public AlterTableDatasetCommandBuilder(@NonNull OpenLineageContext context) {
+  public AlterTableCommandDatasetBuilder(@NonNull OpenLineageContext context) {
     super(context, false);
   }
 

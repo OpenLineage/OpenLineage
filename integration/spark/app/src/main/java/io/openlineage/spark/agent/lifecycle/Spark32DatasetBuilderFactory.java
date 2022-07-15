@@ -11,7 +11,6 @@ import io.openlineage.spark.agent.lifecycle.plan.CommandPlanVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.SaveIntoDataSourceCommandVisitor;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark3.agent.lifecycle.plan.AlterTableDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.AppendDataDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.CreateReplaceDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationInputDatasetBuilder;
@@ -22,6 +21,8 @@ import io.openlineage.spark3.agent.lifecycle.plan.LogicalRelationDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.TableContentChangeDatasetBuilder;
 import java.util.Collection;
 import java.util.List;
+
+import io.openlineage.spark32.agent.lifecycle.plan.AlterTableCommandDatasetBuilder;
 import scala.PartialFunction;
 
 public class Spark32DatasetBuilderFactory implements DatasetBuilderFactory {
@@ -42,20 +43,15 @@ public class Spark32DatasetBuilderFactory implements DatasetBuilderFactory {
   public Collection<PartialFunction<Object, List<OpenLineage.OutputDataset>>> getOutputBuilders(
       OpenLineageContext context) {
     DatasetFactory<OpenLineage.OutputDataset> datasetFactory = DatasetFactory.output(context);
-    ImmutableList.Builder builder =
-        ImmutableList.<PartialFunction<Object, List<OpenLineage.OutputDataset>>>builder()
+    return ImmutableList.<PartialFunction<Object, List<OpenLineage.OutputDataset>>>builder()
             .add(new LogicalRelationDatasetBuilder(context, datasetFactory, false))
             .add(new SaveIntoDataSourceCommandVisitor(context))
             .add(new AppendDataDatasetBuilder(context, datasetFactory))
             .add(new DataSourceV2RelationOutputDatasetBuilder(context, datasetFactory))
             .add(new TableContentChangeDatasetBuilder(context))
-            .add(new CreateReplaceDatasetBuilder(context));
-
-    if (hasAlterTableClass()) {
-      builder.add(new AlterTableDatasetBuilder(context));
-    }
-
-    return builder.build();
+            .add(new CreateReplaceDatasetBuilder(context))
+            .add(new AlterTableCommandDatasetBuilder(context))
+            .build();
   }
 
   private boolean hasAlterTableClass() {

@@ -36,7 +36,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
-class AlterTableDatasetCommandBuilderTest {
+class AlterTableCommandDatasetBuilderTest {
 
   OpenLineageContext openLineageContext =
       OpenLineageContext.builder()
@@ -55,7 +55,7 @@ class AlterTableDatasetCommandBuilderTest {
 
   ResolvedTable resolvedTable = mock(ResolvedTable.class);
 
-  AlterTableDatasetCommandBuilder builder = new AlterTableDatasetCommandBuilder(openLineageContext);
+  AlterTableCommandDatasetBuilder builder = new AlterTableCommandDatasetBuilder(openLineageContext);
 
   @BeforeEach
   public void setUp() {
