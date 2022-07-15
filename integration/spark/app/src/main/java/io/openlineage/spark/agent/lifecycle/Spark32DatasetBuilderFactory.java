@@ -19,10 +19,9 @@ import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2ScanRelationInputD
 import io.openlineage.spark3.agent.lifecycle.plan.InMemoryRelationInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.LogicalRelationDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.TableContentChangeDatasetBuilder;
+import io.openlineage.spark32.agent.lifecycle.plan.AlterTableCommandDatasetBuilder;
 import java.util.Collection;
 import java.util.List;
-
-import io.openlineage.spark32.agent.lifecycle.plan.AlterTableCommandDatasetBuilder;
 import scala.PartialFunction;
 
 public class Spark32DatasetBuilderFactory implements DatasetBuilderFactory {
@@ -44,14 +43,14 @@ public class Spark32DatasetBuilderFactory implements DatasetBuilderFactory {
       OpenLineageContext context) {
     DatasetFactory<OpenLineage.OutputDataset> datasetFactory = DatasetFactory.output(context);
     return ImmutableList.<PartialFunction<Object, List<OpenLineage.OutputDataset>>>builder()
-            .add(new LogicalRelationDatasetBuilder(context, datasetFactory, false))
-            .add(new SaveIntoDataSourceCommandVisitor(context))
-            .add(new AppendDataDatasetBuilder(context, datasetFactory))
-            .add(new DataSourceV2RelationOutputDatasetBuilder(context, datasetFactory))
-            .add(new TableContentChangeDatasetBuilder(context))
-            .add(new CreateReplaceDatasetBuilder(context))
-            .add(new AlterTableCommandDatasetBuilder(context))
-            .build();
+        .add(new LogicalRelationDatasetBuilder(context, datasetFactory, false))
+        .add(new SaveIntoDataSourceCommandVisitor(context))
+        .add(new AppendDataDatasetBuilder(context, datasetFactory))
+        .add(new DataSourceV2RelationOutputDatasetBuilder(context, datasetFactory))
+        .add(new TableContentChangeDatasetBuilder(context))
+        .add(new CreateReplaceDatasetBuilder(context))
+        .add(new AlterTableCommandDatasetBuilder(context))
+        .build();
   }
 
   private boolean hasAlterTableClass() {

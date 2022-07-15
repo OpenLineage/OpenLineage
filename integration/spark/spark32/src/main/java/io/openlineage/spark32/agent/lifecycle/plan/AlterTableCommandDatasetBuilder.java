@@ -12,6 +12,10 @@ import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.NonNull;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.analysis.ResolvedTable;
@@ -30,12 +34,8 @@ import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.apache.spark.sql.types.StructType;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-public class AlterTableCommandDatasetBuilder extends AbstractQueryPlanOutputDatasetBuilder<LogicalPlan> {
+public class AlterTableCommandDatasetBuilder
+    extends AbstractQueryPlanOutputDatasetBuilder<LogicalPlan> {
 
   public AlterTableCommandDatasetBuilder(@NonNull OpenLineageContext context) {
     super(context, false);
@@ -52,7 +52,6 @@ public class AlterTableCommandDatasetBuilder extends AbstractQueryPlanOutputData
         || x instanceof DropColumns
         || x instanceof RenameColumn
         || x instanceof AlterColumn;
-
   }
 
   @Override
