@@ -155,8 +155,8 @@ def test_build_table_check_facets():
     assertions_facet = facets["dataQualityAssertions"]
     assert data_quality_facet.rowCount == 9
     assert data_quality_facet.bytes is None
-    assert assertions_facet[0].assertion == "row_count_check"
-    assert assertions_facet[0].success
+    assert assertions_facet.assertions[0].assertion == "row_count_check"
+    assert assertions_facet.assertions[0].success
 
 
 def test_build_column_check_facets():
@@ -167,9 +167,9 @@ def test_build_column_check_facets():
     assert data_quality_facet.columnMetrics.get("X").distinctCount == 6
     assert data_quality_facet.rowCount is None
     assert data_quality_facet.bytes is None
-    assert assertions_facet[0].assertion == "null_check"
-    assert assertions_facet[0].success
-    assert assertions_facet[0].column == "X"
-    assert assertions_facet[1].assertion == "distinct_check"
-    assert not assertions_facet[1].success
-    assert assertions_facet[1].column == "X"
+    assert assertions_facet.assertions[0].assertion == "null_check"
+    assert assertions_facet.assertions[0].success
+    assert assertions_facet.assertions[0].column == "X"
+    assert assertions_facet.assertions[1].assertion == "distinct_check"
+    assert not assertions_facet.assertions[1].success
+    assert assertions_facet.assertions[1].column == "X"
