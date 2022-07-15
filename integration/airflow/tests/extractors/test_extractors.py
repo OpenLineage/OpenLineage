@@ -9,7 +9,6 @@ from pkg_resources import parse_version
 
 from airflow.version import version as AIRFLOW_VERSION
 from airflow.models.connection import Connection
-from airflow.hooks.base import BaseHook
 
 from openlineage.airflow.extractors import Extractors, BaseExtractor, TaskMetadata
 from openlineage.airflow.extractors.postgres_extractor import PostgresExtractor
@@ -70,6 +69,7 @@ def test_adding_extractors():
 
 
 if parse_version(AIRFLOW_VERSION) >= parse_version("2.0.0"):     # type: ignore
+    from airflow.hooks.base import BaseHook
     @patch.object(BaseHook, "get_connection", return_value=Connection(conn_id="postgres_default", conn_type="postgres"))  # noqa
     def test_instantiate_abstract_extractors(mock_hook):
         class SQLCheckOperator:
