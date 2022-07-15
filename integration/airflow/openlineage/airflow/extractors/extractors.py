@@ -4,8 +4,6 @@ import os
 
 from typing import Type, Optional
 
-from airflow.hooks.base import BaseHook
-
 from openlineage.airflow.extractors.base import BaseExtractor
 from openlineage.airflow.utils import import_from_string, try_import_from_string
 from openlineage.airflow.extractors.sql_check_extractors import get_check_extractors
@@ -98,6 +96,8 @@ class Extractors:
         return None
 
     def instantiate_abstract_extractors(self, task) -> None:
+        from airflow.hooks.base import BaseHook
+
         if task.__class__.__name__ in (
             "SQLCheckOperator", "SQLValueCheckOperator", "SQLThresholdCheckOperator",
             "SQLIntervalCheckOperator", "SQLColumnCheckOperator", "SQLTableCheckOperator",

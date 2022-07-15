@@ -1,6 +1,7 @@
 import logging
 from typing import Optional, Type
 
+from airflow.version import version as AIRFLOW_VERSION
 from openlineage.airflow.extractors import TaskMetadata, BaseExtractor, Extractors
 from openlineage.airflow.facets import UnknownOperatorAttributeRunFacet, UnknownOperatorInstance
 from openlineage.airflow.utils import get_job_name, get_operator_class
@@ -73,7 +74,8 @@ class ExtractorManager:
         return TaskMetadata(name=get_job_name(task))
 
     def _get_extractor(self, task) -> Optional[BaseExtractor]:
-        self.task_to_extractor.instantiate_abstract_extractors(task)
+        if parse_version(AIRFLOW_VERSION) >= parse_version("2.0.0"):     # type: ignore
+            self.task_to_extractor.instantiate_abstract_extractors(task)
         if task.task_id in self.extractors:
             return self.extractors[task.task_id]
         extractor = self.task_to_extractor.get_extractor_class(get_operator_class(task))
