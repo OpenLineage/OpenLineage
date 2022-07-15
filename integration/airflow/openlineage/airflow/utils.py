@@ -7,7 +7,7 @@ import logging
 import os
 import subprocess
 from collections import defaultdict
-from typing import TYPE_CHECKING, Type, Dict, Any
+from typing import TYPE_CHECKING, Type, Dict, Any, List
 from uuid import uuid4
 from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
 from typing import Optional
@@ -353,7 +353,7 @@ def build_table_check_facets(checks) -> dict:
     }
     """
     facet_data = {}
-    assertion_data = {"assertions": []}
+    assertion_data: Dict[str, List[Assertion]] = {"assertions": []}
     for check, check_values in checks.items():
         assertion_data["assertions"].append(
             Assertion(
@@ -393,8 +393,8 @@ def build_column_check_facets(column_mapping) -> dict:
         }
     }
     """
-    facet_data = {"columnMetrics": defaultdict(dict)}
-    assertion_data = {"assertions": []}
+    facet_data: Dict[str, Any] = {"columnMetrics": defaultdict(dict)}
+    assertion_data: Dict[str, List[Assertion]] = {"assertions": []}
     for col_name, checks in column_mapping.items():
         for check, check_values in checks.items():
             facet_key = map_facet_name(check)
@@ -436,3 +436,4 @@ def map_facet_name(check_name) -> str:
         return "max"
     elif "quantiles" in check_name:
         return "quantiles"
+    return ""
