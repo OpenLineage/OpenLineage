@@ -10,6 +10,7 @@ from openlineage.airflow.utils import (
     build_table_check_facets
 )
 
+
 def get_check_extractors(super_):
     class BaseSqlCheckExtractor(super_):
         default_schema = 'public'
@@ -36,7 +37,6 @@ def get_check_extractors(super_):
         def _get_input_facets(self) -> Dict[str, BaseFacet]:
             return {}
 
-
     class SqlValueCheckExtractor(BaseSqlCheckExtractor):
         def __init__(self, operator):
             super().__init__(operator)
@@ -47,7 +47,6 @@ def get_check_extractors(super_):
 
         def _get_input_facets(self) -> Dict[str, BaseFacet]:
             return {}
-
 
     class SqlThresholdCheckExtractor(BaseSqlCheckExtractor):
         def __init__(self, operator):
@@ -60,7 +59,6 @@ def get_check_extractors(super_):
         def _get_input_facets(self) -> Dict[str, BaseFacet]:
             return {}
 
-
     class SqlIntervalCheckExtractor(BaseSqlCheckExtractor):
         def __init__(self, operator):
             super().__init__(operator)
@@ -71,7 +69,6 @@ def get_check_extractors(super_):
 
         def _get_input_facets(self) -> Dict[str, BaseFacet]:
             return {}
-
 
     class SqlColumnCheckExtractor(BaseSqlCheckExtractor):
         def __init__(self, operator):
@@ -84,7 +81,6 @@ def get_check_extractors(super_):
         def _get_input_facets(self) -> Dict[str, BaseFacet]:
             column_mapping = self.operator.column_mapping
             return build_column_check_facets(column_mapping)
-
 
     class SqlTableCheckExtractor(BaseSqlCheckExtractor):
         def __init__(self, operator):

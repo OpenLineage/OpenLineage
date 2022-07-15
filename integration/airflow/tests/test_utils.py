@@ -147,6 +147,8 @@ def test_safe_dict():
         def __str__(self):
             raise NotImplementedError
     assert str(SafeStrDict({'a': NotImplemented()})) == str({})
+
+
 def test_build_table_check_facets():
     facets = build_table_check_facets(TABLE_CHECK_MAPPING)
     data_quality_facet = facets["dataQuality"]

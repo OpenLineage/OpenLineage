@@ -340,6 +340,7 @@ def build_threshold_check_facets() -> dict:
 def build_interval_check_facets() -> dict:
     pass
 
+
 def build_table_check_facets(checks) -> dict:
     """
     Function should expect to take the checks in the following form:

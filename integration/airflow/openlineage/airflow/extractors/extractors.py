@@ -52,6 +52,7 @@ _check_providers = {
     "SnowflakeExtractor": "snowflake",
 }
 
+
 class Extractors:
     """
     This exposes implemented extractors, while hiding ones that require additional, unmet
@@ -112,5 +113,8 @@ class Extractors:
                     else:
                         return
             else:
-                raise ValueError("Extractor for the given task's conn_type (%s) does not exist.", task_conn_type)
+                raise ValueError(
+                    "Extractor for the given task's conn_type (%s) does not exist.",
+                    task_conn_type
+                )
         return
