@@ -1,6 +1,7 @@
 import logging
 from typing import Optional, Type
 
+from pkg_resources import parse_version
 from airflow.version import version as AIRFLOW_VERSION
 from openlineage.airflow.extractors import TaskMetadata, BaseExtractor, Extractors
 from openlineage.airflow.facets import UnknownOperatorAttributeRunFacet, UnknownOperatorInstance
