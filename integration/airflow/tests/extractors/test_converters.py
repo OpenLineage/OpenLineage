@@ -5,8 +5,8 @@ import pytest
 
 from airflow.version import version as AIRFLOW_VERSION
 from pkg_resources import parse_version
-if parse_version(AIRFLOW_VERSION) > parse_version("2.0.0"):
-    pytestmark = pytest.mark.skip("Skipping tests for Airflow 2.0.0+")
+if parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"):
+    pytestmark = pytest.mark.skip("Skipping tests for Airflow version < 2")
 
 from openlineage.airflow.extractors.converters import table_to_dataset
 
