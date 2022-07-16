@@ -3,6 +3,7 @@
 
 from typing import Any, Optional, List
 from unittest.mock import MagicMock
+import pytest
 
 from airflow.models import BaseOperator
 from airflow.version import version as AIRFLOW_VERSION
@@ -83,6 +84,7 @@ def test_extracting_inlets_and_outlets():
     assert isinstance(metadata.inputs[0], Dataset)
     assert isinstance(metadata.outputs[0], Dataset)
 
+
 @pytest.mark.skipif(
     parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"),
     reason="requires AIRFLOW_VERSION to be higher than 2.0",
@@ -105,6 +107,7 @@ def test_extraction_from_inlets_and_outlets_without_extractor():
     assert len(metadata.inputs) == 1 and len(metadata.outputs) == 1
     assert isinstance(metadata.inputs[0], Dataset)
     assert isinstance(metadata.outputs[0], Dataset)
+
 
 @pytest.mark.skipif(
     parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"),

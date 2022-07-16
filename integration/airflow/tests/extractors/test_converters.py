@@ -1,9 +1,13 @@
+# Copyright 2018-2022 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
+
 import pytest
 
 from airflow.version import version as AIRFLOW_VERSION
 from pkg_resources import parse_version
 
 from openlineage.airflow.extractors.converters import table_to_dataset
+
 
 @pytest.mark.skipif(
     parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"),
