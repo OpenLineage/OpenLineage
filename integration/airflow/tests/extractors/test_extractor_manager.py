@@ -5,11 +5,11 @@ from typing import Any, Optional, List
 from unittest.mock import MagicMock
 
 from airflow.models import BaseOperator
-from airflow.lineage.entities import Table
+from airflow.version import version as AIRFLOW_VERSION
+from pkg_resources import parse_version
 
 from openlineage.airflow.extractors import ExtractorManager, BaseExtractor, TaskMetadata
 from openlineage.airflow.extractors.postgres_extractor import PostgresExtractor
-from openlineage.client.run import Dataset
 
 
 class FakeOperator(BaseOperator):
@@ -64,7 +64,14 @@ def test_adding_extractors_to_manager():
     assert len(manager.task_to_extractor.extractors) == count + 1
 
 
+@pytest.mark.skipif(
+    parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"),
+    reason="requires AIRFLOW_VERSION to be higher than 2.0",
+)
 def test_extracting_inlets_and_outlets():
+    from airflow.lineage.entities import Table
+    from openlineage.client.run import Dataset
+
     metadata = TaskMetadata(name="fake-name", job_facets={})
     inlets = [Table(database="d1", cluster="c1", name="t1")]
     outlets = [Table(database="d1", cluster="c1", name="t2")]
@@ -76,8 +83,14 @@ def test_extracting_inlets_and_outlets():
     assert isinstance(metadata.inputs[0], Dataset)
     assert isinstance(metadata.outputs[0], Dataset)
 
-
+@pytest.mark.skipif(
+    parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"),
+    reason="requires AIRFLOW_VERSION to be higher than 2.0",
+)
 def test_extraction_from_inlets_and_outlets_without_extractor():
+    from airflow.lineage.entities import Table
+    from openlineage.client.run import Dataset
+
     dagrun = MagicMock()
 
     task = FakeOperator(
@@ -93,8 +106,14 @@ def test_extraction_from_inlets_and_outlets_without_extractor():
     assert isinstance(metadata.inputs[0], Dataset)
     assert isinstance(metadata.outputs[0], Dataset)
 
-
+@pytest.mark.skipif(
+    parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"),
+    reason="requires AIRFLOW_VERSION to be higher than 2.0",
+)
 def test_fake_extractor_extracts_from_inlets_and_outlets():
+    from airflow.lineage.entities import Table
+    from openlineage.client.run import Dataset
+
     dagrun = MagicMock()
 
     task = FakeOperator(
