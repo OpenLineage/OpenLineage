@@ -67,6 +67,19 @@ public class PlanUtils3 {
     }
   }
 
+  public static Optional<DatasetIdentifier> getDatasetIdentifierFromRelation(
+      DataSourceV2Relation relation) {
+
+    try {
+      return (Optional.of(CatalogUtils3.getDatasetIdentifierFromRelation(relation)));
+    } catch (UnsupportedCatalogException ex) {
+      log.error(
+          String.format("Catalog %s is unsupported", ex.getMessage()),
+          ex); // update this if change the exception thrown in catalogutils
+      return Optional.empty();
+    }
+  }
+
   public static <D extends OpenLineage.Dataset> List<D> fromDataSourceV2Relation(
       DatasetFactory<D> datasetFactory, OpenLineageContext context, DataSourceV2Relation relation) {
     return fromDataSourceV2Relation(
@@ -78,10 +91,22 @@ public class PlanUtils3 {
       OpenLineageContext context,
       DataSourceV2Relation relation,
       OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder) {
+
+    Optional<DatasetIdentifier> di;
     // Get identifier for dataset, or return empty list
     if (relation.identifier().isEmpty()) {
       log.warn("Couldn't find identifier for dataset in plan {}", relation);
-      return Collections.emptyList();
+      // Since there is no identifier, short circuit and check if this is a relationHandler instance
+      // if yes, then we get the datasetIdentifier and return the dataset list.
+      di = PlanUtils3.getDatasetIdentifierFromRelation(relation);
+      if (!di.isPresent()) {
+        return Collections.emptyList();
+      } else {
+        return Collections.singletonList(
+            datasetFactory.getDataset(
+                di.get().getName(), di.get().getNamespace(), datasetFacetsBuilder.build()));
+      }
+      // return Collections.emptyList();
     }
     Identifier identifier = relation.identifier().get();
 
@@ -93,8 +118,7 @@ public class PlanUtils3 {
     TableCatalog tableCatalog = (TableCatalog) relation.catalog().get();
 
     Map<String, String> tableProperties = relation.table().properties();
-    Optional<DatasetIdentifier> di =
-        PlanUtils3.getDatasetIdentifier(context, tableCatalog, identifier, tableProperties);
+    di = PlanUtils3.getDatasetIdentifier(context, tableCatalog, identifier, tableProperties);
 
     if (!di.isPresent()) {
       return Collections.emptyList();
