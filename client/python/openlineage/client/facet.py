@@ -195,3 +195,17 @@ class SourceCodeJobFacet(BaseFacet):
 class ExternalQueryRunFacet(BaseFacet):
     externalQueryId: str = attr.ib()
     source: str = attr.ib()
+
+
+@attr.s
+class ErrorMessageRunFacet(BaseFacet):
+    """
+    This facet represents an error message that was the result of a job run
+    """
+    message: str = attr.ib()
+    programmingLanguage: str = attr.ib()
+    stackTrace: Optional[str] = attr.ib(default=None)
+
+    @staticmethod
+    def _get_schema() -> str:
+        return SCHEMA_URI + "#/definitions/ErrorMessageRunFacet"

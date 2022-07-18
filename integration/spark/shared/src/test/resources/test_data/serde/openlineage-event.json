@@ -9,6 +9,11 @@
           "namespace": "namespace",
           "name": "jobName"
         }
+      },
+      "errorMessage": {
+        "message": "failed",
+        "programmingLanguage": "JAVA",
+        "stackTrace": "<stack_trace>"
       }
     }
   },
