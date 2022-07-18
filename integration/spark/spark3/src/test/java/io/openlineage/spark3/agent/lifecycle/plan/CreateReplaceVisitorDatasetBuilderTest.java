@@ -127,6 +127,7 @@ class CreateReplaceVisitorDatasetBuilderTest {
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
       try (MockedStatic mockedCatalog = mockStatic(CatalogUtils3.class)) {
         when(CatalogUtils3.getDatasetVersion(
+                openLineageContext,
                 catalogTable,
                 Identifier.of(new String[] {"db"}, TABLE),
                 ScalaConversionUtils.<String, String>fromMap(commandProperties)))
@@ -160,6 +161,7 @@ class CreateReplaceVisitorDatasetBuilderTest {
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
       try (MockedStatic mockedCatalog = mockStatic(CatalogUtils3.class)) {
         when(CatalogUtils3.getDatasetVersion(
+                openLineageContext,
                 catalogTable,
                 Identifier.of(new String[] {"db"}, TABLE),
                 ScalaConversionUtils.<String, String>fromMap(commandProperties)))

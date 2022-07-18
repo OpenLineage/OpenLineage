@@ -26,9 +26,9 @@
           }
         ]
       },
-      "tableProvider" : {
-        "provider" : "delta",
-        "format" : "parquet"
+      "storage" : {
+        "storageLayer" : "delta",
+        "fileFormat" : "parquet"
       },
       "version" : {
         "datasetVersion" : "2"

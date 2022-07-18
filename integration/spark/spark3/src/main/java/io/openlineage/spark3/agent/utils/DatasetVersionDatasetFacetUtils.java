@@ -29,7 +29,7 @@ public class DatasetVersionDatasetFacetUtils {
    * Check if we have all the necessary properties in DataSourceV2Relation to get dataset version.
    */
   public static Optional<String> extractVersionFromDataSourceV2Relation(
-      DataSourceV2Relation table) {
+      OpenLineageContext context, DataSourceV2Relation table) {
     if (table.identifier().isEmpty()) {
       log.warn("Couldn't find identifier for dataset in plan " + table);
       return Optional.empty();
@@ -43,7 +43,7 @@ public class DatasetVersionDatasetFacetUtils {
     TableCatalog tableCatalog = (TableCatalog) table.catalog().get();
 
     Map<String, String> tableProperties = table.table().properties();
-    return CatalogUtils3.getDatasetVersion(tableCatalog, identifier, tableProperties);
+    return CatalogUtils3.getDatasetVersion(context, tableCatalog, identifier, tableProperties);
   }
 
   /**
@@ -83,7 +83,7 @@ public class DatasetVersionDatasetFacetUtils {
       OpenLineageContext context,
       OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder,
       DataSourceV2Relation relation) {
-    DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(relation)
+    DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(context, relation)
         .ifPresent(
             version ->
                 datasetFacetsBuilder.version(

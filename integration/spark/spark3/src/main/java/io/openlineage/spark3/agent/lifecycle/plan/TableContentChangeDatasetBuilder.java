@@ -40,7 +40,7 @@ public class TableContentChangeDatasetBuilder
         || (x instanceof OverwritePartitionsDynamic)
         || (x instanceof DeleteFromTable)
         || (x instanceof UpdateTable)
-        || (new IcebergHandler().hasClasses() && x instanceof ReplaceData)
+        || (new IcebergHandler(context).hasClasses() && x instanceof ReplaceData)
         || (x instanceof MergeIntoTable)
         || (x instanceof InsertIntoStatement);
   }
@@ -59,7 +59,7 @@ public class TableContentChangeDatasetBuilder
       if (((InsertIntoStatement) x).overwrite()) {
         includeOverwriteFacet = true;
       }
-    } else if (new IcebergHandler().hasClasses() && x instanceof ReplaceData) {
+    } else if (new IcebergHandler(context).hasClasses() && x instanceof ReplaceData) {
       // DELETE FROM on ICEBERG HAS START ELEMENT WITH ReplaceData AND COMPLETE ONE WITH
       // DeleteFromTable
       table = ((ReplaceData) x).table();

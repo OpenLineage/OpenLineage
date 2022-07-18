@@ -56,7 +56,7 @@ public class AlterTableDatasetBuilder extends AbstractQueryPlanOutputDatasetBuil
       if (includeDatasetVersion(event)) {
         Optional<String> datasetVersion =
             CatalogUtils3.getDatasetVersion(
-                alterTable.catalog(), alterTable.ident(), table.properties());
+                context, alterTable.catalog(), alterTable.ident(), table.properties());
         datasetVersion.ifPresent(
             version -> builder.version(openLineage.newDatasetVersionDatasetFacet(version)));
       }

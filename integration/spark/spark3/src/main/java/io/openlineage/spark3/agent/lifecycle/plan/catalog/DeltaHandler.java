@@ -5,9 +5,10 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
-import io.openlineage.spark.agent.facets.TableProviderFacet;
+import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
+import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
@@ -25,6 +26,12 @@ import scala.Option;
 
 @Slf4j
 public class DeltaHandler implements CatalogHandler {
+
+  private final OpenLineageContext context;
+
+  public DeltaHandler(OpenLineageContext context) {
+    this.context = context;
+  }
 
   @Override
   public boolean hasClasses() {
@@ -78,8 +85,12 @@ public class DeltaHandler implements CatalogHandler {
   }
 
   @Override
-  public Optional<TableProviderFacet> getTableProviderFacet(Map<String, String> properties) {
-    return Optional.of(new TableProviderFacet("delta", "parquet")); // Delta is always parquet
+  public Optional<OpenLineage.StorageDatasetFacet> getStorageDatasetFacet(
+      Map<String, String> properties) {
+    return Optional.of(
+        context
+            .getOpenLineage()
+            .newStorageDatasetFacet("delta", "parquet")); // Delta is always parquet
   }
 
   @SneakyThrows

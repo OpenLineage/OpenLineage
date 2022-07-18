@@ -65,7 +65,8 @@ class DatasetVersionDatasetFacetUtilsTest {
     when(v2Relation.identifier()).thenReturn(Option.empty());
     assertEquals(
         Optional.empty(),
-        DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(v2Relation));
+        DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(
+            openLineageContext, v2Relation));
   }
 
   @Test
@@ -74,7 +75,8 @@ class DatasetVersionDatasetFacetUtilsTest {
     when(v2Relation.catalog()).thenReturn(Option.empty());
     assertEquals(
         Optional.empty(),
-        DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(v2Relation));
+        DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(
+            openLineageContext, v2Relation));
   }
 
   @Test
@@ -83,7 +85,8 @@ class DatasetVersionDatasetFacetUtilsTest {
     when(v2Relation.catalog()).thenReturn(Option.apply(mock(CatalogPlugin.class)));
     assertEquals(
         Optional.empty(),
-        DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(v2Relation));
+        DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(
+            openLineageContext, v2Relation));
   }
 
   @Test
@@ -94,11 +97,13 @@ class DatasetVersionDatasetFacetUtilsTest {
     when(table.properties()).thenReturn(tableProperties);
 
     try (MockedStatic<CatalogUtils3> mocked = mockStatic(CatalogUtils3.class)) {
-      when(CatalogUtils3.getDatasetVersion(tableCatalog, identifier, tableProperties))
+      when(CatalogUtils3.getDatasetVersion(
+              openLineageContext, tableCatalog, identifier, tableProperties))
           .thenReturn(Optional.of("some-version"));
       assertEquals(
           Optional.of("some-version"),
-          DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(v2Relation));
+          DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(
+              openLineageContext, v2Relation));
     }
   }
 
@@ -176,7 +181,8 @@ class DatasetVersionDatasetFacetUtilsTest {
     when(table.properties()).thenReturn(tableProperties);
 
     try (MockedStatic mocked = mockStatic(CatalogUtils3.class)) {
-      when(CatalogUtils3.getDatasetVersion(tableCatalog, identifier, tableProperties))
+      when(CatalogUtils3.getDatasetVersion(
+              openLineageContext, tableCatalog, identifier, tableProperties))
           .thenReturn(Optional.of("v2"));
       DatasetVersionDatasetFacetUtils.includeDatasetVersion(
           openLineageContext, datasetFacetsBuilder, relation);
@@ -195,7 +201,8 @@ class DatasetVersionDatasetFacetUtilsTest {
     when(table.properties()).thenReturn(tableProperties);
 
     try (MockedStatic mocked = mockStatic(CatalogUtils3.class)) {
-      when(CatalogUtils3.getDatasetVersion(tableCatalog, identifier, tableProperties))
+      when(CatalogUtils3.getDatasetVersion(
+              openLineageContext, tableCatalog, identifier, tableProperties))
           .thenReturn(Optional.empty());
       DatasetVersionDatasetFacetUtils.includeDatasetVersion(
           openLineageContext, datasetFacetsBuilder, relation);

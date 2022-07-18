@@ -11,6 +11,7 @@ import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Collections;
 import java.util.Optional;
 import org.apache.spark.sql.connector.catalog.Identifier;
@@ -20,13 +21,14 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 class DeltaHandlerTest {
+
   @Test
   void testGetVersionString() {
     DeltaCatalog deltaCatalog = mock(DeltaCatalog.class);
     DeltaTableV2 deltaTable = Mockito.mock(DeltaTableV2.class, RETURNS_DEEP_STUBS);
     Identifier identifier = Identifier.of(new String[] {"database", "schema"}, "table");
 
-    DeltaHandler deltaHandler = new DeltaHandler();
+    DeltaHandler deltaHandler = new DeltaHandler(mock(OpenLineageContext.class));
 
     when(deltaCatalog.loadTable(identifier)).thenReturn(deltaTable);
     when(deltaTable.snapshot().version()).thenReturn(2L);

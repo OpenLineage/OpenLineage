@@ -5,11 +5,12 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
-import io.openlineage.spark.agent.facets.TableProviderFacet;
+import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.agent.util.SparkConfUtils;
+import io.openlineage.spark.api.OpenLineageContext;
 import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
@@ -30,7 +31,13 @@ import org.apache.spark.sql.connector.catalog.TableCatalog;
 @Slf4j
 public class IcebergHandler implements CatalogHandler {
 
+  private final OpenLineageContext context;
+
   private static final String TYPE = "type";
+
+  public IcebergHandler(OpenLineageContext context) {
+    this.context = context;
+  }
 
   @Override
   public boolean hasClasses() {
@@ -107,9 +114,11 @@ public class IcebergHandler implements CatalogHandler {
   }
 
   @Override
-  public Optional<TableProviderFacet> getTableProviderFacet(Map<String, String> properties) {
+  public Optional<OpenLineage.StorageDatasetFacet> getStorageDatasetFacet(
+      Map<String, String> properties) {
     String format = properties.getOrDefault("format", "");
-    return Optional.of(new TableProviderFacet("iceberg", format.replace("iceberg/", "")));
+    return Optional.of(
+        context.getOpenLineage().newStorageDatasetFacet("iceberg", format.replace("iceberg/", "")));
   }
 
   @SneakyThrows

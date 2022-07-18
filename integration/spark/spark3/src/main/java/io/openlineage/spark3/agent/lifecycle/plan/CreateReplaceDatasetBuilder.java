@@ -112,13 +112,13 @@ public class CreateReplaceDatasetBuilder
 
     if (includeDatasetVersion(event)) {
       Optional<String> datasetVersion =
-          CatalogUtils3.getDatasetVersion(tableCatalog, identifier, tableProperties);
+          CatalogUtils3.getDatasetVersion(context, tableCatalog, identifier, tableProperties);
       datasetVersion.ifPresent(
           version -> builder.version(openLineage.newDatasetVersionDatasetFacet(version)));
     }
 
-    CatalogUtils3.getTableProviderFacet(tableCatalog, tableProperties)
-        .map(provider -> builder.put("tableProvider", provider));
+    CatalogUtils3.getStorageDatasetFacet(context, tableCatalog, tableProperties)
+        .map(storageDatasetFacet -> builder.storage(storageDatasetFacet));
     return Collections.singletonList(
         outputDataset().getDataset(di.get().getName(), di.get().getNamespace(), builder.build()));
   }

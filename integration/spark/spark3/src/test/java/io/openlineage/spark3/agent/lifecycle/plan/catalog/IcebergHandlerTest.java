@@ -11,8 +11,10 @@ import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.openlineage.spark.agent.facets.TableProviderFacet;
+import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
+import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Optional;
@@ -29,7 +31,8 @@ import scala.collection.immutable.Map;
 
 class IcebergHandlerTest {
 
-  private IcebergHandler icebergHandler = new IcebergHandler();
+  private OpenLineageContext context = mock(OpenLineageContext.class);
+  private IcebergHandler icebergHandler = new IcebergHandler(context);
   private SparkSession sparkSession = mock(SparkSession.class);
   private RuntimeConfig runtimeConfig = mock(RuntimeConfig.class);
 
@@ -87,19 +90,22 @@ class IcebergHandlerTest {
   }
 
   @Test
-  void testGetTableProviderFacet() {
-    Optional<TableProviderFacet> tableProviderFacet =
-        icebergHandler.getTableProviderFacet(Collections.singletonMap("format", "iceberg/parquet"));
-    assertEquals("iceberg", tableProviderFacet.get().getProvider());
-    assertEquals("parquet", tableProviderFacet.get().getFormat());
+  void testGetStorageDatasetFacet() {
+    when(context.getOpenLineage()).thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
+    Optional<OpenLineage.StorageDatasetFacet> storageDatasetFacet =
+        icebergHandler.getStorageDatasetFacet(
+            Collections.singletonMap("format", "iceberg/parquet"));
+    assertEquals("iceberg", storageDatasetFacet.get().getStorageLayer());
+    assertEquals("parquet", storageDatasetFacet.get().getFileFormat());
   }
 
   @Test
-  void testGetTableProviderFacetWhenFormatNotProvided() {
-    Optional<TableProviderFacet> tableProviderFacet =
-        icebergHandler.getTableProviderFacet(new HashMap<>());
-    assertEquals("iceberg", tableProviderFacet.get().getProvider());
-    assertEquals("", tableProviderFacet.get().getFormat());
+  void testStorageDatasetFacetWhenFormatNotProvided() {
+    when(context.getOpenLineage()).thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
+    Optional<OpenLineage.StorageDatasetFacet> storageDatasetFacet =
+        icebergHandler.getStorageDatasetFacet(new HashMap<>());
+    assertEquals("iceberg", storageDatasetFacet.get().getStorageLayer());
+    assertEquals("", storageDatasetFacet.get().getFileFormat());
   }
 
   @Test

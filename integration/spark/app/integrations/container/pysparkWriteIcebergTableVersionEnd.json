@@ -17,9 +17,9 @@
           "type" : "integer"
         } ]
       },
-      "tableProvider" : {
-        "provider" : "iceberg",
-        "format" : "parquet"
+      "storage" : {
+        "storageLayer" : "iceberg",
+        "fileFormat" : "parquet"
       },
       "version" : {}
     }
