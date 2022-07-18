@@ -85,4 +85,4 @@ See [CONTRIBUTING.md](https://github.com/OpenLineage/OpenLineage/blob/main/CONTR
 
 ## Report a Vulnerability
 
-If you discover a vulnerability in the project, please [open an issue](https://github.com/OpenLineage/OpenLineage/issues) and attach the "security" label.
+If you discover a vulnerability in the project, please [open an issue](https://github.com/OpenLineage/OpenLineage/issues/new/choose) and attach the "security" label.
