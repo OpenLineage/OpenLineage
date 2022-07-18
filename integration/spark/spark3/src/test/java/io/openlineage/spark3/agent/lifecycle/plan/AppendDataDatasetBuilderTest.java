@@ -60,7 +60,8 @@ class AppendDataDatasetBuilderTest {
 
     try (MockedStatic mockedPlanUtils3 = mockStatic(PlanUtils3.class)) {
       try (MockedStatic mockedFacetUtils = mockStatic(DatasetVersionDatasetFacetUtils.class)) {
-        when(DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(relation))
+        when(DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(
+                context, relation))
             .thenReturn(Optional.of("v2"));
         when(PlanUtils3.fromDataSourceV2Relation(eq(factory), eq(context), eq(relation), any()))
             .thenReturn(Collections.singletonList(dataset));

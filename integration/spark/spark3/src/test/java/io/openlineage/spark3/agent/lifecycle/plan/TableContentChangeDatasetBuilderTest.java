@@ -162,7 +162,8 @@ class TableContentChangeDatasetBuilderTest {
         when(PlanUtils3.fromDataSourceV2Relation(
                 any(), eq(openLineageContext), eq(dataSourceV2Relation), eq(datasetFacetsBuilder)))
             .thenReturn(Collections.singletonList(dataset));
-        when(CatalogUtils3.getDatasetVersion(any(), any(), any())).thenReturn(Optional.of("v2"));
+        when(CatalogUtils3.getDatasetVersion(any(), any(), any(), any()))
+            .thenReturn(Optional.of("v2"));
 
         List<OpenLineage.OutputDataset> datasetList =
             builder.apply(new SparkListenerSQLExecutionEnd(1L, 1L), logicalPlan);

@@ -6,14 +6,12 @@
 package io.openlineage.spark3.agent.utils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.facets.TableProviderFacet;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.DatasetFactory;
@@ -88,7 +86,7 @@ class PlanUtils3Test {
         when(datasetFacetsBuilder.build()).thenReturn(datasetFacets);
 
         when(CatalogUtils3.getDatasetIdentifier(
-                sparkSession, tableCatalog, identifier, tableProperties))
+                openLineageContext, tableCatalog, identifier, tableProperties))
             .thenReturn(di);
         when(datasetFactory.getDataset(di.getName(), di.getNamespace(), datasetFacets))
             .thenReturn(dataset);
@@ -108,7 +106,7 @@ class PlanUtils3Test {
       OpenLineage.Dataset dataset = mock(OpenLineage.Dataset.class);
 
       when(CatalogUtils3.getDatasetIdentifier(
-              sparkSession, tableCatalog, identifier, tableProperties))
+              openLineageContext, tableCatalog, identifier, tableProperties))
           .thenThrow(new UnsupportedCatalogException("exception"));
       when(datasetFactory.getDataset(di, schema)).thenReturn(dataset);
 
@@ -139,36 +137,11 @@ class PlanUtils3Test {
   }
 
   @Test
-  void testIncludeProviderFacet() {
-    try (MockedStatic<CatalogUtils3> mocked = mockStatic(CatalogUtils3.class)) {
-      Map<String, OpenLineage.DatasetFacet> facets = new HashMap<>();
-      TableProviderFacet tableProviderFacet = new TableProviderFacet("iceberg", "parquet");
-      when(CatalogUtils3.getTableProviderFacet(tableCatalog, tableProperties))
-          .thenReturn(Optional.of(tableProviderFacet));
-
-      PlanUtils3.includeProviderFacet(tableCatalog, tableProperties, facets);
-      assertEquals(tableProviderFacet, facets.get("tableProvider"));
-    }
-  }
-
-  @Test
-  void testIncludeProviderFacetWhenNoProvider() {
-    try (MockedStatic<CatalogUtils3> mocked = mockStatic(CatalogUtils3.class)) {
-      Map<String, OpenLineage.DatasetFacet> facets = new HashMap<>();
-      when(CatalogUtils3.getTableProviderFacet(tableCatalog, tableProperties))
-          .thenReturn(Optional.empty());
-
-      PlanUtils3.includeProviderFacet(tableCatalog, tableProperties, facets);
-      assertFalse(facets.containsKey("tableProvider"));
-    }
-  }
-
-  @Test
   void testGetDatasetIdentifier() {
     DatasetIdentifier di = mock(DatasetIdentifier.class);
     try (MockedStatic<CatalogUtils3> mocked = mockStatic(CatalogUtils3.class)) {
       when(CatalogUtils3.getDatasetIdentifier(
-              sparkSession, tableCatalog, identifier, tableProperties))
+              openLineageContext, tableCatalog, identifier, tableProperties))
           .thenReturn(di);
 
       assertEquals(
@@ -183,7 +156,7 @@ class PlanUtils3Test {
   void testGetDatasetIdentifierWhenCatalogUnsupported() {
     try (MockedStatic<CatalogUtils3> mocked = mockStatic(CatalogUtils3.class)) {
       when(CatalogUtils3.getDatasetIdentifier(
-              sparkSession, tableCatalog, identifier, tableProperties))
+              openLineageContext, tableCatalog, identifier, tableProperties))
           .thenThrow(new UnsupportedCatalogException("exception"));
 
       assertEquals(
@@ -208,7 +181,7 @@ class PlanUtils3Test {
     DatasetIdentifier di = mock(DatasetIdentifier.class);
     try (MockedStatic<CatalogUtils3> mocked = mockStatic(CatalogUtils3.class)) {
       when(CatalogUtils3.getDatasetIdentifier(
-              sparkSession, tableCatalog, identifier, tableProperties))
+              openLineageContext, tableCatalog, identifier, tableProperties))
           .thenReturn(di);
       assertEquals(
           di, PlanUtils3.getDatasetIdentifier(openLineageContext, dataSourceV2Relation).get());

@@ -116,6 +116,7 @@ class AlterTableDatasetBuilderTest {
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
       try (MockedStatic mockCatalog = mockStatic(CatalogUtils3.class)) {
         when(CatalogUtils3.getDatasetVersion(
+                openLineageContext,
                 tableCatalog,
                 identifier,
                 ScalaConversionUtils.<String, String>fromMap(tableProperties)))
