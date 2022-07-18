@@ -88,7 +88,8 @@ fn parse_recursive_cte() {
 #[test]
 fn multiple_ctes() {
     assert_eq!(
-        test_sql("
+        test_sql(
+            "
             WITH customers AS (
                 SELECT * FROM DEMO_DB.public.stg_customers
             ),
@@ -99,7 +100,9 @@ fn multiple_ctes() {
             FROM customers c
             JOIN orders o
             ON c.id = o.customer_id
-        "), SqlMeta {
+        "
+        ),
+        SqlMeta {
             in_tables: tables(vec![
                 "DEMO_DB.public.stg_customers",
                 "DEMO_DB.public.stg_orders"

@@ -429,6 +429,23 @@ fn parse_stmt(stmt: &Statement, context: &mut Context) -> Result<(), String> {
             }
             Ok(())
         }
+        Statement::Delete {
+            table_name,
+            using,
+            selection,
+        } => {
+            let table_name = get_table_name_from_table_factor(table_name)?;
+            context.add_output(&table_name.to_string());
+
+            if let Some(using) = using {
+                parse_table_factor(using, context)?;
+            }
+
+            if let Some(expr) = selection {
+                parse_expr(expr, context)?;
+            }
+            Ok(())
+        }
         _ => Ok(()),
     }
 }
