@@ -81,10 +81,10 @@ if parse_version(AIRFLOW_VERSION) >= parse_version("2.0.0"):     # type: ignore
         assert sql_check_extractor._get_scheme() == "postgres"
 
 
-@patch('airflow.models.connection.Connection')
-def test_instantiate_abstract_extractors_value_error(mock_conn):
-    class SQLCheckOperator:
-        conn_id = "notimplementeddb"
-    with pytest.raises(ValueError):
-        extractors = Extractors()
-        extractors.instantiate_abstract_extractors(task=SQLCheckOperator())
+    @patch('airflow.models.connection.Connection')
+    def test_instantiate_abstract_extractors_value_error(mock_conn):
+        class SQLCheckOperator:
+            conn_id = "notimplementeddb"
+        with pytest.raises(ValueError):
+            extractors = Extractors()
+            extractors.instantiate_abstract_extractors(task=SQLCheckOperator())
