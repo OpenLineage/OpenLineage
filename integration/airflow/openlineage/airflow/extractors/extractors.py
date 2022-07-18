@@ -6,6 +6,7 @@ from typing import Type, Optional
 
 from openlineage.airflow.extractors.base import BaseExtractor
 from openlineage.airflow.utils import import_from_string, try_import_from_string
+from openlineage.airflow.extractors.sql_check_extractors import get_check_extractors
 
 _extractors = list(
     filter(
@@ -32,10 +33,22 @@ _extractors = list(
             try_import_from_string(
                 'openlineage.airflow.extractors.bash_extractor.BashExtractor'
             ),
-
         ],
     )
 )
+
+_extractors += get_check_extractors(
+    try_import_from_string(
+        'openlineage.airflow.extractors.sql_extractor.SqlExtractor'
+    )
+)
+
+_check_providers = {
+    "PostgresExtractor": "postgres",
+    "MySqlExtractor": "mysql",
+    "BigQueryExtractor": "gcpbigquery",
+    "SnowflakeExtractor": "snowflake",
+}
 
 
 class Extractors:
@@ -81,3 +94,27 @@ class Extractors:
         if name in self.extractors:
             return self.extractors[name]
         return None
+
+    def instantiate_abstract_extractors(self, task) -> None:
+        from airflow.hooks.base import BaseHook
+
+        if task.__class__.__name__ in (
+            "SQLCheckOperator", "SQLValueCheckOperator", "SQLThresholdCheckOperator",
+            "SQLIntervalCheckOperator", "SQLColumnCheckOperator", "SQLTableCheckOperator",
+        ):
+            for extractor in self.extractors.values():
+                conn_type = _check_providers.get(extractor.__name__, "")
+                task_conn_type = BaseHook.get_connection(task.conn_id).conn_type
+                if task_conn_type == conn_type:
+                    check_extractors = get_check_extractors(extractor)
+                    for check_extractor in check_extractors:
+                        for operator_class in check_extractor.get_operator_classnames():
+                            self.extractors[operator_class] = check_extractor
+                    else:
+                        return
+            else:
+                raise ValueError(
+                    "Extractor for the given task's conn_type (%s) does not exist.",
+                    task_conn_type
+                )
+        return
