@@ -18,6 +18,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.dag.Transformation;
@@ -108,7 +109,15 @@ public class FlinkExecutionContext implements ExecutionContext {
     eventEmitter.emit(
         openLineage
             .newRunEventBuilder()
-            .run(openLineage.newRun(runId, openLineage.newRunFacetsBuilder().build()))
+            .run(
+                openLineage.newRun(
+                    runId,
+                    openLineage
+                        .newRunFacetsBuilder()
+                        .errorMessage(
+                            openLineage.newErrorMessageRunFacet(
+                                failed.getMessage(), "JAVA", ExceptionUtils.getStackTrace(failed)))
+                        .build()))
             .eventTime(ZonedDateTime.now())
             .eventType(EventType.FAIL)
             .build());

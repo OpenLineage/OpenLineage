@@ -1,3 +1,11 @@
 {
-  "eventType" : "FAIL"
+  "eventType" : "FAIL",
+  "run" : {
+    "facets": {
+      "errorMessage": {
+        "message" : "Application Status: FAILED",
+        "programmingLanguage": "JAVA"
+      }
+    }
+  }
 }
