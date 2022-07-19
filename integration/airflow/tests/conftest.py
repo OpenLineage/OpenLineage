@@ -5,7 +5,17 @@ import logging
 import os
 
 import pytest
+
+from pkg_resources import parse_version
+from airflow.version import version as AIRFLOW_VERSION
 log = logging.getLogger(__name__)
+
+
+if parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"):
+    collect_ignore = [
+        "extractors/test_redshift_sql_extractor.py",
+        "extractors/test_redshift_data_extractor.py",
+    ]
 
 
 @pytest.fixture(scope="function")
