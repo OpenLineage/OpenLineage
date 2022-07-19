@@ -22,6 +22,15 @@
           "type" : "string"
         } ]
       },
+      "symlinks": {
+        "identifiers": [
+          {
+            "namespace": "/tmp",
+            "name": "default.tbl",
+            "type": "TABLE"
+          }
+        ]
+      },
       "version" : {},
       "lifecycleStateChange": {
         "lifecycleStateChange": "OVERWRITE"

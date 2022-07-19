@@ -12,6 +12,9 @@
         "name": "file",
         "uri": "file"
       },
+      "version" : {
+        "datasetVersion" : "3"
+      },
       "schema": {
         "fields": [
           {
@@ -28,8 +31,14 @@
           }
         ]
       },
-      "version" : {
-        "datasetVersion" : "3"
+      "symlinks": {
+        "identifiers": [
+          {
+            "namespace": "/tmp",
+            "name": "default.versioned_input_table",
+            "type": "TABLE"
+          }
+        ]
       }
     }
   }

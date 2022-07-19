@@ -5,10 +5,12 @@
 
 package io.openlineage.spark.agent.util;
 
+import java.io.File;
 import java.net.URI;
 import java.util.Optional;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkConf;
 import org.apache.spark.sql.SparkSession;
@@ -55,23 +57,31 @@ public class PathUtils {
   public static DatasetIdentifier fromCatalogTable(
       CatalogTable catalogTable, Optional<SparkConf> sparkConf) {
     Optional<URI> metastoreUri = extractMetastoreUri(sparkConf);
-    if (metastoreUri.isPresent() && metastoreUri.get() != null) {
-      // dealing with Hive tables
-      return prepareHiveDatasetIdentifier(catalogTable, metastoreUri.get());
-    } else {
-      if (catalogTable.storage() != null && catalogTable.storage().locationUri().isDefined()) {
-        // location is present -> use it for dataset identifier with `file:/` scheme
-        return PathUtils.fromURI(catalogTable.storage().locationUri().get(), DEFAULT_SCHEME);
-      }
 
+    DatasetIdentifier di;
+    if (catalogTable.storage() != null && catalogTable.storage().locationUri().isDefined()) {
+      di = PathUtils.fromURI(catalogTable.storage().locationUri().get(), DEFAULT_SCHEME);
+    } else {
+      // try to obtain location
       try {
-        // read it from default table path
-        return prepareDatasetIdentifierFromDefaultTablePath(catalogTable);
+        di = prepareDatasetIdentifierFromDefaultTablePath(catalogTable);
       } catch (IllegalStateException e) {
         // session inactive - no way to find DatasetProvider
         throw new IllegalArgumentException(
             "Unable to extract DatasetIdentifier from a CatalogTable", e);
       }
+    }
+
+    if (metastoreUri.isPresent() && metastoreUri.get() != null) {
+      // dealing with Hive tables
+      DatasetIdentifier symlink = prepareHiveDatasetIdentifier(catalogTable, metastoreUri.get());
+      return di.withSymlink(
+          symlink.getName(), symlink.getNamespace(), DatasetIdentifier.SymlinkType.TABLE);
+    } else {
+      return di.withSymlink(
+          catalogTable.identifier().unquotedString(),
+          StringUtils.substringBeforeLast(di.getName(), File.separator),
+          DatasetIdentifier.SymlinkType.TABLE);
     }
   }
 
@@ -110,8 +120,8 @@ public class PathUtils {
    * good to have it set in case of SPARK-29046
    */
   private static Optional<SparkConf> loadSparkConf() {
-    if (!sparkConf.isPresent() && SparkSession.getActiveSession().isDefined()) {
-      sparkConf = Optional.of(SparkSession.getActiveSession().get().sparkContext().getConf());
+    if (!sparkConf.isPresent() && SparkSession.getDefaultSession().isDefined()) {
+      sparkConf = Optional.of(SparkSession.getDefaultSession().get().sparkContext().getConf());
     }
     return sparkConf;
   }

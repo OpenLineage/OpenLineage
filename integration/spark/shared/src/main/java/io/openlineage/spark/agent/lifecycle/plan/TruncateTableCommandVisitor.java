@@ -57,8 +57,7 @@ public class TruncateTableCommandVisitor
                           .newLifecycleStateChangeDatasetFacet(
                               OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange
                                   .TRUNCATE,
-                              null))
-                  .build()));
+                              null))));
 
     } else {
       // table does not exist, cannot prepare an event

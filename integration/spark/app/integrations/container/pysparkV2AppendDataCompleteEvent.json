@@ -36,6 +36,15 @@
             ]
           }
         }
+      },
+      "symlinks": {
+        "identifiers": [
+          {
+            "namespace": "/tmp/append_data",
+            "name": "db.append_table",
+            "type": "TABLE"
+          }
+        ]
       }
     }
   } ]

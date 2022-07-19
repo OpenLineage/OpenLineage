@@ -39,6 +39,15 @@
           "name" : "b",
           "type" : "long"
         } ]
+      },
+      "symlinks": {
+        "identifiers": [
+          {
+            "namespace": "/tmp/ctas_load",
+            "name": "default.tbl2",
+            "type": "TABLE"
+          }
+        ]
       }
     }
   } ]

@@ -34,6 +34,15 @@
           "name" : "/tmp/alter_test/alter_table_test",
           "namespace" : "file"
         }
+      },
+      "symlinks": {
+        "identifiers": [
+          {
+            "namespace": "/tmp/alter_test",
+            "name": "default.alter_table_test_new",
+            "type": "TABLE"
+          }
+        ]
       }
     }
   } ]

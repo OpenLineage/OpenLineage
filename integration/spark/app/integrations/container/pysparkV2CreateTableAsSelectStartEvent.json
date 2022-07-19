@@ -23,6 +23,15 @@
             "type": "long"
           }
         ]
+      },
+      "symlinks": {
+        "identifiers": [
+          {
+            "namespace": "/tmp/v2",
+            "name": "db.source1",
+            "type": "TABLE"
+          }
+        ]
       }
     }
   }, {
@@ -42,6 +51,15 @@
           {
             "name": "b",
             "type": "long"
+          }
+        ]
+      },
+      "symlinks": {
+        "identifiers": [
+          {
+            "namespace": "/tmp/v2",
+            "name": "db.source2",
+            "type": "TABLE"
           }
         ]
       }

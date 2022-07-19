@@ -43,6 +43,15 @@
             }
           ]
         },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "/tmp/delta",
+              "name": "default.tbl",
+              "type": "TABLE"
+            }
+          ]
+        },
         "lifecycleStateChange" : {
           "lifecycleStateChange" : "CREATE"
         }

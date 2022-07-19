@@ -6,11 +6,14 @@
 package io.openlineage.spark.api;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange;
 import io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRelationDatasetBuilder;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PlanUtils;
 import java.net.URI;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.spark.sql.types.StructType;
 
 /**
@@ -89,8 +92,7 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
    * @return
    */
   public D getDataset(String name, String namespace, StructType schema) {
-    OpenLineage.DatasetFacets datasetFacet = datasetFacet(schema, namespace);
-    return datasetBuilder(name, namespace, datasetFacet).build();
+    return datasetBuilder(name, namespace, datasetFacetBuilder(schema, namespace).build()).build();
   }
 
   /**
@@ -108,20 +110,7 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
         .schema(PlanUtils.schemaFacet(context.getOpenLineage(), schema))
         .dataSource(PlanUtils.datasourceFacet(context.getOpenLineage(), namespace));
 
-    return getDataset(outputPath.getPath(), namespace, datasetFacetsBuilder.build());
-  }
-
-  /**
-   * Construct a dataset {@link OpenLineage.Dataset} given a name, namespace, and preconstructed
-   * {@link OpenLineage.DatasetFacets}.
-   *
-   * @param name
-   * @param namespace
-   * @param datasetFacet
-   * @return
-   */
-  public D getDataset(String name, String namespace, OpenLineage.DatasetFacets datasetFacet) {
-    return datasetBuilder(name, namespace, datasetFacet).build();
+    return getDataset(new DatasetIdentifier(outputPath.getPath(), namespace), datasetFacetsBuilder);
   }
 
   /**
@@ -134,8 +123,9 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
    */
   public D getDataset(URI outputPath, StructType schema) {
     String namespace = PlanUtils.namespaceUri(outputPath);
-    OpenLineage.DatasetFacets datasetFacet = datasetFacet(schema, namespace);
-    return getDataset(outputPath.getPath(), namespace, datasetFacet);
+    return getDataset(
+        new DatasetIdentifier(outputPath.getPath(), namespace),
+        datasetFacetBuilder(schema, namespace));
   }
 
   /**
@@ -146,9 +136,10 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
    * @return
    */
   public D getDataset(DatasetIdentifier ident, StructType schema) {
-    OpenLineage.DatasetFacets datasetFacet = datasetFacet(schema, ident.getNamespace());
-
-    return getDataset(ident.getName(), ident.getNamespace(), datasetFacet);
+    OpenLineage.DatasetFacetsBuilder facetsBuilder =
+        datasetFacetBuilder(schema, ident.getNamespace());
+    includeSymlinksFacet(facetsBuilder, ident);
+    return getDataset(ident, facetsBuilder);
   }
 
   /**
@@ -161,21 +152,33 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
    * @return
    */
   public D getDataset(
-      DatasetIdentifier ident,
-      StructType schema,
-      OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange lifecycleStateChange) {
-    OpenLineage.DatasetFacetsBuilder builder =
-        context
-            .getOpenLineage()
-            .newDatasetFacetsBuilder()
-            .schema(PlanUtils.schemaFacet(context.getOpenLineage(), schema))
-            .lifecycleStateChange(
-                context
-                    .getOpenLineage()
-                    .newLifecycleStateChangeDatasetFacet(lifecycleStateChange, null))
-            .dataSource(PlanUtils.datasourceFacet(context.getOpenLineage(), ident.getNamespace()));
+      DatasetIdentifier ident, StructType schema, LifecycleStateChange lifecycleStateChange) {
+    OpenLineage.DatasetFacetsBuilder facetsBuilder =
+        datasetFacetBuilder(schema, ident.getNamespace());
+    facetsBuilder.lifecycleStateChange(
+        context.getOpenLineage().newLifecycleStateChangeDatasetFacet(lifecycleStateChange, null));
+    includeSymlinksFacet(facetsBuilder, ident);
+    return getDataset(new DatasetIdentifier(ident.getName(), ident.getNamespace()), facetsBuilder);
+  }
 
-    return getDataset(ident.getName(), ident.getNamespace(), builder.build());
+  private void includeSymlinksFacet(
+      OpenLineage.DatasetFacetsBuilder builder, DatasetIdentifier di) {
+    if (!di.getSymlinks().isEmpty()) {
+      List<OpenLineage.SymlinksDatasetFacetIdentifiers> symlinks =
+          di.getSymlinks().stream()
+              .map(
+                  symlink ->
+                      context
+                          .getOpenLineage()
+                          .newSymlinksDatasetFacetIdentifiersBuilder()
+                          .name(symlink.getName())
+                          .namespace(symlink.getNamespace())
+                          .type(symlink.getType().toString())
+                          .build())
+              .collect(Collectors.toList());
+
+      builder.symlinks(context.getOpenLineage().newSymlinksDatasetFacet(symlinks));
+    }
   }
 
   /**
@@ -183,11 +186,12 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
    * OpenLineage.DatasetFacets}.
    *
    * @param ident
-   * @param datasetFacet
+   * @param facetsBuilder
    * @return
    */
-  public D getDataset(DatasetIdentifier ident, OpenLineage.DatasetFacets datasetFacet) {
-    return getDataset(ident.getName(), ident.getNamespace(), datasetFacet);
+  public D getDataset(DatasetIdentifier ident, OpenLineage.DatasetFacetsBuilder facetsBuilder) {
+    includeSymlinksFacet(facetsBuilder, ident);
+    return datasetBuilder(ident.getName(), ident.getNamespace(), facetsBuilder.build()).build();
   }
 
   /**
@@ -197,14 +201,12 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
    * @param namespaceUri
    * @return
    */
-  private OpenLineage.DatasetFacets datasetFacet(StructType schema, String namespaceUri) {
-    OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
-        context
-            .getOpenLineage()
-            .newDatasetFacetsBuilder()
-            .schema(PlanUtils.schemaFacet(context.getOpenLineage(), schema))
-            .dataSource(PlanUtils.datasourceFacet(context.getOpenLineage(), namespaceUri));
-
-    return datasetFacetsBuilder.build();
+  private OpenLineage.DatasetFacetsBuilder datasetFacetBuilder(
+      StructType schema, String namespaceUri) {
+    return context
+        .getOpenLineage()
+        .newDatasetFacetsBuilder()
+        .schema(PlanUtils.schemaFacet(context.getOpenLineage(), schema))
+        .dataSource(PlanUtils.datasourceFacet(context.getOpenLineage(), namespaceUri));
   }
 }

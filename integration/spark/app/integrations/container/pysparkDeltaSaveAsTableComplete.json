@@ -32,6 +32,15 @@
             }
           ]
         },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "/tmp/delta",
+              "name": "movies",
+              "type": "TABLE"
+            }
+          ]
+        },
         "lifecycleStateChange" : {
           "lifecycleStateChange" : "CREATE"
         }

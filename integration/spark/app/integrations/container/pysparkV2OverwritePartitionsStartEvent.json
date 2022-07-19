@@ -24,6 +24,15 @@
           "type" : "long"
         } ]
       },
+      "symlinks": {
+        "identifiers": [
+          {
+            "namespace": "/tmp/v2_overwrite",
+            "name": "db.source",
+            "type": "TABLE"
+          }
+        ]
+      },
       "version" : {}
     }
   } ],

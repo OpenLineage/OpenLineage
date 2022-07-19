@@ -54,6 +54,15 @@
             ]
           }
         }
+      },
+      "symlinks": {
+        "identifiers": [
+          {
+            "namespace": "/tmp/v2_merge",
+            "name": "db.events",
+            "type": "TABLE"
+          }
+        ]
       }
     }
   } ]

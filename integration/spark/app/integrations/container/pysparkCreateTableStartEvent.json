@@ -28,6 +28,15 @@
         },
         "lifecycleStateChange" : {
           "lifecycleStateChange" : "CREATE"
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "/tmp/create_test",
+              "name": "default.create_table_test",
+              "type": "TABLE"
+            }
+          ]
         }
       }
     }

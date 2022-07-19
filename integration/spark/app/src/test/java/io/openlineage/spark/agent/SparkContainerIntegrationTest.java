@@ -212,6 +212,14 @@ class SparkContainerIntegrationTest {
   }
 
   @Test
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3) // Spark version >= 3.*
+  void testSymlinksFacetForHiveCatalog() {
+    SparkContainerUtils.runPysparkContainerWithDefaultConf(
+        network, openLineageClientMockContainer, "symlinks", "spark_hive_catalog.py");
+    verifyEvents("pysparkSymlinksComplete.json");
+  }
+
+  @Test
   @EnabledIf("isDeltaTestEnabled")
   void testCTASDelta() {
     pyspark =

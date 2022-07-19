@@ -1,7 +1,0 @@
-{
-  "eventType": "START",
-  "job": {
-    "namespace": "testCreateAsSelectAndLoad",
-    "name": "open_lineage_integration_delta.execute_create_view_command"
-  }
-}

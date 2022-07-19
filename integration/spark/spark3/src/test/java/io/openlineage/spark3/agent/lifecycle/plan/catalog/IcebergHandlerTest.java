@@ -18,6 +18,7 @@ import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Optional;
+import org.apache.commons.lang.StringUtils;
 import org.apache.iceberg.spark.SparkCatalog;
 import org.apache.iceberg.spark.source.SparkTable;
 import org.apache.spark.sql.RuntimeConfig;
@@ -38,7 +39,7 @@ class IcebergHandlerTest {
 
   @ParameterizedTest
   @CsvSource({
-    "hdfs://namenode:8020/warehouse,hdfs://namenode:8020,/warehouse/database.schema.table",
+    "hdfs://namenode:8020/tmp/warehouse,hdfs://namenode:8020,/tmp/warehouse/database.schema.table",
     "/tmp/warehouse,file,/tmp/warehouse/database.schema.table"
   })
   void testGetDatasetIdentifierForHadoop(String warehouseConf, String namespace, String name) {
@@ -63,6 +64,10 @@ class IcebergHandlerTest {
 
     assertEquals(name, datasetIdentifier.getName());
     assertEquals(namespace, datasetIdentifier.getNamespace());
+    assertEquals("database.schema.table", datasetIdentifier.getSymlinks().get(0).getName());
+    assertEquals(
+        StringUtils.substringBeforeLast(name, "/"),
+        datasetIdentifier.getSymlinks().get(0).getNamespace());
   }
 
   @Test
@@ -70,11 +75,13 @@ class IcebergHandlerTest {
     when(sparkSession.conf()).thenReturn(runtimeConfig);
     when(runtimeConfig.getAll())
         .thenReturn(
-            new Map.Map2<>(
+            new Map.Map3<>(
                 "spark.sql.catalog.test.type",
                 "hive",
                 "spark.sql.catalog.test.uri",
-                "thrift://metastore-host:10001"));
+                "thrift://metastore-host:10001",
+                "spark.sql.catalog.test.warehouse",
+                "/tmp/warehouse"));
     SparkCatalog sparkCatalog = mock(SparkCatalog.class);
     when(sparkCatalog.name()).thenReturn("test");
 
@@ -85,8 +92,12 @@ class IcebergHandlerTest {
             Identifier.of(new String[] {"database", "schema"}, "table"),
             new HashMap<>());
 
-    assertEquals("database.schema.table", datasetIdentifier.getName());
-    assertEquals("hive://metastore-host:10001", datasetIdentifier.getNamespace());
+    DatasetIdentifier.Symlink symlink = datasetIdentifier.getSymlinks().get(0);
+    assertEquals("/tmp/warehouse/database.schema.table", datasetIdentifier.getName());
+    assertEquals("file", datasetIdentifier.getNamespace());
+    assertEquals("database.schema.table", symlink.getName());
+    assertEquals("hive://metastore-host:10001", symlink.getNamespace());
+    assertEquals("TABLE", symlink.getType().toString());
   }
 
   @Test
