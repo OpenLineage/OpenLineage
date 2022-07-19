@@ -7,6 +7,14 @@ setup: true
 orbs:
   continuation: circleci/continuation@0.2.0
 
+# optional parameter when triggering to
+# only run a particular type of integration
+parameters:
+  integration-type:
+    type: enum
+    default: "*"
+    enum: ["*", "airflow", "dagster", "dbt", "publish", "python"]
+
 jobs:
   # Determine the modules that have changed and trigger a series of workflow tasks as necessary.
   # We merge multiple workflows from files in the workflows subdirectory based on the changed
@@ -61,7 +69,12 @@ jobs:
 
           # If we are on the main branch, run all of the workflows
           if [ "$CIRCLE_BRANCH" == "main" ]; then
-            ls -d $PWD/.circleci/workflows/* > workflow_files.txt
+            # if integration type is not all, we specify only a single integration type in workflow files
+            if [ "<< pipeline.parameters.integration-type >>" != "*" ]; then
+              ls -d $PWD/.circleci/workflows/openlineage-integration-<< pipeline.parameters.integration-type >>.yml > workflow_files.txt
+            else
+              ls -d $PWD/.circleci/workflows/* > workflow_files.txt
+            fi
           else
             # Changes to the spec require all workflows to run
             check_change spec "*"
