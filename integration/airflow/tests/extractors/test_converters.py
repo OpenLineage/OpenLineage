@@ -20,11 +20,9 @@ def test_table_to_dataset_conversion():
         database="db",
         cluster="c",
         name="table1",
-        tags="example"
     )
 
     d = table_to_dataset(t)
 
     assert d.namespace == "c"
     assert d.name == "db.table1"
-    assert d.facets["tags"] == "example"
