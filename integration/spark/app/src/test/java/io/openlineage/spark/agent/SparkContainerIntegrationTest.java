@@ -284,6 +284,16 @@ class SparkContainerIntegrationTest {
     testV2Commands(pysparkScript, expectedStartEvent, expectedCompleteEvent, isIceberg);
   }
 
+  @Test
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = "(3.2.*)")
+  void testAlterTableSpark_3_2() {
+    testV2Commands(
+        "spark_v2_alter.py",
+        "pysparkV2AlterTableStartEvent.json",
+        "pysparkV2AlterTableCompleteEvent.json",
+        "true");
+  }
+
   @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3) // Spark version >= 3.*
   @ParameterizedTest
   @CsvSource(

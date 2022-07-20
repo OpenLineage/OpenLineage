@@ -53,6 +53,7 @@ dependencies {
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
     implementation(project(":shared"))
+    implementation(project(":spark3"))
 
     compileOnly "com.google.cloud.spark:spark-bigquery_2.12:${bigqueryVersion}"
     compileOnly "com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:${bigqueryVersion}"
@@ -75,6 +76,7 @@ dependencies {
     testFixturesApi "com.databricks:dbutils-api_2.12:0.0.5"
     testFixturesApi "com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:${bigqueryVersion}"
     testImplementation(testFixtures(project(":shared")))
+    testImplementation(testFixtures(project(":spark3")))
 }
 
 def commonTestConfiguration = {
