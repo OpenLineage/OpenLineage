@@ -94,7 +94,8 @@ public class AlterTableCommandDatasetBuilder
 
     if (includeDatasetVersion(event)) {
       Optional<String> datasetVersion =
-          CatalogUtils3.getDatasetVersion(context, resolvedTable.catalog(), resolvedTable.identifier(), table.properties());
+          CatalogUtils3.getDatasetVersion(
+              context, resolvedTable.catalog(), resolvedTable.identifier(), table.properties());
       datasetVersion.ifPresent(
           version -> builder.version(openLineage.newDatasetVersionDatasetFacet(version)));
     }
