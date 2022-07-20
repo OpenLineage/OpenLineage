@@ -269,7 +269,9 @@ class SparkContainerIntegrationTest {
   @EnabledIfSystemProperty(named = SPARK_VERSION, matches = "(3.2.*)")
   @ParameterizedTest
   @CsvSource(
-      value = {"spark_v2_alter.py:pysparkV2AlterTableStartEvent.json:pysparkV2AlterTableCompleteEvent.json:true"},
+      value = {
+        "spark_v2_alter.py:pysparkV2AlterTableStartEvent.json:pysparkV2AlterTableCompleteEvent.json:true"
+      },
       delimiter = ':')
   void testAlterTableSpark_3_2(
       String pysparkScript,
