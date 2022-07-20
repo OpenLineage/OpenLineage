@@ -29,6 +29,6 @@
   <!-- Headers -->
   <module name="Header">
     <property name="header" 
-      value="/* \n/* Copyright 2018-2002 contributors to the OpenLineage project\n/* SPDX-License-Identifier: Apache-2.0 \n*/"/>
+      value="/*\n/* Copyright 2018-2002 contributors to the OpenLineage project\n/* SPDX-License-Identifier: Apache-2.0 \n*/"/>
   </module>
 </module>
