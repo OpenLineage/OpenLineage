@@ -160,3 +160,19 @@ OpenLineageClient client = OpenLineageClient.builder()
       }
     }).build();
 ```
+
+## Contributing
+
+If contributing changes, additions or fixes to the Java client, please include the following header in any new `.java` files:
+
+```
+/* 
+/* Copyright 2018-2002 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0 
+*/
+```
+
+The Github Actions Super-linter is installed and configured to check for headers in new `.java` files when pull requests are opened.
+
+Thanks for your contributions to the project!
+
