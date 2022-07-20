@@ -266,8 +266,8 @@ class SparkContainerIntegrationTest {
     testV2Commands(pysparkScript, expectedStartEvent, expectedCompleteEvent, isIceberg);
   }
 
+  @Test
   @EnabledIfSystemProperty(named = SPARK_VERSION, matches = "(3.2.*)")
-  @ParameterizedTest
   void testAlterTableSpark_3_2() {
     testV2Commands(
         "spark_v2_alter.py",
