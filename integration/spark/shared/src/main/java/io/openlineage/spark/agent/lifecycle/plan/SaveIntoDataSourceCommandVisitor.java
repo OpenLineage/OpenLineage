@@ -13,6 +13,7 @@ import com.google.common.collect.ImmutableMap.Builder;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange;
 import io.openlineage.client.OpenLineage.OutputDataset;
+import io.openlineage.spark.agent.util.DatasetFacetsUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -150,18 +151,15 @@ public class SaveIntoDataSourceCommandVisitor
 
               // rebuild whole dataset with a LifecycleStateChange facet added
               OpenLineage.DatasetFacets facets =
-                  context
-                      .getOpenLineage()
-                      .newDatasetFacets(
-                          ds.getFacets().getDocumentation(),
-                          ds.getFacets().getDataSource(),
-                          ds.getFacets().getVersion(),
-                          ds.getFacets().getSchema(),
-                          null,
-                          null,
+                  DatasetFacetsUtils.copyToBuilder(context, ds.getFacets())
+                      .lifecycleStateChange(
                           context
                               .getOpenLineage()
-                              .newLifecycleStateChangeDatasetFacet(lifecycleStateChange, null));
+                              .newLifecycleStateChangeDatasetFacet(
+                                  OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange
+                                      .OVERWRITE,
+                                  null))
+                      .build();
 
               OpenLineage.OutputDataset newDs =
                   context
