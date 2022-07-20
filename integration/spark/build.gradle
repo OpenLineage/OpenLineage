@@ -201,6 +201,10 @@ signing {
     sign publishing.publications.mavenJava
 }
 
+tasks.withType(GenerateModuleMetadata) {
+    enabled = false
+}
+
 shadowJar {
     minimize(){
         exclude (project(":shared"))

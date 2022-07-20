@@ -17,7 +17,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerEvent;
+import org.apache.spark.sql.catalyst.analysis.NoSuchTableException;
 import org.apache.spark.sql.catalyst.analysis.ResolvedTable;
 import org.apache.spark.sql.catalyst.plans.logical.AddColumns;
 import org.apache.spark.sql.catalyst.plans.logical.AlterColumn;
@@ -31,9 +33,11 @@ import org.apache.spark.sql.catalyst.plans.logical.SetTableLocation;
 import org.apache.spark.sql.catalyst.plans.logical.SetTableProperties;
 import org.apache.spark.sql.catalyst.plans.logical.UnsetTableProperties;
 import org.apache.spark.sql.connector.catalog.Identifier;
+import org.apache.spark.sql.connector.catalog.Table;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.apache.spark.sql.types.StructType;
 
+@Slf4j
 public class AlterTableCommandDatasetBuilder
     extends AbstractQueryPlanOutputDatasetBuilder<LogicalPlan> {
 
@@ -57,12 +61,18 @@ public class AlterTableCommandDatasetBuilder
   @Override
   protected List<OpenLineage.OutputDataset> apply(
       SparkListenerEvent event, LogicalPlan alterTableCommand) {
-
     ResolvedTable resolvedTable = (ResolvedTable) ((AlterTableCommand) alterTableCommand).table();
+    Table table;
+    try {
+      // resolvedTable has only old metadata (before alter)
+      table = resolvedTable.catalog().loadTable(resolvedTable.identifier());
+    } catch (NoSuchTableException e) {
+      return Collections.emptyList();
+    }
     TableCatalog tableCatalog = resolvedTable.catalog();
-    Map<String, String> tableProperties = resolvedTable.table().properties();
+    Map<String, String> tableProperties = table.properties();
     Identifier identifier = resolvedTable.identifier();
-    StructType schema = resolvedTable.table().schema();
+    StructType schema = table.schema();
     OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange lifecycleStateChange =
         OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.ALTER;
 
@@ -88,7 +98,6 @@ public class AlterTableCommandDatasetBuilder
       datasetVersion.ifPresent(
           version -> builder.version(openLineage.newDatasetVersionDatasetFacet(version)));
     }
-
     CatalogUtils3.getTableProviderFacet(tableCatalog, tableProperties)
         .map(provider -> builder.put("tableProvider", provider));
     return Collections.singletonList(
