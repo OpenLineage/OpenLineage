@@ -33,6 +33,16 @@ class FakeExtractor(BaseExtractor):
             "fake": {"executed": self.operator.executed}
         })
 
+    def extract_on_complete(self, task_instance) -> Optional[TaskMetadata]:
+        from openlineage.client.run import Dataset
+
+        return TaskMetadata(
+            name="fake-name",
+            job_facets={"fake": {"executed": self.operator.executed}},
+            inputs=[Dataset(namespace="example", name="ip_table")],
+            outputs=[Dataset(namespace="example", name="op_table")]
+        )
+
 
 def test_fake_extractor_extracts():
     dagrun = MagicMock()
@@ -132,3 +142,32 @@ def test_fake_extractor_extracts_from_inlets_and_outlets():
     assert len(metadata.inputs) == 1 and len(metadata.outputs) == 1
     assert isinstance(metadata.inputs[0], Dataset)
     assert isinstance(metadata.outputs[0], Dataset)
+    assert metadata.inputs[0].name == "d1.t1"
+    assert metadata.outputs[0].name == "d1.t2"
+
+
+@pytest.mark.skipif(
+    parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"),
+    reason="requires AIRFLOW_VERSION to be higher than 2.0",
+    )
+def test_fake_extractor_extracts_and_discards_inlets_and_outlets():
+    from airflow.lineage.entities import Table
+    from openlineage.client.run import Dataset
+
+    dagrun = MagicMock()
+
+    task = FakeOperator(
+        task_id="task",
+        inlets=[Table(database="d1", cluster="c1", name="t1")],
+        outlets=[Table(database="d1", cluster="c1", name="t2")],
+    )
+
+    manager = ExtractorManager()
+    manager.add_extractor(FakeOperator.__name__, FakeExtractor)
+
+    metadata = manager.extract_metadata(dagrun, task, complete=True)
+    assert len(metadata.inputs) == 1 and len(metadata.outputs) == 1
+    assert isinstance(metadata.inputs[0], Dataset)
+    assert isinstance(metadata.outputs[0], Dataset)
+    assert metadata.inputs[0].name == "ip_table"
+    assert metadata.outputs[0].name == "op_table"
