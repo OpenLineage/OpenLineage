@@ -1,0 +1,63 @@
+{
+  "$schema" : "https://json-schema.org/draft/2020-12/schema",
+  "$id" : "https://openlineage.io/spec/facets/1-0-0/PartitionDatasetFacet.json",
+  "$defs" : {
+    "PartitionDatasetFacet" : {
+      "allOf" : [ {
+        "$ref" : "https://openlineage.io/spec/1-0-2/OpenLineage.json#/$defs/DatasetFacet"
+      }, {
+        "type" : "object",
+        "properties" : {
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "columnName": {
+                  "description": "Partitioning column name.",
+                  "type": "string",
+                  "example": "business_date"
+                }
+              }
+            }
+          },
+          "partitions": {
+            "type": "array", 
+            "items": {
+              "type": "object",
+              "properties": {
+                "identifier" : {
+                "description" : "List of partition keys and values describing a single partition.",
+                "type" : "array",
+                "items" : {
+                  "type" : "object",
+                  "properties" : {
+                    "column" : {
+                      "description" : "Partitioning column name.",
+                      "type" : "string",
+                      "example" : "business_date"
+                    },
+                    "value" : {
+                      "description" : "Partition value.",
+                      "type" : "string",
+                      "example" : "20220801"
+                    }
+                  },
+                  "required" : [ "column", "value" ]
+                }
+              }
+            }
+          }
+          }
+        }
+      } ],
+      "type" : "object"
+    }
+  },
+  "type" : "object",
+  "properties" : {
+    "partitioning" : {
+      "$ref" : "#/$defs/PartitionDatasetFacet"
+    }
+  }
+}

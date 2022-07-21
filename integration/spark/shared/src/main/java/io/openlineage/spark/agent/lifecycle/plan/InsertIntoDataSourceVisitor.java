@@ -55,6 +55,7 @@ public class InsertIntoDataSourceVisitor
                             ds.getFacets().getSchema(),
                             null,
                             null,
+                            null,
                             context
                                 .getOpenLineage()
                                 .newLifecycleStateChangeDatasetFacet(
