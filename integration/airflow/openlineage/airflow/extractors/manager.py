@@ -1,11 +1,14 @@
 import logging
-from typing import Optional, Type
+from typing import Optional, Type, List
 
 from pkg_resources import parse_version
 from airflow.version import version as AIRFLOW_VERSION
 from openlineage.airflow.extractors import TaskMetadata, BaseExtractor, Extractors
 from openlineage.airflow.facets import UnknownOperatorAttributeRunFacet, UnknownOperatorInstance
 from openlineage.airflow.utils import get_job_name, get_operator_class
+
+from airflow.version import version as AIRFLOW_VERSION
+from pkg_resources import parse_version
 
 
 class ExtractorManager:
@@ -30,6 +33,12 @@ class ExtractorManager:
             f'airflow_dag_id={task.dag_id} ' \
             f'task_id={task.task_id} ' \
             f'airflow_run_id={dagrun.run_id} '
+
+        collect_lineage_metadata = True
+        if parse_version(AIRFLOW_VERSION) <= parse_version("2.0.0"):
+            self.log.debug("Manual extraction with inlets and outlets not supported")
+            collect_lineage_metadata = False
+
         if extractor:
             # Extracting advanced metadata is only possible when extractor for particular operator
             # is defined. Without it, we can't extract any input or output data.
@@ -45,6 +54,12 @@ class ExtractorManager:
                     f"Found task metadata for operation {task.task_id}: {task_metadata}"
                 )
                 if task_metadata:
+                    if (not task_metadata.inputs) and (not task_metadata.outputs):
+                        if collect_lineage_metadata:
+                            inlets = task.get_inlet_defs()
+                            outlets = task.get_outlet_defs()
+                            self.extract_inlets_and_outlets(task_metadata, inlets, outlets)
+
                     return task_metadata
 
             except Exception as e:
@@ -56,7 +71,7 @@ class ExtractorManager:
                 f'Unable to find an extractor. {task_info}')
 
             # Only include the unkonwnSourceAttribute facet if there is no extractor
-            return TaskMetadata(
+            task_metadata = TaskMetadata(
                 name=get_job_name(task),
                 run_facets={
                     "unknownSourceAttribute": UnknownOperatorAttributeRunFacet(
@@ -71,6 +86,11 @@ class ExtractorManager:
                     )
                 },
             )
+            if collect_lineage_metadata:
+                inlets = task.get_inlet_defs()
+                outlets = task.get_outlet_defs()
+                self.extract_inlets_and_outlets(task_metadata, inlets, outlets)
+            return task_metadata
 
         return TaskMetadata(name=get_job_name(task))
 
@@ -85,3 +105,18 @@ class ExtractorManager:
             self.extractors[task.task_id] = extractor(task)
             return self.extractors[task.task_id]
         return None
+
+    def extract_inlets_and_outlets(
+            self,
+            task_metadata: TaskMetadata,
+            inlets: List,
+            outlets: List,
+    ):
+        from airflow.lineage.entities import Table
+        from openlineage.airflow.extractors.converters import table_to_dataset
+
+        self.log.debug("Manually extracting lineage metadata from inlets and outlets")
+        task_metadata.inputs = [table_to_dataset(t) for t in inlets
+                                if isinstance(t, Table)]
+        task_metadata.outputs = [table_to_dataset(t) for t in outlets
+                                 if isinstance(t, Table)]
