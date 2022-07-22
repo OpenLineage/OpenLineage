@@ -26,6 +26,7 @@ import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.spark.rdd.HadoopRDD;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.FileScanRDD;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
@@ -79,26 +80,25 @@ public class PlanUtils {
     return new AbstractPartialFunction<T, Collection<D>>() {
       @Override
       public boolean isDefinedAt(T x) {
-        return fns.stream().filter(pfn -> isDefinedAt(x, pfn)).findFirst().isPresent();
+        return fns.stream()
+            .filter(pfn -> PlanUtils.safeIsDefinedAt(pfn, x))
+            .findFirst()
+            .isPresent();
       }
 
       private boolean isDefinedAt(T x, PartialFunction<T, ? extends Collection<D>> pfn) {
-        try {
-          return pfn.isDefinedAt(x);
-        } catch (ClassCastException e) {
-          return false;
-        }
+        return PlanUtils.safeIsDefinedAt(pfn, x);
       }
 
       @Override
       public Collection<D> apply(T x) {
         return fns.stream()
-            .filter(pfn -> isDefinedAt(x, pfn))
+            .filter(pfn -> PlanUtils.safeIsDefinedAt(pfn, x))
             .map(
                 pfn -> {
                   try {
                     return pfn.apply(x);
-                  } catch (RuntimeException e) {
+                  } catch (RuntimeException | NoClassDefFoundError | NoSuchMethodError e) {
                     log.error("Apply failed:", e);
                     return null;
                   }
@@ -239,5 +239,54 @@ public class PlanUtils {
             })
         .distinct()
         .collect(Collectors.toList());
+  }
+
+  /**
+   * instanceOf alike implementation which does not fail in case of a missing class.
+   *
+   * @param plan
+   * @param classCanonicalName
+   * @return
+   */
+  public static boolean safeIsInstanceOf(LogicalPlan plan, String classCanonicalName) {
+    try {
+      Class c = Class.forName(classCanonicalName);
+      return plan.getClass().isAssignableFrom(c);
+    } catch (ClassNotFoundException e) {
+      return false;
+    }
+  }
+
+  /**
+   * isDefinedAt method implementation that should never throw an error or exception
+   *
+   * @param pfn
+   * @param x
+   * @return
+   */
+  public static boolean safeIsDefinedAt(PartialFunction pfn, Object x) {
+    try {
+      return pfn.isDefinedAt(x);
+    } catch (Exception | NoClassDefFoundError e) {
+      log.info("isDefinedAt method failed on {}", pfn.getClass().getCanonicalName());
+      return false;
+    }
+  }
+
+  /**
+   * apply method implementation that should never throw an error or exception
+   *
+   * @param pfn
+   * @param x
+   * @param <T, D>
+   * @return
+   */
+  public static <T, D> List<T> safeApply(PartialFunction<D, List<T>> pfn, D x) {
+    try {
+      return pfn.apply(x);
+    } catch (Exception | NoClassDefFoundError | NoSuchMethodError e) {
+      log.info("apply method failed with", e);
+      return Collections.emptyList();
+    }
   }
 }

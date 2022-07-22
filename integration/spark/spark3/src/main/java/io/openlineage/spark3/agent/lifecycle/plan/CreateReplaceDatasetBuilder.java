@@ -36,6 +36,9 @@ import org.apache.spark.sql.types.StructType;
 public class CreateReplaceDatasetBuilder
     extends AbstractQueryPlanOutputDatasetBuilder<LogicalPlan> {
 
+  private static final String CREATE_V2_TABLE =
+      "org.apache.spark.sql.catalyst.plans.logical.CreateV2Table";
+
   public CreateReplaceDatasetBuilder(OpenLineageContext context) {
     super(context, false);
   }
@@ -48,8 +51,7 @@ public class CreateReplaceDatasetBuilder
         // Class CreateV2Table was removed in Spark Catalyst 3.3.0. For some reason, it is also
         // missing on Databricks platform when Spark context is in version 3.2.1. This hacky way
         // allows checking for the class also when it is not available on the class path
-        || "org.apache.spark.sql.catalyst.plans.logical.CreateV2Table"
-            .equals(x.getClass().getCanonicalName());
+        || PlanUtils.safeIsInstanceOf(x, CREATE_V2_TABLE);
   }
 
   @Override
@@ -68,7 +70,7 @@ public class CreateReplaceDatasetBuilder
       schema = command.tableSchema();
       lifecycleStateChange =
           OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE;
-    } else if (x instanceof CreateV2Table) {
+    } else if (PlanUtils.safeIsInstanceOf(x, CREATE_V2_TABLE)) {
       CreateV2Table command = (CreateV2Table) x;
       tableCatalog = command.catalog();
       tableProperties = ScalaConversionUtils.<String, String>fromMap(command.properties());
