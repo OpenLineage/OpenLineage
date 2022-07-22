@@ -434,21 +434,14 @@ class OpenLineageRunEventBuilder {
     return datasets;
   }
 
-  private <T> Stream<T> buildDatasets(
+  private <T extends OpenLineage.Dataset> Stream<T> buildDatasets(
       List<Object> nodes, Collection<PartialFunction<Object, List<T>>> builders) {
     return nodes.stream()
         .flatMap(
             event ->
                 builders.stream()
-                    .filter(
-                        pfn -> {
-                          try {
-                            return pfn.isDefinedAt(event);
-                          } catch (ClassCastException e) {
-                            return false;
-                          }
-                        })
-                    .map(pfn -> pfn.apply(event))
+                    .filter(pfn -> PlanUtils.safeIsDefinedAt(pfn, event))
+                    .map(pfn -> PlanUtils.safeApply(pfn, event))
                     .flatMap(Collection::stream));
   }
 

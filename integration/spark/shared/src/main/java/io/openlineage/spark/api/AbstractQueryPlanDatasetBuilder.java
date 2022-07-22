@@ -66,20 +66,14 @@ public abstract class AbstractQueryPlanDatasetBuilder<T, P extends LogicalPlan, 
         .getQueryExecution()
         .map(
             qe -> {
-              try {
-                QueryPlanVisitor<LogicalPlan, D> visitor = asQueryPlanVisitor(event);
-                if (searchDependencies) {
-                  return ScalaConversionUtils.fromSeq(qe.optimizedPlan().collect(visitor)).stream()
-                      .flatMap(Collection::stream)
-                      .collect(Collectors.toList());
-                } else if (visitor.isDefinedAt(qe.optimizedPlan())) {
-                  return visitor.apply(qe.optimizedPlan());
-                } else {
-                  return Collections.<D>emptyList();
-                }
-              } catch (Exception e) {
-                // whatever happens (like missing class in new Spark version), continue
-                log.error("Apply method failed with ", e);
+              QueryPlanVisitor<LogicalPlan, D> visitor = asQueryPlanVisitor(event);
+              if (searchDependencies) {
+                return ScalaConversionUtils.fromSeq(qe.optimizedPlan().collect(visitor)).stream()
+                    .flatMap(Collection::stream)
+                    .collect(Collectors.toList());
+              } else if (PlanUtils.safeIsDefinedAt(visitor, qe.optimizedPlan())) {
+                return PlanUtils.safeApply(visitor, qe.optimizedPlan());
+              } else {
                 return Collections.<D>emptyList();
               }
             })
