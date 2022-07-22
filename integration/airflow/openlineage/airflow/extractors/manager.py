@@ -7,9 +7,6 @@ from openlineage.airflow.extractors import TaskMetadata, BaseExtractor, Extracto
 from openlineage.airflow.facets import UnknownOperatorAttributeRunFacet, UnknownOperatorInstance
 from openlineage.airflow.utils import get_job_name, get_operator_class
 
-from airflow.version import version as AIRFLOW_VERSION
-from pkg_resources import parse_version
-
 
 class ExtractorManager:
     """Class abstracting management of custom extractors."""

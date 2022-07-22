@@ -86,13 +86,13 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
     dagrun = task_instance.dag_run
     dag = task_instance.task.dag
 
-    run_id = str(uuid.uuid4())
-    run_data_holder.set_active_run(task_instance, run_id)
-    parent_run_id = str(uuid.uuid3(uuid.NAMESPACE_URL, f'{dag.dag_id}.{dagrun.run_id}'))
-
     def on_running():
         task_instance.render_templates()
         task = task_instance.task
+
+        run_id = str(uuid.uuid4())
+        run_data_holder.set_active_run(task_instance, run_id)
+        parent_run_id = str(uuid.uuid3(uuid.NAMESPACE_URL, f'{dag.dag_id}.{dagrun.run_id}'))
 
         task_metadata = extractor_manager.extract_metadata(dagrun, task)
 
