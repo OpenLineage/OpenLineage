@@ -12,10 +12,12 @@ import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.hadoop.fs.Path;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.catalog.HiveTableRelation;
@@ -24,9 +26,11 @@ import org.apache.spark.sql.catalyst.plans.logical.LeafNode;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.UnaryNode;
 import org.apache.spark.sql.execution.LogicalRDD;
+import org.apache.spark.sql.execution.datasources.HadoopFsRelation;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2ScanRelation;
+import scala.collection.JavaConversions;
 
 /** Traverses LogicalPlan and collect input fields with the corresponding ExprId. */
 @Slf4j
@@ -70,6 +74,10 @@ class InputFieldsCollector {
     } else if (node instanceof LogicalRelation
         && ((LogicalRelation) node).catalogTable().isDefined()) {
       return extractDatasetIdentifier(((LogicalRelation) node).catalogTable().get());
+    } else if (node instanceof LogicalRelation
+        && (((LogicalRelation) node).relation() instanceof HadoopFsRelation)) {
+      HadoopFsRelation relation = (HadoopFsRelation) ((LogicalRelation) node).relation();
+      return extractDatasetIdentifier(relation);
     } else if (node instanceof LogicalRDD) {
       return extractDatasetIdentifier((LogicalRDD) node);
     } else if (node instanceof LeafNode) {
@@ -102,6 +110,27 @@ class InputFieldsCollector {
       return Collections.singletonList(
           new DatasetIdentifier(
               catalogTable.location().getPath(), PlanUtils.namespaceUri(catalogTable.location())));
+    }
+  }
+
+  /* Similar to the InsertIntoHadoopFsRelationVisitor and LogicalRelationDatasetBuilder
+   * We need to handle a HadoopFsRelation by extracting that paths it traverses
+   * to identify the datasets being used.
+   */
+  private static List<DatasetIdentifier> extractDatasetIdentifier(HadoopFsRelation relation) {
+    List<DatasetIdentifier> inputDatasets = new ArrayList<DatasetIdentifier>();
+    List<Path> paths =
+        JavaConversions.asJavaCollection(relation.location().rootPaths()).stream()
+            .collect(Collectors.toList());
+
+    for (Path p : paths) {
+      String namespace = PlanUtils.namespaceUri(p.toUri());
+      inputDatasets.add(new DatasetIdentifier(p.toUri().getPath(), namespace));
+    }
+    if (inputDatasets.isEmpty()) {
+      return Collections.emptyList();
+    } else {
+      return inputDatasets;
     }
   }
 }

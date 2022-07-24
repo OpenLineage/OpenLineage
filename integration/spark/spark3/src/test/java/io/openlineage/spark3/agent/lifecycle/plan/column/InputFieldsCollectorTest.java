@@ -6,6 +6,7 @@
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
@@ -36,6 +37,7 @@ import org.apache.spark.sql.catalyst.plans.logical.CreateTableAsSelect;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.Project;
 import org.apache.spark.sql.execution.LogicalRDD;
+import org.apache.spark.sql.execution.datasources.HadoopFsRelation;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2ScanRelation;
@@ -43,6 +45,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import scala.Option;
+import scala.collection.JavaConverters;
+import scala.collection.Seq;
 
 class InputFieldsCollectorTest {
 
@@ -216,6 +220,33 @@ class InputFieldsCollectorTest {
 
     InputFieldsCollector.collect(context, plan, builder);
     verify(builder, times(0)).addInput(any(), any(), any());
+  }
+
+  @Test
+  @SneakyThrows
+  void collectWhenGrandChildNodeIsHadoopRelation() {
+    LogicalRelation logicalRelation = mock(LogicalRelation.class);
+    HadoopFsRelation relation = mock(HadoopFsRelation.class, RETURNS_DEEP_STUBS);
+    when(logicalRelation.relation()).thenReturn(relation);
+
+    Path p = new Path("/tmp/some/path/" + FILE);
+    Seq<Path> expected_path_seq =
+        JavaConverters.asScalaBufferConverter(Collections.singletonList(p)).asScala();
+
+    when(relation.location().rootPaths()).thenReturn(expected_path_seq);
+
+    LogicalPlan plan = createPlanWithGrandChild(logicalRelation);
+
+    when(logicalRelation.output())
+        .thenReturn(
+            scala.collection.JavaConverters.collectionAsScalaIterableConverter(
+                    Arrays.asList(attributeReference))
+                .asScala()
+                .toSeq());
+
+    InputFieldsCollector.collect(context, plan, builder);
+    verify(builder, times(0))
+        .addInput(exprId, new DatasetIdentifier("/tmp/some/path", FILE), SOME_NAME);
   }
 
   private LogicalPlan createPlanWithGrandChild(LogicalPlan grandChild) {
