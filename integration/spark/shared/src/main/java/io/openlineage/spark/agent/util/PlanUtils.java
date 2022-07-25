@@ -267,7 +267,13 @@ public class PlanUtils {
   public static boolean safeIsDefinedAt(PartialFunction pfn, Object x) {
     try {
       return pfn.isDefinedAt(x);
-    } catch (Exception | NoClassDefFoundError e) {
+    } catch (ClassCastException e) {
+      // do nothing
+      return false;
+    } catch (Exception e) {
+      log.info("isDefinedAt method failed on {}", e);
+      return false;
+    } catch (NoClassDefFoundError e) {
       log.info("isDefinedAt method failed on {}", pfn.getClass().getCanonicalName());
       return false;
     }

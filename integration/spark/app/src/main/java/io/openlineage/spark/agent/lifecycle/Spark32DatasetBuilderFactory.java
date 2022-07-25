@@ -9,6 +9,7 @@ import com.google.common.collect.ImmutableList;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.lifecycle.plan.CommandPlanVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.SaveIntoDataSourceCommandVisitor;
+import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.AppendDataDatasetBuilder;
@@ -20,10 +21,15 @@ import io.openlineage.spark3.agent.lifecycle.plan.InMemoryRelationInputDatasetBu
 import io.openlineage.spark3.agent.lifecycle.plan.LogicalRelationDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.TableContentChangeDatasetBuilder;
 import io.openlineage.spark32.agent.lifecycle.plan.AlterTableCommandDatasetBuilder;
+import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.reflect.MethodUtils;
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import scala.PartialFunction;
 
+@Slf4j
 public class Spark32DatasetBuilderFactory implements DatasetBuilderFactory {
   @Override
   public Collection<PartialFunction<Object, List<OpenLineage.InputDataset>>> getInputBuilders(
@@ -48,7 +54,7 @@ public class Spark32DatasetBuilderFactory implements DatasetBuilderFactory {
         .add(new AppendDataDatasetBuilder(context, datasetFactory))
         .add(new DataSourceV2RelationOutputDatasetBuilder(context, datasetFactory))
         .add(new TableContentChangeDatasetBuilder(context))
-        .add(new CreateReplaceDatasetBuilder(context))
+        .add(getCreateReplaceDatasetBuilder(context))
         .add(new AlterTableCommandDatasetBuilder(context))
         .build();
   }
@@ -63,5 +69,25 @@ public class Spark32DatasetBuilderFactory implements DatasetBuilderFactory {
       // swallow- we don't care
     }
     return false;
+  }
+
+  private AbstractQueryPlanOutputDatasetBuilder<LogicalPlan> getCreateReplaceDatasetBuilder(
+      OpenLineageContext context) {
+    // On Databricks platform Spark 3.2 needs to have the version of `CreateReplaceDatasetBuilder`
+    // from Spark 3.3. Distinction has to be done by sub object fields
+    Method catalogMethod = null;
+    try {
+      catalogMethod =
+          MethodUtils.getAccessibleMethod(
+              Class.forName("org.apache.spark.sql.catalyst.plans.logical.ReplaceTable"), "catalog");
+    } catch (ClassNotFoundException e) {
+      log.error("Could not find `ReplaceTable` class", e);
+    }
+
+    if (catalogMethod != null) {
+      return new CreateReplaceDatasetBuilder(context);
+    } else {
+      return new io.openlineage.spark33.agent.lifecycle.plan.CreateReplaceDatasetBuilder(context);
+    }
   }
 }

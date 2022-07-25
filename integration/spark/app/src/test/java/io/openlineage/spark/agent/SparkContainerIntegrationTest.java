@@ -24,6 +24,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -51,8 +52,6 @@ class SparkContainerIntegrationTest {
       SparkContainerUtils.makeMockServerContainer(network);
 
   private static final String SPARK_3 = "(3.*)";
-  private static final String SPARK_ABOVE_EQUAL_2_4_8 =
-      "(3.*)|(2\\.4\\.([8,9]|\\d\\d))"; // Spark version >= 2.4.8
   private static final String PACKAGES = "--packages";
   private static final String SPARK_VERSION = "spark.version";
 
@@ -213,9 +212,7 @@ class SparkContainerIntegrationTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(
-      named = SPARK_VERSION,
-      matches = SPARK_ABOVE_EQUAL_2_4_8) // Spark version >= 2.4.8
+  @EnabledIf("isDeltaTestEnabled")
   void testCTASDelta() {
     pyspark =
         SparkContainerUtils.makePysparkContainerWithDefaultConf(
@@ -229,7 +226,7 @@ class SparkContainerIntegrationTest {
     verifyEvents("pysparkDeltaCTASComplete.json");
   }
 
-  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = "3.*")
+  @EnabledIf("isDeltaTestEnabled")
   @Test
   void testFilteringDeltaEvents() {
     pyspark =
@@ -247,9 +244,7 @@ class SparkContainerIntegrationTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(
-      named = SPARK_VERSION,
-      matches = SPARK_ABOVE_EQUAL_2_4_8) // Spark version >= 2.4.8
+  @EnabledIf("isDeltaTestEnabled")
   void testDeltaSaveAsTable() {
     pyspark =
         SparkContainerUtils.makePysparkContainerWithDefaultConf(
@@ -316,6 +311,11 @@ class SparkContainerIntegrationTest {
       String expectedStartEvent,
       String expectedCompleteEvent,
       String isIceberg) {
+    if (!Boolean.valueOf(isIceberg) && !isDeltaTestEnabled()) {
+      // disable delta test for Spark 3.3 until delta starts supporting Spark 3.3
+      return;
+    }
+
     pyspark =
         SparkContainerUtils.makePysparkContainerWithDefaultConf(
             network,
@@ -334,9 +334,12 @@ class SparkContainerIntegrationTest {
       return "org.apache.iceberg:iceberg-spark-runtime-3.1_2.12:0.13.0";
     } else if (sparkVersion.startsWith("3.2")) {
       return "org.apache.iceberg:iceberg-spark-runtime-3.2_2.12:0.13.0";
+    } else if (sparkVersion.startsWith("3.3")) {
+      return "org.apache.iceberg:iceberg-spark-runtime-3.3_2.12:0.14.0";
+    } else {
+      // return previously used package name
+      return "org.apache.iceberg:iceberg-spark3-runtime:0.12.0";
     }
-    // return previously used package name
-    return "org.apache.iceberg:iceberg-spark3-runtime:0.12.0";
   }
 
   private String getDeltaPackageName() {
@@ -368,7 +371,7 @@ class SparkContainerIntegrationTest {
     verifyEvents("pysparkTruncateTableStartEvent.json", "pysparkTruncateTableCompleteEvent.json");
   }
 
-  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3) // Spark version >= 3.*
+  @EnabledIf("isDeltaTestEnabled")
   @Test
   void testSaveIntoDataSourceCommand() {
     pyspark =
@@ -384,9 +387,7 @@ class SparkContainerIntegrationTest {
   }
 
   @Test
-  @EnabledIfSystemProperty(
-      named = SPARK_VERSION,
-      matches = SPARK_ABOVE_EQUAL_2_4_8) // Spark version >= 2.4.8
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3)
   void testOptimizedCreateAsSelectAndLoad() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network,
@@ -433,5 +434,19 @@ class SparkContainerIntegrationTest {
   @SneakyThrows
   private JsonBody readJson(Path path) {
     return json(new String(readAllBytes(path)), MatchType.ONLY_MATCHING_FIELDS);
+  }
+
+  boolean isDeltaTestEnabled() {
+    if (System.getProperty(SPARK_VERSION).startsWith("2")) {
+      // we don't run integration tests for delta and Spark 2.x
+      return false;
+    }
+
+    if (System.getProperty(SPARK_VERSION).startsWith("3.3")) {
+      // Delta support for Spark 3.3 is still not released
+      return false;
+    } else {
+      return true;
+    }
   }
 }

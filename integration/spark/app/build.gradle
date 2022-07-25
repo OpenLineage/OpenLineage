@@ -42,6 +42,7 @@ configurations {
     spark2.extendsFrom testImplementation
     spark3.extendsFrom testImplementation
     spark32.extendsFrom testImplementation
+    spark33.extendsFrom testImplementation
 }
 
 archivesBaseName='openlineage-spark-app'
@@ -55,6 +56,7 @@ ext {
     testcontainersVersion = '1.15.3'
     shortVersion = sparkVersion.substring(0,3)
     versionsMap = [
+            "3.3": ["module": "spark33",    "scala": "2.12"],
             "3.2": ["module": "spark32",    "scala": "2.12"],
             "3.1": ["module": "spark3",     "scala": "2.12"],
             "2.4": ["module": "spark2",     "scala": "2.11"]
@@ -72,6 +74,7 @@ dependencies {
     implementation(project(path: ":spark2"))
     implementation(project(path: ":spark3"))
     implementation(project(path: ":spark32"))
+    implementation(project(path: ":spark33"))
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.0.3'
 
 
@@ -80,6 +83,9 @@ dependencies {
     compileOnly ("com.google.cloud.spark:spark-bigquery_${versions.scala}:${bigqueryVersion}") {
         exclude group: 'com.fasterxml.jackson.core'
         exclude group: 'com.fasterxml.jackson.module'
+        exclude group: 'com.sun.jmx'
+        exclude group: 'com.sun.jdmk'
+        exclude group: 'javax.jms'
     }
 
     testFixturesApi "org.apache.spark:spark-core_${versions.scala}:${sparkVersion}"
@@ -178,6 +184,7 @@ shadowJar {
         exclude (project(":spark2"))
         exclude (project(":spark3"))
         exclude (project(":spark32"))
+        exclude (project(":spark33"))
     }
     classifier = ''
     // avoid conflict with any client version of that lib
