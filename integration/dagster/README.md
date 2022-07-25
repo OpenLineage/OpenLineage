@@ -1,5 +1,4 @@
-**New maintainers needed**: please [open an issue](https://github.com/OpenLineage/OpenLineage/issues/new) to get started.
-{: .alert .alert-info .text-center}
+> **New maintainers needed**: please [open an issue](https://github.com/OpenLineage/OpenLineage/issues/new) to get started.
 
 # OpenLineage Dagster Integration
 
