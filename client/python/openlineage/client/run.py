@@ -8,6 +8,7 @@ import uuid
 import attr
 
 from openlineage.client.facet import NominalTimeRunFacet, ParentRunFacet
+from openlineage.client.utils import RedactMixin
 
 
 class RunState(Enum):
@@ -25,9 +26,11 @@ _RUN_FACETS = [
 
 
 @attr.s
-class Run:
+class Run(RedactMixin):
     runId: str = attr.ib()
     facets: Dict = attr.ib(factory=dict)
+
+    _skip_redact: List[str] = ['runId']
 
     @runId.validator
     def check(self, attribute, value):
@@ -35,17 +38,21 @@ class Run:
 
 
 @attr.s
-class Job:
+class Job(RedactMixin):
     namespace: str = attr.ib()
     name: str = attr.ib()
     facets: Dict = attr.ib(factory=dict)
+
+    _skip_redact: List[str] = ['namespace', 'name']
 
 
 @attr.s
-class Dataset:
+class Dataset(RedactMixin):
     namespace: str = attr.ib()
     name: str = attr.ib()
     facets: Dict = attr.ib(factory=dict)
+
+    _skip_redact: List[str] = ['namespace', 'name']
 
 
 @attr.s
@@ -59,7 +66,7 @@ class OutputDataset(Dataset):
 
 
 @attr.s
-class RunEvent:
+class RunEvent(RedactMixin):
     eventType: RunState = attr.ib(validator=attr.validators.in_(RunState))
     eventTime: str = attr.ib()  # TODO: validate dates
     run: Run = attr.ib()
@@ -67,3 +74,5 @@ class RunEvent:
     producer: str = attr.ib()
     inputs: Optional[List[Dataset]] = attr.ib(factory=list)     # type: ignore
     outputs: Optional[List[Dataset]] = attr.ib(factory=list)    # type: ignore
+
+    _skip_redact: List[str] = ['eventType', 'eventTime', 'producer']

@@ -3,9 +3,12 @@
 
 from typing import List
 from openlineage.common.sql import DbTableMeta
+from openlineage.client.utils import RedactMixin
 
 
-class DbColumn:
+class DbColumn(RedactMixin):
+    _skip_redact: List[str] = ['name', 'type', 'ordinal_position']
+
     def __init__(self, name: str, type: str,
                  description: str = None, ordinal_position: int = None):
         self.name = name
@@ -24,7 +27,9 @@ class DbColumn:
                           {self.description!r},{self.ordinal_position!r})"
 
 
-class DbTableSchema:
+class DbTableSchema(RedactMixin):
+    _skip_redact: List[str] = ['schema_name', 'table_name']
+
     def __init__(
         self,
         schema_name: str,

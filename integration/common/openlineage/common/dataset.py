@@ -7,9 +7,12 @@ from openlineage.common.models import DbTableSchema, DbColumn
 from openlineage.client.facet import BaseFacet, DataSourceDatasetFacet, \
     DocumentationDatasetFacet, SchemaDatasetFacet, SchemaField
 from openlineage.client.run import Dataset as OpenLineageDataset, InputDataset, OutputDataset
+from openlineage.client.utils import RedactMixin
 
 
-class Source:
+class Source(RedactMixin):
+    _skip_redact: List[str] = ['scheme', 'name']
+
     def __init__(
             self,
             scheme: Optional[str] = None,
@@ -42,7 +45,9 @@ class Source:
         return f'{self.scheme}'
 
 
-class Field:
+class Field(RedactMixin):
+    _skip_redact: List[str] = ['name', 'type', 'tags']
+
     def __init__(self, name: str, type: str,
                  tags: List[str] = None, description: str = None):
         self.name = name
@@ -72,7 +77,9 @@ class Field:
                        {self.tags!r},{self.description!r})"
 
 
-class Dataset:
+class Dataset(RedactMixin):
+    _skip_redact: List[str] = ['name']
+
     def __init__(
             self,
             source: Source,

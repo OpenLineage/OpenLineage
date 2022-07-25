@@ -1,12 +1,11 @@
 # Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
-
 from typing import Dict, List, Optional
 
 import attr
 
 from openlineage.client.constants import DEFAULT_PRODUCER
-
+from openlineage.client.utils import RedactMixin
 
 SCHEMA_URI = "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json"
 
@@ -19,9 +18,12 @@ def set_producer(producer):
 
 
 @attr.s
-class BaseFacet:
+class BaseFacet(RedactMixin):
     _producer: str = attr.ib(init=False)
     _schemaURL: str = attr.ib(init=False)
+
+    _base_skip_redact: List[str] = ['_producer', '_schemaURL']
+    _additional_skip_redact: List[str] = []
 
     def __attrs_post_init__(self):
         self._producer = PRODUCER
@@ -31,11 +33,17 @@ class BaseFacet:
     def _get_schema() -> str:
         return SCHEMA_URI + "#/definitions/BaseFacet"
 
+    @property
+    def skip_redact(self):
+        return self._base_skip_redact + self._additional_skip_redact
+
 
 @attr.s
 class NominalTimeRunFacet(BaseFacet):
     nominalStartTime: str = attr.ib()
     nominalEndTime: Optional[str] = attr.ib(default=None)
+
+    _additional_skip_redact: List[str] = ['nominalStartTime', 'nominalEndTime']
 
     @staticmethod
     def _get_schema() -> str:
@@ -46,6 +54,8 @@ class NominalTimeRunFacet(BaseFacet):
 class ParentRunFacet(BaseFacet):
     run: Dict = attr.ib()
     job: Dict = attr.ib()
+
+    _additional_skip_redact: List[str] = ['job', 'run']
 
     @classmethod
     def create(cls, runId: str, namespace: str, name: str):
@@ -78,6 +88,8 @@ class SourceCodeLocationJobFacet(BaseFacet):
     type: str = attr.ib()
     url: str = attr.ib()
 
+    _additional_skip_redact: List[str] = ['type', 'url']
+
     @staticmethod
     def _get_schema() -> str:
         return SCHEMA_URI + "#/definitions/SourceCodeLocationJobFacet"
@@ -102,10 +114,12 @@ class DocumentationDatasetFacet(BaseFacet):
 
 
 @attr.s
-class SchemaField:
+class SchemaField(RedactMixin):
     name: str = attr.ib()
     type: str = attr.ib()
     description: Optional[str] = attr.ib(default=None)
+
+    _do_not_redact = ['name', 'type']
 
 
 @attr.s
@@ -122,6 +136,8 @@ class DataSourceDatasetFacet(BaseFacet):
     name: str = attr.ib()
     uri: str = attr.ib()
 
+    _additional_skip_redact: List[str] = ['name', 'uri']
+
     @staticmethod
     def _get_schema() -> str:
         return SCHEMA_URI + "#/definitions/DataSourceDatasetFacet"
@@ -131,6 +147,8 @@ class DataSourceDatasetFacet(BaseFacet):
 class OutputStatisticsOutputDatasetFacet(BaseFacet):
     rowCount: int = attr.ib()
     size: Optional[int] = attr.ib(default=None)
+
+    _additional_skip_redact: List[str] = ['rowCount', 'size']
 
     @staticmethod
     def _get_schema() -> str:
@@ -160,10 +178,12 @@ class DataQualityMetricsInputDatasetFacet(BaseFacet):
 
 
 @attr.s
-class Assertion:
+class Assertion(RedactMixin):
     assertion: str = attr.ib()
     success: bool = attr.ib()
     column: Optional[str] = attr.ib(default=None)
+
+    _skip_redact: List[str] = ['column']
 
 
 @attr.s
@@ -186,6 +206,8 @@ class SourceCodeJobFacet(BaseFacet):
     language: str = attr.ib()  # language that the code was written in
     source: str = attr.ib()  # source code text
 
+    _additional_skip_redact: List[str] = ['language']
+
     @staticmethod
     def _get_schema() -> str:
         return SCHEMA_URI + "#/definitions/SourceCodeJobFacet"
@@ -205,6 +227,8 @@ class ErrorMessageRunFacet(BaseFacet):
     message: str = attr.ib()
     programmingLanguage: str = attr.ib()
     stackTrace: Optional[str] = attr.ib(default=None)
+
+    _additional_skip_redact: List[str] = ['programmingLanguage']
 
     @staticmethod
     def _get_schema() -> str:

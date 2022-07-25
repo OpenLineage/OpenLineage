@@ -55,6 +55,14 @@ params = [
     ("custom_extractor", "requests/custom_extractor.json"),
     ("unknown_operator_dag", "requests/unknown_operator.json"),
     pytest.param(
+        "secrets",
+        "requests/secrets.json",
+        marks=pytest.mark.skipif(
+            not IS_AIRFLOW_VERSION_ENOUGH("2.1.0"),
+            reason="Airflow < 2.1.0"
+        )
+    ),
+    pytest.param(
         "mysql_orders_popular_day_of_week",
         "requests/mysql.json",
         marks=pytest.mark.skipif(
