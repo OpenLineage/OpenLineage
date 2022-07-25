@@ -1,3 +1,6 @@
+**New maintainers needed**: please open an issue to get started.
+{: .alert .alert-info .text-center}
+
 # OpenLineage Dagster Integration
 
 A library that integrates [Dagster](https://dagster.io/) with [OpenLineage](https://openlineage.io) for automatic metadata collection.
