@@ -1,3 +1,5 @@
+> **New maintainers needed**: please [open an issue](https://github.com/OpenLineage/OpenLineage/issues/new) to get started.
+
 # OpenLineage Dagster Integration
 
 A library that integrates [Dagster](https://dagster.io/) with [OpenLineage](https://openlineage.io) for automatic metadata collection.
