@@ -1,4 +1,9 @@
-package io.openlineage.sandbox
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
+package io.openlineage.kafka.sandbox
 
 import io.openlineage.flink.avro.event.InputEvent
 import io.openlineage.flink.avro.event.OutputEvent
