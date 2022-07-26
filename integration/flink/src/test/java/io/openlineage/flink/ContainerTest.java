@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.flink;
 
 import static java.nio.file.Files.readAllBytes;
@@ -29,7 +34,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Tag("integration-test")
 @Testcontainers
 @Slf4j
-public class OpenLineageFlinkContainerTest {
+public class ContainerTest {
 
   private static final Network network = Network.newNetwork();
   private static MockServerClient mockServerClient;

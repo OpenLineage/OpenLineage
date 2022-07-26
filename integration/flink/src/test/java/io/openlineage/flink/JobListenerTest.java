@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.flink;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -27,7 +32,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-public class OpenLineageFlinkJobListenerTest {
+public class JobListenerTest {
 
   JobClient jobClient = mock(JobClient.class);
   JobID jobId = mock(JobID.class);

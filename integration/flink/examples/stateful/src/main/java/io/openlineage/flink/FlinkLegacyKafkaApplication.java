@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.flink;
 
 import io.openlineage.flink.avro.event.InputEvent;
@@ -7,6 +12,7 @@ import org.apache.flink.streaming.api.functions.source.SourceFunction;
 import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 
+import static io.openlineage.flink.StreamEnvironment.setupEnv;
 import static io.openlineage.kafka.KafkaClientProvider.legacyKafkaSink;
 import static io.openlineage.kafka.KafkaClientProvider.legacyKafkaSource;
 import static org.apache.flink.streaming.api.environment.CheckpointConfig.ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION;
@@ -17,14 +23,7 @@ public class FlinkLegacyKafkaApplication {
 
   public static void main(String[] args) throws Exception {
     ParameterTool parameters = ParameterTool.fromArgs(args);
-    StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-
-    env.getConfig().setGlobalJobParameters(parameters);
-    env.setParallelism(parameters.getInt("parallelism", 1));
-    env.enableCheckpointing(parameters.getInt("checkpoint.interval", 1_000), CheckpointingMode.EXACTLY_ONCE);
-    env.getCheckpointConfig().enableExternalizedCheckpoints(RETAIN_ON_CANCELLATION);
-    env.getCheckpointConfig().setMinPauseBetweenCheckpoints(parameters.getInt("min.pause.between.checkpoints", 1_000));
-    env.getCheckpointConfig().setCheckpointTimeout(parameters.getInt("checkpoint.timeout", 90_000));
+    StreamExecutionEnvironment env = setupEnv(args);
 
     SourceFunction<InputEvent> source = legacyKafkaSource(parameters.getRequired("input-topics").split(TOPIC_PARAM_SEPARATOR));
     env.addSource(source, "kafka-source")

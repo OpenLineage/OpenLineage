@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.flink;
 
 import com.google.common.io.Resources;
@@ -9,6 +14,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 import lombok.SneakyThrows;
+import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.MockServerContainer;
 import org.testcontainers.containers.Network;
@@ -94,16 +100,16 @@ public class FlinkContainerUtils {
   }
 
   static GenericContainer<?> makeFlinkJobManagerContainer(
-      String jobName, Network network, List<Startable> startables) {
+      String jobName, String configPath, Network network, List<Startable> startables) {
     GenericContainer<?> container =
         genericContainer(network, FLINK_IMAGE, "jobmanager")
             .withExposedPorts(8081)
             .withFileSystemBind(getOpenLineageJarPath(), "/opt/flink/lib/openlineage.jar")
             .withFileSystemBind(getExampleAppJarPath(), "/opt/flink/lib/example-app.jar")
+            .withFileSystemBind("/tmp/warehouse", "/tmp/warehouse/", BindMode.READ_WRITE)
             .withCopyFileToContainer(
                 MountableFile.forHostPath(Resources.getResource("openlineage.yml").getPath()),
-                "/opt/flink/lib/openlineage.yml")
-            .withFileSystemBind("data/iceberg", "/tmp/warehouse/")
+                configPath)
             .withCommand(
                 "standalone-job "
                     + String.format("--job-classname %s ", jobName)
@@ -111,11 +117,16 @@ public class FlinkContainerUtils {
                     + "--output-topic io.openlineage.flink.kafka.output ")
             .withEnv(
                 "FLINK_PROPERTIES", "jobmanager.rpc.address: jobmanager\nexecution.attached: true")
-            .withEnv("OPENLINEAGE_CONFIG", "/opt/flink/lib/openlineage.yml")
+            .withEnv("OPENLINEAGE_CONFIG", configPath)
             .withStartupTimeout(Duration.of(5, ChronoUnit.MINUTES))
             .dependsOn(startables);
-
     return container;
+  }
+
+  static GenericContainer<?> makeFlinkJobManagerContainer(
+      String jobName, Network network, List<Startable> startables) {
+    return makeFlinkJobManagerContainer(
+        jobName, "/opt/flink/lib/openlineage.yml", network, startables);
   }
 
   static GenericContainer<?> makeFlinkTaskManagerContainer(
@@ -123,7 +134,7 @@ public class FlinkContainerUtils {
     return genericContainer(network, FLINK_IMAGE, "taskmanager")
         .withFileSystemBind(getOpenLineageJarPath(), "/opt/flink/lib/openlineage.jar")
         .withFileSystemBind(getExampleAppJarPath(), "/opt/flink/lib/example-app.jar")
-        .withFileSystemBind("data/iceberg", "/tmp/warehouse/")
+        .withFileSystemBind("/tmp/warehouse", "/tmp/warehouse/", BindMode.READ_WRITE)
         .withEnv(
             "FLINK_PROPERTIES",
             "jobmanager.rpc.address: jobmanager"
