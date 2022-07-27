@@ -18,7 +18,7 @@ class BashExtractor(BaseExtractor):
 
     def extract(self) -> Optional[TaskMetadata]:
         if os.environ.get(
-            "OPENLINEAGE_AIRFLOW_DISABLE_SOURCE_CODE", "False"
+            "OPENLINEAGE_AIRFLOW_DISABLE_SOURCE_CODE", "True"
         ).lower() in ('true', '1', 't'):
             return None
 

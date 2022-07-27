@@ -91,7 +91,7 @@ OpenLineage client depends on environment variables:
 * `OPENLINEAGE_URL` - point to service which will consume OpenLineage events
 * `OPENLINEAGE_API_KEY` - set if consumer of OpenLineage events requires `Bearer` authentication key
 * `OPENLINEAGE_NAMESPACE` - set if you are using something other than the `default` namespace for job namespace.
-* `OPENLINEAGE_AIRFLOW_DISABLE_SOURCE_CODE` - set to `True` if you don't want source code of callables provided to PythonOperator to be send in OpenLineage events
+* `OPENLINEAGE_AIRFLOW_DISABLE_SOURCE_CODE` - set to `False` if you want source code of callables provided in PythonOperator to be send in OpenLineage events
 
 For backwards compatibility, `openlineage-airflow` also support configuration via
 `MARQUEZ_URL`, `MARQUEZ_NAMESPACE` and `MARQUEZ_API_KEY` variables.

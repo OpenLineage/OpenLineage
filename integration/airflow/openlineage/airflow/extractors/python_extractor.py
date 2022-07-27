@@ -24,7 +24,7 @@ class PythonExtractor(BaseExtractor):
     def extract(self) -> Optional[TaskMetadata]:
         collect_source = True
         if os.environ.get(
-            "OPENLINEAGE_AIRFLOW_DISABLE_SOURCE_CODE", "False"
+            "OPENLINEAGE_AIRFLOW_DISABLE_SOURCE_CODE", "True"
         ).lower() in ('true', '1', 't'):
             collect_source = False
 
