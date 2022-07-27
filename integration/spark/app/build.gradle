@@ -127,8 +127,7 @@ def commonTestConfiguration = {
     classpath = project.sourceSets.test.runtimeClasspath
 }
 
-// wrócić do jednego test z jakąś metodą zwracającą konfigurację żeby spark3 działał
-task sparkTest(type: Test) {
+test {
     useJUnitPlatform {i ->
         excludeTags ('integration-test')
         if(!sparkVersion.startsWith('3')) {excludeTags 'spark3'}
