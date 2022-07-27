@@ -20,8 +20,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
-import io.openlineage.flink.agent.facets.CheckpointFacet;
-import io.openlineage.flink.agent.lifecycle.FlinkExecutionContext;
+import io.openlineage.flink.client.CheckpointFacet;
+import io.openlineage.flink.visitor.lifecycle.FlinkExecutionContext;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -33,7 +33,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class OpenLineageContinousJobTrackerTest {
+class OpenLineageContinousJobTrackerTest {
+
+  private static final String CHECKPOINTS = "checkpoints";
+  private static final String SECOND_CHECKPOINT = "second checkpoint";
+  private static final String CHECKPOINTS_URL = "/jobs/%s/checkpoints";
 
   WireMockServer wireMockServer = new WireMockServer(18088);
   ReadableConfig config = mock(ReadableConfig.class);
@@ -70,18 +74,18 @@ public class OpenLineageContinousJobTrackerTest {
 
   @Test
   @SneakyThrows
-  public void testStartTrackingEventsEmitted() {
+  void testStartTrackingEventsEmitted() {
     stubFor(
-        get(urlEqualTo(String.format("/jobs/%s/checkpoints", jobID.toString())))
-            .inScenario("checkpoints")
+        get(urlEqualTo(String.format(CHECKPOINTS_URL, jobID.toString())))
+            .inScenario(CHECKPOINTS)
             .whenScenarioStateIs(STARTED)
             .willReturn(aResponse().withBody(String.format(jsonCheckpointResponse, 0, 0)))
-            .willSetStateTo("second checkpoint"));
+            .willSetStateTo(SECOND_CHECKPOINT));
 
     stubFor(
-        get(urlEqualTo(String.format("/jobs/%s/checkpoints", jobID.toString())))
-            .inScenario("checkpoints")
-            .whenScenarioStateIs("second checkpoint")
+        get(urlEqualTo(String.format(CHECKPOINTS_URL, jobID.toString())))
+            .inScenario(CHECKPOINTS)
+            .whenScenarioStateIs(SECOND_CHECKPOINT)
             .willReturn(aResponse().withBody(String.format(jsonCheckpointResponse, 1, 1))));
 
     CountDownLatch methodDone = new CountDownLatch(2);
@@ -102,25 +106,25 @@ public class OpenLineageContinousJobTrackerTest {
 
   @Test
   @SneakyThrows
-  public void testTrackerContinuesToWorkWhenRestApiGoesDownForSomeTime() {
+  void testTrackerContinuesToWorkWhenRestApiGoesDownForSomeTime() {
     stubFor(
-        get(urlEqualTo(String.format("/jobs/%s/checkpoints", jobID.toString())))
-            .inScenario("checkpoints")
+        get(urlEqualTo(String.format(CHECKPOINTS_URL, jobID.toString())))
+            .inScenario(CHECKPOINTS)
             .whenScenarioStateIs(STARTED)
             .willReturn(aResponse().withBody(String.format(jsonCheckpointResponse, 0, 0)))
             .willSetStateTo("api goes down"));
 
     stubFor(
-        get(urlEqualTo(String.format("/jobs/%s/checkpoints", jobID.toString())))
-            .inScenario("checkpoints")
+        get(urlEqualTo(String.format(CHECKPOINTS_URL, jobID.toString())))
+            .inScenario(CHECKPOINTS)
             .whenScenarioStateIs("api goes down")
             .willReturn(aResponse().withStatus(403))
-            .willSetStateTo("second checkpoint"));
+            .willSetStateTo(SECOND_CHECKPOINT));
 
     stubFor(
-        get(urlEqualTo(String.format("/jobs/%s/checkpoints", jobID.toString())))
-            .inScenario("checkpoints")
-            .whenScenarioStateIs("second checkpoint")
+        get(urlEqualTo(String.format(CHECKPOINTS_URL, jobID.toString())))
+            .inScenario(CHECKPOINTS)
+            .whenScenarioStateIs(SECOND_CHECKPOINT)
             .willReturn(aResponse().withBody(String.format(jsonCheckpointResponse, 1, 1))));
 
     CountDownLatch methodDone = new CountDownLatch(2);

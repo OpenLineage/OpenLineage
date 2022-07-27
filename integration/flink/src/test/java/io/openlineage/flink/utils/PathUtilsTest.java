@@ -9,7 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 
-public class PathUtilsTest {
+class PathUtilsTest {
   @Test
   void trimSlashesTest() {
     assertThat(PathUtils.trimSlashesInName("/a/")).isEqualTo("a");

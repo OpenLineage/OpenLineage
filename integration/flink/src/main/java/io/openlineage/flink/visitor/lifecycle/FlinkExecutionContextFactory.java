@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.flink.agent.lifecycle;
+package io.openlineage.flink.visitor.lifecycle;
 
 import java.util.List;
 import org.apache.flink.api.common.JobID;

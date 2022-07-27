@@ -19,6 +19,7 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
 
   public static DatasetFactory<OpenLineage.InputDataset> input(OpenLineage client) {
     return new DatasetFactory<>(client) {
+      @Override
       public OpenLineage.Builder<OpenLineage.InputDataset> datasetBuilder(
           String name, String namespace, OpenLineage.DatasetFacets datasetFacet) {
         return client.newInputDatasetBuilder().namespace(namespace).name(name).facets(datasetFacet);
@@ -28,6 +29,7 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
 
   public static DatasetFactory<OpenLineage.OutputDataset> output(OpenLineage client) {
     return new DatasetFactory<>(client) {
+      @Override
       public OpenLineage.Builder<OpenLineage.OutputDataset> datasetBuilder(
           String name, String namespace, OpenLineage.DatasetFacets datasetFacet) {
         return client

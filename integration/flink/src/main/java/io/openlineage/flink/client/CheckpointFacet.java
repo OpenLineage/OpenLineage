@@ -3,17 +3,16 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.flink.agent.facets;
+package io.openlineage.flink.client;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.openlineage.client.OpenLineage;
-import io.openlineage.flink.agent.client.EventEmitter;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
+/** Custom facet to contain counters from Flink checkpoints. */
 @Getter
 @EqualsAndHashCode
-/** Custom facet to contain counters from Flink checkpoints. */
 public class CheckpointFacet extends OpenLineage.DefaultRunFacet {
 
   @JsonProperty("completed")

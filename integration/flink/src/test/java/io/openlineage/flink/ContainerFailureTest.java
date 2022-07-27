@@ -24,13 +24,14 @@ import org.testcontainers.containers.Network;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+@SuppressWarnings("PMD")
 @Tag("integration-test")
 @Testcontainers
 @Slf4j
-public class ContainerFailureTest {
+class ContainerFailureTest {
 
   private static final String FAKE_APPLICATION = "io.openlineage.flink.FlinkFakeApplication";
-  private static final String MOCKSERVER_PARTITION_CONFIG = "/opt/flink/lib/openlineage.yml";
+  private static final String NEW_CHECKPOINT_ENCOUNTERED = "New checkpoint encountered";
   private static final String NETWORK_PARTITION_CONFIG =
       "/opt/flink/lib/openlineage-network-partition.yml";
 
@@ -55,12 +56,12 @@ public class ContainerFailureTest {
     taskManager.start();
     await()
         .atMost(Duration.ofMinutes(5))
-        .until(() -> jobManager.getLogs().contains("New checkpoint encountered"));
+        .until(() -> jobManager.getLogs().contains(NEW_CHECKPOINT_ENCOUNTERED));
   }
 
   @Test
   @SneakyThrows
-  public void testEmitFailedNetworkPartitionDoesNotKillFlinkJob() {
+  void testEmitFailedNetworkPartitionDoesNotKillFlinkJob() {
     jobManager =
         FlinkContainerUtils.makeFlinkJobManagerContainer(
             FAKE_APPLICATION, NETWORK_PARTITION_CONFIG, network, Collections.emptyList());
@@ -70,14 +71,14 @@ public class ContainerFailureTest {
     taskManager.start();
     await()
         .atMost(Duration.ofMinutes(5))
-        .until(() -> jobManager.getLogs().contains("New checkpoint encountered"));
+        .until(() -> jobManager.getLogs().contains(NEW_CHECKPOINT_ENCOUNTERED));
 
-    runUntilCheckpoint("io.openlineage.flink.FlinkFakeApplication", NETWORK_PARTITION_CONFIG);
+    runUntilCheckpoint(FAKE_APPLICATION, NETWORK_PARTITION_CONFIG);
   }
 
   @Test
   @SneakyThrows
-  public void testCrashingLineageProviderDoesNotKillFlinkJob() {
+  void testCrashingLineageProviderDoesNotKillFlinkJob() {
     jobManager =
         FlinkContainerUtils.makeFlinkJobManagerContainer(
             FAKE_APPLICATION, NETWORK_PARTITION_CONFIG, network, Collections.emptyList());
@@ -87,14 +88,14 @@ public class ContainerFailureTest {
     taskManager.start();
     await()
         .atMost(Duration.ofMinutes(5))
-        .until(() -> jobManager.getLogs().contains("New checkpoint encountered"));
+        .until(() -> jobManager.getLogs().contains(NEW_CHECKPOINT_ENCOUNTERED));
 
-    runUntilCheckpoint("io.openlineage.flink.FlinkFakeApplication", NETWORK_PARTITION_CONFIG);
+    runUntilCheckpoint(FAKE_APPLICATION, NETWORK_PARTITION_CONFIG);
   }
 
   @Test
   @SneakyThrows
-  public void testEmitFailed500DoesNotKillFlinkJob() {
+  void testEmitFailed500DoesNotKillFlinkJob() {
     mockServerClient =
         new MockServerClient(
             openLineageClientMockContainer.getHost(),
@@ -114,9 +115,9 @@ public class ContainerFailureTest {
     taskManager.start();
     await()
         .atMost(Duration.ofMinutes(5))
-        .until(() -> jobManager.getLogs().contains("New checkpoint encountered"));
+        .until(() -> jobManager.getLogs().contains(NEW_CHECKPOINT_ENCOUNTERED));
 
-    runUntilCheckpoint("io.openlineage.flink.FlinkFakeApplication", NETWORK_PARTITION_CONFIG);
+    runUntilCheckpoint(FAKE_APPLICATION, NETWORK_PARTITION_CONFIG);
   }
 
   @AfterEach

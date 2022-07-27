@@ -15,7 +15,7 @@ import org.apache.avro.Schema;
 import org.apache.avro.SchemaBuilder;
 import org.junit.jupiter.api.Test;
 
-public class AvroSchemaUtilsTest {
+class AvroSchemaUtilsTest {
 
   Schema schema =
       SchemaBuilder.record("InputEvent")
@@ -42,7 +42,7 @@ public class AvroSchemaUtilsTest {
   OpenLineage openLineage = new OpenLineage(mock(URI.class));
 
   @Test
-  public void testConvert() {
+  void testConvert() {
     OpenLineage.SchemaDatasetFacet schemaDatasetFacet =
         AvroSchemaUtils.convert(openLineage, schema);
 

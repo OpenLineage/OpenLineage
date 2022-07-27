@@ -6,6 +6,8 @@
 package io.openlineage.flink.visitor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
@@ -26,7 +28,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-public class KafkaSourceVisitorTest {
+class KafkaSourceVisitorTest {
 
   OpenLineageContext context = mock(OpenLineageContext.class);
   KafkaSource kafkaSource = mock(KafkaSource.class);
@@ -52,14 +54,14 @@ public class KafkaSourceVisitorTest {
   }
 
   @Test
-  public void testIsDefined() {
-    assertEquals(false, kafkaSourceVisitor.isDefinedAt(mock(Object.class)));
-    assertEquals(true, kafkaSourceVisitor.isDefinedAt(mock(KafkaSource.class)));
+  void testIsDefined() {
+    assertFalse(kafkaSourceVisitor.isDefinedAt(mock(Object.class)));
+    assertTrue(kafkaSourceVisitor.isDefinedAt(mock(KafkaSource.class)));
   }
 
   @Test
   @SneakyThrows
-  public void testApply() {
+  void testApply() {
     props.put("bootstrap.servers", "server1;server2");
 
     try (MockedStatic<KafkaSourceWrapper> mockedStatic = mockStatic(KafkaSourceWrapper.class)) {
@@ -85,7 +87,7 @@ public class KafkaSourceVisitorTest {
 
   @Test
   @SneakyThrows
-  public void testApplyWhenIllegalAccessExceptionThrown() {
+  void testApplyWhenIllegalAccessExceptionThrown() {
     try (MockedStatic<KafkaSourceWrapper> mockedStatic = mockStatic(KafkaSourceWrapper.class)) {
       when(KafkaSourceWrapper.of(kafkaSource)).thenReturn(wrapper);
 

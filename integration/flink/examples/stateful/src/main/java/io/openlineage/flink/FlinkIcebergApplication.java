@@ -5,19 +5,15 @@
 
 package io.openlineage.flink;
 
-import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.core.execution.JobListener;
-import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.data.RowData;
-import org.apache.iceberg.flink.CatalogLoader;
 import org.apache.iceberg.flink.TableLoader;
 import org.apache.iceberg.flink.sink.FlinkSink;
 import org.apache.iceberg.flink.source.FlinkSource;
 
 import static io.openlineage.flink.StreamEnvironment.setupEnv;
-import static org.apache.flink.streaming.api.environment.CheckpointConfig.ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION;
 
 public class FlinkIcebergApplication {
 

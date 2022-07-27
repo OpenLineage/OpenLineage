@@ -13,7 +13,7 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import static org.apache.flink.streaming.api.environment.CheckpointConfig.ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION;
 
 public class StreamEnvironment {
-  public static StreamExecutionEnvironment setupEnv(String[] args) {
+  public static StreamExecutionEnvironment setupEnv(String... args) {
     ParameterTool parameters = ParameterTool.fromArgs(args);
     StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 

@@ -3,16 +3,16 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.flink.agent.lifecycle;
+package io.openlineage.flink.visitor.lifecycle;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.flink.SinkLineage;
 import io.openlineage.flink.TransformationUtils;
-import io.openlineage.flink.agent.client.EventEmitter;
-import io.openlineage.flink.agent.facets.CheckpointFacet;
 import io.openlineage.flink.api.OpenLineageContext;
+import io.openlineage.flink.client.CheckpointFacet;
+import io.openlineage.flink.client.EventEmitter;
 import io.openlineage.flink.visitor.Visitor;
 import io.openlineage.flink.visitor.VisitorFactory;
 import io.openlineage.flink.visitor.VisitorFactoryImpl;

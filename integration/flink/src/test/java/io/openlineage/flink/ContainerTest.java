@@ -31,10 +31,11 @@ import org.testcontainers.containers.Network;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+@SuppressWarnings("PMD")
 @Tag("integration-test")
 @Testcontainers
 @Slf4j
-public class ContainerTest {
+class ContainerTest {
 
   private static final Network network = Network.newNetwork();
   private static MockServerClient mockServerClient;
@@ -136,7 +137,7 @@ public class ContainerTest {
 
   @Test
   @SneakyThrows
-  public void testOpenLineageEventSentForKafkaJob() {
+  void testOpenLineageEventSentForKafkaJob() {
     runUntilCheckpoint("io.openlineage.flink.FlinkStatefulApplication");
     mockServerClient.verify(
         getEvent("events/expected_kafka.json"), getEvent("events/expected_kafka_checkpoints.json"));
@@ -144,21 +145,21 @@ public class ContainerTest {
 
   @Test
   @SneakyThrows
-  public void testOpenLineageEventSentForLegacyKafkaJob() {
+  void testOpenLineageEventSentForLegacyKafkaJob() {
     runUntilCheckpoint("io.openlineage.flink.FlinkStatefulApplication");
     mockServerClient.verify(getEvent("events/expected_legacy_kafka.json"));
   }
 
   @Test
   @SneakyThrows
-  public void testOpenLineageEventSentForIcebergJob() {
+  void testOpenLineageEventSentForIcebergJob() {
     runUntilCheckpoint("io.openlineage.flink.FlinkIcebergApplication");
     mockServerClient.verify(getEvent("events/expected_iceberg.json"));
   }
 
   @Test
   @SneakyThrows
-  public void testOpenLineageFailedEventSentForFailedJob() {
+  void testOpenLineageFailedEventSentForFailedJob() {
     runUntilFailed("io.openlineage.flink.FlinkFailedApplication");
     mockServerClient.verify(getEvent("events/expected_failed.json"));
   }

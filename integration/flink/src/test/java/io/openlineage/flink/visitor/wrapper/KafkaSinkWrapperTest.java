@@ -26,7 +26,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-public class KafkaSinkWrapperTest {
+class KafkaSinkWrapperTest {
 
   private Properties props = mock(Properties.class);
   private static Schema schema =
@@ -60,13 +60,13 @@ public class KafkaSinkWrapperTest {
   }
 
   @Test
-  public void testGetProducerConfig() {
+  void testGetProducerConfig() {
     assertEquals(props, wrapper.getKafkaProducerConfig());
   }
 
   @Test
   @SneakyThrows
-  public void testGetKafkaTopic() {
+  void testGetKafkaTopic() {
     Function<?, ?> topicSelector = mock(Function.class);
     Function noArgFunction = mock(Function.class);
     try (MockedStatic<WrapperUtils> mockedStatic = mockStatic(WrapperUtils.class)) {
@@ -82,7 +82,7 @@ public class KafkaSinkWrapperTest {
   }
 
   @Test
-  public void testGetAvroSchema() {
+  void testGetAvroSchema() {
     try (MockedStatic<WrapperUtils> mockedStatic = mockStatic(WrapperUtils.class)) {
       RegistryAvroSerializationSchema avroSerializationSchema =
           mock(RegistryAvroSerializationSchema.class);
@@ -103,7 +103,7 @@ public class KafkaSinkWrapperTest {
   }
 
   @Test
-  public void testGetAvroSchemaWhenNoValueSerializationSchemaPresent() {
+  void testGetAvroSchemaWhenNoValueSerializationSchemaPresent() {
     try (MockedStatic<WrapperUtils> mockedStatic = mockStatic(WrapperUtils.class)) {
       when(WrapperUtils.getFieldValue(
               serializationSchema.getClass(), serializationSchema, "valueSerializationSchema"))
@@ -114,7 +114,7 @@ public class KafkaSinkWrapperTest {
   }
 
   @Test
-  public void testGetAvroSchemaWhenNoDatumWriterPresent() {
+  void testGetAvroSchemaWhenNoDatumWriterPresent() {
     try (MockedStatic<WrapperUtils> mockedStatic = mockStatic(WrapperUtils.class)) {
       RegistryAvroSerializationSchema avroSerializationSchema =
           mock(RegistryAvroSerializationSchema.class);

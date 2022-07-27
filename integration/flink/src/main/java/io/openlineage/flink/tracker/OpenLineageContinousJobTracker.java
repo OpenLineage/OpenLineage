@@ -7,9 +7,9 @@ package io.openlineage.flink.tracker;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.openlineage.flink.agent.facets.CheckpointFacet;
-import io.openlineage.flink.agent.lifecycle.FlinkExecutionContext;
+import io.openlineage.flink.client.CheckpointFacet;
 import io.openlineage.flink.tracker.restapi.Checkpoints;
+import io.openlineage.flink.visitor.lifecycle.FlinkExecutionContext;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Optional;

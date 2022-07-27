@@ -5,11 +5,10 @@
 
 package io.openlineage.flink;
 
-import io.openlineage.flink.agent.ArgumentParser;
-import io.openlineage.flink.agent.lifecycle.FlinkExecutionContext;
-import io.openlineage.flink.agent.lifecycle.FlinkExecutionContextFactory;
 import io.openlineage.flink.tracker.OpenLineageContinousJobTracker;
 import io.openlineage.flink.tracker.OpenLineageContinousJobTrackerFactory;
+import io.openlineage.flink.visitor.lifecycle.FlinkExecutionContext;
+import io.openlineage.flink.visitor.lifecycle.FlinkExecutionContextFactory;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -72,9 +71,6 @@ public class OpenLineageFlinkJobListener implements JobListener {
     Field transformationsField =
         FieldUtils.getField(StreamExecutionEnvironment.class, "transformations", true);
     try {
-      ArgumentParser args =
-          ArgumentParser.parseConfiguration(
-              executionEnvironment.getConfig().getGlobalJobParameters().toMap());
       List<Transformation<?>> transformations =
           ((ArchivedList<Transformation<?>>) transformationsField.get(executionEnvironment))
               .getValue();
@@ -116,7 +112,7 @@ public class OpenLineageFlinkJobListener implements JobListener {
     } else {
       // We don't have jobId when failed, so we need to assume that only existing context is that
       // job
-      if (jobContexts.size() == 1) {
+      if (jobContexts.size() == 1) { // NOPMD
         Map.Entry<JobID, FlinkExecutionContext> entry =
             jobContexts.entrySet().stream().findFirst().get();
         jobContexts.remove(entry.getKey()).onJobFailed(throwable);
