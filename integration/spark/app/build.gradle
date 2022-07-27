@@ -153,8 +153,6 @@ task integrationTest(type: Test) {
         includeTags "integration-test"
         if(!sparkVersion.startsWith('3')) {excludeTags 'spark3'}
     }
-
-
 }
 
 spotless {
