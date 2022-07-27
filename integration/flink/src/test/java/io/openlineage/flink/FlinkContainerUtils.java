@@ -106,7 +106,7 @@ public class FlinkContainerUtils {
             .withExposedPorts(8081)
             .withFileSystemBind(getOpenLineageJarPath(), "/opt/flink/lib/openlineage.jar")
             .withFileSystemBind(getExampleAppJarPath(), "/opt/flink/lib/example-app.jar")
-            .withFileSystemBind("/tmp/warehouse", "/tmp/warehouse/", BindMode.READ_WRITE)
+            .withFileSystemBind("data/iceberg/db", "/tmp/warehouse/", BindMode.READ_WRITE)
             .withCopyFileToContainer(
                 MountableFile.forHostPath(Resources.getResource("openlineage.yml").getPath()),
                 configPath)
@@ -134,7 +134,7 @@ public class FlinkContainerUtils {
     return genericContainer(network, FLINK_IMAGE, "taskmanager")
         .withFileSystemBind(getOpenLineageJarPath(), "/opt/flink/lib/openlineage.jar")
         .withFileSystemBind(getExampleAppJarPath(), "/opt/flink/lib/example-app.jar")
-        .withFileSystemBind("/tmp/warehouse", "/tmp/warehouse/", BindMode.READ_WRITE)
+        .withCopyFileToContainer(MountableFile.forHostPath("data/iceberg/"), "/tmp/warehouse/")
         .withEnv(
             "FLINK_PROPERTIES",
             "jobmanager.rpc.address: jobmanager"
