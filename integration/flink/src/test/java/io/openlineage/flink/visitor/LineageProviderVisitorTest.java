@@ -6,21 +6,22 @@
 package io.openlineage.flink.visitor;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.flink.agent.client.EventEmitter;
 import io.openlineage.flink.api.DatasetFactory;
 import io.openlineage.flink.api.OpenLineageContext;
+import io.openlineage.flink.client.EventEmitter;
 import java.util.Collections;
 import java.util.List;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class LineageProviderVisitorTest {
+class LineageProviderVisitorTest {
   OpenLineageContext context = mock(OpenLineageContext.class);
   LineageProviderVisitor<OpenLineage.InputDataset> visitor;
   OpenLineage openLineage = new OpenLineage(EventEmitter.OPEN_LINEAGE_CLIENT_URI);
@@ -33,13 +34,13 @@ public class LineageProviderVisitorTest {
   }
 
   @Test
-  public void testIsDefined() {
-    assertEquals(false, visitor.isDefinedAt(mock(Object.class)));
-    assertEquals(true, visitor.isDefinedAt(mock(ExampleLineageProvider.class)));
+  void testIsDefined() {
+    assertFalse(visitor.isDefinedAt(mock(Object.class)));
+    assertTrue(visitor.isDefinedAt(mock(ExampleLineageProvider.class)));
   }
 
   @Test
-  public void testApply() {
+  void testApply() {
     OpenLineage.SchemaDatasetFacet schemaDatasetFacet =
         openLineage.newSchemaDatasetFacet(
             Collections.singletonList(

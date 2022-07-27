@@ -16,6 +16,7 @@ import org.apache.commons.lang3.reflect.FieldUtils;
  * org.apache.commons.lang3.reflect.FieldUtils} and {@link
  * org.apache.commons.lang3.reflect.MethodUtils}
  */
+@SuppressWarnings("PMD")
 @Slf4j
 public class WrapperUtils {
 

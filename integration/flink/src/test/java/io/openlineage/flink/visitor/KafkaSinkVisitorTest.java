@@ -6,6 +6,8 @@
 package io.openlineage.flink.visitor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
@@ -25,7 +27,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-public class KafkaSinkVisitorTest {
+class KafkaSinkVisitorTest {
 
   OpenLineageContext context = mock(OpenLineageContext.class);
   KafkaSinkVisitor visitor = new KafkaSinkVisitor(context);
@@ -52,14 +54,14 @@ public class KafkaSinkVisitorTest {
   }
 
   @Test
-  public void testIsDefined() {
-    assertEquals(false, visitor.isDefinedAt(mock(Object.class)));
-    assertEquals(true, visitor.isDefinedAt(mock(KafkaSink.class)));
+  void testIsDefined() {
+    assertFalse(visitor.isDefinedAt(mock(Object.class)));
+    assertTrue(visitor.isDefinedAt(mock(KafkaSink.class)));
   }
 
   @Test
   @SneakyThrows
-  public void testApply() {
+  void testApply() {
     try (MockedStatic<KafkaSinkWrapper> mockedStatic = mockStatic(KafkaSinkWrapper.class)) {
       when(KafkaSinkWrapper.of(kafkaSink)).thenReturn(wrapper);
 
@@ -82,7 +84,7 @@ public class KafkaSinkVisitorTest {
 
   @Test
   @SneakyThrows
-  public void testApplyWhenIllegalAccessExceptionThrown() {
+  void testApplyWhenIllegalAccessExceptionThrown() {
     try (MockedStatic<KafkaSinkWrapper> mockedStatic = mockStatic(KafkaSinkWrapper.class)) {
       when(KafkaSinkWrapper.of(kafkaSink)).thenReturn(wrapper);
 

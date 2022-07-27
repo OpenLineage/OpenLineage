@@ -26,6 +26,8 @@ import static io.openlineage.common.config.ConfigWrapper.fromResource;
 
 public class KafkaClientProvider {
 
+    private final static String SCHEMA_REGISTRY_URL = "http://schema-registry:8081";
+
     private KafkaClientProvider() {
     }
 
@@ -35,7 +37,7 @@ public class KafkaClientProvider {
                 .setProperties(fromResource("kafka-consumer.conf").toProperties())
                 .setBootstrapServers("kafka:9092")
                 .setValueOnlyDeserializer(ConfluentRegistryAvroDeserializationSchema
-                        .forSpecific(InputEvent.class, "http://schema-registry:8081"))
+                        .forSpecific(InputEvent.class, SCHEMA_REGISTRY_URL))
                 .build();
     }
 
@@ -43,7 +45,7 @@ public class KafkaClientProvider {
     public static FlinkKafkaConsumer<InputEvent> legacyKafkaSource(String... topics) {
         return new FlinkKafkaConsumer(
           Arrays.asList(topics),
-          ConfluentRegistryAvroDeserializationSchema.forSpecific(InputEvent.class, "http://schema-registry:8081"),
+          ConfluentRegistryAvroDeserializationSchema.forSpecific(InputEvent.class, SCHEMA_REGISTRY_URL),
           fromResource("kafka-consumer.conf").toProperties()
         );
     }
@@ -54,7 +56,7 @@ public class KafkaClientProvider {
                 .setBootstrapServers("kafka:9092")
                 .setRecordSerializer(KafkaRecordSerializationSchema.builder()
                         .setValueSerializationSchema(ConfluentRegistryAvroSerializationSchema
-                                .forSpecific(OutputEvent.class, topic, "http://schema-registry:8081"))
+                                .forSpecific(OutputEvent.class, topic, SCHEMA_REGISTRY_URL))
                         .setTopic(topic)
                         .build())
                 .build();
@@ -64,7 +66,7 @@ public class KafkaClientProvider {
         return new FlinkKafkaProducer<OutputEvent>(
           topic,
           ConfluentRegistryAvroSerializationSchema
-            .forSpecific(OutputEvent.class, topic, "http://schema-registry:8081"),
+            .forSpecific(OutputEvent.class, topic, SCHEMA_REGISTRY_URL),
           fromResource("kafka-producer.conf").toProperties()
         );
     }

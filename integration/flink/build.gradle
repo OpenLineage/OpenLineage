@@ -4,23 +4,31 @@
 
 import org.apache.tools.ant.filters.ReplaceTokens
 
-buildscript {
-    repositories {
-        maven {
-            url 'https://plugins.gradle.org/m2/'
-        }
-    }
-    dependencies {
-        classpath 'com.adarshr:gradle-test-logger-plugin:2.1.1'
-        classpath 'com.github.jengelman.gradle.plugins:shadow:6.1.0'
-        classpath 'com.diffplug.spotless:spotless-plugin-gradle:5.12.1'
-    }
-}
-
 plugins {
+    id 'java'
+    id 'java-library'
     id 'maven-publish'
     id 'signing'
+    id 'jacoco'
+    id "com.adarshr.test-logger" version "2.1.1"
+    id 'com.diffplug.spotless' version '5.12.1'
     id "com.github.johnrengelman.shadow" version "7.1.2"
+    id "pmd"
+}
+
+pmd {
+    consoleOutput = true
+    toolVersion = "6.46.0"
+    rulesMinimumPriority = 5
+    ruleSetFiles = rootProject.files("pmd-openlineage.xml")
+    ruleSets = []
+    ignoreFailures = true
+}
+
+pmdMain {
+    reports {
+        html.required = true
+    }
 }
 
 repositories {
@@ -37,13 +45,6 @@ repositories {
 configurations {
     lombok
 }
-
-apply plugin: 'jacoco'
-apply plugin: 'java'
-apply plugin: 'java-library'
-apply plugin: 'com.adarshr.test-logger'
-apply plugin: 'com.github.johnrengelman.shadow'
-apply plugin: "com.diffplug.spotless"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_11
@@ -97,13 +98,13 @@ dependencies {
     testImplementation 'com.github.tomakehurst:wiremock:2.27.2'
     testImplementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.17.2'
 
-    testCompile "org.assertj:assertj-core:${assertjVersion}"
-    testCompile "org.junit.jupiter:junit-jupiter:${junit5Version}"
-    testCompile "org.junit.jupiter:junit-jupiter-params:${junit5Version}"
-    testCompile "org.mockito:mockito-core:${mockitoVersion}"
-    testCompile "org.mockito:mockito-inline:${mockitoVersion}"
-    testCompile "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
-    testCompile "org.projectlombok:lombok:${lombokVersion}"
+    testImplementation "org.assertj:assertj-core:${assertjVersion}"
+    testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
+    testImplementation "org.junit.jupiter:junit-jupiter-params:${junit5Version}"
+    testImplementation "org.mockito:mockito-core:${mockitoVersion}"
+    testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
+    testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
+    testImplementation "org.projectlombok:lombok:${lombokVersion}"
 
     lombok  "org.projectlombok:lombok:${lombokVersion}"
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
@@ -273,16 +274,19 @@ shadowJar {
     minimize()
     classifier = ''
     // avoid conflict with any client version of that lib
+    relocate 'com.fasterxml.jackson', 'io.openlineage.flink.shaded.com.fasterxml.jackson'
     relocate 'com.github.ok2c.hc5', 'io.openlineage.flink.shaded.com.github.ok2c.hc5'
     relocate 'org.apache.httpcomponents.client5', 'io.openlineage.flink.shaded.org.apache.httpcomponents.client5'
     relocate 'org.apache.http', 'io.openlineage.flink.shaded.org.apache.http'
     relocate 'javassist', 'io.openlineage.flink.shaded.javassist'
+    relocate 'org.yaml', 'io.openlineage.flink.shaded.org.yaml'
     relocate 'org.apache.hc', 'io.openlineage.flink.shaded.org.apache.hc'
     relocate 'org.apache.commons.codec', 'io.openlineage.flink.shaded.org.apache.commons.codec'
     dependencies {
         exclude(dependency('org.slf4j::'))
     }
 
+    classifier = ''
     exclude 'org/apache/commons/logging/**'
 
     manifest {
@@ -305,9 +309,9 @@ assemble {
 
 task createVersionProperties(dependsOn: processResources) {
     doLast {
-        File dir = new File("$buildDir/resources/main/io/openlineage/flink/agent/client/")
+        File dir = new File("$buildDir/resources/main/io/openlineage/flink/client/")
         dir.mkdirs()
-        new File("$buildDir/resources/main/io/openlineage/flink/agent/client/version.properties").withWriter { w ->
+        new File("$buildDir/resources/main/io/openlineage/flink/client/version.properties").withWriter { w ->
             Properties p = new Properties()
             p['version'] = project.version.toString()
             p.store w, null

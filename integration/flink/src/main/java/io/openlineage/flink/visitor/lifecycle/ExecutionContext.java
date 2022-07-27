@@ -3,9 +3,9 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.flink.agent.lifecycle;
+package io.openlineage.flink.visitor.lifecycle;
 
-import io.openlineage.flink.agent.facets.CheckpointFacet;
+import io.openlineage.flink.client.CheckpointFacet;
 import org.apache.flink.api.common.JobExecutionResult;
 
 public interface ExecutionContext {

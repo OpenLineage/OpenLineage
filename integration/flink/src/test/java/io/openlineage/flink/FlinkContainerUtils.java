@@ -176,7 +176,7 @@ public class FlinkContainerUtils {
           System.err.write(prefixEachLine(prefix, of.getUtf8String()).getBytes());
           break;
         case END:
-          System.out.println(of.getUtf8String());
+          System.out.println(of.getUtf8String()); // NOPMD
           break;
       }
     } catch (IOException ioe) {
@@ -206,7 +206,7 @@ public class FlinkContainerUtils {
   }
 
   private static String getRegistryImage() {
-    if (System.getProperty("os.arch").equals("aarch64")) {
+    if ("aarch64".equals(System.getProperty("os.arch"))) {
       return "eugenetea/schema-registry-arm64:latest";
     }
     return "confluentinc/cp-schema-registry:" + CONFLUENT_VERSION;

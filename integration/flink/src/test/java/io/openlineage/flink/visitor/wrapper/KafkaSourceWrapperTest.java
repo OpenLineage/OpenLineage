@@ -24,8 +24,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.shaded.org.apache.commons.lang.reflect.FieldUtils;
 
-public class KafkaSourceWrapperTest {
+class KafkaSourceWrapperTest {
 
+  private static final String DESERIALIZATION_SCHEMA = "deserializationSchema";
   private KafkaSubscriber kafkaSubscriber = mock(KafkaSubscriber.class);
   private Properties props = mock(Properties.class);
   private KafkaRecordDeserializationSchema deserializationSchema =
@@ -48,25 +49,25 @@ public class KafkaSourceWrapperTest {
 
   @Test
   @SneakyThrows
-  public void testGetSubscriber() {
+  void testGetSubscriber() {
     assertEquals(kafkaSubscriber, wrapper.getSubscriber());
   }
 
   @Test
   @SneakyThrows
-  public void testGetProps() {
+  void testGetProps() {
     assertEquals(props, wrapper.getProps());
   }
 
   @Test
   @SneakyThrows
-  public void testGetDeserializationSchema() {
+  void testGetDeserializationSchema() {
     assertEquals(deserializationSchema, wrapper.getDeserializationSchema());
   }
 
   @Test
   @SneakyThrows
-  public void testGetAvroSchema() {
+  void testGetAvroSchema() {
     KafkaRecordDeserializationSchema deserializationSchema =
         (KafkaRecordDeserializationSchema)
             mock(
@@ -79,33 +80,32 @@ public class KafkaSourceWrapperTest {
     when(typeInformation.getTypeClass())
         .thenReturn(this.getClass()); // test class contains getClassSchema method
 
-    FieldUtils.writeField(kafkaSource, "deserializationSchema", deserializationSchema, true);
+    FieldUtils.writeField(kafkaSource, DESERIALIZATION_SCHEMA, deserializationSchema, true);
     FieldUtils.writeField(
-        deserializationSchema, "deserializationSchema", avroDeserializationSchema, true);
+        deserializationSchema, DESERIALIZATION_SCHEMA, avroDeserializationSchema, true);
 
     assertEquals(Optional.of(schema), wrapper.getAvroSchema());
   }
 
   @Test
   @SneakyThrows
-  public void testGetAvroSchemaForNonAvroDeserializationSchema() {
+  void testGetAvroSchemaForNonAvroDeserializationSchema() {
     KafkaRecordDeserializationSchema deserializationSchema =
         (KafkaRecordDeserializationSchema)
             mock(
                 Class.forName(
                     "org.apache.flink.connector.kafka.source.reader.deserializer.KafkaValueOnlyDeserializationSchemaWrapper"));
-    AvroDeserializationSchema avroDeserializationSchema = mock(AvroDeserializationSchema.class);
 
-    FieldUtils.writeField(kafkaSource, "deserializationSchema", deserializationSchema, true);
+    FieldUtils.writeField(kafkaSource, DESERIALIZATION_SCHEMA, deserializationSchema, true);
     FieldUtils.writeField(
-        deserializationSchema, "deserializationSchema", mock(DeserializationSchema.class), true);
+        deserializationSchema, DESERIALIZATION_SCHEMA, mock(DeserializationSchema.class), true);
 
     assertEquals(Optional.empty(), wrapper.getAvroSchema());
   }
 
   @Test
   @SneakyThrows
-  public void testGetAvroSchemaForEmptyDeserializationSchema() {
+  void testGetAvroSchemaForEmptyDeserializationSchema() {
     assertEquals(Optional.empty(), wrapper.getAvroSchema());
   }
 

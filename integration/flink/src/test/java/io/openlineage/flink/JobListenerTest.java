@@ -14,11 +14,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.openlineage.flink.agent.lifecycle.FlinkExecutionContext;
-import io.openlineage.flink.agent.lifecycle.FlinkExecutionContextFactory;
 import io.openlineage.flink.tracker.OpenLineageContinousJobTracker;
+import io.openlineage.flink.visitor.lifecycle.FlinkExecutionContext;
+import io.openlineage.flink.visitor.lifecycle.FlinkExecutionContextFactory;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.flink.api.common.ExecutionConfig;
@@ -32,11 +33,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-public class JobListenerTest {
+class JobListenerTest {
 
   JobClient jobClient = mock(JobClient.class);
   JobID jobId = mock(JobID.class);
-  ArrayList<Transformation<?>> transformations = new ArrayList<>();
+  List<Transformation<?>> transformations = new ArrayList<>();
   OpenLineageFlinkJobListener listener;
   FlinkExecutionContext context = mock(FlinkExecutionContext.class);
   ReadableConfig readableConfig = mock(ReadableConfig.class);
@@ -50,7 +51,7 @@ public class JobListenerTest {
 
   @Test
   @SneakyThrows
-  public void testOnJobSubmitted() {
+  void testOnJobSubmitted() {
     StreamExecutionEnvironment streamExecutionEnvironment = new StreamExecutionEnvironment();
     FieldUtils.writeField(
         FieldUtils.getField(StreamExecutionEnvironment.class, "transformations", true),
@@ -74,9 +75,10 @@ public class JobListenerTest {
     }
   }
 
+  @SuppressWarnings("PMD")
   @Test
   @SneakyThrows
-  public void testOnJobExecuted() {
+  void testOnJobExecuted() {
     StreamExecutionEnvironment streamExecutionEnvironment = mock(StreamExecutionEnvironment.class);
     ExecutionConfig.GlobalJobParameters globalJobParameters =
         mock(ExecutionConfig.GlobalJobParameters.class);

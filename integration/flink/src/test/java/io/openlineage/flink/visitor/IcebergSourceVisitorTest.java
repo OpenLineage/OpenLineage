@@ -6,14 +6,16 @@
 package io.openlineage.flink.visitor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.flink.agent.client.EventEmitter;
 import io.openlineage.flink.api.OpenLineageContext;
+import io.openlineage.flink.client.EventEmitter;
 import io.openlineage.flink.visitor.wrapper.IcebergSourceWrapper;
 import java.util.Collections;
 import java.util.List;
@@ -25,7 +27,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-public class IcebergSourceVisitorTest {
+class IcebergSourceVisitorTest {
   OpenLineageContext context = mock(OpenLineageContext.class);
   StreamingMonitorFunction icebergSource = mock(StreamingMonitorFunction.class);
   IcebergSourceWrapper wrapper = mock(IcebergSourceWrapper.class);
@@ -39,14 +41,14 @@ public class IcebergSourceVisitorTest {
   }
 
   @Test
-  public void testIsDefined() {
-    assertEquals(false, icebergSourceVisitor.isDefinedAt(mock(Object.class)));
-    assertEquals(true, icebergSourceVisitor.isDefinedAt(mock(StreamingMonitorFunction.class)));
+  void testIsDefined() {
+    assertFalse(icebergSourceVisitor.isDefinedAt(mock(Object.class)));
+    assertTrue(icebergSourceVisitor.isDefinedAt(mock(StreamingMonitorFunction.class)));
   }
 
   @Test
   @SneakyThrows
-  public void testApply() {
+  void testApply() {
     Table table = mock(Table.class, RETURNS_DEEP_STUBS);
 
     try (MockedStatic<IcebergSourceWrapper> mockedStatic = mockStatic(IcebergSourceWrapper.class)) {

@@ -6,6 +6,8 @@
 package io.openlineage.flink.visitor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
@@ -26,7 +28,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-public class FlinkKafkaConsumerVisitorTest {
+class FlinkKafkaConsumerVisitorTest {
 
   OpenLineageContext context = mock(OpenLineageContext.class);
   FlinkKafkaConsumer flinkKafkaConsumer = mock(FlinkKafkaConsumer.class);
@@ -52,14 +54,14 @@ public class FlinkKafkaConsumerVisitorTest {
   }
 
   @Test
-  public void testIsDefined() {
-    assertEquals(false, flinkKafkaConsumerVisitor.isDefinedAt(mock(Object.class)));
-    assertEquals(true, flinkKafkaConsumerVisitor.isDefinedAt(mock(FlinkKafkaConsumer.class)));
+  void testIsDefined() {
+    assertFalse(flinkKafkaConsumerVisitor.isDefinedAt(mock(Object.class)));
+    assertTrue(flinkKafkaConsumerVisitor.isDefinedAt(mock(FlinkKafkaConsumer.class)));
   }
 
   @Test
   @SneakyThrows
-  public void testApply() {
+  void testApply() {
     props.put("bootstrap.servers", "server1;server2");
 
     try (MockedStatic<FlinkKafkaConsumerWrapper> mockedStatic =
@@ -87,7 +89,7 @@ public class FlinkKafkaConsumerVisitorTest {
 
   @Test
   @SneakyThrows
-  public void testApplyWhenIllegalAccessExceptionThrown() {
+  void testApplyWhenIllegalAccessExceptionThrown() {
     try (MockedStatic<FlinkKafkaConsumerWrapper> mockedStatic =
         mockStatic(FlinkKafkaConsumerWrapper.class)) {
       when(FlinkKafkaConsumerWrapper.of(flinkKafkaConsumer)).thenReturn(wrapper);

@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.flink.agent.client;
+package io.openlineage.flink.client;
 
 import io.openlineage.client.Clients;
 import io.openlineage.client.OpenLineage;
