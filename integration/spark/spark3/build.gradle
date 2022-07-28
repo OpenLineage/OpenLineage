@@ -41,7 +41,7 @@ archivesBaseName='openlineage-spark-spark3'
 
 ext {
     bigqueryVersion = '0.21.1'
-    sparkVersion = '3.1.2'
+    sparkVersion = '3.1.3'
     jacksonVersion = '2.10.0'
     lombokVersion = '1.18.20'
 }
