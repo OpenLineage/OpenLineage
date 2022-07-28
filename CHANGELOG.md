@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.11.0...HEAD)
+* Spark 3.3.0 support added [`#950`](https://github.com/OpenLineage/OpenLineage/pull/950)[@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
 
 ## [0.11.0](https://github.com/OpenLineage/OpenLineage/compare/0.10.0...0.11.0) 2022-07-07
 ### Added

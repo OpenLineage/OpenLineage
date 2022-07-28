@@ -91,17 +91,17 @@ class OpenLineageSparkListenerTest {
         new StaticExecutionContextFactory(emitter)
             .createSparkSQLExecutionContext(1L, emitter, qe, olContext);
 
-    executionContext.start(
-        new SparkListenerSQLExecutionStart(
-            1L,
-            "",
-            "",
-            "",
+    SparkListenerSQLExecutionStart event = mock(SparkListenerSQLExecutionStart.class);
+    when(event.sparkPlanInfo())
+        .thenReturn(
             new SparkPlanInfo(
-                "name", "string", Seq$.MODULE$.empty(), Map$.MODULE$.empty(), Seq$.MODULE$.empty()),
-            1L));
-    executionContext.start(
-        new SparkListenerJobStart(0, 2L, Seq$.MODULE$.<StageInfo>empty(), new Properties()));
+                "name",
+                "string",
+                Seq$.MODULE$.empty(),
+                Map$.MODULE$.empty(),
+                Seq$.MODULE$.empty()));
+    when(event.executionId()).thenReturn(1L);
+    executionContext.start(event);
 
     ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
