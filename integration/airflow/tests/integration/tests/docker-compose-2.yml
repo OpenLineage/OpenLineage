@@ -29,6 +29,7 @@ x-airflow-base: &airflow-base
     BIGQUERY_PREFIX: ${BIGQUERY_PREFIX}
     DBT_DATASET_PREFIX: ${DBT_DATASET_PREFIX}_dbt
     GOOGLE_APPLICATION_CREDENTIALS: /opt/config/gcloud/gcloud-service-key.json
+    OPENLINEAGE_AIRFLOW_DISABLE_SOURCE_CODE: "false"
     OPENLINEAGE_URL: http://backend:5000
     OPENLINEAGE_NAMESPACE: food_delivery
     OPENLINEAGE_EXTRACTORS: custom_extractor.CustomExtractor
