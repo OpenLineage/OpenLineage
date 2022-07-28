@@ -1,0 +1,136 @@
+import org.apache.tools.ant.filters.ReplaceTokens
+import groovy.io.FileType
+
+import java.nio.file.Files
+
+
+plugins {
+    id 'java'
+    id 'java-library'
+    id 'java-test-fixtures'
+    id 'com.diffplug.spotless' version '5.12.1'
+    id "com.adarshr.test-logger" version "2.1.1"
+    id "com.github.johnrengelman.shadow" version "7.1.2"
+    id "pmd"
+}
+
+pmd {
+    consoleOutput = true
+    toolVersion = "6.46.0"
+    rulesMinimumPriority = 5
+    ruleSetFiles = rootProject.files("pmd-openlineage.xml")
+    ruleSets = []
+    ignoreFailures = true
+}
+
+pmdMain {
+    reports {
+        html.required = true
+    }
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven {
+        url = 'https://datakin.jfrog.io/artifactory/maven-public-libs-snapshot'
+    }
+}
+
+archivesBaseName='openlineage-spark-spark3'
+
+ext {
+    sparkVersion = '3.3.0'
+    jacksonVersion = '2.10.0'
+    lombokVersion = '1.18.20'
+}
+
+dependencies {
+    compileOnly "org.projectlombok:lombok:${lombokVersion}"
+    annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+    testCompileOnly "org.projectlombok:lombok:${lombokVersion}"
+    testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+
+    implementation(project(":shared"))
+    implementation(project(":spark3"))
+
+    compileOnly "org.apache.spark:spark-core_2.12:${sparkVersion}"
+    compileOnly "org.apache.spark:spark-sql_2.12:${sparkVersion}"
+    compileOnly "org.apache.spark:spark-hive_2.12:${sparkVersion}"
+    compileOnly "org.apache.spark:spark-sql-kafka-0-10_2.12:${sparkVersion}"
+    compileOnly "org.apache.iceberg:iceberg-spark-runtime-3.3_2.12:0.14.0"
+
+    testFixturesApi "com.fasterxml.jackson.module:jackson-module-scala_2.12:${jacksonVersion}"
+    testFixturesApi "org.apache.spark:spark-core_2.12:${sparkVersion}"
+    testFixturesApi "org.apache.spark:spark-sql_2.12:${sparkVersion}"
+    testFixturesApi "org.apache.spark:spark-hive_2.12:${sparkVersion}"
+    testFixturesApi "org.apache.spark:spark-catalyst_2.12:${sparkVersion}"
+    testFixturesApi "org.apache.spark:spark-sql-kafka-0-10_2.12:${sparkVersion}"
+    testFixturesApi "org.apache.iceberg:iceberg-spark-runtime-3.3_2.12:0.14.0"
+    testImplementation(testFixtures(project(":shared")))
+    testImplementation(testFixtures(project(":spark3")))
+}
+
+def commonTestConfiguration = {
+    forkEvery 1
+    maxParallelForks 5
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = true
+    }
+    systemProperties = [
+        'junit.platform.output.capture.stdout': 'true',
+        'junit.platform.output.capture.stderr': 'true',
+        'spark.version'                       : "${sparkVersion}",
+        'openlineage.spark.jar'               : "${archivesBaseName}-${project.version}.jar",
+        'kafka.package.version'               : "org.apache.spark:spark-sql-kafka-0-10_2.12:${sparkVersion}",
+        'mockserver.logLevel'                 : 'ERROR'
+    ]
+
+    classpath = project.sourceSets.test.runtimeClasspath
+}
+
+
+test {
+    configure commonTestConfiguration
+    useJUnitPlatform {
+        excludeTags 'integration-test'
+    }
+}
+
+task integrationTest(type: Test) {
+    configure commonTestConfiguration
+    useJUnitPlatform {
+        includeTags "integration-test"
+    }
+}
+
+assemble {
+    dependsOn shadowJar
+}
+
+
+shadowJar {
+    minimize()
+    classifier = ''
+    dependencies {
+        exclude(dependency('org.slf4j::'))
+    }
+    zip64 true
+}
+
+spotless {
+    def disallowWildcardImports = {
+        String text = it
+        def regex = ~/import .*\.\*;/
+        def m = regex.matcher(text)
+        if (m.find()) {
+            throw new AssertionError("Wildcard imports disallowed - ${m.findAll()}")
+        }
+    }
+    java {
+        googleJavaFormat()
+        removeUnusedImports()
+        custom 'disallowWildcardImports', disallowWildcardImports
+    }
+}

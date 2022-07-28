@@ -8,7 +8,6 @@ package io.openlineage.spark.api;
 import io.openlineage.client.OpenLineage;
 import java.util.List;
 import org.apache.spark.scheduler.SparkListenerEvent;
-import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 
@@ -33,7 +32,7 @@ public abstract class AbstractQueryPlanOutputDatasetBuilder<P extends LogicalPla
   }
 
   protected boolean includeDatasetVersion(SparkListenerEvent event) {
-    return event instanceof SparkListenerSQLExecutionEnd || event instanceof SparkListenerJobEnd;
+    return event instanceof SparkListenerSQLExecutionEnd;
   }
 
   @Override
