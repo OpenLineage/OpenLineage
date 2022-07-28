@@ -11,6 +11,7 @@ from openlineage.airflow.extractors import TaskMetadata
 from openlineage.client import OpenLineageClient, OpenLineageClientOptions, set_producer
 from openlineage.client.facet import DocumentationJobFacet, SourceCodeLocationJobFacet, \
     NominalTimeRunFacet, ParentRunFacet, BaseFacet
+from openlineage.airflow.utils import redact_with_exclusions
 from openlineage.client.run import RunEvent, RunState, Run, Job
 import requests.exceptions
 
@@ -56,6 +57,7 @@ class OpenLineageAdapter:
         return self._client
 
     def emit(self, event: RunEvent):
+        event = redact_with_exclusions(event)
         try:
             return self.get_or_create_openlineage_client().emit(event)
         except requests.exceptions.RequestException:
