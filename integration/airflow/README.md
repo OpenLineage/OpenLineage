@@ -221,6 +221,13 @@ t1 = DataProcPySparkOperator(
         dag=dag)
 ```
 
+## Secrets redaction
+Integration uses Airflow SecretsMasker to hide secrets from produced metadata events. As not all fields in the metadata should be redacted `RedactMixin` is used to pass information which fields should be skipped from the process. 
+
+Typically you should subclass `RedactMixin` and use attribute `_skip_redact` as a list of names of fields to be skipped.
+
+However, all facets inheriting from `BaseFacet` should use `_additional_skip_redact` attribute as addition to common list of `['_producer', '_schemaURL']`.
+
 ## Development
 
 To install all dependencies for _local_ development:
