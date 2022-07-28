@@ -1,0 +1,82 @@
+{
+  "format-version" : 1,
+  "table-uuid" : "cd5cd7c2-db28-43ef-96b1-c8e97564f1fd",
+  "location" : "/tmp/warehouse/db/source",
+  "last-updated-ms" : 1654529648410,
+  "last-column-id" : 2,
+  "schema" : {
+    "type" : "struct",
+    "schema-id" : 0,
+    "fields" : [ {
+      "id" : 1,
+      "name" : "x",
+      "required" : false,
+      "type" : "int"
+    }, {
+      "id" : 2,
+      "name" : "y",
+      "required" : false,
+      "type" : "int"
+    } ]
+  },
+  "current-schema-id" : 0,
+  "schemas" : [ {
+    "type" : "struct",
+    "schema-id" : 0,
+    "fields" : [ {
+      "id" : 1,
+      "name" : "x",
+      "required" : false,
+      "type" : "int"
+    }, {
+      "id" : 2,
+      "name" : "y",
+      "required" : false,
+      "type" : "int"
+    } ]
+  } ],
+  "partition-spec" : [ ],
+  "default-spec-id" : 0,
+  "partition-specs" : [ {
+    "spec-id" : 0,
+    "fields" : [ ]
+  } ],
+  "last-partition-id" : 999,
+  "default-sort-order-id" : 0,
+  "sort-orders" : [ {
+    "order-id" : 0,
+    "fields" : [ ]
+  } ],
+  "properties" : {
+    "owner" : "mobuchowski"
+  },
+  "current-snapshot-id" : 279738701695871110,
+  "snapshots" : [ {
+    "snapshot-id" : 279738701695871110,
+    "timestamp-ms" : 1654529648410,
+    "summary" : {
+      "operation" : "append",
+      "spark.app.id" : "local-1654529543424",
+      "added-data-files" : "2",
+      "added-records" : "2",
+      "added-files-size" : "1230",
+      "changed-partition-count" : "1",
+      "total-records" : "2",
+      "total-files-size" : "1230",
+      "total-data-files" : "2",
+      "total-delete-files" : "0",
+      "total-position-deletes" : "0",
+      "total-equality-deletes" : "0"
+    },
+    "manifest-list" : "/tmp/warehouse/db/source/metadata/snap-279738701695871110-1-7e3ed845-a5da-4e15-9ed6-9d592392c71e.avro",
+    "schema-id" : 0
+  } ],
+  "snapshot-log" : [ {
+    "timestamp-ms" : 1654529648410,
+    "snapshot-id" : 279738701695871110
+  } ],
+  "metadata-log" : [ {
+    "timestamp-ms" : 1654529639216,
+    "metadata-file" : "/tmp/warehouse/db/source/metadata/v1.metadata.json"
+  } ]
+}
