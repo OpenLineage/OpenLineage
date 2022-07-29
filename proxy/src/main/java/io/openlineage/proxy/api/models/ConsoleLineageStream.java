@@ -28,9 +28,6 @@ public class ConsoleLineageStream extends LineageStream {
         String prettyJson = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(jsonObject);
         log.info(prettyJson);
       } catch (JsonProcessingException jpe) {
-        if (log.isErrorEnabled()) {
-          log.error("Unable to beautify given JSON string");
-        }
         log.info(eventAsString);
       }
     } else {
