@@ -181,10 +181,14 @@ class LibraryTest {
 
   private void verifySerialization(List<OpenLineage.RunEvent> events)
       throws JsonProcessingException {
+    ObjectMapper objectMapper = new ObjectMapper();
+    objectMapper.registerModule(new JavaTimeModule());
+    objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+    objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     for (OpenLineage.RunEvent event : events) {
       assertNotNull(
           "Event can serialize",
-          OpenLineageClientUtils.newObjectMapper().writeValueAsString(event));
+              objectMapper.writeValueAsString(event));
     }
   }
 }
