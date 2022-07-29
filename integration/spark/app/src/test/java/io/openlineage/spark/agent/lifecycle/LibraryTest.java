@@ -19,7 +19,6 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.io.Resources;
 import io.openlineage.client.OpenLineage;
-import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import java.io.IOException;
 import java.net.URL;
@@ -186,9 +185,7 @@ class LibraryTest {
     objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
     objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     for (OpenLineage.RunEvent event : events) {
-      assertNotNull(
-          "Event can serialize",
-              objectMapper.writeValueAsString(event));
+      assertNotNull("Event can serialize", objectMapper.writeValueAsString(event));
     }
   }
 }
