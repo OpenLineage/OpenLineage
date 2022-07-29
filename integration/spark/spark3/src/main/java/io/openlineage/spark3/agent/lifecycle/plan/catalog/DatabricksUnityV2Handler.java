@@ -12,16 +12,16 @@ import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * The DatabricksDeltaHandler is intended to support Databricks' custom DeltaCatalog which has the
- * class name of com.databricks.sql.transaction.tahoe.catalog.DeltaCatalog rather than the open
+ * The DatabricksUnityV2Handler is intended to support Databricks' custom Unity Catalog which has
+ * the class name of com.databricks.sql.managedcatalog.UnityCatalogV2Proxy rather than the open
  * source class name of org.apache.spark.sql.delta.catalog.DeltaCatalog. It is used in the same way
  * as the {@link DeltaHandler}.
  */
 @Slf4j
-public class DatabricksDeltaHandler extends AbstractDatabricksHandler {
+public class DatabricksUnityV2Handler extends AbstractDatabricksHandler {
 
-  public DatabricksDeltaHandler(OpenLineageContext context) {
-    super(context, "com.databricks.sql.transaction.tahoe.catalog.DeltaCatalog");
+  public DatabricksUnityV2Handler(OpenLineageContext context) {
+    super(context, "com.databricks.sql.managedcatalog.UnityCatalogV2Proxy");
   }
 
   @Override
@@ -30,11 +30,11 @@ public class DatabricksDeltaHandler extends AbstractDatabricksHandler {
     return Optional.of(
         context
             .getOpenLineage()
-            .newStorageDatasetFacet("delta", "parquet")); // Delta is always parquet
+            .newStorageDatasetFacet("unity", "parquet")); // The default is parquet / delta
   }
 
   @Override
   public String getName() {
-    return "delta";
+    return "unity";
   }
 }

@@ -24,6 +24,7 @@ public class CatalogUtils3 {
             new IcebergHandler(context),
             new DeltaHandler(context),
             new DatabricksDeltaHandler(context),
+            new DatabricksUnityV2Handler(context),
             new JdbcHandler(),
             new V2SessionCatalogHandler());
     return handlers.stream().filter(CatalogHandler::hasClasses).collect(Collectors.toList());
