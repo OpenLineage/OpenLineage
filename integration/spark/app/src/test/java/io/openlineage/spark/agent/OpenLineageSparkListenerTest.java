@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.Environment;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.filters.EventFilterUtils;
 import io.openlineage.spark.agent.lifecycle.ContextFactory;
 import io.openlineage.spark.agent.lifecycle.ExecutionContext;
 import io.openlineage.spark.agent.lifecycle.StaticExecutionContextFactory;
@@ -101,12 +102,13 @@ class OpenLineageSparkListenerTest {
                 Map$.MODULE$.empty(),
                 Seq$.MODULE$.empty()));
     when(event.executionId()).thenReturn(1L);
-    executionContext.start(event);
-
+    try (MockedStatic<EventFilterUtils> utils = mockStatic(EventFilterUtils.class)) {
+      utils.when(() -> EventFilterUtils.isDisabled(olContext, event)).thenReturn(false);
+      executionContext.start(event);
+    }
     ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
-
-    verify(emitter, times(2)).emit(lineageEvent.capture());
+    verify(emitter, times(1)).emit(lineageEvent.capture());
   }
 
   @Test
