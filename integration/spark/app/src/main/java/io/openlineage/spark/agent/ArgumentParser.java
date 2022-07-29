@@ -35,6 +35,7 @@ public class ArgumentParser {
   private final String parentRunId;
   private final Optional<String> apiKey;
   private final Optional<Map<String, String>> urlParams;
+  private final boolean consoleMode;
 
   public static ArgumentParser parse(String clientUrl) {
     URI uri = URI.create(clientUrl);
@@ -55,7 +56,7 @@ public class ArgumentParser {
         String.format(
             "%s/api/%s/namespaces/%s/jobs/%s/runs/%s", host, version, namespace, jobName, runId));
 
-    return new ArgumentParser(host, version, namespace, jobName, runId, apiKey, urlParams);
+    return new ArgumentParser(host, version, namespace, jobName, runId, apiKey, urlParams, false);
   }
 
   public static UUID getRandomUuid() {
@@ -105,6 +106,6 @@ public class ArgumentParser {
 
   private static ArgumentParser getDefaultArguments() {
     return new ArgumentParser(
-        "", "v1", "default", "default", null, Optional.empty(), Optional.empty());
+        "", "v1", "default", "default", null, Optional.empty(), Optional.empty(), false);
   }
 }
