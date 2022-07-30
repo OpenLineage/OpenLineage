@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
 import io.openlineage.spark.agent.util.DatasetIdentifier;
@@ -9,15 +14,22 @@ public class CosmosHandler implements RelationHandler {
 
   @Override
   public boolean hasClasses() {
+    String COSMOS_CATALOG_NAME = "com.azure.cosmos.spark.CosmosCatalog";
+
     try {
-      CosmosHandler.class.getClassLoader().loadClass("com.azure.cosmos.spark.CosmosCatalog");
+      CosmosHandler.class.getClassLoader().loadClass(COSMOS_CATALOG_NAME);
       return true;
     } catch (Exception e) {
-      log.info("Exception raised in CosmosHandler hasClasses {}", e);
       // swallow- we don't care
     }
-    return true; // TODO: figure out how to get the cosmos class - classpath issue that Kusto also
-    // has.
+    try {
+      Thread.currentThread().getContextClassLoader().loadClass(COSMOS_CATALOG_NAME);
+      return true;
+    } catch (Exception e) {
+      // swallow- we don't care
+
+    }
+    return false;
   }
 
   @Override

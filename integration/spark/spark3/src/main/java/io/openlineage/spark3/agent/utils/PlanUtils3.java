@@ -106,7 +106,6 @@ public class PlanUtils3 {
             datasetFactory.getDataset(
                 di.get().getName(), di.get().getNamespace(), datasetFacetsBuilder.build()));
       }
-      // return Collections.emptyList();
     }
     Identifier identifier = relation.identifier().get();
 

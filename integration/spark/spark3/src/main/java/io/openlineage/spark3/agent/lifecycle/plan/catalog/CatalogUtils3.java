@@ -75,17 +75,10 @@ public class CatalogUtils3 {
   public static DatasetIdentifier getDatasetIdentifierFromRelation(
       DataSourceV2Relation relation, List<RelationHandler> relationHandlers) {
     return relationHandlers.stream()
-        .filter(
-            handler -> handler.isClass(relation)) // TODO: is checking just the name in isClass ok?
+        .filter(handler -> handler.isClass(relation))
         .map(handler -> handler.getDatasetIdentifier(relation))
         .findAny()
-        .orElseThrow(
-            () ->
-                new UnsupportedCatalogException(
-                    relation
-                        .getClass()
-                        .getCanonicalName())); // TODO: should have a diff exception here -
-    // UnsupportedRelationException
+        .orElseThrow(() -> new UnsupportedCatalogException(relation.getClass().getCanonicalName()));
   }
 
   public static Optional<OpenLineage.StorageDatasetFacet> getStorageDatasetFacet(
