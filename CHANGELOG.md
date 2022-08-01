@@ -1,7 +1,7 @@
 # Changelog
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.12.0...HEAD)
-
+* Add `RUNNING` EventType in specification and Python client [`#972`](https://github.com/OpenLineage/OpenLineage/pull/972) [@mzareba382](https://github.com/mzareba382)
 ## [0.12.0](https://github.com/OpenLineage/OpenLineage/compare/0.11.0...0.12.0) 2022-08-01
 ### Added
 
