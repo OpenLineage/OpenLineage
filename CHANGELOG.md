@@ -1,7 +1,27 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.11.0...HEAD)
-* Spark 3.3.0 support added [`#950`](https://github.com/OpenLineage/OpenLineage/pull/950)[@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.12.0...HEAD)
+
+## [0.12.0](https://github.com/OpenLineage/OpenLineage/compare/0.11.0...0.12.0) 2022-08-01
+### Added
+
+* Add Spark 3.3.0 support [`#950`](https://github.com/OpenLineage/OpenLineage/pull/950) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+* Add Apache Flink integration [`#951`](https://github.com/OpenLineage/OpenLineage/pull/951) [@mobuchowski](https://github.com/mobuchowski)
+* Add ability to extend column level lineage mechanism [`#922`](https://github.com/OpenLineage/OpenLineage/pull/922) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+* Add ErrorMessageRunFacet [`#897`](https://github.com/OpenLineage/OpenLineage/pull/897) [@mobuchowski](https://github.com/mobuchowski)
+* Add SQLCheckExtractors [`#717`](https://github.com/OpenLineage/OpenLineage/pull/717) [@denimalpaca](https://github.com/denimalpaca)
+* Add RedshiftSQLExtractor & RedshiftDataExtractor [`#930`](https://github.com/OpenLineage/OpenLineage/pull/930) [@JDarDagran](https://github.com/JDarDagran)
+* Add dataset builder for AlterTableCommand [`#927`](https://github.com/OpenLineage/OpenLineage/pull/927) [@tnazarew](https://github.com/tnazarew)
+
+### Changed
+
+* Limit Delta events [`#905`](https://github.com/OpenLineage/OpenLineage/pull/905) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+* Airflow integration: allow lineage metadata to flow through inlets and outlets [`#914`](https://github.com/OpenLineage/OpenLineage/pull/914) [@fenil25](https://github.com/fenil25)
+
+### Fixed
+
+* Limit size of serialized plan [`#917`](https://github.com/OpenLineage/OpenLineage/pull/917) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+* Fix noclassdef error [`#942`](https://github.com/OpenLineage/OpenLineage/pull/942) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
 
 ## [0.11.0](https://github.com/OpenLineage/OpenLineage/compare/0.10.0...0.11.0) 2022-07-07
 ### Added
