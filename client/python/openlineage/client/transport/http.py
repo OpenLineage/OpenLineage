@@ -89,7 +89,7 @@ class HttpTransport(Transport):
         log.debug(f"Constructing openlineage client to send events to {url}")
         try:
             parsed = parse_url(url)
-            if not (parsed.scheme and parsed.netloc):
+            if not (parsed.scheme and parsed.netloc):  # type: ignore
                 raise ValueError(f"Need valid url for OpenLineageClient, passed {url}")
         except Exception as e:
             raise ValueError(f"Need valid url for OpenLineageClient, passed {url}. Exception: {e}")
