@@ -5,18 +5,25 @@ from urllib.parse import urlparse
 
 from openlineage.airflow.utils import (
     get_normalized_postgres_connection_uri,
-    safe_import_airflow
+    safe_import_airflow,
 )
 
 from openlineage.airflow.extractors.sql_extractor import SqlExtractor
-from openlineage.common.sql import DbTableMeta
 
 
 logger = logging.getLogger(__name__)
 
 
 class PostgresExtractor(SqlExtractor):
-    default_schema = 'public'
+    default_schema = "public"
+    _information_schema_columns = [
+        "table_schema",
+        "table_name",
+        "column_name",
+        "ordinal_position",
+        "udt_name",
+    ]
+    _is_information_schema_cross_db = False
 
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
@@ -51,24 +58,3 @@ class PostgresExtractor(SqlExtractor):
             postgres_conn_id=self.operator.postgres_conn_id,
             schema=self.operator.database
         )
-
-    def _get_in_query(self, in_tables):
-        return self._information_schema_query(in_tables)
-
-    def _get_out_query(self, out_tables):
-        return self._information_schema_query(out_tables)
-
-    @staticmethod
-    def _information_schema_query(tables: List[DbTableMeta]) -> str:
-        table_names = ",".join(map(
-            lambda name: f"'{name.name}'", tables
-        ))
-        return f"""
-        SELECT table_schema,
-        table_name,
-        column_name,
-        ordinal_position,
-        udt_name
-        FROM information_schema.columns
-        WHERE table_name IN ({table_names});
-        """
