@@ -9,6 +9,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClient;
 import io.openlineage.client.OpenLineageClientException;
 import io.openlineage.client.OpenLineageClientUtils;
+import io.openlineage.client.transports.ConsoleTransport;
 import io.openlineage.client.transports.HttpTransport;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -28,6 +29,16 @@ public class EventEmitter {
   @Getter private Optional<UUID> parentRunId;
 
   public EventEmitter(ArgumentParser argument) throws URISyntaxException {
+    this.jobNamespace = argument.getNamespace();
+    this.parentJobName = argument.getJobName();
+    this.parentRunId = convertToUUID(argument.getParentRunId());
+
+    if (argument.isConsoleMode()) {
+      this.client = new OpenLineageClient(new ConsoleTransport());
+      log.info("Init OpenLineageContext: will output events to console");
+      return;
+    }
+
     // Extract url parameters other than api_key to append to lineageURI
     String queryParams = null;
     if (argument.getUrlParams().isPresent()) {
@@ -45,9 +56,6 @@ public class EventEmitter {
 
     this.lineageURI =
         new URI(hostURI.getScheme(), hostURI.getAuthority(), uriPath, queryParams, null);
-    this.jobNamespace = argument.getNamespace();
-    this.parentJobName = argument.getJobName();
-    this.parentRunId = convertToUUID(argument.getParentRunId());
 
     HttpTransport.Builder builder = HttpTransport.builder().uri(this.lineageURI);
     argument.getApiKey().ifPresent(builder::apiKey);
@@ -61,7 +69,8 @@ public class EventEmitter {
   public void emit(OpenLineage.RunEvent event) {
     try {
       this.client.emit(event);
-      log.info("Emitting lineage completed successfully: {}", OpenLineageClientUtils.toJson(event));
+      log.debug(
+          "Emitting lineage completed successfully: {}", OpenLineageClientUtils.toJson(event));
     } catch (OpenLineageClientException exception) {
       log.error("Could not emit lineage w/ exception", exception);
     }

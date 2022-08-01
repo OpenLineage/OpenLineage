@@ -93,6 +93,8 @@ The following parameters can be specified
 | spark.openlineage.parentRunId | The RunId of the parent job that initiated this Spark job | xxxx-xxxx-xxxx-xxxx |
 | spark.openlineage.apiKey | An API key to be used when sending events to the OpenLineage server | abcdefghijk |
 | spark.openlineage.url.param.xyz | A url parameter (replace xyz) and value to be included in requests to the OpenLineage API server | abcdefghijk |
+| spark.openlineage.consoleTransport | Events will be emitted to a console, no additional backend is required | true |
+
 
 # Build
 
