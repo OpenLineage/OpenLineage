@@ -13,6 +13,7 @@ from openlineage.client.utils import RedactMixin
 
 class RunState(Enum):
     START = 'START'
+    RUNNING = 'RUNNING'
     COMPLETE = 'COMPLETE'
     ABORT = 'ABORT'
     FAIL = 'FAIL'
