@@ -52,7 +52,7 @@ _extractors += get_check_extractors(
 _check_providers = {
     "PostgresExtractor": "postgres",
     "MySqlExtractor": "mysql",
-    "BigQueryExtractor": "gcpbigquery",
+    "BigQueryExtractor": ["gcpbigquery", "google_cloud_platform"],
     "SnowflakeExtractor": "snowflake",
 }
 
@@ -107,11 +107,16 @@ class Extractors:
         if task.__class__.__name__ in (
             "SQLCheckOperator", "SQLValueCheckOperator", "SQLThresholdCheckOperator",
             "SQLIntervalCheckOperator", "SQLColumnCheckOperator", "SQLTableCheckOperator",
+            "BigQueryTableCheckOperator", "BigQueryColumnCheckOperator"
         ):
             for extractor in self.extractors.values():
                 conn_type = _check_providers.get(extractor.__name__, "")
-                task_conn_type = BaseHook.get_connection(task.conn_id).conn_type
-                if task_conn_type == conn_type:
+                task_conn_type = None
+                if hasattr(task, "gcp_conn_id"):
+                    task_conn_type = BaseHook.get_connection(task.gcp_conn_id).conn_type
+                elif hasattr(task, "conn_id"):
+                    task_conn_type = BaseHook.get_connection(task.conn_id).conn_type
+                if task_conn_type in conn_type:
                     check_extractors = get_check_extractors(extractor)
                     for check_extractor in check_extractors:
                         for operator_class in check_extractor.get_operator_classnames():

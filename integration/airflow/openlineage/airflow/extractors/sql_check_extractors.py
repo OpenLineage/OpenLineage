@@ -22,7 +22,7 @@ def get_check_extractors(super_):
             pass
 
         def extract_on_complete(self, task_instance) -> Optional[TaskMetadata]:
-            if issubclass(BaseSqlCheckExtractor, BigQueryExtractor):
+            if issubclass(BigQueryExtractor, BaseSqlCheckExtractor):
                 return super().extract_on_complete(task_instance)
             return super().extract()
 
@@ -76,7 +76,7 @@ def get_check_extractors(super_):
 
         @classmethod
         def get_operator_classnames(cls) -> List[str]:
-            return ['SQLColumnCheckOperator']
+            return ['SQLColumnCheckOperator', 'BigQueryColumnCheckOperator']
 
         def _get_input_facets(self) -> Dict[str, BaseFacet]:
             column_mapping = self.operator.column_mapping
@@ -88,7 +88,7 @@ def get_check_extractors(super_):
 
         @classmethod
         def get_operator_classnames(cls) -> List[str]:
-            return ['SQLTableCheckOperator']
+            return ['SQLTableCheckOperator', 'BigQueryTableCheckOperator']
 
         def _get_input_facets(self) -> Dict[str, BaseFacet]:
             checks = self.operator.checks
