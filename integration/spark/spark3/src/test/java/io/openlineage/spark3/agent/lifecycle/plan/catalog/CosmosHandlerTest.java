@@ -14,8 +14,6 @@ import io.openlineage.spark.agent.util.DatasetIdentifier;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import org.junit.jupiter.api.Test;
 
-// com.azure.cosmos.spark.items.openlineage-test-cosmos.exampledata.volcanoes
-
 public class CosmosHandlerTest {
 
   @Test
