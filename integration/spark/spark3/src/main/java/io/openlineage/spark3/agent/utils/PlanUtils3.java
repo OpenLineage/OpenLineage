@@ -92,6 +92,8 @@ public class PlanUtils3 {
       DataSourceV2Relation relation,
       OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder) {
 
+    OpenLineage openLineage = context.getOpenLineage();
+
     Optional<DatasetIdentifier> di;
     // Get identifier for dataset, or return empty list
     if (relation.identifier().isEmpty()) {
@@ -102,6 +104,11 @@ public class PlanUtils3 {
       if (!di.isPresent()) {
         return Collections.emptyList();
       } else {
+
+        datasetFacetsBuilder
+            .schema(PlanUtils.schemaFacet(openLineage, relation.schema()))
+            .dataSource(PlanUtils.datasourceFacet(openLineage, di.get().getNamespace()));
+
         return Collections.singletonList(
             datasetFactory.getDataset(
                 di.get().getName(), di.get().getNamespace(), datasetFacetsBuilder.build()));
@@ -123,7 +130,6 @@ public class PlanUtils3 {
       return Collections.emptyList();
     }
 
-    OpenLineage openLineage = context.getOpenLineage();
     datasetFacetsBuilder
         .schema(PlanUtils.schemaFacet(openLineage, relation.schema()))
         .dataSource(PlanUtils.datasourceFacet(openLineage, di.get().getNamespace()));
