@@ -168,6 +168,7 @@ fi
 perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/spark/gradle.properties
 perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./client/java/gradle.properties
 perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./proxy/gradle.properties
+perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/flink/gradle.properties
 echo "version ${NEXT_VERSION}" > integration/spark/spark2/src/test/resources/io/openlineage/spark/agent/version.properties
 echo "version ${NEXT_VERSION}" > integration/spark/spark3/src/test/resources/io/openlineage/spark/agent/version.properties
 echo "version ${NEXT_VERSION}" > integration/flink/src/test/resources/io/openlineage/flink/client/version.properties
