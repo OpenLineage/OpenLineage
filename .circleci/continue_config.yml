@@ -429,7 +429,7 @@ jobs:
             - v1-integration-flink-{{ .Branch }}-{{ .Revision }}
             - v1-integration-flink-{{ .Branch }}
       - run: (cd ./../../client/java/ && ./gradlew --no-daemon --stacktrace publishToMavenLocal)
-      - run: mkdir -p /tmp/warehouse/db/sink/data && cp -R data/iceberg/db /tmp/warehouse && chmod -R 777 /tmp/warehouse
+      - run: chmod -R 777 data/iceberg/db
       - run: ./gradlew examples:stateful:build
       - run: ./gradlew --no-daemon integrationTest --i
       - run:
