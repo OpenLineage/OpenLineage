@@ -56,8 +56,8 @@ ext {
     testcontainersVersion = '1.15.3'
     shortVersion = sparkVersion.substring(0,3)
     versionsMap = [
-            "3.3": ["module": "spark33",    "scala": "2.12", "delta": "2.0.0"],
-            "3.2": ["module": "spark32",    "scala": "2.12", "delta": "2.0.0"],
+            "3.3": ["module": "spark33",    "scala": "2.12", "delta": "1.2.0"],
+            "3.2": ["module": "spark32",    "scala": "2.12", "delta": "1.2.0"],
             "3.1": ["module": "spark3",     "scala": "2.12", "delta": "1.0.0"],
             "2.4": ["module": "spark2",     "scala": "2.11"]
     ]
