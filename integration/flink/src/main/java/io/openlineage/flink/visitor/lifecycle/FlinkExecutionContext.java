@@ -63,14 +63,13 @@ public class FlinkExecutionContext implements ExecutionContext {
   public void onJobCheckpoint(CheckpointFacet facet) {
     log.debug("JobClient - jobId: {}", jobId);
     RunEvent runEvent =
-        buildEventForEventType(EventType.OTHER)
+        buildEventForEventType(EventType.RUNNING)
             .run(
                 new OpenLineage.RunBuilder()
                     .runId(runId)
                     .facets(new OpenLineage.RunFacetsBuilder().put("checkpoints", facet).build())
                     .build())
             .build();
-    // TODO: introduce better event type than OTHER
     log.debug("Posting event for onJobCheckpoint {}: {}", jobId, runEvent);
     eventEmitter.emit(runEvent);
   }
