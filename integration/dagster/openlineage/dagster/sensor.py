@@ -122,9 +122,9 @@ def _handle_pipeline_event(
         timestamp: float,
         repository_name: Optional[str]
 ):
-    """Handles pipeline events that are of type RUN_START, RUN_SUCCESS, RUN_FAILURE, and RUN_CANCELED.
-    Assumes event type is always in the order of RUN_START
-    followed by RUN_SUCCESS, RUN_FAILURE, or RUN_CANCELED.
+    """Handles pipeline events that are of type RUN_START, RUN_SUCCESS, RUN_FAILURE, and 
+    RUN_CANCELED. Assumes event type is always in the order of RUN_START followed by 
+    RUN_SUCCESS, RUN_FAILURE, or RUN_CANCELED.
 
     :param running_pipelines: map of pipeline run ids to dynamically generated metadata
                               for pipelines that are in progress between sensor evaluations.
