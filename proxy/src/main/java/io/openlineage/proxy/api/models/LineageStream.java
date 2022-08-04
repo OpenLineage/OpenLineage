@@ -17,6 +17,7 @@ public abstract class LineageStream {
    */
   enum Type {
     CONSOLE,
+    HTTP,
     KAFKA
   }
 

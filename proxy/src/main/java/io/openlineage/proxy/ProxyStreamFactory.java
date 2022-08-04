@@ -8,6 +8,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import io.openlineage.proxy.api.models.ConsoleConfig;
 import io.openlineage.proxy.api.models.ConsoleLineageStream;
+import io.openlineage.proxy.api.models.HttpConfig;
+import io.openlineage.proxy.api.models.HttpLineageStream;
 import io.openlineage.proxy.api.models.KafkaConfig;
 import io.openlineage.proxy.api.models.KafkaLineageStream;
 import io.openlineage.proxy.api.models.LineageStream;
@@ -52,6 +54,9 @@ public final class ProxyStreamFactory {
         kafkaConfig.getProperties().put("bootstrap.servers", kafkaConfig.getBootstrapServerUrl());
         kafkaConfig.getProperties().put("server.id", kafkaConfig.getLocalServerId());
         lineageStreams.add(new KafkaLineageStream((KafkaConfig) config));
+      } else if (config instanceof HttpConfig) {
+        final HttpConfig httpConfig = (HttpConfig) config;
+        lineageStreams.add(new HttpLineageStream((HttpConfig) config));
       }
     }
     return lineageStreams.build();
