@@ -30,6 +30,13 @@ public class PlanUtils3 {
 
   public static Optional<DatasetIdentifier> getDatasetIdentifier(
       OpenLineageContext context, DataSourceV2Relation relation) {
+
+    if (relation.identifier() == null) {
+      // Since identifier is null, short circuit and check if we can get the dataset identifer
+      // from the relation itself.
+      return getDatasetIdentifierFromRelation(relation);
+    }
+
     return Optional.of(relation)
         .filter(r -> r.identifier() != null)
         .filter(r -> r.identifier().isDefined())
@@ -67,7 +74,7 @@ public class PlanUtils3 {
     }
   }
 
-  public static Optional<DatasetIdentifier> getDatasetIdentifierFromRelation(
+  private static Optional<DatasetIdentifier> getDatasetIdentifierFromRelation(
       DataSourceV2Relation relation) {
 
     try {
@@ -98,9 +105,7 @@ public class PlanUtils3 {
     // Get identifier for dataset, or return empty list
     if (relation.identifier().isEmpty()) {
       log.warn("Couldn't find identifier for dataset in plan {}", relation);
-      // Since there is no identifier, short circuit and check if this is a relationHandler instance
-      // if yes, then we get the datasetIdentifier and return the dataset list.
-      di = PlanUtils3.getDatasetIdentifierFromRelation(relation);
+      di = PlanUtils3.getDatasetIdentifier(context, relation);
       if (!di.isPresent()) {
         return Collections.emptyList();
       } else {

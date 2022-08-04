@@ -49,7 +49,7 @@ public class CosmosHandler implements RelationHandler {
 
     if (tableParts.length != expectedParts) {
       name = relationName;
-      namespace = relationName;
+      namespace = "azurecosmos";
     } else {
       namespace =
           String.format(
