@@ -1,5 +1,5 @@
 {
-  "eventType" : "OTHER",
+  "eventType" : "RUNNING",
   "run": {
     "facets" : {
       "checkpoints": {
