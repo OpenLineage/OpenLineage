@@ -1,0 +1,42 @@
+{
+  "$schema" : "https://json-schema.org/draft/2020-12/schema",
+  "$id" : "https://openlineage.io/spec/facets/1-0-0/OwnershipJobFacet.json",
+  "$defs" : {
+    "OwnershipJobFacet" : {
+      "allOf" : [ {
+        "$ref" : "https://openlineage.io/spec/1-0-3/OpenLineage.json#/$defs/JobFacet"
+      }, {
+        "type" : "object",
+        "properties" : {
+          "owners" : {
+            "description" : "The owners of the job.",
+            "type" : "array",
+            "items" : {
+              "type" : "object",
+              "properties" : {
+                "name" : {
+                  "description" : "The URN describing the owner of the Dataset",
+                  "type" : "string",
+                  "example" : "application:app_name"
+                },
+                "type" : {
+                  "description" : "The type of ownership (optional)",
+                  "type" : "string",
+                  "example" : "MAINTAINER"
+                }
+              },
+              "required" : [ "name" ]
+            }
+          }
+        }
+      } ],
+      "type" : "object"
+    }
+  },
+  "type" : "object",
+  "properties" : {
+    "ownership" : {
+      "$ref" : "#/$defs/OwnershipJobFacet"
+    }
+  }
+}
