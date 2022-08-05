@@ -28,6 +28,7 @@ import org.apache.spark.sql.types.Metadata;
 import org.apache.spark.sql.types.StringType$;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,6 +41,7 @@ import org.mockito.Mockito;
 class DeltaDataSourceTest {
 
   @Test
+  @Disabled
   void testInsertIntoDeltaSource(@TempDir Path tempDir, SparkSession spark)
       throws IOException, InterruptedException, TimeoutException {
     StructType tableSchema =

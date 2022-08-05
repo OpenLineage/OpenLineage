@@ -56,9 +56,9 @@ ext {
     testcontainersVersion = '1.15.3'
     shortVersion = sparkVersion.substring(0,3)
     versionsMap = [
-            "3.3": ["module": "spark33",    "scala": "2.12"],
-            "3.2": ["module": "spark32",    "scala": "2.12"],
-            "3.1": ["module": "spark3",     "scala": "2.12"],
+            "3.3": ["module": "spark33",    "scala": "2.12", "delta": "1.2.0"],
+            "3.2": ["module": "spark32",    "scala": "2.12", "delta": "1.2.0"],
+            "3.1": ["module": "spark3",     "scala": "2.12", "delta": "1.0.0"],
             "2.4": ["module": "spark2",     "scala": "2.11"]
     ]
     versions = versionsMap[shortVersion]
@@ -98,6 +98,8 @@ dependencies {
         exclude group: 'com.fasterxml.jackson.module'
     }
 
+    if(sparkVersion.startsWith('3')) { testFixturesApi "io.delta:delta-core_2.12:${versions.delta}" }
+
     testImplementation(project(":${versions.module}"))
     testImplementation testFixtures(project(":${versions.module}")){
         exclude group: 'org.apache.avro'
@@ -128,7 +130,7 @@ def commonTestConfiguration = {
 }
 
 // wrócić do jednego test z jakąś metodą zwracającą konfigurację żeby spark3 działał
-task sparkTest(type: Test) {
+test {
     useJUnitPlatform {i ->
         excludeTags ('integration-test')
         if(!sparkVersion.startsWith('3')) {excludeTags 'spark3'}
