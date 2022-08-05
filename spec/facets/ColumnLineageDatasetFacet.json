@@ -38,9 +38,13 @@
                     ]
                   }
                 },
-                "transformation": {
+                "transformationDescription": {
                    "type": "string",
                    "description": "a string representation of the transformation applied"
+                },
+                "transformationType": {
+                   "type": "string",
+                   "description": "IDENTITY|MASKED reflects a clearly defined behavior. IDENTITY: exact same as input; MASKED: no original data available (like a hash of PII for example)"
                 }
               },
               "additionalProperties": true,
