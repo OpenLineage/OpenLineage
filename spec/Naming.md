@@ -148,6 +148,21 @@ Identifier:
    * Authority = {host}
  * Unique name: /colls/{table}
    * URI = azurecosmos://{host}.documents.azure.com/dbs/{database}/colls/{table}
+#### Azure Data Explorer:
+Datasource hierarchy:
+ * Host: \<clustername>.\<clusterlocation> 
+ * Database
+ * Table
+ 
+Naming hierarchy:
+ * Database
+ * Table
+
+Identifier:
+ * Namespace: azurekusto://{host}.kusto.windows.net/{database}
+   * Scheme = azurekusto
+ * Unique name: {database}/{table}
+   * URI = azurekusto://{host}.kusto.windows.net/{database}/{table}
 
 ### Distributed file systems/blob stores
 #### GCS
