@@ -109,8 +109,7 @@ public class PlanUtils3 {
       if (!di.isPresent()) {
         return Collections.emptyList();
       }
-    }
-    else {
+    } else {
       Identifier identifier = relation.identifier().get();
 
       // Get catalog for dataset, or return empty list
@@ -128,13 +127,13 @@ public class PlanUtils3 {
       }
 
       CatalogUtils3.getStorageDatasetFacet(context, tableCatalog, tableProperties)
-      .map(storageDatasetFacet -> datasetFacetsBuilder.storage(storageDatasetFacet));
+          .map(storageDatasetFacet -> datasetFacetsBuilder.storage(storageDatasetFacet));
     }
-    
+
     datasetFacetsBuilder
         .schema(PlanUtils.schemaFacet(openLineage, relation.schema()))
         .dataSource(PlanUtils.datasourceFacet(openLineage, di.get().getNamespace()));
-    
+
     return Collections.singletonList(
         datasetFactory.getDataset(
             di.get().getName(), di.get().getNamespace(), datasetFacetsBuilder.build()));
