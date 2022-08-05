@@ -31,12 +31,15 @@ public class PlanUtils3 {
   public static Optional<DatasetIdentifier> getDatasetIdentifier(
       OpenLineageContext context, DataSourceV2Relation relation) {
 
-    if (relation.identifier() == null) {
+    log.info("relation identifier: {}", relation.identifier());
+    log.info("relation identifier is empty? : {}", relation.identifier().isEmpty());
+    if (relation.identifier().isEmpty()) {
       // Since identifier is null, short circuit and check if we can get the dataset identifer
       // from the relation itself.
+      log.info("relation identifier is null");
       return getDatasetIdentifierFromRelation(relation);
     }
-
+    log.info("relation identifier is not null");
     return Optional.of(relation)
         .filter(r -> r.identifier() != null)
         .filter(r -> r.identifier().isDefined())
@@ -104,16 +107,18 @@ public class PlanUtils3 {
     Optional<DatasetIdentifier> di;
     // Get identifier for dataset, or return empty list
     if (relation.identifier().isEmpty()) {
+      log.info("hi -1");
       log.warn("Couldn't find identifier for dataset in plan {}", relation);
       di = PlanUtils3.getDatasetIdentifier(context, relation);
       if (!di.isPresent()) {
+        log.info("hi 0");
         return Collections.emptyList();
       } else {
-
+        log.info("hi 1");
         datasetFacetsBuilder
             .schema(PlanUtils.schemaFacet(openLineage, relation.schema()))
             .dataSource(PlanUtils.datasourceFacet(openLineage, di.get().getNamespace()));
-
+        log.info("hi 2");
         return Collections.singletonList(
             datasetFactory.getDataset(
                 di.get().getName(), di.get().getNamespace(), datasetFacetsBuilder.build()));
