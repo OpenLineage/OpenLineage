@@ -30,10 +30,6 @@
                       "field": {
                         "type": "string",
                         "description": "The input field"
-                      },
-                      "transformation": {
-                        "type": "string",
-                        "description": "a string representation of the transformation applied"
                       }
                     },
                     "additionalProperties": true,
@@ -41,8 +37,13 @@
                       "namespace", "name", "field"
                     ]
                   }
+                },
+                "transformation": {
+                   "type": "string",
+                   "description": "a string representation of the transformation applied"
                 }
               },
+              "additionalProperties": true,
               "required": ["inputFields"]
             }      
           }    
