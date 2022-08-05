@@ -181,6 +181,7 @@ assemble {
 }
 
 shadowJar {
+    dependsOn test
     minimize(){
         exclude (project(":shared"))
         exclude (project(":spark2"))
