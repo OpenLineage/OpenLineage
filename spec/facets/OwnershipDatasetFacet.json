@@ -16,7 +16,7 @@
               "properties" : {
                 "name" : {
                   "description" : "The URN describing the owner of the Dataset",
-                  "type" : "URN",
+                  "type" : "string",
                   "example" : "application:app_name"
                 },
                 "type" : {
@@ -35,7 +35,7 @@
   },
   "type" : "object",
   "properties" : {
-    "schema" : {
+    "ownership" : {
       "$ref" : "#/$defs/OwnershipDatasetFacet"
     }
   }
