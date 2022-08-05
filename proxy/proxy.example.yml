@@ -60,4 +60,4 @@ proxy:
     # Enables proxying OpenLineage events to a HTTP backend
     # - type: Http
     #   url: http://localhost:5000/api/v1/lineage
-    #   apikey: abcdefghijklmnopqrstuvwxyz (optional)
+    #   apiKey: abcdefghijklmnopqrstuvwxyz (optional)

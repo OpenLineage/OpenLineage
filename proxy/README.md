@@ -26,8 +26,8 @@ $ cp proxy.example.yml proxy.yml
 
 By default, the OpenLineage proxy uses the following ports:
 
-* TCP port `5000` is available for the HTTP API server.
-* TCP port `5001` is available for the admin interface.
+* TCP port `8080` is available for the HTTP API server.
+* TCP port `8081` is available for the admin interface.
 
 > **Note:** All of the configuration settings in `proxy.yml` can be specified either in the configuration file or in an environment variable.
 

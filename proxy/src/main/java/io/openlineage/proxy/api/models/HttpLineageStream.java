@@ -20,25 +20,26 @@ import lombok.extern.slf4j.Slf4j;
 public class HttpLineageStream extends LineageStream {
 
   private final String url;
-  private final String apikey;
+  private final String apiKey;
+  private Invocation.Builder invocation;
 
   public HttpLineageStream(@NonNull final HttpConfig httpConfig) {
     super(Type.HTTP);
     this.url = httpConfig.getUrl();
-    this.apikey = httpConfig.getApikey();
+    this.apiKey = httpConfig.getApiKey();
+    ClientBuilder cb = ClientBuilder.newBuilder();
+    Client client = cb.build();
+    this.invocation = client.target(this.url).request(MediaType.APPLICATION_JSON);
+    if (this.apiKey != null && this.apiKey.trim().length() > 0) {
+      this.invocation = this.invocation.header(HttpHeaders.AUTHORIZATION, "Bearer " + this.apiKey);
+    }
   }
 
   @Override
   public void collect(@NonNull String eventAsString) {
     eventAsString = eventAsString.trim();
     try {
-      ClientBuilder cb = ClientBuilder.newBuilder();
-      Client client = cb.build();
-      Invocation.Builder invocation = client.target(this.url).request(MediaType.APPLICATION_JSON);
-      if (this.apikey != null && this.apikey.trim().length() > 0) {
-        invocation = invocation.header(HttpHeaders.AUTHORIZATION, "Bearer " + this.apikey);
-      }
-      Response response = invocation.post(Entity.json(eventAsString));
+      Response response = this.invocation.post(Entity.json(eventAsString));
       int status = response.getStatus();
       log.debug("Received lineage event: {} \n response code: {}", eventAsString, status);
     } catch (WebApplicationException ex) {

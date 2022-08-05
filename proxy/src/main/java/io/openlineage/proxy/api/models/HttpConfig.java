@@ -15,5 +15,5 @@ import lombok.ToString;
 @ToString
 public final class HttpConfig implements ProxyStreamConfig {
   @Getter @Setter private String url;
-  @Getter @Setter private String apikey;
+  @Getter @Setter private String apiKey;
 }
