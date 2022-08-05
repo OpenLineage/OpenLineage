@@ -57,3 +57,7 @@ proxy:
     #     value.serializer : org.apache.kafka.common.serialization.StringSerializer
     #     bring.up.retries : 10
     #     bring.up.minSleepTime : 5000
+    # Enables proxying OpenLineage events to a HTTP backend
+    # - type: Http
+    #   url: http://localhost:5000/api/v1/lineage
+    #   apikey: abcdefghijklmnopqrstuvwxyz (optional)
