@@ -97,8 +97,8 @@ public class SaveIntoDataSourceCommandVisitor
           command.schema());
     }
 
-    // Similar to Kafka, Azure Kusto also has some special handling, so we use the below method
-    // for extracting the dataset from Kusto write operations.
+    // Similar to Kafka, Azure Kusto also has some special handling. So we use the method
+    // below for extracting the dataset from Kusto write operations.
     if (KustoRelationVisitor.isKustoSource(command.dataSource())) {
       return KustoRelationVisitor.createKustoDatasets(
           outputDataset(), command.options(), command.schema());
