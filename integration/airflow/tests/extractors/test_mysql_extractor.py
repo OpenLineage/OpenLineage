@@ -201,3 +201,44 @@ def create_connection():
 def test_get_connection_returns_one_if_exists(create_connection):
     conn = Connection("does_exist")
     assert get_connection("does_exist").conn_id == conn.conn_id
+
+
+@mock.patch("openlineage.airflow.extractors.sql_extractor.get_connection")
+def test_information_schema_query(get_connection):
+    extractor = MySqlExtractor(TASK)
+
+    conn = Connection()
+    conn.parse_from_uri(uri=CONN_URI)
+    get_connection.return_value = conn
+
+    same_schema_explicit = [
+        DbTableMeta("SCHEMA.TABLE_A"),
+        DbTableMeta("SCHEMA.TABLE_B"),
+    ]
+
+    same_schema_explicit_sql = (
+            "SELECT table_schema, table_name, column_name, ordinal_position, column_type "
+            "FROM information_schema.columns "
+            "WHERE ( table_schema = 'SCHEMA' AND table_name IN ('TABLE_A','TABLE_B') );"
+    )
+
+    different_schema_implicit = [
+        DbTableMeta("SCHEMA.TABLE_A"),
+        DbTableMeta("ANOTHER_SCHEMA.TABLE_B"),
+    ]
+
+    different_schema_implicit_sql = (
+        "SELECT table_schema, table_name, column_name, ordinal_position, column_type "
+        "FROM information_schema.columns "
+        "WHERE ( table_schema = 'SCHEMA' AND table_name IN ('TABLE_A') ) "
+        "OR ( table_schema = 'ANOTHER_SCHEMA' AND table_name IN ('TABLE_B') );"
+    )
+
+    assert (
+        extractor._information_schema_query(same_schema_explicit)
+        == same_schema_explicit_sql
+    )
+    assert (
+        extractor._information_schema_query(different_schema_implicit)
+        == different_schema_implicit_sql
+    )

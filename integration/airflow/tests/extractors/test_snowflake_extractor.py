@@ -134,8 +134,9 @@ def test_extract(get_connection, mock_get_table_schemas):
         Dataset(
             name=f"{DB_NAME}.{DB_SCHEMA_NAME}.{DB_TABLE_NAME.name}",
             source=source,
-            fields=[Field.from_column(column) for column in DB_TABLE_COLUMNS]
-        ).to_openlineage_dataset()]
+            fields=[Field.from_column(column) for column in DB_TABLE_COLUMNS],
+        ).to_openlineage_dataset()
+    ]
 
     task_metadata = SnowflakeExtractor(TASK).extract()
 
@@ -163,3 +164,72 @@ def test_extract_query_ids(get_connection, mock_get_table_schemas):
     task_metadata = SnowflakeExtractor(TASK).extract()
 
     assert task_metadata.run_facets["externalQuery"].externalQueryId == "1500100900"
+
+
+@mock.patch("openlineage.airflow.extractors.sql_extractor.get_connection")
+def test_information_schema_query(get_connection):
+    extractor = SnowflakeExtractor(TASK)
+
+    conn = Connection()
+    conn.parse_from_uri(uri=CONN_URI)
+    get_connection.return_value = conn
+
+    same_db_explicit = [
+        DbTableMeta("db.schema.table_a"),
+        DbTableMeta("DB.SCHEMA.table_b"),
+    ]
+
+    same_db_explicit_sql = (
+        "SELECT table_schema, table_name, column_name, ordinal_position, data_type "
+        "FROM DB.information_schema.columns "
+        "WHERE ( table_schema = 'SCHEMA' AND table_name IN ('TABLE_A','TABLE_B') );"
+    )
+
+    same_db_implicit = [DbTableMeta("SCHEMA.TABLE_A"), DbTableMeta("SCHEMA.TABLE_B")]
+
+    same_db_implicit_sql = (
+        "SELECT table_schema, table_name, column_name, ordinal_position, data_type "
+        "FROM FOOD_DELIVERY.information_schema.columns "
+        "WHERE ( table_schema = 'SCHEMA' AND table_name IN ('TABLE_A','TABLE_B') );"
+    )
+
+    different_databases_explicit = [
+        DbTableMeta("DB_1.SCHEMA.TABLE_A"),
+        DbTableMeta("DB_2.SCHEMA.TABLE_B"),
+    ]
+
+    different_databases_explicit_sql = (
+        "SELECT table_schema, table_name, column_name, ordinal_position, data_type "
+        "FROM DB_1.information_schema.columns "
+        "WHERE ( table_schema = 'SCHEMA' AND table_name IN ('TABLE_A') ) "
+        "UNION ALL "
+        "SELECT table_schema, table_name, column_name, ordinal_position, data_type "
+        "FROM DB_2.information_schema.columns "
+        "WHERE ( table_schema = 'SCHEMA' AND table_name IN ('TABLE_B') );"
+    )
+
+    different_databases_mixed = [
+        DbTableMeta("SCHEMA.TABLE_A"),
+        DbTableMeta("DB_2.SCHEMA.TABLE_B"),
+    ]
+
+    different_databases_mixed_sql = (
+        "SELECT table_schema, table_name, column_name, ordinal_position, data_type "
+        "FROM FOOD_DELIVERY.information_schema.columns "
+        "WHERE ( table_schema = 'SCHEMA' AND table_name IN ('TABLE_A') ) "
+        "UNION ALL "
+        "SELECT table_schema, table_name, column_name, ordinal_position, data_type "
+        "FROM DB_2.information_schema.columns "
+        "WHERE ( table_schema = 'SCHEMA' AND table_name IN ('TABLE_B') );"
+    )
+
+    assert extractor._information_schema_query(same_db_explicit) == same_db_explicit_sql
+    assert extractor._information_schema_query(same_db_implicit) == same_db_implicit_sql
+    assert (
+        extractor._information_schema_query(different_databases_explicit)
+        == different_databases_explicit_sql
+    )
+    assert (
+        extractor._information_schema_query(different_databases_mixed)
+        == different_databases_mixed_sql
+    )

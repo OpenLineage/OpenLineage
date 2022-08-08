@@ -62,13 +62,13 @@
 			"schema": {
 				"fields": [{
 					"name": "order_day_of_week",
-					"type": "varchar"
+					"type": "varchar(64)"
 				}, {
 					"name": "order_placed_on",
 					"type": "timestamp"
 				}, {
 					"name": "orders_placed",
-					"type": "int4"
+					"type": "int"
 				}]
 			}
 		},
@@ -106,13 +106,13 @@
 			"schema": {
 				"fields": [{
 					"name": "order_day_of_week",
-					"type": "varchar"
+					"type": "varchar(64)"
 				}, {
 					"name": "order_placed_on",
 					"type": "timestamp"
 				}, {
 					"name": "orders_placed",
-					"type": "int4"
+					"type": "int"
 				}]
 			}
 		},
