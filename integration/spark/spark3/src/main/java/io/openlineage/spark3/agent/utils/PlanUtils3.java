@@ -31,12 +31,14 @@ public class PlanUtils3 {
   public static Optional<DatasetIdentifier> getDatasetIdentifier(
       OpenLineageContext context, DataSourceV2Relation relation) {
 
-    if (relation.identifier().isEmpty()) {
+    // if (relation.identifier() == null) {
+    //   return Optional.empty();
+    // }
+    if (relation.identifier() == null || relation.identifier().isEmpty()) {
       // Since identifier is null, short circuit and check if we can get the dataset identifer
       // from the relation itself.
       return getDatasetIdentifierFromRelation(relation);
     }
-    log.info("relation identifier is not null");
     return Optional.of(relation)
         .filter(r -> r.identifier() != null)
         .filter(r -> r.identifier().isDefined())
