@@ -48,6 +48,61 @@ class HttpTransportTest {
   }
 
   @Test
+  void httpTransportRaisesOnBothUriAndEndpoint() throws IOException {
+    CloseableHttpClient http = mock(CloseableHttpClient.class);
+    HttpConfig config = new HttpConfig();
+    config.setUrl(URI.create("https://localhost:1500/api/v1/lineage"));
+    config.setEndpoint("/");
+    assertThrows(OpenLineageClientException.class, () -> new HttpTransport(http, config));
+  }
+
+  @Test
+  void httpTransportDefaultEndpoint() throws IOException {
+    CloseableHttpClient http = mock(CloseableHttpClient.class);
+    HttpConfig config = new HttpConfig();
+    config.setUrl(URI.create("https://localhost:1500"));
+    Transport transport = new HttpTransport(http, config);
+    OpenLineageClient client = new OpenLineageClient(transport);
+
+    ArgumentCaptor<HttpUriRequest> captor = ArgumentCaptor.forClass(HttpUriRequest.class);
+
+    CloseableHttpResponse response = mock(CloseableHttpResponse.class, RETURNS_DEEP_STUBS);
+
+    when(response.getStatusLine().getStatusCode()).thenReturn(200);
+    when(http.execute(any(HttpUriRequest.class))).thenReturn(response);
+
+    client.emit(event());
+
+    verify(http, times(1)).execute(captor.capture());
+
+    assertThat(captor.getValue().getURI())
+        .isEqualTo(URI.create("https://localhost:1500/api/v1/lineage"));
+  }
+
+  @Test
+  void httpTransportAcceptsExplicitEndpoint() throws IOException {
+    CloseableHttpClient http = mock(CloseableHttpClient.class);
+    HttpConfig config = new HttpConfig();
+    config.setUrl(URI.create("https://localhost:1500"));
+    config.setEndpoint("/");
+    Transport transport = new HttpTransport(http, config);
+    OpenLineageClient client = new OpenLineageClient(transport);
+
+    ArgumentCaptor<HttpUriRequest> captor = ArgumentCaptor.forClass(HttpUriRequest.class);
+
+    CloseableHttpResponse response = mock(CloseableHttpResponse.class, RETURNS_DEEP_STUBS);
+
+    when(response.getStatusLine().getStatusCode()).thenReturn(200);
+    when(http.execute(any(HttpUriRequest.class))).thenReturn(response);
+
+    client.emit(event());
+
+    verify(http, times(1)).execute(captor.capture());
+
+    assertThat(captor.getValue().getURI()).isEqualTo(URI.create("https://localhost:1500/"));
+  }
+
+  @Test
   void httpTransportRaisesOn500() throws IOException {
     CloseableHttpClient http = mock(CloseableHttpClient.class);
     HttpConfig config = new HttpConfig();
