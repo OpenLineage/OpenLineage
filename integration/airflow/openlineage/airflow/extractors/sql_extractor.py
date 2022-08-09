@@ -18,7 +18,8 @@ from abc import abstractmethod
 from openlineage.common.sql.parser import DbTableMeta
 
 if TYPE_CHECKING:
-    from airflow.models import Connection, BaseHook
+    from airflow.models import Connection
+    from airflow.hooks.base import BaseHook
 
 logger = logging.getLogger(__name__)
 
@@ -123,7 +124,7 @@ class SqlExtractor(BaseExtractor):
     def conn(self) -> "Connection":
         if not self._conn:
             self._conn = get_connection(self._conn_id())
-        return self._conn
+        return self._conn  # type: ignore
 
     @property
     def scheme(self) -> Optional[str]:

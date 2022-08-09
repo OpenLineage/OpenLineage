@@ -460,8 +460,8 @@ jobs:
       - *install_python_client
       - install_integration_common:
           install_parser: << parameters.install_parser >>
-      - run: pip install tox mypy==0.770
-      - run: python -m mypy --ignore-missing-imports openlineage
+      - run: pip install tox mypy==0.971
+      - run: python -m mypy --install-types --non-interactive --ignore-missing-imports openlineage
       - restore_cache:
           keys:
             - v1-toxenv-<< parameters.airflow-version >>-{{ checksum "setup.cfg" }}-{{ checksum "setup.py" }}
