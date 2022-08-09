@@ -2,7 +2,6 @@
 import logging
 
 from openlineage.client.run import RunEvent
-from openlineage.client.serde import Serde
 from openlineage.client.transport.transport import Transport, Config
 
 
