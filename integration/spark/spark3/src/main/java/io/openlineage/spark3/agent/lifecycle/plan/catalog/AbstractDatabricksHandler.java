@@ -30,7 +30,7 @@ import scala.Option;
  */
 @Slf4j
 public abstract class AbstractDatabricksHandler implements CatalogHandler {
-  final String DATABRICKS_CLASS_NAME_STRING;
+  final String databricksClassNameString;
 
   protected final OpenLineageContext context;
 
@@ -40,13 +40,13 @@ public abstract class AbstractDatabricksHandler implements CatalogHandler {
 
   protected AbstractDatabricksHandler(OpenLineageContext context, String databricksClassName) {
     this.context = context;
-    this.DATABRICKS_CLASS_NAME_STRING = databricksClassName;
+    this.databricksClassNameString = databricksClassName;
   }
 
   @Override
   public boolean hasClasses() {
     try {
-      DeltaHandler.class.getClassLoader().loadClass(DATABRICKS_CLASS_NAME_STRING);
+      DeltaHandler.class.getClassLoader().loadClass(databricksClassNameString);
       return true;
     } catch (Exception e) {
       // swallow- we don't care
@@ -56,7 +56,7 @@ public abstract class AbstractDatabricksHandler implements CatalogHandler {
 
   @Override
   public boolean isClass(TableCatalog tableCatalog) {
-    return DATABRICKS_CLASS_NAME_STRING.equals(tableCatalog.getClass().getCanonicalName());
+    return databricksClassNameString.equals(tableCatalog.getClass().getCanonicalName());
   }
 
   @Override
