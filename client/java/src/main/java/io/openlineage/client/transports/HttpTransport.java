@@ -69,11 +69,18 @@ public final class HttpTransport extends Transport implements Closeable {
     try {
       URI configUri = httpConfig.getUrl();
       if (configUri.getPath() != null && !configUri.getPath().equals("")) {
+        if (httpConfig.getEndpoint() != null && !httpConfig.getEndpoint().equals("")) {
+          throw new OpenLineageClientException("You can't pass both uri and endpoint parameters.");
+        }
         this.uri = httpConfig.getUrl();
       } else {
+        String endpoint =
+            httpConfig.getEndpoint() != null && !httpConfig.getEndpoint().equals("")
+                ? httpConfig.getEndpoint()
+                : API_V1 + "/lineage";
         this.uri =
             new URIBuilder(httpConfig.getUrl())
-                .setPath(httpConfig.getUrl().getPath() + API_V1 + "/lineage")
+                .setPath(httpConfig.getUrl().getPath() + endpoint)
                 .build();
       }
     } catch (URISyntaxException e) {
