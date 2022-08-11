@@ -54,8 +54,8 @@ java {
 archivesBaseName='openlineage-flink'
 
 ext {
-    flinkVersionShort = '1.14'
-    flinkVersion = '1.14.4'
+    flinkVersion = project.getProperty('flink.version')
+    flinkVersionShort = flinkVersion.substring(0,3)
     assertjVersion = '3.20.2'
     junit5Version = '5.7.2'
     lombokVersion = '1.18.20'
