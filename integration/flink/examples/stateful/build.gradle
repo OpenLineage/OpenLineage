@@ -78,7 +78,7 @@ dependencies {
     implementation "org.apache.flink:flink-table-api-java-bridge$flinkVersionWithScala212"
     implementation "org.apache.flink:flink-table-common:$flinkVersion"
     implementation "org.apache.flink:flink-table-runtime$flinkVersionWithScala212"
-    implementation "org.apache.flink:flink-table-planner$flinkVersionWithScala212"
+    implementation "org.apache.flink:flink-table-planner_2.12:$flinkVersion"
 
     implementation "com.typesafe:config:1.4.1"
     implementation "org.apache.avro:avro:1.11.0"
