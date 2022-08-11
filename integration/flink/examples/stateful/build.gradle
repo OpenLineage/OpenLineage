@@ -62,6 +62,7 @@ dependencies {
     testImplementation 'org.awaitility:awaitility:4.1.1'
 
     def flinkVersion = project.getProperty('flink.version')
+    def flinkVersionShort = flinkVersion.substring(0,4)
     def flinkVersionWithScala212 = flinkVersion.contains('1.14') ? "_2.12:$flinkVersion" : ":$flinkVersion"
     def hadoopVersion = '3.3.1'
     implementation("io.openlineage:openlineage-java:$project.version")
@@ -92,8 +93,8 @@ dependencies {
     }
     implementation "org.apache.avro:avro"
 
-    compileOnly 'org.apache.iceberg:iceberg-flink-1.14:0.13.1'
-    implementation 'org.apache.iceberg:iceberg-flink-runtime-1.14:0.13.1'
+    compileOnly "org.apache.iceberg:iceberg-flink-$flinkVersionShort:0.14.0"
+    implementation "org.apache.iceberg:iceberg-flink-runtime-$flinkVersionShort:0.14.0"
 }
 
 assemble {
