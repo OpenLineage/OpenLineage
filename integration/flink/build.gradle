@@ -155,6 +155,7 @@ def integrationTestConfiguration = {
         showStandardStreams = true
     }
     systemProperties = [
+            'flink.version': "${flinkVersion}",
             'junit.platform.output.capture.stdout': 'true',
             'junit.platform.output.capture.stderr': 'true',
             '.flink.jar': "${archivesBaseName}-${project.version}.jar",
