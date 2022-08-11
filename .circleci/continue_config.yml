@@ -280,7 +280,7 @@ jobs:
       - attach_workspace:
           at: .
       - run: (cd ./../../client/java/ && ./gradlew --no-daemon --stacktrace publishToMavenLocal)
-      - run: ./gradlew --no-daemon --stacktrace build
+      - run: ./gradlew --no-daemon --stacktrace build -Pflink.version=<< parameters.flink-version >>
       - run:
           when: on_fail
           command: cat build/test-results/test/TEST-*.xml
@@ -452,8 +452,8 @@ jobs:
             - v1-integration-flink-{{ .Branch }}
       - run: (cd ./../../client/java/ && ./gradlew --no-daemon --stacktrace publishToMavenLocal)
       - run: chmod -R 777 data/iceberg/db
-      - run: ./gradlew examples:stateful:build
-      - run: ./gradlew --no-daemon integrationTest --i
+      - run: ./gradlew examples:stateful:build -Pflink.version=<< parameters.flink-version >>
+      - run: ./gradlew --no-daemon integrationTest --i -Pflink.version=<< parameters.flink-version >>
       - run:
           when: on_fail
           command: cat build/test-results/integrationTest/TEST-*.xml
