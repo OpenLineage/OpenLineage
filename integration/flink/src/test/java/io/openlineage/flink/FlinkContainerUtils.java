@@ -27,7 +27,8 @@ public class FlinkContainerUtils {
   private static final String SCHEMA_REGISTRY_IMAGE = getRegistryImage();
   private static final String KAFKA_IMAGE = "wurstmeister/kafka:2.13-2.8.1";
   private static final String ZOOKEEPER_IMAGE = "confluentinc/cp-zookeeper:" + CONFLUENT_VERSION;
-  private static final String FLINK_IMAGE = String.format("flink:%s-java11", System.getProperty("flink.version"));
+  private static final String FLINK_IMAGE =
+      String.format("flink:%s-java11", System.getProperty("flink.version"));
 
   static MockServerContainer makeMockServerContainer(Network network) {
     return new MockServerContainer(
