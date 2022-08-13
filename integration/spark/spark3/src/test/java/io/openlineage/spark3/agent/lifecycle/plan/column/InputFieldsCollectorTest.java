@@ -247,7 +247,10 @@ class InputFieldsCollectorTest {
 
     InputFieldsCollector.collect(context, plan, builder);
     verify(builder, times(1))
-        .addInput(exprId, new DatasetIdentifier("/path", "abfss://tmp@storage.dfs.core.windows.net"), SOME_NAME);
+        .addInput(
+            exprId,
+            new DatasetIdentifier("/path", "abfss://tmp@storage.dfs.core.windows.net"),
+            SOME_NAME);
   }
 
   private LogicalPlan createPlanWithGrandChild(LogicalPlan grandChild) {
