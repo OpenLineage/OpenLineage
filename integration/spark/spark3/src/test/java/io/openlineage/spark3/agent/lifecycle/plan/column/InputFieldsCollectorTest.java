@@ -226,10 +226,11 @@ class InputFieldsCollectorTest {
   @SneakyThrows
   void collectWhenGrandChildNodeIsHadoopRelation() {
     LogicalRelation logicalRelation = mock(LogicalRelation.class);
+    when(logicalRelation.catalogTable()).thenReturn(Option.empty());
     HadoopFsRelation relation = mock(HadoopFsRelation.class, RETURNS_DEEP_STUBS);
     when(logicalRelation.relation()).thenReturn(relation);
 
-    Path p = new Path("/tmp/some/path/" + FILE);
+    Path p = new Path("abfss://tmp@storage.dfs.core.windows.net/path");
     Seq<Path> expected_path_seq =
         JavaConverters.asScalaBufferConverter(Collections.singletonList(p)).asScala();
 
@@ -245,8 +246,8 @@ class InputFieldsCollectorTest {
                 .toSeq());
 
     InputFieldsCollector.collect(context, plan, builder);
-    verify(builder, times(0))
-        .addInput(exprId, new DatasetIdentifier("/tmp/some/path", FILE), SOME_NAME);
+    verify(builder, times(1))
+        .addInput(exprId, new DatasetIdentifier("/path", "abfss://tmp@storage.dfs.core.windows.net"), SOME_NAME);
   }
 
   private LogicalPlan createPlanWithGrandChild(LogicalPlan grandChild) {
