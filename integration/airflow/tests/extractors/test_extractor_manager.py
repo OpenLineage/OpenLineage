@@ -84,14 +84,15 @@ def test_extracting_inlets_and_outlets():
     from openlineage.client.run import Dataset
 
     metadata = TaskMetadata(name="fake-name", job_facets={})
-    inlets = [Table(database="d1", cluster="c1", name="t1")]
+    inlets = [Dataset(namespace="c1", name="d1.t0", facets={}), Table(database="d1", cluster="c1", name="t1")]
     outlets = [Table(database="d1", cluster="c1", name="t2")]
 
     manager = ExtractorManager()
     manager.extract_inlets_and_outlets(metadata, inlets, outlets)
 
-    assert len(metadata.inputs) == 1 and len(metadata.outputs) == 1
+    assert len(metadata.inputs) == 2 and len(metadata.outputs) == 1
     assert isinstance(metadata.inputs[0], Dataset)
+    assert isinstance(metadata.inputs[1], Dataset)
     assert isinstance(metadata.outputs[0], Dataset)
 
 
@@ -107,15 +108,16 @@ def test_extraction_from_inlets_and_outlets_without_extractor():
 
     task = FakeOperator(
         task_id="task",
-        inlets=[Table(database="d1", cluster="c1", name="t1")],
+        inlets=[Dataset(namespace="c1", name="d1.t0", facets={}), Table(database="d1", cluster="c1", name="t1")],
         outlets=[Table(database="d1", cluster="c1", name="t2")],
     )
 
     manager = ExtractorManager()
 
     metadata = manager.extract_metadata(dagrun, task)
-    assert len(metadata.inputs) == 1 and len(metadata.outputs) == 1
+    assert len(metadata.inputs) == 2 and len(metadata.outputs) == 1
     assert isinstance(metadata.inputs[0], Dataset)
+    assert isinstance(metadata.inputs[1], Dataset)
     assert isinstance(metadata.outputs[0], Dataset)
 
 
@@ -131,7 +133,7 @@ def test_fake_extractor_extracts_from_inlets_and_outlets():
 
     task = FakeOperator(
         task_id="task",
-        inlets=[Table(database="d1", cluster="c1", name="t1")],
+        inlets=[Dataset(namespace="c1", name="d1.t0", facets={}), Table(database="d1", cluster="c1", name="t1")],
         outlets=[Table(database="d1", cluster="c1", name="t2")],
     )
 
@@ -139,10 +141,12 @@ def test_fake_extractor_extracts_from_inlets_and_outlets():
     manager.add_extractor(FakeOperator.__name__, FakeExtractor)
 
     metadata = manager.extract_metadata(dagrun, task)
-    assert len(metadata.inputs) == 1 and len(metadata.outputs) == 1
+    assert len(metadata.inputs) == 2 and len(metadata.outputs) == 1
     assert isinstance(metadata.inputs[0], Dataset)
+    assert isinstance(metadata.inputs[1], Dataset)
     assert isinstance(metadata.outputs[0], Dataset)
-    assert metadata.inputs[0].name == "d1.t1"
+    assert metadata.inputs[0].name == "d1.t0"
+    assert metadata.inputs[1].name == "d1.t1"
     assert metadata.outputs[0].name == "d1.t2"
 
 
@@ -158,7 +162,7 @@ def test_fake_extractor_extracts_and_discards_inlets_and_outlets():
 
     task = FakeOperator(
         task_id="task",
-        inlets=[Table(database="d1", cluster="c1", name="t1")],
+        inlets=[Dataset(namespace="c1", name="d1.t0", facets={}), Table(database="d1", cluster="c1", name="t1")],
         outlets=[Table(database="d1", cluster="c1", name="t2")],
     )
 
