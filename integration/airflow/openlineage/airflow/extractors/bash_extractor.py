@@ -25,7 +25,7 @@ class BashExtractor(BaseExtractor):
 
         job_facet: Dict = {}
         if collect_source:
-            job_facet={
+            job_facet = {
                 "sourceCode": SourceCodeJobFacet(
                     "bash",
                     # We're on worker and should have access to DAG files
