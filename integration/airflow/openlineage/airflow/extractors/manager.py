@@ -110,10 +110,18 @@ class ExtractorManager:
             outlets: List,
     ):
         from airflow.lineage.entities import Table
+        from openlineage.client.run import Dataset
         from openlineage.airflow.extractors.converters import table_to_dataset
 
         self.log.debug("Manually extracting lineage metadata from inlets and outlets")
-        task_metadata.inputs = [table_to_dataset(t) for t in inlets
-                                if isinstance(t, Table)]
-        task_metadata.outputs = [table_to_dataset(t) for t in outlets
-                                 if isinstance(t, Table)]
+        for i in inlets:
+            if isinstance(i, Dataset):
+                task_metadata.inputs.append(i)
+            elif isinstance(i, Table):
+                task_metadata.inputs.append(table_to_dataset(i))
+
+        for o in outlets:
+            if isinstance(o, Dataset):
+                task_metadata.outputs.append(o)
+            elif isinstance(o, Table):
+                task_metadata.outputs.append(table_to_dataset(o))
