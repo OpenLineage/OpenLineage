@@ -84,7 +84,8 @@ def test_extracting_inlets_and_outlets():
     from openlineage.client.run import Dataset
 
     metadata = TaskMetadata(name="fake-name", job_facets={})
-    inlets = [Dataset(namespace="c1", name="d1.t0", facets={}), Table(database="d1", cluster="c1", name="t1")]
+    inlets = [Dataset(namespace="c1", name="d1.t0", facets={}),
+              Table(database="d1", cluster="c1", name="t1")]
     outlets = [Table(database="d1", cluster="c1", name="t2")]
 
     manager = ExtractorManager()
@@ -108,7 +109,8 @@ def test_extraction_from_inlets_and_outlets_without_extractor():
 
     task = FakeOperator(
         task_id="task",
-        inlets=[Dataset(namespace="c1", name="d1.t0", facets={}), Table(database="d1", cluster="c1", name="t1")],
+        inlets=[Dataset(namespace="c1", name="d1.t0", facets={}),
+                Table(database="d1", cluster="c1", name="t1")],
         outlets=[Table(database="d1", cluster="c1", name="t2")],
     )
 
@@ -133,8 +135,10 @@ def test_fake_extractor_extracts_from_inlets_and_outlets():
 
     task = FakeOperator(
         task_id="task",
-        inlets=[Dataset(namespace="c1", name="d1.t0", facets={}), Table(database="d1", cluster="c1", name="t1")],
-        outlets=[Table(database="d1", cluster="c1", name="t2"), Dataset(namespace="c1", name="d1.t3", facets={})],
+        inlets=[Dataset(namespace="c1", name="d1.t0", facets={}),
+                Table(database="d1", cluster="c1", name="t1")],
+        outlets=[Table(database="d1", cluster="c1", name="t2"),
+                 Dataset(namespace="c1", name="d1.t3", facets={})],
     )
 
     manager = ExtractorManager()
@@ -164,7 +168,8 @@ def test_fake_extractor_extracts_and_discards_inlets_and_outlets():
 
     task = FakeOperator(
         task_id="task",
-        inlets=[Dataset(namespace="c1", name="d1.t0", facets={}), Table(database="d1", cluster="c1", name="t1")],
+        inlets=[Dataset(namespace="c1", name="d1.t0", facets={}),
+                Table(database="d1", cluster="c1", name="t1")],
         outlets=[Table(database="d1", cluster="c1", name="t2")],
     )
 
