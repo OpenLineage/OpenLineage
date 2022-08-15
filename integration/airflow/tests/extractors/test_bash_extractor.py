@@ -14,7 +14,7 @@ from openlineage.client.facet import SourceCodeJobFacet
 def test_extract_operator_bash_command_disables_without_env():
     operator = BashOperator(task_id='taskid', bash_command="exit 0")
     extractor = BashExtractor(operator)
-    assert extractor.extract() is None
+    assert 'sourceCode' not in extractor.extract().job_facets
 
 
 @patch.dict(os.environ, {"OPENLINEAGE_AIRFLOW_DISABLE_SOURCE_CODE": "False"})
@@ -26,7 +26,7 @@ def test_extract_operator_bash_command_enables_on_true():
 
 def test_extract_dag_bash_command_disabled_without_env():
     extractor = BashExtractor(bash_task)
-    assert extractor.extract() is None
+    assert 'sourceCode' not in extractor.extract().job_facets
 
 
 @patch.dict(os.environ, {"OPENLINEAGE_AIRFLOW_DISABLE_SOURCE_CODE": "False"})
@@ -39,7 +39,7 @@ def test_extract_dag_bash_command_enables_on_true():
 @patch.dict(os.environ, {"OPENLINEAGE_AIRFLOW_DISABLE_SOURCE_CODE": "True"})
 def test_extract_dag_bash_command_env_disables_on_true():
     extractor = BashExtractor(bash_task)
-    assert extractor.extract() is None
+    assert 'sourceCode' not in extractor.extract().job_facets
 
 
 @patch.dict(os.environ, {"OPENLINEAGE_AIRFLOW_DISABLE_SOURCE_CODE": "asdftgeragdsfgawef"})
