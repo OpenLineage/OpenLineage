@@ -134,20 +134,22 @@ def test_fake_extractor_extracts_from_inlets_and_outlets():
     task = FakeOperator(
         task_id="task",
         inlets=[Dataset(namespace="c1", name="d1.t0", facets={}), Table(database="d1", cluster="c1", name="t1")],
-        outlets=[Table(database="d1", cluster="c1", name="t2")],
+        outlets=[Table(database="d1", cluster="c1", name="t2"), Dataset(namespace="c1", name="d1.t3", facets={})],
     )
 
     manager = ExtractorManager()
     manager.add_extractor(FakeOperator.__name__, FakeExtractor)
 
     metadata = manager.extract_metadata(dagrun, task)
-    assert len(metadata.inputs) == 2 and len(metadata.outputs) == 1
+    assert len(metadata.inputs) == 2 and len(metadata.outputs) == 2
     assert isinstance(metadata.inputs[0], Dataset)
     assert isinstance(metadata.inputs[1], Dataset)
     assert isinstance(metadata.outputs[0], Dataset)
+    assert isinstance(metadata.outputs[1], Dataset)
     assert metadata.inputs[0].name == "d1.t0"
     assert metadata.inputs[1].name == "d1.t1"
     assert metadata.outputs[0].name == "d1.t2"
+    assert metadata.outputs[1].name == "d1.t3"
 
 
 @pytest.mark.skipif(
