@@ -17,11 +17,9 @@ class BashExtractor(BaseExtractor):
         return ["BashOperator"]
 
     def extract(self) -> Optional[TaskMetadata]:
-        collect_source = True
-        if os.environ.get(
+        collect_source = os.environ.get(
             "OPENLINEAGE_AIRFLOW_DISABLE_SOURCE_CODE", "True"
-        ).lower() in ('true', '1', 't'):
-            collect_source = False
+        ).lower() not in ('true', '1', 't')
 
         job_facet: Dict = {}
         if collect_source:
