@@ -15,8 +15,11 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
+import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 
 public class CatalogUtils3 {
+
+  private static List<RelationHandler> relationHandlers = getRelationHandlers();
 
   private static List<CatalogHandler> getHandlers(OpenLineageContext context) {
     List<CatalogHandler> handlers =
@@ -28,6 +31,11 @@ public class CatalogUtils3 {
             new JdbcHandler(),
             new V2SessionCatalogHandler());
     return handlers.stream().filter(CatalogHandler::hasClasses).collect(Collectors.toList());
+  }
+
+  private static List<RelationHandler> getRelationHandlers() {
+    List<RelationHandler> handlers = Arrays.asList(new CosmosHandler());
+    return handlers.stream().filter(RelationHandler::hasClasses).collect(Collectors.toList());
   }
 
   public static DatasetIdentifier getDatasetIdentifier(
@@ -59,6 +67,19 @@ public class CatalogUtils3 {
   public static Optional<CatalogHandler> getCatalogHandler(
       OpenLineageContext context, TableCatalog catalog) {
     return getHandlers(context).stream().filter(handler -> handler.isClass(catalog)).findAny();
+  }
+
+  public static DatasetIdentifier getDatasetIdentifierFromRelation(DataSourceV2Relation relation) {
+    return getDatasetIdentifierFromRelation(relation, relationHandlers);
+  }
+
+  public static DatasetIdentifier getDatasetIdentifierFromRelation(
+      DataSourceV2Relation relation, List<RelationHandler> relationHandlers) {
+    return relationHandlers.stream()
+        .filter(handler -> handler.isClass(relation))
+        .map(handler -> handler.getDatasetIdentifier(relation))
+        .findAny()
+        .orElseThrow(() -> new UnsupportedCatalogException(relation.getClass().getCanonicalName()));
   }
 
   public static Optional<OpenLineage.StorageDatasetFacet> getStorageDatasetFacet(
