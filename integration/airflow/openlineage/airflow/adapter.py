@@ -5,7 +5,7 @@ import os
 import logging
 from typing import Optional, Dict, Type
 
-from openlineage.airflow import __version__ as OPENLINEAGE_AIRFLOW_VERSION
+from openlineage.airflow.version import __version__ as OPENLINEAGE_AIRFLOW_VERSION
 from openlineage.airflow.extractors import TaskMetadata
 
 from openlineage.client import OpenLineageClient, OpenLineageClientOptions, set_producer

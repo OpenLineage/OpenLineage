@@ -47,7 +47,7 @@ def test_env_add_extractor():
 
 def test_env_multiple_extractors():
     extractor_list_len = len(Extractors().extractors)
-    with patch.dict(os.environ, {"OPENLINEAGE_EXTRACTORS": "tests.extractors.test_extractors.FakeExtractor;tests.extractors.test_extractors.AnotherFakeExtractor"}):  # noqa
+    with patch.dict(os.environ, {"OPENLINEAGE_EXTRACTORS": "tests.extractors.test_extractors.FakeExtractor;\ntests.extractors.test_extractors.AnotherFakeExtractor"}):  # noqa
         assert len(Extractors().extractors) == extractor_list_len + 2
 
 

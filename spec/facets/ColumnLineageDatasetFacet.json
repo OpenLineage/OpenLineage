@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://openlineage.io/spec/facets/1-0-0/ColumnLineageDatasetFacet.json",
+  "$id": "https://openlineage.io/spec/facets/1-0-1/ColumnLineageDatasetFacet.json",
   "$defs": {
     "ColumnLineageDatasetFacet": {
       "allOf": [{
@@ -32,12 +32,22 @@
                         "description": "The input field"
                       }
                     },
+                    "additionalProperties": true,
                     "required": [
                       "namespace", "name", "field"
                     ]
                   }
+                },
+                "transformationDescription": {
+                   "type": "string",
+                   "description": "a string representation of the transformation applied"
+                },
+                "transformationType": {
+                   "type": "string",
+                   "description": "IDENTITY|MASKED reflects a clearly defined behavior. IDENTITY: exact same as input; MASKED: no original data available (like a hash of PII for example)"
                 }
               },
+              "additionalProperties": true,
               "required": ["inputFields"]
             }      
           }    

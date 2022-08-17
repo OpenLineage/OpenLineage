@@ -40,6 +40,7 @@ Specification of build-in ones are below.
 #### HTTP
 
 * `url` - required string parameter specifying
+* `endpoint` - optional string parameter specifying endpoint to which events are sent. By default `api/v1/lineage`.
 * `timeout` - optional float parameter specifying timeout when sending event. By default 5 seconds.
 * `verify` optional boolean attribute specifying if client should verify TLS certificates of backend. By default true.
 * `auth` - optional dictionary specifying authentication options. Type property is required.

@@ -333,7 +333,7 @@ class SparkReadWriteIntegTest {
     // The CreateView action completes quickly enough that it is sometimes missed in CI (the
     // execution id is no longer in the QueryExecution map). That makes this test sometimes flaky
     // if we expect an exact count.
-    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, atLeast(4))
+    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, atLeast(2))
         .emit(lineageEvent.capture());
     List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
     Optional<OpenLineage.RunEvent> completionEvent =
