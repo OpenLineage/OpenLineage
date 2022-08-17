@@ -22,11 +22,9 @@ class PythonExtractor(BaseExtractor):
         return ["PythonOperator"]
 
     def extract(self) -> Optional[TaskMetadata]:
-        collect_source = True
-        if os.environ.get(
+        collect_source = os.environ.get(
             "OPENLINEAGE_AIRFLOW_DISABLE_SOURCE_CODE", "True"
-        ).lower() in ('true', '1', 't'):
-            collect_source = False
+        ).lower() not in ('true', '1', 't')
 
         source_code = self.get_source_code(self.operator.python_callable)
         job_facet: Dict = {}
