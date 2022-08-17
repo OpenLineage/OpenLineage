@@ -14,7 +14,7 @@ from openlineage.client.utils import RedactMixin
 @attr.s
 class AirflowVersionRunFacet(BaseFacet):
     operator: str = attr.ib()
-    taskInfo: str = attr.ib()
+    taskInfo: Dict[str, object] = attr.ib()
     airflowVersion: str = attr.ib()
     openlineageAirflowVersion: str = attr.ib()
 
@@ -27,11 +27,11 @@ class AirflowVersionRunFacet(BaseFacet):
     @classmethod
     def from_task(cls, task):
         # task.__dict__ may contain values uncastable to str
-        from openlineage.airflow.utils import SafeStrDict, get_operator_class
+        from openlineage.airflow.utils import get_operator_class, to_json_encodable
 
         return cls(
             f"{get_operator_class(task).__module__}.{get_operator_class(task).__name__}",
-            str(SafeStrDict(task.__dict__)),
+            to_json_encodable(task),
             AIRFLOW_VERSION,
             OPENLINEAGE_AIRFLOW_VERSION,
         )

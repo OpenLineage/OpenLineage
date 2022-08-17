@@ -2,12 +2,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
+import json
 from urllib.parse import parse_qs, urlparse
 
 import pendulum
 import pytest
 import datetime
-from airflow.models import Connection
+from airflow.models import Connection, DAG as AIRFLOW_DAG
+from airflow.operators.dummy_operator import DummyOperator
 from pkg_resources import parse_version
 from airflow.version import version as AIRFLOW_VERSION
 
@@ -17,6 +19,7 @@ from openlineage.airflow.utils import (
     get_connection_uri,
     get_normalized_postgres_connection_uri,
     get_connection,
+    to_json_encodable,
     DagUtils,
     SafeStrDict,
     build_table_check_facets,
@@ -145,6 +148,19 @@ def test_parse_version():
     assert parse_version("2.2.4") < parse_version("2.3.0.dev0")
     assert parse_version("1.10.15") < parse_version("2.3.0.dev0")
     assert parse_version("2.2.4.dev0") < parse_version("2.3.0.dev0")
+
+
+def test_to_json_encodable():
+    dag = AIRFLOW_DAG(dag_id='test_dag',
+                      schedule_interval='*/2 * * * *',
+                      start_date=datetime.datetime.now(),
+                      catchup=False)
+    task = DummyOperator(task_id='test_task', dag=dag)
+
+    encodable = to_json_encodable(task)
+    encoded = json.dumps(encodable)
+    decoded = json.loads(encoded)
+    assert decoded == encodable
 
 
 def test_safe_dict():

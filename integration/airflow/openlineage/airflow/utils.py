@@ -1,6 +1,7 @@
 # Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
+import datetime
 import importlib
 import json
 import logging
@@ -12,6 +13,7 @@ from uuid import uuid4
 from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
 from typing import Optional
 
+from airflow.models import DAG as AIRFLOW_DAG
 from airflow.version import version as AIRFLOW_VERSION
 
 from pkg_resources import parse_version
@@ -83,6 +85,20 @@ class JobIdMapping:
     @staticmethod
     def make_key(job_name, run_id):
         return "openlineage_id_mapping-{}-{}".format(job_name, run_id)
+
+
+def to_json_encodable(task: "BaseOperator") -> Dict[str, object]:
+    def _task_encoder(obj):
+        if isinstance(obj, datetime.datetime):
+            return obj.isoformat()
+        elif isinstance(obj, AIRFLOW_DAG):
+            return {'dag_id': obj.dag_id,
+                    'tags': obj.tags,
+                    'schedule_interval': obj.schedule_interval}
+        else:
+            return str(obj)
+
+    return json.loads(json.dumps(task.__dict__, default=_task_encoder))
 
 
 class SafeStrDict(dict):
