@@ -133,7 +133,7 @@ Example of valid name is `BigQueryStatisticsJobFacet` and it's key `bigQuery_sta
 
 - **version**: Captures the dataset version when versioning is defined by database (ex. Iceberg snapshot ID)
 
-- **columnLineage**: Captures the column-level lineage
+- [**columnLineage**](facets/ColumnLineageDatasetFacet.md): Captures the column-level lineage
 
 - **ownership**: Captures the owners of the dataset
 
