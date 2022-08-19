@@ -119,7 +119,6 @@ public class ParentRunFacetBuilder extends AbstractRunFacetBuilder<SparkListener
     String namespace =
         SparkConfUtils.findSparkConfigKey(
             sess.sparkContext().conf(), "openlineage.namespace", null);
-
     Optional<ParentRunFacet> parentRunFacet = Optional.empty();
     if (parentRunId != null && parentJobName != null && namespace != null) {
       parentRunFacet =
@@ -146,7 +145,6 @@ public class ParentRunFacetBuilder extends AbstractRunFacetBuilder<SparkListener
     if (event instanceof SparkListenerSQLExecutionEnd) {
       // If this is an ExecutionEnd, we can remove the information from the map
       Long executionId = ((SparkListenerSQLExecutionEnd) event).executionId();
-      // Does the async event queue ever run out of sync?
       if (executionIdToRunIdMap.containsKey(executionId)) {
         log.info(String.format("Removing execution Id of %s", String.valueOf(executionId)));
         executionIdToRunIdMap.remove(executionId);
