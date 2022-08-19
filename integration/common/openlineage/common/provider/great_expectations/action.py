@@ -140,9 +140,12 @@ class OpenLineageValidationAction(ValidationAction):
             )})
 
         # workaround for GE v2 and v3 API difference
-        suite_meta = copy.deepcopy(validation_result_suite.meta)
+        suite_meta = dict({key: self._ser(value)
+                           for key, value in copy.deepcopy(validation_result_suite.meta).items()})
         if 'expectation_suite_meta' not in suite_meta:
-            suite_meta['expectation_suite_meta'] = validation_result_suite.meta
+            suite_meta['expectation_suite_meta'] = dict({key: self._ser(value)
+                                                         for key, value in copy.deepcopy(
+                    validation_result_suite.meta).items()})
         run_facets.update(
             {"great_expectations_meta": GreatExpectationsRunFacet(
                 **suite_meta,
@@ -168,15 +171,22 @@ class OpenLineageValidationAction(ValidationAction):
             job=Job(self.namespace, job_name, facets=job_facets),
             inputs=datasets,
             outputs=[],
-            producer="https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/common/openlineage/provider/great_expectations"  # noqa
+            producer="https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/common/openlineage/provider/great_expectations" # noqa
         )
         if self.do_publish:
             self.openlineage_client.emit(run_event)
         # Great expectations tries to append stuff here, so we need to make it a dict
         return Serde.to_dict(run_event)
 
+    def _ser(self, obj):
+        if hasattr(obj, 'to_json_dict'):
+            return obj.to_json_dict()
+        else:
+            return obj
+
     def _fetch_datasets_from_pandas_source(self, data_asset: PandasDataset,
-                                           validation_result_suite: ExpectationSuiteValidationResult) -> List[OLDataset]:  # noqa
+                                           validation_result_suite: ExpectationSuiteValidationResult) -> \
+    List[OLDataset]:  # noqa
         """
         Generate a list of OpenLineage Datasets from a PandasDataset
         :param data_asset:
@@ -203,7 +213,8 @@ class OpenLineageValidationAction(ValidationAction):
         return []
 
     def _fetch_datasets_from_sql_source(self, data_asset: Union[SqlAlchemyDataset, Validator],
-                                        validation_result_suite: ExpectationSuiteValidationResult) -> List[OLDataset]:  # noqa
+                                        validation_result_suite: ExpectationSuiteValidationResult) -> \
+    List[OLDataset]:  # noqa
         """
         Generate a list of OpenLineage Datasets from a SqlAlchemyDataset.
         :param data_asset:
@@ -226,6 +237,15 @@ class OpenLineageValidationAction(ValidationAction):
         else:
             batch = data_asset.active_batch
             batch_data = batch["data"]
+            custom_sql = batch.batch_request.runtime_parameters.get('query', None) if \
+                batch.batch_request.runtime_parameters is not None else None
+            if custom_sql:
+                parsed_sql = parse(custom_sql)
+                return [
+                    self._get_sql_table(batch_data, metadata, t.schema, t.name,
+                                        validation_result_suite) for t in
+                    parsed_sql.in_tables
+                ]
             table_name = batch["batch_spec"]["table_name"]
             try:
                 schema_name = batch["batch_spec"]["schema_name"]
@@ -242,12 +262,12 @@ class OpenLineageValidationAction(ValidationAction):
             ]
 
     def _get_sql_table(
-        self,
-        data_asset: Union[SqlAlchemyDataset, SqlAlchemyBatchData],
-        meta: MetaData,
-        schema: Optional[str],
-        table_name: str,
-        validation_result_suite: ExpectationSuiteValidationResult
+            self,
+            data_asset: Union[SqlAlchemyDataset, SqlAlchemyBatchData],
+            meta: MetaData,
+            schema: Optional[str],
+            table_name: str,
+            validation_result_suite: ExpectationSuiteValidationResult
     ) -> Optional[OLDataset]:
         """
         Construct a Dataset from the connection url and the columns returned from the
@@ -255,7 +275,7 @@ class OpenLineageValidationAction(ValidationAction):
         :param data_asset:
         :return:
         """
-        engine = data_asset.engine if isinstance(data_asset, SqlAlchemyDataset)\
+        engine = data_asset.engine if isinstance(data_asset, SqlAlchemyDataset) \
             else data_asset._engine
         if isinstance(engine, Connection):
             engine = engine.engine
