@@ -41,7 +41,7 @@ labelPRBasedOnFilePath:
 ##### Greetings ########################################################################################################
 # Comment to be posted to welcome users when they open their first PR
 firstPRWelcomeComment: >
-  Thanks for opening your first pull request in OpenLineage! Please check out our contributing guidelines.
+  Thanks for opening your first pull request in OpenLineage! Please check out our contributing guidelines (https://github.com/OpenLineage/OpenLineage/blob/main/CONTRIBUTING.md).
 
 # Comment to be posted to congratulate user on their first merged PR
 firstPRMergeComment: >
