@@ -127,10 +127,7 @@ class InputFieldsCollector {
       String namespace = PlanUtils.namespaceUri(p.toUri());
       inputDatasets.add(new DatasetIdentifier(p.toUri().getPath(), namespace));
     }
-    if (inputDatasets.isEmpty()) {
-      return Collections.emptyList();
-    } else {
-      return inputDatasets;
-    }
+
+    return inputDatasets;
   }
 }
