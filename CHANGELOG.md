@@ -5,10 +5,10 @@
 ### Added
 
 * Add BigQuery check support [`#960`](https://github.com/OpenLineage/OpenLineage/pull/960) [@denimalpaca](https://github.com/denimalpaca)
-* Add `RUNNING` EventType in specification and Python client [`#972`](https://github.com/OpenLineage/OpenLineage/pull/972) [@mzareba382](https://github.com/mzareba382)
+* Add `RUNNING` `EventType` in spec and Python client [`#972`](https://github.com/OpenLineage/OpenLineage/pull/972) [@mzareba382](https://github.com/mzareba382)
 * Use databases & schemas in SQL Extractors [`#974`](https://github.com/OpenLineage/OpenLineage/pull/974) [@JDarDagran](https://github.com/JDarDagran)
 * Implement Event forwarding feature via HTTP protocol [`#995`](https://github.com/OpenLineage/OpenLineage/pull/995) [@howardyoo](https://github.com/howardyoo)
-* Introduce SymlinksDatasetFacet to spec [`#936`](https://github.com/OpenLineage/OpenLineage/pull/936) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+* Introduce `SymlinksDatasetFacet` to spec [`#936`](https://github.com/OpenLineage/OpenLineage/pull/936) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
 * Add Azure Cosmos Handler to Spark integration [`#983`](https://github.com/OpenLineage/OpenLineage/pull/983) [@hmoazam](https://github.com/hmoazam)
 * Support OL Datasets in manual lineage inputs/outputs [`#1015`](https://github.com/OpenLineage/OpenLineage/pull/1015) [@conorbev](https://github.com/conorbev)
 * Create ownership facets [`#996`](https://github.com/OpenLineage/OpenLineage/pull/996) [@julienledem](https://github.com/julienledem)
