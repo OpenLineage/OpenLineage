@@ -34,7 +34,7 @@ extras_require = {
         "pyyaml>=5.3.1"
     ],
     "great_expectations": [
-        "great_expectations>=0.13.26",
+        "great_expectations>=0.13.26,<=0.15.19",
         "sqlalchemy>=1.3.24"
     ],
     "redshift": [
