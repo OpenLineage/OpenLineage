@@ -1,4 +1,5 @@
-> **New maintainers needed**: please [open an issue](https://github.com/OpenLineage/OpenLineage/issues/new) to get started.
+> **Note** </br>
+> New integration maintainers are needed! Please [open an issue](https://github.com/OpenLineage/OpenLineage/issues/new) to get started.
 
 # OpenLineage Dagster Integration
 
@@ -29,16 +30,16 @@ $ python -m pip install openlineage-dagster
 ### OpenLineage Sensor & Event Log Storage Requirements
 
 **Single OpenLineage sensor per Dagster instance** <br />
-As it processes all event logs for a given Dagster instance, define and enable only a single OpenLineage sensor per instance. 
-Running multiple will result in emitting duplicate OpenLineage job runs for Dagster steps with different OpenLineage run ids that are dynamically generated during sensor runs.
+As the OpenLineage sensor processes all event logs for a given Dagster instance, define and enable only one sensor per instance. 
+Running multiple sensors will result in duplicate OpenLineage job runs being emitted for Dagster steps with different OpenLineage run IDs. These are dynamically generated during sensor runs.
 
 **Non-sharded [Event Log Storage](https://docs.dagster.io/deployment/dagster-instance#event-log-storage)** <br />
 For the sensor to handle all event logs across runs, use non-sharded event log storage.
-If an event log storage sharded by run (i.e. default `SqliteEventLogStorage`) is used, cursor that tracks the last processed event storage id may not update properly. 
+If an event log storage sharded by run (i.e., the default `SqliteEventLogStorage`) is used, the cursor that tracks the last processed event storage ID may not update properly. 
 
 ### OpenLineage Sensor Setup
 
-Get OpenLineage sensor definition from `openlineage_sensor()` factory function and add it to your Dagster repository.
+Get a OpenLineage sensor definition from the `openlineage_sensor()` factory function and add it to your Dagster repository.
 
 ```python
 from dagster import repository
@@ -51,12 +52,12 @@ def my_repository():
     return other_defs + [openlineage_sensor_def]
 ```
 
-With parallel sensor run not supported at the time of writing, some tuning may be necessary to avoid affecting other sensors' performance.
+With parallel sensor runs not supported at the time of writing, some tuning may be necessary to avoid affecting other sensors' performance.
 
 See Dagster's documentation on [Evaluation Interval](https://docs.dagster.io/concepts/partitions-schedules-sensors/sensors#evaluation-interval)
 for more detail on `minimum_interval_seconds`, which defaults to 30 seconds.
 `record_filter_limit` is the maximum number of event logs to process on each sensor evaluation, and it defaults to 30 records per evaluation.
-Default values can be overridden as below.
+Default values can be overridden:
 
 ```python
 @repository
@@ -69,9 +70,9 @@ def my_repository():
 ```
 
 
-OpenLineage sensor handles event logs in ascending order of storage id, and by default, starts with the first log.
+The OpenLineage sensor handles event logs in ascending order of storage ID, and starts with the first log by default.
 Optionally, `after_storage_id` can be specified to customize the starting point.
-This is only applicable when cursor is undefined or has been deleted.
+This is only applicable when the cursor is undefined or has been deleted.
 
 ```python
 @repository
@@ -84,15 +85,15 @@ def my_repository():
 
 ### OpenLineage Adapter & Client Configuration
 
-The sensor uses OpenLineage adapter and client to convert and push data to an OpenLineage backend,
-and they depend on the following environment variables.
+The sensor uses an OpenLineage adapter and client to convert and push data to an OpenLineage backend,
+These depend on environment variables.
 
-If using User Repository Deployments, add the variables to the repository where the sensor is defined.
-Otherwise, add the variables to Dagster Daemon.
+If using User Repository Deployments, add the below variables to the repository where the sensor is defined.
+Otherwise, add the variables to the Dagster Daemon.
 
-* `OPENLINEAGE_URL` - point to service which will consume OpenLineage events
-* `OPENLINEAGE_API_KEY` - set if consumer of OpenLineage events requires `Bearer` authentication key
-* `OPENLINEAGE_NAMESPACE` - set if you are using something other than the `default` as the default namespace when Dagster repository is undefined 
+* `OPENLINEAGE_URL` - point to the service which will consume OpenLineage events
+* `OPENLINEAGE_API_KEY` - set if the consumer of OpenLineage events requires a `Bearer` authentication key
+* `OPENLINEAGE_NAMESPACE` - set if you are using something other than the `default` as the default namespace when a Dagster repository is undefined 
 
 #### OpenLineage Namespace & Dagster Repository
 
@@ -109,7 +110,7 @@ To install all dependencies for local development:
 $ python -m pip install -e .[dev]  # or python -m pip install -e .\[dev\] in zsh 
 ```
 
-To run test suite:
+To run the test suite:
 
 ```bash
 $ pytest
