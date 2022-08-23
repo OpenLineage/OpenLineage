@@ -1,4 +1,4 @@
-> **Note**
+> **Note** </br>
 > New integration maintainers are needed! Please [open an issue](https://github.com/OpenLineage/OpenLineage/issues/new) to get started.
 
 # OpenLineage Dagster Integration
