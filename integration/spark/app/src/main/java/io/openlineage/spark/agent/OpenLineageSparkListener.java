@@ -56,6 +56,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       Collections.synchronizedMap(new HashMap<>());
   private static final Map<Integer, ExecutionContext> rddExecutionRegistry =
       Collections.synchronizedMap(new HashMap<>());
+  public static final String SPARK_CONF_CONSOLE_TRANSPORT = "openlineage.consoleTransport";
   public static final String SPARK_CONF_URL_KEY = "openlineage.url";
   public static final String SPARK_CONF_HOST_KEY = "openlineage.host";
   public static final String SPARK_CONF_API_VERSION_KEY = "openlineage.version";
@@ -304,7 +305,14 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
           findSparkConfigKey(conf, SPARK_CONF_API_KEY).filter(str -> !str.isEmpty());
       Optional<Map<String, String>> urlParams =
           findSparkUrlParams(conf, SPARK_CONF_URL_PARAM_PREFIX);
-      return new ArgumentParser(host, version, namespace, jobName, runId, apiKey, urlParams);
+
+      boolean consoleMode =
+          findSparkConfigKey(conf, SPARK_CONF_CONSOLE_TRANSPORT)
+              .map(v -> Boolean.valueOf(v))
+              .filter(v -> v)
+              .orElse(false);
+      return new ArgumentParser(
+          host, version, namespace, jobName, runId, apiKey, urlParams, consoleMode);
     }
   }
 }

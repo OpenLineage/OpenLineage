@@ -10,14 +10,14 @@ Maven:
 <dependency>
     <groupId>io.openlineage</groupId>
     <artifactId>openlineage-java</artifactId>
-    <version>0.11.0</version>
+    <version>0.13.0</version>
 </dependency>
 ```
 
 or Gradle:
 
 ```groovy
-implementation 'io.openlineage:openlineage-java:0.11.0'
+implementation 'io.openlineage:openlineage-java:0.13.0'
 ```
 
 ## Usage
@@ -166,7 +166,7 @@ OpenLineageClient client = OpenLineageClient.builder()
 If contributing changes, additions or fixes to the Java client, please include the following header in any new `.java` files:
 
 ```
-/* 
+/*
 /* Copyright 2018-2002 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0 
 */

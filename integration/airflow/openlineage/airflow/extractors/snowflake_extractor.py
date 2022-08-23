@@ -6,7 +6,6 @@ from typing import List, Dict
 from openlineage.airflow.extractors.sql_extractor import SqlExtractor
 from openlineage.airflow.utils import get_connection_uri  # noqa
 from openlineage.client.facet import BaseFacet, ExternalQueryRunFacet
-from openlineage.common.sql import DbTableMeta
 
 
 logger = logging.getLogger(__file__)
@@ -15,34 +14,19 @@ logger = logging.getLogger(__file__)
 class SnowflakeExtractor(SqlExtractor):
     source_type = "SNOWFLAKE"
     default_schema = "PUBLIC"
+    _information_schema_columns = [
+        "table_schema",
+        "table_name",
+        "column_name",
+        "ordinal_position",
+        "data_type",
+    ]
+    _is_information_schema_cross_db = True
+    _is_case_sensitive = True
 
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
         return ["SnowflakeOperator", "SnowflakeOperatorAsync"]
-
-    def _get_in_query(self, in_tables):
-        return self._information_schema_query(in_tables)
-
-    def _get_out_query(self, out_tables):
-        return self._information_schema_query(out_tables)
-
-    def _information_schema_query(self, tables: List[DbTableMeta]) -> str:
-        table_names = ",".join(
-            map(lambda name: f"'{self._normalize_identifiers(name.name)}'", tables)
-        )
-        database = self.operator.database
-        if not database:
-            database = self._get_database()
-        sql = f"""
-        SELECT table_schema,
-               table_name,
-               column_name,
-               ordinal_position,
-               data_type
-          FROM {database}.information_schema.columns
-         WHERE table_name IN ({table_names});
-        """
-        return sql
 
     def _get_database(self) -> str:
         if hasattr(self.operator, "database") and self.operator.database is not None:
@@ -63,14 +47,6 @@ class SnowflakeExtractor(SqlExtractor):
             return self.operator.get_db_hook()
         else:
             return self.operator.get_hook()
-
-    def _normalize_identifiers(self, table: str):
-        """
-        Snowflake keeps it's table names in uppercase, so we need to normalize
-        them before use: see
-        https://community.snowflake.com/s/question/0D50Z00009SDHEoSAP/is-there-case-insensitivity-for-table-name-or-column-names  # noqa
-        """
-        return table.upper()
 
     def _get_query_ids(self) -> List[str]:
         if hasattr(self.operator, "query_ids"):

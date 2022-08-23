@@ -30,6 +30,12 @@ public class PlanUtils3 {
 
   public static Optional<DatasetIdentifier> getDatasetIdentifier(
       OpenLineageContext context, DataSourceV2Relation relation) {
+
+    if (relation.identifier() == null || relation.identifier().isEmpty()) {
+      // Since identifier is null, short circuit and check if we can get the dataset identifer
+      // from the relation itself.
+      return getDatasetIdentifierFromRelation(relation);
+    }
     return Optional.of(relation)
         .filter(r -> r.identifier() != null)
         .filter(r -> r.identifier().isDefined())
@@ -67,6 +73,19 @@ public class PlanUtils3 {
     }
   }
 
+  private static Optional<DatasetIdentifier> getDatasetIdentifierFromRelation(
+      DataSourceV2Relation relation) {
+
+    try {
+      return (Optional.of(CatalogUtils3.getDatasetIdentifierFromRelation(relation)));
+    } catch (UnsupportedCatalogException ex) {
+      log.error(
+          String.format("Catalog %s is unsupported", ex.getMessage()),
+          ex); // update this if change the exception thrown in catalogutils
+      return Optional.empty();
+    }
+  }
+
   public static <D extends OpenLineage.Dataset> List<D> fromDataSourceV2Relation(
       DatasetFactory<D> datasetFactory, OpenLineageContext context, DataSourceV2Relation relation) {
     return fromDataSourceV2Relation(
@@ -78,35 +97,42 @@ public class PlanUtils3 {
       OpenLineageContext context,
       DataSourceV2Relation relation,
       OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder) {
+
+    OpenLineage openLineage = context.getOpenLineage();
+
+    Optional<DatasetIdentifier> di;
     // Get identifier for dataset, or return empty list
     if (relation.identifier().isEmpty()) {
       log.warn("Couldn't find identifier for dataset in plan {}", relation);
-      return Collections.emptyList();
+      di = PlanUtils3.getDatasetIdentifier(context, relation);
+      if (!di.isPresent()) {
+        return Collections.emptyList();
+      }
+    } else {
+      Identifier identifier = relation.identifier().get();
+
+      // Get catalog for dataset, or return empty list
+      if (relation.catalog().isEmpty() || !(relation.catalog().get() instanceof TableCatalog)) {
+        log.warn("Couldn't find catalog for dataset in plan " + relation);
+        return Collections.emptyList();
+      }
+      TableCatalog tableCatalog = (TableCatalog) relation.catalog().get();
+
+      Map<String, String> tableProperties = relation.table().properties();
+      di = PlanUtils3.getDatasetIdentifier(context, tableCatalog, identifier, tableProperties);
+
+      if (!di.isPresent()) {
+        return Collections.emptyList();
+      }
+
+      CatalogUtils3.getStorageDatasetFacet(context, tableCatalog, tableProperties)
+          .map(storageDatasetFacet -> datasetFacetsBuilder.storage(storageDatasetFacet));
     }
-    Identifier identifier = relation.identifier().get();
 
-    // Get catalog for dataset, or return empty list
-    if (relation.catalog().isEmpty() || !(relation.catalog().get() instanceof TableCatalog)) {
-      log.warn("Couldn't find catalog for dataset in plan " + relation);
-      return Collections.emptyList();
-    }
-    TableCatalog tableCatalog = (TableCatalog) relation.catalog().get();
-
-    Map<String, String> tableProperties = relation.table().properties();
-    Optional<DatasetIdentifier> di =
-        PlanUtils3.getDatasetIdentifier(context, tableCatalog, identifier, tableProperties);
-
-    if (!di.isPresent()) {
-      return Collections.emptyList();
-    }
-
-    OpenLineage openLineage = context.getOpenLineage();
     datasetFacetsBuilder
         .schema(PlanUtils.schemaFacet(openLineage, relation.schema()))
         .dataSource(PlanUtils.datasourceFacet(openLineage, di.get().getNamespace()));
 
-    CatalogUtils3.getStorageDatasetFacet(context, tableCatalog, tableProperties)
-        .map(storageDatasetFacet -> datasetFacetsBuilder.storage(storageDatasetFacet));
     return Collections.singletonList(
         datasetFactory.getDataset(
             di.get().getName(), di.get().getNamespace(), datasetFacetsBuilder.build()));

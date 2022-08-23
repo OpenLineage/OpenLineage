@@ -47,7 +47,7 @@ def test_env_add_extractor():
 
 def test_env_multiple_extractors():
     extractor_list_len = len(Extractors().extractors)
-    with patch.dict(os.environ, {"OPENLINEAGE_EXTRACTORS": "tests.extractors.test_extractors.FakeExtractor;tests.extractors.test_extractors.AnotherFakeExtractor"}):  # noqa
+    with patch.dict(os.environ, {"OPENLINEAGE_EXTRACTORS": "tests.extractors.test_extractors.FakeExtractor;\ntests.extractors.test_extractors.AnotherFakeExtractor"}):  # noqa
         assert len(Extractors().extractors) == extractor_list_len + 2
 
 
@@ -75,13 +75,13 @@ if parse_version(AIRFLOW_VERSION) >= parse_version("2.0.0"):     # type: ignore
         class SQLCheckOperator:
             conn_id = "postgres_default"
         extractors = Extractors()
-        sql_check_operator = SQLCheckOperator()
-        extractors.instantiate_abstract_extractors(task=sql_check_operator)
+        extractors.instantiate_abstract_extractors(task=SQLCheckOperator())
         sql_check_extractor = extractors.extractors["SQLCheckOperator"]("SQLCheckOperator")
         assert sql_check_extractor._get_scheme() == "postgres"
 
     @patch('airflow.models.connection.Connection')
-    def test_instantiate_abstract_extractors_value_error(mock_conn):
+    @patch.object(BaseHook, "get_connection", return_value=Connection(conn_id="notimplemented", conn_type="notimplementeddb"))  # noqa
+    def test_instantiate_abstract_extractors_value_error(mock_hook, mock_conn):
         class SQLCheckOperator:
             conn_id = "notimplementeddb"
         with pytest.raises(ValueError):

@@ -5,7 +5,7 @@ import logging
 import boto3
 
 if TYPE_CHECKING:
-    from airflow.models import BaseHook
+    from airflow.hooks.base import BaseHook
 
 logger = logging.getLogger(__name__)
 

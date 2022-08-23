@@ -1,5 +1,5 @@
 import os
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
 from openlineage.airflow.facets import UnknownOperatorAttributeRunFacet, UnknownOperatorInstance
@@ -17,20 +17,23 @@ class BashExtractor(BaseExtractor):
         return ["BashOperator"]
 
     def extract(self) -> Optional[TaskMetadata]:
-        if os.environ.get(
-            "OPENLINEAGE_AIRFLOW_DISABLE_SOURCE_CODE", "False"
-        ).lower() in ('true', '1', 't'):
-            return None
+        collect_source = os.environ.get(
+            "OPENLINEAGE_AIRFLOW_DISABLE_SOURCE_CODE", "True"
+        ).lower() not in ('true', '1', 't')
 
-        return TaskMetadata(
-            name=f"{self.operator.dag_id}.{self.operator.task_id}",
-            job_facets={
+        job_facet: Dict = {}
+        if collect_source:
+            job_facet = {
                 "sourceCode": SourceCodeJobFacet(
                     "bash",
                     # We're on worker and should have access to DAG files
                     self.operator.bash_command
                 )
-            },
+            }
+
+        return TaskMetadata(
+            name=f"{self.operator.dag_id}.{self.operator.task_id}",
+            job_facets=job_facet,
             run_facets={
 
                 # The BashOperator is recorded as an "unknownSource" even though we have an

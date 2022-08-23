@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://openlineage.io/spec/1-0-2/OpenLineage.json",
+  "$id": "https://openlineage.io/spec/1-0-3/OpenLineage.json",
   "$defs": {
     "RunEvent": {
       "type": "object",
@@ -10,12 +10,13 @@
           "type": "string",
           "enum": [
             "START",
+            "RUNNING",
             "COMPLETE",
             "ABORT",
             "FAIL",
             "OTHER"
           ],
-          "example": "START|COMPLETE|ABORT|FAIL|OTHER"
+          "example": "START|RUNNING|COMPLETE|ABORT|FAIL|OTHER"
         },
         "eventTime": {
           "description": "the time the event occurred at",

@@ -91,7 +91,7 @@ OpenLineage client depends on environment variables:
 * `OPENLINEAGE_URL` - point to service which will consume OpenLineage events
 * `OPENLINEAGE_API_KEY` - set if consumer of OpenLineage events requires `Bearer` authentication key
 * `OPENLINEAGE_NAMESPACE` - set if you are using something other than the `default` namespace for job namespace.
-* `OPENLINEAGE_AIRFLOW_DISABLE_SOURCE_CODE` - set to `True` if you don't want source code of callables provided to PythonOperator to be send in OpenLineage events
+* `OPENLINEAGE_AIRFLOW_DISABLE_SOURCE_CODE` - set to `False` if you want source code of callables provided in PythonOperator to be send in OpenLineage events
 
 For backwards compatibility, `openlineage-airflow` also support configuration via
 `MARQUEZ_URL`, `MARQUEZ_NAMESPACE` and `MARQUEZ_API_KEY` variables.
@@ -220,6 +220,13 @@ t1 = DataProcPySparkOperator(
             f"-javaagent:{jar}={os.environ.get('OPENLINEAGE_URL')}/api/v1/namespaces/{os.getenv('OPENLINEAGE_NAMESPACE', 'default')}/jobs/{job_name}/runs/{{{{macros.OpenLineagePlugin.lineage_run_id(run_id, task)}}}}?api_key={os.environ.get('OPENLINEAGE_API_KEY')}"
         dag=dag)
 ```
+
+## Secrets redaction
+Integration uses Airflow SecretsMasker to hide secrets from produced metadata events. As not all fields in the metadata should be redacted `RedactMixin` is used to pass information which fields should be skipped from the process. 
+
+Typically you should subclass `RedactMixin` and use attribute `_skip_redact` as a list of names of fields to be skipped.
+
+However, all facets inheriting from `BaseFacet` should use `_additional_skip_redact` attribute as addition to common list of `['_producer', '_schemaURL']`.
 
 ## Development
 

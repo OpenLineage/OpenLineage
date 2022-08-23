@@ -2,9 +2,14 @@ from openlineage.client.run import Dataset
 from airflow.lineage.entities import Table
 
 
-def table_to_dataset(table: Table):
-    return Dataset(
-        namespace=f"{table.cluster}",
-        name=f"{table.database}.{table.name}",
-        facets={},
-    )
+def convert_to_dataset(obj):
+    if isinstance(obj, Dataset):
+        return obj
+    elif isinstance(obj, Table):
+        return Dataset(
+            namespace=f"{obj.cluster}",
+            name=f"{obj.database}.{obj.name}",
+            facets={},
+        )
+    else:
+        return None

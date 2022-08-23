@@ -1,0 +1,324 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0.
+ */
+
+import org.apache.tools.ant.filters.ReplaceTokens
+
+plugins {
+    id 'java'
+    id 'java-library'
+    id 'maven-publish'
+    id 'signing'
+    id 'jacoco'
+    id "com.adarshr.test-logger" version "2.1.1"
+    id 'com.diffplug.spotless' version '5.12.1'
+    id "com.github.johnrengelman.shadow" version "7.1.2"
+    id "pmd"
+}
+
+pmd {
+    consoleOutput = true
+    toolVersion = "6.46.0"
+    rulesMinimumPriority = 5
+    ruleSetFiles = rootProject.files("pmd-openlineage.xml")
+    ruleSets = []
+    ignoreFailures = true
+}
+
+pmdMain {
+    reports {
+        html.required = true
+    }
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven {
+        url = "https://packages.confluent.io/maven/"
+    }
+    maven {
+        url = 'https://datakin.jfrog.io/artifactory/maven-public-libs-snapshot'
+    }
+}
+
+configurations {
+    lombok
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+archivesBaseName='openlineage-flink'
+
+ext {
+    flinkVersionShort = '1.14'
+    flinkVersion = '1.14.4'
+    assertjVersion = '3.20.2'
+    junit5Version = '5.7.2'
+    lombokVersion = '1.18.20'
+    mockitoVersion = '3.11.2'
+    testcontainersVersion = '1.15.3'
+    isReleaseVersion = !version.endsWith('SNAPSHOT')
+}
+
+dependencies {
+    compileOnly "org.projectlombok:lombok:${lombokVersion}"
+    compileOnly "org.apache.flink:flink-java:$flinkVersion"
+    compileOnly "org.apache.flink:flink-streaming-java_2.12:$flinkVersion"
+    compileOnly "org.apache.flink:flink-runtime-web_2.12:$flinkVersion"
+    compileOnly "org.apache.flink:flink-connector-kafka_2.12:$flinkVersion"
+    compileOnly "org.apache.flink:flink-avro:$flinkVersion"
+    compileOnly "org.apache.flink:flink-avro-confluent-registry:$flinkVersion"
+    compileOnly "org.apache.iceberg:iceberg-flink-$flinkVersionShort:0.13.1"
+    compileOnly "org.apache.iceberg:iceberg-flink-runtime-$flinkVersionShort:0.13.1"
+
+    annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+
+    implementation("io.openlineage:openlineage-java:${project.version}")
+    implementation 'org.javassist:javassist:3.27.0-GA'
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.0.3'
+
+    testImplementation "org.apache.flink:flink-java:$flinkVersion"
+    testImplementation "org.apache.flink:flink-streaming-java_2.12:$flinkVersion"
+    testImplementation "org.apache.flink:flink-runtime-web_2.12:$flinkVersion"
+    testImplementation "org.apache.flink:flink-connector-kafka_2.12:$flinkVersion"
+    testImplementation "org.apache.flink:flink-avro:$flinkVersion"
+    testImplementation "org.apache.flink:flink-avro-confluent-registry:$flinkVersion"
+    testImplementation "org.apache.iceberg:iceberg-flink-$flinkVersionShort:0.13.1"
+    testImplementation "org.apache.iceberg:iceberg-flink-runtime-$flinkVersionShort:0.13.1"
+    testImplementation platform('org.junit:junit-bom:5.7.1')
+    testImplementation 'org.hamcrest:hamcrest-library:2.2'
+    testImplementation "org.testcontainers:mockserver:${testcontainersVersion}"
+    testImplementation "org.testcontainers:junit-jupiter:${testcontainersVersion}"
+    testImplementation 'org.mock-server:mockserver-client-java:5.12.0'
+    testImplementation group: 'org.awaitility', name: 'awaitility', version: '4.1.1'
+    testImplementation 'com.github.tomakehurst:wiremock:2.27.2'
+    testImplementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.17.2'
+
+    testImplementation "org.assertj:assertj-core:${assertjVersion}"
+    testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
+    testImplementation "org.junit.jupiter:junit-jupiter-params:${junit5Version}"
+    testImplementation "org.mockito:mockito-core:${mockitoVersion}"
+    testImplementation "org.mockito:mockito-inline:${mockitoVersion}"
+    testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
+    testImplementation "org.projectlombok:lombok:${lombokVersion}"
+
+    lombok  "org.projectlombok:lombok:${lombokVersion}"
+    testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+}
+
+sourceSets {
+    main.java.srcDirs = ["src/main/java"]
+    test.java.srcDirs = ["src/test/java"]
+}
+
+task sourceJar(type: Jar) {
+    classifier 'sources'
+    from sourceSets.main.allJava
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier 'javadoc'
+    from javadoc.destinationDir
+}
+
+def commonTestConfiguration = {
+    forkEvery 1
+    maxParallelForks 3
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = true
+    }
+    systemProperties = [
+            'junit.platform.output.capture.stdout': 'true',
+            'junit.platform.output.capture.stderr': 'true',
+            '.flink.jar': "${archivesBaseName}-${project.version}.jar",
+    ]
+    classpath =  project.sourceSets.test.runtimeClasspath
+}
+
+test {
+    configure commonTestConfiguration
+    useJUnitPlatform {
+        excludeTags 'integration-test'
+    }
+}
+
+def integrationTestConfiguration = {
+    forkEvery 1
+    maxParallelForks 1
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = true
+    }
+    systemProperties = [
+            'junit.platform.output.capture.stdout': 'true',
+            'junit.platform.output.capture.stderr': 'true',
+            '.flink.jar': "${archivesBaseName}-${project.version}.jar",
+    ]
+    classpath =  project.sourceSets.test.runtimeClasspath
+}
+
+task integrationTest(type: Test) {
+    configure integrationTestConfiguration
+    useJUnitPlatform {
+        includeTags "integration-test"
+    }
+    dependsOn shadowJar
+}
+
+integrationTest.outputs.upToDateWhen { false }
+
+javadoc {
+    options.tags = [ "apiNote" ]
+}
+
+spotless {
+    def disallowWildcardImports = {
+        String text = it
+        def regex = ~/import .*\.\*;/
+        def m = regex.matcher(text)
+        if (m.find()) {
+            throw new AssertionError("Wildcard imports disallowed - ${m.findAll()}")
+        }
+    }
+    java {
+        googleJavaFormat()
+        removeUnusedImports()
+        custom 'disallowWildcardImports', disallowWildcardImports
+    }
+}
+
+def reportsDir = "${buildDir}/reports"
+def coverageDir = "${reportsDir}/coverage"
+
+jacoco {
+    toolVersion = '0.8.5'
+    reportsDir = file(coverageDir)
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled = true
+        html.enabled = true
+        html.destination = file(coverageDir)
+    }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId = 'io.openlineage'
+            artifactId = 'openlineage-flink'
+
+            from components.java
+
+            artifact sourceJar
+            artifact javadocJar
+
+            pom {
+                name = 'openlineage-flink'
+                description = 'OpenLineage integration with Flink'
+                url = 'https://github.com/OpenLineage/OpenLineage'
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'openlineage'
+                        name = 'OpenLineage Project'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git://github.com/OpenLineage/OpenLineage.git'
+                    developerConnection = 'scm:git:ssh://github.com:OpenLineage/OpenLineage.git'
+                    url = 'https://github.com/OpenLineage/OpenLineage'
+                }
+            }
+        }
+    }
+
+    processResources {
+        filter ReplaceTokens, tokens: [
+                "version": project.property("version")
+        ]
+    }
+
+    repositories {
+        maven {
+            url = isReleaseVersion ? 'https://oss.sonatype.org/service/local/staging/deploy/maven2' :
+                    'https://datakin.jfrog.io/artifactory/maven-public-libs-snapshot'
+            credentials {
+                username = System.getenv('RELEASE_USERNAME')
+                password = System.getenv('RELEASE_PASSWORD')
+            }
+        }
+    }
+}
+
+signing {
+    required { isReleaseVersion }
+    def signingKey = findProperty("signingKey")
+    def signingPassword = findProperty("signingPassword")
+    useInMemoryPgpKeys(signingKey, signingPassword)
+    sign publishing.publications.mavenJava
+}
+
+shadowJar {
+    minimize()
+    classifier = ''
+    // avoid conflict with any client version of that lib
+    relocate 'com.fasterxml.jackson', 'io.openlineage.flink.shaded.com.fasterxml.jackson'
+    relocate 'com.github.ok2c.hc5', 'io.openlineage.flink.shaded.com.github.ok2c.hc5'
+    relocate 'org.apache.httpcomponents.client5', 'io.openlineage.flink.shaded.org.apache.httpcomponents.client5'
+    relocate 'org.apache.http', 'io.openlineage.flink.shaded.org.apache.http'
+    relocate 'javassist', 'io.openlineage.flink.shaded.javassist'
+    relocate 'org.yaml', 'io.openlineage.flink.shaded.org.yaml'
+    relocate 'org.apache.hc', 'io.openlineage.flink.shaded.org.apache.hc'
+    relocate 'org.apache.commons.codec', 'io.openlineage.flink.shaded.org.apache.commons.codec'
+    dependencies {
+        exclude(dependency('org.slf4j::'))
+    }
+
+    classifier = ''
+    exclude 'org/apache/commons/logging/**'
+
+    manifest {
+        attributes(
+                "Premain-Class": 'io.openlineage.flink.OpenLineageFlinkJobListener',
+                "Agent-Class": 'io.openlineage.flink.OpenLineageFlinkJobListener',
+                'Created-By': "Gradle ${gradle.gradleVersion}",
+                'Built-By': System.getProperty('user.name'),
+                'Build-Jdk': System.getProperty('java.version'),
+                'Implementation-Title': project.name,
+                'Implementation-Version': project.version
+        )
+    }
+    zip64 true
+}
+
+assemble {
+    dependsOn shadowJar
+}
+
+task createVersionProperties(dependsOn: processResources) {
+    doLast {
+        File dir = new File("$buildDir/resources/main/io/openlineage/flink/client/")
+        dir.mkdirs()
+        new File("$buildDir/resources/main/io/openlineage/flink/client/version.properties").withWriter { w ->
+            Properties p = new Properties()
+            p['version'] = project.version.toString()
+            p.store w, null
+        }
+    }
+}
+
+classes {
+    dependsOn createVersionProperties
+}

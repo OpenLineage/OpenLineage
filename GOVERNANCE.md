@@ -138,6 +138,10 @@ The OpenLineage team aim to create regular official release of OpenLineage.
 
 In between official releases, the latest build is also available to developers in GitHub.
 
+### Release cadence
+
+A release will be initiated on the first business day of each month except when this is a Friday, in which case the release will commence on the next business day.
+
 ### Release process
 
 Anyone may request a new release of the project in the #general channel.

@@ -36,7 +36,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 @ExtendWith(SparkAgentTestExtension.class)
-@Tag("spark3")
+@Tag("delta")
 class DeltaDataSourceTest {
 
   @Test

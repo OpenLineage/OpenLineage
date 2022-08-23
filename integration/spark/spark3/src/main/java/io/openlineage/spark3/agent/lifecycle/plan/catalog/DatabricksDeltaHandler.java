@@ -6,21 +6,10 @@
 package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.util.DatasetIdentifier;
-import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.api.OpenLineageContext;
-import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.reflect.MethodUtils;
-import org.apache.hadoop.fs.Path;
-import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.catalyst.TableIdentifier;
-import org.apache.spark.sql.connector.catalog.Identifier;
-import org.apache.spark.sql.connector.catalog.TableCatalog;
-import scala.Option;
 
 /**
  * The DatabricksDeltaHandler is intended to support Databricks' custom DeltaCatalog which has the
@@ -29,71 +18,10 @@ import scala.Option;
  * as the {@link DeltaHandler}.
  */
 @Slf4j
-public class DatabricksDeltaHandler implements CatalogHandler {
-
-  private final OpenLineageContext context;
+public class DatabricksDeltaHandler extends AbstractDatabricksHandler {
 
   public DatabricksDeltaHandler(OpenLineageContext context) {
-    this.context = context;
-  }
-
-  @Override
-  public boolean hasClasses() {
-    try {
-      DeltaHandler.class
-          .getClassLoader()
-          .loadClass("com.databricks.sql.transaction.tahoe.catalog.DeltaCatalog");
-      return true;
-    } catch (Exception e) {
-      // swallow- we don't care
-    }
-    return false;
-  }
-
-  @Override
-  public boolean isClass(TableCatalog tableCatalog) {
-    return "com.databricks.sql.transaction.tahoe.catalog.DeltaCatalog"
-        .equals(tableCatalog.getClass().getCanonicalName());
-  }
-
-  @Override
-  public DatasetIdentifier getDatasetIdentifier(
-      SparkSession session,
-      TableCatalog tableCatalog,
-      Identifier identifier,
-      Map<String, String> properties) {
-
-    Optional<String> location;
-    boolean isPathIdentifier = false;
-    try {
-      isPathIdentifier =
-          (boolean) MethodUtils.invokeMethod(tableCatalog, true, "isPathIdentifier", identifier);
-    } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
-      // DO Nothing
-    }
-
-    if (isPathIdentifier) {
-      location = Optional.of(identifier.name());
-    } else {
-      location = Optional.ofNullable(properties.get("location"));
-    }
-    // Delta uses spark2 catalog when location isn't specified.
-    Path path =
-        new Path(
-            location.orElse(
-                session
-                    .sessionState()
-                    .catalog()
-                    .defaultTablePath(
-                        TableIdentifier.apply(
-                            identifier.name(),
-                            Option.apply(
-                                Arrays.stream(identifier.namespace())
-                                    .reduce((x, y) -> y)
-                                    .orElse(null))))
-                    .toString()));
-    log.info(path.toString());
-    return PathUtils.fromPath(path, "file");
+    super(context, "com.databricks.sql.transaction.tahoe.catalog.DeltaCatalog");
   }
 
   @Override

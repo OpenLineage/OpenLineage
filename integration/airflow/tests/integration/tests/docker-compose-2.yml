@@ -29,6 +29,7 @@ x-airflow-base: &airflow-base
     BIGQUERY_PREFIX: ${BIGQUERY_PREFIX}
     DBT_DATASET_PREFIX: ${DBT_DATASET_PREFIX}_dbt
     GOOGLE_APPLICATION_CREDENTIALS: /opt/config/gcloud/gcloud-service-key.json
+    OPENLINEAGE_AIRFLOW_DISABLE_SOURCE_CODE: "false"
     OPENLINEAGE_URL: http://backend:5000
     OPENLINEAGE_NAMESPACE: food_delivery
     OPENLINEAGE_EXTRACTORS: custom_extractor.CustomExtractor
@@ -36,7 +37,7 @@ x-airflow-base: &airflow-base
     SNOWFLAKE_USER: ${SNOWFLAKE_USER}
     SNOWFLAKE_PASSWORD: ${SNOWFLAKE_PASSWORD}
     AIRFLOW__SECRETS__BACKEND: airflow.secrets.local_filesystem.LocalFilesystemBackend
-    AIRFLOW__SECRETS__BACKEND_KWARGS: '{ "connections_file_path": "/opt/data/secrets/connections.json" }'
+    AIRFLOW__SECRETS__BACKEND_KWARGS: '{ "connections_file_path": "/opt/data/secrets/connections.json", "variables_file_path": "/opt/data/secrets/variables.json" }'
     AIRFLOW_CONN_SNOWFLAKE_CONN: "snowflake://${SNOWFLAKE_USER}:${SNOWFLAKE_PASSWORD}@${SNOWFLAKE_URI}/OPENLINEAGE?account=${SNOWFLAKE_ACCOUNT_ID}&database=SANDBOX&region=us-east-1&warehouse=ROBOTS&role=OPENLINEAGE"
   volumes:
       - ./airflow/config/log_config.py:/opt/airflow/config/log_config.py

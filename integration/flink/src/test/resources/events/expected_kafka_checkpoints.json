@@ -1,0 +1,76 @@
+{
+  "eventType" : "RUNNING",
+  "run": {
+    "facets" : {
+      "checkpoints": {
+        "completed": "${json-unit.any-number}",
+        "failed": 0,
+        "in-progress": "${json-unit.any-number}",
+        "restored": 0,
+        "total": "${json-unit.any-number}"
+      }
+    }
+  },
+  "inputs": [
+    {
+      "namespace": "kafka:9092",
+      "name": "io.openlineage.flink.kafka.input1",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "id",
+              "type": "string"
+            },
+            {
+              "name": "version",
+              "type": "long"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "namespace": "kafka:9092",
+      "name": "io.openlineage.flink.kafka.input2",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "id",
+              "type": "string"
+            },
+            {
+              "name": "version",
+              "type": "long"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "outputs": [
+    {
+      "namespace": "kafka:9092",
+      "name": "io.openlineage.flink.kafka.output",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "id",
+              "type": "string"
+            },
+            {
+              "name": "version",
+              "type": "long"
+            },
+            {
+              "name": "counter",
+              "type": "long"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -19,7 +19,7 @@ class GreatExpectationsRunFacet(BaseFacet):
     """
     great_expectations_version = attr.ib()
     expectation_suite_name: str = attr.ib()
-    run_id: Dict = attr.ib(converter=lambda x: x.to_json_dict())    # type: ignore
+    run_id: Dict = attr.ib()    # type: ignore
     expectation_suite_meta: Dict = attr.ib()
     validation_time: str = attr.ib()
     batch_spec: Optional[BatchSpec] = attr.ib(default=None)
@@ -28,6 +28,8 @@ class GreatExpectationsRunFacet(BaseFacet):
     active_batch_definition: Union[None, IDDict, BatchDefinition] = attr.ib(default=None)
     batch_parameters = attr.ib(default=None)
     checkpoint_name: Optional[str] = attr.ib(default=None)
+    validation_id: Optional[str] = attr.ib(default=None)
+    checkpoint_id: Optional[str] = attr.ib(default=None)
 
     @staticmethod
     def _get_schema() -> str:

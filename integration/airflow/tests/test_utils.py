@@ -2,12 +2,16 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
+import json
 from urllib.parse import parse_qs, urlparse
 
 import pendulum
+import pytest
 import datetime
-from airflow.models import Connection
+from airflow.models import Connection, DAG as AIRFLOW_DAG
+from airflow.operators.dummy_operator import DummyOperator
 from pkg_resources import parse_version
+from airflow.version import version as AIRFLOW_VERSION
 
 from openlineage.airflow.utils import (
     url_to_https,
@@ -15,13 +19,19 @@ from openlineage.airflow.utils import (
     get_connection_uri,
     get_normalized_postgres_connection_uri,
     get_connection,
+    to_json_encodable,
     DagUtils,
     SafeStrDict,
     build_table_check_facets,
-    build_column_check_facets
+    build_column_check_facets,
+    _is_name_redactable,
+    redact_with_exclusions,
 )
+from openlineage.client.utils import RedactMixin
+import attr
+from json import JSONEncoder
 
-AIRFLOW_VERSION = '1.10.12'
+
 AIRFLOW_CONN_ID = 'test_db'
 AIRFLOW_CONN_URI = 'postgres://localhost:5432/testdb'
 SNOWFLAKE_CONN_URI = 'snowflake://12345.us-east-1.snowflakecomputing.com/MyTestRole?extra__snowflake__account=12345&extra__snowflake__database=TEST_DB&extra__snowflake__insecure_mode=false&extra__snowflake__region=us-east-1&extra__snowflake__role=MyTestRole&extra__snowflake__warehouse=TEST_WH&extra__snowflake__aws_access_key_id=123456&extra__snowflake__aws_secret_access_key=abcdefg'  # NOQA
@@ -140,6 +150,19 @@ def test_parse_version():
     assert parse_version("2.2.4.dev0") < parse_version("2.3.0.dev0")
 
 
+def test_to_json_encodable():
+    dag = AIRFLOW_DAG(dag_id='test_dag',
+                      schedule_interval='*/2 * * * *',
+                      start_date=datetime.datetime.now(),
+                      catchup=False)
+    task = DummyOperator(task_id='test_task', dag=dag)
+
+    encodable = to_json_encodable(task)
+    encoded = json.dumps(encodable)
+    decoded = json.loads(encoded)
+    assert decoded == encodable
+
+
 def test_safe_dict():
     assert str(SafeStrDict({'a': 1})) == str({'a': 1})
 
@@ -173,3 +196,92 @@ def test_build_column_check_facets():
     assert assertions_facet.assertions[1].assertion == "distinct_check"
     assert not assertions_facet.assertions[1].success
     assert assertions_facet.assertions[1].column == "X"
+
+
+def test_is_name_redactable():
+    class NotMixin:
+        def __init__(self):
+            self.password = "passwd"
+
+    class Mixined(RedactMixin):
+        _skip_redact = ["password"]
+
+        def __init__(self):
+            self.password = "passwd"
+            self.transparent = "123"
+
+    assert _is_name_redactable("password", NotMixin())
+    assert not _is_name_redactable("password", Mixined())
+    assert _is_name_redactable("transparent", Mixined())
+
+
+@pytest.mark.skipif(
+    parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"),
+    reason="requires AIRFLOW_VERSION to be higher than 2.0",
+)
+def test_redact_with_exclusions(monkeypatch):
+    class NotMixin:
+        def __init__(self):
+            self.password = "passwd"
+
+    def default(self, o):
+        if isinstance(o, NotMixin):
+            return o.__dict__
+        raise TypeError
+
+    assert redact_with_exclusions(NotMixin()).password == "passwd"
+    monkeypatch.setattr(JSONEncoder, "default", default)
+    assert redact_with_exclusions(NotMixin()).password == "***"
+
+    class Mixined(RedactMixin):
+        _skip_redact = ["password"]
+
+        def __init__(self):
+            self.password = "passwd"
+            self.transparent = "123"
+
+    @attr.s
+    class NestedMixined(RedactMixin):
+        _skip_redact = ["nested_field"]
+        password: str = attr.ib()
+        nested_field = attr.ib()
+
+    assert redact_with_exclusions(Mixined()).password == "passwd"
+    assert redact_with_exclusions(Mixined()).transparent == "123"
+    assert redact_with_exclusions({"password": "passwd"}) == {"password": "***"}
+    redacted_nested = redact_with_exclusions(
+        NestedMixined("passwd", NestedMixined("passwd", None))
+    )
+    assert redacted_nested == NestedMixined("***", NestedMixined("passwd", None))
+
+
+@pytest.mark.skipif(
+    parse_version(AIRFLOW_VERSION) >= parse_version("2.0.0"),
+    reason="test for Airflow 1.x only",
+)
+def test_if_stays_unredacted_without_airflow_1():
+    class NotMixin:
+        def __init__(self):
+            self.password = "passwd"
+
+    class Mixined(RedactMixin):
+        _skip_redact = ["password"]
+
+        def __init__(self):
+            self.password = "passwd"
+            self.transparent = "123"
+
+    @attr.s
+    class NestedMixined(RedactMixin):
+        _skip_redact = ["nested_field"]
+        password: str = attr.ib()
+        nested_field = attr.ib()
+
+    assert redact_with_exclusions(NotMixin()).password == "passwd"
+    assert redact_with_exclusions(Mixined()).password == "passwd"
+    assert redact_with_exclusions(Mixined()).transparent == "123"
+    assert redact_with_exclusions({"password": "passwd"}) == {"password": "passwd"}
+    redacted_nested = redact_with_exclusions(
+        NestedMixined("passwd", NestedMixined("passwd", None))
+    )
+    assert redacted_nested == NestedMixined("passwd", NestedMixined("passwd", None))

@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.client.Environment;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.filters.EventFilterUtils;
 import io.openlineage.spark.agent.lifecycle.ContextFactory;
 import io.openlineage.spark.agent.lifecycle.ExecutionContext;
 import io.openlineage.spark.agent.lifecycle.StaticExecutionContextFactory;
@@ -91,22 +92,25 @@ class OpenLineageSparkListenerTest {
         new StaticExecutionContextFactory(emitter)
             .createSparkSQLExecutionContext(1L, emitter, qe, olContext);
 
-    executionContext.start(
-        new SparkListenerSQLExecutionStart(
-            1L,
-            "",
-            "",
-            "",
+    SparkListenerSQLExecutionStart event = mock(SparkListenerSQLExecutionStart.class);
+    when(event.sparkPlanInfo())
+        .thenReturn(
             new SparkPlanInfo(
-                "name", "string", Seq$.MODULE$.empty(), Map$.MODULE$.empty(), Seq$.MODULE$.empty()),
-            1L));
-    executionContext.start(
-        new SparkListenerJobStart(0, 2L, Seq$.MODULE$.<StageInfo>empty(), new Properties()));
+                "name",
+                "string",
+                Seq$.MODULE$.empty(),
+                Map$.MODULE$.empty(),
+                Seq$.MODULE$.empty()));
+    when(event.executionId()).thenReturn(1L);
+    try (MockedStatic<EventFilterUtils> utils = mockStatic(EventFilterUtils.class)) {
+      utils.when(() -> EventFilterUtils.isDisabled(olContext, event)).thenReturn(false);
+      executionContext.start(event);
+    }
 
     ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
 
-    verify(emitter, times(2)).emit(lineageEvent.capture());
+    verify(emitter, times(1)).emit(lineageEvent.capture());
   }
 
   @Test

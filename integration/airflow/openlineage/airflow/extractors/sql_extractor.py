@@ -3,7 +3,11 @@ import logging
 from typing import List, Optional, TYPE_CHECKING, Dict, Tuple
 from urllib.parse import urlparse
 
-from openlineage.airflow.extractors.dbapi_utils import get_table_schemas
+from openlineage.airflow.extractors.dbapi_utils import (
+    get_table_schemas,
+    create_information_schema_query,
+    TablesHierarchy
+)
 from openlineage.airflow.utils import get_connection
 from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
 from openlineage.client.facet import BaseFacet, SqlJobFacet
@@ -11,8 +15,11 @@ from openlineage.common.sql import SqlMeta, parse
 from openlineage.common.dataset import Dataset, Source
 from abc import abstractmethod
 
+from openlineage.common.sql.parser import DbTableMeta
+
 if TYPE_CHECKING:
-    from airflow.models import Connection, BaseHook
+    from airflow.models import Connection
+    from airflow.hooks.base import BaseHook
 
 logger = logging.getLogger(__name__)
 
@@ -20,10 +27,23 @@ logger = logging.getLogger(__name__)
 class SqlExtractor(BaseExtractor):
     default_schema = "public"
 
+    _information_schema_columns = [
+        "table_schema",
+        "table_name",
+        "column_name",
+        "ordinal_position",
+        "udt_name",
+    ]
+    _information_schema_table_name = "information_schema.columns"
+    _is_information_schema_cross_db = False
+    _is_case_sensitive = False
+
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._conn = None
         self._hook = None
+        self._database: Optional[str] = None
+        self._scheme: Optional[str] = None
 
     def extract(self) -> TaskMetadata:
         task_name = f"{self.operator.dag_id}.{self.operator.task_id}"
@@ -46,7 +66,7 @@ class SqlExtractor(BaseExtractor):
 
         # (2) Construct source object
         source = Source(
-            scheme=self._scheme,
+            scheme=self.scheme,
             authority=self._get_authority(),
             connection_url=self._get_connection_uri(),
         )
@@ -63,8 +83,12 @@ class SqlExtractor(BaseExtractor):
             self.hook,
             source,
             database,
-            self._get_in_query(sql_meta.in_tables) if sql_meta.in_tables else None,
-            self._get_out_query(sql_meta.out_tables) if sql_meta.out_tables else None,
+            self._information_schema_query(sql_meta.in_tables)
+            if sql_meta.in_tables
+            else None,
+            self._information_schema_query(sql_meta.out_tables)
+            if sql_meta.out_tables
+            else None,
         )
 
         for ds in inputs:
@@ -100,18 +124,26 @@ class SqlExtractor(BaseExtractor):
     def conn(self) -> "Connection":
         if not self._conn:
             self._conn = get_connection(self._conn_id())
-        return self._conn
+        return self._conn  # type: ignore
 
     @property
-    def _scheme(self) -> str:
-        return self._get_scheme()
+    def scheme(self) -> Optional[str]:
+        if not self._scheme:
+            self._scheme = self._get_scheme()
+        return self._scheme
+
+    @property
+    def database(self) -> Optional[str]:
+        if not self._database:
+            self._database = self._get_database()
+        return self._database
 
     @abstractmethod
-    def _get_scheme(self) -> str:
+    def _get_scheme(self) -> Optional[str]:
         raise NotImplementedError
 
     @abstractmethod
-    def _get_database(self) -> str:
+    def _get_database(self) -> Optional[str]:
         raise NotImplementedError
 
     def _get_authority(self) -> str:
@@ -129,14 +161,6 @@ class SqlExtractor(BaseExtractor):
     def _get_connection_uri(self) -> str:
         raise NotImplementedError
 
-    # optional to implement
-    def _get_in_query(self, in_tables) -> str:
-        pass
-
-    # optional to implement
-    def _get_out_query(self, out_tables) -> str:
-        pass
-
     def _get_db_specific_run_facets(
         self,
         source: Source,
@@ -150,3 +174,35 @@ class SqlExtractor(BaseExtractor):
 
     def _get_output_facets(self) -> Dict[str, BaseFacet]:
         return {}
+
+    def _information_schema_query(self, tables: List[DbTableMeta]) -> str:
+        tables_hierarchy = self._get_tables_hierarchy(
+            tables,
+            database=self.database,
+            is_cross_db=self._is_information_schema_cross_db,
+        )
+        return create_information_schema_query(
+            columns=self._information_schema_columns,
+            information_schema_table_name=self._information_schema_table_name,
+            tables_hierarchy=tables_hierarchy,
+            case_sensitive=self._is_case_sensitive,
+        )
+
+    @staticmethod
+    def _get_tables_hierarchy(
+        tables: List[DbTableMeta],
+        database: Optional[str] = None,
+        is_cross_db: bool = False,
+    ) -> TablesHierarchy:
+        def normalize_name(name: Optional[str]) -> Optional[str]:
+            return name.lower() if name else name
+        hierarchy: TablesHierarchy = {}
+        for table in tables:
+            if is_cross_db:
+                db = table.database or database
+            else:
+                db = None
+            hierarchy.setdefault(normalize_name(db), {}).setdefault(
+                normalize_name(table.schema), []
+            ).append(table.name)
+        return hierarchy

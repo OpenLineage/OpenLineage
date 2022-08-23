@@ -23,7 +23,7 @@ else:
 
 @attr.s
 class TaskMetadata:
-    name: str = attr.ib()
+    name: str = attr.ib()  # deprecated
     inputs: List[Dataset] = attr.ib(factory=list)
     outputs: List[Dataset] = attr.ib(factory=list)
     run_facets: Dict[str, BaseFacet] = attr.ib(factory=dict)

@@ -49,6 +49,7 @@ def create_token_provider(auth: Dict) -> TokenProvider:
 @attr.s
 class HttpConfig(Config):
     url: str = attr.ib()
+    endpoint: str = attr.ib(default='api/v1/lineage')
     timeout: float = attr.ib(default=5.0)
     # check TLS certificates
     verify: bool = attr.ib(default=True)
@@ -89,11 +90,12 @@ class HttpTransport(Transport):
         log.debug(f"Constructing openlineage client to send events to {url}")
         try:
             parsed = parse_url(url)
-            if not (parsed.scheme and parsed.netloc):
+            if not (parsed.scheme and parsed.netloc):  # type: ignore
                 raise ValueError(f"Need valid url for OpenLineageClient, passed {url}")
         except Exception as e:
             raise ValueError(f"Need valid url for OpenLineageClient, passed {url}. Exception: {e}")
         self.url = url
+        self.endpoint = config.endpoint
         self.session = config.session
         self.session.headers['Content-Type'] = 'application/json'
         self.timeout = config.timeout
@@ -111,7 +113,7 @@ class HttpTransport(Transport):
         if log.isEnabledFor(logging.DEBUG):
             log.debug(f"Sending openlineage event {event}")
         resp = self.session.post(
-            urljoin(self.url, 'api/v1/lineage'),
+            urljoin(self.url, self.endpoint),
             event,
             timeout=self.timeout,
             verify=self.verify
