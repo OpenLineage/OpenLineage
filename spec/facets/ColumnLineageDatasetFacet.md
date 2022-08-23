@@ -1,9 +1,36 @@
 # Column level lineage
 
 The [column level lineage facet](ColumnLineageDatasetFacet.json) captures the lineage of columns of an output dataset from the columns in input datasets.
-
-
-Example:
+It must refer to existing columns as defined in the [`schema` facet](SchemaDatasetFacet.json).
+Output Dataset example of adding a columnLineage facet:
+```diff
+    {
+      "namespace": "{namespace of the outputdataset}",
+      "name": "{name of the output dataset}",
+      "facets": {
+        "schema": {
+          "fields": [
+            { "name": "{first column of the output dataset}", "type": "{its type}"},
+            { "name": "{second column of the output dataset}", "type": "{its type}"},
+            ...
+          ]
+        },
+>       "columnLineage": {
+>         "{first column of the output dataset}": {
+>           "inputFields": [
+>             { "namespace": "{input dataset namespace}", name: "{input dataset name}", "field": "{input dataset column name}"},
+>             ... other inputs
+>           ],
+>           "transformationDescription": "identical",
+>           "transformationType": "IDENTITY"
+>         },
+>         "{second column of the output dataset}": ...,
+>         ...
+>       }
+      }
+    }
+```
+Full lineage event example:
 ```
 {
   "eventType": "START",
