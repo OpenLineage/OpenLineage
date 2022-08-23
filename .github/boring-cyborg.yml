@@ -10,8 +10,6 @@ labelPRBasedOnFilePath:
     - client/python/**/*
   common:
     - integration/common/**/*
-  core/airflow:
-    - 
   documentation:
     - doc/*
     - ../*.md
@@ -37,6 +35,10 @@ labelPRBasedOnFilePath:
     - proposals/**/*
   proxy:
     - proxy/**/*
+  spec:
+    - spec/**/*
+  tests:
+    - .circleci/workflows/*
 
 ##### Greetings ########################################################################################################
 # Comment to be posted to welcome users when they open their first PR
