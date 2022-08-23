@@ -37,6 +37,8 @@ labelPRBasedOnFilePath:
     - proxy/**/*
   spec:
     - spec/**/*
+  streaming:
+    - integration/flink/**/*
   tests:
     - .circleci/workflows/*
 
