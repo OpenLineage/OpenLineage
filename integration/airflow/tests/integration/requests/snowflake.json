@@ -37,7 +37,7 @@
 			"nominalTime": {
 				"nominalStartTime": "{{ any(result) }}"
 			},
-			"parentRun": {
+			"parent": {
 				"job": {
 					"name": "snowflake",
 					"namespace": "food_delivery"

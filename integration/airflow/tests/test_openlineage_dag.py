@@ -160,6 +160,11 @@ def test_openlineage_dag(
             eventTime=mock.ANY,
             run=Run(run_id_completed, {
                 "nominalTime": NominalTimeRunFacet(start_time, end_time),
+                "parent": ParentRunFacet.create(
+                    runId=parent_run_id,
+                    namespace=DAG_NAMESPACE,
+                    name=DAG_ID
+                ),
                 "parentRun": ParentRunFacet.create(
                     runId=parent_run_id,
                     namespace=DAG_NAMESPACE,
@@ -182,6 +187,11 @@ def test_openlineage_dag(
             eventTime=mock.ANY,
             run=Run(run_id_failed, {
                 "nominalTime": NominalTimeRunFacet(start_time, end_time),
+                "parent": ParentRunFacet.create(
+                    runId=parent_run_id,
+                    namespace=DAG_NAMESPACE,
+                    name=DAG_ID
+                ),
                 "parentRun": ParentRunFacet.create(
                     runId=parent_run_id,
                     namespace=DAG_NAMESPACE,
@@ -479,6 +489,11 @@ def test_openlineage_dag_with_extractor(
             mock.ANY,
             Run(run_id, {
                 "nominalTime": NominalTimeRunFacet(start_time, end_time),
+                "parent": ParentRunFacet.create(
+                    runId=parent_run_id,
+                    namespace=DAG_NAMESPACE,
+                    name=dag_id
+                ),
                 "parentRun": ParentRunFacet.create(
                     runId=parent_run_id,
                     namespace=DAG_NAMESPACE,
@@ -590,6 +605,11 @@ def test_openlineage_dag_with_extract_on_complete(
             eventTime=mock.ANY,
             run=Run(run_id, {
                 "nominalTime": NominalTimeRunFacet(start_time, end_time),
+                "parent": ParentRunFacet.create(
+                    runId=parent_run_id,
+                    namespace=DAG_NAMESPACE,
+                    name=dag_id
+                ),
                 "parentRun": ParentRunFacet.create(
                     runId=parent_run_id,
                     namespace=DAG_NAMESPACE,
@@ -701,6 +721,11 @@ def test_openlineage_dag_adds_custom_facets(
         eventTime=mock.ANY,
         run=Run(run_id, {
             "nominalTime": NominalTimeRunFacet(start_time, end_time),
+            "parent": ParentRunFacet.create(
+                runId=parent_run_id,
+                namespace=DAG_NAMESPACE,
+                name=DAG_ID
+            ),
             "parentRun": ParentRunFacet.create(
                 runId=parent_run_id,
                 namespace=DAG_NAMESPACE,

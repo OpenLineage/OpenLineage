@@ -15,7 +15,7 @@
  				"airflow_runArgs": {
  					"externalTrigger": false
  				},
- 				"parentRun": {
+ 				"parent": {
  					"job": {
  						"name": "unknown_operator_dag",
  						"namespace": "food_delivery"
