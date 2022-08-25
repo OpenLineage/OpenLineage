@@ -16,7 +16,7 @@
         "airflow_runArgs": {
           "externalTrigger": false
         },
-        "parentRun": {
+        "parent": {
           "job": {
             "name": "mapped_dag",
             "namespace": "food_delivery"
@@ -50,7 +50,7 @@
         "airflow_runArgs": {
           "externalTrigger": false
         },
-        "parentRun": {
+        "parent": {
           "job": {
             "name": "mapped_dag",
             "namespace": "food_delivery"
@@ -81,7 +81,7 @@
         "airflow_runArgs": {
           "externalTrigger": false
         },
-        "parentRun": {
+        "parent": {
           "job": {
             "name": "mapped_dag",
             "namespace": "food_delivery"
@@ -107,7 +107,7 @@
         "airflow_runArgs": {
           "externalTrigger": false
         },
-        "parentRun": {
+        "parent": {
           "job": {
             "name": "mapped_dag",
             "namespace": "food_delivery"

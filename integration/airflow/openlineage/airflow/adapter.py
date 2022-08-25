@@ -194,11 +194,15 @@ class OpenLineageAdapter:
                 "nominalTime": NominalTimeRunFacet(nominal_start_time, nominal_end_time)
             })
         if parent_run_id:
-            facets.update({"parentRun": ParentRunFacet.create(
+            parent_run_facet = ParentRunFacet.create(
                 parent_run_id,
                 _DAG_NAMESPACE,
                 parent_job_name or job_name
-            )})
+            )
+            facets.update({
+                "parent": parent_run_facet,
+                "parentRun": parent_run_facet  # Keep sending this for the backward compatibility
+            })
 
         if run_facets:
             facets.update(run_facets)
