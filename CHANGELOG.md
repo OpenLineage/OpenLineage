@@ -1,6 +1,11 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.13.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.13.1...HEAD)
+## [0.13.1](https://github.com/OpenLineage/OpenLineage/compare/0.13.0...0.13.1) 2022-08-25
+### Fixed
+* Rename all `parentRun` occurrences to parent from Airflow integration [`1037`](https://github.com/OpenLineage/OpenLineage/pull/1037) [@fm100](https://github.com/fm100)
+* Do not change task instance during on_running event [`1028`](https://github.com/OpenLineage/OpenLineage/pull/1028) [@JDarDagran](https://github.com/JDarDagran)
+
 ## [0.13.0](https://github.com/OpenLineage/OpenLineage/compare/0.12.0...0.13.0) 2022-08-22
 ### Added
 
