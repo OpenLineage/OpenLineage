@@ -106,8 +106,8 @@ public class KustoRelationVisitor<D extends OpenLineage.Dataset>
       log.warn("Unable to discover Kusto table property");
       return Optional.empty();
     }
-
-    if ("".equals(tableName)) {
+    
+    if (StringUtils.isBlank(tableName)) {
       log.warn("Unable to discover Kusto table property");
       return Optional.empty();
     }
@@ -117,7 +117,7 @@ public class KustoRelationVisitor<D extends OpenLineage.Dataset>
     }
 
     return Optional.of(tableName);
-  } // end of getName
+  }
 
   private static Optional<String> getNamespace(BaseRelation relation) {
     String url;

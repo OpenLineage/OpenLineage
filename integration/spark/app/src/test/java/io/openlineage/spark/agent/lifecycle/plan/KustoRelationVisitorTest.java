@@ -41,7 +41,7 @@ import scala.collection.Seq$;
  * SaveIntoDataSourceCommandVisitor
  */
 @Slf4j
-class kustoCoordinates {
+class KustoCoordinates {
   @SuppressWarnings("PMD") // used by reflection
   private String clusterUrl; // field read from kustoCoordinates by reflection in getNamespace
 
@@ -58,7 +58,7 @@ class kustoCoordinates {
     return database;
   }
 
-  public kustoCoordinates(String clusterUrl, String database) {
+  public KustoCoordinates(String clusterUrl, String database) {
     this.clusterUrl = clusterUrl;
     this.database = database;
   }
@@ -85,7 +85,7 @@ class MockKustoRelation extends BaseRelation {
 
   public MockKustoRelation(String query, String clusterUrl, String database) {
     this.query = query;
-    this.kustoCoordinates = new kustoCoordinates(clusterUrl, database);
+    this.kustoCoordinates = new KustoCoordinates(clusterUrl, database);
   }
 }
 
