@@ -22,6 +22,7 @@ from great_expectations.execution_engine import (
 from great_expectations.execution_engine.sqlalchemy_batch_data import \
     SqlAlchemyBatchData
 from great_expectations.validator.validator import Validator
+
 from openlineage.client import OpenLineageClient, OpenLineageClientOptions
 from openlineage.client.facet import ParentRunFacet, DocumentationJobFacet, \
     SourceCodeLocationJobFacet, DataQualityMetricsInputDatasetFacet, \
@@ -225,7 +226,7 @@ class OpenLineageValidationAction(ValidationAction):
         if isinstance(data_asset, SqlAlchemyDataset):
             if data_asset.generated_table_name is not None:
                 custom_sql = data_asset.batch_kwargs.get('query')
-                parsed_sql = parse(custom_sql)
+                parsed_sql = parse(custom_sql, dialect=data_asset.engine.dialect.name.lower())
                 return [
                     self._get_sql_table(data_asset, metadata, t.schema, t.name,
                                         validation_result_suite) for t in
@@ -240,7 +241,7 @@ class OpenLineageValidationAction(ValidationAction):
             custom_sql = batch.batch_request.runtime_parameters.get('query', None) if \
                 batch.batch_request.runtime_parameters is not None else None
             if custom_sql:
-                parsed_sql = parse(custom_sql)
+                parsed_sql = parse(custom_sql, dialect=data_asset.execution_engine.dialect_name)
                 return [
                     self._get_sql_table(batch_data, metadata, t.schema, t.name,
                                         validation_result_suite) for t in
@@ -280,6 +281,10 @@ class OpenLineageValidationAction(ValidationAction):
         if isinstance(engine, Connection):
             engine = engine.engine
         datasource_url = engine.url
+
+        # bug in sql parser doesn't strip ` character from bigquery tables
+        if table_name.endswith("`") or table_name.startswith('`'):
+            table_name = table_name.replace('`', '')
         if engine.dialect.name.lower() == "bigquery":
             schema = '{}.{}'.format(datasource_url.host, datasource_url.database)
 
