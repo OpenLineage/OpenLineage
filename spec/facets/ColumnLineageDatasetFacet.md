@@ -2,6 +2,12 @@
 
 The [column level lineage facet](ColumnLineageDatasetFacet.json) captures the lineage of columns of an output dataset from the columns in input datasets.
 It must refer to existing columns as defined in the [`schema` facet](SchemaDatasetFacet.json).
+Additional information on the transformation from the input columns to the output column is stored in the optional *transformationDescription* and *transformationType* fields.
+ - *transformationDescription*: a human readable description of the transformation. ex: "(a+b)" or "identical"
+ - *transformationType*: type of the transformation. possible values:
+  - "IDENTITY" exactly the same as the input.
+  - "MASKED" for example a hash of the input value that doesn't expose the original value.
+
 Output Dataset example of adding a columnLineage facet:
 ```diff
     {
