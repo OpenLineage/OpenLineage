@@ -12,7 +12,7 @@ labelPRBasedOnFilePath:
     - integration/common/**/*
   documentation:
     - doc/*
-    - ../*.md
+    - "*.md"
   extractor:
     - integration/airflow/openlineage/airflow/extractors/*
   integration/airflow:
