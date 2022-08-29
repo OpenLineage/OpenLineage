@@ -198,8 +198,10 @@ class DbtArtifactProcessor:
         """
             Parse dbt manifest and run_result and produce OpenLineage events.
         """
-        manifest = self.load_metadata(self.manifest_path, [2, 3, 4], self.logger)
-        run_result = self.load_metadata(self.run_result_path, [2, 3, 4], self.logger)
+        manifest = self.load_metadata(self.manifest_path, [2, 3, 4, 5, 6, 7], self.logger)
+        self.manifest_version = self.get_schema_version(manifest)
+
+        run_result = self.load_metadata(self.run_result_path, [2, 3, 4, 5], self.logger)
         self.run_metadata = run_result['metadata']
         self.command = run_result['args']['which']
 
@@ -261,7 +263,7 @@ class DbtArtifactProcessor:
                 metadata,
                 ['metadata', 'dbt_schema_version']
             )
-            schema_version = cls.get_version_number(str_schema_version)
+            schema_version = cls.get_schema_version(metadata)
             if schema_version not in desired_schema_versions:
                 if schema_version > max(desired_schema_versions):
                     logger.warning(
@@ -273,6 +275,14 @@ class DbtArtifactProcessor:
                     raise ValueError(f"Wrong version of dbt metadata: {schema_version}, "
                                      f"should be in {desired_schema_versions}")
             return metadata
+
+    @classmethod
+    def get_schema_version(cls, metadata):
+        str_schema_version = get_from_nullable_chain(
+            metadata,
+            ['metadata', 'dbt_schema_version']
+        )
+        return cls.get_version_number(str_schema_version)
 
     @staticmethod
     def get_version_number(version: str) -> int:
@@ -376,6 +386,12 @@ class DbtArtifactProcessor:
             job_name = f"{output_node['database']}.{output_node['schema']}" \
                 f".{self.removeprefix(run['unique_id'], 'model.')}" \
                 + (".build.run" if self.command == 'build' else "")
+
+            if self.manifest_version >= 7:
+                sql = output_node['compiled_code']
+            else:
+                sql = output_node['compiled_sql']
+
             events.add(self.to_openlineage_events(
                 run['status'],
                 started_at,
@@ -385,7 +401,7 @@ class DbtArtifactProcessor:
                     namespace=self.job_namespace,
                     name=job_name,
                     facets={
-                        'sql': SqlJobFacet(output_node['compiled_sql'])
+                        'sql': SqlJobFacet(sql)
                     }
                 ),
                 [self.node_to_dataset(node, has_facets=True) for node in inputs],
