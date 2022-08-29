@@ -32,6 +32,6 @@ fi
 maturin build --sdist --out target/wheels
 
 # Verify that it imports properly
-pip install openlineage-sql --no-index --find-links target/wheels --force-reinstall
+python -m pip install openlineage-sql --no-index --find-links target/wheels --force-reinstall
 python -c "import openlineage_sql"
 echo "all good"
