@@ -61,8 +61,7 @@ public class AlterTableDatasetBuilder extends AbstractQueryPlanOutputDatasetBuil
             version -> builder.version(openLineage.newDatasetVersionDatasetFacet(version)));
       }
 
-      return Collections.singletonList(
-          outputDataset().getDataset(di.get().getName(), di.get().getNamespace(), builder.build()));
+      return Collections.singletonList(outputDataset().getDataset(di.get(), builder));
     } else {
       return Collections.emptyList();
     }

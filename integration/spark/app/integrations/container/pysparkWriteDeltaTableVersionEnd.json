@@ -26,6 +26,15 @@
           }
         ]
       },
+      "symlinks": {
+        "identifiers": [
+          {
+            "namespace": "/tmp",
+            "name": "default.versioned_table",
+            "type": "TABLE"
+          }
+        ]
+      },
       "storage" : {
         "storageLayer" : "delta",
         "fileFormat" : "parquet"

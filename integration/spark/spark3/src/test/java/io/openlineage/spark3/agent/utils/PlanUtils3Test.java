@@ -88,8 +88,7 @@ class PlanUtils3Test {
         when(CatalogUtils3.getDatasetIdentifier(
                 openLineageContext, tableCatalog, identifier, tableProperties))
             .thenReturn(di);
-        when(datasetFactory.getDataset(di.getName(), di.getNamespace(), datasetFacets))
-            .thenReturn(dataset);
+        when(datasetFactory.getDataset(di, datasetFacetsBuilder)).thenReturn(dataset);
 
         assertEquals(
             Collections.singletonList(dataset),

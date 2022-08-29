@@ -121,20 +121,18 @@ public class PlanUtils3 {
       Map<String, String> tableProperties = relation.table().properties();
       di = PlanUtils3.getDatasetIdentifier(context, tableCatalog, identifier, tableProperties);
 
-      if (!di.isPresent()) {
-        return Collections.emptyList();
-      }
-
       CatalogUtils3.getStorageDatasetFacet(context, tableCatalog, tableProperties)
           .map(storageDatasetFacet -> datasetFacetsBuilder.storage(storageDatasetFacet));
+    }
+
+    if (!di.isPresent()) {
+      return Collections.emptyList();
     }
 
     datasetFacetsBuilder
         .schema(PlanUtils.schemaFacet(openLineage, relation.schema()))
         .dataSource(PlanUtils.datasourceFacet(openLineage, di.get().getNamespace()));
 
-    return Collections.singletonList(
-        datasetFactory.getDataset(
-            di.get().getName(), di.get().getNamespace(), datasetFacetsBuilder.build()));
+    return Collections.singletonList(datasetFactory.getDataset(di.get(), datasetFacetsBuilder));
   }
 }

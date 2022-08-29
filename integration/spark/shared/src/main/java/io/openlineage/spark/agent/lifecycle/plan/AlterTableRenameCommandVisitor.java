@@ -68,7 +68,6 @@ public class AlterTableRenameCommandVisitor
             new OpenLineage.DatasetFacetsBuilder()
                 .schema(PlanUtils.schemaFacet(context.getOpenLineage(), table.schema()))
                 .dataSource(PlanUtils.datasourceFacet(context.getOpenLineage(), di.getNamespace()))
-                .lifecycleStateChange(lifecycleStateChangeDatasetFacet)
-                .build()));
+                .lifecycleStateChange(lifecycleStateChangeDatasetFacet)));
   }
 }

@@ -23,6 +23,15 @@
                             "type": "string"
                         }
                     ]
+                },
+                "symlinks": {
+                    "identifiers": [
+                        {
+                            "namespace": "/tmp/warehouse",
+                            "name": "default.test",
+                            "type": "TABLE"
+                        }
+                    ]
                 }
             },
             "name": "/tmp/warehouse/test",

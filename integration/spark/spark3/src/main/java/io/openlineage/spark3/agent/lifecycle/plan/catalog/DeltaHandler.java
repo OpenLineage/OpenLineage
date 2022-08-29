@@ -9,11 +9,13 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.io.File;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier;
@@ -81,7 +83,12 @@ public class DeltaHandler implements CatalogHandler {
                                     .orElse(null))))
                     .toString()));
     log.info(path.toString());
-    return PathUtils.fromPath(path, "file");
+    DatasetIdentifier di = PathUtils.fromPath(path, "file");
+    return di.withSymlink(
+        identifier.toString(),
+        StringUtils.substringBeforeLast(
+            di.getName(), File.separator), // parent location from a name becomes a namespace
+        DatasetIdentifier.SymlinkType.TABLE);
   }
 
   @Override

@@ -54,8 +54,7 @@ public class DropTableCommandVisitor
                           .newLifecycleStateChangeDatasetFacet(
                               OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange
                                   .DROP,
-                              null))
-                  .build()));
+                              null))));
 
     } else {
       // already deleted, do nothing

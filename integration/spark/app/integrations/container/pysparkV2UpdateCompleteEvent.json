@@ -22,6 +22,15 @@
           "type" : "long"
         } ]
       },
+      "symlinks": {
+        "identifiers": [
+          {
+            "namespace": "/tmp/v2_update_table",
+            "name": "db.tbl",
+            "type": "TABLE"
+          }
+        ]
+      },
       "version" : {}
     }
   } ]

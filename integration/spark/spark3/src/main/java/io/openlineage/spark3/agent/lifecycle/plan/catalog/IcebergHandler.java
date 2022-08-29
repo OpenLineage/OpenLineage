@@ -11,6 +11,7 @@ import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.agent.util.SparkConfUtils;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.io.File;
 import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
@@ -18,6 +19,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.iceberg.CatalogProperties;
 import org.apache.iceberg.spark.SparkCatalog;
@@ -81,24 +83,27 @@ public class IcebergHandler implements CatalogHandler {
       throw new UnsupportedCatalogException(catalogName);
     }
     log.info(catalogConf.get(TYPE));
-    switch (catalogConf.get(TYPE)) {
-      case "hadoop":
-        return getHadoopIdentifier(catalogConf, identifier.toString());
-      case "hive":
-        return getHiveIdentifier(
-            session, catalogConf.get(CatalogProperties.URI), identifier.toString());
-      default:
-        throw new UnsupportedCatalogException(catalogConf.get(TYPE));
-    }
-  }
 
-  private DatasetIdentifier getHadoopIdentifier(Map<String, String> conf, String table) {
-    String warehouse = conf.get(CatalogProperties.WAREHOUSE_LOCATION);
-    return PathUtils.fromPath(new Path(warehouse, table));
+    String warehouse = catalogConf.get(CatalogProperties.WAREHOUSE_LOCATION);
+    DatasetIdentifier di = PathUtils.fromPath(new Path(warehouse, identifier.toString()));
+
+    if (catalogConf.get(TYPE).equals("hive")) {
+      di.withSymlink(
+          getHiveIdentifier(
+              session, catalogConf.get(CatalogProperties.URI), identifier.toString()));
+    } else if (catalogConf.get(TYPE).equals("hadoop")) {
+      di.withSymlink(
+          identifier.toString(),
+          StringUtils.substringBeforeLast(
+              di.getName(), File.separator), // parent location from a name becomes a namespace
+          DatasetIdentifier.SymlinkType.TABLE);
+    }
+
+    return di;
   }
 
   @SneakyThrows
-  private DatasetIdentifier getHiveIdentifier(
+  private DatasetIdentifier.Symlink getHiveIdentifier(
       SparkSession session, @Nullable String confUri, String table) {
     String slashPrefixedTable = String.format("/%s", table);
     URI uri;
@@ -109,8 +114,14 @@ public class IcebergHandler implements CatalogHandler {
     } else {
       uri = new URI(confUri);
     }
-    return PathUtils.fromPath(
-        new Path(PathUtils.enrichHiveMetastoreURIWithTableName(uri, slashPrefixedTable)));
+    DatasetIdentifier metastoreIdentifier =
+        PathUtils.fromPath(
+            new Path(PathUtils.enrichHiveMetastoreURIWithTableName(uri, slashPrefixedTable)));
+
+    return new DatasetIdentifier.Symlink(
+        metastoreIdentifier.getName(),
+        metastoreIdentifier.getNamespace(),
+        DatasetIdentifier.SymlinkType.TABLE);
   }
 
   @Override

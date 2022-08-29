@@ -99,7 +99,6 @@ public class AlterTableCommandDatasetBuilder
       datasetVersion.ifPresent(
           version -> builder.version(openLineage.newDatasetVersionDatasetFacet(version)));
     }
-    return Collections.singletonList(
-        outputDataset().getDataset(di.get().getName(), di.get().getNamespace(), builder.build()));
+    return Collections.singletonList(outputDataset().getDataset(di.get(), builder));
   }
 }

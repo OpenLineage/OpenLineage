@@ -21,7 +21,16 @@
           "type" : "long"
         } ]
       },
-      "version" : {}
+      "version" : {},
+      "symlinks": {
+        "identifiers": [
+          {
+            "namespace": "/tmp/v2_merge",
+            "name": "db.updates",
+            "type": "TABLE"
+          }
+        ]
+      }
     }
   } ],
   "outputs" : [ ]
