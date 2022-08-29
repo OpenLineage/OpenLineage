@@ -11,9 +11,12 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.spark.SparkConf;
 import scala.Option;
 
+@Slf4j
 public class SparkConfUtils {
   private static final String metastoreUriKey = "spark.sql.hive.metastore.uris";
   private static final String metastoreHadoopUriKey = "spark.hadoop.hive.metastore.uris";
@@ -30,6 +33,18 @@ public class SparkConfUtils {
     opt = conf.getOption("spark." + name);
     if (opt.isDefined()) {
       return Optional.of(opt.get());
+    }
+    return Optional.empty();
+  }
+
+  public static Optional<Double> findSparkConfigKeyDouble(SparkConf conf, String name) {
+    String timeoutString = conf.get(name);
+    try {
+      if (StringUtils.isNotBlank(timeoutString)) {
+        return Optional.of(Double.parseDouble(timeoutString));
+      }
+    } catch (NumberFormatException e) {
+      log.warn("Value of timeout is not parsable");
     }
     return Optional.empty();
   }

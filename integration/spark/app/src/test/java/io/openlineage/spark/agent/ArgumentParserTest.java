@@ -36,6 +36,7 @@ class ArgumentParserTest {
           RUN_ID,
           false,
           Optional.of("abc"),
+          Optional.empty(),
           Optional.empty()
         });
     pass.add(
@@ -47,6 +48,7 @@ class ArgumentParserTest {
           JOB_NAME,
           RUN_ID,
           false,
+          Optional.empty(),
           Optional.empty(),
           Optional.empty()
         });
@@ -60,6 +62,7 @@ class ArgumentParserTest {
           RUN_ID,
           false,
           Optional.empty(),
+          Optional.empty(),
           Optional.empty()
         });
     pass.add(
@@ -71,6 +74,7 @@ class ArgumentParserTest {
           JOB_NAME,
           null,
           true,
+          Optional.empty(),
           Optional.empty(),
           Optional.empty()
         });
@@ -84,6 +88,7 @@ class ArgumentParserTest {
           RUN_ID,
           false,
           Optional.of("abc"),
+          Optional.empty(),
           Optional.of(Collections.singletonMap("myParam", "xyz"))
         });
     pass.add(
@@ -96,7 +101,34 @@ class ArgumentParserTest {
           RUN_ID,
           false,
           Optional.empty(),
+          Optional.empty(),
           Optional.of(Collections.singletonMap("myParam", "xyz"))
+        });
+    pass.add(
+        new Object[] {
+          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54?timeout=5000",
+          URL,
+          "v1",
+          NS_NAME,
+          JOB_NAME,
+          RUN_ID,
+          false,
+          Optional.empty(),
+          Optional.of(5000.0),
+          Optional.empty()
+        });
+    pass.add(
+        new Object[] {
+          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54?timeout=",
+          URL,
+          "v1",
+          NS_NAME,
+          JOB_NAME,
+          RUN_ID,
+          false,
+          Optional.empty(),
+          Optional.empty(),
+          Optional.empty()
         });
     return pass;
   }
@@ -112,6 +144,7 @@ class ArgumentParserTest {
       String runId,
       boolean defaultRunId,
       Optional<String> apiKey,
+      Optional<Double> timeout,
       Optional<Map<String, String>> urlParams) {
     ArgumentParser parser = ArgumentParser.parse(input);
     assertEquals(host, parser.getHost());
@@ -124,6 +157,7 @@ class ArgumentParserTest {
       assertEquals(runId, parser.getParentRunId());
     }
     assertEquals(apiKey, parser.getApiKey());
+    assertEquals(timeout, parser.getTimeout());
     assertEquals(urlParams, parser.getUrlParams());
     if (urlParams.isPresent()) {
       urlParams
