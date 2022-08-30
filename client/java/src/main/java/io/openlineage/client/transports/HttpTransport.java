@@ -209,6 +209,9 @@ public final class HttpTransport extends Transport implements Closeable {
       httpConfig.setUrl(uri);
       httpConfig.setAuth(tokenProvider);
       httpConfig.setTimeout(timeout);
+      if (httpClient != null) {
+        return new HttpTransport(httpClient, httpConfig);
+      }
       return new HttpTransport(httpConfig);
     }
   }
