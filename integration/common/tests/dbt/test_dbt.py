@@ -45,6 +45,7 @@ def serialize(inst, field, value):
         "tests/dbt/catalog",
         "tests/dbt/fail",
         "tests/dbt/build",
+        "tests/dbt/compiled_code",
         "tests/dbt/spark/thrift",
         "tests/dbt/spark/odbc"
     ]

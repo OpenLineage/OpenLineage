@@ -1,0 +1,70 @@
+{
+	"metadata": {
+		"dbt_schema_version": "https://schemas.getdbt.com/dbt/run-results/v4.json",
+		"dbt_version": "1.3.0b1",
+		"generated_at": "2022-08-29T14:05:52.615555Z",
+		"invocation_id": "2042a280-76c8-4f34-8415-8c8c3ca9a4ba",
+		"env": {}
+	},
+	"results": [{
+		"status": "success",
+		"timing": [{
+			"name": "compile",
+			"started_at": "2022-08-29T14:05:46.415698Z",
+			"completed_at": "2022-08-29T14:05:46.419178Z"
+		}, {
+			"name": "execute",
+			"started_at": "2022-08-29T14:05:46.419512Z",
+			"completed_at": "2022-08-29T14:05:49.128151Z"
+		}],
+		"thread_id": "Thread-1",
+		"execution_time": 2.7137701511383057,
+		"adapter_response": {
+			"_message": "CREATE TABLE (2.0 rows, 0 processed)",
+			"code": "CREATE TABLE",
+			"rows_affected": 2,
+			"bytes_processed": 0
+		},
+		"message": "CREATE TABLE (2.0 rows, 0 processed)",
+		"failures": null,
+		"unique_id": "model.small.my_first_dbt_model"
+	},{
+		"status": "success",
+		"timing": [{
+			"name": "compile",
+			"started_at": "2022-08-29T14:05:50.362675Z",
+			"completed_at": "2022-08-29T14:05:50.367062Z"
+		}, {
+			"name": "execute",
+			"started_at": "2022-08-29T14:05:50.367424Z",
+			"completed_at": "2022-08-29T14:05:51.330479Z"
+		}],
+		"thread_id": "Thread-1",
+		"execution_time": 0.9700310230255127,
+		"adapter_response": {
+			"_message": "OK",
+			"code": "CREATE VIEW"
+		},
+		"message": "OK",
+		"failures": null,
+		"unique_id": "model.small.my_second_dbt_model"
+	}],
+	"elapsed_time": 6.90785813331604,
+	"args": {
+		"write_json": true,
+		"use_colors": true,
+		"printer_width": 80,
+		"version_check": true,
+		"partial_parse": true,
+		"static_parser": true,
+		"profiles_dir": "./tests/dbt/compiled_code",
+		"send_anonymous_usage_stats": true,
+		"event_buffer_size": 100000,
+		"quiet": false,
+		"no_print": false,
+		"indirect_selection": "eager",
+		"resource_types": [],
+		"which": "build",
+		"rpc_method": "build"
+	}
+}

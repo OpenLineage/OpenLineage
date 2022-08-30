@@ -1,0 +1,119 @@
+[{
+	"eventType": "START",
+	"eventTime": "{{ is_datetime(result) }}",
+	"run": {
+		"runId": "{{ any(result) }}"
+	},
+	"job": {
+		"namespace": "job-namespace",
+		"name": "random-gcp-project.dbt_test1.small.my_first_dbt_model.build.run"
+	},
+	"inputs": [],
+	"outputs": [{
+		"namespace": "bigquery",
+		"name": "random-gcp-project.dbt_test1.my_first_dbt_model"
+	}]
+}, {
+	"eventType": "START",
+	"eventTime": "{{ is_datetime(result) }}",
+	"run": {
+		"runId": "{{ any(result) }}"
+	},
+	"job": {
+		"namespace": "job-namespace",
+		"name": "random-gcp-project.dbt_test1.small.my_second_dbt_model.build.run"
+	},
+	"inputs": [{
+		"namespace": "bigquery",
+		"name": "random-gcp-project.dbt_test1.my_first_dbt_model"
+	}],
+	"outputs": [{
+		"namespace": "bigquery",
+		"name": "random-gcp-project.dbt_test1.my_second_dbt_model"
+	}]
+}, {
+	"eventType": "COMPLETE",
+	"eventTime": "{{ is_datetime(result) }}",
+	"run": {
+		"runId": "{{ any(result) }}",
+		"facets": {
+			"parent": {
+				"job": {"name": "dbt-job-name", "namespace": "dbt"},
+				"run": {"runId": "{{ any(result) }}"}
+			},
+			"dbt_version": {
+				"version": "{{ any(result) }}"
+			}
+		}
+	},
+	"job": {
+		"namespace": "job-namespace",
+		"name": "random-gcp-project.dbt_test1.small.my_first_dbt_model.build.run",
+		"facets": {
+			"sql": {
+				"query": "\n\nwith source_data as (\n\n    select 1 as id\n    union all\n    select null as id\n\n)\n\nselect *\nfrom source_data"
+			}
+		}
+	},
+	"inputs": [],
+	"outputs": [{
+		"namespace": "bigquery",
+		"name": "random-gcp-project.dbt_test1.my_first_dbt_model",
+		"facets": {
+			"dataSource": {
+				"name": "bigquery",
+				"uri": "bigquery"
+			},
+			"schema": {
+				"fields": [{
+					"name": "id",
+					"type": null
+				}]
+			}
+		}
+	}]
+}, {
+	"eventType": "COMPLETE",
+	"eventTime": "{{ is_datetime(result) }}",
+	"run": {
+		"runId": "{{ any(result) }}",
+		"facets": {
+			"parent": {
+				"job": {"name": "dbt-job-name", "namespace": "dbt"},
+				"run": {"runId": "{{ any(result) }}"}
+			},
+			"dbt_version": {
+				"version": "{{ any(result) }}"
+			}
+		}
+	},
+	"job": {
+		"namespace": "job-namespace",
+		"name": "random-gcp-project.dbt_test1.small.my_second_dbt_model.build.run",
+		"facets": {
+			"sql": {
+				"query": "select *\nfrom `random-gcp-project`.`dbt_test1`.`my_first_dbt_model`\nwhere id = 1"
+			}
+		}
+	},
+	"inputs": [{
+		"namespace": "bigquery",
+		"name": "random-gcp-project.dbt_test1.my_first_dbt_model"
+	}],
+	"outputs": [{
+		"namespace": "bigquery",
+		"name": "random-gcp-project.dbt_test1.my_first_dbt_model",
+		"facets": {
+			"dataSource": {
+				"name": "bigquery",
+				"uri": "bigquery"
+			},
+			"schema": {
+				"fields": [{
+					"name": "id",
+					"type": null
+				}]
+			}
+		}
+	}]
+}]
