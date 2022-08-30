@@ -26,6 +26,7 @@ public class EventEmitter {
   @Getter private URI lineageURI;
   @Getter private String jobNamespace;
   @Getter private String parentJobName;
+  @Getter private Double timeout;
   @Getter private Optional<UUID> parentRunId;
 
   public EventEmitter(ArgumentParser argument) throws URISyntaxException {
@@ -59,6 +60,7 @@ public class EventEmitter {
 
     HttpTransport.Builder builder = HttpTransport.builder().uri(this.lineageURI);
     argument.getApiKey().ifPresent(builder::apiKey);
+    argument.getTimeout().ifPresent(builder::timeout);
 
     this.client = OpenLineageClient.builder().transport(builder.build()).build();
     log.info(

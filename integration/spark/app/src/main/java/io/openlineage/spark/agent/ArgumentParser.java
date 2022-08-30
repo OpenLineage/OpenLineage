@@ -33,6 +33,7 @@ public class ArgumentParser {
   private final String namespace;
   private final String jobName;
   private final String parentRunId;
+  private final Optional<Double> timeout;
   private final Optional<String> apiKey;
   private final Optional<Map<String, String>> urlParams;
   private final boolean consoleMode;
@@ -49,6 +50,7 @@ public class ArgumentParser {
     String runId = get(elements, "runs", 7, DEFAULTS.getParentRunId());
 
     List<NameValuePair> nameValuePairList = URLEncodedUtils.parse(uri, StandardCharsets.UTF_8);
+    Optional<Double> timeout = getTimeout(nameValuePairList);
     Optional<String> apiKey = getApiKey(nameValuePairList);
     Optional<Map<String, String>> urlParams = getUrlParams(nameValuePairList);
 
@@ -56,7 +58,8 @@ public class ArgumentParser {
         String.format(
             "%s/api/%s/namespaces/%s/jobs/%s/runs/%s", host, version, namespace, jobName, runId));
 
-    return new ArgumentParser(host, version, namespace, jobName, runId, apiKey, urlParams, false);
+    return new ArgumentParser(
+        host, version, namespace, jobName, runId, timeout, apiKey, urlParams, false);
   }
 
   public static UUID getRandomUuid() {
@@ -66,6 +69,22 @@ public class ArgumentParser {
   private static Optional<String> getApiKey(List<NameValuePair> nameValuePairList) {
     return Optional.ofNullable(getNamedParameter(nameValuePairList, "api_key"))
         .filter(StringUtils::isNoneBlank);
+  }
+
+  private static Optional<Double> getTimeout(List<NameValuePair> nameValuePairList) {
+    return Optional.ofNullable(
+        ArgumentParser.extractTimeout(getNamedParameter(nameValuePairList, "timeout")));
+  }
+
+  private static Double extractTimeout(String timeoutString) {
+    try {
+      if (StringUtils.isNotBlank(timeoutString)) {
+        return Double.parseDouble(timeoutString);
+      }
+    } catch (NumberFormatException e) {
+      log.warn("Value of timeout is not parsable");
+    }
+    return null;
   }
 
   public String getUrlParam(String urlParamName) {
@@ -80,6 +99,7 @@ public class ArgumentParser {
     final Map<String, String> urlParams = new HashMap<String, String>();
     nameValuePairList.stream()
         .filter(pair -> !"api_key".equals(pair.getName()))
+        .filter(pair -> !"timeout".equals(pair.getName()))
         .forEach(pair -> urlParams.put(pair.getName(), pair.getValue()));
 
     return urlParams.isEmpty() ? Optional.empty() : Optional.ofNullable(urlParams);
@@ -106,6 +126,14 @@ public class ArgumentParser {
 
   private static ArgumentParser getDefaultArguments() {
     return new ArgumentParser(
-        "", "v1", "default", "default", null, Optional.empty(), Optional.empty(), false);
+        "",
+        "v1",
+        "default",
+        "default",
+        null,
+        Optional.empty(),
+        Optional.empty(),
+        Optional.empty(),
+        false);
   }
 }

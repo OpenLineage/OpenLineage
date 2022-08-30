@@ -149,6 +149,7 @@ public final class HttpTransport extends Transport implements Closeable {
 
     private @Nullable CloseableHttpClient httpClient;
     private @Nullable TokenProvider tokenProvider;
+    private @Nullable Double timeout;
 
     private Builder() {
       this.uri = DEFAULT_OPENLINEAGE_URI;
@@ -177,6 +178,11 @@ public final class HttpTransport extends Transport implements Closeable {
       return this;
     }
 
+    public Builder timeout(@Nullable Double timeout) {
+      this.timeout = timeout;
+      return this;
+    }
+
     public Builder http(@NonNull CloseableHttpClient httpClient) {
       this.httpClient = httpClient;
       return this;
@@ -202,6 +208,7 @@ public final class HttpTransport extends Transport implements Closeable {
       final HttpConfig httpConfig = new HttpConfig();
       httpConfig.setUrl(uri);
       httpConfig.setAuth(tokenProvider);
+      httpConfig.setTimeout(timeout);
       if (httpClient != null) {
         return new HttpTransport(httpClient, httpConfig);
       }
