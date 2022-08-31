@@ -5,11 +5,11 @@ workflows:
       - build-integration-flink:
           matrix:
             parameters:
-              flink-version: [ '1.14.4', '1.15.1' ]
+              flink-version: [ '1.14.5', '1.15.1' ]
       - integration-test-integration-flink:
           matrix:
             parameters:
-              flink-version: [ '1.14.4', '1.15.1' ]
+              flink-version: [ '1.14.5', '1.15.1' ]
           requires:
             - build-integration-flink
       - publish-snapshot-client-java:
