@@ -22,6 +22,7 @@ The current OpenLineage committers are:
 | Paweł Leszczyński  | |
 | Will Johnson       | |
 | Michael Robinson   | |
+| Ross Turk          | |
 
 To understand how to become an OpenLineage committer.
 see the [OpenLineage Governance Guide](GOVERNANCE.md).
