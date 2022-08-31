@@ -1,15 +1,13 @@
 # Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
+import copy
 import logging
 import threading
 import uuid
-import copy
-
-import attr
-
 from typing import TYPE_CHECKING, Optional, Callable, Union
 
+import attr
 from airflow.listeners import hookimpl
 
 from openlineage.airflow.adapter import OpenLineageAdapter
@@ -94,7 +92,7 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
 
         run_id = str(uuid.uuid4())
         run_data_holder.set_active_run(task_instance_copy, run_id)
-        parent_run_id = str(uuid.uuid3(uuid.NAMESPACE_URL, f'{dag.dag_id}.{dagrun.run_id}'))
+        parent_run_id = adapter.build_dag_run_id(dag.dag_id, dagrun.run_id)
 
         task_metadata = extractor_manager.extract_metadata(dagrun, task)
 

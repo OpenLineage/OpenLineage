@@ -3,6 +3,7 @@
 
 import os
 import logging
+import uuid
 from typing import Optional, Dict, Type
 
 from openlineage.airflow.version import __version__ as OPENLINEAGE_AIRFLOW_VERSION
@@ -55,6 +56,9 @@ class OpenLineageAdapter:
             else:
                 self._client = OpenLineageClient.from_environment()
         return self._client
+
+    def build_dag_run_id(self, dag_id, dag_run_id):
+        return str(uuid.uuid3(uuid.NAMESPACE_URL, f'{_DAG_NAMESPACE}.{dag_id}.{dag_run_id}'))
 
     def emit(self, event: RunEvent):
         event = redact_with_exclusions(event)
