@@ -21,7 +21,7 @@ class bcolors:
 def main():
 
     parser = argparse.ArgumentParser(description='Simple tester to parse and test SQL statements.')
-    parser.add_argument('--dialect', nargs='?', default=None, 
+    parser.add_argument('--dialect', nargs='?', default=None,
                         help='set the SQL dialect.')
 
     args = parser.parse_args()
