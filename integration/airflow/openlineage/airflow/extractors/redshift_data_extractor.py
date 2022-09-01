@@ -13,8 +13,6 @@ log = logging.getLogger(__name__)
 
 
 class RedshiftDataExtractor(BaseExtractor):
-    default_schema = "public"
-
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
         return ["RedshiftDataOperator"]
@@ -27,7 +25,11 @@ class RedshiftDataExtractor(BaseExtractor):
         job_facets = {"sql": SqlJobFacet(self.operator.sql)}
 
         log.debug(f"Sending SQL to parser: {self.operator.sql}")
-        sql_meta: Optional[SqlMeta] = parse(self.operator.sql, self.default_schema)
+        sql_meta: Optional[SqlMeta] = parse(
+            self.operator.sql,
+            dialect=self.dialect,
+            default_schema=self.default_schema
+        )
         log.debug(f"Got meta {sql_meta}")
         try:
             redshift_job_id = self._get_xcom_redshift_job_id(task_instance)
@@ -72,6 +74,15 @@ class RedshiftDataExtractor(BaseExtractor):
             run_facets=stats.run_facets,
             job_facets={"sql": SqlJobFacet(self.operator.sql)},
         )
+
+    @property
+    def dialect(self):
+        return "redshift"
+
+    @property
+    def default_schema(self):
+        # TODO: check default schema in redshift
+        return "public"
 
     def _get_xcom_redshift_job_id(self, task_instance):
         redshift_job_id = task_instance.xcom_pull(task_ids=task_instance.task_id)

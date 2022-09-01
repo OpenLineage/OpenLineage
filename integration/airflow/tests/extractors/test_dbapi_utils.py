@@ -215,9 +215,9 @@ def test_create_filter_clauses():
     assert create_filter_clauses(
         {"Schema1": ["Table1"], "Schema2": ["Table2"]}
     ) == [
-        "( table_schema = 'SCHEMA1' AND table_name IN ('Table1') )",
-        "( table_schema = 'SCHEMA2' AND table_name IN ('Table2') )",
+        "( table_schema = 'Schema1' AND table_name IN ('Table1') )",
+        "( table_schema = 'Schema2' AND table_name IN ('Table2') )",
     ]
     assert create_filter_clauses(
         {"Schema1": ["Table1", "Table2"]}
-    ) == ["( table_schema = 'SCHEMA1' AND table_name IN ('Table1','Table2') )"]
+    ) == ["( table_schema = 'Schema1' AND table_name IN ('Table1','Table2') )"]

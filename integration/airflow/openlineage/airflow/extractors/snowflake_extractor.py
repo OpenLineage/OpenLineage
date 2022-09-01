@@ -3,6 +3,7 @@
 import logging
 from typing import List, Dict
 
+from openlineage.airflow.extractors.dbapi_utils import execute_query_on_hook
 from openlineage.airflow.extractors.sql_extractor import SqlExtractor
 from openlineage.airflow.utils import get_connection_uri  # noqa
 from openlineage.client.facet import BaseFacet, ExternalQueryRunFacet
@@ -13,7 +14,7 @@ logger = logging.getLogger(__file__)
 
 class SnowflakeExtractor(SqlExtractor):
     source_type = "SNOWFLAKE"
-    default_schema = "PUBLIC"
+
     _information_schema_columns = [
         "table_schema",
         "table_name",
@@ -22,11 +23,19 @@ class SnowflakeExtractor(SqlExtractor):
         "data_type",
     ]
     _is_information_schema_cross_db = True
-    _is_case_sensitive = True
+    _is_uppercase_names = True
+
+    @property
+    def dialect(self):
+        return "snowflake"
 
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
         return ["SnowflakeOperator", "SnowflakeOperatorAsync"]
+
+    @property
+    def default_schema(self):
+        return execute_query_on_hook(self.hook, "SELECT current_schema();")[0][0]  # row -> column
 
     def _get_database(self) -> str:
         if hasattr(self.operator, "database") and self.operator.database is not None:

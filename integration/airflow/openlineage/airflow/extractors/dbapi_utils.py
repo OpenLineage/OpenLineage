@@ -1,6 +1,6 @@
 import logging
 from contextlib import closing
-from typing import Optional, TYPE_CHECKING, List, Tuple, Dict
+from typing import Optional, TYPE_CHECKING, List, Tuple, Dict, Iterator
 
 from openlineage.common.dataset import Source, Dataset
 from openlineage.common.models import DbTableSchema, DbColumn
@@ -24,6 +24,15 @@ _UDT_NAME = 4
 _TABLE_DATABASE = 5
 
 TablesHierarchy = Dict[str, Dict[str, List[str]]]
+
+
+def execute_query_on_hook(
+    hook: "BaseHook",
+    query: str
+) -> Iterator[tuple]:
+    with closing(hook.get_conn()) as conn:
+        with closing(conn.cursor()) as cursor:
+            return cursor.execute(query).fetchall()
 
 
 def get_table_schemas(
@@ -108,17 +117,17 @@ def create_information_schema_query(
     columns: List[str],
     information_schema_table_name: str,
     tables_hierarchy: TablesHierarchy,
-    case_sensitive: bool = False,
+    uppercase_names: bool = False,
 ) -> str:
     """
     This function creates query for getting table schemas from information schema.
     """
     sqls = []
     for db, schema_mapping in tables_hierarchy.items():
-        filter_clauses = create_filter_clauses(schema_mapping, case_sensitive)
+        filter_clauses = create_filter_clauses(schema_mapping, uppercase_names)
         source = information_schema_table_name
         if db:
-            source = f"{db.upper() if case_sensitive else db}." f"{source}"
+            source = f"{db.upper() if uppercase_names else db}." f"{source}"
         sqls.append(
             (
                 f"SELECT {', '.join(columns)} "
@@ -129,18 +138,19 @@ def create_information_schema_query(
     return " UNION ALL ".join(sqls) + ";"
 
 
-def create_filter_clauses(schema_mapping, case_sensitive: bool = False) -> List[str]:
+def create_filter_clauses(schema_mapping, uppercase_names: bool = False) -> List[str]:
     filter_clauses = []
     for schema, tables in schema_mapping.items():
         table_names = ",".join(
             map(
-                lambda name: f"'{name.upper() if case_sensitive else name}'",
+                lambda name: f"'{name.upper() if uppercase_names else name}'",
                 tables,
             )
         )
         if schema:
             filter_clauses.append(
-                f"( table_schema = '{schema.upper()}' AND table_name IN ({table_names}) )"
+                f"( table_schema = '{schema.upper() if uppercase_names else schema}' "
+                f"AND table_name IN ({table_names}) )"
             )
         else:
             filter_clauses.append(f"( table_name IN ({table_names}) )")

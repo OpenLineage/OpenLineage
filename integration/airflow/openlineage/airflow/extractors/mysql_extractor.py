@@ -7,7 +7,6 @@ from openlineage.airflow.extractors.sql_extractor import SqlExtractor
 
 
 class MySqlExtractor(SqlExtractor):
-    default_schema = None
     _information_schema_columns = [
         "table_schema",
         "table_name",
@@ -15,6 +14,14 @@ class MySqlExtractor(SqlExtractor):
         "ordinal_position",
         "column_type",
     ]
+
+    @property
+    def dialect(self):
+        return "mysql"
+
+    @property
+    def default_schema(self):
+        return None
 
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
@@ -48,3 +55,7 @@ class MySqlExtractor(SqlExtractor):
         return MySqlHook(
             mysql_conn_id=self.operator.mysql_conn_id, schema=self.operator.database
         )
+
+    @staticmethod
+    def _normalize_name(name: str) -> str:
+        return name.upper()
