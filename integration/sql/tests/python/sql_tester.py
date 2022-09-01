@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from openlineage_sql import parse
-import sys, os
+import sys, os, argparse
 
 class bcolors:
     HEADER = '\033[95m'
@@ -19,11 +19,22 @@ class bcolors:
 # via UNIX pipe to the tool. In case of inputing direclty, make sure to press
 # Ctrl+D after the input to EOF the input.
 def main():
+
+    parser = argparse.ArgumentParser(description='Simple tester to parse and test SQL statements.')
+    parser.add_argument('--dialect', nargs='?', default=None, 
+                        help='set the SQL dialect.')
+
+    args = parser.parse_args()
+    # dialect is None if no dialect was specified.
+    dialect = args.dialect
+
     k = 0
     sql = ''
 
     if os.isatty(0):
         print(bcolors.OKGREEN + "Welcome to OpenLineage SQL Parser Tester." + bcolors.ENDC)
+        if dialect is not None:
+            print(f"Dialect selected : {dialect}")
         print("Enter SQL statement, and press Ctrl+D at the last line when finished.\n> ", end='')
 
     try:
@@ -34,7 +45,10 @@ def main():
         pass
 
     if sql != '':
-        meta = parse([sql])
+        if dialect is None:
+            meta = parse([sql])
+        else:
+            meta = parse([sql], dialect=dialect)
         print("\n" + bcolors.OKBLUE + "------ OpenLineage SQL Parser Tester ------" + bcolors.ENDC)
         print(f"> SQL received:\n{sql}")
         if meta is not None:
