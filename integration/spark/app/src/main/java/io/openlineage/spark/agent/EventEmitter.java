@@ -63,7 +63,7 @@ public class EventEmitter {
     argument.getTimeout().ifPresent(builder::timeout);
 
     this.client = OpenLineageClient.builder().transport(builder.build()).build();
-    log.info(
+    log.debug(
         String.format(
             "Init OpenLineageContext: Args: %s URI: %s", argument, lineageURI.toString()));
   }
