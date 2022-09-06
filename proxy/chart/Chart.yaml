@@ -1,0 +1,13 @@
+apiVersion: v2
+appVersion: "1.16.0"
+
+type: application
+name: openlineage-proxy
+description: An Open Standard for lineage metadata collection
+version: 0.1.0
+sources:
+  - https://github.com/OpenLineage/OpenLineage
+  - https://openlineage.io
+keywords:
+  - openlineage
+  - metadata
