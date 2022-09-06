@@ -17,7 +17,7 @@ use sqlparser::ast::{
 };
 use sqlparser::dialect::{
     AnsiDialect, Dialect, GenericDialect, HiveDialect, MsSqlDialect, MySqlDialect,
-    PostgreSqlDialect, SQLiteDialect, SnowflakeDialect,
+    PostgreSqlDialect, RedshiftSqlDialect, SQLiteDialect, SnowflakeDialect,
 };
 use sqlparser::parser::Parser;
 
@@ -394,7 +394,11 @@ fn parse_stmt(stmt: &Statement, context: &mut Context) -> Result<(), String> {
             Ok(())
         }
         Statement::CreateTable {
-            name, query, like, clone, ..
+            name,
+            query,
+            like,
+            clone,
+            ..
         } => {
             if let Some(boxed_query) = query {
                 parse_query(boxed_query.as_ref(), context)?;
@@ -456,6 +460,7 @@ pub fn get_dialect(name: &str) -> Arc<dyn CanonicalDialect> {
         "snowflake" => Arc::new(SnowflakeDialect),
         "postgres" => Arc::new(PostgreSqlDialect {}),
         "postgresql" => Arc::new(PostgreSqlDialect {}),
+        "redshift" => Arc::new(RedshiftSqlDialect {}),
         "hive" => Arc::new(HiveDialect {}),
         "mysql" => Arc::new(MySqlDialect {}),
         "mssql" => Arc::new(MsSqlDialect {}),

@@ -61,22 +61,24 @@ dependencies {
     testImplementation 'org.spockframework:spock-core:2.0-groovy-3.0'
     testImplementation 'org.awaitility:awaitility:4.1.1'
 
-    def flinkVersion = '1.14.4'
+    def flinkVersion = project.getProperty('flink.version')
+    def flinkVersionShort = flinkVersion.substring(0,4)
+    def flinkVersionWithScala212 = flinkVersion.contains('1.14') ? "_2.12:$flinkVersion" : ":$flinkVersion"
     def hadoopVersion = '3.3.1'
     implementation("io.openlineage:openlineage-java:$project.version")
     implementation "org.apache.flink:flink-java:$flinkVersion"
-    implementation "org.apache.flink:flink-streaming-java_2.12:$flinkVersion"
-    implementation "org.apache.flink:flink-runtime-web_2.12:$flinkVersion"
+    implementation "org.apache.flink:flink-streaming-java$flinkVersionWithScala212"
+    implementation "org.apache.flink:flink-runtime-web$flinkVersionWithScala212"
     implementation "org.apache.flink:flink-core:$flinkVersion"
     implementation "org.apache.flink:flink-runtime:$flinkVersion"
-    implementation "org.apache.flink:flink-connector-kafka_2.12:$flinkVersion"
+    implementation "org.apache.flink:flink-connector-kafka$flinkVersionWithScala212"
     implementation "org.apache.flink:flink-avro-confluent-registry:$flinkVersion"
     implementation "org.apache.flink:flink-avro:$flinkVersion"
     implementation "org.apache.flink:flink-table:$flinkVersion"
     implementation "org.apache.flink:flink-table-api-java:$flinkVersion"
-    implementation "org.apache.flink:flink-table-api-java-bridge_2.12:$flinkVersion"
+    implementation "org.apache.flink:flink-table-api-java-bridge$flinkVersionWithScala212"
     implementation "org.apache.flink:flink-table-common:$flinkVersion"
-    implementation "org.apache.flink:flink-table-runtime_2.12:$flinkVersion"
+    implementation "org.apache.flink:flink-table-runtime$flinkVersionWithScala212"
     implementation "org.apache.flink:flink-table-planner_2.12:$flinkVersion"
 
     implementation "com.typesafe:config:1.4.1"
@@ -91,8 +93,8 @@ dependencies {
     }
     implementation "org.apache.avro:avro"
 
-    compileOnly 'org.apache.iceberg:iceberg-flink-1.14:0.13.1'
-    implementation 'org.apache.iceberg:iceberg-flink-runtime-1.14:0.13.1'
+    compileOnly "org.apache.iceberg:iceberg-flink-$flinkVersionShort:0.14.0"
+    implementation "org.apache.iceberg:iceberg-flink-runtime-$flinkVersionShort:0.14.0"
 }
 
 assemble {

@@ -20,9 +20,6 @@ import org.apache.flink.streaming.connectors.kafka.internals.KafkaTopicsDescript
 @Slf4j
 public class FlinkKafkaConsumerWrapper {
 
-  private static final String DESERIALIZATION_SCHEMA_WRAPPER_CLASS =
-      "org.apache.flink.streaming.connectors.kafka.KafkaDeserializationSchemaWrapper";
-
   private final FlinkKafkaConsumer flinkKafkaConsumer;
 
   private FlinkKafkaConsumerWrapper(FlinkKafkaConsumer flinkKafkaConsumer) {
@@ -58,24 +55,53 @@ public class FlinkKafkaConsumerWrapper {
   }
 
   public Optional<Schema> getAvroSchema() {
+    Optional<Class> kafkaDeserializationSchemaWrapperClass =
+        getKafkaDeserializationSchemaWrapperClass();
+
+    if (kafkaDeserializationSchemaWrapperClass.isEmpty()) {
+      log.error("Cannot extract Avro schema: KafkaDeserializationSchemaWrapper not found");
+      return Optional.empty();
+    }
+
     try {
-      final Class deserializationSchemaWrapperClass =
-          Class.forName(DESERIALIZATION_SCHEMA_WRAPPER_CLASS);
       return Optional.of(getDeserializationSchema())
-          .filter(el -> el.getClass().isAssignableFrom(deserializationSchemaWrapperClass))
+          .filter(
+              el -> el.getClass().isAssignableFrom(kafkaDeserializationSchemaWrapperClass.get()))
           .flatMap(
               el ->
                   WrapperUtils.<DeserializationSchema>getFieldValue(
-                      deserializationSchemaWrapperClass, el, "deserializationSchema"))
+                      kafkaDeserializationSchemaWrapperClass.get(), el, "deserializationSchema"))
           .filter(schema -> schema instanceof AvroDeserializationSchema)
           .map(schema -> (AvroDeserializationSchema) schema)
           .map(schema -> schema.getProducedType())
           .flatMap(typeInformation -> Optional.ofNullable(typeInformation.getTypeClass()))
           .flatMap(aClass -> WrapperUtils.<Schema>invokeStatic(aClass, "getClassSchema"));
-    } catch (ClassNotFoundException | IllegalAccessException e) {
+    } catch (IllegalAccessException e) {
       log.error("Cannot extract Avro schema: ", e);
       return Optional.empty();
     }
+  }
+
+  Optional<Class> getKafkaDeserializationSchemaWrapperClass() {
+    try {
+      return Optional.of(
+          Class.forName(
+              "org.apache.flink.streaming.connectors.kafka.KafkaDeserializationSchemaWrapper"));
+    } catch (ClassNotFoundException e) {
+      // do nothing - give another try
+    }
+
+    try {
+      // class renamed in newer Flink versions
+      return Optional.of(
+          Class.forName(
+              "org.apache.flink.streaming.connectors.kafka.internals.KafkaDeserializationSchemaWrapper"));
+    } catch (ClassNotFoundException e) {
+
+    }
+
+    log.error("Couldn't find KafkaDeserializationSchemaWrapper class");
+    return Optional.empty();
   }
 
   private <T> T getField(String name) {

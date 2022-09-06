@@ -16,7 +16,7 @@
 * Support Flink 1.15 [`#1009`](https://github.com/OpenLineage/OpenLineage/pull/1009) [@mzareba382](https://github.com/mzareba382)  
     *Adds support for Flink 1.15.*
 * Add Redshift dialect to the SQL integration [`#1066`](https://github.com/OpenLineage/OpenLineage/pull/1066) [@mobuchowski](https://github.com/mobuchowski)  
-    *Adds support for Redshift's SQL dialect in OpenLineage's SQL parser, including quirks such as the use of square brackets in JSON paths. (Note, this does not add support for all of the Redshift's custom syntax.)*
+    *Adds support for Redshift's SQL dialect in OpenLineage's SQL parser, including quirks such as the use of square brackets in JSON paths. (Note, this does not add support for all of Redshift's custom syntax.)*
 
 ### Changed
 * Make the timeout configurable in the Spark integration [`#1050`](https://github.com/OpenLineage/OpenLineage/pull/1050) [@tnazarew](https://github.com/tnazarew)  

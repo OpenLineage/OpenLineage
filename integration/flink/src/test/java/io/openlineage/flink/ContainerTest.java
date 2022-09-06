@@ -146,7 +146,7 @@ class ContainerTest {
   @Test
   @SneakyThrows
   void testOpenLineageEventSentForLegacyKafkaJob() {
-    runUntilCheckpoint("io.openlineage.flink.FlinkStatefulApplication");
+    runUntilCheckpoint("io.openlineage.flink.FlinkLegacyKafkaApplication");
     mockServerClient.verify(getEvent("events/expected_legacy_kafka.json"));
   }
 

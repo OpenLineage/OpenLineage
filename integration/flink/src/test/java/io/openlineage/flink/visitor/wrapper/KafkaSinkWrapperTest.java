@@ -28,7 +28,7 @@ import org.mockito.MockedStatic;
 
 class KafkaSinkWrapperTest {
 
-  private Properties props = mock(Properties.class);
+  private Properties props = new Properties();
   private static Schema schema =
       SchemaBuilder.record("OutputEvent")
           .namespace("io.openlineage.flink.avro.event")
