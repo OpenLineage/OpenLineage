@@ -42,7 +42,7 @@ helm delete ol-proxy
 | `proxy.replicaCount`        | Number of desired replicas           | `1`                 |
 | `proxy.image.registry`      | Proxy image registry                 | `docker.io`         |
 | `proxy.image.repository`    | Proxy image repository               | `openlineage/proxy` |
-| `proxy.image.tag`           | Proxy image tag                      | `0.15.0`            |
+| `proxy.image.tag`           | Proxy image tag                      | `0.1.0`             |
 | `proxy.image.pullPolicy`    | Image pull policy                    | `IfNotPresent`      |
 | `proxy.host`                | Proxy host                           | `localhost`         |
 | `proxy.port`                | API host port                        | `5000`              |
