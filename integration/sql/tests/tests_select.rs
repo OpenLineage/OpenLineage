@@ -109,3 +109,14 @@ fn select_into() {
         }
     )
 }
+
+#[test]
+fn select_redshift() {
+    assert_eq!(
+        test_sql_dialect("SELECT [col1] FROM [test_schema].[test_table]", "redshift"),
+        SqlMeta {
+            in_tables: table("test_schema.test_table"),
+            out_tables: vec![]
+        }
+    )
+}

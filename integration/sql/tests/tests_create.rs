@@ -48,7 +48,6 @@ fn test_create_table_clone() {
     )
 }
 
-
 #[test]
 fn test_create_and_insert() {
     assert_eq!(
