@@ -354,6 +354,8 @@ class SparkContainerIntegrationTest {
     String sparkVersion = System.getProperty(SPARK_VERSION);
     if (sparkVersion.startsWith("3.2")) {
       return "io.delta:delta-core_2.12:1.1.0";
+    } else if (sparkVersion.startsWith("3.3")) {
+      return "io.delta:delta-core_2.12:2.1.0";
     }
     return "io.delta:delta-core_2.12:1.0.0";
   }
@@ -450,11 +452,6 @@ class SparkContainerIntegrationTest {
       return false;
     }
 
-    if (System.getProperty(SPARK_VERSION).startsWith("3.3")) {
-      // Delta support for Spark 3.3 is still not released
-      return false;
-    } else {
-      return true;
-    }
+    return true;
   }
 }

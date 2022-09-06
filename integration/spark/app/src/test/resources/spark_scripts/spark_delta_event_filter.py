@@ -17,7 +17,7 @@ df = spark.createDataFrame([
     {'a': 1 },
     {'a': 2 }
 ])
-df.createOrReplaceTempView('temp')                                                            # 2 OL events expected
+df.write.saveAsTable('temp')
 spark.sql("CREATE TABLE t2 USING delta LOCATION '/tmp/t2' AS SELECT * FROM temp WHERE a > 1") # 2 OL events expected
 spark.sql("ALTER TABLE t2 ADD COLUMNS (b long)")                                              # 2 OL events expected
 spark.sql("INSERT INTO t1 VALUES (3,4)")                                                      # 2 OL events expected

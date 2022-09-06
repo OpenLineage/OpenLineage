@@ -3,7 +3,9 @@
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.13.1...HEAD)
 
 ### Added
+
 * Experimental Flink integration tests in CI multiple Flink versions and support Flink 1.15.1 [@mzareba382, @pawel-big-lebowski] [`1009`](https://github.com/OpenLineage/OpenLineage/pull/1009)
+* Include delta support for Spark 3.3 [@pawel-big-lebowski] [`957`](https://github.com/OpenLineage/OpenLineage/pull/957)
 
 ## [0.13.1](https://github.com/OpenLineage/OpenLineage/compare/0.13.0...0.13.1) 2022-08-25
 ### Fixed
