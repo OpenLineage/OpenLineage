@@ -67,21 +67,20 @@ public class DeltaHandler implements CatalogHandler {
     } else {
       location = Optional.ofNullable(properties.get("location"));
     }
+
     // Delta uses spark2 catalog when location isn't specified.
+
+    String a = catalog.loadTable(identifier).properties().get("location");
+    String b =
+        location.orElse(
+            Optional.ofNullable(catalog.loadTable(identifier).properties().get("location"))
+                .orElse("dupa"));
     Path path =
         new Path(
-            location.orElse(
-                session
-                    .sessionState()
-                    .catalog()
-                    .defaultTablePath(
-                        TableIdentifier.apply(
-                            identifier.name(),
-                            Option.apply(
-                                Arrays.stream(identifier.namespace())
-                                    .reduce((x, y) -> y)
-                                    .orElse(null))))
-                    .toString()));
+            location.orElseGet(
+                () ->
+                    Optional.ofNullable(catalog.loadTable(identifier).properties().get("location"))
+                        .orElseGet(() -> getDefaultTablePath(session, identifier))));
     log.info(path.toString());
     DatasetIdentifier di = PathUtils.fromPath(path, "file");
     return di.withSymlink(
@@ -89,6 +88,18 @@ public class DeltaHandler implements CatalogHandler {
         StringUtils.substringBeforeLast(
             di.getName(), File.separator), // parent location from a name becomes a namespace
         DatasetIdentifier.SymlinkType.TABLE);
+  }
+
+  private String getDefaultTablePath(SparkSession session, Identifier identifier) {
+    return session
+        .sessionState()
+        .catalog()
+        .defaultTablePath(
+            TableIdentifier.apply(
+                identifier.name(),
+                Option.apply(
+                    Arrays.stream(identifier.namespace()).reduce((x, y) -> y).orElse(null))))
+        .toString();
   }
 
   @Override
