@@ -1,6 +1,10 @@
 # Changelog
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.13.1...HEAD)
+
+### Added
+* Experimental Flink integration tests in CI multiple Flink versions and support Flink 1.15.1 [@mzareba382, @pawel-big-lebowski] [`1009`](https://github.com/OpenLineage/OpenLineage/pull/1009)
+
 ## [0.13.1](https://github.com/OpenLineage/OpenLineage/compare/0.13.0...0.13.1) 2022-08-25
 ### Fixed
 * Rename all `parentRun` occurrences to `parent` from Airflow integration [`1037`](https://github.com/OpenLineage/OpenLineage/pull/1037) [@fm100](https://github.com/fm100)

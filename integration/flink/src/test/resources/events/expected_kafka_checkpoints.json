@@ -4,9 +4,9 @@
     "facets" : {
       "checkpoints": {
         "completed": "${json-unit.any-number}",
-        "failed": 0,
+        "failed": "${json-unit.any-number}",
         "in-progress": "${json-unit.any-number}",
-        "restored": 0,
+        "restored": "${json-unit.any-number}",
         "total": "${json-unit.any-number}"
       }
     }

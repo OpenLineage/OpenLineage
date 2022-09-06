@@ -8,14 +8,12 @@ package io.openlineage.flink;
 import io.openlineage.flink.avro.event.InputEvent;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.core.execution.JobListener;
-import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 
 import static io.openlineage.flink.StreamEnvironment.setupEnv;
 import static io.openlineage.kafka.KafkaClientProvider.aKafkaSink;
 import static io.openlineage.kafka.KafkaClientProvider.aKafkaSource;
 import static org.apache.flink.api.common.eventtime.WatermarkStrategy.noWatermarks;
-import static org.apache.flink.streaming.api.environment.CheckpointConfig.ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION;
 
 public class FlinkStatefulApplication {
 
