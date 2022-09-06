@@ -1,18 +1,39 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.13.1...HEAD)
-
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.14.0...HEAD)
+## [0.14.0](https://github.com/OpenLineage/OpenLineage/compare/0.13.1...0.14.0) - 2022-09-06
 ### Added
+* Support ABFSS and Hadoop Logical Relation in Column-level lineage [`#1008`](https://github.com/OpenLineage/OpenLineage/pull/1008) [@wjohnson](https://github.com/wjohnson)  
+    *Introduces an `extractDatasetIdentifier` that uses similar logic to `InsertIntoHadoopFsRelationVisitor` to pull out the path on the HDFS compliant file system; tested on ABFSS and DBFS (Databricks FileSystem) to prove that lineage could be extracted using non-SQL commands.*
+* Add Kusto relation visitor [`#939`](https://github.com/OpenLineage/OpenLineage/pull/939) [@hmoazam](https://github.com/hmoazam)  
+    *Implements a `KustoRelationVisitor` to support lineage for Azure Kusto's Spark connector.*
+* Add ColumnLevelLineage facet doc [`#1020`](https://github.com/OpenLineage/OpenLineage/pull/1020) [@julienledem](https://github.com/julienledem)  
+    *Adds documentation for the Column-level lineage facet.*
+* Include symlinks dataset facet [`#935`](https://github.com/OpenLineage/OpenLineage/pull/935) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Includes the recently introduced `SymlinkDatasetFacet` in generated OpenLineage events.*
+* Add support for dbt 1.3 beta's metadata changes [`#1051`](https://github.com/OpenLineage/OpenLineage/pull/1051) [@mobuchowski](https://github.com/mobuchowski)  
+    *Makes projects that are composed of only SQL models work on 1.3 beta (dbt 1.3 renamed the `compiled_sql` field to `compiled_code` to support Python models). Does not provide support for dbt's Python models.*
+* Support Flink 1.15 [`#1009`](https://github.com/OpenLineage/OpenLineage/pull/1009) [@mzareba382](https://github.com/mzareba382)  
+    *Adds support for Flink 1.15.*
+* Add Redshift dialect to the SQL integration [`#1066`](https://github.com/OpenLineage/OpenLineage/pull/1066) [@mobuchowski](https://github.com/mobuchowski)  
+    *Adds support for Redshift's SQL dialect in OpenLineage's SQL parser, including quirks such as the use of square brackets in JSON paths. (Note, this does not add support for all of Redshift's custom syntax.)*
 
-* Experimental Flink integration tests in CI multiple Flink versions and support Flink 1.15.1 [@mzareba382, @pawel-big-lebowski] [`1009`](https://github.com/OpenLineage/OpenLineage/pull/1009)
-* Include delta support for Spark 3.3 [@pawel-big-lebowski] [`957`](https://github.com/OpenLineage/OpenLineage/pull/957)
+### Changed
+* Make the timeout configurable in the Spark integration [`#1050`](https://github.com/OpenLineage/OpenLineage/pull/1050) [@tnazarew](https://github.com/tnazarew)  
+    *Makes timeout configurable by the user. (In some cases, the time needed to send events was longer than 5 seconds, which exceeded the timeout value.)*
 
-## [0.13.1](https://github.com/OpenLineage/OpenLineage/compare/0.13.0...0.13.1) 2022-08-25
+### Fixed
+* Add a dialect parameter to Great Expectations SQL parser calls [`#1049`](https://github.com/OpenLineage/OpenLineage/pull/1049) [@collado-mike](https://github.com/collado-mike)  
+    *Specifies the dialect name from the SQL engine.*
+* Fix Delta 2.1.0 with Spark 3.3.0 [`#1065`](https://github.com/OpenLineage/OpenLineage/pull/1065) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Allows delta support for Spark 3.3 and fixes potential issues. (The Openlineage integration for Spark 3.3 was turned on without delta support, as delta did not support Spark 3.3 at that time.)*
+
+## [0.13.1](https://github.com/OpenLineage/OpenLineage/compare/0.13.0...0.13.1) - 2022-08-25
 ### Fixed
 * Rename all `parentRun` occurrences to `parent` from Airflow integration [`1037`](https://github.com/OpenLineage/OpenLineage/pull/1037) [@fm100](https://github.com/fm100)
 * Do not change task instance during `on_running` event [`1028`](https://github.com/OpenLineage/OpenLineage/pull/1028) [@JDarDagran](https://github.com/JDarDagran)
 
-## [0.13.0](https://github.com/OpenLineage/OpenLineage/compare/0.12.0...0.13.0) 2022-08-22
+## [0.13.0](https://github.com/OpenLineage/OpenLineage/compare/0.12.0...0.13.0) - 2022-08-22
 ### Added
 
 * Add BigQuery check support [`#960`](https://github.com/OpenLineage/OpenLineage/pull/960) [@denimalpaca](https://github.com/denimalpaca)
@@ -31,7 +52,7 @@
 ### Fixed
 * Add support for custom SQL queries in v3 Great Expectations API [`#1025`](https://github.com/OpenLineage/OpenLineage/pull/1025) [@collado-mike](https://github.com/collado-mike)
 
-## [0.12.0](https://github.com/OpenLineage/OpenLineage/compare/0.11.0...0.12.0) 2022-08-01
+## [0.12.0](https://github.com/OpenLineage/OpenLineage/compare/0.11.0...0.12.0) - 2022-08-01
 ### Added
 
 * Add Spark 3.3.0 support [`#950`](https://github.com/OpenLineage/OpenLineage/pull/950) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
@@ -52,7 +73,7 @@
 * Limit size of serialized plan [`#917`](https://github.com/OpenLineage/OpenLineage/pull/917) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
 * Fix noclassdef error [`#942`](https://github.com/OpenLineage/OpenLineage/pull/942) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
 
-## [0.11.0](https://github.com/OpenLineage/OpenLineage/compare/0.10.0...0.11.0) 2022-07-07
+## [0.11.0](https://github.com/OpenLineage/OpenLineage/compare/0.10.0...0.11.0) - 2022-07-07
 ### Added
 
 * HTTP option to override timeout and properly close connections in `openlineage-java` lib. [`#909`](https://github.com/OpenLineage/OpenLineage/pull/909) [@mobuchowski](https://github.com/mobuchowski)
@@ -71,7 +92,7 @@
 * [PMD](https://pmd.github.io) reported issues [`#891`](https://github.com/OpenLineage/OpenLineage/pull/891) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
 * Spark casting error and session catalog support for `iceberg` in Spark integration [`#856`](https://github.com/OpenLineage/OpenLineage/pull/856) [@wslulciuc](https://github.com/wslulciuc)
 
-## [0.10.0](https://github.com/OpenLineage/OpenLineage/compare/0.9.0...0.10.0) 2022-06-24
+## [0.10.0](https://github.com/OpenLineage/OpenLineage/compare/0.9.0...0.10.0) - 2022-06-24
 ### Added
 
 * Add static code anlalysis tool [mypy](http://mypy-lang.org) to run in CI for against all python modules ([`#802`](https://github.com/openlineage/openlineage/issues/802)) [@howardyoo](https://github.com/howardyoo)
