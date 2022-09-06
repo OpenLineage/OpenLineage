@@ -1,19 +1,32 @@
 # Changelog
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.14.0...HEAD)
-## [0.14.0](https://github.com/OpenLineage/OpenLineage/compare/0.13.1...0.14.0) 2022-09-01
+## [0.14.0](https://github.com/OpenLineage/OpenLineage/compare/0.13.1...0.14.0) 2022-09-06
 ### Added
-* Support ABFSS and Hadoop Logical Relation in Column Level Lineage [`#1008`](https://github.com/OpenLineage/OpenLineage/pull/1008) [@wjohnson](https://github.com/wjohnson)
-* Add Kusto relation visitor [`#939`](https://github.com/OpenLineage/OpenLineage/pull/939) [@hmoazam](https://github.com/hmoazam) 
-* Add ColumnLevelLineage facet doc [`#1020`](https://github.com/OpenLineage/OpenLineage/pull/1020) [@julienledem](https://github.com/julienledem)
-* Include symlinks dataset facet [`#935`](https://github.com/OpenLineage/OpenLineage/pull/935) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
-* Add support for dbt 1.3 beta's metadata changes [`#1051`](https://github.com/OpenLineage/OpenLineage/pull/1051) [@mobuchowski](https://github.com/mobuchowski)
+Support ABFSS and Hadoop Logical Relation in Column-level lineage [`#1008`](https://github.com/OpenLineage/OpenLineage/pull/1008) [@wjohnson](https://github.com/wjohnson)
+* Introduces an `extractDatasetIdentifier` that uses similar logic to `InsertIntoHadoopFsRelationVisitor` to pull out the path on the HDFS compliant file system; tested on ABFSS and DBFS (Databricks FileSystem) to prove that lineage could be extracted using non-sql commands.
+Add Kusto relation visitor [`#939`](https://github.com/OpenLineage/OpenLineage/pull/939) [@hmoazam](https://github.com/hmoazam) 
+* Implements a `KustoRelationVisitor` to support lineage for Azure Kusto's Spark connector.
+Add ColumnLevelLineage facet doc [`#1020`](https://github.com/OpenLineage/OpenLineage/pull/1020) [@julienledem](https://github.com/julienledem)
+* Adds documentation for the Column-level lineage facet.
+Include symlinks dataset facet [`#935`](https://github.com/OpenLineage/OpenLineage/pull/935) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+* Includes the recently introduced SymlinkDatasetFacet in generated OpenLineage events.
+Add support for dbt 1.3 beta's metadata changes [`#1051`](https://github.com/OpenLineage/OpenLineage/pull/1051) [@mobuchowski](https://github.com/mobuchowski)
+* Makes projects that are composed of only SQL models work on 1.3 beta (dbt 1.3 renamed the `compiled_sql` field to `compiled_code` to support Python models). Does not provide support for dbt's Python models.
+Support Flink 1.15 [`#1009`](https://github.com/OpenLineage/OpenLineage/pull/1009) [@mzareba382](https://github.com/mzareba382)
+* Adds support for Flink 1.15.
+Add Redshift dialect to the SQL integration [`#1066`](https://github.com/OpenLineage/OpenLineage/pull/1066) [@mobuchowski](https://github.com/mobuchowski)
+* Adds support for Redshift's SQL dialect in OpenLineage's SQL parser, including quirks such as the use of square brackets in JSON paths. (Note, this does not add support for all of the Redshift's custom syntax.)
 
 ### Changed
-* Timeout configurable from url and spark conf [`#1050`](https://github.com/OpenLineage/OpenLineage/pull/1050) [@tnazarew](https://github.com/tnazarew)
+Make the timeout configurable in the Spark integration [`#1050`](https://github.com/OpenLineage/OpenLineage/pull/1050) [@tnazarew](https://github.com/tnazarew)
+* Makes timeout configurable by the user. (In some cases, the time needed to send events was longer than 5 seconds, which exceeded the timeout value.)
 
 ### Fixed
-* Add dialect parameter to great expectations sql parser call [`#1049`](https://github.com/OpenLineage/OpenLineage/pull/1049) [@collado-mike](https://github.com/collado-mike)
+Add a dialect parameter to Great Expectations SQL parser calls [`#1049`](https://github.com/OpenLineage/OpenLineage/pull/1049) [@collado-mike](https://github.com/collado-mike)
+* Specifies the dialect name from the SQL engine.
+Fix Delta 2.1.0 with Spark 3.3.0 [`#1065`](https://github.com/OpenLineage/OpenLineage/pull/1065) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+* Allows delta support for Spark 3.3 and fixes potential issues. (The Openlineage integration for Spark 3.3 was turned on without delta support, as delta did not support Spark 3.3 at that time.)
 
 ## [0.13.1](https://github.com/OpenLineage/OpenLineage/compare/0.13.0...0.13.1) 2022-08-25
 ### Fixed
