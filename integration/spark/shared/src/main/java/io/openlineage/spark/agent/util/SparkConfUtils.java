@@ -38,13 +38,18 @@ public class SparkConfUtils {
   }
 
   public static Optional<Double> findSparkConfigKeyDouble(SparkConf conf, String name) {
-    String timeoutString = conf.get(name);
-    try {
-      if (StringUtils.isNotBlank(timeoutString)) {
-        return Optional.of(Double.parseDouble(timeoutString));
+    Option<String> opt = conf.getOption(name);
+    if (!opt.isDefined()) {
+      opt = conf.getOption("spark." + name);
+    }
+    if (opt.isDefined()) {
+      try {
+        if (StringUtils.isNotBlank(opt.get())) {
+          return Optional.of(Double.parseDouble(opt.get()));
+        }
+      } catch (NumberFormatException e) {
+        log.warn("Value of timeout is not parsable");
       }
-    } catch (NumberFormatException e) {
-      log.warn("Value of timeout is not parsable");
     }
     return Optional.empty();
   }

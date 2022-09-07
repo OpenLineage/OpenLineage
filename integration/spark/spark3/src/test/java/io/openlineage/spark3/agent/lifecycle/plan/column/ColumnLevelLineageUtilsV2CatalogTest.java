@@ -21,6 +21,9 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.SparkSession$;
 import org.apache.spark.sql.catalyst.expressions.GenericRow;
@@ -212,6 +215,39 @@ class ColumnLevelLineageUtilsV2CatalogTest {
     assertEquals(
         Optional.empty(),
         ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, schemaDatasetFacet));
+  }
+
+  @Test
+  void testReadWriteParquetDataset() {
+    Dataset<Long> df = spark.range(10);
+    String inputDfPath = "/tmp/insertTestColumnLineage";
+    df.write().mode(SaveMode.Overwrite).parquet(inputDfPath);
+
+    Dataset<Row> df2 = spark.read().parquet(inputDfPath);
+
+    df2.withColumn("col2", df2.col("id").multiply(2))
+        .write()
+        .mode(SaveMode.Overwrite)
+        .parquet("/tmp/insertTestColumnLineage2");
+
+    LogicalPlan plan = LastQueryExecutionSparkEventListener.getLastExecutedLogicalPlan().get();
+    when(queryExecution.optimizedPlan()).thenReturn(plan);
+
+    OpenLineage.SchemaDatasetFacet outputSchema =
+        openLineage.newSchemaDatasetFacet(
+            Arrays.asList(
+                openLineage.newSchemaDatasetFacetFieldsBuilder().name("id").type("long").build(),
+                openLineage
+                    .newSchemaDatasetFacetFieldsBuilder()
+                    .name("col2")
+                    .type("long")
+                    .build()));
+
+    OpenLineage.ColumnLineageDatasetFacet facet =
+        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, outputSchema).get();
+
+    assertColumnDependsOn(facet, "id", FILE, inputDfPath, "id");
+    assertColumnDependsOn(facet, "col2", FILE, inputDfPath, "id");
   }
 
   @Test
