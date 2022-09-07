@@ -466,6 +466,7 @@ pub fn get_dialect(name: &str) -> Arc<dyn CanonicalDialect> {
         "mssql" => Arc::new(MsSqlDialect {}),
         "sqlite" => Arc::new(SQLiteDialect {}),
         "ansi" => Arc::new(AnsiDialect {}),
+        "generic" => Arc::new(GenericDialect),
         _ => Arc::new(GenericDialect),
     }
 }

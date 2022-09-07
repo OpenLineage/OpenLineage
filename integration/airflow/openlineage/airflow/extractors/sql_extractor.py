@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0.
 import logging
-from typing import List, Optional, TYPE_CHECKING, Dict, Tuple
+from typing import List, Optional, TYPE_CHECKING, Dict, Tuple, Callable
 from urllib.parse import urlparse
 
 from openlineage.airflow.extractors.dbapi_utils import (
@@ -25,8 +25,6 @@ logger = logging.getLogger(__name__)
 
 
 class SqlExtractor(BaseExtractor):
-    default_schema = "public"
-
     _information_schema_columns = [
         "table_schema",
         "table_name",
@@ -36,7 +34,7 @@ class SqlExtractor(BaseExtractor):
     ]
     _information_schema_table_name = "information_schema.columns"
     _is_information_schema_cross_db = False
-    _is_case_sensitive = False
+    _is_uppercase_names = False
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -47,12 +45,16 @@ class SqlExtractor(BaseExtractor):
 
     def extract(self) -> TaskMetadata:
         task_name = f"{self.operator.dag_id}.{self.operator.task_id}"
-        job_facets = {"sql": SqlJobFacet(self.operator.sql)}
+        job_facets = {"sql": SqlJobFacet(query=self.operator.sql)}
         run_facets: Dict = {}
 
         # (1) Parse sql statement to obtain input / output tables.
         logger.debug(f"Sending SQL to parser: {self.operator.sql}")
-        sql_meta: Optional[SqlMeta] = parse(self.operator.sql, self.default_schema)
+        sql_meta: Optional[SqlMeta] = parse(
+            self.operator.sql,
+            dialect=self.dialect,
+            default_schema=self.default_schema
+        )
         logger.debug(f"Got meta {sql_meta}")
 
         if not sql_meta:
@@ -115,6 +117,14 @@ class SqlExtractor(BaseExtractor):
         return getattr(self.hook, self.hook.conn_name_attr)
 
     @property
+    def dialect(self):
+        return "generic"
+
+    @property
+    def default_schema(self):
+        return "public"
+
+    @property
     def hook(self):
         if not self._hook:
             self._hook = self._get_hook()
@@ -175,9 +185,14 @@ class SqlExtractor(BaseExtractor):
     def _get_output_facets(self) -> Dict[str, BaseFacet]:
         return {}
 
+    @staticmethod
+    def _normalize_name(name: str) -> str:
+        return name.lower()
+
     def _information_schema_query(self, tables: List[DbTableMeta]) -> str:
         tables_hierarchy = self._get_tables_hierarchy(
             tables,
+            normalize_name=self._normalize_name,
             database=self.database,
             is_cross_db=self._is_information_schema_cross_db,
         )
@@ -185,24 +200,25 @@ class SqlExtractor(BaseExtractor):
             columns=self._information_schema_columns,
             information_schema_table_name=self._information_schema_table_name,
             tables_hierarchy=tables_hierarchy,
-            case_sensitive=self._is_case_sensitive,
+            uppercase_names=self._is_uppercase_names,
         )
 
     @staticmethod
     def _get_tables_hierarchy(
         tables: List[DbTableMeta],
+        normalize_name: Callable[[str], str],
         database: Optional[str] = None,
         is_cross_db: bool = False,
     ) -> TablesHierarchy:
-        def normalize_name(name: Optional[str]) -> Optional[str]:
-            return name.lower() if name else name
         hierarchy: TablesHierarchy = {}
         for table in tables:
             if is_cross_db:
                 db = table.database or database
             else:
                 db = None
-            hierarchy.setdefault(normalize_name(db), {}).setdefault(
-                normalize_name(table.schema), []
+            hierarchy.setdefault(
+                normalize_name(db) if db else db, {}
+            ).setdefault(
+                normalize_name(table.schema) if table.schema else db, []
             ).append(table.name)
         return hierarchy

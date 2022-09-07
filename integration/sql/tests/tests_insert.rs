@@ -80,6 +80,17 @@ fn insert_nested_select() {
 }
 
 #[test]
+fn insert_snowflake_table() {
+    assert_eq!(
+        test_sql_dialect("\n    INSERT INTO test_orders (ord, str, num) VALUES\n    (1, 'b', 15),\n    (2, 'a', 21),\n    (3, 'b', 7);\n   ", "snowflake"),
+        SqlMeta {
+            in_tables: vec![],
+            out_tables: table("test_orders")
+        }
+    )
+}
+
+#[test]
 fn insert_overwrite_table() {
     assert_eq!(
         test_sql(

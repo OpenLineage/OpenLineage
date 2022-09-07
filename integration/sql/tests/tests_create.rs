@@ -1,6 +1,7 @@
 // Copyright 2018-2022 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
 
+use sqlparser::dialect::HiveDialect;
 use openlineage_sql::SqlMeta;
 
 #[macro_use]
@@ -78,3 +79,32 @@ fn create_and_insert_multiple_stmts() {
         }
     )
 }
+
+#[test]
+fn create_hive_external_table_if_not_exist() {
+    assert_eq!(
+        test_sql_dialect("
+            CREATE EXTERNAL TABLE IF NOT EXISTS  Testing_Versions_latest (
+                `ID` INT,
+                `ExperimentID` INT,
+                `Version` SMALLINT,
+                `EnrollmentPeriodInHours` INT,
+                `Started` TIMESTAMP,
+                `EndDate` TIMESTAMP,
+                `IsActive` BOOLEAN,
+                `PercentOfSubjectsToEnroll` SMALLINT,
+                `Created` TIMESTAMP,
+                `Updated` TIMESTAMP,
+                        ds STRING
+                    )
+                    STORED AS PARQUET
+                    LOCATION 's3://abc.ingest/sqlserver/Testing/Versions/ds=2022-08-10'
+                    TBLPROPERTIES ('parquet.compression'='SNAPPY');
+        ", "hive"
+        ), SqlMeta {
+            in_tables: vec![],
+            out_tables: table("Testing_Versions_latest")
+        }
+    )
+}
+

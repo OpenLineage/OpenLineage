@@ -15,7 +15,6 @@ logger = logging.getLogger(__name__)
 
 
 class PostgresExtractor(SqlExtractor):
-    default_schema = "public"
     _information_schema_columns = [
         "table_schema",
         "table_name",
@@ -24,6 +23,10 @@ class PostgresExtractor(SqlExtractor):
         "udt_name",
     ]
     _is_information_schema_cross_db = False
+
+    @property
+    def dialect(self):
+        return "postgres"
 
     @classmethod
     def get_operator_classnames(cls) -> List[str]:

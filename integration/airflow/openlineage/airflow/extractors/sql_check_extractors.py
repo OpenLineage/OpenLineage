@@ -13,8 +13,6 @@ from openlineage.airflow.utils import (
 
 def get_check_extractors(super_):
     class BaseSqlCheckExtractor(super_):
-        default_schema = 'public'
-
         def __init__(self, operator):
             super().__init__(operator)
 

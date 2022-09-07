@@ -166,6 +166,22 @@ def test_parse_simple_insert_into():
     assert sql_meta.out_tables == [DbTableMeta('table0')]
 
 
+def test_parse_snowflake_dialect_insert():
+    sql_meta = parse(
+        '''
+        INSERT INTO test_orders (ord, str, num)
+        VALUES
+        (1, 'b', 15),
+        (2, 'a', 21),
+        (3, 'b', 7);
+        ''',
+        dialect="snowflake"
+    )
+
+    assert sql_meta.in_tables == []
+    assert sql_meta.out_tables == [DbTableMeta('test_orders')]
+
+
 def test_parse_simple_insert_into_select():
     sql_meta = parse(
         '''

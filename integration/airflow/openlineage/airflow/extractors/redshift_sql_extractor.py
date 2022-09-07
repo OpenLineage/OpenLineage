@@ -11,11 +11,13 @@ logger = logging.getLogger(__name__)
 
 
 class RedshiftSQLExtractor(PostgresExtractor):
-    default_schema = "public"
-
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
         return ["RedshiftSQLOperator"]
+
+    @property
+    def dialect(self):
+        return "redshift"
 
     def _get_scheme(self) -> str:
         return "redshift"

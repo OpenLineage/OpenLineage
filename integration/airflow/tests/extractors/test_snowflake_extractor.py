@@ -107,12 +107,15 @@ def get_hook_method(operator):
 
 @mock.patch('openlineage.airflow.extractors.sql_extractor.get_table_schemas')  # noqa
 @mock.patch('openlineage.airflow.extractors.sql_extractor.get_connection')
-def test_extract(get_connection, mock_get_table_schemas):
+@mock.patch('openlineage.airflow.extractors.snowflake_extractor.execute_query_on_hook')
+def test_extract(execute_query_on_hook, get_connection, mock_get_table_schemas):
     source = Source(
         scheme='snowflake',
         authority='test_account',
         connection_url=CONN_URI_URIPARSED
     )
+
+    execute_query_on_hook.return_value = "public"
 
     mock_get_table_schemas.return_value = (
         [Dataset.from_table_schema(source, DB_TABLE_SCHEMA, DB_NAME)],
@@ -148,11 +151,14 @@ def test_extract(get_connection, mock_get_table_schemas):
 @pytest.mark.skipif(parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"), reason="Airflow 2+ test")  # noqa
 @mock.patch('openlineage.airflow.extractors.sql_extractor.get_table_schemas')  # noqa
 @mock.patch('openlineage.airflow.extractors.sql_extractor.get_connection')
-def test_extract_query_ids(get_connection, mock_get_table_schemas):
+@mock.patch('openlineage.airflow.extractors.snowflake_extractor.execute_query_on_hook')
+def test_extract_query_ids(execute_query_on_hook, get_connection, mock_get_table_schemas):
     mock_get_table_schemas.return_value = (
         [],
         [],
     )
+
+    execute_query_on_hook.return_value = "public"
 
     conn = Connection()
     conn.parse_from_uri(uri=CONN_URI)
