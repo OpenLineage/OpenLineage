@@ -88,6 +88,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     if (isDisabled) {
       return;
     }
+    initializeContextFactoryIfNotInitialized();
     if (event instanceof SparkListenerSQLExecutionStart) {
       sparkSQLExecStart((SparkListenerSQLExecutionStart) event);
     } else if (event instanceof SparkListenerSQLExecutionEnd) {
@@ -115,6 +116,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     if (isDisabled) {
       return;
     }
+    initializeContextFactoryIfNotInitialized();
     Optional<ActiveJob> activeJob =
         asJavaOptional(
                 SparkSession.getDefaultSession()
@@ -268,6 +270,10 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
    */
   @Override
   public void onApplicationStart(SparkListenerApplicationStart applicationStart) {
+    initializeContextFactoryIfNotInitialized();
+  }
+
+  private void initializeContextFactoryIfNotInitialized() {
     if (contextFactory != null || isDisabled) {
       return;
     }
