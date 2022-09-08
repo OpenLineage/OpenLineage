@@ -105,10 +105,13 @@ jobs:
           export RELEASE_USERNAME=$(echo $SONATYPE_USER)
 
           # publish jar to maven local so it can be found by dependents
-          ./gradlew publishToMavenLocal
+          ./gradlew publishToMavenLocal --info
 
           # Publish *.jar
-          ./gradlew --no-daemon publish
+          ./gradlew --no-daemon publish --info
+      - store_artifacts:
+          path: ./build/libs
+          destination: java-client-artifacts
       - save_cache:
           key: v1-release-client-java-{{ .Branch }}-{{ .Revision }}
           paths:
@@ -153,6 +156,10 @@ jobs:
           cd -
           # Publish *.jar
           ./gradlew --no-daemon publish
+      - store_artifacts:
+          path: ./build/libs
+          destination: spark-client-artifacts
+
 
   publish-snapshot-integration-spark:
     working_directory: ~/openlineage/integration/spark
