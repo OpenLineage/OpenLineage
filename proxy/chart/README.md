@@ -58,7 +58,7 @@ helm delete ol-proxy
 | `proxy.autoscaling.minReplicas`  | Minimum number of replicas           | `1`                 |
 | `proxy.autoscaling.maxReplicas`  | Maximum number of replicas           | `2`                 |
 | `proxy.autoscaling.targetCPU`    | Target CPU utilization percentage    | `nil`               |
-| `proxy.autoscaling.targetMemory` | Target Memory utilization percentage | `80`                |
+| `proxy.autoscaling.targetMemory` | Target Memory utilization percentage | `nil`               |
 | `proxy.ingress.enabled`          | Enables ingress settings             | `false`             |
 | `proxy.ingress.annotations`      | Annotations applied to ingress       | `nil`               |
 | `proxy.ingress.hosts`            | Hostname applied to ingress routes   | `nil`               |

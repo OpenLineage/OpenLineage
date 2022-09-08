@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "common.names.fullname" . }}
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+    {{- if .Values.commonLabels }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
+    {{- end }}
+    app.kubernetes.io/component: proxy
+  annotations:
+    {{- if .Values.commonAnnotations }}
+      {{- include "common.tplvalues.render" (dict "value" .Values.commonAnnotations "context" $) | nindent 4 }}
+      {{- end }}
+      {{- range $key, $value := .Values.proxy.podAnnotations }}
+      {{ $key }}: {{ include "common.tplvalues.render" (dict "value" $value "context" $) | quote }}
+      {{- end }}
+spec:
+  selector:
+    matchLabels: {{- include "common.labels.matchLabels" . | nindent 6 }}
+      app.kubernetes.io/component: proxy
+  replicas: {{ default 1 .Values.proxy.replicaCount }}
+  template:
+    metadata:
+      labels: {{- include "common.labels.standard" . | nindent 8 }}
+        app.kubernetes.io/component: proxy
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ .Values.proxy.image }}
+          imagePullPolicy: {{ .Values.proxy.image.pullPolicy }}
+          volumeMounts:
+            - name: proxy-volume
+              mountPath: /usr/src/app/config.yml
+              subPath: config.yml
+          ports:
+            - name: http
+              containerPort: {{ .Values.proxy.port }}
+              protocol: TCP
+            - name: http-admin
+              containerPort: {{ .Values.proxy.adminPort }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthcheck
+              port: http-admin
+          readinessProbe:
+            httpGet:
+              path: /healthcheck
+              port: http-admin
+          env:
+            - name: OPENLINEAGE_PROXY_PORT
+              value: {{ .Values.proxy.port | quote }}
+            - name: OPENLINEAGE_PROXY_ADMIN_PORT
+              value: {{ .Values.proxy.adminPort | quote }}
+            - name: OPENLINEAGE_PROXY_CONFIG
+              value: /usr/src/app/config.yml
+            - name: OPENLINEAGE_PROXY_SOURCE
+              value: {{ .Values.proxy.source | quote }}
+          resources: {{- toYaml .Values.proxy.resources | nindent 12 }}
+      volumes:
+        - name: proxy-volume
+          configMap:
+            name: {{ include "proxy.fullname" . }}-config

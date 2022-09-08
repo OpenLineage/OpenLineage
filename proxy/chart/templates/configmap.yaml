@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "common.names.fullname" . }}-config
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+    {{- if .Values.commonLabels }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
+    {{- end }}
+    app.kubernetes.io/component: ol-proxy
+  annotations:
+    {{- if .Values.commonAnnotations }}
+      {{- include "common.tplvalues.render" (dict "value" .Values.commonAnnotations "context" $) | nindent 4 }}
+      {{- end }}
+data:
+  config.yml: |-
+    ### HTTP SERVER CONFIG ###
+
+    # Enables HTTP server configuration overrides (see: https://www.dropwizard.io/en/stable/manual/configuration.html#servers)
+    server:
+      applicationConnectors:
+      - type: http
+        port: ${OPENLINEAGE_PROXY_PORT}
+      adminConnectors:
+      - type: http
+        port: ${OPENLINEAGE_PROXY_ADMIN_PORT}
+
+    ### LOGGING CONFIG ###
+
+    logging:
+      # Levels: TRACE, DEBUG, INFO, WARN, ERROR, FATAL, ALL, OFF
+      level: ${LOG_LEVEL:-INFO}
+      appenders:
+        - type: console
+          # Enables app logs formatted as JSON
+          # layout:
+          #   type: json
+
+    ### PROXY CONFIG ###
+
+    proxy:
+      source: ${OPENLINEAGE_PROXY_SOURCE}
+      streams:
+        - type: Console

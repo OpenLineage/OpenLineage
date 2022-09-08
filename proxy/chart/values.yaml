@@ -1,0 +1,44 @@
+## @section Common parameters
+
+## @param commonLabels String to ...
+##
+commonLabels: {}
+
+## @param commonAnnotations String to ...
+##
+commonAnnotations: {}
+
+## @section Proxy parameters
+##
+proxy:
+  image:
+    registry: docker.io
+    repository: openlineage/proxy
+    tag: 0.0.1
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  podAnnotations: {}
+  host: localhost
+  port: 5000
+  adminPort: 5001
+  source: olPproxy
+  resources:
+    limits: {}
+    #    cpu: 200m
+    #    memory: 1Gi
+    requests: {}
+    #    memory: 256Mi
+    #    cpu: 250m
+  service:
+    type: ClusterIP
+    port: 8080
+    annotations: {}
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 2
+    targetCPU:
+    targetMemory:
+  ingress:
+    enabled: false
+    annotations: {}

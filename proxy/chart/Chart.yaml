@@ -1,10 +1,17 @@
 apiVersion: v2
 appVersion: "1.16.0"
-
+dependencies:
+  - name: common
+    repository: https://charts.bitnami.com/bitnami
+    tags:
+      - bitnami-common
+    version: 2.x.x
 type: application
 name: openlineage-proxy
 description: An Open Standard for lineage metadata collection
 version: 0.1.0
+home: https://github.com/MarquezProject/marquez/tree/main/chart
+icon: https://raw.githubusercontent.com/MarquezProject/marquez/main/web/src/img/marquez-logo.png
 sources:
   - https://github.com/OpenLineage/OpenLineage
   - https://openlineage.io
