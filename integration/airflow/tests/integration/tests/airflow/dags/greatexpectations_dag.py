@@ -1,3 +1,4 @@
+# Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
 from great_expectations_provider.operators.great_expectations import GreatExpectationsOperator
@@ -39,7 +40,7 @@ t1 = GreatExpectationsOperator(
     data_context_root_dir=data_context_dir,
     dag=dag,
     fail_task_on_validation_failure=False,
-    validation_operator_name="ol_operator",
+    checkpoint_kwargs={"run_name": "ge_sqlite_run"},
     do_xcom_push=False
 )
 
@@ -50,7 +51,7 @@ t2 = GreatExpectationsOperator(
     data_context_root_dir=data_context_dir,
     dag=dag,
     fail_task_on_validation_failure=False,
-    validation_operator_name="ol_operator",
+    checkpoint_kwargs={"run_name": "ge_pandas_run"},
     do_xcom_push=False
 )
 
@@ -61,7 +62,7 @@ t3 = GreatExpectationsOperator(
     data_context_root_dir=data_context_dir,
     dag=dag,
     fail_task_on_validation_failure=False,
-    validation_operator_name="ol_operator",
+    checkpoint_kwargs={"run_name": "ge_bad_sqlite_run"},
     do_xcom_push=False
 )
 

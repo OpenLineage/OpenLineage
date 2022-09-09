@@ -24,9 +24,18 @@ def test_extract_operator_bash_command_enables_on_true():
     assert extractor.extract().job_facets['sourceCode'] == SourceCodeJobFacet("bash", "exit 0")
 
 
+@patch.dict(
+    os.environ,
+    {
+        k: v
+        for k, v in os.environ.items()
+        if k != "OPENLINEAGE_AIRFLOW_DISABLE_SOURCE_CODE"
+    },
+    clear=True,
+)
 def test_extract_dag_bash_command_disabled_without_env():
     extractor = BashExtractor(bash_task)
-    assert 'sourceCode' not in extractor.extract().job_facets
+    assert "sourceCode" not in extractor.extract().job_facets
 
 
 @patch.dict(os.environ, {"OPENLINEAGE_AIRFLOW_DISABLE_SOURCE_CODE": "False"})

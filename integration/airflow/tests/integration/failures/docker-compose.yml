@@ -2,9 +2,9 @@ version: "3.7"
 
 x-airflow-common: &airflow-common
   build:
-    context: ../
+    context: ../../../../..
     target: airflow
-    dockerfile: Dockerfile.2
+    dockerfile: integration/airflow/tests/integration/Dockerfile.test
     args:
       AIRFLOW_IMAGE: ${AIRFLOW_IMAGE}
   environment: &airflow-common-env
@@ -36,25 +36,49 @@ x-airflow-common: &airflow-common
       - ./airflow/config/log_config.py:/opt/airflow/config/log_config.py
       - ./airflow/logs:/opt/airflow/logs
       - ./airflow/dags:/opt/airflow/dags
+  depends_on:
+    &airflow-common-depends-on
+    redis:
+      condition: service_healthy
+    postgres:
+      condition: service_healthy
 
 services:
   integration:
     build:
-      context: ../
+      context: ../../../../../
       target: integration
-      dockerfile: Dockerfile.2
+      dockerfile: integration/airflow/tests/integration/Dockerfile.test
       args:
         AIRFLOW_IMAGE: ${AIRFLOW_IMAGE}
     volumes:
-      - ./docker/wait-for-it.sh:/wait-for-it.sh
+      - ../docker/wait-for-it.sh:/wait-for-it.sh
     depends_on:
-      - airflow_scheduler
-      - backend
-    entrypoint: ["./wait-for-it.sh", "backend:5000", "--", "python", "test_failure.py"]
+      airflow_scheduler:
+        condition: service_healthy
+      airflow_worker:
+        condition: service_healthy
+      airflow:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    entrypoint: ["/wait-for-it.sh", "backend:5000", "--", "python", '-m', 'pytest', 'test_failure.py']
 
   airflow:
     <<: *airflow-common
     command: webserver
+    ports:
+      - 8080:8080
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow_init:
+        condition: service_completed_successfully
 
   airflow_scheduler:
     <<: *airflow-common
@@ -65,6 +89,10 @@ services:
       timeout: 10s
       retries: 5
     restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow_init:
+        condition: service_completed_successfully
 
   airflow_worker:
     <<: *airflow-common
@@ -75,18 +103,31 @@ services:
       interval: 10s
       timeout: 10s
       retries: 5
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow_init:
+        condition: service_completed_successfully
 
   backend:
     build:
       context: ../server
-      dockerfile: Dockerfile
     environment:
       - FLASK_APP=app.py
       - FLASK_RUN_PORT=5000
+      - SERVER_EVENTS=/opt/airflow/events
+    volumes:
+      - $PWD/events:/opt/airflow/events
 
   airflow_init:
     <<: *airflow-common
-    command: -c "airflow db init && airflow users create --username airflow --password airflow --firstname airflow --lastname airflow --email airflow@example.com --role Admin"
+    command: -c "/entrypoint airflow db upgrade && airflow users create --username airflow --password airflow --firstname airflow --lastname airflow --email airflow@example.com --role Admin"
+    environment:
+      <<: *airflow-common-env
+      _AIRFLOW_DB_UPGRADE: 'true'
+      _AIRFLOW_WWW_USER_CREATE: 'true'
+      _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-airflow}
+      _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-airflow}
+      _PIP_ADDITIONAL_REQUIREMENTS: ''
     depends_on:
       - postgres
     entrypoint: ["/opt/data/wait-for-it.sh", "postgres:5432", "--", "/bin/bash"]
@@ -116,5 +157,9 @@ services:
       - FOOD_DELIVERY_PASSWORD=food_delivery
       - FOOD_DELIVERY_DB=food_delivery
       - ALLOW_EMPTY_PASSWORD=yes
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 5s
+      retries: 5
     volumes:
       - ../docker/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh

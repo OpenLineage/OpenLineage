@@ -35,7 +35,7 @@ OPENLINEAGE_AIRFLOW_WHL_ALL=$(docker run --rm openlineage-airflow-base:latest sh
 # Add revision to requirements.txt
 cat > requirements.txt <<EOL
 apache-airflow[celery]==1.10.15
-airflow-provider-great-expectations==0.0.8
+airflow-provider-great-expectations==0.1.4
 great-expectations==0.13.42
 dbt-bigquery==0.20.1
 ${OPENLINEAGE_AIRFLOW_WHL}

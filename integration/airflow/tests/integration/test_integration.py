@@ -187,12 +187,12 @@ def check_event_time_ordered(actual_events) -> bool:
     return True
 
 
-def get_events(job_name: str = None):
+def get_events(job_name: str = None, desc: bool = True):
     time.sleep(5)
     params = {}
 
     if job_name:
-        params = {"job_name": job_name}
+        params = {"job_name": job_name, "desc": "true" if desc else "false"}
 
     # Service in ./server captures requests and serves them
     backend_host = os.environ.get("BACKEND_HOST", "backend")
@@ -255,7 +255,7 @@ def test_integration_ordered(dag_id, request_dir: str, airflow_db_conn):
             expected_events.append(json.load(f))
 
     # (3) Get actual events with job names starting with dag_id
-    actual_events = get_events(dag_id)
+    actual_events = get_events(dag_id, False)
 
     assert check_matches_ordered(expected_events, actual_events) is True
     assert check_event_time_ordered(actual_events) is True
