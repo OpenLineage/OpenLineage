@@ -6,7 +6,7 @@ metadata:
     {{- if .Values.commonLabels }}
     {{- include "common.tplvalues.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
     {{- end }}
-    app.kubernetes.io/component: proxy
+    app.kubernetes.io/component: openlineage-proxy
   annotations:
     {{- if .Values.commonAnnotations }}
       {{- include "common.tplvalues.render" (dict "value" .Values.commonAnnotations "context" $) | nindent 4 }}
@@ -17,19 +17,19 @@ metadata:
 spec:
   selector:
     matchLabels: {{- include "common.labels.matchLabels" . | nindent 6 }}
-      app.kubernetes.io/component: proxy
+      app.kubernetes.io/component: openlineage-proxy
   replicas: {{ default 1 .Values.proxy.replicaCount }}
   template:
     metadata:
       labels: {{- include "common.labels.standard" . | nindent 8 }}
-        app.kubernetes.io/component: proxy
+        app.kubernetes.io/component: openlineage-proxy
     spec:
       containers:
         - name: {{ .Chart.Name }}
           image: {{ .Values.proxy.image }}
           imagePullPolicy: {{ .Values.proxy.image.pullPolicy }}
           volumeMounts:
-            - name: proxy-volume
+            - name: openlineage-proxy-volume
               mountPath: /usr/src/app/config.yml
               subPath: config.yml
           ports:
@@ -58,6 +58,6 @@ spec:
               value: {{ .Values.proxy.source | quote }}
           resources: {{- toYaml .Values.proxy.resources | nindent 12 }}
       volumes:
-        - name: proxy-volume
+        - name: openlineage-proxy-volume
           configMap:
             name: {{ include "proxy.fullname" . }}-config

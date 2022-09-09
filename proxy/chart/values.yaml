@@ -21,7 +21,7 @@ proxy:
   host: localhost
   port: 5000
   adminPort: 5001
-  source: olPproxy
+  source: openlineage-proxy
   resources:
     limits: {}
     #    cpu: 200m

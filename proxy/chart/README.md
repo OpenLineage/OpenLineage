@@ -5,25 +5,25 @@ Helm Chart for [OpenLineage Proxy](https://github.com/OpenLineage/OpenLineage/tr
 ## TL;DR
 
 ```bash
-helm install ol-proxy . --dependency-update
+helm install openlineage-proxy . --dependency-update
 ```
 
 ## Installing the Chart
 
-To install the chart with the release name `my-release`:
+To install the chart with the release name `openlineage-proxy`:
 
 ```bash
-helm install ol-proxy .
+helm install openlineage-proxy .
 ```
 
 > **Note:** For a list of parameters that can be overridden during installation, see the [configuration](#configuration) section.
 
 ## Uninstalling the Chart
 
-To uninstall the `ol-proxy` deployment:
+To uninstall the `openlineage-proxy` deployment:
 
 ```bash
-helm delete ol-proxy
+helm delete openlineage-proxy
 ```
 
 ## Configuration
