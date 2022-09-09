@@ -10,8 +10,8 @@ type: application
 name: openlineage-proxy
 description: An Open Standard for lineage metadata collection
 version: 0.1.0
-home: https://github.com/MarquezProject/marquez/tree/main/chart
-icon: https://raw.githubusercontent.com/MarquezProject/marquez/main/web/src/img/marquez-logo.png
+home: https://github.com/OpenLineage/OpenLineage/tree/main/proxy/chart
+icon: https://github.com/OpenLineage/artwork/blob/main/icon/color/olicon-color.png
 sources:
   - https://github.com/OpenLineage/OpenLineage
   - https://openlineage.io
