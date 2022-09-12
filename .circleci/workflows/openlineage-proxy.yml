@@ -2,7 +2,9 @@ workflows:
   openlineage-proxy:
     jobs:
       - build-proxy-backend
-      - build-image-proxy-backend
+      - build-image-proxy-backend:
+          requires:
+            - build-proxy-backend
       - workflow_complete:
           requires:
             - build-proxy-backend

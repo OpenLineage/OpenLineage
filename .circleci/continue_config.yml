@@ -677,7 +677,7 @@ jobs:
     machine:
       image: ubuntu-2004:current
     steps:
-      - checkout
+      - *checkout_project_root
       - run: docker build --no-cache --tag "openlineage/proxy:${CIRCLE_SHA1}" .
       - run: docker save -o proxy.tar "openlineage/proxy:${CIRCLE_SHA1}"
       - store_artifacts:
