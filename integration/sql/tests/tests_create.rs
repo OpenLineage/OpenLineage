@@ -108,3 +108,18 @@ fn create_hive_external_table_if_not_exist() {
     )
 }
 
+#[test]
+fn create_replace_as_select() {
+    assert_eq!(
+        test_sql("
+            CREATE OR REPLACE TABLE DATA_TEAM_DEMOS.ALL_DAYS AS (
+            SELECT date AS calendar_day, yyyy_mm as calendar_month, yyyy as calendar_year
+            FROM dwh_dev.commons.calendar
+            WHERE date BETWEEN '2022-01-01' AND CURRENT_DATE
+        )"),
+        SqlMeta {
+            in_tables: table("dwh_dev.commons.calendar"),
+            out_tables: table("DATA_TEAM_DEMOS.ALL_DAYS")
+        }
+    )
+}
