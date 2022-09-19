@@ -32,12 +32,7 @@ jobs:
           ok=1
           readarray -t files <<<"$(jq -r '.[]' <<<'${{ steps.files.outputs.all }}')"
           for file in ${files[@]}; do 
-            if [[ ($file == *".py") ]]; then
-              if ! grep -q Copyright "$file"; then
-                ok=0
-                echo "Copyright header not found in $file"
-              fi
-            elif [[ ($file == *".java") ]]; then
+            if [[ ($file == *".py") || ($file == *".java") ]]; then
               if ! grep -q Copyright "$file"; then
                 ok=0
                 echo "Copyright header not found in $file"
@@ -46,4 +41,7 @@ jobs:
           done
           if [[ $ok == 0 ]]; then
             exit 1
+          else
+            GREEN="\e[32m"
+            echo -e "${GREEN}All changed & added files have been scanned. Result: no headers are missing.${ENDCOLOR}"
           fi
