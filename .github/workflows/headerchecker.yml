@@ -42,5 +42,5 @@ jobs:
           if [[ $ok == 0 ]]; then
             exit 1
           else
-            echo "All changed/added files scanned. Result: no headers are missing."
+            echo "All changed & added files have been scanned. Result: no headers are missing."
           fi
