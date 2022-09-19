@@ -42,5 +42,6 @@ jobs:
           if [[ $ok == 0 ]]; then
             exit 1
           else
-            echo "All changed & added files have been scanned. Result: no headers are missing."
+            GREEN="\e[32m"
+            echo -e "${GREEN}All changed & added files have been scanned. Result: no headers are missing.${ENDCOLOR}"
           fi
