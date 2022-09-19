@@ -1,3 +1,6 @@
+// Copyright 2018-2022 contributors to the OpenLineage project
+// SPDX-License-Identifier: Apache-2.0
+
 extern crate core;
 
 use openlineage_sql::{parse_sql, SqlMeta};
@@ -11,7 +14,8 @@ use test_utils::*;
 #[test]
 fn parse_copy_from() {
     assert_eq!(
-        parse_sql("
+        parse_sql(
+            "
             COPY INTO SCHEMA.SOME_MONITORING_SYSTEM
                 FROM (
                 SELECT
@@ -44,8 +48,7 @@ fn parse_copy_from() {
             Arc::new(SnowflakeDialect {}),
             None
         )
-            .unwrap_err(),
+        .unwrap_err(),
         "sql parser error: Expected FROM or TO, found: SCHEMA"
     )
 }
-

@@ -1,0 +1,56 @@
+##### Labeler ##########################################################################################################
+# Enable "labeler" for your PR that would add labels to PRs based on the paths that are modified in the PR.
+labelPRBasedOnFilePath:
+  # Add '' to any changes within '' folder or any subfolders
+  ci:
+    - .circleci/**/*
+  client/java:
+    - client/java/**/*
+  client/python:
+    - client/python/**/*
+  common:
+    - integration/common/**/*
+  documentation:
+    - doc/*
+    - "*.md"
+  extractor:
+    - integration/airflow/openlineage/airflow/extractors/*
+  integration/airflow:
+    - integration/airflow/**/*
+  integration/bigquery:
+    - integration/airflow/openlineage/airflow/extractors/bigquery_extractor.py
+  integration/dagster:
+    - integration/dagster/**/*
+  integration/dbt:
+    - integration/dbt/**/*
+  integration/flink:
+    - integration/flink/**/*
+  integration/great-expectations:
+    - integration/common/openlineage/common/provider/great_expectations/*
+  integration/spark:
+    - integration/spark/**/*
+  integration/sql:
+    - integration/sql/**/*
+  proposal:
+    - proposals/**/*
+  proxy:
+    - proxy/**/*
+  spec:
+    - spec/**/*
+  streaming:
+    - integration/flink/**/*
+  tests:
+    - .circleci/workflows/*
+
+##### Greetings ########################################################################################################
+# Comment to be posted to welcome users when they open their first PR
+firstPRWelcomeComment: >
+  Thanks for opening your first OpenLineage pull request! We appreciate your contribution. If you haven't already, please make sure you've reviewed our guide for new contributors (https://github.com/OpenLineage/OpenLineage/blob/main/CONTRIBUTING.md).
+
+# Comment to be posted to congratulate user on their first merged PR
+firstPRMergeComment: >
+  Great job! Congrats on your first merged pull request in OpenLineage!
+
+# Comment to be posted to on first time issues
+firstIssueWelcomeComment: >
+  Thanks for creating your first OpenLineage issue! Your feedback is valuable and improves the project. If you haven't already, please be sure to follow the issue template!

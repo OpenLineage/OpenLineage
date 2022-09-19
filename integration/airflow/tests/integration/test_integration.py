@@ -1,4 +1,6 @@
-# SPDX-License-Identifier: Apache-2.0.
+# Copyright 2018-2022 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
+
 import json
 import logging
 import os
@@ -31,9 +33,10 @@ try:
 except:  # noqa
     pass
 
-IS_AIRFLOW_VERSION_ENOUGH = os.environ.get("AIRFLOW_VERSION", None) or parse_version(
+IS_AIRFLOW_VERSION_ENOUGH = lambda x: parse_version(
     os.environ.get("AIRFLOW_VERSION", "0.0.0")
-) >= parse_version("2.2.4")
+) >= parse_version(x)
+
 
 params = [
     ("postgres_orders_popular_day_of_week", "requests/postgres.json"),
@@ -52,10 +55,18 @@ params = [
     ("custom_extractor", "requests/custom_extractor.json"),
     ("unknown_operator_dag", "requests/unknown_operator.json"),
     pytest.param(
+        "secrets",
+        "requests/secrets.json",
+        marks=pytest.mark.skipif(
+            not IS_AIRFLOW_VERSION_ENOUGH("2.1.0"),
+            reason="Airflow < 2.1.0"
+        )
+    ),
+    pytest.param(
         "mysql_orders_popular_day_of_week",
         "requests/mysql.json",
         marks=pytest.mark.skipif(
-            not IS_AIRFLOW_VERSION_ENOUGH, reason="Airflow < 2.2.4"
+            not IS_AIRFLOW_VERSION_ENOUGH("2.2.4"), reason="Airflow < 2.2.4"
         ),
     ),
     pytest.param(
@@ -63,11 +74,11 @@ params = [
         "requests/dbt_snowflake.json",
         marks=[
             pytest.mark.skipif(
-                not IS_AIRFLOW_VERSION_ENOUGH,
+                not IS_AIRFLOW_VERSION_ENOUGH("2.2.4"),
                 reason="Airflow < 2.2.4",
             ),
             pytest.mark.skipif(
-                os.environ.get("SNOWFLAKE_PASSWORD", '') == '',
+                os.environ.get("SNOWFLAKE_PASSWORD", "") == "",
                 reason="no snowflake credentials",
             ),
         ],
@@ -77,14 +88,21 @@ params = [
         "requests/snowflake.json",
         marks=[
             pytest.mark.skipif(
-                not IS_AIRFLOW_VERSION_ENOUGH,
+                not IS_AIRFLOW_VERSION_ENOUGH("2.2.4"),
                 reason="Airflow < 2.2.4",
             ),
             pytest.mark.skipif(
-                os.environ.get("SNOWFLAKE_ACCOUNT_ID", '') == '',
+                os.environ.get("SNOWFLAKE_ACCOUNT_ID", "") == "",
                 reason="no snowflake credentials",
             ),
         ],
+    ),
+    pytest.param(
+        "mapped_dag",
+        "requests/mapped_dag.json",
+        marks=pytest.mark.skipif(
+            not IS_AIRFLOW_VERSION_ENOUGH("2.3.0"), reason="Airflow < 2.3.0"
+        ),
     ),
 ]
 
@@ -244,14 +262,18 @@ def test_integration_ordered(dag_id, request_dir: str, airflow_db_conn):
     log.info(f"Events for dag {dag_id} verified!")
 
 
-@pytest.mark.parametrize("dag_id, request_path", [
-    pytest.param(
-        "mysql_orders_popular_day_of_week",
-        "requests/airflow_run_facet/mysql.json",
-        marks=pytest.mark.skipif(
-            not IS_AIRFLOW_VERSION_ENOUGH, reason="Airflow < 2.2.4"
-        ),
-    )])
+@pytest.mark.parametrize(
+    "dag_id, request_path",
+    [
+        pytest.param(
+            "mysql_orders_popular_day_of_week",
+            "requests/airflow_run_facet/mysql.json",
+            marks=pytest.mark.skipif(
+                not IS_AIRFLOW_VERSION_ENOUGH("2.2.4"), reason="Airflow < 2.2.4"
+            ),
+        )
+    ],
+)
 def test_airflow_run_facet(dag_id, request_path, airflow_db_conn):
     log.info(f"Checking dag {dag_id} for AirflowRunFacet")
     result = wait_for_dag(dag_id, airflow_db_conn)
@@ -262,6 +284,47 @@ def test_airflow_run_facet(dag_id, request_path, airflow_db_conn):
 
     actual_events = get_events()
     assert check_matches(expected_events, actual_events) is True
+
+
+@pytest.mark.skipif(not IS_AIRFLOW_VERSION_ENOUGH("2.3.0"), reason="Airflow < 2.3.0")
+def test_airflow_mapped_task_facet(airflow_db_conn):
+    dag_id = "mapped_dag"
+    task_id = "multiply"
+    log.info(f"Checking dag {dag_id} for AirflowMappedTaskRunFacet")
+    result = wait_for_dag(dag_id, airflow_db_conn)
+    assert result is True
+
+    actual_events = get_events(dag_id)
+    mapped_events = [
+        event
+        for event in actual_events
+        if event["job"]["name"] == f"{dag_id}.{task_id}"
+    ]
+
+    started_events = [event for event in mapped_events if event["eventType"] == "START"]
+    assert len(started_events) == 3
+    assert started_events[0]["job"]["name"] == f"{dag_id}.{task_id}"
+    assert set(
+        [event["job"]["facets"]["sourceCode"]["source"] for event in started_events]
+    ) == set(["echo 1", "echo 2", "echo 3"])
+    assert sorted(
+        [
+            event["run"]["facets"]["airflow_mappedTask"]["mapIndex"]
+            for event in started_events
+        ]
+    ) == [0, 1, 2]
+    assert set(
+        [
+            event["run"]["facets"]["airflow_mappedTask"]["operatorClass"]
+            for event in started_events
+        ]
+    ) == set(["airflow.operators.bash.BashOperator"])
+    assert set(
+        [
+            event["run"]["facets"]["unknownSourceAttribute"]["unknownItems"][0]["name"]
+            for event in mapped_events
+        ]
+    ) == set(["BashOperator"])
 
 
 if __name__ == "__main__":

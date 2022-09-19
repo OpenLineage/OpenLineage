@@ -43,6 +43,15 @@
       "lifecycleStateChange" : {
         "lifecycleStateChange" : "CREATE"
       },
+      "symlinks": {
+        "identifiers": [
+          {
+            "namespace": "/tmp/ctas_load",
+            "name": "default.tbl1",
+            "type": "TABLE"
+          }
+        ]
+      },
       "columnLineage": {
         "fields": {
           "a": {

@@ -10,14 +10,14 @@ Maven:
 <dependency>
     <groupId>io.openlineage</groupId>
     <artifactId>openlineage-spark</artifactId>
-    <version>0.9.0</version>
+    <version>0.14.1</version>
 </dependency>
 ```
 
 or Gradle:
 
 ```groovy
-implementation 'io.openlineage:openlineage-spark:0.9.0'
+implementation 'io.openlineage:openlineage-spark:0.14.1'
 ```
 
 ## Getting started
@@ -50,7 +50,7 @@ from pyspark.sql import SparkSession
 
 spark = (SparkSession.builder.master('local')
          .appName('sample_spark')
-         .config('spark.jars.packages', 'io.openlineage:openlineage-spark:0.9.0')
+         .config('spark.jars.packages', 'io.openlineage:openlineage-spark:0.14.1')
          .config('spark.extraListeners', 'io.openlineage.spark.agent.OpenLineageSparkListener')
          .config('spark.openlineage.url', 'http://{openlineage.client.host}/api/v1/namespaces/spark_integration/')
          .getOrCreate())
@@ -66,7 +66,7 @@ container):
 ```python
 from pyspark.sql import SparkSession
 
-file = "/home/jovyan/openlineage/libs/openlineage-spark-0.9.0.jar"
+file = "/home/jovyan/openlineage/libs/openlineage-spark-0.14.1.jar"
 
 spark = (SparkSession.builder.master('local').appName('rdd_to_dataframe')
              .config('spark.jars', file)
@@ -92,7 +92,10 @@ The following parameters can be specified
 | spark.openlineage.parentJobName | The job name to be used for the parent job facet | ParentJobName |
 | spark.openlineage.parentRunId | The RunId of the parent job that initiated this Spark job | xxxx-xxxx-xxxx-xxxx |
 | spark.openlineage.apiKey | An API key to be used when sending events to the OpenLineage server | abcdefghijk |
+| spark.openlineage.timeout | Timeout for sending OpenLineage info in milliseconds | 5000 |
 | spark.openlineage.url.param.xyz | A url parameter (replace xyz) and value to be included in requests to the OpenLineage API server | abcdefghijk |
+| spark.openlineage.consoleTransport | Events will be emitted to a console, no additional backend is required | true |
+
 
 # Build
 
@@ -298,3 +301,18 @@ check a `MapPartitionsRDD`'s dependencies. The `RDD` for each `Stage` can be eva
 `org.apache.spark.scheduler.SparkListenerStageCompleted` event occurs. When a
 `org.apache.spark.scheduler.SparkListenerJobEnd` event is encountered, the last `Stage` for the
 `ActiveJob` can be evaluated.
+
+## Contributing
+
+If contributing changes, additions or fixes to the Spark integration, please include the following header in any new `.java` files:
+
+```
+/* 
+/* Copyright 2018-2002 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0 
+*/
+```
+
+The Github Actions Super-linter is installed and configured to check for headers in new `.java` files when pull requests are opened.
+
+Thank you for your contributions to the project!

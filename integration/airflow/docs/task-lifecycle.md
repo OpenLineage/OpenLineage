@@ -1,5 +1,3 @@
-<!-- SPDX-License-Identifier: Apache-2.0 -->
-
 # Airflow task lifecycle
 
 This document describes the airflow task lifecycle and describes how OpenLineage hooks into tasks to obtain information.

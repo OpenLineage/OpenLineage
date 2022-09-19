@@ -1,9 +1,14 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.JdbcUtils;
+import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
@@ -72,12 +77,12 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
 
   @Override
   public List<D> apply(LogicalRelation logRel) {
-    if (logRel.relation() instanceof HadoopFsRelation) {
+    if (logRel.catalogTable() != null && logRel.catalogTable().isDefined()) {
+      return handleCatalogTable(logRel);
+    } else if (logRel.relation() instanceof HadoopFsRelation) {
       return handleHadoopFsRelation(logRel);
     } else if (logRel.relation() instanceof JDBCRelation) {
       return handleJdbcRelation(logRel);
-    } else if (logRel.catalogTable().isDefined()) {
-      return handleCatalogTable(logRel);
     }
     throw new IllegalArgumentException(
         "Expected logical plan to be either HadoopFsRelation, JDBCRelation, "
@@ -87,8 +92,22 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
 
   private List<D> handleCatalogTable(LogicalRelation logRel) {
     CatalogTable catalogTable = logRel.catalogTable().get();
-    return Collections.singletonList(
-        datasetFactory.getDataset(catalogTable.location(), catalogTable.schema()));
+
+    DatasetIdentifier di = PathUtils.fromCatalogTable(catalogTable);
+
+    OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
+        context.getOpenLineage().newDatasetFacetsBuilder();
+    datasetFacetsBuilder.schema(PlanUtils.schemaFacet(context.getOpenLineage(), logRel.schema()));
+    datasetFacetsBuilder.dataSource(
+        PlanUtils.datasourceFacet(context.getOpenLineage(), di.getNamespace()));
+
+    getDatasetVersion(logRel)
+        .map(
+            version ->
+                datasetFacetsBuilder.version(
+                    context.getOpenLineage().newDatasetVersionDatasetFacet(version)));
+
+    return Collections.singletonList(datasetFactory.getDataset(di, datasetFacetsBuilder));
   }
 
   private List<D> handleHadoopFsRelation(LogicalRelation x) {
@@ -124,10 +143,8 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
               })
           .orElse(Collections.emptyList());
     } catch (Exception e) {
-      if (e.getClass()
-          .getName()
-          .equals(
-              "com.databricks.backend.daemon.data.client.adl.AzureCredentialNotFoundException")) {
+      if ("com.databricks.backend.daemon.data.client.adl.AzureCredentialNotFoundException"
+          .equals(e.getClass().getName())) {
         // This is a fallback that can occur when hadoop configurations cannot be
         // reached. This occurs in Azure Databricks when credential passthrough
         // is enabled and you're attempting to get the data lake credentials.
@@ -143,7 +160,7 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
         for (Path p : paths) {
           inputDatasets.add(datasetFactory.getDataset(p.toUri(), relation.schema()));
         }
-        if (inputDatasets.size() == 0) {
+        if (inputDatasets.isEmpty()) {
           return Collections.emptyList();
         } else {
           return inputDatasets;

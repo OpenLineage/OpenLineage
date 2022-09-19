@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -33,6 +38,7 @@ public class ExpressionDependencyCollector {
               .filter(collector -> collector.isDefinedAt(node))
               .forEach(collector -> collector.apply(node, builder));
 
+          CustomCollectorsUtils.collectExpressionDependencies(node, builder);
           List<NamedExpression> expressions = new LinkedList<>();
           if (node instanceof Project) {
             expressions.addAll(

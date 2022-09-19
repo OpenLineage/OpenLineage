@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark.agent.lifecycle.plan;
 
@@ -10,6 +13,7 @@ import com.google.common.collect.ImmutableMap.Builder;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange;
 import io.openlineage.client.OpenLineage.OutputDataset;
+import io.openlineage.spark.agent.util.DatasetFacetsUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -65,6 +69,7 @@ public class SaveIntoDataSourceCommandVisitor
             .isPresent();
   }
 
+  @Override
   public List<OutputDataset> apply(SaveIntoDataSourceCommand cmd) {
     // intentionally unimplemented
     throw new UnsupportedOperationException("apply(LogicalPlay) is not implemented");
@@ -90,6 +95,13 @@ public class SaveIntoDataSourceCommandVisitor
           command.options(),
           command.mode(),
           command.schema());
+    }
+
+    // Similar to Kafka, Azure Kusto also has some special handling. So we use the method
+    // below for extracting the dataset from Kusto write operations.
+    if (KustoRelationVisitor.isKustoSource(command.dataSource())) {
+      return KustoRelationVisitor.createKustoDatasets(
+          outputDataset(), command.options(), command.schema());
     }
 
     StructType schema = getSchema(command);
@@ -146,18 +158,15 @@ public class SaveIntoDataSourceCommandVisitor
 
               // rebuild whole dataset with a LifecycleStateChange facet added
               OpenLineage.DatasetFacets facets =
-                  context
-                      .getOpenLineage()
-                      .newDatasetFacets(
-                          ds.getFacets().getDocumentation(),
-                          ds.getFacets().getDataSource(),
-                          ds.getFacets().getVersion(),
-                          ds.getFacets().getSchema(),
-                          null,
-                          null,
+                  DatasetFacetsUtils.copyToBuilder(context, ds.getFacets())
+                      .lifecycleStateChange(
                           context
                               .getOpenLineage()
-                              .newLifecycleStateChangeDatasetFacet(lifecycleStateChange, null));
+                              .newLifecycleStateChangeDatasetFacet(
+                                  OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange
+                                      .OVERWRITE,
+                                  null))
+                      .build();
 
               OpenLineage.OutputDataset newDs =
                   context

@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark.agent.lifecycle.plan;
 
@@ -51,8 +54,7 @@ public class DropTableCommandVisitor
                           .newLifecycleStateChangeDatasetFacet(
                               OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange
                                   .DROP,
-                              null))
-                  .build()));
+                              null))));
 
     } else {
       // already deleted, do nothing

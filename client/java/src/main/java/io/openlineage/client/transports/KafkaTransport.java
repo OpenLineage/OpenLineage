@@ -1,7 +1,12 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.client.transports;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.client.Utils;
+import io.openlineage.client.OpenLineageClientUtils;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -28,7 +33,7 @@ public final class KafkaTransport extends Transport {
 
   @Override
   public void emit(@NonNull OpenLineage.RunEvent runEvent) {
-    final String eventAsJson = Utils.toJson(runEvent);
+    final String eventAsJson = OpenLineageClientUtils.toJson(runEvent);
     log.debug("Received lineage event: {}", eventAsJson);
     final ProducerRecord<String, String> record =
         new ProducerRecord<>(topicName, localServerId, eventAsJson);

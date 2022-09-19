@@ -1,5 +1,3 @@
-<!-- SPDX-License-Identifier: Apache-2.0 -->
-
 # OpenLineage Airflow Integration
 
 A library that integrates [Airflow `DAGs`]() with [OpenLineage](https://openlineage.io) for automatic metadata collection.
@@ -93,7 +91,7 @@ OpenLineage client depends on environment variables:
 * `OPENLINEAGE_URL` - point to service which will consume OpenLineage events
 * `OPENLINEAGE_API_KEY` - set if consumer of OpenLineage events requires `Bearer` authentication key
 * `OPENLINEAGE_NAMESPACE` - set if you are using something other than the `default` namespace for job namespace.
-* `OPENLINEAGE_AIRFLOW_DISABLE_SOURCE_CODE` - set to `True` if you don't want source code of callables provided to PythonOperator to be send in OpenLineage events
+* `OPENLINEAGE_AIRFLOW_DISABLE_SOURCE_CODE` - set to `False` if you want source code of callables provided in PythonOperator to be send in OpenLineage events
 
 For backwards compatibility, `openlineage-airflow` also support configuration via
 `MARQUEZ_URL`, `MARQUEZ_NAMESPACE` and `MARQUEZ_API_KEY` variables.
@@ -223,6 +221,13 @@ t1 = DataProcPySparkOperator(
         dag=dag)
 ```
 
+## Secrets redaction
+Integration uses Airflow SecretsMasker to hide secrets from produced metadata events. As not all fields in the metadata should be redacted `RedactMixin` is used to pass information which fields should be skipped from the process. 
+
+Typically you should subclass `RedactMixin` and use attribute `_skip_redact` as a list of names of fields to be skipped.
+
+However, all facets inheriting from `BaseFacet` should use `_additional_skip_redact` attribute as addition to common list of `['_producer', '_schemaURL']`.
+
 ## Development
 
 To install all dependencies for _local_ development:
@@ -238,6 +243,13 @@ Airflow 2.0+:
 ```bash
 $ pip install -r dev-requirements-2.x.txt
 ```
+
+There is also bash script that can run arbitrary Airflow image with OpenLineage integration build from current branch.
+Run it as
+```bash
+$ AIRFLOW_IMAGE=<airflow_image_with_tag> ./scripts/run-dev-airflow.sh [--rebuild]
+```
+Rebuild option forces docker images to be rebuilt.
 ### Unit tests
 To run the entire unit test suite use below command:
 ```bash

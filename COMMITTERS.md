@@ -1,8 +1,3 @@
-<!-- SPDX-License-Identifier: Apache-2.0 -->
-
-<!-- SPDX-License-Identifier: CC-BY-4.0 -->
-<!-- Copyright Contributors to the OpenLineage project. -->
-
 # OpenLineage Committers
 
 OpenLineage committers are the group of people that drive the content of OpenLineage.
@@ -27,6 +22,7 @@ The current OpenLineage committers are:
 | Paweł Leszczyński  | |
 | Will Johnson       | |
 | Michael Robinson   | |
+| Ross Turk          | |
 
 To understand how to become an OpenLineage committer.
 see the [OpenLineage Governance Guide](GOVERNANCE.md).

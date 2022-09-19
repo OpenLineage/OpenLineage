@@ -1,19 +1,20 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark.agent;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClient;
 import io.openlineage.client.OpenLineageClientException;
-import io.openlineage.client.Utils;
+import io.openlineage.client.OpenLineageClientUtils;
+import io.openlineage.client.transports.ConsoleTransport;
 import io.openlineage.client.transports.HttpTransport;
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.StringJoiner;
 import java.util.UUID;
 import lombok.Getter;
@@ -25,9 +26,20 @@ public class EventEmitter {
   @Getter private URI lineageURI;
   @Getter private String jobNamespace;
   @Getter private String parentJobName;
+  @Getter private Double timeout;
   @Getter private Optional<UUID> parentRunId;
 
   public EventEmitter(ArgumentParser argument) throws URISyntaxException {
+    this.jobNamespace = argument.getNamespace();
+    this.parentJobName = argument.getJobName();
+    this.parentRunId = convertToUUID(argument.getParentRunId());
+
+    if (argument.isConsoleMode()) {
+      this.client = new OpenLineageClient(new ConsoleTransport());
+      log.info("Init OpenLineageContext: will output events to console");
+      return;
+    }
+
     // Extract url parameters other than api_key to append to lineageURI
     String queryParams = null;
     if (argument.getUrlParams().isPresent()) {
@@ -45,12 +57,10 @@ public class EventEmitter {
 
     this.lineageURI =
         new URI(hostURI.getScheme(), hostURI.getAuthority(), uriPath, queryParams, null);
-    this.jobNamespace = argument.getNamespace();
-    this.parentJobName = argument.getJobName();
-    this.parentRunId = convertToUUID(argument.getParentRunId());
 
     HttpTransport.Builder builder = HttpTransport.builder().uri(this.lineageURI);
     argument.getApiKey().ifPresent(builder::apiKey);
+    argument.getTimeout().ifPresent(builder::timeout);
 
     this.client = OpenLineageClient.builder().transport(builder.build()).build();
     log.info(
@@ -61,26 +71,10 @@ public class EventEmitter {
   public void emit(OpenLineage.RunEvent event) {
     try {
       this.client.emit(event);
-      log.info("Emitting lineage completed successfully: {}", Utils.toJson(event));
+      log.debug(
+          "Emitting lineage completed successfully: {}", OpenLineageClientUtils.toJson(event));
     } catch (OpenLineageClientException exception) {
       log.error("Could not emit lineage w/ exception", exception);
-    }
-  }
-
-  private static URI getProducerUri() {
-    return URI.create(
-        String.format(
-            "https://github.com/OpenLineage/OpenLineage/tree/%s/integration/spark", getVersion()));
-  }
-
-  private static String getVersion() {
-    try {
-      Properties properties = new Properties();
-      InputStream is = EventEmitter.class.getResourceAsStream("version.properties");
-      properties.load(is);
-      return properties.getProperty("version");
-    } catch (IOException exception) {
-      return "main";
     }
   }
 

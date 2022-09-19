@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -24,8 +29,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @Slf4j
-public class ColumnLevelLineageUtilsNonV2CatalogTest {
+class ColumnLevelLineageUtilsNonV2CatalogTest {
 
+  private static final String FILE = "file";
+
+  @SuppressWarnings("PMD")
+  private static final String LOCAL_IP = "127.0.0.1";
+
+  private static final String T1_EXPECTED_NAME = "column_non_v2/t1";
   SparkSession spark;
   OpenLineageContext context;
   QueryExecution queryExecution = mock(QueryExecution.class);
@@ -57,9 +68,9 @@ public class ColumnLevelLineageUtilsNonV2CatalogTest {
             .master("local[*]")
             .appName("ColumnLevelLineage")
             .config("spark.extraListeners", LastQueryExecutionSparkEventListener.class.getName())
-            .config("spark.driver.host", "127.0.0.1")
-            .config("spark.driver.bindAddress", "127.0.0.1")
-            .config("spark.driver.extraJavaOptions", "-Dderby.system.home=/tmp/derby")
+            .config("spark.driver.host", LOCAL_IP)
+            .config("spark.driver.bindAddress", LOCAL_IP)
+            .config("spark.driver.extraJavaOptions", "-Dderby.system.home=/tmp/col_non_v2/derby")
             .enableHiveSupport()
             .getOrCreate();
 
@@ -80,7 +91,7 @@ public class ColumnLevelLineageUtilsNonV2CatalogTest {
   }
 
   @Test
-  public void testNonV2CreateTableAsSelect() {
+  void testNonV2CreateTableAsSelect() {
     spark.sql("CREATE TABLE t1 (a int, b int) LOCATION '/tmp/column_non_v2/t1'");
     spark.sql("INSERT INTO t1 VALUES (1,2)");
     spark.sql("CREATE TABLE t2 LOCATION '/tmp/column_non_v2/t2' AS SELECT * FROM t1");
@@ -90,12 +101,12 @@ public class ColumnLevelLineageUtilsNonV2CatalogTest {
     OpenLineage.ColumnLineageDatasetFacet facet =
         ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, schemaDatasetFacet).get();
 
-    assertColumnDependsOn(facet, "a", "file", "column_non_v2/t1", "a");
-    assertColumnDependsOn(facet, "b", "file", "column_non_v2/t1", "b");
+    assertColumnDependsOn(facet, "a", FILE, T1_EXPECTED_NAME, "a");
+    assertColumnDependsOn(facet, "b", FILE, T1_EXPECTED_NAME, "b");
   }
 
   @Test
-  public void testNonV2CatalogInsertIntoTable() {
+  void testNonV2CatalogInsertIntoTable() {
     spark.sql("CREATE TABLE t1 (a int, b int) LOCATION '/tmp/column_non_v2/t1'");
     spark.sql("INSERT INTO t1 VALUES (1,2)");
     spark.sql("CREATE TABLE t2 (a int, b int) LOCATION '/tmp/column_non_v2/t2'");
@@ -106,8 +117,8 @@ public class ColumnLevelLineageUtilsNonV2CatalogTest {
     OpenLineage.ColumnLineageDatasetFacet facet =
         ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, schemaDatasetFacet).get();
 
-    assertColumnDependsOn(facet, "a", "file", "column_non_v2/t1", "a");
-    assertColumnDependsOn(facet, "b", "file", "column_non_v2/t1", "b");
+    assertColumnDependsOn(facet, "a", FILE, T1_EXPECTED_NAME, "a");
+    assertColumnDependsOn(facet, "b", FILE, T1_EXPECTED_NAME, "b");
   }
 
   private void assertColumnDependsOn(

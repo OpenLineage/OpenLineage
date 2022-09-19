@@ -1,6 +1,7 @@
 #!/bin/bash
 #
-# SPDX-License-Identifier: Apache-2.0.
+# Copyright 2018-2022 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
 #
 # Usage: $ ./up.sh
 
@@ -67,6 +68,8 @@ AIRFLOW_VERSION=${AIRFLOW_IMAGE##*:}
 export AIRFLOW_VERSION=${AIRFLOW_VERSION::-10}
 export BIGQUERY_PREFIX=$(echo "$AIRFLOW_VERSION" | tr "-" "_" | tr "." "_")
 export DBT_DATASET_PREFIX=$(echo "$AIRFLOW_VERSION" | tr "-" "_" | tr "." "_")_dbt
+# just a hack to have same docker-compose for dev and CI env
+export PWD='.'
 
 docker-compose -f tests/docker-compose-2.yml down
 docker-compose -f tests/docker-compose-2.yml up --build --abort-on-container-exit airflow_init postgres

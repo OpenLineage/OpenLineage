@@ -29,8 +29,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import scala.collection.IndexedSeq;
 
-public class InMemoryRelationInputDatasetBuilderTest {
+class InMemoryRelationInputDatasetBuilderTest {
 
+  private static final String CACHE_MANAGER = "cacheManager";
   String CACHED_NAME = "some-table";
 
   OpenLineageContext context = mock(OpenLineageContext.class);
@@ -76,13 +77,13 @@ public class InMemoryRelationInputDatasetBuilderTest {
 
   @SneakyThrows
   @Test
-  public void testApply() {
+  void testApply() {
     IndexedSeq<CachedData> cachedItems =
         collectionAsScalaIterableConverter(Arrays.asList(cachedData)).asScala().toIndexedSeq();
 
     try (MockedStatic mocked = mockStatic(FieldUtils.class)) {
       Field cacheManagerField = mock(Field.class);
-      when(FieldUtils.getField(SharedState.class, "cacheManager", true))
+      when(FieldUtils.getField(SharedState.class, CACHE_MANAGER, true))
           .thenReturn(cacheManagerField);
       when(cacheManagerField.get(sharedState)).thenReturn(cacheManager);
 
@@ -99,7 +100,7 @@ public class InMemoryRelationInputDatasetBuilderTest {
 
   @SneakyThrows
   @Test
-  public void testApplyWithMultipleCachedPlans() {
+  void testApplyWithMultipleCachedPlans() {
     CachedRDDBuilder anotherCacheBuilder = mock(CachedRDDBuilder.class);
     CachedData anotherCachedData = mock(CachedData.class);
     InMemoryRelation anotherInMemoryRelation = mock(InMemoryRelation.class);
@@ -115,7 +116,7 @@ public class InMemoryRelationInputDatasetBuilderTest {
 
     try (MockedStatic mocked = mockStatic(FieldUtils.class)) {
       Field cacheManagerField = mock(Field.class);
-      when(FieldUtils.getField(SharedState.class, "cacheManager", true))
+      when(FieldUtils.getField(SharedState.class, CACHE_MANAGER, true))
           .thenReturn(cacheManagerField);
       when(cacheManagerField.get(sharedState)).thenReturn(cacheManager);
 
@@ -132,7 +133,7 @@ public class InMemoryRelationInputDatasetBuilderTest {
 
   @SneakyThrows
   @Test
-  public void testApplyWhenNoCachedPlan() {
+  void testApplyWhenNoCachedPlan() {
     IndexedSeq<CachedData> cachedItems =
         collectionAsScalaIterableConverter(Collections.<CachedData>emptyList())
             .asScala()
@@ -140,7 +141,7 @@ public class InMemoryRelationInputDatasetBuilderTest {
 
     try (MockedStatic mocked = mockStatic(FieldUtils.class)) {
       Field cacheManagerField = mock(Field.class);
-      when(FieldUtils.getField(SharedState.class, "cacheManager", true))
+      when(FieldUtils.getField(SharedState.class, CACHE_MANAGER, true))
           .thenReturn(cacheManagerField);
       when(cacheManagerField.get(sharedState)).thenReturn(cacheManager);
 
@@ -154,10 +155,10 @@ public class InMemoryRelationInputDatasetBuilderTest {
 
   @SneakyThrows
   @Test
-  public void testApplyWhenExceptionThrown() {
+  void testApplyWhenExceptionThrown() {
     try (MockedStatic mocked = mockStatic(FieldUtils.class)) {
       Field cacheManagerField = mock(Field.class);
-      when(FieldUtils.getField(SharedState.class, "cacheManager", true))
+      when(FieldUtils.getField(SharedState.class, CACHE_MANAGER, true))
           .thenReturn(cacheManagerField);
       when(cacheManagerField.get(sharedState)).thenThrow(new RuntimeException("message"));
 

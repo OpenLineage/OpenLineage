@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.spark.agent.lifecycle;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,11 +36,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 @ExtendWith(SparkAgentTestExtension.class)
-@Tag("spark3")
-public class DeltaDataSourceTest {
+@Tag("delta")
+class DeltaDataSourceTest {
 
   @Test
-  public void testInsertIntoDeltaSource(@TempDir Path tempDir, SparkSession spark)
+  void testInsertIntoDeltaSource(@TempDir Path tempDir, SparkSession spark)
       throws IOException, InterruptedException, TimeoutException {
     StructType tableSchema =
         new StructType(

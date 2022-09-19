@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark.agent.lifecycle.plan;
 
@@ -54,8 +57,7 @@ public class TruncateTableCommandVisitor
                           .newLifecycleStateChangeDatasetFacet(
                               OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange
                                   .TRUNCATE,
-                              null))
-                  .build()));
+                              null))));
 
     } else {
       // table does not exist, cannot prepare an event

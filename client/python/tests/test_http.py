@@ -1,4 +1,6 @@
-# SPDX-License-Identifier: Apache-2.0.
+# Copyright 2018-2022 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
+
 import datetime
 import uuid
 from unittest.mock import patch
@@ -14,7 +16,8 @@ from openlineage.client.transport.http import HttpConfig, HttpTransport
 def test_http_loads_full_config():
     config = HttpConfig.from_dict({
         "type": "http",
-        "url": "http://backend:5000/api/v1/lineage",
+        "url": "http://backend:5000",
+        "endpoint": "api/v1/lineage",
         "verify": False,
         "auth": {
             "type": "api_key",
@@ -22,7 +25,8 @@ def test_http_loads_full_config():
         },
     })
 
-    assert config.url == "http://backend:5000/api/v1/lineage"
+    assert config.url == "http://backend:5000"
+    assert config.endpoint == "api/v1/lineage"
     assert config.verify is False
     assert config.auth.api_key == "1500100900"
     assert isinstance(config.session, Session)
@@ -62,6 +66,34 @@ def test_client_with_http_transport_emits(session):
     client.emit(event)
     transport.session.post.assert_called_once_with(
         "http://backend:5000/api/v1/lineage",
+        Serde.to_json(event),
+        timeout=5.0,
+        verify=True
+    )
+
+
+@patch("requests.Session")
+def test_client_with_http_transport_emits_custom_endpoint(session):
+    config = HttpConfig.from_dict({
+        "type": "http",
+        "url": "http://backend:5000",
+        "endpoint": "custom/lineage",
+        "session": session
+    })
+    transport = HttpTransport(config)
+
+    client = OpenLineageClient(transport=transport)
+    event = RunEvent(
+        eventType=RunState.START,
+        eventTime=datetime.datetime.now().isoformat(),
+        run=Run(runId=str(uuid.uuid4())),
+        job=Job(namespace="http", name="test"),
+        producer="prod",
+    )
+
+    client.emit(event)
+    transport.session.post.assert_called_once_with(
+        "http://backend:5000/custom/lineage",
         Serde.to_json(event),
         timeout=5.0,
         verify=True

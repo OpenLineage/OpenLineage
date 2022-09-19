@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import static io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.OVERWRITE;
@@ -28,7 +33,7 @@ import scala.Predef;
 import scala.Tuple2;
 import scala.collection.Map;
 
-public class SaveIntoDataSourceCommandVisitorTest {
+class SaveIntoDataSourceCommandVisitorTest {
 
   SaveIntoDataSourceCommand command;
   OpenLineageContext context = mock(OpenLineageContext.class);

@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark.agent.lifecycle;
 
@@ -180,7 +183,7 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
                 new LogicalPlanRunFacetBuilder(context),
                 new SparkVersionFacetBuilder(context));
     if (DatabricksEnvironmentFacetBuilder.isDatabricksRuntime()) {
-      listBuilder.add(new DatabricksEnvironmentFacetBuilder(context));
+      listBuilder.add(new DatabricksEnvironmentFacetBuilder());
     }
     return listBuilder.build();
   }

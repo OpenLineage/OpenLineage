@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark.agent.lifecycle;
 
@@ -22,6 +25,9 @@ import org.assertj.core.api.Condition;
  */
 @Slf4j
 public class MatchesMapRecursively extends Condition<Map<String, Object>> {
+
+  private static final String PRODUCER_WITH_UNDERSCORE = "_producer";
+  private static final String PRODUCER = "producer";
 
   public MatchesMapRecursively(Map<String, Object> target, Set<String> ommittedKeys) {
     super(
@@ -89,7 +95,7 @@ public class MatchesMapRecursively extends Condition<Map<String, Object>> {
           eq =
               MatchesMapRecursively.predicate((List<Object>) target.get(k), omittedKeys)
                   .test((List<Object>) val);
-        } else if (k.equals("_producer") || k.equals("producer")) {
+        } else if (PRODUCER_WITH_UNDERSCORE.equals(k) || PRODUCER.equals(k)) {
           eq = Versions.OPEN_LINEAGE_PRODUCER_URI.toString().equals(val);
         } else if (val == null) {
           eq = true;

@@ -60,6 +60,10 @@ class BigQueryExtractor(BaseExtractor):
         stats = BigQueryDatasetsProvider(client=client).get_facets(bigquery_job_id)
         inputs = stats.inputs
         output = stats.output
+
+        for ds in inputs:
+            ds.input_facets = self._get_input_facets()
+
         run_facets = stats.run_facets
         job_facets = {
             "sql": SqlJobFacet(self.operator.sql)
@@ -105,3 +109,6 @@ class BigQueryExtractor(BaseExtractor):
 
         log.debug(f"bigquery_job_id: {bigquery_job_id}")
         return bigquery_job_id
+
+    def _get_input_facets(self):
+        return {}

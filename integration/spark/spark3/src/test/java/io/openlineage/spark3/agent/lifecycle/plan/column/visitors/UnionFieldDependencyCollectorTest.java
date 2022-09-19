@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.spark3.agent.lifecycle.plan.column.visitors;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -20,7 +25,7 @@ import org.apache.spark.sql.types.Metadata$;
 import org.junit.jupiter.api.Test;
 import scala.collection.Seq;
 
-public class UnionFieldDependencyCollectorTest {
+class UnionFieldDependencyCollectorTest {
 
   UnionDependencyVisitor visitor = new UnionDependencyVisitor();
   ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
@@ -36,13 +41,13 @@ public class UnionFieldDependencyCollectorTest {
           "name2", IntegerType$.MODULE$, false, Metadata$.MODULE$.empty(), exprId2, null);
 
   @Test
-  public void testIsDefinedAt() {
+  void testIsDefinedAt() {
     assertTrue(visitor.isDefinedAt(mock(Union.class)));
     assertFalse(visitor.isDefinedAt(mock(LogicalPlan.class)));
   }
 
   @Test
-  public void testCollect() {
+  void testCollect() {
     Union union =
         new Union(
             scala.collection.JavaConverters.collectionAsScalaIterableConverter(

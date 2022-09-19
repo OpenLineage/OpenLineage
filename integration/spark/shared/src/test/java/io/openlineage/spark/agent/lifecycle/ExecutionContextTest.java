@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark.agent.lifecycle;
 
@@ -7,7 +10,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-public class ExecutionContextTest {
+class ExecutionContextTest {
 
   @ParameterizedTest
   @CsvSource({
@@ -17,7 +20,7 @@ public class ExecutionContextTest {
     "JDBCRelationApplication,jdbc_relation_application",
     "Test With a Single LetterBetweenWords,test_with_a_single_letter_between_words"
   })
-  public void testCamelCaseToSnakeCase(String appName, String expected) {
+  void testCamelCaseToSnakeCase(String appName, String expected) {
     String actual =
         appName.replaceAll(ExecutionContext.CAMEL_TO_SNAKE_CASE, "_$1").toLowerCase(Locale.ROOT);
     Assertions.assertEquals(expected, actual);

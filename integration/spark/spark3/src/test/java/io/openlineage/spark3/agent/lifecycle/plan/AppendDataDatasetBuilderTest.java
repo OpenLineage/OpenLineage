@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.spark3.agent.lifecycle.plan;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -25,10 +30,11 @@ import org.apache.spark.sql.catalyst.analysis.NamedRelation;
 import org.apache.spark.sql.catalyst.plans.logical.AppendData;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
+import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-public class AppendDataDatasetBuilderTest {
+class AppendDataDatasetBuilderTest {
 
   OpenLineageContext context =
       OpenLineageContext.builder()
@@ -40,13 +46,13 @@ public class AppendDataDatasetBuilderTest {
   AppendDataDatasetBuilder builder = new AppendDataDatasetBuilder(context, factory);
 
   @Test
-  public void isDefinedAtLogicalPlan() {
+  void isDefinedAtLogicalPlan() {
     assertTrue(builder.isDefinedAtLogicalPlan(mock(AppendData.class)));
     assertFalse(builder.isDefinedAtLogicalPlan(mock(LogicalPlan.class)));
   }
 
   @Test
-  public void testApplyWithDataSourceV2Relation() {
+  void testApplyWithDataSourceV2Relation() {
     AppendData appendData = mock(AppendData.class);
     DataSourceV2Relation relation = mock(DataSourceV2Relation.class);
     OpenLineage.OutputDataset dataset = mock(OpenLineage.OutputDataset.class);
@@ -54,12 +60,14 @@ public class AppendDataDatasetBuilderTest {
 
     try (MockedStatic mockedPlanUtils3 = mockStatic(PlanUtils3.class)) {
       try (MockedStatic mockedFacetUtils = mockStatic(DatasetVersionDatasetFacetUtils.class)) {
-        when(DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(relation))
+        when(DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(
+                context, relation))
             .thenReturn(Optional.of("v2"));
         when(PlanUtils3.fromDataSourceV2Relation(eq(factory), eq(context), eq(relation), any()))
             .thenReturn(Collections.singletonList(dataset));
 
-        List<OpenLineage.OutputDataset> datasets = builder.apply(appendData);
+        List<OpenLineage.OutputDataset> datasets =
+            builder.apply(new SparkListenerSQLExecutionEnd(1L, 1L), appendData);
 
         assertEquals(1, datasets.size());
         assertEquals(dataset, datasets.get(0));
@@ -68,13 +76,13 @@ public class AppendDataDatasetBuilderTest {
   }
 
   @Test
-  public void testApplyWithoutDataSourceV2Relation() {
+  void testApplyWithoutDataSourceV2Relation() {
     AppendData appendData = mock(AppendData.class);
     when(appendData.table())
         .thenReturn(
             (NamedRelation)
                 mock(LogicalPlan.class, withSettings().extraInterfaces(NamedRelation.class)));
 
-    assertEquals(0, builder.apply(appendData).size());
+    assertEquals(0, builder.apply(new SparkListenerSQLExecutionEnd(1L, 1L), appendData).size());
   }
 }

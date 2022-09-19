@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.client.transports;
 
 import static org.apache.http.Consts.UTF_8;
@@ -8,7 +13,7 @@ import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClientException;
-import io.openlineage.client.Utils;
+import io.openlineage.client.OpenLineageClientUtils;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
@@ -19,10 +24,12 @@ import javax.annotation.Nullable;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 
@@ -30,25 +37,50 @@ import org.apache.http.util.EntityUtils;
 public final class HttpTransport extends Transport implements Closeable {
   private static final String API_V1 = "/api/v1";
 
-  private final HttpClient http;
+  private final CloseableHttpClient http;
   private final URI uri;
   private @Nullable final TokenProvider tokenProvider;
 
   public HttpTransport(@NonNull final HttpConfig httpConfig) {
-    this(HttpClientBuilder.create().build(), httpConfig);
+    this(withTimeout(httpConfig.getTimeout()), httpConfig);
   }
 
-  public HttpTransport(@NonNull final HttpClient httpClient, @NonNull final HttpConfig httpConfig) {
+  private static CloseableHttpClient withTimeout(Double timeout) {
+    int timeoutMs;
+    if (timeout == null) {
+      timeoutMs = 5000;
+    } else {
+      timeoutMs = (int) (timeout * 1000);
+    }
+
+    RequestConfig config =
+        RequestConfig.custom()
+            .setConnectTimeout(timeoutMs)
+            .setConnectionRequestTimeout(timeoutMs)
+            .setSocketTimeout(timeoutMs)
+            .build();
+    return HttpClientBuilder.create().setDefaultRequestConfig(config).build();
+  }
+
+  public HttpTransport(
+      @NonNull final CloseableHttpClient httpClient, @NonNull final HttpConfig httpConfig) {
     super(Type.HTTP);
     this.http = httpClient;
     try {
       URI configUri = httpConfig.getUrl();
       if (configUri.getPath() != null && !configUri.getPath().equals("")) {
+        if (httpConfig.getEndpoint() != null && !httpConfig.getEndpoint().equals("")) {
+          throw new OpenLineageClientException("You can't pass both uri and endpoint parameters.");
+        }
         this.uri = httpConfig.getUrl();
       } else {
+        String endpoint =
+            httpConfig.getEndpoint() != null && !httpConfig.getEndpoint().equals("")
+                ? httpConfig.getEndpoint()
+                : API_V1 + "/lineage";
         this.uri =
             new URIBuilder(httpConfig.getUrl())
-                .setPath(httpConfig.getUrl().getPath() + API_V1 + "/lineage")
+                .setPath(httpConfig.getUrl().getPath() + endpoint)
                 .build();
       }
     } catch (URISyntaxException e) {
@@ -59,7 +91,7 @@ public final class HttpTransport extends Transport implements Closeable {
 
   @Override
   public void emit(@NonNull OpenLineage.RunEvent runEvent) {
-    final String eventAsJson = Utils.toJson(runEvent);
+    final String eventAsJson = OpenLineageClientUtils.toJson(runEvent);
     log.debug("POST {}: {}", uri, eventAsJson);
     try {
       final HttpPost request = new HttpPost();
@@ -72,8 +104,10 @@ public final class HttpTransport extends Transport implements Closeable {
         request.addHeader(AUTHORIZATION, tokenProvider.getToken());
       }
 
-      final HttpResponse response = http.execute(request);
-      throwOnHttpError(response);
+      try (CloseableHttpResponse response = http.execute(request)) {
+        throwOnHttpError(response);
+        EntityUtils.consume(response.getEntity());
+      }
     } catch (IOException e) {
       throw new OpenLineageClientException(e);
     }
@@ -88,9 +122,7 @@ public final class HttpTransport extends Transport implements Closeable {
 
   @Override
   public void close() throws IOException {
-    if (http instanceof Closeable) {
-      ((Closeable) http).close();
-    }
+    http.close();
   }
 
   /** Returns an new {@link HttpTransport.Builder} object for building {@link HttpTransport}s. */
@@ -110,23 +142,25 @@ public final class HttpTransport extends Transport implements Closeable {
    * }</pre>
    */
   public static final class Builder {
-    private static final URI DEFAULT_OPENLINEAGE_URI = Utils.toUri("http://localhost:8080");
+    private static final URI DEFAULT_OPENLINEAGE_URI =
+        OpenLineageClientUtils.toUri("http://localhost:8080");
 
     private URI uri;
 
-    private @Nullable HttpClient httpClient;
+    private @Nullable CloseableHttpClient httpClient;
     private @Nullable TokenProvider tokenProvider;
+    private @Nullable Double timeout;
 
     private Builder() {
       this.uri = DEFAULT_OPENLINEAGE_URI;
     }
 
     public Builder uri(@NonNull String urlAsString) {
-      return uri(Utils.toUri(urlAsString));
+      return uri(OpenLineageClientUtils.toUri(urlAsString));
     }
 
     public Builder uri(@NonNull String urlAsString, @NonNull Map<String, String> queryParams) {
-      return uri(Utils.toUri(urlAsString), queryParams);
+      return uri(OpenLineageClientUtils.toUri(urlAsString), queryParams);
     }
 
     public Builder uri(@NonNull URI uri) {
@@ -144,7 +178,12 @@ public final class HttpTransport extends Transport implements Closeable {
       return this;
     }
 
-    public Builder http(@NonNull HttpClient httpClient) {
+    public Builder timeout(@Nullable Double timeout) {
+      this.timeout = timeout;
+      return this;
+    }
+
+    public Builder http(@NonNull CloseableHttpClient httpClient) {
       this.httpClient = httpClient;
       return this;
     }
@@ -169,6 +208,7 @@ public final class HttpTransport extends Transport implements Closeable {
       final HttpConfig httpConfig = new HttpConfig();
       httpConfig.setUrl(uri);
       httpConfig.setAuth(tokenProvider);
+      httpConfig.setTimeout(timeout);
       if (httpClient != null) {
         return new HttpTransport(httpClient, httpConfig);
       }

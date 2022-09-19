@@ -1,10 +1,15 @@
-# SPDX-License-Identifier: Apache-2.0.
+# Copyright 2018-2022 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
+
 import inspect
-from typing import Type
+from typing import Type, List
 
 import attr
 import importlib
 from warnings import warn
+import logging
+
+log = logging.getLogger(__name__)
 
 
 def import_from_string(path: str):
@@ -40,3 +45,11 @@ def get_only_specified_fields(clazz, params: dict) -> dict:
     return {
         key: value for key, value in params.items() if key in field_keys
     }
+
+
+class RedactMixin:
+    _skip_redact: List[str] = []
+
+    @property
+    def skip_redact(self) -> List[str]:
+        return self._skip_redact

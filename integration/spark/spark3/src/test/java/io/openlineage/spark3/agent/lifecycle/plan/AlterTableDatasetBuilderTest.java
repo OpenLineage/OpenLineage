@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark3.agent.lifecycle.plan;
 
@@ -24,6 +27,7 @@ import org.apache.spark.sql.catalyst.plans.logical.AlterTable;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.Table;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
+import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,7 +35,7 @@ import org.mockito.MockedStatic;
 import scala.collection.immutable.HashMap;
 import scala.collection.immutable.Map;
 
-public class AlterTableDatasetBuilderTest {
+class AlterTableDatasetBuilderTest {
 
   OpenLineageContext openLineageContext =
       OpenLineageContext.builder()
@@ -59,15 +63,16 @@ public class AlterTableDatasetBuilderTest {
 
   @Test
   @SneakyThrows
-  public void testApplyWhenTableNotFound() {
+  void testApplyWhenTableNotFound() {
     when(tableCatalog.loadTable(identifier)).thenThrow(mock(NoSuchTableException.class));
-    List<OpenLineage.OutputDataset> outputDatasets = builder.apply(alterTable);
+    List<OpenLineage.OutputDataset> outputDatasets =
+        builder.apply(new SparkListenerSQLExecutionEnd(1L, 1L), alterTable);
     assertEquals(0, outputDatasets.size());
   }
 
   @Test
   @SneakyThrows
-  public void testApplyWhenNoDatasetIdentifier() {
+  void testApplyWhenNoDatasetIdentifier() {
     when(tableCatalog.loadTable(identifier)).thenReturn(table);
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
       when(PlanUtils3.getDatasetIdentifier(
@@ -77,14 +82,15 @@ public class AlterTableDatasetBuilderTest {
               ScalaConversionUtils.<String, String>fromMap(tableProperties)))
           .thenReturn(Optional.empty());
 
-      List<OpenLineage.OutputDataset> outputDatasets = builder.apply(alterTable);
+      List<OpenLineage.OutputDataset> outputDatasets =
+          builder.apply(new SparkListenerSQLExecutionEnd(1L, 1L), alterTable);
       assertEquals(0, outputDatasets.size());
     }
   }
 
   @Test
   @SneakyThrows
-  public void testApply() {
+  void testApply() {
     when(tableCatalog.loadTable(identifier)).thenReturn(table);
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
       when(PlanUtils3.getDatasetIdentifier(
@@ -94,7 +100,8 @@ public class AlterTableDatasetBuilderTest {
               ScalaConversionUtils.<String, String>fromMap(tableProperties)))
           .thenReturn(Optional.of(di));
 
-      List<OpenLineage.OutputDataset> outputDatasets = builder.apply(alterTable);
+      List<OpenLineage.OutputDataset> outputDatasets =
+          builder.apply(new SparkListenerSQLExecutionEnd(1L, 1L), alterTable);
 
       assertEquals(1, outputDatasets.size());
       assertEquals("table", outputDatasets.get(0).getName());
@@ -104,11 +111,12 @@ public class AlterTableDatasetBuilderTest {
 
   @Test
   @SneakyThrows
-  public void testApplyDatasetVersionIncluded() {
+  void testApplyDatasetVersionIncluded() {
     when(tableCatalog.loadTable(identifier)).thenReturn(table);
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
       try (MockedStatic mockCatalog = mockStatic(CatalogUtils3.class)) {
         when(CatalogUtils3.getDatasetVersion(
+                openLineageContext,
                 tableCatalog,
                 identifier,
                 ScalaConversionUtils.<String, String>fromMap(tableProperties)))
@@ -121,7 +129,8 @@ public class AlterTableDatasetBuilderTest {
                 ScalaConversionUtils.<String, String>fromMap(tableProperties)))
             .thenReturn(Optional.of(di));
 
-        List<OpenLineage.OutputDataset> outputDatasets = builder.apply(alterTable);
+        List<OpenLineage.OutputDataset> outputDatasets =
+            builder.apply(new SparkListenerSQLExecutionEnd(1L, 1L), alterTable);
 
         assertEquals(1, outputDatasets.size());
         assertEquals("v2", outputDatasets.get(0).getFacets().getVersion().getDatasetVersion());

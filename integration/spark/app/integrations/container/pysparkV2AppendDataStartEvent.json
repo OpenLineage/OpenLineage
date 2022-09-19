@@ -18,7 +18,16 @@
           "type" : "long"
         }]
       },
-      "version" : {}
+      "version" : {},
+      "symlinks": {
+        "identifiers": [
+          {
+            "namespace": "/tmp/append_data",
+            "name": "db.source1",
+            "type": "TABLE"
+          }
+        ]
+      }
     }
   }, {
     "namespace" : "file",
@@ -34,7 +43,16 @@
           "type" : "long"
         }]
       },
-      "version" : {}
+      "version" : {},
+      "symlinks": {
+        "identifiers": [
+          {
+            "namespace": "/tmp/append_data",
+            "name": "db.source2",
+            "type": "TABLE"
+          }
+        ]
+      }
     }
   } ]
 }

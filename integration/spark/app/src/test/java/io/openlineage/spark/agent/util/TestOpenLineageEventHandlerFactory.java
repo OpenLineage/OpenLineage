@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark.agent.util;
 
@@ -50,9 +53,9 @@ public class TestOpenLineageEventHandlerFactory implements OpenLineageEventHandl
           String tableName =
               ((CreateDataSourceTableAsSelectCommand) x).table().identifier().table();
 
-          if (tableName.equals(FAILING_TABLE_NAME_FAIL_ON_APPLY)) {
+          if (FAILING_TABLE_NAME_FAIL_ON_APPLY.equals(tableName)) {
             return true;
-          } else if (tableName.equals(FAILING_TABLE_NAME_FAIL_ON_IS_DEFINED)) {
+          } else if (FAILING_TABLE_NAME_FAIL_ON_IS_DEFINED.equals(tableName)) {
             throw new RuntimeException(
                 "Failing CreateDataSourceTableAsSelectCommand on isDefinedAt method");
           } else {
@@ -83,6 +86,7 @@ public class TestOpenLineageEventHandlerFactory implements OpenLineageEventHandl
     }
   }
 
+  @Override
   public Collection<PartialFunction<LogicalPlan, List<OpenLineage.InputDataset>>>
       createInputDatasetQueryPlanVisitors(OpenLineageContext context) {
     return Collections.singletonList(failingCreateDataSourceTableAsSelectVisitor);

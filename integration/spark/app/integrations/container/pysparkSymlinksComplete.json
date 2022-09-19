@@ -1,0 +1,39 @@
+{
+  "eventType" : "COMPLETE",
+  "job" : {
+    "namespace" : "symlinks"
+  },
+  "outputs" : [
+    {
+      "namespace": "file",
+      "name": "/tmp/warehouse/test",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "key",
+              "type": "integer"
+            },
+            {
+              "name": "value",
+              "type": "string"
+            }
+          ]
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "name": "default.test",
+              "namespace": "hive://metastore",
+              "type": "TABLE"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

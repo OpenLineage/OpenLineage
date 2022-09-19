@@ -1,11 +1,13 @@
+# Copyright 2018-2022 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
+
+import copy
 import logging
 import threading
 import uuid
+from typing import TYPE_CHECKING, Optional, Callable, Union
 
 import attr
-
-from typing import TYPE_CHECKING, Optional, Callable
-
 from airflow.listeners import hookimpl
 
 from openlineage.airflow.adapter import OpenLineageAdapter
@@ -13,14 +15,14 @@ from openlineage.airflow.extractors import ExtractorManager
 from openlineage.airflow.utils import DagUtils, get_task_location, get_job_name, get_custom_facets
 
 if TYPE_CHECKING:
-    from airflow.models import TaskInstance, BaseOperator
+    from airflow.models import TaskInstance, BaseOperator, MappedOperator
     from sqlalchemy.orm import Session
 
 
 @attr.s(frozen=True)
 class ActiveRun:
     run_id: str = attr.ib()
-    task: "BaseOperator" = attr.ib()
+    task: Union["BaseOperator", "MappedOperator"] = attr.ib()
 
 
 class ActiveRunManager:
@@ -81,30 +83,33 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
 
     log.debug("OpenLineage listener got notification about task instance start")
     dagrun = task_instance.dag_run
-    task = task_instance.task
     dag = task_instance.task.dag
 
-    run_id = str(uuid.uuid4())
-    run_data_holder.set_active_run(task_instance, run_id)
-    parent_run_id = str(uuid.uuid3(uuid.NAMESPACE_URL, f'{dag.dag_id}.{dagrun.run_id}'))
-
     def on_running():
+        task_instance_copy = copy.deepcopy(task_instance)
+        task_instance_copy.render_templates()
+        task = task_instance_copy.task
+
+        run_id = str(uuid.uuid4())
+        run_data_holder.set_active_run(task_instance_copy, run_id)
+        parent_run_id = adapter.build_dag_run_id(dag.dag_id, dagrun.run_id)
+
         task_metadata = extractor_manager.extract_metadata(dagrun, task)
 
         adapter.start_task(
             run_id=run_id,
             job_name=get_job_name(task),
             job_description=dag.description,
-            event_time=DagUtils.get_start_time(task_instance.start_date),
+            event_time=DagUtils.get_start_time(task_instance_copy.start_date),
             parent_job_name=dag.dag_id,
             parent_run_id=parent_run_id,
             code_location=get_task_location(task),
             nominal_start_time=DagUtils.get_start_time(dagrun.execution_date),
-            nominal_end_time=DagUtils.to_iso_8601(task_instance.end_date),
+            nominal_end_time=DagUtils.to_iso_8601(task_instance_copy.end_date),
             task=task_metadata,
             run_facets={
                 **task_metadata.run_facets,
-                **get_custom_facets(task, dagrun.external_trigger)
+                **get_custom_facets(task, dagrun.external_trigger, task_instance_copy)
             }
         )
 

@@ -1,0 +1,57 @@
+{
+  "format-version" : 1,
+  "table-uuid" : "53e008c7-b247-4a63-8535-e38c92a434d2",
+  "location" : "/tmp/warehouse/db/sink",
+  "last-updated-ms" : 1654529643587,
+  "last-column-id" : 2,
+  "schema" : {
+    "type" : "struct",
+    "schema-id" : 0,
+    "fields" : [ {
+      "id" : 1,
+      "name" : "x",
+      "required" : false,
+      "type" : "int"
+    }, {
+      "id" : 2,
+      "name" : "y",
+      "required" : false,
+      "type" : "int"
+    } ]
+  },
+  "current-schema-id" : 0,
+  "schemas" : [ {
+    "type" : "struct",
+    "schema-id" : 0,
+    "fields" : [ {
+      "id" : 1,
+      "name" : "x",
+      "required" : false,
+      "type" : "int"
+    }, {
+      "id" : 2,
+      "name" : "y",
+      "required" : false,
+      "type" : "int"
+    } ]
+  } ],
+  "partition-spec" : [ ],
+  "default-spec-id" : 0,
+  "partition-specs" : [ {
+    "spec-id" : 0,
+    "fields" : [ ]
+  } ],
+  "last-partition-id" : 999,
+  "default-sort-order-id" : 0,
+  "sort-orders" : [ {
+    "order-id" : 0,
+    "fields" : [ ]
+  } ],
+  "properties" : {
+    "owner" : "mobuchowski"
+  },
+  "current-snapshot-id" : -1,
+  "snapshots" : [ ],
+  "snapshot-log" : [ ],
+  "metadata-log" : [ ]
+}

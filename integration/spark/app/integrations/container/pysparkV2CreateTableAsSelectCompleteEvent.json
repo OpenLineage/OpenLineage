@@ -22,6 +22,15 @@
           "type" : "long"
         } ]
       },
+      "symlinks": {
+        "identifiers": [
+          {
+            "namespace": "/tmp/v2",
+            "name": "db.target",
+            "type": "TABLE"
+          }
+        ]
+      },
       "version" : {},
       "columnLineage": {
         "fields": {

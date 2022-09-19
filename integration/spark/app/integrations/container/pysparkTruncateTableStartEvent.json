@@ -14,6 +14,15 @@
           "name": "file",
           "uri": "file"
         },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "/tmp/truncate_test",
+              "name": "default.truncate_table_test",
+              "type": "TABLE"
+            }
+          ]
+        },
         "lifecycleStateChange": {
           "lifecycleStateChange": "TRUNCATE"
         }

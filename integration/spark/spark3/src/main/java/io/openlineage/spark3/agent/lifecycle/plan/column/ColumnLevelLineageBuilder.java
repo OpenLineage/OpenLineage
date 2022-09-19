@@ -1,10 +1,15 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacetFields;
-import io.openlineage.client.Utils;
-import io.openlineage.client.shaded.com.fasterxml.jackson.core.JsonProcessingException;
-import io.openlineage.client.shaded.com.fasterxml.jackson.databind.ObjectMapper;
+import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Arrays;
@@ -18,17 +23,17 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 
 /**
  * Builder class used to store information required to build {@link
  * ColumnLineageDatasetFacetFields}. Single instance of the class is passed when traversing logical
  * plan. It stores input fields, output fields and dependencies between the expressions in {@link
- * LogicalPlan}. Dependency between expressions are used to identify inputs used to evaluate
- * specific output field.
+ * org.apache.spark.sql.catalyst.plans.logical.LogicalPlan}. Dependency between expressions are used
+ * to identify inputs used to evaluate specific output field.
  */
 @Slf4j
 public class ColumnLevelLineageBuilder {
@@ -39,7 +44,9 @@ public class ColumnLevelLineageBuilder {
   private final OpenLineage.SchemaDatasetFacet schema;
   private final OpenLineageContext context;
 
-  ColumnLevelLineageBuilder(OpenLineage.SchemaDatasetFacet schema, OpenLineageContext context) {
+  ColumnLevelLineageBuilder(
+      @NonNull final OpenLineage.SchemaDatasetFacet schema,
+      @NonNull final OpenLineageContext context) {
     this.schema = schema;
     this.context = context;
   }
@@ -88,7 +95,7 @@ public class ColumnLevelLineageBuilder {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    ObjectMapper mapper = Utils.newObjectMapper();
+    ObjectMapper mapper = OpenLineageClientUtils.newObjectMapper();
     try {
       sb.append("Inputs: ")
           .append(mapper.writeValueAsString(inputs))

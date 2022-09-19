@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark.agent;
 
@@ -35,6 +38,9 @@ import org.slf4j.LoggerFactory;
 public class SparkAgentTestExtension
     implements BeforeAllCallback, BeforeEachCallback, AfterEachCallback, ParameterResolver {
   public static final EventEmitter OPEN_LINEAGE_SPARK_CONTEXT = mock(EventEmitter.class);
+
+  @SuppressWarnings("PMD") // always point locally
+  private static final String LOCAL_IP = "127.0.0.1";
 
   @Override
   public void beforeAll(ExtensionContext context) throws Exception {
@@ -108,8 +114,8 @@ public class SparkAgentTestExtension
         .master("local[*]")
         .appName(testName)
         .config("spark.extraListeners", OpenLineageSparkListener.class.getName())
-        .config("spark.driver.host", "127.0.0.1")
-        .config("spark.driver.bindAddress", "127.0.0.1")
+        .config("spark.driver.host", LOCAL_IP)
+        .config("spark.driver.bindAddress", LOCAL_IP)
         .config("spark.sql.warehouse.dir", warehouseDir)
         .getOrCreate();
   }

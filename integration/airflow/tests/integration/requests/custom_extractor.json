@@ -19,7 +19,7 @@
  				"airflow_runArgs": {
  					"externalTrigger": false
  				},
- 				"parentRun": {
+ 				"parent": {
  					"job": {
  						"name": "custom_extractor",
  						"namespace": "food_delivery"

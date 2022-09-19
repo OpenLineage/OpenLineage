@@ -1,8 +1,3 @@
-<!-- SPDX-License-Identifier: Apache-2.0 -->
-
-<!-- SPDX-License-Identifier: CC-BY-4.0 -->
-<!-- Copyright Contributors to the OpenLineage project. -->
-
 # Code of Conduct
 
 All members of this project agree to adhere to the following Code of Conduct

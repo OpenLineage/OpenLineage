@@ -1,3 +1,6 @@
+// Copyright 2018-2022 contributors to the OpenLineage project
+// SPDX-License-Identifier: Apache-2.0
+
 use openlineage_sql::SqlMeta;
 
 #[macro_use]
@@ -74,6 +77,17 @@ fn insert_nested_select() {
         in_tables: table("top_delivery_times"),
         out_tables: table("popular_orders_day_of_week")
     })
+}
+
+#[test]
+fn insert_snowflake_table() {
+    assert_eq!(
+        test_sql_dialect("\n    INSERT INTO test_orders (ord, str, num) VALUES\n    (1, 'b', 15),\n    (2, 'a', 21),\n    (3, 'b', 7);\n   ", "snowflake"),
+        SqlMeta {
+            in_tables: vec![],
+            out_tables: table("test_orders")
+        }
+    )
 }
 
 #[test]

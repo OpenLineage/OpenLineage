@@ -25,10 +25,11 @@ x-airflow-base: &airflow-base
     AIRFLOW__LINEAGE__BACKEND: openlineage.lineage_backend.OpenLineageBackend
     AIRFLOW_CONN_MYSQL_CONN: mysql://food_delivery:food_delivery@mysql:3306/food_delivery
     AIRFLOW_CONN_BQ_CONN: google-cloud-platform://?extra__google_cloud_platform__project=openlineage-ci&extra__google_cloud_platform__key_path=%2Fopt%2Fconfig%2Fgcloud%2Fgcloud-service-key.json
-    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "False"
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: ${DAGS_ARE_PAUSED_AT_CREATION:-False}
     BIGQUERY_PREFIX: ${BIGQUERY_PREFIX}
     DBT_DATASET_PREFIX: ${DBT_DATASET_PREFIX}_dbt
     GOOGLE_APPLICATION_CREDENTIALS: /opt/config/gcloud/gcloud-service-key.json
+    OPENLINEAGE_AIRFLOW_DISABLE_SOURCE_CODE: "false"
     OPENLINEAGE_URL: http://backend:5000
     OPENLINEAGE_NAMESPACE: food_delivery
     OPENLINEAGE_EXTRACTORS: custom_extractor.CustomExtractor
@@ -36,11 +37,11 @@ x-airflow-base: &airflow-base
     SNOWFLAKE_USER: ${SNOWFLAKE_USER}
     SNOWFLAKE_PASSWORD: ${SNOWFLAKE_PASSWORD}
     AIRFLOW__SECRETS__BACKEND: airflow.secrets.local_filesystem.LocalFilesystemBackend
-    AIRFLOW__SECRETS__BACKEND_KWARGS: '{ "connections_file_path": "/opt/data/secrets/connections.json" }'
+    AIRFLOW__SECRETS__BACKEND_KWARGS: '{ "connections_file_path": "/opt/data/secrets/connections.json", "variables_file_path": "/opt/data/secrets/variables.json" }'
     AIRFLOW_CONN_SNOWFLAKE_CONN: "snowflake://${SNOWFLAKE_USER}:${SNOWFLAKE_PASSWORD}@${SNOWFLAKE_URI}/OPENLINEAGE?account=${SNOWFLAKE_ACCOUNT_ID}&database=SANDBOX&region=us-east-1&warehouse=ROBOTS&role=OPENLINEAGE"
   volumes:
       - ./airflow/config/log_config.py:/opt/airflow/config/log_config.py
-      - ./airflow/logs:/opt/airflow/logs
+      - $PWD/airflow/logs:/opt/airflow/logs
       - ./airflow/dags:/opt/airflow/dags
       - ../gcloud:/opt/config/gcloud
 
@@ -84,6 +85,20 @@ services:
       timeout: 10s
       retries: 5
 
+  airflow:
+    profiles:
+      - dev
+    <<: *airflow-base
+    command: webserver
+    ports:
+      - 8080:8080
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    restart: always
+
   backend:
     build:
       context: ../server
@@ -92,7 +107,7 @@ services:
       - FLASK_RUN_PORT=5000
       - SERVER_EVENTS=/opt/airflow/events
     volumes:
-      - ./events:/opt/airflow/events
+      - $PWD/events:/opt/airflow/events
 
   airflow_init:
     <<: *airflow-base

@@ -1,10 +1,14 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark.agent;
 
 import static io.openlineage.spark.agent.ArgumentParser.DEFAULTS;
 import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptional;
 import static io.openlineage.spark.agent.util.SparkConfUtils.findSparkConfigKey;
+import static io.openlineage.spark.agent.util.SparkConfUtils.findSparkConfigKeyDouble;
 import static io.openlineage.spark.agent.util.SparkConfUtils.findSparkUrlParams;
 
 import io.openlineage.client.Environment;
@@ -53,12 +57,14 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       Collections.synchronizedMap(new HashMap<>());
   private static final Map<Integer, ExecutionContext> rddExecutionRegistry =
       Collections.synchronizedMap(new HashMap<>());
+  public static final String SPARK_CONF_CONSOLE_TRANSPORT = "openlineage.consoleTransport";
   public static final String SPARK_CONF_URL_KEY = "openlineage.url";
   public static final String SPARK_CONF_HOST_KEY = "openlineage.host";
   public static final String SPARK_CONF_API_VERSION_KEY = "openlineage.version";
   public static final String SPARK_CONF_NAMESPACE_KEY = "openlineage.namespace";
   public static final String SPARK_CONF_JOB_NAME_KEY = "openlineage.parentJobName";
   public static final String SPARK_CONF_PARENT_RUN_ID_KEY = "openlineage.parentRunId";
+  public static final String SPARK_CONF_TIMEOUT = "openlineage.timeout";
   public static final String SPARK_CONF_API_KEY = "openlineage.apiKey";
   public static final String SPARK_CONF_URL_PARAM_PREFIX = "openlineage.url.param";
   private static WeakHashMap<RDD<?>, Configuration> outputs = new WeakHashMap<>();
@@ -82,6 +88,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     if (isDisabled) {
       return;
     }
+    initializeContextFactoryIfNotInitialized();
     if (event instanceof SparkListenerSQLExecutionStart) {
       sparkSQLExecStart((SparkListenerSQLExecutionStart) event);
     } else if (event instanceof SparkListenerSQLExecutionEnd) {
@@ -109,6 +116,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     if (isDisabled) {
       return;
     }
+    initializeContextFactoryIfNotInitialized();
     Optional<ActiveJob> activeJob =
         asJavaOptional(
                 SparkSession.getDefaultSession()
@@ -209,6 +217,9 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     }
   }
 
+  @SuppressWarnings(
+      "PMD") // javadoc -> Closing a ByteArrayOutputStream has no effect. The methods in this class
+  // can be called after the stream has been closed without generating an IOException.
   private static OpenLineage.RunFacets errorRunFacet(Exception e, OpenLineage ol) {
     OpenLineage.RunFacet errorFacet = ol.newRunFacet();
     ByteArrayOutputStream buffer = new ByteArrayOutputStream();
@@ -259,6 +270,10 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
    */
   @Override
   public void onApplicationStart(SparkListenerApplicationStart applicationStart) {
+    initializeContextFactoryIfNotInitialized();
+  }
+
+  private void initializeContextFactoryIfNotInitialized() {
     if (contextFactory != null || isDisabled) {
       return;
     }
@@ -294,11 +309,19 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       String jobName = findSparkConfigKey(conf, SPARK_CONF_JOB_NAME_KEY, DEFAULTS.getJobName());
       String runId =
           findSparkConfigKey(conf, SPARK_CONF_PARENT_RUN_ID_KEY, DEFAULTS.getParentRunId());
+      Optional<Double> timeout = findSparkConfigKeyDouble(conf, SPARK_CONF_TIMEOUT);
       Optional<String> apiKey =
           findSparkConfigKey(conf, SPARK_CONF_API_KEY).filter(str -> !str.isEmpty());
       Optional<Map<String, String>> urlParams =
           findSparkUrlParams(conf, SPARK_CONF_URL_PARAM_PREFIX);
-      return new ArgumentParser(host, version, namespace, jobName, runId, apiKey, urlParams);
+
+      boolean consoleMode =
+          findSparkConfigKey(conf, SPARK_CONF_CONSOLE_TRANSPORT)
+              .map(v -> Boolean.valueOf(v))
+              .filter(v -> v)
+              .orElse(false);
+      return new ArgumentParser(
+          host, version, namespace, jobName, runId, timeout, apiKey, urlParams, consoleMode);
     }
   }
 }

@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark.agent.util;
 
@@ -8,9 +11,12 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.spark.SparkConf;
 import scala.Option;
 
+@Slf4j
 public class SparkConfUtils {
   private static final String metastoreUriKey = "spark.sql.hive.metastore.uris";
   private static final String metastoreHadoopUriKey = "spark.hadoop.hive.metastore.uris";
@@ -27,6 +33,23 @@ public class SparkConfUtils {
     opt = conf.getOption("spark." + name);
     if (opt.isDefined()) {
       return Optional.of(opt.get());
+    }
+    return Optional.empty();
+  }
+
+  public static Optional<Double> findSparkConfigKeyDouble(SparkConf conf, String name) {
+    Option<String> opt = conf.getOption(name);
+    if (!opt.isDefined()) {
+      opt = conf.getOption("spark." + name);
+    }
+    if (opt.isDefined()) {
+      try {
+        if (StringUtils.isNotBlank(opt.get())) {
+          return Optional.of(Double.parseDouble(opt.get()));
+        }
+      } catch (NumberFormatException e) {
+        log.warn("Value of timeout is not parsable");
+      }
     }
     return Optional.empty();
   }
@@ -58,7 +81,6 @@ public class SparkConfUtils {
     scala.Tuple2<String, String>[] urlConfigs = conf.getAllWithPrefix("spark." + prefix + ".");
     for (scala.Tuple2<String, String> param : urlConfigs) {
       urlParams.put(param._1, param._2);
-      System.out.println(param._1);
     }
 
     return Optional.ofNullable(urlParams);

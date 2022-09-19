@@ -16,6 +16,15 @@
         },
         "lifecycleStateChange": {
           "lifecycleStateChange": "DROP"
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "/tmp/v2_drop",
+              "name": "db.drop_table_test",
+              "type": "TABLE"
+            }
+          ]
         }
       }
     }

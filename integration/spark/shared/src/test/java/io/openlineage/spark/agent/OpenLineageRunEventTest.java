@@ -1,13 +1,16 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark.agent;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.client.OpenLineage;
-import io.openlineage.client.Utils;
-import io.openlineage.client.shaded.com.fasterxml.jackson.core.type.TypeReference;
-import io.openlineage.client.shaded.com.fasterxml.jackson.databind.ObjectMapper;
+import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.spark.agent.lifecycle.MatchesMapRecursively;
 import java.io.IOException;
 import java.net.URI;
@@ -21,14 +24,14 @@ import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
-public class OpenLineageRunEventTest {
+class OpenLineageRunEventTest {
 
   private final TypeReference<Map<String, Object>> mapTypeReference =
       new TypeReference<Map<String, Object>>() {};
 
   @Test
   public void testSerializeRunEvent() throws IOException, URISyntaxException {
-    ObjectMapper mapper = Utils.newObjectMapper();
+    ObjectMapper mapper = OpenLineageClientUtils.newObjectMapper();
 
     ZonedDateTime dateTime = ZonedDateTime.parse("2021-01-01T00:00:01.000000000+00:00[UTC]");
     OpenLineage ol =
@@ -38,10 +41,13 @@ public class OpenLineageRunEventTest {
 
     UUID runId = UUID.fromString("5f24c93c-2ce9-49dc-82e7-95ab4915242f");
     OpenLineage.RunFacets runFacets =
-        ol.newRunFacets(
-            ol.newParentRunFacet(
-                ol.newParentRunFacetRun(runId), ol.newParentRunFacetJob("namespace", "jobName")),
-            null);
+        ol.newRunFacetsBuilder()
+            .parent(
+                ol.newParentRunFacet(
+                    ol.newParentRunFacetRun(runId),
+                    ol.newParentRunFacetJob("namespace", "jobName")))
+            .errorMessage(ol.newErrorMessageRunFacet("failed", "JAVA", "<stack_trace>"))
+            .build();
     OpenLineage.Run run = ol.newRun(runId, runFacets);
     OpenLineage.DocumentationJobFacet documentationJobFacet =
         ol.newDocumentationJobFacetBuilder().description("test documentation").build();

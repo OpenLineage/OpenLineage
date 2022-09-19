@@ -1,3 +1,4 @@
+# Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
 import json
@@ -44,6 +45,7 @@ def serialize(inst, field, value):
         "tests/dbt/catalog",
         "tests/dbt/fail",
         "tests/dbt/build",
+        "tests/dbt/compiled_code",
         "tests/dbt/spark/thrift",
         "tests/dbt/spark/odbc"
     ]

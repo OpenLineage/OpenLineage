@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.spark3.agent.utils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -29,7 +34,7 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import scala.Option;
 
-public class DatasetVersionDatasetFacetUtilsTest {
+class DatasetVersionDatasetFacetUtilsTest {
 
   DataSourceV2Relation v2Relation = mock(DataSourceV2Relation.class);
   Identifier identifier = mock(Identifier.class);
@@ -46,7 +51,7 @@ public class DatasetVersionDatasetFacetUtilsTest {
   OpenLineageContext openLineageContext = mock(OpenLineageContext.class);
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     when(logicalRelation.relation()).thenReturn(fsRelation);
     when(logicalRelation.catalogTable()).thenReturn(Option.apply(catalogTable));
     when(catalogTable.provider()).thenReturn(Option.apply("delta"));
@@ -56,49 +61,54 @@ public class DatasetVersionDatasetFacetUtilsTest {
   }
 
   @Test
-  public void testExtractVersionFromDataSourceV2RelationWhenNoIdentifier() {
+  void testExtractVersionFromDataSourceV2RelationWhenNoIdentifier() {
     when(v2Relation.identifier()).thenReturn(Option.empty());
     assertEquals(
         Optional.empty(),
-        DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(v2Relation));
+        DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(
+            openLineageContext, v2Relation));
   }
 
   @Test
-  public void testExtractVersionFromDataSourceV2RelationWhenNoCatalog() {
+  void testExtractVersionFromDataSourceV2RelationWhenNoCatalog() {
     when(v2Relation.identifier()).thenReturn(Option.apply(identifier));
     when(v2Relation.catalog()).thenReturn(Option.empty());
     assertEquals(
         Optional.empty(),
-        DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(v2Relation));
+        DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(
+            openLineageContext, v2Relation));
   }
 
   @Test
-  public void testExtractVersionFromDataSourceV2RelationWhenCatalogIsNotTableCatalog() {
+  void testExtractVersionFromDataSourceV2RelationWhenCatalogIsNotTableCatalog() {
     when(v2Relation.identifier()).thenReturn(Option.apply(identifier));
     when(v2Relation.catalog()).thenReturn(Option.apply(mock(CatalogPlugin.class)));
     assertEquals(
         Optional.empty(),
-        DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(v2Relation));
+        DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(
+            openLineageContext, v2Relation));
   }
 
   @Test
-  public void testExtractVersionFromDataSourceV2Relation() {
+  void testExtractVersionFromDataSourceV2Relation() {
     when(v2Relation.identifier()).thenReturn(Option.apply(identifier));
     when(v2Relation.catalog()).thenReturn(Option.apply(tableCatalog));
     when(v2Relation.table()).thenReturn(table);
     when(table.properties()).thenReturn(tableProperties);
 
     try (MockedStatic<CatalogUtils3> mocked = mockStatic(CatalogUtils3.class)) {
-      when(CatalogUtils3.getDatasetVersion(tableCatalog, identifier, tableProperties))
+      when(CatalogUtils3.getDatasetVersion(
+              openLineageContext, tableCatalog, identifier, tableProperties))
           .thenReturn(Optional.of("some-version"));
       assertEquals(
           Optional.of("some-version"),
-          DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(v2Relation));
+          DatasetVersionDatasetFacetUtils.extractVersionFromDataSourceV2Relation(
+              openLineageContext, v2Relation));
     }
   }
 
   @Test
-  public void testExtractVersionFromLogicalRelationWhenNotHadoopFsRelation() {
+  void testExtractVersionFromLogicalRelationWhenNotHadoopFsRelation() {
     when(logicalRelation.relation()).thenReturn(mock(BaseRelation.class));
     assertEquals(
         Optional.empty(),
@@ -106,7 +116,7 @@ public class DatasetVersionDatasetFacetUtilsTest {
   }
 
   @Test
-  public void testExtractVersionFromLogicalRelationWhenCatalogTableNotDefined() {
+  void testExtractVersionFromLogicalRelationWhenCatalogTableNotDefined() {
     when(logicalRelation.catalogTable()).thenReturn(Option.empty());
     assertEquals(
         Optional.empty(),
@@ -114,7 +124,7 @@ public class DatasetVersionDatasetFacetUtilsTest {
   }
 
   @Test
-  public void testExtractVersionFromLogicalRelationWhenProviderNotDefined() {
+  void testExtractVersionFromLogicalRelationWhenProviderNotDefined() {
     when(catalogTable.provider()).thenReturn(Option.empty());
     assertEquals(
         Optional.empty(),
@@ -122,7 +132,7 @@ public class DatasetVersionDatasetFacetUtilsTest {
   }
 
   @Test
-  public void testExtractVersionFromLogicalRelationWhenProviderNotDelta() {
+  void testExtractVersionFromLogicalRelationWhenProviderNotDelta() {
     when(catalogTable.provider()).thenReturn(Option.apply("non-delta"));
     assertEquals(
         Optional.empty(),
@@ -130,7 +140,7 @@ public class DatasetVersionDatasetFacetUtilsTest {
   }
 
   @Test
-  public void testExtractVersionFromLogicalRelationWhenNoDeltaClasses() {
+  void testExtractVersionFromLogicalRelationWhenNoDeltaClasses() {
     try (MockedStatic mocked =
         mockStatic(DatasetVersionDatasetFacetUtils.class, Mockito.CALLS_REAL_METHODS)) {
       when(DatasetVersionDatasetFacetUtils.hasDeltaClasses()).thenReturn(false);
@@ -141,7 +151,7 @@ public class DatasetVersionDatasetFacetUtilsTest {
   }
 
   @Test
-  public void testExtractVersionFromLogicalRelationWhenLocationNotTahoeLogFileIndex() {
+  void testExtractVersionFromLogicalRelationWhenLocationNotTahoeLogFileIndex() {
     when(fsRelation.location()).thenReturn(mock(FileIndex.class));
     assertEquals(
         Optional.empty(),
@@ -149,7 +159,7 @@ public class DatasetVersionDatasetFacetUtilsTest {
   }
 
   @Test
-  public void testExtractVersionFromLogicalRelation() {
+  void testExtractVersionFromLogicalRelation() {
     when(snapshot.version()).thenReturn(1L);
     assertEquals(
         Optional.of("1"),
@@ -157,7 +167,7 @@ public class DatasetVersionDatasetFacetUtilsTest {
   }
 
   @Test
-  public void testIncludeDatasetVersion() {
+  void testIncludeDatasetVersion() {
     OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder = new OpenLineage.DatasetFacetsBuilder();
     DataSourceV2Relation relation = mock(DataSourceV2Relation.class);
 
@@ -171,7 +181,8 @@ public class DatasetVersionDatasetFacetUtilsTest {
     when(table.properties()).thenReturn(tableProperties);
 
     try (MockedStatic mocked = mockStatic(CatalogUtils3.class)) {
-      when(CatalogUtils3.getDatasetVersion(tableCatalog, identifier, tableProperties))
+      when(CatalogUtils3.getDatasetVersion(
+              openLineageContext, tableCatalog, identifier, tableProperties))
           .thenReturn(Optional.of("v2"));
       DatasetVersionDatasetFacetUtils.includeDatasetVersion(
           openLineageContext, datasetFacetsBuilder, relation);
@@ -180,7 +191,7 @@ public class DatasetVersionDatasetFacetUtilsTest {
   }
 
   @Test
-  public void testIncludeDatasetVersionWhenNoDatasetVersion() {
+  void testIncludeDatasetVersionWhenNoDatasetVersion() {
     OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder = new OpenLineage.DatasetFacetsBuilder();
     DataSourceV2Relation relation = mock(DataSourceV2Relation.class);
 
@@ -190,7 +201,8 @@ public class DatasetVersionDatasetFacetUtilsTest {
     when(table.properties()).thenReturn(tableProperties);
 
     try (MockedStatic mocked = mockStatic(CatalogUtils3.class)) {
-      when(CatalogUtils3.getDatasetVersion(tableCatalog, identifier, tableProperties))
+      when(CatalogUtils3.getDatasetVersion(
+              openLineageContext, tableCatalog, identifier, tableProperties))
           .thenReturn(Optional.empty());
       DatasetVersionDatasetFacetUtils.includeDatasetVersion(
           openLineageContext, datasetFacetsBuilder, relation);

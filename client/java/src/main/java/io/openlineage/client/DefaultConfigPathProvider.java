@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.client;
 
 import java.io.File;
@@ -9,6 +14,7 @@ import java.util.List;
 public class DefaultConfigPathProvider implements ConfigPathProvider {
   private static final String OPENLINEAGE_YML = "openlineage.yml";
 
+  @Override
   public List<Path> getPaths() {
     List<Path> paths = new ArrayList<>();
 

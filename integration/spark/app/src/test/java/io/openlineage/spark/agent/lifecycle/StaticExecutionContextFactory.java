@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark.agent.lifecycle;
 
@@ -20,7 +23,6 @@ import java.util.concurrent.TimeoutException;
 import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
-import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.QueryExecution;
@@ -74,13 +76,7 @@ public class StaticExecutionContextFactory extends ContextFactory {
   @Override
   public ExecutionContext createRddExecutionContext(int jobId) {
     RddExecutionContext rdd =
-        new RddExecutionContext(
-            OpenLineageContext.builder()
-                .sparkContext(SparkContext.getOrCreate())
-                .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
-                .build(),
-            jobId,
-            openLineageEventEmitter) {
+        new RddExecutionContext(openLineageEventEmitter) {
           @Override
           public void start(SparkListenerJobStart jobStart) {
             try {
@@ -119,11 +115,11 @@ public class StaticExecutionContextFactory extends ContextFactory {
         .map(
             qe -> {
               SparkSession session = qe.sparkSession();
-              SQLContext sqlContext = qe.sparkPlan().sqlContext();
+              SparkContext sparkContext = qe.sparkPlan().sparkContext();
               OpenLineageContext olContext =
                   OpenLineageContext.builder()
                       .sparkSession(Optional.of(session))
-                      .sparkContext(sqlContext.sparkContext())
+                      .sparkContext(sparkContext)
                       .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
                       .queryExecution(qe)
                       .build();

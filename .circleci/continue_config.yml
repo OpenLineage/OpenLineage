@@ -76,6 +76,7 @@ jobs:
             - v1-client-java-{{ .Branch }}
       - run: ./gradlew --no-daemon --stacktrace build
       - run: ./gradlew --no-daemon jacocoTestReport
+      - run: ./gradlew --no-daemon --info check
       - run: bash <(curl -s https://codecov.io/bash)
       - run: ./gradlew javadoc
       - store_test_results:
@@ -83,6 +84,9 @@ jobs:
       - store_artifacts:
           path: build/reports/tests/test
           destination: test-report
+      - store_artifacts:
+          path: build/reports/tests/pmd
+          destination: pmd-report
       - save_cache:
           key: v1-client-java-{{ .Branch }}-{{ .Revision }}
           paths:
@@ -101,10 +105,13 @@ jobs:
           export RELEASE_USERNAME=$(echo $SONATYPE_USER)
 
           # publish jar to maven local so it can be found by dependents
-          ./gradlew publishToMavenLocal
+          ./gradlew publishToMavenLocal --info
 
           # Publish *.jar
-          ./gradlew --no-daemon publish
+          ./gradlew --no-daemon publish --info
+      - store_artifacts:
+          path: ./build/libs
+          destination: java-client-artifacts
       - save_cache:
           key: v1-release-client-java-{{ .Branch }}-{{ .Revision }}
           paths:
@@ -149,6 +156,10 @@ jobs:
           cd -
           # Publish *.jar
           ./gradlew --no-daemon publish
+      - store_artifacts:
+          path: ./build/libs
+          destination: spark-client-artifacts
+
 
   publish-snapshot-integration-spark:
     working_directory: ~/openlineage/integration/spark
@@ -199,6 +210,88 @@ jobs:
           when: on_fail
           command: cat build/test-results/test/TEST-*.xml
       - run: ./gradlew --no-daemon jacocoTestReport
+      - run: ./gradlew --no-daemon --info check
+      - run: ./gradlew javadoc
+      - store_test_results:
+          path: build/test-results/test
+      - store_artifacts:
+          path: build/reports/tests/test
+          destination: test-report
+      - store_artifacts:
+          path: build/reports/tests/pmd
+          destination: pmd-report
+      - save_cache:
+          key: v1-integration-spark-{{ .Branch }}-{{ .Revision }}
+          paths:
+            - ~/.gradle
+
+  release-integration-flink:
+    working_directory: ~/openlineage/integration/flink
+    docker:
+      - image: cimg/openjdk:11
+    steps:
+      - *checkout_project_root
+      - restore_cache:
+          keys:
+            - v1-release-client-java-{{ .Branch }}-{{ .Revision }}
+            - v1-release-client-java-{{ .Branch }}
+      - run: |
+          # Get, then decode the GPG private key used to sign *.jar
+          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
+          export RELEASE_PASSWORD=$(echo $SONATYPE_PASSWORD)
+          export RELEASE_USERNAME=$(echo $SONATYPE_USER)
+
+          cd ../../client/java
+          ./gradlew --no-daemon publishToMavenLocal
+          cd -
+          # Publish *.jar
+          ./gradlew --no-daemon publish
+
+  publish-snapshot-integration-flink:
+    working_directory: ~/openlineage/integration/flink
+    docker:
+      - image: cimg/openjdk:11
+    steps:
+      - *checkout_project_root
+      - restore_cache:
+          keys:
+            - v1-release-client-java-snapshot-{{ .Branch }}-{{ .Revision }}
+            - v1-release-client-java-snapshot-{{ .Branch }}
+      - run: |
+          # Get, then decode the GPG private key used to sign *.jar
+          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
+          export RELEASE_PASSWORD=$(echo $ARTIFACTORY_PASSWORD)
+          export RELEASE_USERNAME=$(echo $ARTIFACTORY_USERNAME)
+          cd ../../client/java
+          ./gradlew --no-daemon publishToMavenLocal
+          cd -
+          # Publish *.jar
+          ./gradlew --no-daemon publish
+
+  build-integration-flink:
+    parameters:
+      flink-version:
+        type: string
+    working_directory: ~/openlineage/integration/flink
+    docker:
+      - image: cimg/openjdk:11.0
+    resource_class: large
+    environment:
+      TESTCONTAINERS_RYUK_DISABLED: "true"
+    steps:
+      - *checkout_project_root
+      - restore_cache:
+          keys:
+            - v1-integration-flink-{{ .Branch }}-{{ .Revision }}
+            - v1-integration-flink-{{ .Branch }}
+      - attach_workspace:
+          at: .
+      - run: (cd ./../../client/java/ && ./gradlew --no-daemon --stacktrace publishToMavenLocal)
+      - run: ./gradlew --no-daemon --stacktrace build -Pflink.version=<< parameters.flink-version >>
+      - run:
+          when: on_fail
+          command: cat build/test-results/test/TEST-*.xml
+      - run: ./gradlew --no-daemon jacocoTestReport
       - run: ./gradlew javadoc
       - store_test_results:
           path: build/test-results/test
@@ -206,7 +299,7 @@ jobs:
           path: build/reports/tests/test
           destination: test-report
       - save_cache:
-          key: v1-integration-spark-{{ .Branch }}-{{ .Revision }}
+          key: v1-integration-flink-{{ .Branch }}-{{ .Revision }}
           paths:
             - ~/.gradle
 
@@ -282,6 +375,22 @@ jobs:
           path: ./target/wheels
           destination: sql-artifacts
 
+  build-integration-sql-macos:
+    working_directory: ~/openlineage/integration/sql
+    macos:
+      xcode: 13.2.1
+    resource_class: large
+    steps:
+      - *checkout_project_root
+      - run: RUN_TESTS=true bash script/build-macos.sh
+      - persist_to_workspace:
+          root: .
+          paths:
+            - ./target/wheels/*.whl
+      - store_artifacts:
+          path: ./target/wheels
+          destination: sql-artifacts-macos
+
   build-integration-dbt:
     working_directory: ~/openlineage/integration/dbt
     docker:
@@ -332,6 +441,40 @@ jobs:
           paths:
             - ~/.gradle
 
+  integration-test-integration-flink:
+    parameters:
+      flink-version:
+        type: string
+    working_directory: ~/openlineage/integration/flink
+    machine:
+      image: ubuntu-2004:current
+    resource_class: large
+    environment:
+      TESTCONTAINERS_RYUK_DISABLED: "true"
+    steps:
+      - *checkout_project_root
+      - restore_cache:
+          keys:
+            - v1-integration-flink-{{ .Branch }}-{{ .Revision }}
+            - v1-integration-flink-{{ .Branch }}
+      - run: (cd ./../../client/java/ && ./gradlew --no-daemon --stacktrace publishToMavenLocal)
+      - run: chmod -R 777 data/iceberg/db
+      - run: ./gradlew examples:stateful:build -Pflink.version=<< parameters.flink-version >>
+      - run: ./gradlew --no-daemon integrationTest --i -Pflink.version=<< parameters.flink-version >>
+      - run:
+          when: on_fail
+          command: cat build/test-results/integrationTest/TEST-*.xml
+      - run: ./gradlew --no-daemon jacocoTestReport
+      - store_test_results:
+          path: build/test-results/integrationTest
+      - store_artifacts:
+          path: build/reports/tests/integrationTest
+          destination: test-report
+      - save_cache:
+          key: v1-integration-flink-{{ .Branch }}-{{ .Revision }}
+          paths:
+            - ~/.gradle
+
   unit-test-integration-airflow:
     parameters:
       install_parser:
@@ -346,8 +489,8 @@ jobs:
       - *install_python_client
       - install_integration_common:
           install_parser: << parameters.install_parser >>
-      - run: pip install tox mypy==0.770
-      - run: python -m mypy --ignore-missing-imports openlineage
+      - run: pip install tox mypy==0.971
+      - run: python -m mypy --install-types --non-interactive --ignore-missing-imports openlineage
       - restore_cache:
           keys:
             - v1-toxenv-<< parameters.airflow-version >>-{{ checksum "setup.cfg" }}-{{ checksum "setup.py" }}
@@ -640,6 +783,12 @@ workflows:
               only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
             branches:
               ignore: /.*/
+      - build-integration-sql-macos:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+            branches:
+              ignore: /.*/
       - release-python:
           filters:
             tags:
@@ -655,3 +804,4 @@ workflows:
             - build-integration-dagster
             - build-integration-sql-x86
             - build-integration-sql-arm
+            - build-integration-sql-macos

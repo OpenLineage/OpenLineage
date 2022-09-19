@@ -1,10 +1,14 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.util.DatasetFacetsUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
@@ -43,21 +47,15 @@ public class InsertIntoDataSourceVisitor
               if (command.overwrite()) {
                 // rebuild whole dataset with a LifecycleStateChange facet added
                 OpenLineage.DatasetFacets facets =
-                    context
-                        .getOpenLineage()
-                        .newDatasetFacets(
-                            ds.getFacets().getDocumentation(),
-                            ds.getFacets().getDataSource(),
-                            ds.getFacets().getVersion(),
-                            ds.getFacets().getSchema(),
-                            null,
-                            null,
+                    DatasetFacetsUtils.copyToBuilder(context, ds.getFacets())
+                        .lifecycleStateChange(
                             context
                                 .getOpenLineage()
                                 .newLifecycleStateChangeDatasetFacet(
                                     OpenLineage.LifecycleStateChangeDatasetFacet
                                         .LifecycleStateChange.OVERWRITE,
-                                    null));
+                                    null))
+                        .build();
 
                 OpenLineage.OutputDataset newDs =
                     context

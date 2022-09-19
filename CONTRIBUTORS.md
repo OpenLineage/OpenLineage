@@ -1,8 +1,3 @@
-<!-- SPDX-License-Identifier: Apache-2.0 -->
-
-<!-- SPDX-License-Identifier: CC-BY-4.0 -->
-<!-- Copyright Contributors to the OpenLineage. -->
-
 # Contributors to OpenLineage
 
 
@@ -10,6 +5,7 @@ This file recognizes the people who have make an important contribution to OpenL
 
 | Name           | Email or GitHub Id |
 | -------------- | -----------------
+| Howard Yoo | howardyoo |
 
 
 

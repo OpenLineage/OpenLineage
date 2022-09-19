@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -28,6 +33,8 @@ class OutputFieldsCollector {
     }
 
     expressions.stream().forEach(expr -> builder.addOutput(expr.exprId(), expr.name()));
+
+    CustomCollectorsUtils.collectOutputs(plan, builder);
 
     if (!builder.hasOutputs()) {
       // extract outputs from the children

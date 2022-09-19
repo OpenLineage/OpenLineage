@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
@@ -9,7 +12,10 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
+import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -19,61 +25,59 @@ import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.junit.jupiter.api.Test;
 
-public class CatalogUtils3Test {
+class CatalogUtils3Test {
 
   @Test
-  public void testGetCatalogHandlerByProviderForIceberg() {
-    assertTrue(
-        CatalogUtils3.getCatalogHandlerByProvider("Iceberg").get() instanceof IcebergHandler);
-  }
-
-  @Test
-  public void testGetCatalogHandlerByProviderForDelta() {
-    assertTrue(CatalogUtils3.getCatalogHandlerByProvider("Delta").get() instanceof DeltaHandler);
-  }
-
-  @Test
-  public void getCatalogHandlerByProviderUnknown() {
-    assertEquals(Optional.empty(), CatalogUtils3.getCatalogHandlerByProvider("Unknown"));
-  }
-
-  @Test
-  public void testGetCatalogHandler() {
+  void testGetCatalogHandler() {
     TableCatalog tableCatalog = mock(org.apache.iceberg.spark.SparkCatalog.class);
-    assertTrue(CatalogUtils3.getCatalogHandler(tableCatalog).get() instanceof IcebergHandler);
+    assertTrue(
+        CatalogUtils3.getCatalogHandler(mock(OpenLineageContext.class), tableCatalog).get()
+            instanceof IcebergHandler);
   }
 
   @Test
-  public void testGetCatalogHandlerEmpty() {
-    assertEquals(Optional.empty(), CatalogUtils3.getCatalogHandler(mock(TableCatalog.class)));
+  void testGetCatalogHandlerEmpty() {
+    assertEquals(
+        Optional.empty(),
+        CatalogUtils3.getCatalogHandler(mock(OpenLineageContext.class), mock(TableCatalog.class)));
   }
 
   @Test
-  public void testGetTableProviderFacet() {
+  void testGetStorageDatasetFacet() {
+    OpenLineageContext context = mock(OpenLineageContext.class);
     TableCatalog tableCatalog = mock(org.apache.iceberg.spark.SparkCatalog.class);
     Map<String, String> properties = new HashMap<>();
+    when(context.getOpenLineage()).thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
+
     assertEquals(
         "iceberg",
-        CatalogUtils3.getTableProviderFacet(tableCatalog, properties).get().getProvider());
+        CatalogUtils3.getStorageDatasetFacet(context, tableCatalog, properties)
+            .get()
+            .getStorageLayer());
   }
 
   @Test
-  public void testGetTableProviderFacetWhenHandlerUnknown() {
+  void testGetStorageDatasetFacetWhenHandlerUnknown() {
     TableCatalog tableCatalog = mock(TableCatalog.class);
     Map<String, String> properties = new HashMap<>();
-    assertEquals(Optional.empty(), CatalogUtils3.getTableProviderFacet(tableCatalog, properties));
+    assertEquals(
+        Optional.empty(),
+        CatalogUtils3.getStorageDatasetFacet(
+            mock(OpenLineageContext.class), tableCatalog, properties));
   }
 
   @Test
-  public void testGetDatasetIdentifier() {
+  void testGetDatasetIdentifier() {
+    OpenLineageContext context = mock(OpenLineageContext.class);
     CatalogHandler catalogHandler = mock(CatalogHandler.class);
     when(catalogHandler.isClass(any())).thenReturn(true);
     when(catalogHandler.getDatasetIdentifier(any(), any(), any(), any()))
         .thenReturn(new DatasetIdentifier("name", "namespace"));
+    when(context.getSparkSession()).thenReturn(Optional.of(mock(SparkSession.class)));
 
     DatasetIdentifier datasetIdentifier =
         CatalogUtils3.getDatasetIdentifier(
-            mock(SparkSession.class),
+            context,
             mock(TableCatalog.class),
             mock(Identifier.class),
             new HashMap<>(),
@@ -84,20 +88,19 @@ public class CatalogUtils3Test {
   }
 
   @Test
-  public void testGetDatasetIdentifierWhenCatalogUnsupported() {
+  void testGetDatasetIdentifierWhenCatalogUnsupported() {
     CatalogHandler catalogHandler = mock(CatalogHandler.class);
     when(catalogHandler.isClass(any())).thenReturn(false);
 
-    UnsupportedCatalogException exception =
-        assertThrows(
-            UnsupportedCatalogException.class,
-            () -> {
-              CatalogUtils3.getDatasetIdentifier(
-                  mock(SparkSession.class),
-                  mock(TableCatalog.class),
-                  mock(Identifier.class),
-                  new HashMap<>(),
-                  Arrays.asList(catalogHandler));
-            });
+    assertThrows(
+        UnsupportedCatalogException.class,
+        () -> {
+          CatalogUtils3.getDatasetIdentifier(
+              mock(OpenLineageContext.class),
+              mock(TableCatalog.class),
+              mock(Identifier.class),
+              new HashMap<>(),
+              Arrays.asList(catalogHandler));
+        });
   }
 }

@@ -1,15 +1,18 @@
+# Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
 import os
 import logging
+import uuid
 from typing import Optional, Dict, Type
 
-from openlineage.airflow import __version__ as OPENLINEAGE_AIRFLOW_VERSION
+from openlineage.airflow.version import __version__ as OPENLINEAGE_AIRFLOW_VERSION
 from openlineage.airflow.extractors import TaskMetadata
 
 from openlineage.client import OpenLineageClient, OpenLineageClientOptions, set_producer
 from openlineage.client.facet import DocumentationJobFacet, SourceCodeLocationJobFacet, \
     NominalTimeRunFacet, ParentRunFacet, BaseFacet
+from openlineage.airflow.utils import redact_with_exclusions
 from openlineage.client.run import RunEvent, RunState, Run, Job
 import requests.exceptions
 
@@ -54,7 +57,11 @@ class OpenLineageAdapter:
                 self._client = OpenLineageClient.from_environment()
         return self._client
 
+    def build_dag_run_id(self, dag_id, dag_run_id):
+        return str(uuid.uuid3(uuid.NAMESPACE_URL, f'{_DAG_NAMESPACE}.{dag_id}.{dag_run_id}'))
+
     def emit(self, event: RunEvent):
+        event = redact_with_exclusions(event)
         try:
             return self.get_or_create_openlineage_client().emit(event)
         except requests.exceptions.RequestException:
@@ -191,11 +198,15 @@ class OpenLineageAdapter:
                 "nominalTime": NominalTimeRunFacet(nominal_start_time, nominal_end_time)
             })
         if parent_run_id:
-            facets.update({"parentRun": ParentRunFacet.create(
+            parent_run_facet = ParentRunFacet.create(
                 parent_run_id,
                 _DAG_NAMESPACE,
                 parent_job_name or job_name
-            )})
+            )
+            facets.update({
+                "parent": parent_run_facet,
+                "parentRun": parent_run_facet  # Keep sending this for the backward compatibility
+            })
 
         if run_facets:
             facets.update(run_facets)

@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark.agent.facets.builder;
 
@@ -71,7 +74,7 @@ class LogicalPlanRunFacetBuilderTest {
   }
 
   @Test
-  public void testIsDefined() {
+  void testIsDefined() {
     LogicalPlanRunFacetBuilder builder =
         new LogicalPlanRunFacetBuilder(
             OpenLineageContext.builder()
@@ -93,7 +96,7 @@ class LogicalPlanRunFacetBuilderTest {
   }
 
   @Test
-  public void testIsNotDefinedWithoutQueryExecution() {
+  void testIsNotDefinedWithoutQueryExecution() {
     LogicalPlanRunFacetBuilder builder =
         new LogicalPlanRunFacetBuilder(
             OpenLineageContext.builder()
@@ -115,7 +118,7 @@ class LogicalPlanRunFacetBuilderTest {
   }
 
   @Test
-  public void testBuild() {
+  void testBuild() {
     LogicalPlanRunFacetBuilder builder =
         new LogicalPlanRunFacetBuilder(
             OpenLineageContext.builder()

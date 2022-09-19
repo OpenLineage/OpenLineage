@@ -1,11 +1,13 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
-import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Collections;
 import java.util.List;
@@ -22,12 +24,8 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 @Slf4j
 public class AppendDataDatasetBuilder extends AbstractQueryPlanOutputDatasetBuilder<AppendData> {
 
-  private final DatasetFactory<OpenLineage.OutputDataset> factory;
-
-  public AppendDataDatasetBuilder(
-      OpenLineageContext context, DatasetFactory<OpenLineage.OutputDataset> factory) {
+  public AppendDataDatasetBuilder(OpenLineageContext context) {
     super(context, false);
-    this.factory = factory;
   }
 
   @Override
@@ -36,12 +34,7 @@ public class AppendDataDatasetBuilder extends AbstractQueryPlanOutputDatasetBuil
   }
 
   @Override
-  public List<OpenLineage.OutputDataset> apply(AppendData x) {
-    return Collections.emptyList();
-  }
-
-  @Override
-  public List<OpenLineage.OutputDataset> apply(SparkListenerEvent event, AppendData appendData) {
+  protected List<OpenLineage.OutputDataset> apply(SparkListenerEvent event, AppendData appendData) {
     LogicalPlan logicalPlan = (LogicalPlan) (appendData).table();
 
     return delegate(

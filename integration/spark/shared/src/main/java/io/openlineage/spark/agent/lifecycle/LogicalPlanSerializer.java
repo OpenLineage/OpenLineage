@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark.agent.lifecycle;
 
@@ -40,6 +43,8 @@ import scala.runtime.AbstractPartialFunction;
  */
 @Slf4j
 class LogicalPlanSerializer {
+  private static final int MAX_SERIALIZED_PLAN_LENGTH =
+      50000; // 50K UTF-8 chars should be ~200KB + some extra bytes added during json encoding
   private final ObjectMapper mapper;
 
   public LogicalPlanSerializer() {
@@ -50,7 +55,7 @@ class LogicalPlanSerializer {
               Class.forName("com.fasterxml.jackson.module.scala.DefaultScalaModule$")
                   .getDeclaredField("MODULE$")
                   .get(null));
-    } catch (Throwable t) {
+    } catch (Exception t) {
       log.warn("Can't register jackson scala module for serializing LogicalPlan");
     }
 
@@ -65,8 +70,14 @@ class LogicalPlanSerializer {
    */
   public String serialize(LogicalPlan x) {
     try {
-      return mapper.writeValueAsString(x);
-    } catch (Throwable e) {
+      String serializedPlan = mapper.writeValueAsString(x);
+      if (serializedPlan.length() > MAX_SERIALIZED_PLAN_LENGTH) {
+        // entry is too long, we slice a substring it and send as String field
+        serializedPlan =
+            mapper.writeValueAsString(serializedPlan.substring(0, MAX_SERIALIZED_PLAN_LENGTH));
+      }
+      return serializedPlan;
+    } catch (Exception e) {
       try {
         return mapper.writeValueAsString(
             "Unable to serialize logical plan due to: " + e.getMessage());
@@ -89,7 +100,15 @@ class LogicalPlanSerializer {
    * LogicalPlan} and leaf nodes don't have child nodes in {@link LogicalPlan}
    */
   @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "id")
-  @JsonIgnoreProperties({"child", "containsChild", "canonicalized", "constraints"})
+  @JsonIgnoreProperties({
+    "child",
+    "containsChild",
+    "canonicalized",
+    "constraints",
+    "data",
+    "deltaLog"
+  })
+  @SuppressWarnings("PMD")
   abstract class ChildMixIn {}
 
   @JsonIgnoreProperties({"sqlConfigs", "sqlConfExecutorSide"})
@@ -97,13 +116,17 @@ class LogicalPlanSerializer {
 
   @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "id")
   public static class PythonRDDMixin {
-    @JsonIgnore private PythonRDDMixin asJavaRDD;
+    @SuppressWarnings("PMD")
+    @JsonIgnore
+    private PythonRDDMixin asJavaRDD;
   }
 
   @JsonTypeInfo(use = Id.CLASS)
   @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "id")
   public static class RDDMixin {
-    @JsonIgnore private Partition[] partitions;
+    @SuppressWarnings("PMD")
+    @JsonIgnore
+    private Partition[] partitions;
 
     @JsonIgnore
     public Boolean isEmpty() {
@@ -112,7 +135,7 @@ class LogicalPlanSerializer {
 
     @JsonIgnore
     public Partition[] getPartitions() {
-      return null;
+      return new Partition[] {};
     }
   }
 

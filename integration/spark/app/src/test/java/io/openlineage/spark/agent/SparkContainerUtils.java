@@ -1,9 +1,16 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.spark.agent;
 
 import java.io.IOException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.stream.Stream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.containers.MockServerContainer;
@@ -68,42 +75,42 @@ public class SparkContainerUtils {
       MockServerContainer mockServerContainer,
       String namespace,
       String... command) {
+
+    List<String> sparkConfigParams = new ArrayList<>();
+    addSparkConfig(sparkConfigParams, "spark.openlineage.host=" + openlineageUrl);
+    addSparkConfig(
+        sparkConfigParams,
+        "spark.openlineage.url=" + openlineageUrl + "/api/v1/namespaces/" + namespace);
+    addSparkConfig(
+        sparkConfigParams, "spark.extraListeners=" + OpenLineageSparkListener.class.getName());
+    addSparkConfig(sparkConfigParams, "spark.sql.warehouse.dir=/tmp/warehouse");
+    addSparkConfig(sparkConfigParams, "spark.sql.shuffle.partitions=1");
+    addSparkConfig(
+        sparkConfigParams, "spark.driver.extraJavaOptions=-Dderby.system.home=/tmp/derby");
+    addSparkConfig(sparkConfigParams, "spark.sql.warehouse.dir=/tmp/warehouse");
+    addSparkConfig(sparkConfigParams, "spark.jars.ivy=/tmp/.ivy2/");
+
+    List<String> sparkSubmit =
+        new ArrayList(Arrays.asList("./bin/spark-submit", "--master", "local"));
+    sparkSubmit.addAll(sparkConfigParams);
+    sparkSubmit.addAll(
+        Arrays.asList(
+            "--jars",
+            "/opt/libs/"
+                + System.getProperty("openlineage.spark.jar")
+                + ",/opt/dependencies/spark-sql-kafka-*.jar"
+                + ",/opt/dependencies/kafka-*.jar"
+                + ",/opt/dependencies/spark-token-provider-*.jar"
+                + ",/opt/dependencies/commons-pool2-*.jar"));
+    sparkSubmit.addAll(Arrays.asList(command));
+
     return makePysparkContainer(
-        network,
-        waitMessage,
-        mockServerContainer,
-        Stream.of(
-                new String[] {
-                  "./bin/spark-submit",
-                  "--master",
-                  "local",
-                  "--conf",
-                  "spark.openlineage.host=" + openlineageUrl,
-                  "--conf",
-                  "spark.openlineage.url=" + openlineageUrl + "/api/v1/namespaces/" + namespace,
-                  "--conf",
-                  "spark.extraListeners=" + OpenLineageSparkListener.class.getName(),
-                  "--conf",
-                  "spark.sql.warehouse.dir=/tmp/warehouse",
-                  "--conf",
-                  "spark.sql.shuffle.partitions=1",
-                  "--conf",
-                  "spark.driver.extraJavaOptions=-Dderby.system.home=/tmp/derby",
-                  "--conf",
-                  "spark.sql.warehouse.dir=/tmp/warehouse",
-                  "--conf",
-                  "spark.jars.ivy=/tmp/.ivy2/",
-                  "--jars",
-                  "/opt/libs/"
-                      + System.getProperty("openlineage.spark.jar")
-                      + ",/opt/dependencies/spark-sql-kafka-*.jar"
-                      + ",/opt/dependencies/kafka-*.jar"
-                      + ",/opt/dependencies/spark-token-provider-*.jar"
-                      + ",/opt/dependencies/commons-pool2-*.jar"
-                },
-                command)
-            .flatMap(Stream::of)
-            .toArray(String[]::new));
+        network, waitMessage, mockServerContainer, sparkSubmit.toArray(new String[0]));
+  }
+
+  static void addSparkConfig(List command, String value) {
+    command.add("--conf");
+    command.add(value);
   }
 
   static void runPysparkContainerWithDefaultConf(
@@ -116,6 +123,7 @@ public class SparkContainerUtils {
         .start();
   }
 
+  @SuppressWarnings("PMD")
   private static void consumeOutput(org.testcontainers.containers.output.OutputFrame of) {
     try {
       switch (of.getType()) {

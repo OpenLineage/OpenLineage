@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark3.agent.lifecycle.plan;
 
@@ -27,6 +30,7 @@ import org.apache.spark.sql.catalyst.plans.logical.ReplaceTable;
 import org.apache.spark.sql.catalyst.plans.logical.ReplaceTableAsSelect;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
+import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -35,6 +39,7 @@ import scala.collection.immutable.Map;
 
 class CreateReplaceVisitorDatasetBuilderTest {
 
+  private static final String TABLE = "table";
   OpenLineageContext openLineageContext =
       OpenLineageContext.builder()
           .sparkSession(Optional.of(mock(SparkSession.class)))
@@ -47,10 +52,10 @@ class CreateReplaceVisitorDatasetBuilderTest {
   TableCatalog catalogTable = mock(TableCatalog.class);
   StructType schema = new StructType();
   Map<String, String> commandProperties = new HashMap<>();
-  Identifier tableName = Identifier.of(new String[] {"db"}, "table");
+  Identifier tableName = Identifier.of(new String[] {"db"}, TABLE);
 
   @Test
-  public void testIsDefined() {
+  void testIsDefined() {
     assertTrue(visitor.isDefinedAtLogicalPlan(mock(CreateTableAsSelect.class)));
     assertTrue(visitor.isDefinedAtLogicalPlan(mock(ReplaceTableAsSelect.class)));
     assertTrue(visitor.isDefinedAtLogicalPlan(mock(ReplaceTable.class)));
@@ -59,7 +64,7 @@ class CreateReplaceVisitorDatasetBuilderTest {
   }
 
   @Test
-  public void testApplyForCreateTableAsSelect() {
+  void testApplyForCreateTableAsSelect() {
     CreateTableAsSelect logicalPlan = mock(CreateTableAsSelect.class);
     when(logicalPlan.catalog()).thenReturn(catalogTable);
     when(logicalPlan.tableName()).thenReturn(tableName);
@@ -72,7 +77,7 @@ class CreateReplaceVisitorDatasetBuilderTest {
   }
 
   @Test
-  public void testApplyForReplaceTable() {
+  void testApplyForReplaceTable() {
     ReplaceTable logicalPlan = mock(ReplaceTable.class);
     when(logicalPlan.catalog()).thenReturn(catalogTable);
     when(logicalPlan.tableName()).thenReturn(tableName);
@@ -85,7 +90,7 @@ class CreateReplaceVisitorDatasetBuilderTest {
   }
 
   @Test
-  public void testApplyForReplaceTableAsSelect() {
+  void testApplyForReplaceTableAsSelect() {
     ReplaceTableAsSelect logicalPlan = mock(ReplaceTableAsSelect.class);
     when(logicalPlan.catalog()).thenReturn(catalogTable);
     when(logicalPlan.tableName()).thenReturn(tableName);
@@ -98,7 +103,7 @@ class CreateReplaceVisitorDatasetBuilderTest {
   }
 
   @Test
-  public void testApplyForCreateV2Table() {
+  void testApplyForCreateV2Table() {
     CreateV2Table logicalPlan = mock(CreateV2Table.class);
     when(logicalPlan.catalog()).thenReturn(catalogTable);
     when(logicalPlan.tableName()).thenReturn(tableName);
@@ -111,19 +116,20 @@ class CreateReplaceVisitorDatasetBuilderTest {
   }
 
   @Test
-  public void testApplyDatasetVersionIncluded() {
+  void testApplyDatasetVersionIncluded() {
     ReplaceTable logicalPlan = mock(ReplaceTable.class);
     when(logicalPlan.catalog()).thenReturn(catalogTable);
     when(logicalPlan.tableName()).thenReturn(tableName);
     when(logicalPlan.tableSchema()).thenReturn(schema);
     when(logicalPlan.properties()).thenReturn(commandProperties);
 
-    DatasetIdentifier di = new DatasetIdentifier("table", "db");
+    DatasetIdentifier di = new DatasetIdentifier(TABLE, "db");
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
       try (MockedStatic mockedCatalog = mockStatic(CatalogUtils3.class)) {
         when(CatalogUtils3.getDatasetVersion(
+                openLineageContext,
                 catalogTable,
-                Identifier.of(new String[] {"db"}, "table"),
+                Identifier.of(new String[] {"db"}, TABLE),
                 ScalaConversionUtils.<String, String>fromMap(commandProperties)))
             .thenReturn(Optional.of("v2"));
 
@@ -134,7 +140,8 @@ class CreateReplaceVisitorDatasetBuilderTest {
                 ScalaConversionUtils.<String, String>fromMap(commandProperties)))
             .thenReturn(Optional.of(di));
 
-        List<OpenLineage.OutputDataset> outputDatasets = visitor.apply(logicalPlan);
+        List<OpenLineage.OutputDataset> outputDatasets =
+            visitor.apply(new SparkListenerSQLExecutionEnd(1L, 1L), logicalPlan);
 
         assertEquals(1, outputDatasets.size());
         assertEquals("v2", outputDatasets.get(0).getFacets().getVersion().getDatasetVersion());
@@ -143,19 +150,20 @@ class CreateReplaceVisitorDatasetBuilderTest {
   }
 
   @Test
-  public void testApplyDatasetVersionMissing() {
+  void testApplyDatasetVersionMissing() {
     ReplaceTable logicalPlan = mock(ReplaceTable.class);
     when(logicalPlan.catalog()).thenReturn(catalogTable);
     when(logicalPlan.tableName()).thenReturn(tableName);
     when(logicalPlan.tableSchema()).thenReturn(schema);
     when(logicalPlan.properties()).thenReturn(commandProperties);
 
-    DatasetIdentifier di = new DatasetIdentifier("table", "db");
+    DatasetIdentifier di = new DatasetIdentifier(TABLE, "db");
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
       try (MockedStatic mockedCatalog = mockStatic(CatalogUtils3.class)) {
         when(CatalogUtils3.getDatasetVersion(
+                openLineageContext,
                 catalogTable,
-                Identifier.of(new String[] {"db"}, "table"),
+                Identifier.of(new String[] {"db"}, TABLE),
                 ScalaConversionUtils.<String, String>fromMap(commandProperties)))
             .thenReturn(Optional.empty());
 
@@ -166,7 +174,8 @@ class CreateReplaceVisitorDatasetBuilderTest {
                 ScalaConversionUtils.<String, String>fromMap(commandProperties)))
             .thenReturn(Optional.of(di));
 
-        List<OpenLineage.OutputDataset> outputDatasets = visitor.apply(logicalPlan);
+        List<OpenLineage.OutputDataset> outputDatasets =
+            visitor.apply(new SparkListenerSQLExecutionEnd(1L, 1L), logicalPlan);
 
         assertEquals(1, outputDatasets.size());
         assertEquals(null, outputDatasets.get(0).getFacets().getVersion());
@@ -178,7 +187,7 @@ class CreateReplaceVisitorDatasetBuilderTest {
       LogicalPlan logicalPlan,
       Map<String, String> tableProperties,
       OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange lifecycleStateChange) {
-    DatasetIdentifier di = new DatasetIdentifier("table", "db");
+    DatasetIdentifier di = new DatasetIdentifier(TABLE, "db");
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
       when(PlanUtils3.getDatasetIdentifier(
               openLineageContext,
@@ -187,19 +196,20 @@ class CreateReplaceVisitorDatasetBuilderTest {
               ScalaConversionUtils.<String, String>fromMap(tableProperties)))
           .thenReturn(Optional.of(di));
 
-      List<OpenLineage.OutputDataset> outputDatasets = visitor.apply(logicalPlan);
+      List<OpenLineage.OutputDataset> outputDatasets =
+          visitor.apply(new SparkListenerSQLExecutionEnd(1L, 1L), logicalPlan);
 
       assertEquals(1, outputDatasets.size());
       assertEquals(
           lifecycleStateChange,
           outputDatasets.get(0).getFacets().getLifecycleStateChange().getLifecycleStateChange());
-      assertEquals("table", outputDatasets.get(0).getName());
+      assertEquals(TABLE, outputDatasets.get(0).getName());
       assertEquals("db", outputDatasets.get(0).getNamespace());
     }
   }
 
   @Test
-  public void testApplyWhenNoDatasetIdentifierReturned() {
+  void testApplyWhenNoDatasetIdentifierReturned() {
     CreateTableAsSelect logicalPlan = mock(CreateTableAsSelect.class);
     try (MockedStatic mocked = mockStatic(PlanUtils3.class)) {
       when(PlanUtils3.getDatasetIdentifier(
@@ -209,7 +219,8 @@ class CreateReplaceVisitorDatasetBuilderTest {
               ScalaConversionUtils.<String, String>fromMap(logicalPlan.properties())))
           .thenReturn(Optional.empty());
 
-      List<OpenLineage.OutputDataset> outputDatasets = visitor.apply(logicalPlan);
+      List<OpenLineage.OutputDataset> outputDatasets =
+          visitor.apply(new SparkListenerSQLExecutionEnd(1L, 1L), logicalPlan);
       assertEquals(0, outputDatasets.size());
     }
   }

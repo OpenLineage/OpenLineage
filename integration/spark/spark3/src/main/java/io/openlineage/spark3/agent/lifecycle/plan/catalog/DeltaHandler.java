@@ -1,15 +1,21 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
-import io.openlineage.spark.agent.facets.TableProviderFacet;
+import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
+import io.openlineage.spark.api.OpenLineageContext;
+import java.io.File;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier;
@@ -22,6 +28,14 @@ import scala.Option;
 
 @Slf4j
 public class DeltaHandler implements CatalogHandler {
+
+  private final OpenLineageContext context;
+
+  public DeltaHandler(OpenLineageContext context) {
+    this.context = context;
+  }
+
+  @Override
   public boolean hasClasses() {
     try {
       DeltaHandler.class
@@ -53,30 +67,52 @@ public class DeltaHandler implements CatalogHandler {
     } else {
       location = Optional.ofNullable(properties.get("location"));
     }
+
     // Delta uses spark2 catalog when location isn't specified.
+
+    String a = catalog.loadTable(identifier).properties().get("location");
+    String b =
+        location.orElse(
+            Optional.ofNullable(catalog.loadTable(identifier).properties().get("location"))
+                .orElse("dupa"));
     Path path =
         new Path(
-            location.orElse(
-                session
-                    .sessionState()
-                    .catalog()
-                    .defaultTablePath(
-                        TableIdentifier.apply(
-                            identifier.name(),
-                            Option.apply(
-                                Arrays.stream(identifier.namespace())
-                                    .reduce((x, y) -> y)
-                                    .orElse(null))))
-                    .toString()));
+            location.orElseGet(
+                () ->
+                    Optional.ofNullable(catalog.loadTable(identifier).properties().get("location"))
+                        .orElseGet(() -> getDefaultTablePath(session, identifier))));
     log.info(path.toString());
-    return PathUtils.fromPath(path, "file");
+    DatasetIdentifier di = PathUtils.fromPath(path, "file");
+    return di.withSymlink(
+        identifier.toString(),
+        StringUtils.substringBeforeLast(
+            di.getName(), File.separator), // parent location from a name becomes a namespace
+        DatasetIdentifier.SymlinkType.TABLE);
   }
 
-  public Optional<TableProviderFacet> getTableProviderFacet(Map<String, String> properties) {
-    return Optional.of(new TableProviderFacet("delta", "parquet")); // Delta is always parquet
+  private String getDefaultTablePath(SparkSession session, Identifier identifier) {
+    return session
+        .sessionState()
+        .catalog()
+        .defaultTablePath(
+            TableIdentifier.apply(
+                identifier.name(),
+                Option.apply(
+                    Arrays.stream(identifier.namespace()).reduce((x, y) -> y).orElse(null))))
+        .toString();
+  }
+
+  @Override
+  public Optional<OpenLineage.StorageDatasetFacet> getStorageDatasetFacet(
+      Map<String, String> properties) {
+    return Optional.of(
+        context
+            .getOpenLineage()
+            .newStorageDatasetFacet("delta", "parquet")); // Delta is always parquet
   }
 
   @SneakyThrows
+  @Override
   public Optional<String> getDatasetVersion(
       TableCatalog tableCatalog, Identifier identifier, Map<String, String> properties) {
     DeltaCatalog deltaCatalog = (DeltaCatalog) tableCatalog;

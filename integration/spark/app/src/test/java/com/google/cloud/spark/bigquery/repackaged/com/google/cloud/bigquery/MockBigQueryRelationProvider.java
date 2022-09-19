@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery;
 
@@ -137,6 +140,7 @@ public class MockBigQueryRelationProvider extends BigQueryRelationProvider {
   private static class EmptyModule implements Module {
     private EmptyModule() {}
 
+    @Override
     public void configure(Binder binder) {}
   }
 }

@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark3.agent.lifecycle.plan;
 
@@ -15,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.sql.catalyst.plans.logical.CreateTableAsSelect;
 import org.apache.spark.sql.catalyst.plans.logical.CreateV2Table;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -32,6 +36,9 @@ import org.apache.spark.sql.types.StructType;
 public class CreateReplaceDatasetBuilder
     extends AbstractQueryPlanOutputDatasetBuilder<LogicalPlan> {
 
+  private static final String CREATE_V2_TABLE =
+      "org.apache.spark.sql.catalyst.plans.logical.CreateV2Table";
+
   public CreateReplaceDatasetBuilder(OpenLineageContext context) {
     super(context, false);
   }
@@ -41,11 +48,14 @@ public class CreateReplaceDatasetBuilder
     return (x instanceof CreateTableAsSelect)
         || (x instanceof ReplaceTable)
         || (x instanceof ReplaceTableAsSelect)
-        || (x instanceof CreateV2Table);
+        // Class CreateV2Table was removed in Spark Catalyst 3.3.0. For some reason, it is also
+        // missing on Databricks platform when Spark context is in version 3.2.1. This hacky way
+        // allows checking for the class also when it is not available on the class path
+        || PlanUtils.safeIsInstanceOf(x, CREATE_V2_TABLE);
   }
 
   @Override
-  public List<OpenLineage.OutputDataset> apply(LogicalPlan x) {
+  protected List<OpenLineage.OutputDataset> apply(SparkListenerEvent event, LogicalPlan x) {
     TableCatalog tableCatalog;
     Map<String, String> tableProperties;
     Identifier identifier;
@@ -60,7 +70,7 @@ public class CreateReplaceDatasetBuilder
       schema = command.tableSchema();
       lifecycleStateChange =
           OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE;
-    } else if (x instanceof CreateV2Table) {
+    } else if (PlanUtils.safeIsInstanceOf(x, CREATE_V2_TABLE)) {
       CreateV2Table command = (CreateV2Table) x;
       tableCatalog = command.catalog();
       tableProperties = ScalaConversionUtils.<String, String>fromMap(command.properties());
@@ -102,14 +112,15 @@ public class CreateReplaceDatasetBuilder
                 openLineage.newLifecycleStateChangeDatasetFacet(lifecycleStateChange, null))
             .dataSource(PlanUtils.datasourceFacet(openLineage, di.get().getNamespace()));
 
-    Optional<String> datasetVersion =
-        CatalogUtils3.getDatasetVersion(tableCatalog, identifier, tableProperties);
-    datasetVersion.ifPresent(
-        version -> builder.version(openLineage.newDatasetVersionDatasetFacet(version)));
+    if (includeDatasetVersion(event)) {
+      Optional<String> datasetVersion =
+          CatalogUtils3.getDatasetVersion(context, tableCatalog, identifier, tableProperties);
+      datasetVersion.ifPresent(
+          version -> builder.version(openLineage.newDatasetVersionDatasetFacet(version)));
+    }
 
-    CatalogUtils3.getTableProviderFacet(tableCatalog, tableProperties)
-        .map(provider -> builder.put("tableProvider", provider));
-    return Collections.singletonList(
-        outputDataset().getDataset(di.get().getName(), di.get().getNamespace(), builder.build()));
+    CatalogUtils3.getStorageDatasetFacet(context, tableCatalog, tableProperties)
+        .map(storageDatasetFacet -> builder.storage(storageDatasetFacet));
+    return Collections.singletonList(outputDataset().getDataset(di.get(), builder));
   }
 }

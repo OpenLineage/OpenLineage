@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.spark.api;
 
 import io.openlineage.client.OpenLineage;
@@ -13,6 +18,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import scala.PartialFunction;
@@ -30,6 +36,7 @@ import scala.PartialFunction;
  * @param <P>
  * @param <D>
  */
+@Slf4j
 public abstract class AbstractQueryPlanDatasetBuilder<T, P extends LogicalPlan, D extends Dataset>
     extends AbstractGenericArgPartialFunction<T, D> {
   protected final OpenLineageContext context;
@@ -53,6 +60,7 @@ public abstract class AbstractQueryPlanDatasetBuilder<T, P extends LogicalPlan, 
 
   public abstract List<D> apply(P p);
 
+  @Override
   public final List<D> apply(T event) {
     return context
         .getQueryExecution()
@@ -63,8 +71,8 @@ public abstract class AbstractQueryPlanDatasetBuilder<T, P extends LogicalPlan, 
                 return ScalaConversionUtils.fromSeq(qe.optimizedPlan().collect(visitor)).stream()
                     .flatMap(Collection::stream)
                     .collect(Collectors.toList());
-              } else if (visitor.isDefinedAt(qe.optimizedPlan())) {
-                return visitor.apply(qe.optimizedPlan());
+              } else if (PlanUtils.safeIsDefinedAt(visitor, qe.optimizedPlan())) {
+                return PlanUtils.safeApply(visitor, qe.optimizedPlan());
               } else {
                 return Collections.<D>emptyList();
               }

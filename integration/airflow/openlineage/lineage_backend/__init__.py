@@ -1,13 +1,14 @@
+# Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
-import os
-import uuid
-import time
 
-from pkg_resources import parse_version
+import os
+import time
+import uuid
+from typing import Optional
 
 from airflow.lineage.backend import LineageBackend
 from airflow.version import version as AIRFLOW_VERSION
-from typing import Optional
+from pkg_resources import parse_version
 
 
 class Backend:
@@ -37,7 +38,7 @@ class Backend:
         dag = context['dag']
         dagrun = context['dag_run']
         task_instance = context['task_instance']
-        dag_run_id = str(uuid.uuid3(uuid.NAMESPACE_URL, f'{dag.dag_id}.{dagrun.run_id}'))
+        dag_run_id = self.adapter.build_dag_run_id(dag.dag_id, dagrun.run_id)
 
         run_id = str(uuid.uuid4())
         job_name = get_job_name(operator)

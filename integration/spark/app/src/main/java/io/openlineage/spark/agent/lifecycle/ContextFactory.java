@@ -1,15 +1,16 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark.agent.lifecycle;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.Versions;
-import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
 import java.util.Optional;
-import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.execution.SQLExecution;
 
@@ -24,13 +25,7 @@ public class ContextFactory {
   }
 
   public ExecutionContext createRddExecutionContext(int jobId) {
-    OpenLineageContext olContext =
-        OpenLineageContext.builder()
-            .sparkSession(ScalaConversionUtils.asJavaOptional(SparkSession.getActiveSession()))
-            .sparkContext(SparkContext.getOrCreate())
-            .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
-            .build();
-    return new RddExecutionContext(olContext, jobId, openLineageEventEmitter);
+    return new RddExecutionContext(openLineageEventEmitter);
   }
 
   public Optional<ExecutionContext> createSparkSQLExecutionContext(long executionId) {

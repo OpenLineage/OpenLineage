@@ -24,6 +24,7 @@ x-airflow-base: &airflow-base
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
     AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432
     GOOGLE_APPLICATION_CREDENTIALS: /opt/config/gcloud/gcloud-service-key.json
+    OPENLINEAGE_AIRFLOW_DISABLE_SOURCE_CODE: "false"
     OPENLINEAGE_NAMESPACE: food_delivery
     OPENLINEAGE_URL: http://backend:5000
     OPENLINEAGE_EXTRACTOR_CustomOperator: custom_extractor.CustomExtractor

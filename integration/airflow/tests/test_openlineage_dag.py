@@ -1,4 +1,6 @@
-# SPDX-License-Identifier: Apache-2.0.
+# Copyright 2018-2022 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
+
 import datetime
 import logging
 import uuid
@@ -27,7 +29,7 @@ from openlineage.common.models import (
 )
 from openlineage.common.sql import DbTableMeta
 from openlineage.airflow import DAG
-from openlineage.airflow import __version__ as OPENLINEAGE_AIRFLOW_VERSION
+from openlineage.airflow.version import __version__ as OPENLINEAGE_AIRFLOW_VERSION
 from openlineage.airflow.extractors import (
     BaseExtractor, TaskMetadata
 )
@@ -158,6 +160,11 @@ def test_openlineage_dag(
             eventTime=mock.ANY,
             run=Run(run_id_completed, {
                 "nominalTime": NominalTimeRunFacet(start_time, end_time),
+                "parent": ParentRunFacet.create(
+                    runId=parent_run_id,
+                    namespace=DAG_NAMESPACE,
+                    name=DAG_ID
+                ),
                 "parentRun": ParentRunFacet.create(
                     runId=parent_run_id,
                     namespace=DAG_NAMESPACE,
@@ -180,6 +187,11 @@ def test_openlineage_dag(
             eventTime=mock.ANY,
             run=Run(run_id_failed, {
                 "nominalTime": NominalTimeRunFacet(start_time, end_time),
+                "parent": ParentRunFacet.create(
+                    runId=parent_run_id,
+                    namespace=DAG_NAMESPACE,
+                    name=DAG_ID
+                ),
                 "parentRun": ParentRunFacet.create(
                     runId=parent_run_id,
                     namespace=DAG_NAMESPACE,
@@ -477,6 +489,11 @@ def test_openlineage_dag_with_extractor(
             mock.ANY,
             Run(run_id, {
                 "nominalTime": NominalTimeRunFacet(start_time, end_time),
+                "parent": ParentRunFacet.create(
+                    runId=parent_run_id,
+                    namespace=DAG_NAMESPACE,
+                    name=dag_id
+                ),
                 "parentRun": ParentRunFacet.create(
                     runId=parent_run_id,
                     namespace=DAG_NAMESPACE,
@@ -588,6 +605,11 @@ def test_openlineage_dag_with_extract_on_complete(
             eventTime=mock.ANY,
             run=Run(run_id, {
                 "nominalTime": NominalTimeRunFacet(start_time, end_time),
+                "parent": ParentRunFacet.create(
+                    runId=parent_run_id,
+                    namespace=DAG_NAMESPACE,
+                    name=dag_id
+                ),
                 "parentRun": ParentRunFacet.create(
                     runId=parent_run_id,
                     namespace=DAG_NAMESPACE,
@@ -699,6 +721,11 @@ def test_openlineage_dag_adds_custom_facets(
         eventTime=mock.ANY,
         run=Run(run_id, {
             "nominalTime": NominalTimeRunFacet(start_time, end_time),
+            "parent": ParentRunFacet.create(
+                runId=parent_run_id,
+                namespace=DAG_NAMESPACE,
+                name=DAG_ID
+            ),
             "parentRun": ParentRunFacet.create(
                 runId=parent_run_id,
                 namespace=DAG_NAMESPACE,
@@ -731,7 +758,7 @@ def test_openlineage_dag_adds_custom_facets(
 
 
 def make_parent_run_id(dag_id=DAG_ID, dag_run_id=DAG_RUN_ID):
-    return str(uuid.uuid3(uuid.NAMESPACE_URL, f'{dag_id}.{dag_run_id}'))
+    return str(uuid.uuid3(uuid.NAMESPACE_URL, f'{DAG_NAMESPACE}.{dag_id}.{dag_run_id}'))
 
 
 class TestFixtureHookingDummyOperator(DummyOperator):

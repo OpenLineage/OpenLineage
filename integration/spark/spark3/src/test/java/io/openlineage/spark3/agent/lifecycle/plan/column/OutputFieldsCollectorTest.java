@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import static org.mockito.Mockito.mock;
@@ -17,8 +22,9 @@ import org.mockito.Mockito;
 import scala.collection.Seq;
 import scala.collection.Seq$;
 
-public class OutputFieldsCollectorTest {
+class OutputFieldsCollectorTest {
 
+  private static final String SOME_NAME = "some-name";
   LogicalPlan plan = mock(LogicalPlan.class);
   ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
 
@@ -34,7 +40,7 @@ public class OutputFieldsCollectorTest {
           .toSeq();
 
   @BeforeEach
-  public void setup() {
+  void setup() {
     when(attr1.name()).thenReturn("name1");
     when(attr1.exprId()).thenReturn(exprId1);
 
@@ -46,7 +52,7 @@ public class OutputFieldsCollectorTest {
   }
 
   @Test
-  public void verifyOutputAttributeIsCollected() {
+  void verifyOutputAttributeIsCollected() {
     when(plan.output()).thenReturn(attrs);
 
     OutputFieldsCollector.collect(plan, builder);
@@ -56,11 +62,11 @@ public class OutputFieldsCollectorTest {
   }
 
   @Test
-  public void verifyAggregateExpressionsAreCollected() {
+  void verifyAggregateExpressionsAreCollected() {
     NamedExpression namedExpression = mock(NamedExpression.class);
     ExprId exprId = mock(ExprId.class);
 
-    when(namedExpression.name()).thenReturn("some-name");
+    when(namedExpression.name()).thenReturn(SOME_NAME);
     when(namedExpression.exprId()).thenReturn(exprId);
 
     Aggregate aggregate = mock(Aggregate.class);
@@ -74,15 +80,15 @@ public class OutputFieldsCollectorTest {
 
     OutputFieldsCollector.collect(aggregate, builder);
 
-    Mockito.verify(builder, times(1)).addOutput(exprId, "some-name");
+    Mockito.verify(builder, times(1)).addOutput(exprId, SOME_NAME);
   }
 
   @Test
-  public void verifyProjectListIsCollected() {
+  void verifyProjectListIsCollected() {
     NamedExpression namedExpression = mock(NamedExpression.class);
     ExprId exprId = mock(ExprId.class);
 
-    when(namedExpression.name()).thenReturn("some-name");
+    when(namedExpression.name()).thenReturn(SOME_NAME);
     when(namedExpression.exprId()).thenReturn(exprId);
 
     Project project = mock(Project.class);
@@ -96,11 +102,11 @@ public class OutputFieldsCollectorTest {
 
     OutputFieldsCollector.collect(project, builder);
 
-    Mockito.verify(builder, times(1)).addOutput(exprId, "some-name");
+    Mockito.verify(builder, times(1)).addOutput(exprId, SOME_NAME);
   }
 
   @Test
-  public void verifyChildrenOutputIsCollectedWhenNoDirectOutput() {
+  void verifyChildrenOutputIsCollectedWhenNoDirectOutput() {
     LogicalPlan childPlan = mock(LogicalPlan.class);
     when(childPlan.output()).thenReturn(attrs);
 

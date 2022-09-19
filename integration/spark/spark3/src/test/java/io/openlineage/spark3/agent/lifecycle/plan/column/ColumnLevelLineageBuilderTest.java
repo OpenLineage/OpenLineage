@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -18,6 +23,9 @@ import org.junit.jupiter.api.Test;
 
 class ColumnLevelLineageBuilderTest {
 
+  private static final String TABLE_A = "tableA";
+  private static final String INPUT_A = "inputA";
+  private static final String DB = "db";
   OpenLineageContext context = mock(OpenLineageContext.class);
   OpenLineage openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
   OpenLineage.SchemaDatasetFacet schema =
@@ -33,44 +41,44 @@ class ColumnLevelLineageBuilderTest {
   ExprId grandChildExprId2 = mock(ExprId.class);
 
   @BeforeEach
-  public void setup() {
+  void setup() {
     when(context.getOpenLineage()).thenReturn(openLineage);
   }
 
   @Test
-  public void testEmptyOutput() {
+  void testEmptyOutput() {
     assertTrue(builder.getInputsUsedFor("non-existing-output").isEmpty());
   }
 
   @Test
-  public void testSingleInputSingleOutput() {
-    DatasetIdentifier di = new DatasetIdentifier("t", "db");
+  void testSingleInputSingleOutput() {
+    DatasetIdentifier di = new DatasetIdentifier("t", DB);
     builder.addOutput(rootExprId, "a");
-    builder.addInput(rootExprId, di, "inputA");
+    builder.addInput(rootExprId, di, INPUT_A);
 
     List<Pair<DatasetIdentifier, String>> inputs = builder.getInputsUsedFor("a");
 
     assertTrue(builder.hasOutputs());
     assertEquals(1, inputs.size());
-    assertEquals("inputA", inputs.get(0).getRight());
+    assertEquals(INPUT_A, inputs.get(0).getRight());
     assertEquals(di, inputs.get(0).getLeft());
   }
 
   @Test
-  public void testMultipleOutputs() {
-    DatasetIdentifier di = new DatasetIdentifier("t", "db");
+  void testMultipleOutputs() {
+    DatasetIdentifier di = new DatasetIdentifier("t", DB);
     builder.addOutput(rootExprId, "a");
     builder.addOutput(rootExprId, "b");
-    builder.addInput(rootExprId, di, "inputA");
+    builder.addInput(rootExprId, di, INPUT_A);
 
     assertEquals(1, builder.getInputsUsedFor("a").size());
     assertEquals(1, builder.getInputsUsedFor("b").size());
   }
 
   @Test
-  public void testMultipleInputsAndSingleOutputWithNestedExpressions() {
-    DatasetIdentifier di1 = new DatasetIdentifier("t1", "db");
-    DatasetIdentifier di2 = new DatasetIdentifier("t2", "db");
+  void testMultipleInputsAndSingleOutputWithNestedExpressions() {
+    DatasetIdentifier di1 = new DatasetIdentifier("t1", DB);
+    DatasetIdentifier di2 = new DatasetIdentifier("t2", DB);
 
     builder.addOutput(rootExprId, "a");
     builder.addDependency(rootExprId, childExprId);
@@ -90,7 +98,7 @@ class ColumnLevelLineageBuilderTest {
   }
 
   @Test
-  public void testCycledExpressionDependency() {
+  void testCycledExpressionDependency() {
     builder.addOutput(rootExprId, "a");
     builder.addDependency(rootExprId, childExprId);
     builder.addDependency(childExprId, rootExprId); // cycle that should not happen
@@ -100,12 +108,12 @@ class ColumnLevelLineageBuilderTest {
   }
 
   @Test
-  public void testBuild() {
-    DatasetIdentifier diA = new DatasetIdentifier("tableA", "db");
-    DatasetIdentifier diB = new DatasetIdentifier("tableB", "db");
+  void testBuild() {
+    DatasetIdentifier diA = new DatasetIdentifier(TABLE_A, DB);
+    DatasetIdentifier diB = new DatasetIdentifier("tableB", DB);
 
     builder.addOutput(rootExprId, "a");
-    builder.addInput(rootExprId, diA, "inputA");
+    builder.addInput(rootExprId, diA, INPUT_A);
     builder.addInput(rootExprId, diB, "inputB");
 
     List<OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalInputFields> facetFields =
@@ -113,17 +121,17 @@ class ColumnLevelLineageBuilderTest {
 
     assertEquals(2, facetFields.size());
 
-    assertEquals("db", facetFields.get(0).getNamespace());
-    assertEquals("tableA", facetFields.get(0).getName());
-    assertEquals("inputA", facetFields.get(0).getField());
+    assertEquals(DB, facetFields.get(0).getNamespace());
+    assertEquals(TABLE_A, facetFields.get(0).getName());
+    assertEquals(INPUT_A, facetFields.get(0).getField());
 
-    assertEquals("db", facetFields.get(0).getNamespace());
-    assertEquals("tableA", facetFields.get(0).getName());
-    assertEquals("inputA", facetFields.get(0).getField());
+    assertEquals(DB, facetFields.get(0).getNamespace());
+    assertEquals(TABLE_A, facetFields.get(0).getName());
+    assertEquals(INPUT_A, facetFields.get(0).getField());
   }
 
   @Test
-  public void testBuildWithEmptyInputs() {
+  void testBuildWithEmptyInputs() {
     builder.addOutput(rootExprId, "a");
     builder.addDependency(rootExprId, childExprId);
 
@@ -132,12 +140,12 @@ class ColumnLevelLineageBuilderTest {
   }
 
   @Test
-  public void testBuildWithDuplicatedInputs() {
-    DatasetIdentifier di = new DatasetIdentifier("tableA", "db");
+  void testBuildWithDuplicatedInputs() {
+    DatasetIdentifier di = new DatasetIdentifier(TABLE_A, DB);
 
     builder.addOutput(rootExprId, "a");
-    builder.addInput(rootExprId, di, "inputA");
-    builder.addInput(childExprId, di, "inputA"); // the same input with different exprId
+    builder.addInput(rootExprId, di, INPUT_A);
+    builder.addInput(childExprId, di, INPUT_A); // the same input with different exprId
     builder.addDependency(rootExprId, childExprId);
 
     List<OpenLineage.ColumnLineageDatasetFacetFieldsAdditionalInputFields> facetFields =

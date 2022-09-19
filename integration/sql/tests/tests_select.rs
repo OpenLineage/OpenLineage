@@ -1,3 +1,6 @@
+// Copyright 2018-2022 contributors to the OpenLineage project
+// SPDX-License-Identifier: Apache-2.0
+
 use openlineage_sql::{parse_sql, BigQueryDialect, SqlMeta};
 use std::sync::Arc;
 
@@ -103,6 +106,17 @@ fn select_into() {
         SqlMeta {
             in_tables: table("table1"),
             out_tables: table("table0")
+        }
+    )
+}
+
+#[test]
+fn select_redshift() {
+    assert_eq!(
+        test_sql_dialect("SELECT [col1] FROM [test_schema].[test_table]", "redshift"),
+        SqlMeta {
+            in_tables: table("test_schema.test_table"),
+            out_tables: vec![]
         }
     )
 }

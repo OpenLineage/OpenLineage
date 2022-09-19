@@ -17,9 +17,18 @@
           "type" : "integer"
         } ]
       },
-      "tableProvider" : {
-        "provider" : "iceberg",
-        "format" : "parquet"
+      "symlinks": {
+        "identifiers": [
+          {
+            "namespace": "/tmp/write_iceberg_table_version",
+            "name": "db.table",
+            "type": "TABLE"
+          }
+        ]
+      },
+      "storage" : {
+        "storageLayer" : "iceberg",
+        "fileFormat" : "parquet"
       },
       "version" : {}
     }

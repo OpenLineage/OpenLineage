@@ -1,4 +1,6 @@
-# SPDX-License-Identifier: Apache-2.0.
+# Copyright 2018-2022 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
+
 import os
 import logging
 from dateutil.parser import parse
@@ -36,11 +38,18 @@ def env_var(var: str, default: Optional[str] = None) -> str:
         raise Exception(msg)
 
 
+def not_match(result, pattern) -> str:
+    if pattern in result:
+        raise Exception(f"Found {pattern} in {result}")
+    return "true"
+
+
 def setup_jinja() -> Environment:
     env = Environment()
     env.globals['any'] = any
     env.globals['is_datetime'] = is_datetime
     env.globals['env_var'] = env_var
+    env.globals['not_match'] = not_match
     return env
 
 

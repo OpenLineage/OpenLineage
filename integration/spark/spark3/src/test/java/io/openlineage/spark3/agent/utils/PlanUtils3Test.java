@@ -1,16 +1,17 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark3.agent.utils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.spark.agent.facets.TableProviderFacet;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.DatasetFactory;
@@ -19,6 +20,7 @@ import io.openlineage.spark3.agent.lifecycle.plan.catalog.CatalogUtils3;
 import io.openlineage.spark3.agent.lifecycle.plan.catalog.UnsupportedCatalogException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.apache.spark.sql.SparkSession;
@@ -33,7 +35,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import scala.Option;
 
-public class PlanUtils3Test {
+class PlanUtils3Test {
 
   OpenLineageContext openLineageContext = mock(OpenLineageContext.class);
   SparkSession sparkSession = mock(SparkSession.class);
@@ -49,7 +51,7 @@ public class PlanUtils3Test {
   OpenLineage openLineage = mock(OpenLineage.class);
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     tableProperties = new HashMap<>();
     when(openLineageContext.getSparkSession()).thenReturn(Optional.of(sparkSession));
     when(openLineageContext.getOpenLineage()).thenReturn(openLineage);
@@ -62,7 +64,7 @@ public class PlanUtils3Test {
   }
 
   @Test
-  public void testFromDataSourceV2Relation() {
+  void testFromDataSourceV2Relation() {
     try (MockedStatic<CatalogUtils3> mocked = mockStatic(CatalogUtils3.class)) {
       try (MockedStatic<PlanUtils> mockedPlanUtils = mockStatic(PlanUtils.class)) {
         DatasetIdentifier di = mock(DatasetIdentifier.class);
@@ -84,10 +86,9 @@ public class PlanUtils3Test {
         when(datasetFacetsBuilder.build()).thenReturn(datasetFacets);
 
         when(CatalogUtils3.getDatasetIdentifier(
-                sparkSession, tableCatalog, identifier, tableProperties))
+                openLineageContext, tableCatalog, identifier, tableProperties))
             .thenReturn(di);
-        when(datasetFactory.getDataset(di.getName(), di.getNamespace(), datasetFacets))
-            .thenReturn(dataset);
+        when(datasetFactory.getDataset(di, datasetFacetsBuilder)).thenReturn(dataset);
 
         assertEquals(
             Collections.singletonList(dataset),
@@ -98,13 +99,13 @@ public class PlanUtils3Test {
   }
 
   @Test
-  public void testFromDataSourceV2RelationWhenDatasetIdentifierEmpty() {
+  void testFromDataSourceV2RelationWhenDatasetIdentifierEmpty() {
     try (MockedStatic<CatalogUtils3> mocked = mockStatic(CatalogUtils3.class)) {
       DatasetIdentifier di = mock(DatasetIdentifier.class);
       OpenLineage.Dataset dataset = mock(OpenLineage.Dataset.class);
 
       when(CatalogUtils3.getDatasetIdentifier(
-              sparkSession, tableCatalog, identifier, tableProperties))
+              openLineageContext, tableCatalog, identifier, tableProperties))
           .thenThrow(new UnsupportedCatalogException("exception"));
       when(datasetFactory.getDataset(di, schema)).thenReturn(dataset);
 
@@ -116,57 +117,30 @@ public class PlanUtils3Test {
   }
 
   @Test
-  public void testFromDataSourceV2RelationWhenIdentifierEmpty() {
+  void testFromDataSourceV2RelationWhenIdentifierEmpty() {
     when(dataSourceV2Relation.identifier()).thenReturn(Option.empty());
-    assertThrows(
-        IllegalArgumentException.class,
-        () ->
-            PlanUtils3.fromDataSourceV2Relation(
-                datasetFactory, openLineageContext, dataSourceV2Relation));
+    final List<OpenLineage.Dataset> result =
+        PlanUtils3.fromDataSourceV2Relation(
+            datasetFactory, openLineageContext, dataSourceV2Relation);
+    assertEquals(0, result.size());
   }
 
   @Test
-  public void testFromDataSourceV2RelationWhenCatalogEmpty() {
+  void testFromDataSourceV2RelationWhenCatalogEmpty() {
     when(dataSourceV2Relation.identifier()).thenReturn(Option.apply(mock(Identifier.class)));
     when(dataSourceV2Relation.catalog()).thenReturn(Option.empty());
-    assertThrows(
-        IllegalArgumentException.class,
-        () ->
-            PlanUtils3.fromDataSourceV2Relation(
-                datasetFactory, openLineageContext, dataSourceV2Relation));
+    final List<OpenLineage.Dataset> result =
+        PlanUtils3.fromDataSourceV2Relation(
+            datasetFactory, openLineageContext, dataSourceV2Relation);
+    assertEquals(0, result.size());
   }
 
   @Test
-  public void testIncludeProviderFacet() {
-    try (MockedStatic<CatalogUtils3> mocked = mockStatic(CatalogUtils3.class)) {
-      Map<String, OpenLineage.DatasetFacet> facets = new HashMap<>();
-      TableProviderFacet tableProviderFacet = new TableProviderFacet("iceberg", "parquet");
-      when(CatalogUtils3.getTableProviderFacet(tableCatalog, tableProperties))
-          .thenReturn(Optional.of(tableProviderFacet));
-
-      PlanUtils3.includeProviderFacet(tableCatalog, tableProperties, facets);
-      assertEquals(tableProviderFacet, facets.get("tableProvider"));
-    }
-  }
-
-  @Test
-  public void testIncludeProviderFacetWhenNoProvider() {
-    try (MockedStatic<CatalogUtils3> mocked = mockStatic(CatalogUtils3.class)) {
-      Map<String, OpenLineage.DatasetFacet> facets = new HashMap<>();
-      when(CatalogUtils3.getTableProviderFacet(tableCatalog, tableProperties))
-          .thenReturn(Optional.empty());
-
-      PlanUtils3.includeProviderFacet(tableCatalog, tableProperties, facets);
-      assertFalse(facets.containsKey("tableProvider"));
-    }
-  }
-
-  @Test
-  public void testGetDatasetIdentifier() {
+  void testGetDatasetIdentifier() {
     DatasetIdentifier di = mock(DatasetIdentifier.class);
     try (MockedStatic<CatalogUtils3> mocked = mockStatic(CatalogUtils3.class)) {
       when(CatalogUtils3.getDatasetIdentifier(
-              sparkSession, tableCatalog, identifier, tableProperties))
+              openLineageContext, tableCatalog, identifier, tableProperties))
           .thenReturn(di);
 
       assertEquals(
@@ -178,10 +152,10 @@ public class PlanUtils3Test {
   }
 
   @Test
-  public void testGetDatasetIdentifierWhenCatalogUnsupported() {
+  void testGetDatasetIdentifierWhenCatalogUnsupported() {
     try (MockedStatic<CatalogUtils3> mocked = mockStatic(CatalogUtils3.class)) {
       when(CatalogUtils3.getDatasetIdentifier(
-              sparkSession, tableCatalog, identifier, tableProperties))
+              openLineageContext, tableCatalog, identifier, tableProperties))
           .thenThrow(new UnsupportedCatalogException("exception"));
 
       assertEquals(
@@ -192,7 +166,7 @@ public class PlanUtils3Test {
   }
 
   @Test
-  public void testGetDatasetIdentifierWhenNoSparkSession() {
+  void testGetDatasetIdentifierWhenNoSparkSession() {
     when(openLineageContext.getSparkSession()).thenReturn(Optional.empty());
     assertThrows(
         IllegalArgumentException.class,
@@ -202,11 +176,11 @@ public class PlanUtils3Test {
   }
 
   @Test
-  public void testGetDatasetIdentifierFromV2Relation() {
+  void testGetDatasetIdentifierFromV2Relation() {
     DatasetIdentifier di = mock(DatasetIdentifier.class);
     try (MockedStatic<CatalogUtils3> mocked = mockStatic(CatalogUtils3.class)) {
       when(CatalogUtils3.getDatasetIdentifier(
-              sparkSession, tableCatalog, identifier, tableProperties))
+              openLineageContext, tableCatalog, identifier, tableProperties))
           .thenReturn(di);
       assertEquals(
           di, PlanUtils3.getDatasetIdentifier(openLineageContext, dataSourceV2Relation).get());
@@ -214,7 +188,7 @@ public class PlanUtils3Test {
   }
 
   @Test
-  public void testGetDatasetIdentifierFromV2RelationWithMissingIdentifier() {
+  void testGetDatasetIdentifierFromV2RelationWithMissingIdentifier() {
     when(dataSourceV2Relation.identifier()).thenReturn(null).thenReturn(Option.empty());
     assertEquals(
         Optional.empty(),
@@ -225,7 +199,7 @@ public class PlanUtils3Test {
   }
 
   @Test
-  public void testGetDatasetIdentifierFromV2RelationWithMissingCatalog() {
+  void testGetDatasetIdentifierFromV2RelationWithMissingCatalog() {
     when(dataSourceV2Relation.catalog())
         .thenReturn(null)
         .thenReturn(Option.empty())

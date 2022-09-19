@@ -2,6 +2,14 @@
 proxy.yml
 !examples/kafka/proxy.yml
 
+# Gradle
+.gradle
+.project
+.classpath
+bin
+build
+*.class
+
 # MacOS
 .DS_Store
 __MACOSX

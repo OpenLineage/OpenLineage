@@ -51,17 +51,25 @@ Datasource hierarchy:
  * Host: examplecluster.\<XXXXXXXXXXXX>.us-west-2.redshift.amazonaws.com
  * Port: 5439
  
+OR
+
+ * Cluster identifier
+ * Region name
+ * Port (defaults to 5439)
+ 
 Naming hierarchy:
  * Database
  * Schema
  * Table
 
+One can interact with Redshift using SQL or Data API. Combination of cluster identifier + region name is the only common unique id available to both ways of interaction.
+
 Identifier:
- * Namespace: redshift://{host}:{port} of the cluster instance.
+ * Namespace: redshift://{cluster_identifier}.{region_name}:{port} of the cluster instance.
    * Scheme = redshift
-   * Authority = {host}:{port}
+   * Authority = {cluster_identifier}:{port}
  * Unique name: {database}.{schema}.{table}
-   * URI =  redshift://{host}:{port}/{database}.{schema}.{table}
+   * URI =  redshift://{cluster_identifier}.{region_name}:{port}/{database}.{schema}.{table}
   
 #### Snowflake
 See: [Object Identifiers — Snowflake Documentation](https://docs.snowflake.com/en/sql-reference/identifiers.html)
@@ -123,6 +131,38 @@ Identifier:
    * Authority = {host}:{port}
  * Unique name: {schema}.{table}
    * URI = sqlserver://{host}:{port};database={database}/{schema}.{table}
+
+#### Azure Cosmos DB:
+Datasource hierarchy:
+azurecosmos://%s.documents.azure.com/dbs/%s
+ * Host: \<XXXXXXXXXXXX>.documents.azure.com
+ * Database
+ 
+Naming hierarchy:
+ * Schema
+ * Table
+
+Identifier:
+ * Namespace: azurecosmos://{host}/dbs/{database}
+   * Scheme = azurecosmos
+   * Authority = {host}
+ * Unique name: /colls/{table}
+   * URI = azurecosmos://{host}.documents.azure.com/dbs/{database}/colls/{table}
+#### Azure Data Explorer:
+Datasource hierarchy:
+ * Host: \<clustername>.\<clusterlocation> 
+ * Database
+ * Table
+ 
+Naming hierarchy:
+ * Database
+ * Table
+
+Identifier:
+ * Namespace: azurekusto://{host}.kusto.windows.net/{database}
+   * Scheme = azurekusto
+ * Unique name: {database}/{table}
+   * URI = azurekusto://{host}.kusto.windows.net/{database}/{table}
 
 ### Distributed file systems/blob stores
 #### GCS

@@ -1,4 +1,5 @@
-# SPDX-License-Identifier: Apache-2.0.
+# Copyright 2018-2022 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
 
 from unittest import mock
 
@@ -90,10 +91,12 @@ TASK = SnowflakeOperator(
 
 
 def mock_get_hook(operator):
+    mocked = mock.MagicMock()
+    mocked.return_value.conn_name_attr = 'snowflake_conn_id'
     if hasattr(operator, 'get_db_hook'):
-        operator.get_db_hook = mock.MagicMock()
+        operator.get_db_hook = mocked
     else:
-        operator.get_hook = mock.MagicMock()
+        operator.get_hook = mocked
 
 
 def get_hook_method(operator):
@@ -102,14 +105,17 @@ def get_hook_method(operator):
     else:
         return operator.get_hook
 
-@mock.patch('openlineage.airflow.extractors.snowflake_extractor.get_table_schemas')  # noqa
-@mock.patch('openlineage.airflow.extractors.snowflake_extractor.get_connection')
-def test_extract(get_connection, mock_get_table_schemas):
+@mock.patch('openlineage.airflow.extractors.sql_extractor.get_table_schemas')  # noqa
+@mock.patch('openlineage.airflow.extractors.sql_extractor.get_connection')
+@mock.patch('openlineage.airflow.extractors.snowflake_extractor.execute_query_on_hook')
+def test_extract(execute_query_on_hook, get_connection, mock_get_table_schemas):
     source = Source(
         scheme='snowflake',
         authority='test_account',
         connection_url=CONN_URI_URIPARSED
     )
+
+    execute_query_on_hook.return_value = "public"
 
     mock_get_table_schemas.return_value = (
         [Dataset.from_table_schema(source, DB_TABLE_SCHEMA, DB_NAME)],
@@ -131,8 +137,9 @@ def test_extract(get_connection, mock_get_table_schemas):
         Dataset(
             name=f"{DB_NAME}.{DB_SCHEMA_NAME}.{DB_TABLE_NAME.name}",
             source=source,
-            fields=[Field.from_column(column) for column in DB_TABLE_COLUMNS]
-        ).to_openlineage_dataset()]
+            fields=[Field.from_column(column) for column in DB_TABLE_COLUMNS],
+        ).to_openlineage_dataset()
+    ]
 
     task_metadata = SnowflakeExtractor(TASK).extract()
 
@@ -142,13 +149,16 @@ def test_extract(get_connection, mock_get_table_schemas):
 
 
 @pytest.mark.skipif(parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"), reason="Airflow 2+ test")  # noqa
-@mock.patch('openlineage.airflow.extractors.snowflake_extractor.get_table_schemas')  # noqa
-@mock.patch('openlineage.airflow.extractors.snowflake_extractor.get_connection')
-def test_extract_query_ids(get_connection, mock_get_table_schemas):
+@mock.patch('openlineage.airflow.extractors.sql_extractor.get_table_schemas')  # noqa
+@mock.patch('openlineage.airflow.extractors.sql_extractor.get_connection')
+@mock.patch('openlineage.airflow.extractors.snowflake_extractor.execute_query_on_hook')
+def test_extract_query_ids(execute_query_on_hook, get_connection, mock_get_table_schemas):
     mock_get_table_schemas.return_value = (
         [],
         [],
     )
+
+    execute_query_on_hook.return_value = "public"
 
     conn = Connection()
     conn.parse_from_uri(uri=CONN_URI)
@@ -160,3 +170,72 @@ def test_extract_query_ids(get_connection, mock_get_table_schemas):
     task_metadata = SnowflakeExtractor(TASK).extract()
 
     assert task_metadata.run_facets["externalQuery"].externalQueryId == "1500100900"
+
+
+@mock.patch("openlineage.airflow.extractors.sql_extractor.get_connection")
+def test_information_schema_query(get_connection):
+    extractor = SnowflakeExtractor(TASK)
+
+    conn = Connection()
+    conn.parse_from_uri(uri=CONN_URI)
+    get_connection.return_value = conn
+
+    same_db_explicit = [
+        DbTableMeta("db.schema.table_a"),
+        DbTableMeta("DB.SCHEMA.table_b"),
+    ]
+
+    same_db_explicit_sql = (
+        "SELECT table_schema, table_name, column_name, ordinal_position, data_type "
+        "FROM DB.information_schema.columns "
+        "WHERE ( table_schema = 'SCHEMA' AND table_name IN ('TABLE_A','TABLE_B') );"
+    )
+
+    same_db_implicit = [DbTableMeta("SCHEMA.TABLE_A"), DbTableMeta("SCHEMA.TABLE_B")]
+
+    same_db_implicit_sql = (
+        "SELECT table_schema, table_name, column_name, ordinal_position, data_type "
+        "FROM FOOD_DELIVERY.information_schema.columns "
+        "WHERE ( table_schema = 'SCHEMA' AND table_name IN ('TABLE_A','TABLE_B') );"
+    )
+
+    different_databases_explicit = [
+        DbTableMeta("DB_1.SCHEMA.TABLE_A"),
+        DbTableMeta("DB_2.SCHEMA.TABLE_B"),
+    ]
+
+    different_databases_explicit_sql = (
+        "SELECT table_schema, table_name, column_name, ordinal_position, data_type "
+        "FROM DB_1.information_schema.columns "
+        "WHERE ( table_schema = 'SCHEMA' AND table_name IN ('TABLE_A') ) "
+        "UNION ALL "
+        "SELECT table_schema, table_name, column_name, ordinal_position, data_type "
+        "FROM DB_2.information_schema.columns "
+        "WHERE ( table_schema = 'SCHEMA' AND table_name IN ('TABLE_B') );"
+    )
+
+    different_databases_mixed = [
+        DbTableMeta("SCHEMA.TABLE_A"),
+        DbTableMeta("DB_2.SCHEMA.TABLE_B"),
+    ]
+
+    different_databases_mixed_sql = (
+        "SELECT table_schema, table_name, column_name, ordinal_position, data_type "
+        "FROM FOOD_DELIVERY.information_schema.columns "
+        "WHERE ( table_schema = 'SCHEMA' AND table_name IN ('TABLE_A') ) "
+        "UNION ALL "
+        "SELECT table_schema, table_name, column_name, ordinal_position, data_type "
+        "FROM DB_2.information_schema.columns "
+        "WHERE ( table_schema = 'SCHEMA' AND table_name IN ('TABLE_B') );"
+    )
+
+    assert extractor._information_schema_query(same_db_explicit) == same_db_explicit_sql
+    assert extractor._information_schema_query(same_db_implicit) == same_db_implicit_sql
+    assert (
+        extractor._information_schema_query(different_databases_explicit)
+        == different_databases_explicit_sql
+    )
+    assert (
+        extractor._information_schema_query(different_databases_mixed)
+        == different_databases_mixed_sql
+    )

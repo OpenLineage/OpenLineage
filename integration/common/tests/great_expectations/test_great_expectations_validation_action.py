@@ -1,4 +1,6 @@
+# Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
+
 import datetime
 import json
 import os
@@ -8,6 +10,7 @@ from unittest.mock import patch
 
 import pandas
 import pytest
+from ruamel import yaml
 from great_expectations.core import (
   ExpectationSuiteValidationResult,
   ExpectationValidationResult,
@@ -467,6 +470,143 @@ def test_dataset_from_sql_source_v3_api(test_db_file, tmpdir):
         ]
     )
 
+    assert len(input_ds["inputFacets"]) == 3
+    assert all(
+        k in input_ds["inputFacets"]
+        for k in
+        ["dataQuality", "greatExpectations_assertions", "dataQualityMetrics"]
+    )
+
+
+def test_dataset_from_sql_custom_query_v3_api(test_db_file, tmpdir):
+    connection_url = f"sqlite:///{test_db_file}"
+    engine = create_engine(connection_url)
+    engine.execute(
+        """CREATE TABLE IF NOT EXISTS join_table (name text, workplace text, position text)"""
+    )
+    custom_sql = (
+      f"""SELECT * FROM {TABLE_NAME} t INNER JOIN join_table j ON t.name=j.name"""
+    )
+
+    store_defaults = FilesystemStoreBackendDefaults(root_directory=tmpdir)
+    store_defaults.stores[store_defaults.expectations_store_name][
+      "store_backend"] = {
+      "class_name": "InMemoryStoreBackend"
+    }
+    project_config.stores = store_defaults.stores
+    project_config.expectations_store_name = store_defaults.expectations_store_name
+    project_config.validations_store_name = store_defaults.validations_store_name
+    project_config.checkpoint_store_name = store_defaults.checkpoint_store_name
+    project_config.evaluation_parameter_store_name = (
+      store_defaults.evaluation_parameter_store_name
+    )
+
+    ctx = BaseDataContext(project_config=project_config)
+    ctx.stores[store_defaults.expectations_store_name].set(
+        ExpectationSuiteIdentifier("test_suite"), ExpectationSuite("test_suite")
+    )
+
+    datasource_yaml = f"""
+    name: food_delivery_db
+    class_name: Datasource
+    execution_engine:
+      class_name: SqlAlchemyExecutionEngine
+      connection_string: {connection_url}
+    data_connectors:
+       default_runtime_data_connector_name:
+           class_name: RuntimeDataConnector
+           batch_identifiers:
+               - default_identifier_name
+       default_inferred_data_connector_name:
+           class_name: InferredAssetSqlDataConnector
+           include_schema_name: true
+    """
+
+    ctx.add_datasource(**yaml.load(datasource_yaml))
+    checkpoint: Checkpoint = Checkpoint(
+        "test_checkpoint",
+        ctx,
+        config_version=1,
+        expectation_suite_name="test_suite",
+        validation_operator_name="action_list_operator",
+    )
+    result = checkpoint.run(
+        run_name_template="the_run",
+        expectation_suite_name="test_suite",
+        validations=[
+          {
+            "batch_request": {
+                    "datasource_name": "food_delivery_db",
+                    "data_connector_name": "default_runtime_data_connector_name",
+                    "data_asset_name": "sql_query",
+                    "batch_identifiers": {
+                        "default_identifier_name": "default_identifier"
+                    },
+                    "runtime_parameters": {
+                        "query": custom_sql,
+                    }
+                },
+            "expectations_suite_name": "test_suite",
+            "action_list": [
+              {
+                "name": "openlineage",
+                "action": {
+                  "class_name": OpenLineageValidationAction.__name__,
+                  "module_name": OpenLineageValidationAction.__module__,
+                  "do_publish": False,
+                  "job_name": "test_expectations_job",
+                },
+              }
+            ],
+          }
+        ],
+    )
+
+    assert len(result.run_results) == 1
+    validation_id = next(iter(result.run_results))
+    ol_result = result.run_results[validation_id]["actions_results"][
+      "openlineage"]
+    assert len(ol_result["outputs"]) == 0
+    assert len(ol_result["inputs"]) == 2
+
+    input_ds = next(ds for ds in ol_result["inputs"] if ds["name"] == TABLE_NAME)
+
+    assert input_ds["namespace"] == "sqlite"
+    assert input_ds["name"] == TABLE_NAME
+    assert "dataSource" in input_ds["facets"]
+    assert input_ds["facets"]["dataSource"]["name"] == "sqlite"
+    assert input_ds["facets"]["dataSource"]["uri"] == "sqlite:/" + test_db_file
+
+    assert "schema" in input_ds["facets"]
+    assert len(input_ds["facets"]["schema"]["fields"]) == 4
+    assert all(
+        f in input_ds["facets"]["schema"]["fields"]
+        for f in [
+          {"name": "name", "type": "TEXT"},
+          {"name": "birthdate", "type": "TEXT"},
+          {"name": "address", "type": "TEXT"},
+          {"name": "size", "type": "INTEGER"},
+        ]
+    )
+
+    assert len(input_ds["inputFacets"]) == 3
+    assert all(
+        k in input_ds["inputFacets"]
+        for k in
+        ["dataQuality", "greatExpectations_assertions", "dataQualityMetrics"]
+    )
+
+    input_ds = next(ds for ds in ol_result['inputs'] if ds["name"] == "join_table")
+    assert "schema" in input_ds["facets"]
+    assert len(input_ds["facets"]["schema"]["fields"]) == 3
+    assert all(
+        f in input_ds["facets"]["schema"]["fields"]
+        for f in [
+          {"name": "name", "type": "TEXT"},
+          {"name": "workplace", "type": "TEXT"},
+          {"name": "position", "type": "TEXT"},
+        ]
+    )
     assert len(input_ds["inputFacets"]) == 3
     assert all(
         k in input_ds["inputFacets"]

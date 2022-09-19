@@ -1,5 +1,3 @@
-<!-- SPDX-License-Identifier: Apache-2.0 -->
-
 # Releasing
 
 1. Update [`CHANGELOG.md`](CHANGELOG.md)

@@ -11,6 +11,22 @@ plugins {
     id 'com.diffplug.spotless' version '5.12.1'
     id "com.adarshr.test-logger" version "2.1.1"
     id "com.github.johnrengelman.shadow" version "7.1.2"
+    id "pmd"
+}
+
+pmd {
+    consoleOutput = true
+    toolVersion = "6.46.0"
+    rulesMinimumPriority = 5
+    ruleSetFiles = rootProject.files("pmd-openlineage.xml")
+    ruleSets = []
+    ignoreFailures = true
+}
+
+pmdMain {
+    reports {
+        html.required = true
+    }
 }
 
 repositories {
@@ -24,16 +40,10 @@ repositories {
 archivesBaseName='openlineage-spark-spark3'
 
 ext {
-    assertjVersion = '3.20.2'
     bigqueryVersion = '0.21.1'
-    junit5Version = '5.7.2'
-    sparkVersion = '3.1.2'
+    sparkVersion = '3.1.3'
     jacksonVersion = '2.10.0'
-    postgresqlVersion = '42.2.19'
     lombokVersion = '1.18.20'
-    mockitoVersion = '3.11.2'
-    testcontainersVersion = '1.15.3'
-    isReleaseVersion = !version.endsWith('SNAPSHOT')
 }
 
 dependencies {
@@ -77,9 +87,9 @@ def commonTestConfiguration = {
     systemProperties = [
             'junit.platform.output.capture.stdout': 'true',
             'junit.platform.output.capture.stderr': 'true',
-            'spark.version'                       : '3.1.2',
+            'spark.version'                       : "${sparkVersion}",
             'openlineage.spark.jar'               : "${archivesBaseName}-${project.version}.jar",
-            'kafka.package.version'               : 'org.apache.spark:spark-sql-kafka-0-10_2.12:3.1.2',
+            'kafka.package.version'               : "org.apache.spark:spark-sql-kafka-0-10_2.12:${sparkVersion}",
             'mockserver.logLevel'                 : 'ERROR'
     ]
 

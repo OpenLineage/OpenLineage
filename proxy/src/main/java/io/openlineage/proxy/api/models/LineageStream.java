@@ -1,6 +1,7 @@
 /*
- * SPDX-License-Identifier: Apache-2.0.
- */
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.proxy.api.models;
 
@@ -17,11 +18,11 @@ public abstract class LineageStream {
    */
   enum Type {
     CONSOLE,
+    HTTP,
     KAFKA
   }
 
-  private final Type type;
-
+  private final Type type; // NOPMD
   /**
    * The constructor sets up the type for destination for logging purposes.
    *

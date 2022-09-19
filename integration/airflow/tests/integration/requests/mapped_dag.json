@@ -1,0 +1,185 @@
+[
+  {
+    "eventType": "START",
+    "job": {
+      "facets": {
+        "sourceCode": {
+          "language": "python",
+          "source": "        python_callable=lambda: list(map(lambda x: \"echo \" + str(x), [1, 2, 3])),\n"
+        }
+      },
+      "name": "mapped_dag.get_input",
+      "namespace": "food_delivery"
+    },
+    "run": {
+      "facets": {
+        "airflow_runArgs": {
+          "externalTrigger": false
+        },
+        "parent": {
+          "job": {
+            "name": "mapped_dag",
+            "namespace": "food_delivery"
+          }
+        },
+        "unknownSourceAttribute": {
+          "unknownItems": [
+            {
+              "type": "operator",
+              "name": "PythonOperator",
+              "properties": {}
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "eventType": "START",
+    "job": {
+      "facets": {
+        "sourceCode": {
+          "language": "bash"
+        }
+      },
+      "name": "mapped_dag.multiply",
+      "namespace": "food_delivery"
+    },
+    "run": {
+      "facets": {
+        "airflow_runArgs": {
+          "externalTrigger": false
+        },
+        "parent": {
+          "job": {
+            "name": "mapped_dag",
+            "namespace": "food_delivery"
+          }
+        },
+        "airflow_mappedTask": {
+          "operatorClass": "airflow.operators.bash.BashOperator"
+        },
+        "unknownSourceAttribute": {
+          "unknownItems": [
+            {
+              "type": "operator",
+              "name": "BashOperator"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "eventType": "START",
+    "job": {
+      "name": "mapped_dag.total",
+      "namespace": "food_delivery"
+    },
+    "run": {
+      "facets": {
+        "airflow_runArgs": {
+          "externalTrigger": false
+        },
+        "parent": {
+          "job": {
+            "name": "mapped_dag",
+            "namespace": "food_delivery"
+          }
+        }
+      }
+    }
+  },
+  {
+    "eventType": "START",
+    "job": {
+      "facets": {
+        "sourceCode": {
+          "language": "python",
+          "source": "        python_callable=lambda: list(map(lambda x: \"echo \" + str(x), [1, 2, 3])),\n"
+        }
+      },
+      "name": "mapped_dag.get_input",
+      "namespace": "food_delivery"
+    },
+    "run": {
+      "facets": {
+        "airflow_runArgs": {
+          "externalTrigger": false
+        },
+        "parent": {
+          "job": {
+            "name": "mapped_dag",
+            "namespace": "food_delivery"
+          }
+        },
+        "unknownSourceAttribute": {
+          "unknownItems": [
+            {
+              "type": "operator",
+              "name": "PythonOperator",
+              "properties": {}
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "eventType": "COMPLETE",
+    "job": {
+      "facets": {
+        "sourceCode": {
+          "language": "python",
+          "source": "        python_callable=lambda: list(map(lambda x: \"echo \" + str(x), [1, 2, 3])),\n"
+        }
+      },
+      "name": "mapped_dag.get_input",
+      "namespace": "food_delivery"
+    },
+    "run": {
+      "facets": {
+        "unknownSourceAttribute": {
+          "unknownItems": [
+            {
+              "type": "operator",
+              "name": "PythonOperator",
+              "properties": {}
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "eventType": "COMPLETE",
+    "job": {
+      "facets": {
+        "sourceCode": {
+          "language": "bash"
+        }
+      },
+      "name": "mapped_dag.multiply",
+      "namespace": "food_delivery"
+    },
+    "run": {
+      "facets": {
+        "unknownSourceAttribute": {
+          "unknownItems": [
+            {
+              "type": "operator",
+              "name": "BashOperator"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "eventType": "COMPLETE",
+    "job": {
+      "name": "mapped_dag.total",
+      "namespace": "food_delivery"
+    }
+  }
+]

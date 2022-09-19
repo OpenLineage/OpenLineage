@@ -21,6 +21,15 @@
           "name" : "b",
           "type" : "string"
         } ]
+      },
+      "symlinks": {
+        "identifiers": [
+          {
+            "namespace": "/tmp/v2_create",
+            "name": "db.create_table_test",
+            "type": "TABLE"
+          }
+        ]
       }
     }
   } ]

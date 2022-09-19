@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark.agent.lifecycle.plan;
 
@@ -25,7 +28,7 @@ import scala.collection.Map$;
 import scala.collection.immutable.HashMap;
 
 @ExtendWith(SparkAgentTestExtension.class)
-public class TruncateTableCommandVisitorTest {
+class TruncateTableCommandVisitorTest {
 
   SparkSession session;
   TruncateTableCommandVisitor visitor;
@@ -52,7 +55,7 @@ public class TruncateTableCommandVisitorTest {
   }
 
   @Test
-  public void testTruncateTableCommandWhenTableDoesNotExist() {
+  void testTruncateTableCommandWhenTableDoesNotExist() {
     // make sure table does not exist
     session.sessionState().catalog().dropTable(table, true, true);
     try {
@@ -69,7 +72,7 @@ public class TruncateTableCommandVisitorTest {
   }
 
   @Test
-  public void testTruncateCommand() {
+  void testTruncateCommand() {
     // create some table
     StructType schema =
         new StructType(

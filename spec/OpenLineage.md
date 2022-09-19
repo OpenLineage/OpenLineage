@@ -1,5 +1,3 @@
-<!-- SPDX-License-Identifier: Apache-2.0 -->
-
 # OpenLineage Spec
 
 ## Specification
@@ -113,6 +111,8 @@ Example of valid name is `BigQueryStatisticsJobFacet` and it's key `bigQuery_sta
 
 - **parent**: Captures the parent job and Run when the run was spawn from a parent run. For example in the case of Airflow, there's a run for the DAG that then spawns runs for individual tasks that would refer to the parent run as the DAG run. Similarly when a SparkOperator starts a Spark job, this creates a separate run that refers to the task run as its parent.
 
+- **errorMessage**: Captures potential error message, programming language - and optionally stack trace - with which the run failed. 
+
 #### Job Facets
 
 - **sourceCodeLocation**: Captures the source code location and version (example: git sha) of the job.
@@ -120,6 +120,8 @@ Example of valid name is `BigQueryStatisticsJobFacet` and it's key `bigQuery_sta
 - **sourceCode**: Captures language (ex. python) and actual source code of the job.
 
 - **sql**: Capture the SQL query if this job is a SQL query.
+
+- **ownership**: Captures the owners of the job
 
 #### Dataset Facets
 
@@ -130,6 +132,10 @@ Example of valid name is `BigQueryStatisticsJobFacet` and it's key `bigQuery_sta
 - **lifecycleStateChange**: Captures the lifecycle states of the dataset like: alter, create, drop, overwrite, rename, truncate.
 
 - **version**: Captures the dataset version when versioning is defined by database (ex. Iceberg snapshot ID)
+
+- [**columnLineage**](facets/ColumnLineageDatasetFacet.md): Captures the column-level lineage
+
+- **ownership**: Captures the owners of the dataset
 
 #### Input Dataset Facets
 

@@ -1,24 +1,40 @@
-# SPDX-License-Identifier: Apache-2.0.
+# Copyright 2018-2022 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
+
+import datetime
 import importlib
 import json
 import logging
 import os
 import subprocess
-from typing import TYPE_CHECKING
+from collections import defaultdict
+from typing import TYPE_CHECKING, Type, Dict, Any, List
 from uuid import uuid4
 from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
 from typing import Optional
 
+from airflow.models import DAG as AIRFLOW_DAG
 from airflow.version import version as AIRFLOW_VERSION
 
 from pkg_resources import parse_version
 
-from openlineage.airflow.facets import AirflowVersionRunFacet, AirflowRunArgsRunFacet
+from openlineage.airflow.facets import (
+    AirflowMappedTaskRunFacet,
+    AirflowVersionRunFacet,
+    AirflowRunArgsRunFacet
+)
+from openlineage.client.facet import (
+    DataQualityMetricsInputDatasetFacet,
+    ColumnMetric,
+    DataQualityAssertionsDatasetFacet,
+    Assertion
+)
+from openlineage.client.utils import RedactMixin
 from pendulum import from_timestamp
 
 
 if TYPE_CHECKING:
-    from airflow.models import Connection
+    from airflow.models import Connection, BaseOperator, TaskInstance
 
 
 log = logging.getLogger(__name__)
@@ -27,6 +43,12 @@ _NOMINAL_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
 def openlineage_job_name(dag_id: str, task_id: str) -> str:
     return f'{dag_id}.{task_id}'
+
+
+def get_operator_class(task: "BaseOperator") -> Type:
+    if task.__class__.__name__ in ('DecoratedMappedOperator', 'MappedOperator'):
+        return task.operator_class
+    return task.__class__
 
 
 class JobIdMapping:
@@ -65,13 +87,27 @@ class JobIdMapping:
         return "openlineage_id_mapping-{}-{}".format(job_name, run_id)
 
 
+def to_json_encodable(task: "BaseOperator") -> Dict[str, object]:
+    def _task_encoder(obj):
+        if isinstance(obj, datetime.datetime):
+            return obj.isoformat()
+        elif isinstance(obj, AIRFLOW_DAG):
+            return {'dag_id': obj.dag_id,
+                    'tags': obj.tags,
+                    'schedule_interval': obj.schedule_interval}
+        else:
+            return str(obj)
+
+    return json.loads(json.dumps(task.__dict__, default=_task_encoder))
+
+
 class SafeStrDict(dict):
     def __str__(self):
         castable = list()
-        for attr, val in self.items():
+        for key, val in self.items():
             try:
-                str(attr), str(val)
-                castable.append((attr, val))
+                str(key), str(val)
+                castable.append((key, val))
             except (TypeError, NotImplementedError):
                 continue
         return str(dict(castable))
@@ -221,11 +257,20 @@ def get_job_name(task):
     return f'{task.dag_id}.{task.task_id}'
 
 
-def get_custom_facets(task, is_external_trigger: bool):
-    return {
+def get_custom_facets(
+    task, is_external_trigger: bool, task_instance: "TaskInstance" = None
+) -> Dict[str, Any]:
+    custom_facets = {
         "airflow_runArgs": AirflowRunArgsRunFacet(is_external_trigger),
-        "airflow_version": AirflowVersionRunFacet.from_task(task)
+        "airflow_version": AirflowVersionRunFacet.from_task(task),
     }
+    # check for -1 comes from SmartSensor compatibility with dynamic task mapping
+    # this comes from Airflow code
+    if hasattr(task_instance, "map_index") and getattr(task_instance, "map_index") != -1:
+        custom_facets["airflow_mappedTask"] = AirflowMappedTaskRunFacet.from_task_instance(
+            task_instance
+        )
+    return custom_facets
 
 
 def new_lineage_run_id(dag_run_id: str, task_id: str) -> str:
@@ -278,7 +323,7 @@ def try_import_from_string(path: str):
     try:
         return import_from_string(path)
     except ImportError as e:
-        logging.info(e.msg)     # type: ignore
+        logging.info(e.msg)  # type: ignore
         return None
 
 
@@ -295,3 +340,198 @@ def safe_import_airflow(airflow_1_path: str, airflow_2_path: str):
             airflow_1_path, airflow_2_path
         )
     )
+
+
+def build_check_facets() -> dict:
+    pass
+
+
+def build_value_check_facets() -> dict:
+    pass
+
+
+def build_threshold_check_facets() -> dict:
+    pass
+
+
+def build_interval_check_facets() -> dict:
+    pass
+
+
+def build_table_check_facets(checks) -> dict:
+    """
+    Function should expect to take the checks in the following form:
+    {
+        'row_count_check': {
+            'pass_value': 100,
+            'tolerance': .05,
+            'result': 101,
+            'success': True
+        }
+    }
+    """
+    facet_data = {}
+    assertion_data: Dict[str, List[Assertion]] = {"assertions": []}
+    for check, check_values in checks.items():
+        assertion_data["assertions"].append(
+            Assertion(
+                assertion=check,
+                success=check_values.get("success", None),
+            )
+        )
+    facet_data["rowCount"] = checks.get("row_count_check", {}).get("result", None)
+    facet_data["bytes"] = checks.get("bytes", {}).get("result", None)
+
+    data_quality_facet = DataQualityMetricsInputDatasetFacet(**facet_data)
+    data_quality_assertions_facet = DataQualityAssertionsDatasetFacet(**assertion_data)
+
+    return {
+        "dataQuality": data_quality_facet,
+        "dataQualityMetrics": data_quality_facet,
+        "dataQualityAssertions": data_quality_assertions_facet
+    }
+
+
+def build_column_check_facets(column_mapping) -> dict:
+    """
+    Function should expect the column_mapping to take the following form:
+    {
+        'col_name': {
+            'null_check': {
+                'pass_value': 0,
+                'result': 0,
+                'success': True
+            },
+            'min': {
+                'pass_value': 5,
+                'tolerance': 0.2,
+                'result': 1,
+                'success': False
+            }
+        }
+    }
+    """
+    facet_data: Dict[str, Any] = {"columnMetrics": defaultdict(dict)}
+    assertion_data: Dict[str, List[Assertion]] = {"assertions": []}
+    for col_name, checks in column_mapping.items():
+        for check, check_values in checks.items():
+            facet_key = map_facet_name(check)
+            facet_data["columnMetrics"][col_name][facet_key] = check_values.get("result", None)
+
+            assertion_data["assertions"].append(
+                Assertion(
+                    assertion=check,
+                    success=check_values.get("success", None),
+                    column=col_name
+                )
+            )
+        facet_data["columnMetrics"][col_name] = ColumnMetric(
+            **facet_data["columnMetrics"][col_name]
+        )
+
+    data_quality_facet = DataQualityMetricsInputDatasetFacet(**facet_data)
+    data_quality_assertions_facet = DataQualityAssertionsDatasetFacet(**assertion_data)
+
+    return {
+        "dataQuality": data_quality_facet,
+        "dataQualityMetrics": data_quality_facet,
+        "dataQualityAssertions": data_quality_assertions_facet
+    }
+
+
+def map_facet_name(check_name) -> str:
+    if "null" in check_name:
+        return "nullCount"
+    elif "distinct" in check_name:
+        return "distinctCount"
+    elif "sum" in check_name:
+        return "sum"
+    elif "count" in check_name:
+        return "count"
+    elif "min" in check_name:
+        return "min"
+    elif "max" in check_name:
+        return "max"
+    elif "quantiles" in check_name:
+        return "quantiles"
+    return ""
+
+
+def redact_with_exclusions(source: Any):
+    try:
+        from airflow.utils.log.secrets_masker import (
+            _secrets_masker,
+            should_hide_value_for_key,
+        )
+    except ImportError:
+        return source
+    import copy
+
+    sm = copy.deepcopy(_secrets_masker())
+    MAX_RECURSION_DEPTH = 20
+
+    def _redact(item, name: Optional[str], depth: int):
+        if depth > MAX_RECURSION_DEPTH:
+            return item
+        try:
+            if (
+                name
+                and should_hide_value_for_key(name)
+            ):
+                return sm._redact_all(item, depth)
+            if isinstance(item, dict):
+                return {
+                    dict_key: _redact(subval, name=dict_key, depth=(depth + 1))
+                    for dict_key, subval in item.items()
+                }
+            elif is_dataclass(item) or (is_json_serializable(item) and hasattr(item, '__dict__')):
+                for dict_key, subval in item.__dict__.items():
+                    if _is_name_redactable(dict_key, item):
+                        setattr(
+                            item,
+                            dict_key,
+                            _redact(subval, name=dict_key, depth=(depth + 1)),
+                        )
+                return item
+            elif isinstance(item, str):
+                if sm.replacer:
+                    return sm.replacer.sub("***", item)
+                return item
+            elif isinstance(item, (tuple, set)):
+                return tuple(
+                    _redact(subval, name=None, depth=(depth + 1)) for subval in item
+                )
+            elif isinstance(item, list):
+                return [
+                    _redact(subval, name=None, depth=(depth + 1)) for subval in item
+                ]
+            else:
+                return item
+        except Exception as e:
+            log.warning(
+                "Unable to redact %s" "Error was: %s: %s",
+                repr(item),
+                type(e).__name__,
+                str(e),
+            )
+            return item
+
+    return _redact(source, name=None, depth=0)
+
+
+def is_dataclass(item):
+    return getattr(item.__class__, "__attrs_attrs__", None) is not None
+
+
+def is_json_serializable(item):
+    try:
+        json.dumps(item)
+        return True
+    except (TypeError, ValueError):
+        return False
+
+
+def _is_name_redactable(name, redacted):
+    if not issubclass(redacted.__class__, RedactMixin):
+        return not name.startswith('_')
+    return name not in redacted.skip_redact

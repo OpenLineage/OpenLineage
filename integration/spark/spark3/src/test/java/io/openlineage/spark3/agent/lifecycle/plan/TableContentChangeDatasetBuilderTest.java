@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark3.agent.lifecycle.plan;
 
@@ -33,13 +36,14 @@ import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.Table;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
+import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import scala.Option;
 
-public class TableContentChangeDatasetBuilderTest {
+class TableContentChangeDatasetBuilderTest {
 
   OpenLineageContext openLineageContext = mock(OpenLineageContext.class);
   DataSourceV2Relation dataSourceV2Relation = mock(DataSourceV2Relation.class);
@@ -59,7 +63,7 @@ public class TableContentChangeDatasetBuilderTest {
   }
 
   @Test
-  public void testApplyForOverwriteByExpression() {
+  void testApplyForOverwriteByExpression() {
     OverwriteByExpression logicalPlan = mock(OverwriteByExpression.class);
     when(logicalPlan.table()).thenReturn(dataSourceV2Relation);
     verify(
@@ -67,7 +71,7 @@ public class TableContentChangeDatasetBuilderTest {
   }
 
   @Test
-  public void testApplyForOverwritePartitionsDynamic() {
+  void testApplyForOverwritePartitionsDynamic() {
     OverwritePartitionsDynamic logicalPlan = mock(OverwritePartitionsDynamic.class);
     when(logicalPlan.table()).thenReturn(dataSourceV2Relation);
     verify(
@@ -75,7 +79,7 @@ public class TableContentChangeDatasetBuilderTest {
   }
 
   @Test
-  public void testApplyForInsertIntoStatement() {
+  void testApplyForInsertIntoStatement() {
     InsertIntoStatement logicalPlan = mock(InsertIntoStatement.class);
     when(logicalPlan.table()).thenReturn(dataSourceV2Relation);
     when(logicalPlan.overwrite()).thenReturn(true);
@@ -84,35 +88,35 @@ public class TableContentChangeDatasetBuilderTest {
   }
 
   @Test
-  public void testApplyForDeleteFromTable() {
+  void testApplyForDeleteFromTable() {
     DeleteFromTable logicalPlan = mock(DeleteFromTable.class);
     when(logicalPlan.table()).thenReturn(dataSourceV2Relation);
     verify(logicalPlan, null);
   }
 
   @Test
-  public void testApplyForUpdateTable() {
+  void testApplyForUpdateTable() {
     UpdateTable logicalPlan = mock(UpdateTable.class);
     when(logicalPlan.table()).thenReturn(dataSourceV2Relation);
     verify(logicalPlan, null);
   }
 
   @Test
-  public void testApplyForReplaceData() {
+  void testApplyForReplaceData() {
     ReplaceData logicalPlan = mock(ReplaceData.class);
     when(logicalPlan.table()).thenReturn(dataSourceV2Relation);
     verify(logicalPlan, null);
   }
 
   @Test
-  public void testApplyForMergeIntoTable() {
+  void testApplyForMergeIntoTable() {
     MergeIntoTable logicalPlan = mock(MergeIntoTable.class);
     when(logicalPlan.targetTable()).thenReturn(dataSourceV2Relation);
     verify(logicalPlan, null);
   }
 
   @Test
-  public void testApplyForInsertIntoStatementWithOverwriteDisabled() {
+  void testApplyForInsertIntoStatementWithOverwriteDisabled() {
     InsertIntoStatement logicalPlan = mock(InsertIntoStatement.class);
     when(logicalPlan.table()).thenReturn(dataSourceV2Relation);
     when(logicalPlan.overwrite()).thenReturn(false);
@@ -120,7 +124,7 @@ public class TableContentChangeDatasetBuilderTest {
   }
 
   @Test
-  public void testIsDefinedAtLogicalPlan() {
+  void testIsDefinedAtLogicalPlan() {
     assertTrue(builder.isDefinedAtLogicalPlan(mock(OverwriteByExpression.class)));
     assertTrue(builder.isDefinedAtLogicalPlan(mock(OverwritePartitionsDynamic.class)));
     assertTrue(builder.isDefinedAtLogicalPlan(mock(InsertIntoStatement.class)));
@@ -158,9 +162,11 @@ public class TableContentChangeDatasetBuilderTest {
         when(PlanUtils3.fromDataSourceV2Relation(
                 any(), eq(openLineageContext), eq(dataSourceV2Relation), eq(datasetFacetsBuilder)))
             .thenReturn(Collections.singletonList(dataset));
-        when(CatalogUtils3.getDatasetVersion(any(), any(), any())).thenReturn(Optional.of("v2"));
+        when(CatalogUtils3.getDatasetVersion(any(), any(), any(), any()))
+            .thenReturn(Optional.of("v2"));
 
-        List<OpenLineage.OutputDataset> datasetList = builder.apply(logicalPlan);
+        List<OpenLineage.OutputDataset> datasetList =
+            builder.apply(new SparkListenerSQLExecutionEnd(1L, 1L), logicalPlan);
 
         assertEquals(1, datasetList.size());
         assertEquals(dataset, datasetList.get(0));

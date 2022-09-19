@@ -26,3 +26,4 @@ If you're contributing a new integration, please specify the scope of the integr
 - [ ] You've updated any relevant documentation (_if relevant_)
 - [ ] You've updated the [`CHANGELOG.md`](https://github.com/OpenLineage/OpenLineage/blob/main/CHANGELOG.md) with details about your change under the "Unreleased" section (_if relevant, depending on the change, this may not be necessary_)
 - [ ] You've versioned the core OpenLineage model or facets according to [SchemaVer](https://docs.snowplowanalytics.com/docs/pipeline-components-and-applications/iglu/common-architecture/schemaver) (_if relevant_)
+- [ ] You've added a [header](https://github.com/OpenLineage/OpenLineage/tree/main/.github/header_templates.md) to source files (_if relevant_)

@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.client.transports;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -6,7 +11,7 @@ import java.net.URI;
 import java.util.Properties;
 import org.junit.jupiter.api.Test;
 
-public class TransportFactoryTest {
+class TransportFactoryTest {
 
   @Test
   void createsConsoleTransport() {

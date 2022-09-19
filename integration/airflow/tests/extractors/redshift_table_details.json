@@ -1,0 +1,55 @@
+{
+  "ColumnList": [
+    {
+      "isCaseSensitive": false,
+      "isCurrency": false,
+      "isSigned": false,
+      "length": 10,
+      "name": "fruit_id",
+      "nullable": 1,
+      "precision": 10,
+      "scale": 0,
+      "schemaName": "public",
+      "tableName": "fruit",
+      "typeName": "int4"
+    },
+    {
+      "isCaseSensitive": false,
+      "isCurrency": false,
+      "isSigned": false,
+      "length": 256,
+      "name": "name",
+      "nullable": 0,
+      "precision": 256,
+      "scale": 0,
+      "schemaName": "public",
+      "tableName": "fruit",
+      "typeName": "varchar"
+    },
+    {
+      "isCaseSensitive": false,
+      "isCurrency": false,
+      "isSigned": false,
+      "length": 256,
+      "name": "color",
+      "nullable": 0,
+      "precision": 256,
+      "scale": 0,
+      "schemaName": "public",
+      "tableName": "fruit",
+      "typeName": "varchar"
+    }
+  ],
+  "TableName": "dev.public.fruit",
+  "ResponseMetadata": {
+    "RequestId": "81d95b02-fad5-46b3-9a06-1b5b6198afdc",
+    "HTTPStatusCode": 200,
+    "HTTPHeaders": {
+      "x-amzn-requestid": "81d95b02-fad5-46b3-9a06-1b5b6198afdc",
+      "content-type": "application/x-amz-json-1.1",
+      "content-length": "620",
+      "date": "Thu, 14 Jul 2022 08:46:36 GMT"
+    },
+    "RetryAttempts": 0
+  }
+}

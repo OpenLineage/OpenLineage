@@ -1,8 +1,11 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
-import io.openlineage.spark.agent.facets.TableProviderFacet;
+import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import java.util.Map;
 import java.util.Optional;
@@ -21,7 +24,8 @@ public interface CatalogHandler {
       Identifier identifier,
       Map<String, String> properties);
 
-  default Optional<TableProviderFacet> getTableProviderFacet(Map<String, String> properties) {
+  default Optional<OpenLineage.StorageDatasetFacet> getStorageDatasetFacet(
+      Map<String, String> properties) {
     return Optional.empty();
   }
 

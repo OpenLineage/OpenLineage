@@ -14,6 +14,15 @@
           "name": "file",
           "uri": "file"
         },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "/tmp/drop_test",
+              "name": "default.drop_table_test",
+              "type": "TABLE"
+            }
+          ]
+        },
         "lifecycleStateChange": {
           "lifecycleStateChange": "DROP"
         }

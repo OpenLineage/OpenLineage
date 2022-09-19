@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
@@ -16,11 +19,11 @@ import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions;
 import org.apache.spark.sql.execution.datasources.v2.jdbc.JDBCTableCatalog;
 import org.junit.jupiter.api.Test;
 
-public class JdbcHandlerTest {
+class JdbcHandlerTest {
 
   @Test
   @SneakyThrows
-  public void testGetDatasetIdentifier() {
+  void testGetDatasetIdentifier() {
     JdbcHandler handler = new JdbcHandler();
 
     JDBCTableCatalog tableCatalog = new JDBCTableCatalog();

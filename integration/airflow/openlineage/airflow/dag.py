@@ -1,12 +1,14 @@
-# SPDX-License-Identifier: Apache-2.0.
-import time
-import os
+# Copyright 2018-2022 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
+
 import copy
-import uuid
+import os
+import time
 
 from airflow.models import DAG as AIRFLOW_DAG
 from airflow.utils.state import State
 
+from openlineage.airflow.adapter import OpenLineageAdapter, _DAG_DEFAULT_NAMESPACE
 from openlineage.airflow.extractors.manager import ExtractorManager
 from openlineage.airflow.macros import lineage_run_id, lineage_parent_id
 from openlineage.airflow.utils import (
@@ -15,8 +17,6 @@ from openlineage.airflow.utils import (
     get_custom_facets,
     new_lineage_run_id, get_task_location, openlineage_job_name
 )
-
-from openlineage.airflow.adapter import OpenLineageAdapter, _DAG_DEFAULT_NAMESPACE
 
 _DAG_NAMESPACE = os.getenv('OPENLINEAGE_NAMESPACE', None)
 if not _DAG_NAMESPACE:
@@ -78,7 +78,7 @@ class DAG(AIRFLOW_DAG):
     # scheduler, where tasks are actually started
     def _register_dagrun(self, dagrun, is_external_trigger: bool, execution_date: str):
         self.log.debug(f"self.task_dict: {self.task_dict}")
-        parent_run_id = str(uuid.uuid3(uuid.NAMESPACE_URL, f'{self.dag_id}.{dagrun.run_id}'))
+        parent_run_id = _ADAPTER.build_dag_run_id(self.dag_id, dagrun.run_id)
         # Register each task in the DAG
         for task_id, task in self.task_dict.items():
             t = self._now_ms()
@@ -161,7 +161,7 @@ class DAG(AIRFLOW_DAG):
         run_id = new_lineage_run_id(dagrun.run_id, task.task_id)
 
         if not task_run_id:
-            parent_run_id = str(uuid.uuid3(uuid.NAMESPACE_URL, f'{self.dag_id}.{dagrun.run_id}'))
+            parent_run_id = _ADAPTER.build_dag_run_id(self.dag_id, dagrun.run_id)
             task_run_id = _ADAPTER.start_task(
                 run_id,
                 job_name,

@@ -1,9 +1,14 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark.agent.lifecycle;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -26,6 +31,7 @@ import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import lombok.SneakyThrows;
+import org.apache.commons.lang.RandomStringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.Partition;
 import org.apache.spark.sql.SQLContext;
@@ -66,13 +72,20 @@ import scala.collection.immutable.HashMap;
 import scala.collection.immutable.Map$;
 
 class LogicalPlanSerializerTest {
+  private static final String TEST_DATA = "test_data";
+  private static final String NAME = "name";
+  private static final String TEST = "test";
+  private static final String RESOURCES = "resources";
+  private static final String SRC = "src";
+  private static final String SERDE = "serde";
+  private static final String EXPR_ID = "exprId";
   private final TypeReference<Map<String, Object>> mapTypeReference =
       new TypeReference<Map<String, Object>>() {};
   private final ObjectMapper objectMapper = new ObjectMapper();
   private final LogicalPlanSerializer logicalPlanSerializer = new LogicalPlanSerializer();
 
   @Test
-  public void testSerializeLogicalPlan() throws IOException {
+  void testSerializeLogicalPlan() throws IOException {
     String jdbcUrl = "jdbc:postgresql://postgreshost:5432/sparkdata";
     String sparkTableName = "my_spark_table";
     scala.collection.immutable.Map<String, String> map =
@@ -85,7 +98,7 @@ class LogicalPlanSerializerTest {
         new JDBCRelation(
             new StructType(
                 new StructField[] {
-                  new StructField("name", StringType$.MODULE$, false, Metadata.empty())
+                  new StructField(NAME, StringType$.MODULE$, false, Metadata.empty())
                 }),
             new Partition[] {},
             new JDBCOptions(jdbcUrl, sparkTableName, map),
@@ -97,7 +110,7 @@ class LogicalPlanSerializerTest {
                 .<AttributeReference>newBuilder()
                 .$plus$eq(
                     new AttributeReference(
-                        "name",
+                        NAME,
                         StringType$.MODULE$,
                         false,
                         Metadata.empty(),
@@ -118,9 +131,9 @@ class LogicalPlanSerializerTest {
         objectMapper.readValue(logicalPlanSerializer.serialize(logicalRelation), mapTypeReference);
 
     Path expectedAggregateNodePath =
-        Paths.get("src", "test", "resources", "test_data", "serde", "aggregate-node.json");
+        Paths.get(SRC, TEST, RESOURCES, TEST_DATA, SERDE, "aggregate-node.json");
     Path logicalRelationNodePath =
-        Paths.get("src", "test", "resources", "test_data", "serde", "logicalrelation-node.json");
+        Paths.get(SRC, TEST, RESOURCES, TEST_DATA, SERDE, "logicalrelation-node.json");
 
     Map<String, Object> expectedAggregateNode =
         objectMapper.readValue(expectedAggregateNodePath.toFile(), mapTypeReference);
@@ -133,7 +146,7 @@ class LogicalPlanSerializerTest {
   }
 
   @Test
-  public void testSerializeLogicalPlanReturnsAlwaysValidJson() throws IOException {
+  void testSerializeLogicalPlanReturnsAlwaysValidJson() throws IOException {
     LogicalPlan notSerializablePlan =
         new LogicalPlan() {
           @Override
@@ -172,7 +185,7 @@ class LogicalPlanSerializerTest {
   }
 
   @Test
-  public void testSerializeInsertIntoHadoopPlan()
+  void testSerializeInsertIntoHadoopPlan()
       throws IOException, InvocationTargetException, IllegalAccessException {
     SparkSession session = SparkSession.builder().master("local").getOrCreate();
 
@@ -181,15 +194,15 @@ class LogicalPlanSerializerTest {
             new CatalogFileIndex(
                 session,
                 CatalogTableTestUtils.getCatalogTable(
-                    new TableIdentifier("test", Option.apply("db"))),
+                    new TableIdentifier(TEST, Option.apply("db"))),
                 100L),
             new StructType(
                 new StructField[] {
-                  new StructField("name", StringType$.MODULE$, false, Metadata.empty())
+                  new StructField(NAME, StringType$.MODULE$, false, Metadata.empty())
                 }),
             new StructType(
                 new StructField[] {
-                  new StructField("name", StringType$.MODULE$, false, Metadata.empty())
+                  new StructField(NAME, StringType$.MODULE$, false, Metadata.empty())
                 }),
             Option.empty(),
             new TextFileFormat(),
@@ -202,7 +215,7 @@ class LogicalPlanSerializerTest {
                 .<AttributeReference>newBuilder()
                 .$plus$eq(
                     new AttributeReference(
-                        "name",
+                        NAME,
                         StringType$.MODULE$,
                         false,
                         Metadata.empty(),
@@ -220,7 +233,7 @@ class LogicalPlanSerializerTest {
                 .<Attribute>newBuilder()
                 .$plus$eq(
                     new AttributeReference(
-                        "name",
+                        NAME,
                         StringType$.MODULE$,
                         false,
                         Metadata.empty(),
@@ -234,7 +247,7 @@ class LogicalPlanSerializerTest {
             SaveMode.Overwrite,
             Option.empty(),
             Option.empty(),
-            Seq$.MODULE$.<String>newBuilder().$plus$eq("name").result());
+            Seq$.MODULE$.<String>newBuilder().$plus$eq(NAME).result());
 
     Map<String, Object> commandActualNode =
         objectMapper.readValue(logicalPlanSerializer.serialize(command), mapTypeReference);
@@ -242,9 +255,9 @@ class LogicalPlanSerializerTest {
         objectMapper.readValue(logicalPlanSerializer.serialize(logicalRelation), mapTypeReference);
 
     Path expectedCommandNodePath =
-        Paths.get("src", "test", "resources", "test_data", "serde", "insertintofs-node.json");
+        Paths.get(SRC, TEST, RESOURCES, TEST_DATA, SERDE, "insertintofs-node.json");
     Path expectedHadoopFSNodePath =
-        Paths.get("src", "test", "resources", "test_data", "serde", "hadoopfsrelation-node.json");
+        Paths.get(SRC, TEST, RESOURCES, TEST_DATA, SERDE, "hadoopfsrelation-node.json");
 
     Map<String, Object> expectedCommandNode =
         objectMapper.readValue(expectedCommandNodePath.toFile(), mapTypeReference);
@@ -252,14 +265,13 @@ class LogicalPlanSerializerTest {
         objectMapper.readValue(expectedHadoopFSNodePath.toFile(), mapTypeReference);
 
     assertThat(commandActualNode)
-        .satisfies(new MatchesMapRecursively(expectedCommandNode, Collections.singleton("exprId")));
+        .satisfies(new MatchesMapRecursively(expectedCommandNode, Collections.singleton(EXPR_ID)));
     assertThat(hadoopFSActualNode)
-        .satisfies(
-            new MatchesMapRecursively(expectedHadoopFSNode, Collections.singleton("exprId")));
+        .satisfies(new MatchesMapRecursively(expectedHadoopFSNode, Collections.singleton(EXPR_ID)));
   }
 
   @Test
-  public void testSerializeBigQueryPlan() throws IOException {
+  void testSerializeBigQueryPlan() throws IOException {
     String query = "SELECT date FROM bigquery-public-data.google_analytics_sample.test";
     System.setProperty("GOOGLE_CLOUD_PROJECT", "test_serialization");
     SparkBigQueryConfig config =
@@ -283,7 +295,7 @@ class LogicalPlanSerializerTest {
     BigQueryRelation bigQueryRelation =
         new BigQueryRelation(
             config,
-            TableInfo.newBuilder(TableId.of("dataset", "test"), new TestTableDefinition()).build(),
+            TableInfo.newBuilder(TableId.of("dataset", TEST), new TestTableDefinition()).build(),
             mock(SQLContext.class));
 
     LogicalRelation logicalRelation =
@@ -293,7 +305,7 @@ class LogicalPlanSerializerTest {
                 .<AttributeReference>newBuilder()
                 .$plus$eq(
                     new AttributeReference(
-                        "name",
+                        NAME,
                         StringType$.MODULE$,
                         false,
                         Metadata.empty(),
@@ -312,9 +324,9 @@ class LogicalPlanSerializerTest {
         objectMapper.readValue(logicalPlanSerializer.serialize(logicalRelation), mapTypeReference);
 
     Path expectedCommandNodePath =
-        Paths.get("src", "test", "resources", "test_data", "serde", "insertintods-node.json");
+        Paths.get(SRC, TEST, RESOURCES, TEST_DATA, SERDE, "insertintods-node.json");
     Path expectedBigQueryRelationNodePath =
-        Paths.get("src", "test", "resources", "test_data", "serde", "bigqueryrelation-node.json");
+        Paths.get(SRC, TEST, RESOURCES, TEST_DATA, SERDE, "bigqueryrelation-node.json");
 
     Map<String, Object> expectedCommandNode =
         objectMapper.readValue(expectedCommandNodePath.toFile(), mapTypeReference);
@@ -322,16 +334,16 @@ class LogicalPlanSerializerTest {
         objectMapper.readValue(expectedBigQueryRelationNodePath.toFile(), mapTypeReference);
 
     assertThat(commandActualNode)
-        .satisfies(new MatchesMapRecursively(expectedCommandNode, Collections.singleton("exprId")));
+        .satisfies(new MatchesMapRecursively(expectedCommandNode, Collections.singleton(EXPR_ID)));
     assertThat(bigqueryActualNode)
         .satisfies(
             new MatchesMapRecursively(
-                expectedBigQueryRelationNode, Collections.singleton("exprId")));
+                expectedBigQueryRelationNode, Collections.singleton(EXPR_ID)));
   }
 
   @Test
   @SneakyThrows
-  public void testSerializeFiltersFields() {
+  void testSerializeFiltersFields() {
     LogicalPlan plan =
         new LogicalPlan() {
           public SessionCatalog sessionCatalog =
@@ -344,6 +356,7 @@ class LogicalPlanSerializerTest {
             return null;
           }
 
+          @Override
           public StructType schema() {
             return new StructType(
                 new StructField[] {
@@ -378,8 +391,59 @@ class LogicalPlanSerializerTest {
         logicalPlanSerializer.serialize(plan).contains("Unable to serialize logical plan due to"));
   }
 
+  @Test
+  void testSerializeSlicesExcessivePayload() {
+    LogicalPlan plan =
+        new LogicalPlan() {
+
+          public String okField = "some-field}}}}{{{\"";
+          public String longField = RandomStringUtils.random(100000);
+
+          @Override
+          public Seq<Attribute> output() {
+            return null;
+          }
+
+          @Override
+          public StructType schema() {
+            return null;
+          }
+
+          @Override
+          public Seq<LogicalPlan> children() {
+            return Seq$.MODULE$.empty();
+          }
+
+          @Override
+          public Object productElement(int n) {
+            return null;
+          }
+
+          @Override
+          public int productArity() {
+            return 0;
+          }
+
+          @Override
+          public boolean canEqual(Object that) {
+            return false;
+          }
+        };
+
+    String serializedPlanString = new LogicalPlanSerializer().serialize(plan);
+
+    assertTrue(serializedPlanString.length() < 51000); // few extra bytes for json encoding
+    assertTrue(serializedPlanString.contains("some-field}}}}{{{\\\\\\\""));
+    try {
+      new ObjectMapper().readTree(serializedPlanString);
+    } catch (IOException e) {
+      fail(); // not a valid JSON
+    }
+  }
+
   @SuppressWarnings("rawtypes")
   static class TestTableDefinition extends TableDefinition {
+
     @Override
     public TableDefinition.Type getType() {
       return TableDefinition.Type.EXTERNAL;
@@ -388,7 +452,7 @@ class LogicalPlanSerializerTest {
     @Nullable
     @Override
     public Schema getSchema() {
-      return Schema.of(Field.of("name", LegacySQLTypeName.STRING));
+      return Schema.of(Field.of(NAME, LegacySQLTypeName.STRING));
     }
 
     @Override

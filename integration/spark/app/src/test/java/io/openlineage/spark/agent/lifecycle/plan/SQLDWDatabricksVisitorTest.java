@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,13 +32,19 @@ import scala.Option;
 import scala.collection.Seq$;
 
 class SqlDwRelationParams {
+
+  @SuppressWarnings("PMD") // used by reflection
   private String jdbcUrlField;
+
+  @SuppressWarnings("PMD") // used by reflection
   private String somethingElse;
 
+  @SuppressWarnings("PMD") // used by reflection
   private String jdbcUrl() {
     return jdbcUrlField;
   }
 
+  @SuppressWarnings("PMD") // used by reflection
   private String getSomethingElse() {
     return somethingElse;
   }
@@ -45,7 +56,10 @@ class SqlDwRelationParams {
 }
 
 class MockSqlDWBaseRelation extends BaseRelation {
+  @SuppressWarnings("PMD") // used by reflection
   private final String tableNameOrSubquery;
+
+  @SuppressWarnings("PMD") // used by reflection
   private final Object params;
 
   @Override
@@ -66,7 +80,12 @@ class MockSqlDWBaseRelation extends BaseRelation {
 }
 
 class MockSpark2SqlDWBaseRelation extends BaseRelation {
+  private static final String FIELD_NAME = "name";
+
+  @SuppressWarnings("PMD") // used by reflection
   private final String com$databricks$spark$sqldw$SqlDWRelation$$tableNameOrSubquery;
+
+  @SuppressWarnings("PMD") // used by reflection
   private final Object params;
 
   @Override
@@ -77,7 +96,7 @@ class MockSpark2SqlDWBaseRelation extends BaseRelation {
   @Override
   public StructType schema() {
     return new StructType(
-        new StructField[] {new StructField("name", StringType$.MODULE$, false, null)});
+        new StructField[] {new StructField(FIELD_NAME, StringType$.MODULE$, false, null)});
   }
 
   public MockSpark2SqlDWBaseRelation(String tableNameOrSubquery, String jdbcUrl) {
@@ -98,6 +117,7 @@ class TestSqlDWDatabricksVisitor extends SqlDWDatabricksVisitor {
 }
 
 class SQLDWDatabricksVisitorTest {
+  private static final String FIELD_NAME = "name";
   SparkSession session = mock(SparkSession.class);
   OpenLineageContext context = mock(OpenLineageContext.class);
 
@@ -124,7 +144,7 @@ class SQLDWDatabricksVisitorTest {
                 .<AttributeReference>newBuilder()
                 .$plus$eq(
                     new AttributeReference(
-                        "name",
+                        FIELD_NAME,
                         StringType$.MODULE$,
                         false,
                         null,
@@ -162,7 +182,7 @@ class SQLDWDatabricksVisitorTest {
                 .<AttributeReference>newBuilder()
                 .$plus$eq(
                     new AttributeReference(
-                        "name",
+                        FIELD_NAME,
                         StringType$.MODULE$,
                         false,
                         null,
@@ -200,7 +220,7 @@ class SQLDWDatabricksVisitorTest {
                 .<AttributeReference>newBuilder()
                 .$plus$eq(
                     new AttributeReference(
-                        "name",
+                        FIELD_NAME,
                         StringType$.MODULE$,
                         false,
                         null,
@@ -234,7 +254,7 @@ class SQLDWDatabricksVisitorTest {
                 .<AttributeReference>newBuilder()
                 .$plus$eq(
                     new AttributeReference(
-                        "name",
+                        FIELD_NAME,
                         StringType$.MODULE$,
                         false,
                         null,

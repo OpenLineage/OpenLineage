@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark2.agent.lifecycle.plan;
 
@@ -45,6 +48,8 @@ import scala.collection.immutable.HashMap;
 
 class CreateHiveTableAsSelectCommandVisitorTest {
 
+  private static final String VALUE = "value";
+  private static final String KEY = "key";
   SparkSession session = mock(SparkSession.class);
 
   @BeforeEach
@@ -77,16 +82,16 @@ class CreateHiveTableAsSelectCommandVisitorTest {
                 new StructType(
                     new StructField[] {
                       new StructField(
-                          "key", IntegerType$.MODULE$, false, new Metadata(new HashMap<>())),
+                          KEY, IntegerType$.MODULE$, false, new Metadata(new HashMap<>())),
                       new StructField(
-                          "value", StringType$.MODULE$, false, new Metadata(new HashMap<>()))
+                          VALUE, StringType$.MODULE$, false, new Metadata(new HashMap<>()))
                     })),
             new LogicalRelation(
                 new JDBCRelation(
                     new StructType(
                         new StructField[] {
-                          new StructField("key", IntegerType$.MODULE$, false, null),
-                          new StructField("value", StringType$.MODULE$, false, null)
+                          new StructField(KEY, IntegerType$.MODULE$, false, null),
+                          new StructField(VALUE, StringType$.MODULE$, false, null)
                         }),
                     new Partition[] {},
                     new JDBCOptions(
@@ -101,7 +106,7 @@ class CreateHiveTableAsSelectCommandVisitorTest {
                     .<AttributeReference>newBuilder()
                     .$plus$eq(
                         new AttributeReference(
-                            "key",
+                            KEY,
                             IntegerType$.MODULE$,
                             false,
                             null,
@@ -109,7 +114,7 @@ class CreateHiveTableAsSelectCommandVisitorTest {
                             Seq$.MODULE$.<String>empty()))
                     .$plus$eq(
                         new AttributeReference(
-                            "value",
+                            VALUE,
                             StringType$.MODULE$,
                             false,
                             null,
@@ -118,7 +123,7 @@ class CreateHiveTableAsSelectCommandVisitorTest {
                     .result(),
                 Option.empty(),
                 false),
-            ScalaConversionUtils.fromList(Arrays.asList("key", "value")),
+            ScalaConversionUtils.fromList(Arrays.asList(KEY, VALUE)),
             SaveMode.Overwrite);
 
     assertThat(visitor.isDefinedAt(command)).isTrue();

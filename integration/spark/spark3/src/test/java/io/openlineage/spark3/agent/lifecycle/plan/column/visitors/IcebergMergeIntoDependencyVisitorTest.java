@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.spark3.agent.lifecycle.plan.column.visitors;
 
 import static org.mockito.Mockito.mock;
@@ -21,7 +26,7 @@ import org.mockito.MockedStatic;
 import scala.Option;
 import scala.collection.Seq;
 
-public class IcebergMergeIntoDependencyVisitorTest {
+class IcebergMergeIntoDependencyVisitorTest {
 
   Attribute output1 = mock(Attribute.class);
   Attribute output2 = mock(Attribute.class);
@@ -50,7 +55,8 @@ public class IcebergMergeIntoDependencyVisitorTest {
   ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
 
   @Test
-  public void testCollectMatched() {
+  @SuppressWarnings("PMD") // mockStatic.verify is an assert statement
+  void testCollectMatched() {
     when(output1.exprId()).thenReturn(outputExprId1);
     when(output2.exprId()).thenReturn(outputExprId2);
 
@@ -75,7 +81,8 @@ public class IcebergMergeIntoDependencyVisitorTest {
   }
 
   @Test
-  public void testCollectNotMatched() {
+  @SuppressWarnings("PMD") // mockStatic.verify is an assert statement
+  void testCollectNotMatched() {
     when(output1.exprId()).thenReturn(outputExprId1);
     when(output2.exprId()).thenReturn(outputExprId2);
 

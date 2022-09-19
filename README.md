@@ -1,5 +1,3 @@
-<!-- SPDX-License-Identifier: Apache-2.0 -->
-
 <div align="center">
   <img src="./doc/openlineage-logo.png" width="375px" />
   <a href="https://lfaidata.foundation/projects">
@@ -84,3 +82,7 @@ OpenLineage repository contains integrations with several systems.
 ## Contributing
 
 See [CONTRIBUTING.md](https://github.com/OpenLineage/OpenLineage/blob/main/CONTRIBUTING.md) for more details about how to contribute.
+
+## Report a Vulnerability
+
+If you discover a vulnerability in the project, please [open an issue](https://github.com/OpenLineage/OpenLineage/issues/new/choose) and attach the "security" label.

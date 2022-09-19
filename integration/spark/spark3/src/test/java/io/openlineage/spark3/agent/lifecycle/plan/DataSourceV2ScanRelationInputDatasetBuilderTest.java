@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.spark3.agent.lifecycle.plan;
 
 import static org.junit.Assert.assertEquals;
@@ -20,7 +25,7 @@ import org.apache.spark.sql.execution.datasources.v2.DataSourceV2ScanRelation;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-public class DataSourceV2ScanRelationInputDatasetBuilderTest {
+class DataSourceV2ScanRelationInputDatasetBuilderTest {
 
   OpenLineage openLineage = mock(OpenLineage.class);
   OpenLineageContext context = mock(OpenLineageContext.class);
@@ -29,13 +34,13 @@ public class DataSourceV2ScanRelationInputDatasetBuilderTest {
       new DataSourceV2ScanRelationInputDatasetBuilder(context, factory);
 
   @Test
-  public void testIsDefinedAt() {
+  void testIsDefinedAt() {
     assertFalse(builder.isDefinedAtLogicalPlan(mock(LogicalPlan.class)));
     assertTrue(builder.isDefinedAtLogicalPlan(mock(DataSourceV2ScanRelation.class)));
   }
 
   @Test
-  public void testApply() {
+  void testApply() {
     OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
         mock(OpenLineage.DatasetFacetsBuilder.class);
     List<OpenLineage.InputDataset> datasets = mock(List.class);

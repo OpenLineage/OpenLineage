@@ -1,8 +1,3 @@
-<!-- SPDX-License-Identifier: Apache-2.0 -->
-
-<!-- SPDX-License-Identifier: CC-BY-4.0 -->
-<!-- Copyright Contributors to the OpenLineage project. -->
-
 # OpenLineage Governance
 
 The OpenLineage project provides content (standards, data, code and documentation) that is intended for wide consumption
@@ -143,6 +138,10 @@ The OpenLineage team aim to create regular official release of OpenLineage.
 
 In between official releases, the latest build is also available to developers in GitHub.
 
+### Release cadence
+
+A release will be initiated on the first business day of each month except when this is a Friday, in which case the release will commence on the next business day.
+
 ### Release process
 
 Anyone may request a new release of the project in the #general channel.
@@ -154,6 +153,8 @@ A total of three +1s, taking into account -1s and excluding votes by the propose
 Alternatively, if after 2 days the release has received at least one +1 and no -1s, the release is also authorized.
 
 If the proposed release receives no +1s in two days, it is not authorized and the proposer must make a new request to reset the clock.
+
+Once a release is authorized, it will be initiated within two business days. Releases will not be made on a Friday unless doing so will address an important defect, an issue with project infrastructure, or a security vulnerability. 
 
 ## Conflict resolution and voting
 

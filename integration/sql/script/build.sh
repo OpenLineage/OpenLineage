@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# SPDX-License-Identifier: Apache-2.0.
-
-
+#
+# Copyright 2018-2022 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
+#
 # Build script for OpenLineage SQL parser.
 # It's assumed that it will be run in manylinux image: see https://github.com/pypa/manylinux
 set -e
@@ -28,9 +29,9 @@ if [[ -z ${RUN_TESTS} ]]; then
 fi
 
 # Build release wheels
-maturin build --out target/wheels
+maturin build --sdist --out target/wheels
 
 # Verify that it imports properly
-pip install openlineage-sql --no-index --find-links target/wheels --force-reinstall
+python -m pip install openlineage-sql --no-index --find-links target/wheels --force-reinstall
 python -c "import openlineage_sql"
 echo "all good"

@@ -49,6 +49,15 @@
               "type": "string"
             }
           ]
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "/tmp/warehouse",
+              "name": "default.target",
+              "type": "TABLE"
+            }
+          ]
         }
       },
       "outputFacets": {}
