@@ -3,9 +3,9 @@ name: Check for Headers in Source Code
 
 on:
   push:
-    branches-ignore: [master, main]
+    branches: ['renovate/**']
   pull_request:
-    branches: [master, main]
+    branches: [main]
 
 jobs:
   build:
