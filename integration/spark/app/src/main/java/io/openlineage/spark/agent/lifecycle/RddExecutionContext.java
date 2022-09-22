@@ -66,15 +66,15 @@ import scala.runtime.AbstractFunction0;
 
 @Slf4j
 class RddExecutionContext implements ExecutionContext {
-  private final EventEmitter sparkContext;
+  private final EventEmitter eventEmitter;
   private final Optional<SparkContext> sparkContextOption;
   private final UUID runId = UUID.randomUUID();
   private List<URI> inputs = Collections.emptyList();
   private List<URI> outputs = Collections.emptyList();
   private String jobSuffix;
 
-  public RddExecutionContext(EventEmitter sparkContext) {
-    this.sparkContext = sparkContext;
+  public RddExecutionContext(EventEmitter eventEmitter) {
+    this.eventEmitter = eventEmitter;
     sparkContextOption =
         Optional.ofNullable(
             SparkContext$.MODULE$
@@ -217,7 +217,7 @@ class RddExecutionContext implements ExecutionContext {
             .build();
 
     log.debug("Posting event for start {}: {}", jobStart, event);
-    sparkContext.emit(event);
+    eventEmitter.emit(event);
   }
 
   @Override
@@ -242,7 +242,7 @@ class RddExecutionContext implements ExecutionContext {
             .build();
 
     log.debug("Posting event for end {}: {}", jobEnd, event);
-    sparkContext.emit(event);
+    eventEmitter.emit(event);
   }
 
   protected ZonedDateTime toZonedTime(long time) {
@@ -262,12 +262,12 @@ class RddExecutionContext implements ExecutionContext {
   }
 
   private Optional<OpenLineage.ParentRunFacet> buildParentFacet() {
-    return sparkContext
+    return eventEmitter
         .getParentRunId()
         .map(
             runId ->
                 PlanUtils.parentRunFacet(
-                    runId, sparkContext.getParentJobName(), sparkContext.getJobNamespace()));
+                    runId, eventEmitter.getParentJobName(), eventEmitter.getJobNamespace()));
   }
 
   protected ErrorFacet buildJobErrorFacet(JobResult jobResult) {
@@ -282,9 +282,13 @@ class RddExecutionContext implements ExecutionContext {
     if (jobSuffix == null) {
       suffix = String.valueOf(jobId);
     }
-    String jobName = sparkContextOption.map(SparkContext::appName).orElse("unknown") + "." + suffix;
+
+
+    String name = eventEmitter.getOverwriteName().isPresent() ? 
+            eventEmitter.getOverwriteName().get() : sparkContextOption.map(SparkContext::appName).orElse("unknown");
+    String jobName = name + "." + suffix;
     return new OpenLineage.JobBuilder()
-        .namespace(sparkContext.getJobNamespace())
+        .namespace(eventEmitter.getJobNamespace())
         .name(jobName.replaceAll(CAMEL_TO_SNAKE_CASE, "_$1").toLowerCase(Locale.ROOT))
         .build();
   }

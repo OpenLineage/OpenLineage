@@ -223,11 +223,14 @@ class SparkSQLExecutionContext implements ExecutionContext {
     if (node instanceof WholeStageCodegenExec) {
       node = ((WholeStageCodegenExec) node).child();
     }
+
+
+    String name = eventEmitter.getOverwriteName().isPresent() ? eventEmitter.getOverwriteName().get() : sparkContext.appName();
     return openLineage
         .newJobBuilder()
         .namespace(this.eventEmitter.getJobNamespace())
         .name(
-            sparkContext.appName().replaceAll(CAMEL_TO_SNAKE_CASE, "_$1").toLowerCase(Locale.ROOT)
+            name.replaceAll(CAMEL_TO_SNAKE_CASE, "_$1").toLowerCase(Locale.ROOT)
                 + "."
                 + node.nodeName().replaceAll(CAMEL_TO_SNAKE_CASE, "_$1").toLowerCase(Locale.ROOT));
   }
