@@ -21,18 +21,6 @@ from openlineage.common.utils import parse_single_arg
 PRODUCER = f'https://github.com/OpenLineage/OpenLineage/tree/{__version__}/integration/dbt'
 
 
-def setup_client() -> Optional[OpenLineageClient]:
-    url = os.getenv("OPENLINEAGE_URL")
-    if not url:
-        return None
-    return OpenLineageClient(
-        url=url,
-        options=OpenLineageClientOptions(
-            api_key=os.getenv("OPENLINEAGE_API_KEY", None)
-        )
-    )
-
-
 def dbt_run_event(
     state: RunState,
     job_name: str,
@@ -94,11 +82,6 @@ def main():
     target = parse_single_arg(args, ['-t', '--target'])
     project_dir = parse_single_arg(args, ['--project-dir'], default='./')
     profile_name = parse_single_arg(args, ['--profile'])
-
-    client = setup_client()
-    if client is None:
-        logger.info("OPENLINEAGE_URL is not set: stopping execution")
-        sys.exit(1)
 
     # We can get this if we have been orchestrated by an external system like airflow
     parent_id = os.getenv("OPENLINEAGE_PARENT_ID")
