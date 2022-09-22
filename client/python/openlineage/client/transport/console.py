@@ -16,7 +16,7 @@ class ConsoleTransport(Transport):
 
     def __init__(self, config: ConsoleConfig):
         self.log = logging.getLogger(__name__)
-        self.log.debug("Constructing openlineage client to send events to console")
+        self.log.debug("Constructing openlineage client to send events to console or logs")
 
     def emit(self, event: RunEvent):
         self.log.info(Serde.to_json(event))
