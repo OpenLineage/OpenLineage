@@ -18,6 +18,7 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.cloud.bigquery.connector.common.BigQueryUtil;
 import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.Field;
 import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.MockBigQueryRelationProvider;
@@ -25,7 +26,6 @@ import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.Sche
 import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.StandardSQLTypeName;
 import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.StandardTableDefinition;
 import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.TableId;
-import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.connector.common.BigQueryUtil;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Binder;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Module;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Provides;
