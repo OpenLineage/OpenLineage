@@ -54,7 +54,7 @@ class InputFieldsCollector {
 
   private static void discoverInputsFromNode(
       OpenLineageContext context, LogicalPlan node, ColumnLevelLineageBuilder builder) {
-    extractDatasetIdentifier(context, node).stream()
+        extractDatasetIdentifier(context, node).stream()
         .forEach(
             di ->
                 ScalaConversionUtils.fromSeq(node.output()).stream()
