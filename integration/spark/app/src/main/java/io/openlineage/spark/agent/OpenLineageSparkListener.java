@@ -313,8 +313,8 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       Optional<Double> timeout = findSparkConfigKeyDouble(conf, SPARK_CONF_TIMEOUT);
       Optional<String> apiKey =
           findSparkConfigKey(conf, SPARK_CONF_API_KEY).filter(str -> !str.isEmpty());
-      Optional<String> overwriteName = 
-              findSparkConfigKey(conf, SPARK_CONF_OVERWRITE_NAME).filter(str -> !str.isEmpty());
+      Optional<String> overwriteName =
+          findSparkConfigKey(conf, SPARK_CONF_OVERWRITE_NAME).filter(str -> !str.isEmpty());
       Optional<Map<String, String>> urlParams =
           findSparkUrlParams(conf, SPARK_CONF_URL_PARAM_PREFIX);
 
@@ -324,7 +324,16 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
               .filter(v -> v)
               .orElse(false);
       return new ArgumentParser(
-          host, version, namespace, jobName, runId, timeout, apiKey, overwriteName, urlParams, consoleMode);
+          host,
+          version,
+          namespace,
+          jobName,
+          runId,
+          timeout,
+          apiKey,
+          overwriteName,
+          urlParams,
+          consoleMode);
     }
   }
 }

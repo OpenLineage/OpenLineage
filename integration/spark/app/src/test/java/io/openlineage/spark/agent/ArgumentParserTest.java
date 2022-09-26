@@ -37,7 +37,7 @@ class ArgumentParserTest {
           RUN_ID,
           false,
           Optional.of("abc"),
-          Optional.empty(), 
+          Optional.empty(),
           Optional.empty(),
           Optional.empty()
         });
@@ -138,10 +138,11 @@ class ArgumentParserTest {
           Optional.empty(),
           Optional.empty(),
           Optional.empty()
-        }); 
+        });
     pass.add(
         new Object[] {
-          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54?overwrite_name=" + OVERWRITE_NAME,
+          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54?overwrite_name="
+              + OVERWRITE_NAME,
           URL,
           "v1",
           NS_NAME,
@@ -184,7 +185,7 @@ class ArgumentParserTest {
     assertEquals(timeout, parser.getTimeout());
     assertEquals(overwriteName, parser.getOverwriteName());
     assertEquals(urlParams, parser.getUrlParams());
-    urlParams.ifPresent(par -> par
-            .forEach((k, v) -> assertEquals(par.get(k), parser.getUrlParam(k))));
+    urlParams.ifPresent(
+        par -> par.forEach((k, v) -> assertEquals(par.get(k), parser.getUrlParam(k))));
   }
 }

@@ -30,7 +30,8 @@ import org.jetbrains.annotations.NotNull;
 @ToString
 public class ArgumentParser {
   public static final ArgumentParser DEFAULTS = getDefaultArguments();
-  public static final Set<String> namedParams = new HashSet<>(Arrays.asList("timeout", "api_key", "overwrite_name"));
+  public static final Set<String> namedParams =
+      new HashSet<>(Arrays.asList("timeout", "api_key", "overwrite_name"));
 
   private final String host;
   private final String version;
@@ -73,9 +74,10 @@ public class ArgumentParser {
   }
 
   @NotNull
-  private static Optional<String> getNamedStringParameter(List<NameValuePair> nameValuePairList, String name) {
+  private static Optional<String> getNamedStringParameter(
+      List<NameValuePair> nameValuePairList, String name) {
     return Optional.ofNullable(getNamedParameter(nameValuePairList, name))
-            .filter(StringUtils::isNoneBlank);
+        .filter(StringUtils::isNoneBlank);
   }
 
   private static Optional<Double> getTimeout(List<NameValuePair> nameValuePairList) {

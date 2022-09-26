@@ -224,8 +224,10 @@ class SparkSQLExecutionContext implements ExecutionContext {
       node = ((WholeStageCodegenExec) node).child();
     }
 
-
-    String name = eventEmitter.getOverwriteName().isPresent() ? eventEmitter.getOverwriteName().get() : sparkContext.appName();
+    String name =
+        eventEmitter.getOverwriteName().isPresent()
+            ? eventEmitter.getOverwriteName().get()
+            : sparkContext.appName();
     return openLineage
         .newJobBuilder()
         .namespace(this.eventEmitter.getJobNamespace())

@@ -1,0 +1,70 @@
+{
+    "eventType": "START",
+    "inputs": [],
+    "job": {
+        "name": "overwrite_name.execute_insert_into_hive_table",
+        "namespace": "testPysparkSQLHiveTest"
+    },
+    "outputs": [
+        {
+            "facets": {
+                "dataSource": {
+                    "name": "file",
+                    "uri": "file"
+                },
+                "schema": {
+                    "fields": [
+                        {
+                            "name": "key",
+                            "type": "integer"
+                        },
+                        {
+                            "name": "value",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "symlinks": {
+                    "identifiers": [
+                        {
+                            "namespace": "/tmp/warehouse",
+                            "name": "default.test",
+                            "type": "TABLE"
+                        }
+                    ]
+                }
+            },
+            "name": "/tmp/warehouse/test",
+            "namespace": "file"
+        }
+    ],
+    "run": {
+        "facets": {
+            "spark.logicalPlan": {},
+            "spark_unknown": {
+                "inputs": [
+                    {
+                        "description": {},
+                        "inputAttributes": [],
+                        "outputAttributes": [
+                            {
+                                "metadata": {},
+                                "name": "key",
+                                "type": "integer"
+                            },
+                            {
+                                "metadata": {},
+                                "name": "value",
+                                "type": "string"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "spark_version": {
+                "spark-version": "${json-unit.any-string}",
+                "openlineage-spark-version": "${json-unit.any-string}"
+            }
+        }
+    }
+}
