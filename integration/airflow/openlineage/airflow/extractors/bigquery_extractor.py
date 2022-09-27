@@ -15,7 +15,6 @@ from openlineage.airflow.extractors.base import (
     TaskMetadata
 )
 from openlineage.airflow.utils import get_job_name, try_import_from_string
-from google.cloud.bigquery import Client
 
 _BIGQUERY_CONN_URL = 'bigquery'
 
@@ -78,6 +77,8 @@ class BigQueryExtractor(BaseExtractor):
         )
 
     def _get_client(self):
+        # lazy-load the bigquery Client due to its slow import
+        from google.cloud.bigquery import Client
         # Get client using Airflow hook - this way we use the same credentials as Airflow
         if hasattr(self.operator, 'hook') and self.operator.hook:
             hook = self.operator.hook
