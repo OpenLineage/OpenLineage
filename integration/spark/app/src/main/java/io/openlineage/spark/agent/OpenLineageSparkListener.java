@@ -5,7 +5,6 @@
 
 package io.openlineage.spark.agent;
 
-import static io.openlineage.spark.agent.ArgumentParser.DEFAULTS;
 import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptional;
 import static io.openlineage.spark.agent.util.SparkConfUtils.findSparkConfigKey;
 import static io.openlineage.spark.agent.util.SparkConfUtils.findSparkConfigKeyDouble;
@@ -303,37 +302,28 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     if (url.isPresent()) {
       return ArgumentParser.parse(url.get());
     } else {
-      String host = findSparkConfigKey(conf, SPARK_CONF_HOST_KEY, DEFAULTS.getHost());
-      String version = findSparkConfigKey(conf, SPARK_CONF_API_VERSION_KEY, DEFAULTS.getVersion());
-      String namespace =
-          findSparkConfigKey(conf, SPARK_CONF_NAMESPACE_KEY, DEFAULTS.getNamespace());
-      String jobName = findSparkConfigKey(conf, SPARK_CONF_JOB_NAME_KEY, DEFAULTS.getJobName());
-      String runId =
-          findSparkConfigKey(conf, SPARK_CONF_PARENT_RUN_ID_KEY, DEFAULTS.getParentRunId());
-      Optional<Double> timeout = findSparkConfigKeyDouble(conf, SPARK_CONF_TIMEOUT);
-      Optional<String> apiKey =
-          findSparkConfigKey(conf, SPARK_CONF_API_KEY).filter(str -> !str.isEmpty());
-      Optional<String> overwriteName =
-          findSparkConfigKey(conf, SPARK_CONF_OVERWRITE_NAME).filter(str -> !str.isEmpty());
-      Optional<Map<String, String>> urlParams =
-          findSparkUrlParams(conf, SPARK_CONF_URL_PARAM_PREFIX);
-
       boolean consoleMode =
           findSparkConfigKey(conf, SPARK_CONF_CONSOLE_TRANSPORT)
               .map(Boolean::valueOf)
               .filter(v -> v)
               .orElse(false);
-      return new ArgumentParser(
-          host,
-          version,
-          namespace,
-          jobName,
-          runId,
-          timeout,
-          apiKey,
-          overwriteName,
-          urlParams,
-          consoleMode);
+
+      ArgumentParser.ArgumentParserBuilder builder =
+          ArgumentParser.builder()
+              .timeout(findSparkConfigKeyDouble(conf, SPARK_CONF_TIMEOUT))
+              .apiKey(findSparkConfigKey(conf, SPARK_CONF_API_KEY).filter(str -> !str.isEmpty()))
+              .overwriteName(
+                  findSparkConfigKey(conf, SPARK_CONF_OVERWRITE_NAME).filter(str -> !str.isEmpty()))
+              .urlParams(findSparkUrlParams(conf, SPARK_CONF_URL_PARAM_PREFIX))
+              .consoleMode(consoleMode);
+
+      findSparkConfigKey(conf, SPARK_CONF_HOST_KEY).ifPresent(builder::host);
+      findSparkConfigKey(conf, SPARK_CONF_API_VERSION_KEY).ifPresent(builder::version);
+      findSparkConfigKey(conf, SPARK_CONF_NAMESPACE_KEY).ifPresent(builder::namespace);
+      findSparkConfigKey(conf, SPARK_CONF_JOB_NAME_KEY).ifPresent(builder::jobName);
+      findSparkConfigKey(conf, SPARK_CONF_PARENT_RUN_ID_KEY).ifPresent(builder::parentRunId);
+
+      return builder.build();
     }
   }
 }

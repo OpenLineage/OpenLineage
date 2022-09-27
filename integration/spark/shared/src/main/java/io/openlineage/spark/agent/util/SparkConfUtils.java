@@ -21,10 +21,6 @@ public class SparkConfUtils {
   private static final String metastoreUriKey = "spark.sql.hive.metastore.uris";
   private static final String metastoreHadoopUriKey = "spark.hadoop.hive.metastore.uris";
 
-  public static String findSparkConfigKey(SparkConf conf, String name, String defaultValue) {
-    return findSparkConfigKey(conf, name).orElse(defaultValue);
-  }
-
   public static Optional<String> findSparkConfigKey(SparkConf conf, String name) {
     Option<String> opt = conf.getOption(name);
     if (opt.isDefined()) {

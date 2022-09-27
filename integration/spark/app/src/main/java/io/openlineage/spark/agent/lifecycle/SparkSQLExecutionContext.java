@@ -31,6 +31,7 @@ import org.apache.spark.sql.execution.SparkPlan;
 import org.apache.spark.sql.execution.WholeStageCodegenExec;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
+import org.jetbrains.annotations.NotNull;
 
 @Slf4j
 class SparkSQLExecutionContext implements ExecutionContext {
@@ -224,16 +225,16 @@ class SparkSQLExecutionContext implements ExecutionContext {
       node = ((WholeStageCodegenExec) node).child();
     }
 
-    String name =
-        eventEmitter.getOverwriteName().isPresent()
-            ? eventEmitter.getOverwriteName().get()
-            : sparkContext.appName();
+    String name = eventEmitter.getOverwriteName().orElse(sparkContext.appName());
     return openLineage
         .newJobBuilder()
         .namespace(this.eventEmitter.getJobNamespace())
-        .name(
-            name.replaceAll(CAMEL_TO_SNAKE_CASE, "_$1").toLowerCase(Locale.ROOT)
-                + "."
-                + node.nodeName().replaceAll(CAMEL_TO_SNAKE_CASE, "_$1").toLowerCase(Locale.ROOT));
+        .name(normalizeName(name) + "." + normalizeName(node.nodeName()));
+  }
+
+  @NotNull
+  // normalizes string, changes CamelCase to snake_case and replaces all non-alphanumerics with '_'
+  private static String normalizeName(String name) {
+    return name.replaceAll(CAMEL_TO_SNAKE_CASE, "_$1").toLowerCase(Locale.ROOT);
   }
 }
