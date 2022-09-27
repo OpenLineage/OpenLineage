@@ -2,6 +2,8 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.14.0...HEAD)
 * Fix uuid generation conflict for airflow dags with same name - 2022-09-07 [@collado-mike](https://github.com/collado-mike)
+* Fix Spark integration issue with spark-bigquery-connector >=0.25.0 - 2022-09-22 [`#1111`](https://github.com/OpenLineage/OpenLineage/pull/1111) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+
 
 ## [0.14.1](https://github.com/OpenLineage/OpenLineage/compare/0.14.0...0.14.1) - 2022-09-07
 ### Fixed
