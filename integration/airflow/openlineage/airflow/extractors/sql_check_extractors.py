@@ -3,7 +3,6 @@
 from typing import List, Optional, Dict
 
 from openlineage.airflow.extractors.base import TaskMetadata
-from openlineage.airflow.extractors.bigquery_extractor import BigQueryExtractor
 from openlineage.client.facet import BaseFacet
 from openlineage.airflow.utils import (
     build_column_check_facets,
@@ -20,6 +19,7 @@ def get_check_extractors(super_):
             pass
 
         def extract_on_complete(self, task_instance) -> Optional[TaskMetadata]:
+            from openlineage.airflow.extractors.bigquery_extractor import BigQueryExtractor
             if issubclass(BigQueryExtractor, BaseSqlCheckExtractor):
                 return super().extract_on_complete(task_instance)
             return super().extract()
