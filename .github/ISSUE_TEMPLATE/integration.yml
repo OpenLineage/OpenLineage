@@ -1,0 +1,49 @@
+---
+name: Integration
+description: Propose a new integration
+title: "[INTEGRATION] "
+labels: ["integration"]
+body:
+  - type: markdown
+    attributes:
+      # yamllint disable rule:line-length
+      value: "
+        ## Thank you for your interest in OpenLineage!
+        
+        We are very interested in new integrations that make it easier for users to adopt the standard. This form will help us collect a bit of information about the integration you are proposing."
+      # yamllint enable rule:line-length
+  - type: input
+    attributes:
+      label: What is the target system?
+      description: What are you proposing a new OpenLineage integration with?
+      placeholder: i.e. which framework, project, or product
+  - type: checkboxes
+    attributes:
+      label: What kind of integration is this?
+      description: What kind of integration is this? Typically, integrations with data stores and orchestration systems produce lineage metadata and integrations with catalogs and data operations systems consume lineage metadata.
+      options:
+        - label: Produces OpenLineage metadata
+        - label: Consumes OpenLineage metadata
+        - label: Something else
+  - type: textarea
+    attributes:
+      label: How should this integration be implemented?
+      description: Please provide details about your proposed integration
+      placeholder: Please include a short description of your integration approach. Include links to the APIs required and the necessary target system documentation. If there is work being done within the target system, please provide a link to the other project's tracker if available.
+  - type: checkboxes
+    attributes:
+      label: Where should this integration be implemented?
+      description: Ideally, target systems would emit OpenLineage metadata using a push mechanism. However, sometimes integrations are implemented as plugins that live within the OpenLineage repository.
+      options:
+        - label: In the target system
+        - label: In the OpenLineage repo
+        - label: Somewhere else
+  - type: checkboxes
+    attributes:
+      label: Do you plan to make this contribution yourself?
+      description: This is absolutely not required. However, if you are interested in working on this project the community would be happy to help you. If not, that's ok too!
+      options:
+        - label: I am interested in doing this work
+  - type: markdown
+    attributes:
+      value: "Thanks for submitting a proposal! We appreciate the time you have spent."
