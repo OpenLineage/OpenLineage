@@ -53,7 +53,7 @@ services:
     environment:
       - BIGQUERY_PREFIX=airflow_1
       - DBT_DATASET_PREFIX=airflow_1_dbt
-    entrypoint: ["./wait-for-it.sh", "backend:5000", "--", "python", "-m", "pytest"]
+    entrypoint: ["./wait-for-it.sh", "backend:5000", "--", "python", "-m", "pytest", "test_integration.py"]
 
   airflow:
     <<: *airflow-base

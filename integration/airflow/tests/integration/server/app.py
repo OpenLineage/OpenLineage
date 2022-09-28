@@ -94,13 +94,18 @@ def lineage():
     elif request.method == 'GET':
         received_requests = []
         job_name = request.args.get("job_name")
+        desc = request.args.get("desc", "false")
         if job_name:
             logger.info(job_name)
-            received_requests += conn.execute("""
-                SELECT body FROM requests WHERE job_name LIKE :job_name ORDER BY created_at
-            """, {
-                "job_name": f'{job_name}%'
-            }).fetchall()
+            received_requests += conn.execute(
+                """
+                SELECT body FROM requests WHERE job_name LIKE :job_name ORDER BY created_at %s
+            """
+                % ("DESC" if desc == "true" else "ASC"),
+                {
+                    "job_name": f"{job_name}%",
+                },
+            ).fetchall()
         else:
             received_requests = conn.execute("""
                 SELECT body FROM requests

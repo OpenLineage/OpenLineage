@@ -21,7 +21,6 @@ levels = {
     "openlineage": "DEBUG",
     "great_expectations": "INFO",
     "airflow.lineage": "DEBUG",
-    "airflow.processor_manager": "WARNING",
     "botocore": "INFO",
 }
 

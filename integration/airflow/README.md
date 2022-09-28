@@ -244,12 +244,11 @@ Airflow 2.0+:
 $ pip install -r dev-requirements-2.x.txt
 ```
 
-There is also bash script that can run arbitrary Airflow image with OpenLineage integration build from current branch.
+There is also bash script that can run arbitrary Airflow image with OpenLineage integration build from current branch. Additionally it mounts OpenLineage Python packages as Docker volumes. This enables you to change your code without need to constantly rebuild Docker images to run tests.
 Run it as
 ```bash
-$ AIRFLOW_IMAGE=<airflow_image_with_tag> ./scripts/run-dev-airflow.sh [--rebuild]
+$ AIRFLOW_IMAGE=<airflow_image_with_tag> ./scripts/run-dev-airflow.sh [--help]
 ```
-Rebuild option forces docker images to be rebuilt.
 ### Unit tests
 To run the entire unit test suite use below command:
 ```bash
@@ -275,3 +274,10 @@ e.g.
 ```bash
 $ AIRFLOW_IMAGE=apache/airflow:2.3.1-python3.7 ./tests/integration/docker/up-2.sh
 ```
+
+When using `run-dev-airflow.sh` you can add flag `-i` or `--attach-integration` to run integration tests in dev environment.
+This could be helpful when you need to run arbitrary integration tests during development. For example following command run in integration container:
+```bash
+python -m pytest test_integration.py::test_integration[great_expectations_validation-requests/great_expectations.json]
+```
+runs single test which you can repeat after changes in code.
