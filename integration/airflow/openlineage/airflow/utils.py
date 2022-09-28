@@ -8,10 +8,11 @@ import logging
 import os
 import subprocess
 from collections import defaultdict
-from typing import TYPE_CHECKING, Type, Dict, Any, List
+from typing import TYPE_CHECKING, Type, Dict, Any, List, Callable
 from uuid import uuid4
 from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
 from typing import Optional
+import threading
 
 from airflow.models import DAG as AIRFLOW_DAG
 from airflow.version import version as AIRFLOW_VERSION
@@ -535,3 +536,81 @@ def _is_name_redactable(name, redacted):
     if not issubclass(redacted.__class__, RedactMixin):
         return not name.startswith('_')
     return name not in redacted.skip_redact
+
+
+def execute_in_thread(target: Callable, args=None, kwargs=None):
+    args = args or ()
+    kwargs = kwargs or {}
+    thread = threading.Thread(target=target, args=args, kwargs=kwargs, daemon=True)
+    thread.start()
+
+    # Join, but ignore checking if thread stopped. If it did, then we shoudn't do anything.
+    # This basically gives this thread 5 seconds to complete work, then it can be killed,
+    # as daemon=True. We don't want to deadlock Airflow if our code hangs.
+
+    # This will hang if this timeouts, and extractor is running non-daemon thread inside,
+    # since it will never be cleaned up. Ex. SnowflakeOperator
+    thread.join(timeout=10)
+
+
+class EventBuilder:
+    @staticmethod
+    def start_task(adapter, extractor_manager, task_instance, task, dag, dagrun) -> str:
+        run_id = str(uuid4())
+        job_name = get_job_name(task)
+
+        dag_run_id = adapter.build_dag_run_id(dag.dag_id, dagrun.run_id)
+
+        task_metadata = extractor_manager.extract_metadata(
+            dagrun=dagrun,
+            task=task,
+            complete=True,
+            task_instance=task_instance,
+        )
+        adapter.start_task(
+            run_id=run_id,
+            job_name=job_name,
+            job_description=dag.description,
+            event_time=DagUtils.get_start_time(task_instance.start_date),
+            parent_job_name=dag.dag_id,
+            parent_run_id=dag_run_id,
+            code_location=get_task_location(task),
+            nominal_start_time=DagUtils.get_start_time(dagrun.execution_date),
+            nominal_end_time=DagUtils.to_iso_8601(task_instance.end_date),
+            task=task_metadata,
+            run_facets={
+                **task_metadata.run_facets,
+                **get_custom_facets(task, dagrun.external_trigger, task_instance),
+            },
+        )
+
+        return run_id
+
+    @staticmethod
+    def complete_task(
+        adapter, extractor_manager, task_instance, task, dagrun, run_id=None, end_date=None,
+    ) -> None:
+        # this is going to be removed when removing 1.x support
+        if not run_id:
+            run_id = str(uuid4())
+        task_metadata = extractor_manager.extract_metadata(
+            dagrun, task, complete=True, task_instance=task_instance
+        )
+        adapter.complete_task(
+            run_id=run_id,
+            job_name=get_job_name(task),
+            end_time=DagUtils.to_iso_8601(task_instance.end_date or end_date),
+            task=task_metadata,
+        )
+
+    @staticmethod
+    def fail_task(adapter, extractor_manager, task_instance, task, dagrun, run_id) -> None:
+        task_metadata = extractor_manager.extract_metadata(
+            dagrun, task, complete=True, task_instance=task_instance
+        )
+        adapter.fail_task(
+            run_id=run_id,
+            job_name=get_job_name(task),
+            end_time=DagUtils.to_iso_8601(task_instance.end_date),
+            task=task_metadata,
+        )

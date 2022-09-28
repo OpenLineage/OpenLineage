@@ -3,7 +3,6 @@
 
 import os
 import time
-import uuid
 from typing import Optional
 
 from airflow.lineage.backend import LineageBackend
@@ -33,46 +32,32 @@ class Backend:
         Send_lineage ignores manually provided inlets and outlets. The data collection mechanism
         is automatic, and bases on the passed context.
         """
-        from openlineage.airflow.utils import DagUtils, get_custom_facets, \
-            get_job_name, get_task_location
+        from openlineage.airflow.utils import EventBuilder
+
         dag = context['dag']
         dagrun = context['dag_run']
         task_instance = context['task_instance']
-        dag_run_id = self.adapter.build_dag_run_id(dag.dag_id, dagrun.run_id)
 
-        run_id = str(uuid.uuid4())
-        job_name = get_job_name(operator)
-
-        task_metadata = self.extractor_manager.extract_metadata(
-            dagrun=dagrun,
-            task=operator,
-            complete=True,
-            task_instance=task_instance
-        )
-
+        # this is going to be removed when removing 1.x support
+        run_id = None
         if parse_version(AIRFLOW_VERSION) >= parse_version("2.0.0"):
-            self.adapter.start_task(
-                run_id=run_id,
-                job_name=job_name,
-                job_description=dag.description,
-                event_time=DagUtils.get_start_time(task_instance.start_date),
-                parent_job_name=dag.dag_id,
-                parent_run_id=dag_run_id,
-                code_location=get_task_location(operator),
-                nominal_start_time=DagUtils.get_start_time(dagrun.execution_date),
-                nominal_end_time=DagUtils.to_iso_8601(task_instance.end_date),
-                task=task_metadata,
-                run_facets={
-                    **task_metadata.run_facets,
-                    **get_custom_facets(operator, dagrun.external_trigger)
-                }
+            run_id = EventBuilder.start_task(
+                adapter=self.adapter,
+                extractor_manager=self.extractor_manager,
+                task_instance=task_instance,
+                task=operator,
+                dag=dag,
+                dagrun=dagrun,
             )
 
-        self.adapter.complete_task(
+        EventBuilder.complete_task(
+            adapter=self.adapter,
+            extractor_manager=self.extractor_manager,
+            task_instance=task_instance,
+            task=operator,
+            dagrun=dagrun,
             run_id=run_id,
-            job_name=job_name,
-            end_time=DagUtils.to_iso_8601(self._now_ms()),
-            task=task_metadata,
+            end_date=self._now_ms(),
         )
 
     @staticmethod

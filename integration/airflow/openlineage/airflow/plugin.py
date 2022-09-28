@@ -21,11 +21,18 @@ if parse_version(AIRFLOW_VERSION) \
     class OpenLineagePlugin(AirflowPlugin):
         name = "OpenLineagePlugin"
         macros = [lineage_run_id, lineage_parent_id]
-else:
+elif parse_version(AIRFLOW_VERSION) < parse_version("2.4.0"):
     from openlineage.airflow import listener
 
     # Provide entrypoint airflow plugin that registers listener module
     class OpenLineagePlugin(AirflowPlugin):     # type: ignore
         name = "OpenLineagePlugin"
         listeners = [listener]
+        macros = [lineage_run_id, lineage_parent_id]
+else:
+    from openlineage.airflow.task_policy import patch_openlineage_policy
+    patch_openlineage_policy()
+
+    class OpenLineagePlugin(AirflowPlugin):     # type: ignore
+        name = "OpenLineagePlugin"
         macros = [lineage_run_id, lineage_parent_id]

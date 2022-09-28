@@ -3,16 +3,17 @@
 
 import copy
 import logging
-import threading
-import uuid
-from typing import TYPE_CHECKING, Optional, Callable, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 import attr
 from airflow.listeners import hookimpl
 
 from openlineage.airflow.adapter import OpenLineageAdapter
 from openlineage.airflow.extractors import ExtractorManager
-from openlineage.airflow.utils import DagUtils, get_task_location, get_job_name, get_custom_facets
+from openlineage.airflow.utils import (
+    execute_in_thread,
+    EventBuilder,
+)
 
 if TYPE_CHECKING:
     from airflow.models import TaskInstance, BaseOperator, MappedOperator
@@ -49,26 +50,6 @@ class ActiveRunManager:
 
 log = logging.getLogger('airflow')
 
-
-def execute_in_thread(target: Callable, kwargs=None):
-    if kwargs is None:
-        kwargs = {}
-    thread = threading.Thread(
-        target=target,
-        kwargs=kwargs,
-        daemon=True
-    )
-    thread.start()
-
-    # Join, but ignore checking if thread stopped. If it did, then we shoudn't do anything.
-    # This basically gives this thread 5 seconds to complete work, then it can be killed,
-    # as daemon=True. We don't want to deadlock Airflow if our code hangs.
-
-    # This will hang if this timeouts, and extractor is running non-daemon thread inside,
-    # since it will never be cleaned up. Ex. SnowflakeOperator
-    thread.join(timeout=10)
-
-
 run_data_holder = ActiveRunManager()
 extractor_manager = ExtractorManager()
 adapter = OpenLineageAdapter()
@@ -90,28 +71,15 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
         task_instance_copy.render_templates()
         task = task_instance_copy.task
 
-        run_id = str(uuid.uuid4())
-        run_data_holder.set_active_run(task_instance_copy, run_id)
-        parent_run_id = adapter.build_dag_run_id(dag.dag_id, dagrun.run_id)
-
-        task_metadata = extractor_manager.extract_metadata(dagrun, task)
-
-        adapter.start_task(
-            run_id=run_id,
-            job_name=get_job_name(task),
-            job_description=dag.description,
-            event_time=DagUtils.get_start_time(task_instance_copy.start_date),
-            parent_job_name=dag.dag_id,
-            parent_run_id=parent_run_id,
-            code_location=get_task_location(task),
-            nominal_start_time=DagUtils.get_start_time(dagrun.execution_date),
-            nominal_end_time=DagUtils.to_iso_8601(task_instance_copy.end_date),
-            task=task_metadata,
-            run_facets={
-                **task_metadata.run_facets,
-                **get_custom_facets(task, dagrun.external_trigger, task_instance_copy)
-            }
+        run_id = EventBuilder.start_task(
+            adapter=adapter,
+            extractor_manager=extractor_manager,
+            task_instance=task_instance_copy,
+            task=task,
+            dag=dag,
+            dagrun=dagrun,
         )
+        run_data_holder.set_active_run(task_instance_copy, run_id)
 
     execute_in_thread(on_running)
 
@@ -124,18 +92,16 @@ def on_task_instance_success(previous_state, task_instance: "TaskInstance", sess
     dagrun = task_instance.dag_run
     task = run_data.task if run_data else None
 
-    def on_success():
-        task_metadata = extractor_manager.extract_metadata(
-            dagrun, task, complete=True, task_instance=task_instance
-        )
-        adapter.complete_task(
-            run_id=run_data.run_id,
-            job_name=get_job_name(task),
-            end_time=DagUtils.to_iso_8601(task_instance.end_date),
-            task=task_metadata
-        )
+    kwargs = dict(
+        adapter=adapter,
+        extractor_manager=extractor_manager,
+        task_instance=task_instance,
+        task=task,
+        dagrun=dagrun,
+        run_id=run_data.run_id if run_data else None,
+    )
 
-    execute_in_thread(on_success)
+    execute_in_thread(EventBuilder.complete_task, kwargs=kwargs)
 
 
 @hookimpl
@@ -146,16 +112,13 @@ def on_task_instance_failed(previous_state, task_instance: "TaskInstance", sessi
     dagrun = task_instance.dag_run
     task = run_data.task if run_data else None
 
-    def on_failure():
-        task_metadata = extractor_manager.extract_metadata(
-            dagrun, task, complete=True, task_instance=task_instance
-        )
+    kwargs = dict(
+        adapter=adapter,
+        extractor_manager=extractor_manager,
+        task_instance=task_instance,
+        task=task,
+        dagrun=dagrun,
+        run_id=run_data.run_id if run_data else None,
+    )
 
-        adapter.fail_task(
-            run_id=run_data.run_id,
-            job_name=get_job_name(task),
-            end_time=DagUtils.to_iso_8601(task_instance.end_date),
-            task=task_metadata
-        )
-
-    execute_in_thread(on_failure)
+    execute_in_thread(EventBuilder.fail_task, kwargs=kwargs)
