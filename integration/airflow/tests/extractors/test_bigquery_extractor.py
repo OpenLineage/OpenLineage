@@ -1,7 +1,5 @@
 # Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
-
-
 import json
 import logging
 import random
@@ -12,14 +10,13 @@ from datetime import datetime
 import mock
 from pkg_resources import parse_version
 import pytz
-import pytest
 from airflow.utils import timezone
 from airflow.models import TaskInstance, DAG
 from airflow.utils.state import State
 from airflow.version import version as AIRFLOW_VERSION
 
 from openlineage.airflow.extractors.bigquery_extractor import BigQueryExtractor
-from openlineage.airflow.utils import safe_import_airflow, choose_based_on_version
+from openlineage.airflow.utils import try_import_from_string
 from openlineage.client.facet import OutputStatisticsOutputDatasetFacet, ExternalQueryRunFacet
 from openlineage.common.provider.bigquery import BigQueryJobRunFacet, \
     BigQueryStatisticsDatasetFacet, BigQueryErrorRunFacet
@@ -28,21 +25,16 @@ from openlineage.common.utils import get_from_nullable_chain
 log = logging.getLogger(__name__)
 
 
-BigQueryExecuteQueryOperator = safe_import_airflow(
-    airflow_1_path="airflow.contrib.operators.bigquery_operator.BigQueryOperator",
-    airflow_2_path="airflow.providers.google.cloud.operators.bigquery.BigQueryExecuteQueryOperator"
+BigQueryExecuteQueryOperator = try_import_from_string(
+    "airflow.providers.google.cloud.operators.bigquery.BigQueryExecuteQueryOperator"
 )
 
 
-@pytest.mark.skipif(parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"), reason="Airflow 2+ test")  # noqa
 class TestBigQueryExtractorE2E(unittest.TestCase):
     def setUp(self):
         log.debug("TestBigQueryExtractorE2E.setup(): ")
 
-    @mock.patch(choose_based_on_version(
-        airflow_1_version="airflow.contrib.operators.bigquery_operator.BigQueryHook",
-        airflow_2_version='airflow.providers.google.cloud.operators.bigquery.BigQueryHook'
-    ))
+    @mock.patch('airflow.providers.google.cloud.operators.bigquery.BigQueryHook')
     def test_extract(self, mock_hook):
         log.info("test_extractor")
 
@@ -169,10 +161,7 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
         f.close()
         return details
 
-    @mock.patch(choose_based_on_version(
-        airflow_1_version="airflow.contrib.operators.bigquery_operator.BigQueryHook",
-        airflow_2_version='airflow.providers.google.cloud.operators.bigquery.BigQueryHook'
-    ))
+    @mock.patch('airflow.providers.google.cloud.operators.bigquery.BigQueryHook')
     def test_extract_cached(self, mock_hook):
         bq_job_id = "foo.bq.job_id"
 
@@ -241,10 +230,7 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
             source="bigquery"
         ) == task_meta.run_facets['externalQuery']
 
-    @mock.patch(choose_based_on_version(
-        airflow_1_version="airflow.contrib.operators.bigquery_operator.BigQueryHook",
-        airflow_2_version='airflow.providers.google.cloud.operators.bigquery.BigQueryHook'
-    ))
+    @mock.patch('airflow.providers.google.cloud.operators.bigquery.BigQueryHook')
     def test_extract_error(self, mock_hook):
         bq_job_id = "foo.bq.job_id"
 

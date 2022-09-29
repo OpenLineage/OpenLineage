@@ -38,7 +38,6 @@ def test_get_table_schemas():
     ]
 
     hook.get_conn.return_value.cursor.return_value.fetchall.side_effect = [rows, rows]
-
     source = Source(scheme="bigquery", authority=None, connection_url=None, name=None)
 
     table_schemas = get_table_schemas(

@@ -30,7 +30,7 @@ jobs:
       - name: Check for headers
         run: |
           ok=1
-          readarray -t files <<<"$(jq -r '.[]' <<<'${{ steps.files.outputs.all }}')"
+          readarray -t files <<<"$(jq -r '.[]' <<<'${{ steps.files.outputs.added_modified }}')"
           for file in ${files[@]}; do 
             if [[ ($file == *".py") || ($file == *".java") ]]; then
               if ! grep -q Copyright "$file"; then

@@ -24,8 +24,7 @@ A library that integrates [Airflow `DAGs`]() with [OpenLineage](https://openline
 ## Requirements
 
 - [Python 3.7](https://www.python.org/downloads)
-- [Airflow 1.10.12+](https://pypi.org/project/apache-airflow)
-- (experimental) [Airflow 2.1+](https://pypi.org/project/apache-airflow)
+- [Airflow 2.1+](https://pypi.org/project/apache-airflow)
 
 ## Installation
 
@@ -63,15 +62,6 @@ In contrast to integration via subclassing `DAG`, `LineageBackend` based approac
 for task on each task completion.
 
 OpenLineageBackend does not take into account manually configured inlets and outlets. 
-
-### Airflow 1.10+
-
-To begin collecting Airflow DAG metadata with OpenLineage, use:
-
-```diff
-- from airflow import DAG
-+ from openlineage.airflow import DAG
-```
 
 When enabled, the library will:
 
@@ -139,9 +129,6 @@ First one, is to add them to `OPENLINEAGE_EXTRACTORS` environment variable, sepa
 OPENLINEAGE_EXTRACTORS=full.path.to.ExtractorClass;full.path.to.AnotherExtractorClass
 ```
 
-Second one - working in Airflow 1.10.x only - is to register all additional operator-extractor pairings by 
-providing `lineage_custom_extractors` argument in `openlineage.airflow.DAG`.
-
 #### Great Expectations
 
 Great Expectations integration works by providing OpenLineageValidationAction. You need to include it into your `action_list` in `great_expectations.yml`.
@@ -195,21 +182,6 @@ of a given task into the arguments sent to a  remote processing job's Airflow op
 DAG run_id and the task to access the generated run id for that task. For example, a Spark job can be triggered
 using the `DataProcPySparkOperator` with the correct parent run id using the following configuration:
 
-Airflow 1.10:
-
-```python
-t1 = DataProcPySparkOperator(
-    task_id=job_name,
-    #required pyspark configuration,
-    job_name=job_name,
-    dataproc_pyspark_properties={
-        'spark.driver.extraJavaOptions':
-            f"-javaagent:{jar}={os.environ.get('OPENLINEAGE_URL')}/api/v1/namespaces/{os.getenv('OPENLINEAGE_NAMESPACE', 'default')}/jobs/{job_name}/runs/{{{{lineage_run_id(run_id, task)}}}}?api_key={os.environ.get('OPENLINEAGE_API_KEY')}"
-        dag=dag)
-```
-
-Airflow 2.0+:
-
 ```python
 t1 = DataProcPySparkOperator(
     task_id=job_name,
@@ -234,14 +206,8 @@ To install all dependencies for _local_ development:
 
 Airflow integration depends on `openlineage.sql`, `openlineage.common` & `openlineage.client.python`. You should install them first independently or try to install with following command:
 
-Airflow 1.10:
 ```bash
-$ pip install -r dev-requirements-1.x.txt
-```
-
-Airflow 2.0+:
-```bash
-$ pip install -r dev-requirements-2.x.txt
+$ pip install -r dev-requirements.txt
 ```
 
 There is also bash script that can run arbitrary Airflow image with OpenLineage integration build from current branch. Additionally it mounts OpenLineage Python packages as Docker volumes. This enables you to change your code without need to constantly rebuild Docker images to run tests.
@@ -262,11 +228,6 @@ You can also skip using `tox` and run `pytest` on your own dev environment.
 ### Integration tests
 Integration tests require usage of _docker compose_. There are scripts prepared to make build images and run tests easier.
 
-Airflow 1.10:
-```bash
-$ ./tests/integration/docker/up.sh
-```
-Airflow 2.0+:
 ```bash
 $ AIRFLOW_IMAGE=<name-of-airflow-image> ./tests/integration/docker/up-2.sh
 ```

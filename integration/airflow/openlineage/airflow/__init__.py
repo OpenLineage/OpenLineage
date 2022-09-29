@@ -10,15 +10,13 @@ import logging
 __author__ = """OpenLineage"""
 
 if parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"):     # type: ignore
-    from openlineage.airflow.dag import DAG
     logging.warning(
         f'''
-        OpenLineage support for Airflow version {AIRFLOW_VERSION}
-        is DEPRECATED, and will be desupported on September 30, 2022.
+        OpenLineage support for Airflow version {AIRFLOW_VERSION} is REMOVED.
         Please make sure to upgrade your Airflow version to minimum of 2.0.0
         in order to continue using OpenLineage.
         '''
     )
-else:
-    from airflow.models import DAG
+
+from airflow.models import DAG
 __all__ = ["DAG", "__version__"]

@@ -7,8 +7,9 @@ import pytest
 from airflow.models import Connection
 from airflow.utils.dates import days_ago
 from airflow import DAG
+from airflow.utils.session import create_session
 
-from openlineage.airflow.utils import safe_import_airflow, get_connection
+from openlineage.airflow.utils import get_connection, try_import_from_string
 from openlineage.common.models import (
     DbTableSchema,
     DbColumn
@@ -17,15 +18,8 @@ from openlineage.common.sql import DbTableMeta
 from openlineage.common.dataset import Source, Dataset, Field
 from openlineage.airflow.extractors.mysql_extractor import MySqlExtractor
 
-MySqlOperator = safe_import_airflow(
-    airflow_1_path="airflow.operators.mysql_operator.MySqlOperator",
-    airflow_2_path="airflow.providers.mysql.operators.mysql.MySqlOperator"
-)
-
-MySqlHook = safe_import_airflow(
-    airflow_1_path="airflow.hooks.mysql_hook.MySqlHook",
-    airflow_2_path="airflow.providers.mysql.hooks.mysql.MySqlHook"
-)
+MySqlOperator = try_import_from_string("airflow.providers.mysql.operators.mysql.MySqlOperator")
+MySqlHook = try_import_from_string("airflow.providers.mysql.hooks.mysql.MySqlHook")
 
 CONN_ID = 'food_delivery_db'
 CONN_URI = 'mysql://user:pass@localhost:3306/food_delivery'
@@ -181,11 +175,6 @@ def test_get_connection_import_returns_none_if_not_exists():
 
 @pytest.fixture
 def create_connection():
-    create_session = safe_import_airflow(
-        airflow_1_path="airflow.utils.db.create_session",
-        airflow_2_path="airflow.utils.session.create_session",
-    )
-
     conn = Connection("does_exist", conn_type="mysql")
     with create_session() as session:
         session.add(conn)

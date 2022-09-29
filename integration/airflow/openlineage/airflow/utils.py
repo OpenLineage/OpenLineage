@@ -12,11 +12,7 @@ from typing import TYPE_CHECKING, Type, Dict, Any, List
 from uuid import uuid4
 from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
 from typing import Optional
-
 from airflow.models import DAG as AIRFLOW_DAG
-from airflow.version import version as AIRFLOW_VERSION
-
-from pkg_resources import parse_version
 
 from openlineage.airflow.facets import (
     AirflowMappedTaskRunFacet,
@@ -234,19 +230,14 @@ def get_connection(conn_id) -> "Connection":
         conn.parse_from_uri(uri=conn_uri)
         return conn
 
-    # Airflow 2: use secrets backend.
-    if parse_version(AIRFLOW_VERSION) >= parse_version("2.0.0"):    # type: ignore
-        try:
-            return Connection.get_connection_from_secrets(conn_id)
-        except Exception:
-            # Deliberate pass to try getting it via query
-            pass
+    # Try secrets backend.
+    try:
+        return Connection.get_connection_from_secrets(conn_id)
+    except Exception:
+        # Deliberate pass to try getting it via query
+        pass
 
-    create_session = safe_import_airflow(
-        airflow_1_path="airflow.utils.db.create_session",
-        airflow_2_path="airflow.utils.session.create_session",
-    )
-
+    from airflow.utils.session import create_session
     with create_session() as session:
         return session.query(Connection)\
             .filter(Connection.conn_id == conn_id)\
@@ -325,21 +316,6 @@ def try_import_from_string(path: str):
     except ImportError as e:
         logging.info(e.msg)  # type: ignore
         return None
-
-
-def choose_based_on_version(airflow_1_version, airflow_2_version):
-    if parse_version(AIRFLOW_VERSION) >= parse_version("2.0.0"):
-        return airflow_2_version
-    else:
-        return airflow_1_version
-
-
-def safe_import_airflow(airflow_1_path: str, airflow_2_path: str):
-    return import_from_string(
-        choose_based_on_version(
-            airflow_1_path, airflow_2_path
-        )
-    )
 
 
 def build_check_facets() -> dict:

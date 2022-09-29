@@ -12,10 +12,7 @@ set_producer("https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/
 
 from airflow.version import version as AIRFLOW_VERSION
 from pkg_resources import parse_version
-if parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"):
-    from openlineage.airflow import DAG
-else:
-    from airflow import DAG
+from airflow import DAG
 
 # Exercise the extractor only for Airflow 2.3.0+
 # This is to test the thread handling in the Airflow listener. The thread should be shutdown after 2 seconds, even

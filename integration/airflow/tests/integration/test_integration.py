@@ -33,6 +33,10 @@ try:
 except:  # noqa
     pass
 
+
+SNOWFLAKE_AIRFLOW_TEST_VERSION = os.environ.get("SNOWFLAKE_AIRFLOW_TEST_VERSION", "2.2.4")
+
+
 IS_AIRFLOW_VERSION_ENOUGH = lambda x: parse_version(
     os.environ.get("AIRFLOW_VERSION", "0.0.0")
 ) >= parse_version(x)
@@ -74,8 +78,8 @@ params = [
         "requests/dbt_snowflake.json",
         marks=[
             pytest.mark.skipif(
-                not IS_AIRFLOW_VERSION_ENOUGH("2.2.4"),
-                reason="Airflow < 2.2.4",
+                not IS_AIRFLOW_VERSION_ENOUGH(SNOWFLAKE_AIRFLOW_TEST_VERSION),
+                reason=f"Airflow < {SNOWFLAKE_AIRFLOW_TEST_VERSION}",
             ),
             pytest.mark.skipif(
                 os.environ.get("SNOWFLAKE_PASSWORD", "") == "",
@@ -88,8 +92,8 @@ params = [
         "requests/snowflake.json",
         marks=[
             pytest.mark.skipif(
-                not IS_AIRFLOW_VERSION_ENOUGH("2.2.4"),
-                reason="Airflow < 2.2.4",
+                not IS_AIRFLOW_VERSION_ENOUGH(SNOWFLAKE_AIRFLOW_TEST_VERSION),
+                reason=f"Airflow < {SNOWFLAKE_AIRFLOW_TEST_VERSION}",
             ),
             pytest.mark.skipif(
                 os.environ.get("SNOWFLAKE_ACCOUNT_ID", "") == "",

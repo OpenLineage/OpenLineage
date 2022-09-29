@@ -4,7 +4,7 @@ x-airflow-common: &airflow-common
   build:
     context: ../../../../..
     target: airflow
-    dockerfile: integration/airflow/tests/integration/Dockerfile.test
+    dockerfile: integration/airflow/tests/integration/Dockerfile
     args:
       AIRFLOW_IMAGE: ${AIRFLOW_IMAGE}
   environment: &airflow-common-env
@@ -48,7 +48,7 @@ services:
     build:
       context: ../../../../../
       target: integration
-      dockerfile: integration/airflow/tests/integration/Dockerfile.test
+      dockerfile: integration/airflow/tests/integration/Dockerfile
       args:
         AIRFLOW_IMAGE: ${AIRFLOW_IMAGE}
     volumes:
