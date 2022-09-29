@@ -55,9 +55,9 @@ services:
       - ../docker/wait-for-it.sh:/wait-for-it.sh
     depends_on:
       airflow_scheduler:
-        condition: service_healthy
+        condition: service_started
       airflow_worker:
-        condition: service_healthy
+        condition: service_started
       airflow:
         condition: service_healthy
       backend:

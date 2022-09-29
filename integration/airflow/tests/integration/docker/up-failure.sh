@@ -34,4 +34,5 @@ esac
 docker-compose -f failures/docker-compose.yml down -v
 docker-compose -f failures/docker-compose.yml build
 OPENLINEAGE_URL=$URL docker-compose -f failures/docker-compose.yml run integration
+docker-compose -f failures/docker-compose.yml logs > failures/airflow/logs/docker.log
 docker-compose -f failures/docker-compose.yml down -v
