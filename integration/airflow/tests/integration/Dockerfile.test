@@ -7,7 +7,12 @@ COPY client/python /app/openlineage/client/python
 COPY integration/targe[t] /app/openlineage/integration/sql/target
 USER root
 RUN mkdir -p /opt/data
-RUN apt-get update && apt-get install -y git
+RUN apt-get update && apt-get install -y git patch
+RUN set -ex; \
+    curl -o /tmp/revert.patch https://github.com/astronomer/airflow/commit/0b62ba5af6e76b54a83c378d266287aa575a3c90.patch; \
+    cd /home/airflow/.local/lib/python3.7/site-packages/airflow; \
+    patch -u -p 2 < /tmp/revert.patch; \
+    rm /tmp/revert.patch
 COPY integration/airflow/tests/integration/data /opt/data
 COPY integration/airflow/tests/integration/docker/wait-for-it.sh /opt/data/wait-for-it.sh
 RUN chmod -R 777 /opt/data
