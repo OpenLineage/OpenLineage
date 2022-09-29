@@ -58,6 +58,7 @@ public class SparkContainerUtils {
       Network network,
       MockServerContainer mockServerContainer,
       String namespace,
+      List<String> urlParams,
       String... command) {
     return makePysparkContainerWithDefaultConf(
         network,
@@ -65,7 +66,17 @@ public class SparkContainerUtils {
         ".*ShutdownHookManager: Shutdown hook called.*",
         mockServerContainer,
         namespace,
+        urlParams,
         command);
+  }
+
+  static GenericContainer<?> makePysparkContainerWithDefaultConf(
+      Network network,
+      MockServerContainer mockServerContainer,
+      String namespace,
+      String... command) {
+    return makePysparkContainerWithDefaultConf(
+        network, mockServerContainer, namespace, new ArrayList<>(), command);
   }
 
   static GenericContainer<?> makePysparkContainerWithDefaultConf(
@@ -74,13 +85,24 @@ public class SparkContainerUtils {
       String waitMessage,
       MockServerContainer mockServerContainer,
       String namespace,
+      List<String> urlParams,
       String... command) {
+
+    //    String urlParamsString = urlParams.isEmpty() ?
+    String paramString = "";
+    if (!urlParams.isEmpty()) {
+      paramString = "?" + String.join("&", urlParams);
+    }
 
     List<String> sparkConfigParams = new ArrayList<>();
     addSparkConfig(sparkConfigParams, "spark.openlineage.host=" + openlineageUrl);
     addSparkConfig(
         sparkConfigParams,
-        "spark.openlineage.url=" + openlineageUrl + "/api/v1/namespaces/" + namespace);
+        "spark.openlineage.url="
+            + openlineageUrl
+            + "/api/v1/namespaces/"
+            + namespace
+            + paramString);
     addSparkConfig(
         sparkConfigParams, "spark.extraListeners=" + OpenLineageSparkListener.class.getName());
     addSparkConfig(sparkConfigParams, "spark.sql.warehouse.dir=/tmp/warehouse");
@@ -118,8 +140,18 @@ public class SparkContainerUtils {
       MockServerContainer mockServerContainer,
       String namespace,
       String pysparkFile) {
+    runPysparkContainerWithDefaultConf(
+        network, mockServerContainer, namespace, new ArrayList<>(), pysparkFile);
+  }
+
+  static void runPysparkContainerWithDefaultConf(
+      Network network,
+      MockServerContainer mockServerContainer,
+      String namespace,
+      List<String> urlParams,
+      String pysparkFile) {
     makePysparkContainerWithDefaultConf(
-            network, mockServerContainer, namespace, "/opt/spark_scripts/" + pysparkFile)
+            network, mockServerContainer, namespace, urlParams, "/opt/spark_scripts/" + pysparkFile)
         .start();
   }
 

@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 public class EventEmitter {
   @Getter private OpenLineageClient client;
   @Getter private URI lineageURI;
+  @Getter private Optional<String> overwriteName;
   @Getter private String jobNamespace;
   @Getter private String parentJobName;
   @Getter private Double timeout;
@@ -33,6 +34,7 @@ public class EventEmitter {
     this.jobNamespace = argument.getNamespace();
     this.parentJobName = argument.getJobName();
     this.parentRunId = convertToUUID(argument.getParentRunId());
+    this.overwriteName = argument.getOverwriteName();
 
     if (argument.isConsoleMode()) {
       this.client = new OpenLineageClient(new ConsoleTransport());

@@ -9,11 +9,14 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
@@ -25,49 +28,62 @@ import org.apache.hc.core5.net.URLEncodedUtils;
 @Slf4j
 @Getter
 @ToString
+@Builder
 public class ArgumentParser {
-  public static final ArgumentParser DEFAULTS = getDefaultArguments();
+  public static final Set<String> namedParams =
+      new HashSet<>(Arrays.asList("timeout", "api_key", "overwrite_name"));
 
-  private final String host;
-  private final String version;
-  private final String namespace;
-  private final String jobName;
-  private final String parentRunId;
-  private final Optional<Double> timeout;
-  private final Optional<String> apiKey;
-  private final Optional<Map<String, String>> urlParams;
-  private final boolean consoleMode;
+  @Builder.Default private String host = "";
+  @Builder.Default private String version = "v1";
+  @Builder.Default private String namespace = "default";
+  @Builder.Default private String jobName = "default";
+  @Builder.Default private String parentRunId = null;
+  @Builder.Default private Optional<Double> timeout = Optional.empty();
+  @Builder.Default private Optional<String> apiKey = Optional.empty();
+  @Builder.Default private Optional<String> overwriteName = Optional.empty();
+  @Builder.Default private Optional<Map<String, String>> urlParams = Optional.empty();
+  @Builder.Default private boolean consoleMode = false;
 
   public static ArgumentParser parse(String clientUrl) {
     URI uri = URI.create(clientUrl);
-    String host = uri.getScheme() + "://" + uri.getAuthority();
-
     String path = uri.getPath();
     String[] elements = path.split("/");
-    String version = get(elements, "api", 1, DEFAULTS.getVersion());
-    String namespace = get(elements, "namespaces", 3, DEFAULTS.getNamespace());
-    String jobName = get(elements, "jobs", 5, DEFAULTS.getJobName());
-    String runId = get(elements, "runs", 7, DEFAULTS.getParentRunId());
-
     List<NameValuePair> nameValuePairList = URLEncodedUtils.parse(uri, StandardCharsets.UTF_8);
-    Optional<Double> timeout = getTimeout(nameValuePairList);
-    Optional<String> apiKey = getApiKey(nameValuePairList);
-    Optional<Map<String, String>> urlParams = getUrlParams(nameValuePairList);
 
+    ArgumentParserBuilder builder =
+        ArgumentParser.builder()
+            .host(uri.getScheme() + "://" + uri.getAuthority())
+            .timeout(getTimeout(nameValuePairList))
+            .apiKey(getNamedStringParameter(nameValuePairList, "api_key"))
+            .overwriteName(getNamedStringParameter(nameValuePairList, "overwrite_name"))
+            .urlParams(getUrlParams(nameValuePairList))
+            .consoleMode(false);
+
+    get(elements, "api", 1).ifPresent(builder::version);
+    get(elements, "namespaces", 3).ifPresent(builder::namespace);
+    get(elements, "jobs", 5).ifPresent(builder::jobName);
+    get(elements, "runs", 7).ifPresent(builder::parentRunId);
+
+    ArgumentParser argumentParser = builder.build();
     log.info(
         String.format(
-            "%s/api/%s/namespaces/%s/jobs/%s/runs/%s", host, version, namespace, jobName, runId));
+            "%s/api/%s/namespaces/%s/jobs/%s/runs/%s",
+            argumentParser.getHost(),
+            argumentParser.getVersion(),
+            argumentParser.getNamespace(),
+            argumentParser.getJobName(),
+            argumentParser.getParentRunId()));
 
-    return new ArgumentParser(
-        host, version, namespace, jobName, runId, timeout, apiKey, urlParams, false);
+    return argumentParser;
   }
 
   public static UUID getRandomUuid() {
     return UUID.randomUUID();
   }
 
-  private static Optional<String> getApiKey(List<NameValuePair> nameValuePairList) {
-    return Optional.ofNullable(getNamedParameter(nameValuePairList, "api_key"))
+  private static Optional<String> getNamedStringParameter(
+      List<NameValuePair> nameValuePairList, String name) {
+    return Optional.ofNullable(getNamedParameter(nameValuePairList, name))
         .filter(StringUtils::isNoneBlank);
   }
 
@@ -98,8 +114,7 @@ public class ArgumentParser {
   private static Optional<Map<String, String>> getUrlParams(List<NameValuePair> nameValuePairList) {
     final Map<String, String> urlParams = new HashMap<String, String>();
     nameValuePairList.stream()
-        .filter(pair -> !"api_key".equals(pair.getName()))
-        .filter(pair -> !"timeout".equals(pair.getName()))
+        .filter(pair -> !namedParams.contains(pair.getName()))
         .forEach(pair -> urlParams.put(pair.getName(), pair.getValue()));
 
     return urlParams.isEmpty() ? Optional.empty() : Optional.ofNullable(urlParams);
@@ -114,26 +129,13 @@ public class ArgumentParser {
     return null;
   }
 
-  private static String get(String[] elements, String name, int index, String defaultValue) {
+  private static Optional<String> get(String[] elements, String name, int index) {
     boolean check = elements.length > index + 1 && name.equals(elements[index]);
     if (check) {
-      return elements[index + 1];
+      return Optional.of(elements[index + 1]);
     } else {
       log.warn("missing " + name + " in " + Arrays.toString(elements) + " at " + index);
-      return defaultValue;
+      return Optional.empty();
     }
-  }
-
-  private static ArgumentParser getDefaultArguments() {
-    return new ArgumentParser(
-        "",
-        "v1",
-        "default",
-        "default",
-        null,
-        Optional.empty(),
-        Optional.empty(),
-        Optional.empty(),
-        false);
   }
 }

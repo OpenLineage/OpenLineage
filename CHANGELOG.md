@@ -2,20 +2,20 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.15.0...HEAD)
 
-## [0.15.0](https://github.com/OpenLineage/OpenLineage/compare/0.14.1...0.15.0) - 2022-09-29
+## [0.15.0](https://github.com/OpenLineage/OpenLineage/compare/0.14.1...0.15.0) - 2022-10-03
 ### Added
 * Airflow: improve development experience [`#1101`](https://github.com/OpenLineage/OpenLineage/pull/1101) [@JDarDagran](https://github.com/JDarDagran)  
     *Adds an interactive development environment to the Airflow integration and improves integration testing.*
 * Documentation: update issue templates for proposal & add new integration template [`#1116`](https://github.com/OpenLineage/OpenLineage/pull/1116) [@rossturk](https://github.com/rossturk)  
     *Adds a YAML issue template for new integrations and fixes a bug in the proposal template.*
+* Spark: add description for URL parameters in readme, change `overwriteName` to `appName` [`#1130`](https://github.com/OpenLineage/OpenLineage/pull/1130) [@tnazarew](https://github.com/tnazarew)  
+    *Adds more information about passing arguments with `spark.openlineage.url` and changes `overwriteName` to `appName` for clarity.*
 
 ### Changed
 * Airflow: lazy load BigQuery client [`#1119`](https://github.com/OpenLineage/OpenLineage/pull/1119) [@mobuchowski](https://github.com/mobuchowski)  
     *Moves import of the BigQuery client from top level to local level to decrease DAG import time.*
 
 ### Fixed
-* Airflow: add task policy in Airflow 2.4.0 OpenLineage plugin [`#1123`](https://github.com/OpenLineage/OpenLineage/pull/1123) [@JDarDagran](https://github.com/JDarDagran)  
-    *Uses `task_policy` to override `on_execute/success/failure_callback` in 2.4.0 due to breaking changes in Sqlalchemy events sent by Airflow.*
 * Airflow: fix UUID generation conflict for Airflow DAGs with same name [`#1056`](https://github.com/OpenLineage/OpenLineage/pull/1056) [@collado-mike](https://github.com/collado-mike)  
     *Adds a namespace to the UUID calculation to avoid conflicts caused by DAGs having the same name in different namespaces in Airflow deployments.*
 * Spark/BigQuery: fix issue with spark-bigquery-connector >=0.25.0 [`#1111`](https://github.com/OpenLineage/OpenLineage/pull/1111) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  

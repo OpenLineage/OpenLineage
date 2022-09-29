@@ -39,4 +39,5 @@ export PWD='.'
 docker-compose -f tests/docker-compose-2.yml down -v
 docker-compose -f tests/docker-compose-2.yml build
 docker-compose -f tests/docker-compose-2.yml run integration
+docker-compose -f tests/docker-compose-2.yml logs > tests/airflow/logs/docker.log
 docker-compose -f tests/docker-compose-2.yml down

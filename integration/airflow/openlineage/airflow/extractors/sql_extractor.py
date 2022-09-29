@@ -1,3 +1,4 @@
+# Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0.
 import logging
 from typing import List, Optional, TYPE_CHECKING, Dict, Tuple, Callable
@@ -11,11 +12,9 @@ from openlineage.airflow.extractors.dbapi_utils import (
 from openlineage.airflow.utils import get_connection
 from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
 from openlineage.client.facet import BaseFacet, SqlJobFacet
-from openlineage.common.sql import SqlMeta, parse
+from openlineage.common.sql import SqlMeta, parse, DbTableMeta
 from openlineage.common.dataset import Dataset, Source
 from abc import abstractmethod
-
-from openlineage.common.sql.parser import DbTableMeta
 
 if TYPE_CHECKING:
     from airflow.models import Connection

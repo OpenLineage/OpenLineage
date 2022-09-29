@@ -55,9 +55,9 @@ services:
       - ../docker/wait-for-it.sh:/wait-for-it.sh
     depends_on:
       airflow_scheduler:
-        condition: service_healthy
+        condition: service_started
       airflow_worker:
-        condition: service_healthy
+        condition: service_started
       airflow:
         condition: service_healthy
       backend:
@@ -72,7 +72,7 @@ services:
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
       interval: 10s
-      timeout: 10s
+      timeout: 60s
       retries: 5
     restart: always
     depends_on:
