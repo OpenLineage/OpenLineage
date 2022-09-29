@@ -2,11 +2,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+import typing
 from typing import Optional
 
 import attr
-from requests import Session
-from requests.adapters import HTTPAdapter
+if typing.TYPE_CHECKING:
+    from requests import Session
+    from requests.adapters import HTTPAdapter
 
 from openlineage.client.run import RunEvent
 from openlineage.client.transport import Transport, get_default_factory
@@ -18,7 +20,7 @@ class OpenLineageClientOptions:
     timeout: float = attr.ib(default=5.0)
     verify: bool = attr.ib(default=True)
     api_key: str = attr.ib(default=None)
-    adapter: HTTPAdapter = attr.ib(default=None)
+    adapter: "HTTPAdapter" = attr.ib(default=None)
 
 
 log = logging.getLogger(__name__)
@@ -29,7 +31,7 @@ class OpenLineageClient:
         self,
         url: Optional[str] = None,
         options: Optional[OpenLineageClientOptions] = None,
-        session: Optional[Session] = None,
+        session: Optional["Session"] = None,
         transport: Optional[Transport] = None,
     ):
         if url:
@@ -38,6 +40,7 @@ class OpenLineageClient:
             if not options:
                 options = OpenLineageClientOptions()
             if not session:
+                from requests import Session
                 session = Session()
             self._initialize_url(url, options, session)
         elif transport:
@@ -49,7 +52,7 @@ class OpenLineageClient:
         self,
         url: str,
         options: OpenLineageClientOptions,
-        session: Session
+        session: 'Session'
     ):
         self.transport = HttpTransport(HttpConfig.from_options(
             url=url,
