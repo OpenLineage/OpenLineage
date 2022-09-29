@@ -2,6 +2,7 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.14.0...HEAD)
 * Fix uuid generation conflict for airflow dags with same name - 2022-09-07 [@collado-mike](https://github.com/collado-mike)
+* Add overwrite of app name with custom value in Spark events [`#1109`](https://github.com/OpenLineage/OpenLineage/pull/1109) [@tnazarew](https://github.com/tnazarew)
 
 ## [0.14.1](https://github.com/OpenLineage/OpenLineage/compare/0.14.0...0.14.1) - 2022-09-07
 ### Fixed

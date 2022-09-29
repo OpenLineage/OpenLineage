@@ -284,9 +284,9 @@ class RddExecutionContext implements ExecutionContext {
     }
 
     String name =
-        eventEmitter.getOverwriteName().isPresent()
-            ? eventEmitter.getOverwriteName().get()
-            : sparkContextOption.map(SparkContext::appName).orElse("unknown");
+        eventEmitter
+            .getOverwriteName()
+            .orElse(sparkContextOption.map(SparkContext::appName).orElse("unknown"));
     String jobName = name + "." + suffix;
     return new OpenLineage.JobBuilder()
         .namespace(eventEmitter.getJobNamespace())
