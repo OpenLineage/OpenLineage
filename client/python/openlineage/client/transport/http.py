@@ -1,14 +1,15 @@
+# Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0.
 import logging
 from urllib.parse import urljoin
 
 import attr
 
-from typing import Optional, Dict
+from typing import Optional, Dict, TYPE_CHECKING
 
-from requests import Session
-from requests.adapters import HTTPAdapter
-from urllib3.util import parse_url
+if TYPE_CHECKING:
+    from requests import Session
+    from requests.adapters import HTTPAdapter
 
 from openlineage.client.run import RunEvent
 from openlineage.client.serde import Serde
@@ -46,6 +47,11 @@ def create_token_provider(auth: Dict) -> TokenProvider:
     return TokenProvider({})
 
 
+def get_session():
+    from requests import Session
+    return Session()
+
+
 @attr.s
 class HttpConfig(Config):
     url: str = attr.ib()
@@ -55,9 +61,9 @@ class HttpConfig(Config):
     verify: bool = attr.ib(default=True)
     auth: TokenProvider = attr.ib(factory=lambda: TokenProvider({}))
     # not set by TransportFactory
-    session: Session = attr.ib(factory=Session)
+    session: "Session" = attr.ib(factory=get_session)
     # not set by TransportFactory
-    adapter: Optional[HTTPAdapter] = attr.ib(default=None)
+    adapter: Optional["HTTPAdapter"] = attr.ib(default=None)
 
     @classmethod
     def from_dict(cls, params: dict) -> 'HttpConfig':
@@ -68,14 +74,14 @@ class HttpConfig(Config):
         return cls(**specified_dict)
 
     @classmethod
-    def from_options(cls, url: str, options, session: Optional[Session]) -> 'HttpConfig':
+    def from_options(cls, url: str, options, session: Optional['Session']) -> 'HttpConfig':
         return cls(
             url=url,
             timeout=options.timeout,
             verify=options.verify,
             auth=ApiKeyTokenProvider({"api_key": options.api_key})
             if options.api_key else TokenProvider({}),
-            session=session if session else Session(),
+            session=session if session else get_session(),
             adapter=options.adapter
         )
 
@@ -89,6 +95,7 @@ class HttpTransport(Transport):
 
         log.debug(f"Constructing openlineage client to send events to {url}")
         try:
+            from urllib3.util import parse_url
             parsed = parse_url(url)
             if not (parsed.scheme and parsed.netloc):  # type: ignore
                 raise ValueError(f"Need valid url for OpenLineageClient, passed {url}")
@@ -105,7 +112,7 @@ class HttpTransport(Transport):
         if config.adapter:
             self.set_adapter(config.adapter)
 
-    def set_adapter(self, adapter: HTTPAdapter):
+    def set_adapter(self, adapter: "HTTPAdapter"):
         self.session.mount(self.url, adapter)
 
     def emit(self, event: RunEvent):
