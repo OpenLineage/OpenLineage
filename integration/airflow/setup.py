@@ -15,12 +15,14 @@ __version__ = "0.15.0"
 requirements = [
     "attrs>=19.3",
     "requests>=2.20.0",
-    "sqlparse>=0.3.1",
     f"openlineage-integration-common[sql]=={__version__}",
     f"openlineage-python=={__version__}",
 ]
 
 extras_require = {
+    "python-sql": [
+        "sqlparse>=0.3.1",
+    ],
     "tests": [
         "pytest",
         "pytest-cov",

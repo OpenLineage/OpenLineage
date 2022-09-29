@@ -11,6 +11,8 @@ from sqlparse.tokens import Punctuation
 
 log = logging.getLogger(__name__)
 
+# Do not import from this package directly. Instead, import from openlineage.common.sql
+
 
 def provider():
     return "python"

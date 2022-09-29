@@ -15,10 +15,12 @@ __version__ = "0.15.0"
 requirements = [
     "attrs>=19.3.0",
     f"openlineage-python=={__version__}",
-    "sqlparse>=0.3.1",
 ]
 
 extras_require = {
+    "python-sql": [
+        "sqlparse>=0.3.1",
+    ],
     "sql": [
         f"openlineage_sql=={__version__}"
     ],
