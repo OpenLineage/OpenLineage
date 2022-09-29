@@ -287,10 +287,12 @@ class LogicalPlanSerializerTest {
                 "2"),
             ImmutableMap.of(),
             new Configuration(),
+            ImmutableMap.of(),
             10,
             SQLConf.get(),
             "",
-            Optional.empty());
+            Optional.empty(),
+            true);
 
     BigQueryRelation bigQueryRelation =
         new BigQueryRelation(

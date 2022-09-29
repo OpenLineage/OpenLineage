@@ -558,7 +558,6 @@ jobs:
       - run: cp -r ../client/python python
       - attach_workspace:
           at: .
-      - run: docker build -f airflow/Dockerfile.tests -t openlineage-airflow-base .
       - run: AIRFLOW_IMAGE=<< parameters.airflow-image >> ./airflow/tests/integration/docker/up-2.sh
       - store_artifacts:
           path: airflow/tests/integration/tests/airflow/logs

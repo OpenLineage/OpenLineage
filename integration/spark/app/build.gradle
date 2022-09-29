@@ -49,7 +49,7 @@ archivesBaseName='openlineage-spark-app'
 
 
 ext {
-    bigqueryVersion = '0.21.1'
+    bigqueryVersion = '0.26.0'
     sparkVersion = project.getProperty('spark.version')
     postgresqlVersion = '42.2.19'
     mockitoVersion = '3.11.2'

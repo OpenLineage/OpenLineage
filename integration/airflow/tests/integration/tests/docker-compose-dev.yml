@@ -1,0 +1,27 @@
+version: "3.7"
+
+x-dev-mounts: &dev-mounts
+  volumes:
+    - ../../../../../:/app/openlineage
+
+services:
+  integration:
+    volumes:
+      - ../:/app
+    entrypoint: /bin/bash
+    tty: true
+
+  airflow_scheduler:
+    <<: *dev-mounts
+
+  airflow_worker:
+    <<: *dev-mounts
+
+  airflow:
+    <<: *dev-mounts
+
+  backend:
+    <<: *dev-mounts
+
+  airflow_init:
+    <<: *dev-mounts

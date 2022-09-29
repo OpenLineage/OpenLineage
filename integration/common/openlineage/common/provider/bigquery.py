@@ -5,10 +5,7 @@ import json
 import logging
 import traceback
 import attr
-
-from typing import Tuple, Optional, Dict, List
-
-from google.cloud.bigquery import Client
+from typing import Tuple, Optional, Dict, List, TYPE_CHECKING
 
 from openlineage.common.dataset import Dataset, Source
 from openlineage.common.models import DbTableSchema, DbColumn
@@ -19,6 +16,15 @@ from openlineage.client.facet import BaseFacet, OutputStatisticsOutputDatasetFac
     ExternalQueryRunFacet
 
 _BIGQUERY_CONN_URL = 'bigquery'
+
+# we lazy-load bigquery Client in BigQueryDatasetsProvider if not type-checking
+if TYPE_CHECKING:
+    from google.cloud.bigquery import Client
+
+
+def get_bq_client():
+    from google.cloud.bigquery import Client
+    return Client
 
 
 @attr.s
@@ -85,11 +91,12 @@ class BigQueryFacets:
 class BigQueryDatasetsProvider:
     def __init__(
         self,
-        client: Optional[Client] = None,
+        client: Optional["Client"] = None,
         logger: Optional[logging.Logger] = None
     ):
         if client is None:
-            self.client = Client()
+            # lazy-load bigquery client since its slow to import (primarily due to pandas)
+            self.client = get_bq_client()
         else:
             self.client = client
         if logger is None:

@@ -1,5 +1,3 @@
-<!-- SPDX-License-Identifier: Apache-2.0 -->
-
 ---
 name: Proposal
 about: Propose an addition to the spec
