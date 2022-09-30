@@ -1,10 +1,8 @@
 // Copyright 2018-2022 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
 
-use sqlparser::dialect::HiveDialect;
 use openlineage_sql::SqlMeta;
 
-#[macro_use]
 mod test_utils;
 use test_utils::*;
 
@@ -83,7 +81,8 @@ fn create_and_insert_multiple_stmts() {
 #[test]
 fn create_hive_external_table_if_not_exist() {
     assert_eq!(
-        test_sql_dialect("
+        test_sql_dialect(
+            "
             CREATE EXTERNAL TABLE IF NOT EXISTS  Testing_Versions_latest (
                 `ID` INT,
                 `ExperimentID` INT,
@@ -100,8 +99,10 @@ fn create_hive_external_table_if_not_exist() {
                     STORED AS PARQUET
                     LOCATION 's3://abc.ingest/sqlserver/Testing/Versions/ds=2022-08-10'
                     TBLPROPERTIES ('parquet.compression'='SNAPPY');
-        ", "hive"
-        ), SqlMeta {
+        ",
+            "hive"
+        ),
+        SqlMeta {
             in_tables: vec![],
             out_tables: table("Testing_Versions_latest")
         }
@@ -111,12 +112,14 @@ fn create_hive_external_table_if_not_exist() {
 #[test]
 fn create_replace_as_select() {
     assert_eq!(
-        test_sql("
+        test_sql(
+            "
             CREATE OR REPLACE TABLE DATA_TEAM_DEMOS.ALL_DAYS AS (
             SELECT date AS calendar_day, yyyy_mm as calendar_month, yyyy as calendar_year
             FROM dwh_dev.commons.calendar
             WHERE date BETWEEN '2022-01-01' AND CURRENT_DATE
-        )"),
+        )"
+        ),
         SqlMeta {
             in_tables: table("dwh_dev.commons.calendar"),
             out_tables: table("DATA_TEAM_DEMOS.ALL_DAYS")

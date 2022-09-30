@@ -25,10 +25,11 @@ export CARGO_INCREMENTAL=0
 
 # Run test if indicated to do so.
 if [[ -z ${RUN_TESTS} ]]; then
-  cargo test --no-default-features
+  cargo test -p openlineage_sql_python --no-default-features
 fi
 
 # Build release wheels
+cd iface-py
 maturin build --sdist --out target/wheels
 
 # Verify that it imports properly

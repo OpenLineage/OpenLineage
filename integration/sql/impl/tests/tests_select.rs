@@ -4,7 +4,6 @@
 use openlineage_sql::{parse_sql, BigQueryDialect, SqlMeta};
 use std::sync::Arc;
 
-#[macro_use]
 mod test_utils;
 use test_utils::*;
 
