@@ -7,7 +7,6 @@ use openlineage_sql::{parse_sql, SqlMeta};
 use sqlparser::dialect::PostgreSqlDialect;
 use std::sync::Arc;
 
-#[macro_use]
 mod test_utils;
 use test_utils::*;
 
@@ -53,7 +52,8 @@ fn parse_bugged_cte() {
             Arc::new(PostgreSqlDialect {}),
             None
         )
-        .unwrap_err(),
+        .unwrap_err()
+        .to_string(),
         "sql parser error: Expected ), found: user_id"
     )
 }
