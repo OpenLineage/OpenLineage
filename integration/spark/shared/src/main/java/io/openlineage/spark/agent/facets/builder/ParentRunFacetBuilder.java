@@ -74,18 +74,18 @@ public class ParentRunFacetBuilder extends AbstractRunFacetBuilder<SparkListener
     // not been populated. This needs to always be ran
     if (parentRunId == null) {
       parentRunId =
-          SparkConfUtils.findSparkConfigKey(
-              sess.sparkContext().conf(), "openlineage.parentRunId", null);
+          SparkConfUtils.findSparkConfigKey(sess.sparkContext().conf(), "openlineage.parentRunId")
+              .orElse(null);
     }
     if (parentJobName == null) {
       parentJobName =
-          SparkConfUtils.findSparkConfigKey(
-              sess.sparkContext().conf(), "openlineage.parentJobName", null);
+          SparkConfUtils.findSparkConfigKey(sess.sparkContext().conf(), "openlineage.parentJobName")
+              .orElse(null);
     }
 
     String namespace =
-        SparkConfUtils.findSparkConfigKey(
-            sess.sparkContext().conf(), "openlineage.namespace", null);
+        SparkConfUtils.findSparkConfigKey(sess.sparkContext().conf(), "openlineage.namespace")
+            .orElse(null);
     Optional<ParentRunFacet> parentRunFacet = Optional.empty();
     if (parentRunId != null && parentJobName != null && namespace != null) {
       parentRunFacet =

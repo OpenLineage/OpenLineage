@@ -290,7 +290,8 @@ class RddExecutionContext implements ExecutionContext {
     String jobName = name + "." + suffix;
     return new OpenLineage.JobBuilder()
         .namespace(eventEmitter.getJobNamespace())
-        .name(jobName.replaceAll(PlanUtils.CAMEL_TO_SNAKE_CASE_REGEX, "_$1").toLowerCase(Locale.ROOT))
+        .name(
+            jobName.replaceAll(PlanUtils.CAMEL_TO_SNAKE_CASE_REGEX, "_$1").toLowerCase(Locale.ROOT))
         .build();
   }
 
