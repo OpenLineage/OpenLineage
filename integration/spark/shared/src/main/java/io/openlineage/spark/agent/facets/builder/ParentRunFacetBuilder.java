@@ -53,58 +53,25 @@ public class ParentRunFacetBuilder extends AbstractRunFacetBuilder<SparkListener
     String parentJobName = null;
 
     if (event instanceof SparkListenerSQLExecutionStart) {
-      // If this is an ExecutionStart, we need to extract the runId and jobName
-      // based on the executionId and the OpenLineageContext
-      Long executionId = ((SparkListenerSQLExecutionStart) event).executionId();
-      log.debug(
-          "Setting execution Id of {} to run id of {}",
-          String.valueOf(executionId),
-          context.getRunUuid().toString());
-
-      if (context.getQueryExecution().isPresent()) {
-        SparkContext sparkContext = context.getSparkContext();
-        SparkPlan sparkPlan = context.getQueryExecution().get().executedPlan();
-        String jobName = PlanUtils.getSparkJobName(sparkContext, sparkPlan);
-        log.debug("Execution Id of {} has a jobName of {}", String.valueOf(executionId), jobName);
-
-        executionIdToRunIdMap.put(
-            executionId, new AbstractMap.SimpleEntry<UUID, String>(context.getRunUuid(), jobName));
-      } else {
-        log.debug("Failed to set the execution context since queryExecution was missing");
-      }
+      addExecutionIdToRunMapping(((SparkListenerSQLExecutionStart) event));
 
     } else if (event instanceof SparkListenerJobStart) {
       SparkListenerJobStart jobStart = (SparkListenerJobStart) event;
-      String currentExecutionId = jobStart.properties().getProperty("spark.sql.execution.id");
 
-      log.debug("Spark SQL Execution Id is: {}", currentExecutionId);
+      Optional<Entry<UUID, String>> parentEntry = Optional.empty();
 
-      // This property appears to be unique to Azure Databricks' implementation
-      // of a connector to Azure Synapse SQL Pools. By extracting this and looking
-      // up the OpenLineage RunId and JobName based on this execution Id, we can
-      // identify the previous execution as the parent runId and parent job Name.
-      if (jobStart.properties().containsKey("spark.sql.execution.parent")) {
-        String sqlExecutionParentId =
-            jobStart.properties().getProperty("spark.sql.execution.parent");
+      parentEntry = getDatabricksSynapseParentRun(jobStart);
 
-        log.debug(
-            "Current ExecutionId {} has Parent Execution Id {}",
-            currentExecutionId,
-            sqlExecutionParentId);
-
-        Optional<Entry<UUID, String>> parentEntry =
-            executionParentToParentRun(sqlExecutionParentId);
-
-        if (parentEntry.isPresent()) {
-          // Based on the previous execution, set the parentRunId and parentJobName
-          parentRunId = parentEntry.get().getKey().toString();
-          parentJobName = parentEntry.get().getValue().toString();
-        }
+      if (parentEntry.isPresent()) {
+        // Based on the previous execution, set the parentRunId and parentJobName
+        parentRunId = parentEntry.get().getKey().toString();
+        parentJobName = parentEntry.get().getValue().toString();
+        log.debug("The Parent Entry was Populated {} {}", parentRunId, parentJobName);
       }
     }
 
     // Get values for parent run and job name from configuration if they have
-    // not been populated.
+    // not been populated. This needs to always be ran
     if (parentRunId == null) {
       parentRunId =
           SparkConfUtils.findSparkConfigKey(
@@ -146,7 +113,7 @@ public class ParentRunFacetBuilder extends AbstractRunFacetBuilder<SparkListener
       // If this is an ExecutionEnd, we can remove the information from the map
       Long executionId = ((SparkListenerSQLExecutionEnd) event).executionId();
       if (executionIdToRunIdMap.containsKey(executionId)) {
-        log.info(String.format("Removing execution Id of %s", String.valueOf(executionId)));
+        log.debug(String.format("Removing execution Id of %s", String.valueOf(executionId)));
         executionIdToRunIdMap.remove(executionId);
       }
     }
@@ -165,5 +132,50 @@ public class ParentRunFacetBuilder extends AbstractRunFacetBuilder<SparkListener
       }
     }
     return Optional.empty();
+  }
+
+  private void addExecutionIdToRunMapping(SparkListenerSQLExecutionStart event) {
+    // If this is an ExecutionStart, we need to extract the runId and jobName
+    // based on the executionId and the OpenLineageContext
+    Long executionId = event.executionId();
+    log.debug(
+        "Setting execution Id of {} to run id of {}",
+        String.valueOf(executionId),
+        context.getRunUuid().toString());
+
+    if (context.getQueryExecution().isPresent()) {
+      SparkContext sparkContext = context.getSparkContext();
+      SparkPlan sparkPlan = context.getQueryExecution().get().executedPlan();
+      String jobName = PlanUtils.getSparkJobName(sparkContext, sparkPlan);
+      log.debug("Execution Id of {} has a jobName of {}", String.valueOf(executionId), jobName);
+
+      executionIdToRunIdMap.put(
+          executionId, new AbstractMap.SimpleEntry<UUID, String>(context.getRunUuid(), jobName));
+    } else {
+      log.debug("Failed to set the execution context since queryExecution was missing");
+    }
+  }
+
+  private Optional<Entry<UUID, String>> getDatabricksSynapseParentRun(
+      SparkListenerJobStart jobStart) {
+    // This property appears to be unique to Azure Databricks' implementation
+    // of a connector to Azure Synapse SQL Pools in Databricks Runtime 9.1 and earlier.
+    // By extracting this and looking up the OpenLineage RunId and JobName based
+    // on this execution Id, we can identify the previous execution as the parent runId
+    // and parent job Name.
+    if (!(jobStart.properties().containsKey("spark.sql.execution.parent"))) {
+      return Optional.empty();
+    }
+
+    String currentExecutionId = jobStart.properties().getProperty("spark.sql.execution.id");
+    log.debug("Spark SQL Execution Id is: {}", currentExecutionId);
+
+    String sqlExecutionParentId = jobStart.properties().getProperty("spark.sql.execution.parent");
+    log.debug(
+        "Current ExecutionId {} has Parent Execution Id {}",
+        currentExecutionId,
+        sqlExecutionParentId);
+
+    return executionParentToParentRun(sqlExecutionParentId);
   }
 }

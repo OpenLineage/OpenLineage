@@ -312,11 +312,12 @@ public class PlanUtils {
     if (node instanceof WholeStageCodegenExec) {
       node = ((WholeStageCodegenExec) node).child();
     }
-    return sparkContext
+    return String.format(
+        "%s.%s",
+        sparkContext
             .appName()
             .replaceAll(CAMEL_TO_SNAKE_CASE_REGEX, "_$1")
-            .toLowerCase(Locale.ROOT)
-        + "."
-        + node.nodeName().replaceAll(CAMEL_TO_SNAKE_CASE_REGEX, "_$1").toLowerCase(Locale.ROOT);
+            .toLowerCase(Locale.ROOT),
+        node.nodeName().replaceAll(CAMEL_TO_SNAKE_CASE_REGEX, "_$1").toLowerCase(Locale.ROOT));
   }
 }
