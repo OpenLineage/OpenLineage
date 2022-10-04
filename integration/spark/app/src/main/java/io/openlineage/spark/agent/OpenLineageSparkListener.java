@@ -312,8 +312,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
           ArgumentParser.builder()
               .timeout(findSparkConfigKeyDouble(conf, SPARK_CONF_TIMEOUT))
               .apiKey(findSparkConfigKey(conf, SPARK_CONF_API_KEY).filter(str -> !str.isEmpty()))
-              .appName(
-                  findSparkConfigKey(conf, SPARK_CONF_APP_NAME).filter(str -> !str.isEmpty()))
+              .appName(findSparkConfigKey(conf, SPARK_CONF_APP_NAME).filter(str -> !str.isEmpty()))
               .urlParams(findSparkUrlParams(conf, SPARK_CONF_URL_PARAM_PREFIX))
               .consoleMode(consoleMode);
 
