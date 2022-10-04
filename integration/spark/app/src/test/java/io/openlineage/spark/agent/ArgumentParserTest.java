@@ -23,13 +23,13 @@ class ArgumentParserTest {
   private static final String JOB_NAME = "job_name";
   private static final String URL = "http://localhost:5000";
   private static final String RUN_ID = "ea445b5c-22eb-457a-8007-01c7c52b6e54";
-  private static final String OVERWRITE_NAME = "test";
+  private static final String APP_NAME = "test";
 
   public static Collection<Object[]> data() {
     List<Object[]> pass = new ArrayList<>();
     pass.add(
         new Object[] {
-          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54?api_key=abc",
+          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54?api-key=abc",
           URL,
           "v1",
           NS_NAME,
@@ -57,7 +57,7 @@ class ArgumentParserTest {
         });
     pass.add(
         new Object[] {
-          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54?api_key=",
+          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54?api-key=",
           URL,
           "v1",
           NS_NAME,
@@ -71,7 +71,7 @@ class ArgumentParserTest {
         });
     pass.add(
         new Object[] {
-          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name?api_key=",
+          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name?api-key=",
           URL,
           "v1",
           NS_NAME,
@@ -85,7 +85,7 @@ class ArgumentParserTest {
         });
     pass.add(
         new Object[] {
-          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54?api_key=abc&myParam=xyz",
+          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54?api-key=abc&myParam=xyz",
           URL,
           "v1",
           NS_NAME,
@@ -99,7 +99,7 @@ class ArgumentParserTest {
         });
     pass.add(
         new Object[] {
-          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54?api_key=&myParam=xyz",
+          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54?api-key=&myParam=xyz",
           URL,
           "v1",
           NS_NAME,
@@ -141,8 +141,8 @@ class ArgumentParserTest {
         });
     pass.add(
         new Object[] {
-          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54?overwrite_name="
-              + OVERWRITE_NAME,
+          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54?app-name="
+              + APP_NAME,
           URL,
           "v1",
           NS_NAME,
@@ -151,7 +151,7 @@ class ArgumentParserTest {
           false,
           Optional.empty(),
           Optional.empty(),
-          Optional.of(OVERWRITE_NAME),
+          Optional.of(APP_NAME),
           Optional.empty()
         });
     return pass;
@@ -169,7 +169,7 @@ class ArgumentParserTest {
       boolean defaultRunId,
       Optional<String> apiKey,
       Optional<Double> timeout,
-      Optional<String> overwriteName,
+      Optional<String> appName,
       Optional<Map<String, String>> urlParams) {
     ArgumentParser parser = ArgumentParser.parse(input);
     assertEquals(host, parser.getHost());
@@ -183,7 +183,7 @@ class ArgumentParserTest {
     }
     assertEquals(apiKey, parser.getApiKey());
     assertEquals(timeout, parser.getTimeout());
-    assertEquals(overwriteName, parser.getOverwriteName());
+    assertEquals(appName, parser.getAppName());
     assertEquals(urlParams, parser.getUrlParams());
     urlParams.ifPresent(
         par -> par.forEach((k, v) -> assertEquals(par.get(k), parser.getUrlParam(k))));

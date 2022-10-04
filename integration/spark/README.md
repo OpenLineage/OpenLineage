@@ -79,11 +79,18 @@ spark = (SparkSession.builder.master('local').appName('rdd_to_dataframe')
 ## Arguments
 
 ### Spark Listener
-The SparkListener reads its configuration from SparkConf parameters. These can be specified on the
-command line (e.g., `--conf "spark.openlineage.url=http://{openlineage.client.host}/api/v1/namespaces/my_namespace/job/the_job"`)
-or from the `conf/spark-defaults.conf` file.
+The SparkListener reads its configuration from SparkConf parameters. These can be specified in the
+command line or in the `conf/spark-defaults.conf` file. 
 
-The following parameters can be specified
+There are two ways of supplying parameters, each parameter as separate config entry or all the parameters in 
+`spark.openlineage.url`
+
+NOTE: If `spark.openlineage.url` is defined, all the parameters will be taken from it regardless whether they are
+also defined in configuration or not.
+
+#### Config entries
+
+The following parameters can be specified in the Spark configuration
 | Parameter | Definition | Example |
 ------------|------------|---------
 | spark.openlineage.host | The hostname of the OpenLineage API server where events should be reported | http://localhost:5000 |
@@ -93,9 +100,19 @@ The following parameters can be specified
 | spark.openlineage.parentRunId | The RunId of the parent job that initiated this Spark job | xxxx-xxxx-xxxx-xxxx |
 | spark.openlineage.apiKey | An API key to be used when sending events to the OpenLineage server | abcdefghijk |
 | spark.openlineage.timeout | Timeout for sending OpenLineage info in milliseconds | 5000 |
+| spark.openlineage.appName | Custom value overwriting Spark app name in events | AppName |
 | spark.openlineage.url.param.xyz | A url parameter (replace xyz) and value to be included in requests to the OpenLineage API server | abcdefghijk |
 | spark.openlineage.consoleTransport | Events will be emitted to a console, no additional backend is required | true |
 
+#### Url
+
+`spark.openlineage.url` covers `spark.openlineage.*` parameters in form of resources and url parameters.
+
+Url structure:
+
+`http://{host}/api/{version}/namespaces/{namespace}/job/{parentRunId}?api-key={apiKey}`
+
+`apiKey`, `timeout`, `appName` are defined in url parameters. `consoleTransport` in this approach is set to false.
 
 # Build
 
