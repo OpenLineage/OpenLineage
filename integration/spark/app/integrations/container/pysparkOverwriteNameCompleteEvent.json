@@ -2,7 +2,7 @@
     "eventType": "COMPLETE",
     "inputs": [],
     "job": {
-        "name": "overwrite_name.execute_insert_into_hive_table",
+        "name": "app_name.execute_insert_into_hive_table",
         "namespace": "testPysparkSQLHiveTest"
     },
     "outputs": [

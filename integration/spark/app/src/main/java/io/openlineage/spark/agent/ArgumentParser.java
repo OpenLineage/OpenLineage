@@ -31,7 +31,7 @@ import org.apache.hc.core5.net.URLEncodedUtils;
 @Builder
 public class ArgumentParser {
   public static final Set<String> namedParams =
-      new HashSet<>(Arrays.asList("timeout", "api_key", "overwrite_name"));
+      new HashSet<>(Arrays.asList("timeout", "api_key", "app_name"));
 
   @Builder.Default private String host = "";
   @Builder.Default private String version = "v1";
@@ -40,7 +40,7 @@ public class ArgumentParser {
   @Builder.Default private String parentRunId = null;
   @Builder.Default private Optional<Double> timeout = Optional.empty();
   @Builder.Default private Optional<String> apiKey = Optional.empty();
-  @Builder.Default private Optional<String> overwriteName = Optional.empty();
+  @Builder.Default private Optional<String> appName = Optional.empty();
   @Builder.Default private Optional<Map<String, String>> urlParams = Optional.empty();
   @Builder.Default private boolean consoleMode = false;
 
@@ -55,7 +55,7 @@ public class ArgumentParser {
             .host(uri.getScheme() + "://" + uri.getAuthority())
             .timeout(getTimeout(nameValuePairList))
             .apiKey(getNamedStringParameter(nameValuePairList, "api_key"))
-            .overwriteName(getNamedStringParameter(nameValuePairList, "overwrite_name"))
+            .appName(getNamedStringParameter(nameValuePairList, "app_name"))
             .urlParams(getUrlParams(nameValuePairList))
             .consoleMode(false);
 
