@@ -379,7 +379,7 @@ jobs:
     working_directory: ~/openlineage/integration/sql
     macos:
       xcode: 13.2.1
-    resource_class: large
+    resource_class: medium
     steps:
       - *checkout_project_root
       - run: RUN_TESTS=true bash script/build-macos.sh
