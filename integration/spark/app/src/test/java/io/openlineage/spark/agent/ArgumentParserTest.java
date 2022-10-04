@@ -29,7 +29,7 @@ class ArgumentParserTest {
     List<Object[]> pass = new ArrayList<>();
     pass.add(
         new Object[] {
-          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54?api-key=abc",
+          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54?api_key=abc",
           URL,
           "v1",
           NS_NAME,
@@ -57,7 +57,7 @@ class ArgumentParserTest {
         });
     pass.add(
         new Object[] {
-          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54?api-key=",
+          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54?api_key=",
           URL,
           "v1",
           NS_NAME,
@@ -71,7 +71,7 @@ class ArgumentParserTest {
         });
     pass.add(
         new Object[] {
-          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name?api-key=",
+          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name?api_key=",
           URL,
           "v1",
           NS_NAME,
@@ -85,7 +85,7 @@ class ArgumentParserTest {
         });
     pass.add(
         new Object[] {
-          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54?api-key=abc&myParam=xyz",
+          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54?api_key=abc&myParam=xyz",
           URL,
           "v1",
           NS_NAME,
@@ -99,7 +99,7 @@ class ArgumentParserTest {
         });
     pass.add(
         new Object[] {
-          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54?api-key=&myParam=xyz",
+          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54?api_key=&myParam=xyz",
           URL,
           "v1",
           NS_NAME,
@@ -141,7 +141,7 @@ class ArgumentParserTest {
         });
     pass.add(
         new Object[] {
-          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54?app-name="
+          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54?app_name="
               + APP_NAME,
           URL,
           "v1",

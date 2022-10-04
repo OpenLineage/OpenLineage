@@ -182,7 +182,7 @@ class SparkContainerIntegrationTest {
         network,
         openLineageClientMockContainer,
         "testPysparkSQLHiveTest",
-        Arrays.asList("app-name=appName"),
+        Arrays.asList("app_name=appName"),
         "overwrite_appname.py");
     verifyEvents("pysparkOverwriteNameStartEvent.json", "pysparkOverwriteNameCompleteEvent.json");
   }

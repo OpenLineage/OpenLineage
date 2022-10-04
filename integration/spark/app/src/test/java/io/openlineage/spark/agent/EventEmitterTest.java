@@ -19,7 +19,7 @@ class EventEmitterTest {
         new EventEmitter(
             ArgumentParser.parse(
                 "https://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/"
-                    + "ea445b5c-22eb-457a-8007-01c7c52b6e54?api-key=abc"));
+                    + "ea445b5c-22eb-457a-8007-01c7c52b6e54?api_key=abc"));
     assertEquals(URI.create("https://localhost:5000/api/v1/lineage"), ctx.getLineageURI());
   }
 
@@ -29,7 +29,7 @@ class EventEmitterTest {
         new EventEmitter(
             ArgumentParser.parse(
                 "https://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/"
-                    + "ea445b5c-22eb-457a-8007-01c7c52b6e54?api-key=abc&code=123&foo=bar"));
+                    + "ea445b5c-22eb-457a-8007-01c7c52b6e54?api_key=abc&code=123&foo=bar"));
     assertEquals(
         URI.create("https://localhost:5000/api/v1/lineage?code=123&foo=bar"), ctx.getLineageURI());
   }

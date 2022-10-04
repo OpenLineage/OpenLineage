@@ -31,7 +31,7 @@ import org.apache.hc.core5.net.URLEncodedUtils;
 @Builder
 public class ArgumentParser {
   public static final Set<String> namedParams =
-      new HashSet<>(Arrays.asList("timeout", "api-key", "app-name"));
+      new HashSet<>(Arrays.asList("timeout", "api_key", "app_name"));
 
   @Builder.Default private String host = "";
   @Builder.Default private String version = "v1";
@@ -54,8 +54,8 @@ public class ArgumentParser {
         ArgumentParser.builder()
             .host(uri.getScheme() + "://" + uri.getAuthority())
             .timeout(getTimeout(nameValuePairList))
-            .apiKey(getNamedStringParameter(nameValuePairList, "api-key"))
-            .appName(getNamedStringParameter(nameValuePairList, "app-name"))
+            .apiKey(getNamedStringParameter(nameValuePairList, "api_key"))
+            .appName(getNamedStringParameter(nameValuePairList, "app_name"))
             .urlParams(getUrlParams(nameValuePairList))
             .consoleMode(false);
 

@@ -110,7 +110,7 @@ The following parameters can be specified in the Spark configuration
 
 Url structure:
 
-`http://{host}/api/{version}/namespaces/{namespace}/job/{parentRunId}?api-key={apiKey}`
+`http://{host}/api/{version}/namespaces/{namespace}/job/{parentRunId}?api_key={apiKey}`
 
 `apiKey`, `timeout`, `appName` are defined in url parameters. `consoleTransport` in this approach is set to false.
 
