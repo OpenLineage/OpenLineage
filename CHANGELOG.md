@@ -2,7 +2,7 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.15.0...HEAD)
 
-## [0.15.0](https://github.com/OpenLineage/OpenLineage/compare/0.14.1...0.15.0) - 2022-10-03
+## [0.15.0](https://github.com/OpenLineage/OpenLineage/compare/0.14.1...0.15.0) - 2022-10-04
 ### Added
 * Airflow: improve development experience [`#1101`](https://github.com/OpenLineage/OpenLineage/pull/1101) [@JDarDagran](https://github.com/JDarDagran)  
     *Adds an interactive development environment to the Airflow integration and improves integration testing.*

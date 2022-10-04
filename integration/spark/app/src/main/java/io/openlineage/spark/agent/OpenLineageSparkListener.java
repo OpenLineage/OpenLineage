@@ -66,7 +66,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   public static final String SPARK_CONF_TIMEOUT = "openlineage.timeout";
   public static final String SPARK_CONF_API_KEY = "openlineage.apiKey";
   public static final String SPARK_CONF_URL_PARAM_PREFIX = "openlineage.url.param";
-  private static final String SPARK_CONF_OVERWRITE_NAME = "openlineage.overwrite.name";
+  private static final String SPARK_CONF_APP_NAME = "openlineage.appName";
   private static WeakHashMap<RDD<?>, Configuration> outputs = new WeakHashMap<>();
   private static ContextFactory contextFactory;
   private static JobMetricsHolder jobMetrics = JobMetricsHolder.getInstance();
@@ -312,8 +312,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
           ArgumentParser.builder()
               .timeout(findSparkConfigKeyDouble(conf, SPARK_CONF_TIMEOUT))
               .apiKey(findSparkConfigKey(conf, SPARK_CONF_API_KEY).filter(str -> !str.isEmpty()))
-              .overwriteName(
-                  findSparkConfigKey(conf, SPARK_CONF_OVERWRITE_NAME).filter(str -> !str.isEmpty()))
+              .appName(findSparkConfigKey(conf, SPARK_CONF_APP_NAME).filter(str -> !str.isEmpty()))
               .urlParams(findSparkUrlParams(conf, SPARK_CONF_URL_PARAM_PREFIX))
               .consoleMode(consoleMode);
 
