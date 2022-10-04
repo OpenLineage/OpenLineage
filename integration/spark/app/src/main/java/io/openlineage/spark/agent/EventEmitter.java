@@ -42,7 +42,7 @@ public class EventEmitter {
       return;
     }
 
-    // Extract url parameters other than api_key to append to lineageURI
+    // Extract url parameters other than api-key to append to lineageURI
     String queryParams = null;
     if (argument.getUrlParams().isPresent()) {
       Map<String, String> urlParams = argument.getUrlParams().get();
