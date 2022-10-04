@@ -258,11 +258,11 @@ def get_job_name(task):
 
 
 def get_custom_facets(
-    task, is_external_trigger: bool, task_instance: "TaskInstance" = None
+    dagrun, task, is_external_trigger: bool, task_instance: "TaskInstance" = None
 ) -> Dict[str, Any]:
     custom_facets = {
         "airflow_runArgs": AirflowRunArgsRunFacet(is_external_trigger),
-        "airflow_version": AirflowVersionRunFacet.from_task(task),
+        "airflow_version": AirflowVersionRunFacet.from_dagrun_and_task(dagrun, task),
     }
     # check for -1 comes from SmartSensor compatibility with dynamic task mapping
     # this comes from Airflow code
