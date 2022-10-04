@@ -1,6 +1,11 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.15.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.15.1...HEAD)
+
+## [0.15.1](https://github.com/OpenLineage/OpenLineage/compare/0.15.0...0.15.1) - 2022-10-04
+### Fixed
+* CI: build macos release package on medium resource class [`#1131`](https://github.com/OpenLineage/OpenLineage/pull/1131) [@mobuchowski](https://github.com/mobuchowski)  
+    *Fixes failing build due to resource class being too large.*
 
 ## [0.15.0](https://github.com/OpenLineage/OpenLineage/compare/0.14.1...0.15.0) - 2022-10-04
 ### Added
