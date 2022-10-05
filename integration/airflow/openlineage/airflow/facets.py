@@ -25,13 +25,16 @@ class AirflowVersionRunFacet(BaseFacet):
     ]
 
     @classmethod
-    def from_task(cls, task):
+    def from_dagrun_and_task(cls, dagrun, task):
         # task.__dict__ may contain values uncastable to str
         from openlineage.airflow.utils import get_operator_class, to_json_encodable
 
+        task_info = to_json_encodable(task)
+        task_info["dag_run"] = to_json_encodable(dagrun)
+
         return cls(
             f"{get_operator_class(task).__module__}.{get_operator_class(task).__name__}",
-            to_json_encodable(task),
+            task_info,
             AIRFLOW_VERSION,
             OPENLINEAGE_AIRFLOW_VERSION,
         )

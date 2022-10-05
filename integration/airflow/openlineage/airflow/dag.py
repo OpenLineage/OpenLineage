@@ -99,7 +99,10 @@ class DAG(AIRFLOW_DAG):
                     DagUtils.get_start_time(execution_date),
                     DagUtils.get_end_time(execution_date, self.following_schedule(execution_date)),
                     task_metadata,
-                    {**task_metadata.run_facets, **get_custom_facets(task, is_external_trigger)}
+                    {
+                        **task_metadata.run_facets,
+                        **get_custom_facets(dagrun, task, is_external_trigger)
+                    }
                 )
 
                 JobIdMapping.set(
@@ -173,7 +176,7 @@ class DAG(AIRFLOW_DAG):
                 DagUtils.to_iso_8601(task_instance.start_date),
                 DagUtils.to_iso_8601(task_instance.end_date),
                 task_metadata,
-                {**task_metadata.run_facets, **get_custom_facets(task, False)}
+                {**task_metadata.run_facets, **get_custom_facets(dagrun, task, False)}
             )
 
             if not task_run_id:
