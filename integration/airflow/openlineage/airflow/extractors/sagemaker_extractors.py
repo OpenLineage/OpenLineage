@@ -11,7 +11,6 @@ from airflow.providers.amazon.aws.hooks.sagemaker import SageMakerHook
 
 log = logging.getLogger(__name__)
 
-
 def get_s3_bucket(path):
     return path.replace("s3://", "").split('/')[0]
 
