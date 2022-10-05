@@ -8,8 +8,6 @@
     *Adds an interactive development environment to the Airflow integration and improves integration testing.*
 * Spark: add description for URL parameters in readme, change `overwriteName` to `appName` [`#1130`](https://github.com/OpenLineage/OpenLineage/pull/1130) [@tnazarew](https://github.com/tnazarew)  
     *Adds more information about passing arguments with `spark.openlineage.url` and changes `overwriteName` to `appName` for clarity.*
-* Spark: overwrite app name with fixed value [`#1109`](https://github.com/OpenLineage/OpenLineage/pull/1109) [@tnazarew](https://github.com/tnazarew)  
-    *Overwrites `JobName` with a literal value to fix issue caused by elongated or unique Spark job names.*
 * Documentation: update issue templates for proposal & add new integration template [`#1116`](https://github.com/OpenLineage/OpenLineage/pull/1116) [@rossturk](https://github.com/rossturk)  
     *Adds a YAML issue template for new integrations and fixes a bug in the proposal template.*
 
