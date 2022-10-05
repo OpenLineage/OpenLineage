@@ -2,19 +2,16 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.15.1...HEAD)
 
-## [0.15.1](https://github.com/OpenLineage/OpenLineage/compare/0.15.0...0.15.1) - 2022-10-04
-### Fixed
-* CI: build macos release package on medium resource class [`#1131`](https://github.com/OpenLineage/OpenLineage/pull/1131) [@mobuchowski](https://github.com/mobuchowski)  
-    *Fixes failing build due to resource class being too large.*
-
-## [0.15.0](https://github.com/OpenLineage/OpenLineage/compare/0.14.1...0.15.0) - 2022-10-04
+## [0.15.1](https://github.com/OpenLineage/OpenLineage/compare/0.14.1...0.15.1) - 2022-10-05
 ### Added
 * Airflow: improve development experience [`#1101`](https://github.com/OpenLineage/OpenLineage/pull/1101) [@JDarDagran](https://github.com/JDarDagran)  
     *Adds an interactive development environment to the Airflow integration and improves integration testing.*
-* Documentation: update issue templates for proposal & add new integration template [`#1116`](https://github.com/OpenLineage/OpenLineage/pull/1116) [@rossturk](https://github.com/rossturk)  
-    *Adds a YAML issue template for new integrations and fixes a bug in the proposal template.*
 * Spark: add description for URL parameters in readme, change `overwriteName` to `appName` [`#1130`](https://github.com/OpenLineage/OpenLineage/pull/1130) [@tnazarew](https://github.com/tnazarew)  
     *Adds more information about passing arguments with `spark.openlineage.url` and changes `overwriteName` to `appName` for clarity.*
+* Spark: overwrite app name with fixed value [`#1109`](https://github.com/OpenLineage/OpenLineage/pull/1109) [@tnazarew](https://github.com/tnazarew)  
+    *Overwrites `JobName` with a literal value to fix issue caused by elongated or unique Spark job names.*
+* Documentation: update issue templates for proposal & add new integration template [`#1116`](https://github.com/OpenLineage/OpenLineage/pull/1116) [@rossturk](https://github.com/rossturk)  
+    *Adds a YAML issue template for new integrations and fixes a bug in the proposal template.*
 
 ### Changed
 * Airflow: lazy load BigQuery client [`#1119`](https://github.com/OpenLineage/OpenLineage/pull/1119) [@mobuchowski](https://github.com/mobuchowski)  
@@ -29,14 +26,14 @@
     *Fixes a null pointer exception error and an error when `openlineage.timeout` is not provided.*
 * Spark: set log level of `Init OpenLineageContext` to DEBUG [`#1064`](https://github.com/OpenLineage/OpenLineage/pull/1064) [@varuntestaz](https://github.com/varuntestaz)  
     *Prevents sensitive information from being logged unless debug mode is used.*
-* Spark: overwrite app name with fixed value [`#1109`](https://github.com/OpenLineage/OpenLineage/pull/1109) [@tnazarew](https://github.com/tnazarew)  
-    *Overwrites `JobName` with a literal value to fix issue caused by elongated or unique Spark job names.*
 * Java client: update version of SnakeYAML [`#1090`](https://github.com/OpenLineage/OpenLineage/pull/1090) [@TheSpeedding](https://github.com/TheSpeedding)  
     *Bumps the SnakeYAML library version to include a key bug fix.* 
 * dbt: remove requirement for `OPENLINEAGE_URL` to be set [`#1107`](https://github.com/OpenLineage/OpenLineage/pull/1107) [@mobuchowski](https://github.com/mobuchowski)  
     *Removes erroneous check for `OPENLINEAGE_URL` in the dbt integration.*
 * Python client: remove potentially cyclic import [`#1126`](https://github.com/OpenLineage/OpenLineage/pull/1126) [@mobuchowski](https://github.com/mobuchowski)  
     *Hides imports to remove potentially cyclic import.*
+* CI: build macos release package on medium resource class [`#1131`](https://github.com/OpenLineage/OpenLineage/pull/1131) [@mobuchowski](https://github.com/mobuchowski)  
+    *Fixes failing build due to resource class being too large.*
 
 ## [0.14.1](https://github.com/OpenLineage/OpenLineage/compare/0.14.0...0.14.1) - 2022-09-07
 ### Fixed
