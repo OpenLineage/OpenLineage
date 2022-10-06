@@ -44,6 +44,14 @@ pip install openlineage-sql --no-index --find-links target/wheels --force-reinst
 python -c "import openlineage_sql"
 ```
 
+To build the Java interface run the following script from the project root:
+
+```bash
+./iface-java/scripts/build.sh
+```
+
+This produces an `OpenLineageSql.jar` in the `iface-java/build` directory.
+
 #### Todo:
 * Support a larger part of the SQL language 
 * Python as a Cargo feature
