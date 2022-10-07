@@ -6,12 +6,10 @@ import json
 from urllib.parse import parse_qs, urlparse
 
 import pendulum
-import pytest
 import datetime
 from airflow.models import Connection, DAG as AIRFLOW_DAG
-from airflow.operators.dummy_operator import DummyOperator
+from airflow.operators.dummy import DummyOperator
 from pkg_resources import parse_version
-from airflow.version import version as AIRFLOW_VERSION
 
 from openlineage.airflow.utils import (
     url_to_https,
@@ -215,10 +213,6 @@ def test_is_name_redactable():
     assert _is_name_redactable("transparent", Mixined())
 
 
-@pytest.mark.skipif(
-    parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"),
-    reason="requires AIRFLOW_VERSION to be higher than 2.0",
-)
 def test_redact_with_exclusions(monkeypatch):
     class NotMixin:
         def __init__(self):
@@ -253,35 +247,3 @@ def test_redact_with_exclusions(monkeypatch):
         NestedMixined("passwd", NestedMixined("passwd", None))
     )
     assert redacted_nested == NestedMixined("***", NestedMixined("passwd", None))
-
-
-@pytest.mark.skipif(
-    parse_version(AIRFLOW_VERSION) >= parse_version("2.0.0"),
-    reason="test for Airflow 1.x only",
-)
-def test_if_stays_unredacted_without_airflow_1():
-    class NotMixin:
-        def __init__(self):
-            self.password = "passwd"
-
-    class Mixined(RedactMixin):
-        _skip_redact = ["password"]
-
-        def __init__(self):
-            self.password = "passwd"
-            self.transparent = "123"
-
-    @attr.s
-    class NestedMixined(RedactMixin):
-        _skip_redact = ["nested_field"]
-        password: str = attr.ib()
-        nested_field = attr.ib()
-
-    assert redact_with_exclusions(NotMixin()).password == "passwd"
-    assert redact_with_exclusions(Mixined()).password == "passwd"
-    assert redact_with_exclusions(Mixined()).transparent == "123"
-    assert redact_with_exclusions({"password": "passwd"}) == {"password": "passwd"}
-    redacted_nested = redact_with_exclusions(
-        NestedMixined("passwd", NestedMixined("passwd", None))
-    )
-    assert redacted_nested == NestedMixined("passwd", NestedMixined("passwd", None))

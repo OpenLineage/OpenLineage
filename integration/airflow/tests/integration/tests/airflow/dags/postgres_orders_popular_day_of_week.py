@@ -1,6 +1,7 @@
+# Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
-
-from airflow.operators.postgres_operator import PostgresOperator
+from airflow import DAG
+from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.utils.dates import days_ago
 
 from openlineage.client import set_producer
@@ -14,14 +15,6 @@ def get_sql() -> str:
       order_placed_on   TIMESTAMP NOT NULL,
       orders_placed     INTEGER NOT NULL
     );'''
-
-
-from airflow.version import version as AIRFLOW_VERSION
-from pkg_resources import parse_version
-if parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"):
-    from openlineage.airflow import DAG
-else:
-    from airflow import DAG
 
 
 default_args = {
@@ -47,20 +40,12 @@ dag = DAG(
 )
 
 
-if parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"):
-    t1 = PostgresOperator(
-        task_id='postgres_if_not_exists',
-        postgres_conn_id='food_delivery_db',
-        sql=get_sql(),
-        dag=dag
-    )
-else:
-    t1 = PostgresOperator(
-        task_id='postgres_if_not_exists',
-        postgres_conn_id='food_delivery_db',
-        sql="{{ get_sql() }}",
-        dag=dag
-    )
+t1 = PostgresOperator(
+    task_id='postgres_if_not_exists',
+    postgres_conn_id='food_delivery_db',
+    sql="{{ get_sql() }}",
+    dag=dag
+)
 
 t2 = PostgresOperator(
     task_id='postgres_insert',

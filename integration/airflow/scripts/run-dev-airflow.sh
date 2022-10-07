@@ -71,8 +71,8 @@ function compose_up() {
     UP_ARGS+="-d"
   fi
 
-  docker-compose -f $YAML_LOCATION/docker-compose-2.yml -f $YAML_LOCATION/docker-compose-dev.yml down
-  docker-compose -f $YAML_LOCATION/docker-compose-2.yml -f $YAML_LOCATION/docker-compose-dev.yml --profile dev up $UP_ARGS
+  docker-compose -f $YAML_LOCATION/docker-compose.yml -f $YAML_LOCATION/docker-compose-dev.yml down
+  docker-compose -f $YAML_LOCATION/docker-compose.yml -f $YAML_LOCATION/docker-compose-dev.yml --profile dev up $UP_ARGS
 }
 
 while [[ $# -gt 0 ]]
@@ -93,20 +93,20 @@ do
        RUN_DEFAULT="true"
        ;;
     --shutdown)
-      docker-compose -f $YAML_LOCATION/docker-compose-2.yml -f $YAML_LOCATION/docker-compose-dev.yml down
+      docker-compose -f $YAML_LOCATION/docker-compose.yml -f $YAML_LOCATION/docker-compose-dev.yml down
       exit
       ;;
     --compose-exec)
       shift
-      docker-compose -f $YAML_LOCATION/docker-compose-2.yml -f $YAML_LOCATION/docker-compose-dev.yml "$@"
+      docker-compose -f $YAML_LOCATION/docker-compose.yml -f $YAML_LOCATION/docker-compose-dev.yml "$@"
       exit
       ;;
     -i|--attach-integration)
-      docker-compose -f $YAML_LOCATION/docker-compose-2.yml -f $YAML_LOCATION/docker-compose-dev.yml exec integration /bin/bash
+      docker-compose -f $YAML_LOCATION/docker-compose.yml -f $YAML_LOCATION/docker-compose-dev.yml exec integration /bin/bash
       exit
       ;;
     -a|--attach-worker)
-      docker-compose -f $YAML_LOCATION/docker-compose-2.yml -f $YAML_LOCATION/docker-compose-dev.yml exec --workdir /app/openlineage/integration/airflow airflow_worker /bin/bash
+      docker-compose -f $YAML_LOCATION/docker-compose.yml -f $YAML_LOCATION/docker-compose-dev.yml exec --workdir /app/openlineage/integration/airflow airflow_worker /bin/bash
       exit
       ;;
      *) echo "Unknown argument: $1"

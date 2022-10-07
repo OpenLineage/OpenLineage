@@ -33,10 +33,10 @@ class AirflowVersionRunFacet(BaseFacet):
         task_info["dag_run"] = to_json_encodable(dagrun)
 
         return cls(
-            f"{get_operator_class(task).__module__}.{get_operator_class(task).__name__}",
-            task_info,
-            AIRFLOW_VERSION,
-            OPENLINEAGE_AIRFLOW_VERSION,
+            operator=f"{get_operator_class(task).__module__}.{get_operator_class(task).__name__}",
+            taskInfo=task_info,
+            airflowVersion=AIRFLOW_VERSION,
+            openlineageAirflowVersion=OPENLINEAGE_AIRFLOW_VERSION,
         )
 
 

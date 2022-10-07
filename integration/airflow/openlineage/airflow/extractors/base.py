@@ -1,3 +1,4 @@
+# Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
 import attr
@@ -5,20 +6,8 @@ from abc import ABC, abstractmethod
 
 from openlineage.client.run import Dataset
 from typing import List, Dict, Optional
-from pkg_resources import parse_version
-
-from airflow.version import version as AIRFLOW_VERSION
-
 from openlineage.client.facet import BaseFacet
-
-if parse_version(AIRFLOW_VERSION) >= parse_version("2.0.0"):    # type: ignore
-    # Corrects path of import for Airflow versions below 1.10.11
-    from airflow.utils.log.logging_mixin import LoggingMixin
-elif parse_version(AIRFLOW_VERSION) >= parse_version("1.10.11"):    # type: ignore
-    from airflow import LoggingMixin        # type: ignore
-else:
-    # Corrects path of import for Airflow versions below 1.10.11
-    from airflow.utils.log.logging_mixin import LoggingMixin
+from airflow.utils.log.logging_mixin import LoggingMixin
 
 
 @attr.s

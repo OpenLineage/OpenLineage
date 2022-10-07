@@ -1,13 +1,11 @@
-# SPDX-License-Identifier: Apache-2.0.
+# Copyright 2018-2022 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
 import logging
 from typing import List
 from urllib.parse import urlparse
 
-from openlineage.airflow.utils import (
-    get_normalized_postgres_connection_uri,
-    safe_import_airflow,
-)
-
+from openlineage.airflow.utils import get_normalized_postgres_connection_uri, \
+    try_import_from_string
 from openlineage.airflow.extractors.sql_extractor import SqlExtractor
 
 
@@ -53,9 +51,8 @@ class PostgresExtractor(SqlExtractor):
             return f'{parsed.hostname}:{parsed.port}'
 
     def _get_hook(self):
-        PostgresHook = safe_import_airflow(
-            airflow_1_path="airflow.hooks.postgres_hook.PostgresHook",
-            airflow_2_path="airflow.providers.postgres.hooks.postgres.PostgresHook"
+        PostgresHook = try_import_from_string(
+            "airflow.providers.postgres.hooks.postgres.PostgresHook"
         )
         return PostgresHook(
             postgres_conn_id=self.operator.postgres_conn_id,

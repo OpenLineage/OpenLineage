@@ -4,7 +4,7 @@
 import logging
 from datetime import datetime
 
-from airflow.operators.dummy_operator import DummyOperator
+from airflow.operators.dummy import DummyOperator
 from airflow import DAG
 
 log = logging.getLogger(__name__)

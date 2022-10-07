@@ -34,11 +34,7 @@ extras_require = {
         "pandas-gbq==0.14.1",       # must be set to 0.14.* for airflow tests compatibility
         "snowflake-connector-python"
     ],
-    "airflow-1": [
-        "apache-airflow[gcp_api,google,postgres,mysql]==1.10.15",
-        "airflow-provider-great-expectations==0.0.8",
-    ],
-    "airflow-2": [
+    "airflow": [
         "apache-airflow-providers-postgres>=2.0.0",
         "apache-airflow-providers-mysql>=2.0.0",
         "apache-airflow-providers-snowflake>=2.1.0",

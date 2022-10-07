@@ -4,9 +4,6 @@
 import logging
 import traceback
 from typing import Optional, List
-from airflow.version import version as AIRFLOW_VERSION
-
-from pkg_resources import parse_version
 
 from openlineage.client.facet import SqlJobFacet
 from openlineage.common.provider.bigquery import BigQueryDatasetsProvider, BigQueryErrorRunFacet
@@ -87,22 +84,21 @@ class BigQueryExtractor(BaseExtractor):
                 project_id=hook.project_id,
                 location=hook.location
             )
-        elif parse_version(AIRFLOW_VERSION) >= parse_version("2.0.0"):
-            BigQueryHook = try_import_from_string(
-                'airflow.providers.google.cloud.operators.bigquery.BigQueryHook'
+        BigQueryHook = try_import_from_string(
+            'airflow.providers.google.cloud.operators.bigquery.BigQueryHook'
+        )
+        if BigQueryHook is not None:
+            hook = BigQueryHook(
+                gcp_conn_id=self.operator.gcp_conn_id,
+                use_legacy_sql=self.operator.use_legacy_sql,
+                delegate_to=self.operator.delegate_to,
+                location=self.operator.location,
+                impersonation_chain=self.operator.impersonation_chain,
             )
-            if BigQueryHook is not None:
-                hook = BigQueryHook(
-                    gcp_conn_id=self.operator.gcp_conn_id,
-                    use_legacy_sql=self.operator.use_legacy_sql,
-                    delegate_to=self.operator.delegate_to,
-                    location=self.operator.location,
-                    impersonation_chain=self.operator.impersonation_chain,
-                )
-                return hook.get_client(
-                    project_id=hook.project_id,
-                    location=hook.location
-                )
+            return hook.get_client(
+                project_id=hook.project_id,
+                location=hook.location
+            )
         return Client()
 
     def _get_xcom_bigquery_job_id(self, task_instance):

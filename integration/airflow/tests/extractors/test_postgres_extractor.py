@@ -7,8 +7,9 @@ import pytest
 from airflow.models import Connection
 from airflow.utils.dates import days_ago
 from airflow import DAG
+from airflow.utils.session import create_session
 
-from openlineage.airflow.utils import safe_import_airflow, get_connection
+from openlineage.airflow.utils import get_connection, try_import_from_string
 from openlineage.common.models import (
     DbTableSchema,
     DbColumn
@@ -17,15 +18,10 @@ from openlineage.common.sql import DbTableMeta
 from openlineage.common.dataset import Source, Dataset, Field
 from openlineage.airflow.extractors.postgres_extractor import PostgresExtractor
 
-PostgresOperator = safe_import_airflow(
-    airflow_1_path="airflow.operators.postgres_operator.PostgresOperator",
-    airflow_2_path="airflow.providers.postgres.operators.postgres.PostgresOperator"
+PostgresOperator = try_import_from_string(
+    "airflow.providers.postgres.operators.postgres.PostgresOperator"
 )
-
-PostgresHook = safe_import_airflow(
-    airflow_1_path="airflow.hooks.postgres_hook.PostgresHook",
-    airflow_2_path="airflow.providers.postgres.hooks.postgres.PostgresHook"
-)
+PostgresHook = try_import_from_string("airflow.providers.postgres.hooks.postgres.PostgresHook")
 
 CONN_ID = 'food_delivery_db'
 CONN_URI = 'postgres://user:pass@localhost:5432/food_delivery'
@@ -178,11 +174,6 @@ def test_get_connection_import_returns_none_if_not_exists():
 
 @pytest.fixture
 def create_connection():
-    create_session = safe_import_airflow(
-        airflow_1_path="airflow.utils.db.create_session",
-        airflow_2_path="airflow.utils.session.create_session",
-    )
-
     conn = Connection("does_exist", conn_type="postgres")
     with create_session() as session:
         session.add(conn)
