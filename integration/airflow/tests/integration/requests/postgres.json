@@ -6,7 +6,7 @@
                 "description": "Determines the popular day of week orders are placed."
             },
             "sql": {
-                "query": "\n    CREATE TABLE IF NOT EXISTS popular_orders_day_of_week (\n      order_day_of_week VARCHAR(64) NOT NULL,\n      order_placed_on   TIMESTAMP NOT NULL,\n      orders_placed     INTEGER NOT NULL\n    );"
+                "query": "\n    CREATE TABLE IF NOT EXISTS popular_orders_day_of_week (\n      order_day_of_week VARCHAR(64) NOT NULL,\n      order_placed_on   TIMESTAMP NOT NULL,\n      orders_placed     INTEGER NOT NULL\n    )"
             }
         },
         "name": "postgres_orders_popular_day_of_week.postgres_if_not_exists",
@@ -28,7 +28,7 @@
                 "description": "Determines the popular day of week orders are placed."
             },
             "sql": {
-                "query": "\n    INSERT INTO popular_orders_day_of_week (order_day_of_week, order_placed_on,orders_placed)\n    SELECT EXTRACT(ISODOW FROM order_placed_on) AS order_day_of_week,\n           order_placed_on,\n           COUNT(*) AS orders_placed\n      FROM top_delivery_times\n     GROUP BY order_placed_on;\n    "
+                "query": "\n    INSERT INTO popular_orders_day_of_week (order_day_of_week, order_placed_on,orders_placed)\n    SELECT EXTRACT(ISODOW FROM order_placed_on) AS order_day_of_week,\n           order_placed_on,\n           COUNT(*) AS orders_placed\n      FROM top_delivery_times\n     GROUP BY order_placed_on\n    "
             }
         },
         "name": "postgres_orders_popular_day_of_week.postgres_insert",
@@ -48,7 +48,7 @@
     "job": {
         "facets": {
             "sql": {
-                "query": "\n    CREATE TABLE IF NOT EXISTS popular_orders_day_of_week (\n      order_day_of_week VARCHAR(64) NOT NULL,\n      order_placed_on   TIMESTAMP NOT NULL,\n      orders_placed     INTEGER NOT NULL\n    );"
+                "query": "\n    CREATE TABLE IF NOT EXISTS popular_orders_day_of_week (\n      order_day_of_week VARCHAR(64) NOT NULL,\n      order_placed_on   TIMESTAMP NOT NULL,\n      orders_placed     INTEGER NOT NULL\n    )"
             }
         },
         "name": "postgres_orders_popular_day_of_week.postgres_if_not_exists",
@@ -88,7 +88,7 @@
 	"job": {
 		"facets": {
 			"sql": {
-                "query": "\n    INSERT INTO popular_orders_day_of_week (order_day_of_week, order_placed_on,orders_placed)\n    SELECT EXTRACT(ISODOW FROM order_placed_on) AS order_day_of_week,\n           order_placed_on,\n           COUNT(*) AS orders_placed\n      FROM top_delivery_times\n     GROUP BY order_placed_on;\n    "
+                "query": "\n    INSERT INTO popular_orders_day_of_week (order_day_of_week, order_placed_on,orders_placed)\n    SELECT EXTRACT(ISODOW FROM order_placed_on) AS order_day_of_week,\n           order_placed_on,\n           COUNT(*) AS orders_placed\n      FROM top_delivery_times\n     GROUP BY order_placed_on\n    "
 			}
 		},
 		"name": "postgres_orders_popular_day_of_week.postgres_insert",

@@ -1,7 +1,7 @@
 # Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0.
 import logging
-from typing import List, Optional, TYPE_CHECKING, Dict, Tuple, Callable
+from typing import List, Optional, TYPE_CHECKING, Dict, Tuple, Callable, Iterable, Union
 from urllib.parse import urlparse
 
 from openlineage.airflow.extractors.dbapi_utils import (
@@ -44,7 +44,7 @@ class SqlExtractor(BaseExtractor):
 
     def extract(self) -> TaskMetadata:
         task_name = f"{self.operator.dag_id}.{self.operator.task_id}"
-        job_facets = {"sql": SqlJobFacet(query=self.operator.sql)}
+        job_facets = {"sql": SqlJobFacet(query=self._normalize_sql(self.operator.sql))}
         run_facets: Dict = {}
 
         # (1) Parse sql statement to obtain input / output tables.
@@ -201,6 +201,13 @@ class SqlExtractor(BaseExtractor):
             tables_hierarchy=tables_hierarchy,
             uppercase_names=self._is_uppercase_names,
         )
+
+    @staticmethod
+    def _normalize_sql(sql: Union[str, Iterable[str]]):
+        if isinstance(sql, str):
+            sql = [stmt for stmt in sql.split(";") if stmt != ""]
+        sql = [obj for stmt in sql for obj in stmt.split(";") if obj != ""]
+        return ";\n".join(sql)
 
     @staticmethod
     def _get_tables_hierarchy(
