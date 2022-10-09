@@ -105,6 +105,29 @@ def test_get_connection_filter_qs_params():
                          'extra__snowflake__warehouse'])
 
 
+def test_get_connection_filter_qs_params_with_boolean_in_conn():
+    conn = Connection(
+        conn_type="redshift",
+        extra={
+            "iam": True,
+            "cluster_identifier": "redshift-cluster-name",
+            "region": "region",
+            "aws_secret_access_key": "AKIAIOSFODNN7EXAMPLE",
+            "aws_access_key_id": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+        }
+    )
+    uri = get_connection_uri(conn)
+    parsed = urlparse(uri)
+    qs_dict = parse_qs(parsed.query)
+    assert not any(k in qs_dict.keys()
+                   for k in ['aws_secret_access_key',
+                             'aws_access_key_id'])
+    assert all(k in qs_dict.keys()
+               for k in ['iam',
+                         'cluster_identifier',
+                         'region'])
+
+
 def test_get_location_no_file_path():
     assert get_location(None) is None
     assert get_location("") is None

@@ -10,7 +10,7 @@ import subprocess
 from collections import defaultdict
 from typing import TYPE_CHECKING, Type, Dict, Any, List
 from uuid import uuid4
-from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
+from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
 from typing import Optional
 from airflow.models import DAG as AIRFLOW_DAG
 
@@ -188,11 +188,14 @@ def get_connection_uri(conn):
     # Remove username and password
     netloc = f'{parsed.hostname}' + (f':{parsed.port}' if parsed.port else "")
     parsed = parsed._replace(netloc=netloc)
-    query_dict = parse_qs(parsed.query)
-    filtered_qs = {k: query_dict[k]
-                   for k in query_dict.keys()
-                   if not _filtered_query_params(k)}
-    parsed = parsed._replace(query=urlencode(filtered_qs))
+    if parsed.query:
+        query_dict = dict(parse_qsl(parsed.query))
+        if conn.EXTRA_KEY in query_dict:
+            query_dict = json.loads(query_dict[conn.EXTRA_KEY])
+        filtered_qs = {
+            k: v for k, v in query_dict.items() if not _filtered_query_params(k)
+        }
+        parsed = parsed._replace(query=urlencode(filtered_qs))
     return urlunparse(parsed)
 
 
