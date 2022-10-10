@@ -46,7 +46,7 @@ t2 = MySqlOperator(
            order_placed_on,
            COUNT(*) AS orders_placed
       FROM top_delivery_times
-     GROUP BY order_placed_on;
+     GROUP BY order_placed_on
     ''',
     dag=dag
 )
