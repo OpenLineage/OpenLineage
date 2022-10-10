@@ -3,13 +3,10 @@
 
 from unittest import mock
 
-import pytest
-from airflow.contrib.operators.snowflake_operator import SnowflakeOperator
+from airflow.providers.snowflake.operators.snowflake import SnowflakeOperator
 from airflow.models import Connection
 from airflow import DAG
 from airflow.utils.dates import days_ago
-from airflow.version import version as AIRFLOW_VERSION
-from pkg_resources import parse_version
 
 from openlineage.common.models import (
     DbTableSchema,
@@ -148,7 +145,6 @@ def test_extract(execute_query_on_hook, get_connection, mock_get_table_schemas):
     assert task_metadata.outputs == []
 
 
-@pytest.mark.skipif(parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"), reason="Airflow 2+ test")  # noqa
 @mock.patch('openlineage.airflow.extractors.sql_extractor.get_table_schemas')  # noqa
 @mock.patch('openlineage.airflow.extractors.sql_extractor.get_connection')
 @mock.patch('openlineage.airflow.extractors.snowflake_extractor.execute_query_on_hook')

@@ -49,3 +49,14 @@ def test_get_tables_hierarchy():
         database="Db",
         is_cross_db=True,
     ) == {"db": {"schema1": ["Table2"]}, "db2": {"schema1": ["Table1"]}}
+
+
+def test_get_sql_iterator():
+    assert SqlExtractor._normalize_sql("select * from asdf") == "select * from asdf"
+
+    assert SqlExtractor._normalize_sql(
+        ["select * from asdf", "insert into asdf values (1,2,3)"]
+    ) == "select * from asdf;\ninsert into asdf values (1,2,3)"
+
+    assert SqlExtractor._normalize_sql("select * from asdf;insert into asdf values (1,2,3)") \
+        == "select * from asdf;\ninsert into asdf values (1,2,3)"

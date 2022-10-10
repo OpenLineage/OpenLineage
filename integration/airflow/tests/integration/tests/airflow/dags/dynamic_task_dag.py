@@ -1,9 +1,11 @@
+# Copyright 2018-2022 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
 from datetime import datetime
 
 from airflow import DAG, XComArg
 from airflow.decorators import task
-from airflow.operators.python_operator import PythonOperator
-from airflow.operators.bash_operator import BashOperator
+from airflow.operators.python import PythonOperator
+from airflow.operators.bash import BashOperator
 
 
 with DAG(

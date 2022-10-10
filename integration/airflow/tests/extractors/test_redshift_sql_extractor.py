@@ -7,8 +7,9 @@ import pytest
 from airflow.models import Connection
 from airflow.utils.dates import days_ago
 from airflow import DAG
+from airflow.utils.session import create_session
 
-from openlineage.airflow.utils import safe_import_airflow, get_connection
+from openlineage.airflow.utils import get_connection
 from openlineage.common.models import DbTableSchema, DbColumn
 from openlineage.common.sql import DbTableMeta
 from openlineage.common.dataset import Source, Dataset, Field
@@ -126,7 +127,6 @@ def test_authority_with_clustername_in_host(get_connection):
     conn = Connection()
     conn.parse_from_uri(uri=CONN_URI)
     get_connection.return_value = conn
-
     assert (
         RedshiftSQLExtractor(TASK)._get_authority()
         == "redshift-cluster-name.region:5439"
@@ -222,11 +222,6 @@ def test_get_connection_import_returns_none_if_not_exists():
 
 @pytest.fixture
 def create_connection():
-    create_session = safe_import_airflow(
-        airflow_1_path="airflow.utils.db.create_session",
-        airflow_2_path="airflow.utils.session.create_session",
-    )
-
     conn = Connection("does_exist", conn_type="redshift")
     with create_session() as session:
         session.add(conn)

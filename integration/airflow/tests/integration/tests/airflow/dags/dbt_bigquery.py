@@ -1,25 +1,15 @@
+# Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
 import os
 
-from airflow.operators.bash_operator import BashOperator
+from airflow import DAG
+from airflow.operators.bash import BashOperator
 from airflow.utils.dates import days_ago
-from pkg_resources import parse_version
-
-from airflow.version import version as AIRFLOW_VERSION
-
-try:
-    from airflow.utils.db import create_session
-except ImportError:
-    from airflow.utils.session import create_session
+from airflow.utils.session import create_session
 
 
-if parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"):
-    from openlineage.airflow import DAG
-    PLUGIN_MACRO = "{{ lineage_parent_id(run_id, task) }}"
-else:
-    from airflow import DAG
-    PLUGIN_MACRO = "{{ macros.OpenLineagePlugin.lineage_parent_id(run_id, task) }}"
+PLUGIN_MACRO = "{{ macros.OpenLineagePlugin.lineage_parent_id(run_id, task) }}"
 
 
 PROJECT_DIR = "/opt/data/dbt/testproject"

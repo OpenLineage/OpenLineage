@@ -3,11 +3,7 @@
 
 from typing import Any, Optional, List
 from unittest.mock import MagicMock
-import pytest
-
 from airflow.models import BaseOperator
-from airflow.version import version as AIRFLOW_VERSION
-from pkg_resources import parse_version
 
 from openlineage.airflow.extractors import ExtractorManager, BaseExtractor, TaskMetadata
 from openlineage.airflow.extractors.postgres_extractor import PostgresExtractor
@@ -75,10 +71,6 @@ def test_adding_extractors_to_manager():
     assert len(manager.task_to_extractor.extractors) == count + 1
 
 
-@pytest.mark.skipif(
-    parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"),
-    reason="requires AIRFLOW_VERSION to be higher than 2.0",
-)
 def test_extracting_inlets_and_outlets():
     from airflow.lineage.entities import Table
     from openlineage.client.run import Dataset
@@ -97,10 +89,6 @@ def test_extracting_inlets_and_outlets():
     assert isinstance(metadata.outputs[0], Dataset)
 
 
-@pytest.mark.skipif(
-    parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"),
-    reason="requires AIRFLOW_VERSION to be higher than 2.0",
-)
 def test_extraction_from_inlets_and_outlets_without_extractor():
     from airflow.lineage.entities import Table
     from openlineage.client.run import Dataset
@@ -123,10 +111,6 @@ def test_extraction_from_inlets_and_outlets_without_extractor():
     assert isinstance(metadata.outputs[0], Dataset)
 
 
-@pytest.mark.skipif(
-    parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"),
-    reason="requires AIRFLOW_VERSION to be higher than 2.0",
-)
 def test_extraction_from_inlets_and_outlets_ignores_unhandled_types():
     from airflow.lineage.entities import Table, File
     from openlineage.client.run import Dataset
@@ -147,10 +131,6 @@ def test_extraction_from_inlets_and_outlets_ignores_unhandled_types():
     assert len(metadata.inputs) == 2 and len(metadata.outputs) == 1
 
 
-@pytest.mark.skipif(
-    parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"),
-    reason="requires AIRFLOW_VERSION to be higher than 2.0",
-)
 def test_fake_extractor_extracts_from_inlets_and_outlets():
     from airflow.lineage.entities import Table
     from openlineage.client.run import Dataset
@@ -180,10 +160,6 @@ def test_fake_extractor_extracts_from_inlets_and_outlets():
     assert metadata.outputs[1].name == "d1.t3"
 
 
-@pytest.mark.skipif(
-    parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"),
-    reason="requires AIRFLOW_VERSION to be higher than 2.0",
-    )
 def test_fake_extractor_extracts_and_discards_inlets_and_outlets():
     from airflow.lineage.entities import Table
     from openlineage.client.run import Dataset

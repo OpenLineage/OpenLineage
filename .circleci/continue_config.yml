@@ -520,28 +520,6 @@ jobs:
             - ./dist/*.whl
             - ./dist/*.tar.gz
 
-  integration-test-integration-airflow-1-10:
-    working_directory: ~/openlineage/integration/
-    machine:
-      image: ubuntu-2004:current
-    resource_class: large
-    steps:
-      - *checkout_project_root
-      - gcp-cli/install
-      - gcp-cli/initialize
-      - run: ../.circleci/get-docker-compose.sh
-      - run: cp -r ../client/python python
-      - attach_workspace:
-          at: .
-      - run: docker build -f airflow/Dockerfile.tests -t openlineage-airflow-base .
-      - run: ./airflow/tests/integration/docker/up.sh
-      - store_artifacts:
-          path: airflow/tests/integration/tests/airflow/logs
-          destination: airflow-logs
-      - store_artifacts:
-          path: airflow/tests/integration/tests/events
-          destination: events
-
   integration-test-integration-airflow:
     parameters:
       airflow-image:
@@ -558,7 +536,7 @@ jobs:
       - run: cp -r ../client/python python
       - attach_workspace:
           at: .
-      - run: AIRFLOW_IMAGE=<< parameters.airflow-image >> ./airflow/tests/integration/docker/up-2.sh
+      - run: AIRFLOW_IMAGE=<< parameters.airflow-image >> ./airflow/tests/integration/docker/up.sh
       - store_artifacts:
           path: airflow/tests/integration/tests/airflow/logs
           destination: airflow-logs
@@ -579,8 +557,7 @@ jobs:
       - run: cp -r ../client/python python
       - attach_workspace:
           at: .
-      - run: docker build -f airflow/Dockerfile.tests -t openlineage-airflow-base .
-      - run: AIRFLOW_IMAGE=apache/airflow:2.3.1-python3.7 ./airflow/tests/integration/docker/up-failure.sh << parameters.failure-type >>
+      - run: AIRFLOW_IMAGE=apache/airflow:2.3.4-python3.7 ./airflow/tests/integration/docker/up-failure.sh << parameters.failure-type >>
       - store_artifacts:
           path: airflow/tests/integration/failures/airflow/logs
           destination: airflow-logs

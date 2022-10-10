@@ -1,20 +1,15 @@
+# Copyright 2018-2022 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
 import os
 import time
 
-from airflow.operators.python_operator import PythonOperator
-
-from airflow.contrib.operators.bigquery_operator import BigQueryOperator
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from airflow.providers.google.cloud.operators.bigquery import BigQueryExecuteQueryOperator
 from airflow.utils.dates import days_ago
 
 from openlineage.client import set_producer
 set_producer("https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow")
-
-from airflow.version import version as AIRFLOW_VERSION
-from pkg_resources import parse_version
-if parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"):
-    from openlineage.airflow import DAG
-else:
-    from airflow import DAG
 
 
 default_args = {
@@ -38,7 +33,7 @@ DATASET_ID = 'airflow_integration'
 PREFIX = os.environ['BIGQUERY_PREFIX'] + "_"
 CONNECTION = 'bq_conn'
 
-t1 = BigQueryOperator(
+t1 = BigQueryExecuteQueryOperator(
     task_id='bigquery_if_not_exists',
     gcp_conn_id=CONNECTION,
     sql=f'''
@@ -51,7 +46,7 @@ t1 = BigQueryOperator(
     dag=dag
 )
 
-t2 = BigQueryOperator(
+t2 = BigQueryExecuteQueryOperator(
     task_id='bigquery_empty_table',
     gcp_conn_id='bq_conn',
     sql=f'''
@@ -68,7 +63,7 @@ delay_1 = PythonOperator(
     python_callable=lambda: time.sleep(10)
 )
 
-t3 = BigQueryOperator(
+t3 = BigQueryExecuteQueryOperator(
     task_id='bigquery_seed',
     gcp_conn_id='bq_conn',
     sql=f'''
@@ -80,7 +75,7 @@ t3 = BigQueryOperator(
     dag=dag
 )
 
-t4 = BigQueryOperator(
+t4 = BigQueryExecuteQueryOperator(
     task_id='bigquery_insert',
     gcp_conn_id='bq_conn',
     sql=f'''
@@ -94,7 +89,7 @@ t4 = BigQueryOperator(
     dag=dag
 )
 
-t5 = BigQueryOperator(
+t5 = BigQueryExecuteQueryOperator(
     task_id='bigquery_truncate_top_delivery_times',
     gcp_conn_id='bq_conn',
     sql=f'''
@@ -103,7 +98,7 @@ t5 = BigQueryOperator(
     dag=dag
 )
 
-t6 = BigQueryOperator(
+t6 = BigQueryExecuteQueryOperator(
     task_id='bigquery_truncate_popular_orders_day_of_week',
     gcp_conn_id='bq_conn',
     sql=f'''
