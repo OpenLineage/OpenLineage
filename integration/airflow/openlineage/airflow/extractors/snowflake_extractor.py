@@ -1,16 +1,11 @@
 # Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
-
-import logging
 from typing import List, Dict
 
 from openlineage.airflow.extractors.dbapi_utils import execute_query_on_hook
 from openlineage.airflow.extractors.sql_extractor import SqlExtractor
 from openlineage.airflow.utils import get_connection_uri  # noqa
 from openlineage.client.facet import BaseFacet, ExternalQueryRunFacet
-
-
-logger = logging.getLogger(__file__)
 
 
 class SnowflakeExtractor(SqlExtractor):
@@ -77,7 +72,7 @@ class SnowflakeExtractor(SqlExtractor):
                 externalQueryId=query_ids[0], source=source.name
             )
         elif len(query_ids) > 1:
-            logger.warning(
+            self.log.warning(
                 "Found more than one query id for task "
                 f"{self.operator.dag_id}.{self.operator.task_id}: {query_ids} "
                 "This might indicate that this task might be better as multiple jobs"
