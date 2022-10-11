@@ -1,6 +1,5 @@
 # Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0.
-import logging
 from typing import List, Optional, TYPE_CHECKING, Dict, Tuple, Callable, Iterable, Union
 from urllib.parse import urlparse
 
@@ -19,8 +18,6 @@ from abc import abstractmethod
 if TYPE_CHECKING:
     from airflow.models import Connection
     from airflow.hooks.base import BaseHook
-
-logger = logging.getLogger(__name__)
 
 
 class SqlExtractor(BaseExtractor):
@@ -48,13 +45,13 @@ class SqlExtractor(BaseExtractor):
         run_facets: Dict = {}
 
         # (1) Parse sql statement to obtain input / output tables.
-        logger.debug(f"Sending SQL to parser: {self.operator.sql}")
+        self.log.debug(f"Sending SQL to parser: {self.operator.sql}")
         sql_meta: Optional[SqlMeta] = parse(
             self.operator.sql,
             dialect=self.dialect,
             default_schema=self.default_schema
         )
-        logger.debug(f"Got meta {sql_meta}")
+        self.log.debug(f"Got meta {sql_meta}")
 
         if not sql_meta:
             return TaskMetadata(

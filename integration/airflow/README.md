@@ -129,6 +129,8 @@ First one, is to add them to `OPENLINEAGE_EXTRACTORS` environment variable, sepa
 OPENLINEAGE_EXTRACTORS=full.path.to.ExtractorClass;full.path.to.AnotherExtractorClass
 ```
 
+To ensure OpenLineage logging propagation to custom extractors you should use `self.log` instead of creating logger by yourself.
+
 #### Great Expectations
 
 Great Expectations integration works by providing OpenLineageValidationAction. You need to include it into your `action_list` in `great_expectations.yml`.
