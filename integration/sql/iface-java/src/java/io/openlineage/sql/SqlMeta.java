@@ -14,6 +14,14 @@ public class SqlMeta {
         this.outTables = out;
     }
 
+    public List<DbTableMeta> inTables() {
+        return inTables;
+    }
+
+    public List<DbTableMeta> outTables() {
+        return outTables;
+    }
+
     @Override
     public String toString() {
         return String.format(
