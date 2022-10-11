@@ -1,15 +1,11 @@
 # Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
-import logging
 from typing import List
 from urllib.parse import urlparse
 
 from openlineage.airflow.utils import get_normalized_postgres_connection_uri, \
     try_import_from_string
 from openlineage.airflow.extractors.sql_extractor import SqlExtractor
-
-
-logger = logging.getLogger(__name__)
 
 
 class PostgresExtractor(SqlExtractor):

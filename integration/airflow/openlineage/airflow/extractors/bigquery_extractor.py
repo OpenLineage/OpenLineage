@@ -1,7 +1,5 @@
 # Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
-
-import logging
 import traceback
 from typing import Optional, List
 
@@ -16,8 +14,6 @@ from openlineage.airflow.utils import get_job_name, try_import_from_string
 
 _BIGQUERY_CONN_URL = 'bigquery'
 
-log = logging.getLogger(__name__)
-
 
 class BigQueryExtractor(BaseExtractor):
     def __init__(self, operator):
@@ -31,7 +27,7 @@ class BigQueryExtractor(BaseExtractor):
         return None
 
     def extract_on_complete(self, task_instance) -> Optional[TaskMetadata]:
-        log.debug(f"extract_on_complete({task_instance})")
+        self.log.debug(f"extract_on_complete({task_instance})")
 
         try:
             bigquery_job_id = self._get_xcom_bigquery_job_id(task_instance)
@@ -40,7 +36,7 @@ class BigQueryExtractor(BaseExtractor):
                     "Xcom could not resolve BigQuery job id. Job may have failed."
                 )
         except Exception as e:
-            log.error(
+            self.log.error(
                 f"Cannot retrieve job details from BigQuery.Client. {e}", exc_info=True
             )
             return TaskMetadata(
@@ -105,7 +101,7 @@ class BigQueryExtractor(BaseExtractor):
         bigquery_job_id = task_instance.xcom_pull(
             task_ids=task_instance.task_id, key='job_id')
 
-        log.debug(f"bigquery_job_id: {bigquery_job_id}")
+        self.log.debug(f"bigquery_job_id: {bigquery_job_id}")
         return bigquery_job_id
 
     def _get_input_facets(self):

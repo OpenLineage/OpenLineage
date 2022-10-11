@@ -2,13 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 from typing import List, TYPE_CHECKING
 from openlineage.airflow.extractors.postgres_extractor import PostgresExtractor
-import logging
 import boto3
 
 if TYPE_CHECKING:
     from airflow.hooks.base import BaseHook
-
-logger = logging.getLogger(__name__)
 
 
 class RedshiftSQLExtractor(PostgresExtractor):
@@ -58,7 +55,7 @@ class RedshiftSQLExtractor(PostgresExtractor):
         if "amazonaws.com" in hostname and len(parts) == 6:
             return f"{parts[0]}.{parts[2]}"
         else:
-            logger.warning(
+            self.log.warning(
                 """Could not parse identifier from hostname '%s'.
             You are probably using IP to connect to Redshift cluster.
             Expected format: 'cluster_identifier.id.region_name.redshift.amazonaws.com'

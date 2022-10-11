@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from openlineage.client.run import Dataset
 from typing import List, Dict, Optional
 from openlineage.client.facet import BaseFacet
-from airflow.utils.log.logging_mixin import LoggingMixin
+from openlineage.airflow.utils import LoggingMixin
 
 
 @attr.s

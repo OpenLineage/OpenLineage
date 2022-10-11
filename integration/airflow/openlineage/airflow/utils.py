@@ -514,3 +514,24 @@ def _is_name_redactable(name, redacted):
     if not issubclass(redacted.__class__, RedactMixin):
         return not name.startswith('_')
     return name not in redacted.skip_redact
+
+
+class LoggingMixin:
+
+    _log: Optional["logging.Logger"] = None
+
+    @property
+    def log(self) -> logging.Logger:
+        """Returns a logger."""
+        if self._log is None:
+            self._log = logging.getLogger(self._get_logger_name())
+        return self._log
+
+    def _get_logger_name(self):
+        if self.__class__.__module__.startswith("openlineage.airflow.extractors"):
+            return self.__class__.__module__ + "." + self.__class__.__name__
+        else:
+            return (
+                "openlineage.airflow.extractors."
+                f"{self.__class__.__module__}.{self.__class__.__name__}"
+            )

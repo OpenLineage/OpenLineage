@@ -13,7 +13,7 @@ class ExtractorManager:
     def __init__(self):
         self.extractors = {}
         self.task_to_extractor = Extractors()
-        self.log = logging.getLogger()
+        self.log = logging.getLogger(f"{self.__class__.__module__}.{self.__class__.__name__}")
 
     def add_extractor(self, operator, extractor: Type[BaseExtractor]):
         self.task_to_extractor.add_extractor(operator, extractor)
