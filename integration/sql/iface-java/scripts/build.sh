@@ -4,24 +4,36 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m'
 
-CURRENT_DIR=$(pwd)
-SRC=iface-java/src
+BASEDIR=$(dirname $BASH_SOURCE)
+ROOT=$BASEDIR/..
+SRC=$ROOT/src
 JAVA_SRC=$SRC/java/io/openlineage/sql
-RESOURCES=iface-java/resources/io/openlineage/sql
-SCRIPTS=iface-java/scripts
-NATIVE_LIB_NAME=libopenlineage_sql_java.so
+RESOURCES=$ROOT/resources/io/openlineage/sql
+SCRIPTS=$ROOT/scripts
+
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    NATIVE_LIB_NAME=libopenlineage_sql_java.so
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    NATIVE_LIB_NAME=libopenlineage_sql_java.dylib
+else
+    printf "\n${RED}Unsupported OS!\n${NC}"
+fi
+
+# Build the Rust bindings
+cd $ROOT/..
+cargo build -p openlineage_sql_java
+
+cd iface-java
 
 # Let's generate this header every run so that it is always
 # up to date.
+mvn dependency:copy-dependencies
 ./$SCRIPTS/generate_jni_header.sh
 
-# Build the Rust bindings
-cargo build -p openlineage_sql_java
-
 # Package into jar
-cp $CURRENT_DIR/target/debug/$NATIVE_LIB_NAME $RESOURCES
-cd iface-java
-mvn package -Dmaven.test.skip
+mkdir -p $RESOURCES
+cp target/debug/$NATIVE_LIB_NAME $RESOURCES
+mvn assembly:assembly -Dmaven.test.skip
 
 # Run tests
 mvn test

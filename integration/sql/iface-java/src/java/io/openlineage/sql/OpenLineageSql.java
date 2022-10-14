@@ -1,5 +1,7 @@
 package io.openlineage.sql;
 
+import org.apache.commons.lang3.SystemUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,7 +37,15 @@ public final class OpenLineageSql {
     }
 
     static {
-        String libName = "libopenlineage_sql_java.so";
+        String libName = "libopenlineage_sql_java";
+        if (SystemUtils.IS_OS_MAC_OSX) {
+            libName += ".dylib";
+        } else if (SystemUtils.IS_OS_LINUX) {
+            libName += ".so";
+        } else {
+            throw new RuntimeException("Cannot link native library: unsupported OS");
+        }
+
         try {
             loadNativeLibrary(libName);
         } catch (IOException e) {

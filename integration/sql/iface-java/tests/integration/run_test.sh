@@ -1,7 +1,9 @@
 #!/bin/bash
 
-JAR=target/openlineage-sql.jar
+BASEDIR=$(dirname $BASH_SOURCE)
+ROOT=$BASEDIR/../..
+JAR=$ROOT/target/openlineage-sql-jar-with-dependencies.jar
 
-rm -f tests/integration/*.class
-javac -cp $JAR tests/integration/TestParser.java
-java -cp $JAR:tests/integration TestParser "$@"
+rm -f $BASEDIR/*.class
+javac -cp $JAR $BASEDIR/TestParser.java
+java -cp $JAR:$BASEDIR TestParser "$@"
