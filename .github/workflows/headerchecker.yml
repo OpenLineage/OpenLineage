@@ -26,6 +26,7 @@ jobs:
         with:
           format: 'json'
           token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
 
       - name: Check for headers
         run: |
