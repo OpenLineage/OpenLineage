@@ -1,7 +1,7 @@
 # Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, Optional, Dict
+from typing import Any, List, Optional, Dict
 from collections import defaultdict
 
 from openlineage.airflow.extractors.base import TaskMetadata
@@ -116,7 +116,7 @@ def get_check_extractors(super_):
                     return "quantiles"
                 return ""
 
-            facet_data = {"columnMetrics": defaultdict(dict)}
+            facet_data: Dict[str, Any] = {"columnMetrics": defaultdict(dict)}
             assertion_data: Dict[str, List[Assertion]] = {"assertions": []}
             for col_name, checks in self.operator.column_mapping.items():
                 col_name = col_name.upper() if self.operator._is_uppercase_names else col_name
@@ -166,7 +166,7 @@ def get_check_extractors(super_):
             }
             """
             facet_data = {}
-            assertion_data = {"assertions": []}
+            assertion_data: Dict[str, List[Assertion]] = {"assertions": []}
             for check, check_values in self.operator.checks.items():
                 assertion_data["assertions"].append(
                     Assertion(
