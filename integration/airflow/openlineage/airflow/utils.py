@@ -7,8 +7,7 @@ import json
 import logging
 import os
 import subprocess
-from collections import defaultdict
-from typing import TYPE_CHECKING, Type, Dict, Any, List
+from typing import TYPE_CHECKING, Type, Dict, Any
 from uuid import uuid4
 from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
 from typing import Optional
@@ -18,12 +17,6 @@ from openlineage.airflow.facets import (
     AirflowMappedTaskRunFacet,
     AirflowVersionRunFacet,
     AirflowRunArgsRunFacet
-)
-from openlineage.client.facet import (
-    DataQualityMetricsInputDatasetFacet,
-    ColumnMetric,
-    DataQualityAssertionsDatasetFacet,
-    Assertion
 )
 from openlineage.client.utils import RedactMixin
 from pendulum import from_timestamp
