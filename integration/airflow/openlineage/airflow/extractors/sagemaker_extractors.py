@@ -82,10 +82,13 @@ class SageMakerTransformExtractor(BaseExtractor):
             log.error(f"Cannot find Model Package Name in Xcom values. {e}", exc_info=True)
 
         try:
-            transform_input = xcom_values['Transform']['TransformInput']['DataSource']['S3DataSource']['S3Uri']
-            transform_output = xcom_values['Transform']['TransformOutput']['S3OutputPath']
+            transform = xcom_values['Transform']
+            transform_input = transform['TransformInput']['DataSource']['S3DataSource']['S3Uri']
+            transform_output = transform['TransformOutput']['S3OutputPath']
         except KeyError as e:
-            log.error(f"Cannot find some required input/output details in Xcom. {e}", exc_info=True)
+            log.error(
+                f"Cannot find some required input/output details in Xcom. {e}", exc_info=True
+            )
 
         inputs = []
 
@@ -138,9 +141,13 @@ class SageMakerTrainingExtractor(BaseExtractor):
         inputs = []
 
         for input_data in xcom_values['Training']['InputDataConfig']:
-            inputs.append(generate_s3_dataset(input_data['DataSource']['S3DataSource']['S3Uri']))
+            inputs.append(
+                generate_s3_dataset(input_data['DataSource']['S3DataSource']['S3Uri'])
+            )
 
-        output = [generate_s3_dataset(xcom_values['Training']['ModelArtifacts']['S3ModelArtifacts'])]
+        output = [
+            generate_s3_dataset(xcom_values['Training']['ModelArtifacts']['S3ModelArtifacts'])
+        ]
 
         return TaskMetadata(
             name=f"{self.operator.dag_id}.{self.operator.task_id}",
