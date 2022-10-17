@@ -122,12 +122,12 @@ def get_check_extractors(super_):
                 col_name = col_name.upper() if self.operator._is_uppercase_names else col_name
                 for check, check_values in checks.items():
                     facet_key = map_facet_name(check)
-                    facet_data["columnMetrics"][col_name][facet_key] = check_values.get("result", None)
+                    facet_data["columnMetrics"][col_name][facet_key] = check_values.get("result")
 
                     assertion_data["assertions"].append(
                         Assertion(
                             assertion=check,
-                            success=check_values.get("success", None),
+                            success=check_values.get("success"),
                             column=col_name
                         )
                     )
@@ -143,7 +143,6 @@ def get_check_extractors(super_):
                 "dataQualityMetrics": data_quality_facet,
                 "dataQualityAssertions": data_quality_assertions_facet
             }
-
 
     class SqlTableCheckExtractor(BaseSqlCheckExtractor):
         def __init__(self, operator):
@@ -171,10 +170,11 @@ def get_check_extractors(super_):
                 assertion_data["assertions"].append(
                     Assertion(
                         assertion=check,
-                        success=check_values.get("success", None),
+                        success=check_values.get("success"),
                     )
                 )
-            facet_data["rowCount"] = self.operator.checks.get("row_count_check", {}).get("result", None)
+            facet_data["rowCount"] = self.operator.checks.get(
+                "row_count_check", {}).get("result", None)
             facet_data["bytes"] = self.operator.checks.get("bytes", {}).get("result", None)
 
             data_quality_facet = DataQualityMetricsInputDatasetFacet(**facet_data)
