@@ -1,11 +1,8 @@
 // Copyright 2018-2022 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
 
-extern crate core;
-
 use openlineage_sql::parse_sql;
 use sqlparser::dialect::SnowflakeDialect;
-use std::sync::Arc;
 
 #[test]
 fn parse_copy_from() {
@@ -41,7 +38,7 @@ fn parse_copy_from() {
                 CURRENT_TIMESTAMP AS lts
                 FROM @schema.general_finished AS t
             )",
-            Arc::new(SnowflakeDialect {}),
+            &SnowflakeDialect {},
             None
         )
         .unwrap_err()

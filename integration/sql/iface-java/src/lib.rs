@@ -47,10 +47,10 @@ impl AsJavaObject for rust_impl::SqlMeta {
         let ins = JList::from_env(env, ins).unwrap();
         let outs = JList::from_env(env, outs).unwrap();
 
-        for e in &self.in_tables {
+        for e in &self.table_lineage.in_tables {
             ins.add(e.as_java_object(env)?)?;
         }
-        for e in &self.out_tables {
+        for e in &self.table_lineage.out_tables {
             outs.add(e.as_java_object(env)?)?;
         }
 

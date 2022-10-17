@@ -19,7 +19,7 @@ pub struct DbTableMeta(rust_impl::DbTableMeta);
 impl DbTableMeta {
     #[new]
     pub fn py_new(name: String) -> Self {
-        DbTableMeta(rust_impl::DbTableMeta::new_default_context(name))
+        DbTableMeta(rust_impl::DbTableMeta::new_default_dialect(name))
     }
 
     #[getter(qualified_name)]
@@ -92,8 +92,20 @@ pub struct SqlMeta {
 
 impl SqlMeta {
     fn new(meta: rust_impl::SqlMeta) -> Self {
-        let in_tables = meta.in_tables.iter().cloned().map(DbTableMeta).collect();
-        let out_tables = meta.out_tables.iter().cloned().map(DbTableMeta).collect();
+        let in_tables = meta
+            .table_lineage
+            .in_tables
+            .iter()
+            .cloned()
+            .map(DbTableMeta)
+            .collect();
+        let out_tables = meta
+            .table_lineage
+            .out_tables
+            .iter()
+            .cloned()
+            .map(DbTableMeta)
+            .collect();
         Self {
             in_tables,
             out_tables,

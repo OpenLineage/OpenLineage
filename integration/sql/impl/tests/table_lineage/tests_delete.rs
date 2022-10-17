@@ -1,16 +1,16 @@
 // Copyright 2018-2022 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
 
-mod test_utils;
-
-use openlineage_sql::SqlMeta;
-use test_utils::*;
+use crate::test_utils::*;
+use openlineage_sql::TableLineage;
 
 #[test]
 fn delete_from() {
     assert_eq!(
-        test_sql("DELETE FROM a.b WHERE x = 0",),
-        SqlMeta {
+        test_sql("DELETE FROM a.b WHERE x = 0",)
+            .unwrap()
+            .table_lineage,
+        TableLineage {
             in_tables: vec![],
             out_tables: table("a.b")
         }
@@ -28,8 +28,10 @@ fn delete_from_using() {
                     WHERE col = 'x'
                 ) AS duplicates
                 WHERE a.b.col = duplicates.col",
-        ),
-        SqlMeta {
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
             in_tables: table("b.c"),
             out_tables: table("a.b")
         }

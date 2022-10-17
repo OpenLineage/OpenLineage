@@ -1,16 +1,16 @@
 // Copyright 2018-2022 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
 
-use openlineage_sql::SqlMeta;
-
-mod test_utils;
-use test_utils::*;
+use crate::test_utils::*;
+use openlineage_sql::TableLineage;
 
 #[test]
 fn insert_values() {
     assert_eq!(
-        test_sql("INSERT INTO TEST VALUES(1)",),
-        SqlMeta {
+        test_sql("INSERT INTO TEST VALUES(1)",)
+            .unwrap()
+            .table_lineage,
+        TableLineage {
             in_tables: vec![],
             out_tables: table("TEST")
         }
@@ -20,8 +20,10 @@ fn insert_values() {
 #[test]
 fn insert_cols_values() {
     assert_eq!(
-        test_sql("INSERT INTO tbl(col1, col2) VALUES (1, 2), (2, 3)",),
-        SqlMeta {
+        test_sql("INSERT INTO tbl(col1, col2) VALUES (1, 2), (2, 3)",)
+            .unwrap()
+            .table_lineage,
+        TableLineage {
             in_tables: vec![],
             out_tables: table("tbl")
         }
@@ -31,8 +33,10 @@ fn insert_cols_values() {
 #[test]
 fn insert_select_table() {
     assert_eq!(
-        test_sql("INSERT INTO TEST SELECT * FROM TEMP",),
-        SqlMeta {
+        test_sql("INSERT INTO TEST SELECT * FROM TEMP",)
+            .unwrap()
+            .table_lineage,
+        TableLineage {
             in_tables: table("TEMP"),
             out_tables: table("TEST")
         }
@@ -54,8 +58,10 @@ fn insert_select_table_2() {
             where PROCESSED_AT = '2022-04-14'
             group by to_date(C_AT), dm.C_NAME, P
             ;",
-        ),
-        SqlMeta {
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
             in_tables: tables(vec!["b1.b2", "m.dim"]),
             out_tables: table("a1.a2")
         }
@@ -72,7 +78,7 @@ fn insert_nested_select() {
                 FROM top_delivery_times
                 GROUP BY order_placed_on;
             ",
-    ), SqlMeta {
+    ).unwrap().table_lineage, TableLineage {
         in_tables: table("top_delivery_times"),
         out_tables: table("popular_orders_day_of_week")
     })
@@ -81,8 +87,8 @@ fn insert_nested_select() {
 #[test]
 fn insert_snowflake_table() {
     assert_eq!(
-        test_sql_dialect("\n    INSERT INTO test_orders (ord, str, num) VALUES\n    (1, 'b', 15),\n    (2, 'a', 21),\n    (3, 'b', 7);\n   ", "snowflake"),
-        SqlMeta {
+        test_sql_dialect("\n    INSERT INTO test_orders (ord, str, num) VALUES\n    (1, 'b', 15),\n    (2, 'a', 21),\n    (3, 'b', 7);\n   ", "snowflake").unwrap().table_lineage,
+        TableLineage {
             in_tables: vec![],
             out_tables: table("test_orders")
         }
@@ -114,8 +120,10 @@ fn insert_overwrite_table() {
             uid,
             pii_userid
     "
-        ),
-        SqlMeta {
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
             in_tables: table("schema.fpsm"),
             out_tables: table("schema.dps")
         }
@@ -133,8 +141,10 @@ fn insert_overwrite_subqueries() {
             *
         FROM
         (SELECT * FROM table2) a"
-        ),
-        SqlMeta {
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
             in_tables: table("table2"),
             out_tables: table("mytable")
         }
@@ -157,8 +167,10 @@ fn insert_overwrite_multiple_subqueries() {
          UNION ALL
          SELECT * FROM table4) a
          "
-        ),
-        SqlMeta {
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
             in_tables: tables(vec!["table2", "table3", "table4"]),
             out_tables: table("mytable")
         }
@@ -183,8 +195,10 @@ fn insert_overwrite_partition() {
                 u.u_i = g.u_i
         ",
             "hive"
-        ),
-        SqlMeta {
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
             in_tables: tables(vec!["d_d_n.u_t_250", "d_n_p.g_d_r"]),
             out_tables: table("d_d_n.g_d_t_r")
         }
@@ -200,8 +214,10 @@ fn set_before_insert() {
                 INSERT INTO TABLE a.b.c VALUES (1, 2, 3);
             ",
             "hive"
-        ),
-        SqlMeta {
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
             in_tables: vec![],
             out_tables: table("a.b.c")
         }
@@ -234,8 +250,10 @@ fn insert_overwrite_hive_sets_large() {
                         ON T1.p_id = T2.p_id
         ",
             "hive"
-        ),
-        SqlMeta {
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
             in_tables: tables(vec!["d_p.f_p_s", "d_p.f_p_s_merged"]),
             out_tables: table("d_d_p.d_f_s")
         }
@@ -269,8 +287,10 @@ fn insert_group_by() {
               U_SOURCE,
               P,
               U_SOURCE;"
-        ),
-        SqlMeta {
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
             in_tables: table("b1.b2"),
             out_tables: table("a1.a2")
         }
@@ -383,8 +403,10 @@ fn insert_nested_with_select() {
           created_dt,
           region,
           x;"
-        ),
-        SqlMeta {
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
             in_tables: tables(vec!["b1.b2", "c1.c2", "d1.d2", "e1.e2", "f1.f2"]),
             out_tables: table("a1.a2")
         }
@@ -399,8 +421,10 @@ fn test_multiple_statements_delete_insert() {
             DELETE FROM public.\"Employees\";
             INSERT INTO public.\"Employees\" VALUES (1, 'TALES OF SHIVA', 'Mark', 'mark', 0);
         "
-        ),
-        SqlMeta {
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
             in_tables: vec![],
             out_tables: table("public.\"Employees\""),
         }
@@ -415,8 +439,10 @@ fn test_multiple_statements_insert_insert() {
             INSERT INTO a.a VALUES(1,2);
             INSERT INTO b.b VALUES(1,2);
         "
-        ),
-        SqlMeta {
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
             in_tables: vec![],
             out_tables: tables(vec!["a.a", "b.b"]),
         }
@@ -432,8 +458,10 @@ fn test_triple_statements_insert_insert_insert() {
             INSERT INTO b.b SELECT * FROM a.a;
             INSERT INTO c.c VALUES(1,2);
         "
-        ),
-        SqlMeta {
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
             in_tables: table("a.a"),
             out_tables: tables(vec!["a.a", "b.b", "c.c"]),
         }
@@ -496,8 +524,10 @@ fn insert_overwrite_multiple_unions() {
                 sub.p_i,
                 sub.u_i
         "
-        ),
-        SqlMeta {
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
             in_tables: tables(vec!["d_d_n.a_p_s_v", "d_d_n.d_p_s_v"]),
             out_tables: table("d_d_n.a_p_s_v")
         }
@@ -626,8 +656,10 @@ fn insert_overwrite_partition_dates() {
             sub.uid,
             sub.userkey
         "
-        ),
-        SqlMeta {
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
             in_tables: tables(vec!["ddw.aps2", "ddw.dps"]),
             out_tables: table("ddw.aps2")
         }

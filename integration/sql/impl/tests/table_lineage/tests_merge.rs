@@ -1,10 +1,8 @@
 // Copyright 2018-2022 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
 
-mod test_utils;
-
-use openlineage_sql::SqlMeta;
-use test_utils::*;
+use crate::test_utils::*;
+use openlineage_sql::TableLineage;
 
 #[test]
 fn merge_subquery_when_not_matched() {
@@ -30,8 +28,10 @@ fn merge_subquery_when_not_matched() {
             ,stg.B
             ,stg.C
         )",
-        ),
-        SqlMeta {
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
             in_tables: table("s.foo"),
             out_tables: table("s.bar")
         }
@@ -74,8 +74,10 @@ fn test_merge_multiple_clauses() {
             d_m.z = src.z
             when not matched then insert (m_id,c_name,c_code,r_name,r_code,c,z)
             values (m_id,c_name,c_code,r_name,r_code,c,z);"
-        ),
-        SqlMeta {
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
             in_tables: table("c.u_l_u"),
             out_tables: table("m.d")
         }

@@ -1,14 +1,9 @@
 // Copyright 2018-2022 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
 
-extern crate core;
-
-use openlineage_sql::{parse_sql, SqlMeta};
+use crate::test_utils::*;
+use openlineage_sql::{parse_sql, TableLineage};
 use sqlparser::dialect::PostgreSqlDialect;
-use std::sync::Arc;
-
-mod test_utils;
-use test_utils::*;
 
 #[test]
 fn parse_simple_cte() {
@@ -26,8 +21,10 @@ fn parse_simple_cte() {
                     FROM sum_trans
                     WHERE count > 1000 OR balance > 100000;
                 ",
-        ),
-        SqlMeta {
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
             in_tables: table("transactions"),
             out_tables: table("potential_fraud")
         }
@@ -49,7 +46,7 @@ fn parse_bugged_cte() {
                 SELECT user_id, cnt, balance
                 FROM sum_trans
                 WHERE count > 1000 OR balance > 100000;",
-            Arc::new(PostgreSqlDialect {}),
+            &PostgreSqlDialect {},
             None
         )
         .unwrap_err()
@@ -77,8 +74,10 @@ fn parse_recursive_cte() {
             INSERT INTO sub_employees (employee_id, manager_id, full_name)
             SELECT employee_id, manager_id, full_name FROM subordinates;
         "
-        ),
-        SqlMeta {
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
             in_tables: table("employees"),
             out_tables: table("sub_employees")
         }
@@ -101,8 +100,10 @@ fn multiple_ctes() {
             JOIN orders o
             ON c.id = o.customer_id
         "
-        ),
-        SqlMeta {
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
             in_tables: tables(vec![
                 "DEMO_DB.public.stg_customers",
                 "DEMO_DB.public.stg_orders"
@@ -184,8 +185,10 @@ fn cte_insert_overwrite() {
               grps.uk,
               grps.grp
         "
-        ),
-        SqlMeta {
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
             in_tables: table("d_n.f_p_s"),
             out_tables: table("dev_d_n.f_p_s_m")
         }
