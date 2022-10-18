@@ -4,17 +4,21 @@
 import os
 import logging
 import uuid
-from typing import Optional, Dict, Type
+from typing import Optional, Dict, Type, TYPE_CHECKING
 
 from openlineage.airflow.version import __version__ as OPENLINEAGE_AIRFLOW_VERSION
 from openlineage.airflow.extractors import TaskMetadata
 
 from openlineage.client import OpenLineageClient, OpenLineageClientOptions, set_producer
 from openlineage.client.facet import DocumentationJobFacet, SourceCodeLocationJobFacet, \
-    NominalTimeRunFacet, ParentRunFacet, BaseFacet
-from openlineage.airflow.utils import redact_with_exclusions
+    NominalTimeRunFacet, ParentRunFacet, BaseFacet, ErrorMessageRunFacet
+from openlineage.airflow.utils import redact_with_exclusions, DagUtils
 from openlineage.client.run import RunEvent, RunState, Run, Job
 import requests.exceptions
+
+
+if TYPE_CHECKING:
+    from airflow.models.dagrun import DagRun
 
 
 _DAG_DEFAULT_OWNER = 'anonymous'
@@ -178,6 +182,59 @@ class OpenLineageAdapter:
             ),
             inputs=task.inputs,
             outputs=task.outputs,
+            producer=_PRODUCER
+        )
+        self.emit(event)
+
+    def dag_started(self, dag_run: "DagRun", msg: str):
+        event = RunEvent(
+            eventType=RunState.START,
+            eventTime=DagUtils.to_iso_8601(dag_run.end_date),
+            job=Job(
+                name=dag_run.dag_id,
+                namespace=_DAG_NAMESPACE
+            ),
+            run=Run(runId=self.build_dag_run_id(dag_run.dag_id, dag_run.run_id)),
+            inputs=[],
+            outputs=[],
+            producer=_PRODUCER
+        )
+        self.emit(event)
+
+    def dag_success(self, dag_run: "DagRun", msg: str):
+        event = RunEvent(
+            eventType=RunState.COMPLETE,
+            eventTime=DagUtils.to_iso_8601(dag_run.end_date),
+            job=Job(
+                name=dag_run.dag_id,
+                namespace=_DAG_NAMESPACE
+            ),
+            run=Run(runId=self.build_dag_run_id(dag_run.dag_id, dag_run.run_id)),
+            inputs=[],
+            outputs=[],
+            producer=_PRODUCER
+        )
+        self.emit(event)
+
+    def dag_failed(self, dag_run: "DagRun", msg: str):
+        event = RunEvent(
+            eventType=RunState.FAIL,
+            eventTime=DagUtils.to_iso_8601(dag_run.end_date),
+            job=Job(
+                name=dag_run.dag_id,
+                namespace=_DAG_NAMESPACE
+            ),
+            run=Run(
+                runId=self.build_dag_run_id(dag_run.dag_id, dag_run.run_id),
+                facets={
+                    "errorMessage": ErrorMessageRunFacet(
+                        message=msg,
+                        programmingLanguage="python"
+                    )
+                }
+            ),
+            inputs=[],
+            outputs=[],
             producer=_PRODUCER
         )
         self.emit(event)

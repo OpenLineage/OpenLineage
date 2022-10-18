@@ -5,6 +5,7 @@ import copy
 import logging
 import threading
 import uuid
+from concurrent.futures import Executor, ThreadPoolExecutor
 from typing import TYPE_CHECKING, Optional, Callable, Union
 
 import attr
@@ -15,7 +16,7 @@ from openlineage.airflow.extractors import ExtractorManager
 from openlineage.airflow.utils import DagUtils, get_task_location, get_job_name, get_custom_facets
 
 if TYPE_CHECKING:
-    from airflow.models import TaskInstance, BaseOperator, MappedOperator
+    from airflow.models import TaskInstance, BaseOperator, MappedOperator, DagRun
     from sqlalchemy.orm import Session
 
 
@@ -48,6 +49,8 @@ class ActiveRunManager:
 
 
 log = logging.getLogger('airflow')
+# TODO: move task instance runs to executor
+executor: Optional[Executor] = None
 
 
 def execute_in_thread(target: Callable, kwargs=None):
@@ -159,3 +162,38 @@ def on_task_instance_failed(previous_state, task_instance: "TaskInstance", sessi
         )
 
     execute_in_thread(on_failure)
+
+
+@hookimpl
+def on_starting():
+    global executor
+    executor = ThreadPoolExecutor(max_workers=8, thread_name_prefix="openlineage_")
+
+
+@hookimpl
+def before_stopping():
+    executor.shutdown(wait=False)
+
+
+@hookimpl
+def on_dag_run_running(dag_run: "DagRun", msg: str):
+    if not executor:
+        log.error("Executor have not started before `on_dag_run_running`")
+        return
+    executor.submit(adapter.dag_started, dag_run=dag_run, msg=msg)
+
+
+@hookimpl
+def on_dag_run_success(dag_run: "DagRun", msg: str):
+    if not executor:
+        log.error("Executor have not started before `on_dag_run_success`")
+        return
+    executor.submit(adapter.dag_success, dag_run=dag_run, msg=msg)
+
+
+@hookimpl
+def on_dag_run_failed(dag_run: "DagRun", msg: str):
+    if not executor:
+        log.error("Executor have not started before `on_dag_run_failed`")
+        return
+    executor.submit(adapter.dag_failed, dag_run=dag_run, msg=msg)
