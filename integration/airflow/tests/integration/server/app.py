@@ -128,3 +128,8 @@ def timeout_lineage():
     logger.warning("Called timeout endpoint")
     time.sleep(15)
     return jsonify({}), 200
+
+
+@app.route("/healthcheck", methods=['GET'])
+def healthcheck():
+    return "", 200
