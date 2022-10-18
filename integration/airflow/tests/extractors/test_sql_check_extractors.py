@@ -1,3 +1,6 @@
+# Copyright 2018-2022 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
+
 from openlineage.airflow.extractors.postgres_extractor import PostgresExtractor
 from openlineage.airflow.extractors.sql_check_extractors import get_check_extractors
 
