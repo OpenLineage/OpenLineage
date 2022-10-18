@@ -38,8 +38,10 @@ TABLE_CHECK_MAPPING = {
     SqlTableCheckExtractor
 ) = get_check_extractors(PostgresExtractor)
 
+
 class SQLTableCheckOperator:
     checks = TABLE_CHECK_MAPPING
+
 
 class SQLColumnCheckOperator:
     column_mapping = COLUMN_CHECK_MAPPING
