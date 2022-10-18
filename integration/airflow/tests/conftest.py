@@ -11,7 +11,7 @@ from airflow.version import version as AIRFLOW_VERSION
 from mock import patch
 log = logging.getLogger(__name__)
 
-collect_ignore = []
+collect_ignore = ['extractors']
 
 
 if parse_version(AIRFLOW_VERSION) < parse_version("2.3.0"):
