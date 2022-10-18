@@ -600,7 +600,7 @@ jobs:
           at: .
       - run: pip install wheel twine
       - run: mkdir -p target/wheels && cp target/wheels/* dist/
-      - run: python -m twine upload --non-interactive --verbose -u $ARTIFACTORY_USERNAME -p $ARTIFACTORY_PASSWORD --repository-url https://datakin.jfrog.io/artifactory/api/pypi/pypi-public-libs-release dist/*
+      - run: python -m twine upload --non-interactive --verbose -u $ARTIFACTORY_USERNAME -p $ARTIFACTORY_PASSWORD --repository-url https://astronomer.jfrog.io/artifactory/api/pypi/pypi-public-libs-release dist/*
 
   release-python:
     working_directory: ~/openlineage
