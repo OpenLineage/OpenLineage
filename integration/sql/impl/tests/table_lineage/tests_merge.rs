@@ -32,8 +32,8 @@ fn merge_subquery_when_not_matched() {
         .unwrap()
         .table_lineage,
         TableLineage {
-            in_tables: table("s.foo"),
-            out_tables: table("s.bar")
+            in_tables: tables(vec!["s.foo"]),
+            out_tables: tables(vec!["s.bar"])
         }
     );
 }
@@ -78,8 +78,8 @@ fn test_merge_multiple_clauses() {
         .unwrap()
         .table_lineage,
         TableLineage {
-            in_tables: table("c.u_l_u"),
-            out_tables: table("m.d")
+            in_tables: tables(vec!["c.u_l_u"]),
+            out_tables: tables(vec!["m.d"])
         }
     )
 }

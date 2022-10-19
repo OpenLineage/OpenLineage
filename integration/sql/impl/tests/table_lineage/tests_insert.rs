@@ -12,7 +12,7 @@ fn insert_values() {
             .table_lineage,
         TableLineage {
             in_tables: vec![],
-            out_tables: table("TEST")
+            out_tables: tables(vec!["TEST"])
         }
     );
 }
@@ -25,7 +25,7 @@ fn insert_cols_values() {
             .table_lineage,
         TableLineage {
             in_tables: vec![],
-            out_tables: table("tbl")
+            out_tables: tables(vec!["tbl"])
         }
     );
 }
@@ -37,8 +37,8 @@ fn insert_select_table() {
             .unwrap()
             .table_lineage,
         TableLineage {
-            in_tables: table("TEMP"),
-            out_tables: table("TEST")
+            in_tables: tables(vec!["TEMP"]),
+            out_tables: tables(vec!["TEST"])
         }
     );
 }
@@ -63,7 +63,7 @@ fn insert_select_table_2() {
         .table_lineage,
         TableLineage {
             in_tables: tables(vec!["b1.b2", "m.dim"]),
-            out_tables: table("a1.a2")
+            out_tables: tables(vec!["a1.a2"])
         }
     )
 }
@@ -79,8 +79,8 @@ fn insert_nested_select() {
                 GROUP BY order_placed_on;
             ",
     ).unwrap().table_lineage, TableLineage {
-        in_tables: table("top_delivery_times"),
-        out_tables: table("popular_orders_day_of_week")
+        in_tables: tables(vec!["top_delivery_times"]),
+        out_tables: tables(vec!["popular_orders_day_of_week"])
     })
 }
 
@@ -90,7 +90,7 @@ fn insert_snowflake_table() {
         test_sql_dialect("\n    INSERT INTO test_orders (ord, str, num) VALUES\n    (1, 'b', 15),\n    (2, 'a', 21),\n    (3, 'b', 7);\n   ", "snowflake").unwrap().table_lineage,
         TableLineage {
             in_tables: vec![],
-            out_tables: table("test_orders")
+            out_tables: tables(vec!["test_orders"])
         }
     )
 }
@@ -124,8 +124,8 @@ fn insert_overwrite_table() {
         .unwrap()
         .table_lineage,
         TableLineage {
-            in_tables: table("schema.fpsm"),
-            out_tables: table("schema.dps")
+            in_tables: tables(vec!["schema.fpsm"]),
+            out_tables: tables(vec!["schema.dps"])
         }
     )
 }
@@ -145,8 +145,8 @@ fn insert_overwrite_subqueries() {
         .unwrap()
         .table_lineage,
         TableLineage {
-            in_tables: table("table2"),
-            out_tables: table("mytable")
+            in_tables: tables(vec!["table2"]),
+            out_tables: tables(vec!["mytable"])
         }
     )
 }
@@ -172,7 +172,7 @@ fn insert_overwrite_multiple_subqueries() {
         .table_lineage,
         TableLineage {
             in_tables: tables(vec!["table2", "table3", "table4"]),
-            out_tables: table("mytable")
+            out_tables: tables(vec!["mytable"])
         }
     )
 }
@@ -200,7 +200,7 @@ fn insert_overwrite_partition() {
         .table_lineage,
         TableLineage {
             in_tables: tables(vec!["d_d_n.u_t_250", "d_n_p.g_d_r"]),
-            out_tables: table("d_d_n.g_d_t_r")
+            out_tables: tables(vec!["d_d_n.g_d_t_r"])
         }
     )
 }
@@ -219,7 +219,7 @@ fn set_before_insert() {
         .table_lineage,
         TableLineage {
             in_tables: vec![],
-            out_tables: table("a.b.c")
+            out_tables: tables(vec!["a.b.c"])
         }
     )
 }
@@ -255,7 +255,7 @@ fn insert_overwrite_hive_sets_large() {
         .table_lineage,
         TableLineage {
             in_tables: tables(vec!["d_p.f_p_s", "d_p.f_p_s_merged"]),
-            out_tables: table("d_d_p.d_f_s")
+            out_tables: tables(vec!["d_d_p.d_f_s"])
         }
     )
 }
@@ -291,8 +291,8 @@ fn insert_group_by() {
         .unwrap()
         .table_lineage,
         TableLineage {
-            in_tables: table("b1.b2"),
-            out_tables: table("a1.a2")
+            in_tables: tables(vec!["b1.b2"]),
+            out_tables: tables(vec!["a1.a2"])
         }
     )
 }
@@ -408,7 +408,7 @@ fn insert_nested_with_select() {
         .table_lineage,
         TableLineage {
             in_tables: tables(vec!["b1.b2", "c1.c2", "d1.d2", "e1.e2", "f1.f2"]),
-            out_tables: table("a1.a2")
+            out_tables: tables(vec!["a1.a2"])
         }
     )
 }
@@ -426,7 +426,7 @@ fn test_multiple_statements_delete_insert() {
         .table_lineage,
         TableLineage {
             in_tables: vec![],
-            out_tables: table("public.\"Employees\""),
+            out_tables: tables(vec!["public.\"Employees\""]),
         }
     )
 }
@@ -462,7 +462,7 @@ fn test_triple_statements_insert_insert_insert() {
         .unwrap()
         .table_lineage,
         TableLineage {
-            in_tables: table("a.a"),
+            in_tables: tables(vec!["a.a"]),
             out_tables: tables(vec!["a.a", "b.b", "c.c"]),
         }
     )
@@ -529,7 +529,7 @@ fn insert_overwrite_multiple_unions() {
         .table_lineage,
         TableLineage {
             in_tables: tables(vec!["d_d_n.a_p_s_v", "d_d_n.d_p_s_v"]),
-            out_tables: table("d_d_n.a_p_s_v")
+            out_tables: tables(vec!["d_d_n.a_p_s_v"])
         }
     )
 }
@@ -661,7 +661,7 @@ fn insert_overwrite_partition_dates() {
         .table_lineage,
         TableLineage {
             in_tables: tables(vec!["ddw.aps2", "ddw.dps"]),
-            out_tables: table("ddw.aps2")
+            out_tables: tables(vec!["ddw.aps2"])
         }
     )
 }

@@ -12,15 +12,20 @@ pub struct SqlMeta {
 }
 
 impl SqlMeta {
-    pub fn new(mut in_tables: Vec<DbTableMeta>, mut out_tables: Vec<DbTableMeta>) -> Self {
+    pub fn new(
+        mut in_tables: Vec<DbTableMeta>,
+        mut out_tables: Vec<DbTableMeta>,
+        mut column_lineage: Vec<ColumnLineage>,
+    ) -> Self {
         in_tables.sort();
         out_tables.sort();
+        column_lineage.sort_by(|l1, l2| l1.descendant.cmp(&l2.descendant));
         SqlMeta {
             table_lineage: TableLineage {
                 in_tables,
                 out_tables,
             },
-            column_lineage: vec![],
+            column_lineage,
         }
     }
 }
@@ -31,9 +36,25 @@ pub struct ColumnLineage {
     pub lineage: Vec<ColumnMeta>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+impl ColumnLineage {
+    pub fn new(descendant: ColumnMeta) -> Self {
+        ColumnLineage {
+            descendant,
+            lineage: vec![],
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct ColumnMeta {
+    pub origin: Option<DbTableMeta>,
     pub name: String,
+}
+
+impl ColumnMeta {
+    pub fn new(name: String, origin: Option<DbTableMeta>) -> Self {
+        ColumnMeta { name, origin }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

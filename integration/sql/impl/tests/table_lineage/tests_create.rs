@@ -20,7 +20,7 @@ fn test_create_table() {
         .table_lineage,
         TableLineage {
             in_tables: vec![],
-            out_tables: table("Persons")
+            out_tables: tables(vec!["Persons"])
         }
     )
 }
@@ -32,8 +32,8 @@ fn test_create_table_like() {
             .unwrap()
             .table_lineage,
         TableLineage {
-            in_tables: table("original"),
-            out_tables: table("new")
+            in_tables: tables(vec!["original"]),
+            out_tables: tables(vec!["new"])
         }
     )
 }
@@ -45,8 +45,8 @@ fn test_create_table_clone() {
             .unwrap()
             .table_lineage,
         TableLineage {
-            in_tables: table("original"),
-            out_tables: table("new")
+            in_tables: tables(vec!["original"]),
+            out_tables: tables(vec!["new"])
         }
     )
 }
@@ -65,7 +65,7 @@ fn test_create_and_insert() {
         .table_lineage,
         TableLineage {
             in_tables: tables(vec!["temp.table"]),
-            out_tables: table("Persons")
+            out_tables: tables(vec!["Persons"])
         }
     )
 }
@@ -81,7 +81,7 @@ fn create_and_insert_multiple_stmts() {
         .table_lineage,
         TableLineage {
             in_tables: tables(vec!["temp.table"]),
-            out_tables: table("Persons")
+            out_tables: tables(vec!["Persons"])
         }
     )
 }
@@ -114,7 +114,7 @@ fn create_hive_external_table_if_not_exist() {
         .table_lineage,
         TableLineage {
             in_tables: vec![],
-            out_tables: table("Testing_Versions_latest")
+            out_tables: tables(vec!["Testing_Versions_latest"])
         }
     )
 }
@@ -133,8 +133,8 @@ fn create_replace_as_select() {
         .unwrap()
         .table_lineage,
         TableLineage {
-            in_tables: table("dwh_dev.commons.calendar"),
-            out_tables: table("DATA_TEAM_DEMOS.ALL_DAYS")
+            in_tables: tables(vec!["dwh_dev.commons.calendar"]),
+            out_tables: tables(vec!["DATA_TEAM_DEMOS.ALL_DAYS"])
         }
     )
 }

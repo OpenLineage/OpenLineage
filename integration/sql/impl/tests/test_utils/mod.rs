@@ -19,8 +19,8 @@ pub fn test_sql_dialect(sql: &str, dialect: &str) -> Result<SqlMeta> {
     parse_sql(sql, get_dialect(dialect), None)
 }
 
-pub fn table(name: &str) -> Vec<DbTableMeta> {
-    vec![DbTableMeta::new_default_dialect(String::from(name))]
+pub fn table(name: &str) -> DbTableMeta {
+    DbTableMeta::new_default_dialect(String::from(name))
 }
 
 pub fn tables(names: Vec<&str>) -> Vec<DbTableMeta> {

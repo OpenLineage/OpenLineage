@@ -12,7 +12,7 @@ fn delete_from() {
             .table_lineage,
         TableLineage {
             in_tables: vec![],
-            out_tables: table("a.b")
+            out_tables: tables(vec!["a.b"])
         }
     );
 }
@@ -32,8 +32,8 @@ fn delete_from_using() {
         .unwrap()
         .table_lineage,
         TableLineage {
-            in_tables: table("b.c"),
-            out_tables: table("a.b")
+            in_tables: tables(vec!["b.c"]),
+            out_tables: tables(vec!["a.b"])
         }
     );
 }

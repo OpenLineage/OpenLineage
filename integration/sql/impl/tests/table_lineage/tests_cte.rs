@@ -25,8 +25,8 @@ fn parse_simple_cte() {
         .unwrap()
         .table_lineage,
         TableLineage {
-            in_tables: table("transactions"),
-            out_tables: table("potential_fraud")
+            in_tables: tables(vec!["transactions"]),
+            out_tables: tables(vec!["potential_fraud"])
         }
     );
 }
@@ -78,8 +78,8 @@ fn parse_recursive_cte() {
         .unwrap()
         .table_lineage,
         TableLineage {
-            in_tables: table("employees"),
-            out_tables: table("sub_employees")
+            in_tables: tables(vec!["employees"]),
+            out_tables: tables(vec!["sub_employees"])
         }
     )
 }
@@ -189,8 +189,8 @@ fn cte_insert_overwrite() {
         .unwrap()
         .table_lineage,
         TableLineage {
-            in_tables: table("d_n.f_p_s"),
-            out_tables: table("dev_d_n.f_p_s_m")
+            in_tables: tables(vec!["d_n.f_p_s"]),
+            out_tables: tables(vec!["dev_d_n.f_p_s_m"])
         }
     )
 }

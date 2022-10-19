@@ -9,7 +9,7 @@ fn select_simple() {
     assert_eq!(
         test_sql("SELECT * FROM table0;",).unwrap().table_lineage,
         TableLineage {
-            in_tables: table("table0"),
+            in_tables: tables(vec!["table0"]),
             out_tables: vec![]
         }
     )
@@ -21,7 +21,7 @@ fn select_from_schema_table() {
             .unwrap()
             .table_lineage,
         TableLineage {
-            in_tables: table("schema0.table0"),
+            in_tables: tables(vec!["schema0.table0"]),
             out_tables: vec![]
         }
     )
@@ -98,7 +98,7 @@ fn select_bigquery_excaping() {
         .unwrap()
         .table_lineage,
         TableLineage {
-            in_tables: table("random-project.dbt_test1.source_table"),
+            in_tables: tables(vec!["random-project.dbt_test1.source_table"]),
             out_tables: vec![]
         }
     )
@@ -111,8 +111,8 @@ fn select_into() {
             .unwrap()
             .table_lineage,
         TableLineage {
-            in_tables: table("table1"),
-            out_tables: table("table0")
+            in_tables: tables(vec!["table1"]),
+            out_tables: tables(vec!["table0"])
         }
     )
 }
@@ -124,7 +124,7 @@ fn select_redshift() {
             .unwrap()
             .table_lineage,
         TableLineage {
-            in_tables: table("test_schema.test_table"),
+            in_tables: tables(vec!["test_schema.test_table"]),
             out_tables: vec![]
         }
     )

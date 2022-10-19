@@ -6,7 +6,7 @@ use crate::lineage::*;
 
 use anyhow::{anyhow, Result};
 use sqlparser::ast::{
-    Expr, Ident, Query, Select, SelectItem, SetExpr, Statement, TableAlias, TableFactor, With,
+    Expr, Ident, Query, Select, SelectItem, SetExpr, Statement, TableAlias, TableFactor, With, TableWithJoins,
 };
 
 pub trait Visit {
@@ -80,6 +80,35 @@ impl Visit for Expr {
                     condition.visit(context)?;
                 }
             }
+            Expr::Identifier(id) => {
+                let context_set = context.column_context().is_some();
+                if context_set {
+                    let descendant = context.column_context().as_ref().unwrap().name.clone();
+                    context.add_column_ancestors(
+                        descendant,
+                        vec![ColumnMeta::new(
+                            id.value.clone(),
+                            context.table_context().clone(),
+                        )],
+                    );
+                }
+            }
+            Expr::CompoundIdentifier(ids) => {
+                // TODO: Resolve aliases
+                let context_set = context.column_context().is_some();
+                if context_set {
+                    let descendant = context.column_context().as_ref().unwrap().name.clone();
+                    let ancestor = ids.last().unwrap().value.clone();
+                    context.add_column_ancestors(
+                        descendant,
+                        vec![ColumnMeta::new(
+                            ancestor,
+                            // TODO: Extract table context
+                            context.table_context().clone(),
+                        )],
+                    );
+                }
+            }
             _ => {}
         }
         Ok(())
@@ -88,18 +117,41 @@ impl Visit for Expr {
 
 impl Visit for Select {
     fn visit(&self, context: &mut Context) -> Result<()> {
+        // TODO: Handle selection from multiple tables
+        if let Some(t) = self.from.first() {
+            if let TableFactor::Table { name, .. } = &t.relation {
+                
+                context.set_table_context(Some(DbTableMeta::new(
+                    name.to_string(),
+                    context.dialect(),
+                    context.default_schema().clone(),
+                )))
+            }
+        }
+
         for projection in &self.projection {
             match projection {
                 SelectItem::UnnamedExpr(expr) => {
+                    match expr {
+                        Expr::Identifier(id) => context
+                            .set_column_context(Some(ColumnMeta::new(id.value.clone(), None))),
+                        Expr::CompoundIdentifier(ids) => context.set_column_context(Some(
+                            ColumnMeta::new(ids.last().unwrap().value.clone(), None),
+                        )),
+                        _ => context.set_unnamed_column_context(),
+                    };
                     expr.visit(context)?;
                 }
                 SelectItem::ExprWithAlias { expr, alias } => {
+                    context.set_column_context(Some(ColumnMeta::new(alias.value.clone(), None)));
                     expr.visit(context)?;
                     context.add_alias(alias.value.clone());
                 }
                 _ => {}
             }
         }
+
+        context.set_column_context(None);
 
         if let Some(into) = &self.into {
             context.add_output(into.name.to_string())
@@ -111,6 +163,8 @@ impl Visit for Select {
                 join.relation.visit(context)?;
             }
         }
+
+        context.set_table_context(None);
         Ok(())
     }
 }

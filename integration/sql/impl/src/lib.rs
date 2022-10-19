@@ -25,6 +25,7 @@ pub fn parse_multiple_statements(
 ) -> Result<SqlMeta> {
     let mut inputs: HashSet<DbTableMeta> = HashSet::new();
     let mut outputs: HashSet<DbTableMeta> = HashSet::new();
+    let mut column_lineage: Vec<ColumnLineage> = vec![];
 
     for statement in sql {
         let ast = Parser::parse_sql(dialect.as_base(), statement)?;
@@ -36,13 +37,20 @@ pub fn parse_multiple_statements(
         for stmt in ast {
             let mut context = Context::new(dialect.clone(), default_schema.clone());
             stmt.visit(&mut context)?;
-            inputs.extend(context.mut_inputs().drain());
-            outputs.extend(context.mut_outputs().drain());
+            inputs.extend(context.inputs.drain());
+            outputs.extend(context.outputs.drain());
+            column_lineage.extend(context.columns.drain().map(|(descendant, lineage)| {
+                ColumnLineage {
+                    descendant: ColumnMeta::new(descendant, None),
+                    lineage,
+                }
+            }));
         }
     }
     Ok(SqlMeta::new(
         inputs.into_iter().collect(),
         outputs.into_iter().collect(),
+        column_lineage,
     ))
 }
 

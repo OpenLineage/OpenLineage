@@ -12,7 +12,7 @@ fn update_table() {
             .table_lineage,
         TableLineage {
             in_tables: vec![],
-            out_tables: table("table0")
+            out_tables: tables(vec!["table0"])
         }
     );
 }
@@ -30,8 +30,8 @@ fn update_table_from() {
         .unwrap()
         .table_lineage,
         TableLineage {
-            in_tables: table("dataset.NewArrivals"),
-            out_tables: table("dataset.Inventory")
+            in_tables: tables(vec!["dataset.NewArrivals"]),
+            out_tables: tables(vec!["dataset.Inventory"])
         }
     )
 }
@@ -50,8 +50,8 @@ fn update_table_from_subquery() {
         .unwrap()
         .table_lineage,
         TableLineage {
-            in_tables: table("dataset.NewArrivals"),
-            out_tables: table("dataset.Inventory")
+            in_tables: tables(vec!["dataset.NewArrivals"]),
+            out_tables: tables(vec!["dataset.Inventory"])
         }
     )
 }

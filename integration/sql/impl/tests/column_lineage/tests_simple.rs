@@ -1,20 +1,22 @@
 // Copyright 2018-2022 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::test_utils::test_sql;
+use crate::test_utils::{table, test_sql};
 use openlineage_sql::{ColumnLineage, ColumnMeta};
 
 #[test]
 fn test_simple_select() {
-    let output = test_sql("SELECT a FROM table1 t1").unwrap();
+    let output = test_sql("SELECT a FROM t1").unwrap();
     assert_eq!(
         output.column_lineage,
         vec![ColumnLineage {
             descendant: ColumnMeta {
+                origin: None,
                 name: "a".to_string()
             },
             lineage: vec![ColumnMeta {
-                name: "t1.a".to_string()
+                origin: Some(table("t1")),
+                name: "a".to_string()
             }]
         }]
     );
@@ -22,40 +24,48 @@ fn test_simple_select() {
 
 #[test]
 fn test_simple_renaming() {
-    let output = test_sql("SELECT t1.a, b, c as x, [d] as [y] FROM table1 t1").unwrap();
+    let output = test_sql("SELECT t1.a, b, c as x, d as y FROM table1 t1").unwrap();
     assert_eq!(
         output.column_lineage,
         vec![
             ColumnLineage {
                 descendant: ColumnMeta {
+                    origin: None,
                     name: "a".to_string()
                 },
                 lineage: vec![ColumnMeta {
-                    name: "t1.a".to_string()
+                    origin: Some(table("table1")),
+                    name: "a".to_string()
                 }]
             },
             ColumnLineage {
                 descendant: ColumnMeta {
+                    origin: None,
                     name: "b".to_string()
                 },
                 lineage: vec![ColumnMeta {
-                    name: "t1.b".to_string()
+                    origin: Some(table("table1")),
+                    name: "b".to_string()
                 }]
             },
             ColumnLineage {
                 descendant: ColumnMeta {
+                    origin: None,
                     name: "x".to_string()
                 },
                 lineage: vec![ColumnMeta {
-                    name: "t1.c".to_string()
+                    origin: Some(table("table1")),
+                    name: "c".to_string()
                 }]
             },
             ColumnLineage {
                 descendant: ColumnMeta {
+                    origin: None,
                     name: "y".to_string()
                 },
                 lineage: vec![ColumnMeta {
-                    name: "t1.d".to_string()
+                    origin: Some(table("table1")),
+                    name: "d".to_string()
                 }]
             },
         ]
@@ -76,18 +86,22 @@ fn test_simple_join() {
         vec![
             ColumnLineage {
                 descendant: ColumnMeta {
+                    origin: None,
                     name: "x".to_string()
                 },
                 lineage: vec![ColumnMeta {
-                    name: "t1.a".to_string()
+                    origin: Some(table("table1")),
+                    name: "a".to_string()
                 }]
             },
             ColumnLineage {
                 descendant: ColumnMeta {
+                    origin: None,
                     name: "y".to_string()
                 },
                 lineage: vec![ColumnMeta {
-                    name: "t1.b".to_string()
+                    origin: Some(table("table2")),
+                    name: "b".to_string()
                 }]
             },
         ]
@@ -98,7 +112,7 @@ fn test_simple_join() {
 fn test_nested_select() {
     let output = test_sql(
         "SELECT t1.a
-         FROM table1
+         FROM table1 t1
          WHERE b IN (SELECT b FROM table2)",
     )
     .unwrap();
@@ -106,10 +120,12 @@ fn test_nested_select() {
         output.column_lineage,
         vec![ColumnLineage {
             descendant: ColumnMeta {
+                origin: None,
                 name: "a".to_string()
             },
             lineage: vec![ColumnMeta {
-                name: "t1.a".to_string()
+                origin: Some(table("table1")),
+                name: "a".to_string()
             }]
         },]
     );
@@ -129,18 +145,22 @@ fn test_nested_renaming() {
         vec![
             ColumnLineage {
                 descendant: ColumnMeta {
+                    origin: None,
                     name: "a".to_string()
                 },
                 lineage: vec![ColumnMeta {
-                    name: "t1.a".to_string()
+                    origin: Some(table("table1")),
+                    name: "a".to_string()
                 }]
             },
             ColumnLineage {
                 descendant: ColumnMeta {
+                    origin: None,
                     name: "b".to_string()
                 },
                 lineage: vec![ColumnMeta {
-                    name: "t1.b".to_string()
+                    origin: Some(table("table2")),
+                    name: "b".to_string()
                 }]
             },
         ]
@@ -158,17 +178,21 @@ fn test_simple_case() {
         output.column_lineage,
         vec![ColumnLineage {
             descendant: ColumnMeta {
+                origin: None,
                 name: "d".to_string()
             },
             lineage: vec![
                 ColumnMeta {
-                    name: "t1.a".to_string()
+                    origin: Some(table("table1")),
+                    name: "a".to_string()
                 },
                 ColumnMeta {
-                    name: "t1.b".to_string()
+                    origin: Some(table("table1")),
+                    name: "b".to_string()
                 },
                 ColumnMeta {
-                    name: "t1.c".to_string()
+                    origin: Some(table("table1")),
+                    name: "c".to_string()
                 },
             ]
         },]
@@ -186,14 +210,17 @@ fn test_simple_operators() {
         output.column_lineage,
         vec![ColumnLineage {
             descendant: ColumnMeta {
+                origin: None,
                 name: "c".to_string()
             },
             lineage: vec![
                 ColumnMeta {
-                    name: "t1.a".to_string()
+                    origin: Some(table("table1")),
+                    name: "a".to_string()
                 },
                 ColumnMeta {
-                    name: "t1.b".to_string()
+                    origin: Some(table("table1")),
+                    name: "b".to_string()
                 },
             ]
         },]
@@ -211,10 +238,12 @@ fn test_simple_count() {
         output.column_lineage,
         vec![ColumnLineage {
             descendant: ColumnMeta {
+                origin: None,
                 name: "b".to_string()
             },
             lineage: vec![ColumnMeta {
-                name: "t1.a".to_string()
+                origin: Some(table("table1")),
+                name: "a".to_string()
             },]
         },]
     );
@@ -231,14 +260,17 @@ fn test_simple_aggregate() {
         output.column_lineage,
         vec![ColumnLineage {
             descendant: ColumnMeta {
+                origin: None,
                 name: "c".to_string()
             },
             lineage: vec![
                 ColumnMeta {
-                    name: "t1.a".to_string()
+                    origin: Some(table("table1")),
+                    name: "a".to_string()
                 },
                 ColumnMeta {
-                    name: "t1.b".to_string()
+                    origin: Some(table("table1")),
+                    name: "b".to_string()
                 },
             ]
         },]

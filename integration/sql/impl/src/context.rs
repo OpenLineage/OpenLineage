@@ -9,6 +9,8 @@ use crate::lineage::*;
 
 use sqlparser::dialect::SnowflakeDialect;
 
+type ColumnAncestors = Vec<ColumnMeta>;
+
 // Context struct serves as generic holder of an all information we currently have about
 // SQL statements that we have parsed so far.
 //
@@ -26,16 +28,25 @@ pub struct Context<'a> {
     aliases: HashSet<DbTableMeta>,
     // Tables used as input to this query. "Input" is defined liberally, query does not have
     // to read data to be treated as input - it's sufficient that it's referenced in a query somehow
-    inputs: HashSet<DbTableMeta>,
+    pub inputs: HashSet<DbTableMeta>,
     // Tables used as output to this query. Same as input, they have to be referenced - data does
     // not have to be actually written as a result of execution.
-    outputs: HashSet<DbTableMeta>,
-    columns: HashMap<String, ColumnLineage>,
+    pub outputs: HashSet<DbTableMeta>,
+    // Map of column lineages
+    pub columns: HashMap<String, ColumnAncestors>,
+    // Indicates whether we are talking about columns in a context of some specific table.
+    // For example, when we visit a select statement 'SELECT a, b FROM t', our table context
+    // would be 't'
+    table_context: Option<DbTableMeta>,
+    // Specifies whether we are inside a column context and its name
+    column_context: Option<ColumnMeta>,
     // Some databases allow to specify default schema. When schema for table is not referenced,
     // we're using this default as it.
     default_schema: Option<String>,
     // Dialect used in this statements.
     dialect: &'a dyn CanonicalDialect,
+    // Used to generate unique names for unaliased columns created from compound expressions
+    column_id: u32,
 }
 
 impl<'a> Context<'a> {
@@ -45,8 +56,11 @@ impl<'a> Context<'a> {
             inputs: HashSet::new(),
             outputs: HashSet::new(),
             columns: HashMap::new(),
+            table_context: None,
+            column_context: None,
             default_schema: None,
             dialect: &SnowflakeDialect,
+            column_id: 0,
         }
     }
 
@@ -56,15 +70,15 @@ impl<'a> Context<'a> {
             inputs: HashSet::new(),
             outputs: HashSet::new(),
             columns: HashMap::new(),
+            table_context: None,
+            column_context: None,
             default_schema,
             dialect,
+            column_id: 0,
         }
     }
 
-    pub fn add_alias(&mut self, alias: String) {
-        let name = DbTableMeta::new(alias, self.dialect.deref(), self.default_schema.clone());
-        self.aliases.insert(name);
-    }
+    // --- Table Lineage ---
 
     pub fn add_input(&mut self, table: String) {
         let name = DbTableMeta::new(table, self.dialect.deref(), self.default_schema.clone());
@@ -80,19 +94,53 @@ impl<'a> Context<'a> {
         }
     }
 
-    pub fn inputs(&self) -> &HashSet<DbTableMeta> {
-        &self.inputs
+    // --- Column Lineage ---
+
+    pub fn add_column_ancestors(&mut self, column: String, mut ancestors: ColumnAncestors) {
+        let entry = self.columns.entry(column);
+        entry
+            .and_modify(|x| x.extend(ancestors.drain(..)))
+            .or_insert(ancestors);
     }
 
-    pub fn mut_inputs(&mut self) -> &mut HashSet<DbTableMeta> {
-        &mut self.inputs
+    // --- Context Manipulators ---
+
+    pub fn add_alias(&mut self, alias: String) {
+        let name = DbTableMeta::new(alias, self.dialect.deref(), self.default_schema.clone());
+        self.aliases.insert(name);
     }
 
-    pub fn outputs(&self) -> &HashSet<DbTableMeta> {
-        &self.outputs
+    pub fn set_table_context(&mut self, table: Option<DbTableMeta>) {
+        self.table_context = table;
     }
 
-    pub fn mut_outputs(&mut self) -> &mut HashSet<DbTableMeta> {
-        &mut self.outputs
+    pub fn set_column_context(&mut self, column: Option<ColumnMeta>) {
+        self.column_context = column;
+    }
+
+    pub fn set_unnamed_column_context(&mut self) {
+        self.column_context = Some(ColumnMeta::new(self.next_unnamed_column(), None));
+    }
+
+    // --- Accessors ---
+    pub fn table_context(&self) -> &Option<DbTableMeta> {
+        &self.table_context
+    }
+
+    pub fn column_context(&self) -> &Option<ColumnMeta> {
+        &self.column_context
+    }
+
+    pub fn dialect(&self) -> &dyn CanonicalDialect {
+        self.dialect
+    }
+
+    pub fn default_schema(&self) -> &Option<String> {
+        &self.default_schema
+    }
+
+    // --- Utils ---
+    fn next_unnamed_column(&self) -> String {
+        format!("_{}", self.column_id)
     }
 }
