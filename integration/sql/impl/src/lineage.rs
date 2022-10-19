@@ -20,6 +20,7 @@ impl SqlMeta {
         in_tables.sort();
         out_tables.sort();
         column_lineage.sort_by(|l1, l2| l1.descendant.cmp(&l2.descendant));
+        column_lineage.iter_mut().for_each(|x| x.lineage.sort());
         SqlMeta {
             table_lineage: TableLineage {
                 in_tables,

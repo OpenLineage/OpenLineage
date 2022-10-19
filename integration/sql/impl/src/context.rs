@@ -9,7 +9,7 @@ use crate::lineage::*;
 
 use sqlparser::dialect::SnowflakeDialect;
 
-type ColumnAncestors = Vec<ColumnMeta>;
+type ColumnAncestors = HashSet<ColumnMeta>;
 
 // Context struct serves as generic holder of an all information we currently have about
 // SQL statements that we have parsed so far.
@@ -96,11 +96,11 @@ impl<'a> Context<'a> {
 
     // --- Column Lineage ---
 
-    pub fn add_column_ancestors(&mut self, column: String, mut ancestors: ColumnAncestors) {
+    pub fn add_column_ancestors(&mut self, column: String, mut ancestors: Vec<ColumnMeta>) {
         let entry = self.columns.entry(column);
         entry
             .and_modify(|x| x.extend(ancestors.drain(..)))
-            .or_insert(ancestors);
+            .or_insert(HashSet::from_iter(ancestors));
     }
 
     // --- Context Manipulators ---

@@ -71,13 +71,25 @@ impl Visit for Expr {
                 expr.visit(context)?;
             }
             Expr::Case {
-                operand: _,
+                operand,
                 conditions,
-                results: _,
-                else_result: _,
+                results,
+                else_result,
             } => {
+                if let Some(expr) = operand {
+                    expr.visit(context)?;
+                }
+
                 for condition in conditions {
                     condition.visit(context)?;
+                }
+
+                for result in results {
+                    result.visit(context)?;
+                }
+
+                if let Some(expr) = else_result {
+                    expr.visit(context)?;
                 }
             }
             Expr::Identifier(id) => {
@@ -133,7 +145,7 @@ impl Visit for Function {
 impl Visit for FunctionArg {
     fn visit(&self, context: &mut Context) -> Result<()> {
         match self {
-            FunctionArg::Named { name, arg } => arg.visit(context),
+            FunctionArg::Named { name: _, arg } => arg.visit(context),
             FunctionArg::Unnamed(arg) => arg.visit(context),
         }
     }
