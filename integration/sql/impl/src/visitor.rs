@@ -6,7 +6,7 @@ use crate::lineage::*;
 
 use anyhow::{anyhow, Result};
 use sqlparser::ast::{
-    Expr, Ident, Query, Select, SelectItem, SetExpr, Statement, TableAlias, TableFactor, With, TableWithJoins,
+    Expr, Ident, Query, Select, SelectItem, SetExpr, Statement, TableAlias, TableFactor, With, TableWithJoins, Function, FunctionArg, FunctionArgExpr, WindowSpec, OrderByExpr,
 };
 
 pub trait Visit {
@@ -109,8 +109,55 @@ impl Visit for Expr {
                     );
                 }
             }
+            Expr::Function(func) => func.visit(context)?,
             _ => {}
         }
+        Ok(())
+    }
+}
+
+impl Visit for Function {
+    fn visit(&self, context: &mut Context) -> Result<()> {
+        for arg in &self.args {
+            arg.visit(context)?;
+        }
+
+        if let Some(spec) = &self.over {
+            spec.visit(context)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl Visit for FunctionArg {
+    fn visit(&self, context: &mut Context) -> Result<()> {
+        match self {
+            FunctionArg::Named { name, arg } => arg.visit(context),
+            FunctionArg::Unnamed(arg) => arg.visit(context),
+        }
+    }
+}
+
+impl Visit for FunctionArgExpr {
+    fn visit(&self, context: &mut Context) -> Result<()> {
+        match self {
+            FunctionArgExpr::Expr(expr) => expr.visit(context),
+            _ => Ok(()),
+        }
+    }
+}
+
+impl Visit for WindowSpec {
+    fn visit(&self, context: &mut Context) -> Result<()> {
+        for expr in &self.partition_by {
+            expr.visit(context)?;
+        }
+
+        for order in &self.order_by {
+            order.expr.visit(context)?;
+        }
+
         Ok(())
     }
 }
