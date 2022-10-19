@@ -170,7 +170,7 @@ class DbtArtifactProcessor:
         self._dbt_run_metadata: Optional[ParentRunMetadata] = None
         self.profile_name = profile_name
         self.target = target
-        self.jinja_environment = None
+        self.jinja_environment: Optional[Environment] = None
         self.logger = logger
 
         self.job_namespace = job_namespace
@@ -346,7 +346,7 @@ class DbtArtifactProcessor:
                 parsed_list.append(cls.render_values_jinja(environment, elem))
             return parsed_list      # type: ignore
         elif isinstance(value, str):
-            return environment.from_string(value).render()
+            return environment.from_string(value).render()  # type: ignore
         else:
             return value
 
