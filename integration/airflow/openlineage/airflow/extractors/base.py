@@ -7,7 +7,15 @@ from abc import ABC, abstractmethod
 from openlineage.client.run import Dataset
 from typing import List, Dict, Optional
 from openlineage.client.facet import BaseFacet
-from openlineage.airflow.utils import LoggingMixin
+from openlineage.airflow.utils import LoggingMixin, get_job_name
+
+
+@attr.s
+class OperatorLineage:
+    inputs: List[Dataset] = attr.ib(factory=list)
+    outputs: List[Dataset] = attr.ib(factory=list)
+    run_facets: Dict[str, BaseFacet] = attr.ib(factory=dict)
+    job_facets: Dict[str, BaseFacet] = attr.ib(factory=dict)
 
 
 @attr.s
@@ -50,3 +58,23 @@ class BaseExtractor(ABC, LoggingMixin):
 
     def extract_on_complete(self, task_instance) -> Optional[TaskMetadata]:
         return self.extract()
+
+
+class DefaultExtractor(BaseExtractor):
+    @classmethod
+    def get_operator_classnames(cls) -> List[str]:
+        """
+        Default extractor is chosen not on the classname basis, but
+        by existence of get_openlineage_facets method on operator
+        """
+        return []
+
+    def extract(self) -> Optional[TaskMetadata]:
+        facets: OperatorLineage = self.operator.get_openlineage_facets()
+        return TaskMetadata(
+            name=get_job_name(task=self.operator),
+            inputs=facets.inputs,
+            outputs=facets.outputs,
+            run_facets=facets.run_facets,
+            job_facets=facets.job_facets
+        )
