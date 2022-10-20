@@ -115,6 +115,54 @@ fn test_compound_names() {
 }
 
 #[test]
+fn test_column_name_inference() {
+    let output = test_sql(
+        "SELECT db.t.a, b, (a + b) FROM db.t"
+    ).unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![
+            ColumnLineage {
+                descendant: ColumnMeta {
+                    origin: None,
+                    name: "_0".to_string()
+                },
+                lineage: vec![
+                    ColumnMeta {
+                        origin: Some(table("db.t")),
+                        name: "a".to_string()
+                    },
+                    ColumnMeta {
+                        origin: Some(table("db.t")),
+                        name: "b".to_string()
+                    },
+                ]
+            },
+            ColumnLineage {
+                descendant: ColumnMeta {
+                    origin: None,
+                    name: "a".to_string()
+                },
+                lineage: vec![ColumnMeta {
+                    origin: Some(table("db.t")),
+                    name: "a".to_string()
+                }]
+            },
+            ColumnLineage {
+                descendant: ColumnMeta {
+                    origin: None,
+                    name: "b".to_string()
+                },
+                lineage: vec![ColumnMeta {
+                    origin: Some(table("db.t")),
+                    name: "b".to_string()
+                }]
+            },
+        ]
+    );
+}
+
+#[test]
 fn test_simple_join() {
     let output = test_sql(
         "SELECT t1.a as x, t2.b as y
