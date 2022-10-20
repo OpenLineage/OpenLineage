@@ -16,7 +16,7 @@ pub trait Visit {
 impl Visit for With {
     fn visit(&self, context: &mut Context) -> Result<()> {
         for cte in &self.cte_tables {
-            context.add_alias(cte.alias.name.value.clone());
+            context.add_table_alias(DbTableMeta::new_default_dialect("".to_string()), cte.alias.name.value.clone());
             cte.query.visit(context)?;
         }
         Ok(())
@@ -26,7 +26,11 @@ impl Visit for With {
 impl Visit for TableFactor {
     fn visit(&self, context: &mut Context) -> Result<()> {
         match self {
-            TableFactor::Table { name, .. } => {
+            TableFactor::Table { name, alias, .. } => {
+                let table = DbTableMeta::new(name.to_string(), context.dialect(), context.default_schema().clone());
+                if let Some(alias) = alias {
+                    context.add_table_alias(table.clone(), alias.name.value.clone());
+                }
                 context.add_input(name.to_string());
                 Ok(())
             }
@@ -37,7 +41,7 @@ impl Visit for TableFactor {
             } => {
                 subquery.visit(context)?;
                 if let Some(a) = alias {
-                    context.add_alias(a.name.value.clone());
+                    context.add_table_alias(DbTableMeta::new_default_dialect("".to_string()), a.name.value.clone());
                 }
                 Ok(())
             }
@@ -106,17 +110,17 @@ impl Visit for Expr {
                 }
             }
             Expr::CompoundIdentifier(ids) => {
-                // TODO: Resolve aliases
                 let context_set = context.column_context().is_some();
                 if context_set {
                     let descendant = context.column_context().as_ref().unwrap().name.clone();
                     let ancestor = ids.last().unwrap().value.clone();
+                    let prefix = ids.iter().take(ids.len() - 1).rev().map(|i| i.value.clone()).collect::<Vec<String>>().join(".");
+                    let table = DbTableMeta::new(prefix, context.dialect(), context.default_schema().clone());
                     context.add_column_ancestors(
                         descendant,
                         vec![ColumnMeta::new(
                             ancestor,
-                            // TODO: Extract table context
-                            context.table_context().clone(),
+                            Some(table),
                         )],
                     );
                 }
@@ -176,15 +180,22 @@ impl Visit for WindowSpec {
 
 impl Visit for Select {
     fn visit(&self, context: &mut Context) -> Result<()> {
-        // TODO: Handle selection from multiple tables
-        if let Some(t) = self.from.first() {
-            if let TableFactor::Table { name, .. } = &t.relation {
-                
-                context.set_table_context(Some(DbTableMeta::new(
-                    name.to_string(),
-                    context.dialect(),
-                    context.default_schema().clone(),
-                )))
+        // If we're selecting from a single table, that table becomes the default
+        if self.from.len() == 1 {
+            let t = self.from.first().unwrap();
+            if let TableFactor::Table { name, alias, .. } = &t.relation {
+                let table = DbTableMeta::new(name.to_string(), context.dialect(), context.default_schema().clone());
+                if let Some(alias) = alias {
+                    context.add_table_alias(table.clone(), alias.name.value.clone());
+                }
+                context.set_table_context(Some(table));
+            }
+        }
+
+        for table in &self.from {
+            table.relation.visit(context)?;
+            for join in &table.joins {
+                join.relation.visit(context)?;
             }
         }
 
@@ -204,7 +215,6 @@ impl Visit for Select {
                 SelectItem::ExprWithAlias { expr, alias } => {
                     context.set_column_context(Some(ColumnMeta::new(alias.value.clone(), None)));
                     expr.visit(context)?;
-                    context.add_alias(alias.value.clone());
                 }
                 _ => {}
             }
@@ -214,13 +224,6 @@ impl Visit for Select {
 
         if let Some(into) = &self.into {
             context.add_output(into.name.to_string())
-        }
-
-        for table in &self.from {
-            table.relation.visit(context)?;
-            for join in &table.joins {
-                join.relation.visit(context)?;
-            }
         }
 
         context.set_table_context(None);

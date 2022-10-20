@@ -1,11 +1,14 @@
 // Copyright 2018-2022 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
 
+mod alias_table;
+
 use std::collections::{HashMap, HashSet};
 use std::ops::Deref;
 
 use crate::dialect::CanonicalDialect;
 use crate::lineage::*;
+use alias_table::AliasTable;
 
 use sqlparser::dialect::SnowflakeDialect;
 
@@ -23,9 +26,6 @@ type ColumnAncestors = HashSet<ColumnMeta>;
 // However, aliases are lost when going from statement to statement, so we need to handle that.
 #[derive(Debug)]
 pub struct Context<'a> {
-    // Set of aliases we discovered in this query. We don't want to return alias as input and
-    // output, because they have no sense in outside of query they were defined
-    aliases: HashSet<DbTableMeta>,
     // Tables used as input to this query. "Input" is defined liberally, query does not have
     // to read data to be treated as input - it's sufficient that it's referenced in a query somehow
     pub inputs: HashSet<DbTableMeta>,
@@ -34,6 +34,9 @@ pub struct Context<'a> {
     pub outputs: HashSet<DbTableMeta>,
     // Map of column lineages
     pub columns: HashMap<String, ColumnAncestors>,
+    // The alias table is used to track back a chain of aliases back to the original
+    // symbol. Only those symbols are meaningful outside of the processed query.
+    aliases: AliasTable,
     // Indicates whether we are talking about columns in a context of some specific table.
     // For example, when we visit a select statement 'SELECT a, b FROM t', our table context
     // would be 't'
@@ -52,10 +55,10 @@ pub struct Context<'a> {
 impl<'a> Context<'a> {
     pub fn default() -> Context<'a> {
         Context {
-            aliases: HashSet::new(),
             inputs: HashSet::new(),
             outputs: HashSet::new(),
             columns: HashMap::new(),
+            aliases: AliasTable::new(),
             table_context: None,
             column_context: None,
             default_schema: None,
@@ -66,10 +69,10 @@ impl<'a> Context<'a> {
 
     pub fn new(dialect: &dyn CanonicalDialect, default_schema: Option<String>) -> Context {
         Context {
-            aliases: HashSet::new(),
             inputs: HashSet::new(),
             outputs: HashSet::new(),
             columns: HashMap::new(),
+            aliases: AliasTable::new(),
             table_context: None,
             column_context: None,
             default_schema,
@@ -82,14 +85,14 @@ impl<'a> Context<'a> {
 
     pub fn add_input(&mut self, table: String) {
         let name = DbTableMeta::new(table, self.dialect.deref(), self.default_schema.clone());
-        if !self.aliases.contains(&name) {
+        if !self.aliases.is_table_alias(&name) {
             self.inputs.insert(name);
         }
     }
 
     pub fn add_output(&mut self, output: String) {
         let name = DbTableMeta::new(output, self.dialect.deref(), self.default_schema.clone());
-        if !self.aliases.contains(&name) {
+        if !self.aliases.is_table_alias(&name) {
             self.outputs.insert(name);
         }
     }
@@ -97,6 +100,12 @@ impl<'a> Context<'a> {
     // --- Column Lineage ---
 
     pub fn add_column_ancestors(&mut self, column: String, mut ancestors: Vec<ColumnMeta>) {
+        for ancestor in &mut ancestors {
+            if let Some(table) = &mut ancestor.origin {
+                *table = self.aliases.resolve_table(table).clone();
+            }
+        }
+
         let entry = self.columns.entry(column);
         entry
             .and_modify(|x| x.extend(ancestors.drain(..)))
@@ -105,9 +114,9 @@ impl<'a> Context<'a> {
 
     // --- Context Manipulators ---
 
-    pub fn add_alias(&mut self, alias: String) {
-        let name = DbTableMeta::new(alias, self.dialect.deref(), self.default_schema.clone());
-        self.aliases.insert(name);
+    pub fn add_table_alias(&mut self, table: DbTableMeta, alias: String) {
+        let alias = DbTableMeta::new(alias, self.dialect.deref(), self.default_schema.clone());
+        self.aliases.add_table_alias(table, alias);
     }
 
     pub fn set_table_context(&mut self, table: Option<DbTableMeta>) {
