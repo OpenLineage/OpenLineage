@@ -10,8 +10,9 @@ fn test_simple_cte() {
         "WITH my_cte AS (
             SELECT a,b,c FROM t1
          )
-         SELECT a,c FROM my_cte"
-    ).unwrap();
+         SELECT a,c FROM my_cte",
+    )
+    .unwrap();
     assert_eq!(
         output.column_lineage,
         vec![

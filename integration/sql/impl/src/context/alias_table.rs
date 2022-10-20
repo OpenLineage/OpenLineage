@@ -13,7 +13,10 @@ pub struct AliasTable {
 
 impl AliasTable {
     pub fn new() -> Self {
-        AliasTable { column_aliases: HashMap::new(), table_aliases: HashMap::new() }
+        AliasTable {
+            column_aliases: HashMap::new(),
+            table_aliases: HashMap::new(),
+        }
     }
 
     pub fn add_column_alias(&mut self, col: ColumnMeta, alias: ColumnMeta) {
