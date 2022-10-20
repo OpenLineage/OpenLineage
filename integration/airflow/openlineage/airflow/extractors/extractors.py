@@ -1,6 +1,5 @@
 # Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
-import inspect
 import os
 
 from typing import Type, Optional
@@ -101,8 +100,7 @@ class Extractors:
         name = clazz.__name__
         if name in self.extractors:
             return self.extractors[name]
-        if hasattr(clazz, "get_openlineage_facets") \
-                and inspect.isfunction(clazz.get_openlineage_facets):
+        if hasattr(clazz, "get_openlineage_facets") and callable(clazz.get_openlineage_facets):
             return self.default_extractor
         return None
 
