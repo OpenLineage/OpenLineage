@@ -73,6 +73,48 @@ fn test_simple_renaming() {
 }
 
 #[test]
+fn test_compound_names() {
+    let output = test_sql(
+        "SELECT db.t.x as x, y, t1.z as z FROM db.t as t1"
+    ).unwrap();
+    assert_eq!(
+        output.column_lineage,
+        vec![
+            ColumnLineage {
+                descendant: ColumnMeta {
+                    origin: None,
+                    name: "x".to_string()
+                },
+                lineage: vec![ColumnMeta {
+                    origin: Some(table("db.t")),
+                    name: "x".to_string()
+                }]
+            },
+            ColumnLineage {
+                descendant: ColumnMeta {
+                    origin: None,
+                    name: "y".to_string()
+                },
+                lineage: vec![ColumnMeta {
+                    origin: Some(table("db.t")),
+                    name: "y".to_string()
+                }]
+            },
+            ColumnLineage {
+                descendant: ColumnMeta {
+                    origin: None,
+                    name: "z".to_string()
+                },
+                lineage: vec![ColumnMeta {
+                    origin: Some(table("db.t")),
+                    name: "z".to_string()
+                }]
+            },
+        ]
+    );
+}
+
+#[test]
 fn test_simple_join() {
     let output = test_sql(
         "SELECT t1.a as x, t2.b as y

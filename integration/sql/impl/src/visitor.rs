@@ -131,7 +131,6 @@ impl Visit for Expr {
                     let prefix = ids
                         .iter()
                         .take(ids.len() - 1)
-                        .rev()
                         .map(|i| i.value.clone())
                         .collect::<Vec<String>>()
                         .join(".");
