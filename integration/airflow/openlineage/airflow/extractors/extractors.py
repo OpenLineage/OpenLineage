@@ -1,10 +1,10 @@
-# Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
+
 import os
 
 from typing import Type, Optional
 
-from openlineage.airflow.extractors.base import BaseExtractor, DefaultExtractor
+from openlineage.airflow.extractors.base import BaseExtractor
 from openlineage.airflow.utils import import_from_string, try_import_from_string
 from openlineage.airflow.extractors.sql_check_extractors import get_check_extractors
 
@@ -41,6 +41,15 @@ _extractors = list(
             ),
             try_import_from_string(
                 'openlineage.airflow.extractors.sftp_extractor.SFTPExtractor'
+            ),
+            try_import_from_string(
+                'openlineage.airflow.extractors.sagemaker_extractors.SageMakerProcessingExtractor'
+            ),
+            try_import_from_string(
+                'openlineage.airflow.extractors.sagemaker_extractors.SageMakerTrainingExtractor'
+            ),
+            try_import_from_string(
+                'openlineage.airflow.extractors.sagemaker_extractors.SageMakerTransformExtractor'
             )
         ],
     )

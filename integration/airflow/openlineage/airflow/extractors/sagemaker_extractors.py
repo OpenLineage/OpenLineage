@@ -27,10 +27,16 @@ class SageMakerProcessingExtractor(BaseExtractor):
 
         xcom_values = task_instance.xcom_pull(task_ids=task_instance.task_id)
 
-        inputs, outputs = self._get_s3_datasets(
-            processing_inputs=xcom_values['Processing']['ProcessingInputs'],
-            processing_outputs=xcom_values['Processing']['ProcessingOutputConfig']['Outputs']
-        )
+        inputs = []
+        outputs = []
+
+        try:
+            inputs, outputs = self._get_s3_datasets(
+                processing_inputs=xcom_values['Processing']['ProcessingInputs'],
+                processing_outputs=xcom_values['Processing']['ProcessingOutputConfig']['Outputs']
+            )
+        except KeyError as e:
+            log.error(f"Could not find input/output information in Xcom. {e}")
 
         return TaskMetadata(
             name=f"{self.operator.dag_id}.{self.operator.task_id}",
@@ -87,7 +93,7 @@ class SageMakerTransformExtractor(BaseExtractor):
             transform_output = transform['TransformOutput']['S3OutputPath']
         except KeyError as e:
             log.error(
-                f"Cannot find some required input/output details in Xcom. {e}", exc_info=True
+                f"Cannot find some required input/output details in XCom. {e}", exc_info=True
             )
 
         inputs = []
@@ -120,7 +126,7 @@ class SageMakerTransformExtractor(BaseExtractor):
             for container in model_containers:
                 model_data_urls.append(container['ModelDataUrl'])
         except Exception as e:
-            log.error(f"Cannot retrieve model details from {e}", exc_info=True)
+            log.error(f"Cannot retrieve model details. {e}", exc_info=True)
 
         return model_data_urls
 
@@ -139,15 +145,22 @@ class SageMakerTrainingExtractor(BaseExtractor):
         xcom_values = task_instance.xcom_pull(task_ids=task_instance.task_id)
 
         inputs = []
+        output = []
 
-        for input_data in xcom_values['Training']['InputDataConfig']:
-            inputs.append(
-                generate_s3_dataset(input_data['DataSource']['S3DataSource']['S3Uri'])
+        try:
+            for input_data in xcom_values['Training']['InputDataConfig']:
+                inputs.append(
+                    generate_s3_dataset(input_data['DataSource']['S3DataSource']['S3Uri'])
+                )
+        except KeyError as e:
+            log.error(f"Issues extracting inputs. {e}")
+
+        try:
+            output.append(
+                generate_s3_dataset(xcom_values['Training']['ModelArtifacts']['S3ModelArtifacts'])
             )
-
-        output = [
-            generate_s3_dataset(xcom_values['Training']['ModelArtifacts']['S3ModelArtifacts'])
-        ]
+        except KeyError as e:
+            log.error(f"Issues extracting inputs. {e}")
 
         return TaskMetadata(
             name=f"{self.operator.dag_id}.{self.operator.task_id}",
