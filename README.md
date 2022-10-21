@@ -41,7 +41,7 @@ OpenLineage is an [LF AI & Data Foundation](https://lfaidata.foundation/projects
 
 ## Scope
 OpenLineage defines the metadata for running jobs and the corresponding events.
-A configurable backend allows to choose what protocol to send the events to.
+A configurable backend allows the user to choose what protocol to send the events to.
  ![Scope](doc/scope.svg)
 
 ## Core model
@@ -56,7 +56,7 @@ The [specification](spec/OpenLineage.md) is defined using OpenAPI and allows ext
 
 ## Integrations
 
-OpenLineage repository contains integrations with several systems.
+The OpenLineage repository contains integrations with several systems.
 
 - [Apache Spark](https://github.com/OpenLineage/OpenLineage/tree/main/integration/spark)
 - [Apache Airflow](https://github.com/OpenLineage/OpenLineage/tree/main/integration/airflow)
@@ -71,7 +71,7 @@ OpenLineage repository contains integrations with several systems.
 ## Community
 - Slack: [OpenLineage.slack.com](http://bit.ly/OpenLineageSlack)
 - Twitter: [@OpenLineage](https://twitter.com/OpenLineage)
-- Gougle group: [openlineage@googlegroups.com](https://groups.google.com/g/openlineage)
+- Google group: [openlineage@googlegroups.com](https://groups.google.com/g/openlineage)
 
 ## Talks
  - [Metadata day 2020. Open Lineage lightning talk](https://www.youtube.com/watch?v=anlV5Er_BpM)
