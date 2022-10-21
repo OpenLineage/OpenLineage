@@ -3,7 +3,6 @@
 
 use openlineage_sql::SqlMeta;
 
-#[macro_use]
 mod test_utils;
 use test_utils::*;
 

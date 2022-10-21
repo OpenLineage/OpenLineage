@@ -358,9 +358,9 @@ jobs:
     resource_class: << parameters.resource_class >>
     steps:
       - *checkout_project_root
-      - run: docker run -it -v $PWD:/code << parameters.image >> bash -c 'cd /code; RUN_TESTS=<<parameters.run_tests>> bash script/build.sh'
+      - run: docker run -it -v $PWD:/code << parameters.image >> bash -c 'cd /code; RUN_TESTS=<<parameters.run_tests>> bash iface-py/script/build.sh'
       - persist_to_workspace:
-          root: .
+          root: ./iface-py
           paths:
             - ./target/wheels/*.whl
       - when:
@@ -368,11 +368,11 @@ jobs:
             equal: [ "quay.io/pypa/manylinux2014_x86_64", << parameters.image >> ]
           steps:
             - persist_to_workspace:
-                root: .
+                root: ./iface-py
                 paths:
-                  - ./target/wheels/*.tar.gz
+                  - target/wheels/*.tar.gz
       - store_artifacts:
-          path: ./target/wheels
+          path: ./iface-py/target/wheels
           destination: sql-artifacts
 
   build-integration-sql-macos:
@@ -382,13 +382,13 @@ jobs:
     resource_class: medium
     steps:
       - *checkout_project_root
-      - run: RUN_TESTS=true bash script/build-macos.sh
+      - run: RUN_TESTS=true bash iface-py/script/build-macos.sh
       - persist_to_workspace:
-          root: .
+          root: ./iface-py
           paths:
-            - ./target/wheels/*.whl
+            - target/wheels/*.whl
       - store_artifacts:
-          path: ./target/wheels
+          path: ./iface-py/target/wheels
           destination: sql-artifacts-macos
 
   build-integration-dbt:
