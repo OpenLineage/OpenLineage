@@ -277,8 +277,10 @@ impl<'a> Context<'a> {
 
     // --- Utils ---
 
-    fn next_unnamed_column(&self) -> String {
-        format!("_{}", self.column_id)
+    fn next_unnamed_column(&mut self) -> String {
+        let out = format!("_{}", self.column_id);
+        self.column_id += 1;
+        out
     }
 }
 
