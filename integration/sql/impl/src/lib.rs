@@ -37,14 +37,14 @@ pub fn parse_multiple_statements(
         for stmt in ast {
             let mut context = Context::new(dialect.clone(), default_schema.clone());
             stmt.visit(&mut context)?;
-            inputs.extend(context.inputs);
-            outputs.extend(context.outputs);
-            column_lineage.extend(context.columns.drain().map(|(descendant, lineage)| {
+            column_lineage.extend(context.mut_columns().drain().map(|(descendant, lineage)| {
                 ColumnLineage {
-                    descendant: ColumnMeta::new(descendant, None),
+                    descendant,
                     lineage: Vec::from_iter(lineage),
                 }
             }));
+            inputs.extend(context.inputs);
+            outputs.extend(context.outputs);
         }
     }
     Ok(SqlMeta::new(

@@ -74,9 +74,7 @@ fn test_simple_renaming() {
 
 #[test]
 fn test_compound_names() {
-    let output = test_sql(
-        "SELECT db.t.x as x, y, t1.z as z FROM db.t as t1"
-    ).unwrap();
+    let output = test_sql("SELECT db.t.x as x, y, t1.z as z FROM db.t as t1").unwrap();
     assert_eq!(
         output.column_lineage,
         vec![
@@ -116,9 +114,7 @@ fn test_compound_names() {
 
 #[test]
 fn test_column_name_inference() {
-    let output = test_sql(
-        "SELECT db.t.a, b, (a + b) FROM db.t"
-    ).unwrap();
+    let output = test_sql("SELECT db.t.a, b, (a + b) FROM db.t").unwrap();
     assert_eq!(
         output.column_lineage,
         vec![

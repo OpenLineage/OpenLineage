@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use core::time;
+use std::sync::Arc;
 
 use crate::context::Context;
 use crate::lineage::*;
@@ -24,7 +25,17 @@ impl Visit for With {
                 DbTableMeta::new_default_dialect("".to_string()),
                 cte.alias.name.value.clone(),
             );
+            context.push_frame();
             cte.query.visit(context)?;
+            let frame = context.pop_frame();
+            if let Some(f) = frame {
+                let table = DbTableMeta::new(
+                    cte.alias.name.value.clone(),
+                    context.dialect(),
+                    context.default_schema().clone(),
+                );
+                context.collect_with_table(f, table);
+            }
         }
         Ok(())
     }
@@ -50,13 +61,21 @@ impl Visit for TableFactor {
                 subquery,
                 alias,
             } => {
+                context.push_frame();
                 subquery.visit(context)?;
-                if let Some(a) = alias {
-                    context.add_table_alias(
-                        DbTableMeta::new_default_dialect("".to_string()),
-                        a.name.value.clone(),
+                let frame = context.pop_frame().unwrap();
+
+                if let Some(alias) = alias {
+                    let table = DbTableMeta::new(
+                        alias.name.value.clone(),
+                        context.dialect(),
+                        context.default_schema().clone(),
                     );
+                    context.collect_with_table(frame, table);
+                } else {
+                    context.collect(frame);
                 }
+
                 Ok(())
             }
             _ => Err(anyhow!(
@@ -115,7 +134,7 @@ impl Visit for Expr {
                 if context_set {
                     let descendant = context.column_context().as_ref().unwrap().name.clone();
                     context.add_column_ancestors(
-                        descendant,
+                        ColumnMeta::new(descendant, None),
                         vec![ColumnMeta::new(
                             id.value.clone(),
                             context.table_context().clone(),
@@ -140,7 +159,7 @@ impl Visit for Expr {
                         context.default_schema().clone(),
                     );
                     context.add_column_ancestors(
-                        descendant,
+                        ColumnMeta::new(descendant, None),
                         vec![ColumnMeta::new(ancestor, Some(table))],
                     );
                 }
@@ -387,12 +406,26 @@ impl Visit for Select {
             }
         }
 
+        context.push_frame();
+
         for table in &self.from {
+            context.push_frame();
             table.relation.visit(context)?;
+            let frame = context.pop_frame().unwrap();
+            context.collect_aliases(&frame);
+            context.collect(frame);
+
             for join in &table.joins {
+                context.push_frame();
                 join.relation.visit(context)?;
+                let frame = context.pop_frame().unwrap();
+                context.collect_aliases(&frame);
+                context.collect(frame);
             }
         }
+
+        let tables_frame = context.pop_frame().unwrap();
+        context.collect_aliases(&tables_frame);
 
         for projection in &self.projection {
             match projection {
@@ -422,6 +455,9 @@ impl Visit for Select {
         }
 
         context.set_table_context(None);
+
+        context.coalesce(tables_frame);
+
         Ok(())
     }
 }
@@ -448,32 +484,43 @@ impl Visit for SetExpr {
 
 impl Visit for Query {
     fn visit(&self, context: &mut Context) -> Result<()> {
+        context.push_frame();
         match &self.with {
             Some(with) => with.visit(context)?,
             None => (),
-        };
+        }
+        let with_frame = context.pop_frame().unwrap();
 
+        context.collect_aliases(&with_frame);
+
+        context.push_frame();
         self.body.visit(context)?;
+        let frame = context.pop_frame().unwrap();
+        context.collect(frame);
+
+        // Resolve CTEs
+        context.coalesce(with_frame);
+
         Ok(())
     }
 }
 
 impl Visit for Statement {
     fn visit(&self, context: &mut Context) -> Result<()> {
+        context.push_frame();
+
         match self {
-            Statement::Query(query) => query.visit(context),
+            Statement::Query(query) => query.visit(context)?,
             Statement::Insert {
                 table_name, source, ..
             } => {
                 source.visit(context)?;
                 context.add_output(table_name.to_string());
-                Ok(())
             }
             Statement::Merge { table, source, .. } => {
                 let table_name = get_table_name_from_table_factor(table)?;
                 context.add_output(table_name);
                 source.visit(context)?;
-                Ok(())
             }
             Statement::CreateTable {
                 name,
@@ -493,7 +540,6 @@ impl Visit for Statement {
                 }
 
                 context.add_output(name.to_string());
-                Ok(())
             }
             Statement::Update {
                 table,
@@ -513,7 +559,6 @@ impl Visit for Statement {
                 if let Some(expr) = selection {
                     expr.visit(context)?;
                 }
-                Ok(())
             }
             Statement::Delete {
                 table_name,
@@ -530,10 +575,14 @@ impl Visit for Statement {
                 if let Some(expr) = selection {
                     expr.visit(context)?;
                 }
-                Ok(())
             }
-            _ => Ok(()),
+            _ => {}
         }
+
+        let frame = context.pop_frame().unwrap();
+        context.collect(frame);
+
+        Ok(())
     }
 }
 
