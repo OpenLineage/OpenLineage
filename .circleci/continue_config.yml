@@ -304,31 +304,25 @@ jobs:
             - ~/.gradle
 
   unit-test-integration-common:
-    parameters:
-      install_parser:
-        type: boolean
     working_directory: ~/openlineage/integration/common
     docker:
       - image: cimg/python:3.7
     steps:
       - *checkout_project_root
-      - *install_python_client
-      - when:
-          condition: << parameters.install_parser >>
-          steps:
-            - attach_workspace:
-                  at: .
-            - run: pip install target/wheels/*.whl
-            - run: pip install -e .[dev]
-      - when:
-          condition:
-            not: << parameters.install_parser >>
-          steps:
-            - run: pip install -e .[dev_no_parser]
-      - run: flake8
-      - run: python -m mypy --ignore-missing-imports openlineage
-      - run: pytest --cov=openlineage tests/
+      - attach_workspace:
+          at: .
+      - run: pip install tox
+      - restore_cache:
+          keys:
+            - v1-toxenv-common-{{ .Branch }}-{{ checksum "setup.cfg" }}-{{ checksum "setup.py" }}
+      - run: tox -p all
       - run: bash <(curl -s https://codecov.io/bash)
+      - store_test_results:
+          path: test-results
+      - save_cache:
+          paths:
+            - ./.tox
+          key: v1-toxenv-common-{{ .Branch }}-{{ checksum "setup.cfg" }}-{{ checksum "setup.py" }}
 
   build-integration-common:
     working_directory: ~/openlineage/integration/common

@@ -14,9 +14,6 @@ workflows:
       - unit-test-integration-common:
           requires:
             - build-integration-sql-x86
-          matrix:
-            parameters:
-              install_parser: [true, false]
       - build-integration-common:
           filters:
             branches:
