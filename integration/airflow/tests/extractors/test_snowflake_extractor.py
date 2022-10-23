@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from unittest import mock
+from urllib.parse import urlparse, parse_qs
 
 from airflow.providers.snowflake.operators.snowflake import SnowflakeOperator
 from airflow.models import Connection
@@ -17,7 +18,8 @@ from openlineage.common.dataset import Source, Dataset, Field
 from openlineage.airflow.extractors.snowflake_extractor import SnowflakeExtractor
 
 CONN_ID = 'food_delivery_db'
-CONN_URI = 'snowflake://snowflake.example/db-schema?account=test_account&database=FOOD_DELIVERY&region=us-east&warehouse=snow-warehouse'  # noqa
+CONN_URI = 'snowflake://snowflake.example/db-schema?account=test_account&database=FOOD_DELIVERY&region=us-east&warehouse=snow-warehouse&secret=hideit'  # noqa
+CONN_URI_WITH_EXTRA_PREFIX = 'snowflake://snowflake.example/db-schema?extra__snowflake__account=test_account&extra__snowflake__database=FOOD_DELIVERY&extra__snowflake__region=us-east&extra__snowflake__warehouse=snow-warehouse&extra__snowflake__secret=hideit'  # noqa
 CONN_URI_URIPARSED = 'snowflake://snowflake.example/db-schema?account=%5B%27test_account%27%5D&database=%5B%27FOOD_DELIVERY%27%5D&region=%5B%27us-east%27%5D&warehouse=%5B%27snow-warehouse%27%5D'  # noqa
 
 DB_NAME = 'FOOD_DELIVERY'
@@ -101,6 +103,35 @@ def get_hook_method(operator):
         return operator.get_db_hook
     else:
         return operator.get_hook
+
+
+def test_get_connection_filter_qs_params():
+    conn = Connection(conn_id="snowflake", uri=CONN_URI)
+    uri = SnowflakeExtractor.get_connection_uri(conn)
+    parsed = urlparse(uri)
+    qs_dict = parse_qs(parsed.query)
+    assert all(
+        param in qs_dict for param in ["warehouse", "account", "database", "region"]
+    )
+    assert "secret" not in qs_dict
+
+
+def test_get_connection_filter_qs_params_with_extra_prefix():
+    conn = Connection(conn_id="snowflake", uri=CONN_URI_WITH_EXTRA_PREFIX)
+    uri = SnowflakeExtractor.get_connection_uri(conn)
+    parsed = urlparse(uri)
+    qs_dict = parse_qs(parsed.query)
+    assert all(
+        param in qs_dict
+        for param in [
+            "extra__snowflake__warehouse",
+            "extra__snowflake__account",
+            "extra__snowflake__database",
+            "extra__snowflake__region",
+        ]
+    )
+    assert "secret" not in qs_dict
+
 
 @mock.patch('openlineage.airflow.extractors.sql_extractor.get_table_schemas')  # noqa
 @mock.patch('openlineage.airflow.extractors.sql_extractor.get_connection')

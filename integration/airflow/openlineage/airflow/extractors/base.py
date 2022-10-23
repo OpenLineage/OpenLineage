@@ -4,6 +4,9 @@
 import attr
 from abc import ABC, abstractmethod
 
+from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
+import json
+
 from openlineage.client.run import Dataset
 from typing import List, Dict, Optional
 from openlineage.client.facet import BaseFacet
@@ -28,6 +31,9 @@ class TaskMetadata:
 
 
 class BaseExtractor(ABC, LoggingMixin):
+
+    _whitelist_query_params: List[str] = []
+
     def __init__(self, operator):
         super().__init__()
         self.operator = operator
@@ -58,6 +64,30 @@ class BaseExtractor(ABC, LoggingMixin):
 
     def extract_on_complete(self, task_instance) -> Optional[TaskMetadata]:
         return self.extract()
+
+    @classmethod
+    def get_connection_uri(cls, conn):
+        """
+        Return the connection URI for the given ID. We first attempt to lookup
+        the connection URI via AIRFLOW_CONN_<conn_id>, else fallback on querying
+        the Airflow's connection table.
+        """
+
+        conn_uri = conn.get_uri()
+        parsed = urlparse(conn_uri)
+
+        # Remove username and password
+        netloc = f'{parsed.hostname}' + (f':{parsed.port}' if parsed.port else "")
+        parsed = parsed._replace(netloc=netloc)
+        if parsed.query:
+            query_dict = dict(parse_qsl(parsed.query))
+            if conn.EXTRA_KEY in query_dict:
+                query_dict = json.loads(query_dict[conn.EXTRA_KEY])
+            filtered_qs = {
+                k: v for k, v in query_dict.items() if k in cls._whitelist_query_params
+            }
+            parsed = parsed._replace(query=urlencode(filtered_qs))
+        return urlunparse(parsed)
 
 
 class DefaultExtractor(BaseExtractor):

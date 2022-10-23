@@ -189,3 +189,15 @@ def create_connection():
 def test_get_connection_returns_one_if_exists(create_connection):
     conn = Connection("does_exist")
     assert get_connection("does_exist").conn_id == conn.conn_id
+
+
+def test_get_connection_from_uri():
+    conn = Connection()
+    conn.parse_from_uri(uri=CONN_URI)
+    assert PostgresExtractor.get_connection_uri(conn) == CONN_URI_WITHOUT_USERPASS
+
+
+def test_get_normalized_postgres_connection_uri():
+    conn = Connection()
+    conn.parse_from_uri(uri=CONN_URI.replace("postgres", "postgresql"))
+    assert PostgresExtractor.get_connection_uri(conn) == CONN_URI_WITHOUT_USERPASS

@@ -66,7 +66,7 @@ class SqlExtractor(BaseExtractor):
         source = Source(
             scheme=self.scheme,
             authority=self._get_authority(),
-            connection_url=self._get_connection_uri(),
+            connection_url=self.get_connection_uri(self.conn),
         )
 
         database = getattr(self.operator, "database", None)
@@ -161,10 +161,6 @@ class SqlExtractor(BaseExtractor):
 
     @abstractmethod
     def _get_hook(self) -> "BaseHook":
-        raise NotImplementedError
-
-    @abstractmethod
-    def _get_connection_uri(self) -> str:
         raise NotImplementedError
 
     def _get_db_specific_run_facets(
