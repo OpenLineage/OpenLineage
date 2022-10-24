@@ -369,6 +369,47 @@ jobs:
           path: ./iface-py/target/wheels
           destination: sql-artifacts
 
+  compile-integration-sql-java-linux:
+    working_directory: ~/openlineage/integration/sql/iface-java
+    docker:
+      - image: cimg/openjdk:8.0
+    resource_class: medium
+    steps:
+      - *checkout_project_root
+      - run: bash script/compile.sh
+      - persist_to_workspace:
+          root: ../
+          paths:
+            - target/debug/libopenlineage_sql_java.so
+
+  compile-integration-sql-java-macos:
+    working_directory: ~/openlineage/integration/sql/iface-java
+    macos:
+      xcode: 13.2.1
+    resource_class: medium
+    steps:
+      - *checkout_project_root
+      - run: bash script/compile.sh
+      - persist_to_workspace:
+          root: ../
+          paths:
+            - target/debug/libopenlineage_sql_java.dylib
+
+  build-integration-sql-java:
+    working_directory: ~/openlineage/integration/sql/iface-java
+    docker:
+      - image: cimg/openjdk:8.0
+    resource_class: medium
+    steps:
+      - *checkout_project_root
+      - attach_workspace:
+          at: ../
+      - run: bash script/build.sh
+      - store_artifacts:
+          path: ./build/libs
+          destination: sql-java-artifacts
+
+
   build-integration-sql-macos:
     working_directory: ~/openlineage/integration/sql
     macos:

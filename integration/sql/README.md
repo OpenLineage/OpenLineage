@@ -7,6 +7,7 @@ A library that extracts lineage from SQL statements.
 If you're using OpenLineage integration, there's good chance that you're already using this integration.
 
 This library is implemented in Rust and provides a Python and Java interface. The Rust implementation has not yet been published to Cargo.
+The interface is explained in INTERFACE.md.
 
 ## Installation
 
@@ -49,7 +50,7 @@ python -c "import openlineage_sql"
 To build the Java interface run the following script from the project root:
 
 ```bash
-./iface-java/scripts/build.sh
+./iface-java/script/build.sh
 ```
 
 This produces an `openlineage-sql.jar` in the `iface-java/target` directory.

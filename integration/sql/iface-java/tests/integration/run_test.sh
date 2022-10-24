@@ -1,8 +1,8 @@
 #!/bin/bash
 
 BASEDIR=$(dirname $BASH_SOURCE)
-ROOT=$BASEDIR/../..
-JAR=$ROOT/target/openlineage-sql-jar-with-dependencies.jar
+source $BASEDIR/../../gradle.properties
+JAR=build/libs/openlineage-sql-java-$version.jar
 
 rm -f $BASEDIR/*.class
 javac -cp $JAR $BASEDIR/TestParser.java

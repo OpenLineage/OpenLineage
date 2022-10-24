@@ -5,6 +5,6 @@
 
 BASEDIR=$(dirname $BASH_SOURCE)
 SRC=$BASEDIR/../src
-DEPENDENCIES=$BASEDIR/../target/dependency
-JAVA_SRC=$SRC/java/io/openlineage/sql
-javac -cp "$DEPENDENCIES/*" -h $SRC/jni $JAVA_SRC/*.java
+DEPENDENCIES=$BASEDIR/../build/dependencies
+JAVA_SRC=$SRC/main/java/io/openlineage/sql
+javac -cp "$DEPENDENCIES/*" -h $SRC/main/jni $JAVA_SRC/*.java
