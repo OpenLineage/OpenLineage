@@ -5,59 +5,52 @@
     "ColumnLineageDatasetFacet": {
       "allOf": [{
         "$ref": "https://openlineage.io/spec/1-0-2/OpenLineage.json#/$defs/DatasetFacet"
-      }, {
-        "type": "object",
-        "properties": {
-          "fields": {
-            "description": "Column level lineage that maps output fields into input fields used to evaluate them.",
-            "type": "object",
-            "additionalProperties": {
-              "type": "object",
-              "properties": {
-                "inputFields": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "namespace": {
-                        "type": "string",
-                        "description": "The input dataset namespace"
-                      },
-                      "name": {
-                        "type": "string",
-                        "description": "The input dataset name"
-                      },
-                      "field": {
-                        "type": "string",
-                        "description": "The input field"
-                      }
-                    },
-                    "additionalProperties": true,
-                    "required": [
-                      "namespace", "name", "field"
-                    ]
+      }],
+      "type": "object",
+      "properties": {
+        "fields": {
+          "description": "Column level lineage that maps output fields into input fields used to evaluate them.",
+          "type": "object",
+          "properties": {
+            "inputFields": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "namespace": {
+                    "type": "string",
+                    "description": "The input dataset namespace"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "The input dataset name"
+                  },
+                  "field": {
+                    "type": "string",
+                    "description": "The input field"
                   }
                 },
-                "transformationDescription": {
-                   "type": "string",
-                   "description": "a string representation of the transformation applied"
-                },
-                "transformationType": {
-                   "type": "string",
-                   "description": "IDENTITY|MASKED reflects a clearly defined behavior. IDENTITY: exact same as input; MASKED: no original data available (like a hash of PII for example)"
-                }
-              },
-              "additionalProperties": true,
-              "required": ["inputFields"]
-            }      
-          }    
-        },
-        "additionalProperties": true,
-        "required": [
-          "fields"
-        ]
-      }],
-      "type": "object"
+                "additionalProperties": true,
+                "required": [ "namespace", "name", "field" ]
+              }
+            },
+            "transformationDescription": {
+                "type": "string",
+                "description": "a string representation of the transformation applied"
+            },
+            "transformationType": {
+                "type": "string",
+                "description": "IDENTITY|MASKED reflects a clearly defined behavior. IDENTITY: exact same as input; MASKED: no original data available (like a hash of PII for example)"
+            }
+          },
+          "additionalProperties": true,
+          "required": ["inputFields"]
+        }    
+      },
+      "additionalProperties": true,
+      "required": [
+        "fields"
+      ]
     }
   },
   "type": "object",

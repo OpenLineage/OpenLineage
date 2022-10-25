@@ -194,6 +194,7 @@
           "description": "The common facets for this dataset",
           "type": "object",
           "allOf": [
+            { "$ref": "facets/ColumnLineageDatasetFacet.json" },
             { "$ref": "facets/DatasourceDatasetFacet.json" },
             { "$ref": "facets/DataQualityAssertionsDatasetFacet.json" },
             { "$ref": "facets/LifecycleStateChangeDatasetFacet.json" },
