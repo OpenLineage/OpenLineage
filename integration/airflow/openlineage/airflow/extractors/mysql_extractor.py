@@ -3,7 +3,7 @@
 from typing import List
 from urllib.parse import urlparse
 
-from openlineage.airflow.utils import get_connection_uri, try_import_from_string
+from openlineage.airflow.utils import try_import_from_string
 from openlineage.airflow.extractors.sql_extractor import SqlExtractor
 
 
@@ -27,9 +27,6 @@ class MySqlExtractor(SqlExtractor):
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
         return ["MySqlOperator"]
-
-    def _get_connection_uri(self):
-        return get_connection_uri(self.conn)
 
     def _get_scheme(self) -> str:
         return "mysql"

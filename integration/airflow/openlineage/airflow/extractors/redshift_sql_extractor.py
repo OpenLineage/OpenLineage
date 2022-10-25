@@ -9,6 +9,9 @@ if TYPE_CHECKING:
 
 
 class RedshiftSQLExtractor(PostgresExtractor):
+
+    _whitelist_query_params: List[str] = ["cluster_identifier", "region"]
+
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
         return ["RedshiftSQLOperator"]
