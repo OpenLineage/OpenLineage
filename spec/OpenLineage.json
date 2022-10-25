@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://openlineage.io/spec/1-0-3/OpenLineage.json",
+  "$id": "https://openlineage.io/spec/1-15-0/OpenLineage.json",
   "$defs": {
     "RunEvent": {
       "type": "object",
@@ -53,7 +53,7 @@
           "description": "The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version of the schema definition for this RunEvent",
           "type": "string",
           "format": "uri",
-          "example": "https://openlineage.io/spec/0-0-1/OpenLineage.json"
+          "example": "https://openlineage.io/spec/1-0-0/OpenLineage.json"
         }
       },
       "required": [
@@ -75,6 +75,12 @@
         "facets": {
           "description": "The run facets.",
           "type": "object",
+          "allOf": [
+            { "$ref": "facets/ErrorMessageRunFacet.json" },
+            { "$ref": "facets/ExternalQueryRunFacet.json" },
+            { "$ref": "facets/NominalTimeRunFacet.json" },
+            { "$ref": "facets/ParentRunFacet.json" }
+          ],
           "additionalProperties": {
             "$ref": "#/$defs/RunFacet"
           }
@@ -107,6 +113,13 @@
         "facets": {
           "description": "The job facets.",
           "type": "object",
+          "allOf": [
+            { "$ref": "facets/DocumentationJobFacet.json" },
+            { "$ref": "facets/OwnershipJobFacet.json" },
+            { "$ref": "facets/SourceCodeJobFacet.json" },
+            { "$ref": "facets/SourceCodeLocationJobFacet.json" },
+            { "$ref": "facets/SQLJobFacet.json" }
+          ],
           "additionalProperties": {
             "$ref": "#/$defs/JobFacet"
           }
@@ -128,52 +141,40 @@
       "description": "An input dataset",
       "type": "object",
       "allOf": [
-        { "$ref": "#/$defs/Dataset" },
-        {
-          "type": "object",
-          "properties": {
-            "inputFacets": {
-              "description": "The input facets for this dataset.",
-              "type": "object",
-              "additionalProperties": {
-                "$ref": "#/$defs/InputDatasetFacet"
-              }
-            }
-          }
-        }
-      ]
+        { "$ref": "#/$defs/Dataset" }
+      ],
+      "properties": {
+        "inputFacets": { "$ref": "#/$defs/InputDatasetFacet" }
+      }
     },
     "InputDatasetFacet": {
-      "description": "An Input Dataset Facet",
+      "description": "Input dataset specific facets",
       "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/DatasetFacet"
+      },
       "allOf": [
-        { "$ref": "#/$defs/BaseFacet" }
+        { "$ref": "facets/DataQualityMetricsInputDatasetFacet.json"}
       ]
     },
     "OutputDataset": {
       "description": "An output dataset",
       "type": "object",
       "allOf": [
-        { "$ref": "#/$defs/Dataset" },
-        {
-          "type": "object",
-          "properties": {
-            "outputFacets": {
-              "description": "The output facets for this dataset",
-              "type": "object",
-              "additionalProperties": {
-                "$ref": "#/$defs/OutputDatasetFacet"
-              }
-            }
-          }
-        }
-      ]
+        { "$ref": "#/$defs/Dataset" }
+      ],
+      "properties": {
+        "outputFacets": { "$ref": "#/$defs/OutputDatasetFacet" }
+      }
     },
     "OutputDatasetFacet": {
-      "description": "An Output Dataset Facet",
+      "description": "Output dataset specific facets",
       "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/DatasetFacet"
+      },
       "allOf": [
-        { "$ref": "#/$defs/BaseFacet" }
+        { "$ref": "facets/OutputStatisticsOutputDatasetFacet.json"}
       ]
     },
     "Dataset": {
@@ -190,8 +191,18 @@
           "example": "instance.schema.table"
         },
         "facets": {
-          "description": "The facets for this dataset",
+          "description": "The common facets for this dataset",
           "type": "object",
+          "allOf": [
+            { "$ref": "facets/DatasourceDatasetFacet.json" },
+            { "$ref": "facets/DataQualityAssertionsDatasetFacet.json" },
+            { "$ref": "facets/LifecycleStateChangeDatasetFacet.json" },
+            { "$ref": "facets/OwnershipDatasetFacet.json" },
+            { "$ref": "facets/SchemaDatasetFacet.json" },
+            { "$ref": "facets/StorageDatasetFacet.json" },
+            { "$ref": "facets/SymlinksDatasetFacet.json" },
+            { "$ref": "facets/DatasetVersionDatasetFacet.json" }
+          ],
           "additionalProperties": {
             "$ref": "#/$defs/DatasetFacet"
           }
@@ -223,7 +234,7 @@
           "description": "The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version of the schema definition for this facet",
           "type": "string",
           "format": "uri",
-          "example": "https://openlineage.io/spec/1-0-2/OpenLineage.json#/$defs/BaseFacet"
+          "example": "https://openlineage.io/spec/1-0-0/OpenLineage.json#/$defs/BaseFacet"
         }
       },
       "additionalProperties": true,

@@ -3,6 +3,7 @@
   "$id" : "https://openlineage.io/spec/facets/1-0-0/NominalTimeRunFacet.json",
   "$defs" : {
     "NominalTimeRunFacet" : {
+      "description": "The period of time of which an event is expected or known to happen. Example can be something that is scheduled to happen on a given time.",
       "allOf" : [ {
         "$ref" : "https://openlineage.io/spec/1-0-2/OpenLineage.json#/$defs/RunFacet"
       }, {

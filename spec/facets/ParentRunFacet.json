@@ -3,7 +3,7 @@
   "$id" : "https://openlineage.io/spec/facets/1-0-0/ParentRunFacet.json",
   "$defs" : {
     "ParentRunFacet" : {
-      "description" : "the id of the parent run and job, iff this run was spawn from an other run (for example, the Dag run scheduling its tasks)",
+      "description" : "The information of the parent run and job, if this run was spawn from an other run (for example, the Dag run scheduling its tasks)",
       "allOf" : [ {
         "$ref" : "https://openlineage.io/spec/1-0-2/OpenLineage.json#/$defs/RunFacet"
       }, {
