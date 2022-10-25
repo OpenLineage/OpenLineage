@@ -18,7 +18,7 @@ def generate_s3_dataset(path) -> Dataset:
 class SageMakerProcessingExtractor(BaseExtractor):
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
-        return ['SageMakerProcessingOperator']
+        return ['SageMakerProcessingOperator', 'SageMakerProcessingOperatorAsync']
 
     def extract(self) -> Optional[TaskMetadata]:
         pass
@@ -68,7 +68,7 @@ class SageMakerProcessingExtractor(BaseExtractor):
 class SageMakerTransformExtractor(BaseExtractor):
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
-        return ['SageMakerTransformOperator']
+        return ['SageMakerTransformOperator', 'SageMakerTransformOperatorAsync']
 
     def extract(self) -> Optional[TaskMetadata]:
         pass
@@ -134,7 +134,7 @@ class SageMakerTransformExtractor(BaseExtractor):
 class SageMakerTrainingExtractor(BaseExtractor):
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
-        return ['SageMakerTrainingOperator']
+        return ['SageMakerTrainingOperator', 'SageMakerTrainingOperatorAsync']
 
     def extract(self) -> Optional[TaskMetadata]:
         pass
