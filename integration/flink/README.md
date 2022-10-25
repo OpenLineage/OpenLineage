@@ -15,12 +15,12 @@ Maven:
 <dependency>
     <groupId>io.openlineage</groupId>
     <artifactId>openlineage-flink</artifactId>
-    <version>0.15.1</version>
+    <version>0.16.0</version>
 </dependency>
 ```
 
 or Gradle:
 
 ```groovy
-implementation 'io.openlineage:openlineage-flink:0.15.1'
+implementation 'io.openlineage:openlineage-flink:0.16.0'
 ```
