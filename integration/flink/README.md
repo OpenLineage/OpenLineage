@@ -1,6 +1,8 @@
 # OpenLineage Flink
 
-The OpenLineage Flink uses jvm instrumentation to emit OpenLineage metadata.
+The OpenLineage Flink uses JVM instrumentation to emit OpenLineage metadata.
+
+The integration is currently very limited: [more docs here](https://openlineage.io/docs/integrations/flink).
 
 ## Installation
 
@@ -13,16 +15,12 @@ Maven:
 <dependency>
     <groupId>io.openlineage</groupId>
     <artifactId>openlineage-flink</artifactId>
-    <version>0.12.0</version>
+    <version>0.16.0</version>
 </dependency>
 ```
 
 or Gradle:
 
 ```groovy
-implementation 'io.openlineage:openlineage-flink:0.12.0'
+implementation 'io.openlineage:openlineage-flink:0.16.0'
 ```
-
-## Getting started
-
-### Quickstart
