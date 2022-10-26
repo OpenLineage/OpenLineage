@@ -5,6 +5,7 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -119,6 +120,12 @@ class ColumnLevelLineageUtilsNonV2CatalogTest {
 
     assertColumnDependsOn(facet, "a", FILE, T1_EXPECTED_NAME, "a");
     assertColumnDependsOn(facet, "b", FILE, T1_EXPECTED_NAME, "b");
+  }
+
+  @Test
+  void testWhenSchemaIsNull() {
+    when(queryExecution.optimizedPlan()).thenReturn(mock(LogicalPlan.class));
+    assertDoesNotThrow(() -> ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, null));
   }
 
   private void assertColumnDependsOn(
