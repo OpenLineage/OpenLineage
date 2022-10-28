@@ -1,6 +1,5 @@
 # Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
-
 import attr
 from abc import ABC, abstractmethod
 
@@ -100,7 +99,13 @@ class DefaultExtractor(BaseExtractor):
         return []
 
     def extract(self) -> Optional[TaskMetadata]:
-        facets: OperatorLineage = self.operator.get_openlineage_facets()
+        return self._get_openlineage_facets(on_complete=False)
+
+    def extract_on_complete(self, task_instance) -> Optional[TaskMetadata]:
+        return self._get_openlineage_facets(on_complete=True)
+
+    def _get_openlineage_facets(self, on_complete: bool) -> Optional[TaskMetadata]:
+        facets: OperatorLineage = self.operator.get_openlineage_facets(on_complete=on_complete)
         return TaskMetadata(
             name=get_job_name(task=self.operator),
             inputs=facets.inputs,
