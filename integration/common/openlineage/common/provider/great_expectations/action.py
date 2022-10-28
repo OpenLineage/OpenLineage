@@ -185,7 +185,7 @@ class OpenLineageValidationAction(ValidationAction):
         else:
             return obj
 
-    def _fetch_datasets_from_pandas_source(self, data_asset: PandasDataset,
+    def _fetch_datasets_from_pandas_source(self, data_asset: Union[PandasDataset, Validator],
                                            validation_result_suite: ExpectationSuiteValidationResult) -> \
     List[OLDataset]:  # noqa
         """
@@ -194,15 +194,39 @@ class OpenLineageValidationAction(ValidationAction):
         :param validation_result_suite:
         :return:
         """
-        if data_asset.batch_kwargs.__contains__("path"):
-            path = data_asset.batch_kwargs.get("path")
+        if isinstance(data_asset, PandasDataset):
+            if data_asset.batch_kwargs.__contains__("path"):
+                path = data_asset.batch_kwargs.get("path")
+                if path.startswith("/"):
+                    path = "file://{}".format(path)
+                parsed_url = urlparse(path)
+                columns = [Field(
+                    name=col,
+                    type=str(data_asset[col].dtype) if data_asset[col].dtype is not None else 'UNKNOWN'
+                ) for col in data_asset.columns]
+                return [
+                    Dataset(
+                        source=self._source(parsed_url._replace(path='')),
+                        name=parsed_url.path,
+                        fields=columns,
+                        input_facets=self.results_facet(validation_result_suite)
+                    ).to_openlineage_dataset()
+                ]
+            return []
+        else:
+            batch = data_asset.active_batch
+            batch_data = batch.data
+            path = batch.batch_request.runtime_parameters.get('path', None) if \
+                batch.batch_request.runtime_parameters is not None else None
+            if path is None:
+                return []
             if path.startswith("/"):
                 path = "file://{}".format(path)
             parsed_url = urlparse(path)
             columns = [Field(
-                name=col,
-                type=str(data_asset[col].dtype) if data_asset[col].dtype is not None else 'UNKNOWN'
-            ) for col in data_asset.columns]
+                    name=col,
+                    type=str(data_asset[col].dtype) if data_asset[col].dtype is not None else 'UNKNOWN'
+                ) for col in batch_data.columns]
             return [
                 Dataset(
                     source=self._source(parsed_url._replace(path='')),
@@ -211,7 +235,6 @@ class OpenLineageValidationAction(ValidationAction):
                     input_facets=self.results_facet(validation_result_suite)
                 ).to_openlineage_dataset()
             ]
-        return []
 
     def _fetch_datasets_from_sql_source(self, data_asset: Union[SqlAlchemyDataset, Validator],
                                         validation_result_suite: ExpectationSuiteValidationResult) -> \
