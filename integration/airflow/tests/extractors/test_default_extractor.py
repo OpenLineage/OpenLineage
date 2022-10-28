@@ -4,11 +4,13 @@ from typing import Any
 
 from airflow.models import BaseOperator
 from airflow.operators.python import PythonOperator
+from unittest import mock
+import attr
 
 from openlineage.airflow.extractors import Extractors
 from openlineage.airflow.extractors.base import OperatorLineage, DefaultExtractor, TaskMetadata
 from openlineage.airflow.extractors.python_extractor import PythonExtractor
-from openlineage.client.facet import ParentRunFacet, SqlJobFacet
+from openlineage.client.facet import ParentRunFacet, SqlJobFacet, BaseFacet
 from openlineage.client.run import Dataset
 
 
@@ -22,17 +24,33 @@ RUN_FACETS = {
 JOB_FACETS = {"sql": SqlJobFacet(query="SELECT * FROM inputtable")}
 
 
+@attr.s
+class CompleteRunFacet(BaseFacet):
+    finished: bool = attr.ib(default=False)
+
+
+FINISHED_FACETS = {"complete": CompleteRunFacet(True)}
+
+
 class ExampleOperator(BaseOperator):
     def execute(self, context) -> Any:
         pass
 
-    def get_openlineage_facets(self) -> OperatorLineage:
-        return OperatorLineage(
-            inputs=INPUTS,
-            outputs=OUTPUTS,
-            run_facets=RUN_FACETS,
-            job_facets=JOB_FACETS
-        )
+    def get_openlineage_facets(self, on_complete) -> OperatorLineage:
+        if on_complete:
+            return OperatorLineage(
+                inputs=INPUTS,
+                outputs=OUTPUTS,
+                run_facets=RUN_FACETS,
+                job_facets=FINISHED_FACETS,
+            )
+        else:
+            return OperatorLineage(
+                inputs=INPUTS,
+                outputs=OUTPUTS,
+                run_facets=RUN_FACETS,
+                job_facets=JOB_FACETS,
+            )
 
 
 class BrokenOperator(BaseOperator):
@@ -48,12 +66,26 @@ def test_default_extraction():
 
     metadata = extractor(ExampleOperator(task_id="test")).extract()
 
+    task_instance = mock.MagicMock()
+
+    metadata_on_complete = extractor(
+        ExampleOperator(task_id="test")
+    ).extract_on_complete(task_instance=task_instance)
+
     assert metadata == TaskMetadata(
         name="adhoc_airflow.test",
         inputs=INPUTS,
         outputs=OUTPUTS,
         run_facets=RUN_FACETS,
         job_facets=JOB_FACETS
+    )
+
+    assert metadata_on_complete == TaskMetadata(
+        name="adhoc_airflow.test",
+        inputs=INPUTS,
+        outputs=OUTPUTS,
+        run_facets=RUN_FACETS,
+        job_facets=FINISHED_FACETS,
     )
 
 
