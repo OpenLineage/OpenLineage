@@ -104,6 +104,14 @@ public class SaveIntoDataSourceCommandVisitor
           outputDataset(), command.options(), command.schema());
     }
 
+    // TODO: check which command properties we need.
+    if (SnowflakeRelationVisitor.isSnowflakeSource(command.dataSource())) {
+      return SnowflakeRelationVisitor.createSnowflakeDatasets(
+          outputDataset(),
+          command.options(),
+          getSchema(command)); // command.schema() doesn't seem to contain the schema.
+    }
+
     StructType schema = getSchema(command);
     LifecycleStateChange lifecycleStateChange =
         (SaveMode.Overwrite == command.mode()) ? OVERWRITE : CREATE;

@@ -95,6 +95,7 @@ dependencies {
         exclude group: 'com.sun.jdmk'
         exclude group: 'javax.jms'
     }
+    compileOnly "net.snowflake:spark-snowflake_${versions.scala}:2.11.0-spark_3.3" // TODO: Check - here and in shared gradle file
 
     testFixturesApi "org.apache.spark:spark-core_${versions.scala}:${sparkVersion}"
     testFixturesApi "org.apache.spark:spark-sql_${versions.scala}:${sparkVersion}"
