@@ -8,6 +8,7 @@ from airflow.models import Connection
 from airflow.utils.dates import days_ago
 from airflow import DAG
 from airflow.utils.session import create_session
+from urllib.parse import urlparse, parse_qs
 
 from openlineage.airflow.utils import get_connection
 from openlineage.common.models import DbTableSchema, DbColumn
@@ -213,6 +214,28 @@ def test_extract_authority_uri(get_connection, mock_get_table_schemas):
     assert task_metadata.name == f"{DAG_ID}.{TASK_ID}"
     assert task_metadata.inputs == expected_inputs
     assert task_metadata.outputs == []
+
+
+def test_get_connection_filter_qs_params_with_boolean_in_conn():
+    conn = Connection(
+        conn_type="redshift",
+        extra={
+            "iam": True,
+            "cluster_identifier": "redshift-cluster-name",
+            "region": "region",
+            "aws_secret_access_key": "AKIAIOSFODNN7EXAMPLE",
+            "aws_access_key_id": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+        }
+    )
+    uri = RedshiftSQLExtractor.get_connection_uri(conn)
+    parsed = urlparse(uri)
+    qs_dict = parse_qs(parsed.query)
+    assert not any([k in qs_dict.keys()
+                   for k in ['aws_secret_access_key',
+                             'aws_access_key_id']])
+    assert all(k in qs_dict.keys()
+               for k in ['cluster_identifier',
+                         'region'])
 
 
 def test_get_connection_import_returns_none_if_not_exists():

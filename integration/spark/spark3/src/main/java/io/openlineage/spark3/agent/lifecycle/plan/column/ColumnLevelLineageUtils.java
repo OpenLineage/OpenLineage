@@ -21,7 +21,8 @@ public class ColumnLevelLineageUtils {
   public static Optional<OpenLineage.ColumnLineageDatasetFacet> buildColumnLineageDatasetFacet(
       OpenLineageContext context, OpenLineage.SchemaDatasetFacet schemaFacet) {
     if (!context.getQueryExecution().isPresent()
-        || context.getQueryExecution().get().optimizedPlan() == null) {
+        || context.getQueryExecution().get().optimizedPlan() == null
+        || schemaFacet == null) {
       return Optional.empty();
     }
 

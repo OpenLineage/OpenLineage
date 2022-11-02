@@ -3,13 +3,9 @@
 
 extern crate core;
 
-use openlineage_sql::{parse_sql, SqlMeta};
+use openlineage_sql::parse_sql;
 use sqlparser::dialect::SnowflakeDialect;
 use std::sync::Arc;
-
-#[macro_use]
-mod test_utils;
-use test_utils::*;
 
 #[test]
 fn parse_copy_from() {
@@ -48,7 +44,8 @@ fn parse_copy_from() {
             Arc::new(SnowflakeDialect {}),
             None
         )
-        .unwrap_err(),
+        .unwrap_err()
+        .to_string(),
         "sql parser error: Expected FROM or TO, found: SCHEMA"
     )
 }

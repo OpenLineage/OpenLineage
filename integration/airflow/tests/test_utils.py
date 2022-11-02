@@ -3,19 +3,16 @@
 
 import os
 import json
-from urllib.parse import parse_qs, urlparse
 
 import pendulum
 import datetime
-from airflow.models import Connection, DAG as AIRFLOW_DAG
+from airflow.models import DAG as AIRFLOW_DAG
 from airflow.operators.dummy import DummyOperator
 from pkg_resources import parse_version
 
 from openlineage.airflow.utils import (
     url_to_https,
     get_location,
-    get_connection_uri,
-    get_normalized_postgres_connection_uri,
     get_connection,
     to_json_encodable,
     DagUtils,
@@ -33,26 +30,6 @@ AIRFLOW_CONN_URI = 'postgres://localhost:5432/testdb'
 SNOWFLAKE_CONN_URI = 'snowflake://12345.us-east-1.snowflakecomputing.com/MyTestRole?extra__snowflake__account=12345&extra__snowflake__database=TEST_DB&extra__snowflake__insecure_mode=false&extra__snowflake__region=us-east-1&extra__snowflake__role=MyTestRole&extra__snowflake__warehouse=TEST_WH&extra__snowflake__aws_access_key_id=123456&extra__snowflake__aws_secret_access_key=abcdefg'  # NOQA
 
 
-def test_get_connection_uri():
-    conn = Connection(
-        conn_id=AIRFLOW_CONN_ID,
-        uri=AIRFLOW_CONN_URI
-    )
-    assert get_connection_uri(conn) == AIRFLOW_CONN_URI
-
-
-def test_get_connection_from_uri():
-    conn = Connection()
-    conn.parse_from_uri(uri=AIRFLOW_CONN_URI)
-    assert get_normalized_postgres_connection_uri(conn) == AIRFLOW_CONN_URI
-
-
-def test_get_normalized_postgres_connection_uri():
-    conn = Connection()
-    conn.parse_from_uri(uri="postgresql://localhost:5432/testdb")
-    assert get_normalized_postgres_connection_uri(conn) == AIRFLOW_CONN_URI
-
-
 def test_get_connection():
     os.environ['AIRFLOW_CONN_DEFAULT'] = AIRFLOW_CONN_URI
 
@@ -61,46 +38,6 @@ def test_get_connection():
     assert conn.port == 5432
     assert conn.conn_type == 'postgres'
     assert conn
-
-
-def test_get_connection_filter_qs_params():
-    conn = Connection(conn_id='snowflake', uri=SNOWFLAKE_CONN_URI)
-    uri = get_connection_uri(conn)
-    parsed = urlparse(uri)
-    qs_dict = parse_qs(parsed.query)
-    assert not any(k in qs_dict.keys()
-                   for k in ['extra__snowflake__insecure_mode',
-                             'extra__snowflake__region',
-                             'extra__snowflake__role',
-                             'extra__snowflake__aws_access_key_id',
-                             'extra__snowflake__aws_secret_access_key'])
-    assert all(k in qs_dict.keys()
-               for k in ['extra__snowflake__account',
-                         'extra__snowflake__database',
-                         'extra__snowflake__warehouse'])
-
-
-def test_get_connection_filter_qs_params_with_boolean_in_conn():
-    conn = Connection(
-        conn_type="redshift",
-        extra={
-            "iam": True,
-            "cluster_identifier": "redshift-cluster-name",
-            "region": "region",
-            "aws_secret_access_key": "AKIAIOSFODNN7EXAMPLE",
-            "aws_access_key_id": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
-        }
-    )
-    uri = get_connection_uri(conn)
-    parsed = urlparse(uri)
-    qs_dict = parse_qs(parsed.query)
-    assert not any(k in qs_dict.keys()
-                   for k in ['aws_secret_access_key',
-                             'aws_access_key_id'])
-    assert all(k in qs_dict.keys()
-               for k in ['iam',
-                         'cluster_identifier',
-                         'region'])
 
 
 def test_get_location_no_file_path():

@@ -1,7 +1,6 @@
-use openlineage_sql::{
-    get_dialect, get_generic_dialect, parse_multiple_statements, parse_sql, DbTableMeta, SqlMeta,
-};
-use sqlparser::dialect::PostgreSqlDialect;
+#![allow(dead_code)]
+
+use openlineage_sql::{get_dialect, parse_multiple_statements, parse_sql, DbTableMeta, SqlMeta};
 
 pub fn test_sql(sql: &str) -> SqlMeta {
     test_sql_dialect(sql, "postgres")

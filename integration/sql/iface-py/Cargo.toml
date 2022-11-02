@@ -1,0 +1,25 @@
+[package]
+name = "openlineage_sql_python"
+description = "Python interface for the Rust OpenLineage lineage extraction library"
+version = "0.16.0"
+edition = "2021"
+authors = ["Maciej Obuchowski <obuchowski.maciej@gmail.com>"]
+keywords = ["sql", "lineage", "openlineage", "python"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "openlineage_sql"
+crate-type = ["cdylib"]
+
+[dependencies]
+openlineage_sql = {path = "../impl"}
+anyhow = {workspace = true}
+pyo3 = {version = "0.16.4", features = ["extension-module", "abi3", "abi3-py37", "anyhow"]}
+sqlparser = {git = "https://github.com/mobuchowski/sqlparser-rs", branch = "sqlp-release"}
+
+[build-dependencies]
+pyo3-build-config = {version = "0.16.4"}
+
+[features]
+extension-module = ["pyo3/extension-module"]
+default = ["extension-module"]

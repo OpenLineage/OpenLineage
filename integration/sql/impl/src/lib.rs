@@ -3,15 +3,12 @@
 
 mod bigquery;
 
-use std::collections::hash_map::DefaultHasher;
 use std::collections::HashSet;
-use std::hash::{Hash, Hasher};
+use std::hash::Hash;
 use std::sync::Arc;
 
+use anyhow::{anyhow, Result};
 pub use bigquery::BigQueryDialect;
-use pyo3::basic::CompareOp;
-use pyo3::exceptions::{PyRuntimeError, PyTypeError};
-use pyo3::prelude::*;
 use sqlparser::ast::{
     Expr, Ident, Query, Select, SelectItem, SetExpr, Statement, TableAlias, TableFactor, With,
 };
@@ -22,25 +19,22 @@ use sqlparser::dialect::{
 use sqlparser::parser::Parser;
 
 pub trait CanonicalDialect: Dialect {
-    fn canonical_name(&self, name: String) -> Option<String>;
+    fn canonical_name<'a, 'b>(&'a self, name: &'b str) -> Option<&'b str>;
     fn as_base(&self) -> &dyn Dialect;
 }
 
 impl<T: Dialect> CanonicalDialect for T {
-    fn canonical_name(&self, name: String) -> Option<String> {
-        match name.chars().next() {
-            Some(x) => {
-                if self.is_delimited_identifier_start(x) {
-                    let mut chars = name.chars();
-                    chars.next();
-                    chars.next_back();
-                    Some(chars.as_str().to_string())
-                } else {
-                    Some(name)
-                }
+    fn canonical_name<'a, 'b>(&'a self, name: &'b str) -> Option<&'b str> {
+        name.chars().next().map(|x| {
+            if self.is_delimited_identifier_start(x) {
+                let mut chars = name.chars();
+                chars.next();
+                chars.next_back();
+                chars.as_str()
+            } else {
+                name
             }
-            _ => None,
-        }
+        })
     }
     fn as_base(&self) -> &dyn Dialect {
         self
@@ -86,12 +80,12 @@ impl Context {
         }
     }
 
-    fn new(dialect: Arc<dyn CanonicalDialect>, default_schema: Option<&str>) -> Context {
+    fn new(dialect: Arc<dyn CanonicalDialect>, default_schema: Option<String>) -> Context {
         Context {
             aliases: HashSet::new(),
             inputs: HashSet::new(),
             outputs: HashSet::new(),
-            default_schema: default_schema.map(String::from),
+            default_schema,
             dialect,
         }
     }
@@ -106,132 +100,81 @@ impl Context {
         self.aliases.insert(name);
     }
 
-    fn add_input(&mut self, table: &String) {
-        let name = DbTableMeta::new(table.clone(), self);
+    fn add_input(&mut self, table: String) {
+        let name = DbTableMeta::new(table, self);
         if !self.aliases.contains(&name) {
             self.inputs.insert(name);
         }
     }
 
-    fn add_output(&mut self, output: &String) {
-        let name = DbTableMeta::new(output.clone(), self);
+    fn add_output(&mut self, output: String) {
+        let name = DbTableMeta::new(output, self);
         if !self.aliases.contains(&name) {
             self.outputs.insert(name);
         }
     }
 }
 
-#[pyclass]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct DbTableMeta {
-    #[pyo3(get)]
-    database: Option<String>,
-    #[pyo3(get)]
-    schema: Option<String>,
-    #[pyo3(get)]
-    name: String,
+    pub database: Option<String>,
+    pub schema: Option<String>,
+    pub name: String,
     // ..columns
 }
 
 impl DbTableMeta {
-    fn new(name: String, context: &mut Context) -> Self {
+    fn new(name: String, context: &Context) -> Self {
         let mut split = name
             .split('.')
-            .map(|x| {
-                context
-                    .dialect
-                    .canonical_name(String::from(x))
-                    .unwrap_or(String::from(x))
-            })
-            .collect::<Vec<String>>();
+            .map(|x| context.dialect.canonical_name(x).unwrap_or(x))
+            .collect::<Vec<&str>>();
         split.reverse();
-        let table_name = match split.get(0) {
-            Some(x) => x,
-            None => &name,
-        };
+        let table_name: &str = split.first().unwrap_or(&name.as_str());
         DbTableMeta {
-            database: split.get(2).cloned(),
-            schema: split.get(1).cloned().or(context.default_schema.clone()),
-            name: table_name.clone(),
+            database: split.get(2).map(ToString::to_string),
+            schema: split
+                .get(1)
+                .map(ToString::to_string)
+                .or_else(|| context.default_schema.clone()),
+            name: table_name.to_string(),
         }
+    }
+
+    pub fn new_default_context(name: String) -> Self {
+        Self::new(name, &Context::default())
     }
 }
 
-#[pymethods]
 impl DbTableMeta {
-    #[new]
     pub fn py_new(name: String) -> Self {
-        DbTableMeta::new(name, &mut Context::default())
+        DbTableMeta::new(name, &Context::default())
     }
 
-    #[getter(qualified_name)]
     pub fn qualified_name(&self) -> String {
         format!(
             "{}{}{}",
             self.database
                 .as_ref()
                 .map(|x| format!("{}.", x))
-                .unwrap_or("".to_string()),
+                .unwrap_or_else(|| "".to_string()),
             self.schema
                 .as_ref()
                 .map(|x| format!("{}.", x))
-                .unwrap_or("".to_string()),
+                .unwrap_or_else(|| "".to_string()),
             self.name
         )
     }
-
-    fn __richcmp__(&self, other: &Self, op: CompareOp) -> PyResult<bool> {
-        match op {
-            CompareOp::Eq => Ok(self.qualified_name() == other.qualified_name()),
-            CompareOp::Ne => Ok(self.qualified_name() != other.qualified_name()),
-            _ => Err(PyTypeError::new_err(format!(
-                "can't use operator {op:?} on DbTableMeta"
-            ))),
-        }
-    }
-
-    fn __repr__(&self) -> String {
-        self.qualified_name()
-    }
-
-    fn __str__(&self) -> String {
-        self.__repr__()
-    }
-
-    fn __hash__(&self) -> isize {
-        let mut hasher = DefaultHasher::new();
-        self.hash(&mut hasher);
-        hasher.finish() as isize
-    }
 }
 
-#[pyclass]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SqlMeta {
-    #[pyo3(get)]
     pub in_tables: Vec<DbTableMeta>,
-    #[pyo3(get)]
     pub out_tables: Vec<DbTableMeta>,
 }
 
-#[pymethods]
 impl SqlMeta {
-    fn __repr__(&self) -> String {
-        format!(
-            "{{\"in_tables\": {:?}, \"out_tables\": {:?} }}",
-            self.in_tables, self.out_tables
-        )
-    }
-
-    fn __str__(&self) -> String {
-        self.__repr__()
-    }
-}
-
-impl SqlMeta {
-    fn new(inputs: Vec<DbTableMeta>, outputs: Vec<DbTableMeta>) -> Self {
-        let mut inputs: Vec<DbTableMeta> = inputs.clone();
-        let mut outputs: Vec<DbTableMeta> = outputs.clone();
+    fn new(mut inputs: Vec<DbTableMeta>, mut outputs: Vec<DbTableMeta>) -> Self {
         inputs.sort();
         outputs.sort();
         SqlMeta {
@@ -241,7 +184,7 @@ impl SqlMeta {
     }
 }
 
-fn parse_with(with: &With, context: &mut Context) -> Result<(), String> {
+fn parse_with(with: &With, context: &mut Context) -> Result<()> {
     for cte in &with.cte_tables {
         context.add_table_alias(&cte.alias);
         parse_query(&cte.query, context)?;
@@ -249,10 +192,10 @@ fn parse_with(with: &With, context: &mut Context) -> Result<(), String> {
     Ok(())
 }
 
-fn parse_table_factor(table: &TableFactor, context: &mut Context) -> Result<(), String> {
+fn parse_table_factor(table: &TableFactor, context: &mut Context) -> Result<()> {
     match table {
         TableFactor::Table { name, .. } => {
-            context.add_input(&name.to_string());
+            context.add_input(name.to_string());
             Ok(())
         }
         TableFactor::Derived {
@@ -266,17 +209,17 @@ fn parse_table_factor(table: &TableFactor, context: &mut Context) -> Result<(), 
             }
             Ok(())
         }
-        _ => Err(format!(
+        _ => Err(anyhow!(
             "TableFactor other than table or subquery not implemented: {table}"
         )),
     }
 }
 
-fn get_table_name_from_table_factor(table: &TableFactor) -> Result<String, String> {
+fn get_table_name_from_table_factor(table: &TableFactor) -> Result<String> {
     if let TableFactor::Table { name, .. } = table {
         Ok(name.to_string())
     } else {
-        Err(format!(
+        Err(anyhow!(
             "Name can be got only from simple table, got {table}"
         ))
     }
@@ -284,7 +227,7 @@ fn get_table_name_from_table_factor(table: &TableFactor) -> Result<String, Strin
 
 /// Process expression in case where we want to extract lineage (for eg. in subqueries)
 /// This means most enum types are untouched, where in other contexts they'd be processed.
-fn parse_expr(expr: &Expr, context: &mut Context) -> Result<(), String> {
+fn parse_expr(expr: &Expr, context: &mut Context) -> Result<()> {
     match expr {
         Expr::Subquery(query) => {
             parse_query(query, context)?;
@@ -318,22 +261,22 @@ fn parse_expr(expr: &Expr, context: &mut Context) -> Result<(), String> {
     Ok(())
 }
 
-fn parse_select(select: &Select, context: &mut Context) -> Result<(), String> {
+fn parse_select(select: &Select, context: &mut Context) -> Result<()> {
     for projection in &select.projection {
         match projection {
             SelectItem::UnnamedExpr(expr) => {
-                parse_expr(&expr, context)?;
+                parse_expr(expr, context)?;
             }
             SelectItem::ExprWithAlias { expr, alias } => {
-                parse_expr(&expr, context)?;
-                context.add_ident_alias(&alias);
+                parse_expr(expr, context)?;
+                context.add_ident_alias(alias);
             }
             _ => {}
         }
     }
 
     if let Some(into) = &select.into {
-        context.add_output(&into.name.to_string())
+        context.add_output(into.name.to_string())
     }
 
     for table in &select.from {
@@ -345,7 +288,7 @@ fn parse_select(select: &Select, context: &mut Context) -> Result<(), String> {
     Ok(())
 }
 
-fn parse_setexpr(setexpr: &SetExpr, context: &mut Context) -> Result<(), String> {
+fn parse_setexpr(setexpr: &SetExpr, context: &mut Context) -> Result<()> {
     match setexpr {
         SetExpr::Select(select) => parse_select(select, context)?,
         SetExpr::Values(_) => (),
@@ -364,7 +307,7 @@ fn parse_setexpr(setexpr: &SetExpr, context: &mut Context) -> Result<(), String>
     Ok(())
 }
 
-fn parse_query(query: &Query, context: &mut Context) -> Result<(), String> {
+fn parse_query(query: &Query, context: &mut Context) -> Result<()> {
     match &query.with {
         Some(with) => parse_with(with, context)?,
         None => (),
@@ -374,7 +317,7 @@ fn parse_query(query: &Query, context: &mut Context) -> Result<(), String> {
     Ok(())
 }
 
-fn parse_stmt(stmt: &Statement, context: &mut Context) -> Result<(), String> {
+fn parse_stmt(stmt: &Statement, context: &mut Context) -> Result<()> {
     match stmt {
         Statement::Query(query) => {
             parse_query(query, context)?;
@@ -384,12 +327,12 @@ fn parse_stmt(stmt: &Statement, context: &mut Context) -> Result<(), String> {
             table_name, source, ..
         } => {
             parse_query(source, context)?;
-            context.add_output(&table_name.to_string());
+            context.add_output(table_name.to_string());
             Ok(())
         }
         Statement::Merge { table, source, .. } => {
             let table_name = get_table_name_from_table_factor(table)?;
-            context.add_output(&table_name);
+            context.add_output(table_name);
             parse_table_factor(source, context)?;
             Ok(())
         }
@@ -404,13 +347,13 @@ fn parse_stmt(stmt: &Statement, context: &mut Context) -> Result<(), String> {
                 parse_query(boxed_query.as_ref(), context)?;
             }
             if let Some(like_table) = like {
-                context.add_input(&like_table.to_string());
+                context.add_input(like_table.to_string());
             }
             if let Some(clone) = clone {
-                context.add_input(&clone.to_string());
+                context.add_input(clone.to_string());
             }
 
-            context.add_output(&name.to_string());
+            context.add_output(name.to_string());
             Ok(())
         }
         Statement::Update {
@@ -420,7 +363,7 @@ fn parse_stmt(stmt: &Statement, context: &mut Context) -> Result<(), String> {
             selection,
         } => {
             let name = get_table_name_from_table_factor(&table.relation)?;
-            context.add_output(&name);
+            context.add_output(name);
 
             if let Some(src) = from {
                 parse_table_factor(&src.relation, context)?;
@@ -439,7 +382,7 @@ fn parse_stmt(stmt: &Statement, context: &mut Context) -> Result<(), String> {
             selection,
         } => {
             let table_name = get_table_name_from_table_factor(table_name)?;
-            context.add_output(&table_name.to_string());
+            context.add_output(table_name);
 
             if let Some(using) = using {
                 parse_table_factor(using, context)?;
@@ -482,23 +425,20 @@ pub fn get_generic_dialect(name: Option<&str>) -> Arc<dyn CanonicalDialect> {
 pub fn parse_multiple_statements(
     sql: Vec<&str>,
     dialect: Arc<dyn CanonicalDialect>,
-    default_schema: Option<&str>,
-) -> Result<SqlMeta, String> {
+    default_schema: Option<String>,
+) -> Result<SqlMeta> {
     let mut inputs: HashSet<DbTableMeta> = HashSet::new();
     let mut outputs: HashSet<DbTableMeta> = HashSet::new();
 
     for statement in sql {
-        let ast = match Parser::parse_sql(dialect.as_base(), statement) {
-            Ok(k) => k,
-            Err(e) => return Err(e.to_string()),
-        };
+        let ast = Parser::parse_sql(dialect.as_base(), statement)?;
 
         if ast.is_empty() {
-            return Err(String::from("Empty statement list"));
+            return Err(anyhow!("Empty statement list"));
         }
 
         for stmt in ast {
-            let mut context = Context::new(dialect.clone(), default_schema);
+            let mut context = Context::new(dialect.clone(), default_schema.clone());
             parse_stmt(&stmt, &mut context)?;
             for input in context.inputs.iter() {
                 inputs.insert(input.clone());
@@ -517,33 +457,9 @@ pub fn parse_multiple_statements(
 pub fn parse_sql(
     sql: &str,
     dialect: Arc<dyn CanonicalDialect>,
-    default_schema: Option<&str>,
-) -> Result<SqlMeta, String> {
+    default_schema: Option<String>,
+) -> Result<SqlMeta> {
     parse_multiple_statements(vec![sql], dialect, default_schema)
-}
-
-// Parses SQL.
-#[pyfunction]
-fn parse(sql: Vec<&str>, dialect: Option<&str>, default_schema: Option<&str>) -> PyResult<SqlMeta> {
-    match parse_multiple_statements(sql, get_generic_dialect(dialect), default_schema) {
-        Ok(ok) => Ok(ok),
-        Err(err) => Err(PyRuntimeError::new_err(err)),
-    }
-}
-
-#[pyfunction]
-fn provider() -> String {
-    "rust".to_string()
-}
-
-/// A Python module implemented in Rust.
-#[pymodule]
-fn openlineage_sql(_py: Python, m: &PyModule) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(parse, m)?)?;
-    m.add_function(wrap_pyfunction!(provider, m)?)?;
-    m.add_class::<SqlMeta>()?;
-    m.add_class::<DbTableMeta>()?;
-    Ok(())
 }
 
 #[cfg(test)]

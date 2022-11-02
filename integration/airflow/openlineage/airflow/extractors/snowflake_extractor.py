@@ -4,7 +4,6 @@ from typing import List, Dict
 
 from openlineage.airflow.extractors.dbapi_utils import execute_query_on_hook
 from openlineage.airflow.extractors.sql_extractor import SqlExtractor
-from openlineage.airflow.utils import get_connection_uri  # noqa
 from openlineage.client.facet import BaseFacet, ExternalQueryRunFacet
 
 
@@ -20,6 +19,12 @@ class SnowflakeExtractor(SqlExtractor):
     ]
     _is_information_schema_cross_db = True
     _is_uppercase_names = True
+
+    # extra prefix should be deprecated soon in Airflow
+    _whitelist_query_params: List[str] = ["warehouse", "account", "database", "region"] + [
+        "extra__snowflake__" + el
+        for el in ["warehouse", "account", "database", "region"]
+    ]
 
     @property
     def dialect(self):
@@ -60,9 +65,6 @@ class SnowflakeExtractor(SqlExtractor):
 
     def _get_scheme(self):
         return "snowflake"
-
-    def _get_connection_uri(self):
-        return get_connection_uri(self.conn)
 
     def _get_db_specific_run_facets(self, source, *_) -> Dict[str, BaseFacet]:
         query_ids = self._get_query_ids()

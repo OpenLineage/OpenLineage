@@ -304,31 +304,25 @@ jobs:
             - ~/.gradle
 
   unit-test-integration-common:
-    parameters:
-      install_parser:
-        type: boolean
     working_directory: ~/openlineage/integration/common
     docker:
       - image: cimg/python:3.7
     steps:
       - *checkout_project_root
-      - *install_python_client
-      - when:
-          condition: << parameters.install_parser >>
-          steps:
-            - attach_workspace:
-                  at: .
-            - run: pip install target/wheels/*.whl
-            - run: pip install -e .[dev]
-      - when:
-          condition:
-            not: << parameters.install_parser >>
-          steps:
-            - run: pip install -e .[dev_no_parser]
-      - run: flake8
-      - run: python -m mypy --ignore-missing-imports openlineage
-      - run: pytest --cov=openlineage tests/
+      - attach_workspace:
+          at: .
+      - run: pip install tox
+      - restore_cache:
+          keys:
+            - v1-toxenv-common-{{ .Branch }}-{{ checksum "setup.cfg" }}-{{ checksum "setup.py" }}
+      - run: tox -p all
       - run: bash <(curl -s https://codecov.io/bash)
+      - store_test_results:
+          path: test-results
+      - save_cache:
+          paths:
+            - ./.tox
+          key: v1-toxenv-common-{{ .Branch }}-{{ checksum "setup.cfg" }}-{{ checksum "setup.py" }}
 
   build-integration-common:
     working_directory: ~/openlineage/integration/common
@@ -358,9 +352,9 @@ jobs:
     resource_class: << parameters.resource_class >>
     steps:
       - *checkout_project_root
-      - run: docker run -it -v $PWD:/code << parameters.image >> bash -c 'cd /code; RUN_TESTS=<<parameters.run_tests>> bash script/build.sh'
+      - run: docker run -it -v $PWD:/code << parameters.image >> bash -c 'cd /code; RUN_TESTS=<<parameters.run_tests>> bash iface-py/script/build.sh'
       - persist_to_workspace:
-          root: .
+          root: ./iface-py
           paths:
             - ./target/wheels/*.whl
       - when:
@@ -368,11 +362,11 @@ jobs:
             equal: [ "quay.io/pypa/manylinux2014_x86_64", << parameters.image >> ]
           steps:
             - persist_to_workspace:
-                root: .
+                root: ./iface-py
                 paths:
-                  - ./target/wheels/*.tar.gz
+                  - target/wheels/*.tar.gz
       - store_artifacts:
-          path: ./target/wheels
+          path: ./iface-py/target/wheels
           destination: sql-artifacts
 
   build-integration-sql-macos:
@@ -382,13 +376,13 @@ jobs:
     resource_class: medium
     steps:
       - *checkout_project_root
-      - run: RUN_TESTS=true bash script/build-macos.sh
+      - run: RUN_TESTS=true bash iface-py/script/build-macos.sh
       - persist_to_workspace:
-          root: .
+          root: ./iface-py
           paths:
-            - ./target/wheels/*.whl
+            - target/wheels/*.whl
       - store_artifacts:
-          path: ./target/wheels
+          path: ./iface-py/target/wheels
           destination: sql-artifacts-macos
 
   build-integration-dbt:
@@ -600,7 +594,7 @@ jobs:
           at: .
       - run: pip install wheel twine
       - run: mkdir -p target/wheels && cp target/wheels/* dist/
-      - run: python -m twine upload --non-interactive --verbose -u $ARTIFACTORY_USERNAME -p $ARTIFACTORY_PASSWORD --repository-url https://datakin.jfrog.io/artifactory/api/pypi/pypi-public-libs-release dist/*
+      - run: python -m twine upload --non-interactive --verbose -u $ARTIFACTORY_USERNAME -p $ARTIFACTORY_PASSWORD --repository-url https://astronomer.jfrog.io/artifactory/api/pypi/pypi-public-libs-release dist/*
 
   release-python:
     working_directory: ~/openlineage
