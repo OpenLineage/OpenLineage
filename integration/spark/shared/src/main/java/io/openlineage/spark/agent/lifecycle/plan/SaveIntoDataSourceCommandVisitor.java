@@ -104,12 +104,13 @@ public class SaveIntoDataSourceCommandVisitor
           outputDataset(), command.options(), command.schema());
     }
 
-    // TODO: check which command properties we need.
+    // Similar to Kafka, Snowflake also has some special handling. So we use the method
+    // below for extracting the dataset from Snowflake write operations.
     if (SnowflakeRelationVisitor.isSnowflakeSource(command.dataSource())) {
       return SnowflakeRelationVisitor.createSnowflakeDatasets(
-          outputDataset(),
-          command.options(),
-          getSchema(command)); // command.schema() doesn't seem to contain the schema.
+          outputDataset(), command.options(), getSchema(command));
+      // command.schema() doesn't seem to contain the schema when tested with Azure Snowflake,
+      // so we use the helper to extract it from the logical plan.
     }
 
     StructType schema = getSchema(command);

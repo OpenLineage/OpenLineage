@@ -48,8 +48,7 @@ public class SnowflakeRelationVisitor<D extends OpenLineage.Dataset>
     this.factory = factory;
   }
 
-  protected boolean isSnowflakeClass(
-      LogicalPlan plan) { // Q: should we be able to use the actual SnowflakeRelation here?
+  protected boolean isSnowflakeClass(LogicalPlan plan) {
     try {
       Class c = Thread.currentThread().getContextClassLoader().loadClass(SNOWFLAKE_CLASS_NAME);
       return (plan instanceof LogicalRelation
@@ -135,18 +134,6 @@ public class SnowflakeRelationVisitor<D extends OpenLineage.Dataset>
 
     Map<String, String> javaOptions =
         io.openlineage.spark.agent.util.ScalaConversionUtils.fromMap(options);
-
-    // for (Map.Entry<String, String> entry : javaOptions.entrySet()) {
-    //   String k = entry.getKey();
-    //   String v = entry.getValue();
-    //   log.info("k: {}, v: {}", k, v);
-    // }
-
-    // String[] schemaFields = schema.fieldNames();
-    // log.info("num schema fields: {}", schemaFields.length);
-    // for (String f : schemaFields) {
-    //   log.info("field: {}", f);
-    // }
 
     String name = javaOptions.get("dbtable");
     if (name == null) {
