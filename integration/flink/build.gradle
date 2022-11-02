@@ -60,7 +60,7 @@ ext {
     assertjVersion = '3.20.2'
     junit5Version = '5.7.2'
     lombokVersion = '1.18.20'
-    mockitoVersion = '3.11.2'
+    mockitoVersion = '4.8.1'
     testcontainersVersion = '1.15.3'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
 }
