@@ -100,7 +100,15 @@ class Extractors:
         name = clazz.__name__
         if name in self.extractors:
             return self.extractors[name]
-        if hasattr(clazz, "get_openlineage_facets") and callable(clazz.get_openlineage_facets):
+
+        def method_exists(method_name):
+            method = getattr(clazz, method_name, None)
+            if method:
+                return callable(method)
+
+        if method_exists("get_openlineage_facets_on_start") or method_exists(
+            "get_openlineage_facets_on_complete"
+        ):
             return self.default_extractor
         return None
 
