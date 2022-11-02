@@ -45,7 +45,8 @@ if [[ -z ${RUN_TESTS} ]]; then
 fi
 
 # Build release wheels
-python -m maturin build --universal2 --out target/wheels
+cd iface-py
+maturin build --universal2 --out target/wheels
 
 echo "Package build, trying to import"
 echo "Platform:"
