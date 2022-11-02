@@ -56,7 +56,7 @@ dependencies {
         exclude module: 'log4j'
     }
 
-    testRuntimeOnly "org.junit.jupiter:junit-jupiter:5.8.2"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter:5.9.1"
     testCompileOnly 'org.codehaus.groovy:groovy-all:3.0.8'
     testImplementation 'org.spockframework:spock-core:2.0-groovy-3.0'
     testImplementation 'org.awaitility:awaitility:4.1.1'
