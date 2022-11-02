@@ -31,21 +31,21 @@ class ExampleOperator(BaseOperator):
     def execute(self, context) -> Any:
         pass
 
-    def get_openlineage_facets(self, on_complete: bool) -> OperatorLineage:
-        if on_complete:
-            return OperatorLineage(
-                inputs=INPUTS,
-                outputs=OUTPUTS,
-                run_facets=RUN_FACETS,
-                job_facets={"complete": CompleteRunFacet(True)},
-            )
-        else:
-            return OperatorLineage(
-                inputs=INPUTS,
-                outputs=OUTPUTS,
-                run_facets=RUN_FACETS,
-                job_facets=JOB_FACETS,
-            )
+    def get_openlineage_facets_on_start(self) -> OperatorLineage:
+        return OperatorLineage(
+            inputs=INPUTS,
+            outputs=OUTPUTS,
+            run_facets=RUN_FACETS,
+            job_facets=JOB_FACETS,
+        )
+
+    def get_openlineage_facets_on_complete(self) -> OperatorLineage:
+        return OperatorLineage(
+            inputs=INPUTS,
+            outputs=OUTPUTS,
+            run_facets=RUN_FACETS,
+            job_facets={"complete": CompleteRunFacet(True)},
+        )
 
 
 default_args = {
