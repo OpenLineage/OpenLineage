@@ -10,6 +10,8 @@ labelPRBasedOnFilePath:
     - client/python/**/*
   common:
     - integration/common/**/*
+  dev/ops:
+    - dev/**/*
   documentation:
     - doc/*
     - "*.md"
