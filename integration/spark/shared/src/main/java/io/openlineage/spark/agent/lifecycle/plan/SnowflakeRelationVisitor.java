@@ -117,9 +117,10 @@ public class SnowflakeRelationVisitor<D extends OpenLineage.Dataset>
     }
 
     url = url.replace("https://", "");
-    String namespace = String.format("%s%s/%s/%s", SNOWFLAKE_PREFIX, url, sfDatabase, sfSchema);
+    String name = String.format("%s.%s.%s", sfDatabase, sfSchema, tableName);
+    String namespace = String.format("%s%s", SNOWFLAKE_PREFIX, url);
 
-    output = Collections.singletonList(factory.getDataset(tableName, namespace, relation.schema()));
+    output = Collections.singletonList(factory.getDataset(name, namespace, relation.schema()));
 
     return output;
   }
@@ -135,9 +136,9 @@ public class SnowflakeRelationVisitor<D extends OpenLineage.Dataset>
     Map<String, String> javaOptions =
         io.openlineage.spark.agent.util.ScalaConversionUtils.fromMap(options);
 
-    String name = javaOptions.get("dbtable");
-    if (name == null) {
-      name = "COMPLEX";
+    String tableName = javaOptions.get("dbtable");
+    if (tableName == null) {
+      tableName = "COMPLEX";
     }
 
     String sfSchema = javaOptions.get("sfschema");
@@ -145,7 +146,8 @@ public class SnowflakeRelationVisitor<D extends OpenLineage.Dataset>
     String sfDatabase = javaOptions.get("sfdatabase");
 
     sfUrl = sfUrl.replace("https://", "");
-    String namespace = String.format("%s%s/%s/%s", SNOWFLAKE_PREFIX, sfUrl, sfDatabase, sfSchema);
+    String name = String.format("%s.%s.%s", sfDatabase, sfSchema, tableName);
+    String namespace = String.format("%s%s", SNOWFLAKE_PREFIX, sfUrl);
 
     output = Collections.singletonList(datasetFactory.getDataset(name, namespace, schema));
     return output;
