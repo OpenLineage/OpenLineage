@@ -64,7 +64,7 @@ dependencies {
     def flinkVersion = project.getProperty('flink.version')
     def flinkVersionShort = flinkVersion.substring(0,4)
     def flinkVersionWithScala212 = flinkVersion.contains('1.14') ? "_2.12:$flinkVersion" : ":$flinkVersion"
-    def hadoopVersion = '3.3.1'
+    def hadoopVersion = '3.3.4'
     implementation("io.openlineage:openlineage-java:$project.version")
     implementation "org.apache.flink:flink-java:$flinkVersion"
     implementation "org.apache.flink:flink-streaming-java$flinkVersionWithScala212"
