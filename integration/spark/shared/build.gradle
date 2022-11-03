@@ -62,7 +62,7 @@ dependencies {
         exclude group: 'com.fasterxml.jackson.core'
         exclude group: 'com.fasterxml.jackson.module'
     }
-    compileOnly "net.snowflake:spark-snowflake_2.12:2.11.0-spark_3.3" // TODO: Check - here and in app gradle file
+    compileOnly "net.snowflake:spark-snowflake_2.12:2.11.0-spark_3.3"
 
     compileOnly "org.apache.spark:spark-hive_2.11:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql-kafka-0-10_2.11:${sparkVersion}"
