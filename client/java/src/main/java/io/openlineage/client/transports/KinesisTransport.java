@@ -47,8 +47,10 @@ public class KinesisTransport extends Transport {
     KinesisProducerConfiguration config =
         KinesisProducerConfiguration.fromProperties(kinesisConfig.getProperties());
     config.setRegion(this.region);
-    roleArn.ifPresent(s -> config.setCredentialsProvider(
-            new STSAssumeRoleSessionCredentialsProvider.Builder(s, "OLProducer").build()));
+    roleArn.ifPresent(
+        s ->
+            config.setCredentialsProvider(
+                new STSAssumeRoleSessionCredentialsProvider.Builder(s, "OLProducer").build()));
 
     this.producer = new KinesisProducer(config);
     this.listeningExecutor = Executors.newSingleThreadExecutor();
