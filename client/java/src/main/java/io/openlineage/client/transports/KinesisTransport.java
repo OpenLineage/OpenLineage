@@ -40,7 +40,7 @@ public class KinesisTransport extends Transport {
 
   public KinesisTransport(@NonNull final KinesisConfig kinesisConfig) {
     super(Type.KINESIS);
-    this.streaName = kinesisConfig.getStreamName();
+    this.streamName = kinesisConfig.getStreamName();
     this.region = kinesisConfig.getRegion();
     this.roleArn = kinesisConfig.getRoleArn();
 

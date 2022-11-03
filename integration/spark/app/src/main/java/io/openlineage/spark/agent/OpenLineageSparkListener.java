@@ -323,10 +323,10 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       return ArgumentParser.parse(url.get());
     } else if (transportType.isPresent()) {
       // go and check the specific transport type setting
-      String mode = transportType.get();
+      String mode = transportType.get().toLowerCase();
       Optional<TransportConfig> transportConfig = Optional.empty();
       switch (mode) {
-        case "Kinesis":
+        case "kinesis":
           Map<String, String> config =
               findSparkConfigKeysStartsWith(conf, "spark.openlineage.transport.kinesis.");
           KinesisConfig kinesisConfig = new KinesisConfig();
