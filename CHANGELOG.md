@@ -1,7 +1,7 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.16.0...HEAD)
-## [0.16.0](https://github.com/OpenLineage/OpenLineage/compare/0.15.1...0.16.0) - 2022-11-1
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.16.1...HEAD)
+## [0.16.1](https://github.com/OpenLineage/OpenLineage/compare/0.15.1...0.16.1) - 2022-11-3
 ### Added
 * Airflow: add `dag_run` information to Airflow version run facet [`#1133`](https://github.com/OpenLineage/OpenLineage/pull/1133) [@fm100](https://github.com/fm100)  
     *Adds the Airflow DAG run ID to the `taskInfo` facet, making this additional information available to the integration.*
