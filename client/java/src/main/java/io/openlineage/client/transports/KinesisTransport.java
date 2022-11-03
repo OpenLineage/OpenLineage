@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.client.transports;
 
 import com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider;
@@ -77,7 +82,8 @@ public class KinesisTransport extends Transport {
           @Override
           public void onFailure(Throwable t) {
             log.error("Failed to send to Kinesis lineage event: {}", eventAsJson, t);
-          };
+          }
+          ;
         };
 
     Futures.addCallback(future, callback, this.listeningExecutor);
