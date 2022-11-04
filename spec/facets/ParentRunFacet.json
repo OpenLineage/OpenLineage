@@ -1,6 +1,6 @@
 {
   "$schema" : "https://json-schema.org/draft/2020-12/schema",
-  "$id" : "https://openlineage.io/spec/facets/1-0-0/ParentRunFacet.json",
+  "$id" : "https://openlineage.io/spec/facets/1-0-1/ParentRunFacet.json",
   "$defs" : {
     "ParentRunFacet" : {
       "description" : "The information of the parent run and job, if this run was spawn from an other run (for example, the Dag run scheduling its tasks)",

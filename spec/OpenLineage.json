@@ -75,15 +75,15 @@
         "facets": {
           "description": "The run facets.",
           "type": "object",
-          "allOf": [
+          "anyOf": [
             { "$ref": "facets/ErrorMessageRunFacet.json" },
             { "$ref": "facets/ExternalQueryRunFacet.json" },
             { "$ref": "facets/NominalTimeRunFacet.json" },
             { "$ref": "facets/ParentRunFacet.json" }
           ],
-          "additionalProperties": {
-            "$ref": "#/$defs/RunFacet"
-          }
+          "allOf": [
+            { "$ref": "#/$defs/RunFacet" }
+          ]
         }
       },
       "required": [
@@ -113,16 +113,16 @@
         "facets": {
           "description": "The job facets.",
           "type": "object",
-          "allOf": [
+          "anyOf": [
             { "$ref": "facets/DocumentationJobFacet.json" },
             { "$ref": "facets/OwnershipJobFacet.json" },
             { "$ref": "facets/SourceCodeJobFacet.json" },
             { "$ref": "facets/SourceCodeLocationJobFacet.json" },
             { "$ref": "facets/SQLJobFacet.json" }
           ],
-          "additionalProperties": {
+          "allOf": [{
             "$ref": "#/$defs/JobFacet"
-          }
+          }]
         }
       },
       "required": [
@@ -150,10 +150,10 @@
     "InputDatasetFacet": {
       "description": "Input dataset specific facets",
       "type": "object",
-      "additionalProperties": {
+      "allOf": [{
         "$ref": "#/$defs/DatasetFacet"
-      },
-      "allOf": [
+      }],
+      "anyOf": [
         { "$ref": "facets/DataQualityMetricsInputDatasetFacet.json"}
       ]
     },
@@ -173,7 +173,7 @@
       "additionalProperties": {
         "$ref": "#/$defs/DatasetFacet"
       },
-      "allOf": [
+      "anyOf": [
         { "$ref": "facets/OutputStatisticsOutputDatasetFacet.json"}
       ]
     },
@@ -193,7 +193,7 @@
         "facets": {
           "description": "The common facets for this dataset",
           "type": "object",
-          "allOf": [
+          "anyOf": [
             { "$ref": "facets/ColumnLineageDatasetFacet.json" },
             { "$ref": "facets/DatasourceDatasetFacet.json" },
             { "$ref": "facets/DataQualityAssertionsDatasetFacet.json" },
@@ -204,9 +204,9 @@
             { "$ref": "facets/SymlinksDatasetFacet.json" },
             { "$ref": "facets/DatasetVersionDatasetFacet.json" }
           ],
-          "additionalProperties": {
+          "allOf": [{
             "$ref": "#/$defs/DatasetFacet"
-          }
+          }]
         }
       },
       "required": [

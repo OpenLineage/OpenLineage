@@ -179,10 +179,14 @@ public class TypeResolver {
         @Override
         public ResolvedType visit(RefType refType) {
           String absolutePointer = refType.getPointer();
+          System.out.println(">> absolutePointer: " + absolutePointer);
           int anchorIndex = absolutePointer.indexOf('#');
           String pointer = absolutePointer.substring(anchorIndex + 1);
           String base = absolutePointer.substring(0, anchorIndex);
           String typeName = titleCase(lastPart(pointer));
+
+          System.out.println(":" + pointer + ":" + base + ":" + typeName);
+
           final String refContainer;
           if (anchorIndex > 0) {
             String file = base.substring(base.lastIndexOf('/') + 1);

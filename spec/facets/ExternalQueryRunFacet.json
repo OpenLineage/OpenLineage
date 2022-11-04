@@ -1,6 +1,6 @@
 {
   "$schema" : "https://json-schema.org/draft/2020-12/schema",
-  "$id" : "https://openlineage.io/spec/facets/1-0-0/ExternalQueryRunFacet.json",
+  "$id" : "https://openlineage.io/spec/facets/1-0-1/ExternalQueryRunFacet.json",
   "$defs" : {
     "ExternalQueryRunFacet" : {
       "description" : "The facet that contains information about externally run query",
