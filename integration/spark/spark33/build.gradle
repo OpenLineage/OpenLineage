@@ -41,7 +41,7 @@ archivesBaseName='openlineage-spark-spark3'
 
 ext {
     sparkVersion = '3.3.1'
-    jacksonVersion = '2.10.0'
+    jacksonVersion = '2.13.4'
     lombokVersion = '1.18.20'
 }
 
