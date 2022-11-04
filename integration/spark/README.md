@@ -10,14 +10,14 @@ Maven:
 <dependency>
     <groupId>io.openlineage</groupId>
     <artifactId>openlineage-spark</artifactId>
-    <version>0.15.1</version>
+    <version>0.16.1</version>
 </dependency>
 ```
 
 or Gradle:
 
 ```groovy
-implementation 'io.openlineage:openlineage-spark:0.15.1'
+implementation 'io.openlineage:openlineage-spark:0.16.1'
 ```
 
 ## Getting started
@@ -50,7 +50,7 @@ from pyspark.sql import SparkSession
 
 spark = (SparkSession.builder.master('local')
          .appName('sample_spark')
-         .config('spark.jars.packages', 'io.openlineage:openlineage-spark:0.15.1')
+         .config('spark.jars.packages', 'io.openlineage:openlineage-spark:0.16.1')
          .config('spark.extraListeners', 'io.openlineage.spark.agent.OpenLineageSparkListener')
          .config('spark.openlineage.url', 'http://{openlineage.client.host}/api/v1/namespaces/spark_integration/')
          .getOrCreate())
@@ -66,7 +66,7 @@ container):
 ```python
 from pyspark.sql import SparkSession
 
-file = "/home/jovyan/openlineage/libs/openlineage-spark-0.15.1.jar"
+file = "/home/jovyan/openlineage/libs/openlineage-spark-0.16.1.jar"
 
 spark = (SparkSession.builder.master('local').appName('rdd_to_dataframe')
              .config('spark.jars', file)
@@ -91,6 +91,7 @@ also defined in configuration or not.
 #### Config entries
 
 The following parameters can be specified in the Spark configuration
+
 | Parameter | Definition | Example |
 ------------|------------|---------
 | spark.openlineage.host | The hostname of the OpenLineage API server where events should be reported | http://localhost:5000 |
@@ -103,6 +104,18 @@ The following parameters can be specified in the Spark configuration
 | spark.openlineage.appName | Custom value overwriting Spark app name in events | AppName |
 | spark.openlineage.url.param.xyz | A url parameter (replace xyz) and value to be included in requests to the OpenLineage API server | abcdefghijk |
 | spark.openlineage.consoleTransport | Events will be emitted to a console, no additional backend is required | true |
+| spark.openlineage.transport.type | The transport type used for event emit, currently only support 'kinesis' | kinesis |
+
+##### Kinesis Transport
+If using `spark.openlineage.transport.type` as `kinesis`, then below parameters would be read and used when building KinesisProducer.
+Also, KinesisTransport depends on you to provide artifact `com.amazonaws:amazon-kinesis-producer:0.14.0` or compatible on your classpath.
+
+| Parameter | Definition | Example |
+------------|------------|---------
+| spark.openlineage.transport.kinesis.streamName | Required, the streamName of the Kinesis Stream | some-stream-name |
+| spark.openlineage.transport.kinesis.region | Required, the region of the stream | us-east-2 |
+| spark.openlineage.transport.kinesis.roleArn | Optional, the roleArn which is allowd to read/write to Kinesis stream | some-role-arn |
+| spark.openlineage.transport.kinesis.[xxx] | Optional, the [xxx] is property of [Kinesis allowd properties](https://github.com/awslabs/amazon-kinesis-producer/blob/master/java/amazon-kinesis-producer-sample/default_config.properties) | 1 |
 
 #### Url
 

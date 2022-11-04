@@ -5,6 +5,7 @@
 
 package io.openlineage.spark.agent;
 
+import io.openlineage.client.transports.TransportConfig;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -43,6 +44,9 @@ public class ArgumentParser {
   @Builder.Default private Optional<String> appName = Optional.empty();
   @Builder.Default private Optional<Map<String, String>> urlParams = Optional.empty();
   @Builder.Default private boolean consoleMode = false;
+
+  @Builder.Default private Optional<TransportConfig> transportConfig = Optional.empty();
+  @Builder.Default private Optional<String> transportMode = Optional.empty();
 
   public static ArgumentParser parse(String clientUrl) {
     URI uri = URI.create(clientUrl);

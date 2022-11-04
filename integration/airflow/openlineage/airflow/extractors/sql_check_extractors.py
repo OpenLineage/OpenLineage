@@ -1,13 +1,16 @@
 # Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, Optional, Dict
+from typing import Any, List, Optional, Dict
+from collections import defaultdict
 
 from openlineage.airflow.extractors.base import TaskMetadata
 from openlineage.client.facet import BaseFacet
-from openlineage.airflow.utils import (
-    build_column_check_facets,
-    build_table_check_facets
+from openlineage.client.facet import (
+    DataQualityMetricsInputDatasetFacet,
+    ColumnMetric,
+    DataQualityAssertionsDatasetFacet,
+    Assertion
 )
 
 
@@ -78,8 +81,68 @@ def get_check_extractors(super_):
             return ['SQLColumnCheckOperator', 'BigQueryColumnCheckOperator']
 
         def _get_input_facets(self) -> Dict[str, BaseFacet]:
-            column_mapping = self.operator.column_mapping
-            return build_column_check_facets(column_mapping)
+            """
+            Function should expect the column_mapping to take the following form:
+            {
+                'col_name': {
+                    'null_check': {
+                        'pass_value': 0,
+                        'result': 0,
+                        'success': True
+                    },
+                    'min': {
+                        'pass_value': 5,
+                        'tolerance': 0.2,
+                        'result': 1,
+                        'success': False
+                    }
+                }
+            }
+            """
+            def map_facet_name(check_name) -> str:
+                if "null" in check_name:
+                    return "nullCount"
+                elif "distinct" in check_name:
+                    return "distinctCount"
+                elif "sum" in check_name:
+                    return "sum"
+                elif "count" in check_name:
+                    return "count"
+                elif "min" in check_name:
+                    return "min"
+                elif "max" in check_name:
+                    return "max"
+                elif "quantiles" in check_name:
+                    return "quantiles"
+                return ""
+
+            facet_data: Dict[str, Any] = {"columnMetrics": defaultdict(dict)}
+            assertion_data: Dict[str, List[Assertion]] = {"assertions": []}
+            for col_name, checks in self.operator.column_mapping.items():
+                col_name = col_name.upper() if self._is_uppercase_names else col_name
+                for check, check_values in checks.items():
+                    facet_key = map_facet_name(check)
+                    facet_data["columnMetrics"][col_name][facet_key] = check_values.get("result")
+
+                    assertion_data["assertions"].append(
+                        Assertion(
+                            assertion=check,
+                            success=check_values.get("success"),
+                            column=col_name
+                        )
+                    )
+                facet_data["columnMetrics"][col_name] = ColumnMetric(
+                    **facet_data["columnMetrics"][col_name]
+                )
+
+            data_quality_facet = DataQualityMetricsInputDatasetFacet(**facet_data)
+            data_quality_assertions_facet = DataQualityAssertionsDatasetFacet(**assertion_data)
+
+            return {
+                "dataQuality": data_quality_facet,
+                "dataQualityMetrics": data_quality_facet,
+                "dataQualityAssertions": data_quality_assertions_facet
+            }
 
     class SqlTableCheckExtractor(BaseSqlCheckExtractor):
         def __init__(self, operator):
@@ -90,8 +153,38 @@ def get_check_extractors(super_):
             return ['SQLTableCheckOperator', 'BigQueryTableCheckOperator']
 
         def _get_input_facets(self) -> Dict[str, BaseFacet]:
-            checks = self.operator.checks
-            return build_table_check_facets(checks)
+            """
+            Function should expect to take the checks in the following form:
+            {
+                'row_count_check': {
+                    'pass_value': 100,
+                    'tolerance': .05,
+                    'result': 101,
+                    'success': True
+                }
+            }
+            """
+            facet_data = {}
+            assertion_data: Dict[str, List[Assertion]] = {"assertions": []}
+            for check, check_values in self.operator.checks.items():
+                assertion_data["assertions"].append(
+                    Assertion(
+                        assertion=check,
+                        success=check_values.get("success"),
+                    )
+                )
+            facet_data["rowCount"] = self.operator.checks.get(
+                "row_count_check", {}).get("result", None)
+            facet_data["bytes"] = self.operator.checks.get("bytes", {}).get("result", None)
+
+            data_quality_facet = DataQualityMetricsInputDatasetFacet(**facet_data)
+            data_quality_assertions_facet = DataQualityAssertionsDatasetFacet(**assertion_data)
+
+            return {
+                "dataQuality": data_quality_facet,
+                "dataQualityMetrics": data_quality_facet,
+                "dataQualityAssertions": data_quality_assertions_facet
+            }
 
     return [
         SqlCheckExtractor,

@@ -64,6 +64,13 @@ ext {
     versions = versionsMap[shortVersion]
 }
 
+configurations.all { // https://github.com/apache/spark/pull/38355 - can be remove for Spark 3.3.2
+    resolutionStrategy {
+        // https://github.com/FasterXML/jackson-databind/issues/3627
+        force "com.fasterxml.jackson:jackson-bom:$jacksonVersion"
+    }
+}
+
 dependencies {
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"

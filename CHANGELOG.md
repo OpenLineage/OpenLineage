@@ -1,7 +1,43 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.15.1...HEAD)
-* Removed support for Airflow 1.10 [`#1128`](https://github.com/OpenLineage/OpenLineage/pull/1128) [@mobuchowski](https://github.com/mobuchowski)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.16.1...HEAD)
+### Added
+* Support latest Spark 3.3.1 [`#1183`](https://github.com/OpenLineage/OpenLineage/pull/1183) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+
+## [0.16.1](https://github.com/OpenLineage/OpenLineage/compare/0.15.1...0.16.1) - 2022-11-3
+### Added
+* Airflow: add `dag_run` information to Airflow version run facet [`#1133`](https://github.com/OpenLineage/OpenLineage/pull/1133) [@fm100](https://github.com/fm100)  
+    *Adds the Airflow DAG run ID to the `taskInfo` facet, making this additional information available to the integration.*
+* Airflow: add `LoggingMixin` to extractors [`#1149`](https://github.com/OpenLineage/OpenLineage/pull/1149) [@JDarDagran](https://github.com/JDarDagran)  
+    *Adds a `LoggingMixin` class to the custom extractor to make the output consistent with general Airflow and OpenLineage logging settings.*
+* Airflow: add default extractor [`#1162`](https://github.com/OpenLineage/OpenLineage/pull/1162) [@mobuchowski](https://github.com/mobuchowski)  
+    *Adds a `DefaultExtractor` to support the default implementation of OpenLineage for external operators without the need for custom extractors.*
+* Airflow: add `on_complete` argument in `DefaultExtractor` [`#1188`](https://github.com/OpenLineage/OpenLineage/pull/1188) [@JDarDagran](https://github.com/JDarDagran)  
+    *Adds support for running another method on `extract_on_complete`.*
+* SQL: reorganize the library into multiple packages [`#1167`](https://github.com/OpenLineage/OpenLineage/pull/1167) [@StarostaGit](https://github.com/StarostaGit) [@mobuchowski](https://github.com/mobuchowski)   
+    *Splits the SQL library into a Rust implementation and foreign language bindings, easing the process of adding language interfaces. Also contains CI fix.*
+
+### Changed
+* Airflow: move `get_connection_uri` as extractor's classmethod [`#1169`](https://github.com/OpenLineage/OpenLineage/pull/1169) [@JDarDagran](https://github.com/JDarDagran)  
+    *The `get_connection_uri` method allowed for too many params, resulting in unnecessarily long URIs. This changes the logic to whitelisting per extractor.*
+* Airflow: change `get_openlineage_facets_on_start/complete` behavior [`#1201`](https://github.com/OpenLineage/OpenLineage/pull/1201) [@JDarDagran](https://github.com/JDarDagran)  
+    *Splits up the method for greater legibility and easier maintenance.*
+
+### Fixed
+* Airflow: always send SQL in `SqlJobFacet` as a string [`#1143`](https://github.com/OpenLineage/OpenLineage/pull/1143) [@mobuchowski](https://github.com/mobuchowski)  
+    *Changes the data type of `query` from array to string to an fix error in the `RedshiftSQLOperator`.* 
+* Airflow: include `__extra__` case when filtering URI query params [`#1144`](https://github.com/OpenLineage/OpenLineage/pull/1144) [@JDarDagran](https://github.com/JDarDagran)  
+    *Includes the `conn.EXTRA_KEY` in the `get_connection_uri` method to avoid exposing secrets in URIs via the `__extra__` key.*  
+* Airflow: enforce column casing in `SQLCheckExtractor`s [`#1159`](https://github.com/OpenLineage/OpenLineage/pull/1159) [@denimalpaca](https://github.com/denimalpaca)  
+    *Uses the parent extractor's `_is_uppercase_names` property to determine if the column should be upper cased in the `SQLColumnCheckExtractor`'s `_get_input_facets()` method.*
+* Spark: prevent exception when no schema provided [`#1180`](https://github.com/OpenLineage/OpenLineage/pull/1180) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Prevents evalution of column lineage when the `schemFacet` is `null`.*
+* Great Expectations: add V3 API compatibility [`#1194`](https://github.com/OpenLineage/OpenLineage/pull/1194) [@denimalpaca](https://github.com/denimalpaca)  
+    *Fixes the Pandas datasource to make it V3 API-compatible.*
+
+### Removed
+* Airflow: remove support for Airflow 1.10 [`#1128`](https://github.com/OpenLineage/OpenLineage/pull/1128) [@mobuchowski](https://github.com/mobuchowski)  
+    *Removes the code structures and tests enabling support for Airflow 1.10.*
 
 ## [0.15.1](https://github.com/OpenLineage/OpenLineage/compare/0.14.1...0.15.1) - 2022-10-05
 ### Added
