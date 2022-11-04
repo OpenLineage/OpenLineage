@@ -11,6 +11,7 @@ import io.openlineage.client.OpenLineageClientException;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.transports.ConsoleTransport;
 import io.openlineage.client.transports.HttpTransport;
+import io.openlineage.client.transports.TransportFactory;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Map;
@@ -39,6 +40,16 @@ public class EventEmitter {
     if (argument.isConsoleMode()) {
       this.client = new OpenLineageClient(new ConsoleTransport());
       log.info("Init OpenLineageContext: will output events to console");
+      return;
+    }
+
+    if (argument.getTransportConfig().isPresent()) {
+      this.client =
+          new OpenLineageClient(new TransportFactory(argument.getTransportConfig().get()).build());
+      log.info(
+          String.format(
+              "Init OpenLineageContext: use %s as transport, with config %s",
+              argument.getTransportMode().get(), argument.getTransportConfig().get()));
       return;
     }
 

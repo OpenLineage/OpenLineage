@@ -43,9 +43,12 @@ public final class TransportFactory {
       }
       kafkaConfig.getProperties().put("server.id", kafkaConfig.getLocalServerId());
       return new KafkaTransport(kafkaConfig);
+    } else if (transportConfig instanceof KinesisConfig) {
+      final KinesisConfig config = (KinesisConfig) transportConfig;
+      return new KinesisTransport(config);
     } else {
       throw new IllegalArgumentException(
-          "Transport must be of type 'Console', 'HTTP', or 'Kafka'.");
+          "Transport must be of type 'Console', 'HTTP', 'Kafka' or 'Kinesis'.");
     }
   }
 }
