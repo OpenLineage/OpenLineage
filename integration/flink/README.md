@@ -1,8 +1,8 @@
 # OpenLineage Flink
 
-The OpenLineage Flink uses JVM instrumentation to emit OpenLineage metadata.
+The OpenLineage Flink integration uses JVM instrumentation to emit OpenLineage metadata.
 
-The integration is currently very limited: [more docs here](https://openlineage.io/docs/integrations/flink).
+The integration is currently very limited. See [more docs here](https://openlineage.io/docs/integrations/flink).
 
 ## Installation
 
