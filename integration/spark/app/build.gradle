@@ -57,10 +57,10 @@ ext {
     testcontainersVersion = '1.15.3'
     shortVersion = sparkVersion.substring(0,3)
     versionsMap = [
-            "3.3": ["module": "spark33",    "scala": "2.12", "delta": "NA"],
-            "3.2": ["module": "spark32",    "scala": "2.12", "delta": "1.1.0"],
-            "3.1": ["module": "spark3",     "scala": "2.12", "delta": "1.0.0"],
-            "2.4": ["module": "spark2",     "scala": "2.11", "delta": "NA"]
+            "3.3": ["module": "spark33",    "scala": "2.12", "delta": "NA", "snowflake": "2.11.0-spark_3.3"],
+            "3.2": ["module": "spark32",    "scala": "2.12", "delta": "1.1.0", "snowflake": "2.11.0-spark_3.2"],
+            "3.1": ["module": "spark3",     "scala": "2.12", "delta": "1.0.0", "snowflake": "2.11.0-spark_3.1"],
+            "2.4": ["module": "spark2",     "scala": "2.11", "delta": "NA", "snowflake": "2.9.3-spark_2.4"]
     ]
     versions = versionsMap[shortVersion]
 }
