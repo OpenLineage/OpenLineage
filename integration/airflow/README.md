@@ -229,11 +229,11 @@ You can also skip using `tox` and run `pytest` on your own dev environment.
 The integration tests require the use of _docker compose_. There are scripts prepared to make build images and run tests easier.
 
 ```bash
-$ AIRFLOW_IMAGE=<name-of-airflow-image> ./tests/integration/docker/up-2.sh
+$ AIRFLOW_IMAGE=<name-of-airflow-image> ./tests/integration/docker/up.sh
 ```
 
 ```bash
-$ AIRFLOW_IMAGE=apache/airflow:2.3.1-python3.7 ./tests/integration/docker/up-2.sh
+$ AIRFLOW_IMAGE=apache/airflow:2.3.1-python3.7 ./tests/integration/docker/up.sh
 ```
 
 When using `run-dev-airflow.sh`, you can add the `-i` flag or `--attach-integration` flag to run integration tests in a dev environment.
