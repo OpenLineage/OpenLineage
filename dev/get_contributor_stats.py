@@ -31,10 +31,11 @@ option_github_token = click.option(
 
 class ContributorStats:
 
-    def __init__(self, repo: Repository, org: Organization, team: Team):
+    def __init__(self, repo: Repository, org: Organization, team: Team, sort: str):
         self.repo = repo
         self.org = org
         self.team = team
+        self.sort = sort
         self.rows = []
         self.logins = {}
         self.committer_prs = []
@@ -81,10 +82,37 @@ class ContributorStats:
 
     def sort_key(self, row):
         """provides key for sorting contributors by total commits during period"""
-        return row[8]
+        if self.sort == 'commits-this-period':
+            return row[8]
+        elif self.sort == 'PRs':
+            return row[9]
+        elif self.sort == 'all-time-commits':
+            return row[5]
+        elif self.sort == 'all-time-additions':
+            return row[3]
+        elif self.sort == 'additions-this-period':
+            return row[6]
+        elif self.sort == 'deletions-this-period':
+            return row[7]
+        elif self.sort == 'all-time-deletions':
+            return row[4]
 
     def sort_contributors(self):
         """sorts contributors using key"""
+        if self.sort == 'commits-this-period':
+            console.print('Sorting by commits this period...', style='green')
+        elif self.sort == 'PRs':
+            console.print('Sorting by PRs this period...', style='green')
+        elif self.sort == 'all-time-commits':
+            console.print('Sorting by all-time commits...', style='green')
+        elif self.sort == 'all-time-additions':
+            console.print('Sorting by all-time additions...', style='green')
+        elif self.sort == 'additions-this-period':
+            console.print('Sorting by additions this period...', style='green')
+        elif self.sort == 'deletions-this-period':
+            console.print('Sorting by deletions this period...', style='green')
+        elif self.sort == 'all-time-deletions':
+            console.print('Sorting by all-time deletions...', style='green')
         self.rows = sorted(self.rows, key=self.sort_key)
 
     def get_pulls(self, date_start, date_end):
@@ -286,6 +314,15 @@ DEFAULT_END_OF_MONTH=DEFAULT_BEGINNING_OF_MONTH + relativedelta(months=+1)
     help="Search org for committer team name", 
     default=str("committers")
 )
+@click.option(
+    '--sort',
+    help=
+    """
+    Sort options: PRs, commits-this-period, all-time-commits, all-time-additions, 
+    additions-this-period, deletions-this-period, all-time-deletions
+    """,
+    default=str("PRs")
+)
 
 def main(
     github_token: str,
@@ -294,7 +331,8 @@ def main(
     verbose: bool,
     repo: str,
     org: str,
-    team: str
+    team: str,
+    sort: str
 ):    
     with console.status('Working...', spinner='line'):    
         console.print(
@@ -305,11 +343,11 @@ def main(
         repo = g.get_repo(repo)
         org = g.get_organization(org)
         if repo:
-            stats = ContributorStats(repo=repo, org=org, team=team)
+            stats = ContributorStats(repo=repo, org=org, team=team, sort=sort)
             stats.get_stats(date_start=date_start, date_end=date_end)
-            stats.sort_contributors()
             stats.get_pulls(date_start=date_start, date_end=date_end)
             stats.add_pulls()
+            stats.sort_contributors()
             stats.collect_committers()
             stats.compare_committers()
             if verbose:
