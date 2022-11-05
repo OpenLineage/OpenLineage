@@ -64,4 +64,8 @@ class ConfigTest {
       return Collections.singletonList(this.path);
     }
   }
+
+  static class Dummy {
+    public String dummy;
+  }
 }
