@@ -1,6 +1,6 @@
 # Versioning
 ## Context
-the OpenLineage spec gets versioned and published.
+The OpenLineage spec gets versioned and published.
 
 Requirements:
 - The OpenLineage spec and related libraries are in the OpenLineage repo.
