@@ -4,7 +4,7 @@ plugins {
     id 'maven-publish'
     id 'signing'
     id 'jacoco'
-    id "com.adarshr.test-logger" version "2.1.1"
+    id "com.adarshr.test-logger" version "3.2.0"
     id 'com.diffplug.spotless' version '5.12.1'
     id "com.github.johnrengelman.shadow" version "7.1.2"
     id "pmd"
