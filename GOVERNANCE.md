@@ -156,6 +156,8 @@ If the proposed release receives no +1s in two days, it is not authorized and th
 
 Once a release is authorized, it will be initiated within two business days. Releases will not be made on a Friday unless doing so will address an important defect, an issue with project infrastructure, or a security vulnerability. 
 
+If a release build fails or is delayed for up to three business days after initiation for a purely technical reason, the next point release is automatically authorized after the build and release process has been fixed.
+
 ## Conflict resolution and voting
 
 In general, we prefer that technical issues and committer membership are amicably worked out
