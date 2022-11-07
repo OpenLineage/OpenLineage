@@ -42,7 +42,7 @@ extras_require = {
         "apache-airflow-providers-amazon>=3.1.1",
         "airflow-provider-great-expectations==0.1.4",
         "great-expectations<=0.15.23",
-        "protobuf==3.20.*",
+        "protobuf>=3.20,<4.22",
     ],
 }
 
