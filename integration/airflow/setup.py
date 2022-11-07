@@ -41,7 +41,7 @@ extras_require = {
         "apache-airflow-providers-google>=5.0.0",
         "apache-airflow-providers-amazon>=3.1.1",
         "airflow-provider-great-expectations==0.1.5",
-        "great-expectations<=0.15.23",
+        "great-expectations<0.15.32",
         "protobuf==3.20.*",
     ],
 }
