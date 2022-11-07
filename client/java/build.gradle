@@ -47,7 +47,7 @@ ext {
     jacksonDatabindVersion = "2.13.4.2"
     junit5Version = '5.8.2'
     lombokVersion = '1.18.22'
-    mockitoVersion = '4.2.0'
+    mockitoVersion = '4.8.1'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
 }
 
