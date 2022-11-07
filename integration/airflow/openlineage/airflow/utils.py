@@ -7,8 +7,7 @@ import json
 import logging
 import os
 import subprocess
-from collections import defaultdict
-from typing import TYPE_CHECKING, Type, Dict, Any, List
+from typing import TYPE_CHECKING, Type, Dict, Any
 from uuid import uuid4
 from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
 from typing import Optional
@@ -18,12 +17,6 @@ from openlineage.airflow.facets import (
     AirflowMappedTaskRunFacet,
     AirflowVersionRunFacet,
     AirflowRunArgsRunFacet
-)
-from openlineage.client.facet import (
-    DataQualityMetricsInputDatasetFacet,
-    ColumnMetric,
-    DataQualityAssertionsDatasetFacet,
-    Assertion
 )
 from openlineage.client.utils import RedactMixin
 from pendulum import from_timestamp
@@ -319,121 +312,6 @@ def try_import_from_string(path: str):
     except ImportError as e:
         logging.info(e.msg)  # type: ignore
         return None
-
-
-def build_check_facets() -> dict:
-    pass
-
-
-def build_value_check_facets() -> dict:
-    pass
-
-
-def build_threshold_check_facets() -> dict:
-    pass
-
-
-def build_interval_check_facets() -> dict:
-    pass
-
-
-def build_table_check_facets(checks) -> dict:
-    """
-    Function should expect to take the checks in the following form:
-    {
-        'row_count_check': {
-            'pass_value': 100,
-            'tolerance': .05,
-            'result': 101,
-            'success': True
-        }
-    }
-    """
-    facet_data = {}
-    assertion_data: Dict[str, List[Assertion]] = {"assertions": []}
-    for check, check_values in checks.items():
-        assertion_data["assertions"].append(
-            Assertion(
-                assertion=check,
-                success=check_values.get("success", None),
-            )
-        )
-    facet_data["rowCount"] = checks.get("row_count_check", {}).get("result", None)
-    facet_data["bytes"] = checks.get("bytes", {}).get("result", None)
-
-    data_quality_facet = DataQualityMetricsInputDatasetFacet(**facet_data)
-    data_quality_assertions_facet = DataQualityAssertionsDatasetFacet(**assertion_data)
-
-    return {
-        "dataQuality": data_quality_facet,
-        "dataQualityMetrics": data_quality_facet,
-        "dataQualityAssertions": data_quality_assertions_facet
-    }
-
-
-def build_column_check_facets(column_mapping) -> dict:
-    """
-    Function should expect the column_mapping to take the following form:
-    {
-        'col_name': {
-            'null_check': {
-                'pass_value': 0,
-                'result': 0,
-                'success': True
-            },
-            'min': {
-                'pass_value': 5,
-                'tolerance': 0.2,
-                'result': 1,
-                'success': False
-            }
-        }
-    }
-    """
-    facet_data: Dict[str, Any] = {"columnMetrics": defaultdict(dict)}
-    assertion_data: Dict[str, List[Assertion]] = {"assertions": []}
-    for col_name, checks in column_mapping.items():
-        for check, check_values in checks.items():
-            facet_key = map_facet_name(check)
-            facet_data["columnMetrics"][col_name][facet_key] = check_values.get("result", None)
-
-            assertion_data["assertions"].append(
-                Assertion(
-                    assertion=check,
-                    success=check_values.get("success", None),
-                    column=col_name
-                )
-            )
-        facet_data["columnMetrics"][col_name] = ColumnMetric(
-            **facet_data["columnMetrics"][col_name]
-        )
-
-    data_quality_facet = DataQualityMetricsInputDatasetFacet(**facet_data)
-    data_quality_assertions_facet = DataQualityAssertionsDatasetFacet(**assertion_data)
-
-    return {
-        "dataQuality": data_quality_facet,
-        "dataQualityMetrics": data_quality_facet,
-        "dataQualityAssertions": data_quality_assertions_facet
-    }
-
-
-def map_facet_name(check_name) -> str:
-    if "null" in check_name:
-        return "nullCount"
-    elif "distinct" in check_name:
-        return "distinctCount"
-    elif "sum" in check_name:
-        return "sum"
-    elif "count" in check_name:
-        return "count"
-    elif "min" in check_name:
-        return "min"
-    elif "max" in check_name:
-        return "max"
-    elif "quantiles" in check_name:
-        return "quantiles"
-    return ""
 
 
 def redact_with_exclusions(source: Any):

@@ -10,21 +10,21 @@ Maven:
 <dependency>
     <groupId>io.openlineage</groupId>
     <artifactId>openlineage-spark</artifactId>
-    <version>0.15.1</version>
+    <version>0.16.1</version>
 </dependency>
 ```
 
 or Gradle:
 
 ```groovy
-implementation 'io.openlineage:openlineage-spark:0.15.1'
+implementation 'io.openlineage:openlineage-spark:0.16.1'
 ```
 
 ## Getting started
 
 ### Quickstart
 The fastest way to get started testing Spark and OpenLineage is to use the docker-compose files included
-in the project. From the spark integration directory ($OPENLINEAGE_ROOT/integration/spark) execute
+in the project. From the Spark integration directory ($OPENLINEAGE_ROOT/integration/spark), execute
 ```bash
 docker-compose up
 ```
@@ -37,7 +37,7 @@ notebook_1  |     Or copy and paste one of these URLs:
 notebook_1  |         http://abc12345d6e:8888/?token=XXXXXX
 notebook_1  |      or http://127.0.0.1:8888/?token=XXXXXX
 ```
-Copy the URL with the localhost IP and paste into your browser window to begin creating a new Jupyter
+Copy the URL with the localhost IP and paste it into your browser window to begin creating a new Jupyter
 Spark notebook (see the [https://jupyter-docker-stacks.readthedocs.io/en/latest/](docs) for info on
 using the Jupyter docker image).
 
@@ -50,7 +50,7 @@ from pyspark.sql import SparkSession
 
 spark = (SparkSession.builder.master('local')
          .appName('sample_spark')
-         .config('spark.jars.packages', 'io.openlineage:openlineage-spark:0.15.1')
+         .config('spark.jars.packages', 'io.openlineage:openlineage-spark:0.16.1')
          .config('spark.extraListeners', 'io.openlineage.spark.agent.OpenLineageSparkListener')
          .config('spark.openlineage.url', 'http://{openlineage.client.host}/api/v1/namespaces/spark_integration/')
          .getOrCreate())
@@ -66,7 +66,7 @@ container):
 ```python
 from pyspark.sql import SparkSession
 
-file = "/home/jovyan/openlineage/libs/openlineage-spark-0.15.1.jar"
+file = "/home/jovyan/openlineage/libs/openlineage-spark-0.16.1.jar"
 
 spark = (SparkSession.builder.master('local').appName('rdd_to_dataframe')
              .config('spark.jars', file)
@@ -79,18 +79,19 @@ spark = (SparkSession.builder.master('local').appName('rdd_to_dataframe')
 ## Arguments
 
 ### Spark Listener
-The SparkListener reads its configuration from SparkConf parameters. These can be specified in the
+The SparkListener reads its configuration from SparkConf parameters. These can be specified on the
 command line or in the `conf/spark-defaults.conf` file. 
 
 There are two ways of supplying parameters, each parameter as separate config entry or all the parameters in 
 `spark.openlineage.url`
 
-NOTE: If `spark.openlineage.url` is defined, all the parameters will be taken from it regardless whether they are
+NOTE: If `spark.openlineage.url` is defined, all the parameters will be taken from it regardless of whether they are
 also defined in configuration or not.
 
 #### Config entries
 
-The following parameters can be specified in the Spark configuration
+The following parameters can be specified in the Spark configuration:
+
 | Parameter | Definition | Example |
 ------------|------------|---------
 | spark.openlineage.host | The hostname of the OpenLineage API server where events should be reported | http://localhost:5000 |
@@ -101,30 +102,42 @@ The following parameters can be specified in the Spark configuration
 | spark.openlineage.apiKey | An API key to be used when sending events to the OpenLineage server | abcdefghijk |
 | spark.openlineage.timeout | Timeout for sending OpenLineage info in milliseconds | 5000 |
 | spark.openlineage.appName | Custom value overwriting Spark app name in events | AppName |
-| spark.openlineage.url.param.xyz | A url parameter (replace xyz) and value to be included in requests to the OpenLineage API server | abcdefghijk |
-| spark.openlineage.consoleTransport | Events will be emitted to a console, no additional backend is required | true |
+| spark.openlineage.url.param.xyz | A URL parameter (replace xyz) and value to be included in requests to the OpenLineage API server | abcdefghijk |
+| spark.openlineage.consoleTransport | Events will be emitted to a console, so no additional backend is required | true |
+| spark.openlineage.transport.type | The transport type used for event emit, currently only supporting 'kinesis' | kinesis |
 
-#### Url
+##### Kinesis Transport
+If using `spark.openlineage.transport.type` as `kinesis`, then the below parameters would be read and used when building KinesisProducer.
+Also, KinesisTransport depends on you to provide artifact `com.amazonaws:amazon-kinesis-producer:0.14.0` or compatible on your classpath.
 
-`spark.openlineage.url` covers `spark.openlineage.*` parameters in form of resources and url parameters.
+| Parameter | Definition | Example |
+------------|------------|---------
+| spark.openlineage.transport.kinesis.streamName | Required, the streamName of the Kinesis Stream | some-stream-name |
+| spark.openlineage.transport.kinesis.region | Required, the region of the stream | us-east-2 |
+| spark.openlineage.transport.kinesis.roleArn | Optional, the roleArn which is allowed to read/write to Kinesis stream | some-role-arn |
+| spark.openlineage.transport.kinesis.[xxx] | Optional, the [xxx] is property of [Kinesis allowd properties](https://github.com/awslabs/amazon-kinesis-producer/blob/master/java/amazon-kinesis-producer-sample/default_config.properties) | 1 |
 
-Url structure:
+#### URL
+
+`spark.openlineage.url` covers `spark.openlineage.*` parameters in the form of resources and URL parameters.
+
+URL structure:
 
 `http://{host}/api/{version}/namespaces/{namespace}/job/{parentRunId}?api_key={apiKey}`
 
-`apiKey`, `timeout`, `appName` are defined in url parameters. `consoleTransport` in this approach is set to false.
+`apiKey`, `timeout`, `appName` are defined in URL parameters. `consoleTransport` in this approach is set to False.
 
 # Build
 
 ## Java 8
 
-Testing requires a Java 8 JVM to test the scala spark components.
+Testing requires a Java 8 JVM to test the Scala Spark components.
 
 `export JAVA_HOME=`/usr/libexec/java_home -v 1.8`
 
 ## Preparation
 
-Before testing or building jar, run the following command from the client/java directory
+Before testing or building the jar, run the following command from the client/java directory
 to install the openlineage-java jar, on which this module depends:
 
 ```sh
@@ -152,13 +165,13 @@ To run the integration tests, from the current directory run:
 ```
 
 # Extending
-The Spark library is intended to support extension by supporting custom implementations of a handful
+The Spark library is intended to support extension via custom implementations of a handful
 of interfaces. Nearly every extension interface extends or mimics Scala's `PartialFunction`. The
 `isDefinedAt(Object x)` method determines whether a given input is a valid input to the function.
 A default implementation of `isDefinedAt(Object x)` is provided, which checks the generic type
 arguments of the concrete class, if concrete type arguments are given, and determines if the input
-argument matches the generic type. For example the following class is automatically defined for an
-input argument of type `MyDataset`
+argument matches the generic type. For example, the following class is automatically defined for an
+input argument of type `MyDataset`.
 
 ```
 class MyDatasetDetector extends QueryPlanVisitor<MyDataset, OutputDataset> {
@@ -166,7 +179,7 @@ class MyDatasetDetector extends QueryPlanVisitor<MyDataset, OutputDataset> {
 ```
 
 ## API
-The following APIs are still evolving and may change over time, based on user feedback.
+The following APIs are still evolving and may change over time based on user feedback.
 
 ###[`OpenLineageEventHandlerFactory`](shared/src/main/java/io/openlineage/spark/api/OpenLineageEventHandlerFactory.java)
 This interface defines the main entrypoint to the extension codebase. Custom implementations
@@ -241,7 +254,7 @@ for specifics on each method.
 ### [`QueryPlanVisitor`](shared/src/main/java/io/openlineage/spark/api/QueryPlanVisitor.java)
 QueryPlanVisitors evaluate nodes of a Spark `LogicalPlan` and attempt to generate `InputDataset`s or
 `OutputDataset`s from the information found in the `LogicalPlan` nodes. This is the most common
-abstraction present in the OpenLineage Spark library and many examples can be found in the
+abstraction present in the OpenLineage Spark library, and many examples can be found in the
 `io.openlineage.spark.agent.lifecycle.plan` package - examples include the
 [`BigQueryNodeVisitor`](shared/src/main/java/io/openlineage/spark/agent/lifecycle/plan/BigQueryNodeVisitor.java),
 the [`KafkaRelationVisitor`](shared/src/main/java/io/openlineage/spark/agent/lifecycle/plan/KafkaRelationVisitor.java)
@@ -268,8 +281,8 @@ and [`AbstractOutputDatasetBuilder`s](shared/src/main/java/io/openlineage/spark/
 are available for builders to extend.
 
 ### [`CustomFacetBuilder`](shared/src/main/java/io/openlineage/spark/api/CustomFacetBuilder.java)
-CustomFacetBuilders evaluate Spark event types and scheduler objects (see below) to construct custom
-facets. CustomFacetBuilders are used to create `InputDatsetFacet`s, `OutputDatsetFacet`s,
+`CustomFacetBuilders` evaluate Spark event types and scheduler objects (see below) to construct custom
+facets. `CustomFacetBuilders` are used to create `InputDatsetFacet`s, `OutputDatsetFacet`s,
 `DatsetFacet`s, `RunFacet`s, and `JobFacet`s. A few examples can be found in the
 [`io.openlineage.spark.agent.facets.builder`](shared/src/main/java/io/openlineage/spark/agent/facets/builder)
 package, including the [`ErrorFacetBuilder`](shared/src/main/java/io/openlineage/spark/agent/facets/builder/ErrorFacetBuilder.java)
@@ -330,6 +343,6 @@ If contributing changes, additions or fixes to the Spark integration, please inc
 */
 ```
 
-The Github Actions Super-linter is installed and configured to check for headers in new `.java` files when pull requests are opened.
+A Github Action checks for headers in new `.java` files when pull requests are opened.
 
 Thank you for your contributions to the project!

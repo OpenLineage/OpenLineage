@@ -9,7 +9,7 @@ plugins {
     id 'java-library'
     id 'java-test-fixtures'
     id 'com.diffplug.spotless' version '5.12.1'
-    id "com.adarshr.test-logger" version "2.1.1"
+    id "com.adarshr.test-logger" version "3.2.0"
     id "com.github.johnrengelman.shadow" version "7.1.2"
     id "pmd"
 }
@@ -62,6 +62,13 @@ ext {
             "2.4": ["module": "spark2",     "scala": "2.11", "delta": "NA"]
     ]
     versions = versionsMap[shortVersion]
+}
+
+configurations.all { // https://github.com/apache/spark/pull/38355 - can be remove for Spark 3.3.2
+    resolutionStrategy {
+        // https://github.com/FasterXML/jackson-databind/issues/3627
+        force "com.fasterxml.jackson:jackson-bom:$jacksonVersion"
+    }
 }
 
 dependencies {

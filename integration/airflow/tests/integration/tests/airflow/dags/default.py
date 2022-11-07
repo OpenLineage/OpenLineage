@@ -5,9 +5,10 @@ from typing import Any
 from airflow import DAG
 from airflow.models import BaseOperator
 from airflow.utils.dates import days_ago
+import attr
 
 from openlineage.airflow.extractors.base import OperatorLineage
-from openlineage.client.facet import ParentRunFacet, SqlJobFacet
+from openlineage.client.facet import BaseFacet, ParentRunFacet, SqlJobFacet
 from openlineage.client.run import Dataset
 
 
@@ -21,44 +22,51 @@ RUN_FACETS = {
 JOB_FACETS = {"sql": SqlJobFacet(query="SELECT * FROM inputtable")}
 
 
+@attr.s
+class CompleteRunFacet(BaseFacet):
+    finished: bool = attr.ib()
+
+
 class ExampleOperator(BaseOperator):
     def execute(self, context) -> Any:
         pass
 
-    def get_openlineage_facets(self) -> OperatorLineage:
+    def get_openlineage_facets_on_start(self) -> OperatorLineage:
         return OperatorLineage(
             inputs=INPUTS,
             outputs=OUTPUTS,
             run_facets=RUN_FACETS,
-            job_facets=JOB_FACETS
+            job_facets=JOB_FACETS,
+        )
+
+    def get_openlineage_facets_on_complete(self) -> OperatorLineage:
+        return OperatorLineage(
+            inputs=INPUTS,
+            outputs=OUTPUTS,
+            run_facets=RUN_FACETS,
+            job_facets={"complete": CompleteRunFacet(True)},
         )
 
 
 default_args = {
-    'owner': 'datascience',
-    'depends_on_past': False,
-    'start_date': days_ago(7),
-    'email_on_failure': False,
-    'email_on_retry': False,
-    'email': ['datascience@example.com']
+    "owner": "datascience",
+    "depends_on_past": False,
+    "start_date": days_ago(7),
+    "email_on_failure": False,
+    "email_on_retry": False,
+    "email": ["datascience@example.com"],
 }
 
 dag = DAG(
-    'default_extractor_dag',
-    schedule_interval='@once',
+    "default_extractor_dag",
+    schedule_interval="@once",
     default_args=default_args,
-    description='Determines the popular day of week orders are placed.'
+    description="Determines the popular day of week orders are placed.",
 )
 
 
-t1 = ExampleOperator(
-    task_id='default_operator_first',
-    dag=dag
-)
+t1 = ExampleOperator(task_id="default_operator_first", dag=dag)
 
-t2 = ExampleOperator(
-    task_id='default_operator_second',
-    dag=dag
-)
+t2 = ExampleOperator(task_id="default_operator_second", dag=dag)
 
 t1 >> t2

@@ -52,7 +52,7 @@ def my_repository():
     return other_defs + [openlineage_sensor_def]
 ```
 
-With parallel sensor runs not supported at the time of writing, some tuning may be necessary to avoid affecting other sensors' performance.
+Given that parallel sensor runs are not supported at the time of writing, some tuning may be necessary to avoid affecting other sensors' performance.
 
 See Dagster's documentation on [Evaluation Interval](https://docs.dagster.io/concepts/partitions-schedules-sensors/sensors#evaluation-interval)
 for more detail on `minimum_interval_seconds`, which defaults to 30 seconds.
@@ -70,7 +70,7 @@ def my_repository():
 ```
 
 
-The OpenLineage sensor handles event logs in ascending order of storage ID, and starts with the first log by default.
+The OpenLineage sensor handles event logs in ascending order of storage ID and starts with the first log by default.
 Optionally, `after_storage_id` can be specified to customize the starting point.
 This is only applicable when the cursor is undefined or has been deleted.
 
@@ -85,15 +85,15 @@ def my_repository():
 
 ### OpenLineage Adapter & Client Configuration
 
-The sensor uses an OpenLineage adapter and client to convert and push data to an OpenLineage backend,
+The sensor uses an OpenLineage adapter and client to convert and push data to an OpenLineage backend.
 These depend on environment variables.
 
 If using User Repository Deployments, add the below variables to the repository where the sensor is defined.
 Otherwise, add the variables to the Dagster Daemon.
 
-* `OPENLINEAGE_URL` - point to the service which will consume OpenLineage events
-* `OPENLINEAGE_API_KEY` - set if the consumer of OpenLineage events requires a `Bearer` authentication key
-* `OPENLINEAGE_NAMESPACE` - set if you are using something other than the `default` as the default namespace when a Dagster repository is undefined 
+* `OPENLINEAGE_URL` - point to the service which will consume OpenLineage events.
+* `OPENLINEAGE_API_KEY` - set if the consumer of OpenLineage events requires a `Bearer` authentication key.
+* `OPENLINEAGE_NAMESPACE` - set if you are using something other than the `default` as the default namespace when a Dagster repository is undefined. 
 
 #### OpenLineage Namespace & Dagster Repository
 

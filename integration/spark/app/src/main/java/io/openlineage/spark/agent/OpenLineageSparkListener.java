@@ -8,10 +8,13 @@ package io.openlineage.spark.agent;
 import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptional;
 import static io.openlineage.spark.agent.util.SparkConfUtils.findSparkConfigKey;
 import static io.openlineage.spark.agent.util.SparkConfUtils.findSparkConfigKeyDouble;
+import static io.openlineage.spark.agent.util.SparkConfUtils.findSparkConfigKeysStartsWith;
 import static io.openlineage.spark.agent.util.SparkConfUtils.findSparkUrlParams;
 
 import io.openlineage.client.Environment;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.transports.KinesisConfig;
+import io.openlineage.client.transports.TransportConfig;
 import io.openlineage.spark.agent.lifecycle.ContextFactory;
 import io.openlineage.spark.agent.lifecycle.ExecutionContext;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -56,6 +59,8 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       Collections.synchronizedMap(new HashMap<>());
   private static final Map<Integer, ExecutionContext> rddExecutionRegistry =
       Collections.synchronizedMap(new HashMap<>());
+
+  public static final String SPARK_CONF_TRANSPORT_TYPE = "openlineage.transport.type";
   public static final String SPARK_CONF_CONSOLE_TRANSPORT = "openlineage.consoleTransport";
   public static final String SPARK_CONF_URL_KEY = "openlineage.url";
   public static final String SPARK_CONF_HOST_KEY = "openlineage.host";
@@ -297,10 +302,53 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     return Boolean.parseBoolean(isDisabled);
   }
 
+  private void commonConfigParse(ArgumentParser.ArgumentParserBuilder builder, SparkConf conf) {
+    builder
+        .timeout(findSparkConfigKeyDouble(conf, SPARK_CONF_TIMEOUT))
+        .apiKey(findSparkConfigKey(conf, SPARK_CONF_API_KEY).filter(str -> !str.isEmpty()))
+        .appName(findSparkConfigKey(conf, SPARK_CONF_APP_NAME).filter(str -> !str.isEmpty()))
+        .urlParams(findSparkUrlParams(conf, SPARK_CONF_URL_PARAM_PREFIX));
+
+    findSparkConfigKey(conf, SPARK_CONF_HOST_KEY).ifPresent(builder::host);
+    findSparkConfigKey(conf, SPARK_CONF_API_VERSION_KEY).ifPresent(builder::version);
+    findSparkConfigKey(conf, SPARK_CONF_NAMESPACE_KEY).ifPresent(builder::namespace);
+    findSparkConfigKey(conf, SPARK_CONF_JOB_NAME_KEY).ifPresent(builder::jobName);
+    findSparkConfigKey(conf, SPARK_CONF_PARENT_RUN_ID_KEY).ifPresent(builder::parentRunId);
+  }
+
   private ArgumentParser parseConf(SparkConf conf) {
     Optional<String> url = findSparkConfigKey(conf, SPARK_CONF_URL_KEY);
+    Optional<String> transportType = findSparkConfigKey(conf, SPARK_CONF_TRANSPORT_TYPE);
     if (url.isPresent()) {
       return ArgumentParser.parse(url.get());
+    } else if (transportType.isPresent()) {
+      // go and check the specific transport type setting
+      String mode = transportType.get().toLowerCase();
+      Optional<TransportConfig> transportConfig = Optional.empty();
+      switch (mode) {
+        case "kinesis":
+          Map<String, String> config =
+              findSparkConfigKeysStartsWith(conf, "spark.openlineage.transport.kinesis.");
+          KinesisConfig kinesisConfig = new KinesisConfig();
+          kinesisConfig.setStreamName(config.get("streamName"));
+          kinesisConfig.setRegion(config.get("region"));
+          kinesisConfig.setRoleArn(Optional.ofNullable(config.get("roleArn")));
+          Properties properties = new Properties();
+          properties.putAll(config);
+          kinesisConfig.setProperties(properties);
+          transportConfig = Optional.of(kinesisConfig);
+        default:
+          // todo, we may support other java client transport mode in this way in the future
+      }
+      ArgumentParser.ArgumentParserBuilder builder =
+          ArgumentParser.builder()
+              .transportMode(Optional.of(mode))
+              .transportConfig(transportConfig);
+
+      commonConfigParse(builder, conf);
+
+      return builder.build();
+
     } else {
       boolean consoleMode =
           findSparkConfigKey(conf, SPARK_CONF_CONSOLE_TRANSPORT)
@@ -309,19 +357,8 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
               .orElse(false);
 
       ArgumentParser.ArgumentParserBuilder builder =
-          ArgumentParser.builder()
-              .timeout(findSparkConfigKeyDouble(conf, SPARK_CONF_TIMEOUT))
-              .apiKey(findSparkConfigKey(conf, SPARK_CONF_API_KEY).filter(str -> !str.isEmpty()))
-              .appName(findSparkConfigKey(conf, SPARK_CONF_APP_NAME).filter(str -> !str.isEmpty()))
-              .urlParams(findSparkUrlParams(conf, SPARK_CONF_URL_PARAM_PREFIX))
-              .consoleMode(consoleMode);
-
-      findSparkConfigKey(conf, SPARK_CONF_HOST_KEY).ifPresent(builder::host);
-      findSparkConfigKey(conf, SPARK_CONF_API_VERSION_KEY).ifPresent(builder::version);
-      findSparkConfigKey(conf, SPARK_CONF_NAMESPACE_KEY).ifPresent(builder::namespace);
-      findSparkConfigKey(conf, SPARK_CONF_JOB_NAME_KEY).ifPresent(builder::jobName);
-      findSparkConfigKey(conf, SPARK_CONF_PARENT_RUN_ID_KEY).ifPresent(builder::parentRunId);
-
+          ArgumentParser.builder().consoleMode(consoleMode);
+      commonConfigParse(builder, conf);
       return builder.build();
     }
   }

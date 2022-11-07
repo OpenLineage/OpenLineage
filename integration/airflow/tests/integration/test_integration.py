@@ -56,7 +56,14 @@ params = [
         marks=pytest.mark.skipif(not IS_GCP_AUTH, reason="no gcp credentials"),
     ),
     ("source_code_dag", "requests/source_code.json"),
-    ("default_extractor_dag", "requests/default_extractor.json"),
+    pytest.param(
+        "default_extractor_dag",
+        "requests/default_extractor.json",
+        marks=pytest.mark.skipif(
+            not IS_AIRFLOW_VERSION_ENOUGH("2.3.0"),  # both extract and extract_on_complete
+            reason="Airflow < 2.3.0"                 # run on 2.3+
+        )
+    ),
     ("custom_extractor", "requests/custom_extractor.json"),
     ("unknown_operator_dag", "requests/unknown_operator.json"),
     pytest.param(

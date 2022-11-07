@@ -4,7 +4,7 @@ COPY integration/sql /app/openlineage/integration/sql
 COPY integration/common /app/openlineage/integration/common
 COPY integration/airflow /app/openlineage/integration/airflow
 COPY client/python /app/openlineage/client/python
-COPY integration/targe[t] /app/openlineage/integration/sql/target
+COPY integration/target /app/openlineage/integration/sql/target
 USER root
 RUN mkdir -p /opt/data
 RUN apt-get update && apt-get install -y git

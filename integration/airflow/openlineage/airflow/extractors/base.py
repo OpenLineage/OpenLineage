@@ -1,6 +1,5 @@
 # Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
-
 import attr
 from abc import ABC, abstractmethod
 
@@ -8,7 +7,7 @@ from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
 import json
 
 from openlineage.client.run import Dataset
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Callable
 from openlineage.client.facet import BaseFacet
 from openlineage.airflow.utils import LoggingMixin, get_job_name
 
@@ -19,6 +18,9 @@ class OperatorLineage:
     outputs: List[Dataset] = attr.ib(factory=list)
     run_facets: Dict[str, BaseFacet] = attr.ib(factory=dict)
     job_facets: Dict[str, BaseFacet] = attr.ib(factory=dict)
+
+
+GetOpenLineageFacetsMethod = Callable[[], OperatorLineage]
 
 
 @attr.s
@@ -56,7 +58,7 @@ class BaseExtractor(ABC, LoggingMixin):
         raise NotImplementedError()
 
     def validate(self):
-        assert (self.operator.__class__.__name__ in self.get_operator_classnames())
+        assert self.operator.__class__.__name__ in self.get_operator_classnames()
 
     @abstractmethod
     def extract(self) -> Optional[TaskMetadata]:
@@ -77,7 +79,7 @@ class BaseExtractor(ABC, LoggingMixin):
         parsed = urlparse(conn_uri)
 
         # Remove username and password
-        netloc = f'{parsed.hostname}' + (f':{parsed.port}' if parsed.port else "")
+        netloc = f"{parsed.hostname}" + (f":{parsed.port}" if parsed.port else "")
         parsed = parsed._replace(netloc=netloc)
         if parsed.query:
             query_dict = dict(parse_qsl(parsed.query))
@@ -100,11 +102,29 @@ class DefaultExtractor(BaseExtractor):
         return []
 
     def extract(self) -> Optional[TaskMetadata]:
-        facets: OperatorLineage = self.operator.get_openlineage_facets()
+        try:
+            return self._get_openlineage_facets(
+                self.operator.get_openlineage_facets_on_start
+            )
+        except AttributeError:
+            return None
+
+    def extract_on_complete(self, task_instance) -> Optional[TaskMetadata]:
+        on_complete = getattr(self.operator, 'get_openlineage_facets_on_complete', None)
+        if on_complete and callable(on_complete):
+            return self._get_openlineage_facets(
+                on_complete
+            )
+        return self.extract()
+
+    def _get_openlineage_facets(
+        self, get_facets_method: GetOpenLineageFacetsMethod
+    ) -> Optional[TaskMetadata]:
+        facets: OperatorLineage = get_facets_method()
         return TaskMetadata(
             name=get_job_name(task=self.operator),
             inputs=facets.inputs,
             outputs=facets.outputs,
             run_facets=facets.run_facets,
-            job_facets=facets.job_facets
+            job_facets=facets.job_facets,
         )

@@ -44,46 +44,44 @@ $ python3 setup.py install
 
 ### Airflow 2.3+
 
-Integration automatically registers itself for Airflow 2.3 if it's installed on Airflow worker's python.
-This means you don't have to do anything besides configuring it, which is described in Configuration section.
+The integration automatically registers itself for Airflow 2.3 if it's installed on the Airflow worker's Python.
+This means you don't have to do anything besides configuring it, which is described in the Configuration section.
 
 ### Airflow 2.1 - 2.2
 
-This method has limited support: 
-it does not support tracking failed jobs, and job starts are registered only when job ends.
+This method has limited support: it does not support tracking failed jobs, and job starts are registered only when a job ends.
 
-Set your LineageBackend in your [airflow.cfg](https://airflow.apache.org/docs/apache-airflow/stable/howto/set-config.html) or via environmental variable `AIRFLOW__LINEAGE__BACKEND`
-to 
+Set your LineageBackend in your [airflow.cfg](https://airflow.apache.org/docs/apache-airflow/stable/howto/set-config.html) or via environmental variable `AIRFLOW__LINEAGE__BACKEND` to 
 ```
 openlineage.lineage_backend.OpenLineageBackend
 ```
 
-In contrast to integration via subclassing `DAG`, `LineageBackend` based approach collects all metadata 
-for task on each task completion.
+In contrast to integration via subclassing a `DAG`, a `LineageBackend`-based approach collects all metadata 
+for a task on each task's completion.
 
-OpenLineageBackend does not take into account manually configured inlets and outlets. 
+The OpenLineageBackend does not take into account manually configured inlets and outlets. 
 
 When enabled, the library will:
 
-1. On DAG **start**, collect metadata for each task using an `Extractor` if it exists for given operator.
-2. Collect task input / output metadata (`source`, `schema`, etc)
-3. Collect task run-level metadata (execution time, state, parameters, etc)
+1. On DAG **start**, collect metadata for each task using an `Extractor` if it exists for a given operator.
+2. Collect task input / output metadata (`source`, `schema`, etc.)
+3. Collect task run-level metadata (execution time, state, parameters, etc.)
 4. On DAG **complete**, also mark the task as _complete_ in OpenLineage
 
 ## Configuration
 
 ### `HTTP` Backend Environment Variables
 
-`openlineage-airflow` uses OpenLineage client to push data to OpenLineage backend.
+`openlineage-airflow` uses the OpenLineage client to push data to OpenLineage backend.
 
-OpenLineage client depends on environment variables:
+The OpenLineage client depends on environment variables:
 
-* `OPENLINEAGE_URL` - point to service which will consume OpenLineage events
-* `OPENLINEAGE_API_KEY` - set if consumer of OpenLineage events requires `Bearer` authentication key
-* `OPENLINEAGE_NAMESPACE` - set if you are using something other than the `default` namespace for job namespace.
-* `OPENLINEAGE_AIRFLOW_DISABLE_SOURCE_CODE` - set to `False` if you want source code of callables provided in PythonOperator to be send in OpenLineage events
+* `OPENLINEAGE_URL` - point to the service that will consume OpenLineage events.
+* `OPENLINEAGE_API_KEY` - set if the consumer of OpenLineage events requires a `Bearer` authentication key.
+* `OPENLINEAGE_NAMESPACE` - set if you are using something other than the `default` namespace for the job namespace.
+* `OPENLINEAGE_AIRFLOW_DISABLE_SOURCE_CODE` - set to `False` if you want the source code of callables provided in the PythonOperator to be sent in OpenLineage events.
 
-For backwards compatibility, `openlineage-airflow` also support configuration via
+For backwards compatibility, `openlineage-airflow` also supports configuration via
 `MARQUEZ_URL`, `MARQUEZ_NAMESPACE` and `MARQUEZ_API_KEY` variables.
 
 ```
@@ -93,20 +91,20 @@ MARQUEZ_NAMESPACE=my_special_ns
 
 ### Extractors : Sending the correct data from your DAGs
 
-If you do nothing, OpenLineage backend will receive the `Job` and the `Run` from your DAGs, but,
-unless you use few operators for which this integration provides extractor, input and output metadata will not be send.
+If you do nothing, the OpenLineage backend will receive the `Job` and the `Run` from your DAGs, but,
+unless you use one of the few operators for which this integration provides an extractor, input and output metadata will not be sent.
 
-`openlineage-airflow` allows you to do more than that by building "Extractors". Extractor is object
-suited to extract metadata from particular operator (or operators). 
+`openlineage-airflow` allows you to do more than that by building "Extractors." An extractor is an object
+suited to extract metadata from a particular operator (or operators). 
 
 1. Name : The name of the task
-2. Inputs : List of input datasets
-3. Outputs : List of output datasets
+2. Inputs : A list of input datasets
+3. Outputs : A list of output datasets
 4. Context : The Airflow context for the task
 
 #### Bundled Extractors
 
-`openlineage-airflow` provides extractors for
+`openlineage-airflow` provides extractors for:
 
 * `PostgresOperator`
 * `MySqlOperator`
@@ -115,7 +113,7 @@ suited to extract metadata from particular operator (or operators).
 * `GreatExpectationsOperator`
 * `PythonOperator`
 
-SQL Operators utilize SQL parser. There is experimental SQL parser, activated if you install [openlineage-sql](https://pypi.org/project/openlineage-sql) on your Airflow worker.
+SQL Operators utilize the SQL parser. There is an experimental SQL parser activated if you install [openlineage-sql](https://pypi.org/project/openlineage-sql) on your Airflow worker.
 
 #### Custom Extractors
 
@@ -124,18 +122,18 @@ provide custom extractors. They should derive from `BaseExtractor`.
 
 There are two ways to register them for use in `openlineage-airflow`. 
 
-First one, is to add them to `OPENLINEAGE_EXTRACTORS` environment variable, separated by comma `(;)` 
+One way is to add them to the `OPENLINEAGE_EXTRACTORS` environment variable, separated by a semi-colon `(;)`. 
 ```
 OPENLINEAGE_EXTRACTORS=full.path.to.ExtractorClass;full.path.to.AnotherExtractorClass
 ```
 
-To ensure OpenLineage logging propagation to custom extractors you should use `self.log` instead of creating logger by yourself.
+To ensure OpenLineage logging propagation to custom extractors you should use `self.log` instead of creating a logger yourself.
 
 #### Great Expectations
 
-Great Expectations integration works by providing OpenLineageValidationAction. You need to include it into your `action_list` in `great_expectations.yml`.
+The Great Expectations integration works by providing an OpenLineageValidationAction. You need to include it into your `action_list` in `great_expectations.yml`.
 
-The following example illustrates example change in default configuration: 
+The following example illustrates a way to change the default configuration: 
 ```diff
 validation_operators:
   action_list_operator:
@@ -167,22 +165,22 @@ validation_operators:
       #       class_name: SlackRenderer
 ```
 
-If you're using `GreatExpectationsOperator`, you need to set `validation_operator_name` to operator that includes OpenLineageValidationAction.
-Setting it in `great_expectations.yml` files isn't enough - the operator overrides it with default name if it's not provided.
+If you're using `GreatExpectationsOperator`, you need to set `validation_operator_name` to an operator that includes OpenLineageValidationAction.
+Setting it in `great_expectations.yml` files isn't enough - the operator overrides it with the default name if a different one is not provided.
 
-To see example of working configuration, you can see [DAG](https://github.com/OpenLineage/OpenLineage/blob/main/integration/airflow/tests/integration/airflow/dags/greatexpectations_dag.py) and [Great Expectations configuration](https://github.com/OpenLineage/OpenLineage/tree/main/integration/airflow/tests/integration/data/great_expectations) in integration tests.
+To see an example of a working configuration, see [DAG](https://github.com/OpenLineage/OpenLineage/blob/main/integration/airflow/tests/integration/airflow/dags/greatexpectations_dag.py) and [Great Expectations configuration](https://github.com/OpenLineage/OpenLineage/tree/main/integration/airflow/tests/integration/data/great_expectations) in the integration tests.
 
 ## Triggering Child Jobs
 Commonly, Airflow DAGs will trigger processes on remote systems, such as an Apache Spark or Apache
-Beam job. Those systems may have their own OpenLineage integration and report their own
+Beam job. Those systems may have their own OpenLineage integrations and report their own
 job runs and dataset inputs/outputs. To propagate the job hierarchy, tasks must send their own run
-id so that the downstream process can report the [ParentRunFacet](https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#/definitions/ParentRunFacet)
+ids so that the downstream process can report the [ParentRunFacet](https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#/definitions/ParentRunFacet)
 with the proper run id.
 
 The `lineage_run_id` and `lineage_parent_id` macros exists to inject the run id or whole parent run information
-of a given task into the arguments sent to a  remote processing job's Airflow operator. The macro requires the 
-DAG run_id and the task to access the generated run id for that task. For example, a Spark job can be triggered
-using the `DataProcPySparkOperator` with the correct parent run id using the following configuration:
+of a given task into the arguments sent to a remote processing job's Airflow operator. The macro requires the 
+DAG `run_id` and the task to access the generated `run_id` for that task. For example, a Spark job can be triggered
+using the `DataProcPySparkOperator` with the correct parent `run_id` using the following configuration:
 
 ```python
 t1 = DataProcPySparkOperator(
@@ -196,29 +194,29 @@ t1 = DataProcPySparkOperator(
 ```
 
 ## Secrets redaction
-Integration uses Airflow SecretsMasker to hide secrets from produced metadata events. As not all fields in the metadata should be redacted `RedactMixin` is used to pass information which fields should be skipped from the process. 
+The integration uses Airflow SecretsMasker to hide secrets from produced metadata events. As not all fields in the metadata should be redacted, `RedactMixin` is used to pass information about which fields should be ignored by the process. 
 
-Typically you should subclass `RedactMixin` and use attribute `_skip_redact` as a list of names of fields to be skipped.
+Typically, you should subclass `RedactMixin` and use the `_skip_redact` attribute as a list of names of fields to be skipped.
 
-However, all facets inheriting from `BaseFacet` should use `_additional_skip_redact` attribute as addition to common list of `['_producer', '_schemaURL']`.
+However, all facets inheriting from `BaseFacet` should use the `_additional_skip_redact` attribute as an addition to the regular list (`['_producer', '_schemaURL']`).
 
 ## Development
 
 To install all dependencies for _local_ development:
 
-Airflow integration depends on `openlineage.sql`, `openlineage.common` & `openlineage.client.python`. You should install them first independently or try to install with following command:
+The Airflow integration depends on `openlineage.sql`, `openlineage.common` and `openlineage.client.python`. You should install them first independently or try to install them with following command:
 
 ```bash
 $ pip install -r dev-requirements.txt
 ```
 
-There is also bash script that can run arbitrary Airflow image with OpenLineage integration build from current branch. Additionally it mounts OpenLineage Python packages as Docker volumes. This enables you to change your code without need to constantly rebuild Docker images to run tests.
-Run it as
+There is also a bash script that can run an arbitrary Airflow image with an OpenLineage integration built from the current branch. Additionally, it mounts OpenLineage Python packages as Docker volumes. This enables you to change your code without the need to constantly rebuild Docker images to run tests.
+Run it as:
 ```bash
 $ AIRFLOW_IMAGE=<airflow_image_with_tag> ./scripts/run-dev-airflow.sh [--help]
 ```
 ### Unit tests
-To run the entire unit test suite use below command:
+To run the entire unit test suite, use the below command:
 ```bash
 $ tox
 ```
@@ -228,19 +226,19 @@ $ tox -e py-airflow214
 ```
 You can also skip using `tox` and run `pytest` on your own dev environment.
 ### Integration tests
-Integration tests require usage of _docker compose_. There are scripts prepared to make build images and run tests easier.
+The integration tests require the use of _docker compose_. There are scripts prepared to make build images and run tests easier.
 
 ```bash
-$ AIRFLOW_IMAGE=<name-of-airflow-image> ./tests/integration/docker/up-2.sh
-```
-e.g.
-```bash
-$ AIRFLOW_IMAGE=apache/airflow:2.3.1-python3.7 ./tests/integration/docker/up-2.sh
+$ AIRFLOW_IMAGE=<name-of-airflow-image> ./tests/integration/docker/up.sh
 ```
 
-When using `run-dev-airflow.sh` you can add flag `-i` or `--attach-integration` to run integration tests in dev environment.
-This could be helpful when you need to run arbitrary integration tests during development. For example following command run in integration container:
+```bash
+$ AIRFLOW_IMAGE=apache/airflow:2.3.1-python3.7 ./tests/integration/docker/up.sh
+```
+
+When using `run-dev-airflow.sh`, you can add the `-i` flag or `--attach-integration` flag to run integration tests in a dev environment.
+This can be helpful when you need to run arbitrary integration tests during development. For example, the following command run in the integration container...
 ```bash
 python -m pytest test_integration.py::test_integration[great_expectations_validation-requests/great_expectations.json]
 ```
-runs single test which you can repeat after changes in code.
+...runs a single test which you can repeat after changes in code.

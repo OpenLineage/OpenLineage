@@ -4,11 +4,17 @@ from typing import Any
 
 from airflow.models import BaseOperator
 from airflow.operators.python import PythonOperator
+from unittest import mock
+import attr
 
 from openlineage.airflow.extractors import Extractors
-from openlineage.airflow.extractors.base import OperatorLineage, DefaultExtractor, TaskMetadata
+from openlineage.airflow.extractors.base import (
+    OperatorLineage,
+    DefaultExtractor,
+    TaskMetadata,
+)
 from openlineage.airflow.extractors.python_extractor import PythonExtractor
-from openlineage.client.facet import ParentRunFacet, SqlJobFacet
+from openlineage.client.facet import ParentRunFacet, SqlJobFacet, BaseFacet
 from openlineage.client.run import Dataset
 
 
@@ -22,16 +28,58 @@ RUN_FACETS = {
 JOB_FACETS = {"sql": SqlJobFacet(query="SELECT * FROM inputtable")}
 
 
+@attr.s
+class CompleteRunFacet(BaseFacet):
+    finished: bool = attr.ib(default=False)
+
+
+FINISHED_FACETS = {"complete": CompleteRunFacet(True)}
+
+
 class ExampleOperator(BaseOperator):
     def execute(self, context) -> Any:
         pass
 
-    def get_openlineage_facets(self) -> OperatorLineage:
+    def get_openlineage_facets_on_start(self) -> OperatorLineage:
         return OperatorLineage(
             inputs=INPUTS,
             outputs=OUTPUTS,
             run_facets=RUN_FACETS,
-            job_facets=JOB_FACETS
+            job_facets=JOB_FACETS,
+        )
+
+    def get_openlineage_facets_on_complete(self) -> OperatorLineage:
+        return OperatorLineage(
+            inputs=INPUTS,
+            outputs=OUTPUTS,
+            run_facets=RUN_FACETS,
+            job_facets=FINISHED_FACETS,
+        )
+
+
+class OperatorWihoutComplete(BaseOperator):
+    def execute(self, context) -> Any:
+        pass
+
+    def get_openlineage_facets_on_start(self) -> OperatorLineage:
+        return OperatorLineage(
+            inputs=INPUTS,
+            outputs=OUTPUTS,
+            run_facets=RUN_FACETS,
+            job_facets=JOB_FACETS,
+        )
+
+
+class OperatorWihoutStart(BaseOperator):
+    def execute(self, context) -> Any:
+        pass
+
+    def get_openlineage_facets_on_complete(self) -> OperatorLineage:
+        return OperatorLineage(
+            inputs=INPUTS,
+            outputs=OUTPUTS,
+            run_facets=RUN_FACETS,
+            job_facets=FINISHED_FACETS,
         )
 
 
@@ -48,12 +96,74 @@ def test_default_extraction():
 
     metadata = extractor(ExampleOperator(task_id="test")).extract()
 
+    task_instance = mock.MagicMock()
+
+    metadata_on_complete = extractor(
+        ExampleOperator(task_id="test")
+    ).extract_on_complete(task_instance=task_instance)
+
     assert metadata == TaskMetadata(
         name="adhoc_airflow.test",
         inputs=INPUTS,
         outputs=OUTPUTS,
         run_facets=RUN_FACETS,
-        job_facets=JOB_FACETS
+        job_facets=JOB_FACETS,
+    )
+
+    assert metadata_on_complete == TaskMetadata(
+        name="adhoc_airflow.test",
+        inputs=INPUTS,
+        outputs=OUTPUTS,
+        run_facets=RUN_FACETS,
+        job_facets=FINISHED_FACETS,
+    )
+
+
+def test_extraction_without_on_complete():
+    extractor = Extractors().get_extractor_class(OperatorWihoutComplete)
+    assert extractor is DefaultExtractor
+
+    metadata = extractor(OperatorWihoutComplete(task_id="test")).extract()
+
+    task_instance = mock.MagicMock()
+
+    metadata_on_complete = extractor(
+        OperatorWihoutComplete(task_id="test")
+    ).extract_on_complete(task_instance=task_instance)
+
+    expected_task_metadata = TaskMetadata(
+        name="adhoc_airflow.test",
+        inputs=INPUTS,
+        outputs=OUTPUTS,
+        run_facets=RUN_FACETS,
+        job_facets=JOB_FACETS,
+    )
+
+    assert metadata == expected_task_metadata
+
+    assert metadata_on_complete == expected_task_metadata
+
+
+def test_extraction_without_on_start():
+    extractor = Extractors().get_extractor_class(OperatorWihoutStart)
+    assert extractor is DefaultExtractor
+
+    metadata = extractor(OperatorWihoutStart(task_id="test")).extract()
+
+    task_instance = mock.MagicMock()
+
+    metadata_on_complete = extractor(
+        OperatorWihoutStart(task_id="test")
+    ).extract_on_complete(task_instance=task_instance)
+
+    assert metadata is None
+
+    assert metadata_on_complete == TaskMetadata(
+        name="adhoc_airflow.test",
+        inputs=INPUTS,
+        outputs=OUTPUTS,
+        run_facets=RUN_FACETS,
+        job_facets=FINISHED_FACETS,
     )
 
 

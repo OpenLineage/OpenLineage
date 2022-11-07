@@ -10,7 +10,7 @@ from setuptools import setup, find_namespace_packages
 with open("README.md") as readme_file:
     readme = readme_file.read()
 
-__version__ = "0.16.0"
+__version__ = "0.17.0"
 
 requirements = [
     "attrs>=19.3",
@@ -40,7 +40,7 @@ extras_require = {
         "apache-airflow-providers-snowflake>=2.1.0",
         "apache-airflow-providers-google>=5.0.0",
         "apache-airflow-providers-amazon>=3.1.1",
-        "airflow-provider-great-expectations==0.1.4",
+        "airflow-provider-great-expectations==0.1.5",
         "great-expectations<=0.15.23",
         "protobuf==3.20.*",
     ],
