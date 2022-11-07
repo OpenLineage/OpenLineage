@@ -44,7 +44,7 @@ configurations {
 }
 
 ext {
-    assertjVersion = '3.20.2'
+    assertjVersion = '3.23.1'
     bigqueryVersion = '0.26.0'
     junit5Version = '5.7.2'
     sparkVersion = '2.4.8'
