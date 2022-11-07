@@ -23,6 +23,8 @@ public class SchemaParser {
         return new OneOfType(parseChildren(typeJson.get("oneOf")));
       } else if (typeJson.has("allOf")) {
         return new AllOfType(parseChildren(typeJson.get("allOf")));
+      } else if (typeJson.has("anyOf")) {
+        return new AnyOfType(parseChildren(typeJson.get("anyOf")));
       } else if (typeJson.has("$ref")) {
         String pointer = typeJson.get("$ref").asText();
         return new RefType(pointer);
@@ -103,6 +105,8 @@ public class SchemaParser {
     T visit(EnumType enumType);
 
     T visit(OneOfType oneOfType);
+
+    T visit(AnyOfType anyOfType);
 
     T visit(AllOfType allOfType);
 
@@ -239,6 +243,46 @@ public class SchemaParser {
       }
       AllOfType allOfType = (AllOfType) o;
       return children.equals(allOfType.children);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(children);
+    }
+  }
+
+  static class AnyOfType implements Type {
+
+    private final List<Type> children;
+
+    public AnyOfType(List<Type> children) {
+      this.children = children;
+    }
+
+    public List<Type> getChildren() {
+      return children;
+    }
+
+    @Override
+    public <T> T accept(TypeVisitor<T> visitor) {
+      return visitor.visit(this);
+    }
+
+    @Override
+    public String toString() {
+      return "AnyOfType{children: " + children + "}";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      AnyOfType anyOfType = (AnyOfType) o;
+      return children.equals(anyOfType.children);
     }
 
     @Override
