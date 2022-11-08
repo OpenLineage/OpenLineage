@@ -1,5 +1,5 @@
 [workspace]
-members = ["impl", "iface-py"]
+members = ["impl", "iface-py", "iface-java"]
 
 [workspace.dependencies]
 anyhow = "1.0.6"
