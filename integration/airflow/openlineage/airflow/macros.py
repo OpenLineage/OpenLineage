@@ -2,17 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
-
-from openlineage.airflow.utils import JobIdMapping, openlineage_job_name, safe_import_airflow
+from openlineage.airflow.utils import JobIdMapping, openlineage_job_name
 
 _JOB_NAMESPACE = os.getenv('OPENLINEAGE_NAMESPACE', 'default')
-
-
-def get_create_session():
-    return safe_import_airflow(
-        airflow_1_path="airflow.utils.db.create_session",
-        airflow_2_path="airflow.utils.session.create_session",
-    )
 
 
 def lineage_run_id(run_id, task):
@@ -29,7 +21,8 @@ def lineage_run_id(run_id, task):
         dag=dag
     )
     """
-    with get_create_session()() as session:
+    from airflow.utils.session import create_session
+    with create_session() as session:
         name = openlineage_job_name(task.dag_id, task.task_id)
         ids = JobIdMapping.get(name, run_id, session)
         if ids is None:
@@ -55,7 +48,8 @@ def lineage_parent_id(run_id, task):
         dag=dag
     )
     """
-    with get_create_session()() as session:
+    from airflow.utils.session import create_session
+    with create_session() as session:
         job_name = openlineage_job_name(task.dag_id, task.task_id)
         ids = JobIdMapping.get(job_name, run_id, session)
         if ids is None:

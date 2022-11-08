@@ -210,7 +210,7 @@ jobs:
           when: on_fail
           command: cat build/test-results/test/TEST-*.xml
       - run: ./gradlew --no-daemon jacocoTestReport
-      - run: ./gradlew --no-daemon --info check
+      - run: ./gradlew --no-daemon --info check -Pspark.version=<< parameters.spark-version >>
       - run: ./gradlew javadoc
       - store_test_results:
           path: build/test-results/test
@@ -304,31 +304,25 @@ jobs:
             - ~/.gradle
 
   unit-test-integration-common:
-    parameters:
-      install_parser:
-        type: boolean
     working_directory: ~/openlineage/integration/common
     docker:
       - image: cimg/python:3.7
     steps:
       - *checkout_project_root
-      - *install_python_client
-      - when:
-          condition: << parameters.install_parser >>
-          steps:
-            - attach_workspace:
-                  at: .
-            - run: pip install target/wheels/*.whl
-            - run: pip install -e .[dev]
-      - when:
-          condition:
-            not: << parameters.install_parser >>
-          steps:
-            - run: pip install -e .[dev_no_parser]
-      - run: flake8
-      - run: python -m mypy --ignore-missing-imports openlineage
-      - run: pytest --cov=openlineage tests/
+      - attach_workspace:
+          at: .
+      - run: pip install tox
+      - restore_cache:
+          keys:
+            - v1-toxenv-common-{{ .Branch }}-{{ checksum "setup.cfg" }}-{{ checksum "setup.py" }}
+      - run: tox -p all
       - run: bash <(curl -s https://codecov.io/bash)
+      - store_test_results:
+          path: test-results
+      - save_cache:
+          paths:
+            - ./.tox
+          key: v1-toxenv-common-{{ .Branch }}-{{ checksum "setup.cfg" }}-{{ checksum "setup.py" }}
 
   build-integration-common:
     working_directory: ~/openlineage/integration/common
@@ -358,9 +352,9 @@ jobs:
     resource_class: << parameters.resource_class >>
     steps:
       - *checkout_project_root
-      - run: docker run -it -v $PWD:/code << parameters.image >> bash -c 'cd /code; RUN_TESTS=<<parameters.run_tests>> bash script/build.sh'
+      - run: docker run -it -v $PWD:/code << parameters.image >> bash -c 'cd /code; RUN_TESTS=<<parameters.run_tests>> bash iface-py/script/build.sh'
       - persist_to_workspace:
-          root: .
+          root: ./iface-py
           paths:
             - ./target/wheels/*.whl
       - when:
@@ -368,27 +362,68 @@ jobs:
             equal: [ "quay.io/pypa/manylinux2014_x86_64", << parameters.image >> ]
           steps:
             - persist_to_workspace:
-                root: .
+                root: ./iface-py
                 paths:
-                  - ./target/wheels/*.tar.gz
+                  - target/wheels/*.tar.gz
       - store_artifacts:
-          path: ./target/wheels
+          path: ./iface-py/target/wheels
           destination: sql-artifacts
+
+  compile-integration-sql-java-linux:
+    working_directory: ~/openlineage/integration/sql/iface-java
+    docker:
+      - image: cimg/openjdk:8.0
+    resource_class: medium
+    steps:
+      - *checkout_project_root
+      - run: bash script/compile.sh
+      - persist_to_workspace:
+          root: ../
+          paths:
+            - target/debug/libopenlineage_sql_java.so
+
+  compile-integration-sql-java-macos:
+    working_directory: ~/openlineage/integration/sql/iface-java
+    macos:
+      xcode: 13.2.1
+    resource_class: medium
+    steps:
+      - *checkout_project_root
+      - run: bash script/compile.sh
+      - persist_to_workspace:
+          root: ../
+          paths:
+            - target/debug/libopenlineage_sql_java.dylib
+
+  build-integration-sql-java:
+    working_directory: ~/openlineage/integration/sql/iface-java
+    docker:
+      - image: cimg/openjdk:8.0
+    resource_class: medium
+    steps:
+      - *checkout_project_root
+      - attach_workspace:
+          at: ../
+      - run: bash script/build.sh
+      - store_artifacts:
+          path: ./build/libs
+          destination: sql-java-artifacts
+
 
   build-integration-sql-macos:
     working_directory: ~/openlineage/integration/sql
     macos:
       xcode: 13.2.1
-    resource_class: large
+    resource_class: medium
     steps:
       - *checkout_project_root
-      - run: RUN_TESTS=true bash script/build-macos.sh
+      - run: RUN_TESTS=true bash iface-py/script/build-macos.sh
       - persist_to_workspace:
-          root: .
+          root: ./iface-py
           paths:
-            - ./target/wheels/*.whl
+            - target/wheels/*.whl
       - store_artifacts:
-          path: ./target/wheels
+          path: ./iface-py/target/wheels
           destination: sql-artifacts-macos
 
   build-integration-dbt:
@@ -520,28 +555,6 @@ jobs:
             - ./dist/*.whl
             - ./dist/*.tar.gz
 
-  integration-test-integration-airflow-1-10:
-    working_directory: ~/openlineage/integration/
-    machine:
-      image: ubuntu-2004:current
-    resource_class: large
-    steps:
-      - *checkout_project_root
-      - gcp-cli/install
-      - gcp-cli/initialize
-      - run: ../.circleci/get-docker-compose.sh
-      - run: cp -r ../client/python python
-      - attach_workspace:
-          at: .
-      - run: docker build -f airflow/Dockerfile.tests -t openlineage-airflow-base .
-      - run: ./airflow/tests/integration/docker/up.sh
-      - store_artifacts:
-          path: airflow/tests/integration/tests/airflow/logs
-          destination: airflow-logs
-      - store_artifacts:
-          path: airflow/tests/integration/tests/events
-          destination: events
-
   integration-test-integration-airflow:
     parameters:
       airflow-image:
@@ -558,8 +571,7 @@ jobs:
       - run: cp -r ../client/python python
       - attach_workspace:
           at: .
-      - run: docker build -f airflow/Dockerfile.tests -t openlineage-airflow-base .
-      - run: AIRFLOW_IMAGE=<< parameters.airflow-image >> ./airflow/tests/integration/docker/up-2.sh
+      - run: AIRFLOW_IMAGE=<< parameters.airflow-image >> ./airflow/tests/integration/docker/up.sh
       - store_artifacts:
           path: airflow/tests/integration/tests/airflow/logs
           destination: airflow-logs
@@ -580,8 +592,7 @@ jobs:
       - run: cp -r ../client/python python
       - attach_workspace:
           at: .
-      - run: docker build -f airflow/Dockerfile.tests -t openlineage-airflow-base .
-      - run: AIRFLOW_IMAGE=apache/airflow:2.3.1-python3.7 ./airflow/tests/integration/docker/up-failure.sh << parameters.failure-type >>
+      - run: AIRFLOW_IMAGE=apache/airflow:2.3.4-python3.7 ./airflow/tests/integration/docker/up-failure.sh << parameters.failure-type >>
       - store_artifacts:
           path: airflow/tests/integration/failures/airflow/logs
           destination: airflow-logs
@@ -624,7 +635,7 @@ jobs:
           at: .
       - run: pip install wheel twine
       - run: mkdir -p target/wheels && cp target/wheels/* dist/
-      - run: python -m twine upload --non-interactive --verbose -u $ARTIFACTORY_USERNAME -p $ARTIFACTORY_PASSWORD --repository-url https://datakin.jfrog.io/artifactory/api/pypi/pypi-public-libs-release dist/*
+      - run: python -m twine upload --non-interactive --verbose -u $ARTIFACTORY_USERNAME -p $ARTIFACTORY_PASSWORD --repository-url https://astronomer.jfrog.io/artifactory/api/pypi/pypi-public-libs-release dist/*
 
   release-python:
     working_directory: ~/openlineage

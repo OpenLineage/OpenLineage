@@ -1,6 +1,6 @@
 # OpenLineage dbt integration
 
-Wrapper script for dbt for automatic metadata collection
+Wrapper script for automatic metadata collection from dbt
 
 ## Features
 
@@ -33,9 +33,9 @@ $ pip install .
 
 ### `HTTP` Backend Environment Variables
 
-`openlineage-dbt` uses OpenLineage client to push data to OpenLineage backend.
+`openlineage-dbt` uses the OpenLineage client to push data to the OpenLineage backend.
 
-OpenLineage client depends on environment variables:
+The OpenLineage client depends on environment variables:
 
 * `OPENLINEAGE_URL` - point to service which will consume OpenLineage events
 * `OPENLINEAGE_API_KEY` - set if consumer of OpenLineage events requires `Bearer` authentication key
@@ -46,4 +46,4 @@ OpenLineage client depends on environment variables:
 
 To begin collecting dbt metadata with OpenLineage, replace `dbt run` with `dbt-ol run`.
 
-Additional table and column level metadata will be available if `catalog.json`, result of running `dbt docs generate` will be found in target directory.
+Additional table and column level metadata will be available if `catalog.json`, a result of running `dbt docs generate`, will be found in the target directory.

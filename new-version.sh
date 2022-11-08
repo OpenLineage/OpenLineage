@@ -134,6 +134,7 @@ done
 
 # (2) Bump java module versions
 perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./client/java/gradle.properties
+perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/sql/iface-java/gradle.properties
 perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/spark/gradle.properties
 perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./integration/flink/gradle.properties
 perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./proxy/gradle.properties
@@ -142,6 +143,7 @@ perl -i -pe"s/^version=.*/version=${RELEASE_VERSION}/g" ./proxy/gradle.propertie
 perl -i -pe"s/<version>.*/<version>${RELEASE_VERSION}<\/version>/g" ./integration/spark/README.md
 perl -i -pe"s/openlineage-spark:[[:alnum:]\.-]*/openlineage-spark:${RELEASE_VERSION}/g" ./integration/spark/README.md
 perl -i -pe"s/openlineage-spark-.*jar/openlineage-spark-${RELEASE_VERSION}.jar/g" ./integration/spark/README.md
+perl -i -pe"s/<version>.*/<version>${RELEASE_VERSION}<\/version>/g" ./integration/flink/README.md
 perl -i -pe"s/<version>.*/<version>${RELEASE_VERSION}<\/version>/g" ./client/java/README.md
 perl -i -pe"s/openlineage-java:[[:alnum:]\.-]*/openlineage-java:${RELEASE_VERSION}/g" ./client/java/README.md
 
@@ -166,6 +168,7 @@ if [[ "${NEXT_VERSION}" == *-rc.? ||
 fi
 
 perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/spark/gradle.properties
+perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/sql/iface-java/gradle.properties
 perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./client/java/gradle.properties
 perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./proxy/gradle.properties
 perl -i -pe"s/^version=.*/version=${NEXT_VERSION}/g" ./integration/flink/gradle.properties

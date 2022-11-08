@@ -1,5 +1,5 @@
-# SPDX-License-Identifier: Apache-2.0.
-import logging
+# Copyright 2018-2022 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
 from typing import Optional, List
 
 from openlineage.client.facet import SqlJobFacet
@@ -8,8 +8,6 @@ from openlineage.common.provider.redshift_data import RedshiftDataDatasetsProvid
 from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
 from openlineage.airflow.utils import get_job_name
 from openlineage.common.sql import SqlMeta, parse
-
-log = logging.getLogger(__name__)
 
 
 class RedshiftDataExtractor(BaseExtractor):
@@ -21,16 +19,16 @@ class RedshiftDataExtractor(BaseExtractor):
         return None
 
     def extract_on_complete(self, task_instance) -> Optional[TaskMetadata]:
-        log.debug(f"extract_on_complete({task_instance})")
+        self.log.debug(f"extract_on_complete({task_instance})")
         job_facets = {"sql": SqlJobFacet(self.operator.sql)}
 
-        log.debug(f"Sending SQL to parser: {self.operator.sql}")
+        self.log.debug(f"Sending SQL to parser: {self.operator.sql}")
         sql_meta: Optional[SqlMeta] = parse(
             self.operator.sql,
             dialect=self.dialect,
             default_schema=self.default_schema
         )
-        log.debug(f"Got meta {sql_meta}")
+        self.log.debug(f"Got meta {sql_meta}")
         try:
             redshift_job_id = self._get_xcom_redshift_job_id(task_instance)
             if redshift_job_id is None:
@@ -38,7 +36,7 @@ class RedshiftDataExtractor(BaseExtractor):
                     "Xcom could not resolve Redshift job id. Job may have failed."
                 )
         except Exception as e:
-            log.error(f"Cannot retrieve job details from {e}", exc_info=True)
+            self.log.error(f"Cannot retrieve job details from {e}", exc_info=True)
             return TaskMetadata(
                 name=get_job_name(task=self.operator),
                 run_facets={},
@@ -87,5 +85,5 @@ class RedshiftDataExtractor(BaseExtractor):
     def _get_xcom_redshift_job_id(self, task_instance):
         redshift_job_id = task_instance.xcom_pull(task_ids=task_instance.task_id)
 
-        log.debug(f"redshift job id: {redshift_job_id}")
+        self.log.debug(f"redshift job id: {redshift_job_id}")
         return redshift_job_id

@@ -14,9 +14,6 @@ workflows:
       - unit-test-integration-common:
           requires:
             - build-integration-sql-x86
-          matrix:
-            parameters:
-              install_parser: [true, false]
       - build-integration-common:
           filters:
             branches:
@@ -28,30 +25,20 @@ workflows:
           matrix:
               parameters:
                 airflow-version: [
-                  'airflow-1.10.15',
                   'airflow-2.1.4',
-                  'airflow-2.3.1'
+                  'airflow-2.2.4',
+                  'airflow-2.3.4'
                 ]
                 install_parser: [ true ]
           requires:
             - build-integration-sql-x86
-      - integration-test-integration-airflow-1-10:
-          context: integration-tests
-          requires:
-            - unit-test-integration-airflow
-            - unit-test-integration-common
-            - unit-test-client-python
-            - build-integration-sql-x86
-          filters:
-            branches:
-              ignore: /pull\/[0-9]+/
       - integration-test-integration-airflow:
           matrix:
             parameters:
               airflow-image: [
                 'apache/airflow:2.1.4-python3.7',
                 'apache/airflow:2.2.4-python3.7',
-                'apache/airflow:2.3.1-python3.7'
+                'apache/airflow:2.3.4-python3.7'
               ]
           context: integration-tests
           requires:
@@ -91,4 +78,3 @@ workflows:
             - build-integration-airflow
             - integration-test-integration-airflow-failure
             - integration-test-integration-airflow
-            - integration-test-integration-airflow-1-10

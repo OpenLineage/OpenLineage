@@ -1,17 +1,10 @@
-# SPDX-License-Identifier: Apache-2.0.
-import logging
+# Copyright 2018-2022 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
 from typing import List
 from urllib.parse import urlparse
 
-from openlineage.airflow.utils import (
-    get_normalized_postgres_connection_uri,
-    safe_import_airflow,
-)
-
+from openlineage.airflow.utils import try_import_from_string
 from openlineage.airflow.extractors.sql_extractor import SqlExtractor
-
-
-logger = logging.getLogger(__name__)
 
 
 class PostgresExtractor(SqlExtractor):
@@ -24,6 +17,7 @@ class PostgresExtractor(SqlExtractor):
     ]
     _is_information_schema_cross_db = False
 
+    # cluster-identifier
     @property
     def dialect(self):
         return "postgres"
@@ -32,8 +26,12 @@ class PostgresExtractor(SqlExtractor):
     def get_operator_classnames(cls) -> List[str]:
         return ['PostgresOperator']
 
-    def _get_connection_uri(self):
-        return get_normalized_postgres_connection_uri(self.conn)
+    @classmethod
+    def get_connection_uri(cls, conn):
+        uri = super().get_connection_uri(conn)
+        if uri.startswith('postgresql'):
+            uri = uri.replace('postgresql', 'postgres', 1)
+        return uri
 
     def _get_scheme(self):
         return 'postgres'
@@ -53,9 +51,8 @@ class PostgresExtractor(SqlExtractor):
             return f'{parsed.hostname}:{parsed.port}'
 
     def _get_hook(self):
-        PostgresHook = safe_import_airflow(
-            airflow_1_path="airflow.hooks.postgres_hook.PostgresHook",
-            airflow_2_path="airflow.providers.postgres.hooks.postgres.PostgresHook"
+        PostgresHook = try_import_from_string(
+            "airflow.providers.postgres.hooks.postgres.PostgresHook"
         )
         return PostgresHook(
             postgres_conn_id=self.operator.postgres_conn_id,

@@ -177,6 +177,17 @@ class SparkContainerIntegrationTest {
   }
 
   @Test
+  void testOverwriteName() {
+    SparkContainerUtils.runPysparkContainerWithDefaultConf(
+        network,
+        openLineageClientMockContainer,
+        "testPysparkSQLHiveTest",
+        Arrays.asList("app_name=appName"),
+        "overwrite_appname.py");
+    verifyEvents("pysparkOverwriteNameStartEvent.json", "pysparkOverwriteNameCompleteEvent.json");
+  }
+
+  @Test
   void testPysparkSQLOverwriteDirHiveTest() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network,

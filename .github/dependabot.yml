@@ -1,0 +1,63 @@
+# For information about how to configure Dependabot, see: 
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file#configuration-options-for-the-dependabotyml-file
+
+version: 2
+updates:
+  # Supported package managers:
+  # bundler
+  # cargo
+  # composer
+  # docker
+  # mix
+  # elm
+  # gitsubmodule
+  # github-actions
+  # gomod
+  # gradle
+  # maven
+  # npm
+  # nuget
+  # pip, pipenv, pip-compile, poetry (use 'pip')
+  # pub
+  # terraform
+  # yarn (use 'npm')
+  - package-ecosystem: "gradle"
+    directory: "client/java"
+    schedule:
+    # supported intervals: daily, weekly, monthly
+      interval: "weekly"
+
+  - package-ecosystem: "gradle"
+    directory: "integration/flink"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "gradle"
+    directory: "integration/spark"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "pip"
+    directory: "client/python"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "pip"
+    directory: "integration/common"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "pip"
+    directory: "integration/airflow"
+    schedule:
+      interval: "weekly"  
+
+  - package-ecosystem: "pip"
+    directory: "integration/dbt"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "cargo"
+    directory: "integration/sql"
+    schedule:
+      interval: "weekly"

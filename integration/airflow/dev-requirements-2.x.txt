@@ -1,3 +1,0 @@
--e ../../client/python
--e ../common[sql]
--e .[dev,airflow-2]

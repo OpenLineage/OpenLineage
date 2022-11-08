@@ -1,14 +1,12 @@
+# Copyright 2018-2022 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
 import os
 import inspect
-import logging
 from typing import Optional, List, Callable, Dict
 
 from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
 from openlineage.airflow.facets import UnknownOperatorAttributeRunFacet, UnknownOperatorInstance
 from openlineage.client.facet import SourceCodeJobFacet
-
-
-log = logging.getLogger(__name__)
 
 
 class PythonExtractor(BaseExtractor):
@@ -63,5 +61,7 @@ class PythonExtractor(BaseExtractor):
             # Trying to extract source code of builtin_function_or_method
             return str(callable)
         except OSError:
-            log.exception(f"Can't get source code facet of PythonOperator {self.operator.task_id}")
+            self.log.exception(
+                f"Can't get source code facet of PythonOperator {self.operator.task_id}"
+            )
         return None

@@ -11,83 +11,110 @@ set -e
 project_root=$(git rev-parse --show-toplevel)
 current_dir=$(pwd)
 
+YAML_LOCATION="${project_root}"/integration/airflow/tests/integration/tests
+
 REBUILD="false"
+RUN_DEFAULT="true"
+DETACHED="true"
+
+function help() {
+  echo "Usage:"
+  echo
+  echo "IMPORTANT: Set AIRFLOW_IMAGE variable first."
+  echo "./run-dev-airflow.sh [-b] [-r] [--shutdown] [--compose-exec]"
+  echo
+  echo "options:"
+  echo "-b|--block-thread         Run docker-compose without --detach flag."
+  echo "-r|--rebuild              Force rebuilding all images."
+  echo "--shutdown                Stop and remove all containers and networks."
+  echo "--compose-exec            Run arbitrary command using docker-compose"
+  echo "-i|--attach-integration   Attach terminal to integration container from which you can run integration tests."
+  echo "-a|--attach-worker        Attach terminal to Airflow worker from which you can run unit tests."
+  echo "-h|--help                 Prints help."
+  echo
+}
+
+function set_write_permissions () {
+  mkdir -p airflow/logs
+  chmod a+rw -R airflow/logs
+  chmod a+w -R $project_root/integration
+  chmod a+w -R $project_root/client/python
+}
+
+function compose_up() {
+
+  # string operator: from variable AIRFLOW_IMAGE
+  #  ##   <-- greedy front trim
+  #  *    <-- matches anything
+  #  :    <-- until the last ':'
+  AIRFLOW_VERSION=${AIRFLOW_IMAGE##*:}
+
+  # Remove -python3.7 from the tag
+  export AIRFLOW_VERSION=${AIRFLOW_VERSION::-10}
+  export BIGQUERY_PREFIX=$(echo "$AIRFLOW_VERSION" | tr "-" "_" | tr "." "_")
+  export DBT_DATASET_PREFIX=$(echo "$AIRFLOW_VERSION" | tr "-" "_" | tr "." "_")_dbt
+  export DAGS_ARE_PAUSED_AT_CREATION=True
+
+  if [[ "$(id -u)" == "0" ]]; then
+    set_write_permissions
+    export AIRFLOW_UID=50000
+  else
+    export AIRFLOW_UID=$(id -u)
+  fi
+
+  UP_ARGS=""
+  if [[ "${REBUILD}" == "true" ]]; then
+    UP_ARGS+="--build --force-recreate "
+  fi
+
+  if [[ "${DETACHED}" == "true" ]]; then
+    UP_ARGS+="-d"
+  fi
+
+  docker-compose -f $YAML_LOCATION/docker-compose.yml -f $YAML_LOCATION/docker-compose-dev.yml down
+  docker-compose -f $YAML_LOCATION/docker-compose.yml -f $YAML_LOCATION/docker-compose-dev.yml --profile dev up $UP_ARGS
+}
+
 while [[ $# -gt 0 ]]
 do
   case $1 in
+    -h|--help)
+      help
+      exit
+      ;;
+    -b|--block-thread)
+      shift
+      DETACHED="false"
+      RUN_DEFAULT="true"
+      ;;
     -r|--rebuild)
        shift
        REBUILD="true"
+       RUN_DEFAULT="true"
        ;;
-     *) echo "Unknown argument: $1"
+    --shutdown)
+      docker-compose -f $YAML_LOCATION/docker-compose.yml -f $YAML_LOCATION/docker-compose-dev.yml down
+      exit
+      ;;
+    --compose-exec)
       shift
+      docker-compose -f $YAML_LOCATION/docker-compose.yml -f $YAML_LOCATION/docker-compose-dev.yml "$@"
+      exit
+      ;;
+    -i|--attach-integration)
+      docker-compose -f $YAML_LOCATION/docker-compose.yml -f $YAML_LOCATION/docker-compose-dev.yml exec integration /bin/bash
+      exit
+      ;;
+    -a|--attach-worker)
+      docker-compose -f $YAML_LOCATION/docker-compose.yml -f $YAML_LOCATION/docker-compose-dev.yml exec --workdir /app/openlineage/integration/airflow airflow_worker /bin/bash
+      exit
+      ;;
+     *) echo "Unknown argument: $1"
+      exit 1
       ;;
   esac
 done
 
-
-if [[ "${REBUILD}" == "true" ]]; then
-   echo "Rebuilding..."
-   cd "${project_root}"/integration
-   cp -r ../client/python .
-   docker build -f airflow/Dockerfile.tests -t openlineage-airflow-base .
-   rm -rf python
-   cd ${current_dir}
+if [[ "${RUN_DEFAULT}" == "true" ]]; then
+  compose_up
 fi
-
-# this makes it easier to keep proper permissions on logs
-mkdir -p airflow/logs
-chmod a+rwx -R airflow/logs
-
-# maybe overkill
-OPENLINEAGE_AIRFLOW_WHL=$(docker run --rm openlineage-airflow-base:latest sh -c "ls /whl/openlineage*.whl")
-OPENLINEAGE_AIRFLOW_WHL_ALL=$(docker run --rm openlineage-airflow-base:latest sh -c "ls /whl/*")
-
-# Add revision to requirements.txt
-cat > requirements.txt <<EOL
-airflow-provider-great-expectations==0.0.8
-apache-airflow-providers-snowflake==2.5.1
-apache-airflow-providers-postgres==3.0.0
-apache-airflow-providers-google==6.7.0
-great-expectations==0.13.42
-dbt-core==1.0.1
-dbt-bigquery==1.0.0
-dbt-snowflake==1.0.0
-${OPENLINEAGE_AIRFLOW_WHL}
-EOL
-
-# Add revision to integration-requirements.txt
-cat > integration-requirements.txt <<EOL
-requests==2.24.0
-psycopg2-binary==2.9.2
-mysqlclient>=1.3.6
-httplib2>=0.18.1
-retrying==1.3.3
-pytest==6.2.2
-jinja2==3.0.2
-python-dateutil==2.8.2
-${OPENLINEAGE_AIRFLOW_WHL}
-EOL
-
-# string operator: from variable AIRFLOW_IMAGE
-#  ##   <-- greedy front trim
-#  *    <-- matches anything
-#  :    <-- until the last ':'
-AIRFLOW_VERSION=${AIRFLOW_IMAGE##*:}
-
-# Remove -python3.7 from the tag
-export AIRFLOW_VERSION=${AIRFLOW_VERSION::-10}
-export BIGQUERY_PREFIX=$(echo "$AIRFLOW_VERSION" | tr "-" "_" | tr "." "_")
-export DBT_DATASET_PREFIX=$(echo "$AIRFLOW_VERSION" | tr "-" "_" | tr "." "_")_dbt
-export DAGS_ARE_PAUSED_AT_CREATION=True
-
-YAML_LOCATION="${project_root}"/integration/airflow/tests/integration/tests/docker-compose-2.yml
-
-UP_ARGS=""
-if [[ "${REBUILD}" == "true" ]]; then
-   UP_ARGS+="--build --force-recreate"
-fi
-
-docker-compose -f $YAML_LOCATION down
-docker-compose -f $YAML_LOCATION up $UP_ARGS --abort-on-container-exit airflow_init postgres
-docker-compose -f $YAML_LOCATION --profile dev up $UP_ARGS --scale airflow_init=0 --scale integration=0

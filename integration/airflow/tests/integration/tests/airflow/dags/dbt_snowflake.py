@@ -1,3 +1,4 @@
+# Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
 import json
@@ -37,7 +38,7 @@ default_args = {
     'email': ['datascience@example.com']
 }
 
-if AIRFLOW_VERSION == '2.2.4':
+if AIRFLOW_VERSION == os.environ.get("SNOWFLAKE_AIRFLOW_TEST_VERSION", "2.3.4"):
     dag = DAG(
         'dbt_snowflake',
         schedule_interval='@once',

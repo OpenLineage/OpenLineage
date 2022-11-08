@@ -10,17 +10,19 @@ from setuptools import setup, find_namespace_packages
 with open("README.md") as readme_file:
     readme = readme_file.read()
 
-__version__ = "0.15.0"
+__version__ = "0.17.0"
 
 requirements = [
     "attrs>=19.3",
     "requests>=2.20.0",
-    "sqlparse>=0.3.1",
     f"openlineage-integration-common[sql]=={__version__}",
     f"openlineage-python=={__version__}",
 ]
 
 extras_require = {
+    "python-sql": [
+        "sqlparse>=0.3.1",
+    ],
     "tests": [
         "pytest",
         "pytest-cov",
@@ -32,17 +34,14 @@ extras_require = {
         "pandas-gbq==0.14.1",       # must be set to 0.14.* for airflow tests compatibility
         "snowflake-connector-python"
     ],
-    "airflow-1": [
-        "apache-airflow[gcp_api,google,postgres,mysql]==1.10.15",
-        "airflow-provider-great-expectations==0.0.8",
-    ],
-    "airflow-2": [
+    "airflow": [
         "apache-airflow-providers-postgres>=2.0.0",
         "apache-airflow-providers-mysql>=2.0.0",
         "apache-airflow-providers-snowflake>=2.1.0",
         "apache-airflow-providers-google>=5.0.0",
         "apache-airflow-providers-amazon>=3.1.1",
-        "airflow-provider-great-expectations==0.1.4",
+        "airflow-provider-great-expectations==0.1.5",
+        "great-expectations<=0.15.23",
         "protobuf==3.20.*",
     ],
 }

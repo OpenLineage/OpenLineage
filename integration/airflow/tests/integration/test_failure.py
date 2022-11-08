@@ -9,6 +9,8 @@ import time
 import requests
 from requests.auth import HTTPBasicAuth
 from retrying import retry
+import pytest
+import unittest
 
 
 logging.basicConfig(
@@ -53,6 +55,10 @@ def wait_for_dag(dag_id):
         raise Exception('Retry!')
     return True
 
+@pytest.fixture(scope="module", autouse=True)
+def airflow_db_conn():
+    yield setup_db()
+
 
 def setup_db():
     time.sleep(10)
@@ -65,19 +71,16 @@ def setup_db():
     )
     airflow_db_conn.autocommit = True
 
+@pytest.mark.parametrize("dag_id", ["wait_dag", "test_dag", "hanging_extractor_dag"])
+def test_failure(dag_id):
+    trigger_dag(dag_id)
+    assert wait_for_dag(dag_id)
+
 
 def trigger_dag(dag_id):
     r = requests.post(f"http://airflow:8080/api/v1/dags/{dag_id}/dagRuns", auth=HTTPBasicAuth('airflow', 'airflow'), json={})
     r.raise_for_status()
 
 
-if __name__ == '__main__':
-    setup_db()
-    if not wait_for_dag("wait_dag"):
-        sys.exit(1)
-    trigger_dag("test_dag")
-    if not wait_for_dag("test_dag"):
-        sys.exit(1)
-    trigger_dag("hanging_extractor_dag")
-    if not wait_for_dag("hanging_extractor_dag"):
-        sys.exit(1)
+if __name__ == "__main__":
+    unittest.main()

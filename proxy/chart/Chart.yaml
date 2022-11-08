@@ -1,0 +1,20 @@
+apiVersion: v2
+appVersion: "1.16.0"
+dependencies:
+  - name: common
+    repository: https://charts.bitnami.com/bitnami
+    tags:
+      - bitnami-common
+    version: 2.x.x
+type: application
+name: openlineage-proxy
+description: An Open Standard for lineage metadata collection
+version: 0.1.0
+home: https://github.com/OpenLineage/OpenLineage/tree/main/proxy/chart
+icon: https://github.com/OpenLineage/artwork/blob/main/icon/color/olicon-color.png
+sources:
+  - https://github.com/OpenLineage/OpenLineage
+  - https://openlineage.io
+keywords:
+  - openlineage
+  - metadata

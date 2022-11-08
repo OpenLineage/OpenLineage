@@ -50,23 +50,22 @@ class Backend:
             task_instance=task_instance
         )
 
-        if parse_version(AIRFLOW_VERSION) >= parse_version("2.0.0"):
-            self.adapter.start_task(
-                run_id=run_id,
-                job_name=job_name,
-                job_description=dag.description,
-                event_time=DagUtils.get_start_time(task_instance.start_date),
-                parent_job_name=dag.dag_id,
-                parent_run_id=dag_run_id,
-                code_location=get_task_location(operator),
-                nominal_start_time=DagUtils.get_start_time(dagrun.execution_date),
-                nominal_end_time=DagUtils.to_iso_8601(task_instance.end_date),
-                task=task_metadata,
-                run_facets={
-                    **task_metadata.run_facets,
-                    **get_custom_facets(operator, dagrun.external_trigger)
-                }
-            )
+        self.adapter.start_task(
+            run_id=run_id,
+            job_name=job_name,
+            job_description=dag.description,
+            event_time=DagUtils.get_start_time(task_instance.start_date),
+            parent_job_name=dag.dag_id,
+            parent_run_id=dag_run_id,
+            code_location=get_task_location(operator),
+            nominal_start_time=DagUtils.get_start_time(dagrun.execution_date),
+            nominal_end_time=DagUtils.to_iso_8601(task_instance.end_date),
+            task=task_metadata,
+            run_facets={
+                **task_metadata.run_facets,
+                **get_custom_facets(dagrun, operator, dagrun.external_trigger)
+            }
+        )
 
         self.adapter.complete_task(
             run_id=run_id,
@@ -81,8 +80,7 @@ class Backend:
 
 
 class OpenLineageBackend(LineageBackend):
-    # Airflow 1.10 uses send_lineage as staticmethod, so just construct class
-    # instance on first use and delegate calls to it
+    # Constructing instance on first use and delegate calls to it - backwards compatible with 1.10
     backend: Optional[Backend] = None
 
     @classmethod

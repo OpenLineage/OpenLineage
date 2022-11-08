@@ -23,6 +23,7 @@ class ArgumentParserTest {
   private static final String JOB_NAME = "job_name";
   private static final String URL = "http://localhost:5000";
   private static final String RUN_ID = "ea445b5c-22eb-457a-8007-01c7c52b6e54";
+  private static final String APP_NAME = "test";
 
   public static Collection<Object[]> data() {
     List<Object[]> pass = new ArrayList<>();
@@ -37,6 +38,7 @@ class ArgumentParserTest {
           false,
           Optional.of("abc"),
           Optional.empty(),
+          Optional.empty(),
           Optional.empty()
         });
     pass.add(
@@ -48,6 +50,7 @@ class ArgumentParserTest {
           JOB_NAME,
           RUN_ID,
           false,
+          Optional.empty(),
           Optional.empty(),
           Optional.empty(),
           Optional.empty()
@@ -63,6 +66,7 @@ class ArgumentParserTest {
           false,
           Optional.empty(),
           Optional.empty(),
+          Optional.empty(),
           Optional.empty()
         });
     pass.add(
@@ -74,6 +78,7 @@ class ArgumentParserTest {
           JOB_NAME,
           null,
           true,
+          Optional.empty(),
           Optional.empty(),
           Optional.empty(),
           Optional.empty()
@@ -89,6 +94,7 @@ class ArgumentParserTest {
           false,
           Optional.of("abc"),
           Optional.empty(),
+          Optional.empty(),
           Optional.of(Collections.singletonMap("myParam", "xyz"))
         });
     pass.add(
@@ -100,6 +106,7 @@ class ArgumentParserTest {
           JOB_NAME,
           RUN_ID,
           false,
+          Optional.empty(),
           Optional.empty(),
           Optional.empty(),
           Optional.of(Collections.singletonMap("myParam", "xyz"))
@@ -115,6 +122,7 @@ class ArgumentParserTest {
           false,
           Optional.empty(),
           Optional.of(5000.0),
+          Optional.empty(),
           Optional.empty()
         });
     pass.add(
@@ -128,6 +136,22 @@ class ArgumentParserTest {
           false,
           Optional.empty(),
           Optional.empty(),
+          Optional.empty(),
+          Optional.empty()
+        });
+    pass.add(
+        new Object[] {
+          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54?app_name="
+              + APP_NAME,
+          URL,
+          "v1",
+          NS_NAME,
+          JOB_NAME,
+          RUN_ID,
+          false,
+          Optional.empty(),
+          Optional.empty(),
+          Optional.of(APP_NAME),
           Optional.empty()
         });
     return pass;
@@ -145,6 +169,7 @@ class ArgumentParserTest {
       boolean defaultRunId,
       Optional<String> apiKey,
       Optional<Double> timeout,
+      Optional<String> appName,
       Optional<Map<String, String>> urlParams) {
     ArgumentParser parser = ArgumentParser.parse(input);
     assertEquals(host, parser.getHost());
@@ -158,11 +183,9 @@ class ArgumentParserTest {
     }
     assertEquals(apiKey, parser.getApiKey());
     assertEquals(timeout, parser.getTimeout());
+    assertEquals(appName, parser.getAppName());
     assertEquals(urlParams, parser.getUrlParams());
-    if (urlParams.isPresent()) {
-      urlParams
-          .get()
-          .forEach((k, v) -> assertEquals(urlParams.get().get(k), parser.getUrlParam(k)));
-    }
+    urlParams.ifPresent(
+        par -> par.forEach((k, v) -> assertEquals(par.get(k), parser.getUrlParam(k))));
   }
 }

@@ -1,131 +1,69 @@
 {
-  "@class": "org.apache.spark.sql.execution.datasources.LogicalRelation",
-  "relation": {
-    "@class": "com.google.cloud.spark.bigquery.BigQueryRelation",
-    "options": {
-      "tableId": {
-        "project": null,
-        "dataset": "test-dataset",
-        "table": "QUERY",
-        "iamresourceName": "projects/null/datasets/test-dataset/tables/QUERY"
-      },
-      "query": {
-        "present": true
-      },
-      "parentProjectId": "test_serialization",
-      "credentialsKey": {
-        "present": false
-      },
-      "credentialsFile": 6,
-      "accessToken": 6,
-      "filter": 6,
-      "defaultParallelism": 10,
-      "temporaryGcsBucket": 6,
-      "persistentGcsBucket": 6,
-      "persistentGcsPath": 6,
-      "intermediateFormat": "PARQUET",
-      "readDataFormat": "ARROW",
-      "combinePushedDownFilters": true,
-      "viewsEnabled": false,
-      "materializationProject": 6,
-      "materializationDataset": 6,
-      "partitionField": 6,
-      "partitionRequireFilter": 6,
-      "partitionType": 6,
-      "clusteredFields": 6,
-      "createDisposition": 6,
-      "optimizedEmptyProjection": true,
-      "useAvroLogicalTypes": false,
-      "loadSchemaUpdateOptions": [],
-      "materializationExpirationTimeInMinutes": 1440,
-      "maxReadRowsRetries": 3,
-      "pushAllFilters": true,
-      "tableIdWithoutThePartition": 4,
-      "partitionTypeOrDefault": "DAY",
-      "bigQueryClientConnectTimeout": 60000,
-      "bigQueryClientReadTimeout": 60000,
-      "bigQueryClientRetrySettings": {
-        "totalTimeout": {
-          "seconds": 600,
-          "negative": false,
-          "zero": false,
-          "units": ["SECONDS", "NANOS"],
-          "nano": 0
-        },
-        "initialRetryDelay": {
-          "seconds": 1,
-          "negative": false,
-          "zero": false,
-          "units": ["SECONDS", "NANOS"],
-          "nano": 250000000
-        },
-        "retryDelayMultiplier": 1.6,
-        "maxRetryDelay": {
-          "seconds": 5,
-          "negative": false,
-          "zero": false,
-          "units": ["SECONDS", "NANOS"],
-          "nano": 0
-        },
-        "maxAttempts": 0,
-        "jittered": true,
-        "initialRpcTimeout": {
-          "seconds": 60,
-          "negative": false,
-          "zero": false,
-          "units": ["SECONDS", "NANOS"],
-          "nano": 0
-        },
-        "rpcTimeoutMultiplier": 1.6,
-        "maxRpcTimeout": {
-          "seconds": 300,
-          "negative": false,
-          "zero": false,
-          "units": ["SECONDS", "NANOS"],
-          "nano": 0
+  "@class":"org.apache.spark.sql.execution.datasources.LogicalRelation",
+  "id":1,
+  "relation":{
+    "@class":"com.google.cloud.spark.bigquery.BigQueryRelation",
+    "id":2,
+    "tableId":{
+      "id":3,
+      "dataset":"dataset",
+      "table":"test",
+      "iamresourceName":"projects/null/datasets/dataset/tables/test"
+    },
+    "tableName":"dataset.test"
+  },
+  "output":[
+    {
+      "id":4,
+      "name":"name",
+      "dataType":{
+        "id":5,
+        "ordering":{
+          "id":6
         }
-      }
-    },
-    "table": {
-      "etag": null,
-      "generatedId": null,
-      "selfLink": null,
-      "tableId": {
-        "project": null,
-        "dataset": "dataset",
-        "table": "test",
-        "iamresourceName": "projects/null/datasets/dataset/tables/test"
       },
-      "friendlyName": null,
-      "description": null,
-      "creationTime": null,
-      "expirationTime": null,
-      "lastModifiedTime": null,
-      "numBytes": null,
-      "numLongTermBytes": null,
-      "numRows": null,
-      "definition": {}
-      }
-    },
-    "traceEnabled": false
+      "nullable":false,
+      "metadata":{
+        "id":7,
+        "map":{
+
+        }
+      },
+      "exprId":{
+        "id":1,
+        "jvmId":"36158998-6a69-407a-9ac2-5eed26afc168"
+      },
+      "qualifier":[
+
+      ],
+      "origin":{
+        "id":9
+      },
+      "deterministic":true,
+      "resolved":true
+    }
+  ],
+  "isStreaming":false,
+  "origin":9,
+  "schema":[
+    {
+      "id":10,
+      "name":"name",
+      "dataType":5,
+      "nullable":false,
+      "metadata":7
+    }
+  ],
+  "allAttributes":{
+    "id":11,
+    "attrs":[
+
+    ]
   },
-  "output": [{
-    "name": "name",
-    "nullable": false,
-    "metadata": {
-      "map": {}
-    },
-    "qualifier": [],
-    "deterministic": true,
-    "resolved": true
-  }],
-  "catalogTable": null,
-  "isStreaming": false,
-  "allAttributes": {
-    "attrs": []
+  "resolved":true,
+  "attributeMap":{
+    "name#1":4
   },
-  "resolved": true,
-  "statsCache": null,
-  "traceEnabled": false,
-  "canonicalizedPlan": false
+  "traceEnabled":false,
+  "canonicalizedPlan":false
 }

@@ -1,6 +1,6 @@
+# Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0.
-import logging
-from typing import List, Optional, TYPE_CHECKING, Dict, Tuple, Callable
+from typing import List, Optional, TYPE_CHECKING, Dict, Tuple, Callable, Iterable, Union
 from urllib.parse import urlparse
 
 from openlineage.airflow.extractors.dbapi_utils import (
@@ -11,17 +11,13 @@ from openlineage.airflow.extractors.dbapi_utils import (
 from openlineage.airflow.utils import get_connection
 from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
 from openlineage.client.facet import BaseFacet, SqlJobFacet
-from openlineage.common.sql import SqlMeta, parse
+from openlineage.common.sql import SqlMeta, parse, DbTableMeta
 from openlineage.common.dataset import Dataset, Source
 from abc import abstractmethod
-
-from openlineage.common.sql.parser import DbTableMeta
 
 if TYPE_CHECKING:
     from airflow.models import Connection
     from airflow.hooks.base import BaseHook
-
-logger = logging.getLogger(__name__)
 
 
 class SqlExtractor(BaseExtractor):
@@ -45,17 +41,17 @@ class SqlExtractor(BaseExtractor):
 
     def extract(self) -> TaskMetadata:
         task_name = f"{self.operator.dag_id}.{self.operator.task_id}"
-        job_facets = {"sql": SqlJobFacet(query=self.operator.sql)}
+        job_facets = {"sql": SqlJobFacet(query=self._normalize_sql(self.operator.sql))}
         run_facets: Dict = {}
 
         # (1) Parse sql statement to obtain input / output tables.
-        logger.debug(f"Sending SQL to parser: {self.operator.sql}")
+        self.log.debug(f"Sending SQL to parser: {self.operator.sql}")
         sql_meta: Optional[SqlMeta] = parse(
             self.operator.sql,
             dialect=self.dialect,
             default_schema=self.default_schema
         )
-        logger.debug(f"Got meta {sql_meta}")
+        self.log.debug(f"Got meta {sql_meta}")
 
         if not sql_meta:
             return TaskMetadata(
@@ -70,7 +66,7 @@ class SqlExtractor(BaseExtractor):
         source = Source(
             scheme=self.scheme,
             authority=self._get_authority(),
-            connection_url=self._get_connection_uri(),
+            connection_url=self.get_connection_uri(self.conn),
         )
 
         database = getattr(self.operator, "database", None)
@@ -167,10 +163,6 @@ class SqlExtractor(BaseExtractor):
     def _get_hook(self) -> "BaseHook":
         raise NotImplementedError
 
-    @abstractmethod
-    def _get_connection_uri(self) -> str:
-        raise NotImplementedError
-
     def _get_db_specific_run_facets(
         self,
         source: Source,
@@ -202,6 +194,13 @@ class SqlExtractor(BaseExtractor):
             tables_hierarchy=tables_hierarchy,
             uppercase_names=self._is_uppercase_names,
         )
+
+    @staticmethod
+    def _normalize_sql(sql: Union[str, Iterable[str]]):
+        if isinstance(sql, str):
+            sql = [stmt for stmt in sql.split(";") if stmt != ""]
+        sql = [obj for stmt in sql for obj in stmt.split(";") if obj != ""]
+        return ";\n".join(sql)
 
     @staticmethod
     def _get_tables_hierarchy(

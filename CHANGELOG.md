@@ -1,11 +1,78 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.14.0...HEAD)
-* Fix uuid generation conflict for airflow dags with same name - 2022-09-07 [@collado-mike](https://github.com/collado-mike)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.16.1...HEAD)
+### Added
+* Support latest Spark 3.3.1 [`#1183`](https://github.com/OpenLineage/OpenLineage/pull/1183) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+
+## [0.16.1](https://github.com/OpenLineage/OpenLineage/compare/0.15.1...0.16.1) - 2022-11-3
+### Added
+* Airflow: add `dag_run` information to Airflow version run facet [`#1133`](https://github.com/OpenLineage/OpenLineage/pull/1133) [@fm100](https://github.com/fm100)  
+    *Adds the Airflow DAG run ID to the `taskInfo` facet, making this additional information available to the integration.*
+* Airflow: add `LoggingMixin` to extractors [`#1149`](https://github.com/OpenLineage/OpenLineage/pull/1149) [@JDarDagran](https://github.com/JDarDagran)  
+    *Adds a `LoggingMixin` class to the custom extractor to make the output consistent with general Airflow and OpenLineage logging settings.*
+* Airflow: add default extractor [`#1162`](https://github.com/OpenLineage/OpenLineage/pull/1162) [@mobuchowski](https://github.com/mobuchowski)  
+    *Adds a `DefaultExtractor` to support the default implementation of OpenLineage for external operators without the need for custom extractors.*
+* Airflow: add `on_complete` argument in `DefaultExtractor` [`#1188`](https://github.com/OpenLineage/OpenLineage/pull/1188) [@JDarDagran](https://github.com/JDarDagran)  
+    *Adds support for running another method on `extract_on_complete`.*
+* SQL: reorganize the library into multiple packages [`#1167`](https://github.com/OpenLineage/OpenLineage/pull/1167) [@StarostaGit](https://github.com/StarostaGit) [@mobuchowski](https://github.com/mobuchowski)   
+    *Splits the SQL library into a Rust implementation and foreign language bindings, easing the process of adding language interfaces. Also contains CI fix.*
+
+### Changed
+* Airflow: move `get_connection_uri` as extractor's classmethod [`#1169`](https://github.com/OpenLineage/OpenLineage/pull/1169) [@JDarDagran](https://github.com/JDarDagran)  
+    *The `get_connection_uri` method allowed for too many params, resulting in unnecessarily long URIs. This changes the logic to whitelisting per extractor.*
+* Airflow: change `get_openlineage_facets_on_start/complete` behavior [`#1201`](https://github.com/OpenLineage/OpenLineage/pull/1201) [@JDarDagran](https://github.com/JDarDagran)  
+    *Splits up the method for greater legibility and easier maintenance.*
+
+### Fixed
+* Airflow: always send SQL in `SqlJobFacet` as a string [`#1143`](https://github.com/OpenLineage/OpenLineage/pull/1143) [@mobuchowski](https://github.com/mobuchowski)  
+    *Changes the data type of `query` from array to string to an fix error in the `RedshiftSQLOperator`.* 
+* Airflow: include `__extra__` case when filtering URI query params [`#1144`](https://github.com/OpenLineage/OpenLineage/pull/1144) [@JDarDagran](https://github.com/JDarDagran)  
+    *Includes the `conn.EXTRA_KEY` in the `get_connection_uri` method to avoid exposing secrets in URIs via the `__extra__` key.*  
+* Airflow: enforce column casing in `SQLCheckExtractor`s [`#1159`](https://github.com/OpenLineage/OpenLineage/pull/1159) [@denimalpaca](https://github.com/denimalpaca)  
+    *Uses the parent extractor's `_is_uppercase_names` property to determine if the column should be upper cased in the `SQLColumnCheckExtractor`'s `_get_input_facets()` method.*
+* Spark: prevent exception when no schema provided [`#1180`](https://github.com/OpenLineage/OpenLineage/pull/1180) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Prevents evalution of column lineage when the `schemFacet` is `null`.*
+* Great Expectations: add V3 API compatibility [`#1194`](https://github.com/OpenLineage/OpenLineage/pull/1194) [@denimalpaca](https://github.com/denimalpaca)  
+    *Fixes the Pandas datasource to make it V3 API-compatible.*
+
+### Removed
+* Airflow: remove support for Airflow 1.10 [`#1128`](https://github.com/OpenLineage/OpenLineage/pull/1128) [@mobuchowski](https://github.com/mobuchowski)  
+    *Removes the code structures and tests enabling support for Airflow 1.10.*
+
+## [0.15.1](https://github.com/OpenLineage/OpenLineage/compare/0.14.1...0.15.1) - 2022-10-05
+### Added
+* Airflow: improve development experience [`#1101`](https://github.com/OpenLineage/OpenLineage/pull/1101) [@JDarDagran](https://github.com/JDarDagran)  
+    *Adds an interactive development environment to the Airflow integration and improves integration testing.*
+* Spark: add description for URL parameters in readme, change `overwriteName` to `appName` [`#1130`](https://github.com/OpenLineage/OpenLineage/pull/1130) [@tnazarew](https://github.com/tnazarew)  
+    *Adds more information about passing arguments with `spark.openlineage.url` and changes `overwriteName` to `appName` for clarity.*
+* Documentation: update issue templates for proposal & add new integration template [`#1116`](https://github.com/OpenLineage/OpenLineage/pull/1116) [@rossturk](https://github.com/rossturk)  
+    *Adds a YAML issue template for new integrations and fixes a bug in the proposal template.*
+
+### Changed
+* Airflow: lazy load BigQuery client [`#1119`](https://github.com/OpenLineage/OpenLineage/pull/1119) [@mobuchowski](https://github.com/mobuchowski)  
+    *Moves import of the BigQuery client from top level to local level to decrease DAG import time.*
+
+### Fixed
+* Airflow: fix UUID generation conflict for Airflow DAGs with same name [`#1056`](https://github.com/OpenLineage/OpenLineage/pull/1056) [@collado-mike](https://github.com/collado-mike)  
+    *Adds a namespace to the UUID calculation to avoid conflicts caused by DAGs having the same name in different namespaces in Airflow deployments.*
+* Spark/BigQuery: fix issue with spark-bigquery-connector >=0.25.0 [`#1111`](https://github.com/OpenLineage/OpenLineage/pull/1111) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Makes the Spark integration compatible with the latest connector.*
+* Spark: fix column lineage [`#1069`](https://github.com/OpenLineage/OpenLineage/pull/1069) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Fixes a null pointer exception error and an error when `openlineage.timeout` is not provided.*
+* Spark: set log level of `Init OpenLineageContext` to DEBUG [`#1064`](https://github.com/OpenLineage/OpenLineage/pull/1064) [@varuntestaz](https://github.com/varuntestaz)  
+    *Prevents sensitive information from being logged unless debug mode is used.*
+* Java client: update version of SnakeYAML [`#1090`](https://github.com/OpenLineage/OpenLineage/pull/1090) [@TheSpeedding](https://github.com/TheSpeedding)  
+    *Bumps the SnakeYAML library version to include a key bug fix.* 
+* dbt: remove requirement for `OPENLINEAGE_URL` to be set [`#1107`](https://github.com/OpenLineage/OpenLineage/pull/1107) [@mobuchowski](https://github.com/mobuchowski)  
+    *Removes erroneous check for `OPENLINEAGE_URL` in the dbt integration.*
+* Python client: remove potentially cyclic import [`#1126`](https://github.com/OpenLineage/OpenLineage/pull/1126) [@mobuchowski](https://github.com/mobuchowski)  
+    *Hides imports to remove potentially cyclic import.*
+* CI: build macos release package on medium resource class [`#1131`](https://github.com/OpenLineage/OpenLineage/pull/1131) [@mobuchowski](https://github.com/mobuchowski)  
+    *Fixes failing build due to resource class being too large.*
 
 ## [0.14.1](https://github.com/OpenLineage/OpenLineage/compare/0.14.0...0.14.1) - 2022-09-07
 ### Fixed
-* Fix Spark integration issues including error when no `openlineage.timeout` [`#1069`](https://github.com/OpenLineage/OpenLineage/pull/1069) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+* Fix Spark integration issues including error when no `openlineage.timeout` [`#1069`](https://github.com/OpenLineage/OpenLineage/pull/1069) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *`OpenlineageSparkListener` was failing when no `openlineage.timeout` was provided.* 
 
 ## [0.14.0](https://github.com/OpenLineage/OpenLineage/compare/0.13.1...0.14.0) - 2022-09-06
@@ -37,39 +104,39 @@
 
 ## [0.13.1](https://github.com/OpenLineage/OpenLineage/compare/0.13.0...0.13.1) - 2022-08-25
 ### Fixed
-* Rename all `parentRun` occurrences to `parent` in Airflow integration [`1037`](https://github.com/OpenLineage/OpenLineage/pull/1037) [@fm100](https://github.com/fm100)
+* Rename all `parentRun` occurrences to `parent` in Airflow integration [`1037`](https://github.com/OpenLineage/OpenLineage/pull/1037) [@fm100](https://github.com/fm100)  
     *Changes the `parentRun` property name to `parent` in the Airflow integration to match the spec.*
-* Do not change task instance during `on_running` event [`1028`](https://github.com/OpenLineage/OpenLineage/pull/1028) [@JDarDagran](https://github.com/JDarDagran)
+* Do not change task instance during `on_running` event [`1028`](https://github.com/OpenLineage/OpenLineage/pull/1028) [@JDarDagran](https://github.com/JDarDagran)  
     *Fixes an issue in the Airflow integration with the `on_running` hook, which was changing the `TaskInstance` object along with the `task` attribute.*
 
 ## [0.13.0](https://github.com/OpenLineage/OpenLineage/compare/0.12.0...0.13.0) - 2022-08-22
 ### Added
 
-* Add BigQuery check support [`#960`](https://github.com/OpenLineage/OpenLineage/pull/960) [@denimalpaca](https://github.com/denimalpaca)
+* Add BigQuery check support [`#960`](https://github.com/OpenLineage/OpenLineage/pull/960) [@denimalpaca](https://github.com/denimalpaca)  
     *Adds logic and support for proper dynamic class inheritance for BigQuery-style operators. (BigQuery's extractor needed additional logic to support the forthcoming `BigQueryColumnCheckOperator` and `BigQueryTableCheckOperator`.)*
-* Add `RUNNING` `EventType` in spec and Python client [`#972`](https://github.com/OpenLineage/OpenLineage/pull/972) [@mzareba382](https://github.com/mzareba382)
+* Add `RUNNING` `EventType` in spec and Python client [`#972`](https://github.com/OpenLineage/OpenLineage/pull/972) [@mzareba382](https://github.com/mzareba382)  
     *Introduces a `RUNNING` event state in the OpenLineage spec to indicate a running task and adds a `RUNNING` event type in the Python API.*
-* Use databases & schemas in SQL Extractors [`#974`](https://github.com/OpenLineage/OpenLineage/pull/974) [@JDarDagran](https://github.com/JDarDagran)
+* Use databases & schemas in SQL Extractors [`#974`](https://github.com/OpenLineage/OpenLineage/pull/974) [@JDarDagran](https://github.com/JDarDagran)  
     *Allows the Airflow integration to differentiate between databases and schemas. (There was no notion of databases and schemas when querying and parsing results from `information_schema` tables.)*
-* Implement Event forwarding feature via HTTP protocol [`#995`](https://github.com/OpenLineage/OpenLineage/pull/995) [@howardyoo](https://github.com/howardyoo)
+* Implement Event forwarding feature via HTTP protocol [`#995`](https://github.com/OpenLineage/OpenLineage/pull/995) [@howardyoo](https://github.com/howardyoo)  
     *Adds `HttpLineageStream` to forward a given OpenLineage event to any HTTP endpoint.*
-* Introduce `SymlinksDatasetFacet` to spec [`#936`](https://github.com/OpenLineage/OpenLineage/pull/936) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+* Introduce `SymlinksDatasetFacet` to spec [`#936`](https://github.com/OpenLineage/OpenLineage/pull/936) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Creates a new facet, the `SymlinksDatasetFacet`, to support the storing of alternative dataset names.*
-* Add Azure Cosmos Handler to Spark integration [`#983`](https://github.com/OpenLineage/OpenLineage/pull/983) [@hmoazam](https://github.com/hmoazam)
+* Add Azure Cosmos Handler to Spark integration [`#983`](https://github.com/OpenLineage/OpenLineage/pull/983) [@hmoazam](https://github.com/hmoazam)  
     *Defines a new interface, the `RelationHandler`, to support Spark data sources that do not have `TableCatalog`, `Identifier`, or `TableProperties` set, as is the case with the Azure Cosmos DB Spark connector.*
-* Support OL Datasets in manual lineage inputs/outputs [`#1015`](https://github.com/OpenLineage/OpenLineage/pull/1015) [@conorbev](https://github.com/conorbev)
+* Support OL Datasets in manual lineage inputs/outputs [`#1015`](https://github.com/OpenLineage/OpenLineage/pull/1015) [@conorbev](https://github.com/conorbev)  
     *Allows Airflow users to create OpenLineage Dataset classes directly in DAGs with no conversion necessary. (Manual lineage definition required users to create an `airflow.lineage.entities.Table`, which was then converted to an OpenLineage Dataset.)* 
-* Create ownership facets [`#996`](https://github.com/OpenLineage/OpenLineage/pull/996) [@julienledem](https://github.com/julienledem)
+* Create ownership facets [`#996`](https://github.com/OpenLineage/OpenLineage/pull/996) [@julienledem](https://github.com/julienledem)  
     *Adds an ownership facet to both Dataset and Job in the OpenLineage spec to capture ownership of jobs and datasets.*
 
 ### Changed
-* Use `RUNNING` EventType in Flink integration for currently running jobs [`#985`](https://github.com/OpenLineage/OpenLineage/pull/985) [@mzareba382](https://github.com/mzareba382)
+* Use `RUNNING` EventType in Flink integration for currently running jobs [`#985`](https://github.com/OpenLineage/OpenLineage/pull/985) [@mzareba382](https://github.com/mzareba382)  
     *Makes use of the new `RUNNING` event type in the Flink integration, changing events sent by Flink jobs from `OTHER` to this new type.*
-* Convert task objects to JSON-encodable objects when creating custom Airflow version facets [`#1018`](https://github.com/OpenLineage/OpenLineage/pull/1018) [@fm100](https://github.com/fm100)
+* Convert task objects to JSON-encodable objects when creating custom Airflow version facets [`#1018`](https://github.com/OpenLineage/OpenLineage/pull/1018) [@fm100](https://github.com/fm100)  
     *Implements a `to_json_encodable` function in the Airflow integration to make task objects JSON-encodable.*
 
 ### Fixed
-* Add support for custom SQL queries in v3 Great Expectations API [`#1025`](https://github.com/OpenLineage/OpenLineage/pull/1025) [@collado-mike](https://github.com/collado-mike)
+* Add support for custom SQL queries in v3 Great Expectations API [`#1025`](https://github.com/OpenLineage/OpenLineage/pull/1025) [@collado-mike](https://github.com/collado-mike)  
     *Fixes support for custom SQL statements in the Great Expectations provider. (The Great Expectations custom SQL datasource was not applied to the support for the V3 checkpoints API.)*
     
 ## [0.12.0](https://github.com/OpenLineage/OpenLineage/compare/0.11.0...0.12.0) - 2022-08-01

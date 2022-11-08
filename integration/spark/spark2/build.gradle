@@ -9,7 +9,7 @@ plugins {
     id 'java-library'
     id 'java-test-fixtures'
     id 'com.diffplug.spotless' version '5.12.1'
-    id "com.adarshr.test-logger" version "2.1.1"
+    id "com.adarshr.test-logger" version "3.2.0"
     id "com.github.johnrengelman.shadow" version "7.1.2"
     id "pmd"
 }
@@ -40,7 +40,6 @@ repositories {
 archivesBaseName='openlineage-spark-spark2'
 
 ext {
-    bigqueryVersion = '0.21.1'
     sparkVersion = '2.4.8'
     jacksonVersion = '2.6.7'
     jacksonModuleScalaVersion = '2.6.7.1'
@@ -55,17 +54,12 @@ dependencies {
     compileOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
     compileOnly "org.apache.spark:spark-hive_2.11:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql-kafka-0-10_2.11:${sparkVersion}"
-    compileOnly("com.google.cloud.spark:spark-bigquery_2.11:${bigqueryVersion}") {
-        exclude group: 'com.fasterxml.jackson.core'
-        exclude group: 'com.fasterxml.jackson.module'
-    }
 
     compileOnly "com.databricks:dbutils-api_2.11:0.0.5"
 
     testFixturesApi "org.apache.spark:spark-core_2.11:${sparkVersion}"
     testFixturesApi "org.apache.spark:spark-sql_2.11:${sparkVersion}"
     testFixturesApi "org.apache.spark:spark-hive_2.11:${sparkVersion}"
-    testFixturesApi "com.google.cloud.spark:spark-bigquery-with-dependencies_2.11:${bigqueryVersion}"
     testFixturesApi "com.fasterxml.jackson.module:jackson-module-scala_2.11:${jacksonVersion}"
     testFixturesApi "org.apache.spark:spark-sql-kafka-0-10_2.11:${sparkVersion}"
     testImplementation(testFixtures(project(":shared")))

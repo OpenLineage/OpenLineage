@@ -1,0 +1,130 @@
+[{
+	"eventType": "START",
+	"inputs": [{
+		"facets": {},
+		"name": "inputtable",
+		"namespace": "database://host:port"
+	}],
+	"job": {
+		"facets": {
+			"sql": {
+				"query": "SELECT * FROM inputtable"
+			}
+		},
+		"name": "default_extractor_dag.default_operator_first",
+		"namespace": "food_delivery"
+	},
+	"outputs": [{
+		"facets": {},
+		"name": "inputtable",
+		"namespace": "database://host:port"
+	}],
+	"run": {
+		"facets": {
+			"parent": {
+				"job": {
+					"name": "parentjob",
+					"namespace": "namespace"
+				},
+				"run": {}
+			}
+		}
+	}
+},
+{
+	"eventType": "COMPLETE",
+	"inputs": [{
+		"facets": {},
+		"name": "inputtable",
+		"namespace": "database://host:port"
+	}],
+	"job": {
+		"facets": {
+			"complete": {
+				"finished": true
+			}
+		},
+		"name": "default_extractor_dag.default_operator_first",
+		"namespace": "food_delivery"
+	},
+	"outputs": [{
+		"facets": {},
+		"name": "inputtable",
+		"namespace": "database://host:port"
+	}],
+	"run": {
+		"facets": {
+			"parent": {
+				"job": {
+					"name": "parentjob",
+					"namespace": "namespace"
+				},
+				"run": {}
+			}
+		}
+	}
+}, {
+	"eventType": "START",
+	"inputs": [{
+		"facets": {},
+		"name": "inputtable",
+		"namespace": "database://host:port"
+	}],
+	"job": {
+		"facets": {
+			"sql": {
+				"query": "SELECT * FROM inputtable"
+			}
+		},
+		"name": "default_extractor_dag.default_operator_second",
+		"namespace": "food_delivery"
+	},
+	"outputs": [{
+		"facets": {},
+		"name": "inputtable",
+		"namespace": "database://host:port"
+	}],
+	"run": {
+		"facets": {
+			"parent": {
+				"job": {
+					"name": "parentjob",
+					"namespace": "namespace"
+				},
+				"run": {}
+			}
+		}
+	}
+}, {
+	"eventType": "COMPLETE",
+	"inputs": [{
+		"facets": {},
+		"name": "inputtable",
+		"namespace": "database://host:port"
+	}],
+	"job": {
+		"facets": {
+			"complete": {
+				"finished": true
+			}
+		},
+		"name": "default_extractor_dag.default_operator_second",
+		"namespace": "food_delivery"
+	},
+	"outputs": [{
+		"facets": {},
+		"name": "inputtable",
+		"namespace": "database://host:port"
+	}],
+	"run": {
+		"facets": {
+			"parent": {
+				"job": {
+					"name": "parentjob",
+					"namespace": "namespace"
+				},
+				"run": {}
+			}
+		}
+	}
+}]

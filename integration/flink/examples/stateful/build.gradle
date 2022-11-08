@@ -4,11 +4,11 @@ plugins {
     id 'maven-publish'
     id 'signing'
     id 'jacoco'
-    id "com.adarshr.test-logger" version "2.1.1"
+    id "com.adarshr.test-logger" version "3.2.0"
     id 'com.diffplug.spotless' version '5.12.1'
     id "com.github.johnrengelman.shadow" version "7.1.2"
     id "pmd"
-    id "com.github.davidmc24.gradle.plugin.avro" version "1.3.0"
+    id "com.github.davidmc24.gradle.plugin.avro" version "1.5.0"
 }
 
 pmd {
@@ -56,7 +56,7 @@ dependencies {
         exclude module: 'log4j'
     }
 
-    testRuntimeOnly "org.junit.jupiter:junit-jupiter:5.8.2"
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter:5.9.1"
     testCompileOnly 'org.codehaus.groovy:groovy-all:3.0.8'
     testImplementation 'org.spockframework:spock-core:2.0-groovy-3.0'
     testImplementation 'org.awaitility:awaitility:4.1.1'
@@ -83,7 +83,7 @@ dependencies {
 
     implementation "com.typesafe:config:1.4.1"
     implementation "org.apache.avro:avro:1.11.0"
-    implementation 'io.confluent:kafka-schema-registry-client:7.0.1'
+    implementation 'io.confluent:kafka-schema-registry-client:7.2.2'
     implementation 'io.confluent:kafka-avro-serializer:7.0.1'
     implementation 'com.github.davidmc24.gradle.plugin:gradle-avro-plugin:1.3.0'
     implementation "org.apache.hadoop:hadoop-hdfs:$hadoopVersion"

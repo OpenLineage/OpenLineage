@@ -13,6 +13,7 @@ public abstract class Transport {
     CONSOLE,
     HTTP,
     KAFKA,
+    KINESIS,
     NOOP
   };
 

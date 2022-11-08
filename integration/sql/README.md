@@ -1,51 +1,67 @@
 # OpenLineage SQL Parser
 
-Library that extracts lineage from sql statements. 
+A library that extracts lineage from SQL statements. 
 
-### Usage
+## Usage
 
 If you're using OpenLineage integration, there's good chance that you're already using this integration.
 
-This library can be used both as Python library and as Rust library, however it's not published at Cargo yet.
+This library is implemented in Rust and provides a Python and Java interface. The Rust implementation has not yet been published to Cargo.
+The interface is explained in INTERFACE.md.
 
-### Installation
+## Installation
 
-Python:
+### Python
 
 ```bash
 $ pip install openlineage-sql 
 ```
 
-To install from source, you need to have Rust toolchain.
+To install from source, you need to have a Rust toolchain.
 
 ```bash
 curl https://sh.rustup.rs -sSf | sh -s -- -y
 source $HOME/.cargo/env
 ```
 
-You can run cargo tests then:
+You can run Cargo tests then:
 
 ```bash
 cargo test
 ```
 
-To build Python wheel for your system and architecture you need Maturin build system.
-It's recommended to install this in virtualenv.
+To build a Python wheel for your system and architecture, you need a Maturin build system.
+It's recommended to install this in a virtualenv.
 
 ```bash
 python -m pip install maturin
 maturin build --out target/wheels
 ```
 
-You can verify that library has been properly build by running
+You can verify that the library has been properly built by running:
 
 ```bash
 pip install openlineage-sql --no-index --find-links target/wheels --force-reinstall
 python -c "import openlineage_sql"
 ```
 
+### Java
+
+To build the Java interface run the following script from the project root:
+
+```bash
+./iface-java/script/build.sh
+```
+
+This produces an `openlineage-sql.jar` in the `iface-java/target` directory.
+
+The interface can be manually tested by running the integration test from the `iface-java` directory. When no arguments are provided, the test runs in interactive mode.
+
+```bash
+./tests/integration/run_test.sh [sql]
+```
+
 #### Todo:
-* Support larger part of SQL language 
-* Column-level lineage
-* Python as a cargo feature
-* Explore Java integration
+* Support a larger part of the SQL language 
+* Python as a Cargo feature
+* Explore a Java integration

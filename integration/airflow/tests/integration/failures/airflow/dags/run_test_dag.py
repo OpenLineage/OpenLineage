@@ -5,19 +5,10 @@ from airflow.operators.bash_operator import BashOperator
 from airflow.operators.python_operator import PythonOperator
 from airflow.utils.dates import days_ago
 from openlineage.client import set_producer
+from airflow import DAG
 
-
-_PRODUCER="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow"
-
+_PRODUCER = "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow"
 set_producer(_PRODUCER)
-
-from airflow.version import version as AIRFLOW_VERSION
-from pkg_resources import parse_version
-if parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"):
-    from openlineage.airflow import DAG
-else:
-    from airflow import DAG
-
 
 default_args = {
     'owner': 'datascience',

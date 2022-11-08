@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.spark.SparkConf;
@@ -21,8 +22,9 @@ public class SparkConfUtils {
   private static final String metastoreUriKey = "spark.sql.hive.metastore.uris";
   private static final String metastoreHadoopUriKey = "spark.hadoop.hive.metastore.uris";
 
-  public static String findSparkConfigKey(SparkConf conf, String name, String defaultValue) {
-    return findSparkConfigKey(conf, name).orElse(defaultValue);
+  public static Map<String, String> findSparkConfigKeysStartsWith(SparkConf conf, String prefix) {
+    return Arrays.stream(conf.getAllWithPrefix(prefix))
+        .collect(Collectors.toMap(t -> t._1, t -> t._2));
   }
 
   public static Optional<String> findSparkConfigKey(SparkConf conf, String name) {

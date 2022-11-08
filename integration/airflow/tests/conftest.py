@@ -8,15 +8,10 @@ import pytest
 
 from pkg_resources import parse_version
 from airflow.version import version as AIRFLOW_VERSION
+from mock import patch
 log = logging.getLogger(__name__)
 
 collect_ignore = []
-
-if parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"):
-    collect_ignore.extend([
-        "extractors/test_redshift_sql_extractor.py",
-        "extractors/test_redshift_data_extractor.py",
-    ])
 
 
 if parse_version(AIRFLOW_VERSION) < parse_version("2.3.0"):
@@ -49,3 +44,18 @@ def dagbag():
     from airflow.models import DagBag
     dagbag = DagBag(include_examples=False)
     return dagbag
+
+
+@pytest.fixture(autouse=True)
+def mock_settings_env_vars():
+    with patch.dict(
+        os.environ,
+        {
+            k: v
+            for k, v in os.environ.items()
+            if k
+            not in ["OPENLINEAGE_AIRFLOW_DISABLE_SOURCE_CODE", "OPENLINEAGE_EXTRACTORS"]
+        },
+        clear=True,
+    ):
+        yield

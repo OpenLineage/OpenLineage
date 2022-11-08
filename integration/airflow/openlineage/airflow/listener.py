@@ -109,7 +109,7 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
             task=task_metadata,
             run_facets={
                 **task_metadata.run_facets,
-                **get_custom_facets(task, dagrun.external_trigger, task_instance_copy)
+                **get_custom_facets(dagrun, task, dagrun.external_trigger, task_instance_copy)
             }
         )
 

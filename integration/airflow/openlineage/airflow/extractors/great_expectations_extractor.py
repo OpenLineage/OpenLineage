@@ -1,10 +1,8 @@
-# SPDX-License-Identifier: Apache-2.0.
-import logging
+# Copyright 2018-2022 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
 from typing import Optional, List
 
 from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
-
-log = logging.getLogger(__file__)
 
 
 # Great Expectations is optional dependency.

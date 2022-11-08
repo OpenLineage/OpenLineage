@@ -1,23 +1,17 @@
+# Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 from typing import Any
-
+from airflow import DAG
 from airflow.models import BaseOperator
 from airflow.utils.decorators import apply_defaults
 from airflow.utils.dates import days_ago
-
-from airflow.version import version as AIRFLOW_VERSION
-from pkg_resources import parse_version
-if parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"):
-    from openlineage.airflow import DAG
-else:
-    from airflow import DAG
 
 
 class TestUnknownDummyOperator(BaseOperator):
 
     @apply_defaults
     def __init__(self, *args, **kwargs):
-        super(TestUnknownDummyOperator, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def execute(self, context: Any):
         for i in range(10):

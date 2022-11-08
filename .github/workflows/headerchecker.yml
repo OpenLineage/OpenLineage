@@ -1,0 +1,48 @@
+---
+name: Check for Headers in Source Code
+
+on:
+  push:
+    branches: ['renovate/**']
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    name: Check for Headers
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - id: files
+        uses: jitterbit/get-changed-files@v1
+        with:
+          format: 'json'
+          token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Check for headers
+        run: |
+          ok=1
+          readarray -t files <<<"$(jq -r '.[]' <<<'${{ steps.files.outputs.added_modified }}')"
+          for file in ${files[@]}; do 
+            if [[ ($file == *".py") || ($file == *".java") ]]; then
+              if ! grep -q Copyright "$file"; then
+                ok=0
+                echo "Copyright header not found in $file"
+              fi
+            fi
+          done
+          if [[ $ok == 0 ]]; then
+            exit 1
+          else
+            GREEN="\e[32m"
+            echo -e "${GREEN}All changed & added files have been scanned. Result: no headers are missing.${ENDCOLOR}"
+          fi

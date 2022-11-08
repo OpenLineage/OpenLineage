@@ -113,7 +113,7 @@ Identifier :
    * Scheme = bigquery
    * Authority = 
  * Unique name: {project id}.{dataset name}.{table name}
-   * URI =   bigquery:{project id}.{schema}.{table}
+   * URI = bigquery:{project id}.{dataset name}.{table name}
 
 #### Azure Synapse:
 Datasource hierarchy:

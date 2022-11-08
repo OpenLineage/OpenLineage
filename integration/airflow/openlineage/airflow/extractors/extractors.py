@@ -1,10 +1,10 @@
+# Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
-
 import os
 
 from typing import Type, Optional
 
-from openlineage.airflow.extractors.base import BaseExtractor
+from openlineage.airflow.extractors.base import BaseExtractor, DefaultExtractor
 from openlineage.airflow.utils import import_from_string, try_import_from_string
 from openlineage.airflow.extractors.sql_check_extractors import get_check_extractors
 
@@ -67,6 +67,7 @@ class Extractors:
     def __init__(self):
         # Do not expose extractors relying on external dependencies that are not installed
         self.extractors = {}
+        self.default_extractor = DefaultExtractor
 
         for extractor in _extractors:
             for operator_class in extractor.get_operator_classnames():
@@ -99,6 +100,16 @@ class Extractors:
         name = clazz.__name__
         if name in self.extractors:
             return self.extractors[name]
+
+        def method_exists(method_name):
+            method = getattr(clazz, method_name, None)
+            if method:
+                return callable(method)
+
+        if method_exists("get_openlineage_facets_on_start") or method_exists(
+            "get_openlineage_facets_on_complete"
+        ):
+            return self.default_extractor
         return None
 
     def instantiate_abstract_extractors(self, task) -> None:

@@ -33,6 +33,10 @@ try:
 except:  # noqa
     pass
 
+
+SNOWFLAKE_AIRFLOW_TEST_VERSION = os.environ.get("SNOWFLAKE_AIRFLOW_TEST_VERSION", "2.2.4")
+
+
 IS_AIRFLOW_VERSION_ENOUGH = lambda x: parse_version(
     os.environ.get("AIRFLOW_VERSION", "0.0.0")
 ) >= parse_version(x)
@@ -52,6 +56,14 @@ params = [
         marks=pytest.mark.skipif(not IS_GCP_AUTH, reason="no gcp credentials"),
     ),
     ("source_code_dag", "requests/source_code.json"),
+    pytest.param(
+        "default_extractor_dag",
+        "requests/default_extractor.json",
+        marks=pytest.mark.skipif(
+            not IS_AIRFLOW_VERSION_ENOUGH("2.3.0"),  # both extract and extract_on_complete
+            reason="Airflow < 2.3.0"                 # run on 2.3+
+        )
+    ),
     ("custom_extractor", "requests/custom_extractor.json"),
     ("unknown_operator_dag", "requests/unknown_operator.json"),
     pytest.param(
@@ -74,8 +86,8 @@ params = [
         "requests/dbt_snowflake.json",
         marks=[
             pytest.mark.skipif(
-                not IS_AIRFLOW_VERSION_ENOUGH("2.2.4"),
-                reason="Airflow < 2.2.4",
+                not IS_AIRFLOW_VERSION_ENOUGH(SNOWFLAKE_AIRFLOW_TEST_VERSION),
+                reason=f"Airflow < {SNOWFLAKE_AIRFLOW_TEST_VERSION}",
             ),
             pytest.mark.skipif(
                 os.environ.get("SNOWFLAKE_PASSWORD", "") == "",
@@ -88,8 +100,8 @@ params = [
         "requests/snowflake.json",
         marks=[
             pytest.mark.skipif(
-                not IS_AIRFLOW_VERSION_ENOUGH("2.2.4"),
-                reason="Airflow < 2.2.4",
+                not IS_AIRFLOW_VERSION_ENOUGH(SNOWFLAKE_AIRFLOW_TEST_VERSION),
+                reason=f"Airflow < {SNOWFLAKE_AIRFLOW_TEST_VERSION}",
             ),
             pytest.mark.skipif(
                 os.environ.get("SNOWFLAKE_ACCOUNT_ID", "") == "",
@@ -187,12 +199,12 @@ def check_event_time_ordered(actual_events) -> bool:
     return True
 
 
-def get_events(job_name: str = None):
+def get_events(job_name: str = None, desc: bool = True):
     time.sleep(5)
     params = {}
 
     if job_name:
-        params = {"job_name": job_name}
+        params = {"job_name": job_name, "desc": "true" if desc else "false"}
 
     # Service in ./server captures requests and serves them
     backend_host = os.environ.get("BACKEND_HOST", "backend")
@@ -255,7 +267,7 @@ def test_integration_ordered(dag_id, request_dir: str, airflow_db_conn):
             expected_events.append(json.load(f))
 
     # (3) Get actual events with job names starting with dag_id
-    actual_events = get_events(dag_id)
+    actual_events = get_events(dag_id, False)
 
     assert check_matches_ordered(expected_events, actual_events) is True
     assert check_event_time_ordered(actual_events) is True

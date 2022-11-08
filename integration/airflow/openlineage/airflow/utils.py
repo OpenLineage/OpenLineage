@@ -7,27 +7,16 @@ import json
 import logging
 import os
 import subprocess
-from collections import defaultdict
-from typing import TYPE_CHECKING, Type, Dict, Any, List
+from typing import TYPE_CHECKING, Type, Dict, Any
 from uuid import uuid4
-from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
+from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
 from typing import Optional
-
 from airflow.models import DAG as AIRFLOW_DAG
-from airflow.version import version as AIRFLOW_VERSION
-
-from pkg_resources import parse_version
 
 from openlineage.airflow.facets import (
     AirflowMappedTaskRunFacet,
     AirflowVersionRunFacet,
     AirflowRunArgsRunFacet
-)
-from openlineage.client.facet import (
-    DataQualityMetricsInputDatasetFacet,
-    ColumnMetric,
-    DataQualityAssertionsDatasetFacet,
-    Assertion
 )
 from openlineage.client.utils import RedactMixin
 from pendulum import from_timestamp
@@ -192,11 +181,14 @@ def get_connection_uri(conn):
     # Remove username and password
     netloc = f'{parsed.hostname}' + (f':{parsed.port}' if parsed.port else "")
     parsed = parsed._replace(netloc=netloc)
-    query_dict = parse_qs(parsed.query)
-    filtered_qs = {k: query_dict[k]
-                   for k in query_dict.keys()
-                   if not _filtered_query_params(k)}
-    parsed = parsed._replace(query=urlencode(filtered_qs))
+    if parsed.query:
+        query_dict = dict(parse_qsl(parsed.query))
+        if conn.EXTRA_KEY in query_dict:
+            query_dict = json.loads(query_dict[conn.EXTRA_KEY])
+        filtered_qs = {
+            k: v for k, v in query_dict.items() if not _filtered_query_params(k)
+        }
+        parsed = parsed._replace(query=urlencode(filtered_qs))
     return urlunparse(parsed)
 
 
@@ -234,19 +226,14 @@ def get_connection(conn_id) -> "Connection":
         conn.parse_from_uri(uri=conn_uri)
         return conn
 
-    # Airflow 2: use secrets backend.
-    if parse_version(AIRFLOW_VERSION) >= parse_version("2.0.0"):    # type: ignore
-        try:
-            return Connection.get_connection_from_secrets(conn_id)
-        except Exception:
-            # Deliberate pass to try getting it via query
-            pass
+    # Try secrets backend.
+    try:
+        return Connection.get_connection_from_secrets(conn_id)
+    except Exception:
+        # Deliberate pass to try getting it via query
+        pass
 
-    create_session = safe_import_airflow(
-        airflow_1_path="airflow.utils.db.create_session",
-        airflow_2_path="airflow.utils.session.create_session",
-    )
-
+    from airflow.utils.session import create_session
     with create_session() as session:
         return session.query(Connection)\
             .filter(Connection.conn_id == conn_id)\
@@ -258,11 +245,11 @@ def get_job_name(task):
 
 
 def get_custom_facets(
-    task, is_external_trigger: bool, task_instance: "TaskInstance" = None
+    dagrun, task, is_external_trigger: bool, task_instance: "TaskInstance" = None
 ) -> Dict[str, Any]:
     custom_facets = {
         "airflow_runArgs": AirflowRunArgsRunFacet(is_external_trigger),
-        "airflow_version": AirflowVersionRunFacet.from_task(task),
+        "airflow_version": AirflowVersionRunFacet.from_dagrun_and_task(dagrun, task),
     }
     # check for -1 comes from SmartSensor compatibility with dynamic task mapping
     # this comes from Airflow code
@@ -325,136 +312,6 @@ def try_import_from_string(path: str):
     except ImportError as e:
         logging.info(e.msg)  # type: ignore
         return None
-
-
-def choose_based_on_version(airflow_1_version, airflow_2_version):
-    if parse_version(AIRFLOW_VERSION) >= parse_version("2.0.0"):
-        return airflow_2_version
-    else:
-        return airflow_1_version
-
-
-def safe_import_airflow(airflow_1_path: str, airflow_2_path: str):
-    return import_from_string(
-        choose_based_on_version(
-            airflow_1_path, airflow_2_path
-        )
-    )
-
-
-def build_check_facets() -> dict:
-    pass
-
-
-def build_value_check_facets() -> dict:
-    pass
-
-
-def build_threshold_check_facets() -> dict:
-    pass
-
-
-def build_interval_check_facets() -> dict:
-    pass
-
-
-def build_table_check_facets(checks) -> dict:
-    """
-    Function should expect to take the checks in the following form:
-    {
-        'row_count_check': {
-            'pass_value': 100,
-            'tolerance': .05,
-            'result': 101,
-            'success': True
-        }
-    }
-    """
-    facet_data = {}
-    assertion_data: Dict[str, List[Assertion]] = {"assertions": []}
-    for check, check_values in checks.items():
-        assertion_data["assertions"].append(
-            Assertion(
-                assertion=check,
-                success=check_values.get("success", None),
-            )
-        )
-    facet_data["rowCount"] = checks.get("row_count_check", {}).get("result", None)
-    facet_data["bytes"] = checks.get("bytes", {}).get("result", None)
-
-    data_quality_facet = DataQualityMetricsInputDatasetFacet(**facet_data)
-    data_quality_assertions_facet = DataQualityAssertionsDatasetFacet(**assertion_data)
-
-    return {
-        "dataQuality": data_quality_facet,
-        "dataQualityMetrics": data_quality_facet,
-        "dataQualityAssertions": data_quality_assertions_facet
-    }
-
-
-def build_column_check_facets(column_mapping) -> dict:
-    """
-    Function should expect the column_mapping to take the following form:
-    {
-        'col_name': {
-            'null_check': {
-                'pass_value': 0,
-                'result': 0,
-                'success': True
-            },
-            'min': {
-                'pass_value': 5,
-                'tolerance': 0.2,
-                'result': 1,
-                'success': False
-            }
-        }
-    }
-    """
-    facet_data: Dict[str, Any] = {"columnMetrics": defaultdict(dict)}
-    assertion_data: Dict[str, List[Assertion]] = {"assertions": []}
-    for col_name, checks in column_mapping.items():
-        for check, check_values in checks.items():
-            facet_key = map_facet_name(check)
-            facet_data["columnMetrics"][col_name][facet_key] = check_values.get("result", None)
-
-            assertion_data["assertions"].append(
-                Assertion(
-                    assertion=check,
-                    success=check_values.get("success", None),
-                    column=col_name
-                )
-            )
-        facet_data["columnMetrics"][col_name] = ColumnMetric(
-            **facet_data["columnMetrics"][col_name]
-        )
-
-    data_quality_facet = DataQualityMetricsInputDatasetFacet(**facet_data)
-    data_quality_assertions_facet = DataQualityAssertionsDatasetFacet(**assertion_data)
-
-    return {
-        "dataQuality": data_quality_facet,
-        "dataQualityMetrics": data_quality_facet,
-        "dataQualityAssertions": data_quality_assertions_facet
-    }
-
-
-def map_facet_name(check_name) -> str:
-    if "null" in check_name:
-        return "nullCount"
-    elif "distinct" in check_name:
-        return "distinctCount"
-    elif "sum" in check_name:
-        return "sum"
-    elif "count" in check_name:
-        return "count"
-    elif "min" in check_name:
-        return "min"
-    elif "max" in check_name:
-        return "max"
-    elif "quantiles" in check_name:
-        return "quantiles"
-    return ""
 
 
 def redact_with_exclusions(source: Any):
@@ -535,3 +392,24 @@ def _is_name_redactable(name, redacted):
     if not issubclass(redacted.__class__, RedactMixin):
         return not name.startswith('_')
     return name not in redacted.skip_redact
+
+
+class LoggingMixin:
+
+    _log: Optional["logging.Logger"] = None
+
+    @property
+    def log(self) -> logging.Logger:
+        """Returns a logger."""
+        if self._log is None:
+            self._log = logging.getLogger(self._get_logger_name())
+        return self._log
+
+    def _get_logger_name(self):
+        if self.__class__.__module__.startswith("openlineage.airflow.extractors"):
+            return self.__class__.__module__ + "." + self.__class__.__name__
+        else:
+            return (
+                "openlineage.airflow.extractors."
+                f"{self.__class__.__module__}.{self.__class__.__name__}"
+            )

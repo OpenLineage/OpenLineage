@@ -223,12 +223,16 @@ class SparkSQLExecutionContext implements ExecutionContext {
     if (node instanceof WholeStageCodegenExec) {
       node = ((WholeStageCodegenExec) node).child();
     }
+
+    String name = eventEmitter.getAppName().orElse(sparkContext.appName());
     return openLineage
         .newJobBuilder()
         .namespace(this.eventEmitter.getJobNamespace())
-        .name(
-            sparkContext.appName().replaceAll(CAMEL_TO_SNAKE_CASE, "_$1").toLowerCase(Locale.ROOT)
-                + "."
-                + node.nodeName().replaceAll(CAMEL_TO_SNAKE_CASE, "_$1").toLowerCase(Locale.ROOT));
+        .name(normalizeName(name) + "." + normalizeName(node.nodeName()));
+  }
+
+  // normalizes string, changes CamelCase to snake_case and replaces all non-alphanumerics with '_'
+  private static String normalizeName(String name) {
+    return name.replaceAll(CAMEL_TO_SNAKE_CASE, "_$1").toLowerCase(Locale.ROOT);
   }
 }

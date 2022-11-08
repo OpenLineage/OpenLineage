@@ -10,10 +10,9 @@ from setuptools import setup
 with open("README.md") as readme_file:
      readme = readme_file.read()
 
-__version__ = "0.15.0"
+__version__ = "0.17.0"
 
 requirements = [
-    f"sqlparse>=0.2.3,<0.4",
     f"tqdm>=4.62.0",
     f"openlineage-integration-common[dbt]=={__version__}",
 ]

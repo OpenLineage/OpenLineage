@@ -21,3 +21,6 @@ __MACOSX
 *.iws
 .idea
 venv
+
+# Dependent Helm charts
+chart/charts/

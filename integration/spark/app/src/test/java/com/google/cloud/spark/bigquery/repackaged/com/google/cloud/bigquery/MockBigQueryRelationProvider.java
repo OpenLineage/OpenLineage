@@ -5,20 +5,20 @@
 
 package com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery;
 
+import com.google.cloud.bigquery.connector.common.BigQueryClient;
 import com.google.cloud.spark.bigquery.BigQueryRelation;
 import com.google.cloud.spark.bigquery.BigQueryRelationProvider;
 import com.google.cloud.spark.bigquery.DataSourceVersion;
-import com.google.cloud.spark.bigquery.GuiceInjectorCreator;
 import com.google.cloud.spark.bigquery.SparkBigQueryConfig;
-import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.connector.common.BigQueryClient;
-import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.connector.common.MockBigQueryClientModule;
+import com.google.cloud.spark.bigquery.SparkBigQueryConnectorModule;
+import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.common.MockBigQueryClientModule;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Binder;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Guice;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Injector;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Key;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Module;
-import com.google.cloud.spark.bigquery.v2.SparkBigQueryConnectorModule;
 import java.math.BigInteger;
+import java.util.Collections;
 import java.util.Optional;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.Dataset;
@@ -40,16 +40,6 @@ import scala.runtime.AbstractFunction0;
 public class MockBigQueryRelationProvider extends BigQueryRelationProvider {
   public static final BigQuery BIG_QUERY = Mockito.mock(BigQuery.class);
   public static final MockInjector INJECTOR = new MockInjector();
-
-  public MockBigQueryRelationProvider() {
-    super(
-        new AbstractFunction0<GuiceInjectorCreator>() {
-          @Override
-          public GuiceInjectorCreator apply() {
-            return new MockInjector();
-          }
-        });
-  }
 
   public static Table makeTable(TableId id, StandardTableDefinition tableDefinition) {
     return new Table.Builder(BIG_QUERY, id, tableDefinition)
@@ -85,27 +75,11 @@ public class MockBigQueryRelationProvider extends BigQueryRelationProvider {
     public RDD<Row> buildScan() {
       return testRecords.rdd();
     }
-
-    @Override
-    public boolean canEqual(Object that) {
-      return that instanceof MockBigQueryRelation;
-    }
-
-    @Override
-    public Object productElement(int n) {
-      return null;
-    }
-
-    @Override
-    public int productArity() {
-      return 0;
-    }
   }
 
-  public static class MockInjector implements GuiceInjectorCreator {
+  public static class MockInjector {
     private Module testModule = new EmptyModule();
 
-    @Override
     public Injector createGuiceInjector(
         SQLContext sqlContext, Map<String, String> parameters, Option<StructType> schema) {
       final MockBigQueryClientModule bqModule = new MockBigQueryClientModule(BIG_QUERY);
@@ -115,7 +89,8 @@ public class MockBigQueryRelationProvider extends BigQueryRelationProvider {
           bqModule,
           new SparkBigQueryConnectorModule(
               sparkSession,
-              JavaConversions.mapAsJavaMap(parameters),
+              JavaConversions.<String, String>mapAsJavaMap(parameters),
+              Collections.emptyMap(),
               Optional.ofNullable(
                   schema.getOrElse(
                       new AbstractFunction0<StructType>() {
@@ -124,16 +99,12 @@ public class MockBigQueryRelationProvider extends BigQueryRelationProvider {
                           return null;
                         }
                       })),
-              DataSourceVersion.V1));
+              DataSourceVersion.V1,
+              true));
     }
 
     public void setTestModule(Module testModule) {
       this.testModule = testModule;
-    }
-
-    @Override
-    public Option<StructType> createGuiceInjector$default$3() {
-      return Option.empty();
     }
   }
 

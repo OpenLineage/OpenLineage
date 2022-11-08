@@ -10,22 +10,24 @@ from setuptools import find_namespace_packages, setup
 with open("README.md") as readme_file:
     readme = readme_file.read()
 
-__version__ = "0.15.0"
+__version__ = "0.17.0"
 
 requirements = [
     "attrs>=19.3.0",
     f"openlineage-python=={__version__}",
-    "sqlparse>=0.3.1",
 ]
 
 extras_require = {
+    "python-sql": [
+        "sqlparse>=0.3.1",
+    ],
     "sql": [
         f"openlineage_sql=={__version__}"
     ],
     "bigquery": [
         "google-api-core>=1.26.3",
         "google-auth>=1.30.0",
-        "google-cloud-bigquery>=2.15.0,<3.0.0",
+        "google-cloud-bigquery>=2.15.0,<4.0.0",
         "google-cloud-core>=1.6.0",
         "google-crc32c>=1.1.2"
     ],

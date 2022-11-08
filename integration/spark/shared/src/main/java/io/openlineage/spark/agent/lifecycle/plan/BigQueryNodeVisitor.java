@@ -11,10 +11,13 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
@@ -31,6 +34,7 @@ import org.apache.spark.sql.sources.CreatableRelationProvider;
  *
  * @param <D> the type of {@link OpenLineage.Dataset} created by this visitor
  */
+@Slf4j
 public class BigQueryNodeVisitor<D extends OpenLineage.Dataset>
     extends QueryPlanVisitor<LogicalPlan, D> {
   private static final String BIGQUERY_NAMESPACE = "bigquery";
@@ -84,13 +88,40 @@ public class BigQueryNodeVisitor<D extends OpenLineage.Dataset>
   @Override
   public List<D> apply(LogicalPlan x) {
     return bigQuerySupplier(x)
+        .map(s -> s.get())
+        .filter(relation -> getBigQueryTableName(relation).isPresent())
         .map(
-            s -> {
-              BigQueryRelation relation = s.get();
-              String name = relation.tableName();
-              return Collections.singletonList(
-                  factory.getDataset(name, BIGQUERY_NAMESPACE, relation.schema()));
-            })
+            relation ->
+                Collections.singletonList(
+                    factory.getDataset(
+                        getBigQueryTableName(relation).get(),
+                        BIGQUERY_NAMESPACE,
+                        relation.schema())))
         .orElse(null);
+  }
+
+  /**
+   * Versions of spark-bigquery-connector differ in implementation of {@link BigQueryRelation}
+   * class. Previously `tableName` method was available in Scala class, recent java implementation
+   * contains `getTableName` instead. This method retrieves the table name regardless of connector
+   * version.
+   *
+   * @return
+   */
+  private Optional<String> getBigQueryTableName(BigQueryRelation relation) {
+    if (MethodUtils.getAccessibleMethod(relation.getClass(), "tableName") != null) {
+      try {
+        return Optional.of((String) MethodUtils.invokeMethod(relation, "tableName"));
+      } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+        log.error("Could not invoke method", e);
+      }
+    } else if (MethodUtils.getAccessibleMethod(relation.getClass(), "getTableName") != null) {
+      try {
+        return Optional.of((String) MethodUtils.invokeMethod(relation, "getTableName"));
+      } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+        log.error("Could not invoke method", e);
+      }
+    }
+    return Optional.empty();
   }
 }
