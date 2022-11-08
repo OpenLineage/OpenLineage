@@ -3,7 +3,7 @@
 # Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 #
-# Usage: $ ./build-and-push.sh <version>
+# Usage: $ ./build-and-push-proxy.sh <version>
 
 set -eu
 
