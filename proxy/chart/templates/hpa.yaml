@@ -1,0 +1,27 @@
+{{- if .Values.proxy.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "proxy.name" . }}-hpa
+  namespace: {{ .Release.Namespace }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "proxy.name" . }}-hpa
+  minReplicas: {{ .Values.proxy.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.proxy.autoscaling.maxReplicas }}
+  metrics:
+  {{- if .Values.proxy.autoscaling.targetCPU }}
+  - type: Resource
+    resource:
+      name: cpu
+      targetAverageUtilization: {{ .Values.proxy.autoscaling.targetCPU }}
+  {{- end }}
+  {{- if .Values.proxy.autoscaling.targetMemory }}
+  - type: Resource
+    resource:
+      name: memory
+      targetAverageUtilization: {{ .Values.proxy.autoscaling.targetMemory }}
+  {{- end }}
+  {{- end }}

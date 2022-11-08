@@ -25,3 +25,6 @@ venv
 # Built files
 target*
 build*
+
+# Dependent Helm charts
+chart/charts/
