@@ -417,6 +417,7 @@ jobs:
     resource_class: medium
     steps:
       - *checkout_project_root
+      - run: RUN_TESTS=true bash iface-py/script/setup-macos.sh
       - run: RUN_TESTS=true bash iface-py/script/build-macos.sh
       - persist_to_workspace:
           root: ./iface-py

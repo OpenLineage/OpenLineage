@@ -7,34 +7,14 @@
 # It's assumed that it will be run on MacOS
 set -e
 
-echo "Installing homebrew"
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+if [ -x "$(command -v /usr/local/bin/python3.7)" ]; then
+  /usr/local/bin/python3.7 -m venv .env
+else
+  python -m venv .env
+fi
 
-export HOMEBREW_NO_AUTO_UPDATE=1
-export HOMEBREW_NO_INSTALL_CLEANUP=1
-
-echo "Installing Python 3.7"
-brew install python@3.7
-
-which python
-which python3
-
-/usr/local/bin/python3.7 -m venv .env
 source .env/bin/activate
-
-which python
-which python3
-
-# Install Rust
-echo "Installing Rust"
-curl https://sh.rustup.rs -sSf | sh -s -- -y
 source $HOME/.cargo/env
-
-rustup target add aarch64-apple-darwin
-
-# Maturin is build tool that we're using. It can build python wheels based on standard Rust Cargo.toml.
-echo "Installing Maturin"
-python -m pip install maturin
 
 # Disable incremental compilation, since it causes issues.
 export CARGO_INCREMENTAL=0
@@ -45,13 +25,13 @@ if [[ $RUN_TESTS = true ]]; then
 fi
 
 # Build release wheels
-cd iface-py
+#cd iface-py
 maturin build --universal2 --out target/wheels
 
 echo "Package build, trying to import"
 echo "Platform:"
 python -c "from distutils import util; print(util.get_platform())"
-# Verify that it imports properly
+# Verify that it imports and works properly
 python -m pip install openlineage-sql --no-index --find-links target/wheels --force-reinstall
-python -c "import openlineage_sql"
+python -c "from openlineage_sql import parse; parse([\"SELECT a from b\"])"
 echo "all good"
