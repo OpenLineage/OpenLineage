@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.spark.agent.filters;
 
 import io.openlineage.spark.api.OpenLineageContext;
@@ -15,7 +20,7 @@ public class EventFilterUtils {
    * @return
    */
   public static boolean isDisabled(OpenLineageContext context, SparkListenerEvent event) {
-    return Arrays.asList(new DeltaEventFilter(context)).stream()
+    return Arrays.asList(new DeltaEventFilter(context), new DatabricksEventFilter(context)).stream()
         .filter(filter -> filter.isDisabled(event.getClass().cast(event)))
         .findAny()
         .isPresent();

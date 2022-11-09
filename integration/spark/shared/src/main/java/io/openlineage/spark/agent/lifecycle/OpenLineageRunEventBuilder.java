@@ -26,6 +26,7 @@ import io.openlineage.client.OpenLineage.RunEventBuilder;
 import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.client.OpenLineage.RunFacets;
 import io.openlineage.client.OpenLineage.RunFacetsBuilder;
+import io.openlineage.spark.agent.hooks.HookUtils;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
 import io.openlineage.spark.agent.util.FacetUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
@@ -302,12 +303,14 @@ class OpenLineageRunEventBuilder {
     RunFacets runFacets = buildRunFacets(nodes, runFacetBuilders, runFacetsBuilder);
     OpenLineage.RunBuilder runBuilder =
         openLineage.newRunBuilder().runId(openLineageContext.getRunUuid()).facets(runFacets);
-    return runEventBuilder
+    runEventBuilder
         .run(runBuilder.build())
         .job(jobBuilder.facets(jobFacets).build())
         .inputs(inputDatasets)
-        .outputs(outputDatasets)
-        .build();
+        .outputs(outputDatasets);
+
+    HookUtils.preBuild(openLineageContext, runEventBuilder);
+    return runEventBuilder.build();
   }
 
   private List<InputDataset> buildInputDatasets(List<Object> nodes) {
