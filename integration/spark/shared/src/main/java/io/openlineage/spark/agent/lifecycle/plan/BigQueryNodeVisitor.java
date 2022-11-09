@@ -19,6 +19,7 @@ import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.spark.sql.SQLContext;
+import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.SaveIntoDataSourceCommand;
@@ -65,7 +66,7 @@ public class BigQueryNodeVisitor<D extends OpenLineage.Dataset>
   private Optional<Supplier<BigQueryRelation>> bigQuerySupplier(LogicalPlan plan) {
     // SaveIntoDataSourceCommand is a special case because it references a CreatableRelationProvider
     // Every other write instance references a LogicalRelation(BigQueryRelation, _, _, _)
-    SQLContext sqlContext = context.getSparkSession().get().sqlContext();
+    SQLContext sqlContext = SparkSession.active().sqlContext();
     if (plan instanceof SaveIntoDataSourceCommand) {
       SaveIntoDataSourceCommand saveCommand = (SaveIntoDataSourceCommand) plan;
       CreatableRelationProvider relationProvider = saveCommand.dataSource();
