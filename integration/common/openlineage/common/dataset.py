@@ -49,7 +49,7 @@ class Field(RedactMixin):
     _skip_redact: List[str] = ['name', 'type', 'tags']
 
     def __init__(self, name: str, type: str,
-                 tags: List[str] = None, description: str = None):
+                 tags: Optional[List[str]] = None, description: Optional[str] = None):
         self.name = name
         self.type = type
         self.tags = tags
@@ -83,11 +83,11 @@ class Dataset(RedactMixin):
     def __init__(
             self,
             source: Source,
-            name: str, fields: List[Field] = None,
+            name: str, fields: Optional[List[Field]] = None,
             description: Optional[str] = None,
-            custom_facets: Dict[str, BaseFacet] = None,
-            input_facets: Dict[str, BaseFacet] = None,
-            output_facets: Dict[str, BaseFacet] = None
+            custom_facets: Optional[Dict[str, BaseFacet]] = None,
+            input_facets: Optional[Dict[str, BaseFacet]] = None,
+            output_facets: Optional[Dict[str, BaseFacet]] = None
     ):
         if fields is None:
             fields = []
@@ -108,8 +108,8 @@ class Dataset(RedactMixin):
     @staticmethod
     def from_table(source: Source,
                    table_name: str,
-                   schema_name: str = None,
-                   database_name: str = None):
+                   schema_name: Optional[str] = None,
+                   database_name: Optional[str] = None):
         return Dataset(
             name=Dataset._to_name(
                 schema_name=schema_name,
@@ -123,7 +123,7 @@ class Dataset(RedactMixin):
     def from_table_schema(
             source: Source,
             table_schema: DbTableSchema,
-            database_name: str = None
+            database_name: Optional[str] = None
     ):
         return Dataset(
             name=Dataset._to_name(
@@ -141,7 +141,7 @@ class Dataset(RedactMixin):
         )
 
     @staticmethod
-    def _to_name(table_name: str, schema_name: str = None, database_name: str = None):
+    def _to_name(table_name: str, schema_name: Optional[str] = None, database_name: Optional[str] = None):  # noqa
         # Prefix the table name with database and schema name using
         # the format: {database_name}.{table_schema}.{table_name}.
         name = [table_name]

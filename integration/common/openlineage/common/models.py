@@ -1,7 +1,7 @@
 # Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List
+from typing import Optional, List
 from openlineage.common.sql import DbTableMeta
 from openlineage.client.utils import RedactMixin
 
@@ -10,7 +10,7 @@ class DbColumn(RedactMixin):
     _skip_redact: List[str] = ['name', 'type', 'ordinal_position']
 
     def __init__(self, name: str, type: str,
-                 description: str = None, ordinal_position: int = None):
+                 description: Optional[str] = None, ordinal_position: Optional[int] = None):
         self.name = name
         self.type = type
         self.description = description
