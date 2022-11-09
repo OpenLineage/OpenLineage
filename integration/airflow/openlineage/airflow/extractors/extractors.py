@@ -38,6 +38,9 @@ _extractors = list(
             ),
             try_import_from_string(
                 'openlineage.airflow.extractors.redshift_data_extractor.RedshiftDataExtractor'
+            ),
+            try_import_from_string(
+                'openlineage.airflow.extractors.sftp_extractor.SFTPExtractor'
             )
         ],
     )
@@ -54,6 +57,7 @@ _check_providers = {
     "MySqlExtractor": "mysql",
     "BigQueryExtractor": ["gcpbigquery", "google_cloud_platform"],
     "SnowflakeExtractor": "snowflake",
+    "SFTPExtractor": ["sftp", "ssh"],
 }
 
 
