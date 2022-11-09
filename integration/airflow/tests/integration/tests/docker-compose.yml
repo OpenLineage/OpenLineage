@@ -42,6 +42,7 @@ x-airflow-base: &airflow-base
     AIRFLOW__SECRETS__BACKEND: airflow.secrets.local_filesystem.LocalFilesystemBackend
     AIRFLOW__SECRETS__BACKEND_KWARGS: '{ "connections_file_path": "/opt/data/secrets/connections.json", "variables_file_path": "/opt/data/secrets/variables.json" }'
     AIRFLOW_CONN_SNOWFLAKE_CONN: "snowflake://${SNOWFLAKE_USER}:${SNOWFLAKE_PASSWORD}@${SNOWFLAKE_URI}/OPENLINEAGE?account=${SNOWFLAKE_ACCOUNT_ID}&database=SANDBOX&region=us-east-1&warehouse=ROBOTS&role=OPENLINEAGE"
+    AIRFLOW_CONN_SFTP_CONN: sftp://airflow:airflow@openssh-server:2222
   volumes:
       - ./airflow/config/log_config.py:/opt/airflow/config/log_config.py
       - $PWD/airflow/logs:/opt/airflow/logs
@@ -55,6 +56,8 @@ x-airflow-base: &airflow-base
     postgres:
       condition: service_healthy
     mysql:
+      condition: service_healthy
+    openssh-server:
       condition: service_healthy
 
 services:
@@ -94,6 +97,7 @@ services:
 
   airflow_worker:
     <<: *airflow-base
+    hostname: airflow-worker
     command: celery worker
     restart: always
     healthcheck:
@@ -197,3 +201,17 @@ services:
       retries: 50
     volumes:
       - ../docker/init-db-mysql.sh:/docker-entrypoint-initdb.d/init-db-mysql.sh
+
+  openssh-server:
+    image: linuxserver/openssh-server:latest
+    ports:
+      - "2222:2222"
+    environment:
+      - USER_PASSWORD=airflow
+      - USER_NAME=airflow
+      - PASSWORD_ACCESS=true
+    healthcheck:
+      test: ["CMD", "s6-svstat", "/run/service/svc-openssh-server"]
+      interval: 5s
+      timeout: 30s
+      retries: 50

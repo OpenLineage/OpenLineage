@@ -40,6 +40,8 @@ extras_require = {
         "apache-airflow-providers-snowflake>=2.1.0",
         "apache-airflow-providers-google>=5.0.0",
         "apache-airflow-providers-amazon>=3.1.1",
+        "apache-airflow-providers-sftp>=4.1.0",
+        "apache-airflow-providers-ssh>=2.1.0",
         "airflow-provider-great-expectations==0.1.5",
         "great-expectations<=0.15.23",
         "protobuf==3.20.*",

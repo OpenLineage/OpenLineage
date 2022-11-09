@@ -529,7 +529,7 @@ jobs:
       - restore_cache:
           keys:
             - v1-toxenv-<< parameters.airflow-version >>-{{ checksum "setup.cfg" }}-{{ checksum "setup.py" }}
-      - run: tox -e py3-<< parameters.airflow-version >>
+      - run: tox -e py3-<< parameters.airflow-version >> -vv
       - store_test_results:
           path: test-results
       - save_cache:
