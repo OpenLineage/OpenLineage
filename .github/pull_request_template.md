@@ -1,5 +1,3 @@
-<!-- SPDX-License-Identifier: Apache-2.0 -->
-
 ### Problem
 
 👋 Thanks for opening a pull request! Please include a brief summary of the problem your change is trying to solve, or bug fix. If your change fixes a bug or you'd like to provide context on why you're making the change, please [link the issue](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue) as follows:
@@ -27,3 +25,7 @@ If you're contributing a new integration, please specify the scope of the integr
 - [ ] You've updated the [`CHANGELOG.md`](https://github.com/OpenLineage/OpenLineage/blob/main/CHANGELOG.md) with details about your change under the "Unreleased" section (_if relevant, depending on the change, this may not be necessary_)
 - [ ] You've versioned the core OpenLineage model or facets according to [SchemaVer](https://docs.snowplowanalytics.com/docs/pipeline-components-and-applications/iglu/common-architecture/schemaver) (_if relevant_)
 - [ ] You've added a [header](https://github.com/OpenLineage/OpenLineage/tree/main/.github/header_templates.md) to source files (_if relevant_)
+
+----
+SPDX-License-Identifier: Apache-2.0\
+Copyright 2018-2022 contributors to the OpenLineage project

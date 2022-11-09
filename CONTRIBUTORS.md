@@ -12,5 +12,5 @@ This file recognizes the people who have make an important contribution to OpenL
 To understand how to become an OpenLineage contributor see the [OpenLineage Contributing Guide](CONTRIBUTING.md).
 
 ----
-License: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/),
-Copyright Contributors to the OpenLineage project.
+SPDX-License-Identifier: Apache-2.0\
+Copyright 2018-2022 contributors to the OpenLineage project
