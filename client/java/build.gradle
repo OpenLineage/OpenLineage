@@ -45,7 +45,7 @@ ext {
     assertjVersion = '3.22.0'
     jacksonVersion = "2.13.4"
     jacksonDatabindVersion = "2.13.4.2"
-    junit5Version = '5.8.2'
+    junit5Version = '5.9.1'
     lombokVersion = '1.18.24'
     mockitoVersion = '4.8.1'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
