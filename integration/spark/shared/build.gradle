@@ -84,7 +84,7 @@ dependencies {
         exclude group: 'com.fasterxml.jackson.datatype'
         exclude group: 'com.fasterxml.jackson.dataformat'
     }
-    testFixturesApi group: 'org.awaitility', name: 'awaitility', version: '4.1.1'
+    testFixturesApi group: 'org.awaitility', name: 'awaitility', version: '4.2.0'
     testFixturesApi "org.assertj:assertj-core:${assertjVersion}"
     testFixturesApi "org.mockito:mockito-core:${mockitoVersion}"
     testFixturesApi "org.mockito:mockito-inline:${mockitoVersion}"
