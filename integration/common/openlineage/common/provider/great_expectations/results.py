@@ -35,7 +35,7 @@ class ExpectationsParser:
     facet_key: str = ''
 
     @classmethod
-    def can_accept(cls, expectation_result: ExpectationValidationResult) -> bool:
+    def can_accept(cls, expectation_result: ExpectationValidationResult) -> Optional[Any]:
         expectation_type = get_from_nullable_chain(expectation_result,
                                                    ['expectation_config', 'expectation_type'])
         return expectation_type and expectation_type == cls.expectation_key
@@ -67,7 +67,7 @@ class FileSizeExpectationsParser(ExpectationsParser):
     expectation_key = 'expect_file_size_to_be_between'
 
     @staticmethod
-    def parse_expectation_result(expectation_result: dict) -> ExpectationsParserResult:
+    def parse_expectation_result(expectation_result: dict) -> ExpectationsParserResult:  # type: ignore # noqa
         pass  # TODO: file asset validation
 
 
@@ -78,7 +78,7 @@ class ColumnExpectationsParser(ExpectationsParser):
     column = ''
 
     @classmethod
-    def can_accept(cls, expectation_result: ExpectationValidationResult) -> bool:
+    def can_accept(cls, expectation_result: ExpectationValidationResult) -> Optional[Any]:
         expectation_type = get_from_nullable_chain(expectation_result,
                                                    ['expectation_config', 'expectation_type'])
         extracted_column = get_from_nullable_chain(

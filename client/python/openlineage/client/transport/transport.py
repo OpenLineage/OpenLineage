@@ -1,4 +1,5 @@
-# SPDX-License-Identifier: Apache-2.0.
+# Copyright 2018-2022 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
 from openlineage.client.run import RunEvent
 
 
@@ -34,5 +35,5 @@ class Transport:
 
 
 class TransportFactory:
-    def create(self) -> Transport:
+    def create(self) -> Transport:  # type: ignore
         pass
