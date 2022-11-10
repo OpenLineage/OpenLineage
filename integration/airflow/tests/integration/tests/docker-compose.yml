@@ -26,6 +26,7 @@ x-airflow-base: &airflow-base
     AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT: 120
     AIRFLOW__LINEAGE__BACKEND: openlineage.lineage_backend.OpenLineageBackend
     AIRFLOW_CONN_MYSQL_CONN: mysql://food_delivery:food_delivery@mysql:3306/food_delivery
+    AIRFLOW_CONN_TRINO_CONN: trino://trino@trino:8080/default?catalog=memory
     AIRFLOW_CONN_BQ_CONN: google-cloud-platform://?extra__google_cloud_platform__project=openlineage-ci&extra__google_cloud_platform__key_path=%2Fopt%2Fconfig%2Fgcloud%2Fgcloud-service-key.json
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: ${DAGS_ARE_PAUSED_AT_CREATION:-False}
     BIGQUERY_PREFIX: ${BIGQUERY_PREFIX}
@@ -55,6 +56,8 @@ x-airflow-base: &airflow-base
     postgres:
       condition: service_healthy
     mysql:
+      condition: service_healthy
+    trino:
       condition: service_healthy
 
 services:
@@ -197,3 +200,17 @@ services:
       retries: 50
     volumes:
       - ../docker/init-db-mysql.sh:/docker-entrypoint-initdb.d/init-db-mysql.sh
+
+  trino:
+    image: trinodb/trino:402
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "/usr/lib/trino/bin/health-check"]
+      interval: 5s
+      timeout: 30s
+      retries: 50
+    volumes:
+      - ../docker/catalog:/etc/trino/catalog
+    depends_on:
+      - postgres

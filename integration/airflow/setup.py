@@ -37,6 +37,7 @@ extras_require = {
     "airflow": [
         "apache-airflow-providers-postgres>=2.0.0",
         "apache-airflow-providers-mysql>=2.0.0",
+        "apache-airflow-providers-trino>=3.1.0",
         "apache-airflow-providers-snowflake>=2.1.0",
         "apache-airflow-providers-google>=5.0.0",
         "apache-airflow-providers-amazon>=3.1.1",

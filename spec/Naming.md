@@ -46,6 +46,23 @@ Identifier:
  * Unique name: {database}.{table}
    * URI =  mysql://{host}:{port}/{database}.{table}
 
+#### Trino:
+Datasource hierarchy:
+ * Host
+ * Port
+
+Naming hierarchy:
+ * Catalog
+ * Schema
+ * Table
+
+Identifier:
+ * Namespace: trino://{host}:{port} of the service instance.
+   * Scheme = trino
+   * Authority = {host}:{port}
+ * Unique name: {catalog}.{schema}.{table}
+   * URI =  trino://{host}:{port}/{catalog}.{schema}.{table}
+
 #### Redshift:
 Datasource hierarchy:
  * Host: examplecluster.\<XXXXXXXXXXXX>.us-west-2.redshift.amazonaws.com

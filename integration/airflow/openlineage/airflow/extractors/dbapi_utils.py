@@ -120,6 +120,7 @@ def create_information_schema_query(
     information_schema_table_name: str,
     tables_hierarchy: TablesHierarchy,
     uppercase_names: bool = False,
+    allow_trailing_semicolon: bool = True,
 ) -> str:
     """
     This function creates query for getting table schemas from information schema.
@@ -137,7 +138,13 @@ def create_information_schema_query(
                 f"WHERE {' OR '.join(filter_clauses)}"
             )
         )
-    return " UNION ALL ".join(sqls) + ";"
+    sql = " UNION ALL ".join(sqls)
+
+    # For some databases such as Trino, trailing semicolon can cause a syntax error.
+    if allow_trailing_semicolon:
+        sql += ";"
+
+    return sql
 
 
 def create_filter_clauses(schema_mapping, uppercase_names: bool = False) -> List[str]:
