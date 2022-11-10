@@ -42,7 +42,7 @@ archivesBaseName='openlineage-spark-spark2'
 ext {
     sparkVersion = '2.4.8'
     jacksonVersion = '2.6.7'
-    jacksonModuleScalaVersion = '2.6.7.1'
+    jacksonModuleScalaVersion = '2.14.0'
     lombokVersion = '1.18.20'
 }
 
