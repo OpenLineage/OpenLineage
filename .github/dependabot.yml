@@ -26,38 +26,62 @@ updates:
     schedule:
     # supported intervals: daily, weekly, monthly
       interval: "weekly"
+    labels:
+      - "dependencies"
+      - "dependabot"
 
   - package-ecosystem: "gradle"
     directory: "integration/flink"
     schedule:
       interval: "weekly"
+    labels:
+      - "dependencies"
+      - "dependabot"
 
   - package-ecosystem: "gradle"
     directory: "integration/spark"
     schedule:
       interval: "weekly"
+    labels:
+      - "dependencies"
+      - "dependabot"
 
   - package-ecosystem: "pip"
     directory: "client/python"
     schedule:
       interval: "weekly"
+    labels:
+      - "dependencies"
+      - "dependabot"
 
   - package-ecosystem: "pip"
     directory: "integration/common"
     schedule:
       interval: "weekly"
+    labels:
+      - "dependencies"
+      - "dependabot"
 
   - package-ecosystem: "pip"
     directory: "integration/airflow"
     schedule:
-      interval: "weekly"  
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "dependabot"  
 
   - package-ecosystem: "pip"
     directory: "integration/dbt"
     schedule:
       interval: "weekly"
+    labels:
+      - "dependencies"
+      - "dependabot"
 
   - package-ecosystem: "cargo"
     directory: "integration/sql"
     schedule:
       interval: "weekly"
+    labels:
+      - "dependencies"
+      - "dependabot"
