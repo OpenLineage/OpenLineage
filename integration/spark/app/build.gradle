@@ -96,7 +96,7 @@ dependencies {
         exclude group: 'javax.jms'
     }
     compileOnly ("net.snowflake:spark-snowflake_${versions.scala}:${versions.snowflake}") {
-        exclude group: 'com.google.guava'
+        exclude group: 'com.google.guava:guava'
     }
 
     testFixturesApi "org.apache.spark:spark-core_${versions.scala}:${sparkVersion}"
@@ -104,7 +104,7 @@ dependencies {
     testFixturesApi "org.apache.spark:spark-hive_${versions.scala}:${sparkVersion}"
     testFixturesApi 'commons-beanutils:commons-beanutils:1.9.4'
     testFixturesApi ("net.snowflake:spark-snowflake_${versions.scala}:${versions.snowflake}") {
-        exclude group: 'com.google.guava'
+        exclude group: 'com.google.guava:guava'
     }
     testFixturesApi "org.apache.spark:spark-sql-kafka-0-10_${versions.scala}:${sparkVersion}"
     testFixturesApi("com.google.cloud.spark:spark-bigquery-with-dependencies_${versions.scala}:${bigqueryVersion}") {
