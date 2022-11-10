@@ -9,7 +9,9 @@ from pyspark.sql import SparkSession
 
 spark = SparkSession.builder \
     .master("local") \
+    .appName("Open Lineage Integration Hive") \
     .enableHiveSupport() \
+    .config("spark.openlineage.facets.disabled", "spark_unknown;spark.logicalPlan;dataSource") \
     .getOrCreate()
 spark.sparkContext.setLogLevel('info')
 

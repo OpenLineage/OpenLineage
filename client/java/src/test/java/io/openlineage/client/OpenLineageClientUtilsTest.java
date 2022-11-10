@@ -14,6 +14,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import java.net.URI;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /** Unit tests for {@link OpenLineageClientUtils}. */
@@ -23,10 +24,33 @@ public class OpenLineageClientUtilsTest {
   private static final TypeReference<Object> TYPE = new TypeReference<Object>() {};
   private static final String JSON = "{\"value\":\"" + VALUE + "\"}";
 
+  @BeforeEach
+  public void setUp() {
+    OpenLineageClientUtils.configureObjectMapper(new String[] {});
+  }
+
   @Test
   public void testToJson() {
     final String actual = OpenLineageClientUtils.toJson(OBJECT);
     assertThat(actual).isEqualTo(JSON);
+  }
+
+  @Test
+  public void testToJson_withDisabledFacets() {
+    OpenLineageClientUtils.configureObjectMapper(new String[] {"excludedValue"});
+    final String actual = OpenLineageClientUtils.toJson(new ObjectWithDisabledFacets("a", "b"));
+
+    assertThat(actual).contains("notExcludedValue");
+    assertThat(actual).doesNotContain("excludedValue");
+  }
+
+  @Test
+  public void testToJson_withDisabledFacetsIsNull() {
+    OpenLineageClientUtils.configureObjectMapper(null);
+    final String actual = OpenLineageClientUtils.toJson(new ObjectWithDisabledFacets("a", "b"));
+
+    assertThat(actual).contains("notExcludedValue");
+    assertThat(actual).contains("excludedValue");
   }
 
   @Test
@@ -66,6 +90,20 @@ public class OpenLineageClientUtilsTest {
     @JsonCreator
     Object(@JsonProperty("value") final String value) {
       this.value = value;
+    }
+  }
+
+  @JsonAutoDetect(fieldVisibility = Visibility.ANY)
+  static final class ObjectWithDisabledFacets {
+    final String excludedValue;
+    final String notExcludedValue;
+
+    @JsonCreator
+    ObjectWithDisabledFacets(
+        @JsonProperty("excludedValue") final String excludedValue,
+        @JsonProperty("notExcludedValue") final String notExcludedValue) {
+      this.excludedValue = excludedValue;
+      this.notExcludedValue = notExcludedValue;
     }
   }
 }

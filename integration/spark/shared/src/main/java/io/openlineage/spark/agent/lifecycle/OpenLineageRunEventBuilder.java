@@ -27,6 +27,7 @@ import io.openlineage.client.OpenLineage.RunFacet;
 import io.openlineage.client.OpenLineage.RunFacets;
 import io.openlineage.client.OpenLineage.RunFacetsBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
+import io.openlineage.spark.agent.util.FacetUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.CustomFacetBuilder;
@@ -294,6 +295,7 @@ class OpenLineageRunEventBuilder {
     List<OutputDataset> outputDatasets = buildOutputDatasets(nodes);
     openLineageContext
         .getQueryExecution()
+        .filter(qe -> !FacetUtils.isFacetDisabled(openLineageContext, "spark_unknown"))
         .flatMap(qe -> unknownEntryFacetListener.build(qe.optimizedPlan()))
         .ifPresent(facet -> runFacetsBuilder.put("spark_unknown", facet));
 

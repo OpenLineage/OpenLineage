@@ -5,6 +5,7 @@
 
 package io.openlineage.spark.agent;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -14,6 +15,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -171,7 +173,9 @@ class ArgumentParserTest {
       Optional<Double> timeout,
       Optional<String> appName,
       Optional<Map<String, String>> urlParams) {
-    ArgumentParser parser = ArgumentParser.parse(input);
+    ArgumentParser.ArgumentParserBuilder builder = new ArgumentParser.ArgumentParserBuilder();
+    ArgumentParser.parse(builder, input);
+    ArgumentParser parser = builder.build();
     assertEquals(host, parser.getHost());
     assertEquals(version, parser.getVersion());
     assertEquals(namespace, parser.getNamespace());
@@ -187,5 +191,26 @@ class ArgumentParserTest {
     assertEquals(urlParams, parser.getUrlParams());
     urlParams.ifPresent(
         par -> par.forEach((k, v) -> assertEquals(par.get(k), parser.getUrlParam(k))));
+  }
+
+  @Test
+  void testGetDisabledFacets() {
+    ArgumentParser.ArgumentParserBuilder builder = new ArgumentParser.ArgumentParserBuilder();
+    builder.host("host");
+    builder.disabledFacets("spark_unknown;spark.logicalPlan");
+    ArgumentParser parser = builder.build();
+
+    assertThat(parser.getDisabledFacets())
+        .contains("spark_unknown")
+        .contains("spark.logicalPlan")
+        .hasSize(2);
+  }
+
+  @Test
+  void testGetDisabledFacetsWhenNoEntry() {
+    ArgumentParser.ArgumentParserBuilder builder = new ArgumentParser.ArgumentParserBuilder();
+    ArgumentParser parser = builder.build();
+
+    assertThat(parser.getDisabledFacets()).contains("spark_unknown").hasSize(1);
   }
 }

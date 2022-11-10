@@ -28,6 +28,12 @@ public final class Clients {
     final TransportFactory factory = new TransportFactory(openLineageYaml.getTransportConfig());
     final Transport transport = factory.build();
     // ...
-    return OpenLineageClient.builder().transport(transport).build();
+    OpenLineageClient.Builder builder = OpenLineageClient.builder();
+
+    if (openLineageYaml.getFacetsConfig() != null) {
+      builder.disableFacets(openLineageYaml.getFacetsConfig().getDisabledFacets());
+    }
+
+    return builder.transport(transport).build();
   }
 }

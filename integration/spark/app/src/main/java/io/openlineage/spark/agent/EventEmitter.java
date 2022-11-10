@@ -75,7 +75,11 @@ public class EventEmitter {
     argument.getApiKey().ifPresent(builder::apiKey);
     argument.getTimeout().ifPresent(builder::timeout);
 
-    this.client = OpenLineageClient.builder().transport(builder.build()).build();
+    this.client =
+        OpenLineageClient.builder()
+            .disableFacets(argument.getDisabledFacets())
+            .transport(builder.build())
+            .build();
     log.debug(
         String.format(
             "Init OpenLineageContext: Args: %s URI: %s", argument, lineageURI.toString()));
