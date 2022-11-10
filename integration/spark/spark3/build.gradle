@@ -58,7 +58,7 @@ dependencies {
     compileOnly "org.apache.spark:spark-hive_2.12:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql-kafka-0-10_2.12:${sparkVersion}"
     compileOnly "org.apache.iceberg:iceberg-spark3-runtime:0.12.1"
-    compileOnly "io.delta:delta-core_2.12:1.0.0"
+    compileOnly "io.delta:delta-core_2.12:2.1.1"
     compileOnly "com.databricks:dbutils-api_2.12:0.0.5"
 
     testFixturesApi "com.fasterxml.jackson.module:jackson-module-scala_2.12:${jacksonVersion}"
