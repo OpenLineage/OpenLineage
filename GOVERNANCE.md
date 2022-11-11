@@ -126,7 +126,7 @@ for more general discussion.
 The OpenLineage content is managed in GitHub under [https://github.com/OpenLineage/OpenLineage](https://github.com/OpenLineage/OpenLineage).
 It may be developed using patches, branches from main, or forks/git pull requests.
 Each change should have a [GitHub issue](https://github.com/OpenLineage/OpenLineage/issues) explaining why the change is being made.
-See: [CONTRIBUTING.md]
+For more information about contributing, read the [contributors guide](CONTRIBUTING.md).
 
 When new content proposed to the project, the person contributing is required to sign the contribution
 to confirm it conforms to the [Developer Certificate of Origin (DCO)](https://developercertificate.org/).
@@ -166,5 +166,5 @@ be resolved by voting. The voting process is a simple majority in which each com
 
 
 ----
-License: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/),
-Copyright Contributors to the OpenLineage project.
+SPDX-License-Identifier: Apache-2.0\
+Copyright 2018-2022 contributors to the OpenLineage project
