@@ -63,7 +63,7 @@ class Backend:
             task=task_metadata,
             run_facets={
                 **task_metadata.run_facets,
-                **get_custom_facets(dagrun, operator, dagrun.external_trigger)
+                **get_custom_facets(dagrun, operator, dagrun.external_trigger, task_instance)
             }
         )
 

@@ -7,24 +7,25 @@ import json
 import logging
 import os
 import subprocess
+from logging import Logger
 from typing import TYPE_CHECKING, Type, Dict, Any
 from uuid import uuid4
 from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
 from typing import Optional
 from airflow.models import DAG as AIRFLOW_DAG
+from airflow.serialization.serialized_objects import SerializedTaskGroup
+from airflow.utils.task_group import TaskGroup
 
 from openlineage.airflow.facets import (
     AirflowMappedTaskRunFacet,
     AirflowVersionRunFacet,
-    AirflowRunArgsRunFacet
+    AirflowRunArgsRunFacet, AirflowTaskRunFacet
 )
 from openlineage.client.utils import RedactMixin
 from pendulum import from_timestamp
 
-
 if TYPE_CHECKING:
     from airflow.models import Connection, BaseOperator, TaskInstance
-
 
 log = logging.getLogger(__name__)
 _NOMINAL_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
@@ -76,7 +77,24 @@ class JobIdMapping:
         return "openlineage_id_mapping-{}-{}".format(job_name, run_id)
 
 
-def to_json_encodable(task: "BaseOperator") -> Dict[str, object]:
+def task_to_json_encodable(task: "BaseOperator", fix_operator_keys=False) -> Dict[str, object]:
+    task_dict = task.__dict__.copy()
+
+    if fix_operator_keys:
+        task_dict['dag'] = task_dict.pop('_dag')
+        if '_BaseOperator__from_mapped' in task_dict:
+            task_dict['mapped'] = task_dict.pop('_BaseOperator__from_mapped')
+        if '_BaseOperator__init_kwargs' in task_dict:
+            task_dict['args'] = task_dict.pop('_BaseOperator__init_kwargs')
+        if '_downstream_task_ids' in task_dict:
+            task_dict['downstream_task_ids'] = task_dict.pop('_downstream_task_ids')
+        if '_upstream_task_ids' in task_dict:
+            task_dict['upstream_task_ids'] = task_dict.pop('_upstream_task_ids')
+
+    return to_json_encodable(task_dict)
+
+
+def to_json_encodable(item: Dict[str, object]):
     def _task_encoder(obj):
         if isinstance(obj, datetime.datetime):
             return obj.isoformat()
@@ -84,10 +102,14 @@ def to_json_encodable(task: "BaseOperator") -> Dict[str, object]:
             return {'dag_id': obj.dag_id,
                     'tags': obj.tags,
                     'schedule_interval': obj.schedule_interval}
+        elif isinstance(obj, Logger):
+            return None
+        elif isinstance(obj, TaskGroup):
+            return SerializedTaskGroup.serialize_task_group(obj)
         else:
             return str(obj)
 
-    return json.loads(json.dumps(task.__dict__, default=_task_encoder))
+    return json.loads(json.dumps(item, default=_task_encoder))
 
 
 class SafeStrDict(dict):
@@ -200,7 +222,7 @@ def _filtered_query_params(k: str):
                                "aws_secret_access_key",
                                "extra__snowflake__"]
     return k not in unfiltered_snowflake_keys and \
-        any(substr in k for substr in filtered_key_substrings)
+        (substr in k for substr in filtered_key_substrings)
 
 
 def get_normalized_postgres_connection_uri(conn):
@@ -235,8 +257,8 @@ def get_connection(conn_id) -> "Connection":
 
     from airflow.utils.session import create_session
     with create_session() as session:
-        return session.query(Connection)\
-            .filter(Connection.conn_id == conn_id)\
+        return session.query(Connection) \
+            .filter(Connection.conn_id == conn_id) \
             .first()
 
 
@@ -245,11 +267,12 @@ def get_job_name(task):
 
 
 def get_custom_facets(
-    dagrun, task, is_external_trigger: bool, task_instance: "TaskInstance" = None
+        dagrun, task, is_external_trigger: bool, task_instance: "TaskInstance" = None
 ) -> Dict[str, Any]:
     custom_facets = {
         "airflow_runArgs": AirflowRunArgsRunFacet(is_external_trigger),
         "airflow_version": AirflowVersionRunFacet.from_dagrun_and_task(dagrun, task),
+        "airflow_taskRun": AirflowTaskRunFacet.from_dagrun_and_taskinstance(dagrun, task_instance)
     }
     # check for -1 comes from SmartSensor compatibility with dynamic task mapping
     # this comes from Airflow code
@@ -332,8 +355,8 @@ def redact_with_exclusions(source: Any):
             return item
         try:
             if (
-                name
-                and should_hide_value_for_key(name)
+                    name
+                    and should_hide_value_for_key(name)
             ):
                 return sm._redact_all(item, depth)
             if isinstance(item, dict):
@@ -395,7 +418,6 @@ def _is_name_redactable(name, redacted):
 
 
 class LoggingMixin:
-
     _log: Optional["logging.Logger"] = None
 
     @property

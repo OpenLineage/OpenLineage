@@ -4,6 +4,7 @@
 from typing import List, Dict
 
 import attr
+from airflow.models import TaskInstance, DagRun
 from airflow.version import version as AIRFLOW_VERSION
 from openlineage.client.facet import BaseFacet
 
@@ -27,16 +28,37 @@ class AirflowVersionRunFacet(BaseFacet):
     @classmethod
     def from_dagrun_and_task(cls, dagrun, task):
         # task.__dict__ may contain values uncastable to str
-        from openlineage.airflow.utils import get_operator_class, to_json_encodable
+        from openlineage.airflow.utils import get_operator_class, task_to_json_encodable, to_json_encodable # noqa
 
-        task_info = to_json_encodable(task)
-        task_info["dag_run"] = to_json_encodable(dagrun)
+        task_info = task_to_json_encodable(task)
+        task_info["dag_run"] = to_json_encodable(dagrun.__dict__)
 
         return cls(
             operator=f"{get_operator_class(task).__module__}.{get_operator_class(task).__name__}",
             taskInfo=task_info,
             airflowVersion=AIRFLOW_VERSION,
             openlineageAirflowVersion=OPENLINEAGE_AIRFLOW_VERSION,
+        )
+
+
+@attr.s
+class AirflowTaskRunFacet(BaseFacet):
+    operator: str = attr.ib()
+    taskInfo: Dict[str, object] = attr.ib()
+    tryNumber: int = attr.ib()
+
+    @classmethod
+    def from_dagrun_and_taskinstance(cls, dagrun: DagRun, task_instance: TaskInstance):
+        # task.__dict__ may contain values uncastable to str
+        from openlineage.airflow.utils import get_operator_class, task_to_json_encodable, to_json_encodable # noqa
+
+        task_info = task_to_json_encodable(task_instance.task, True)
+        task_info["dag_run"] = to_json_encodable(dagrun.__dict__)
+
+        return cls(
+            operator=f"{get_operator_class(task_instance.task).__module__}.{get_operator_class(task_instance.task).__name__}", # noqa
+            taskInfo=task_info,
+            tryNumber=task_instance.try_number,
         )
 
 

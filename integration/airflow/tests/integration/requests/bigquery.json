@@ -13,7 +13,30 @@
         "facets": {
             "airflow_runArgs": {
                 "externalTrigger": false
-            }
+            },
+          "airflow_taskRun": {
+            "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.17.0/integration/airflow",
+            "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/BaseFacet",
+            "operator": "***.providers.google.cloud.operators.bigquery.BigQueryExecuteQueryOperator",
+            "taskInfo": {
+              "allow_large_results": false,
+              "create_disposition": "CREATE_IF_NEEDED",
+              "dag": {
+                "dag_id": "bigquery_orders_popular_day_of_week",
+                "schedule_interval": "@once"
+              },
+              "dag_run": {
+                "conf": {},
+                "creating_job_id": 1,
+                "dag_id": "bigquery_orders_popular_day_of_week",
+                "external_trigger": false
+              },
+              "inlets": [],
+              "outlets": [],
+              "task_id": "bigquery_if_not_exists"
+            },
+            "tryNumber": 1
+          }
         }
     }
 },

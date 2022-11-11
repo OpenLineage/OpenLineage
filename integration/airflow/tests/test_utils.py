@@ -14,7 +14,7 @@ from openlineage.airflow.utils import (
     url_to_https,
     get_location,
     get_connection,
-    to_json_encodable,
+    task_to_json_encodable,
     DagUtils,
     SafeStrDict,
     _is_name_redactable,
@@ -90,7 +90,7 @@ def test_to_json_encodable():
                       catchup=False)
     task = DummyOperator(task_id='test_task', dag=dag)
 
-    encodable = to_json_encodable(task)
+    encodable = task_to_json_encodable(task)
     encoded = json.dumps(encodable)
     decoded = json.loads(encoded)
     assert decoded == encodable

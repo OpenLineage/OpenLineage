@@ -1,119 +1,183 @@
-[{
+[
+  {
     "eventType": "START",
     "job": {
-        "facets": {
-            "documentation": {
-                "description": "Determines the popular day of week orders are placed."
-            },
-            "sql": {
-                "query": "\n    CREATE TABLE IF NOT EXISTS popular_orders_day_of_week (\n      order_day_of_week VARCHAR(64) NOT NULL,\n      order_placed_on   TIMESTAMP NOT NULL,\n      orders_placed     INTEGER NOT NULL\n    )"
-            }
+      "facets": {
+        "documentation": {
+          "description": "Determines the popular day of week orders are placed."
         },
-        "name": "postgres_orders_popular_day_of_week.postgres_if_not_exists",
-        "namespace": "food_delivery"
+        "sql": {
+          "query": "\n    CREATE TABLE IF NOT EXISTS popular_orders_day_of_week (\n      order_day_of_week VARCHAR(64) NOT NULL,\n      order_placed_on   TIMESTAMP NOT NULL,\n      orders_placed     INTEGER NOT NULL\n    )"
+        }
+      },
+      "name": "postgres_orders_popular_day_of_week.postgres_if_not_exists",
+      "namespace": "food_delivery"
     },
     "run": {
-        "facets": {
-            "airflow_runArgs": {
-              "externalTrigger": false
-            }
+      "facets": {
+        "airflow_runArgs": {
+          "externalTrigger": false
+        },
+        "airflow_taskRun": {
+          "operator": "***.providers.postgres.operators.postgres.PostgresOperator",
+          "taskInfo": {
+            "autocommit": false,
+            "dag": {
+              "dag_id": "postgres_orders_popular_day_of_week",
+              "schedule_interval": "@once"
+            },
+            "dag_run": {
+              "conf": {},
+              "creating_job_id": 1,
+              "dag_id": "postgres_orders_popular_day_of_week",
+              "external_trigger": false,
+              "run_type": "scheduled"
+            },
+            "downstream_task_ids": "{'postgres_insert'}",
+            "inlets": [],
+            "outlets": [],
+            "owner": "datascience",
+            "sql": "\n    CREATE TABLE IF NOT EXISTS popular_orders_day_of_week (\n      order_day_of_week VARCHAR(64) NOT NULL,\n      order_placed_on   TIMESTAMP NOT NULL,\n      orders_placed     INTEGER NOT NULL\n    );",
+            "task_id": "postgres_if_not_exists"
+          },
+          "tryNumber": 1
         }
+      }
     }
-},
-{
+  },
+  {
     "eventType": "START",
     "job": {
-        "facets": {
-            "documentation": {
-                "description": "Determines the popular day of week orders are placed."
-            },
-            "sql": {
-                "query": "\n    INSERT INTO popular_orders_day_of_week (order_day_of_week, order_placed_on,orders_placed)\n    SELECT EXTRACT(ISODOW FROM order_placed_on) AS order_day_of_week,\n           order_placed_on,\n           COUNT(*) AS orders_placed\n      FROM top_delivery_times\n     GROUP BY order_placed_on\n    "
-            }
+      "facets": {
+        "documentation": {
+          "description": "Determines the popular day of week orders are placed."
         },
-        "name": "postgres_orders_popular_day_of_week.postgres_insert",
-        "namespace": "food_delivery"
+        "sql": {
+          "query": "\n    INSERT INTO popular_orders_day_of_week (order_day_of_week, order_placed_on,orders_placed)\n    SELECT EXTRACT(ISODOW FROM order_placed_on) AS order_day_of_week,\n           order_placed_on,\n           COUNT(*) AS orders_placed\n      FROM top_delivery_times\n     GROUP BY order_placed_on\n    "
+        }
+      },
+      "name": "postgres_orders_popular_day_of_week.postgres_insert",
+      "namespace": "food_delivery"
     },
     "run": {
-        "facets": {
-            "airflow_runArgs": {
-                "externalTrigger": false
-            }
+      "facets": {
+        "airflow_runArgs": {
+          "externalTrigger": false
+        },
+        "airflow_taskRun": {
+          "operator": "***.providers.postgres.operators.postgres.PostgresOperator",
+          "taskInfo": {
+            "autocommit": false,
+            "dag": {
+              "dag_id": "postgres_orders_popular_day_of_week",
+              "schedule_interval": "@once"
+            },
+            "dag_run": {
+              "conf": {},
+              "creating_job_id": 1,
+              "dag_id": "postgres_orders_popular_day_of_week",
+              "external_trigger": false,
+              "run_type": "scheduled"
+            },
+            "upstream_task_ids": "{'postgres_if_not_exists'}",
+            "inlets": [],
+            "outlets": [],
+            "owner": "datascience",
+            "sql": "\n    INSERT INTO popular_orders_day_of_week (order_day_of_week, order_placed_on,orders_placed)\n    SELECT EXTRACT(ISODOW FROM order_placed_on) AS order_day_of_week,\n           order_placed_on,\n           COUNT(*) AS orders_placed\n      FROM top_delivery_times\n     GROUP BY order_placed_on\n    ",
+            "task_id": "postgres_insert"
+          },
+          "tryNumber": 1
         }
+      }
     }
-},
-{
+  },
+  {
     "eventType": "COMPLETE",
     "inputs": [],
     "job": {
-        "facets": {
-            "sql": {
-                "query": "\n    CREATE TABLE IF NOT EXISTS popular_orders_day_of_week (\n      order_day_of_week VARCHAR(64) NOT NULL,\n      order_placed_on   TIMESTAMP NOT NULL,\n      orders_placed     INTEGER NOT NULL\n    )"
-            }
-        },
-        "name": "postgres_orders_popular_day_of_week.postgres_if_not_exists",
-        "namespace": "food_delivery"
+      "facets": {
+        "sql": {
+          "query": "\n    CREATE TABLE IF NOT EXISTS popular_orders_day_of_week (\n      order_day_of_week VARCHAR(64) NOT NULL,\n      order_placed_on   TIMESTAMP NOT NULL,\n      orders_placed     INTEGER NOT NULL\n    )"
+        }
+      },
+      "name": "postgres_orders_popular_day_of_week.postgres_if_not_exists",
+      "namespace": "food_delivery"
     },
-    "outputs": [{
-		"facets": {
-			"schema": {
-				"fields": [{
-					"name": "order_day_of_week",
-					"type": "varchar"
-				}, {
-					"name": "order_placed_on",
-					"type": "timestamp"
-				}, {
-					"name": "orders_placed",
-					"type": "int4"
-				}]
-			}
-		},
-		"name": "food_delivery.public.popular_orders_day_of_week",
-		"namespace": "postgres://postgres:5432"
-	}]
-},
-{
-	"eventType": "COMPLETE",
-	"inputs": [{
-		"facets": {
-			"dataSource": {
-				"name": "postgres://postgres:5432",
-				"uri": "postgres://postgres:5432/food_delivery"
-			}
-		},
-		"name": "food_delivery.public.top_delivery_times",
-		"namespace": "postgres://postgres:5432"
-	}],
-	"job": {
-		"facets": {
-			"sql": {
-                "query": "\n    INSERT INTO popular_orders_day_of_week (order_day_of_week, order_placed_on,orders_placed)\n    SELECT EXTRACT(ISODOW FROM order_placed_on) AS order_day_of_week,\n           order_placed_on,\n           COUNT(*) AS orders_placed\n      FROM top_delivery_times\n     GROUP BY order_placed_on\n    "
-			}
-		},
-		"name": "postgres_orders_popular_day_of_week.postgres_insert",
-		"namespace": "food_delivery"
-	},
-	"outputs": [{
-		"facets": {
-			"dataSource": {
-				"name": "postgres://postgres:5432",
-				"uri": "postgres://postgres:5432/food_delivery"
-			},
-			"schema": {
-				"fields": [{
-					"name": "order_day_of_week",
-					"type": "varchar"
-				}, {
-					"name": "order_placed_on",
-					"type": "timestamp"
-				}, {
-					"name": "orders_placed",
-					"type": "int4"
-				}]
-			}
-		},
-		"name": "food_delivery.public.popular_orders_day_of_week",
-		"namespace": "postgres://postgres:5432"
-	}]
-}]
+    "outputs": [
+      {
+        "facets": {
+          "schema": {
+            "fields": [
+              {
+                "name": "order_day_of_week",
+                "type": "varchar"
+              },
+              {
+                "name": "order_placed_on",
+                "type": "timestamp"
+              },
+              {
+                "name": "orders_placed",
+                "type": "int4"
+              }
+            ]
+          }
+        },
+        "name": "food_delivery.public.popular_orders_day_of_week",
+        "namespace": "postgres://postgres:5432"
+      }
+    ]
+  },
+  {
+    "eventType": "COMPLETE",
+    "inputs": [
+      {
+        "facets": {
+          "dataSource": {
+            "name": "postgres://postgres:5432",
+            "uri": "postgres://postgres:5432/food_delivery"
+          }
+        },
+        "name": "food_delivery.public.top_delivery_times",
+        "namespace": "postgres://postgres:5432"
+      }
+    ],
+    "job": {
+      "facets": {
+        "sql": {
+          "query": "\n    INSERT INTO popular_orders_day_of_week (order_day_of_week, order_placed_on,orders_placed)\n    SELECT EXTRACT(ISODOW FROM order_placed_on) AS order_day_of_week,\n           order_placed_on,\n           COUNT(*) AS orders_placed\n      FROM top_delivery_times\n     GROUP BY order_placed_on\n    "
+        }
+      },
+      "name": "postgres_orders_popular_day_of_week.postgres_insert",
+      "namespace": "food_delivery"
+    },
+    "outputs": [
+      {
+        "facets": {
+          "dataSource": {
+            "name": "postgres://postgres:5432",
+            "uri": "postgres://postgres:5432/food_delivery"
+          },
+          "schema": {
+            "fields": [
+              {
+                "name": "order_day_of_week",
+                "type": "varchar"
+              },
+              {
+                "name": "order_placed_on",
+                "type": "timestamp"
+              },
+              {
+                "name": "orders_placed",
+                "type": "int4"
+              }
+            ]
+          }
+        },
+        "name": "food_delivery.public.popular_orders_day_of_week",
+        "namespace": "postgres://postgres:5432"
+      }
+    ]
+  }
+]

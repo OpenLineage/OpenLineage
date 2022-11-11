@@ -16,6 +16,36 @@
         "airflow_runArgs": {
           "externalTrigger": false
         },
+        "airflow_taskRun": {
+          "operator": "***.operators.python.PythonOperator",
+          "taskInfo": {
+            "_inlets": [],
+            "_outlets": [],
+            "args": {
+              "task_id": "get_input"
+            },
+            "dag": {
+              "dag_id": "mapped_dag",
+              "schedule_interval": "@once",
+              "tags": []
+            },
+            "dag_run": {
+              "conf": {},
+              "creating_job_id": 1,
+              "dag_id": "mapped_dag",
+              "external_trigger": false
+            },
+            "downstream_task_ids": "{'multiply'}",
+            "inlets": [],
+            "outlets": [],
+            "task_id": "get_input",
+            "trigger_rule": "all_success",
+            "upstream_task_ids": "set()",
+            "wait_for_downstream": false,
+            "weight_rule": "downstream"
+          },
+          "tryNumber": 1
+        },
         "parent": {
           "job": {
             "name": "mapped_dag",
