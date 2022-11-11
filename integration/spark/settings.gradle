@@ -5,3 +5,8 @@ include 'spark33'
 include 'shared'
 include 'app'
 
+includeBuild('../../client/java') {
+    dependencySubstitution {
+        substitute module('io.openlineage:openlineage-java') with project(':')
+    }
+}
