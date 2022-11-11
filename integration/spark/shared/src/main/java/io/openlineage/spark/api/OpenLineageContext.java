@@ -87,6 +87,9 @@ public class OpenLineageContext {
   /** Optional {@link QueryExecution} for runs that are Spark SQL queries. */
   @Default @NonNull Optional<QueryExecution> queryExecution = Optional.empty();
 
+  /** Optional job name if it is configured explicitly */
+  @Default @NonNull Optional<String> appName = Optional.empty();
+
   /**
    * Override the default Builder class to take an unwrapped {@link QueryExecution} argument, rather
    * than forcing the caller to wrap the {@link QueryExecution} in an {@link Optional}. The Spark
@@ -102,6 +105,11 @@ public class OpenLineageContext {
     @Tolerate
     public OpenLineageContextBuilder queryExecution(QueryExecution queryExecution) {
       return queryExecution(Optional.of(queryExecution));
+    }
+
+    @Tolerate
+    public OpenLineageContextBuilder appName(String appName) {
+      return appName(Optional.of(appName));
     }
   }
 }

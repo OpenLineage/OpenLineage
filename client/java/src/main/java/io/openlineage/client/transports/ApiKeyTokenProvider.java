@@ -5,6 +5,7 @@
 
 package io.openlineage.client.transports;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -12,6 +13,7 @@ import lombok.ToString;
 
 @NoArgsConstructor
 @ToString
+@AllArgsConstructor
 public class ApiKeyTokenProvider implements TokenProvider {
   @Getter @Setter private String apiKey;
 

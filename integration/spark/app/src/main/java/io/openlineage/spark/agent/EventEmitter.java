@@ -9,8 +9,11 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClient;
 import io.openlineage.client.OpenLineageClientException;
 import io.openlineage.client.OpenLineageClientUtils;
+import io.openlineage.client.transports.ApiKeyTokenProvider;
 import io.openlineage.client.transports.ConsoleTransport;
+import io.openlineage.client.transports.HttpConfig;
 import io.openlineage.client.transports.HttpTransport;
+import io.openlineage.client.transports.Transport;
 import io.openlineage.client.transports.TransportFactory;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -24,18 +27,28 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class EventEmitter {
   @Getter private OpenLineageClient client;
-  @Getter private URI lineageURI;
-  @Getter private Optional<String> appName;
   @Getter private String jobNamespace;
   @Getter private String parentJobName;
-  @Getter private Double timeout;
   @Getter private Optional<UUID> parentRunId;
 
+  public EventEmitter(
+      Transport transport, String jobNamespace, String parentJobName, Optional<UUID> parentRunId) {
+    this.client = new OpenLineageClient(transport);
+    this.jobNamespace = jobNamespace;
+    this.parentJobName = parentJobName;
+    this.parentRunId = parentRunId;
+  }
+
+  /**
+   * @param argument
+   * @throws URISyntaxException
+   * @deprecated Use {@link EventEmitter#EventEmitter(Transport, String, String, Optional)}
+   */
+  @Deprecated
   public EventEmitter(ArgumentParser argument) throws URISyntaxException {
     this.jobNamespace = argument.getNamespace();
     this.parentJobName = argument.getJobName();
     this.parentRunId = convertToUUID(argument.getParentRunId());
-    this.appName = argument.getAppName();
 
     if (argument.isConsoleMode()) {
       this.client = new OpenLineageClient(new ConsoleTransport());
@@ -53,6 +66,14 @@ public class EventEmitter {
       return;
     }
 
+    HttpConfig config = buildHttpConfig(argument);
+
+    this.client = OpenLineageClient.builder().transport(new HttpTransport(config)).build();
+    log.debug(
+        String.format("Init OpenLineageContext: Args: %s URI: %s", argument, config.getUrl()));
+  }
+
+  static HttpConfig buildHttpConfig(ArgumentParser argument) throws URISyntaxException {
     // Extract url parameters other than api_key to append to lineageURI
     String queryParams = null;
     if (argument.getUrlParams().isPresent()) {
@@ -68,17 +89,14 @@ public class EventEmitter {
     URI hostURI = new URI(argument.getHost());
     String uriPath = String.format("/api/%s/lineage", argument.getVersion());
 
-    this.lineageURI =
+    URI lineageURI =
         new URI(hostURI.getScheme(), hostURI.getAuthority(), uriPath, queryParams, null);
 
-    HttpTransport.Builder builder = HttpTransport.builder().uri(this.lineageURI);
-    argument.getApiKey().ifPresent(builder::apiKey);
-    argument.getTimeout().ifPresent(builder::timeout);
-
-    this.client = OpenLineageClient.builder().transport(builder.build()).build();
-    log.debug(
-        String.format(
-            "Init OpenLineageContext: Args: %s URI: %s", argument, lineageURI.toString()));
+    HttpConfig config = new HttpConfig();
+    argument.getApiKey().ifPresent(key -> config.setAuth(new ApiKeyTokenProvider(key)));
+    argument.getTimeout().ifPresent(config::setTimeout);
+    config.setUrl(lineageURI);
+    return config;
   }
 
   public void emit(OpenLineage.RunEvent event) {

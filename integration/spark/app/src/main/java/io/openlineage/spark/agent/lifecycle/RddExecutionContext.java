@@ -67,14 +67,16 @@ import scala.runtime.AbstractFunction0;
 @Slf4j
 class RddExecutionContext implements ExecutionContext {
   private final EventEmitter eventEmitter;
+  private final Optional<String> appName;
   private final Optional<SparkContext> sparkContextOption;
   private final UUID runId = UUID.randomUUID();
   private List<URI> inputs = Collections.emptyList();
   private List<URI> outputs = Collections.emptyList();
   private String jobSuffix;
 
-  public RddExecutionContext(EventEmitter eventEmitter) {
+  public RddExecutionContext(EventEmitter eventEmitter, Optional<String> appName) {
     this.eventEmitter = eventEmitter;
+    this.appName = appName;
     sparkContextOption =
         Optional.ofNullable(
             SparkContext$.MODULE$
@@ -283,10 +285,7 @@ class RddExecutionContext implements ExecutionContext {
       suffix = String.valueOf(jobId);
     }
 
-    String name =
-        eventEmitter
-            .getAppName()
-            .orElse(sparkContextOption.map(SparkContext::appName).orElse("unknown"));
+    String name = appName.orElse(sparkContextOption.map(SparkContext::appName).orElse("unknown"));
     String jobName = name + "." + suffix;
     return new OpenLineage.JobBuilder()
         .namespace(eventEmitter.getJobNamespace())

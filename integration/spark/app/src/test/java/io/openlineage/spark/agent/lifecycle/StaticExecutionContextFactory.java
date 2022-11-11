@@ -44,7 +44,7 @@ public class StaticExecutionContextFactory extends ContextFactory {
   public static final Semaphore semaphore = new Semaphore(NUM_PERMITS);
 
   public StaticExecutionContextFactory(EventEmitter eventEmitter) {
-    super(eventEmitter);
+    super(eventEmitter, Optional.empty());
     try {
       semaphore.acquire(NUM_PERMITS);
     } catch (Exception e) {
@@ -76,7 +76,7 @@ public class StaticExecutionContextFactory extends ContextFactory {
   @Override
   public ExecutionContext createRddExecutionContext(int jobId) {
     RddExecutionContext rdd =
-        new RddExecutionContext(openLineageEventEmitter) {
+        new RddExecutionContext(openLineageEventEmitter, Optional.empty()) {
           @Override
           public void start(SparkListenerJobStart jobStart) {
             try {

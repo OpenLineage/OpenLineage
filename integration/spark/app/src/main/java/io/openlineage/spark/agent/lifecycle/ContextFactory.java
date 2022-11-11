@@ -18,14 +18,16 @@ public class ContextFactory {
 
   public final EventEmitter openLineageEventEmitter;
   private final OpenLineageEventHandlerFactory handlerFactory;
+  private final Optional<String> appName;
 
-  public ContextFactory(EventEmitter openLineageEventEmitter) {
+  public ContextFactory(EventEmitter openLineageEventEmitter, Optional<String> appName) {
     this.openLineageEventEmitter = openLineageEventEmitter;
+    this.appName = appName;
     handlerFactory = new InternalEventHandlerFactory();
   }
 
   public ExecutionContext createRddExecutionContext(int jobId) {
-    return new RddExecutionContext(openLineageEventEmitter);
+    return new RddExecutionContext(openLineageEventEmitter, appName);
   }
 
   public Optional<ExecutionContext> createSparkSQLExecutionContext(long executionId) {
@@ -39,6 +41,7 @@ public class ContextFactory {
                       .sparkContext(sparkSession.sparkContext())
                       .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
                       .queryExecution(queryExecution)
+                      .appName(appName)
                       .build();
               OpenLineageRunEventBuilder runEventBuilder =
                   new OpenLineageRunEventBuilder(olContext, handlerFactory);

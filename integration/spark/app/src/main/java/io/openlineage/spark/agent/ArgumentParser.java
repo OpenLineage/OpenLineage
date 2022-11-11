@@ -5,8 +5,11 @@
 
 package io.openlineage.spark.agent;
 
+import io.openlineage.client.transports.ApiKeyTokenProvider;
+import io.openlineage.client.transports.HttpConfig;
 import io.openlineage.client.transports.TransportConfig;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -15,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,17 +29,23 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.core5.http.NameValuePair;
 import org.apache.hc.core5.net.URLEncodedUtils;
 
+/**
+ * @deprecated Use {@link io.openlineage.client.transports.TransportFactory} with appropriate {@link
+ *     TransportConfig}
+ */
 @AllArgsConstructor
 @Slf4j
 @Getter
 @ToString
 @Builder
+@Deprecated
 public class ArgumentParser {
   public static final Set<String> namedParams =
       new HashSet<>(Arrays.asList("timeout", "api_key", "app_name"));
+  public static final String DEFAULT_VERSION = "v1";
 
   @Builder.Default private String host = "";
-  @Builder.Default private String version = "v1";
+  @Builder.Default private String version = DEFAULT_VERSION;
   @Builder.Default private String namespace = "default";
   @Builder.Default private String jobName = "default";
   @Builder.Default private String parentRunId = null;
@@ -48,22 +58,48 @@ public class ArgumentParser {
   @Builder.Default private Optional<TransportConfig> transportConfig = Optional.empty();
   @Builder.Default private Optional<String> transportMode = Optional.empty();
 
-  public static ArgumentParser parse(String clientUrl) {
+  /**
+   * @param clientUrl
+   * @return
+   * @throws URISyntaxException
+   * @deprecated Use Spark configuration for specific properties
+   */
+  @Deprecated
+  public static ArgumentParser parse(String clientUrl) throws URISyntaxException {
+    HttpConfig httpConfig = new HttpConfig();
     URI uri = URI.create(clientUrl);
     String path = uri.getPath();
     String[] elements = path.split("/");
-    List<NameValuePair> nameValuePairList = URLEncodedUtils.parse(uri, StandardCharsets.UTF_8);
 
+    // Extract url parameters other than api_key to append to lineageURI
+    List<NameValuePair> nameValuePairList = URLEncodedUtils.parse(uri, StandardCharsets.UTF_8);
+    Optional<Map<String, String>> urlParams = getUrlParams(nameValuePairList);
+    String queryParams =
+        urlParams
+            .map(
+                params -> {
+                  StringJoiner query = new StringJoiner("&");
+                  params.entrySet().stream()
+                      .filter(entry -> !entry.getKey().equals("api_key"))
+                      .forEach(entry -> query.add(entry.getKey() + "=" + entry.getValue()));
+
+                  return query.toString();
+                })
+            .orElse(null);
+
+    String version = get(elements, "api", 1).orElse(DEFAULT_VERSION);
+    String uriPath = String.format("/api/%s/lineage", version);
+
+    httpConfig.setUrl(new URI(uri.getScheme(), uri.getAuthority(), uriPath, queryParams, null));
+    getTimeout(nameValuePairList).ifPresent(httpConfig::setTimeout);
+    getNamedStringParameter(nameValuePairList, "api_key")
+        .ifPresent(key -> httpConfig.setAuth(new ApiKeyTokenProvider(key)));
     ArgumentParserBuilder builder =
         ArgumentParser.builder()
-            .host(uri.getScheme() + "://" + uri.getAuthority())
-            .timeout(getTimeout(nameValuePairList))
-            .apiKey(getNamedStringParameter(nameValuePairList, "api_key"))
+            .transportConfig(Optional.of(httpConfig))
             .appName(getNamedStringParameter(nameValuePairList, "app_name"))
-            .urlParams(getUrlParams(nameValuePairList))
             .consoleMode(false);
 
-    get(elements, "api", 1).ifPresent(builder::version);
     get(elements, "namespaces", 3).ifPresent(builder::namespace);
     get(elements, "jobs", 5).ifPresent(builder::jobName);
     get(elements, "runs", 7).ifPresent(builder::parentRunId);
@@ -71,9 +107,8 @@ public class ArgumentParser {
     ArgumentParser argumentParser = builder.build();
     log.info(
         String.format(
-            "%s/api/%s/namespaces/%s/jobs/%s/runs/%s",
-            argumentParser.getHost(),
-            argumentParser.getVersion(),
+            "%s/namespaces/%s/jobs/%s/runs/%s",
+            httpConfig.getUrl(),
             argumentParser.getNamespace(),
             argumentParser.getJobName(),
             argumentParser.getParentRunId()));
