@@ -8,8 +8,8 @@ plugins {
     id 'java'
     id 'java-library'
     id 'java-test-fixtures'
-    id 'com.diffplug.spotless' version '5.12.1'
-    id "com.github.johnrengelman.shadow" version "7.1.2"
+    id 'com.diffplug.spotless'
+    id "com.github.johnrengelman.shadow"
     id "pmd"
 }
 
