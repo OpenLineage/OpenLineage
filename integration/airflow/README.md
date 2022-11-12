@@ -243,3 +243,7 @@ This can be helpful when you need to run arbitrary integration tests during deve
 python -m pytest test_integration.py::test_integration[great_expectations_validation-requests/great_expectations.json]
 ```
 ...runs a single test which you can repeat after changes in code.
+
+----
+SPDX-License-Identifier: Apache-2.0\
+Copyright 2018-2022 contributors to the OpenLineage project

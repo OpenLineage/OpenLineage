@@ -27,7 +27,7 @@ OpenLineage uses [GitHub's fork and pull model](https://help.github.com/articles
 to create a contribution.
 
 Make sure to [sign-off](https://github.com/OpenLineage/OpenLineage/blob/main/why-the-dco.md) your work to say that the contributor has the rights to make the contribution and
-agrees with the [Developer Certificate of Origin (DCO)](why-the-dco.md)
+agrees with the [Developer Certificate of Origin (DCO)](why-the-dco.md).
 
 To ensure your pull request is accepted, follow these guidelines:
 
@@ -62,7 +62,7 @@ To ensure your pull request is accepted, follow these guidelines:
 
 ## Proposing changes
 
-Create an issue and tag it as `proposal`
+Create an issue and tag it as `proposal`.
 
 In the description provide the following sections:
  - Purpose (Why?): What is the use case this is for. 
@@ -90,9 +90,9 @@ workflows are merged into a single config file. See existing workflows for examp
 
 ## First-Time Contributors
 
-If this is your first contribution to open source, you can [follow this tutorial][contributiontutorial] or check [this video series][contributionvideos] to learn about the contribution workflow with GitHub.
+If this is your first contribution to open source, you can [follow this tutorial][contributiontutorial] or check out [this video series][contributionvideos] to learn about the contribution workflow with GitHub.
 
-Look tickets labeled ['good first issue'][goodfirstissues] and ['help wanted'][helpwantedissues]. These are a great starting point if you want to contribute. Don't hesitate to ask questions about the issue if you are not sure about the strategy to follow.
+Look for tickets labeled ['good first issue'][goodfirstissues] and ['help wanted'][helpwantedissues]. These are a great starting point if you want to contribute. Don't hesitate to ask questions about the issue if you are not sure about the strategy to follow.
 
 
 [issues]: https://github.com/OpenLineage/OpenLineage/issues
@@ -103,6 +103,10 @@ Look tickets labeled ['good first issue'][goodfirstissues] and ['help wanted'][h
 
 ## Triggering CI runs from forks (committers)
 
-CI runs on forks are disabled due to possibility to access external services via CI run. 
-Once contributor decides PR is ready to be checked, they can use [this script](https://github.com/jklukas/git-push-fork-to-upstream-branch)
-to trigger CI run on separate branch with same commit ID. This will update CI status of a PR.
+CI runs on forks are disabled due to the possibility of access by external services via CI run. 
+Once a contributor decides a PR is ready to be checked, they can use [this script](https://github.com/jklukas/git-push-fork-to-upstream-branch)
+to trigger a CI run on a separate branch with the same commit ID. This will update the CI status of a PR.
+
+----
+SPDX-License-Identifier: Apache-2.0\
+Copyright 2018-2022 contributors to the OpenLineage project

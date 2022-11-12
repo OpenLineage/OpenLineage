@@ -65,3 +65,7 @@ The interface can be manually tested by running the integration test from the `i
 * Support a larger part of the SQL language 
 * Python as a Cargo feature
 * Explore a Java integration
+
+----
+SPDX-License-Identifier: Apache-2.0\
+Copyright 2018-2022 contributors to the OpenLineage project

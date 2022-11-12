@@ -7,3 +7,6 @@
 |Apache Spark|2.4.6, 3.1.2, 3.2.1+, 3.3.1|https://github.com/apache/spark/tags|[README](./spark/README.md)| |
 |Apache Flink|1.14.5, 1.15.1|https://github.com/apache/flink/tags|[README](./spark/README.md)| Flink support is currently experimental |
 
+----
+SPDX-License-Identifier: Apache-2.0\
+Copyright 2018-2022 contributors to the OpenLineage project

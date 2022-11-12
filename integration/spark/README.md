@@ -346,3 +346,7 @@ If contributing changes, additions or fixes to the Spark integration, please inc
 A Github Action checks for headers in new `.java` files when pull requests are opened.
 
 Thank you for your contributions to the project!
+
+----
+SPDX-License-Identifier: Apache-2.0\
+Copyright 2018-2022 contributors to the OpenLineage project

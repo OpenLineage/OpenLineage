@@ -78,12 +78,11 @@ This includes:
 New committers are voted onto the committers list by the existing committers - see
 [committer list](COMMITTERS.md).
 
-The committers vote and if a majority agree then the requester
-is added to the committers list and given write access to the git repositories.
+Upon a new nomination, the committers vote; if there are at least 3 votes in support of the nominee and no vetoes in a period of three days, the nominee becomes a committer. If there are vetoes, a majority of all committers is required to approve the nominee. Once accepted, the nominee is added to the committers list and given write access to the git repositories.
 
-Once confirmed, you can publicly refer to yourself as an OpenLineage committer.
+Once confirmed, nominees can publicly refer to themselves as OpenLineage committers.
 
-#### When does a committer lose maintainer status
+#### When does a committer lose maintainer status?
 
 If a committer is no longer interested or cannot perform the committer duties listed above, they
 should volunteer to be moved to emeritus status. In extreme cases this can also occur by a vote of
@@ -127,7 +126,7 @@ for more general discussion.
 The OpenLineage content is managed in GitHub under [https://github.com/OpenLineage/OpenLineage](https://github.com/OpenLineage/OpenLineage).
 It may be developed using patches, branches from main, or forks/git pull requests.
 Each change should have a [GitHub issue](https://github.com/OpenLineage/OpenLineage/issues) explaining why the change is being made.
-See: [CONTRIBUTING.md]
+For more information about contributing, read the [contributors guide](CONTRIBUTING.md).
 
 When new content proposed to the project, the person contributing is required to sign the contribution
 to confirm it conforms to the [Developer Certificate of Origin (DCO)](https://developercertificate.org/).
@@ -167,5 +166,5 @@ be resolved by voting. The voting process is a simple majority in which each com
 
 
 ----
-License: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/),
-Copyright Contributors to the OpenLineage project.
+SPDX-License-Identifier: Apache-2.0\
+Copyright 2018-2022 contributors to the OpenLineage project

@@ -176,3 +176,6 @@ The Github Actions Super-linter is installed and configured to check for headers
 
 Thanks for your contributions to the project!
 
+----
+SPDX-License-Identifier: Apache-2.0\
+Copyright 2018-2022 contributors to the OpenLineage project

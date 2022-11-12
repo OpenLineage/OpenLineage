@@ -12,3 +12,7 @@ For Python there is Python object with two lists.
 
 The tables can be in different database schemas or even databases, so we return `DbTableMeta` object that contains up to three-level nested names.
 This object carries three language-specific Strings carrying this information.
+
+----
+SPDX-License-Identifier: Apache-2.0\
+Copyright 2018-2022 contributors to the OpenLineage project
