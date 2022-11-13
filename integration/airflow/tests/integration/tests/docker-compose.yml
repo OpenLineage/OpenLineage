@@ -73,6 +73,8 @@ services:
       DBT_DATASET_PREFIX: ${DBT_DATASET_PREFIX}_dbt
       AIRFLOW_VERSION: ${AIRFLOW_VERSION}
       SNOWFLAKE_ACCOUNT_ID: ${SNOWFLAKE_ACCOUNT_ID}
+    networks:
+      - app_net
     volumes:
       - ../docker/wait-for-it.sh:/wait-for-it.sh
     depends_on:
@@ -84,6 +86,8 @@ services:
   airflow_scheduler:
     <<: *airflow-base
     command: scheduler
+    networks:
+      - app_net
     healthcheck:
       test: [ "CMD-SHELL", 'airflow jobs check --job-type SchedulerJob --hostname "$${HOSTNAME}"' ]
       interval: 10s
@@ -99,6 +103,9 @@ services:
     <<: *airflow-base
     hostname: airflow-worker
     command: celery worker
+    networks:
+      app_net:
+        ipv4_address: 172.16.238.100
     restart: always
     healthcheck:
       test: [ "CMD-SHELL", 'celery --app airflow.executors.celery_executor.app inspect ping -d "celery@$${HOSTNAME}"' ]
@@ -115,6 +122,8 @@ services:
       - dev
     <<: *airflow-base
     command: webserver
+    networks:
+      - app_net
     ports:
       - 8080:8080
     healthcheck:
@@ -135,6 +144,8 @@ services:
       - FLASK_APP=app.py
       - FLASK_RUN_PORT=5000
       - SERVER_EVENTS=/opt/airflow/events
+    networks:
+      - app_net
     volumes:
       - $PWD/events:/opt/airflow/events
 
@@ -148,12 +159,16 @@ services:
       _AIRFLOW_WWW_USER_USERNAME: ${_AIRFLOW_WWW_USER_USERNAME:-airflow}
       _AIRFLOW_WWW_USER_PASSWORD: ${_AIRFLOW_WWW_USER_PASSWORD:-airflow}
       _PIP_ADDITIONAL_REQUIREMENTS: ''
+    networks:
+      - app_net
     depends_on:
       - postgres
     entrypoint: ["/opt/data/wait-for-it.sh", "postgres:5432", "--", "/bin/bash"]
 
   redis:
     image: redis:latest
+    networks:
+      - app_net
     ports:
       - 6379:6379
     healthcheck:
@@ -165,6 +180,8 @@ services:
 
   postgres:
     image: bitnami/postgresql:12.1.0
+    networks:
+      - app_net
     ports:
       - "5432:5432"
     environment:
@@ -186,6 +203,8 @@ services:
 
   mysql:
     image: mysql:8
+    networks:
+      - app_net
     ports:
       - "3306:3306"
     environment:
@@ -204,6 +223,9 @@ services:
 
   openssh-server:
     image: linuxserver/openssh-server:latest
+    networks:
+      app_net:
+        ipv4_address: 172.16.238.10
     ports:
       - "2222:2222"
     environment:
@@ -215,3 +237,12 @@ services:
       interval: 5s
       timeout: 30s
       retries: 50
+
+networks:
+  app_net:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.16.238.0/24
+          gateway: 172.16.238.1
