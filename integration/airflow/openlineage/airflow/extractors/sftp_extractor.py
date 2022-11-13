@@ -10,8 +10,6 @@ from airflow.providers.ssh.hooks.ssh import SSHHook
 
 
 class SFTPExtractor(BaseExtractor):
-    def __init__(self, operator):
-        super().__init__(operator)
 
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
@@ -19,35 +17,46 @@ class SFTPExtractor(BaseExtractor):
 
     def extract(self) -> Optional[TaskMetadata]:
         scheme = "file"
+
         local_host = socket.gethostname()
+        try:
+            local_host = socket.gethostbyname(local_host)
+        except Exception as e:
+            self.log.warning(
+                f"Failed to resolve local hostname. Using the hostname got by socket.gethostbyname() without resolution. {e}",  # noqa: E501
+                exc_info=True
+            )
+
+        if hasattr(self.operator, "sftp_hook") and self.operator.sftp_hook is not None:
+            hook = self.operator.sftp_hook
+        elif hasattr(self.operator, "ssh_hook") and self.operator.ssh_hook is not None:
+            hook = self.operator.ssh_hook
+        else:
+            hook = SSHHook(ssh_conn_id=self.operator.ssh_conn_id)
 
         if hasattr(self.operator, "remote_host") and self.operator.remote_host is not None:
             remote_host = self.operator.remote_host
-        elif hasattr(self.operator, "sftp_hook") and self.operator.sftp_hook is not None:
-            remote_host = self.operator.sftp_hook.get_connection().host
-        elif hasattr(self.operator, "ssh_hook") and self.operator.ssh_hook is not None:
-            remote_host = self.operator.ssh_hook.get_connection().host
         else:
-            hook = SSHHook(ssh_conn_id=self.operator.ssh_conn_id)
-            remote_host = hook.get_connection(self.operator.ssh_conn_id).host
-
-        if isinstance(self.operator.local_filepath, str):
-            local_filepath = [self.operator.local_filepath]
-        else:
-            local_filepath = self.operator.local_filepath
-
-        if isinstance(self.operator.remote_filepath, str):
-            remote_filepath = [self.operator.remote_filepath]
-        else:
-            remote_filepath = self.operator.remote_filepath
+            remote_host = hook.get_connection(hook.ssh_conn_id).host
+        try:
+            remote_host = socket.gethostbyname(remote_host)
+        except Exception as e:
+            self.log.warning(
+                f"Failed to resolve remote hostname. Using the provided hostname without resolution. {e}",  # noqa: E501
+                exc_info=True
+            )
 
         local_datasets = [
-            Dataset(source=self._get_source(scheme, local_host, path), name=path)
-            for path in local_filepath
+            Dataset(source=self._get_source(scheme, local_host, None, path), name=path)
+            for path in self.operator.local_filepath
         ]
         remote_datasets = [
-            Dataset(source=self._get_source(scheme, remote_host, path), name=path)
-            for path in remote_filepath
+            Dataset(source=self._get_source(
+                scheme,
+                remote_host,
+                hook.port if hasattr(hook, "port") else hook.ssh_hook.port,
+                path,
+            ), name=path) for path in self.operator.remote_filepath
         ]
 
         if self.operator.operation.lower() == SFTPOperation.GET:
@@ -65,7 +74,8 @@ class SFTPExtractor(BaseExtractor):
             job_facets={},
         )
 
-    def _get_source(self, scheme, authority, path) -> Source:
+    def _get_source(self, scheme, host, port, path) -> Source:
+        authority = host if port is None else f"{host}:{port}"
         return Source(
             scheme=scheme,
             authority=authority,

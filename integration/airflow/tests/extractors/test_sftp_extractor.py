@@ -7,7 +7,9 @@ import socket
 from unittest import mock
 
 from airflow.models import Connection, DAG
+from airflow.providers.sftp.hooks.sftp import SFTPHook
 from airflow.providers.sftp.operators.sftp import SFTPOperation
+from airflow.providers.ssh.hooks.ssh import SSHHook
 from airflow.utils import timezone
 
 from openlineage.airflow.extractors.sftp_extractor import SFTPExtractor
@@ -19,7 +21,7 @@ SFTPOperator = try_import_from_string("airflow.providers.sftp.operators.sftp.SFT
 SCHEME = "file"
 
 LOCAL_FILEPATH = "/path/to/local"
-LOCAL_HOST = socket.gethostname()
+LOCAL_HOST = socket.gethostbyname(socket.gethostname())
 LOCAL_SOURCE = Source(
     scheme=SCHEME, authority=LOCAL_HOST,
     connection_url=f"{SCHEME}://{LOCAL_HOST}{LOCAL_FILEPATH}"
@@ -28,9 +30,11 @@ LOCAL_DATASET = [Dataset(source=LOCAL_SOURCE, name=LOCAL_FILEPATH).to_openlineag
 
 REMOTE_FILEPATH = "/path/to/remote"
 REMOTE_HOST = "remotehost"
+REMOTE_PORT = 22
+REMOTE_AUTHORITY = f"{REMOTE_HOST}:{REMOTE_PORT}"
 REMOTE_SOURCE = Source(
-    scheme=SCHEME, authority=REMOTE_HOST,
-    connection_url=f"{SCHEME}://{REMOTE_HOST}{REMOTE_FILEPATH}"
+    scheme=SCHEME, authority=REMOTE_AUTHORITY,
+    connection_url=f"{SCHEME}://{REMOTE_AUTHORITY}{REMOTE_FILEPATH}"
 )
 REMOTE_DATASET = [Dataset(source=REMOTE_SOURCE, name=REMOTE_FILEPATH).to_openlineage_dataset()]
 
@@ -39,7 +43,7 @@ CONN = Connection(
     conn_id=CONN_ID,
     conn_type='sftp',
     host=REMOTE_HOST,
-    port='22',
+    port=REMOTE_PORT,
 )
 
 
@@ -49,7 +53,7 @@ CONN = Connection(
 ])
 @mock.patch('airflow.providers.ssh.hooks.ssh.SSHHook.get_conn', spec=paramiko.SSHClient)
 @mock.patch('airflow.providers.ssh.hooks.ssh.SSHHook.get_connection', spec=Connection)
-def test_extract_get(get_connection, get_conn, operation, expected):
+def test_extract_ssh_conn_id(get_connection, get_conn, operation, expected):
     get_connection.return_value = CONN
 
     dag_id = "sftp_dag"
@@ -58,6 +62,62 @@ def test_extract_get(get_connection, get_conn, operation, expected):
     task = SFTPOperator(
         task_id=task_id,
         ssh_conn_id=CONN_ID,
+        dag=DAG(dag_id),
+        start_date=timezone.utcnow(),
+        local_filepath=LOCAL_FILEPATH,
+        remote_filepath=REMOTE_FILEPATH,
+        operation=operation,
+    )
+    task_metadata = SFTPExtractor(task).extract()
+
+    assert task_metadata.name == f"{dag_id}.{task_id}"
+    assert task_metadata.inputs == expected[0]
+    assert task_metadata.outputs == expected[1]
+
+
+@pytest.mark.parametrize("operation, expected", [
+    (SFTPOperation.GET, (REMOTE_DATASET, LOCAL_DATASET)),
+    (SFTPOperation.PUT, (LOCAL_DATASET, REMOTE_DATASET)),
+])
+@mock.patch('airflow.providers.ssh.hooks.ssh.SSHHook.get_conn', spec=paramiko.SSHClient)
+@mock.patch('airflow.providers.ssh.hooks.ssh.SSHHook.get_connection', spec=Connection)
+def test_extract_sftp_hook(get_connection, get_conn, operation, expected):
+    get_connection.return_value = CONN
+
+    dag_id = "sftp_dag"
+    task_id = "sftp_task"
+
+    task = SFTPOperator(
+        task_id=task_id,
+        sftp_hook=SFTPHook(ssh_conn_id=CONN_ID),
+        dag=DAG(dag_id),
+        start_date=timezone.utcnow(),
+        local_filepath=LOCAL_FILEPATH,
+        remote_filepath=REMOTE_FILEPATH,
+        operation=operation,
+    )
+    task_metadata = SFTPExtractor(task).extract()
+
+    assert task_metadata.name == f"{dag_id}.{task_id}"
+    assert task_metadata.inputs == expected[0]
+    assert task_metadata.outputs == expected[1]
+
+
+@pytest.mark.parametrize("operation, expected", [
+    (SFTPOperation.GET, (REMOTE_DATASET, LOCAL_DATASET)),
+    (SFTPOperation.PUT, (LOCAL_DATASET, REMOTE_DATASET)),
+])
+@mock.patch('airflow.providers.ssh.hooks.ssh.SSHHook.get_conn', spec=paramiko.SSHClient)
+@mock.patch('airflow.providers.ssh.hooks.ssh.SSHHook.get_connection', spec=Connection)
+def test_extract_ssh_hook(get_connection, get_conn, operation, expected):
+    get_connection.return_value = CONN
+
+    dag_id = "sftp_dag"
+    task_id = "sftp_task"
+
+    task = SFTPOperator(
+        task_id=task_id,
+        ssh_hook=SSHHook(ssh_conn_id=CONN_ID),
         dag=DAG(dag_id),
         start_date=timezone.utcnow(),
         local_filepath=LOCAL_FILEPATH,
