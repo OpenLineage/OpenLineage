@@ -38,7 +38,7 @@ else
 fi
 
 # check if there are any changes in spec in the latest commit
-if git diff --name-only --exit-code $PREV_SPEC_COMMIT HEAD 'spec/*.json' >> /dev/null; then
+if git diff --name-only --exit-code $PREV_SPEC_COMMIT HEAD 'spec/*.json' 'spec/OpenLineage.yml' >> /dev/null; then
   echo "no changes in spec detected, skipping publishing spec"
   exit 0
 fi
@@ -48,7 +48,10 @@ echo "Copying spec files from commit $PREV_SPEC_COMMIT"
 # Mark last commit on which we finished copying spec
 echo "$CIRCLE_SHA1" > "$WEBSITE_COMMIT_FILE"
 
-# Copy changed spec fils to target location
+# Copy changed spec YML file to target location
+cp spec/OpenLineage.yml ${WEBSITE_DIR}/static/spec/OpenLineage.yml
+
+# Copy changed spec JSON files to target location
 git diff --name-only $PREV_SPEC_COMMIT HEAD 'spec/*.json' | while read LINE; do
   # extract target file name from $id field in spec files
   URL=$(cat $LINE | jq -r '.["$id"]')
