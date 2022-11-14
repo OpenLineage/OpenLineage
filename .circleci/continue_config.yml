@@ -657,7 +657,7 @@ jobs:
       - *checkout_project_root
       - add_ssh_keys:
           fingerprints:
-            - "bf:81:9a:73:cf:b6:8e:f9:d8:2c:c0:9b:eb:64:86:23"
+            - "01:93:41:8a:7b:81:b6:cf:d4:b2:34:52:c6:ff:ac:53"
       - run: spec/release.sh
 
   build-proxy-backend:
