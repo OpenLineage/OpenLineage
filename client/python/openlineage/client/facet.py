@@ -1,5 +1,6 @@
 # Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
+from enum import Enum
 from typing import Dict, List, Optional
 
 import attr
@@ -233,3 +234,137 @@ class ErrorMessageRunFacet(BaseFacet):
     @staticmethod
     def _get_schema() -> str:
         return SCHEMA_URI + "#/definitions/ErrorMessageRunFacet"
+
+
+@attr.s
+class SymlinksDatasetFacetIdentifiers:
+    namespace: str = attr.ib()
+    name: str = attr.ib()
+    type: str = attr.ib()
+
+
+@attr.s
+class SymlinksDatasetFacet(BaseFacet):
+    """
+    This facet represents dataset symlink names
+    """
+    identifiers: List[SymlinksDatasetFacetIdentifiers] = attr.ib(factory=dict)
+
+    @staticmethod
+    def _get_schema() -> str:
+        return SCHEMA_URI + "#/definitions/SymlinksDatasetFacet"
+
+
+@attr.s
+class StorageDatasetFacet(BaseFacet):
+    """
+    This facet represents dataset symlink names
+    """
+    storageLayer: str = attr.ib()
+    fileFormat: str = attr.ib()
+
+    @staticmethod
+    def _get_schema() -> str:
+        return SCHEMA_URI + "#/definitions/StorageDatasetFacet"
+
+
+@attr.s
+class OwnershipJobFacetOwners:
+    name: str = attr.ib()
+    type: str = attr.ib()
+
+
+@attr.s
+class OwnershipJobFacet(BaseFacet):
+    """
+    This facet represents ownership of a job
+    """
+    owners: List[OwnershipJobFacetOwners] = attr.ib(factory=dict)
+
+    @staticmethod
+    def _get_schema() -> str:
+        return SCHEMA_URI + "#/definitions/OwnershipJobFacet"
+
+
+@attr.s
+class DatasetVersionDatasetFacet(BaseFacet):
+    """
+    This facet represents version of a dataset
+    """
+    datasetVersion: str = attr.ib()
+
+    @staticmethod
+    def _get_schema() -> str:
+        return SCHEMA_URI + "#/definitions/DatasetVersionDatasetFacet"
+
+
+class LifecycleStateChange(Enum):
+    ALTER = "ALTER"
+    CREATE = "CREATE"
+    DROP = "DROP"
+    OVERWRITE = "OVERWRITE"
+    RENAME = "RENAME"
+    TRUNCATE = "TRUNCATE"
+
+
+@attr.s
+class LifecycleStateChangeDatasetFacetPreviousIdentifier():
+    name: str = attr.ib()
+    namespace: str = attr.ib()
+
+
+@attr.s
+class LifecycleStateChangeDatasetFacet(BaseFacet):
+    """
+    This facet represents information of lifecycle changes of a dataset
+    """
+    lifecycleStateChange: LifecycleStateChange = attr.ib()
+    previousIdentifier: LifecycleStateChangeDatasetFacetPreviousIdentifier = attr.ib()
+
+    @staticmethod
+    def _get_schema() -> str:
+        return SCHEMA_URI + "#/definitions/LifecycleStateChangeDatasetFacet"
+
+
+@attr.s
+class OwnershipDatasetFacetOwners:
+    name: str = attr.ib()
+    type: str = attr.ib()
+
+
+@attr.s
+class OwnershipDatasetFacet(BaseFacet):
+    """
+    This facet represents ownership of a dataset
+    """
+    owners: List[OwnershipDatasetFacetOwners] = attr.ib(factory=dict)
+
+    @staticmethod
+    def _get_schema() -> str:
+        return SCHEMA_URI + "#/definitions/OwnershipDatasetFacet"
+
+
+@attr.s
+class ColumnLineageDatasetFacetFieldsAdditionalInputFields:
+    namespace: str = attr.ib()
+    name: str = attr.ib()
+    field: str = attr.ib()
+
+
+@attr.s
+class ColumnLineageDatasetFacetFieldsAdditional:
+    inputFields: List[ColumnLineageDatasetFacetFieldsAdditionalInputFields] = attr.ib()
+    transformationDescription: str = attr.ib()
+    transformationType: str = attr.ib()
+
+
+@attr.s
+class ColumnLineageDatasetFacet(BaseFacet):
+    """
+    This facet contains column lineage of a dataset
+    """
+    fields: Dict[str, ColumnLineageDatasetFacetFieldsAdditional] = attr.ib(factory=dict)
+
+    @staticmethod
+    def _get_schema() -> str:
+        return SCHEMA_URI + "#/definitions/ColumnLineageDatasetFacet"
