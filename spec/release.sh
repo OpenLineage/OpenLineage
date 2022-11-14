@@ -11,7 +11,7 @@ git config --global user.email "openlineage-bot-key@openlineage.io"
 git config --global user.name "OpenLineage deploy bot"
 
 WEBSITE_DIR=${WEBSITE_DIR:-$HOME/build/website}
-REPO="git@github.com:OpenLineage/OpenLineage.github.io"
+REPO="git@github.com:OpenLineage/website"
 
 if [[ -d $WEBSITE_DIR ]]; then
   # Check if we're in git repository and the repository points at website
@@ -54,7 +54,7 @@ git diff --name-only HEAD~1 HEAD 'spec/*.json' | while read LINE; do
   URL=$(cat $LINE | jq -r '.["$id"]')
 
   # extract target location in website repo
-  LOC="${WEBSITE_DIR}/${URL#*//*/}"
+  LOC="${WEBSITE_DIR}/static/${URL#*//*/}"
   LOC_DIR="${LOC%/*}"
 
   # create dir if necessary, and copy files
