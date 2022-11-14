@@ -49,7 +49,7 @@ echo "Copying spec files from commit $PREV_SPEC_COMMIT"
 echo "$CIRCLE_SHA1" > "$WEBSITE_COMMIT_FILE"
 
 # Copy changed spec fils to target location
-git diff --name-only HEAD~1 HEAD 'spec/*.json' | while read LINE; do
+git diff --name-only $PREV_SPEC_COMMIT HEAD 'spec/*.json' | while read LINE; do
   # extract target file name from $id field in spec files
   URL=$(cat $LINE | jq -r '.["$id"]')
 
