@@ -33,7 +33,7 @@ repositories {
     mavenLocal()
     mavenCentral()
     maven {
-        url = 'https://datakin.jfrog.io/artifactory/maven-public-libs-snapshot'
+        url = 'https://astronomer.jfrog.io/artifactory/maven-public-libs-snapshot'
     }
 }
 
