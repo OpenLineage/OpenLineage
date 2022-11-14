@@ -64,6 +64,6 @@ done
 
 # commit new spec and push
 git-website add -A .last_spec_commit_id
-git-website add -A spec/
+git-website add -A static/spec/
 git --git-dir "$WEBSITE_DIR/.git" --work-tree "$WEBSITE_DIR" commit -m "openlineage specification update"
 git-website push
