@@ -1,9 +1,8 @@
-from unittest import TestCase
 import logging
 import unittest
-from unittest import mock, TestCase
 import random
 import pytz
+from unittest import TestCase
 from openlineage.airflow.extractors.s3_extractor import S3CopyObjectExtractor
 from airflow.providers.amazon.aws.operators.s3 import S3CopyObjectOperator
 from openlineage.airflow.extractors.base import TaskMetadata
