@@ -30,6 +30,7 @@ import io.openlineage.client.SchemaParser.ArrayType;
 import io.openlineage.client.SchemaParser.Field;
 import io.openlineage.client.SchemaParser.ObjectType;
 import io.openlineage.client.SchemaParser.OneOfType;
+import io.openlineage.client.SchemaParser.AnyOfType;
 import io.openlineage.client.SchemaParser.PrimitiveType;
 import io.openlineage.client.SchemaParser.RefType;
 import io.openlineage.client.SchemaParser.Type;
@@ -137,6 +138,12 @@ public class TypeResolver {
         @Override
         public ResolvedType visit(OneOfType oneOfType) {
           throw new UnsupportedOperationException("oneOf is not supported yet " + oneOfType);
+        }
+
+        @Override
+        public ResolvedType visit(AnyOfType oneOfType) {
+          // in case of anyOf we generate code based on the first type available
+          return visit(oneOfType.getChildren().get(0));
         }
 
         @Override
