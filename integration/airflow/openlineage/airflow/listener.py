@@ -3,10 +3,10 @@
 
 import copy
 import logging
-import threading
+import os
 import uuid
 from concurrent.futures import Executor, ThreadPoolExecutor
-from typing import TYPE_CHECKING, Optional, Callable, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 import attr
 from airflow.listeners import hookimpl
@@ -18,6 +18,9 @@ from openlineage.airflow.utils import DagUtils, get_task_location, get_job_name,
 if TYPE_CHECKING:
     from airflow.models import TaskInstance, BaseOperator, MappedOperator, DagRun
     from sqlalchemy.orm import Session
+
+
+log = logging.getLogger("airflow.task.openlineage")
 
 
 @attr.s(frozen=True)
@@ -48,29 +51,8 @@ class ActiveRunManager:
         return ti.dag_id + ti.task_id + ti.run_id
 
 
-log = logging.getLogger('airflow')
 # TODO: move task instance runs to executor
 executor: Optional[Executor] = None
-
-
-def execute_in_thread(target: Callable, kwargs=None):
-    if kwargs is None:
-        kwargs = {}
-    thread = threading.Thread(
-        target=target,
-        kwargs=kwargs,
-        daemon=True
-    )
-    thread.start()
-
-    # Join, but ignore checking if thread stopped. If it did, then we shoudn't do anything.
-    # This basically gives this thread 5 seconds to complete work, then it can be killed,
-    # as daemon=True. We don't want to deadlock Airflow if our code hangs.
-
-    # This will hang if this timeouts, and extractor is running non-daemon thread inside,
-    # since it will never be cleaned up. Ex. SnowflakeOperator
-    thread.join(timeout=10)
-
 
 run_data_holder = ActiveRunManager()
 extractor_manager = ExtractorManager()
@@ -88,15 +70,15 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
     dagrun = task_instance.dag_run
     dag = task_instance.task.dag
 
+    task_instance_copy = copy.deepcopy(task_instance)
+    task = task_instance_copy.task
+
+    run_id = str(uuid.uuid4())
+    run_data_holder.set_active_run(task_instance_copy, run_id)
+
     def on_running():
-        task_instance_copy = copy.deepcopy(task_instance)
         task_instance_copy.render_templates()
-        task = task_instance_copy.task
-
-        run_id = str(uuid.uuid4())
-        run_data_holder.set_active_run(task_instance_copy, run_id)
         parent_run_id = adapter.build_dag_run_id(dag.dag_id, dagrun.run_id)
-
         task_metadata = extractor_manager.extract_metadata(dagrun, task)
 
         adapter.start_task(
@@ -115,8 +97,7 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
                 **get_custom_facets(dagrun, task, dagrun.external_trigger, task_instance_copy)
             }
         )
-
-    execute_in_thread(on_running)
+    executor.submit(on_running)
 
 
 @hookimpl
@@ -137,8 +118,7 @@ def on_task_instance_success(previous_state, task_instance: "TaskInstance", sess
             end_time=DagUtils.to_iso_8601(task_instance.end_date),
             task=task_metadata
         )
-
-    execute_in_thread(on_success)
+    executor.submit(on_success)
 
 
 @hookimpl
@@ -161,18 +141,20 @@ def on_task_instance_failed(previous_state, task_instance: "TaskInstance", sessi
             task=task_metadata
         )
 
-    execute_in_thread(on_failure)
+    executor.submit(on_failure)
 
 
 @hookimpl
 def on_starting():
     global executor
-    executor = ThreadPoolExecutor(max_workers=8, thread_name_prefix="openlineage_")
+    if not executor:
+        executor = ThreadPoolExecutor(max_workers=8, thread_name_prefix="openlineage_")
 
 
 @hookimpl
 def before_stopping():
-    executor.shutdown(wait=False)
+    if executor:
+        executor.shutdown(wait=True)
 
 
 @hookimpl
