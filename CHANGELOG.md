@@ -1,15 +1,49 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.16.1...HEAD)
-### Added
-* Spark: Support latest Spark 3.3.1 [`#1183`](https://github.com/OpenLineage/OpenLineage/pull/1183) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
-* Python: add facets implementation to Python client [`#1233`](https://github.com/OpenLineage/OpenLineage/pull/1233) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
-* Spark: Disable specified facets [`#1271`](https://github.com/OpenLineage/OpenLineage/pull/1271) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.17.0...HEAD)
 
+## [0.17.0](https://github.com/OpenLineage/OpenLineage/compare/0.16.1...0.17.0) - 2022-11-16
+### Added
+* Spark: support latest Spark 3.3.1 [`#1183`](https://github.com/OpenLineage/OpenLineage/pull/1183) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Adds support for the latest Spark 3.3.1 version.*
+* Spark: add Kinesis Transport and support config Kinesis in Spark integration [`#1200`](https://github.com/OpenLineage/OpenLineage/pull/1200) [@yogayang](https://github.com/yogyang)  
+    *Adds support for sending to Kinesis from the Spark integration.* 
+* Spark: Disable specified facets [`#1271`](https://github.com/OpenLineage/OpenLineage/pull/1271) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Adds the ability to disable specified facets from generated OpenLineage events.*
+* Python: add facets implementation to Python client [`#1233`](https://github.com/OpenLineage/OpenLineage/pull/1233) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Adds missing facets to the Python client.*
+* SQL: add Rust parser interface [`#1172`](https://github.com/OpenLineage/OpenLineage/pull/1172) [@StarostaGit](https://github.com/StarostaGit) [@mobuchowski](https://github.com/mobuchowski)  
+    *Implements a Java interface in the Rust SQL parser, including a build script, native library loading mechanism, CI support and build fixes.*
+* Proxy: add helm chart for the proxy backed [`#1068`](https://github.com/OpenLineage/OpenLineage/pull/1068) [@wslulciuc](https://github.com/wslulciuc)  
+    *Adds a helm chart for deploying the proxy backend on Kubernetes.*
+* Spec: include possible facets usage in spec [`#1249`](https://github.com/OpenLineage/OpenLineage/pull/1249) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Extends the `facets` definition with a list of available facets.*
+* Website: publish YML version of spec to website [`#1300`](https://github.com/OpenLineage/OpenLineage/pull/1300) [@rossturk](https://github.com/rossturk)  
+    *Adds configuration necessary to make the OpenLineage website auto-generate openAPI docs when the spec is published there.*
+* Docs: update language on nominating new committers [`#1270`](https://github.com/OpenLineage/OpenLineage/pull/1270) [@rossturk](https://github.com/rossturk)  
+    *Updates the governance language to reflect the new policy on nominating committers.*
+
+### Changed
+* Website: publish spec into new website repo location [`#1295`](https://github.com/OpenLineage/OpenLineage/pull/1295) [@rossturk](https://github.com/rossturk)  
+    *Creates a new deploy key, adds it to CircleCI & GitHub, and makes the necessary changes to the `release.sh` script.*
+* Airflow: change how pip installs packages in tox environments [`#1302`](https://github.com/OpenLineage/OpenLineage/pull/1302) [@JDarDagran](https://github.com/JDarDagran)  
+    *Use deprecated resolver and constraints files provided by Airflow to avoid potential issues caused by pip's new resolver.*
+
+### Fixed
+* Airflow: fix README for running integration test [`#1238`](https://github.com/OpenLineage/OpenLineage/pull/1238) [@sekikn](https://github.com/sekikn)  
+    *Updates the README for consistency with supported Airflow versions.*
+* Airflow: add `task_instance` argument to `get_openlineage_facets_on_complete` [`#1269`](https://github.com/OpenLineage/OpenLineage/pull/1269) [@JDarDagran](https://github.com/JDarDagran)  
+    *Adds the `task_instance` argument to `DefaultExtractor`.*
+* Java client: fix up all artifactory paths [`#1290`](https://github.com/OpenLineage/OpenLineage/pull/1290) [@harels](https://github.com/harels)  
+    *Not all artifactory paths were changed in the build CI script in a previous PR.*
+* Python client: fix Mypy errors and adjust to PEP 484 [`#1264`](https://github.com/OpenLineage/OpenLineage/pull/1264) [@JDarDagran](https://github.com/JDarDagran)  
+    *Adds a `--no-namespace-packages` argument to the Mypy command and adjusts code to PEP 484.*
+* Website: release all specs since `last_spec_commit_id`, not just HEAD~1 [`#1298`](https://github.com/OpenLineage/OpenLineage/pull/1298) [@rossturk](https://github.com/rossturk)  
+    *The script now ships all specs that have changed since `.last_spec_commit_id`.*
 
 ### Removed
-* Deprecate HttpTransport.Builder in favor of HttpConfig [@collado-mike](https://github.com/collado-mike)
+* Deprecate HttpTransport.Builder in favor of HttpConfig [`#1287`](https://github.com/OpenLineage/OpenLineage/pull/1287) [@collado-mike](https://github.com/collado-mike)  
+    *Deprecates the Builder in favor of HttpConfig only and replaces the existing Builder implementation by delegating to the HttpConfig.*
 
 ## [0.16.1](https://github.com/OpenLineage/OpenLineage/compare/0.15.1...0.16.1) - 2022-11-3
 ### Added
