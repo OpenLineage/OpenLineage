@@ -5,8 +5,10 @@
 
 package io.openlineage.spark.agent.lifecycle.plan;
 
+import com.google.cloud.bigquery.connector.common.BigQueryUtil;
 import com.google.cloud.spark.bigquery.BigQueryRelation;
 import com.google.cloud.spark.bigquery.BigQueryRelationProvider;
+import com.google.cloud.spark.bigquery.SparkBigQueryConfig;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -23,6 +25,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.SaveIntoDataSourceCommand;
 import org.apache.spark.sql.sources.CreatableRelationProvider;
+import scala.Option;
 
 /**
  * {@link LogicalPlan} visitor that matches {@link BigQueryRelation}s or {@link
@@ -59,45 +62,58 @@ public class BigQueryNodeVisitor<D extends OpenLineage.Dataset>
 
   @Override
   public boolean isDefinedAt(LogicalPlan plan) {
-    return bigQuerySupplier(plan).isPresent();
+    if ((plan instanceof LogicalRelation
+            && ((LogicalRelation) plan).relation() instanceof BigQueryRelation)
+        || plan instanceof SaveIntoDataSourceCommand
+            && ((SaveIntoDataSourceCommand) plan).dataSource()
+                instanceof BigQueryRelationProvider) {
+      return true;
+    }
+    return false;
   }
 
   private Optional<Supplier<BigQueryRelation>> bigQuerySupplier(LogicalPlan plan) {
     // SaveIntoDataSourceCommand is a special case because it references a CreatableRelationProvider
     // Every other write instance references a LogicalRelation(BigQueryRelation, _, _, _)
-    SQLContext sqlContext = context.getSparkSession().get().sqlContext();
-    if (plan instanceof SaveIntoDataSourceCommand) {
-      SaveIntoDataSourceCommand saveCommand = (SaveIntoDataSourceCommand) plan;
-      CreatableRelationProvider relationProvider = saveCommand.dataSource();
-      if (relationProvider instanceof BigQueryRelationProvider) {
-        return Optional.of(
-            () ->
-                (BigQueryRelation)
-                    ((BigQueryRelationProvider) relationProvider)
-                        .createRelation(sqlContext, saveCommand.options(), saveCommand.schema()));
-      }
-    } else {
-      if (plan instanceof LogicalRelation
-          && ((LogicalRelation) plan).relation() instanceof BigQueryRelation) {
-        return Optional.of(() -> (BigQueryRelation) ((LogicalRelation) plan).relation());
-      }
+    if (plan instanceof LogicalRelation
+        && ((LogicalRelation) plan).relation() instanceof BigQueryRelation) {
+      return Optional.of(() -> (BigQueryRelation) ((LogicalRelation) plan).relation());
     }
     return Optional.empty();
   }
 
+  private String getFromSaveIntoDataSourceCommand(SaveIntoDataSourceCommand saveCommand) {
+    CreatableRelationProvider relationProvider = saveCommand.dataSource();
+    SQLContext sqlContext = context.getSparkSession().get().sqlContext();
+    BigQueryRelationProvider bqRelationProvider = (BigQueryRelationProvider) relationProvider;
+    SparkBigQueryConfig config =
+        bqRelationProvider.createSparkBigQueryConfig(
+            sqlContext, saveCommand.options(), Option.apply(saveCommand.schema()));
+    return BigQueryUtil.friendlyTableName(config.getTableIdWithoutThePartition());
+  }
+
   @Override
-  public List<D> apply(LogicalPlan x) {
-    return bigQuerySupplier(x)
-        .map(s -> s.get())
-        .filter(relation -> getBigQueryTableName(relation).isPresent())
-        .map(
-            relation ->
-                Collections.singletonList(
-                    factory.getDataset(
-                        getBigQueryTableName(relation).get(),
-                        BIGQUERY_NAMESPACE,
-                        relation.schema())))
-        .orElse(null);
+  public List<D> apply(LogicalPlan plan) {
+    if (plan instanceof SaveIntoDataSourceCommand) {
+      SaveIntoDataSourceCommand saveCommand = (SaveIntoDataSourceCommand) plan;
+      return Collections.singletonList(
+          factory.getDataset(
+              getFromSaveIntoDataSourceCommand(saveCommand),
+              BIGQUERY_NAMESPACE,
+              saveCommand.schema()));
+    } else {
+      return bigQuerySupplier(plan)
+          .map(s -> s.get())
+          .filter(relation -> getBigQueryTableName(relation).isPresent())
+          .map(
+              relation ->
+                  Collections.singletonList(
+                      factory.getDataset(
+                          getBigQueryTableName(relation).get(),
+                          BIGQUERY_NAMESPACE,
+                          relation.schema())))
+          .orElse(null);
+    }
   }
 
   /**
