@@ -11,6 +11,7 @@ plugins {
     id 'signing'
     id 'jacoco'
     id "com.adarshr.test-logger" version "3.2.0"
+    id "org.gradle.test-retry" version "1.4.1"
     id 'com.diffplug.spotless' version '5.12.1'
     id "com.github.johnrengelman.shadow" version "7.1.2"
 }
@@ -87,6 +88,13 @@ test {
 }
 
 task integrationTest(type: Test) {
+    retry {
+        boolean isCiServer = System.getenv().containsKey("CI")
+        if (isCiServer) {
+            maxRetries = 3
+            maxFailures = 3
+        }
+    }
     useJUnitPlatform {
         includeTags "integration-test"
     }
