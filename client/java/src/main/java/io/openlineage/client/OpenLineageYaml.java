@@ -6,6 +6,7 @@
 package io.openlineage.client;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.openlineage.client.transports.FacetsConfig;
 import io.openlineage.client.transports.TransportConfig;
 import lombok.Getter;
 
@@ -14,4 +15,8 @@ public class OpenLineageYaml {
   @Getter
   @JsonProperty("transport")
   private TransportConfig transportConfig;
+
+  @Getter
+  @JsonProperty("facets")
+  private FacetsConfig facetsConfig;
 }

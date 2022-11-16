@@ -39,7 +39,7 @@ class ExampleOperator(BaseOperator):
             job_facets=JOB_FACETS,
         )
 
-    def get_openlineage_facets_on_complete(self) -> OperatorLineage:
+    def get_openlineage_facets_on_complete(self, task_instance) -> OperatorLineage:
         return OperatorLineage(
             inputs=INPUTS,
             outputs=OUTPUTS,

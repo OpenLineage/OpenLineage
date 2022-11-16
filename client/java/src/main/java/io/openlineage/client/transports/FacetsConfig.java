@@ -5,12 +5,10 @@
 
 package io.openlineage.client.transports;
 
-import java.net.URI;
-import javax.annotation.Nullable;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import lombok.ToString;
 import lombok.With;
 
@@ -18,9 +16,9 @@ import lombok.With;
 @AllArgsConstructor
 @ToString
 @With
-public final class HttpConfig implements TransportConfig {
-  @Getter @Setter private URI url;
-  @Getter @Setter private @Nullable String endpoint;
-  @Getter @Setter private @Nullable Double timeout;
-  @Getter @Setter private @Nullable TokenProvider auth;
+public class FacetsConfig {
+
+  @Getter
+  @JsonProperty("disabled")
+  private String[] disabledFacets;
 }

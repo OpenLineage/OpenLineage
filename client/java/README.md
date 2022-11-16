@@ -10,14 +10,14 @@ Maven:
 <dependency>
     <groupId>io.openlineage</groupId>
     <artifactId>openlineage-java</artifactId>
-    <version>0.16.1</version>
+    <version>0.17.0</version>
 </dependency>
 ```
 
 or Gradle:
 
 ```groovy
-implementation 'io.openlineage:openlineage-java:0.16.1'
+implementation 'io.openlineage:openlineage-java:0.17.0'
 ```
 
 ## Usage
@@ -130,6 +130,17 @@ transport:
 
 KafkaTransport depends on you to provide artifact `org.apache.kafka:kafka-clients:3.1.0` or compatible on your classpath.
 
+## Facets Configuration
+
+You can specify a list of disabled facets that will not be included in OpenLineage event. 
+
+```yaml
+facets:
+  disabled: 
+    - spark_unknown
+    - spark_logicalPlan
+```
+
 ## Error Handling
 
 ```java
@@ -176,3 +187,6 @@ The Github Actions Super-linter is installed and configured to check for headers
 
 Thanks for your contributions to the project!
 
+----
+SPDX-License-Identifier: Apache-2.0\
+Copyright 2018-2022 contributors to the OpenLineage project

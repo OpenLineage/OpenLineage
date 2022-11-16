@@ -111,6 +111,7 @@ public class SparkContainerUtils {
         sparkConfigParams, "spark.driver.extraJavaOptions=-Dderby.system.home=/tmp/derby");
     addSparkConfig(sparkConfigParams, "spark.sql.warehouse.dir=/tmp/warehouse");
     addSparkConfig(sparkConfigParams, "spark.jars.ivy=/tmp/.ivy2/");
+    addSparkConfig(sparkConfigParams, "spark.openlineage.facets.disabled=''");
 
     List<String> sparkSubmit =
         new ArrayList(Arrays.asList("./bin/spark-submit", "--master", "local"));

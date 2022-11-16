@@ -19,3 +19,7 @@
 7. Draft a [new release](https://github.com/OpenLineage/OpenLineage/releases/new) using the release notes for `X.Y.Z` in **step 1** as the release description:
 
    ![](./doc/new-release.png)
+
+----
+SPDX-License-Identifier: Apache-2.0\
+Copyright 2018-2022 contributors to the OpenLineage project

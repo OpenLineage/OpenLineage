@@ -37,4 +37,6 @@ By default, the OpenLineage proxy uses the following ports:
 $ ./gradlew runShadow
 ```
 
-
+----
+SPDX-License-Identifier: Apache-2.0\
+Copyright 2018-2022 contributors to the OpenLineage project

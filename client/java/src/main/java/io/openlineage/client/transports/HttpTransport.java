@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.Map;
 import javax.annotation.Nullable;
 import lombok.NonNull;
+import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.config.RequestConfig;
@@ -140,19 +141,20 @@ public final class HttpTransport extends Transport implements Closeable {
    *   .url("http://localhost:5000")
    *   .build()
    * }</pre>
+   *
+   * @deprecated Use {@link HttpConfig} instead
    */
+  @Deprecated
   public static final class Builder {
     private static final URI DEFAULT_OPENLINEAGE_URI =
         OpenLineageClientUtils.toUri("http://localhost:8080");
 
-    private URI uri;
-
     private @Nullable CloseableHttpClient httpClient;
-    private @Nullable TokenProvider tokenProvider;
-    private @Nullable Double timeout;
+
+    @Delegate private final HttpConfig httpConfig = new HttpConfig();
 
     private Builder() {
-      this.uri = DEFAULT_OPENLINEAGE_URI;
+      httpConfig.setUrl(DEFAULT_OPENLINEAGE_URI);
     }
 
     public Builder uri(@NonNull String urlAsString) {
@@ -171,7 +173,7 @@ public final class HttpTransport extends Transport implements Closeable {
       try {
         final URIBuilder builder = new URIBuilder(uri);
         queryParams.forEach(builder::addParameter);
-        this.uri = builder.build();
+        httpConfig.setUrl(builder.build());
       } catch (URISyntaxException e) {
         throw new OpenLineageClientException(e);
       }
@@ -179,7 +181,7 @@ public final class HttpTransport extends Transport implements Closeable {
     }
 
     public Builder timeout(@Nullable Double timeout) {
-      this.timeout = timeout;
+      httpConfig.setTimeout(timeout);
       return this;
     }
 
@@ -189,15 +191,14 @@ public final class HttpTransport extends Transport implements Closeable {
     }
 
     public Builder tokenProvider(@Nullable TokenProvider tokenProvider) {
-      this.tokenProvider = tokenProvider;
+      httpConfig.setAuth(tokenProvider);
       return this;
     }
 
     public Builder apiKey(@Nullable String apiKey) {
       final ApiKeyTokenProvider apiKeyTokenProvider = new ApiKeyTokenProvider();
       apiKeyTokenProvider.setApiKey(apiKey);
-      this.tokenProvider = apiKeyTokenProvider;
-      return this;
+      return tokenProvider(apiKeyTokenProvider);
     }
 
     /**
@@ -205,10 +206,6 @@ public final class HttpTransport extends Transport implements Closeable {
      * HttpTransport.Builder}.
      */
     public HttpTransport build() {
-      final HttpConfig httpConfig = new HttpConfig();
-      httpConfig.setUrl(uri);
-      httpConfig.setAuth(tokenProvider);
-      httpConfig.setTimeout(timeout);
       if (httpClient != null) {
         return new HttpTransport(httpClient, httpConfig);
       }

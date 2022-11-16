@@ -96,6 +96,25 @@ class LogicalPlanRunFacetBuilderTest {
   }
 
   @Test
+  void testIsDefinedWhenFacetDisabled() {
+    LogicalPlanRunFacetBuilder builder =
+        new LogicalPlanRunFacetBuilder(
+            OpenLineageContext.builder()
+                .sparkContext(sparkContext)
+                .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+                .queryExecution(queryExecution)
+                .build());
+
+    sparkContext.conf().set("spark.openlineage.facets.disabled", "spark.logicalPlan");
+    assertThat(
+            builder.isDefinedAt(
+                new SparkListenerJobStart(1, 1L, Seq$.MODULE$.empty(), new Properties())))
+        .isFalse();
+
+    sparkContext.conf().remove("spark.openlineage.facets.disabled");
+  }
+
+  @Test
   void testIsNotDefinedWithoutQueryExecution() {
     LogicalPlanRunFacetBuilder builder =
         new LogicalPlanRunFacetBuilder(

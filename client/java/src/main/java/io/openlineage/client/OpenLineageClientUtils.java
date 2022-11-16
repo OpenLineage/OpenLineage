@@ -7,11 +7,14 @@ package io.openlineage.client;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 
+import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -32,6 +35,9 @@ public final class OpenLineageClientUtils {
 
   private static final ObjectMapper YML = new ObjectMapper(new YAMLFactory());
 
+  @JsonFilter("disabledFacets")
+  public class DisabledFacetsMixin {}
+
   /** Returns a new {@link ObjectMapper} instance. */
   public static ObjectMapper newObjectMapper() {
     final ObjectMapper mapper = new ObjectMapper();
@@ -41,6 +47,23 @@ public final class OpenLineageClientUtils {
     mapper.disable(FAIL_ON_UNKNOWN_PROPERTIES);
     mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     return mapper;
+  }
+
+  /**
+   * Configure object mapper to exclude specified facets from being serialized
+   *
+   * @param disableFacets
+   */
+  public static void configureObjectMapper(String[] disableFacets) {
+    if (disableFacets == null) {
+      return;
+    }
+    SimpleFilterProvider simpleFilterProvider =
+        new SimpleFilterProvider()
+            .addFilter(
+                "disabledFacets", SimpleBeanPropertyFilter.serializeAllExcept(disableFacets));
+    MAPPER.setFilterProvider(simpleFilterProvider);
+    MAPPER.addMixIn(Object.class, DisabledFacetsMixin.class);
   }
 
   /** Converts the provided {@code value} to a Json {@code string}. */

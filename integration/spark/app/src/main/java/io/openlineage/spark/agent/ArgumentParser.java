@@ -33,6 +33,7 @@ import org.apache.hc.core5.net.URLEncodedUtils;
 public class ArgumentParser {
   public static final Set<String> namedParams =
       new HashSet<>(Arrays.asList("timeout", "api_key", "app_name"));
+  public static final String disabledFacetsSeparator = ";";
 
   @Builder.Default private String host = "";
   @Builder.Default private String version = "v1";
@@ -43,42 +44,48 @@ public class ArgumentParser {
   @Builder.Default private Optional<String> apiKey = Optional.empty();
   @Builder.Default private Optional<String> appName = Optional.empty();
   @Builder.Default private Optional<Map<String, String>> urlParams = Optional.empty();
+  @Builder.Default private String disabledFacets = "spark_unknown";
   @Builder.Default private boolean consoleMode = false;
 
   @Builder.Default private Optional<TransportConfig> transportConfig = Optional.empty();
   @Builder.Default private Optional<String> transportMode = Optional.empty();
 
-  public static ArgumentParser parse(String clientUrl) {
+  public static void parse(ArgumentParserBuilder builder, String clientUrl) {
     URI uri = URI.create(clientUrl);
     String path = uri.getPath();
     String[] elements = path.split("/");
     List<NameValuePair> nameValuePairList = URLEncodedUtils.parse(uri, StandardCharsets.UTF_8);
 
-    ArgumentParserBuilder builder =
-        ArgumentParser.builder()
-            .host(uri.getScheme() + "://" + uri.getAuthority())
-            .timeout(getTimeout(nameValuePairList))
-            .apiKey(getNamedStringParameter(nameValuePairList, "api_key"))
-            .appName(getNamedStringParameter(nameValuePairList, "app_name"))
-            .urlParams(getUrlParams(nameValuePairList))
-            .consoleMode(false);
+    builder
+        .host(uri.getScheme() + "://" + uri.getAuthority())
+        .timeout(getTimeout(nameValuePairList))
+        .apiKey(getNamedStringParameter(nameValuePairList, "api_key"))
+        .appName(getNamedStringParameter(nameValuePairList, "app_name"))
+        .urlParams(getUrlParams(nameValuePairList))
+        .consoleMode(false);
 
     get(elements, "api", 1).ifPresent(builder::version);
     get(elements, "namespaces", 3).ifPresent(builder::namespace);
     get(elements, "jobs", 5).ifPresent(builder::jobName);
     get(elements, "runs", 7).ifPresent(builder::parentRunId);
+  }
 
-    ArgumentParser argumentParser = builder.build();
-    log.info(
-        String.format(
-            "%s/api/%s/namespaces/%s/jobs/%s/runs/%s",
-            argumentParser.getHost(),
-            argumentParser.getVersion(),
-            argumentParser.getNamespace(),
-            argumentParser.getJobName(),
-            argumentParser.getParentRunId()));
-
-    return argumentParser;
+  public static ArgumentParserBuilder builder() {
+    return new ArgumentParserBuilder() {
+      @Override
+      public ArgumentParser build() {
+        ArgumentParser argumentParser = super.build();
+        log.info(
+            String.format(
+                "%s/api/%s/namespaces/%s/jobs/%s/runs/%s",
+                argumentParser.getHost(),
+                argumentParser.getVersion(),
+                argumentParser.getNamespace(),
+                argumentParser.getJobName(),
+                argumentParser.getParentRunId()));
+        return argumentParser;
+      }
+    };
   }
 
   public static UUID getRandomUuid() {
@@ -113,6 +120,10 @@ public class ArgumentParser {
       param = urlParams.get().get(urlParamName);
     }
     return param;
+  }
+
+  public String[] getDisabledFacets() {
+    return disabledFacets.split(disabledFacetsSeparator);
   }
 
   private static Optional<Map<String, String>> getUrlParams(List<NameValuePair> nameValuePairList) {

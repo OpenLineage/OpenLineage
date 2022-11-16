@@ -5,6 +5,8 @@
 
 package io.openlineage.spark.agent.facets.builder;
 
+import static io.openlineage.spark.agent.util.FacetUtils.isFacetDisabled;
+
 import io.openlineage.spark.agent.facets.LogicalPlanFacet;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -28,6 +30,9 @@ public class LogicalPlanRunFacetBuilder extends CustomFacetBuilder<Object, Logic
 
   @Override
   public boolean isDefinedAt(Object x) {
+    if (isFacetDisabled(openLineageContext, "spark.logicalPlan")) {
+      return false;
+    }
     return (x instanceof SparkListenerSQLExecutionEnd
             || x instanceof SparkListenerSQLExecutionStart
             || x instanceof SparkListenerJobStart
