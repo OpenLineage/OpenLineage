@@ -130,6 +130,17 @@ transport:
 
 KafkaTransport depends on you to provide artifact `org.apache.kafka:kafka-clients:3.1.0` or compatible on your classpath.
 
+## Facets Configuration
+
+You can specify a list of disabled facets that will not be included in OpenLineage event. 
+
+```yaml
+facets:
+  disabled: 
+    - spark_unknown
+    - spark_logicalPlan
+```
+
 ## Error Handling
 
 ```java

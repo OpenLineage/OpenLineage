@@ -1,0 +1,6 @@
+transport:
+  type: console
+facets:
+  disabled:
+    - facet1
+    - facet2

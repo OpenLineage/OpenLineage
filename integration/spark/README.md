@@ -105,6 +105,7 @@ The following parameters can be specified in the Spark configuration:
 | spark.openlineage.url.param.xyz | A URL parameter (replace xyz) and value to be included in requests to the OpenLineage API server | abcdefghijk |
 | spark.openlineage.consoleTransport | Events will be emitted to a console, so no additional backend is required | true |
 | spark.openlineage.transport.type | The transport type used for event emit, currently only supporting 'kinesis' | kinesis |
+| spark.openlineage.facets.disabled | `;` separated list of facets to disable, by default equal to `spark_unknown` | spark_unknown;spark.logicalPlan |
 
 ##### Kinesis Transport
 If using `spark.openlineage.transport.type` as `kinesis`, then the below parameters would be read and used when building KinesisProducer.

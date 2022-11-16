@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public final class OpenLineageClient {
   final Transport transport;
+  final String[] disabledFacets;
 
   /** Creates a new {@code OpenLineageClient} object. */
   public OpenLineageClient() {
@@ -21,7 +22,14 @@ public final class OpenLineageClient {
   }
 
   public OpenLineageClient(@NonNull final Transport transport) {
+    this(transport, new String[] {});
+  }
+
+  public OpenLineageClient(@NonNull final Transport transport, String[] disabledFacets) {
     this.transport = transport;
+    this.disabledFacets = disabledFacets;
+
+    OpenLineageClientUtils.configureObjectMapper(disabledFacets);
   }
 
   /**
@@ -56,13 +64,20 @@ public final class OpenLineageClient {
   public static final class Builder {
     private static final Transport DEFAULT_TRANSPORT = new ConsoleTransport();
     private Transport transport;
+    private String[] disabledFacets;
 
     private Builder() {
       this.transport = DEFAULT_TRANSPORT;
+      disabledFacets = new String[] {};
     }
 
     public Builder transport(@NonNull Transport transport) {
       this.transport = transport;
+      return this;
+    }
+
+    public Builder disableFacets(@NonNull String[] disabledFacets) {
+      this.disabledFacets = disabledFacets;
       return this;
     }
 
@@ -71,7 +86,7 @@ public final class OpenLineageClient {
      * OpenLineageClient.Builder}.
      */
     public OpenLineageClient build() {
-      return new OpenLineageClient(transport);
+      return new OpenLineageClient(transport, disabledFacets);
     }
   }
 }
