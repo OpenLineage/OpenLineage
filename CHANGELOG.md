@@ -2,7 +2,8 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.16.1...HEAD)
 ### Added
-* Support latest Spark 3.3.1 [`#1183`](https://github.com/OpenLineage/OpenLineage/pull/1183) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+* Spark: Support latest Spark 3.3.1 [`#1183`](https://github.com/OpenLineage/OpenLineage/pull/1183) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+* Python: add facets implementation to Python client [`#1233`](https://github.com/OpenLineage/OpenLineage/pull/1233) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
 
 ### Removed
 * Deprecate HttpTransport.Builder in favor of HttpConfig [@collado-mike](https://github.com/collado-mike)
