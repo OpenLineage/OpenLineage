@@ -3,10 +3,12 @@
 import socket
 from typing import Optional, List
 
+import paramiko
+
 from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
 from openlineage.common.dataset import Source, Dataset
+from airflow.providers.sftp.hooks.sftp import SFTPHook
 from airflow.providers.sftp.operators.sftp import SFTPOperation
-from airflow.providers.ssh.hooks.ssh import SSHHook
 
 
 class SFTPExtractor(BaseExtractor):
@@ -27,12 +29,16 @@ class SFTPExtractor(BaseExtractor):
                 exc_info=True
             )
 
+        # As of version 4.1.0, SFTPOperator accepts either of SFTPHook, SSHHook, or ssh_conn_id
+        # as a constructor parameter. In the last case, SFTPOperator creates hook object in the
+        # `execute` method rather than its constructor for some reason. So we have to manually
+        # create a hook in the same way so that we can access connection information via that.
         if hasattr(self.operator, "sftp_hook") and self.operator.sftp_hook is not None:
             hook = self.operator.sftp_hook
         elif hasattr(self.operator, "ssh_hook") and self.operator.ssh_hook is not None:
             hook = self.operator.ssh_hook
         else:
-            hook = SSHHook(ssh_conn_id=self.operator.ssh_conn_id)
+            hook = SFTPHook(ssh_conn_id=self.operator.ssh_conn_id)
 
         if hasattr(self.operator, "remote_host") and self.operator.remote_host is not None:
             remote_host = self.operator.remote_host
@@ -46,9 +52,29 @@ class SFTPExtractor(BaseExtractor):
                 exc_info=True
             )
 
+        if hasattr(hook, "port"):
+            remote_port = hook.port
+        elif hasattr(hook, "ssh_hook"):
+            remote_port = hook.ssh_hook.port
+        if remote_port is None:
+            remote_port = paramiko.config.SSH_PORT
+
+        # Since v4.1.0, SFTPOperator accepts both a string (single file) and a list of
+        # strings (multiple files) as local_filepath and remote_filepath, and internally
+        # keeps them as list in both cases. But before 4.1.0, only single string is
+        # allowed. So we consider both cases here for backward compatibility.
+        if isinstance(self.operator.local_filepath, str):
+            local_filepath = [self.operator.local_filepath]
+        else:
+            local_filepath = self.operator.local_filepath
+        if isinstance(self.operator.remote_filepath, str):
+            remote_filepath = [self.operator.remote_filepath]
+        else:
+            remote_filepath = self.operator.remote_filepath
+
         local_datasets = [
             Dataset(source=self._get_source(scheme, local_host, None, path), name=path)
-            for path in self.operator.local_filepath
+            for path in local_filepath
         ]
         remote_datasets = [
             Dataset(source=self._get_source(
@@ -56,7 +82,7 @@ class SFTPExtractor(BaseExtractor):
                 remote_host,
                 hook.port if hasattr(hook, "port") else hook.ssh_hook.port,
                 path,
-            ), name=path) for path in self.operator.remote_filepath
+            ), name=path) for path in remote_filepath
         ]
 
         if self.operator.operation.lower() == SFTPOperation.GET:

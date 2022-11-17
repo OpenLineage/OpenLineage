@@ -4,17 +4,24 @@ import paramiko
 import pytest
 import socket
 
+from pkg_resources import parse_version
 from unittest import mock
 
 from airflow.models import Connection, DAG
 from airflow.providers.sftp.hooks.sftp import SFTPHook
 from airflow.providers.sftp.operators.sftp import SFTPOperation
 from airflow.providers.ssh.hooks.ssh import SSHHook
+from airflow.providers_manager import ProvidersManager
 from airflow.utils import timezone
 
 from openlineage.airflow.extractors.sftp_extractor import SFTPExtractor
 from openlineage.airflow.utils import try_import_from_string
 from openlineage.common.dataset import Source, Dataset
+
+
+SFTP_PROVIDER_VERSION = parse_version(
+    ProvidersManager().providers["apache-airflow-providers-sftp"].version
+)
 
 SFTPOperator = try_import_from_string("airflow.providers.sftp.operators.sftp.SFTPOperator")
 
@@ -75,6 +82,10 @@ def test_extract_ssh_conn_id(get_connection, get_conn, operation, expected):
     assert task_metadata.outputs == expected[1]
 
 
+@pytest.mark.skipif(
+    SFTP_PROVIDER_VERSION < parse_version("4.0.0"),
+    reason="SFTPOperator doesn't support sftp_hook as a constructor parameter in this version."
+)
 @pytest.mark.parametrize("operation, expected", [
     (SFTPOperation.GET, (REMOTE_DATASET, LOCAL_DATASET)),
     (SFTPOperation.PUT, (LOCAL_DATASET, REMOTE_DATASET)),
