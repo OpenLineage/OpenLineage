@@ -29,9 +29,10 @@ SCHEME = "file"
 
 LOCAL_FILEPATH = "/path/to/local"
 LOCAL_HOST = socket.gethostbyname(socket.gethostname())
+LOCAL_AUTHORITY = f"{LOCAL_HOST}:{paramiko.config.SSH_PORT}"
 LOCAL_SOURCE = Source(
-    scheme=SCHEME, authority=LOCAL_HOST,
-    connection_url=f"{SCHEME}://{LOCAL_HOST}{LOCAL_FILEPATH}"
+    scheme=SCHEME, authority=LOCAL_AUTHORITY,
+    connection_url=f"{SCHEME}://{LOCAL_AUTHORITY}{LOCAL_FILEPATH}"
 )
 LOCAL_DATASET = [Dataset(source=LOCAL_SOURCE, name=LOCAL_FILEPATH).to_openlineage_dataset()]
 

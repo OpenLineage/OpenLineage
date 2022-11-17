@@ -56,8 +56,6 @@ class SFTPExtractor(BaseExtractor):
             remote_port = hook.port
         elif hasattr(hook, "ssh_hook"):
             remote_port = hook.ssh_hook.port
-        if remote_port is None:
-            remote_port = paramiko.config.SSH_PORT
 
         # Since v4.1.0, SFTPOperator accepts both a string (single file) and a list of
         # strings (multiple files) as local_filepath and remote_filepath, and internally
@@ -77,12 +75,8 @@ class SFTPExtractor(BaseExtractor):
             for path in local_filepath
         ]
         remote_datasets = [
-            Dataset(source=self._get_source(
-                scheme,
-                remote_host,
-                hook.port if hasattr(hook, "port") else hook.ssh_hook.port,
-                path,
-            ), name=path) for path in remote_filepath
+            Dataset(source=self._get_source(scheme, remote_host, remote_port, path), name=path)
+            for path in remote_filepath
         ]
 
         if self.operator.operation.lower() == SFTPOperation.GET:
@@ -101,7 +95,8 @@ class SFTPExtractor(BaseExtractor):
         )
 
     def _get_source(self, scheme, host, port, path) -> Source:
-        authority = host if port is None else f"{host}:{port}"
+        port = port or paramiko.config.SSH_PORT
+        authority = f"{host}:{port}"
         return Source(
             scheme=scheme,
             authority=authority,

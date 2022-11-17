@@ -242,17 +242,17 @@ Identifier :
 ### Local file system
 Datasource hierarchy:
  * IP
- * Port (optional)
+ * Port
 
 Naming hierarchy:
  * Path
 
 Identifier :
- * Namespace: file://{IP} or file://{IP}:{port}
+ * Namespace: file://{IP}:{port}
    * Scheme = file
-   * Authority = {IP} or {IP}:{port}
+   * Authority = {IP}:{port}
  * Unique name: {path}
-   * URI = file://{IP}{path} or file://{IP}:{port}{path}
+   * URI = file://{IP}:{port}{path}
 
 ## Jobs
 ### Context
