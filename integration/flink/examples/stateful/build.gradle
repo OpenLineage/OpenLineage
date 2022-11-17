@@ -81,7 +81,7 @@ dependencies {
     implementation "org.apache.flink:flink-table-runtime$flinkVersionWithScala212"
     implementation "org.apache.flink:flink-table-planner_2.12:$flinkVersion"
 
-    implementation "com.typesafe:config:1.4.1"
+    implementation "com.typesafe:config:1.4.2"
     implementation "org.apache.avro:avro:1.11.0"
     implementation 'io.confluent:kafka-schema-registry-client:7.2.2'
     implementation 'io.confluent:kafka-avro-serializer:7.0.1'
