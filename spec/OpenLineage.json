@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://openlineage.io/spec/1-0-4/OpenLineage.json",
+  "$id": "https://openlineage.io/spec/1-0-5/OpenLineage.json",
   "$defs": {
     "RunEvent": {
       "type": "object",
@@ -75,14 +75,15 @@
         "facets": {
           "description": "The run facets.",
           "type": "object",
-          "additionalProperties": {
-            "anyOf": [
-              { "$ref": "#/$defs/RunFacet" },
-              { "$ref": "facets/ErrorMessageRunFacet.json" },
-              { "$ref": "facets/NominalTimeRunFacet.json" },
-              { "$ref": "facets/ParentRunFacet.json" }
-            ]
-          }
+          "anyOf": [
+            { 
+              "type": "object",
+              "additionalProperties": { "$ref": "#/$defs/RunFacet" }
+            },
+            { "$ref": "facets/ErrorMessageRunFacet.json" },
+            { "$ref": "facets/NominalTimeRunFacet.json" },
+            { "$ref": "facets/ParentRunFacet.json" }
+          ]
         }
       },
       "required": [
@@ -112,16 +113,17 @@
         "facets": {
           "description": "The job facets.",
           "type": "object",
-          "additionalProperties": {
-            "anyOf": [
-              { "$ref": "#/$defs/JobFacet" },
-              { "$ref": "facets/DocumentationJobFacet.json" },
-              { "$ref": "facets/OwnershipJobFacet.json" },
-              { "$ref": "facets/SourceCodeJobFacet.json" },
-              { "$ref": "facets/SourceCodeLocationJobFacet.json" },
-              { "$ref": "facets/SQLJobFacet.json" }
-            ]
-          }
+          "anyOf": [
+            { 
+              "type": "object",
+              "additionalProperties": { "$ref": "#/$defs/JobFacet" }
+            },
+            { "$ref": "facets/DocumentationJobFacet.json" },
+            { "$ref": "facets/OwnershipJobFacet.json" },
+            { "$ref": "facets/SourceCodeJobFacet.json" },
+            { "$ref": "facets/SourceCodeLocationJobFacet.json" },
+            { "$ref": "facets/SQLJobFacet.json" }
+          ]
         }
       },
       "required": [
@@ -147,12 +149,13 @@
             "inputFacets": {
               "description": "The input facets for this dataset.",
               "type": "object",
-              "additionalProperties": {
-                "anyOf": [
-                  { "$ref": "#/$defs/InputDatasetFacet" },
-                  { "$ref": "facets/DataQualityMetricsInputDatasetFacet.json"}
-                ]
-              }
+              "anyOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": { "$ref": "#/$defs/InputDatasetFacet" }
+                },
+                { "$ref": "facets/DataQualityMetricsInputDatasetFacet.json"}
+              ]
             }
           }
         }
@@ -176,12 +179,13 @@
             "outputFacets": {
               "description": "The output facets for this dataset",
               "type": "object",
-              "additionalProperties": {
-                "anyOf": [
-                  { "$ref": "#/$defs/OutputDatasetFacet" },
-                  { "$ref": "facets/OutputStatisticsOutputDatasetFacet.json"}
-                ]
-              }
+              "anyOf": [
+                { 
+                  "type": "object",
+                  "additionalProperties": { "$ref": "#/$defs/OutputDatasetFacet" }
+                },
+                { "$ref": "facets/OutputStatisticsOutputDatasetFacet.json"}
+              ]
             }
           }
         }
@@ -210,20 +214,21 @@
         "facets": {
           "description": "The facets for this dataset",
           "type": "object",
-          "additionalProperties": {
-            "anyOf": [
-              { "$ref": "#/$defs/DatasetFacet" },
-              { "$ref": "facets/ColumnLineageDatasetFacet.json" },
-              { "$ref": "facets/DatasourceDatasetFacet.json" },
-              { "$ref": "facets/DataQualityAssertionsDatasetFacet.json" },
-              { "$ref": "facets/LifecycleStateChangeDatasetFacet.json" },
-              { "$ref": "facets/OwnershipDatasetFacet.json" },
-              { "$ref": "facets/SchemaDatasetFacet.json" },
-              { "$ref": "facets/StorageDatasetFacet.json" },
-              { "$ref": "facets/SymlinksDatasetFacet.json" },
-              { "$ref": "facets/DatasetVersionDatasetFacet.json" }
-            ]
-          }
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": { "$ref": "#/$defs/DatasetFacet" }
+            },
+            { "$ref": "facets/ColumnLineageDatasetFacet.json" },
+            { "$ref": "facets/DatasourceDatasetFacet.json" },
+            { "$ref": "facets/DataQualityAssertionsDatasetFacet.json" },
+            { "$ref": "facets/LifecycleStateChangeDatasetFacet.json" },
+            { "$ref": "facets/OwnershipDatasetFacet.json" },
+            { "$ref": "facets/SchemaDatasetFacet.json" },
+            { "$ref": "facets/StorageDatasetFacet.json" },
+            { "$ref": "facets/SymlinksDatasetFacet.json" },
+            { "$ref": "facets/DatasetVersionDatasetFacet.json" }
+          ]
         }
       },
       "required": [
