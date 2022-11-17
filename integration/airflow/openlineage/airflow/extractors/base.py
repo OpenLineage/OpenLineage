@@ -7,7 +7,7 @@ from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
 import json
 
 from openlineage.client.run import Dataset
-from typing import List, Dict, Optional, Callable
+from typing import List, Dict, Optional
 from openlineage.client.facet import BaseFacet
 from openlineage.airflow.utils import LoggingMixin, get_job_name
 
@@ -18,9 +18,6 @@ class OperatorLineage:
     outputs: List[Dataset] = attr.ib(factory=list)
     run_facets: Dict[str, BaseFacet] = attr.ib(factory=dict)
     job_facets: Dict[str, BaseFacet] = attr.ib(factory=dict)
-
-
-GetOpenLineageFacetsMethod = Callable[[], OperatorLineage]
 
 
 @attr.s
@@ -113,14 +110,14 @@ class DefaultExtractor(BaseExtractor):
         on_complete = getattr(self.operator, 'get_openlineage_facets_on_complete', None)
         if on_complete and callable(on_complete):
             return self._get_openlineage_facets(
-                on_complete
+                on_complete, task_instance
             )
         return self.extract()
 
     def _get_openlineage_facets(
-        self, get_facets_method: GetOpenLineageFacetsMethod
+        self, get_facets_method, *args
     ) -> Optional[TaskMetadata]:
-        facets: OperatorLineage = get_facets_method()
+        facets: OperatorLineage = get_facets_method(*args)
         return TaskMetadata(
             name=get_job_name(task=self.operator),
             inputs=facets.inputs,

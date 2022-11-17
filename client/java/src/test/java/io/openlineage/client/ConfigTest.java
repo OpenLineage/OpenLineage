@@ -52,6 +52,15 @@ class ConfigTest {
     }
   }
 
+  @Test
+  void testFacetsDisabledConfigFromYaml() throws URISyntaxException {
+    Path configPath =
+        Paths.get(this.getClass().getClassLoader().getResource("config/facets.yaml").toURI());
+    OpenLineageClient client = Clients.newClient(new TestConfigPathProvider(configPath));
+
+    assertThat(client.disabledFacets).contains("facet1", "facet2");
+  }
+
   static class TestConfigPathProvider implements ConfigPathProvider {
     private final Path path;
 

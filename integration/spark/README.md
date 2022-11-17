@@ -10,14 +10,14 @@ Maven:
 <dependency>
     <groupId>io.openlineage</groupId>
     <artifactId>openlineage-spark</artifactId>
-    <version>0.16.1</version>
+    <version>0.17.0</version>
 </dependency>
 ```
 
 or Gradle:
 
 ```groovy
-implementation 'io.openlineage:openlineage-spark:0.16.1'
+implementation 'io.openlineage:openlineage-spark:0.17.0'
 ```
 
 ## Getting started
@@ -50,7 +50,7 @@ from pyspark.sql import SparkSession
 
 spark = (SparkSession.builder.master('local')
          .appName('sample_spark')
-         .config('spark.jars.packages', 'io.openlineage:openlineage-spark:0.16.1')
+         .config('spark.jars.packages', 'io.openlineage:openlineage-spark:0.17.0')
          .config('spark.extraListeners', 'io.openlineage.spark.agent.OpenLineageSparkListener')
          .config('spark.openlineage.url', 'http://{openlineage.client.host}/api/v1/namespaces/spark_integration/')
          .getOrCreate())
@@ -66,7 +66,7 @@ container):
 ```python
 from pyspark.sql import SparkSession
 
-file = "/home/jovyan/openlineage/libs/openlineage-spark-0.16.1.jar"
+file = "/home/jovyan/openlineage/libs/openlineage-spark-0.17.0.jar"
 
 spark = (SparkSession.builder.master('local').appName('rdd_to_dataframe')
              .config('spark.jars', file)
@@ -105,6 +105,7 @@ The following parameters can be specified in the Spark configuration:
 | spark.openlineage.url.param.xyz | A URL parameter (replace xyz) and value to be included in requests to the OpenLineage API server | abcdefghijk |
 | spark.openlineage.consoleTransport | Events will be emitted to a console, so no additional backend is required | true |
 | spark.openlineage.transport.type | The transport type used for event emit, currently only supporting 'kinesis' | kinesis |
+| spark.openlineage.facets.disabled | `;` separated list of facets to disable, by default equal to `spark_unknown` | spark_unknown;spark.logicalPlan |
 
 ##### Kinesis Transport
 If using `spark.openlineage.transport.type` as `kinesis`, then the below parameters would be read and used when building KinesisProducer.
@@ -346,3 +347,7 @@ If contributing changes, additions or fixes to the Spark integration, please inc
 A Github Action checks for headers in new `.java` files when pull requests are opened.
 
 Thank you for your contributions to the project!
+
+----
+SPDX-License-Identifier: Apache-2.0\
+Copyright 2018-2022 contributors to the OpenLineage project

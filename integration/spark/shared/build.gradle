@@ -35,7 +35,7 @@ repositories {
     mavenLocal()
     mavenCentral()
     maven {
-        url = 'https://datakin.jfrog.io/artifactory/maven-public-libs-snapshot'
+        url = 'https://astronomer.jfrog.io/artifactory/maven-public-libs-snapshot'
     }
 }
 
@@ -49,7 +49,7 @@ ext {
     junit5Version = '5.7.2'
     sparkVersion = '2.4.8'
     postgresqlVersion = '42.2.19'
-    mockitoVersion = '3.11.2'
+    mockitoVersion = '4.8.1'
     testcontainersVersion = '1.17.5'
 }
 
@@ -72,7 +72,7 @@ dependencies {
 
     testFixturesApi "org.postgresql:postgresql:${postgresqlVersion}"
     testFixturesApi 'org.hamcrest:hamcrest-library:2.2'
-    testFixturesApi 'org.xerial:sqlite-jdbc:3.34.0'
+    testFixturesApi 'org.xerial:sqlite-jdbc:3.39.4.0'
     testFixturesApi "org.testcontainers:junit-jupiter:${testcontainersVersion}"
     testFixturesApi "org.testcontainers:postgresql:${testcontainersVersion}"
     testFixturesApi "org.testcontainers:mockserver:${testcontainersVersion}"

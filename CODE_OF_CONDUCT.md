@@ -86,5 +86,5 @@ The Project will work towards an equitable resolution in the event of a misunder
 This code is based on the [Hyperledger Project](https://github.com/hyperledger/hyperledger/wiki/Hyperledger-Project-Code-of-Conduct)‘s Code of Conduct.
 
 ----
-License: [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/),
-Copyright Contributors to the OpenLineage project.
+SPDX-License-Identifier: Apache-2.0\
+Copyright 2018-2022 contributors to the OpenLineage project

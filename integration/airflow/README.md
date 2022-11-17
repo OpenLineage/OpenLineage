@@ -116,6 +116,7 @@ suited to extract metadata from a particular operator (or operators).
 
 SQL Operators utilize the SQL parser. There is an experimental SQL parser activated if you install [openlineage-sql](https://pypi.org/project/openlineage-sql) on your Airflow worker.
 
+
 #### Custom Extractors
 
 If your DAGs contain additional operators from which you want to extract lineage data, fear not - you can always
@@ -129,6 +130,23 @@ OPENLINEAGE_EXTRACTORS=full.path.to.ExtractorClass;full.path.to.AnotherExtractor
 ```
 
 To ensure OpenLineage logging propagation to custom extractors you should use `self.log` instead of creating a logger yourself.
+
+#### Default Extractor
+
+When you own operators' code this is not neccessary to provide custom extractors. You can also use Default Extractor's capability.
+
+In order to do that you should define at least one of two methods in operator:
+
+* `get_openlineage_facets_on_start()`
+
+Extracts metadata on start of task.
+
+* `get_openlineage_facets_on_complete(task_instance: TaskInstance)`
+
+Extracts metadata on complete of task. This should accept `task_instance` argument, similar to `extract_on_complete` method in base extractors.
+
+If you don't define `get_openlineage_facets_on_complete` method it would fall back to `get_openlineage_facets_on_start`.
+
 
 #### Great Expectations
 
@@ -243,3 +261,7 @@ This can be helpful when you need to run arbitrary integration tests during deve
 python -m pytest test_integration.py::test_integration[great_expectations_validation-requests/great_expectations.json]
 ```
 ...runs a single test which you can repeat after changes in code.
+
+----
+SPDX-License-Identifier: Apache-2.0\
+Copyright 2018-2022 contributors to the OpenLineage project

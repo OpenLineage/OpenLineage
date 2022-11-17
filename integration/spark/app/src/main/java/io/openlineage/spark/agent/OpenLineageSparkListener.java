@@ -72,6 +72,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   public static final String SPARK_CONF_API_KEY = "openlineage.apiKey";
   public static final String SPARK_CONF_URL_PARAM_PREFIX = "openlineage.url.param";
   private static final String SPARK_CONF_APP_NAME = "openlineage.appName";
+  private static final String SPARK_CONF_FACETS_DISABLED = "openlineage.facets.disabled";
   private static WeakHashMap<RDD<?>, Configuration> outputs = new WeakHashMap<>();
   private static ContextFactory contextFactory;
   private static JobMetricsHolder jobMetrics = JobMetricsHolder.getInstance();
@@ -309,6 +310,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
         .appName(findSparkConfigKey(conf, SPARK_CONF_APP_NAME).filter(str -> !str.isEmpty()))
         .urlParams(findSparkUrlParams(conf, SPARK_CONF_URL_PARAM_PREFIX));
 
+    findSparkConfigKey(conf, SPARK_CONF_FACETS_DISABLED).ifPresent(builder::disabledFacets);
     findSparkConfigKey(conf, SPARK_CONF_HOST_KEY).ifPresent(builder::host);
     findSparkConfigKey(conf, SPARK_CONF_API_VERSION_KEY).ifPresent(builder::version);
     findSparkConfigKey(conf, SPARK_CONF_NAMESPACE_KEY).ifPresent(builder::namespace);
@@ -319,8 +321,11 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   private ArgumentParser parseConf(SparkConf conf) {
     Optional<String> url = findSparkConfigKey(conf, SPARK_CONF_URL_KEY);
     Optional<String> transportType = findSparkConfigKey(conf, SPARK_CONF_TRANSPORT_TYPE);
+    ArgumentParser.ArgumentParserBuilder builder = ArgumentParser.builder();
+    commonConfigParse(builder, conf);
+
     if (url.isPresent()) {
-      return ArgumentParser.parse(url.get());
+      ArgumentParser.parse(builder, url.get());
     } else if (transportType.isPresent()) {
       // go and check the specific transport type setting
       String mode = transportType.get().toLowerCase();
@@ -340,26 +345,16 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
         default:
           // todo, we may support other java client transport mode in this way in the future
       }
-      ArgumentParser.ArgumentParserBuilder builder =
-          ArgumentParser.builder()
-              .transportMode(Optional.of(mode))
-              .transportConfig(transportConfig);
-
-      commonConfigParse(builder, conf);
-
-      return builder.build();
-
+      builder.transportMode(Optional.of(mode)).transportConfig(transportConfig);
     } else {
       boolean consoleMode =
           findSparkConfigKey(conf, SPARK_CONF_CONSOLE_TRANSPORT)
               .map(Boolean::valueOf)
               .filter(v -> v)
               .orElse(false);
-
-      ArgumentParser.ArgumentParserBuilder builder =
-          ArgumentParser.builder().consoleMode(consoleMode);
-      commonConfigParse(builder, conf);
-      return builder.build();
+      builder.consoleMode(consoleMode);
     }
+
+    return builder.build();
   }
 }
