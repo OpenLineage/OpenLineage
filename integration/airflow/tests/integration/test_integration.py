@@ -116,6 +116,7 @@ params = [
             not IS_AIRFLOW_VERSION_ENOUGH("2.3.0"), reason="Airflow < 2.3.0"
         ),
     ),
+    ("sftp_dag", "requests/sftp.json"),
 ]
 
 

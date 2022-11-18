@@ -239,6 +239,21 @@ Identifier :
  * Unique name: {path}
    * URI =   wasbs://{container name}@{service name}{path}
 
+### Local file system
+Datasource hierarchy:
+ * IP
+ * Port
+
+Naming hierarchy:
+ * Path
+
+Identifier :
+ * Namespace: file://{IP}:{port}
+   * Scheme = file
+   * Authority = {IP}:{port}
+ * Unique name: {path}
+   * URI = file://{IP}:{port}{path}
+
 ## Jobs
 ### Context
 
