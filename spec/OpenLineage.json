@@ -81,6 +81,7 @@
               "additionalProperties": { "$ref": "#/$defs/RunFacet" }
             },
             { "$ref": "facets/ErrorMessageRunFacet.json" },
+            { "$ref": "facets/ExternalQueryRunFacet.json" },
             { "$ref": "facets/NominalTimeRunFacet.json" },
             { "$ref": "facets/ParentRunFacet.json" }
           ]
