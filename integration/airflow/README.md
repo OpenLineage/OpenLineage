@@ -112,6 +112,7 @@ suited to extract metadata from a particular operator (or operators).
 * `BigQueryOperator`
 * `SnowflakeOperator`
 * `GreatExpectationsOperator`
+* `SFTPOperator`
 * `PythonOperator`
 
 SQL Operators utilize the SQL parser. There is an experimental SQL parser activated if you install [openlineage-sql](https://pypi.org/project/openlineage-sql) on your Airflow worker.

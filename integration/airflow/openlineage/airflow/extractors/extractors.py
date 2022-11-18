@@ -42,6 +42,9 @@ _extractors = list(
             try_import_from_string(
                 'openlineage.airflow.extractors.trino_extractor.TrinoExtractor'
             ),
+            try_import_from_string(
+                'openlineage.airflow.extractors.sftp_extractor.SFTPExtractor'
+            )
         ],
     )
 )
@@ -58,6 +61,7 @@ _check_providers = {
     "BigQueryExtractor": ["gcpbigquery", "google_cloud_platform"],
     "SnowflakeExtractor": "snowflake",
     "TrinoExtractor": "trino",
+    "SFTPExtractor": ["sftp", "ssh"],
 }
 
 
