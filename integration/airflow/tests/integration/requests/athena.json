@@ -1,0 +1,429 @@
+[{
+    "eventType": "START",
+    "inputs": [],
+    "job": {
+        "facets": {
+            "documentation": {
+                "description": "Determines the popular day of week orders are placed."
+            },
+            "sql": {
+                "query": "CREATE DATABASE IF NOT EXISTS openlineage_integration_{{ env_var('AWS_ATHENA_SUFFIX') }}"
+            }
+        },
+        "name": "athena_dag.athena_create_database",
+        "namespace": "food_delivery"
+    },
+    "outputs": [
+        {
+            "facets": {
+                "dataSource": {
+                    "name": "{{ env_var('AWS_ATHENA_OUTPUT_LOCATION') | url_scheme_authority }}",
+                    "uri": "{{ env_var('AWS_ATHENA_OUTPUT_LOCATION') ~ env_var('AWS_ATHENA_SUFFIX') }}"
+                }
+            },
+            "name": "{{ (env_var('AWS_ATHENA_OUTPUT_LOCATION') ~ env_var('AWS_ATHENA_SUFFIX')) | url_path }}",
+            "namespace": "{{ env_var('AWS_ATHENA_OUTPUT_LOCATION') | url_scheme_authority }}"
+        }
+    ],
+    "run": {
+        "facets": {
+            "airflow_runArgs": {
+                "externalTrigger": false
+            },
+            "parent": {
+                "job": {
+                    "name": "athena_dag",
+                    "namespace": "food_delivery"
+                }
+            },
+            "parentRun": {
+                "job": {
+                    "name": "athena_dag",
+                    "namespace": "food_delivery"
+                }
+            }
+        }
+    }
+},{
+    "eventType": "COMPLETE",
+    "inputs": [],
+    "job": {
+        "facets": {
+            "sql": {
+                "query": "CREATE DATABASE IF NOT EXISTS openlineage_integration_{{ env_var('AWS_ATHENA_SUFFIX') }}"
+            }
+        },
+        "name": "athena_dag.athena_create_database",
+        "namespace": "food_delivery"
+    },
+    "outputs": [
+        {
+            "facets": {
+                "dataSource": {
+                    "name": "{{ env_var('AWS_ATHENA_OUTPUT_LOCATION') | url_scheme_authority }}",
+                    "uri": "{{ env_var('AWS_ATHENA_OUTPUT_LOCATION') ~ env_var('AWS_ATHENA_SUFFIX') }}"
+                }
+            },
+            "name": "{{ (env_var('AWS_ATHENA_OUTPUT_LOCATION') ~ env_var('AWS_ATHENA_SUFFIX')) | url_path }}",
+            "namespace": "{{ env_var('AWS_ATHENA_OUTPUT_LOCATION') | url_scheme_authority }}"
+        }
+    ],
+    "run": {
+        "facets": {}
+    }
+},{
+    "eventType": "START",
+    "inputs": [],
+    "job": {
+        "facets": {
+            "documentation": {
+                "description": "Determines the popular day of week orders are placed."
+            },
+            "sql": {
+                "query": "\n    CREATE EXTERNAL TABLE IF NOT EXISTS test_orders (\n      ord   INT,\n      str   STRING,\n      num   INT\n    )\n    LOCATION '{{ env_var('AWS_ATHENA_OUTPUT_LOCATION') ~ env_var('AWS_ATHENA_SUFFIX') }}';\n\n    "
+            }
+        },
+        "name": "athena_dag.athena_create_table",
+        "namespace": "food_delivery"
+    },
+    "run": {
+        "facets": {
+            "airflow_runArgs": {
+                "externalTrigger": false
+            },
+            "parent": {
+                "job": {
+                    "name": "athena_dag",
+                    "namespace": "food_delivery"
+                }
+            },
+            "parentRun": {
+                "job": {
+                    "name": "athena_dag",
+                    "namespace": "food_delivery"
+                }
+            }
+        }
+    }
+},{
+    "eventType": "COMPLETE",
+    "inputs": [],
+    "job": {
+        "facets": {
+            "sql": {
+                "query": "\n    CREATE EXTERNAL TABLE IF NOT EXISTS test_orders (\n      ord   INT,\n      str   STRING,\n      num   INT\n    )\n    LOCATION '{{ env_var('AWS_ATHENA_OUTPUT_LOCATION') ~ env_var('AWS_ATHENA_SUFFIX') }}';\n\n    "
+            }
+        },
+        "name": "athena_dag.athena_create_table",
+        "namespace": "food_delivery"
+    },
+    "outputs": [
+        {
+            "facets": {
+                "dataSource": {
+                    "name": "awsathena://athena.{{ env_var('AWS_DEFAULT_REGION') }}.amazonaws.com",
+                    "uri": "awsathena://athena.{{ env_var('AWS_DEFAULT_REGION') }}.amazonaws.com"
+                },
+                "schema": {
+                    "fields": [
+                        {
+                            "name": "ord",
+                            "type": "int"
+                        },
+                        {
+                            "name": "str",
+                            "type": "string"
+                        },
+                        {
+                            "name": "num",
+                            "type": "int"
+                        }
+                    ]
+                }
+            },
+            "name": "AwsDataCatalog.openlineage_integration_{{ env_var('AWS_ATHENA_SUFFIX') }}.test_orders",
+            "namespace": "awsathena://athena.{{ env_var('AWS_DEFAULT_REGION') }}.amazonaws.com"
+        },
+        {
+            "facets": {
+                "dataSource": {
+                    "name": "{{ env_var('AWS_ATHENA_OUTPUT_LOCATION') | url_scheme_authority }}",
+                    "uri": "{{ env_var('AWS_ATHENA_OUTPUT_LOCATION') ~ env_var('AWS_ATHENA_SUFFIX') }}"
+                }
+            },
+            "name": "{{ (env_var('AWS_ATHENA_OUTPUT_LOCATION') ~ env_var('AWS_ATHENA_SUFFIX')) | url_path }}",
+            "namespace": "{{ env_var('AWS_ATHENA_OUTPUT_LOCATION') | url_scheme_authority }}"
+        }
+    ],
+    "run": {
+        "facets": {}
+    }
+},{
+    "eventType": "START",
+    "inputs": [],
+    "job": {
+        "facets": {
+            "documentation": {
+                "description": "Determines the popular day of week orders are placed."
+            },
+            "sql": {
+                "query": "\n    INSERT INTO test_orders (ord, str, num) VALUES\n    (1, 'b', 15),\n    (2, 'a', 21),\n    (3, 'b', 7);\n\n    "
+            }
+        },
+        "name": "athena_dag.athena_insert",
+        "namespace": "food_delivery"
+    },
+    "outputs": [
+        {
+            "facets": {
+                "dataSource": {
+                    "name": "awsathena://athena.{{ env_var('AWS_DEFAULT_REGION') }}.amazonaws.com",
+                    "uri": "awsathena://athena.{{ env_var('AWS_DEFAULT_REGION') }}.amazonaws.com"
+                },
+                "schema": {
+                    "fields": [
+                        {
+                            "name": "ord",
+                            "type": "int"
+                        },
+                        {
+                            "name": "str",
+                            "type": "string"
+                        },
+                        {
+                            "name": "num",
+                            "type": "int"
+                        }
+                    ]
+                }
+            },
+            "name": "AwsDataCatalog.openlineage_integration_{{ env_var('AWS_ATHENA_SUFFIX') }}.test_orders",
+            "namespace": "awsathena://athena.{{ env_var('AWS_DEFAULT_REGION') }}.amazonaws.com"
+        },
+        {
+            "facets": {
+                "dataSource": {
+                    "name": "{{ env_var('AWS_ATHENA_OUTPUT_LOCATION') | url_scheme_authority }}",
+                    "uri": "{{ env_var('AWS_ATHENA_OUTPUT_LOCATION') ~ env_var('AWS_ATHENA_SUFFIX') }}"
+                }
+            },
+            "name": "{{ (env_var('AWS_ATHENA_OUTPUT_LOCATION') ~ env_var('AWS_ATHENA_SUFFIX')) | url_path }}",
+            "namespace": "{{ env_var('AWS_ATHENA_OUTPUT_LOCATION') | url_scheme_authority }}"
+        }
+    ],
+    "run": {
+        "facets": {
+            "airflow_runArgs": {
+                "externalTrigger": false
+            },
+            "parent": {
+                "job": {
+                    "name": "athena_dag",
+                    "namespace": "food_delivery"
+                }
+            },
+            "parentRun": {
+                "job": {
+                    "name": "athena_dag",
+                    "namespace": "food_delivery"
+                }
+            }
+        }
+    }
+},{
+    "eventType": "COMPLETE",
+    "inputs": [],
+    "job": {
+        "facets": {
+            "sql": {
+                "query": "\n    INSERT INTO test_orders (ord, str, num) VALUES\n    (1, 'b', 15),\n    (2, 'a', 21),\n    (3, 'b', 7);\n\n    "
+            }
+        },
+        "name": "athena_dag.athena_insert",
+        "namespace": "food_delivery"
+    },
+    "outputs": [
+        {
+            "facets": {
+                "dataSource": {
+                    "name": "awsathena://athena.{{ env_var('AWS_DEFAULT_REGION') }}.amazonaws.com",
+                    "uri": "awsathena://athena.{{ env_var('AWS_DEFAULT_REGION') }}.amazonaws.com"
+                },
+                "schema": {
+                    "fields": [
+                        {
+                            "name": "ord",
+                            "type": "int"
+                        },
+                        {
+                            "name": "str",
+                            "type": "string"
+                        },
+                        {
+                            "name": "num",
+                            "type": "int"
+                        }
+                    ]
+                }
+            },
+            "name": "AwsDataCatalog.openlineage_integration_{{ env_var('AWS_ATHENA_SUFFIX') }}.test_orders",
+            "namespace": "awsathena://athena.{{ env_var('AWS_DEFAULT_REGION') }}.amazonaws.com"
+        },
+        {
+            "facets": {
+                "dataSource": {
+                    "name": "{{ env_var('AWS_ATHENA_OUTPUT_LOCATION') | url_scheme_authority }}",
+                    "uri": "{{ env_var('AWS_ATHENA_OUTPUT_LOCATION') ~ env_var('AWS_ATHENA_SUFFIX') }}"
+                }
+            },
+            "name": "{{ (env_var('AWS_ATHENA_OUTPUT_LOCATION') ~ env_var('AWS_ATHENA_SUFFIX')) | url_path }}",
+            "namespace": "{{ env_var('AWS_ATHENA_OUTPUT_LOCATION') | url_scheme_authority }}"
+        }
+    ],
+    "run": {
+        "facets": {}
+    }
+},{
+    "eventType": "START",
+    "inputs": [],
+    "job": {
+        "facets": {
+            "documentation": {
+                "description": "Determines the popular day of week orders are placed."
+            },
+            "sql": {
+                "query": "DROP TABLE test_orders"
+            }
+        },
+        "name": "athena_dag.athena_drop_table",
+        "namespace": "food_delivery"
+    },
+    "outputs": [
+        {
+            "facets": {
+                "dataSource": {
+                    "name": "{{ env_var('AWS_ATHENA_OUTPUT_LOCATION') | url_scheme_authority }}",
+                    "uri": "{{ env_var('AWS_ATHENA_OUTPUT_LOCATION') ~ env_var('AWS_ATHENA_SUFFIX') }}"
+                }
+            },
+            "name": "{{ (env_var('AWS_ATHENA_OUTPUT_LOCATION') ~ env_var('AWS_ATHENA_SUFFIX')) | url_path }}",
+            "namespace": "{{ env_var('AWS_ATHENA_OUTPUT_LOCATION') | url_scheme_authority }}"
+        }
+    ],
+    "run": {
+        "facets": {
+            "airflow_runArgs": {
+                "externalTrigger": false
+            },
+            "parent": {
+                "job": {
+                    "name": "athena_dag",
+                    "namespace": "food_delivery"
+                }
+            },
+            "parentRun": {
+                "job": {
+                    "name": "athena_dag",
+                    "namespace": "food_delivery"
+                }
+            }
+        }
+    }
+},{
+    "eventType": "COMPLETE",
+    "inputs": [],
+    "job": {
+        "facets": {
+            "sql": {
+                "query": "DROP TABLE test_orders"
+            }
+        },
+        "name": "athena_dag.athena_drop_table",
+        "namespace": "food_delivery"
+    },
+    "outputs": [
+        {
+            "facets": {
+                "dataSource": {
+                    "name": "{{ env_var('AWS_ATHENA_OUTPUT_LOCATION') | url_scheme_authority }}",
+                    "uri": "{{ env_var('AWS_ATHENA_OUTPUT_LOCATION') ~ env_var('AWS_ATHENA_SUFFIX') }}"
+                }
+            },
+            "name": "{{ (env_var('AWS_ATHENA_OUTPUT_LOCATION') ~ env_var('AWS_ATHENA_SUFFIX')) | url_path }}",
+            "namespace": "{{ env_var('AWS_ATHENA_OUTPUT_LOCATION') | url_scheme_authority }}"
+        }
+    ],
+    "run": {
+        "facets": {}
+    }
+},{
+    "eventType": "START",
+    "inputs": [],
+    "job": {
+        "facets": {
+            "documentation": {
+                "description": "Determines the popular day of week orders are placed."
+            },
+            "sourceCode": {
+                "language": "python",
+                "source": "def delete_objects():\n    hook = S3Hook(aws_conn_id=CONNECTION)\n    keys = hook.list_keys(bucket_name=S3_BUCKET, prefix=S3_PREFIX)\n    hook.delete_objects(bucket=S3_BUCKET, keys=keys)\n"
+            }
+        },
+        "name": "athena_dag.delete_s3_objects",
+        "namespace": "food_delivery"
+    },
+    "outputs": [],
+    "run": {
+        "facets": {
+            "airflow_runArgs": {
+                "externalTrigger": false
+            },
+            "parent": {
+                "job": {
+                    "name": "athena_dag",
+                    "namespace": "food_delivery"
+                }
+            },
+            "parentRun": {
+                "job": {
+                    "name": "athena_dag",
+                    "namespace": "food_delivery"
+                }
+            },
+            "unknownSourceAttribute": {
+                "unknownItems": [
+                    {
+                        "name": "PythonOperator",
+                        "type": "operator"
+                    }
+                ]
+            }
+        }
+    }
+},{
+    "eventType": "COMPLETE",
+    "inputs": [],
+    "job": {
+        "facets": {
+            "sourceCode": {
+                "language": "python",
+                "source": "def delete_objects():\n    hook = S3Hook(aws_conn_id=CONNECTION)\n    keys = hook.list_keys(bucket_name=S3_BUCKET, prefix=S3_PREFIX)\n    hook.delete_objects(bucket=S3_BUCKET, keys=keys)\n"
+            }
+        },
+        "name": "athena_dag.delete_s3_objects",
+        "namespace": "food_delivery"
+    },
+    "outputs": [],
+    "run": {
+        "facets": {
+            "unknownSourceAttribute": {
+                "unknownItems": [
+                    {
+                        "name": "PythonOperator",
+                        "type": "operator"
+                    }
+                ]
+            }
+        }
+    }
+}]

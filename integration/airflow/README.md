@@ -108,6 +108,7 @@ suited to extract metadata from a particular operator (or operators).
 
 * `PostgresOperator`
 * `MySqlOperator`
+* `AthenaOperator`
 * `BigQueryOperator`
 * `SnowflakeOperator`
 * `GreatExpectationsOperator`
