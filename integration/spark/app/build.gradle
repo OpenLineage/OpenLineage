@@ -99,7 +99,7 @@ dependencies {
     testFixturesApi "org.apache.spark:spark-core_${versions.scala}:${sparkVersion}"
     testFixturesApi "org.apache.spark:spark-sql_${versions.scala}:${sparkVersion}"
     testFixturesApi "org.apache.spark:spark-hive_${versions.scala}:${sparkVersion}"
-    testFixturesApi 'commons-beanutils:commons-beanutils:1.9.3'
+    testFixturesApi 'commons-beanutils:commons-beanutils:1.9.4'
     testFixturesApi "org.apache.spark:spark-sql-kafka-0-10_${versions.scala}:${sparkVersion}"
     testFixturesApi("com.google.cloud.spark:spark-bigquery-with-dependencies_${versions.scala}:${bigqueryVersion}") {
         exclude group: 'com.fasterxml.jackson.core'
