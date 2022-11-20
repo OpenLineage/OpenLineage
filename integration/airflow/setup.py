@@ -42,7 +42,7 @@ extras_require = {
         "apache-airflow-providers-amazon>=3.1.1",
         "apache-airflow-providers-sftp>=2.1.1",
         "apache-airflow-providers-ssh>=2.1.0",
-        "airflow-provider-great-expectations==0.1.5",
+        "airflow-provider-great-expectations==0.2.1",
         "great-expectations<=0.15.23",
         "protobuf==3.20.*",
     ],
