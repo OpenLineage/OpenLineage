@@ -48,7 +48,7 @@ ext {
     bigqueryVersion = '0.26.0'
     junit5Version = '5.7.2'
     sparkVersion = '2.4.8'
-    postgresqlVersion = '42.2.19'
+    postgresqlVersion = '42.5.0'
     mockitoVersion = '4.9.0'
     testcontainersVersion = '1.17.5'
 }
