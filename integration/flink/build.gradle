@@ -90,7 +90,7 @@ dependencies {
     testImplementation "org.apache.flink:flink-avro-confluent-registry:$flinkVersion"
     testImplementation "org.apache.iceberg:iceberg-flink-$flinkVersionShort:0.14.0"
     testImplementation "org.apache.iceberg:iceberg-flink-runtime-$flinkVersionShort:0.14.0"
-    testImplementation platform('org.junit:junit-bom:5.7.1')
+    testImplementation platform('org.junit:junit-bom:5.9.1')
     testImplementation 'org.hamcrest:hamcrest-library:2.2'
     testImplementation "org.testcontainers:mockserver:${testcontainersVersion}"
     testImplementation "org.testcontainers:junit-jupiter:${testcontainersVersion}"
