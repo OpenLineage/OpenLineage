@@ -22,8 +22,8 @@ public class SparkConfUtils {
   private static final String metastoreUriKey = "spark.sql.hive.metastore.uris";
   private static final String metastoreHadoopUriKey = "spark.hadoop.hive.metastore.uris";
 
-  public static Map<String, String> findSparkConfigKeysStartsWith(SparkConf conf, String prefix) {
-    return Arrays.stream(conf.getAllWithPrefix(prefix))
+  public static Map<String, String> findSparkConfigKeysStartsWith(SparkConf conf, String prefix, String transportType) {
+    return Arrays.stream(conf.getAllWithPrefix(String.format("%s.%s.", prefix, transportType)))
         .collect(Collectors.toMap(t -> t._1, t -> t._2));
   }
 
