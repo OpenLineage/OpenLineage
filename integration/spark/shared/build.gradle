@@ -49,7 +49,7 @@ ext {
     junit5Version = '5.7.2'
     sparkVersion = '2.4.8'
     postgresqlVersion = '42.2.19'
-    mockitoVersion = '4.8.1'
+    mockitoVersion = '4.9.0'
     testcontainersVersion = '1.17.5'
 }
 
