@@ -174,7 +174,7 @@ class ArgumentParserTest {
       Optional<String> appName,
       Optional<Map<String, String>> urlParams) {
     ArgumentParser.ArgumentParserBuilder builder = new ArgumentParser.ArgumentParserBuilder();
-    ArgumentParser.parse(builder, input);
+    ArgumentParser.parseUrl(builder, input);
     ArgumentParser parser = builder.build();
     assertEquals(host, parser.getHost());
     assertEquals(version, parser.getVersion());
@@ -200,7 +200,7 @@ class ArgumentParserTest {
     builder.disabledFacets("spark_unknown;spark.logicalPlan");
     ArgumentParser parser = builder.build();
 
-    assertThat(parser.getDisabledFacets())
+    assertThat(parser.extractDisabledFacets())
         .contains("spark_unknown")
         .contains("spark.logicalPlan")
         .hasSize(2);
@@ -211,6 +211,6 @@ class ArgumentParserTest {
     ArgumentParser.ArgumentParserBuilder builder = new ArgumentParser.ArgumentParserBuilder();
     ArgumentParser parser = builder.build();
 
-    assertThat(parser.getDisabledFacets()).contains("spark_unknown").hasSize(1);
+    assertThat(parser.extractDisabledFacets()).contains("spark_unknown").hasSize(1);
   }
 }

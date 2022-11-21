@@ -17,7 +17,7 @@ class EventEmitterTest {
 
   @Test
   void testLineageUri() throws URISyntaxException {
-    ArgumentParser.parse(
+    ArgumentParser.parseUrl(
         builder,
         "https://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/"
             + "ea445b5c-22eb-457a-8007-01c7c52b6e54?api_key=abc");
@@ -27,7 +27,7 @@ class EventEmitterTest {
 
   @Test
   void testLineageUriWithExtraParams() throws URISyntaxException {
-    ArgumentParser.parse(
+    ArgumentParser.parseUrl(
         builder,
         "https://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/"
             + "ea445b5c-22eb-457a-8007-01c7c52b6e54?api_key=abc&code=123&foo=bar");
