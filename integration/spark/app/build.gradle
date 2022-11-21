@@ -60,7 +60,7 @@ ext {
             "3.3": ["module": "spark33",    "scala": "2.12", "delta": "NA", "snowflake": "2.11.0-spark_3.3"],
             "3.2": ["module": "spark32",    "scala": "2.12", "delta": "1.1.0", "snowflake": "2.11.0-spark_3.2"],
             "3.1": ["module": "spark3",     "scala": "2.12", "delta": "1.0.0", "snowflake": "2.11.0-spark_3.1"],
-            "2.4": ["module": "spark2",     "scala": "2.11", "delta": "NA", "snowflake": "2.9.3-spark_2.4"]
+            "2.4": ["module": "spark2",     "scala": "2.11", "delta": "NA", "snowflake": "NA"]
     ]
     versions = versionsMap[shortVersion]
 }
@@ -95,12 +95,16 @@ dependencies {
         exclude group: 'com.sun.jdmk'
         exclude group: 'javax.jms'
     }
-    compileOnly ("net.snowflake:spark-snowflake_${versions.scala}:${versions.snowflake}") {
-        exclude group: 'com.google.guava:guava'
-        exclude group: 'org.apache.spark:spark-core_2.11'
-        exclude group: 'org.apache.spark:spark-sql_2.11'
-        exclude group: 'org.apache.spark:spark-catalyst_2.11'
+
+    if(versions.snowflake != "NA") {
+        compileOnly ("net.snowflake:spark-snowflake_${versions.scala}:${versions.snowflake}") {
+            exclude group: 'com.google.guava:guava'
+            exclude group: 'org.apache.spark:spark-core_2.11'
+            exclude group: 'org.apache.spark:spark-sql_2.11'
+            exclude group: 'org.apache.spark:spark-catalyst_2.11'
+        }
     }
+
 
     testFixturesApi "org.apache.spark:spark-core_${versions.scala}:${sparkVersion}"
     testFixturesApi "org.apache.spark:spark-sql_${versions.scala}:${sparkVersion}"
@@ -112,6 +116,14 @@ dependencies {
         exclude group: 'org.apache.spark:spark-sql_2.11'
         exclude group: 'org.apache.spark:spark-catalyst_2.11'
 
+    if(versions.snowflake != "NA") {
+        testFixturesApi ("net.snowflake:spark-snowflake_${versions.scala}:${versions.snowflake}") {
+            exclude group: 'com.google.guava:guava'
+            exclude group: 'org.apache.spark:spark-core_2.11'
+            exclude group: 'org.apache.spark:spark-sql_2.11'
+            exclude group: 'org.apache.spark:spark-catalyst_2.11'
+
+        }
     }
     testFixturesApi "org.apache.spark:spark-sql-kafka-0-10_${versions.scala}:${sparkVersion}"
     testFixturesApi("com.google.cloud.spark:spark-bigquery-with-dependencies_${versions.scala}:${bigqueryVersion}") {
