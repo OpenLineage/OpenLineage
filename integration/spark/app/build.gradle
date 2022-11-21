@@ -110,11 +110,6 @@ dependencies {
     testFixturesApi "org.apache.spark:spark-sql_${versions.scala}:${sparkVersion}"
     testFixturesApi "org.apache.spark:spark-hive_${versions.scala}:${sparkVersion}"
     testFixturesApi 'commons-beanutils:commons-beanutils:1.9.4'
-    testFixturesApi ("net.snowflake:spark-snowflake_${versions.scala}:${versions.snowflake}") {
-        exclude group: 'com.google.guava:guava'
-        exclude group: 'org.apache.spark:spark-core_2.11'
-        exclude group: 'org.apache.spark:spark-sql_2.11'
-        exclude group: 'org.apache.spark:spark-catalyst_2.11'
 
     if(versions.snowflake != "NA") {
         testFixturesApi ("net.snowflake:spark-snowflake_${versions.scala}:${versions.snowflake}") {
@@ -122,7 +117,6 @@ dependencies {
             exclude group: 'org.apache.spark:spark-core_2.11'
             exclude group: 'org.apache.spark:spark-sql_2.11'
             exclude group: 'org.apache.spark:spark-catalyst_2.11'
-
         }
     }
     testFixturesApi "org.apache.spark:spark-sql-kafka-0-10_${versions.scala}:${sparkVersion}"
