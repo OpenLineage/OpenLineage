@@ -575,9 +575,11 @@ jobs:
       - store_artifacts:
           path: airflow/tests/integration/tests/airflow/logs
           destination: airflow-logs
+          when: always
       - store_artifacts:
           path: airflow/tests/integration/tests/events
           destination: events
+          when: always
 
   integration-test-integration-airflow-failure:
     parameters:
