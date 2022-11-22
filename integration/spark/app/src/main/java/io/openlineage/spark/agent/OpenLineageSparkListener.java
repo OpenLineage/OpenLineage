@@ -37,6 +37,7 @@ import org.apache.spark.SparkContext;
 import org.apache.spark.SparkContext$;
 import org.apache.spark.SparkEnv;
 import org.apache.spark.SparkEnv$;
+import org.apache.spark.package$;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.scheduler.ActiveJob;
 import org.apache.spark.scheduler.SparkListenerApplicationEnd;
@@ -80,6 +81,8 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       ScalaConversionUtils.toScalaFn(SparkSession::sparkContext);
   private final Function0<Option<SparkContext>> activeSparkContext =
       ScalaConversionUtils.toScalaFn(SparkContext$.MODULE$::getActive);
+
+  String sparkVersion = package$.MODULE$.SPARK_VERSION();
 
   private static final boolean isDisabled = checkIfDisabled();
 
@@ -137,7 +140,10 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
         ScalaConversionUtils.fromSeq(jobStart.stageIds()).stream()
             .map(Integer.class::cast)
             .collect(Collectors.toSet());
-    jobMetrics.addJobStages(jobStart.jobId(), stages);
+
+    if (sparkVersion.startsWith("3")) {
+      jobMetrics.addJobStages(jobStart.jobId(), stages);
+    }
 
     Optional.ofNullable(getSqlExecutionId(jobStart.properties()))
         .map(Optional::of)
@@ -178,12 +184,14 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     if (context != null) {
       context.end(jobEnd);
     }
-    jobMetrics.cleanUp(jobEnd.jobId());
+    if (sparkVersion.startsWith("3")) {
+      jobMetrics.cleanUp(jobEnd.jobId());
+    }
   }
 
   @Override
   public void onTaskEnd(SparkListenerTaskEnd taskEnd) {
-    if (isDisabled) {
+    if (isDisabled || sparkVersion.startsWith("2")) {
       return;
     }
     jobMetrics.addMetrics(taskEnd.stageId(), taskEnd.taskMetrics());

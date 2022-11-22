@@ -54,10 +54,16 @@ public class SaveIntoDataSourceCommandVisitor
 
   @Override
   public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
-    return context.getSparkSession().isPresent()
-        && x instanceof SaveIntoDataSourceCommand
-        && (((SaveIntoDataSourceCommand) x).dataSource() instanceof SchemaRelationProvider
-            || ((SaveIntoDataSourceCommand) x).dataSource() instanceof RelationProvider);
+    if (context.getSparkSession().isPresent() && x instanceof SaveIntoDataSourceCommand) {
+      SaveIntoDataSourceCommand command = (SaveIntoDataSourceCommand) x;
+      if (PlanUtils.safeIsInstanceOf(
+          command.dataSource(), "com.google.cloud.spark.bigquery.BigQueryRelationProvider")) {
+        return false;
+      }
+      return command.dataSource() instanceof SchemaRelationProvider
+          || command.dataSource() instanceof RelationProvider;
+    }
+    return false;
   }
 
   @Override

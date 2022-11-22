@@ -453,6 +453,9 @@ jobs:
       JDK8_HOME: /usr/lib/jvm/java-8-openjdk-amd64
     steps:
       - *checkout_project_root
+      - gcp-cli/install
+      - gcp-cli/initialize
+      - run: mkdir -p app/build/gcloud && echo $GCLOUD_SERVICE_KEY > app/build/gcloud/gcloud-service-key.json && chmod 644 app/build/gcloud/gcloud-service-key.json
       - restore_cache:
           keys:
             - v1-integration-spark-{{ .Branch }}-{{ .Revision }}

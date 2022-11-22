@@ -3,13 +3,9 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.common;
+package com.google.cloud.bigquery.connector.common;
 
-import com.google.cloud.bigquery.connector.common.BigQueryClient;
-import com.google.cloud.bigquery.connector.common.BigQueryConfig;
-import com.google.cloud.bigquery.connector.common.BigQueryCredentialsSupplier;
 import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.BigQuery;
-import com.google.cloud.spark.bigquery.repackaged.com.google.common.cache.CacheBuilder;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Binder;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Module;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Provides;
@@ -46,7 +42,7 @@ public class MockBigQueryClientModule implements Module {
         bq,
         Optional.of("materializationProject"),
         Optional.of("materializationDataset"),
-        CacheBuilder.newBuilder().build(),
+        null,
         Collections.emptyMap());
   }
 }

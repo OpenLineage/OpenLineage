@@ -13,7 +13,10 @@ import static org.mockserver.model.JsonBody.json;
 import com.google.common.collect.ImmutableMap;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -25,6 +28,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -100,6 +104,7 @@ class SparkContainerIntegrationTest {
   }
 
   @Test
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3) // Spark version >= 3.*
   void testPysparkWordCountWithCliArgs() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network,
@@ -112,6 +117,7 @@ class SparkContainerIntegrationTest {
   }
 
   @Test
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3) // Spark version >= 3.*
   void testPysparkRddToTable() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network, openLineageClientMockContainer, "testPysparkRddToTable", "spark_rdd_to_table.py");
@@ -167,6 +173,7 @@ class SparkContainerIntegrationTest {
   }
 
   @Test
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3) // Spark version >= 3.*
   void testPysparkSQLHiveTest() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network, openLineageClientMockContainer, "testPysparkSQLHiveTest", "spark_hive.py");
@@ -178,17 +185,20 @@ class SparkContainerIntegrationTest {
   }
 
   @Test
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3) // Spark version >= 3.*
   void testOverwriteName() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network,
         openLineageClientMockContainer,
         "testPysparkSQLHiveTest",
-        Arrays.asList("app_name=appName"),
+        Collections.singletonList("app_name=appName"),
+        Collections.emptyList(),
         "overwrite_appname.py");
     verifyEvents("pysparkOverwriteNameStartEvent.json", "pysparkOverwriteNameCompleteEvent.json");
   }
 
   @Test
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3) // Spark version >= 3.*
   void testPysparkSQLOverwriteDirHiveTest() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network,
@@ -438,6 +448,37 @@ class SparkContainerIntegrationTest {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network, openLineageClientMockContainer, "testAlterTable", "spark_alter_table.py");
     verifyEvents("pysparkAlterTableAddColumnsEnd.json", "pysparkAlterTableRenameEnd.json");
+  }
+
+  @Test
+  @EnabledIfEnvironmentVariable(named = "CI", matches = "true")
+  @EnabledIfSystemProperty(
+      named = SPARK_VERSION,
+      matches = "(3.3.*)") // Only running on 3.3 because mockserver can't fill in the spark version
+  void testReadAndWriteFromBigquery() {
+    List<String> sparkConfigParams = new ArrayList<>();
+    sparkConfigParams.add(
+        "spark.hadoop.google.cloud.auth.service.account.json.keyfile=/opt/gcloud/gcloud-service-key.json");
+    sparkConfigParams.add("spark.hadoop.google.cloud.auth.service.account.enable=true");
+    sparkConfigParams.add(
+        "spark.hadoop.fs.AbstractFileSystem.gs.impl=com.google.cloud.hadoop.fs.gcs.GoogleHadoopFS");
+    sparkConfigParams.add(
+        "spark.hadoop.fs.gs.impl=com.google.cloud.hadoop.fs.gcs.GoogleHadoopFileSystem");
+
+    SparkContainerUtils.runPysparkContainerWithDefaultConf(
+        network,
+        openLineageClientMockContainer,
+        "testReadAndWriteFromBigquery",
+        Collections.emptyList(),
+        sparkConfigParams,
+        "spark_bigquery.py");
+    verifyEvents(
+        "pysparkBigquerySaveStart.json",
+        "pysparkBigqueryInsertStart.json",
+        "pysparkBigqueryInsertStart.json",
+        "pysparkBigqueryInsertEnd.json",
+        "pysparkBigqueryInsertEnd.json",
+        "pysparkBigquerySaveEnd.json");
   }
 
   @Test
