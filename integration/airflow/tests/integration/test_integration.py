@@ -120,7 +120,7 @@ params = [
 ]
 
 
-@retry(wait_exponential_multiplier=1000, wait_exponential_max=10000)
+@retry(wait_exponential_multiplier=1000, wait_exponential_max=10000, stop_max_delay=1000*10*60)
 def wait_for_dag(dag_id, airflow_db_conn) -> bool:
     log.info(f"Waiting for DAG '{dag_id}'...")
 
