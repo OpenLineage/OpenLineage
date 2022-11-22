@@ -54,6 +54,20 @@ public class SparkConfUtils {
       }
     }
     return Optional.empty();
+  }  
+  
+  public static Double findSparkConfigKeyDouble(Map<String, String> conf, String name) {
+    if (conf.containsKey(name)) {
+      try {
+        String number = conf.get(name);
+        if (StringUtils.isNotBlank(number)) {
+          return Double.parseDouble(number);
+        }
+      } catch (NumberFormatException e) {
+        log.warn("Value of timeout is not parsable");
+      }
+    }
+    return null;
   }
 
   public static Optional<URI> getMetastoreUri(SparkConf conf) {

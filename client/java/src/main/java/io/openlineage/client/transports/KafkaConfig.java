@@ -13,7 +13,7 @@ import lombok.ToString;
 
 @NoArgsConstructor
 @ToString
-public final class KafkaConfig implements TransportConfig {
+public final class KafkaConfig extends TransportConfig {
   @Getter @Setter private String topicName;
   @Getter @Setter private String localServerId;
   @Getter @Setter private Properties properties;

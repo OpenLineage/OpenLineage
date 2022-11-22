@@ -6,22 +6,14 @@
 package io.openlineage.spark.agent;
 
 import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptional;
-import static io.openlineage.spark.agent.util.SparkConfUtils.findSparkConfigKey;
-import static io.openlineage.spark.agent.util.SparkConfUtils.findSparkConfigKeyDouble;
-import static io.openlineage.spark.agent.util.SparkConfUtils.findSparkConfigKeysStartsWith;
-import static io.openlineage.spark.agent.util.SparkConfUtils.findSparkUrlParams;
+
 
 import io.openlineage.client.Environment;
 import io.openlineage.client.OpenLineage;
-import io.openlineage.client.transports.HttpConfig;
-import io.openlineage.client.transports.KafkaConfig;
-import io.openlineage.client.transports.KinesisConfig;
-import io.openlineage.client.transports.TransportConfig;
 import io.openlineage.spark.agent.lifecycle.ContextFactory;
 import io.openlineage.spark.agent.lifecycle.ExecutionContext;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.io.PrintWriter;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.ZonedDateTime;
 import java.util.Collections;
@@ -278,7 +270,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     SparkEnv sparkEnv = SparkEnv$.MODULE$.get();
     if (sparkEnv != null) {
       try {
-        ArgumentParser args = parseConf(sparkEnv.conf());
+        ArgumentParser args = ArgumentParser.parseConf(sparkEnv.conf());
         contextFactory = new ContextFactory(new EventEmitter(args));
       } catch (URISyntaxException e) {
         log.error("Unable to parse open lineage endpoint. Lineage events will not be collected", e);

@@ -92,20 +92,30 @@ also defined in configuration or not.
 
 The following parameters can be specified in the Spark configuration:
 
+##### Common config
+
+
+
 | Parameter | Definition | Example |
 ------------|------------|---------
-| spark.openlineage.host | The hostname of the OpenLineage API server where events should be reported | http://localhost:5000 |
-| spark.openlineage.version | The API version of the OpenLineage API server | 1|
 | spark.openlineage.namespace | The default namespace to be applied for any jobs submitted | MyNamespace|
 | spark.openlineage.parentJobName | The job name to be used for the parent job facet | ParentJobName |
 | spark.openlineage.parentRunId | The RunId of the parent job that initiated this Spark job | xxxx-xxxx-xxxx-xxxx |
-| spark.openlineage.apiKey | An API key to be used when sending events to the OpenLineage server | abcdefghijk |
-| spark.openlineage.timeout | Timeout for sending OpenLineage info in milliseconds | 5000 |
 | spark.openlineage.appName | Custom value overwriting Spark app name in events | AppName |
-| spark.openlineage.url.param.xyz | A URL parameter (replace xyz) and value to be included in requests to the OpenLineage API server | abcdefghijk |
-| spark.openlineage.consoleTransport | Events will be emitted to a console, so no additional backend is required | true |
 | spark.openlineage.transport.type | The transport type used for event emit, currently only supporting 'kinesis' | kinesis |
 | spark.openlineage.facets.disabled | `;` separated list of facets to disable, by default equal to `spark_unknown` | spark_unknown;spark.logicalPlan |
+
+##### Http Config
+
+
+| Parameter                                         | Definition | Example |
+---------------------------------------------------|------------|---------
+| spark.openlineage.transport.http.host             | The hostname of the OpenLineage API server where events should be reported | http://localhost:5000 |
+| spark.openlineage.transport.http.version          | The API version of the OpenLineage API server | 1|
+| spark.openlineage.transport.http.apiKey           | An API key to be used when sending events to the OpenLineage server | abcdefghijk |
+| spark.openlineage.transport.http.timeout          | Timeout for sending OpenLineage info in milliseconds | 5000 |
+| spark.openlineage.transport.http.url.param.xyz    | A URL parameter (replace xyz) and value to be included in requests to the OpenLineage API server | abcdefghijk |
+
 
 ##### Kinesis Transport
 If using `spark.openlineage.transport.type` as `kinesis`, then the below parameters would be read and used when building KinesisProducer.

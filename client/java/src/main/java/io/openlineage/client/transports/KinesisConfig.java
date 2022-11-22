@@ -14,7 +14,7 @@ import lombok.ToString;
 
 @NoArgsConstructor
 @ToString
-public final class KinesisConfig implements TransportConfig {
+public final class KinesisConfig extends TransportConfig {
   @Getter @Setter private String streamName;
   @Getter @Setter private String region;
   @Getter @Setter private Optional<String> roleArn;

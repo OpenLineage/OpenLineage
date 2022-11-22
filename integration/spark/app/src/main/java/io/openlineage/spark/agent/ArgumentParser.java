@@ -43,7 +43,7 @@ public class ArgumentParser {
 
   public static final String SPARK_CONF_TRANSPORT_TYPE = "openlineage.transport.type";
   public static final String SPARK_CONF_CONSOLE_TRANSPORT = "openlineage.consoleTransport";
-  public static final String SPARK_CONF_URL = "openlineage.url";
+  public static final String SPARK_CONF_URL = "spark.openlineage.transport.http.url";
   public static final String SPARK_CONF_HOST = "openlineage.host";
   public static final String SPARK_CONF_API_VERSION = "openlineage.version";
   public static final String SPARK_CONF_NAMESPACE = "openlineage.namespace";
@@ -56,6 +56,8 @@ public class ArgumentParser {
   private static final String SPARK_CONF_FACETS_DISABLED = "openlineage.facets.disabled";
 
   private static final String TRANSPORT_PREFIX = "spark.openlineage.transport";
+  private static final String OPENLINEAGE_PREFIX = "spark.openlineage";
+  
   
   
   
@@ -63,59 +65,22 @@ public class ArgumentParser {
       new HashSet<>(Arrays.asList("timeout", "api_key", "app_name"));
   public static final String disabledFacetsSeparator = ";";
 
-  @Builder.Default private String host = "";
-  @Builder.Default private String version = "v1";
+
   @Builder.Default private String namespace = "default";
   @Builder.Default private String jobName = "default";
   @Builder.Default private String parentRunId = null;
-  @Builder.Default private Optional<Double> timeout = Optional.empty();
-  @Builder.Default private Optional<String> apiKey = Optional.empty();
-  @Builder.Default private Optional<String> appName = Optional.empty();
-  @Builder.Default private Optional<Map<String, String>> urlParams = Optional.empty();
+  @Builder.Default private String appName = null;
   @Builder.Default private String disabledFacets = "spark_unknown";
-  @Builder.Default private boolean consoleMode = false;
-
   @Builder.Default private TransportConfig transportConfig = new ConsoleConfig();
   @Builder.Default private String transportMode = "console";
-
-  public static ArgumentParserBuilder parseUrl(String clientUrl) {
-    return UrlParser.parseUrl(clientUrl);
-  }
-
-  private void commonConfigParse(ArgumentParser.ArgumentParserBuilder builder, SparkConf conf) {
-    builder
-            .timeout(findSparkConfigKeyDouble(conf, SPARK_CONF_TIMEOUT))
-            .apiKey(findSparkConfigKey(conf, SPARK_CONF_API_KEY).filter(str -> !str.isEmpty()))
-            .urlParams(findSparkUrlParams(conf, SPARK_CONF_URL_PARAM_PREFIX));
-    findSparkConfigKey(conf, SPARK_CONF_HOST).ifPresent(builder::host);
-    findSparkConfigKey(conf, SPARK_CONF_API_VERSION).ifPresent(builder::version);
-  }
-
-
-
-  private ArgumentParser parseConf(SparkConf conf) {
-    Optional<String> transportType = findSparkConfigKey(conf, SPARK_CONF_TRANSPORT_TYPE);
-    ArgumentParser.ArgumentParserBuilder builder;
-      String mode = transportType.orElse("console").toLowerCase();
-      switch (mode) {
-        case "kinesis":
-          builder = getKinesisTransportConfig(conf);
-          break;
-        case "kafka":
-          builder = getKafkaTransportConfig(conf);
-          break;
-        case "http":
-          builder = getHttpTransportConfig(conf);
-          break;
-        default:
-          builder = getConsoleTransportConfig(conf);
-      }
-    return builder.build();
+  
+  public static ArgumentParser parseConf(SparkConf conf) {
+    return getBuilder(conf).build();
   }
 
   private static ArgumentParserBuilder parseCommonConfig(SparkConf conf) {
     ArgumentParserBuilder builder = new ArgumentParserBuilder();
-    builder.appName(findSparkConfigKey(conf, SPARK_CONF_APP_NAME).filter(str -> !str.isEmpty()));
+    findSparkConfigKey(conf, SPARK_CONF_APP_NAME).filter(str -> !str.isEmpty()).ifPresent(builder::namespace);
     findSparkConfigKey(conf, SPARK_CONF_NAMESPACE).ifPresent(builder::namespace);
     findSparkConfigKey(conf, SPARK_CONF_JOB_NAME).ifPresent(builder::jobName);
     findSparkConfigKey(conf, SPARK_CONF_PARENT_RUN_ID).ifPresent(builder::parentRunId);
@@ -123,47 +88,39 @@ public class ArgumentParser {
     return builder;
   }
 
-  private ArgumentParserBuilder getBuilder(SparkConf conf){
+  private static ArgumentParserBuilder getBuilder(SparkConf conf){
     ArgumentParserBuilder builder = parseCommonConfig(conf);
     Optional<String> transportType = findSparkConfigKey(conf, SPARK_CONF_TRANSPORT_TYPE);
     String mode = transportType.orElse("console").toLowerCase();
     Map<String, String> config =
             findSparkConfigKeysStartsWith(conf, TRANSPORT_PREFIX, mode);
-    Properties properties = new Properties();
-    properties.putAll(config);
-
     TransportConfig transportConfig;
     switch (mode) {
       case "kinesis":
         transportConfig = getKafkaConfig(config);
-        ((KinesisConfig)transportConfig).setProperties(properties);
         break;
       case "kafka":
-        transportConfig = getKafkaConfig(config);
-        ((KafkaConfig)transportConfig).setProperties(properties);
+        transportConfig = getKinesisConfig(config);
         break;
       case "http":
-        transportConfig = getKafkaConfig(config);
-        ((HttpConfig)transportConfig).setProperties(properties);
+        if(config.containsKey("http.url")){
+          builder = UrlParser.parseUrl(builder, config.get("http.url"));
+        }else{
+          transportConfig = getHttpConfig(config);
+        }
+        
         break;
       default:
-        transportConfig = getKafkaConfig(config);
+        transportConfig = getConsoleConfig(config);
     }
-
-
-  }
-
-  @NotNull
-  private static ArgumentParserBuilder getKafkaTransportConfig(SparkConf conf) {
-    ArgumentParserBuilder builder = parseCommonConfig(conf);
-    String mode = "kafka";
-    Map<String, String> config =
-            findSparkConfigKeysStartsWith(conf, TRANSPORT_PREFIX, mode);
-    KafkaConfig kafkaConfig = getKafkaConfig(config);
-    Properties properties = new Properties();
-    properties.putAll(config);
-    kafkaConfig.setProperties(properties);
-    builder.transportMode(mode).transportConfig(kafkaConfig);
+    if(!config.containsKey("http.url")){
+      Properties properties = new Properties();
+      properties.putAll(config);
+      transportConfig.setProperties(properties);
+    }
+    
+    builder.transportConfig(transportConfig);
+    builder.transportMode(mode);
     return builder;
   }
 
@@ -176,47 +133,26 @@ public class ArgumentParser {
   }
 
   @NotNull
-  private static Optional<TransportConfig> getKinesisTransportConfig(SparkConf conf) {
-    Optional<TransportConfig> transportConfig;
-    Map<String, String> config =
-        findSparkConfigKeysStartsWith(conf, TRANSPORT_PREFIX, "kafka");
+  private static KinesisConfig getKinesisConfig(Map<String, String> config) {
     KinesisConfig kinesisConfig = new KinesisConfig();
     kinesisConfig.setStreamName(config.get("streamName"));
     kinesisConfig.setRegion(config.get("region"));
     kinesisConfig.setRoleArn(Optional.ofNullable(config.get("roleArn")));
-    Properties properties = new Properties();
-    properties.putAll(config);
-    kinesisConfig.setProperties(properties);
-    transportConfig = Optional.of(kinesisConfig);
-    return transportConfig;
-  }
-
-
+    return kinesisConfig;
+  } 
+  
   @NotNull
-  private static Optional<TransportConfig> getHttpTransportConfig(SparkConf conf) {
-    Optional<TransportConfig> transportConfig;
-    Map<String, String> config =
-            findSparkConfigKeysStartsWith(conf, "spark.openlineage.transport.http.");
+  private static HttpConfig getHttpConfig(Map<String, String> config) {
     HttpConfig httpConfig = new HttpConfig();
-    httpConfig.setUrl(new URI(config.get("url")));
+    
     httpConfig.setEndpoint(config.get("endpoint"));
-    httpConfig.setTimeout(config.get("timeout"));
+    httpConfig.setTimeout(findSparkConfigKeyDouble(config, "timeout"));
     httpConfig.setAuth(config.get("auth"));
-    transportConfig = Optional.of(kafkaConfig);
-    return transportConfig;
+    return httpConfig;
   }
 
-  private static Optional<TransportConfig> getConsoleTransportConfig(SparkConf conf) {
-    Optional<TransportConfig> transportConfig;
-    Map<String, String> config =
-            findSparkConfigKeysStartsWith(conf, "spark.openlineage.transport.http.");
-    HttpConfig httpConfig = new HttpConfig();
-    httpConfig.setUrl(new URI(config.get("url")));
-    httpConfig.setEndpoint(config.get("endpoint"));
-    httpConfig.setTimeout(config.get("timeout"));
-    httpConfig.setAuth(config.get("auth"));
-    transportConfig = Optional.of(kafkaConfig);
-    return transportConfig;
+  private static TransportConfig getConsoleConfig(Map<String, String> config) {
+    return new ConsoleConfig();
   }
   public static ArgumentParserBuilder builder() {
     return new ArgumentParserBuilder() {

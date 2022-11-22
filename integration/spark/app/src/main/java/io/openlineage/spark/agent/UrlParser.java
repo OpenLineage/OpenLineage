@@ -1,5 +1,6 @@
 package io.openlineage.spark.agent;
 
+import io.openlineage.client.transports.HttpConfig;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -15,8 +16,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
+
 @Slf4j
 @Getter
 public class UrlParser {
@@ -37,25 +41,32 @@ public class UrlParser {
     public String disabledFacets = "spark_unknown";
     public boolean consoleMode = false;
 
-    public static ArgumentParser.ArgumentParserBuilder parseUrl(String clientUrl) {
-        ArgumentParser.ArgumentParserBuilder builder = ArgumentParser.builder();
+    public static ArgumentParser.ArgumentParserBuilder parseUrl(ArgumentParser.ArgumentParserBuilder builder, String clientUrl) {
+        HttpConfig httpConfig = new HttpConfig();
         URI uri = URI.create(clientUrl);
         String path = uri.getPath();
         String[] elements = path.split("/");
         List<NameValuePair> nameValuePairList = URLEncodedUtils.parse(uri, StandardCharsets.UTF_8);
 
-        builder
-                .host(uri.getScheme() + "://" + uri.getAuthority())
-                .timeout(getTimeout(nameValuePairList))
-                .apiKey(getNamedStringParameter(nameValuePairList, "api_key"))
-                .appName(getNamedStringParameter(nameValuePairList, "app_name"))
-                .urlParams(getUrlParams(nameValuePairList))
-                .consoleMode(false);
-
-        get(elements, "api", 1).ifPresent(builder::version);
+        httpConfig.setUrl(uri);
+        httpConfig.setHost(uri.getScheme() + "://" + uri.getAuthority());
+        httpConfig.setTimeout(getTimeout(nameValuePairList));
+        get(elements, "api", 1).ifPresent(httpConfig::setVersion);
+        getNamedStringParameter(nameValuePairList, "app_name").ifPresent(builder::appName);
+        Properties properties = new Properties();
+        Map<String, Map.Entry<String, String>> params = getUrlParams(nameValuePairList)
+                .orElseGet(HashMap::new)
+                .entrySet().stream()
+                .collect(Collectors.toMap(key -> "transport.http.url.param." + key, value -> value));
+        properties.putAll(params);
+        httpConfig.setProperties(properties);
+        
+        
         get(elements, "namespaces", 3).ifPresent(builder::namespace);
         get(elements, "jobs", 5).ifPresent(builder::jobName);
         get(elements, "runs", 7).ifPresent(builder::parentRunId);
+        
+        builder.transportConfig(httpConfig);
         return builder;
     }
     
@@ -69,12 +80,8 @@ public class UrlParser {
                 .filter(StringUtils::isNoneBlank);
     }
 
-    private static Optional<Double> getTimeout(List<NameValuePair> nameValuePairList) {
-        return Optional.ofNullable(
-                UrlParser.extractTimeout(getNamedParameter(nameValuePairList, "timeout")));
-    }
-
-    private static Double extractTimeout(String timeoutString) {
+    private static Double getTimeout(List<NameValuePair> nameValuePairList) {
+        String timeoutString = getNamedParameter(nameValuePairList, "timeout");
         try {
             if (StringUtils.isNotBlank(timeoutString)) {
                 return Double.parseDouble(timeoutString);

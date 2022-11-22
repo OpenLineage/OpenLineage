@@ -7,6 +7,13 @@ package io.openlineage.client.transports;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+
+import java.util.Properties;
 
 @JsonSubTypes({
   @JsonSubTypes.Type(value = ConsoleConfig.class, name = "console"),
@@ -15,4 +22,9 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
   @JsonSubTypes.Type(value = KafkaConfig.class, name = "kinesis")
 })
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
-public interface TransportConfig {}
+@NoArgsConstructor
+@AllArgsConstructor
+@ToString
+public abstract class TransportConfig {
+    @Getter @Setter protected Properties properties;
+}
