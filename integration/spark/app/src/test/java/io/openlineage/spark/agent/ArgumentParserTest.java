@@ -15,6 +15,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import org.apache.spark.SparkConf;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -212,5 +214,17 @@ class ArgumentParserTest {
     ArgumentParser parser = builder.build();
 
     assertThat(parser.getDisabledFacets()).contains("spark_unknown").hasSize(1);
+  }
+
+  @Test
+  void testParsingSparkConfToJson(){
+    SparkConf sparkConf = new SparkConf()
+            .set("spark.openlineage.transport.type", "http")
+            .set("spark.openlineage.transport.url", "http://localhost:5050")
+            .set("spark.openlineage.transport.endpoint", "api/v1/lineage")
+            .set("spark.openlineage.transport.auth.type", "api_key")
+            .set("spark.openlineage.transport.auth.api_key", "random_token")
+            .set("spark.openlineage.facets.disabled", "facet1;facet2");
+    ArgumentParser.extractOpenlineageConfFromSparkConf(sparkConf);
   }
 }

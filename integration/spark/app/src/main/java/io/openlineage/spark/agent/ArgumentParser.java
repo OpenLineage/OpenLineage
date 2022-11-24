@@ -6,16 +6,13 @@
 package io.openlineage.spark.agent;
 
 import io.openlineage.client.transports.TransportConfig;
+
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -24,6 +21,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.core5.http.NameValuePair;
 import org.apache.hc.core5.net.URLEncodedUtils;
+import org.apache.spark.SparkConf;
+import org.json.JSONObject;
+import scala.Tuple2;
 
 @AllArgsConstructor
 @Slf4j
@@ -49,6 +49,31 @@ public class ArgumentParser {
 
   @Builder.Default private Optional<TransportConfig> transportConfig = Optional.empty();
   @Builder.Default private Optional<String> transportMode = Optional.empty();
+
+  public static void extractOpenlineageConfFromSparkConf(SparkConf conf) {
+    Tuple2<String, String>[] olconf = conf.getAllWithPrefix("spark.openlineage");
+    JSONObject jsonObject = new JSONObject();
+    for(Tuple2<String, String> tuple: olconf){
+      JSONObject temp = jsonObject;
+      String[] jpath = tuple._1.split(".");
+      Iterator<String> iter = Arrays.stream(jpath).iterator();
+      boolean leaf = false;
+      while(!leaf){
+        String key = iter.next();
+        if(iter.hasNext()){
+          if(!temp.has(key)){
+            temp.put(key, new JSONObject());
+          }
+          temp = temp.getJSONObject(key);
+        }
+        else{
+          temp.put(key, tuple._2);
+          leaf = true;
+        }
+      }
+    }
+    InputStream is = new ByteArrayInputStream(jsonObject.toString().getBytes());
+  }
 
   public static void parse(ArgumentParserBuilder builder, String clientUrl) {
     URI uri = URI.create(clientUrl);
