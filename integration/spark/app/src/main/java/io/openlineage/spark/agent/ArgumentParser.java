@@ -5,6 +5,8 @@
 
 package io.openlineage.spark.agent;
 
+import io.openlineage.client.OpenLineageClientUtils;
+import io.openlineage.client.OpenLineageYaml;
 import io.openlineage.client.transports.TransportConfig;
 
 import java.io.ByteArrayInputStream;
@@ -12,6 +14,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,6 +25,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.core5.http.NameValuePair;
 import org.apache.hc.core5.net.URLEncodedUtils;
 import org.apache.spark.SparkConf;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import scala.Tuple2;
 
@@ -49,13 +53,16 @@ public class ArgumentParser {
 
   @Builder.Default private Optional<TransportConfig> transportConfig = Optional.empty();
   @Builder.Default private Optional<String> transportMode = Optional.empty();
+  @Builder.Default private OpenLineageYaml openLineageYaml = new OpenLineageYaml();
+  
 
-  public static void extractOpenlineageConfFromSparkConf(SparkConf conf) {
+  public static OpenLineageYaml extractOpenlineageConfFromSparkConf(SparkConf conf) {
     Tuple2<String, String>[] olconf = conf.getAllWithPrefix("spark.openlineage");
     JSONObject jsonObject = new JSONObject();
     for(Tuple2<String, String> tuple: olconf){
       JSONObject temp = jsonObject;
-      String[] jpath = tuple._1.split(".");
+      String keyString = tuple._1.substring(1, tuple._1.length());
+      String[] jpath = keyString.split("\\.");
       Iterator<String> iter = Arrays.stream(jpath).iterator();
       boolean leaf = false;
       while(!leaf){
@@ -67,12 +74,21 @@ public class ArgumentParser {
           temp = temp.getJSONObject(key);
         }
         else{
-          temp.put(key, tuple._2);
+          if(keyString.equals("facets.disabled")) {
+            JSONArray jsonArray = new JSONArray();
+
+            Arrays.stream(tuple._2.split(";")).forEach(jsonArray::put);
+            temp.put(key, jsonArray);
+          }
+          else{
+            temp.put(key, tuple._2);
+            
+          }
           leaf = true;
         }
       }
     }
-    InputStream is = new ByteArrayInputStream(jsonObject.toString().getBytes());
+    return OpenLineageClientUtils.loadOpenLineageYaml(new ByteArrayInputStream(jsonObject.toString().getBytes()));
   }
 
   public static void parse(ArgumentParserBuilder builder, String clientUrl) {

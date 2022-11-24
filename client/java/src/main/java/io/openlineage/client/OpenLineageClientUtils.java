@@ -9,6 +9,7 @@ import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKN
 
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,6 +20,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -34,6 +36,7 @@ public final class OpenLineageClientUtils {
   private static final ObjectMapper MAPPER = newObjectMapper();
 
   private static final ObjectMapper YML = new ObjectMapper(new YAMLFactory());
+  private static final ObjectMapper JSON = new ObjectMapper(new JsonFactory());
 
   @JsonFilter("disabledFacets")
   public class DisabledFacetsMixin {}
@@ -125,6 +128,14 @@ public final class OpenLineageClientUtils {
         }
       }
       throw new IllegalArgumentException();
+    } catch (IOException e) {
+      throw new OpenLineageClientException(e);
+    }
+  }
+  
+  public static OpenLineageYaml loadOpenLineageYaml(InputStream inputStream) {
+    try {
+      return JSON.readValue(inputStream, OpenLineageYaml.class);
     } catch (IOException e) {
       throw new OpenLineageClientException(e);
     }

@@ -16,6 +16,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import io.openlineage.client.OpenLineageClient;
+import io.openlineage.client.OpenLineageYaml;
+import io.openlineage.client.transports.FacetsConfig;
+import io.openlineage.client.transports.TransportConfig;
 import org.apache.spark.SparkConf;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -223,8 +227,13 @@ class ArgumentParserTest {
             .set("spark.openlineage.transport.url", "http://localhost:5050")
             .set("spark.openlineage.transport.endpoint", "api/v1/lineage")
             .set("spark.openlineage.transport.auth.type", "api_key")
-            .set("spark.openlineage.transport.auth.api_key", "random_token")
+            .set("spark.openlineage.transport.auth.apiKey", "random_token")
             .set("spark.openlineage.facets.disabled", "facet1;facet2");
-    ArgumentParser.extractOpenlineageConfFromSparkConf(sparkConf);
+    OpenLineageYaml openLineageYaml = ArgumentParser.extractOpenlineageConfFromSparkConf(sparkConf);
+    FacetsConfig facetsConfig = openLineageYaml.getFacetsConfig();
+    TransportConfig transportConfig = openLineageYaml.getTransportConfig();
+//    OpenLineageClient openLineageClient = new OpenLineageClient()
+    
+    assertEquals(1,1);
   }
 }
