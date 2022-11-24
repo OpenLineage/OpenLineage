@@ -77,7 +77,7 @@ public class EventEmitter {
 
     this.client =
         OpenLineageClient.builder()
-            .disableFacets(argument.getDisabledFacets())
+            .disableFacets(argument.getDEFAULT_DISABLED_FACETS())
             .transport(builder.build())
             .build();
     log.debug(

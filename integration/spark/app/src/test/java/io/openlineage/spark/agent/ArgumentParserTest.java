@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import io.openlineage.client.OpenLineageClient;
 import io.openlineage.client.OpenLineageYaml;
 import io.openlineage.client.transports.FacetsConfig;
 import io.openlineage.client.transports.TransportConfig;
@@ -203,10 +202,10 @@ class ArgumentParserTest {
   void testGetDisabledFacets() {
     ArgumentParser.ArgumentParserBuilder builder = new ArgumentParser.ArgumentParserBuilder();
     builder.host("host");
-    builder.disabledFacets("spark_unknown;spark.logicalPlan");
+    builder.DEFAULT_DISABLED_FACETS("spark_unknown;spark.logicalPlan");
     ArgumentParser parser = builder.build();
 
-    assertThat(parser.getDisabledFacets())
+    assertThat(parser.getDEFAULT_DISABLED_FACETS())
         .contains("spark_unknown")
         .contains("spark.logicalPlan")
         .hasSize(2);
@@ -217,7 +216,7 @@ class ArgumentParserTest {
     ArgumentParser.ArgumentParserBuilder builder = new ArgumentParser.ArgumentParserBuilder();
     ArgumentParser parser = builder.build();
 
-    assertThat(parser.getDisabledFacets()).contains("spark_unknown").hasSize(1);
+    assertThat(parser.getDEFAULT_DISABLED_FACETS()).contains("spark_unknown").hasSize(1);
   }
 
   @Test

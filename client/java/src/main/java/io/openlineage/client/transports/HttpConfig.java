@@ -18,7 +18,7 @@ import lombok.With;
 @AllArgsConstructor
 @ToString
 @With
-public final class HttpConfig implements TransportConfig {
+public final class HttpConfig extends TransportConfig {
   @Getter @Setter private URI url;
   @Getter @Setter private @Nullable String endpoint;
   @Getter @Setter private @Nullable Double timeout;

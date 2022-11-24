@@ -11,6 +11,10 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.Map;
+import java.util.Properties;
 
 @Slf4j
 public final class KafkaTransport extends Transport {
@@ -19,7 +23,13 @@ public final class KafkaTransport extends Transport {
   private final KafkaProducer<String, String> producer;
 
   public KafkaTransport(@NonNull final KafkaConfig kafkaConfig) {
-    this(new KafkaProducer<>(kafkaConfig.getProperties()), kafkaConfig);
+    this(new KafkaProducer<>(getProperties(kafkaConfig)), kafkaConfig);
+  }
+
+  private static Properties getProperties(@NotNull KafkaConfig kafkaConfig) {
+    Properties properties = new Properties();
+    properties.putAll(kafkaConfig.getProperties());
+    return properties;
   }
 
   public KafkaTransport(

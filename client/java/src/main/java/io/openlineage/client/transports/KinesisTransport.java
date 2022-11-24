@@ -17,6 +17,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClientUtils;
 import java.nio.ByteBuffer;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import lombok.NonNull;
@@ -49,8 +50,10 @@ public class KinesisTransport extends Transport {
     this.region = kinesisConfig.getRegion();
     this.roleArn = kinesisConfig.getRoleArn();
 
+    Properties properties = new Properties();
+    properties.putAll(kinesisConfig.getProperties());
     KinesisProducerConfiguration config =
-        KinesisProducerConfiguration.fromProperties(kinesisConfig.getProperties());
+        KinesisProducerConfiguration.fromProperties(properties);
     config.setRegion(this.region);
     roleArn.ifPresent(
         s ->

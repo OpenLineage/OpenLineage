@@ -7,14 +7,11 @@ package io.openlineage.spark.agent;
 
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.OpenLineageYaml;
-import io.openlineage.client.transports.TransportConfig;
 
 import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -35,24 +32,29 @@ import scala.Tuple2;
 @ToString
 @Builder
 public class ArgumentParser {
-  public static final Set<String> namedParams =
-      new HashSet<>(Arrays.asList("timeout", "api_key", "app_name"));
-  public static final String disabledFacetsSeparator = ";";
+  
+  public static final String SPARK_CONF_NAMESPACE = "openlineage.namespace";
+  public static final String SPARK_CONF_JOB_NAME = "openlineage.parentJobName";
+  public static final String SPARK_CONF_PARENT_RUN_ID = "openlineage.parentRunId";
+  public static final String SPARK_CONF_URL_PARAM_PREFIX = "openlineage.url.param";
+  private static final String SPARK_CONF_APP_NAME = "openlineage.appName";
+  
+  private static final String FACETS_PREFIX = "spark.openlineage.transport";
+  private static final String TRANSPORT_PREFIX = "spark.openlineage.transport";  
+  private static final String OPENLINEAGE_PREFIX = "spark.openlineage";
 
-  @Builder.Default private String host = "";
-  @Builder.Default private String version = "v1";
+  public static final String DISABLED_FACETS_SEPARATOR = ";";
+  public static final Set<String> NAMED_PARAMS =
+      new HashSet<>(Arrays.asList("timeout", "api_key", "app_name"));
+  
+
+
   @Builder.Default private String namespace = "default";
   @Builder.Default private String jobName = "default";
   @Builder.Default private String parentRunId = null;
-  @Builder.Default private Optional<Double> timeout = Optional.empty();
-  @Builder.Default private Optional<String> apiKey = Optional.empty();
-  @Builder.Default private Optional<String> appName = Optional.empty();
-  @Builder.Default private Optional<Map<String, String>> urlParams = Optional.empty();
-  @Builder.Default private String disabledFacets = "spark_unknown";
-  @Builder.Default private boolean consoleMode = false;
+  @Builder.Default private String appName = null;
+  @Builder.Default private String DEFAULT_DISABLED_FACETS = "spark_unknown";
 
-  @Builder.Default private Optional<TransportConfig> transportConfig = Optional.empty();
-  @Builder.Default private Optional<String> transportMode = Optional.empty();
   @Builder.Default private OpenLineageYaml openLineageYaml = new OpenLineageYaml();
   
 
@@ -76,7 +78,6 @@ public class ArgumentParser {
         else{
           if(keyString.equals("facets.disabled")) {
             JSONArray jsonArray = new JSONArray();
-
             Arrays.stream(tuple._2.split(";")).forEach(jsonArray::put);
             temp.put(key, jsonArray);
           }
@@ -163,14 +164,10 @@ public class ArgumentParser {
     return param;
   }
 
-  public String[] getDisabledFacets() {
-    return disabledFacets.split(disabledFacetsSeparator);
-  }
-
   private static Optional<Map<String, String>> getUrlParams(List<NameValuePair> nameValuePairList) {
     final Map<String, String> urlParams = new HashMap<String, String>();
     nameValuePairList.stream()
-        .filter(pair -> !namedParams.contains(pair.getName()))
+        .filter(pair -> !NAMED_PARAMS.contains(pair.getName()))
         .forEach(pair -> urlParams.put(pair.getName(), pair.getValue()));
 
     return urlParams.isEmpty() ? Optional.empty() : Optional.ofNullable(urlParams);
