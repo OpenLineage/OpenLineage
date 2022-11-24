@@ -310,7 +310,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
         .appName(findSparkConfigKey(conf, SPARK_CONF_APP_NAME).filter(str -> !str.isEmpty()))
         .urlParams(findSparkUrlParams(conf, SPARK_CONF_URL_PARAM_PREFIX));
 
-    findSparkConfigKey(conf, SPARK_CONF_FACETS_DISABLED).ifPresent(builder::disabledFacets);
+    findSparkConfigKey(conf, SPARK_CONF_FACETS_DISABLED).ifPresent(builder::DEFAULT_DISABLED_FACETS);
     findSparkConfigKey(conf, SPARK_CONF_HOST_KEY).ifPresent(builder::host);
     findSparkConfigKey(conf, SPARK_CONF_API_VERSION_KEY).ifPresent(builder::version);
     findSparkConfigKey(conf, SPARK_CONF_NAMESPACE_KEY).ifPresent(builder::namespace);
