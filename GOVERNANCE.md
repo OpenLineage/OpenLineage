@@ -60,7 +60,7 @@ OpenLineage contributors are members who have actively taken additional steps to
 Being recognized as an OpenLineage contributor is done by nomination of an OpenLineage committers with a majority vote
 of OpenLineage committers to confirm. 
 
-OpenLineage's contributors are recognized in the [contributors list](CONTRIBUTORS.md)
+OpenLineage's contributors are recognized in the [contributors list](CONTRIBUTORS.md).
 
 ### OpenLineage project committers
 
@@ -98,6 +98,7 @@ OpenLineage is currently led by Julien Le Dem.
 ## OpenLineage project meetings
 
 Some meetings are face-to-face, but most are conference calls.  
+
 Attendance at meetings is open to all.  Conference calls can be joined without an explicit invitation.
 However, due to physical security requirements at some of the venues we use,
 it is necessary to ensure you are added to the invitee list of any face-to-face meetings
