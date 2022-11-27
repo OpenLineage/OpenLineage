@@ -31,7 +31,7 @@ extras_require = {
         "mypy>=0.9.6",
         "SQLAlchemy",       # must be set to 1.3.* for airflow tests compatibility
         "Flask-SQLAlchemy",  # must be set to 2.4.* for airflow tests compatibility
-        "pandas-gbq==0.14.1",       # must be set to 0.14.* for airflow tests compatibility
+        "pandas-gbq==0.15.0",       # must be set to 0.14.* for airflow tests compatibility
         "snowflake-connector-python"
     ],
     "airflow": [
