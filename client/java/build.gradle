@@ -64,7 +64,7 @@ dependencies {
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
     implementation 'org.apache.httpcomponents:httpclient:4.5.13'
     implementation 'commons-logging:commons-logging:1.2'
-    implementation 'org.yaml:snakeyaml:1.31'
+    implementation 'org.yaml:snakeyaml:1.33'
     implementation 'org.slf4j:slf4j-api:1.7.36'
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
     compileOnly 'org.apache.kafka:kafka-clients:3.1.0'
