@@ -59,7 +59,7 @@ ext {
     flinkVersionWithScala212 = flinkVersion.contains('1.14') ? "_2.12:$flinkVersion" : ":$flinkVersion"
     assertjVersion = '3.23.1'
     junit5Version = '5.9.1'
-    lombokVersion = '1.18.20'
+    lombokVersion = '1.18.24'
     mockitoVersion = '4.9.0'
     testcontainersVersion = '1.15.3'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
