@@ -1,7 +1,6 @@
 package io.openlineage.spark.agent;
 
 import io.openlineage.client.transports.HttpConfig;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -24,9 +23,19 @@ import java.util.stream.Collectors;
 @Slf4j
 @Getter
 public class UrlParser {
+    
 
+    public static final String SPARK_CONF_HOST = "spark.openlineage.transport.http.host";
+    public static final String SPARK_CONF_API_VERSION = "spark.openlineage.transport.http.version";
+    public static final String SPARK_CONF_TIMEOUT = "spark.openlineage.transport.http.timeout";
+    public static final String SPARK_CONF_API_KEY = "spark.openlineage.transport.http.apiKey";
+    public static final String SPARK_CONF_URL_PARAM_PREFIX = "spark.openlineage.transport.url.param";
+
+    private static final String SPARK_CONF_DISABLED_FACETS = "spark.openlineage.facets.disabled.";
+    private static final String TRANSPORT_PREFIX = "spark.openlineage.transport.";
+    private static final String OPENLINEAGE_PREFIX = "spark.openlineage.";
     public static final Set<String> namedParams =
-            new HashSet<>(Arrays.asList("timeout", "api_key", "app_name"));
+            new HashSet<>(Arrays.asList("timeout", "api_key", "app_name", "disabled"));
     public static final String disabledFacetsSeparator = ";";
 
     public String host = "";
@@ -36,69 +45,36 @@ public class UrlParser {
     public String parentRunId = null;
     public Optional<String> appName = Optional.empty();
 
-    public static ArgumentParser.ArgumentParserBuilder parseUrl(ArgumentParser.ArgumentParserBuilder builder, String clientUrl) {
-        HttpConfig httpConfig = new HttpConfig();
+    public static Map<String,String> parseUrl(String clientUrl) {
         URI uri = URI.create(clientUrl);
         String path = uri.getPath();
         String[] elements = path.split("/");
         List<NameValuePair> nameValuePairList = URLEncodedUtils.parse(uri, StandardCharsets.UTF_8);
-
-        httpConfig.setUrl(uri);
-        httpConfig.setHost(uri.getScheme() + "://" + uri.getAuthority());
-        httpConfig.setTimeout(getTimeout(nameValuePairList));
-        get(elements, "api", 1).ifPresent(httpConfig::setVersion);
-        getNamedStringParameter(nameValuePairList, "app_name").ifPresent(builder::appName);
-        Properties properties = new Properties();
-        Map<String, Map.Entry<String, String>> params = getUrlParams(nameValuePairList)
+        
+        Map<String, String> parsedProperties = new HashMap<>();
+        parsedProperties.put(SPARK_CONF_HOST, uri.getScheme() + "://" + uri.getAuthority());
+        get(elements, "namespaces", 3).ifPresent(p -> parsedProperties.put(ArgumentParser.SPARK_CONF_NAMESPACE, p));
+        get(elements, "jobs", 5).ifPresent(p -> parsedProperties.put(ArgumentParser.SPARK_CONF_JOB_NAME, p));
+        get(elements, "runs", 7).ifPresent(p -> parsedProperties.put(ArgumentParser.SPARK_CONF_PARENT_RUN_ID, p));
+        get(elements, "api", 1).ifPresent(p -> parsedProperties.put(SPARK_CONF_API_VERSION, p));
+        
+        getNamedStringParameter(nameValuePairList, "disabled").ifPresent(p->parsedProperties.put(SPARK_CONF_DISABLED_FACETS, p));
+        getNamedStringParameter(nameValuePairList, "timeout").ifPresent(p->parsedProperties.put(SPARK_CONF_TIMEOUT, p));
+        getNamedStringParameter(nameValuePairList, "api_key").ifPresent(p->parsedProperties.put(SPARK_CONF_API_KEY, p));
+        getNamedStringParameter(nameValuePairList, "app_name").ifPresent(p->parsedProperties.put(ArgumentParser.SPARK_CONF_APP_NAME, p));
+        
+        getUrlParams(nameValuePairList)
                 .orElseGet(HashMap::new)
-                .entrySet().stream()
-                .collect(Collectors.toMap(key -> "transport.http.url.param." + key, value -> value));
-        properties.putAll(params);
-        httpConfig.setProperties(properties);
-
-
-        get(elements, "namespaces", 3).ifPresent(builder::namespace);
-        get(elements, "jobs", 5).ifPresent(builder::jobName);
-        get(elements, "runs", 7).ifPresent(builder::parentRunId);
-
-        builder.transportConfig(httpConfig);
-        return builder;
+                .forEach((key, value) -> parsedProperties.put(SPARK_CONF_URL_PARAM_PREFIX + key, value));
+        return parsedProperties;
     }
-
-    public static UUID getRandomUuid() {
-        return UUID.randomUUID();
-    }
-
+    
     private static Optional<String> getNamedStringParameter(
             List<NameValuePair> nameValuePairList, String name) {
         return Optional.ofNullable(getNamedParameter(nameValuePairList, name))
                 .filter(StringUtils::isNoneBlank);
     }
-
-    private static Double getTimeout(List<NameValuePair> nameValuePairList) {
-        String timeoutString = getNamedParameter(nameValuePairList, "timeout");
-        try {
-            if (StringUtils.isNotBlank(timeoutString)) {
-                return Double.parseDouble(timeoutString);
-            }
-        } catch (NumberFormatException e) {
-            log.warn("Value of timeout is not parsable");
-        }
-        return null;
-    }
-
-    public String getUrlParam(String urlParamName) {
-        String param = null;
-        if (urlParams.isPresent()) {
-            param = urlParams.get().get(urlParamName);
-        }
-        return param;
-    }
-
-    public String[] extractDisabledFacets() {
-        return disabledFacets.split(disabledFacetsSeparator);
-    }
-
+    
     private static Optional<Map<String, String>> getUrlParams(List<NameValuePair> nameValuePairList) {
         final Map<String, String> urlParams = new HashMap<String, String>();
         nameValuePairList.stream()
