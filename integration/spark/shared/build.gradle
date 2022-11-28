@@ -50,7 +50,7 @@ ext {
     sparkVersion = '2.4.8'
     postgresqlVersion = '42.5.0'
     mockitoVersion = '4.9.0'
-    testcontainersVersion = '1.17.5'
+    testcontainersVersion = '1.17.6'
 }
 
 dependencies {
