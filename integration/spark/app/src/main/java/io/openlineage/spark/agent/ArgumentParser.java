@@ -13,6 +13,8 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
+import io.openlineage.client.transports.KinesisConfig;
+import io.openlineage.client.transports.TransportConfig;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -26,29 +28,26 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import scala.Tuple2;
 
+import static io.openlineage.spark.agent.util.SparkConfUtils.findSparkConfigKey;
+import static io.openlineage.spark.agent.util.SparkConfUtils.findSparkConfigKeyDouble;
+import static io.openlineage.spark.agent.util.SparkConfUtils.findSparkConfigKeysStartsWith;
+import static io.openlineage.spark.agent.util.SparkConfUtils.findSparkUrlParams;
+
 @AllArgsConstructor
 @Slf4j
 @Getter
 @ToString
 @Builder
 public class ArgumentParser {
-  
-  public static final String SPARK_CONF_NAMESPACE = "openlineage.namespace";
-  public static final String SPARK_CONF_JOB_NAME = "openlineage.parentJobName";
-  public static final String SPARK_CONF_PARENT_RUN_ID = "openlineage.parentRunId";
-  public static final String SPARK_CONF_URL_PARAM_PREFIX = "openlineage.url.param";
-  private static final String SPARK_CONF_APP_NAME = "openlineage.appName";
-  
-  private static final String FACETS_PREFIX = "spark.openlineage.transport";
-  private static final String TRANSPORT_PREFIX = "spark.openlineage.transport";  
-  private static final String OPENLINEAGE_PREFIX = "spark.openlineage";
 
+  public static final String SPARK_CONF_NAMESPACE = "spark.openlineage.namespace";
+  public static final String SPARK_CONF_JOB_NAME = "spark.openlineage.parentJobName";
+  public static final String SPARK_CONF_PARENT_RUN_ID = "spark.openlineage.parentRunId";
+  public static final String SPARK_CONF_APP_NAME = "spark.openlineage.appName";
   public static final String DISABLED_FACETS_SEPARATOR = ";";
-  public static final Set<String> NAMED_PARAMS =
-      new HashSet<>(Arrays.asList("timeout", "api_key", "app_name"));
+  public static final String SPARK_CONF_TRANSPORT_TYPE = "spark.openlineage.transport.type";
+  public static final String SPARK_CONF_HTTP_URL = "spark.openlineage.transport.http.url";
   
-
-
   @Builder.Default private String namespace = "default";
   @Builder.Default private String jobName = "default";
   @Builder.Default private String parentRunId = null;
@@ -57,14 +56,31 @@ public class ArgumentParser {
 
   @Builder.Default private OpenLineageYaml openLineageYaml = new OpenLineageYaml();
   
+  public static ArgumentParser parse(SparkConf conf){
+    ArgumentParserBuilder builder = ArgumentParser.builder();
+    Optional<String> transportType = findSparkConfigKey(conf, SPARK_CONF_TRANSPORT_TYPE);
+    if (!transportType.isPresent()) { 
+      conf.set(SPARK_CONF_TRANSPORT_TYPE, "console");
+    }
+    
+    if(transportType.orElseGet(()->"console").equals("http")){
+      findSparkConfigKey(conf, SPARK_CONF_HTTP_URL)
+              .ifPresent(url -> UrlParser.parseUrl(url).forEach(conf::set));
+    }
+    findSparkConfigKey(conf, SPARK_CONF_APP_NAME).filter(str -> !str.isEmpty()).ifPresent(builder::appName);
+    findSparkConfigKey(conf, SPARK_CONF_NAMESPACE).ifPresent(builder::namespace);
+    findSparkConfigKey(conf, SPARK_CONF_JOB_NAME).ifPresent(builder::jobName);
+    findSparkConfigKey(conf, SPARK_CONF_PARENT_RUN_ID).ifPresent(builder::parentRunId);
+    
+    return builder.build();
+  }
 
   public static OpenLineageYaml extractOpenlineageConfFromSparkConf(SparkConf conf) {
-    Tuple2<String, String>[] olconf = conf.getAllWithPrefix("spark.openlineage");
+    Tuple2<String, String>[] olconf = conf.getAllWithPrefix("spark.openlineage.");
     JSONObject jsonObject = new JSONObject();
     for(Tuple2<String, String> tuple: olconf){
       JSONObject temp = jsonObject;
-      String keyString = tuple._1.substring(1, tuple._1.length());
-      String[] jpath = keyString.split("\\.");
+      String[] jpath = tuple._1.split("\\.");
       Iterator<String> iter = Arrays.stream(jpath).iterator();
       boolean leaf = false;
       while(!leaf){
@@ -76,7 +92,7 @@ public class ArgumentParser {
           temp = temp.getJSONObject(key);
         }
         else{
-          if(keyString.equals("facets.disabled")) {
+          if(tuple._2.contains(";")) {
             JSONArray jsonArray = new JSONArray();
             Arrays.stream(tuple._2.split(";")).forEach(jsonArray::put);
             temp.put(key, jsonArray);
@@ -90,105 +106,5 @@ public class ArgumentParser {
       }
     }
     return OpenLineageClientUtils.loadOpenLineageYaml(new ByteArrayInputStream(jsonObject.toString().getBytes()));
-  }
-
-  public static void parse(ArgumentParserBuilder builder, String clientUrl) {
-    URI uri = URI.create(clientUrl);
-    String path = uri.getPath();
-    String[] elements = path.split("/");
-    List<NameValuePair> nameValuePairList = URLEncodedUtils.parse(uri, StandardCharsets.UTF_8);
-
-    builder
-        .host(uri.getScheme() + "://" + uri.getAuthority())
-        .timeout(getTimeout(nameValuePairList))
-        .apiKey(getNamedStringParameter(nameValuePairList, "api_key"))
-        .appName(getNamedStringParameter(nameValuePairList, "app_name"))
-        .urlParams(getUrlParams(nameValuePairList))
-        .consoleMode(false);
-
-    get(elements, "api", 1).ifPresent(builder::version);
-    get(elements, "namespaces", 3).ifPresent(builder::namespace);
-    get(elements, "jobs", 5).ifPresent(builder::jobName);
-    get(elements, "runs", 7).ifPresent(builder::parentRunId);
-  }
-
-  public static ArgumentParserBuilder builder() {
-    return new ArgumentParserBuilder() {
-      @Override
-      public ArgumentParser build() {
-        ArgumentParser argumentParser = super.build();
-        log.info(
-            String.format(
-                "%s/api/%s/namespaces/%s/jobs/%s/runs/%s",
-                argumentParser.getHost(),
-                argumentParser.getVersion(),
-                argumentParser.getNamespace(),
-                argumentParser.getJobName(),
-                argumentParser.getParentRunId()));
-        return argumentParser;
-      }
-    };
-  }
-
-  public static UUID getRandomUuid() {
-    return UUID.randomUUID();
-  }
-
-  private static Optional<String> getNamedStringParameter(
-      List<NameValuePair> nameValuePairList, String name) {
-    return Optional.ofNullable(getNamedParameter(nameValuePairList, name))
-        .filter(StringUtils::isNoneBlank);
-  }
-
-  private static Optional<Double> getTimeout(List<NameValuePair> nameValuePairList) {
-    return Optional.ofNullable(
-        ArgumentParser.extractTimeout(getNamedParameter(nameValuePairList, "timeout")));
-  }
-
-  private static Double extractTimeout(String timeoutString) {
-    try {
-      if (StringUtils.isNotBlank(timeoutString)) {
-        return Double.parseDouble(timeoutString);
-      }
-    } catch (NumberFormatException e) {
-      log.warn("Value of timeout is not parsable");
-    }
-    return null;
-  }
-
-  public String getUrlParam(String urlParamName) {
-    String param = null;
-    if (urlParams.isPresent()) {
-      param = urlParams.get().get(urlParamName);
-    }
-    return param;
-  }
-
-  private static Optional<Map<String, String>> getUrlParams(List<NameValuePair> nameValuePairList) {
-    final Map<String, String> urlParams = new HashMap<String, String>();
-    nameValuePairList.stream()
-        .filter(pair -> !NAMED_PARAMS.contains(pair.getName()))
-        .forEach(pair -> urlParams.put(pair.getName(), pair.getValue()));
-
-    return urlParams.isEmpty() ? Optional.empty() : Optional.ofNullable(urlParams);
-  }
-
-  protected static String getNamedParameter(List<NameValuePair> nameValuePairList, String param) {
-    for (NameValuePair nameValuePair : nameValuePairList) {
-      if (nameValuePair.getName().equalsIgnoreCase(param)) {
-        return nameValuePair.getValue();
-      }
-    }
-    return null;
-  }
-
-  private static Optional<String> get(String[] elements, String name, int index) {
-    boolean check = elements.length > index + 1 && name.equals(elements[index]);
-    if (check) {
-      return Optional.of(elements[index + 1]);
-    } else {
-      log.warn("missing " + name + " in " + Arrays.toString(elements) + " at " + index);
-      return Optional.empty();
-    }
   }
 }
