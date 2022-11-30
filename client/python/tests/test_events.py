@@ -8,6 +8,7 @@ from typing import Optional, List
 import attr
 import pytest
 
+from openlineage.client.run import RunState
 from openlineage.client.serde import Serde
 from openlineage.client import run, facet, set_producer
 
@@ -27,7 +28,7 @@ def get_sorted_json(file_name: str) -> str:
 def test_full_core_event_serializes_properly():
     runEvent = run.RunEvent(
         eventType=run.RunState.START,
-        eventTime='2020-02-01',
+        eventTime='2021-11-03T10:53:52.427343',
         run=run.Run(
             runId='69f4acab-b87d-4fc0-b27b-8ea950370ff3',
             facets={
@@ -62,18 +63,30 @@ def test_run_id_uuid_check():
 
 
 def test_run_event_type_validated():
+    valid_event = run.RunEvent(
+        RunState.START,
+        "2021-11-03T10:53:52.427343",
+        run.Run("69f4acab-b87d-4fc0-b27b-8ea950370ff3", {}),
+        run.Job("default", "name"),
+        "producer"
+    )
     with pytest.raises(ValueError):
         run.RunEvent(
             "asdf",
-            "2020-02-01",
-            run.Run("69f4acab-b87d-4fc0-b27b-8ea950370ff3", {}),
-            run.Job("default", "name"),
-            "producer"
+            valid_event.eventTime,
+            valid_event.run,
+            valid_event.job,
+            valid_event.producer
         )
 
-    # TODO: validate dates
-    # with pytest.raises(ValueError):
-    #     events.RunEvent(events.RunState.START, 1500, events.Run("1500", {}))
+    with pytest.raises(ValueError):
+        run.RunEvent(
+            valid_event.eventType,
+            "2021-11-03",
+            valid_event.run,
+            valid_event.job,
+            valid_event.producer
+        )
 
 
 def test_nominal_time_facet_does_not_require_end_time():

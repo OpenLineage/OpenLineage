@@ -3,6 +3,7 @@
 
 from typing import Dict, List, Optional
 from enum import Enum
+from dateutil import parser
 
 import uuid
 import attr
@@ -69,7 +70,7 @@ class OutputDataset(Dataset):
 @attr.s
 class RunEvent(RedactMixin):
     eventType: RunState = attr.ib(validator=attr.validators.in_(RunState))
-    eventTime: str = attr.ib()  # TODO: validate dates
+    eventTime: str = attr.ib()
     run: Run = attr.ib()
     job: Job = attr.ib()
     producer: str = attr.ib()
@@ -77,3 +78,10 @@ class RunEvent(RedactMixin):
     outputs: Optional[List[Dataset]] = attr.ib(factory=list)    # type: ignore
 
     _skip_redact: List[str] = ['eventType', 'eventTime', 'producer']
+
+    @eventTime.validator
+    def check(self, attribute, value):
+        parser.isoparse(value)
+        if not ("t" in value.lower()):
+            # make sure date-time contains time
+            raise ValueError("Parsed date-time has to contain time: {}".format(value))

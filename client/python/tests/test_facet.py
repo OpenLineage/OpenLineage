@@ -17,7 +17,7 @@ from openlineage.client.run import RunEvent, RunState, Run, Job, Dataset
 
 openlineage_event = {
     "eventType": "START",
-    "eventTime": "2022-11-01",
+    "eventTime": "2021-11-03T10:53:52.427343",
     "job": {
         "namespace": "openlineage",
         "name": "job",
@@ -60,7 +60,7 @@ def test_symlink_dataset_facet():
     client.emit(
         RunEvent(
             RunState.START,
-            "2022-11-01",
+            "2021-11-03T10:53:52.427343",
             Run("69f4acab-b87d-4fc0-b27b-8ea950370ff3"),
             Job("openlineage", "job"),
             "some-producer",
@@ -109,7 +109,7 @@ def test_storage_dataset_facet():
     client.emit(
         RunEvent(
             RunState.START,
-            "2022-11-01",
+            "2021-11-03T10:53:52.427343",
             Run("69f4acab-b87d-4fc0-b27b-8ea950370ff3"),
             Job("openlineage", "job"),
             "some-producer",
@@ -157,7 +157,7 @@ def test_ownership_job_facet():
     client.emit(
         RunEvent(
             RunState.START,
-            "2022-11-01",
+            "2021-11-03T10:53:52.427343",
             Run("69f4acab-b87d-4fc0-b27b-8ea950370ff3"),
             Job(
                 "openlineage",
@@ -204,7 +204,7 @@ def test_dataset_version_dataset_facet():
     client.emit(
         RunEvent(
             RunState.START,
-            "2022-11-01",
+            "2021-11-03T10:53:52.427343",
             Run("69f4acab-b87d-4fc0-b27b-8ea950370ff3"),
             Job(
                 "openlineage",
@@ -253,7 +253,7 @@ def test_lifecycle_state_change_dataset_facet():
     client.emit(
         RunEvent(
             RunState.START,
-            "2022-11-01",
+            "2021-11-03T10:53:52.427343",
             Run("69f4acab-b87d-4fc0-b27b-8ea950370ff3"),
             Job(
                 "openlineage",
@@ -308,7 +308,7 @@ def test_ownership_dataset_facet():
     client.emit(
         RunEvent(
             RunState.START,
-            "2022-11-01",
+            "2021-11-03T10:53:52.427343",
             Run("69f4acab-b87d-4fc0-b27b-8ea950370ff3"),
             Job(
                 "openlineage",
@@ -368,7 +368,7 @@ def test_column_lineage_dataset_facet():
     client.emit(
         RunEvent(
             RunState.START,
-            "2022-11-01",
+            "2021-11-03T10:53:52.427343",
             Run("69f4acab-b87d-4fc0-b27b-8ea950370ff3"),
             Job(
                 "openlineage",
