@@ -59,20 +59,6 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
       Collections.synchronizedMap(new HashMap<>());
   private static final Map<Integer, ExecutionContext> rddExecutionRegistry =
       Collections.synchronizedMap(new HashMap<>());
-
-  public static final String SPARK_CONF_TRANSPORT_TYPE = "openlineage.transport.type";
-  public static final String SPARK_CONF_CONSOLE_TRANSPORT = "openlineage.consoleTransport";
-  public static final String SPARK_CONF_URL_KEY = "openlineage.url";
-  public static final String SPARK_CONF_HOST_KEY = "openlineage.host";
-  public static final String SPARK_CONF_API_VERSION_KEY = "openlineage.version";
-  public static final String SPARK_CONF_NAMESPACE_KEY = "openlineage.namespace";
-  public static final String SPARK_CONF_JOB_NAME_KEY = "openlineage.parentJobName";
-  public static final String SPARK_CONF_PARENT_RUN_ID_KEY = "openlineage.parentRunId";
-  public static final String SPARK_CONF_TIMEOUT = "openlineage.timeout";
-  public static final String SPARK_CONF_API_KEY = "openlineage.apiKey";
-  public static final String SPARK_CONF_URL_PARAM_PREFIX = "openlineage.url.param";
-  private static final String SPARK_CONF_APP_NAME = "openlineage.appName";
-  private static final String SPARK_CONF_FACETS_DISABLED = "openlineage.facets.disabled";
   private static WeakHashMap<RDD<?>, Configuration> outputs = new WeakHashMap<>();
   private static ContextFactory contextFactory;
   private static JobMetricsHolder jobMetrics = JobMetricsHolder.getInstance();
@@ -286,7 +272,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     SparkEnv sparkEnv = SparkEnv$.MODULE$.get();
     if (sparkEnv != null) {
       try {
-        ArgumentParser args = parseConf(sparkEnv.conf());
+        ArgumentParser args = ArgumentParser.parse(sparkEnv.conf());
         contextFactory = new ContextFactory(new EventEmitter(args));
       } catch (URISyntaxException e) {
         log.error("Unable to parse open lineage endpoint. Lineage events will not be collected", e);

@@ -35,23 +35,12 @@ public class EventEmitter {
     this.jobNamespace = argument.getNamespace();
     this.parentJobName = argument.getJobName();
     this.parentRunId = convertToUUID(argument.getParentRunId());
-    this.appName = argument.getAppName();
+    this.appName = Optional.ofNullable(argument.getAppName());
 
-    if (argument.isConsoleMode()) {
-      this.client = new OpenLineageClient(new ConsoleTransport());
-      log.info("Init OpenLineageContext: will output events to console");
-      return;
-    }
-
-    if (argument.getTransportConfig().isPresent()) {
-      this.client =
-          new OpenLineageClient(new TransportFactory(argument.getTransportConfig().get()).build());
-      log.info(
-          String.format(
-              "Init OpenLineageContext: use %s as transport, with config %s",
-              argument.getTransportMode().get(), argument.getTransportConfig().get()));
-      return;
-    }
+    this.client = OpenLineageClient.builder()
+            .transport(new TransportFactory(argument.getOpenLineageYaml().getTransportConfig()).build())
+            .disableFacets(argument.getOpenLineageYaml().getFacetsConfig().getDisabledFacets())
+            .build();
 
     // Extract url parameters other than api_key to append to lineageURI
     String queryParams = null;
