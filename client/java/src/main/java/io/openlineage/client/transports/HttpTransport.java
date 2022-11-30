@@ -24,6 +24,7 @@ import javax.annotation.Nullable;
 import lombok.NonNull;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -69,8 +70,8 @@ public final class HttpTransport extends Transport implements Closeable {
     this.http = httpClient;
     try {
       URI configUri = httpConfig.getUrl();
-      if (configUri.getPath() != null && !configUri.getPath().equals("")) {
-        if (httpConfig.getEndpoint() != null && !httpConfig.getEndpoint().equals("")) {
+      if (StringUtils.isNotBlank(configUri.getPath())) {
+        if (StringUtils.isNotBlank(httpConfig.getEndpoint())) {
           throw new OpenLineageClientException("You can't pass both uri and endpoint parameters.");
         }
         this.uri = httpConfig.getUrl();

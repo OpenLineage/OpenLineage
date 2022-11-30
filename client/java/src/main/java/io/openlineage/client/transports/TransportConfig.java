@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 import java.util.Map;
 
@@ -19,6 +20,7 @@ import java.util.Map;
   @JsonSubTypes.Type(value = KinesisConfig.class, name = "kinesis"),
 })
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
+@ToString
 public abstract class TransportConfig {
     @Getter
     @Setter

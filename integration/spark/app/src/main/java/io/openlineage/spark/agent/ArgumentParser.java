@@ -12,6 +12,7 @@ import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Stream;
 
 import io.openlineage.client.transports.KinesisConfig;
 import io.openlineage.client.transports.TransportConfig;
@@ -46,7 +47,7 @@ public class ArgumentParser {
   public static final String SPARK_CONF_APP_NAME = "spark.openlineage.appName";
   public static final String DISABLED_FACETS_SEPARATOR = ";";
   public static final String SPARK_CONF_TRANSPORT_TYPE = "spark.openlineage.transport.type";
-  public static final String SPARK_CONF_HTTP_URL = "spark.openlineage.transport.http.url";
+  public static final String SPARK_CONF_HTTP_URL = "spark.openlineage.transport.url";
   
   @Builder.Default private String namespace = "default";
   @Builder.Default private String jobName = "default";
@@ -77,11 +78,16 @@ public class ArgumentParser {
 
   public static OpenLineageYaml extractOpenlineageConfFromSparkConf(SparkConf conf) {
     Tuple2<String, String>[] olconf = conf.getAllWithPrefix("spark.openlineage.");
+
     JSONObject jsonObject = new JSONObject();
     for(Tuple2<String, String> tuple: olconf){
       JSONObject temp = jsonObject;
-      String[] jpath = tuple._1.split("\\.");
-      Iterator<String> iter = Arrays.stream(jpath).iterator();
+      Iterator<String> iter;
+      if(tuple._1.startsWith("transport.properties.")){
+        iter = Arrays.asList("transport", "properties", tuple._1.replaceFirst("transport.properties.", "")).iterator();
+      } else {
+        iter = Arrays.stream(tuple._1.split("\\.")).iterator();
+      }
       boolean leaf = false;
       while(!leaf){
         String key = iter.next();

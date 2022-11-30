@@ -25,11 +25,11 @@ import java.util.stream.Collectors;
 public class UrlParser {
     
 
-    public static final String SPARK_CONF_HOST = "spark.openlineage.transport.http.host";
-    public static final String SPARK_CONF_API_VERSION = "spark.openlineage.transport.http.version";
-    public static final String SPARK_CONF_TIMEOUT = "spark.openlineage.transport.http.timeout";
-    public static final String SPARK_CONF_API_KEY = "spark.openlineage.transport.http.apiKey";
-    public static final String SPARK_CONF_URL_PARAM_PREFIX = "spark.openlineage.transport.url.param";
+    public static final String SPARK_CONF_HOST = "spark.openlineage.transport.host";
+    public static final String SPARK_CONF_API_VERSION = "spark.openlineage.transport.version";
+    public static final String SPARK_CONF_TIMEOUT = "spark.openlineage.transport.timeout";
+    public static final String SPARK_CONF_API_KEY = "spark.openlineage.transport.apiKey";
+    public static final String SPARK_CONF_URL_PARAM_PREFIX = "spark.openlineage.transport.properties.url.param";
 
     private static final String SPARK_CONF_DISABLED_FACETS = "spark.openlineage.facets.disabled.";
     private static final String TRANSPORT_PREFIX = "spark.openlineage.transport.";
