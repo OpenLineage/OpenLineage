@@ -34,6 +34,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
+import org.jetbrains.annotations.NotNull;
 
 @Slf4j
 public final class HttpTransport extends Transport implements Closeable {
@@ -69,26 +70,32 @@ public final class HttpTransport extends Transport implements Closeable {
     super(Type.HTTP);
     this.http = httpClient;
     try {
-      URI configUri = httpConfig.getUrl();
-      if (StringUtils.isNotBlank(configUri.getPath())) {
-        if (StringUtils.isNotBlank(httpConfig.getEndpoint())) {
-          throw new OpenLineageClientException("You can't pass both uri and endpoint parameters.");
-        }
-        this.uri = httpConfig.getUrl();
-      } else {
-        String endpoint =
-            httpConfig.getEndpoint() != null && !httpConfig.getEndpoint().equals("")
-                ? httpConfig.getEndpoint()
-                : API_V1 + "/lineage";
-        this.uri =
-            new URIBuilder(httpConfig.getUrl())
-                .setPath(httpConfig.getUrl().getPath() + endpoint)
-                .build();
-      }
+      this.uri = getUri(httpConfig);
     } catch (URISyntaxException e) {
       throw new OpenLineageClientException(e);
     }
     this.tokenProvider = httpConfig.getAuth();
+  }
+
+  private URI getUri(@NotNull HttpConfig httpConfig) throws URISyntaxException {
+    URI url = httpConfig.getUrl();
+    URIBuilder builder = new URIBuilder(url);
+    if (StringUtils.isNotBlank(url.getPath())) {
+      if (StringUtils.isNotBlank(httpConfig.getEndpoint())) {
+        throw new OpenLineageClientException("You can't pass both uri and endpoint parameters.");
+      }
+    } else {
+      String endpoint =
+          StringUtils.isNotBlank(httpConfig.getEndpoint())
+              ? httpConfig.getEndpoint()
+              : API_V1 + "/lineage";
+      builder.setPath(endpoint);
+    }
+    if(httpConfig.getProperties() != null){
+      httpConfig.getProperties().entrySet().stream().filter(e->e.getKey().startsWith("url.param."))
+              .forEach(e->builder.addParameter(e.getKey().replace("url.param.", ""), e.getValue()));
+    }
+    return builder.build();
   }
 
   @Override
