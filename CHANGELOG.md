@@ -2,6 +2,10 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.17.0...HEAD)
 
+### Fixed
+* Spark: databricks improvements to send better events [`#1330`](https://github.com/OpenLineage/OpenLineage/pull/1330) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski) 
+    *Filter unwanted events, provide meaningful job name.*
+
 ## [0.17.0](https://github.com/OpenLineage/OpenLineage/compare/0.16.1...0.17.0) - 2022-11-16
 ### Added
 * Spark: support latest Spark 3.3.1 [`#1183`](https://github.com/OpenLineage/OpenLineage/pull/1183) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  

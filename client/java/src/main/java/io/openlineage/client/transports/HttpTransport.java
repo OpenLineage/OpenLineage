@@ -117,7 +117,11 @@ public final class HttpTransport extends Transport implements Closeable {
   private void throwOnHttpError(@NonNull HttpResponse response) throws IOException {
     final int code = response.getStatusLine().getStatusCode();
     if (code >= 400 && code < 600) { // non-2xx
-      throw new OpenLineageClientException(EntityUtils.toString(response.getEntity(), UTF_8));
+      String message =
+          String.format(
+              "code: %d, response: %s", code, EntityUtils.toString(response.getEntity(), UTF_8));
+
+      throw new OpenLineageClientException(message);
     }
   }
 
