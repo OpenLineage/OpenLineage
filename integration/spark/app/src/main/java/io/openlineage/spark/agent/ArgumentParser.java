@@ -48,6 +48,7 @@ public class ArgumentParser {
   public static final String DISABLED_FACETS_SEPARATOR = ";";
   public static final String SPARK_CONF_TRANSPORT_TYPE = "spark.openlineage.transport.type";
   public static final String SPARK_CONF_HTTP_URL = "spark.openlineage.transport.url";
+  public static final Set<String> PROPERTIES_PREFIXES = new HashSet<>(Arrays.asList("transport.properties", "transport.url.param"
   
   @Builder.Default private String namespace = "default";
   @Builder.Default private String jobName = "default";
@@ -72,7 +73,7 @@ public class ArgumentParser {
     findSparkConfigKey(conf, SPARK_CONF_NAMESPACE).ifPresent(builder::namespace);
     findSparkConfigKey(conf, SPARK_CONF_JOB_NAME).ifPresent(builder::jobName);
     findSparkConfigKey(conf, SPARK_CONF_PARENT_RUN_ID).ifPresent(builder::parentRunId);
-    
+    builder.openLineageYaml(extractOpenlineageConfFromSparkConf(conf));
     return builder.build();
   }
 
@@ -80,6 +81,7 @@ public class ArgumentParser {
     Tuple2<String, String>[] olconf = conf.getAllWithPrefix("spark.openlineage.");
 
     JSONObject jsonObject = new JSONObject();
+    
     for(Tuple2<String, String> tuple: olconf){
       JSONObject temp = jsonObject;
       Iterator<String> iter;
@@ -98,9 +100,9 @@ public class ArgumentParser {
           temp = temp.getJSONObject(key);
         }
         else{
-          if(tuple._2.contains(";")) {
+          if(tuple._2.contains(DISABLED_FACETS_SEPARATOR)) {
             JSONArray jsonArray = new JSONArray();
-            Arrays.stream(tuple._2.split(";")).forEach(jsonArray::put);
+            Arrays.stream(tuple._2.split(DISABLED_FACETS_SEPARATOR)).forEach(jsonArray::put);
             temp.put(key, jsonArray);
           }
           else{

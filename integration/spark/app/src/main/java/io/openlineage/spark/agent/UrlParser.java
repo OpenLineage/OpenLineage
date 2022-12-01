@@ -23,14 +23,12 @@ import java.util.stream.Collectors;
 @Slf4j
 @Getter
 public class UrlParser {
-    
-
-    public static final String SPARK_CONF_HOST = "spark.openlineage.transport.host";
-    public static final String SPARK_CONF_API_VERSION = "spark.openlineage.transport.version";
+    public static final String SPARK_CONF_API_ENDPOINT = "spark.openlineage.transport.endpoint";
     public static final String SPARK_CONF_TIMEOUT = "spark.openlineage.transport.timeout";
-    public static final String SPARK_CONF_API_KEY = "spark.openlineage.transport.apiKey";
+    public static final String SPARK_CONF_API_KEY = "spark.openlineage.transport.auth.apiKey";
+    public static final String SPARK_CONF_AUTH_TYPE = "spark.openlineage.transport.auth.type";
     public static final String SPARK_CONF_URL_PARAM_PREFIX = "spark.openlineage.transport.properties.url.param";
-
+    public static final String SPARK_CONF_HTTP_URL = "spark.openlineage.transport.url";
     private static final String SPARK_CONF_DISABLED_FACETS = "spark.openlineage.facets.disabled.";
     private static final String TRANSPORT_PREFIX = "spark.openlineage.transport.";
     private static final String OPENLINEAGE_PREFIX = "spark.openlineage.";
@@ -52,15 +50,18 @@ public class UrlParser {
         List<NameValuePair> nameValuePairList = URLEncodedUtils.parse(uri, StandardCharsets.UTF_8);
         
         Map<String, String> parsedProperties = new HashMap<>();
-        parsedProperties.put(SPARK_CONF_HOST, uri.getScheme() + "://" + uri.getAuthority());
+        parsedProperties.put(SPARK_CONF_HTTP_URL, uri.getScheme() + "://" + uri.getAuthority());
         get(elements, "namespaces", 3).ifPresent(p -> parsedProperties.put(ArgumentParser.SPARK_CONF_NAMESPACE, p));
         get(elements, "jobs", 5).ifPresent(p -> parsedProperties.put(ArgumentParser.SPARK_CONF_JOB_NAME, p));
         get(elements, "runs", 7).ifPresent(p -> parsedProperties.put(ArgumentParser.SPARK_CONF_PARENT_RUN_ID, p));
-        get(elements, "api", 1).ifPresent(p -> parsedProperties.put(SPARK_CONF_API_VERSION, p));
+        get(elements, "api", 1).ifPresent(p -> parsedProperties.put(SPARK_CONF_API_ENDPOINT, String.format("/api/%s/lineage", p)));
         
         getNamedStringParameter(nameValuePairList, "disabled").ifPresent(p->parsedProperties.put(SPARK_CONF_DISABLED_FACETS, p));
         getNamedStringParameter(nameValuePairList, "timeout").ifPresent(p->parsedProperties.put(SPARK_CONF_TIMEOUT, p));
-        getNamedStringParameter(nameValuePairList, "api_key").ifPresent(p->parsedProperties.put(SPARK_CONF_API_KEY, p));
+        getNamedStringParameter(nameValuePairList, "api_key").ifPresent(p->{
+            parsedProperties.put(SPARK_CONF_API_KEY, p);
+            parsedProperties.put(SPARK_CONF_AUTH_TYPE, "api_key");
+        });
         getNamedStringParameter(nameValuePairList, "app_name").ifPresent(p->parsedProperties.put(ArgumentParser.SPARK_CONF_APP_NAME, p));
         
         getUrlParams(nameValuePairList)
