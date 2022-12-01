@@ -13,7 +13,8 @@ with open("README.md") as readme_file:
 requirements = [
     "attrs>=19.3.0",
     "requests>=2.20.0",
-    "pyyaml>=5.1.0"
+    "pyyaml>=5.1.0",
+    "python-dateutil"
 ]
 
 extras_require = {

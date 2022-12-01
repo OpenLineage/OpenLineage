@@ -5,6 +5,8 @@
 ### Fixed
 * Spark: databricks improvements to send better events [`#1330`](https://github.com/OpenLineage/OpenLineage/pull/1330) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski) 
     *Filter unwanted events, provide meaningful job name.*
+* Python: validate eventTime field in python client [`#1355`](https://github.com/OpenLineage/OpenLineage/pull/1355) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Validate eventTime of a RunEvent within client library.*
 
 ## [0.17.0](https://github.com/OpenLineage/OpenLineage/compare/0.16.1...0.17.0) - 2022-11-16
 ### Added
