@@ -41,6 +41,15 @@ _extractors = list(
             ),
             try_import_from_string(
                 'openlineage.airflow.extractors.sftp_extractor.SFTPExtractor'
+            ),
+            try_import_from_string(
+                'openlineage.airflow.extractors.sagemaker_extractors.SageMakerProcessingExtractor'
+            ),
+            try_import_from_string(
+                'openlineage.airflow.extractors.sagemaker_extractors.SageMakerTrainingExtractor'
+            ),
+            try_import_from_string(
+                'openlineage.airflow.extractors.sagemaker_extractors.SageMakerTransformExtractor'
             )
         ],
     )
