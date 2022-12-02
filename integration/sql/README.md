@@ -24,11 +24,6 @@ curl https://sh.rustup.rs -sSf | sh -s -- -y
 source $HOME/.cargo/env
 ```
 
-Make sure you are in the correct directory.
-```bash
-cd iface-py
-```
-
 You can run Cargo tests then:
 
 ```bash
@@ -39,6 +34,7 @@ To build a Python wheel for your system and architecture, you need a Maturin bui
 It's recommended to install this in a virtualenv.
 
 ```bash
+cd iface-py
 python -m pip install maturin
 maturin build --out target/wheels
 ```
