@@ -40,7 +40,7 @@ python -m pip install maturin
 export CARGO_INCREMENTAL=0
 
 # Run test if indicated to do so.
-if [[ -z ${RUN_TESTS} ]]; then
+if [[ $RUN_TESTS = true ]]; then
   cargo test --no-default-features
 fi
 
