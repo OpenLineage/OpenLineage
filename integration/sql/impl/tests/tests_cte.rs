@@ -54,7 +54,7 @@ fn parse_bugged_cte() {
         )
         .unwrap_err()
         .to_string(),
-        "sql parser error: Expected ), found: user_id"
+        "sql parser error: Expected AS, found: ("
     )
 }
 
