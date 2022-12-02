@@ -129,7 +129,7 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     from javadoc.destinationDir
 }
 
-compileJava.dependsOn tasks.generateCode, tasks.openApiGenerate
+compileJava.dependsOn tasks.generateCode
 
 test {
     useJUnitPlatform()
