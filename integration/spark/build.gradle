@@ -50,7 +50,7 @@ archivesBaseName='openlineage-spark'
 ext {
     lombokVersion = '1.18.20'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
-    jacksonVersion = "2.13.2"
+    jacksonVersion = "2.14.1"
     jacksonDatabindVersion = "2.13.2.2"
 }
 
