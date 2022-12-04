@@ -57,7 +57,7 @@ dependencies {
     }
 
     testRuntimeOnly "org.junit.jupiter:junit-jupiter:5.9.1"
-    testCompileOnly 'org.codehaus.groovy:groovy-all:3.0.8'
+    testCompileOnly 'org.codehaus.groovy:groovy-all:3.0.13'
     testImplementation 'org.spockframework:spock-core:2.0-groovy-3.0'
     testImplementation 'org.awaitility:awaitility:4.2.0'
 
