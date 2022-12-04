@@ -20,7 +20,7 @@ dependencies {
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.13.4'
     implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.13.4.2'
     implementation group: 'com.squareup', name: 'javapoet', version: '1.13.0'
-    implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
+    implementation group: 'org.slf4j', name: 'slf4j-api', version: '2.0.5'
     implementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.25'
 }
 
