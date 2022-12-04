@@ -85,7 +85,7 @@ dependencies {
     implementation "org.apache.avro:avro:1.11.1"
     implementation 'io.confluent:kafka-schema-registry-client:7.2.2'
     implementation 'io.confluent:kafka-avro-serializer:7.0.1'
-    implementation 'com.github.davidmc24.gradle.plugin:gradle-avro-plugin:1.3.0'
+    implementation 'com.github.davidmc24.gradle.plugin:gradle-avro-plugin:1.5.0'
     implementation "org.apache.hadoop:hadoop-hdfs:$hadoopVersion"
     implementation "org.apache.hadoop:hadoop-common:$hadoopVersion"
     implementation("org.apache.hadoop:hadoop-minicluster:$hadoopVersion") {
