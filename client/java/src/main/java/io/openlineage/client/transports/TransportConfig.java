@@ -7,11 +7,6 @@ package io.openlineage.client.transports;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
-
-import java.util.Map;
 
 @JsonSubTypes({
   @JsonSubTypes.Type(value = ConsoleConfig.class, name = "console"),
@@ -20,5 +15,4 @@ import java.util.Map;
   @JsonSubTypes.Type(value = KinesisConfig.class, name = "kinesis"),
 })
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
-public interface TransportConfig {
-}
+public interface TransportConfig {}

@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Collections;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -32,9 +31,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 class HttpTransportTest {
-  
+
   @Test
-  void transportCreatedWithHttpConfig(){
+  void transportCreatedWithHttpConfig() {
     HttpConfig httpConfig = new HttpConfig();
     try {
       httpConfig.setUrl(new URI("http://localhost:5000"));
@@ -53,7 +52,6 @@ class HttpTransportTest {
     } catch (URISyntaxException | NoSuchFieldException | IllegalAccessException e) {
       throw new RuntimeException(e);
     }
-
   }
 
   @Test

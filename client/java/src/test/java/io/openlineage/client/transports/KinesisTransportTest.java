@@ -16,7 +16,6 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClient;
 import java.io.IOException;
 import java.net.URI;
-import java.util.Optional;
 import java.util.Properties;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
