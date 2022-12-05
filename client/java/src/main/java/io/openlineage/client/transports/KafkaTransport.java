@@ -7,12 +7,10 @@ package io.openlineage.client.transports;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClientUtils;
-import java.util.Properties;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.jetbrains.annotations.NotNull;
 
 @Slf4j
 public final class KafkaTransport extends Transport {
