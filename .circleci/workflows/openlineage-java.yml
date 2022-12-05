@@ -42,9 +42,13 @@ workflows:
           context: release
           requires:
             - integration-test-integration-spark
+      - publish-javadoc:
+          filters:
+            branches:
+              only: main
+          context: release
       - workflow_complete:
           requires:
-            - publish-javadoc
             - publish-snapshot-integration-spark
             - integration-test-integration-spark
             - integration-test-integration-flink
