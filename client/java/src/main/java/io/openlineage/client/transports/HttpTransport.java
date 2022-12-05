@@ -91,9 +91,9 @@ public final class HttpTransport extends Transport implements Closeable {
               : API_V1 + "/lineage";
       builder.setPath(endpoint);
     }
-    if(httpConfig.getUrlParams() != null){
+    if (httpConfig.getUrlParams() != null) {
       httpConfig.getUrlParams().entrySet().stream()
-              .forEach(e->builder.addParameter(e.getKey().replace("url.param.", ""), e.getValue()));
+          .forEach(e -> builder.addParameter(e.getKey().replace("url.param.", ""), e.getValue()));
     }
     return builder.build();
   }

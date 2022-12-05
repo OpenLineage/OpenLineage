@@ -16,8 +16,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClientUtils;
 import java.nio.ByteBuffer;
-import java.util.Optional;
-import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import lombok.NonNull;
@@ -53,9 +51,9 @@ public class KinesisTransport extends Transport {
     KinesisProducerConfiguration config =
         KinesisProducerConfiguration.fromProperties(kinesisConfig.getProperties());
     config.setRegion(this.region);
-    if(StringUtils.isNotBlank(roleArn)){
-            config.setCredentialsProvider(
-                new STSAssumeRoleSessionCredentialsProvider.Builder(roleArn, "OLProducer").build());
+    if (StringUtils.isNotBlank(roleArn)) {
+      config.setCredentialsProvider(
+          new STSAssumeRoleSessionCredentialsProvider.Builder(roleArn, "OLProducer").build());
     }
     this.producer = new KinesisProducer(config);
     this.listeningExecutor = Executors.newSingleThreadExecutor();
@@ -82,8 +80,7 @@ public class KinesisTransport extends Transport {
           @Override
           public void onFailure(Throwable t) {
             log.error("Failed to send to Kinesis lineage event: {}", eventAsJson, t);
-          }
-          ;
+          };
         };
 
     Futures.addCallback(future, callback, this.listeningExecutor);

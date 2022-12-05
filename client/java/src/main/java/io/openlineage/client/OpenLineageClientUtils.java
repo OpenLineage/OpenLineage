@@ -132,7 +132,7 @@ public final class OpenLineageClientUtils {
       throw new OpenLineageClientException(e);
     }
   }
-  
+
   public static OpenLineageYaml loadOpenLineageYaml(InputStream inputStream) {
     try {
       return JSON.readValue(inputStream, OpenLineageYaml.class);

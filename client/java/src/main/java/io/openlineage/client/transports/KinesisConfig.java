@@ -5,7 +5,6 @@
 
 package io.openlineage.client.transports;
 
-import java.util.Optional;
 import java.util.Properties;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,6 +21,4 @@ public final class KinesisConfig implements TransportConfig {
   // check
   // https://github.com/awslabs/amazon-kinesis-producer/blob/master/java/amazon-kinesis-producer-sample/default_config.properties
   @Getter @Setter private Properties properties;
-  
-  
 }

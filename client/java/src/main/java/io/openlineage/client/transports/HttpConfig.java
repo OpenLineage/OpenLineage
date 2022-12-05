@@ -7,7 +7,6 @@ package io.openlineage.client.transports;
 
 import java.net.URI;
 import java.util.Map;
-import java.util.Properties;
 import javax.annotation.Nullable;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
