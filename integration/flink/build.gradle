@@ -80,7 +80,7 @@ dependencies {
 
     implementation("io.openlineage:openlineage-java:${project.version}")
     implementation 'org.javassist:javassist:3.29.2-GA'
-    implementation 'org.apache.httpcomponents.client5:httpclient5:5.0.3'
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.2'
 
     testImplementation "org.apache.flink:flink-java:$flinkVersion"
     testImplementation "org.apache.flink:flink-streaming-java$flinkVersionWithScala212"
