@@ -6,7 +6,9 @@
 package io.openlineage.client.transports;
 
 import static io.openlineage.client.Events.event;
+import static java.util.Collections.singletonMap;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
@@ -18,6 +20,7 @@ import static org.mockito.Mockito.when;
 import io.openlineage.client.OpenLineageClient;
 import io.openlineage.client.OpenLineageClientException;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
@@ -30,21 +33,27 @@ import org.mockito.ArgumentCaptor;
 
 class HttpTransportTest {
   
-  @Test transportCreatedWithHttpConfig(){
+  @Test
+  void transportCreatedWithHttpConfig(){
     HttpConfig httpConfig = new HttpConfig();
     try {
       httpConfig.setUrl(new URI("http://localhost:5000"));
-    httpConfig.setEndpoint("/api/v1/lineage");
-    httpConfig.setTimeout(5000.0);
-    ApiKeyTokenProvider auth = new ApiKeyTokenProvider();
-    auth.setApiKey("test");
-    httpConfig.setAuth(auth);
-    HttpTransport httpTransport = new HttpTransport(httpConfig);
-    httpTransport.getClass().getDeclaredField("")
-    } catch (URISyntaxException e) {
+      httpConfig.setEndpoint("/api/v1/lineage");
+      httpConfig.setTimeout(5000.0);
+      httpConfig.setUrlParams(singletonMap("param", "value"));
+      ApiKeyTokenProvider auth = new ApiKeyTokenProvider();
+      auth.setApiKey("test");
+      httpConfig.setAuth(auth);
+      HttpTransport httpTransport = new HttpTransport(httpConfig);
+      Field uri = httpTransport.getClass().getDeclaredField("uri");
+      uri.setAccessible(true);
+      String target = uri.get(httpTransport).toString();
+      assertEquals("http://localhost:5000/api/v1/lineage?param=value", target);
+
+    } catch (URISyntaxException | NoSuchFieldException | IllegalAccessException e) {
       throw new RuntimeException(e);
     }
-    
+
   }
 
   @Test
@@ -164,7 +173,7 @@ class HttpTransportTest {
     CloseableHttpClient http = mock(CloseableHttpClient.class);
     Transport transport =
         HttpTransport.builder()
-            .uri("http://localhost:1500", Collections.singletonMap("param", "value"))
+            .uri("http://localhost:1500", singletonMap("param", "value"))
             .http(http)
             .apiKey("apiKey")
             .build();
