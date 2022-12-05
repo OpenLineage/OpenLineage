@@ -44,6 +44,7 @@ workflows:
             - integration-test-integration-spark
       - workflow_complete:
           requires:
+            - publish-javadoc
             - publish-snapshot-integration-spark
             - integration-test-integration-spark
             - integration-test-integration-flink
