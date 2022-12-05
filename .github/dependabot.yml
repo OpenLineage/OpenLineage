@@ -45,6 +45,13 @@ updates:
     schedule:
       interval: "weekly"
       day: "sunday"
+    ignore:
+      - dependency-name: "jackson-databind"
+      - dependency-name: "jackson-core"
+      - dependency-name: "jackson-annotations"
+      - dependency-name: "jackson-dataformat-yaml"
+      - dependency-name: "jackson-datatype-jdk8"
+      - dependency-name: "jackson-datatype-jsr310"
     labels:
       - "dependencies"
       - "dependabot"
