@@ -134,7 +134,7 @@ def test_get_connection_filter_qs_params_with_extra_prefix():
 
 
 @mock.patch('openlineage.airflow.extractors.sql_extractor.get_table_schemas')  # noqa
-@mock.patch('openlineage.airflow.extractors.sql_extractor.get_connection')
+@mock.patch("airflow.hooks.base.BaseHook.get_connection")
 @mock.patch('openlineage.airflow.extractors.snowflake_extractor.execute_query_on_hook')
 def test_extract(execute_query_on_hook, get_connection, mock_get_table_schemas):
     source = Source(
@@ -177,7 +177,7 @@ def test_extract(execute_query_on_hook, get_connection, mock_get_table_schemas):
 
 
 @mock.patch('openlineage.airflow.extractors.sql_extractor.get_table_schemas')  # noqa
-@mock.patch('openlineage.airflow.extractors.sql_extractor.get_connection')
+@mock.patch("airflow.hooks.base.BaseHook.get_connection")
 @mock.patch('openlineage.airflow.extractors.snowflake_extractor.execute_query_on_hook')
 def test_extract_query_ids(execute_query_on_hook, get_connection, mock_get_table_schemas):
     mock_get_table_schemas.return_value = (
@@ -199,7 +199,7 @@ def test_extract_query_ids(execute_query_on_hook, get_connection, mock_get_table
     assert task_metadata.run_facets["externalQuery"].externalQueryId == "1500100900"
 
 
-@mock.patch("openlineage.airflow.extractors.sql_extractor.get_connection")
+@mock.patch("airflow.hooks.base.BaseHook.get_connection")
 def test_information_schema_query(get_connection):
     extractor = SnowflakeExtractor(TASK)
 

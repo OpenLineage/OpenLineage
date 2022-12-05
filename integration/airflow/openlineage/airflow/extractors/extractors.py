@@ -7,6 +7,10 @@ from typing import Type, Optional
 from openlineage.airflow.extractors.base import BaseExtractor, DefaultExtractor
 from openlineage.airflow.utils import import_from_string, try_import_from_string
 from openlineage.airflow.extractors.sql_check_extractors import get_check_extractors
+from openlineage.airflow.extractors.sql_execute_query import (
+    sql_extractors,
+    get_sql_execute_query_extractor,
+)
 
 _extractors = list(
     filter(
@@ -126,6 +130,7 @@ class Extractors:
         return None
 
     def instantiate_abstract_extractors(self, task) -> None:
+        # instantiate sql check extractors
         from airflow.hooks.base import BaseHook
 
         if task.__class__.__name__ in (
@@ -152,4 +157,16 @@ class Extractors:
                     "Extractor for the given task's conn_type (%s) does not exist.",
                     task_conn_type
                 )
+
+        # instantiate sql execute query extractor
+        if task.__class__.__name__ == "SQLExecuteQueryOperator":
+            task_conn_type = BaseHook.get_connection(task.conn_id).conn_type
+            extractor_name = sql_extractors.get(task_conn_type, None)
+            extractor = list(
+                filter(lambda x: x.__name__ == extractor_name, self.extractors.values())
+            )
+            if extractor:
+                self.extractors[
+                    "SQLExecuteQueryOperator"
+                ] = get_sql_execute_query_extractor(extractor[0])
         return

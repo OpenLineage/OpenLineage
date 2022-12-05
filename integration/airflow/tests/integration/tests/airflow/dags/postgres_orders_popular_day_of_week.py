@@ -1,10 +1,12 @@
 # Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 from airflow import DAG
+from airflow.version import version as AIRFLOW_VERSION
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.utils.dates import days_ago
 
 from openlineage.client import set_producer
+from pkg_resources import parse_version
 set_producer("https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow")
 
 
@@ -39,13 +41,21 @@ dag = DAG(
     description='Determines the popular day of week orders are placed.'
 )
 
-
-t1 = PostgresOperator(
-    task_id='postgres_if_not_exists',
-    postgres_conn_id='food_delivery_db',
-    sql="{{ get_sql() }}",
-    dag=dag
-)
+if parse_version(AIRFLOW_VERSION) < parse_version('2.5.0'):
+    t1 = PostgresOperator(    
+        task_id='postgres_if_not_exists',
+        postgres_conn_id='food_delivery_db',
+        sql="{{ get_sql() }}",
+        dag=dag
+    )
+else:
+    from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
+    t1 = SQLExecuteQueryOperator(
+        task_id='postgres_if_not_exists',
+        conn_id='food_delivery_db',
+        sql="{{ get_sql() }}",
+        dag=dag
+    )
 
 t2 = PostgresOperator(
     task_id='postgres_insert',

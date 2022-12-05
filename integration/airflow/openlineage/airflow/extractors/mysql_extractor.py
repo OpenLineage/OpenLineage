@@ -42,9 +42,6 @@ class MySqlExtractor(SqlExtractor):
             parsed = urlparse(self.conn.get_uri())
             return f"{parsed.hostname}:{parsed.port}"
 
-    def _conn_id(self):
-        return self.operator.mysql_conn_id
-
     def _get_hook(self):
         MySqlHook = try_import_from_string("airflow.providers.mysql.hooks.mysql.MySqlHook")
         return MySqlHook(

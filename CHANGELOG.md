@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.17.0...HEAD)
+### Added
+* Airflow: support SQLExecuteQueryOperator [`#1379`](https://github.com/OpenLineage/OpenLineage/pull/1379) [@JDarDagran](https://github.com/JDarDagran) 
 
 ### Fixed
 * Spark: databricks improvements to send better events [`#1330`](https://github.com/OpenLineage/OpenLineage/pull/1330) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski) 

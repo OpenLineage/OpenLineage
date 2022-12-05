@@ -76,6 +76,19 @@ def test_instantiate_abstract_extractors(mock_hook):
     assert sql_check_extractor._get_scheme() == "postgres"
 
 
+@patch.object(BaseHook, "get_connection", return_value=Connection(conn_id="postgres_default", conn_type="postgres"))  # noqa
+def test_instantiate_abstract_extractors_sql_execute(mock_hook):
+    class SQLExecuteQueryOperator:
+        conn_id = "postgres_default"
+
+    extractors = Extractors()
+    extractors.instantiate_abstract_extractors(task=SQLExecuteQueryOperator())
+    sql_check_extractor = extractors.extractors["SQLExecuteQueryOperator"](
+        "SQLExecuteQueryOperator"
+    )
+    assert sql_check_extractor._get_scheme() == "postgres"
+
+
 @patch('airflow.models.connection.Connection')
 @patch.object(BaseHook, "get_connection", return_value=Connection(conn_id="notimplemented", conn_type="notimplementeddb"))  # noqa
 def test_instantiate_abstract_extractors_value_error(mock_hook, mock_conn):
