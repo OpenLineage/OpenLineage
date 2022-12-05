@@ -20,9 +20,5 @@ import java.util.Map;
   @JsonSubTypes.Type(value = KinesisConfig.class, name = "kinesis"),
 })
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
-@ToString
-public abstract class TransportConfig {
-    @Getter
-    @Setter
-    protected Map<String, String> properties;
+public interface TransportConfig {
 }

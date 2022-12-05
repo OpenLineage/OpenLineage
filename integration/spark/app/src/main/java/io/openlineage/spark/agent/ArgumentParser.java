@@ -48,7 +48,7 @@ public class ArgumentParser {
   public static final String DISABLED_FACETS_SEPARATOR = ";";
   public static final String SPARK_CONF_TRANSPORT_TYPE = "spark.openlineage.transport.type";
   public static final String SPARK_CONF_HTTP_URL = "spark.openlineage.transport.url";
-  public static final Set<String> PROPERTIES_PREFIXES = new HashSet<>(Arrays.asList("transport.properties", "transport.url.param"
+  public static final Set<String> PROPERTIES_PREFIXES = new HashSet<>(Arrays.asList("transport.properties.", "transport.url.param."));
   
   @Builder.Default private String namespace = "default";
   @Builder.Default private String jobName = "default";
@@ -81,36 +81,32 @@ public class ArgumentParser {
     Tuple2<String, String>[] olconf = conf.getAllWithPrefix("spark.openlineage.");
 
     JSONObject jsonObject = new JSONObject();
-    
-    for(Tuple2<String, String> tuple: olconf){
+    for(Tuple2<String, String> c: olconf) {
       JSONObject temp = jsonObject;
-      Iterator<String> iter;
-      if(tuple._1.startsWith("transport.properties.")){
-        iter = Arrays.asList("transport", "properties", tuple._1.replaceFirst("transport.properties.", "")).iterator();
-      } else {
-        iter = Arrays.stream(tuple._1.split("\\.")).iterator();
+      String keyPath = c._1;
+      String value = c._2;
+      Optional<String> propertyPath = PROPERTIES_PREFIXES.stream().filter(keyPath::startsWith).findAny();
+      List<String> pathKeys = propertyPath.map(s -> {
+                List<String> path = new ArrayList<>(Arrays.asList(s.split("\\.")));
+                path.add(keyPath.replaceFirst(s, ""));
+                return path;
+      })
+              .orElseGet(() -> Arrays.asList(keyPath.split("\\.")));
+      List<String> nonLeafs = pathKeys.subList(0, pathKeys.size() -1);
+      String leaf = pathKeys.get(pathKeys.size() - 1);
+      for(String node: nonLeafs){
+        if(!temp.has(node)){
+          temp.put(node, new JSONObject());
+        }
+        temp = temp.getJSONObject(node);
       }
-      boolean leaf = false;
-      while(!leaf){
-        String key = iter.next();
-        if(iter.hasNext()){
-          if(!temp.has(key)){
-            temp.put(key, new JSONObject());
-          }
-          temp = temp.getJSONObject(key);
-        }
-        else{
-          if(tuple._2.contains(DISABLED_FACETS_SEPARATOR)) {
-            JSONArray jsonArray = new JSONArray();
-            Arrays.stream(tuple._2.split(DISABLED_FACETS_SEPARATOR)).forEach(jsonArray::put);
-            temp.put(key, jsonArray);
-          }
-          else{
-            temp.put(key, tuple._2);
-            
-          }
-          leaf = true;
-        }
+      if(value.contains(DISABLED_FACETS_SEPARATOR)) {
+        JSONArray jsonArray = new JSONArray();
+        Arrays.stream(value.split(DISABLED_FACETS_SEPARATOR)).forEach(jsonArray::put);
+        temp.put(leaf, jsonArray);
+      }
+      else{
+        temp.put(leaf, value);
       }
     }
     return OpenLineageClientUtils.loadOpenLineageYaml(new ByteArrayInputStream(jsonObject.toString().getBytes()));
