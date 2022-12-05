@@ -7,14 +7,14 @@ import os
 import sys
 from typing import List
 
-from pkg_resources import parse_version
-
 import psycopg2
 import time
 import requests
+from pkg_resources import parse_version
 from retrying import retry
 import pytest
 import unittest
+
 from openlineage.common.test import match, setup_jinja
 
 env = setup_jinja()

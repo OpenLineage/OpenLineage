@@ -12,6 +12,7 @@ from uuid import uuid4
 from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
 from typing import Optional
 from airflow.models import DAG as AIRFLOW_DAG
+from pkg_resources import parse_version
 
 from openlineage.airflow.facets import (
     AirflowMappedTaskRunFacet,
@@ -396,3 +397,10 @@ class LoggingMixin:
                 "openlineage.airflow.extractors."
                 f"{self.__class__.__module__}.{self.__class__.__name__}"
             )
+
+
+def is_airflow_version_enough(version):
+    from airflow.version import version as AIRFLOW_VERSION
+    return parse_version(
+        AIRFLOW_VERSION
+    ) >= parse_version(version)

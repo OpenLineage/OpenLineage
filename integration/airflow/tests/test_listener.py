@@ -1,3 +1,4 @@
+import pytest
 from airflow.models import BaseOperator
 from airflow.models import TaskInstance, DAG
 from airflow.utils.dates import days_ago
@@ -9,6 +10,8 @@ from airflow.listeners.events import (
     register_task_instance_state_events,
     unregister_task_instance_state_events,
 )
+
+from openlineage.airflow.utils import is_airflow_version_enough
 
 
 class TemplateOperator(BaseOperator):
@@ -28,6 +31,7 @@ def render_df():
 
 @patch("airflow.models.TaskInstance.xcom_push")
 @patch("airflow.models.BaseOperator.render_template")
+@pytest.mark.skipif(is_airflow_version_enough("2.5.0"), reason="Airflow >= 2.5.0")
 def test_listener_does_not_change_task_instance(render_mock, xcom_push_mock):
     register_task_instance_state_events()
     render_mock.return_value = render_df()
