@@ -21,13 +21,7 @@ public final class KafkaTransport extends Transport {
   private final KafkaProducer<String, String> producer;
 
   public KafkaTransport(@NonNull final KafkaConfig kafkaConfig) {
-    this(new KafkaProducer<>(getProperties(kafkaConfig)), kafkaConfig);
-  }
-
-  private static Properties getProperties(@NotNull KafkaConfig kafkaConfig) {
-    Properties properties = new Properties();
-    properties.putAll(kafkaConfig.getProperties());
-    return properties;
+    this(new KafkaProducer<>(kafkaConfig.getProperties()), kafkaConfig);
   }
 
   public KafkaTransport(
