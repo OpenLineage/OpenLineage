@@ -31,7 +31,7 @@ updates:
       - "dependencies"
       - "dependabot"
     ignore:
-      - dependency-name: "slf4j"
+      - dependency-name: "org.slf4j.slf4j-api"
         versions: ["2.*"]
 
   - package-ecosystem: "gradle"
@@ -43,7 +43,7 @@ updates:
       - "dependencies"
       - "dependabot"
     ignore:
-      - dependency-name: "slf4j"
+      - dependency-name: "org.slf4j.slf4j-api"
         versions: [ "2.*" ]
 
   - package-ecosystem: "gradle"
@@ -55,8 +55,8 @@ updates:
       - "dependencies"
       - "dependabot"
     ignore:
-      - dependency-name: "jackson*"
-      - dependency-name: "slf4j"
+      - dependency-name: "com.fasterxml.jackson*"
+      - dependency-name: "org.slf4j.slf4j-api"
         versions: [ "2.*" ]
 
   - package-ecosystem: "pip"
