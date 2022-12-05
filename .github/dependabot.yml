@@ -30,6 +30,9 @@ updates:
     labels:
       - "dependencies"
       - "dependabot"
+    ignore:
+      - dependency-name: "slf4j"
+        versions: ["2.*"]
 
   - package-ecosystem: "gradle"
     directory: "integration/flink"
@@ -39,6 +42,9 @@ updates:
     labels:
       - "dependencies"
       - "dependabot"
+    ignore:
+      - dependency-name: "slf4j"
+        versions: [ "2.*" ]
 
   - package-ecosystem: "gradle"
     directory: "integration/spark"
@@ -48,6 +54,10 @@ updates:
     labels:
       - "dependencies"
       - "dependabot"
+    ignore:
+      - dependency-name: "jackson*"
+      - dependency-name: "slf4j"
+        versions: [ "2.*" ]
 
   - package-ecosystem: "pip"
     directory: "client/python"
@@ -66,6 +76,9 @@ updates:
     labels:
       - "dependencies"
       - "dependabot"
+    ignore:
+      - dependency-name: "great-expectations"
+
 
   - package-ecosystem: "pip"
     directory: "integration/airflow"
@@ -74,7 +87,9 @@ updates:
       day: "sunday"
     labels:
       - "dependencies"
-      - "dependabot"  
+      - "dependabot"
+    ignore:
+      - dependency-name: "great-expectations"
 
   - package-ecosystem: "pip"
     directory: "integration/dbt"
