@@ -74,7 +74,7 @@ TASK = RedshiftSQLOperator(
 
 
 @mock.patch("openlineage.airflow.extractors.sql_extractor.get_table_schemas")  # noqa
-@mock.patch("openlineage.airflow.extractors.sql_extractor.get_connection")
+@mock.patch("airflow.hooks.base.BaseHook.get_connection")
 def test_extract(get_connection, mock_get_table_schemas):
     source = Source(
         scheme="redshift",
@@ -123,7 +123,7 @@ def test_parsing_hostname():
     )
 
 
-@mock.patch("openlineage.airflow.extractors.sql_extractor.get_connection")  # noqa
+@mock.patch("airflow.hooks.base.BaseHook.get_connection")  # noqa
 def test_authority_with_clustername_in_host(get_connection):
     conn = Connection()
     conn.parse_from_uri(uri=CONN_URI)
@@ -134,7 +134,7 @@ def test_authority_with_clustername_in_host(get_connection):
     )
 
 
-@mock.patch("openlineage.airflow.extractors.sql_extractor.get_connection")  # noqa
+@mock.patch("airflow.hooks.base.BaseHook.get_connection")  # noqa
 def test_authority_with_iam(get_connection):
     conn = Connection(
         extra={
@@ -150,7 +150,7 @@ def test_authority_with_iam(get_connection):
         == "redshift-cluster-name.region:5439"
     )
 
-@mock.patch("openlineage.airflow.extractors.sql_extractor.get_connection")  # noqa
+@mock.patch("airflow.hooks.base.BaseHook.get_connection")  # noqa
 def test_authority_with_iam_and_implicit_region(get_connection):
     import os
     os.environ['AWS_DEFAULT_REGION'] = 'region_2'
@@ -168,7 +168,7 @@ def test_authority_with_iam_and_implicit_region(get_connection):
     )
 
 
-@mock.patch("openlineage.airflow.extractors.sql_extractor.get_connection")  # noqa
+@mock.patch("airflow.hooks.base.BaseHook.get_connection")  # noqa
 def test_authority_without_iam_wrong_connection(get_connection):
     conn = Connection(
         extra={
@@ -183,7 +183,7 @@ def test_authority_without_iam_wrong_connection(get_connection):
 
 
 @mock.patch("openlineage.airflow.extractors.sql_extractor.get_table_schemas")  # noqa
-@mock.patch("openlineage.airflow.extractors.sql_extractor.get_connection")
+@mock.patch("airflow.hooks.base.BaseHook.get_connection")
 def test_extract_authority_uri(get_connection, mock_get_table_schemas):
 
     source = Source(

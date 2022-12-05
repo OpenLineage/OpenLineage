@@ -97,7 +97,7 @@ TASK = PostgresOperator(
 
 
 @mock.patch('openlineage.airflow.extractors.sql_extractor.get_table_schemas')  # noqa
-@mock.patch('openlineage.airflow.extractors.sql_extractor.get_connection')
+@mock.patch("airflow.hooks.base.BaseHook.get_connection")
 def test_extract(get_connection, mock_get_table_schemas):
     source = Source(
         scheme='postgres',
@@ -135,7 +135,7 @@ def test_extract(get_connection, mock_get_table_schemas):
 
 
 @mock.patch('openlineage.airflow.extractors.sql_extractor.get_table_schemas')  # noqa
-@mock.patch('openlineage.airflow.extractors.sql_extractor.get_connection')
+@mock.patch("airflow.hooks.base.BaseHook.get_connection")
 def test_extract_authority_uri(get_connection, mock_get_table_schemas):
 
     source = Source(
