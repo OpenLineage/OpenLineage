@@ -14,8 +14,12 @@ import lombok.ToString;
 
 @NoArgsConstructor
 @ToString
-public final class KinesisConfig extends TransportConfig {
+public final class KinesisConfig implements TransportConfig {
   @Getter @Setter private String streamName;
   @Getter @Setter private String region;
   @Getter @Setter private Optional<String> roleArn;
+
+  // check
+  // https://github.com/awslabs/amazon-kinesis-producer/blob/master/java/amazon-kinesis-producer-sample/default_config.properties
+  @Getter @Setter private Properties properties;
 }

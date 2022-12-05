@@ -27,21 +27,11 @@ public class UrlParser {
     public static final String SPARK_CONF_TIMEOUT = "spark.openlineage.transport.timeout";
     public static final String SPARK_CONF_API_KEY = "spark.openlineage.transport.auth.apiKey";
     public static final String SPARK_CONF_AUTH_TYPE = "spark.openlineage.transport.auth.type";
-    public static final String SPARK_CONF_URL_PARAM_PREFIX = "spark.openlineage.transport.properties.url.param";
+    public static final String SPARK_CONF_URL_PARAM_PREFIX = "spark.openlineage.transport.url.param";
     public static final String SPARK_CONF_HTTP_URL = "spark.openlineage.transport.url";
-    private static final String SPARK_CONF_DISABLED_FACETS = "spark.openlineage.facets.disabled.";
-    private static final String TRANSPORT_PREFIX = "spark.openlineage.transport.";
-    private static final String OPENLINEAGE_PREFIX = "spark.openlineage.";
+    public static final String SPARK_CONF_DISABLED_FACETS = "spark.openlineage.facets.disabled.";
     public static final Set<String> namedParams =
             new HashSet<>(Arrays.asList("timeout", "api_key", "app_name", "disabled"));
-    public static final String disabledFacetsSeparator = ";";
-
-    public String host = "";
-    public String version = "v1";
-    public String namespace = "default";
-    public String jobName = "default";
-    public String parentRunId = null;
-    public Optional<String> appName = Optional.empty();
 
     public static Map<String,String> parseUrl(String clientUrl) {
         URI uri = URI.create(clientUrl);

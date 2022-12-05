@@ -41,9 +41,9 @@ public class EventEmitter {
             .build();
 
     // Extract url parameters other than api_key to append to lineageURI
-    log.debug(
-        String.format(
-            "Init OpenLineageContext: Args: %s URI: %s", argument, lineageURI.toString()));
+//    log.debug(
+//        String.format(
+//            "Init OpenLineageContext: Args: %s URI: %s", argument, lineageURI.toString()));
   }
 
   public void emit(OpenLineage.RunEvent event) {
