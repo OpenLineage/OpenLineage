@@ -46,7 +46,7 @@ configurations {
 ext {
     assertjVersion = '3.23.1'
     bigqueryVersion = '0.26.0'
-    junit5Version = '5.7.2'
+    junit5Version = '5.9.1'
     sparkVersion = '2.4.8'
     postgresqlVersion = '42.5.0'
     mockitoVersion = '4.9.0'
