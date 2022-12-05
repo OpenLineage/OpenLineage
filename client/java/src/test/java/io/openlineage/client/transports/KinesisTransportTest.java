@@ -31,7 +31,7 @@ class KinesisTransportTest {
     properties.setProperty("MinConnections", "1");
 
     config.setRegion("us-west-2");
-    config.setRoleArn(Optional.of("test-role"));
+    config.setRoleArn("test-role");
     config.setStreamName("test-stream");
     config.setProperties(properties);
 

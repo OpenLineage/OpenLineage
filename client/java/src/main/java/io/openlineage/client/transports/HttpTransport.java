@@ -93,7 +93,6 @@ public final class HttpTransport extends Transport implements Closeable {
     }
     if(httpConfig.getUrlParams() != null){
       httpConfig.getUrlParams().entrySet().stream()
-              .filter(e->e.getKey().startsWith("url.param."))
               .forEach(e->builder.addParameter(e.getKey().replace("url.param.", ""), e.getValue()));
     }
     return builder.build();
