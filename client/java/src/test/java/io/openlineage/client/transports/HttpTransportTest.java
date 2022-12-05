@@ -19,6 +19,7 @@ import io.openlineage.client.OpenLineageClient;
 import io.openlineage.client.OpenLineageClientException;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Collections;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -28,6 +29,23 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 class HttpTransportTest {
+  
+  @Test transportCreatedWithHttpConfig(){
+    HttpConfig httpConfig = new HttpConfig();
+    try {
+      httpConfig.setUrl(new URI("http://localhost:5000"));
+    httpConfig.setEndpoint("/api/v1/lineage");
+    httpConfig.setTimeout(5000.0);
+    ApiKeyTokenProvider auth = new ApiKeyTokenProvider();
+    auth.setApiKey("test");
+    httpConfig.setAuth(auth);
+    HttpTransport httpTransport = new HttpTransport(httpConfig);
+    httpTransport.getClass().getDeclaredField("")
+    } catch (URISyntaxException e) {
+      throw new RuntimeException(e);
+    }
+    
+  }
 
   @Test
   void clientEmitsHttpTransport() throws IOException {
