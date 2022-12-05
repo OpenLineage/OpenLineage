@@ -50,11 +50,8 @@ public class KinesisTransport extends Transport {
     this.streamName = kinesisConfig.getStreamName();
     this.region = kinesisConfig.getRegion();
     this.roleArn = kinesisConfig.getRoleArn();
-
-    Properties properties = new Properties();
-    properties.putAll(kinesisConfig.getProperties());
     KinesisProducerConfiguration config =
-        KinesisProducerConfiguration.fromProperties(properties);
+        KinesisProducerConfiguration.fromProperties(kinesisConfig.getProperties());
     config.setRegion(this.region);
     if(StringUtils.isNotBlank(roleArn)){
             config.setCredentialsProvider(
