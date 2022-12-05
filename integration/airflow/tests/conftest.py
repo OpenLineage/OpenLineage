@@ -19,6 +19,7 @@ if parse_version(AIRFLOW_VERSION) < parse_version("2.3.0"):
 
 if parse_version(AIRFLOW_VERSION) < parse_version("2.2.4"):
     collect_ignore.append("extractors/test_redshift_sql_extractor.py")
+    collect_ignore.append("extractors/test_s3_extractor.py")
 
 if parse_version(AIRFLOW_VERSION) < parse_version("2.3.0"):
     collect_ignore.append("extractors/test_redshift_data_extractor.py")
