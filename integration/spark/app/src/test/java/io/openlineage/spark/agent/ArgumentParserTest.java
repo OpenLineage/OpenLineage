@@ -5,13 +5,14 @@
 
 package io.openlineage.spark.agent;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 import io.openlineage.client.OpenLineageYaml;
-import io.openlineage.client.transports.FacetsConfig;
-import io.openlineage.client.transports.TransportConfig;
+import io.openlineage.client.transports.ApiKeyTokenProvider;
+import io.openlineage.client.transports.ConsoleConfig;
+import io.openlineage.client.transports.HttpConfig;
+import io.openlineage.client.transports.KafkaConfig;
+import io.openlineage.client.transports.KinesisConfig;
 import org.apache.spark.SparkConf;
 import org.junit.jupiter.api.Test;
 
@@ -22,60 +23,114 @@ class ArgumentParserTest {
   private static final String URL = "http://localhost:5000";
   private static final String RUN_ID = "ea445b5c-22eb-457a-8007-01c7c52b6e54";
   private static final String APP_NAME = "test";
+  private static final String DISABLED_FACETS = "facet1;facet2";
+  private static final String ENDPOINT = "api/v1/lineage";
+  private static final String AUTH_TYPE = "api_key";
+  private static final String API_KEY = "random_token";
 
   @Test
-  void testGetDisabledFacets() {
-    ArgumentParser.ArgumentParserBuilder builder = new ArgumentParser.ArgumentParserBuilder();
-    builder.host("host");
-    builder.DEFAULT_DISABLED_FACETS("spark_unknown;spark.logicalPlan");
-    ArgumentParser parser = builder.build();
-
-    assertThat(parser.getDEFAULT_DISABLED_FACETS())
-        .contains("spark_unknown")
-        .contains("spark.logicalPlan")
-        .hasSize(2);
+  void testDefaults() {
+    ArgumentParser argumentParser = ArgumentParser.parse(new SparkConf());
+    assertEquals(
+        ArgumentParser.DEFAULT_DISABLED_FACETS.split(";")[0],
+        argumentParser.getOpenLineageYaml().getFacetsConfig().getDisabledFacets()[0]);
+    assert (argumentParser.getOpenLineageYaml().getTransportConfig() instanceof ConsoleConfig);
   }
 
   @Test
-  void testGetDisabledFacetsWhenNoEntry() {
-    ArgumentParser.ArgumentParserBuilder builder = new ArgumentParser.ArgumentParserBuilder();
-    ArgumentParser parser = builder.build();
+  void testTransportTypes() {
+    ArgumentParser argumentParserConsole =
+        ArgumentParser.parse(
+            new SparkConf().set(ArgumentParser.SPARK_CONF_TRANSPORT_TYPE, "console"));
+    ArgumentParser argumentParserHttp =
+        ArgumentParser.parse(new SparkConf().set(ArgumentParser.SPARK_CONF_TRANSPORT_TYPE, "http"));
+    ArgumentParser argumentParserKafka =
+        ArgumentParser.parse(
+            new SparkConf().set(ArgumentParser.SPARK_CONF_TRANSPORT_TYPE, "kafka"));
+    ArgumentParser argumentParserKinesis =
+        ArgumentParser.parse(
+            new SparkConf().set(ArgumentParser.SPARK_CONF_TRANSPORT_TYPE, "kinesis"));
 
-    assertThat(parser.getDEFAULT_DISABLED_FACETS()).contains("spark_unknown").hasSize(1);
+    assert (argumentParserConsole.getOpenLineageYaml().getTransportConfig()
+        instanceof ConsoleConfig);
+    assert (argumentParserHttp.getOpenLineageYaml().getTransportConfig() instanceof HttpConfig);
+    assert (argumentParserKafka.getOpenLineageYaml().getTransportConfig() instanceof KafkaConfig);
+    assert (argumentParserKinesis.getOpenLineageYaml().getTransportConfig()
+        instanceof KinesisConfig);
   }
 
   @Test
-  void testConfToHttpConfig(){
-    SparkConf sparkConf = new SparkConf()
+  void testLoadingSparkConfig() {
+    SparkConf sparkConf =
+        new SparkConf()
+            .set(ArgumentParser.SPARK_CONF_NAMESPACE, NS_NAME)
+            .set(ArgumentParser.SPARK_CONF_JOB_NAME, JOB_NAME)
+            .set(ArgumentParser.SPARK_CONF_PARENT_RUN_ID, RUN_ID)
+            .set(ArgumentParser.SPARK_CONF_APP_NAME, APP_NAME);
+    ArgumentParser argumentParser = ArgumentParser.parse(sparkConf);
+    assertEquals(NS_NAME, argumentParser.getNamespace());
+    assertEquals(JOB_NAME, argumentParser.getJobName());
+    assertEquals(RUN_ID, argumentParser.getParentRunId());
+    assertEquals(APP_NAME, argumentParser.getAppName());
+  }
+
+  @Test
+  void testConfToHttpConfig() {
+    SparkConf sparkConf =
+        new SparkConf()
             .set("spark.openlineage.transport.type", "http")
-            .set("spark.openlineage.transport.url", "http://localhost:5050")
-            .set("spark.openlineage.transport.endpoint", "api/v1/lineage")
-            .set("spark.openlineage.transport.auth.type", "api_key")
-            .set("spark.openlineage.transport.auth.apiKey", "random_token")
-            .set("spark.openlineage.transport.urlParams.number1", "value1")
-            .set("spark.openlineage.transport.urlParams.number2", "value2")
-            .set("spark.openlineage.facets.disabled", "facet1;facet2");
+            .set("spark.openlineage.transport.url", URL)
+            .set("spark.openlineage.transport.endpoint", ENDPOINT)
+            .set("spark.openlineage.transport.auth.type", AUTH_TYPE)
+            .set("spark.openlineage.transport.auth.apiKey", API_KEY)
+            .set("spark.openlineage.transport.timeout", "5000")
+            .set("spark.openlineage.facets.disabled", DISABLED_FACETS)
+            .set("spark.openlineage.transport.urlParams.test1", "test1")
+            .set("spark.openlineage.transport.urlParams.test2", "test2");
+
     OpenLineageYaml openLineageYaml = ArgumentParser.extractOpenlineageConfFromSparkConf(sparkConf);
-    FacetsConfig facetsConfig = openLineageYaml.getFacetsConfig();
-    TransportConfig transportConfig = openLineageYaml.getTransportConfig();
-//    OpenLineageClient openLineageClient = new OpenLineageClient()
-    
-    assertEquals(1,1);
+    HttpConfig transportConfig = (HttpConfig) openLineageYaml.getTransportConfig();
+    assertEquals(URL, transportConfig.getUrl().toString());
+    assertEquals(ENDPOINT, transportConfig.getEndpoint());
+    assert (transportConfig.getAuth() != null);
+    assert (transportConfig.getAuth() instanceof ApiKeyTokenProvider);
+    assertEquals("Bearer random_token", transportConfig.getAuth().getToken());
+    assertEquals(5000, transportConfig.getTimeout());
   }
 
   @Test
-  void testConfToKafkaConfig(){
-    SparkConf sparkConf = new SparkConf()
+  void testConfToKafkaConfig() {
+    SparkConf sparkConf =
+        new SparkConf()
             .set("spark.openlineage.transport.type", "kafka")
-            .set("spark.openlineage.transport.topicName", "dupa")
-            .set("spark.openlineage.transport.localServerId", "dupa1")
-            .set("spark.openlineage.transport.properties.dupa1", "DUPA1")
-            .set("spark.openlineage.transport.properties.dupa2", "DUPA2");
+            .set("spark.openlineage.transport.topicName", "test")
+            .set("spark.openlineage.transport.localServerId", "test")
+            .set("spark.openlineage.transport.properties.test1", "test1")
+            .set("spark.openlineage.transport.properties.test2", "test2");
     OpenLineageYaml openLineageYaml = ArgumentParser.extractOpenlineageConfFromSparkConf(sparkConf);
-    FacetsConfig facetsConfig = openLineageYaml.getFacetsConfig();
-    TransportConfig transportConfig = openLineageYaml.getTransportConfig();
-//    OpenLineageClient openLineageClient = new OpenLineageClient()
+    KafkaConfig transportConfig = (KafkaConfig) openLineageYaml.getTransportConfig();
+    assertEquals("test", transportConfig.getTopicName());
+    assertEquals("test", transportConfig.getLocalServerId());
+    assertEquals("test1", transportConfig.getProperties().get("test1"));
+    assertEquals("test2", transportConfig.getProperties().get("test2"));
+  }
 
-    assertEquals(1,1);
+  @Test
+  void testConfToKinesisConfig() {
+    SparkConf sparkConf =
+        new SparkConf()
+            .set("spark.openlineage.transport.type", "kinesis")
+            .set("spark.openlineage.transport.streamName", "test")
+            .set("spark.openlineage.transport.region", "test")
+            .set("spark.openlineage.transport.roleArn", "test")
+            .set("spark.openlineage.transport.properties.test1", "test1")
+            .set("spark.openlineage.transport.properties.test2", "test2");
+    OpenLineageYaml openLineageYaml = ArgumentParser.extractOpenlineageConfFromSparkConf(sparkConf);
+    KinesisConfig transportConfig = (KinesisConfig) openLineageYaml.getTransportConfig();
+    assertEquals("test", transportConfig.getStreamName());
+    assertEquals("test", transportConfig.getRegion());
+    assertEquals("test", transportConfig.getRoleArn());
+    assertEquals("test1", transportConfig.getProperties().get("test1"));
+    assertEquals("test2", transportConfig.getProperties().get("test2"));
   }
 }

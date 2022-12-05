@@ -22,12 +22,13 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 @Slf4j
 public class KinesisTransport extends Transport {
   private final String streamName;
   private final String region;
-  private final Optional<String> roleArn;
+  private final String roleArn;
 
   private final KinesisProducer producer;
 
@@ -55,11 +56,10 @@ public class KinesisTransport extends Transport {
     KinesisProducerConfiguration config =
         KinesisProducerConfiguration.fromProperties(properties);
     config.setRegion(this.region);
-    roleArn.ifPresent(
-        s ->
+    if(StringUtils.isNotBlank(roleArn)){
             config.setCredentialsProvider(
-                new STSAssumeRoleSessionCredentialsProvider.Builder(s, "OLProducer").build()));
-
+                new STSAssumeRoleSessionCredentialsProvider.Builder(roleArn, "OLProducer").build());
+    }
     this.producer = new KinesisProducer(config);
     this.listeningExecutor = Executors.newSingleThreadExecutor();
   }

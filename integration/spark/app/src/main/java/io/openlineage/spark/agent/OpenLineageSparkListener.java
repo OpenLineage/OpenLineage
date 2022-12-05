@@ -6,15 +6,9 @@
 package io.openlineage.spark.agent;
 
 import static io.openlineage.spark.agent.util.ScalaConversionUtils.asJavaOptional;
-import static io.openlineage.spark.agent.util.SparkConfUtils.findSparkConfigKey;
-import static io.openlineage.spark.agent.util.SparkConfUtils.findSparkConfigKeyDouble;
-import static io.openlineage.spark.agent.util.SparkConfUtils.findSparkConfigKeysStartsWith;
-import static io.openlineage.spark.agent.util.SparkConfUtils.findSparkUrlParams;
 
 import io.openlineage.client.Environment;
 import io.openlineage.client.OpenLineage;
-import io.openlineage.client.transports.KinesisConfig;
-import io.openlineage.client.transports.TransportConfig;
 import io.openlineage.spark.agent.lifecycle.ContextFactory;
 import io.openlineage.spark.agent.lifecycle.ExecutionContext;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
