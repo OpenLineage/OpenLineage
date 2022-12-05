@@ -165,13 +165,15 @@ def on_task_instance_failed(previous_state, task_instance: "TaskInstance", sessi
 
 
 @hookimpl
-def on_starting():
+def on_starting(component):
     global executor
+    logging.error(f"??? starting {component.__class__.__name__}")
     executor = ThreadPoolExecutor(max_workers=8, thread_name_prefix="openlineage_")
 
 
 @hookimpl
-def before_stopping():
+def before_stopping(component):
+    logging.error(f"??? ending {component.__class__.__name__}")
     executor.shutdown(wait=False)
 
 
