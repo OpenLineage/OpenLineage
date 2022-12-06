@@ -164,6 +164,7 @@ Identifier:
    * Authority = {host}
  * Unique name: /colls/{table}
    * URI = azurecosmos://{host}.documents.azure.com/dbs/{database}/colls/{table}
+
 #### Azure Data Explorer:
 Datasource hierarchy:
  * Host: \<clustername>.\<clusterlocation> 
