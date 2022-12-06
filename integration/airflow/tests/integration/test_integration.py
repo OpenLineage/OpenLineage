@@ -5,6 +5,8 @@ import json
 import logging
 import os
 import sys
+from typing import List
+
 from pkg_resources import parse_version
 
 import psycopg2
@@ -260,8 +262,18 @@ def test_integration(dag_id, request_path, airflow_db_conn):
     log.info(f"Events for dag {dag_id} verified!")
 
 
-@pytest.mark.parametrize("dag_id, request_dir", [("event_order", "requests/order")])
-def test_integration_ordered(dag_id, request_dir: str, airflow_db_conn):
+@pytest.mark.parametrize("dag_id, request_dir, skip_jobs", [
+    ("event_order", "requests/order", ['event_order']),
+    pytest.param(
+        "dag_event_order",
+        "requests/dag_order",
+        [],
+        marks=pytest.mark.skipif(
+            not IS_AIRFLOW_VERSION_ENOUGH("2.5.0rc2"), reason="Airflow <= 2.5.0rc2"
+        ),
+    )
+])
+def test_integration_ordered(dag_id, request_dir: str, skip_jobs: List[str], airflow_db_conn):
     log.info(f"Checking dag {dag_id}")
     # (1) Wait for DAG to complete
     result = wait_for_dag(dag_id, airflow_db_conn)
@@ -277,6 +289,10 @@ def test_integration_ordered(dag_id, request_dir: str, airflow_db_conn):
 
     # (3) Get actual events with job names starting with dag_id
     actual_events = get_events(dag_id, False)
+
+    # (4) Filter jobs that we want to skip, which is
+    #     used to skip dag events if we don't want to check them
+    actual_events = [event for event in actual_events if event['job']['name'] not in skip_jobs]
 
     assert check_matches_ordered(expected_events, actual_events) is True
     assert check_event_time_ordered(actual_events) is True

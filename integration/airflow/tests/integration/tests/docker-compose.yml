@@ -65,6 +65,8 @@ x-airflow-base: &airflow-base
       condition: service_healthy
     openssh-server:
       condition: service_healthy
+    backend:
+      condition: service_healthy
 
 services:
   integration:
@@ -159,6 +161,9 @@ services:
       - app_net
     volumes:
       - $PWD/events:/opt/airflow/events
+    healthcheck:
+      test: [ "CMD-SHELL", 'curl -X GET http://localhost:5000/healthcheck' ]
+
 
   airflow_init:
     <<: *airflow-base

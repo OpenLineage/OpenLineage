@@ -32,7 +32,6 @@ updates:
       - "dependabot"
     ignore:
       - dependency-name: "org.slf4j.slf4j-api"
-        versions: ["2.*"]
 
   - package-ecosystem: "gradle"
     directory: "integration/flink"
@@ -44,7 +43,6 @@ updates:
       - "dependabot"
     ignore:
       - dependency-name: "org.slf4j.slf4j-api"
-        versions: [ "2.*" ]
 
   - package-ecosystem: "gradle"
     directory: "integration/spark"
@@ -64,7 +62,6 @@ updates:
     ignore:
       - dependency-name: "com.fasterxml.jackson*"
       - dependency-name: "org.slf4j.slf4j-api"
-        versions: [ "2.*" ]
 
   - package-ecosystem: "pip"
     directory: "client/python"
