@@ -4,6 +4,10 @@
 ### Added
 * Airflow: support SQLExecuteQueryOperator [`#1379`](https://github.com/OpenLineage/OpenLineage/pull/1379) [@JDarDagran](https://github.com/JDarDagran) 
 
+### Changed
+* Spark: enable usage of other Transports via Spark configuration [`#1331`](https://github.com/OpenLineage/OpenLineage/pull/1183) [@tnazarew](https://github.com/tnazarew)
+    * OL client argument parsing moved from Spark Integration to java client
+
 ### Fixed
 * Spark: databricks improvements to send better events [`#1330`](https://github.com/OpenLineage/OpenLineage/pull/1330) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski) 
     *Filter unwanted events, provide meaningful job name.*
