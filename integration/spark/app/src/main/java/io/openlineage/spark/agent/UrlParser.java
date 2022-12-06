@@ -22,7 +22,7 @@ public class UrlParser {
   public static final String SPARK_CONF_TIMEOUT = "spark.openlineage.transport.timeout";
   public static final String SPARK_CONF_API_KEY = "spark.openlineage.transport.auth.apiKey";
   public static final String SPARK_CONF_AUTH_TYPE = "spark.openlineage.transport.auth.type";
-  public static final String SPARK_CONF_URL_PARAM_PREFIX = "spark.openlineage.transport.url.param";
+  public static final String SPARK_CONF_URL_PARAM_PREFIX = "spark.openlineage.transport.urlParams";
   public static final String SPARK_CONF_HTTP_URL = "spark.openlineage.transport.url";
   public static final String SPARK_CONF_DISABLED_FACETS = "spark.openlineage.facets.disabled.";
   public static final Set<String> namedParams =
