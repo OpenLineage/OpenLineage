@@ -45,7 +45,7 @@ public class ArgumentParser {
   public static final String SPARK_CONF_TRANSPORT_TYPE = "spark.openlineage.transport.type";
   public static final String SPARK_CONF_HTTP_URL = "spark.openlineage.transport.url";
   public static final Set<String> PROPERTIES_PREFIXES =
-      new HashSet<>(Arrays.asList("transport.properties.", "transport.url.param."));
+      new HashSet<>(Arrays.asList("transport.properties.", "transport.urlParams."));
 
   @Builder.Default private String namespace = "default";
   @Builder.Default private String jobName = "default";

@@ -72,7 +72,8 @@ spark = (SparkSession.builder.master('local').appName('rdd_to_dataframe')
              .config('spark.jars', file)
              .config('spark.jars.packages', 'org.postgresql:postgresql:42.2.+')
              .config('spark.extraListeners', 'io.openlineage.spark.agent.OpenLineageSparkListener')
-             .config('spark.openlineage.url', 'http://{openlineage.client.host}/api/v1/namespaces/spark_integration/')
+             .config('spark.openlineage.transport.type', 'http')
+             .config('spark.openlineage.transport.url', 'http://{openlineage.client.host}/api/v1/namespaces/spark_integration/')
              .getOrCreate())
 ```
 
@@ -82,11 +83,9 @@ spark = (SparkSession.builder.master('local').appName('rdd_to_dataframe')
 The SparkListener reads its configuration from SparkConf parameters. These can be specified on the
 command line or in the `conf/spark-defaults.conf` file.
 
-#### Config entries
-
 The following parameters can be specified in the Spark configuration:
 
-##### General
+### General
 
 Parameters configuring the Spark integration
 
@@ -99,17 +98,17 @@ Parameters configuring the Spark integration
 | spark.openlineage.appName                | Custom value overwriting Spark app name in events                                                   | AppName                         |
 | spark.openlineage.facets.disabled        | `;` separated list of facets to disable, default is `spark_unknown;` (currently must contain `;`)   | spark_unknown;spark.logicalPlan |
 
-##### HTTP
+### HTTP
 
-| Parameter                                | Definition                                                                                       | Example                         |
-------------------------------------------|--------------------------------------------------------------------------------------------------|---------------------------------
-| spark.openlineage.transport.endpoint     | Path to resource                                                                                 | /api/v1/lineage                 |
-| spark.openlineage.transport.apiKey       | An API key to be used when sending events to the OpenLineage server                              | abcdefghijk                     |
-| spark.openlineage.transport.timeout      | Timeout for sending OpenLineage info in milliseconds                                             | 5000                            |
-| spark.openlineage.transport.urlParam.xyz | A URL parameter (replace xyz) and value to be included in requests to the OpenLineage API server | abcdefghijk                     |
-| spark.openlineage.transport.url          | The hostname of the OpenLineage API server where events should be reported                       | http://localhost:5000           |
+| Parameter                                 | Definition                                                                                                       | Example                         |
+-------------------------------------------|------------------------------------------------------------------------------------------------------------------|---------------------------------
+| spark.openlineage.transport.endpoint      | Path to resource                                                                                                 | /api/v1/lineage                 |
+| spark.openlineage.transport.apiKey        | An API key to be used when sending events to the OpenLineage server                                              | abcdefghijk                     |
+| spark.openlineage.transport.timeout       | Timeout for sending OpenLineage info in milliseconds                                                             | 5000                            |
+| spark.openlineage.transport.urlParams.xyz | A URL parameter (replace xyz) and value to be included in requests to the OpenLineage API server                 | abcdefghijk                     |
+| spark.openlineage.transport.url           | The hostname of the OpenLineage API server where events should be reported, it can have other properties embeded | http://localhost:5000           |
 
-###### URL
+##### URL
 
 You can supply http parameters using values in url, the parsed `spark.openlineage.*` properties are located in url as follows:
 
@@ -119,12 +118,8 @@ example:
 
 `http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx?app_name=app&api_key=abc&timeout=5000&xxx=xxx`
 
-`http://{host}/api/{version}/namespaces/{namespace}/job/{parentRunId}?api_key={apiKey}`
-
-`apiKey`, `timeout`, `appName` are defined in URL parameters. `consoleTransport` in this approach is set to False.
-
-##### Kinesis 
-If using `spark.openlineage.transport.type` as `kinesis`, then the below parameters would be read and used when building KinesisProducer.
+### Kinesis 
+If `spark.openlineage.transport.type` is set to `kinesis`, then the below parameters would be read and used when building KinesisProducer.
 Also, KinesisTransport depends on you to provide artifact `com.amazonaws:amazon-kinesis-producer:0.14.0` or compatible on your classpath.
 
 | Parameter                                     | Definition                                                                                                                                                                                   | Example          |
@@ -134,16 +129,14 @@ Also, KinesisTransport depends on you to provide artifact `com.amazonaws:amazon-
 | spark.openlineage.transport.roleArn           | Optional, the roleArn which is allowed to read/write to Kinesis stream                                                                                                                       | some-role-arn    |
 | spark.openlineage.transport.properties.[xxx]  | Optional, the [xxx] is property of [Kinesis allowd properties](https://github.com/awslabs/amazon-kinesis-producer/blob/master/java/amazon-kinesis-producer-sample/default_config.properties) | 1                |
 
-##### Kafka 
-If using `spark.openlineage.transport.type` as `kinesis`, then the below parameters would be read and used when building KinesisProducer.
-Also, KinesisTransport depends on you to provide artifact `com.amazonaws:amazon-kinesis-producer:0.14.0` or compatible on your classpath.
+### Kafka 
+If `spark.openlineage.transport.type` is set to `kafka`, then the below parameters would be read and used when building KafkaProducer.
 
-| Parameter                                     | Definition                                                                                                                                                                                   | Example          |
------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------
-| spark.openlineage.transport.streamName        | Required, the streamName of the Kinesis Stream                                                                                                                                               | some-stream-name |
-| spark.openlineage.transport.region            | Required, the region of the stream                                                                                                                                                           | us-east-2        |
-| spark.openlineage.transport.roleArn           | Optional, the roleArn which is allowed to read/write to Kinesis stream                                                                                                                       | some-role-arn    |
-| spark.openlineage.transport.properties.[xxx]  | Optional, the [xxx] is property of [Kinesis allowd properties](https://github.com/awslabs/amazon-kinesis-producer/blob/master/java/amazon-kinesis-producer-sample/default_config.properties) | 1                |
+| Parameter                                    | Definition                                      | Example    |
+----------------------------------------------|-------------------------------------------------|------------
+| spark.openlineage.transport.topicName        | Required, name of the topic                     | topic-name |
+| spark.openlineage.transport.localServerId    | Required, id of local server                    | xxxxxxxx   |
+| spark.openlineage.transport.properties.[xxx] | Optional, the [xxx] is property of Kafka client | 1          |
 
 
 # Build
