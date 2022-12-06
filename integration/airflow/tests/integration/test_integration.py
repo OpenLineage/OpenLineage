@@ -55,6 +55,14 @@ params = [
         "requests/dbt_bigquery.json",
         marks=pytest.mark.skipif(not IS_GCP_AUTH, reason="no gcp credentials"),
     ),
+    pytest.param(
+        "athena_dag",
+        "requests/athena.json",
+        marks=pytest.mark.skipif(
+            os.environ.get("AWS_ACCESS_KEY_ID", "") == "",
+            reason="no aws credentials",
+        ),
+    ),
     ("source_code_dag", "requests/source_code.json"),
     pytest.param(
         "default_extractor_dag",

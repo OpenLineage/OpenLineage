@@ -6,6 +6,7 @@ import logging
 from dateutil.parser import parse
 from jinja2 import Environment
 from typing import Any, Optional
+from urllib.parse import urlparse
 
 
 log = logging.getLogger(__name__)
@@ -44,12 +45,23 @@ def not_match(result, pattern) -> str:
     return "true"
 
 
+def url_scheme_authority(url) -> str:
+    parsed = urlparse(url)
+    return f"{parsed.scheme}://{parsed.netloc}"
+
+
+def url_path(url) -> str:
+    return urlparse(url).path
+
+
 def setup_jinja() -> Environment:
     env = Environment()
     env.globals['any'] = any
     env.globals['is_datetime'] = is_datetime
     env.globals['env_var'] = env_var
     env.globals['not_match'] = not_match
+    env.filters['url_scheme_authority'] = url_scheme_authority
+    env.filters['url_path'] = url_path
     return env
 
 
