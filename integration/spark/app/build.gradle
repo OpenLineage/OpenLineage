@@ -97,34 +97,33 @@ dependencies {
         exclude group: 'javax.jms'
     }
 
-    if(versions.snowflake != "NA") {
-        compileOnly ("net.snowflake:spark-snowflake_${versions.scala}:${versions.snowflake}") {
-            exclude group: 'com.google.guava:guava'
-            exclude group: 'org.apache.spark:spark-core_2.11'
-            exclude group: 'org.apache.spark:spark-sql_2.11'
-            exclude group: 'org.apache.spark:spark-catalyst_2.11'
-        }
+    compileOnly ("net.snowflake:spark-snowflake_${versions.scala}:${versions.snowflake}") {
+        exclude group: 'com.google.guava:guava'
+        exclude group: 'org.apache.spark:spark-core_2.11'
+        exclude group: 'org.apache.spark:spark-sql_2.11'
+        exclude group: 'org.apache.spark:spark-catalyst_2.11'
     }
-
 
     testFixturesApi "org.apache.spark:spark-core_${versions.scala}:${sparkVersion}"
     testFixturesApi "org.apache.spark:spark-sql_${versions.scala}:${sparkVersion}"
     testFixturesApi "org.apache.spark:spark-hive_${versions.scala}:${sparkVersion}"
     testFixturesApi 'commons-beanutils:commons-beanutils:1.9.4'
 
-    if(versions.snowflake != "NA") {
-        testFixturesApi ("net.snowflake:spark-snowflake_${versions.scala}:${versions.snowflake}") {
-            exclude group: 'com.google.guava:guava'
-            exclude group: 'org.apache.spark:spark-core_2.11'
-            exclude group: 'org.apache.spark:spark-sql_2.11'
-            exclude group: 'org.apache.spark:spark-catalyst_2.11'
-        }
+
+    testFixturesApi ("net.snowflake:spark-snowflake_${versions.scala}:${versions.snowflake}") {
+        exclude group: 'com.google.guava:guava'
+        exclude group: 'org.apache.spark:spark-core_2.11'
+        exclude group: 'org.apache.spark:spark-sql_2.11'
+        exclude group: 'org.apache.spark:spark-catalyst_2.11'
     }
+
     testFixturesApi "org.apache.spark:spark-sql-kafka-0-10_${versions.scala}:${sparkVersion}"
     testFixturesApi("com.google.cloud.spark:spark-bigquery-with-dependencies_${versions.scala}:${bigqueryVersion}") {
         exclude group: 'com.fasterxml.jackson.core'
         exclude group: 'com.fasterxml.jackson.module'
     }
+
+    testFixturesApi("org.apache.hadoop:hadoop-client:2.10.2") { force=true }
 
     if(versions.delta != "NA") { testFixturesApi "io.delta:delta-core_2.12:${versions.delta}" }
 
