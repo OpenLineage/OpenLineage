@@ -48,6 +48,8 @@ ext {
     bigqueryVersion = '0.26.0'
     junit5Version = '5.9.1'
     sparkVersion = '2.4.8'
+    sparkVersionShort = '2.4'
+    snowflakeVersion = '2.9.3'
     postgresqlVersion = '42.5.0'
     mockitoVersion = '4.9.0'
     testcontainersVersion = '1.17.6'
@@ -62,7 +64,7 @@ dependencies {
         exclude group: 'com.fasterxml.jackson.core'
         exclude group: 'com.fasterxml.jackson.module'
     }
-    compileOnly ("net.snowflake:spark-snowflake_2.12:2.11.0-spark_3.3") {
+    compileOnly ("net.snowflake:spark-snowflake_2.11:${snowflakeVersion}-spark_${sparkVersionShort}") {
         exclude group: 'com.google.guava:guava'
         exclude group: 'org.apache.spark:spark-core_2.11'
         exclude group: 'org.apache.spark:spark-sql_2.11'
