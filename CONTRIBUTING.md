@@ -15,8 +15,12 @@ See how to join [here](https://github.com/OpenLineage/OpenLineage#community)
 Please use the [issues][issues] section of the OpenLineage repository and search for a similar problem. If you don't find it, submit your bug, question, proposal or feature request.
 
 Use tags to indicate parts of the OpenLineage that your issue relates to.
-For example, in the case of bugs, please provide steps to reproduce it and tag your issue with `bug` and integration that has that bug, for example `integration/spark`.
+For example, in the case of bugs, tag your issue with `bug` and integration that has that bug, for example `integration/spark`.
 
+### A few tips of reporting issues effectively
+- **Make sure you have a reproducible case**. In order for the issue to be categorized as a bug, the problem should be reproducible by other contributors and developers. If you do not have a reproducible case, chances are, it will take extra time and effort to resolve it. Write down steps to reproduce the problem, as concisely as possible.
+- **Make sure to specify as much information on the environment** of which the OpenLineage is being used in. Specifying the version of the OpenLineage library being used is extremely helpful. Also, specifying type of the integration (e.g. Airflow) and the version of it is vital. Additionally, specify the platform, operating system or environment of where the OpenLineage is being used.
+- **Collect and attach logs and OpenLineage event data**. If possible, adjust log level (python or Java) to DEBUG and collect as much detailed information regarding the error. Also, attach any OpenLineage events (JSON) which was used, so that developers can understand the data that caused the error.
 
 ## Contributing to the project
 
