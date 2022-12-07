@@ -80,7 +80,7 @@ public class KinesisTransport extends Transport {
           @Override
           public void onFailure(Throwable t) {
             log.error("Failed to send to Kinesis lineage event: {}", eventAsJson, t);
-          };
+          }
         };
 
     Futures.addCallback(future, callback, this.listeningExecutor);
