@@ -128,7 +128,7 @@ dependencies {
     pysparkContainerOnly "com.google.cloud.bigdataoss:gcs-connector:${versions.gcs}:shaded"
 
     if(versions.delta != "NA") { testFixturesApi "io.delta:delta-core_2.12:${versions.delta}" }
-    if(versions.module != "spark2") { testFixturesApi "org.json:json:20200518" }
+    if(versions.module == "spark2") { testFixturesApi "org.json:json:20200518" }
 
     testImplementation(project(":${versions.module}"))
     testImplementation testFixtures(project(":${versions.module}")){
