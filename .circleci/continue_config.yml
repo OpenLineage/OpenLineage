@@ -311,7 +311,7 @@ jobs:
       - *checkout_project_root
       - attach_workspace:
           at: .
-      - run: pip install tox
+      - run: pip install tox==3.27.1
       - restore_cache:
           keys:
             - v1-toxenv-common-{{ .Branch }}-{{ checksum "setup.cfg" }}-{{ checksum "setup.py" }}
@@ -524,7 +524,7 @@ jobs:
       - *install_python_client
       - install_integration_common:
           install_parser: << parameters.install_parser >>
-      - run: pip install tox mypy==0.971
+      - run: pip install tox==3.27.1 mypy==0.971
       - run: python -m mypy --install-types --non-interactive --ignore-missing-imports openlineage
       - restore_cache:
           keys:
