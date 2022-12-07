@@ -16,10 +16,12 @@
     *Creates extractors for `SagemakeProcessingOperator` and `SagemakerTransformOperator`.*
 * Airflow: add S3 extractor for Airflow operators [`#1166`](https://github.com/OpenLineage/OpenLineage/pull/1166) [@fhoda](https://github.com/fhoda)  
     *Creates an extractor for the `S3CopyObject` in the Airflow integration.*
+* Airflow: use threadpool-based event emission in TaskInstance listener [`#1398`](https://github.com/OpenLineage/OpenLineage/pull/1398) [@JDarDagran](https://github.com/JDarDagran), [@mobuchowski](https://github.com/mobuchowski)
 * Spec: add spec file for `ExternalQueryRunFacet` [`#1262`](https://github.com/OpenLineage/OpenLineage/pull/1262) [@howardyoo](https://github.com/howardyoo)  
     *Adds a spec file to make this facet available for the Java client. Includes a README*
 * Docs: add a TSC doc [`#1303`](https://github.com/OpenLineage/OpenLineage/pull/1303) [@merobi-hub](https://github.com/merobi-hub)  
     *Adds a document listing the members of the Technical Steering Committee.*
+
 
 ### Fixed
 * Spark: improve Databricks to send better events [`#1330`](https://github.com/OpenLineage/OpenLineage/pull/1330) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  

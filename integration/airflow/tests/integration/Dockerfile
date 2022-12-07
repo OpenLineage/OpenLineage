@@ -4,7 +4,7 @@ COPY integration/sql /app/openlineage/integration/sql
 COPY integration/common /app/openlineage/integration/common
 COPY integration/airflow /app/openlineage/integration/airflow
 COPY client/python /app/openlineage/client/python
-COPY integration/target /app/openlineage/integration/sql/target
+COPY integration/targe[t] /app/openlineage/integration/sql/target
 USER root
 RUN mkdir -p /opt/data
 RUN apt-get update && apt-get install -y git
@@ -21,6 +21,11 @@ RUN AIRFLOW_VERSION=`airflow version` && \
     pip install --no-cache-dir --use-deprecated=legacy-resolver -r dev-requirements.txt \
     --constraint=https://raw.githubusercontent.com/apache/airflow/constraints-$AIRFLOW_VERSION/constraints-$PYTHON_VERSION.txt
 
+COPY debug.patch /tmp/patch.patch
+RUN if [[ "$(airflow version)" > "2.5" ]]; then \
+    cd /home/airflow/.local/lib/python3.7/site-packages/airflow; \
+    patch -u -p 2 < /tmp/patch.patch; \
+    fi
 
 FROM python:3.7-slim as integration
 RUN mkdir -p /app && mkdir -p /opt/openlineage

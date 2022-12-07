@@ -20,6 +20,8 @@ from openlineage.airflow.utils import (
     get_job_name,
     get_custom_facets,
     get_airflow_run_facet,
+    is_airflow_version_enough,
+    print_exception
 )
 
 if TYPE_CHECKING:
@@ -55,9 +57,8 @@ class ActiveRunManager:
         return ti.dag_id + ti.task_id + ti.run_id
 
 
-log = logging.getLogger("airflow")
-# TODO: move task instance runs to executor
-executor: Optional[Executor] = None
+log = logging.getLogger('airflow')
+executor: Optional[Executor] = None  # type: ignore
 
 
 def execute_in_thread(target: Callable, kwargs=None):
@@ -80,6 +81,13 @@ extractor_manager = ExtractorManager()
 adapter = OpenLineageAdapter()
 
 
+def execute(target: Callable):
+    if is_airflow_version_enough("2.5.0"):
+        executor.submit(target)  # type: ignore
+    else:
+        execute_in_thread(target)
+
+
 @hookimpl
 def on_task_instance_running(previous_state, task_instance: "TaskInstance", session: "Session"):
     if not hasattr(task_instance, 'task'):
@@ -91,19 +99,35 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
     dagrun = task_instance.dag_run
     dag = task_instance.task.dag
 
-    def on_running():
-        task_instance_copy = copy.deepcopy(task_instance)
-        task_instance_copy.render_templates()
-        task = task_instance_copy.task
+    parent_run_id = adapter.build_dag_run_id(dag.dag_id, dagrun.run_id)
+    run_id = str(uuid.uuid4())
 
-        run_id = str(uuid.uuid4())
+    task_instance_copy = copy.deepcopy(task_instance)
+    import os
+    log.info(f"running {os.getpid()}")
+    if is_airflow_version_enough("2.5.0"):
+        # this needs to be set in 2.5 here to fetch in on_complete forked process
         run_data_holder.set_active_run(task_instance_copy, run_id)
-        parent_run_id = adapter.build_dag_run_id(dag.dag_id, dagrun.run_id)
 
+    @print_exception
+    def on_running():
+        from airflow import settings
+        try:
+            settings.reconfigure_orm(disable_connection_pool=True)
+        except Exception as e:
+            print(e)
+        log.info(f"hook on_running {os.getpid()}")
+        task_instance_copy.render_templates()
+
+        log.info(f"hook after render_templates {os.getpid()}")
+
+        task = task_instance_copy.task
         task_uuid = adapter.build_task_instance_run_id(
-            task.task_id, task_instance.execution_date, task_instance.try_number
+            task.task_id, task_instance_copy.execution_date, task_instance_copy.try_number
         )
-
+        if not is_airflow_version_enough("2.5.0"):
+            # this needs to set here to pass proper task to on_complete
+            run_data_holder.set_active_run(task_instance_copy, run_id)
         task_metadata = extractor_manager.extract_metadata(dagrun, task)
 
         start, end = get_dagrun_start_end(dagrun=dagrun, dag=dag)
@@ -128,8 +152,14 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
                 **get_airflow_run_facet(dagrun, dag, task_instance_copy, task, task_uuid)
             }
         )
+    
+    from airflow import settings
+    try:
+        settings.reconfigure_orm(disable_connection_pool=True)
+    except Exception as e:
+        print(e)
 
-    execute_in_thread(on_running)
+    execute(on_running)
 
 
 @hookimpl
@@ -138,8 +168,13 @@ def on_task_instance_success(previous_state, task_instance: "TaskInstance", sess
     run_data = run_data_holder.get_active_run(task_instance)
 
     dagrun = task_instance.dag_run
-    task = run_data.task if run_data else None
+    if is_airflow_version_enough("2.5.0"):
+        # in 2.5 task is set properly after flush
+        task = task_instance.task
+    else:
+        task = run_data.task if run_data else None
 
+    @print_exception
     def on_success():
         task_metadata = extractor_manager.extract_metadata(
             dagrun, task, complete=True, task_instance=task_instance
@@ -151,7 +186,7 @@ def on_task_instance_success(previous_state, task_instance: "TaskInstance", sess
             task=task_metadata,
         )
 
-    execute_in_thread(on_success)
+    execute(on_success)
 
 
 @hookimpl
@@ -162,6 +197,7 @@ def on_task_instance_failed(previous_state, task_instance: "TaskInstance", sessi
     dagrun = task_instance.dag_run
     task = run_data.task if run_data else None
 
+    @print_exception
     def on_failure():
         task_metadata = extractor_manager.extract_metadata(
             dagrun, task, complete=True, task_instance=task_instance
@@ -174,18 +210,22 @@ def on_task_instance_failed(previous_state, task_instance: "TaskInstance", sessi
             task=task_metadata,
         )
 
-    execute_in_thread(on_failure)
+    execute(on_failure)
 
 
 @hookimpl
 def on_starting(component):
     global executor
-    executor = ThreadPoolExecutor(max_workers=8, thread_name_prefix="openlineage_")
+    log.error(f"on_starting: {component.__class__.__name__}")
+    if not executor:
+        executor = ThreadPoolExecutor(max_workers=8, thread_name_prefix="openlineage_")
 
 
 @hookimpl
 def before_stopping(component):
-    executor.shutdown(wait=False)
+    log.error(f"before_stopping: {component.__class__.__name__}")
+    if executor:
+        executor.shutdown(wait=True)
 
 
 @hookimpl

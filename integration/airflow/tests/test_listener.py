@@ -1,3 +1,6 @@
+# Copyright 2018-2022 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
+
 from airflow.models import BaseOperator
 from airflow.models import TaskInstance, DAG
 from airflow.utils.dates import days_ago
@@ -9,6 +12,8 @@ from airflow.listeners.events import (
     register_task_instance_state_events,
     unregister_task_instance_state_events,
 )
+
+from openlineage.airflow.utils import is_airflow_version_enough
 
 
 class TemplateOperator(BaseOperator):
@@ -44,10 +49,19 @@ def test_listener_does_not_change_task_instance(render_mock, xcom_push_mock):
     run_id = str(uuid.uuid1())
     dag.create_dagrun(state=State.NONE, run_id=run_id)
     ti = TaskInstance(t, run_id=run_id)
+
+    class TestComponent:
+        pass
+
+    if is_airflow_version_enough("2.5.0"):
+        from airflow.listeners.listener import get_listener_manager
+        get_listener_manager().hook.on_starting(component=TestComponent())
     ti.check_and_change_state_before_execution()  # make listener hook on running event
     ti._run_raw_task()
     # we need to unregister hooks not to break BigQuery E2E tests
     unregister_task_instance_state_events()
+    if is_airflow_version_enough("2.5.0"):
+        get_listener_manager().hook.before_stopping(component=TestComponent())
 
     # check if task returns the same DataFrame
     pd.testing.assert_frame_equal(xcom_push_mock.call_args[1]["value"], render_df())

@@ -13,6 +13,7 @@ from uuid import uuid4
 from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
 from typing import Optional
 from airflow.models import DAG as AIRFLOW_DAG
+from pkg_resources import parse_version
 
 from openlineage.airflow.facets import (
     AirflowMappedTaskRunFacet,
@@ -22,6 +23,7 @@ from openlineage.airflow.facets import (
 )
 from openlineage.client.utils import RedactMixin
 from pendulum import from_timestamp
+from functools import wraps
 
 
 if TYPE_CHECKING:
@@ -573,3 +575,20 @@ class LoggingMixin:
                 "openlineage.airflow.extractors."
                 f"{self.__class__.__module__}.{self.__class__.__name__}"
             )
+
+
+def is_airflow_version_enough(version):
+    from airflow.version import version as AIRFLOW_VERSION
+    return parse_version(
+        AIRFLOW_VERSION
+    ) >= parse_version(version)
+
+
+def print_exception(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except Exception as e:
+            log.exception(e)
+    return wrapper

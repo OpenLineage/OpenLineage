@@ -7,14 +7,14 @@ import os
 import sys
 from typing import List
 
-from pkg_resources import parse_version
-
 import psycopg2
 import time
 import requests
+from pkg_resources import parse_version
 from retrying import retry
 import pytest
 import unittest
+
 from openlineage.common.test import match, setup_jinja
 
 env = setup_jinja()
@@ -144,7 +144,7 @@ params = [
 ]
 
 
-@retry(wait_exponential_multiplier=1000, wait_exponential_max=10000, stop_max_delay=1000*10*60)
+@retry(wait_exponential_multiplier=1000, wait_exponential_max=10000, stop_max_delay=1000*1*60)
 def wait_for_dag(dag_id, airflow_db_conn) -> bool:
     log.info(f"Waiting for DAG '{dag_id}'...")
 
@@ -166,6 +166,8 @@ def wait_for_dag(dag_id, airflow_db_conn) -> bool:
         return False
     elif state != "success":
         raise Exception("Retry!")
+    # just wait a bit until dagrun complete event arrives
+    time.sleep(1.5)
     return True
 
 
@@ -283,7 +285,7 @@ def test_integration(dag_id, request_path, airflow_db_conn):
         "requests/dag_order",
         [],
         marks=pytest.mark.skipif(
-            not IS_AIRFLOW_VERSION_ENOUGH("2.5.0rc2"), reason="Airflow <= 2.5.0rc2"
+            not IS_AIRFLOW_VERSION_ENOUGH("2.5.0"), reason="Airflow <= 2.5.0"
         ),
     )
 ])

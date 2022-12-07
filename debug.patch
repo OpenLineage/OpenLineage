@@ -1,0 +1,205 @@
+diff --git a/airflow/cli/commands/task_command.py b/airflow/cli/commands/task_command.py
+index 078565dc38..c2c327915b 100644
+--- a/airflow/cli/commands/task_command.py
++++ b/airflow/cli/commands/task_command.py
+@@ -331,6 +331,7 @@ def task_run(args, dag=None):
+     """
+     # Load custom airflow config
+ 
++    print(f"task command {args.dag_id}, {args.task_id} {dag} {os.getpid()}")
+     if args.local and args.raw:
+         raise AirflowException(
+             "Option --raw and --local are mutually exclusive. "
+@@ -350,17 +351,21 @@ def task_run(args, dag=None):
+                 f"You provided the option {unsupported_flags}. "
+                 "Delete it to execute the command."
+             )
++    print(f"task command {args.dag_id}, {args.task_id} after raw {os.getpid()}")
+     if dag and args.pickle:
+         raise AirflowException("You cannot use the --pickle option when using DAG.cli() method.")
+     if args.cfg_path:
+         with open(args.cfg_path) as conf_file:
+             conf_dict = json.load(conf_file)
+-
++        
++        print(f"task command {args.dag_id}, {args.task_id} conf_dict {os.getpid()}")
+         if os.path.exists(args.cfg_path):
+             os.remove(args.cfg_path)
+-
++        
+         conf.read_dict(conf_dict, source=args.cfg_path)
++        print(f"task command {args.dag_id}, {args.task_id} read_dict {os.getpid()}")
+         settings.configure_vars()
++        print(f"task command {args.dag_id}, {args.task_id} configure_vars {os.getpid()}")
+ 
+     settings.MASK_SECRETS_IN_LOGS = True
+ 
+@@ -368,20 +373,26 @@ def task_run(args, dag=None):
+     # behind multiple open sleeping connections while heartbeating, which could
+     # easily exceed the database connection limit when
+     # processing hundreds of simultaneous tasks.
++    print(f"task command {args.dag_id}, {args.task_id} reconfigure_orm {os.getpid()}")
+     settings.reconfigure_orm(disable_connection_pool=True)
+ 
+     get_listener_manager().hook.on_starting(component=TaskCommandMarker())
+ 
++    print(f"task command {args.dag_id}, {args.task_id} after on_starting {os.getpid()}")
+     if args.pickle:
+         print(f"Loading pickle id: {args.pickle}")
+         dag = get_dag_by_pickle(args.pickle)
++        print(f"task command {args.dag_id}, {args.task_id} after get_dag_by_pickle {os.getpid()}")
+     elif not dag:
+         dag = get_dag(args.subdir, args.dag_id)
++        print(f"task command {args.dag_id}, {args.task_id} after get_dag {os.getpid()}")
+     else:
+         # Use DAG from parameter
+         pass
+     task = dag.get_task(task_id=args.task_id)
++    print(f"task command {args.dag_id}, {args.task_id} after dag.get_task {os.getpid()}")
+     ti, _ = _get_ti(task, args.map_index, exec_date_or_run_id=args.execution_date_or_run_id, pool=args.pool)
++    print(f"task command {args.dag_id}, {args.task_id} aftert _get_ti {os.getpid()}")
+     ti.init_run_context(raw=args.raw)
+ 
+     hostname = get_hostname()
+@@ -390,9 +401,11 @@ def task_run(args, dag=None):
+ 
+     try:
+         if args.interactive:
++            print(f"task command {args.dag_id}, {args.task_id} _run_task_by_selected_method interactive {os.getpid()}")
+             _run_task_by_selected_method(args, dag, ti)
+         else:
+             with _capture_task_logs(ti):
++                print(f"task command {args.dag_id}, {args.task_id} _run_task_by_selected_method capture_task_logs {os.getpid()}")
+                 _run_task_by_selected_method(args, dag, ti)
+     finally:
+         try:
+diff --git a/airflow/jobs/base_job.py b/airflow/jobs/base_job.py
+index e3d79d67b9..ad43e7698e 100644
+--- a/airflow/jobs/base_job.py
++++ b/airflow/jobs/base_job.py
+@@ -235,22 +235,28 @@ class BaseJob(Base, LoggingMixin):
+ 
+     def run(self):
+         """Starts the job."""
++        import os
++        self.log.info(f"BaseJob run {os.getpid()}")
+         Stats.incr(self.__class__.__name__.lower() + "_start", 1, 1)
+         # Adding an entry in the DB
+         with create_session() as session:
+             self.state = State.RUNNING
+             session.add(self)
+             session.commit()
++            self.log.info(f"BaseJob session commit {os.getpid()}")
+             make_transient(self)
++            self.log.info(f"BaseJob make_transient {os.getpid()}")
+ 
+             try:
++                self.log.info(f"BaseJob before _execute {os.getpid()}")
+                 self._execute()
+                 # In case of max runs or max duration
+                 self.state = State.SUCCESS
+             except SystemExit:
+                 # In case of ^C or SIGTERM
+                 self.state = State.SUCCESS
+-            except Exception:
++            except Exception as e:
++                self.log.info("BaseJob got exception", e)
+                 self.state = State.FAILED
+                 raise
+             finally:
+diff --git a/airflow/jobs/local_task_job.py b/airflow/jobs/local_task_job.py
+index fe7fc4a561..b95657189f 100644
+--- a/airflow/jobs/local_task_job.py
++++ b/airflow/jobs/local_task_job.py
+@@ -84,7 +84,8 @@ class LocalTaskJob(BaseJob):
+             self.handle_task_exit(128 + signum)
+ 
+         signal.signal(signal.SIGTERM, signal_handler)
+-
++        import os
++        self.log.info(f"LocalTaskJob before check_and_change_state_before_execution, {str(self.task_instance)} {os.getpid()}")
+         if not self.task_instance.check_and_change_state_before_execution(
+             mark_success=self.mark_success,
+             ignore_all_deps=self.ignore_all_deps,
+@@ -99,6 +100,7 @@ class LocalTaskJob(BaseJob):
+             return
+ 
+         try:
++            self.log.info(f"LocalTaskJob before task_runner.start, {str(self.task_instance)} {os.getpid()}")
+             self.task_runner.start()
+ 
+             heartbeat_time_limit = conf.getint("scheduler", "scheduler_zombie_task_threshold")
+diff --git a/airflow/task/task_runner/standard_task_runner.py b/airflow/task/task_runner/standard_task_runner.py
+index 4d2d55e927..5125784a18 100644
+--- a/airflow/task/task_runner/standard_task_runner.py
++++ b/airflow/task/task_runner/standard_task_runner.py
+@@ -39,17 +39,20 @@ class StandardTaskRunner(BaseTaskRunner):
+         self.dag = local_task_job.task_instance.task.dag
+ 
+     def start(self):
++        self.log.info("StandardTaskRunner: start")
+         if CAN_FORK and not self.run_as_user:
+             self.process = self._start_by_fork()
+         else:
+             self.process = self._start_by_exec()
+ 
+     def _start_by_exec(self) -> psutil.Process:
++        self.log.info("StandardTaskRunner _start_by_exec")
+         subprocess = self.run_command()
+         self.process = psutil.Process(subprocess.pid)
+         return self.process
+ 
+     def _start_by_fork(self):
++        self.log.info("StandardTaskRunner: _start_by_fork")
+         pid = os.fork()
+         if pid:
+             self.log.info("Started process %d to run task", pid)
+@@ -57,6 +60,7 @@ class StandardTaskRunner(BaseTaskRunner):
+         else:
+             # Start a new process group
+             set_new_process_group()
++            self.log.info(f"StandardTaskRunner set_new_process_group {os.getpid()}")
+             import signal
+ 
+             signal.signal(signal.SIGINT, signal.SIG_DFL)
+@@ -70,7 +74,9 @@ class StandardTaskRunner(BaseTaskRunner):
+             # between process. The cli code will re-create this as part of its
+             # normal startup
+             settings.engine.pool.dispose()
++            self.log.info(f"StandardTaskRunner after pool dispose {os.getpid()}")
+             settings.engine.dispose()
++            self.log.info(f"StandardTaskRunner after engine dispose {os.getpid()}")
+ 
+             parser = get_parser()
+             # [1:] - remove "airflow" from the start of the command
+@@ -86,6 +92,7 @@ class StandardTaskRunner(BaseTaskRunner):
+             if job_id is not None:
+                 proc_title += " {0.job_id}"
+             setproctitle(proc_title.format(args))
++            self.log.info(f"StandardTaskRunner after setproctitle {os.getpid()}")
+             return_code = 0
+             try:
+                 with _airflow_parsing_context_manager(
+diff --git a/airflow/utils/cli.py b/airflow/utils/cli.py
+index 3ee43fdc4a..eab448e481 100644
+--- a/airflow/utils/cli.py
++++ b/airflow/utils/cli.py
+@@ -90,8 +90,10 @@ def action_cli(func=None, check_db=True):
+             :param kwargs: A passthrough keyword argument
+             """
+             _check_cli_args(args)
++            print(f"wrapper after check args {os.getpid()}", func, f)
+             metrics = _build_metrics(f.__name__, args[0])
+             cli_action_loggers.on_pre_execution(**metrics)
++            print(f"wrapper after pre_execution {os.getpid()}", func, f)
+             verbose = getattr(args[0], "verbose", False)
+             root_logger = logging.getLogger()
+             if verbose:
+@@ -107,6 +109,7 @@ def action_cli(func=None, check_db=True):
+                     synchronize_log_template()
+                 return f(*args, **kwargs)
+             except Exception as e:
++                print(f"wrapper exception {os.getpid()}", func, f, e)
+                 metrics["error"] = e
+                 raise
+             finally:

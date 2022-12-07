@@ -21,7 +21,7 @@ from openlineage.client.facet import (
     ErrorMessageRunFacet,
     ProcessingEngineRunFacet,
 )
-from openlineage.airflow.utils import redact_with_exclusions, DagUtils
+from openlineage.airflow.utils import redact_with_exclusions, DagUtils, print_exception
 from openlineage.client.run import RunEvent, RunState, Run, Job
 import requests.exceptions
 
@@ -199,6 +199,7 @@ class OpenLineageAdapter:
         )
         self.emit(event)
 
+    @print_exception
     def dag_started(
         self,
         dag_run: "DagRun",
@@ -221,6 +222,7 @@ class OpenLineageAdapter:
         )
         self.emit(event)
 
+    @print_exception
     def dag_success(self, dag_run: "DagRun", msg: str):
         event = RunEvent(
             eventType=RunState.COMPLETE,
@@ -233,6 +235,7 @@ class OpenLineageAdapter:
         )
         self.emit(event)
 
+    @print_exception
     def dag_failed(self, dag_run: "DagRun", msg: str):
         event = RunEvent(
             eventType=RunState.FAIL,

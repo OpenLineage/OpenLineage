@@ -80,11 +80,13 @@ def lineage():
     conn = get_conn()
     if request.method == 'POST':
         job_name = request.json['job']['name']
+        event_time = request.json['eventTime']
         conn.execute("""
-            INSERT INTO requests values (:body, :job_name, CURRENT_TIMESTAMP)
+            INSERT INTO requests values (:body, :job_name, :created_at)
         """, {
             "body": json.dumps(request.json),
-            "job_name": job_name
+            "job_name": job_name,
+            "created_at": event_time,
         })
         logger.info(f"job_name: {job_name}")
         logger.info(json.dumps(request.json, sort_keys=True))

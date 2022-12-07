@@ -36,9 +36,10 @@ export BIGQUERY_PREFIX=$(echo "$AIRFLOW_VERSION" | tr "-" "_" | tr "." "_")
 export DBT_DATASET_PREFIX=$(echo "$AIRFLOW_VERSION" | tr "-" "_" | tr "." "_")_dbt
 # just a hack to have same docker-compose for dev and CI env
 export PWD='.'
-
+EXIT_CODE=0
 docker-compose -f tests/docker-compose.yml down -v
 docker-compose -f tests/docker-compose.yml build
-docker-compose -f tests/docker-compose.yml run integration
+docker-compose -f tests/docker-compose.yml run integration || EXIT_CODE=$?
 docker-compose -f tests/docker-compose.yml logs > tests/airflow/logs/docker.log
 docker-compose -f tests/docker-compose.yml down
+exit $EXIT_CODE

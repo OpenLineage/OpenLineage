@@ -21,7 +21,9 @@ levels = {
     "openlineage": "DEBUG",
     "great_expectations": "INFO",
     "airflow.lineage": "DEBUG",
+    "airflow.jobs": "DEBUG",
     "botocore": "INFO",
+    "airflow": "DEBUG"
 }
 
 for el, lvl in levels.items():

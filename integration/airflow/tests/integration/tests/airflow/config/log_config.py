@@ -22,6 +22,8 @@ levels = {
     "great_expectations": "INFO",
     "airflow.lineage": "DEBUG",
     "airflow.processor_manager": "WARNING",
+    "airflow.jobs": "DEBUG",
+    "airflow": "DEBUG",
     "botocore": "INFO",
 }
 

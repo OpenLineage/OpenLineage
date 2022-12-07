@@ -71,7 +71,7 @@ function compose_up() {
     UP_ARGS+="-d"
   fi
 
-  docker-compose -f $YAML_LOCATION/docker-compose.yml -f $YAML_LOCATION/docker-compose-dev.yml down
+  docker-compose -f $YAML_LOCATION/docker-compose.yml -f $YAML_LOCATION/docker-compose-dev.yml down -v
   docker-compose -f $YAML_LOCATION/docker-compose.yml -f $YAML_LOCATION/docker-compose-dev.yml --profile dev up $UP_ARGS
 }
 
