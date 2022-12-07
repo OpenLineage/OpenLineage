@@ -50,7 +50,7 @@ ext {
     sparkVersion = '2.4.8'
     sparkVersionShort = '2.4'
     snowflakeVersion = '2.9.3'
-    postgresqlVersion = '42.5.0'
+    postgresqlVersion = '42.5.1'
     mockitoVersion = '4.9.0'
     testcontainersVersion = '1.17.6'
 }
