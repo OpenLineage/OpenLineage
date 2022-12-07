@@ -8,7 +8,7 @@ plugins {
     id 'java'
     id 'java-library'
     id 'java-test-fixtures'
-    id 'com.diffplug.spotless' version '5.12.1'
+    id 'com.diffplug.spotless' version '6.12.0'
     id "com.adarshr.test-logger" version "3.2.0"
     id "org.gradle.test-retry" version "1.4.1"
     id "com.github.johnrengelman.shadow" version "7.1.2"
