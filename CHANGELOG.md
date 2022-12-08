@@ -2,7 +2,7 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.18.0...HEAD)
 
-## [0.18.0](https://github.com/OpenLineage/OpenLineage/compare/0.17.0...0.18.0) - 2022-12-6
+## [0.18.0](https://github.com/OpenLineage/OpenLineage/compare/0.17.0...0.18.0) - 2022-12-8
 ### Added
 * Airflow: support `SQLExecuteQueryOperator` [`#1379`](https://github.com/OpenLineage/OpenLineage/pull/1379) [@JDarDagran](https://github.com/JDarDagran)  
     *Changes the `SQLExtractor` and adds support for the dynamic assignment of extractors based on `conn_type`.*
