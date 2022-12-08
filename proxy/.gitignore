@@ -7,7 +7,7 @@ proxy.yml
 .project
 .classpath
 bin
-build
+build/
 *.class
 
 # MacOS
@@ -21,10 +21,6 @@ __MACOSX
 *.iws
 .idea
 venv
-
-# Built files
-target*
-build*
 
 # Dependent Helm charts
 chart/charts/
