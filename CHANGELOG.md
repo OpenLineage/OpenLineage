@@ -9,7 +9,7 @@
 * Airflow: introduce a new extractor for `SFTPOperator` [`#1263`](https://github.com/OpenLineage/OpenLineage/pull/1263) [@sekikn](https://github.com/sekikn)  
     *Adds an extractor for tracing file transfers between local file systems.*
 * Airflow: add Sagemaker extractors [`#1136`](https://github.com/OpenLineage/OpenLineage/pull/1136) [@fhoda](https://github.com/fhoda)  
-    *Creates extractors for `SagemakeProcessingOperator` and `SagemakerTransformOperator`.*
+    *Creates extractors for `SagemakerProcessingOperator` and `SagemakerTransformOperator`.*
 * Airflow: add S3 extractor for Airflow operators [`#1166`](https://github.com/OpenLineage/OpenLineage/pull/1166) [@fhoda](https://github.com/fhoda)  
     *Creates an extractor for the `S3CopyObject` in the Airflow integration.*
 * Spec: add spec file for `ExternalQueryRunFacet` [`#1262`](https://github.com/OpenLineage/OpenLineage/pull/1262) [@howardyoo](https://github.com/howardyoo)  
