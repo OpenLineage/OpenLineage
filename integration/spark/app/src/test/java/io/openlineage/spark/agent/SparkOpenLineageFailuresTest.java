@@ -13,8 +13,8 @@ import static org.mockserver.model.HttpRequest.request;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.lifecycle.StaticExecutionContextFactory;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.concurrent.TimeoutException;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -80,7 +80,8 @@ class SparkOpenLineageFailuresTest {
             ".*Spark is fine!.*",
             openLineageClientMockContainer,
             "testFailures",
-            new ArrayList<String>(),
+            Collections.emptyList(),
+            Collections.emptyList(),
             "/opt/spark_scripts/spark_test_failures.py")
         .start();
   }
@@ -96,7 +97,8 @@ class SparkOpenLineageFailuresTest {
             ".*Spark is fine!.*",
             openLineageClientMockContainer,
             "testFailures",
-            new ArrayList<String>(),
+            Collections.emptyList(),
+            Collections.emptyList(),
             "/opt/spark_scripts/spark_test_failures.py")
         .start();
   }
@@ -112,7 +114,8 @@ class SparkOpenLineageFailuresTest {
             ".*Spark is fine!.*",
             openLineageClientMockContainer,
             "testFailures",
-            new ArrayList<String>(),
+            Collections.emptyList(),
+            Collections.emptyList(),
             "/opt/spark_scripts/spark_test_failures.py")
         .start();
   }

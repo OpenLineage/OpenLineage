@@ -8,7 +8,7 @@ plugins {
     id 'java'
     id 'java-library'
     id 'java-test-fixtures'
-    id 'com.diffplug.spotless' version '5.12.1'
+    id 'com.diffplug.spotless' version '6.12.0'
     id "com.adarshr.test-logger" version "3.2.0"
     id "org.gradle.test-retry" version "1.4.1"
     id "com.github.johnrengelman.shadow" version "7.1.2"
@@ -44,16 +44,22 @@ ext {
     sparkVersion = '3.1.3'
     jacksonVersion = '2.10.0'
     lombokVersion = '1.18.20'
+    bigqueryVersion = "0.26.0"
 }
 
 dependencies {
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
+
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
     testCompileOnly "org.projectlombok:lombok:${lombokVersion}"
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
     implementation(project(":shared"))
 
+    compileOnly ("com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:${bigqueryVersion}") {
+        exclude group: 'com.fasterxml.jackson.core'
+        exclude group: 'com.fasterxml.jackson.module'
+    }
     compileOnly "org.apache.spark:spark-core_2.12:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql_2.12:${sparkVersion}"
     compileOnly "org.apache.spark:spark-hive_2.12:${sparkVersion}"

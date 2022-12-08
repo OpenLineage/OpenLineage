@@ -8,7 +8,7 @@ plugins {
     id 'java'
     id 'java-library'
     id 'java-test-fixtures'
-    id 'com.diffplug.spotless' version '5.12.1'
+    id 'com.diffplug.spotless' version '6.12.0'
     id "com.github.johnrengelman.shadow" version "7.1.2"
     id "pmd"
 }
@@ -48,7 +48,9 @@ ext {
     bigqueryVersion = '0.26.0'
     junit5Version = '5.9.1'
     sparkVersion = '2.4.8'
-    postgresqlVersion = '42.5.0'
+    sparkVersionShort = '2.4'
+    snowflakeVersion = '2.9.3'
+    postgresqlVersion = '42.5.1'
     mockitoVersion = '4.9.0'
     testcontainersVersion = '1.17.6'
 }
@@ -58,10 +60,17 @@ dependencies {
 
     compileOnly "org.apache.spark:spark-core_2.11:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
-    compileOnly ("com.google.cloud.spark:spark-bigquery_2.11:${bigqueryVersion}") {
+    compileOnly ("com.google.cloud.spark:spark-bigquery-with-dependencies_2.11:${bigqueryVersion}") {
         exclude group: 'com.fasterxml.jackson.core'
         exclude group: 'com.fasterxml.jackson.module'
     }
+    compileOnly ("net.snowflake:spark-snowflake_2.11:${snowflakeVersion}-spark_${sparkVersionShort}") {
+        exclude group: 'com.google.guava:guava'
+        exclude group: 'org.apache.spark:spark-core_2.11'
+        exclude group: 'org.apache.spark:spark-sql_2.11'
+        exclude group: 'org.apache.spark:spark-catalyst_2.11'
+    }
+
     compileOnly "org.apache.spark:spark-hive_2.11:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql-kafka-0-10_2.11:${sparkVersion}"
     compileOnly "com.databricks:dbutils-api_2.11:0.0.5"

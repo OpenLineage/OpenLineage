@@ -154,13 +154,16 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
   @Override
   public Collection<CustomFacetBuilder<?, ? extends OutputDatasetFacet>>
       createOutputDatasetFacetBuilders(OpenLineageContext context) {
-    return ImmutableList.<CustomFacetBuilder<?, ? extends OutputDatasetFacet>>builder()
-        .addAll(
-            generate(
-                eventHandlerFactories,
-                factory -> factory.createOutputDatasetFacetBuilders(context)))
-        .add(new OutputStatisticsOutputDatasetFacetBuilder(context))
-        .build();
+    ImmutableList.Builder<CustomFacetBuilder<?, ? extends OutputDatasetFacet>> builder =
+        ImmutableList.<CustomFacetBuilder<?, ? extends OutputDatasetFacet>>builder()
+            .addAll(
+                generate(
+                    eventHandlerFactories,
+                    factory -> factory.createOutputDatasetFacetBuilders(context)));
+    if (context.getSparkVersion().startsWith("3")) {
+      builder.add(new OutputStatisticsOutputDatasetFacetBuilder(context));
+    }
+    return builder.build();
   }
 
   @Override

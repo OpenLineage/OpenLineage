@@ -311,7 +311,7 @@ jobs:
       - *checkout_project_root
       - attach_workspace:
           at: .
-      - run: pip install tox
+      - run: pip install tox==3.27.1
       - restore_cache:
           keys:
             - v1-toxenv-common-{{ .Branch }}-{{ checksum "setup.cfg" }}-{{ checksum "setup.py" }}
@@ -453,6 +453,9 @@ jobs:
       JDK8_HOME: /usr/lib/jvm/java-8-openjdk-amd64
     steps:
       - *checkout_project_root
+      - gcp-cli/install
+      - gcp-cli/initialize
+      - run: mkdir -p app/build/gcloud && echo $GCLOUD_SERVICE_KEY > app/build/gcloud/gcloud-service-key.json && chmod 644 app/build/gcloud/gcloud-service-key.json
       - restore_cache:
           keys:
             - v1-integration-spark-{{ .Branch }}-{{ .Revision }}
@@ -524,7 +527,7 @@ jobs:
       - *install_python_client
       - install_integration_common:
           install_parser: << parameters.install_parser >>
-      - run: pip install tox mypy==0.971
+      - run: pip install tox==3.27.1 mypy==0.971
       - run: python -m mypy --install-types --non-interactive --ignore-missing-imports openlineage
       - restore_cache:
           keys:
@@ -650,6 +653,18 @@ jobs:
       - run: pip install wheel twine
       - run: mkdir -p target/wheels && cp target/wheels/* dist/
       - run: python -m twine upload --non-interactive --verbose --repository pypi dist/*
+
+  publish-javadoc:
+    working_directory: ~/openlineage/client/java
+    docker:
+      - image: cimg/openjdk:11.0
+    steps:
+      - *checkout_project_root
+      - add_ssh_keys:
+          fingerprints:
+            - "01:93:41:8a:7b:81:b6:cf:d4:b2:34:52:c6:ff:ac:53"
+      - run: ./gradlew javadoc
+      - run: ./release-javadoc.sh
 
   publish-spec:
     working_directory: ~/openlineage
