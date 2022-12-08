@@ -19,6 +19,7 @@ import lombok.NonNull;
 import lombok.Value;
 import lombok.experimental.Tolerate;
 import org.apache.spark.SparkContext;
+import org.apache.spark.package$;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.QueryExecution;
@@ -86,6 +87,9 @@ public class OpenLineageContext {
 
   /** Optional {@link QueryExecution} for runs that are Spark SQL queries. */
   @Default @NonNull Optional<QueryExecution> queryExecution = Optional.empty();
+
+  /** Spark version of currently running job */
+  String sparkVersion = package$.MODULE$.SPARK_VERSION();
 
   /**
    * Override the default Builder class to take an unwrapped {@link QueryExecution} argument, rather

@@ -1,69 +1,41 @@
 {
   "@class":"org.apache.spark.sql.execution.datasources.LogicalRelation",
-  "id":1,
   "relation":{
     "@class":"com.google.cloud.spark.bigquery.BigQueryRelation",
-    "id":2,
-    "tableId":{
-      "id":3,
+    "tableId": {
       "dataset":"dataset",
-      "table":"test",
-      "iamresourceName":"projects/null/datasets/dataset/tables/test"
+      "table":"test"
     },
     "tableName":"dataset.test"
   },
   "output":[
     {
-      "id":4,
       "name":"name",
       "dataType":{
-        "id":5,
-        "ordering":{
-          "id":6
-        }
+        "ordering":{}
       },
       "nullable":false,
       "metadata":{
-        "id":7,
-        "map":{
-
-        }
+        "map":{}
       },
-      "exprId":{
-        "id":1,
-        "jvmId":"36158998-6a69-407a-9ac2-5eed26afc168"
-      },
-      "qualifier":[
-
-      ],
-      "origin":{
-        "id":9
-      },
+      "qualifier":[],
+      "origin":{},
       "deterministic":true,
       "resolved":true
     }
   ],
   "isStreaming":false,
-  "origin":9,
   "schema":[
     {
-      "id":10,
-      "name":"name",
-      "dataType":5,
-      "nullable":false,
-      "metadata":7
+      "name": "name",
+      "nullable": false
     }
   ],
   "allAttributes":{
-    "id":11,
-    "attrs":[
-
-    ]
+    "attrs":[]
   },
   "resolved":true,
-  "attributeMap":{
-    "name#1":4
-  },
+  "attributeMap":{},
   "traceEnabled":false,
   "canonicalizedPlan":false
 }

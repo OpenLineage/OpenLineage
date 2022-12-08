@@ -18,10 +18,10 @@ import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.cloud.bigquery.MockBigQueryRelationProvider;
 import com.google.cloud.bigquery.connector.common.BigQueryUtil;
 import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.BigQuery;
 import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.Field;
-import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.MockBigQueryRelationProvider;
 import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.Schema;
 import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.StandardSQLTypeName;
 import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.StandardTableDefinition;
@@ -39,6 +39,7 @@ import io.openlineage.client.OpenLineage.SchemaDatasetFacetFields;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.PlanUtils;
+import io.openlineage.spark.agent.util.SparkVersionUtils;
 import io.openlineage.spark.agent.util.TestOpenLineageEventHandlerFactory;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -216,8 +217,9 @@ class SparkReadWriteIntegTest {
         .isEqualTo(schemaDatasetFacet);
 
     assertNotNull(output.getFacets().getAdditionalProperties());
-
-    assertThat(output.getOutputFacets().getOutputStatistics()).isNotNull();
+    if (SparkVersionUtils.isSpark3()) {
+      assertThat(output.getOutputFacets().getOutputStatistics()).isNotNull();
+    }
   }
 
   @Test
@@ -271,7 +273,7 @@ class SparkReadWriteIntegTest {
         .satisfies(
             d -> {
               // Spark rowCount metrics currently only working in Spark 3.x
-              if (spark.version().startsWith("3")) {
+              if (SparkVersionUtils.isSpark3()) {
                 assertThat(d.getOutputFacets().getOutputStatistics())
                     .isNotNull()
                     .hasFieldOrPropertyWithValue("rowCount", 2L);
@@ -635,7 +637,7 @@ class SparkReadWriteIntegTest {
         .satisfies(
             d -> {
               // Spark rowCount metrics currently only working in Spark 3.x
-              if (spark.version().startsWith("3")) {
+              if (SparkVersionUtils.isSpark3()) {
                 assertThat(d.getOutputFacets().getOutputStatistics())
                     .isNotNull()
                     .hasFieldOrPropertyWithValue("rowCount", 2L);

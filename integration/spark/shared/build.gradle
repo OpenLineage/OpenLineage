@@ -60,7 +60,7 @@ dependencies {
 
     compileOnly "org.apache.spark:spark-core_2.11:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
-    compileOnly ("com.google.cloud.spark:spark-bigquery_2.11:${bigqueryVersion}") {
+    compileOnly ("com.google.cloud.spark:spark-bigquery-with-dependencies_2.11:${bigqueryVersion}") {
         exclude group: 'com.fasterxml.jackson.core'
         exclude group: 'com.fasterxml.jackson.module'
     }

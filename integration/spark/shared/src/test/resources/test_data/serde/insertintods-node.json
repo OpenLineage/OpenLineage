@@ -4,24 +4,18 @@
     "@class":"org.apache.spark.sql.execution.datasources.LogicalRelation",
     "relation":{
       "@class":"com.google.cloud.spark.bigquery.BigQueryRelation",
-      "tableId":{
-        "dataset":"dataset",
-        "table":"test",
-        "iamresourceName":"projects/null/datasets/dataset/tables/test"
-      },
-      "tableName":"dataset.test"
+      "id": 3,
+      "tableName": "dataset.test",
+      "tableId": {
+          "dataset":"dataset",
+          "table":"test"
+      }
     },
     "output":[
       {
-        "dataType":{
-          "ordering":{
-
-          }
-        },
+        "dataType":{},
         "nullable":false,
-        "qualifier":[
-
-        ],
+        "qualifier":[],
         "deterministic":true,
         "resolved":true
       }
@@ -34,17 +28,13 @@
       }
     ],
     "resolved":true,
-    "attributeMap":{
-
-    },
+    "attributeMap":{},
     "traceEnabled":false,
     "canonicalizedPlan":false
   },
   "overwrite":false,
   "resolved":true,
-  "metrics":{
-
-  },
+  "metrics":{},
   "streaming":false,
   "traceEnabled":false,
   "canonicalizedPlan":false
