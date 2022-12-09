@@ -3,7 +3,7 @@
 
 import json
 from openlineage.common.test import match
-
+import sys
 
 def check_matches(expected_events, actual_events) -> bool:
     for expected in expected_events:
@@ -36,4 +36,6 @@ def compare_mockserver(source_file, target_file):
 
 
 if __name__ == "__main__":
-    compare_mockserver("source.json", "target.json")
+    print(sys.argv[1])
+    print(sys.argv[2])
+    compare_mockserver(sys.argv[1], sys.argv[2])
