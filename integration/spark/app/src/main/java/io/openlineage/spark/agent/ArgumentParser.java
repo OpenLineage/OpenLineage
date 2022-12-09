@@ -24,6 +24,7 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.spark.SparkConf;
+import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import scala.Tuple2;
@@ -57,7 +58,7 @@ public class ArgumentParser {
     ArgumentParserBuilder builder = ArgumentParser.builder();
     conf.setIfMissing(SPARK_CONF_DISABLED_FACETS, DEFAULT_DISABLED_FACETS);
     conf.setIfMissing(SPARK_CONF_TRANSPORT_TYPE, "console");
-    
+
     log.info("OPENLINEAGE CONFIG PARAMETERS");
     Arrays.stream(conf.getAllWithPrefix("spark.openlineage.")).forEach(e->log.info("OL PARAM: " + e._1 + " = " + e._2));
     if (conf.get(SPARK_CONF_TRANSPORT_TYPE).equals("http")) {
@@ -85,36 +86,44 @@ public class ArgumentParser {
       JSONObject temp = jsonObject;
       String keyPath = c._1;
       String value = c._2;
-      Optional<String> propertyPath =
-          PROPERTIES_PREFIXES.stream().filter(keyPath::startsWith).findAny();
-      List<String> pathKeys =
-          propertyPath
-              .map(
-                  s -> {
-                    List<String> path = new ArrayList<>(Arrays.asList(s.split("\\.")));
-                    path.add(keyPath.replaceFirst(s, ""));
-                    return path;
-                  })
-              .orElseGet(() -> Arrays.asList(keyPath.split("\\.")));
-      List<String> nonLeafs = pathKeys.subList(0, pathKeys.size() - 1);
-      String leaf = pathKeys.get(pathKeys.size() - 1);
-      for (String node : nonLeafs) {
-        if (!temp.has(node)) {
-          temp.put(node, new JSONObject());
-        }
-        temp = temp.getJSONObject(node);
-      }
-      if (value.contains(DISABLED_FACETS_SEPARATOR)) {
-        JSONArray jsonArray = new JSONArray();
-        Arrays.stream(value.split(DISABLED_FACETS_SEPARATOR))
-            .filter(StringUtils::isNotBlank)
-            .forEach(jsonArray::put);
-        temp.put(leaf, jsonArray);
-      } else {
-        temp.put(leaf, value);
-      }
+      if(StringUtils.isNotBlank(value)){
+          List<String> pathKeys = getJsonPath(keyPath);
+          List<String> nonLeafs = pathKeys.subList(0, pathKeys.size() - 1);
+          String leaf = pathKeys.get(pathKeys.size() - 1);
+          for (String node : nonLeafs) {
+            if (!temp.has(node)) {
+              temp.put(node, new JSONObject());
+            }
+            temp = temp.getJSONObject(node);
+          }
+          if (value.contains(DISABLED_FACETS_SEPARATOR)) {
+            JSONArray jsonArray = new JSONArray();
+            Arrays.stream(value.split(DISABLED_FACETS_SEPARATOR))
+                .filter(StringUtils::isNotBlank)
+                .forEach(jsonArray::put);
+            temp.put(leaf, jsonArray);
+          } else {
+            temp.put(leaf, value);
+          }
+    }
     }
     return OpenLineageClientUtils.loadOpenLineageYaml(
         new ByteArrayInputStream(jsonObject.toString().getBytes()));
+  }
+
+  @NotNull
+  private static List<String> getJsonPath(String keyPath) {
+    Optional<String> propertyPath =
+        PROPERTIES_PREFIXES.stream().filter(keyPath::startsWith).findAny();
+    List<String> pathKeys =
+        propertyPath
+            .map(
+                s -> {
+                  List<String> path = new ArrayList<>(Arrays.asList(s.split("\\.")));
+                  path.add(keyPath.replaceFirst(s, ""));
+                  return path;
+                })
+            .orElseGet(() -> Arrays.asList(keyPath.split("\\.")));
+    return pathKeys;
   }
 }
