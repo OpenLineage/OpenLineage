@@ -105,11 +105,10 @@ public class SparkContainerUtils {
     }
 
     List<String> sparkConf = new ArrayList<>();
-    sparkConfigParams.forEach(param -> addSparkConfig(sparkConf, param));
-    addSparkConfig(sparkConf, "spark.openlineage.host=" + openlineageUrl);
+    addSparkConfig(sparkConf, "spark.openlineage.transport.type=http");
     addSparkConfig(
-        sparkConf,
-        "spark.openlineage.url="
+            sparkConf,
+        "spark.openlineage.transport.url="
             + openlineageUrl
             + "/api/v1/namespaces/"
             + namespace

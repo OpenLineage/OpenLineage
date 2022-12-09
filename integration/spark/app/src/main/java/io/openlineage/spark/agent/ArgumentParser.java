@@ -39,7 +39,7 @@ public class ArgumentParser {
   public static final String SPARK_CONF_JOB_NAME = "spark.openlineage.parentJobName";
   public static final String SPARK_CONF_PARENT_RUN_ID = "spark.openlineage.parentRunId";
   public static final String SPARK_CONF_APP_NAME = "spark.openlineage.appName";
-  public static final String SPARK_CONF_DISABLED_FACETS = "spark.openlineage.facets.disabled.";
+  public static final String SPARK_CONF_DISABLED_FACETS = "spark.openlineage.facets.disabled";
   public static final String DEFAULT_DISABLED_FACETS = "spark_unknown;";
   public static final String DISABLED_FACETS_SEPARATOR = ";";
   public static final String SPARK_CONF_TRANSPORT_TYPE = "spark.openlineage.transport.type";
@@ -57,6 +57,9 @@ public class ArgumentParser {
     ArgumentParserBuilder builder = ArgumentParser.builder();
     conf.setIfMissing(SPARK_CONF_DISABLED_FACETS, DEFAULT_DISABLED_FACETS);
     conf.setIfMissing(SPARK_CONF_TRANSPORT_TYPE, "console");
+    
+    log.info("OPENLINEAGE CONFIG PARAMETERS");
+    Arrays.stream(conf.getAllWithPrefix("spark.openlineage.")).forEach(e->log.info("OL PARAM: " + e._1 + " = " + e._2));
     if (conf.get(SPARK_CONF_TRANSPORT_TYPE).equals("http")) {
       findSparkConfigKey(conf, SPARK_CONF_HTTP_URL)
           .ifPresent(url -> UrlParser.parseUrl(url).forEach(conf::set));
