@@ -9,6 +9,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClient;
 import io.openlineage.client.OpenLineageClientException;
 import io.openlineage.client.OpenLineageClientUtils;
+import io.openlineage.client.transports.FacetsConfig;
 import io.openlineage.client.transports.TransportFactory;
 import java.net.URISyntaxException;
 import java.util.Optional;
@@ -29,12 +30,12 @@ public class EventEmitter {
     this.parentJobName = argument.getJobName();
     this.parentRunId = convertToUUID(argument.getParentRunId());
     this.appName = Optional.ofNullable(argument.getAppName());
-
+    String[] disabledFacets = Optional.ofNullable(argument.getOpenLineageYaml().getFacetsConfig()).orElse(new FacetsConfig().withDisabledFacets(new String[0])).getDisabledFacets();
     this.client =
         OpenLineageClient.builder()
             .transport(
                 new TransportFactory(argument.getOpenLineageYaml().getTransportConfig()).build())
-            .disableFacets(argument.getOpenLineageYaml().getFacetsConfig().getDisabledFacets())
+            .disableFacets(disabledFacets)
             .build();
   }
 
