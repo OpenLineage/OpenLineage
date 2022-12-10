@@ -145,7 +145,7 @@ Custom facets can also be added, using a common facet name prefix.
 #### Dataset facets
 [Schema](https://github.com/OpenLineage/OpenLineage/blob/main/spec/facets/SchemaDatasetFacet.json)
 
-```json
+```
 schema: {
 	fields: [{ 
 		Name: ””
@@ -158,7 +158,7 @@ schema: {
 #### Output facets
 [OutputStatistics](https://github.com/OpenLineage/OpenLineage/blob/main/spec/facets/OutputStatisticsOutputDatasetFacet.json)
 
-```json
+```
 outputStatistics: {
 	rowCount: 10
 	Size: 1000
@@ -168,7 +168,7 @@ outputStatistics: {
 #### Run facets
 [ErrorMessage](https://github.com/OpenLineage/OpenLineage/blob/main/spec/facets/ErrorMessageRunFacet.json)
 
-```json
+```
 errorMessage: {
 	Message: ””
 	programmingLanguage: ””
