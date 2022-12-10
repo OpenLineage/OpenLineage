@@ -43,8 +43,8 @@ Facets are the json facets defined in the OpenLineage specification
 TaskInstanceLineage:
 	runFacets: dict{}
 	jobFacets: dict{}
-inputs: [InputDataset]
-outputs: [OutputDataset]
+	inputs: [InputDataset]
+	outputs: [OutputDataset]
  
 InputDataset:
 	namespace: string
