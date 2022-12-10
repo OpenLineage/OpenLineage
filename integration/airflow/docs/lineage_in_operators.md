@@ -1,14 +1,14 @@
-#Exposing lineage in Airflow operators
+# Exposing lineage in Airflow operators
 
 Since: 0.18.0
 
-##Scope
+## Scope
 The goal is to move the lineage extraction logic as close as possible to the operator logic. (for airflow operators in the airflow repository, for other providers in their own repository). 
 This makes lineage extraction more stable as it lives with the operators. Previously the OpenLineage library required one `Extractor` for each supported `Operator` which is brittle and can break when operator internals changes. This also facilitates custom operator support.
 
 Each operator is responsible for describing lineage per the spec below, but the actual lineage events are still being sent by the OpenLineage library in the TaskInstanceListener.
 
-##Context
+## Context
 OpenLineage collects the following information regarding the Datasets being read and written by a task:
 
  - Dataset name and namespace [required] - the format for naming is outlined in the [naming specification](https://github.com/OpenLineage/OpenLineage/blob/main/spec/Naming.md#datasets).
@@ -33,7 +33,7 @@ For metadata about the execution of the task, a queryId or executionId should be
 
 The astro library also includes data quality assertions, which we collect with OpenLineage and expose in the Datakin product. The OpenLineage [DataQuality facet specification can be found in here](https://github.com/OpenLineage/OpenLineage/blob/main/spec/facets/DataQualityAssertionsDatasetFacet.json).
 
-##Implementation
+## Implementation
 Each TaskInstance exposes the following methods returning the structure defined below:
  - get_openlineage_facets_on_start(ti)
  - get_openlineage_facets_on_complete(ti)
@@ -137,12 +137,12 @@ Example:
  }], 
 }
 ```
-###Relevant facets
+### Relevant facets
 Here are some relevant examples of facets that can be added.
 Please consult [the spec](https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.md#standard-facets) for the full list.
 Custom facets can also be added, using a common facet name prefix.
 
-####Dataset facets
+#### Dataset facets
 [Schema](https://github.com/OpenLineage/OpenLineage/blob/main/spec/facets/SchemaDatasetFacet.json)
 
 ```json
@@ -155,7 +155,7 @@ schema: {
 }
 ```
 
-####Output facets
+#### Output facets
 [OutputStatistics](https://github.com/OpenLineage/OpenLineage/blob/main/spec/facets/OutputStatisticsOutputDatasetFacet.json)
 
 ```json
@@ -165,7 +165,7 @@ outputStatistics: {
 }
 ```
 
-####Run facets
+#### Run facets
 [ErrorMessage](https://github.com/OpenLineage/OpenLineage/blob/main/spec/facets/ErrorMessageRunFacet.json)
 
 ```json
@@ -176,7 +176,7 @@ errorMessage: {
 }
 ```
 
-####All facets
+#### All facets
 [Facets](https://github.com/OpenLineage/OpenLineage/tree/main/spec/facets)
 
 
