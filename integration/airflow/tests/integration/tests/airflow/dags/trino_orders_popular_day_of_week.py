@@ -27,10 +27,18 @@ dag = DAG(
 
 
 t1 = TrinoOperator(
+    task_id='trino_create',
+    trino_conn_id='trino_conn',
+    sql='CREATE SCHEMA IF NOT EXISTS memory.default',
+    dag=dag
+)
+
+
+t2 = TrinoOperator(
     task_id='trino_insert',
     trino_conn_id='trino_conn',
     sql='''
-    CREATE TABLE popular_orders_day_of_week AS
+    CREATE TABLE memory.default.popular_orders_day_of_week AS
     SELECT DAY_OF_WEEK(order_placed_on) AS order_day_of_week,
            order_placed_on,
            COUNT(*) AS orders_placed
@@ -39,3 +47,6 @@ t1 = TrinoOperator(
     ''',
     dag=dag
 )
+
+
+t1 >> t2

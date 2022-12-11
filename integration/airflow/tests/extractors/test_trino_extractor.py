@@ -1,5 +1,6 @@
 # Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
+import pytest
 
 from unittest import mock
 
@@ -84,16 +85,14 @@ DAG = dag = DAG(
 )
 
 TASK_ID = 'select'
-TASK = TrinoOperator(
-    task_id=TASK_ID,
-    trino_conn_id=CONN_ID,
-    sql=SQL,
-    dag=DAG,
+
+
+@pytest.mark.skipif(
+    TrinoOperator is None,
+    reason="TrinoOperator is available only with apache-airflow-providers-trino 3.1.0+"
 )
-
-
 @mock.patch('openlineage.airflow.extractors.sql_extractor.get_table_schemas')  # noqa
-@mock.patch('openlineage.airflow.extractors.sql_extractor.get_connection')
+@mock.patch('airflow.hooks.base.BaseHook.get_connection')
 def test_extract(get_connection, mock_get_table_schemas):
     source = Source(
         scheme='trino',
@@ -124,7 +123,13 @@ def test_extract(get_connection, mock_get_table_schemas):
             fields=[Field.from_column(column) for column in DB_TABLE_COLUMNS]
         ).to_openlineage_dataset()]
 
-    task_metadata = TrinoExtractor(TASK).extract()
+    task = TrinoOperator(
+        task_id=TASK_ID,
+        trino_conn_id=CONN_ID,
+        sql=SQL,
+        dag=DAG,
+    )
+    task_metadata = TrinoExtractor(task).extract()
 
     assert task_metadata.name == f"{DAG_ID}.{TASK_ID}"
     assert task_metadata.inputs == expected_inputs

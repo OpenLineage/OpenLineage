@@ -241,11 +241,11 @@ services:
       - ../docker/init-db-mysql.sh:/docker-entrypoint-initdb.d/init-db-mysql.sh
 
   trino:
-    image: trinodb/trino:402
+    image: trinodb/trino:403
     networks:
       - app_net
-    ports:
-      - "8080:8080"
+    expose:
+      - 8080
     healthcheck:
       test: ["CMD", "/usr/lib/trino/bin/health-check"]
       interval: 5s
