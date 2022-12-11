@@ -10,7 +10,7 @@ from setuptools import find_namespace_packages, setup
 with open("README.md") as readme_file:
     readme = readme_file.read()
 
-__version__ = "0.18.0"
+__version__ = "0.19.0"
 
 requirements = [
     "attrs>=19.3.0",
@@ -36,7 +36,7 @@ extras_require = {
         "pyyaml>=5.3.1"
     ],
     "great_expectations": [
-        "great_expectations>=0.13.26,<0.15.33",
+        "great_expectations>=0.13.26,<0.15.35",
         "sqlalchemy>=1.3.24"
     ],
     "redshift": [

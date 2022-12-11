@@ -56,7 +56,7 @@ def test_client_sends_proper_json_with_minimal_event():
     client.emit(
         RunEvent(
             RunState.START,
-            "2020-01-01",
+            "2021-11-03T10:53:52.427343",
             Run("69f4acab-b87d-4fc0-b27b-8ea950370ff3"),
             Job("openlineage", "job"),
             "producer"
@@ -65,7 +65,7 @@ def test_client_sends_proper_json_with_minimal_event():
 
     session.post.assert_called_with(
         "http://example.com/api/v1/lineage",
-        '{"eventTime": "2020-01-01", "eventType": "START", "inputs": [], "job": '
+        '{"eventTime": "2021-11-03T10:53:52.427343", "eventType": "START", "inputs": [], "job": '
         '{"facets": {}, "name": "job", "namespace": "openlineage"}, "outputs": [], '
         '"producer": "producer", "run": {"facets": {}, "runId": '
         '"69f4acab-b87d-4fc0-b27b-8ea950370ff3"}}',
@@ -81,7 +81,7 @@ def test_client_uses_passed_transport():
 
     client.emit(event=RunEvent(
             RunState.START,
-            "2020-01-01",
+            "2021-11-03T10:53:52.427343",
             Run("69f4acab-b87d-4fc0-b27b-8ea950370ff3"),
             Job("openlineage", "job"),
             "producer"

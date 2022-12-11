@@ -22,16 +22,18 @@ Output Dataset example of adding a columnLineage facet:
           ]
         },
 >       "columnLineage": {
->         "{first column of the output dataset}": {
->           "inputFields": [
->             { "namespace": "{input dataset namespace}", name: "{input dataset name}", "field": "{input dataset column name}"},
->             ... other inputs
->           ],
->           "transformationDescription": "identical",
->           "transformationType": "IDENTITY"
->         },
->         "{second column of the output dataset}": ...,
->         ...
+>         "fields": {
+>           "{first column of the output dataset}": {
+>             "inputFields": [
+>               { "namespace": "{input dataset namespace}", name: "{input dataset name}", "field": "{input dataset column name}"},
+>               ... other inputs
+>             ],
+>             "transformationDescription": "identical",
+>             "transformationType": "IDENTITY"
+>           },
+>           "{second column of the output dataset}": ...,
+>           ...
+>         }
 >       }
       }
     }
@@ -74,15 +76,17 @@ Full lineage event example:
           ]
         },
         "columnLineage": {
-          "a": {
-            "inputFields": [
-              {namespace: "my-datasource-namespace", name: "instance.schema.table", "field": "ia"},
-              ... other inputs
-            ],
-            transformationDescription: "identical",
-            transformationType: "IDENTITY"
-          },
-          "b": ... other output fields
+          "fields": {
+            "a": {
+              "inputFields": [
+                {namespace: "my-datasource-namespace", name: "instance.schema.table", "field": "ia"},
+                ... other inputs
+              ],
+              transformationDescription: "identical",
+              transformationType: "IDENTITY"
+            },
+            "b": ... other output fields
+          }
         }
       }
     }

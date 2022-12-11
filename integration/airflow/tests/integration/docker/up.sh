@@ -31,6 +31,7 @@ AIRFLOW_VERSION=${AIRFLOW_IMAGE##*:}
 
 # Remove -python3.7 from the tag
 export AIRFLOW_VERSION=${AIRFLOW_VERSION::-10}
+export AWS_ATHENA_SUFFIX=$(echo "$AIRFLOW_VERSION" | tr "-" "_" | tr "." "_")
 export BIGQUERY_PREFIX=$(echo "$AIRFLOW_VERSION" | tr "-" "_" | tr "." "_")
 export DBT_DATASET_PREFIX=$(echo "$AIRFLOW_VERSION" | tr "-" "_" | tr "." "_")_dbt
 # just a hack to have same docker-compose for dev and CI env

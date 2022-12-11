@@ -10,11 +10,15 @@ import com.databricks.dbutils_v1.DbfsUtils;
 import io.openlineage.spark.agent.facets.EnvironmentFacet;
 import io.openlineage.spark.agent.models.DatabricksMountpoint;
 import io.openlineage.spark.api.CustomFacetBuilder;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerJobStart;
@@ -71,15 +75,51 @@ public class DatabricksEnvironmentFacetBuilder
      * access it via reflection.
      */
     try {
-      dbutilsClass = Class.forName("com.databricks.dbutils_v1.impl.DbfsUtilsImpl");
-      dbutils = (DbfsUtils) dbutilsClass.getDeclaredConstructor().newInstance();
-      dbProperties.put("mountPoints", getDatabricksMountpoints(dbutils));
+      Optional<DbfsUtils> dbfsUtils = getDbfsUtils();
+      if (!dbfsUtils.isPresent()) {
+        dbProperties.put("mountPoints", new ArrayList<DatabricksMountpoint>());
+      } else {
+        dbProperties.put("mountPoints", getDatabricksMountpoints(dbfsUtils.get()));
+      }
+
     } catch (Exception e) {
-      log.warn("Failed to load dbutils in OpenLineageListener");
+      log.warn("Failed to load dbutils in OpenLineageListener:", e);
       dbProperties.put("mountPoints", new ArrayList<DatabricksMountpoint>());
     }
 
     return dbProperties;
+  }
+
+  // Starting in Databricks Runtime 11, there is a new constructor for DbFsUtils
+  // If running on an older version, the constructor has no parameters.
+  // If running on DBR 11 or above, you need to specify whether you allow mount operations (true or
+  // false)
+  private static Optional<DbfsUtils> getDbfsUtils()
+      throws ClassNotFoundException, InstantiationException, IllegalAccessException,
+          IllegalArgumentException, InvocationTargetException {
+    Class dbutilsClass = Class.forName("com.databricks.dbutils_v1.impl.DbfsUtilsImpl");
+    Constructor[] dbutilsConstructors = dbutilsClass.getDeclaredConstructors();
+    if (dbutilsConstructors.length == 0) {
+      log.warn(
+          "Failed to load dbutils in OpenLineageListener as there were no declared constructors");
+      return Optional.empty();
+    }
+    Constructor firstConstructor = dbutilsConstructors[0];
+    Parameter[] constructorParams = firstConstructor.getParameters();
+    if (constructorParams.length == 0) {
+      log.debug("DbUtils constructor had no parameters");
+      return Optional.of((DbfsUtils) firstConstructor.newInstance());
+    } else if (constructorParams.length == 1
+        && constructorParams[0].getName().equals("allowMountOperations")) {
+      log.debug("DbUtils constructor had one parameter named allowMountOperations");
+      return Optional.of((DbfsUtils) firstConstructor.newInstance(true));
+    } else {
+      log.warn(
+          "dbutils had {} constructors and the first constructor had {} params",
+          dbutilsConstructors.length,
+          constructorParams.length);
+      return Optional.empty();
+    }
   }
 
   private static List<DatabricksMountpoint> getDatabricksMountpoints(DbfsUtils dbutils) {

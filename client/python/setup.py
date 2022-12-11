@@ -13,7 +13,8 @@ with open("README.md") as readme_file:
 requirements = [
     "attrs>=19.3.0",
     "requests>=2.20.0",
-    "pyyaml>=5.1.0"
+    "pyyaml>=5.1.0",
+    "python-dateutil"
 ]
 
 extras_require = {
@@ -34,7 +35,7 @@ extras_require["dev"] = set(sum(extras_require.values(), []))
 
 setup(
     name="openlineage-python",
-    version="0.18.0",
+    version="0.19.0",
     description="OpenLineage Python Client",
     long_description=readme,
     long_description_content_type="text/markdown",

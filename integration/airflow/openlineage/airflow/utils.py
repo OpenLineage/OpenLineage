@@ -215,29 +215,12 @@ def get_normalized_postgres_connection_uri(conn):
     return uri
 
 
-def get_connection(conn_id) -> "Connection":
-    # TODO: We may want to throw an exception if the connection
-    # does not exist (ex: AirflowConnectionException). The connection
-    # URI is required when collecting metadata for a data source.
-    from airflow.models import Connection
-    conn_uri = os.environ.get('AIRFLOW_CONN_' + conn_id.upper())
-    if conn_uri:
-        conn = Connection()
-        conn.parse_from_uri(uri=conn_uri)
-        return conn
-
-    # Try secrets backend.
+def get_connection(conn_id) -> "Optional[Connection]":
+    from airflow.hooks.base import BaseHook
     try:
-        return Connection.get_connection_from_secrets(conn_id)
+        return BaseHook.get_connection(conn_id=conn_id)
     except Exception:
-        # Deliberate pass to try getting it via query
-        pass
-
-    from airflow.utils.session import create_session
-    with create_session() as session:
-        return session.query(Connection)\
-            .filter(Connection.conn_id == conn_id)\
-            .first()
+        return None
 
 
 def get_job_name(task):

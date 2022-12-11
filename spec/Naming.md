@@ -88,6 +88,22 @@ Identifier:
  * Unique name: {database}.{schema}.{table}
    * URI =  redshift://{cluster_identifier}.{region_name}:{port}/{database}.{schema}.{table}
   
+#### Athena:
+Datasource hierarchy:
+ * Host: athena.{region_name}.amazonaws.com
+
+Naming hierarchy:
+ * Catalog
+ * Database
+ * Table
+
+Identifier:
+ * Namespace: awsathena://athena.{region_name}.amazonaws.com of the service instance.
+   * Scheme = awsathena
+   * Authority = athena.{region_name}.amazonaws.com
+ * Unique name: {catalog}.{database}.{table}
+   * URI =  awsathena://athena.{region_name}.amazonaws.com/{catalog}.{database}.{table}
+
 #### Snowflake
 See: [Object Identifiers — Snowflake Documentation](https://docs.snowflake.com/en/sql-reference/identifiers.html)
 
@@ -165,6 +181,7 @@ Identifier:
    * Authority = {host}
  * Unique name: /colls/{table}
    * URI = azurecosmos://{host}.documents.azure.com/dbs/{database}/colls/{table}
+
 #### Azure Data Explorer:
 Datasource hierarchy:
  * Host: \<clustername>.\<clusterlocation> 

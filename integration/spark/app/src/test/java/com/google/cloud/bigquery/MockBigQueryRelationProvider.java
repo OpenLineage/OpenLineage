@@ -3,23 +3,31 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery;
+package com.google.cloud.bigquery;
 
 import com.google.cloud.bigquery.connector.common.BigQueryClient;
+import com.google.cloud.bigquery.connector.common.MockBigQueryClientModule;
 import com.google.cloud.spark.bigquery.BigQueryRelation;
 import com.google.cloud.spark.bigquery.BigQueryRelationProvider;
 import com.google.cloud.spark.bigquery.DataSourceVersion;
 import com.google.cloud.spark.bigquery.SparkBigQueryConfig;
 import com.google.cloud.spark.bigquery.SparkBigQueryConnectorModule;
-import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.common.MockBigQueryClientModule;
+import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.BigQuery;
+import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.StandardTableDefinition;
+import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.Table;
+import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.TableDefinition;
+import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.TableId;
+import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.TableInfo;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Binder;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Guice;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Injector;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Key;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Module;
-import java.math.BigInteger;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.Optional;
+import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
@@ -41,11 +49,17 @@ public class MockBigQueryRelationProvider extends BigQueryRelationProvider {
   public static final BigQuery BIG_QUERY = Mockito.mock(BigQuery.class);
   public static final MockInjector INJECTOR = new MockInjector();
 
-  public static Table makeTable(TableId id, StandardTableDefinition tableDefinition) {
-    return new Table.Builder(BIG_QUERY, id, tableDefinition)
-        .setNumBytes(tableDefinition.getNumBytes())
-        .setNumRows(BigInteger.valueOf(tableDefinition.getNumRows()))
-        .build();
+  public static Table makeTable(TableId id, StandardTableDefinition tableDefinition)
+      throws InstantiationException, IllegalAccessException, InvocationTargetException,
+          NoSuchMethodException {
+    Constructor<Table.Builder> constructor =
+        Table.Builder.class.getDeclaredConstructor(
+            BigQuery.class, TableId.class, TableDefinition.class);
+    constructor.setAccessible(true);
+
+    Table.Builder builder = constructor.newInstance(BIG_QUERY, id, tableDefinition);
+    MethodUtils.invokeMethod(builder, true, "setNumBytes", tableDefinition.getNumBytes());
+    return builder.build();
   }
 
   @Override
@@ -100,7 +114,7 @@ public class MockBigQueryRelationProvider extends BigQueryRelationProvider {
                         }
                       })),
               DataSourceVersion.V1,
-              true));
+              false));
     }
 
     public void setTestModule(Module testModule) {

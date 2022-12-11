@@ -30,6 +30,7 @@ workflows:
             parameters:
               spark-version: [ '2.4.6', '3.1.3', '3.2.2', '3.3.1' ]
       - integration-test-integration-spark:
+          context: integration-tests
           matrix:
             parameters:
               spark-version: [ '2.4.6', '3.1.3', '3.2.2', '3.3.1' ]
@@ -42,6 +43,11 @@ workflows:
           context: release
           requires:
             - integration-test-integration-spark
+      - publish-javadoc:
+          filters:
+            branches:
+              only: main
+          context: release
       - workflow_complete:
           requires:
             - publish-snapshot-integration-spark

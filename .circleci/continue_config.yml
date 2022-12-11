@@ -43,7 +43,7 @@ jobs:
       - *checkout_project_root
       - run: pip install -e .[dev]
       - run: python -m flake8 --extend-ignore=F401
-      - run: python -m mypy --ignore-missing-imports --no-namespace-packages openlineage
+      - run: python -m mypy --install-types --non-interactive --ignore-missing-imports --no-namespace-packages openlineage
       - run: python -m pytest --cov=openlineage tests/
       - run: bash <(curl -s https://codecov.io/bash)
 
@@ -311,7 +311,7 @@ jobs:
       - *checkout_project_root
       - attach_workspace:
           at: .
-      - run: pip install tox
+      - run: pip install tox==3.27.1
       - restore_cache:
           keys:
             - v1-toxenv-common-{{ .Branch }}-{{ checksum "setup.cfg" }}-{{ checksum "setup.py" }}
@@ -453,6 +453,9 @@ jobs:
       JDK8_HOME: /usr/lib/jvm/java-8-openjdk-amd64
     steps:
       - *checkout_project_root
+      - gcp-cli/install
+      - gcp-cli/initialize
+      - run: mkdir -p app/build/gcloud && echo $GCLOUD_SERVICE_KEY > app/build/gcloud/gcloud-service-key.json && chmod 644 app/build/gcloud/gcloud-service-key.json
       - restore_cache:
           keys:
             - v1-integration-spark-{{ .Branch }}-{{ .Revision }}
@@ -524,7 +527,7 @@ jobs:
       - *install_python_client
       - install_integration_common:
           install_parser: << parameters.install_parser >>
-      - run: pip install tox mypy==0.971
+      - run: pip install tox==3.27.1 mypy==0.971
       - run: python -m mypy --install-types --non-interactive --ignore-missing-imports openlineage
       - restore_cache:
           keys:
@@ -575,9 +578,11 @@ jobs:
       - store_artifacts:
           path: airflow/tests/integration/tests/airflow/logs
           destination: airflow-logs
+          when: always
       - store_artifacts:
           path: airflow/tests/integration/tests/events
           destination: events
+          when: always
 
   integration-test-integration-airflow-failure:
     parameters:
@@ -649,6 +654,18 @@ jobs:
       - run: mkdir -p target/wheels && cp target/wheels/* dist/
       - run: python -m twine upload --non-interactive --verbose --repository pypi dist/*
 
+  publish-javadoc:
+    working_directory: ~/openlineage/client/java
+    docker:
+      - image: cimg/openjdk:11.0
+    steps:
+      - *checkout_project_root
+      - add_ssh_keys:
+          fingerprints:
+            - "01:93:41:8a:7b:81:b6:cf:d4:b2:34:52:c6:ff:ac:53"
+      - run: ./gradlew javadoc
+      - run: ./release-javadoc.sh
+
   publish-spec:
     working_directory: ~/openlineage
     docker:
@@ -683,6 +700,17 @@ jobs:
           paths:
             - ~/.gradle
 
+  build-image-proxy-backend:
+    working_directory: ~/openlineage/proxy
+    machine:
+      image: ubuntu-2004:current
+    steps:
+      - *checkout_project_root
+      - run: docker build --no-cache --tag "openlineage/proxy:${CIRCLE_SHA1}" .
+      - run: docker save -o proxy.tar "openlineage/proxy:${CIRCLE_SHA1}"
+      - store_artifacts:
+          path: proxy.tar
+
   release-proxy-backend:
     working_directory: ~/openlineage/proxy
     docker:
@@ -700,6 +728,15 @@ jobs:
 
           # Publish *.jar
           ./gradlew publish
+
+  release-docker-proxy-backend:
+    working_directory: ~/openlineage/proxy
+    machine:
+      image: ubuntu-2004:current
+    steps:
+      - checkout
+      - run: ./docker/login.sh
+      - run: ./docker/build-and-push-proxy.sh $CIRCLE_TAG
 
   workflow_complete:
     working_directory: ~/openlineage
@@ -729,6 +766,13 @@ workflows:
           requires:
             - release-client-java
       - release-proxy-backend:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+            branches:
+              ignore: /.*/
+          context: release
+      - release-docker-proxy-backend:
           filters:
             tags:
               only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/

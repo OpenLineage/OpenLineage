@@ -11,8 +11,8 @@ plugins {
     id 'java-library'
     id 'maven-publish'
     id 'signing'
-    id "com.adarshr.test-logger" version "2.1.1"
-    id 'com.diffplug.spotless' version '6.11.0'
+    id "com.adarshr.test-logger" version "3.2.0"
+    id 'com.diffplug.spotless' version '6.12.0'
     id "org.openapi.generator" version "6.2.1"
     id "com.github.johnrengelman.shadow" version "7.1.2"
     id "pmd"
@@ -47,7 +47,7 @@ ext {
     jacksonDatabindVersion = "2.13.4.2"
     junit5Version = '5.9.1'
     lombokVersion = '1.18.24'
-    mockitoVersion = '4.8.1'
+    mockitoVersion = '4.9.0'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
 }
 
@@ -64,10 +64,10 @@ dependencies {
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
     implementation 'org.apache.httpcomponents:httpclient:4.5.13'
     implementation 'commons-logging:commons-logging:1.2'
-    implementation 'org.yaml:snakeyaml:1.31'
+    implementation 'org.yaml:snakeyaml:1.33'
     implementation 'org.slf4j:slf4j-api:1.7.36'
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
-    compileOnly 'org.apache.kafka:kafka-clients:3.1.0'
+    compileOnly 'org.apache.kafka:kafka-clients:3.3.1'
     compileOnly 'com.amazonaws:amazon-kinesis-producer:0.14.13'
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
@@ -129,7 +129,7 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     from javadoc.destinationDir
 }
 
-compileJava.dependsOn tasks.generateCode, tasks.openApiGenerate
+compileJava.dependsOn tasks.generateCode
 
 test {
     useJUnitPlatform()

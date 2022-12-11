@@ -30,6 +30,8 @@ updates:
     labels:
       - "dependencies"
       - "dependabot"
+    ignore:
+      - dependency-name: "org.slf4j.slf4j-api"
 
   - package-ecosystem: "gradle"
     directory: "integration/flink"
@@ -39,15 +41,27 @@ updates:
     labels:
       - "dependencies"
       - "dependabot"
+    ignore:
+      - dependency-name: "org.slf4j.slf4j-api"
 
   - package-ecosystem: "gradle"
     directory: "integration/spark"
     schedule:
       interval: "weekly"
       day: "sunday"
+    ignore:
+      - dependency-name: "jackson-databind"
+      - dependency-name: "jackson-core"
+      - dependency-name: "jackson-annotations"
+      - dependency-name: "jackson-dataformat-yaml"
+      - dependency-name: "jackson-datatype-jdk8"
+      - dependency-name: "jackson-datatype-jsr310"
     labels:
       - "dependencies"
       - "dependabot"
+    ignore:
+      - dependency-name: "com.fasterxml.jackson*"
+      - dependency-name: "org.slf4j.slf4j-api"
 
   - package-ecosystem: "pip"
     directory: "client/python"
@@ -66,6 +80,9 @@ updates:
     labels:
       - "dependencies"
       - "dependabot"
+    ignore:
+      - dependency-name: "great-expectations"
+
 
   - package-ecosystem: "pip"
     directory: "integration/airflow"
@@ -74,7 +91,9 @@ updates:
       day: "sunday"
     labels:
       - "dependencies"
-      - "dependabot"  
+      - "dependabot"
+    ignore:
+      - dependency-name: "great-expectations"
 
   - package-ecosystem: "pip"
     directory: "integration/dbt"

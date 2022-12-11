@@ -25,6 +25,7 @@ import java.net.URISyntaxException;
 import java.util.Optional;
 import java.util.Properties;
 import org.apache.hadoop.fs.Path;
+import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.scheduler.StageInfo;
@@ -58,6 +59,7 @@ class OpenLineageSparkListenerTest {
 
     when(sparkSession.sparkContext()).thenReturn(sparkContext);
     when(sparkContext.appName()).thenReturn("appName");
+    when(sparkContext.getConf()).thenReturn(new SparkConf());
     when(qe.optimizedPlan())
         .thenReturn(
             new InsertIntoHadoopFsRelationCommand(

@@ -27,7 +27,9 @@ workflows:
                 airflow-version: [
                   'airflow-2.1.4',
                   'airflow-2.2.4',
-                  'airflow-2.3.4'
+                  'airflow-2.3.4',
+                  'airflow-2.4.3',
+                  'airflow-2.5.0'
                 ]
                 install_parser: [ true ]
           requires:
@@ -38,7 +40,9 @@ workflows:
               airflow-image: [
                 'apache/airflow:2.1.4-python3.7',
                 'apache/airflow:2.2.4-python3.7',
-                'apache/airflow:2.3.4-python3.7'
+                'apache/airflow:2.3.4-python3.7',
+                'apache/airflow:2.4.3-python3.7',
+                'apache/airflow:2.5.0-python3.7'
               ]
           context: integration-tests
           requires:

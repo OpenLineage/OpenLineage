@@ -111,6 +111,8 @@ class SqlExtractor(BaseExtractor):
         )
 
     def _conn_id(self) -> str:
+        if hasattr(self.hook, "conn_id"):
+            return "conn_id"
         return getattr(self.hook, self.hook.conn_name_attr)
 
     @property
@@ -124,7 +126,7 @@ class SqlExtractor(BaseExtractor):
     @property
     def hook(self):
         if not self._hook:
-            self._hook = self._get_hook()
+            self._hook = SqlExtractor._get_hook(self) or self._get_hook()
         return self._hook
 
     @property
@@ -160,9 +162,8 @@ class SqlExtractor(BaseExtractor):
             parsed = urlparse(self.conn.get_uri())
             return f"{parsed.hostname}:{parsed.port}"
 
-    @abstractmethod
-    def _get_hook(self) -> "BaseHook":
-        raise NotImplementedError
+    def _get_hook(self) -> "Optional[BaseHook]":
+        return getattr(self.operator, "_hook", None)
 
     def _get_db_specific_run_facets(
         self,

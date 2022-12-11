@@ -40,9 +40,15 @@ x-airflow-base: &airflow-base
     SNOWFLAKE_ACCOUNT_ID: ${SNOWFLAKE_ACCOUNT_ID}
     SNOWFLAKE_USER: ${SNOWFLAKE_USER}
     SNOWFLAKE_PASSWORD: ${SNOWFLAKE_PASSWORD}
+    AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+    AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+    AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
+    AWS_ATHENA_OUTPUT_LOCATION: ${AWS_ATHENA_OUTPUT_LOCATION}
+    AWS_ATHENA_SUFFIX: ${AWS_ATHENA_SUFFIX}
     AIRFLOW__SECRETS__BACKEND: airflow.secrets.local_filesystem.LocalFilesystemBackend
     AIRFLOW__SECRETS__BACKEND_KWARGS: '{ "connections_file_path": "/opt/data/secrets/connections.json", "variables_file_path": "/opt/data/secrets/variables.json" }'
     AIRFLOW_CONN_SNOWFLAKE_CONN: "snowflake://${SNOWFLAKE_USER}:${SNOWFLAKE_PASSWORD}@${SNOWFLAKE_URI}/OPENLINEAGE?account=${SNOWFLAKE_ACCOUNT_ID}&database=SANDBOX&region=us-east-1&warehouse=ROBOTS&role=OPENLINEAGE"
+    AIRFLOW_CONN_AWS_CONN: "aws://"
     AIRFLOW_CONN_SFTP_CONN: sftp://airflow:airflow@openssh-server:2222
   volumes:
       - ./airflow/config/log_config.py:/opt/airflow/config/log_config.py
@@ -62,6 +68,8 @@ x-airflow-base: &airflow-base
       condition: service_healthy
     openssh-server:
       condition: service_healthy
+    backend:
+      condition: service_healthy
 
 services:
   integration:
@@ -76,6 +84,11 @@ services:
       DBT_DATASET_PREFIX: ${DBT_DATASET_PREFIX}_dbt
       AIRFLOW_VERSION: ${AIRFLOW_VERSION}
       SNOWFLAKE_ACCOUNT_ID: ${SNOWFLAKE_ACCOUNT_ID}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
+      AWS_ATHENA_OUTPUT_LOCATION: ${AWS_ATHENA_OUTPUT_LOCATION}
+      AWS_ATHENA_SUFFIX: ${AWS_ATHENA_SUFFIX}
     networks:
       - app_net
     volumes:
@@ -151,6 +164,9 @@ services:
       - app_net
     volumes:
       - $PWD/events:/opt/airflow/events
+    healthcheck:
+      test: [ "CMD-SHELL", 'curl -X GET http://localhost:5000/healthcheck' ]
+
 
   airflow_init:
     <<: *airflow-base

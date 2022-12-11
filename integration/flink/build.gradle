@@ -11,7 +11,7 @@ plugins {
     id 'signing'
     id 'jacoco'
     id "com.adarshr.test-logger" version "3.2.0"
-    id 'com.diffplug.spotless' version '5.12.1'
+    id 'com.diffplug.spotless' version '6.12.0'
     id "com.github.johnrengelman.shadow" version "7.1.2"
     id "pmd"
 }
@@ -57,9 +57,9 @@ ext {
     flinkVersion = project.getProperty('flink.version')
     flinkVersionShort = flinkVersion.substring(0,4)
     flinkVersionWithScala212 = flinkVersion.contains('1.14') ? "_2.12:$flinkVersion" : ":$flinkVersion"
-    assertjVersion = '3.20.2'
+    assertjVersion = '3.23.1'
     junit5Version = '5.9.1'
-    lombokVersion = '1.18.20'
+    lombokVersion = '1.18.24'
     mockitoVersion = '4.9.0'
     testcontainersVersion = '1.15.3'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
@@ -79,8 +79,8 @@ dependencies {
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
     implementation("io.openlineage:openlineage-java:${project.version}")
-    implementation 'org.javassist:javassist:3.27.0-GA'
-    implementation 'org.apache.httpcomponents.client5:httpclient5:5.0.3'
+    implementation 'org.javassist:javassist:3.29.2-GA'
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.2'
 
     testImplementation "org.apache.flink:flink-java:$flinkVersion"
     testImplementation "org.apache.flink:flink-streaming-java$flinkVersionWithScala212"
@@ -90,14 +90,14 @@ dependencies {
     testImplementation "org.apache.flink:flink-avro-confluent-registry:$flinkVersion"
     testImplementation "org.apache.iceberg:iceberg-flink-$flinkVersionShort:0.14.0"
     testImplementation "org.apache.iceberg:iceberg-flink-runtime-$flinkVersionShort:0.14.0"
-    testImplementation platform('org.junit:junit-bom:5.7.1')
+    testImplementation platform('org.junit:junit-bom:5.9.1')
     testImplementation 'org.hamcrest:hamcrest-library:2.2'
     testImplementation "org.testcontainers:mockserver:${testcontainersVersion}"
     testImplementation "org.testcontainers:junit-jupiter:${testcontainersVersion}"
     testImplementation 'org.mock-server:mockserver-client-java:5.12.0'
-    testImplementation group: 'org.awaitility', name: 'awaitility', version: '4.1.1'
+    testImplementation group: 'org.awaitility', name: 'awaitility', version: '4.2.0'
     testImplementation 'com.github.tomakehurst:wiremock:2.27.2'
-    testImplementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.17.2'
+    testImplementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.19.0'
 
     testImplementation "org.assertj:assertj-core:${assertjVersion}"
     testImplementation "org.junit.jupiter:junit-jupiter:${junit5Version}"
