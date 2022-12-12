@@ -59,7 +59,8 @@ public class ArgumentParser {
     conf.setIfMissing(SPARK_CONF_TRANSPORT_TYPE, "console");
 
     log.info("OPENLINEAGE CONFIG PARAMETERS");
-    Arrays.stream(conf.getAllWithPrefix("spark.openlineage.")).forEach(e->log.info("OL PARAM: " + e._1 + " = " + e._2));
+    Arrays.stream(conf.getAllWithPrefix("spark.openlineage."))
+        .forEach(e -> log.info("OL PARAM: " + e._1 + " = " + e._2));
     if (conf.get(SPARK_CONF_TRANSPORT_TYPE).equals("http")) {
       findSparkConfigKey(conf, SPARK_CONF_HTTP_URL)
           .ifPresent(url -> UrlParser.parseUrl(url).forEach(conf::set));
@@ -85,26 +86,26 @@ public class ArgumentParser {
       JSONObject temp = jsonObject;
       String keyPath = c._1;
       String value = c._2;
-      if(StringUtils.isNotBlank(value)){
-          List<String> pathKeys = getJsonPath(keyPath);
-          List<String> nonLeafs = pathKeys.subList(0, pathKeys.size() - 1);
-          String leaf = pathKeys.get(pathKeys.size() - 1);
-          for (String node : nonLeafs) {
-            if (!temp.has(node)) {
-              temp.put(node, new JSONObject());
-            }
-            temp = temp.getJSONObject(node);
+      if (StringUtils.isNotBlank(value)) {
+        List<String> pathKeys = getJsonPath(keyPath);
+        List<String> nonLeafs = pathKeys.subList(0, pathKeys.size() - 1);
+        String leaf = pathKeys.get(pathKeys.size() - 1);
+        for (String node : nonLeafs) {
+          if (!temp.has(node)) {
+            temp.put(node, new JSONObject());
           }
-          if (value.contains(DISABLED_FACETS_SEPARATOR)) {
-            JSONArray jsonArray = new JSONArray();
-            Arrays.stream(value.split(DISABLED_FACETS_SEPARATOR))
-                .filter(StringUtils::isNotBlank)
-                .forEach(jsonArray::put);
-            temp.put(leaf, jsonArray);
-          } else {
-            temp.put(leaf, value);
-          }
-    }
+          temp = temp.getJSONObject(node);
+        }
+        if (value.contains(DISABLED_FACETS_SEPARATOR)) {
+          JSONArray jsonArray = new JSONArray();
+          Arrays.stream(value.split(DISABLED_FACETS_SEPARATOR))
+              .filter(StringUtils::isNotBlank)
+              .forEach(jsonArray::put);
+          temp.put(leaf, jsonArray);
+        } else {
+          temp.put(leaf, value);
+        }
+      }
     }
     return OpenLineageClientUtils.loadOpenLineageYaml(
         new ByteArrayInputStream(jsonObject.toString().getBytes()));
