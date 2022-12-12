@@ -30,7 +30,10 @@ public class EventEmitter {
     this.parentJobName = argument.getJobName();
     this.parentRunId = convertToUUID(argument.getParentRunId());
     this.appName = Optional.ofNullable(argument.getAppName());
-    String[] disabledFacets = Optional.ofNullable(argument.getOpenLineageYaml().getFacetsConfig()).orElse(new FacetsConfig().withDisabledFacets(new String[0])).getDisabledFacets();
+    String[] disabledFacets =
+        Optional.ofNullable(argument.getOpenLineageYaml().getFacetsConfig())
+            .orElse(new FacetsConfig().withDisabledFacets(new String[0]))
+            .getDisabledFacets();
     this.client =
         OpenLineageClient.builder()
             .transport(

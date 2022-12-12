@@ -8,5 +8,4 @@ package io.openlineage.spark.agent;
 class EventEmitterTest {
 
   ArgumentParser.ArgumentParserBuilder builder = new ArgumentParser.ArgumentParserBuilder();
-  
 }
