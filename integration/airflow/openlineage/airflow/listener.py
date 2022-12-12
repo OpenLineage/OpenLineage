@@ -13,7 +13,13 @@ from airflow.listeners import hookimpl
 
 from openlineage.airflow.adapter import OpenLineageAdapter
 from openlineage.airflow.extractors import ExtractorManager
-from openlineage.airflow.utils import DagUtils, get_task_location, get_job_name, get_custom_facets
+from openlineage.airflow.utils import (
+    DagUtils,
+    get_task_location,
+    get_job_name,
+    get_custom_facets,
+    get_airflow_run_facet,
+)
 
 if TYPE_CHECKING:
     from airflow.models import TaskInstance, BaseOperator, MappedOperator, DagRun
@@ -97,6 +103,10 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
         run_data_holder.set_active_run(task_instance_copy, run_id)
         parent_run_id = adapter.build_dag_run_id(dag.dag_id, dagrun.run_id)
 
+        task_uuid = adapter.build_task_instance_run_id(
+            task.task_id, task_instance.execution_date, task_instance.try_number
+        )
+
         task_metadata = extractor_manager.extract_metadata(dagrun, task)
 
         adapter.start_task(
@@ -112,7 +122,8 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
             task=task_metadata,
             run_facets={
                 **task_metadata.run_facets,
-                **get_custom_facets(dagrun, task, dagrun.external_trigger, task_instance_copy)
+                **get_custom_facets(dagrun, task, dagrun.external_trigger, task_instance_copy),
+                **get_airflow_run_facet(dagrun, dag, task_instance_copy, task, task_uuid)
             }
         )
 
