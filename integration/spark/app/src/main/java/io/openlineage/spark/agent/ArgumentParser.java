@@ -24,7 +24,6 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.spark.SparkConf;
-import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import scala.Tuple2;
@@ -111,7 +110,6 @@ public class ArgumentParser {
         new ByteArrayInputStream(jsonObject.toString().getBytes()));
   }
 
-  @NotNull
   private static List<String> getJsonPath(String keyPath) {
     Optional<String> propertyPath =
         PROPERTIES_PREFIXES.stream().filter(keyPath::startsWith).findAny();
