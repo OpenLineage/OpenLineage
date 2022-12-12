@@ -415,6 +415,17 @@ def new_lineage_run_id(dag_run_id: str, task_id: str) -> str:
     return str(uuid4())
 
 
+def get_dagrun_start_end(dagrun: "DagRun", dag: "DAG"):
+    try:
+        return dagrun.data_interval_start, dagrun.data_interval_end
+    except AttributeError:
+        # Airflow < 2.2 before adding data interval
+        pass
+    start = dagrun.execution_date
+    end = dag.following_schedule(start)
+    return start, end or start
+
+
 class DagUtils:
     def get_execution_date(**kwargs):
         return kwargs.get("execution_date")

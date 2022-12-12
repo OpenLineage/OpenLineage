@@ -271,7 +271,7 @@ class StorageDatasetFacet(BaseFacet):
 @attr.s
 class OwnershipJobFacetOwners:
     name: str = attr.ib()
-    type: str = attr.ib()
+    type: Optional[str] = attr.ib(default=None)
 
 
 @attr.s

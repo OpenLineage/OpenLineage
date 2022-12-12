@@ -3,11 +3,16 @@
 
 import os
 import json
+import uuid
+import pytest
 
 import pendulum
 import datetime
-from airflow.models import DAG as AIRFLOW_DAG
+from airflow.models import DAG as AIRFLOW_DAG, DagModel
+from airflow.utils.dates import days_ago
+from airflow.utils.state import State
 from airflow.operators.dummy import DummyOperator
+from airflow.version import version as AIRFLOW_VERSION
 from pkg_resources import parse_version
 
 from openlineage.airflow.utils import (
@@ -20,6 +25,7 @@ from openlineage.airflow.utils import (
     _is_name_redactable,
     redact_with_exclusions,
     InfoJsonEncodable,
+    get_dagrun_start_end,
 )
 from openlineage.client.utils import RedactMixin
 import attr
@@ -68,6 +74,27 @@ def test_pendulum_to_iso_8601():
 
     tz = pendulum.timezone("America/Los_Angeles")
     assert "2021-08-05T19:05:01.000000Z" == DagUtils.to_iso_8601(tz.convert(dt))
+
+
+@pytest.mark.skipif(
+    parse_version(AIRFLOW_VERSION) < parse_version("2.4.0"),
+    reason="Airflow < 2.4.0"
+)
+def test_get_dagrun_start_end():
+    dag = AIRFLOW_DAG(
+        "test",
+        start_date=days_ago(1),
+        schedule_interval="@once"
+    )
+    AIRFLOW_DAG.bulk_write_to_db([dag])
+    dag_model = DagModel.get_dagmodel(dag.dag_id)
+    run_id = str(uuid.uuid1())
+    dagrun = dag.create_dagrun(
+        state=State.NONE,
+        run_id=run_id,
+        data_interval=dag.get_next_data_interval(dag_model))
+    assert dagrun.data_interval_start is not None
+    assert get_dagrun_start_end(dagrun, dag) == (days_ago(1), days_ago(1))
 
 
 def test_parse_version():

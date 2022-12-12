@@ -15,6 +15,7 @@ from openlineage.airflow.adapter import OpenLineageAdapter
 from openlineage.airflow.extractors import ExtractorManager
 from openlineage.airflow.utils import (
     DagUtils,
+    get_dagrun_start_end,
     get_task_location,
     get_job_name,
     get_custom_facets,
@@ -54,7 +55,7 @@ class ActiveRunManager:
         return ti.dag_id + ti.task_id + ti.run_id
 
 
-log = logging.getLogger('airflow')
+log = logging.getLogger("airflow")
 # TODO: move task instance runs to executor
 executor: Optional[Executor] = None
 
@@ -62,11 +63,7 @@ executor: Optional[Executor] = None
 def execute_in_thread(target: Callable, kwargs=None):
     if kwargs is None:
         kwargs = {}
-    thread = threading.Thread(
-        target=target,
-        kwargs=kwargs,
-        daemon=True
-    )
+    thread = threading.Thread(target=target, kwargs=kwargs, daemon=True)
     thread.start()
 
     # Join, but ignore checking if thread stopped. If it did, then we shoudn't do anything.
@@ -109,6 +106,8 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
 
         task_metadata = extractor_manager.extract_metadata(dagrun, task)
 
+        start, end = get_dagrun_start_end(dagrun=dagrun, dag=dag)
+
         adapter.start_task(
             run_id=run_id,
             job_name=get_job_name(task),
@@ -117,12 +116,15 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
             parent_job_name=dag.dag_id,
             parent_run_id=parent_run_id,
             code_location=get_task_location(task),
-            nominal_start_time=DagUtils.get_start_time(dagrun.execution_date),
-            nominal_end_time=DagUtils.to_iso_8601(task_instance_copy.end_date),
+            nominal_start_time=DagUtils.get_start_time(start),
+            nominal_end_time=DagUtils.to_iso_8601(end),
+            owners=dag.owner.split(", "),
             task=task_metadata,
             run_facets={
                 **task_metadata.run_facets,
-                **get_custom_facets(dagrun, task, dagrun.external_trigger, task_instance_copy),
+                **get_custom_facets(
+                    dagrun, task, dagrun.external_trigger, task_instance_copy
+                ),
                 **get_airflow_run_facet(dagrun, dag, task_instance_copy, task, task_uuid)
             }
         )
@@ -146,7 +148,7 @@ def on_task_instance_success(previous_state, task_instance: "TaskInstance", sess
             run_id=run_data.run_id,
             job_name=get_job_name(task),
             end_time=DagUtils.to_iso_8601(task_instance.end_date),
-            task=task_metadata
+            task=task_metadata,
         )
 
     execute_in_thread(on_success)
@@ -169,7 +171,7 @@ def on_task_instance_failed(previous_state, task_instance: "TaskInstance", sessi
             run_id=run_data.run_id,
             job_name=get_job_name(task),
             end_time=DagUtils.to_iso_8601(task_instance.end_date),
-            task=task_metadata
+            task=task_metadata,
         )
 
     execute_in_thread(on_failure)
@@ -191,7 +193,14 @@ def on_dag_run_running(dag_run: "DagRun", msg: str):
     if not executor:
         log.error("Executor have not started before `on_dag_run_running`")
         return
-    executor.submit(adapter.dag_started, dag_run=dag_run, msg=msg)
+    start, end = get_dagrun_start_end(dag_run, dag_run.dag)
+    executor.submit(
+        adapter.dag_started,
+        dag_run=dag_run,
+        msg=msg,
+        nominal_start_time=DagUtils.get_start_time(start),
+        nominal_end_time=DagUtils.to_iso_8601(end),
+    )
 
 
 @hookimpl
