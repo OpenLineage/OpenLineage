@@ -55,7 +55,7 @@ jobs:
           function check_change () {
             MOD=$1
             shift
-            if [ $(git diff --name-only main $MOD | wc -l) -gt 0 ]; then
+            if [ $(git diff --name-only main $MOD | grep -v "README.md" | wc -l) -gt 0 ]; then
               echo "Change found in $MOD"
               if [ "$1" == "*" ]; then
                 ls -d $PWD/.circleci/workflows/* > workflow_files.txt
