@@ -103,7 +103,7 @@ public class ArgumentParser {
           } else {
             nodePointer.put(leaf, value);
           }
-    }
+      }
     }
     try {
       return OpenLineageClientUtils.loadOpenLineageYaml(
@@ -113,13 +113,10 @@ public class ArgumentParser {
     }
   }
 
-  @NotNull
   private static List<Tuple2<String, String>> filterProperties(SparkConf conf) {
-    List<Tuple2<String, String>> olconf =
-        Arrays.stream(conf.getAllWithPrefix("spark.openlineage."))
+    return Arrays.stream(conf.getAllWithPrefix("spark.openlineage."))
             .filter(e -> e._1.startsWith("transport") || e._1.startsWith("facets"))
             .collect(Collectors.toList());
-    return olconf;
   }
 
   private static List<String> getJsonPath(String keyPath) {
