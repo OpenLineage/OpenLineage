@@ -28,8 +28,6 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.spark.SparkConf;
-import org.json.JSONArray;
-import org.json.JSONObject;
 import scala.Tuple2;
 
 @AllArgsConstructor
@@ -87,22 +85,22 @@ public class ArgumentParser {
       ObjectNode nodePointer = objectNode;
       String keyPath = c._1;
       String value = c._2;
-      if(StringUtils.isNotBlank(value)){
-          List<String> pathKeys = getJsonPath(keyPath);
-          List<String> nonLeafs = pathKeys.subList(0, pathKeys.size() - 1);
-          String leaf = pathKeys.get(pathKeys.size() - 1);
-          for (String node : nonLeafs) {
-            nodePointer.putIfAbsent(node, objectMapper.createObjectNode());
-            nodePointer = (ObjectNode) nodePointer.get(node);
-          }
-          if (value.contains(DISABLED_FACETS_SEPARATOR)) {
-            ArrayNode arrayNode = nodePointer.putArray(leaf);
-            Arrays.stream(value.split(DISABLED_FACETS_SEPARATOR))
-                    .filter(StringUtils::isNotBlank)
-                    .forEach(arrayNode::add);
-          } else {
-            nodePointer.put(leaf, value);
-          }
+      if (StringUtils.isNotBlank(value)) {
+        List<String> pathKeys = getJsonPath(keyPath);
+        List<String> nonLeafs = pathKeys.subList(0, pathKeys.size() - 1);
+        String leaf = pathKeys.get(pathKeys.size() - 1);
+        for (String node : nonLeafs) {
+          nodePointer.putIfAbsent(node, objectMapper.createObjectNode());
+          nodePointer = (ObjectNode) nodePointer.get(node);
+        }
+        if (value.contains(DISABLED_FACETS_SEPARATOR)) {
+          ArrayNode arrayNode = nodePointer.putArray(leaf);
+          Arrays.stream(value.split(DISABLED_FACETS_SEPARATOR))
+              .filter(StringUtils::isNotBlank)
+              .forEach(arrayNode::add);
+        } else {
+          nodePointer.put(leaf, value);
+        }
       }
     }
     try {
@@ -115,8 +113,8 @@ public class ArgumentParser {
 
   private static List<Tuple2<String, String>> filterProperties(SparkConf conf) {
     return Arrays.stream(conf.getAllWithPrefix("spark.openlineage."))
-            .filter(e -> e._1.startsWith("transport") || e._1.startsWith("facets"))
-            .collect(Collectors.toList());
+        .filter(e -> e._1.startsWith("transport") || e._1.startsWith("facets"))
+        .collect(Collectors.toList());
   }
 
   private static List<String> getJsonPath(String keyPath) {
