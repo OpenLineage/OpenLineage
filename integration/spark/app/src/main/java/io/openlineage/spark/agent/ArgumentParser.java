@@ -90,7 +90,7 @@ public class ArgumentParser {
         List<String> nonLeafs = pathKeys.subList(0, pathKeys.size() - 1);
         String leaf = pathKeys.get(pathKeys.size() - 1);
         for (String node : nonLeafs) {
-          if(nodePointer.get(node) == null){
+          if (nodePointer.get(node) == null) {
             nodePointer.putObject(node);
           }
           nodePointer = (ObjectNode) nodePointer.get(node);
