@@ -31,7 +31,7 @@ impl SqlMeta {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, Hash)]
 pub struct ColumnLineage {
     pub descendant: ColumnMeta,
     pub lineage: Vec<ColumnMeta>,
@@ -92,6 +92,21 @@ impl DbTableMeta {
                 .or_else(|| default_schema),
             name: table_name.to_string(),
         }
+    }
+
+    pub fn qualified_name(&self) -> String {
+        format!(
+            "{}{}{}",
+            self.database
+                .as_ref()
+                .map(|x| format!("{}.", x))
+                .unwrap_or_else(|| "".to_string()),
+            self.schema
+                .as_ref()
+                .map(|x| format!("{}.", x))
+                .unwrap_or_else(|| "".to_string()),
+            self.name
+        )
     }
 
     pub fn new_default_dialect(name: String) -> Self {

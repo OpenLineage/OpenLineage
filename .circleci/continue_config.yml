@@ -810,6 +810,12 @@ workflows:
               only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
             branches:
               ignore: /.*/
+      - build-integration-sql-java:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+            branches:
+              ignore: /.*/
       - build-integration-sql:
           matrix:
             alias: build-integration-sql-x86
@@ -861,3 +867,4 @@ workflows:
             - build-integration-sql-x86
             - build-integration-sql-arm
             - build-integration-sql-macos
+            - build-integration-sql-java
