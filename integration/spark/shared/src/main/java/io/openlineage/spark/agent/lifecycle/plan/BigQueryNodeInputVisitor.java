@@ -18,36 +18,32 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.MethodUtils;
-import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.SaveIntoDataSourceCommand;
-import org.apache.spark.sql.sources.CreatableRelationProvider;
 
 /**
- * {@link LogicalPlan} visitor that matches {@link BigQueryRelation}s or {@link
- * SaveIntoDataSourceCommand}s that use a {@link BigQueryRelationProvider}. This function extracts a
- * {@link OpenLineage.Dataset} from the BigQuery table referenced by the relation. The convention
- * used for naming is a URI of <code>
+ * {@link LogicalPlan} visitor that matches {@link SaveIntoDataSourceCommand}s that use a {@link
+ * BigQueryRelationProvider}. This function extracts a {@link OpenLineage.Dataset} from the BigQuery
+ * table referenced by the relation. The convention used for naming is a URI of <code>
  * bigquery://&lt;projectId&gt;.&lt;.datasetId&gt;.&lt;tableName&gt;</code> . The namespace for
  * bigquery tables is always <code>bigquery</code> and the name is the FQN.
- *
- * @param <D> the type of {@link OpenLineage.Dataset} created by this visitor
  */
 @Slf4j
-public class BigQueryNodeVisitor<D extends OpenLineage.Dataset>
-    extends QueryPlanVisitor<LogicalPlan, D> {
+public class BigQueryNodeInputVisitor
+    extends QueryPlanVisitor<LogicalPlan, OpenLineage.InputDataset> {
   private static final String BIGQUERY_NAMESPACE = "bigquery";
-  private final DatasetFactory<D> factory;
+  private final DatasetFactory<OpenLineage.InputDataset> factory;
 
-  public BigQueryNodeVisitor(OpenLineageContext context, DatasetFactory<D> factory) {
+  public BigQueryNodeInputVisitor(
+      OpenLineageContext context, DatasetFactory<OpenLineage.InputDataset> factory) {
     super(context);
     this.factory = factory;
   }
 
   public static boolean hasBigQueryClasses() {
     try {
-      BigQueryNodeVisitor.class
+      BigQueryNodeOutputVisitor.class
           .getClassLoader()
           .loadClass("com.google.cloud.spark.bigquery.BigQueryRelation");
       return true;
@@ -59,35 +55,23 @@ public class BigQueryNodeVisitor<D extends OpenLineage.Dataset>
 
   @Override
   public boolean isDefinedAt(LogicalPlan plan) {
-    return bigQuerySupplier(plan).isPresent();
+    return plan instanceof LogicalRelation
+        && ((LogicalRelation) plan).relation() instanceof BigQueryRelation;
   }
 
   private Optional<Supplier<BigQueryRelation>> bigQuerySupplier(LogicalPlan plan) {
     // SaveIntoDataSourceCommand is a special case because it references a CreatableRelationProvider
     // Every other write instance references a LogicalRelation(BigQueryRelation, _, _, _)
-    SQLContext sqlContext = context.getSparkSession().get().sqlContext();
-    if (plan instanceof SaveIntoDataSourceCommand) {
-      SaveIntoDataSourceCommand saveCommand = (SaveIntoDataSourceCommand) plan;
-      CreatableRelationProvider relationProvider = saveCommand.dataSource();
-      if (relationProvider instanceof BigQueryRelationProvider) {
-        return Optional.of(
-            () ->
-                (BigQueryRelation)
-                    ((BigQueryRelationProvider) relationProvider)
-                        .createRelation(sqlContext, saveCommand.options(), saveCommand.schema()));
-      }
-    } else {
-      if (plan instanceof LogicalRelation
-          && ((LogicalRelation) plan).relation() instanceof BigQueryRelation) {
-        return Optional.of(() -> (BigQueryRelation) ((LogicalRelation) plan).relation());
-      }
+    if (plan instanceof LogicalRelation
+        && ((LogicalRelation) plan).relation() instanceof BigQueryRelation) {
+      return Optional.of(() -> (BigQueryRelation) ((LogicalRelation) plan).relation());
     }
     return Optional.empty();
   }
 
   @Override
-  public List<D> apply(LogicalPlan x) {
-    return bigQuerySupplier(x)
+  public List<OpenLineage.InputDataset> apply(LogicalPlan plan) {
+    return bigQuerySupplier(plan)
         .map(s -> s.get())
         .filter(relation -> getBigQueryTableName(relation).isPresent())
         .map(

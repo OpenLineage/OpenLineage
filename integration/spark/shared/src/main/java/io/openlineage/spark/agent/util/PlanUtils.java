@@ -26,7 +26,6 @@ import org.apache.hadoop.mapred.FileInputFormat;
 import org.apache.spark.rdd.HadoopRDD;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.FileScanRDD;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
@@ -97,7 +96,15 @@ public class PlanUtils {
             .map(
                 pfn -> {
                   try {
-                    return pfn.apply(x);
+                    Collection<D> collection = pfn.apply(x);
+                    if (log.isDebugEnabled()) {
+                      log.debug(
+                          "Visitor {} visited {}, returned {}",
+                          pfn.getClass().getCanonicalName(),
+                          x.getClass().getCanonicalName(),
+                          collection);
+                    }
+                    return collection;
                   } catch (RuntimeException | NoClassDefFoundError | NoSuchMethodError e) {
                     log.error("Apply failed:", e);
                     return null;
@@ -244,14 +251,14 @@ public class PlanUtils {
   /**
    * instanceOf alike implementation which does not fail in case of a missing class.
    *
-   * @param plan
+   * @param instance
    * @param classCanonicalName
    * @return
    */
-  public static boolean safeIsInstanceOf(LogicalPlan plan, String classCanonicalName) {
+  public static boolean safeIsInstanceOf(Object instance, String classCanonicalName) {
     try {
       Class c = Class.forName(classCanonicalName);
-      return plan.getClass().isAssignableFrom(c);
+      return instance.getClass().isAssignableFrom(c);
     } catch (ClassNotFoundException e) {
       return false;
     }

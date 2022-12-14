@@ -1,18 +1,39 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.17.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.18.0...HEAD)
+
+## [0.18.0](https://github.com/OpenLineage/OpenLineage/compare/0.17.0...0.18.0) - 2022-12-6
 ### Added
-* Airflow: support SQLExecuteQueryOperator [`#1379`](https://github.com/OpenLineage/OpenLineage/pull/1379) [@JDarDagran](https://github.com/JDarDagran) 
+* Airflow: support `SQLExecuteQueryOperator` [`#1379`](https://github.com/OpenLineage/OpenLineage/pull/1379) [@JDarDagran](https://github.com/JDarDagran)  
+    *Changes the `SQLExtractor` and adds support for the dynamic assignment of extractors based on `conn_type`.*
+* Airflow: introduce a new extractor for `SFTPOperator` [`#1263`](https://github.com/OpenLineage/OpenLineage/pull/1263) [@sekikn](https://github.com/sekikn)  
+    *Adds an extractor for tracing file transfers between local file systems.*
+* Airflow: add Sagemaker extractors [`#1136`](https://github.com/OpenLineage/OpenLineage/pull/1136) [@fhoda](https://github.com/fhoda)  
+    *Creates extractors for `SagemakeProcessingOperator` and `SagemakerTransformOperator`.*
+* Airflow: add S3 extractor for Airflow operators [`#1166`](https://github.com/OpenLineage/OpenLineage/pull/1166) [@fhoda](https://github.com/fhoda)  
+    *Creates an extractor for the `S3CopyObject` in the Airflow integration.*
+* Spec: add spec file for `ExternalQueryRunFacet` [`#1262`](https://github.com/OpenLineage/OpenLineage/pull/1262) [@howardyoo](https://github.com/howardyoo)  
+    *Adds a spec file to make this facet available for the Java client. Includes a README*
+* Docs: add a TSC doc [`#1303`](https://github.com/OpenLineage/OpenLineage/pull/1303) [@merobi-hub](https://github.com/merobi-hub)  
+    *Adds a document listing the members of the Technical Steering Committee.*
+
+### Changed
+* Spark: enable usage of other Transports via Spark configuration [`#1383`](https://github.com/OpenLineage/OpenLineage/pull/1383) [@tnazarew](https://github.com/tnazarew)
+    * OL client argument parsing moved from Spark Integration to java client
 
 ### Changed
 * Spark: enable usage of other Transports via Spark configuration [`#1383`](https://github.com/OpenLineage/OpenLineage/pull/1383) [@tnazarew](https://github.com/tnazarew)
     * OL client argument parsing moved from Spark Integration to java client
 
 ### Fixed
-* Spark: databricks improvements to send better events [`#1330`](https://github.com/OpenLineage/OpenLineage/pull/1330) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski) 
-    *Filter unwanted events, provide meaningful job name.*
-* Python: validate eventTime field in python client [`#1355`](https://github.com/OpenLineage/OpenLineage/pull/1355) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Validate eventTime of a RunEvent within client library.*
+* Spark: improve Databricks to send better events [`#1330`](https://github.com/OpenLineage/OpenLineage/pull/1330) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Filters unwanted events and provides a meaningful job name.*
+* Spark-Bigquery: fix a few of the common errors [`#1377`](https://github.com/OpenLineage/OpenLineage/pull/1377) [@mobuchowski](https://github.com/mobuchowski)  
+    *Fixes a few of the common issues with the Spark-Bigquery integration and adds an integration test and configures CI.*
+* Python: validate `eventTime` field in Python client [`#1355`](https://github.com/OpenLineage/OpenLineage/pull/1355) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Validates the `eventTime` of a `RunEvent` within the client library.*
+* Databricks: Handle Databricks Runtime 11.3 changes to `DbFsUtils` constructor [`#1351`](https://github.com/OpenLineage/OpenLineage/pull/1351) [@wjohnson](https://github.com/wjohnson)  
+    *Recaptures lost mount point information from the `DatabricksEnvironmentFacetBuilder` and environment-properties facet by looking at the number of parameters in the `DbFsUtils` constructor to determine the runtime version.*
 
 ## [0.17.0](https://github.com/OpenLineage/OpenLineage/compare/0.16.1...0.17.0) - 2022-11-16
 ### Added

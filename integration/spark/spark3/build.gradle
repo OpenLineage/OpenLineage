@@ -43,17 +43,23 @@ archivesBaseName='openlineage-spark-spark3'
 ext {
     sparkVersion = '3.1.3'
     jacksonVersion = '2.10.0'
-    lombokVersion = '1.18.20'
+    lombokVersion = '1.18.24'
+    bigqueryVersion = "0.27.1"
 }
 
 dependencies {
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
+
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
     testCompileOnly "org.projectlombok:lombok:${lombokVersion}"
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
     implementation(project(":shared"))
 
+    compileOnly ("com.google.cloud.spark:spark-bigquery-with-dependencies_2.12:${bigqueryVersion}") {
+        exclude group: 'com.fasterxml.jackson.core'
+        exclude group: 'com.fasterxml.jackson.module'
+    }
     compileOnly "org.apache.spark:spark-core_2.12:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql_2.12:${sparkVersion}"
     compileOnly "org.apache.spark:spark-hive_2.12:${sparkVersion}"

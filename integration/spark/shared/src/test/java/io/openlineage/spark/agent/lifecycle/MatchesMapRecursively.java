@@ -1,4 +1,7 @@
-/* SPDX-License-Identifier: Apache-2.0 */
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
 
 package io.openlineage.spark.agent.lifecycle;
 
@@ -100,7 +103,11 @@ public class MatchesMapRecursively extends Condition<Map<String, Object>> {
           eq = val.equals(target.get(k));
         }
         if (!eq) {
-          log.error("Passed object {} does not match target object {}", map.get(k), target.get(k));
+          log.error(
+              "For key {} - passed object {} does not match target object {}",
+              k,
+              map.get(k),
+              target.get(k));
           return false;
         }
       }

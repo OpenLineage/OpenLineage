@@ -311,7 +311,7 @@ jobs:
       - *checkout_project_root
       - attach_workspace:
           at: .
-      - run: pip install tox
+      - run: pip install tox==3.27.1
       - restore_cache:
           keys:
             - v1-toxenv-common-{{ .Branch }}-{{ checksum "setup.cfg" }}-{{ checksum "setup.py" }}
@@ -453,6 +453,9 @@ jobs:
       JDK8_HOME: /usr/lib/jvm/java-8-openjdk-amd64
     steps:
       - *checkout_project_root
+      - gcp-cli/install
+      - gcp-cli/initialize
+      - run: mkdir -p app/build/gcloud && echo $GCLOUD_SERVICE_KEY > app/build/gcloud/gcloud-service-key.json && chmod 644 app/build/gcloud/gcloud-service-key.json
       - restore_cache:
           keys:
             - v1-integration-spark-{{ .Branch }}-{{ .Revision }}
@@ -524,7 +527,7 @@ jobs:
       - *install_python_client
       - install_integration_common:
           install_parser: << parameters.install_parser >>
-      - run: pip install tox mypy==0.971
+      - run: pip install tox==3.27.1 mypy==0.971
       - run: python -m mypy --install-types --non-interactive --ignore-missing-imports openlineage
       - restore_cache:
           keys:
@@ -697,6 +700,17 @@ jobs:
           paths:
             - ~/.gradle
 
+  build-image-proxy-backend:
+    working_directory: ~/openlineage/proxy
+    machine:
+      image: ubuntu-2004:current
+    steps:
+      - *checkout_project_root
+      - run: docker build --no-cache --tag "openlineage/proxy:${CIRCLE_SHA1}" .
+      - run: docker save -o proxy.tar "openlineage/proxy:${CIRCLE_SHA1}"
+      - store_artifacts:
+          path: proxy.tar
+
   release-proxy-backend:
     working_directory: ~/openlineage/proxy
     docker:
@@ -714,6 +728,15 @@ jobs:
 
           # Publish *.jar
           ./gradlew publish
+
+  release-docker-proxy-backend:
+    working_directory: ~/openlineage/proxy
+    machine:
+      image: ubuntu-2004:current
+    steps:
+      - checkout
+      - run: ./docker/login.sh
+      - run: ./docker/build-and-push-proxy.sh $CIRCLE_TAG
 
   workflow_complete:
     working_directory: ~/openlineage
@@ -743,6 +766,13 @@ workflows:
           requires:
             - release-client-java
       - release-proxy-backend:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+            branches:
+              ignore: /.*/
+          context: release
+      - release-docker-proxy-backend:
           filters:
             tags:
               only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/

@@ -48,7 +48,7 @@ public class EventEmitter {
       log.debug(
           "Emitting lineage completed successfully: {}", OpenLineageClientUtils.toJson(event));
     } catch (OpenLineageClientException exception) {
-      log.error("Could not emit lineage w/ exception", exception);
+      log.error("Could not emit lineage w/ exception", exception.getCause());
     }
   }
 

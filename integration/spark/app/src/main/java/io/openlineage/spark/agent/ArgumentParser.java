@@ -7,9 +7,13 @@ package io.openlineage.spark.agent;
 
 import static io.openlineage.spark.agent.util.SparkConfUtils.findSparkConfigKey;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.OpenLineageYaml;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -24,8 +28,6 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.spark.SparkConf;
-import org.json.JSONArray;
-import org.json.JSONObject;
 import scala.Tuple2;
 
 @AllArgsConstructor
@@ -76,14 +78,11 @@ public class ArgumentParser {
   }
 
   public static OpenLineageYaml extractOpenlineageConfFromSparkConf(SparkConf conf) {
-    List<Tuple2<String, String>> olconf =
-        Arrays.stream(conf.getAllWithPrefix("spark.openlineage."))
-            .filter(e -> e._1.startsWith("transport") || e._1.startsWith("facets"))
-            .collect(Collectors.toList());
-
-    JSONObject jsonObject = new JSONObject();
-    for (Tuple2<String, String> c : olconf) {
-      JSONObject temp = jsonObject;
+    List<Tuple2<String, String>> properties = filterProperties(conf);
+    ObjectMapper objectMapper = new ObjectMapper();
+    ObjectNode objectNode = objectMapper.createObjectNode();
+    for (Tuple2<String, String> c : properties) {
+      ObjectNode nodePointer = objectNode;
       String keyPath = c._1;
       String value = c._2;
       if (StringUtils.isNotBlank(value)) {
@@ -91,24 +90,31 @@ public class ArgumentParser {
         List<String> nonLeafs = pathKeys.subList(0, pathKeys.size() - 1);
         String leaf = pathKeys.get(pathKeys.size() - 1);
         for (String node : nonLeafs) {
-          if (!temp.has(node)) {
-            temp.put(node, new JSONObject());
-          }
-          temp = temp.getJSONObject(node);
+          nodePointer.putIfAbsent(node, objectMapper.createObjectNode());
+          nodePointer = (ObjectNode) nodePointer.get(node);
         }
         if (value.contains(DISABLED_FACETS_SEPARATOR)) {
-          JSONArray jsonArray = new JSONArray();
+          ArrayNode arrayNode = nodePointer.putArray(leaf);
           Arrays.stream(value.split(DISABLED_FACETS_SEPARATOR))
               .filter(StringUtils::isNotBlank)
-              .forEach(jsonArray::put);
-          temp.put(leaf, jsonArray);
+              .forEach(arrayNode::add);
         } else {
-          temp.put(leaf, value);
+          nodePointer.put(leaf, value);
         }
       }
     }
-    return OpenLineageClientUtils.loadOpenLineageYaml(
-        new ByteArrayInputStream(jsonObject.toString().getBytes()));
+    try {
+      return OpenLineageClientUtils.loadOpenLineageYaml(
+          new ByteArrayInputStream(objectMapper.writeValueAsBytes(objectNode)));
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private static List<Tuple2<String, String>> filterProperties(SparkConf conf) {
+    return Arrays.stream(conf.getAllWithPrefix("spark.openlineage."))
+        .filter(e -> e._1.startsWith("transport") || e._1.startsWith("facets"))
+        .collect(Collectors.toList());
   }
 
   private static List<String> getJsonPath(String keyPath) {

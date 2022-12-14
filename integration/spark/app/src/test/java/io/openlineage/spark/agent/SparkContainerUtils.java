@@ -10,6 +10,7 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.KafkaContainer;
@@ -36,6 +37,7 @@ public class SparkContainerUtils {
             DockerImageName.parse("bitnami/spark:" + System.getProperty("spark.version")))
         .withNetwork(network)
         .withNetworkAliases("spark")
+        .withFileSystemBind("build/gcloud", "/opt/gcloud")
         .withFileSystemBind("src/test/resources/test_data", "/test_data")
         .withFileSystemBind("src/test/resources/spark_scripts", "/opt/spark_scripts")
         .withFileSystemBind("build/libs", "/opt/libs")
@@ -59,6 +61,7 @@ public class SparkContainerUtils {
       MockServerContainer mockServerContainer,
       String namespace,
       List<String> urlParams,
+      List<String> sparkConfigParams,
       String... command) {
     return makePysparkContainerWithDefaultConf(
         network,
@@ -67,6 +70,7 @@ public class SparkContainerUtils {
         mockServerContainer,
         namespace,
         urlParams,
+        sparkConfigParams,
         command);
   }
 
@@ -76,7 +80,12 @@ public class SparkContainerUtils {
       String namespace,
       String... command) {
     return makePysparkContainerWithDefaultConf(
-        network, mockServerContainer, namespace, new ArrayList<>(), command);
+        network,
+        mockServerContainer,
+        namespace,
+        Collections.emptyList(),
+        Collections.emptyList(),
+        command);
   }
 
   static GenericContainer<?> makePysparkContainerWithDefaultConf(
@@ -86,6 +95,7 @@ public class SparkContainerUtils {
       MockServerContainer mockServerContainer,
       String namespace,
       List<String> urlParams,
+      List<String> sparkConfigParams,
       String... command) {
 
     //    String urlParamsString = urlParams.isEmpty() ?
@@ -94,34 +104,36 @@ public class SparkContainerUtils {
       paramString = "?" + String.join("&", urlParams);
     }
 
-    List<String> sparkConfigParams = new ArrayList<>();
-    addSparkConfig(sparkConfigParams, "spark.openlineage.transport.type=http");
+    List<String> sparkConf = new ArrayList<>();
+    addSparkConfig(sparkConf, "spark.openlineage.transport.type=http");
     addSparkConfig(
-        sparkConfigParams,
+        sparkConf,
         "spark.openlineage.transport.url="
             + openlineageUrl
             + "/api/v1/namespaces/"
             + namespace
             + paramString);
-    addSparkConfig(
-        sparkConfigParams, "spark.extraListeners=" + OpenLineageSparkListener.class.getName());
-    addSparkConfig(sparkConfigParams, "spark.sql.warehouse.dir=/tmp/warehouse");
-    addSparkConfig(sparkConfigParams, "spark.sql.shuffle.partitions=1");
-    addSparkConfig(
-        sparkConfigParams, "spark.driver.extraJavaOptions=-Dderby.system.home=/tmp/derby");
-    addSparkConfig(sparkConfigParams, "spark.sql.warehouse.dir=/tmp/warehouse");
-    addSparkConfig(sparkConfigParams, "spark.jars.ivy=/tmp/.ivy2/");
-    addSparkConfig(sparkConfigParams, "spark.openlineage.facets.disabled=");
+    addSparkConfig(sparkConf, "spark.extraListeners=" + OpenLineageSparkListener.class.getName());
+    addSparkConfig(sparkConf, "spark.sql.warehouse.dir=/tmp/warehouse");
+    addSparkConfig(sparkConf, "spark.sql.shuffle.partitions=1");
+    addSparkConfig(sparkConf, "spark.driver.extraJavaOptions=-Dderby.system.home=/tmp/derby");
+    addSparkConfig(sparkConf, "spark.sql.warehouse.dir=/tmp/warehouse");
+    addSparkConfig(sparkConf, "spark.jars.ivy=/tmp/.ivy2/");
+    addSparkConfig(sparkConf, "spark.openlineage.facets.disabled=");
 
     List<String> sparkSubmit =
         new ArrayList(Arrays.asList("./bin/spark-submit", "--master", "local"));
-    sparkSubmit.addAll(sparkConfigParams);
+    sparkSubmit.addAll(sparkConf);
     sparkSubmit.addAll(
         Arrays.asList(
             "--jars",
             "/opt/libs/"
                 + System.getProperty("openlineage.spark.jar")
                 + ",/opt/dependencies/spark-sql-kafka-*.jar"
+                + ",/opt/dependencies/spark-bigquery-with-dependencies*.jar"
+                + ",/opt/dependencies/gcs-connector-hadoop*.jar"
+                + ",/opt/dependencies/google-http-client-*.jar"
+                + ",/opt/dependencies/google-oauth-client-*.jar"
                 + ",/opt/dependencies/kafka-*.jar"
                 + ",/opt/dependencies/spark-token-provider-*.jar"
                 + ",/opt/dependencies/commons-pool2-*.jar"));
@@ -142,7 +154,12 @@ public class SparkContainerUtils {
       String namespace,
       String pysparkFile) {
     runPysparkContainerWithDefaultConf(
-        network, mockServerContainer, namespace, new ArrayList<>(), pysparkFile);
+        network,
+        mockServerContainer,
+        namespace,
+        Collections.emptyList(),
+        Collections.emptyList(),
+        pysparkFile);
   }
 
   static void runPysparkContainerWithDefaultConf(
@@ -150,9 +167,15 @@ public class SparkContainerUtils {
       MockServerContainer mockServerContainer,
       String namespace,
       List<String> urlParams,
+      List<String> sparkConfigParams,
       String pysparkFile) {
     makePysparkContainerWithDefaultConf(
-            network, mockServerContainer, namespace, urlParams, "/opt/spark_scripts/" + pysparkFile)
+            network,
+            mockServerContainer,
+            namespace,
+            urlParams,
+            sparkConfigParams,
+            "/opt/spark_scripts/" + pysparkFile)
         .start();
   }
 

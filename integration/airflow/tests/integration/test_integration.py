@@ -92,6 +92,13 @@ params = [
         ),
     ),
     pytest.param(
+        "trino_orders_popular_day_of_week",
+        "requests/trino.json",
+        marks=pytest.mark.skipif(
+            not IS_AIRFLOW_VERSION_ENOUGH("2.4.0"), reason="Airflow < 2.4.0"
+        ),
+    ),
+    pytest.param(
         "dbt_snowflake",
         "requests/dbt_snowflake.json",
         marks=[

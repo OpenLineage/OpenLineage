@@ -20,7 +20,7 @@ subprojects {
     apply plugin: 'java'
 
     ext {
-        lombokVersion = '1.18.20'
+        lombokVersion = '1.18.24'
         isReleaseVersion = !version.endsWith('SNAPSHOT')
     }
 

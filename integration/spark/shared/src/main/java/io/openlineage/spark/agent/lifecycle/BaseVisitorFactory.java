@@ -10,7 +10,8 @@ import io.openlineage.client.OpenLineage.Dataset;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.spark.agent.lifecycle.plan.AlterTableAddColumnsCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.AlterTableRenameCommandVisitor;
-import io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeInputVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeOutputVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.CreateDataSourceTableAsSelectCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.CreateDataSourceTableCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.CreateHiveTableAsSelectCommandVisitor;
@@ -46,9 +47,6 @@ abstract class BaseVisitorFactory implements VisitorFactory {
       OpenLineageContext context, DatasetFactory<D> factory) {
     List<PartialFunction<LogicalPlan, List<D>>> list = new ArrayList<>();
     list.add(new LogicalRDDVisitor(context, factory));
-    if (BigQueryNodeVisitor.hasBigQueryClasses()) {
-      list.add(new BigQueryNodeVisitor(context, factory));
-    }
     if (KafkaRelationVisitor.hasKafkaClasses()) {
       list.add(new KafkaRelationVisitor(context, factory));
     }
@@ -73,8 +71,14 @@ abstract class BaseVisitorFactory implements VisitorFactory {
   @Override
   public List<PartialFunction<LogicalPlan, List<InputDataset>>> getInputVisitors(
       OpenLineageContext context) {
+    DatasetFactory<InputDataset> factory = DatasetFactory.input(context);
     List<PartialFunction<LogicalPlan, List<InputDataset>>> inputVisitors =
-        new ArrayList<>(getCommonVisitors(context, DatasetFactory.input(context)));
+        new ArrayList<>(getCommonVisitors(context, factory));
+
+    if (BigQueryNodeInputVisitor.hasBigQueryClasses()) {
+      inputVisitors.add(new BigQueryNodeInputVisitor(context, factory));
+    }
+
     if (VisitorFactory.classPresent("org.apache.spark.sql.execution.SQLExecutionRDD")) {
       inputVisitors.add(new SqlExecutionRDDVisitor(context));
     }
@@ -91,6 +95,10 @@ abstract class BaseVisitorFactory implements VisitorFactory {
         getCommonVisitors(context, factory);
     List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>> list =
         new ArrayList<>(outputCommonVisitors);
+
+    if (BigQueryNodeOutputVisitor.hasBigQueryClasses()) {
+      list.add(new BigQueryNodeOutputVisitor(context, factory));
+    }
 
     list.add(new InsertIntoDataSourceDirVisitor(context));
     list.add(new InsertIntoDataSourceVisitor(context));

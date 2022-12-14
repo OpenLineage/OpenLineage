@@ -292,7 +292,7 @@ class LogicalPlanSerializerTest {
             SQLConf.get(),
             "",
             Optional.empty(),
-            true);
+            false);
 
     BigQueryRelation bigQueryRelation =
         new BigQueryRelation(
