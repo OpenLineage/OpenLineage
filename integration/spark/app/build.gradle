@@ -128,7 +128,6 @@ dependencies {
     pysparkContainerOnly "com.google.cloud.bigdataoss:gcs-connector:${versions.gcs}:shaded"
 
     if(versions.delta != "NA") { testFixturesApi "io.delta:delta-core_2.12:${versions.delta}" }
-    if(versions.module == "spark2") { testImplementation "org.json:json:20200518" }
 
     testImplementation(project(":${versions.module}"))
     testImplementation testFixtures(project(":${versions.module}")){
@@ -238,7 +237,6 @@ shadowJar {
     relocate 'org.apache.http', 'io.openlineage.spark.shaded.org.apache.http'
     relocate 'org.yaml.snakeyaml', 'io.openlineage.spark.shaded.org.yaml.snakeyaml'
     relocate 'com.fasterxml.jackson', 'io.openlineage.spark.shaded.com.fasterxml.jackson'
-    if(versions.module == "spark2") { relocate 'org.json', 'io.openlineage.spark.shaded.org.json'}
     manifest {
         attributes(
                 'Created-By': "Gradle ${gradle.gradleVersion}",
