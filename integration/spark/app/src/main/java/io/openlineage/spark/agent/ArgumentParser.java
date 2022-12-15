@@ -59,10 +59,7 @@ public class ArgumentParser {
     ArgumentParserBuilder builder = ArgumentParser.builder();
     conf.setIfMissing(SPARK_CONF_DISABLED_FACETS, DEFAULT_DISABLED_FACETS);
     conf.setIfMissing(SPARK_CONF_TRANSPORT_TYPE, "console");
-
-    log.info("OPENLINEAGE CONFIG PARAMETERS");
-    Arrays.stream(conf.getAllWithPrefix("spark.openlineage."))
-        .forEach(e -> log.info("OL PARAM: " + e._1 + " = " + e._2));
+    
     if (conf.get(SPARK_CONF_TRANSPORT_TYPE).equals("http")) {
       findSparkConfigKey(conf, SPARK_CONF_HTTP_URL)
           .ifPresent(url -> UrlParser.parseUrl(url).forEach(conf::set));

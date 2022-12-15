@@ -71,7 +71,6 @@ public final class HttpTransport extends Transport implements Closeable {
     this.http = httpClient;
     try {
       this.uri = getUri(httpConfig);
-      log.info("HTTP TRANSPORT URL: " + uri);
     } catch (URISyntaxException e) {
       throw new OpenLineageClientException(e);
     }
