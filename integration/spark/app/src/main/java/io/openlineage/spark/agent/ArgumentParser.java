@@ -59,7 +59,7 @@ public class ArgumentParser {
     ArgumentParserBuilder builder = ArgumentParser.builder();
     conf.setIfMissing(SPARK_CONF_DISABLED_FACETS, DEFAULT_DISABLED_FACETS);
     conf.setIfMissing(SPARK_CONF_TRANSPORT_TYPE, "console");
-    
+
     if (conf.get(SPARK_CONF_TRANSPORT_TYPE).equals("http")) {
       findSparkConfigKey(conf, SPARK_CONF_HTTP_URL)
           .ifPresent(url -> UrlParser.parseUrl(url).forEach(conf::set));
