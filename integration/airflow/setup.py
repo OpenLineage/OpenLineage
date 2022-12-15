@@ -21,6 +21,7 @@ requirements = [
 
 extras_require = {
     "tests": [
+        "aiohttp",          # tox Airflow 2.3.4 does not install it by default
         "pytest",
         "pytest-cov",
         "mock",
@@ -40,6 +41,7 @@ extras_require = {
         "apache-airflow-providers-sftp>=2.1.1",
         "apache-airflow-providers-ssh>=2.1.0",
         "apache-airflow-providers-ftp>=3.3.0",
+        "apache-airflow-providers-dbt-cloud>=2.1.0",
         "airflow-provider-great-expectations==0.1.5",
         "great-expectations<=0.15.23",
         "protobuf>=3.20,<4.23",

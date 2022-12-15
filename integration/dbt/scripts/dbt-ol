@@ -15,7 +15,7 @@ from typing import Optional
 from openlineage.client.client import OpenLineageClient
 from openlineage.client.run import Job, Run, RunEvent, RunState
 from openlineage.common.provider.dbt import (
-    DbtArtifactProcessor,
+    DbtLocalArtifactProcessor,
     ParentRunMetadata,
     UnsupportedDbtCommand,
 )
@@ -93,6 +93,7 @@ def dbt_run_event_failed(
 logger = logging.getLogger("dbtol")
 logger.setLevel("INFO")
 logger.addHandler(logging.StreamHandler(sys.stdout))
+logging.basicConfig(level=logging.INFO)
 
 
 def main():
@@ -122,7 +123,7 @@ def main():
             job_namespace=parent_namespace
         )
 
-    processor = DbtArtifactProcessor(
+    processor = DbtLocalArtifactProcessor(
         producer=PRODUCER,
         target=target,
         job_namespace=job_namespace,
@@ -134,7 +135,7 @@ def main():
     # Always emit "wrapping event" around dbt run. This indicates start of dbt execution, since
     # both the start and complete events for dbt models won't get emitted until end of execution.
     start_event = dbt_run_event_start(
-        job_name=f"dbt-run-{processor.project['name']}",
+        job_name=f"dbt-run-{processor.project_name}",
         job_namespace=job_namespace,
         parent_run_metadata=parent_run_metadata
     )

@@ -1,0 +1,68 @@
+{
+  "metadata": {
+    "dbt_schema_version": "https://schemas.getdbt.com/dbt/catalog/v1.json",
+    "dbt_version": "1.4.0a1",
+    "generated_at": "2022-11-10T20:24:13.581678Z",
+    "invocation_id": "e0c64ee8-2672-4c7a-92cc-2e27c2d4324f",
+    "env": {
+      "DBT_CLOUD_PROJECT_ID": "177370",
+      "DBT_CLOUD_RUN_ID": "96031646",
+      "DBT_CLOUD_JOB_ID": "155267",
+      "DBT_CLOUD_RUN_REASON": "Triggered via Apache Airflow by task 'trigger_job_run1' in the astronomy DAG.",
+      "DBT_CLOUD_RUN_REASON_CATEGORY": "other"
+    }
+  },
+  "nodes": {
+    "model.my_new_project.my_first_dbt_model": {
+      "metadata": {
+        "type": "BASE TABLE",
+        "schema": "TEST_SCHEMA",
+        "name": "MY_FIRST_DBT_MODEL",
+        "database": "SANDBOX",
+        "comment": null,
+        "owner": "TEST_SCHEMA"
+      },
+      "columns": {
+        "ID": {
+          "type": "NUMBER",
+          "index": 1,
+          "name": "ID",
+          "comment": null
+        }
+      },
+      "stats": {
+        "last_modified": {
+          "id": "last_modified",
+          "label": "Last Modified",
+          "value": "2022-11-10 20:23UTC",
+          "include": true,
+          "description": "The timestamp for last update/change"
+        },
+        "bytes": {
+          "id": "bytes",
+          "label": "Approximate Size",
+          "value": 1024,
+          "include": true,
+          "description": "Approximate size of the table as reported by Snowflake"
+        },
+        "row_count": {
+          "id": "row_count",
+          "label": "Row Count",
+          "value": 2,
+          "include": true,
+          "description": "An approximate count of rows in this table"
+        },
+        "has_stats": {
+          "id": "has_stats",
+          "label": "Has Stats?",
+          "value": true,
+          "include": false,
+          "description": "Indicates whether there are statistics for this table"
+        }
+      },
+      "unique_id": "model.my_new_project.my_first_dbt_model"
+    }
+  },
+  "sources": {},
+  "errors": null
+}
