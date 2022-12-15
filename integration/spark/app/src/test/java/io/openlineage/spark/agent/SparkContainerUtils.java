@@ -105,6 +105,7 @@ public class SparkContainerUtils {
     }
 
     List<String> sparkConf = new ArrayList<>();
+    sparkConfigParams.forEach(param -> addSparkConfig(sparkConf, param));
     addSparkConfig(sparkConf, "spark.openlineage.transport.type=http");
     addSparkConfig(
         sparkConf,
