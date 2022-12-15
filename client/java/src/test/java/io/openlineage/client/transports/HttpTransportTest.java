@@ -33,25 +33,21 @@ import org.mockito.ArgumentCaptor;
 class HttpTransportTest {
 
   @Test
-  void transportCreatedWithHttpConfig() {
+  void transportCreatedWithHttpConfig()
+      throws URISyntaxException, NoSuchFieldException, IllegalAccessException {
     HttpConfig httpConfig = new HttpConfig();
-    try {
-      httpConfig.setUrl(new URI("http://localhost:5000"));
-      httpConfig.setEndpoint("/api/v1/lineage");
-      httpConfig.setTimeout(5000.0);
-      httpConfig.setUrlParams(singletonMap("param", "value"));
-      ApiKeyTokenProvider auth = new ApiKeyTokenProvider();
-      auth.setApiKey("test");
-      httpConfig.setAuth(auth);
-      HttpTransport httpTransport = new HttpTransport(httpConfig);
-      Field uri = httpTransport.getClass().getDeclaredField("uri");
-      uri.setAccessible(true);
-      String target = uri.get(httpTransport).toString();
-      assertEquals("http://localhost:5000/api/v1/lineage?param=value", target);
-
-    } catch (URISyntaxException | NoSuchFieldException | IllegalAccessException e) {
-      throw new RuntimeException(e);
-    }
+    httpConfig.setUrl(new URI("http://localhost:5000"));
+    httpConfig.setEndpoint("/api/v1/lineage");
+    httpConfig.setTimeout(5000.0);
+    httpConfig.setUrlParams(singletonMap("param", "value"));
+    ApiKeyTokenProvider auth = new ApiKeyTokenProvider();
+    auth.setApiKey("test");
+    httpConfig.setAuth(auth);
+    HttpTransport httpTransport = new HttpTransport(httpConfig);
+    Field uri = httpTransport.getClass().getDeclaredField("uri");
+    uri.setAccessible(true);
+    String target = uri.get(httpTransport).toString();
+    assertEquals("http://localhost:5000/api/v1/lineage?param=value", target);
   }
 
   @Test
