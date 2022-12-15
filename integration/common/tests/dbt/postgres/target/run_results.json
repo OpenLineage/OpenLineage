@@ -1,0 +1,134 @@
+{
+	"metadata": {
+		"dbt_schema_version": "https://schemas.getdbt.com/dbt/run-results/v4.json",
+		"dbt_version": "1.3.1",
+		"generated_at": "2022-12-14T21:28:17.216927Z",
+		"invocation_id": "1269f08d-da04-4fbd-8207-1ddc9110cb1b",
+		"env": {}
+	},
+	"results": [{
+		"status": "success",
+		"timing": [{
+			"name": "compile",
+			"started_at": "2022-12-14T21:28:16.888948Z",
+			"completed_at": "2022-12-14T21:28:16.898154Z"
+		}, {
+			"name": "execute",
+			"started_at": "2022-12-14T21:28:16.899571Z",
+			"completed_at": "2022-12-14T21:28:16.964210Z"
+		}],
+		"thread_id": "Thread-1",
+		"execution_time": 0.07901287078857422,
+		"adapter_response": {
+			"_message": "CREATE VIEW",
+			"code": "CREATE VIEW",
+			"rows_affected": -1
+		},
+		"message": "CREATE VIEW",
+		"failures": null,
+		"unique_id": "model.jaffle_shop.stg_customers"
+	}, {
+		"status": "success",
+		"timing": [{
+			"name": "compile",
+			"started_at": "2022-12-14T21:28:16.972100Z",
+			"completed_at": "2022-12-14T21:28:16.977442Z"
+		}, {
+			"name": "execute",
+			"started_at": "2022-12-14T21:28:16.997052Z",
+			"completed_at": "2022-12-14T21:28:17.030362Z"
+		}],
+		"thread_id": "Thread-1",
+		"execution_time": 0.06149768829345703,
+		"adapter_response": {
+			"_message": "CREATE VIEW",
+			"code": "CREATE VIEW",
+			"rows_affected": -1
+		},
+		"message": "CREATE VIEW",
+		"failures": null,
+		"unique_id": "model.jaffle_shop.stg_orders"
+	}, {
+		"status": "success",
+		"timing": [{
+			"name": "compile",
+			"started_at": "2022-12-14T21:28:17.037765Z",
+			"completed_at": "2022-12-14T21:28:17.044089Z"
+		}, {
+			"name": "execute",
+			"started_at": "2022-12-14T21:28:17.045744Z",
+			"completed_at": "2022-12-14T21:28:17.076892Z"
+		}],
+		"thread_id": "Thread-1",
+		"execution_time": 0.04267001152038574,
+		"adapter_response": {
+			"_message": "CREATE VIEW",
+			"code": "CREATE VIEW",
+			"rows_affected": -1
+		},
+		"message": "CREATE VIEW",
+		"failures": null,
+		"unique_id": "model.jaffle_shop.stg_payments"
+	}, {
+		"status": "success",
+		"timing": [{
+			"name": "compile",
+			"started_at": "2022-12-14T21:28:17.085055Z",
+			"completed_at": "2022-12-14T21:28:17.092345Z"
+		}, {
+			"name": "execute",
+			"started_at": "2022-12-14T21:28:17.093727Z",
+			"completed_at": "2022-12-14T21:28:17.140203Z"
+		}],
+		"thread_id": "Thread-1",
+		"execution_time": 0.058419227600097656,
+		"adapter_response": {
+			"_message": "SELECT 100",
+			"code": "SELECT",
+			"rows_affected": 100
+		},
+		"message": "SELECT 100",
+		"failures": null,
+		"unique_id": "model.jaffle_shop.customers"
+	}, {
+		"status": "success",
+		"timing": [{
+			"name": "compile",
+			"started_at": "2022-12-14T21:28:17.148674Z",
+			"completed_at": "2022-12-14T21:28:17.154923Z"
+		}, {
+			"name": "execute",
+			"started_at": "2022-12-14T21:28:17.156316Z",
+			"completed_at": "2022-12-14T21:28:17.196590Z"
+		}],
+		"thread_id": "Thread-1",
+		"execution_time": 0.0513913631439209,
+		"adapter_response": {
+			"_message": "SELECT 99",
+			"code": "SELECT",
+			"rows_affected": 99
+		},
+		"message": "SELECT 99",
+		"failures": null,
+		"unique_id": "model.jaffle_shop.orders"
+	}],
+	"elapsed_time": 0.40049314498901367,
+	"args": {
+		"write_json": true,
+		"use_colors": true,
+		"printer_width": 80,
+		"version_check": true,
+		"partial_parse": true,
+		"static_parser": true,
+		"profiles_dir": "./tests/dbt/postgres",
+		"send_anonymous_usage_stats": true,
+		"event_buffer_size": 100000,
+		"quiet": false,
+		"no_print": false,
+		"project_dir": "/usr/local/airflow/dbt/jaffle_shop",
+		"profile": "postgres_profile",
+		"which": "run",
+		"rpc_method": "run",
+		"indirect_selection": "eager"
+	}
+}

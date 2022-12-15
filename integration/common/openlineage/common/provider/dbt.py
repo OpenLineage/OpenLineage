@@ -33,6 +33,7 @@ class Adapter(Enum):
     SNOWFLAKE = 'snowflake'
     REDSHIFT = 'redshift'
     SPARK = 'spark'
+    POSTGRES = 'postgres'
 
     @staticmethod
     def adapters() -> str:
@@ -215,7 +216,10 @@ class DbtArtifactProcessor:
         profile_dir = run_result['args']['profiles_dir']
 
         if not self.profile_name:
-            self.profile_name = self.project['profile']
+            if self.project.get('profile'):
+                self.profile_name = self.project.get('profile')
+            else:
+                raise KeyError(f'profile not found in {self.project}')
 
         profile = self.load_yaml_with_jinja(
             os.path.join(profile_dir, 'profiles.yml')
@@ -688,6 +692,8 @@ class DbtArtifactProcessor:
             return "bigquery"
         elif self.adapter_type == Adapter.REDSHIFT:
             return f"redshift://{profile['host']}:{profile['port']}"
+        elif self.adapter_type == Adapter.POSTGRES:
+            return f"postgres://{profile['host']}:{profile['port']}"
         elif self.adapter_type == Adapter.SPARK:
             port = ""
 

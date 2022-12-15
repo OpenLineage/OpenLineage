@@ -3,6 +3,7 @@
 
 import os
 import logging
+import json
 from dateutil.parser import parse
 from jinja2 import Environment
 from typing import Any, Optional
@@ -110,7 +111,10 @@ def match(expected, result) -> bool:
                     return False
             else:
                 if not match(x, result[i]):
-                    log.error(f"List not matched expected: {x} result: {result[i]}")
+                    log.error(
+                        f"List not matched at {i}\n" +
+                        f"  expected:\n{json.dumps(x)}\n" +
+                        f"  result: \n{json.dumps(result[i])}")
                     return False
     elif isinstance(expected, str):
         if '{{' in expected:
