@@ -133,6 +133,13 @@ params = [
             not IS_AIRFLOW_VERSION_ENOUGH("2.3.0"), reason="Airflow < 2.3.0"
         ),
     ),
+    pytest.param(
+        "task_group_dag",
+        "requests/task_group.json",
+        marks=pytest.mark.skipif(
+            not IS_AIRFLOW_VERSION_ENOUGH("2.3.0"), reason="Airflow < 2.3.0"
+        ),
+    ),
     ("sftp_dag", "requests/sftp.json"),
 ]
 

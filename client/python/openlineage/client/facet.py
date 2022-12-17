@@ -368,3 +368,10 @@ class ColumnLineageDatasetFacet(BaseFacet):
     @staticmethod
     def _get_schema() -> str:
         return SCHEMA_URI + "#/definitions/ColumnLineageDatasetFacet"
+
+
+@attr.s
+class ProcessingEngineRunFacet(BaseFacet):
+    version: str = attr.ib()
+    name: str = attr.ib()
+    openlineageAdapterVersion: str = attr.ib()

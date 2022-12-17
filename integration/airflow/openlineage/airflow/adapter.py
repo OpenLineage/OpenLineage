@@ -10,8 +10,15 @@ from openlineage.airflow.version import __version__ as OPENLINEAGE_AIRFLOW_VERSI
 from openlineage.airflow.extractors import TaskMetadata
 
 from openlineage.client import OpenLineageClient, OpenLineageClientOptions, set_producer
-from openlineage.client.facet import DocumentationJobFacet, SourceCodeLocationJobFacet, \
-    NominalTimeRunFacet, ParentRunFacet, BaseFacet, ErrorMessageRunFacet
+from openlineage.client.facet import (
+    DocumentationJobFacet,
+    SourceCodeLocationJobFacet,
+    NominalTimeRunFacet,
+    ParentRunFacet,
+    BaseFacet,
+    ErrorMessageRunFacet,
+    ProcessingEngineRunFacet,
+)
 from openlineage.airflow.utils import redact_with_exclusions, DagUtils
 from openlineage.client.run import RunEvent, RunState, Run, Job
 import requests.exceptions
@@ -64,6 +71,14 @@ class OpenLineageAdapter:
     def build_dag_run_id(self, dag_id, dag_run_id):
         return str(uuid.uuid3(uuid.NAMESPACE_URL, f'{_DAG_NAMESPACE}.{dag_id}.{dag_run_id}'))
 
+    def build_task_instance_run_id(self, task_id, execution_date, try_number):
+        return str(
+            uuid.uuid3(
+                uuid.NAMESPACE_URL,
+                f"{_DAG_NAMESPACE}.{task_id}.{execution_date}.{try_number}",
+            )
+        )
+
     def emit(self, event: RunEvent):
         event = redact_with_exclusions(event)
         try:
@@ -98,10 +113,18 @@ class OpenLineageAdapter:
         :param nominal_start_time: scheduled time of dag run
         :param nominal_end_time: following schedule of dag run
         :param task: metadata container with information extracted from operator
-        :param run_facets:
+        :param run_facets: custom run facets
         :return:
         """
+        from airflow.version import version as AIRFLOW_VERSION
 
+        processing_engine_version_facet = ProcessingEngineRunFacet(
+            version=AIRFLOW_VERSION,
+            name="Airflow",
+            openlineageAdapterVersion=OPENLINEAGE_AIRFLOW_VERSION,
+        )
+
+        run_facets["processing_engine"] = processing_engine_version_facet  # type: ignore
         event = RunEvent(
             eventType=RunState.START,
             eventTime=event_time,

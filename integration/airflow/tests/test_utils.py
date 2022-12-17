@@ -19,6 +19,7 @@ from openlineage.airflow.utils import (
     SafeStrDict,
     _is_name_redactable,
     redact_with_exclusions,
+    InfoJsonEncodable,
 )
 from openlineage.client.utils import RedactMixin
 import attr
@@ -103,6 +104,28 @@ def test_safe_dict():
         def __str__(self):
             raise NotImplementedError
     assert str(SafeStrDict({'a': NotImplemented()})) == str({})
+
+
+def test_info_json_encodable():
+    class TestInfo(InfoJsonEncodable):
+        excludes = ["exclude_1", "exclude_2", "imastring"]
+        casts = {"iwanttobeint": lambda x: int(x.imastring)}
+        renames = {"_faulty_name": "goody_name"}
+
+    @attr.s
+    class Test:
+        exclude_1: str = attr.ib()
+        imastring: str = attr.ib()
+        _faulty_name: str = attr.ib()
+        donotcare: str = attr.ib()
+
+    obj = Test('val', '123', 'not_funny', 'abc')
+
+    assert json.loads(json.dumps(TestInfo(obj))) == {
+        "iwanttobeint": 123,
+        "goody_name": "not_funny",
+        "donotcare": "abc",
+    }
 
 
 def test_is_name_redactable():

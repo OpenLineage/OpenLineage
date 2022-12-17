@@ -66,6 +66,18 @@ class AirflowMappedTaskRunFacet(BaseFacet):
 
 
 @attr.s
+class AirflowRunFacet(BaseFacet):
+    """
+    Composite Airflow run facet.
+    """
+    dag: Dict = attr.ib()
+    dagRun: Dict = attr.ib()
+    task: Dict = attr.ib()
+    taskInstance: Dict = attr.ib()
+    taskUuid: str = attr.ib()
+
+
+@attr.s
 class UnknownOperatorInstance(RedactMixin):
     """
     Describes an unknown operator - specifies the (class) name of the operator
