@@ -31,16 +31,3 @@ def test_column_level_lineage():
             ]
         )
     ]
-    #
-    # let y: SqlMeta = SqlMeta {
-    #     in_tables: vec![pytable("table1"), pytable("table2")],
-    #     out_tables: vec![],
-    #     column_lineage: vec![ColumnLineage {
-    #         descendant: pycolumn("col1"),
-    #         lineage: vec![pycolumn_with_origin("col1", "table1"), ]
-    #     }, ColumnLineage {
-    #         descendant: pycolumn("col3"),
-    #         lineage: vec![pycolumn_with_origin("col3", "table2")]
-    #     }],
-    # };
-    # assert_eq!(x, y);

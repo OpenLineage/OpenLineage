@@ -32,15 +32,13 @@ public class SqlMeta {
     return columnLineage;
   }
 
-
   @Override
   public String toString() {
     return String.format(
         "{{\"inTables\": %s, \"outTables\": %s, \"columnLineage\": %s}}",
         Arrays.toString(inTables.toArray()),
         Arrays.toString(outTables.toArray()),
-        Arrays.toString(columnLineage.toArray())
-    );
+        Arrays.toString(columnLineage.toArray()));
   }
 
   @Override
@@ -54,9 +52,9 @@ public class SqlMeta {
     }
 
     SqlMeta other = (SqlMeta) o;
-    return other.inTables.equals(inTables) &&
-        other.outTables.equals(outTables) &&
-        other.columnLineage.equals(columnLineage);
+    return other.inTables.equals(inTables)
+        && other.outTables.equals(outTables)
+        && other.columnLineage.equals(columnLineage);
   }
 
   @Override

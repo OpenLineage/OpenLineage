@@ -25,7 +25,10 @@ if [[ $RUN_TESTS = true ]]; then
 fi
 
 # Build release wheels
-#cd iface-py
+if [[ -d "./iface-py" ]]
+then
+  cd iface-py
+fi
 maturin build --universal2 --out target/wheels
 
 echo "Package build, trying to import"
@@ -33,5 +36,5 @@ echo "Platform:"
 python -c "from distutils import util; print(util.get_platform())"
 # Verify that it imports and works properly
 python -m pip install openlineage-sql --no-index --find-links target/wheels --force-reinstall
-python -c "from openlineage_sql import parse; print(parse([\"SELECT b.a from b\"]).column_lineage)"
+python -c "from openlineage_sql import parse; import sys; sys.exit(len(parse([\"SELECT b.a from b\"]).column_lineage) != 1)"
 echo "all good"

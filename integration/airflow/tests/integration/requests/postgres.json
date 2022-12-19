@@ -55,87 +55,87 @@
         "namespace": "food_delivery"
     },
     "outputs": [{
-		"facets": {
-			"schema": {
-				"fields": [{
-					"name": "order_day_of_week",
-					"type": "varchar"
-				}, {
-					"name": "order_placed_on",
-					"type": "timestamp"
-				}, {
-					"name": "orders_placed",
-					"type": "int4"
-				}]
-			}
-		},
-		"name": "food_delivery.public.popular_orders_day_of_week",
-		"namespace": "postgres://postgres:5432"
-	}]
+        "facets": {
+            "schema": {
+                "fields": [{
+                    "name": "order_day_of_week",
+                    "type": "varchar"
+                }, {
+                    "name": "order_placed_on",
+                    "type": "timestamp"
+                }, {
+                    "name": "orders_placed",
+                    "type": "int4"
+                }]
+            }
+        },
+        "name": "food_delivery.public.popular_orders_day_of_week",
+        "namespace": "postgres://postgres:5432"
+    }]
 },
 {
-	"eventType": "COMPLETE",
-	"inputs": [{
-		"facets": {
-			"dataSource": {
-				"name": "postgres://postgres:5432",
-				"uri": "postgres://postgres:5432/food_delivery"
-			}
-		},
-		"name": "food_delivery.public.top_delivery_times",
-		"namespace": "postgres://postgres:5432"
-	}],
-	"job": {
-		"facets": {
-			"sql": {
+    "eventType": "COMPLETE",
+    "inputs": [{
+        "facets": {
+            "dataSource": {
+                "name": "postgres://postgres:5432",
+                "uri": "postgres://postgres:5432/food_delivery"
+            }
+        },
+        "name": "food_delivery.public.top_delivery_times",
+        "namespace": "postgres://postgres:5432"
+    }],
+    "job": {
+        "facets": {
+            "sql": {
                 "query": "\n    INSERT INTO popular_orders_day_of_week (order_day_of_week, order_placed_on,orders_placed)\n    SELECT EXTRACT(ISODOW FROM order_placed_on) AS order_day_of_week,\n           order_placed_on,\n           COUNT(*) AS orders_placed\n      FROM top_delivery_times\n     GROUP BY order_placed_on\n    "
-			}
-		},
-		"name": "postgres_orders_popular_day_of_week.postgres_insert",
-		"namespace": "food_delivery"
-	},
-	"outputs": [{
-		"facets": {
-			"dataSource": {
-				"name": "postgres://postgres:5432",
-				"uri": "postgres://postgres:5432/food_delivery"
-			},
-			"schema": {
-				"fields": [{
-					"name": "order_day_of_week",
-					"type": "varchar"
-				}, {
-					"name": "order_placed_on",
-					"type": "timestamp"
-				}, {
-					"name": "orders_placed",
-					"type": "int4"
-				}]
-			},
-			"columnLineage": {
+            }
+        },
+        "name": "postgres_orders_popular_day_of_week.postgres_insert",
+        "namespace": "food_delivery"
+    },
+    "outputs": [{
+        "facets": {
+            "dataSource": {
+                "name": "postgres://postgres:5432",
+                "uri": "postgres://postgres:5432/food_delivery"
+            },
+            "schema": {
+                "fields": [{
+                    "name": "order_day_of_week",
+                    "type": "varchar"
+                }, {
+                    "name": "order_placed_on",
+                    "type": "timestamp"
+                }, {
+                    "name": "orders_placed",
+                    "type": "int4"
+                }]
+            },
+            "columnLineage": {
                 "fields": {
                     "order_day_of_week": {
                         "inputFields": [{
-							"field": "order_placed_on",
-							"name": "public.top_delivery_times",
-							"namespace": "postgres://postgres:5432"
-						}],
-						"transformationDescription": "",
-						"transformationType": ""
-					},
-					"order_placed_on": {
-						"inputFields": [{
-							"field": "order_placed_on",
-							"name": "public.top_delivery_times",
-							"namespace": "postgres://postgres:5432"
-						}],
-						"transformationDescription": "",
-						"transformationType": ""
-					}
-				}
-			}
-		},
-		"name": "food_delivery.public.popular_orders_day_of_week",
-		"namespace": "postgres://postgres:5432"
-	}]
+                            "field": "order_placed_on",
+                            "name": "public.top_delivery_times",
+                            "namespace": "postgres://postgres:5432"
+                        }],
+                        "transformationDescription": "",
+                        "transformationType": ""
+                    },
+                    "order_placed_on": {
+                        "inputFields": [{
+                            "field": "order_placed_on",
+                            "name": "public.top_delivery_times",
+                            "namespace": "postgres://postgres:5432"
+                        }],
+                        "transformationDescription": "",
+                        "transformationType": ""
+                    }
+                }
+            }
+        },
+        "name": "food_delivery.public.popular_orders_day_of_week",
+        "namespace": "postgres://postgres:5432"
+    }]
 }]

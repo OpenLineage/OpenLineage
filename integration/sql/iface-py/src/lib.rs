@@ -147,7 +147,7 @@ impl ColumnLineage {
     fn __repr__(&self) -> String {
         fn column_meta(cm: ColumnMeta) -> String {
             format!(
-                "origin: {:?}, name {}",
+                "origin: ({:?}), name ({})",
                 cm.0.origin
                     .map(|x| x.qualified_name())
                     .unwrap_or("unknown".to_string()),
@@ -236,7 +236,7 @@ impl SqlMeta {
 impl SqlMeta {
     fn __repr__(&self) -> String {
         format!(
-            "{{\"in_tables\": {:?}, \"out_tables\": {:?} \"columnLineage\": {:?}}}",
+            "{{\"in_tables\": {:?}, \"out_tables\": {:?} \"column_lineage\": {:?}}}",
             self.in_tables, self.out_tables, self.column_lineage
         )
     }

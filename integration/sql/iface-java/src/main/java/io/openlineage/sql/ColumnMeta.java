@@ -5,18 +5,19 @@
 
 package io.openlineage.sql;
 
+import java.util.Optional;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 public class ColumnMeta {
-  private final DbTableMeta origin; // nullable
+  private final Optional<DbTableMeta> origin; // nullable
   private final String name;
 
   public ColumnMeta(DbTableMeta origin, String name) {
-    this.origin = origin;
+    this.origin = Optional.ofNullable(origin);
     this.name = name;
   }
 
-  public DbTableMeta origin() {
+  public Optional<DbTableMeta> origin() {
     return origin;
   }
 
@@ -27,10 +28,7 @@ public class ColumnMeta {
   @Override
   public String toString() {
     return String.format(
-        "{{\"origin\": %s, \"name\": %s}}",
-        origin != null ? origin.toString() : "unknown",
-        name
-    );
+        "{{\"origin\": %s, \"name\": %s}}", origin != null ? origin.toString() : "unknown", name);
   }
 
   @Override
@@ -44,7 +42,7 @@ public class ColumnMeta {
     }
 
     ColumnMeta other = (ColumnMeta) o;
-    return other.origin.equals(origin) && other.name.equals(name);
+    return other.origin().equals(origin()) && other.name.equals(name);
   }
 
   @Override

@@ -2,6 +2,11 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.18.0...HEAD)
 
+### Added:
+* SQL parser: ability to extract column-level lineage from SQL statements [@StarostaGit](https://github.com/StarostaGit)
+* SQL parser: adjust Rust-Python and Rust-Java interfaces for SQL parser [@StarostaGit](https://github.com/StarostaGit), [@mobuchowski](https://github.com/mobuchowski)
+* Airflow: use SQL parser to extract column-level lineage in SQL Extractor [@mobuchowski](https://github.com/mobuchowski)
+
 ## [0.18.0](https://github.com/OpenLineage/OpenLineage/compare/0.17.0...0.18.0) - 2022-12-6
 ### Added
 * Airflow: support `SQLExecuteQueryOperator` [`#1379`](https://github.com/OpenLineage/OpenLineage/pull/1379) [@JDarDagran](https://github.com/JDarDagran)  
