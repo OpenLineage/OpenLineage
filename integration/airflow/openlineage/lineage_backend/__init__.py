@@ -34,7 +34,7 @@ class Backend:
         is automatic, and bases on the passed context.
         """
         from openlineage.airflow.utils import DagUtils, get_custom_facets, \
-            get_job_name, get_task_location, get_airflow_run_facet
+            get_job_name, get_task_location, get_airflow_run_facet, get_dagrun_start_end
         dag = context['dag']
         dagrun = context['dag_run']
         task_instance = context['task_instance']
@@ -53,6 +53,7 @@ class Backend:
         task_uuid = self.adapter.build_task_instance_run_id(
             operator.task_id, task_instance.execution_date, task_instance.try_number
         )
+        start, end = get_dagrun_start_end(dagrun, dag)
 
         self.adapter.start_task(
             run_id=run_id,
@@ -62,8 +63,9 @@ class Backend:
             parent_job_name=dag.dag_id,
             parent_run_id=dag_run_id,
             code_location=get_task_location(operator),
-            nominal_start_time=DagUtils.get_start_time(dagrun.execution_date),
-            nominal_end_time=DagUtils.to_iso_8601(task_instance.end_date),
+            nominal_start_time=DagUtils.get_start_time(start),
+            nominal_end_time=DagUtils.to_iso_8601(end),
+            owners=dag.owner.split(', '),
             task=task_metadata,
             run_facets={
                 **task_metadata.run_facets,
