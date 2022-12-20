@@ -89,24 +89,29 @@ The following parameters can be specified in the Spark configuration:
 
 Parameters configuring the Spark integration
 
-| Parameter                                | Definition                                                                                          | Example                         |
-------------------------------------------|-----------------------------------------------------------------------------------------------------|---------------------------------
-| spark.openlineage.transport.type         | The transport type used for event emit, default type is `console`                                   | http                            |
-| spark.openlineage.namespace              | The default namespace to be applied for any jobs submitted                                          | MyNamespace                     |
-| spark.openlineage.parentJobName          | The job name to be used for the parent job facet                                                    | ParentJobName                   |
-| spark.openlineage.parentRunId            | The RunId of the parent job that initiated this Spark job                                           | xxxx-xxxx-xxxx-xxxx             |
-| spark.openlineage.appName                | Custom value overwriting Spark app name in events                                                   | AppName                         |
-| spark.openlineage.facets.disabled        | `;` separated list of facets to disable, default is `spark_unknown;` (currently must contain `;`)   | spark_unknown;spark.logicalPlan |
+| Parameter                                | Definition                                                                                        | Example                         |
+------------------------------------------|---------------------------------------------------------------------------------------------------|---------------------------------
+| spark.openlineage.transport.type         | The transport type used for event emit, default type is `http`                                    | http                            |
+| spark.openlineage.namespace              | The default namespace to be applied for any jobs submitted                                        | MyNamespace                     |
+| spark.openlineage.parentJobName          | The job name to be used for the parent job facet                                                  | ParentJobName                   |
+| spark.openlineage.parentRunId            | The RunId of the parent job that initiated this Spark job                                         | xxxx-xxxx-xxxx-xxxx             |
+| spark.openlineage.appName                | Custom value overwriting Spark app name in events                                                 | AppName                         |
+| spark.openlineage.facets.disabled        | `;` separated list of facets to disable, default is `spark_unknown;` (currently must contain `;`) | spark_unknown;spark.logicalPlan |
 
 ### HTTP
 
-| Parameter                                 | Definition                                                                                                       | Example                         |
--------------------------------------------|------------------------------------------------------------------------------------------------------------------|---------------------------------
-| spark.openlineage.transport.endpoint      | Path to resource                                                                                                 | /api/v1/lineage                 |
-| spark.openlineage.transport.apiKey        | An API key to be used when sending events to the OpenLineage server                                              | abcdefghijk                     |
-| spark.openlineage.transport.timeout       | Timeout for sending OpenLineage info in milliseconds                                                             | 5000                            |
-| spark.openlineage.transport.urlParams.xyz | A URL parameter (replace xyz) and value to be included in requests to the OpenLineage API server                 | abcdefghijk                     |
-| spark.openlineage.transport.url           | The hostname of the OpenLineage API server where events should be reported, it can have other properties embeded | http://localhost:5000           |
+| Parameter                                     | Definition                                                                                                                | Example               |
+-----------------------------------------------|---------------------------------------------------------------------------------------------------------------------------|-----------------------
+| spark.openlineage.transport.endpoint          | Path to resource                                                                                                          | /api/v1/lineage       |
+| *DEPRECATED* spark.openlineage.version        | The API version of the OpenLineage API server (unavailable from x.x.x)                                                    | 1                     |
+| spark.openlineage.transport.apiKey            | An API key to be used when sending events to the OpenLineage server                                                       | abcdefghijk           |
+| *DEPRECATED* spark.openlineage.apiKey         | An API key to be used when sending events to the OpenLineage server (unavailable from x.x.x)                              | abcdefghijk           |
+| spark.openlineage.transport.timeout           | Timeout for sending OpenLineage info in milliseconds                                                                      | 5000                  |
+| *DEPRECATED* spark.openlineage.timeout        | Timeout for sending OpenLineage info in milliseconds (unavailable from x.x.x)                                             | 5000                  |
+| spark.openlineage.transport.urlParams.xyz     | A URL parameter (replace xyz) and value to be included in requests to the OpenLineage API server                          | abcdefghijk           |
+| *DEPRECATED* spark.openlineage.url.param.xyz  | A URL parameter (replace xyz) and value to be included in requests to the OpenLineage API server (unavailable from x.x.x) | abcdefghijk           |
+| spark.openlineage.transport.url               | The hostname of the OpenLineage API server where events should be reported, it can have other properties embeded          | http://localhost:5000 |
+| *DEPRECATED* spark.openlineage.transport.host | The hostname of the OpenLineage API server where events should be reported (unavailable from x.x.x)                       | http://localhost:5000 |
 
 ##### URL
 

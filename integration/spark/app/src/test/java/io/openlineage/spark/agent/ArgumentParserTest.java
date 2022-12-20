@@ -34,7 +34,7 @@ class ArgumentParserTest {
     assertEquals(
         ArgumentParser.DEFAULT_DISABLED_FACETS.split(";")[0],
         argumentParser.getOpenLineageYaml().getFacetsConfig().getDisabledFacets()[0]);
-    assert (argumentParser.getOpenLineageYaml().getTransportConfig() instanceof ConsoleConfig);
+    assert (argumentParser.getOpenLineageYaml().getTransportConfig() instanceof HttpConfig);
   }
 
   @Test
@@ -89,6 +89,27 @@ class ArgumentParserTest {
             .set("spark.openlineage.transport.urlParams.test2", "test2");
 
     OpenLineageYaml openLineageYaml = ArgumentParser.extractOpenlineageConfFromSparkConf(sparkConf);
+    HttpConfig transportConfig = (HttpConfig) openLineageYaml.getTransportConfig();
+    assertEquals(URL, transportConfig.getUrl().toString());
+    assertEquals(ENDPOINT, transportConfig.getEndpoint());
+    assert (transportConfig.getAuth() != null);
+    assert (transportConfig.getAuth() instanceof ApiKeyTokenProvider);
+    assertEquals("Bearer random_token", transportConfig.getAuth().getToken());
+    assertEquals(5000, transportConfig.getTimeout());
+  }
+  @Test
+  void testOldConfig() {
+    SparkConf sparkConf =
+        new SparkConf()
+            .set("spark.openlineage.host", URL)
+            .set("spark.openlineage.version", "1")
+            .set("spark.openlineage.apiKey", API_KEY)
+            .set("spark.openlineage.timeout", "5000")
+            .set("spark.openlineage.facets.disabled", DISABLED_FACETS)
+            .set("spark.openlineage.url.param.test1", "test1")
+            .set("spark.openlineage.url.param.test2", "test2");
+
+    OpenLineageYaml openLineageYaml = ArgumentParser.parse(sparkConf).getOpenLineageYaml();
     HttpConfig transportConfig = (HttpConfig) openLineageYaml.getTransportConfig();
     assertEquals(URL, transportConfig.getUrl().toString());
     assertEquals(ENDPOINT, transportConfig.getEndpoint());

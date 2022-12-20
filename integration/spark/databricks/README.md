@@ -23,9 +23,9 @@ Follow the steps below to enable Open Lineage on Databricks.
     * Copies the init script to the dbfs folder
 * Create an interactive or job cluster with the relevant spark configs:
     ```
-    spark.openlineage.version v1
+    spark.openlineage.endpoint api/v1/lineage
     spark.openlineage.namespace YOURNAMESPACE
-    spark.openlineage.host https://YOURHOST
+    spark.openlineage.url https://YOURHOST
     ```
 * Set the cluster Init script to be: `dbfs:/databricks/openlineage/open-lineage-init-script.sh`
 

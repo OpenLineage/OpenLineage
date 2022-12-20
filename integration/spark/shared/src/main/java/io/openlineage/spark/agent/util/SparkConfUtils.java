@@ -32,7 +32,8 @@ public class SparkConfUtils {
     if (opt.isDefined()) {
       return Optional.of(opt.get());
     }
-    opt = conf.getOption("spark." + name);
+    // handling deprecated http properties without 'transport'
+    opt = conf.getOption(name.replace("transport.", ""));
     if (opt.isDefined()) {
       return Optional.of(opt.get());
     }
