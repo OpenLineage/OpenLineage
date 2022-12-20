@@ -97,6 +97,7 @@ class ArgumentParserTest {
     assertEquals("Bearer random_token", transportConfig.getAuth().getToken());
     assertEquals(5000, transportConfig.getTimeout());
   }
+
   @Test
   void testOldConfig() {
     SparkConf sparkConf =
