@@ -21,17 +21,17 @@ func New(conf config.Config) *Database {
 	}
 
 	log.Println("Initializing DB")
-	InitDB(db)
+	initDB(db)
 	return &Database{db: db}
 }
 
-func InitDB(db *sql.DB) {
+func initDB(db *sql.DB) {
 	db.Exec(`
 		CREATE TABLE IF NOT EXISTS partitions (
 			name       text     NOT NULL,
 			size       integer  NOT NULL,
 			created_at datetime NOT NULL,
-			current    boolean  NOT NULL
+			is_current boolean  NOT NULL
 		)
 	`)
 

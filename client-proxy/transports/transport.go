@@ -6,7 +6,7 @@ import (
 )
 
 type ITransport interface {
-	Send(lineageEvent string) error
+	Emit(lineageEvent string) error
 }
 
 func Create(conf config.Config) (ITransport, error) {

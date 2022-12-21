@@ -5,6 +5,6 @@ type HttpTransport struct {
 	OpenLineageAPIKey string
 }
 
-func (transport *HttpTransport) Send(lineageEvent string) error {
+func (transport *HttpTransport) Emit(lineageEvent string) error {
 	return nil
 }
