@@ -1,5 +1,5 @@
 workflows:
-  openlineage-proxy:
+  openlineage-proxy-backend:
     jobs:
       - build-proxy-backend
       - build-image-proxy-backend:

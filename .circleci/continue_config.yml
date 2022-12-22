@@ -678,7 +678,7 @@ jobs:
       - run: spec/release.sh
 
   build-proxy-backend:
-    working_directory: ~/openlineage/proxy
+    working_directory: ~/openlineage/proxy/backend
     docker:
       - image: cimg/openjdk:11.0
     steps:
@@ -701,7 +701,7 @@ jobs:
             - ~/.gradle
 
   build-image-proxy-backend:
-    working_directory: ~/openlineage/proxy
+    working_directory: ~/openlineage/proxy/backend
     machine:
       image: ubuntu-2004:current
     steps:
@@ -712,7 +712,7 @@ jobs:
           path: proxy.tar
 
   release-proxy-backend:
-    working_directory: ~/openlineage/proxy
+    working_directory: ~/openlineage/proxy/backend
     docker:
       - image: cimg/openjdk:11.0
     steps:
@@ -730,7 +730,7 @@ jobs:
           ./gradlew publish
 
   release-docker-proxy-backend:
-    working_directory: ~/openlineage/proxy
+    working_directory: ~/openlineage/proxy/backend
     machine:
       image: ubuntu-2004:current
     steps:
