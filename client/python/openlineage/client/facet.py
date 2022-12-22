@@ -376,6 +376,10 @@ class ProcessingEngineRunFacet(BaseFacet):
     name: str = attr.ib()
     openlineageAdapterVersion: str = attr.ib()
 
+    @staticmethod
+    def _get_schema() -> str:
+        return SCHEMA_URI + "#/definitions/ProcessingEngineRunFacet"
+
 
 @attr.s
 class ExtractionError(BaseFacet):
@@ -390,3 +394,7 @@ class ExtractionErrorRunFacet(BaseFacet):
     totalTasks: int = attr.ib()
     failedTasks: int = attr.ib()
     errors: List[ExtractionError] = attr.ib()
+
+    @staticmethod
+    def _get_schema() -> str:
+        return SCHEMA_URI + "#/definitions/ExtractionErrorRunFacet"

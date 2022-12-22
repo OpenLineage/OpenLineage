@@ -6,7 +6,6 @@
 package io.openlineage.sql;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,6 +24,7 @@ class OpenLineageSqlTest {
         new SqlMeta(
             Arrays.asList(new DbTableMeta(null, null, "test")),
             new ArrayList<DbTableMeta>(),
+            Collections.emptyList(),
             Collections.emptyList()));
   }
 
@@ -41,19 +41,8 @@ class OpenLineageSqlTest {
         new SqlMeta(
             Arrays.asList(new DbTableMeta("random-project", "dbt_test1", "source_table")),
             new ArrayList<DbTableMeta>(),
+            Collections.emptyList(),
             Collections.emptyList()));
-  }
-
-  @Test
-  void parseError() {
-    boolean exceptionCaught = false;
-    try {
-      SqlMeta output = OpenLineageSql.parse(Arrays.asList("Definitely not an SQL statement")).get();
-    } catch (Exception e) {
-      exceptionCaught = true;
-      assertTrue(e instanceof Exception);
-    }
-    assertTrue(exceptionCaught);
   }
 
   @Test
@@ -143,6 +132,33 @@ class OpenLineageSqlTest {
         Arrays.asList(
             columnLineage("c", Arrays.asList(Pair.of("table1", "a"), Pair.of("table1", "b")))),
         output.columnLineage());
+  }
+
+  @Test
+  void returnedError() {
+    SqlMeta output = OpenLineageSql.parse(Collections.singletonList("NOT A STATEMENT")).get();
+    assertEquals(1, output.errors().size());
+    assertEquals(
+        Collections.singletonList(
+            new ExtractionError(0, "Expected an SQL statement, found: NOT", "NOT A STATEMENT")),
+        output.errors());
+  }
+
+  @Test
+  void returnedMultipleErrors() {
+    SqlMeta output =
+        OpenLineageSql.parse(
+                Arrays.asList("NOT A STATEMENT", "SELECT * FROM test", "ANOTHER NON STATEMENT"))
+            .get();
+    assertEquals(Collections.singletonList(new DbTableMeta(null, null, "test")), output.inTables());
+
+    assertEquals(2, output.errors().size());
+    assertEquals(
+        Arrays.asList(
+            new ExtractionError(0, "Expected an SQL statement, found: NOT", "NOT A STATEMENT"),
+            new ExtractionError(
+                2, "Expected an SQL statement, found: ANOTHER", "ANOTHER NON STATEMENT")),
+        output.errors());
   }
 
   @Test

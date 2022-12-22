@@ -1,0 +1,49 @@
+[
+  {
+    "eventType": "START",
+    "job": {
+      "facets": {
+        "sql": {
+          "query": "CREATE TYPE myrowtype AS (f1 int, f2 text, f3 numeric)"
+        }
+      },
+      "name": "failed_sql_extraction.fail"
+    },
+    "run": {
+      "facets": {
+        "extractionError": {
+          "totalTasks": 1,
+          "failedTasks": 1,
+          "errors": [{
+            "errorMessage": "Expected an object type after CREATE, found: TYPE",
+            "task": "CREATE TYPE myrowtype AS (f1 int, f2 text, f3 numeric)",
+            "taskNumber": 0
+          }]
+        }
+      }
+    }
+  }, {
+    "eventType": "COMPLETE",
+    "job": {
+      "facets": {
+        "sql": {
+          "query": "CREATE TYPE myrowtype AS (f1 int, f2 text, f3 numeric)"
+        }
+      },
+      "name": "failed_sql_extraction.fail"
+    },
+    "run": {
+      "facets": {
+        "extractionError": {
+          "totalTasks": 1,
+          "failedTasks": 1,
+          "errors": [{
+            "errorMessage": "Expected an object type after CREATE, found: TYPE",
+            "task": "CREATE TYPE myrowtype AS (f1 int, f2 text, f3 numeric)",
+            "taskNumber": 0
+          }]
+        }
+      }
+    }
+  }
+]

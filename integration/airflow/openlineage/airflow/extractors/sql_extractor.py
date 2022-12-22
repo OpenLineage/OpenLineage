@@ -15,7 +15,9 @@ from openlineage.client.facet import (
     SqlJobFacet,
     ColumnLineageDatasetFacet,
     ColumnLineageDatasetFacetFieldsAdditional,
-    ColumnLineageDatasetFacetFieldsAdditionalInputFields
+    ColumnLineageDatasetFacetFieldsAdditionalInputFields,
+    ExtractionError,
+    ExtractionErrorRunFacet
 )
 from openlineage.common.sql import SqlMeta, parse, DbTableMeta
 from openlineage.common.dataset import Dataset, Source
@@ -67,6 +69,22 @@ class SqlExtractor(BaseExtractor):
                 outputs=[],
                 run_facets=run_facets,
                 job_facets=job_facets,
+            )
+
+        if sql_meta.errors:
+            run_facets['extractionError'] = ExtractionErrorRunFacet(
+                totalTasks=len(self.operator.sql) if isinstance(self.operator.sql, list) else 1,
+                failedTasks=len(sql_meta.errors),
+                errors=[
+                    ExtractionError(
+                        errorMessage=error.message,
+                        stackTrace=None,
+                        task=error.origin_statement,
+                        taskNumber=error.index
+                    )
+                    for error
+                    in sql_meta.errors
+                ]
             )
 
         # (2) Construct source object

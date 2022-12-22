@@ -33,7 +33,7 @@ impl AsJavaObject for rust_impl::SqlMeta {
     }
 
     fn ctor_signature() -> &'static str {
-        "(Ljava/util/List;Ljava/util/List;Ljava/util/List;)V"
+        "(Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;)V"
     }
 
     fn ctor_arguments<'a, 'b>(&'b self, env: &'a JNIEnv) -> Result<Box<[JValue<'a>]>> {
@@ -49,9 +49,13 @@ impl AsJavaObject for rust_impl::SqlMeta {
         let columns = env
             .new_object(array_list_class, "()V", &[])
             .expect("Coudln't create a new ArrayList");
+        let errors = env
+            .new_object(array_list_class, "()V", &[])
+            .expect("Coudln't create a new ArrayList");
         let ins = JList::from_env(env, ins).unwrap();
         let outs = JList::from_env(env, outs).unwrap();
         let columns = JList::from_env(env, columns).unwrap();
+        let errors = JList::from_env(env, errors).unwrap();
 
         for e in &self.table_lineage.in_tables {
             ins.add(e.as_java_object(env)?)?;
@@ -64,10 +68,15 @@ impl AsJavaObject for rust_impl::SqlMeta {
             columns.add(e.as_java_object(env)?)?;
         }
 
+        for e in &self.errors {
+            errors.add(e.as_java_object(env)?)?;
+        }
+
         Ok(Box::new([
             JValue::Object(ins.into()),
             JValue::Object(outs.into()),
             JValue::Object(columns.into()),
+            JValue::Object(errors.into()),
         ]))
     }
 }
@@ -148,6 +157,27 @@ impl AsJavaObject for rust_impl::ColumnLineage {
         Ok(Box::new([
             JValue::Object(descendant),
             JValue::Object(lineage.into()),
+        ]))
+    }
+}
+
+impl AsJavaObject for rust_impl::ExtractionError {
+    fn java_class_name() -> &'static str {
+        "io/openlineage/sql/ExtractionError"
+    }
+
+    fn ctor_signature() -> &'static str {
+        "(JLjava/lang/String;Ljava/lang/String;)V"
+    }
+
+    fn ctor_arguments<'a, 'b>(&'b self, env: &'a JNIEnv) -> Result<Box<[JValue<'a>]>> {
+        let message = env.new_string(&self.message)?.into();
+        let origin_statement = env.new_string(&self.origin_statement)?.into();
+
+        Ok(Box::new([
+            JValue::Long(self.index as i64),
+            JValue::Object(message),
+            JValue::Object(origin_statement),
         ]))
     }
 }

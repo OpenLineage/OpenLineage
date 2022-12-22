@@ -4,7 +4,7 @@
 import logging
 
 import pytest
-from openlineage.common.sql import parse, DbTableMeta, provider
+from openlineage.common.sql import parse, DbTableMeta, provider, ExtractionError
 
 log = logging.getLogger(__name__)
 
@@ -253,20 +253,21 @@ def test_parse_simple_cte():
 
 
 def test_parse_bugged_cte():
-    assert parse(
-            '''
-            WITH sum_trans (
-                SELECT user_id, COUNT(*) as cnt, SUM(amount) as balance
-                FROM transactions
-                WHERE created_date > '2020-01-01'
-                GROUP BY user_id
-            )
-            INSERT INTO potential_fraud (user_id, cnt, balance)
-            SELECT user_id, cnt, balance
-              FROM sum_trans
-              WHERE count > 1000 OR balance > 100000;
-            '''
-    ) is None
+    sql = """
+        WITH sum_trans (
+            SELECT user_id, COUNT(*) as cnt, SUM(amount) as balance
+            FROM transactions
+            WHERE created_date > '2020-01-01'
+            GROUP BY user_id
+        )
+        INSERT INTO potential_fraud (user_id, cnt, balance)
+        SELECT user_id, cnt, balance
+            FROM sum_trans
+            WHERE count > 1000 OR balance > 100000;
+    """
+    assert parse(sql).errors == [
+        ExtractionError(0, "Expected AS, found: (", sql)
+    ]
 
 
 def test_parse_recursive_cte():

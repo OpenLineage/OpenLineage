@@ -6,9 +6,17 @@ use crate::CanonicalDialect;
 use sqlparser::dialect::SnowflakeDialect;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ExtractionError {
+    pub index: usize,
+    pub message: String,
+    pub origin_statement: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SqlMeta {
     pub table_lineage: TableLineage,
     pub column_lineage: Vec<ColumnLineage>,
+    pub errors: Vec<ExtractionError>,
 }
 
 impl SqlMeta {
@@ -16,6 +24,7 @@ impl SqlMeta {
         mut in_tables: Vec<DbTableMeta>,
         mut out_tables: Vec<DbTableMeta>,
         mut column_lineage: Vec<ColumnLineage>,
+        mut errors: Vec<ExtractionError>,
     ) -> Self {
         in_tables.sort();
         out_tables.sort();
@@ -27,6 +36,7 @@ impl SqlMeta {
                 out_tables,
             },
             column_lineage,
+            errors,
         }
     }
 }

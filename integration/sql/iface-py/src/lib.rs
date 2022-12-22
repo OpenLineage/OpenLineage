@@ -3,10 +3,9 @@
 extern crate openlineage_sql as rust_impl;
 
 use std::collections::hash_map::DefaultHasher;
-use std::ffi::c_long;
 use std::hash::{Hash, Hasher};
 
-use anyhow::{Error, Result};
+use anyhow::Result;
 use pyo3::basic::CompareOp;
 use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
@@ -193,6 +192,77 @@ impl ColumnLineage {
 
 #[pyclass]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ExtractionError(rust_impl::ExtractionError);
+
+#[pymethods]
+impl ExtractionError {
+    #[new]
+    pub fn py_new(index: usize, message: String, origin_statement: String) -> Self {
+        Self(rust_impl::ExtractionError {
+            index,
+            message,
+            origin_statement,
+        })
+    }
+
+    #[getter(index)]
+    pub fn index(&self) -> usize {
+        self.0.index
+    }
+
+    #[getter(message)]
+    pub fn message(&self) -> String {
+        self.0.message.clone()
+    }
+
+    #[getter(origin_statement)]
+    pub fn origin_statement(&self) -> String {
+        self.0.origin_statement.clone()
+    }
+
+    fn __repr__(&self) -> String {
+        fn column_meta(cm: ColumnMeta) -> String {
+            format!(
+                "index: ({}), message ({}), origin_statement",
+                cm.0.origin
+                    .map(|x| x.qualified_name())
+                    .unwrap_or("unknown".to_string()),
+                cm.0.name
+            )
+        }
+        format!(
+            "index: ({}), message ({}), origin_statement ({})",
+            self.0.index, self.0.message, self.0.origin_statement
+        )
+    }
+
+    fn __str__(&self) -> String {
+        self.__repr__()
+    }
+
+    fn __richcmp__(&self, other: &Self, op: CompareOp) -> PyResult<bool> {
+        match op {
+            CompareOp::Eq => Ok(self.0.index == other.0.index
+                && self.0.message == other.0.message
+                && self.0.origin_statement == other.0.origin_statement),
+            CompareOp::Ne => Ok(self.0.index != other.0.index
+                || self.0.message != other.0.message
+                || self.0.origin_statement != other.0.origin_statement),
+            _ => Err(PyTypeError::new_err(format!(
+                "can't use operator {op:?} on ExtractionError"
+            ))),
+        }
+    }
+
+    fn __hash__(&self) -> isize {
+        let mut hasher = DefaultHasher::new();
+        self.hash(&mut hasher);
+        hasher.finish() as isize
+    }
+}
+
+#[pyclass]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SqlMeta {
     #[pyo3(get)]
     pub in_tables: Vec<DbTableMeta>,
@@ -200,6 +270,8 @@ pub struct SqlMeta {
     pub out_tables: Vec<DbTableMeta>,
     #[pyo3(get)]
     pub column_lineage: Vec<ColumnLineage>,
+    #[pyo3(get)]
+    pub errors: Vec<ExtractionError>,
 }
 
 impl SqlMeta {
@@ -224,10 +296,12 @@ impl SqlMeta {
             .cloned()
             .map(ColumnLineage::new)
             .collect();
+        let errors = meta.errors.iter().cloned().map(ExtractionError).collect();
         Self {
             in_tables,
             out_tables,
             column_lineage,
+            errors,
         }
     }
 }
@@ -266,6 +340,7 @@ fn openlineage_sql(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<DbTableMeta>()?;
     m.add_class::<ColumnLineage>()?;
     m.add_class::<ColumnMeta>()?;
+    m.add_class::<ExtractionError>()?;
     Ok(())
 }
 
@@ -320,6 +395,7 @@ fn test_python_conversion() {
                 lineage: vec![pycolumn_with_origin("col3", "table2")],
             },
         ],
+        errors: vec![],
     };
     assert_eq!(x, y);
 }

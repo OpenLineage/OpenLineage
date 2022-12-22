@@ -46,6 +46,7 @@ IS_AIRFLOW_VERSION_ENOUGH = lambda x: parse_version(
 
 params = [
     ("postgres_orders_popular_day_of_week", "requests/postgres.json"),
+    ("failed_sql_extraction", "requests/failed_sql_extraction.json"),
     ("great_expectations_validation", "requests/great_expectations.json"),
     pytest.param(
         "bigquery_orders_popular_day_of_week",
