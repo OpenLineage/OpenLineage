@@ -4,6 +4,7 @@
 .classpath
 .project
 .settings
+.local
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -157,4 +158,5 @@ cython_debug/
 gcloud-service-key.json
 
 *.java_version
+*.java-version
 *.DS_Store
