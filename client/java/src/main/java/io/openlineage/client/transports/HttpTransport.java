@@ -34,7 +34,6 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
-import org.jetbrains.annotations.NotNull;
 
 @Slf4j
 public final class HttpTransport extends Transport implements Closeable {
@@ -77,7 +76,7 @@ public final class HttpTransport extends Transport implements Closeable {
     this.tokenProvider = httpConfig.getAuth();
   }
 
-  private URI getUri(@NotNull HttpConfig httpConfig) throws URISyntaxException {
+  private URI getUri(HttpConfig httpConfig) throws URISyntaxException {
     URI url = httpConfig.getUrl();
     URIBuilder builder = new URIBuilder(url);
     if (StringUtils.isNotBlank(url.getPath())) {
