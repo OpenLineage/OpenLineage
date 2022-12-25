@@ -1,0 +1,22 @@
+[{
+    "eventType": "START",
+    "inputs": [
+        {
+            "name": "testfile",
+            "namespace": "s3://testbucket"
+        }
+    ],
+    "job": {
+        "facets": {},
+        "name": "s3transform_dag.s3transform_task"
+    },
+    "outputs": [
+        {
+            "name": "testfile2",
+            "namespace": "s3://testbucket"
+        }
+    ],
+    "run": {
+        "facets": {}
+    }
+}]

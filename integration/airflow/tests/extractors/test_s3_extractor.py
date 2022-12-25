@@ -6,8 +6,11 @@ import unittest
 import random
 import pytz
 from unittest import TestCase
-from openlineage.airflow.extractors.s3_extractor import S3CopyObjectExtractor
-from airflow.providers.amazon.aws.operators.s3 import S3CopyObjectOperator
+from openlineage.airflow.extractors.s3_extractor import (
+    S3CopyObjectExtractor,
+    S3FileTransformExtractor
+)
+from airflow.providers.amazon.aws.operators.s3 import S3CopyObjectOperator, S3FileTransformOperator
 from openlineage.airflow.extractors.base import TaskMetadata
 from datetime import datetime
 from airflow.models import TaskInstance, DAG
@@ -79,5 +82,68 @@ class TestS3CopyObjectExtractor(TestCase):
 
         return task_instance
 
-    if __name__ == '__main__':
-        unittest.main()
+
+class TestS3FileTransformExtractor(TestCase):
+    def setUp(self):
+        log.debug("TestS3FileTransformExtractor.setup(): ")
+        self.task = TestS3FileTransformExtractor._get_copy_task()
+        self.ti = TestS3FileTransformExtractor._get_ti(task=self.task)
+        self.extractor = S3FileTransformExtractor(operator=self.task)
+
+    def test_extract(self):
+        expected_return_value = TaskMetadata(
+            name="TestS3FileTransformExtractor.task_id",
+            inputs=[
+                Dataset(
+                    namespace="s3://source-bucket",
+                    name="s3://source-bucket/path/to/source_file.csv",
+                    facets={}
+                )
+            ],
+            outputs=[
+                Dataset(
+                    namespace="s3://destination-bucket",
+                    name="s3://destination-bucket/path/to/destination_file.csv",
+                    facets={}
+                )
+            ],
+        )
+
+        return_value = self.extractor.extract()
+
+        self.assertEqual(return_value, expected_return_value)
+
+    @staticmethod
+    def _get_copy_task():
+        dag = DAG(dag_id="TestS3FileTransformExtractor")
+        task = S3FileTransformOperator(
+            task_id="task_id",
+            source_aws_conn_id="aws_default",
+            dest_aws_conn_id="aws_default",
+            source_s3_key="s3://source-bucket/path/to/source_file.csv",
+            dest_s3_key="s3://destination-bucket/path/to/destination_file.csv",
+            transform_script="cp",
+            replace=True,
+            dag=dag,
+            start_date=timezone.datetime(2016, 2, 1, 0, 0, 0),
+        )
+
+        return task
+
+    @staticmethod
+    def _get_ti(task):
+        kwargs = {}
+        if parse_version(AIRFLOW_VERSION) > parse_version("2.2.0"):
+            kwargs['run_id'] = 'test_run_id'  # change in 2.2.0
+        task_instance = TaskInstance(
+            task=task,
+            execution_date=datetime.utcnow().replace(tzinfo=pytz.utc),
+            state=State.SUCCESS,
+            **kwargs)
+        task_instance.job_id = random.randrange(10000)
+
+        return task_instance
+
+
+if __name__ == '__main__':
+    unittest.main()

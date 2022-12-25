@@ -63,7 +63,10 @@ _extractors = list(
             ),
             try_import_from_string(
                 'openlineage.airflow.extractors.s3_extractor.S3CopyObjectExtractor'
-            )
+            ),
+            try_import_from_string(
+                'openlineage.airflow.extractors.s3_extractor.S3FileTransformExtractor'
+            ),
         ],
     )
 )
