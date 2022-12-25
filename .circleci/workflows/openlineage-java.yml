@@ -53,4 +53,3 @@ workflows:
             - publish-snapshot-integration-spark
             - integration-test-integration-spark
             - integration-test-integration-flink
-
