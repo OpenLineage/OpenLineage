@@ -83,7 +83,7 @@ dependencies {
 
     implementation "com.typesafe:config:1.4.2"
     implementation "org.apache.avro:avro:1.11.1"
-    implementation 'io.confluent:kafka-schema-registry-client:7.3.0'
+    implementation 'io.confluent:kafka-schema-registry-client:7.3.1'
     implementation 'io.confluent:kafka-avro-serializer:7.3.0'
     implementation 'com.github.davidmc24.gradle.plugin:gradle-avro-plugin:1.5.0'
     implementation "org.apache.hadoop:hadoop-hdfs:$hadoopVersion"
