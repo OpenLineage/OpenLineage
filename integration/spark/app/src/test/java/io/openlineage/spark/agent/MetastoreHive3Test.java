@@ -56,7 +56,6 @@ public class MetastoreHive3Test {
             .enableHiveSupport()
             .getOrCreate();
     fs = MetastoreTestUtils.getFileSystem(spark);
-
     MetastoreTestUtils.removeDatabaseFiles(database, fs);
     executeSql("DROP TABLE IF EXISTS %s.%s", database, table);
     executeSql("DROP DATABASE IF EXISTS %s", database);
