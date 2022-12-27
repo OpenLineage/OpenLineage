@@ -19,4 +19,15 @@
     "run": {
         "facets": {}
     }
+},{
+    "eventType": "COMPLETE",
+    "inputs": [],
+    "job": {
+        "facets": {},
+        "name": "s3transform_dag.s3transform_task"
+    },
+    "outputs": [],
+    "run": {
+        "facets": {}
+    }
 }]

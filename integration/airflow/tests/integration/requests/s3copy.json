@@ -19,4 +19,15 @@
     "run": {
         "facets": {}
     }
+},{
+    "eventType": "COMPLETE",
+    "inputs": [],
+    "job": {
+        "facets": {},
+        "name": "s3copy_dag.s3copy_task"
+    },
+    "outputs": [],
+    "run": {
+        "facets": {}
+    }
 }]

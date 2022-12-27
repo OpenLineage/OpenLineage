@@ -3,21 +3,15 @@
 
 import logging
 import unittest
-import random
-import pytz
 from unittest import TestCase
+from airflow.models import DAG
+from airflow.providers.amazon.aws.operators.s3 import S3CopyObjectOperator, S3FileTransformOperator
+from airflow.utils import timezone
+from openlineage.airflow.extractors.base import TaskMetadata
 from openlineage.airflow.extractors.s3_extractor import (
     S3CopyObjectExtractor,
     S3FileTransformExtractor
 )
-from airflow.providers.amazon.aws.operators.s3 import S3CopyObjectOperator, S3FileTransformOperator
-from openlineage.airflow.extractors.base import TaskMetadata
-from datetime import datetime
-from airflow.models import TaskInstance, DAG
-from airflow.utils.state import State
-from airflow.utils import timezone
-from pkg_resources import parse_version
-from airflow.version import version as AIRFLOW_VERSION
 from openlineage.client.run import Dataset
 
 log = logging.getLogger(__name__)
@@ -27,7 +21,6 @@ class TestS3CopyObjectExtractor(TestCase):
     def setUp(self):
         log.debug("TestS3CopyObjectExtractor.setup(): ")
         self.task = TestS3CopyObjectExtractor._get_copy_task()
-        self.ti = TestS3CopyObjectExtractor._get_ti(task=self.task)
         self.extractor = S3CopyObjectExtractor(operator=self.task)
 
     def test_extract(self):
@@ -48,9 +41,7 @@ class TestS3CopyObjectExtractor(TestCase):
                 )
             ],
         )
-
         return_value = self.extractor.extract()
-
         self.assertEqual(return_value, expected_return_value)
 
     @staticmethod
@@ -65,29 +56,13 @@ class TestS3CopyObjectExtractor(TestCase):
             dag=dag,
             start_date=timezone.datetime(2016, 2, 1, 0, 0, 0),
         )
-
         return task
-
-    @staticmethod
-    def _get_ti(task):
-        kwargs = {}
-        if parse_version(AIRFLOW_VERSION) > parse_version("2.2.0"):
-            kwargs['run_id'] = 'test_run_id'  # change in 2.2.0
-        task_instance = TaskInstance(
-            task=task,
-            execution_date=datetime.utcnow().replace(tzinfo=pytz.utc),
-            state=State.SUCCESS,
-            **kwargs)
-        task_instance.job_id = random.randrange(10000)
-
-        return task_instance
 
 
 class TestS3FileTransformExtractor(TestCase):
     def setUp(self):
         log.debug("TestS3FileTransformExtractor.setup(): ")
         self.task = TestS3FileTransformExtractor._get_copy_task()
-        self.ti = TestS3FileTransformExtractor._get_ti(task=self.task)
         self.extractor = S3FileTransformExtractor(operator=self.task)
 
     def test_extract(self):
@@ -108,9 +83,7 @@ class TestS3FileTransformExtractor(TestCase):
                 )
             ],
         )
-
         return_value = self.extractor.extract()
-
         self.assertEqual(return_value, expected_return_value)
 
     @staticmethod
@@ -127,22 +100,7 @@ class TestS3FileTransformExtractor(TestCase):
             dag=dag,
             start_date=timezone.datetime(2016, 2, 1, 0, 0, 0),
         )
-
         return task
-
-    @staticmethod
-    def _get_ti(task):
-        kwargs = {}
-        if parse_version(AIRFLOW_VERSION) > parse_version("2.2.0"):
-            kwargs['run_id'] = 'test_run_id'  # change in 2.2.0
-        task_instance = TaskInstance(
-            task=task,
-            execution_date=datetime.utcnow().replace(tzinfo=pytz.utc),
-            state=State.SUCCESS,
-            **kwargs)
-        task_instance.job_id = random.randrange(10000)
-
-        return task_instance
 
 
 if __name__ == '__main__':
