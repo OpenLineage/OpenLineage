@@ -126,11 +126,11 @@ dependencies {
 
     testFixturesApi("org.apache.hadoop:hadoop-client:3.3.4") { force=true }
     pysparkContainerOnly "com.google.cloud.bigdataoss:gcs-connector:${versions.gcs}:shaded"
+    if(versions.module != "spark2") {pysparkContainerOnly("com.google.cloud.bigdataoss:gcs-connector:hadoop3-2.2.7:shaded")}
 
     if(versions.delta != "NA") { testFixturesApi "io.delta:delta-core_2.12:${versions.delta}" }
 
     testImplementation(project(":${versions.module}"))
-//    if(versions.module != "spark2") {testImplementation("com.google.cloud.bigdataoss:gcs-connector:hadoop3-2.2.7")}
     
     testImplementation testFixtures(project(":${versions.module}")){
         exclude group: 'org.apache.avro'
