@@ -130,7 +130,7 @@ dependencies {
     if(versions.delta != "NA") { testFixturesApi "io.delta:delta-core_2.12:${versions.delta}" }
 
     testImplementation(project(":${versions.module}"))
-    if(versions.module != "spark2") {testImplementation("com.google.cloud.bigdataoss:gcs-connector:hadoop3-2.2.7")}
+//    if(versions.module != "spark2") {testImplementation("com.google.cloud.bigdataoss:gcs-connector:hadoop3-2.2.7")}
     
     testImplementation testFixtures(project(":${versions.module}")){
         exclude group: 'org.apache.avro'
