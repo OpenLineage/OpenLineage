@@ -125,7 +125,10 @@ dependencies {
     }
 
     testFixturesApi("org.apache.hadoop:hadoop-client:3.3.4") { force=true }
-    pysparkContainerOnly "com.google.cloud.bigdataoss:gcs-connector:${versions.gcs}:shaded"
+    pysparkContainerOnly("com.google.cloud.bigdataoss:gcs-connector:${versions.gcs}:shaded"){
+        exclude group: 'com.google.guava', module: 'guava'
+    }
+    pysparkContainerOnly("com.google.guava:guava:30.1-jre")
 
     if(versions.delta != "NA") { testFixturesApi "io.delta:delta-core_2.12:${versions.delta}" }
 
