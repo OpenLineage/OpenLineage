@@ -14,7 +14,6 @@ import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -26,7 +25,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Slf4j
 @Tag("integration-test")
-@Disabled
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "CI", matches = "true")
 @EnabledIfSystemProperty(named = "spark.version", matches = "(3.*)")
