@@ -106,10 +106,10 @@ public class SparkContainerUtils {
 
     List<String> sparkConf = new ArrayList<>();
     sparkConfigParams.forEach(param -> addSparkConfig(sparkConf, param));
-    addSparkConfig(sparkConf, "spark.openlineage.host=" + openlineageUrl);
+    addSparkConfig(sparkConf, "spark.openlineage.transport.type=http");
     addSparkConfig(
         sparkConf,
-        "spark.openlineage.url="
+        "spark.openlineage.transport.url="
             + openlineageUrl
             + "/api/v1/namespaces/"
             + namespace
@@ -120,7 +120,7 @@ public class SparkContainerUtils {
     addSparkConfig(sparkConf, "spark.driver.extraJavaOptions=-Dderby.system.home=/tmp/derby");
     addSparkConfig(sparkConf, "spark.sql.warehouse.dir=/tmp/warehouse");
     addSparkConfig(sparkConf, "spark.jars.ivy=/tmp/.ivy2/");
-    addSparkConfig(sparkConf, "spark.openlineage.facets.disabled=''");
+    addSparkConfig(sparkConf, "spark.openlineage.facets.disabled=");
 
     List<String> sparkSubmit =
         new ArrayList(Arrays.asList("./bin/spark-submit", "--master", "local"));

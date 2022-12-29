@@ -9,14 +9,10 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClient;
 import io.openlineage.client.OpenLineageClientException;
 import io.openlineage.client.OpenLineageClientUtils;
-import io.openlineage.client.transports.ConsoleTransport;
-import io.openlineage.client.transports.HttpTransport;
+import io.openlineage.client.transports.FacetsConfig;
 import io.openlineage.client.transports.TransportFactory;
-import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Map;
 import java.util.Optional;
-import java.util.StringJoiner;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -24,65 +20,26 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class EventEmitter {
   @Getter private OpenLineageClient client;
-  @Getter private URI lineageURI;
   @Getter private Optional<String> appName;
   @Getter private String jobNamespace;
   @Getter private String parentJobName;
-  @Getter private Double timeout;
   @Getter private Optional<UUID> parentRunId;
 
   public EventEmitter(ArgumentParser argument) throws URISyntaxException {
     this.jobNamespace = argument.getNamespace();
     this.parentJobName = argument.getJobName();
     this.parentRunId = convertToUUID(argument.getParentRunId());
-    this.appName = argument.getAppName();
-
-    if (argument.isConsoleMode()) {
-      this.client = new OpenLineageClient(new ConsoleTransport());
-      log.info("Init OpenLineageContext: will output events to console");
-      return;
-    }
-
-    if (argument.getTransportConfig().isPresent()) {
-      this.client =
-          new OpenLineageClient(new TransportFactory(argument.getTransportConfig().get()).build());
-      log.info(
-          String.format(
-              "Init OpenLineageContext: use %s as transport, with config %s",
-              argument.getTransportMode().get(), argument.getTransportConfig().get()));
-      return;
-    }
-
-    // Extract url parameters other than api_key to append to lineageURI
-    String queryParams = null;
-    if (argument.getUrlParams().isPresent()) {
-      Map<String, String> urlParams = argument.getUrlParams().get();
-
-      StringJoiner query = new StringJoiner("&");
-      urlParams.forEach((k, v) -> query.add(k + "=" + v));
-
-      queryParams = query.toString();
-    }
-
-    // Convert host to a URI to extract scheme and authority
-    URI hostURI = new URI(argument.getHost());
-    String uriPath = String.format("/api/%s/lineage", argument.getVersion());
-
-    this.lineageURI =
-        new URI(hostURI.getScheme(), hostURI.getAuthority(), uriPath, queryParams, null);
-
-    HttpTransport.Builder builder = HttpTransport.builder().uri(this.lineageURI);
-    argument.getApiKey().ifPresent(builder::apiKey);
-    argument.getTimeout().ifPresent(builder::timeout);
-
+    this.appName = Optional.ofNullable(argument.getAppName());
+    String[] disabledFacets =
+        Optional.ofNullable(argument.getOpenLineageYaml().getFacetsConfig())
+            .orElse(new FacetsConfig().withDisabledFacets(new String[0]))
+            .getDisabledFacets();
     this.client =
         OpenLineageClient.builder()
-            .disableFacets(argument.getDisabledFacets())
-            .transport(builder.build())
+            .transport(
+                new TransportFactory(argument.getOpenLineageYaml().getTransportConfig()).build())
+            .disableFacets(disabledFacets)
             .build();
-    log.debug(
-        String.format(
-            "Init OpenLineageContext: Args: %s URI: %s", argument, lineageURI.toString()));
   }
 
   public void emit(OpenLineage.RunEvent event) {

@@ -5,7 +5,6 @@
 
 package io.openlineage.client.transports;
 
-import java.util.Optional;
 import java.util.Properties;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -17,7 +16,7 @@ import lombok.ToString;
 public final class KinesisConfig implements TransportConfig {
   @Getter @Setter private String streamName;
   @Getter @Setter private String region;
-  @Getter @Setter private Optional<String> roleArn;
+  @Getter @Setter private String roleArn;
 
   // check
   // https://github.com/awslabs/amazon-kinesis-producer/blob/master/java/amazon-kinesis-producer-sample/default_config.properties

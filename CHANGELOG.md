@@ -23,6 +23,10 @@
 * Docs: add a TSC doc [`#1303`](https://github.com/OpenLineage/OpenLineage/pull/1303) [@merobi-hub](https://github.com/merobi-hub)  
     *Adds a document listing the members of the Technical Steering Committee.*
 
+### Changed
+* Spark: enable usage of other Transports via Spark configuration [`#1383`](https://github.com/OpenLineage/OpenLineage/pull/1383) [@tnazarew](https://github.com/tnazarew)
+    * OL client argument parsing moved from Spark Integration to java client
+
 ### Fixed
 * Spark: improve Databricks to send better events [`#1330`](https://github.com/OpenLineage/OpenLineage/pull/1330) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Filters unwanted events and provides a meaningful job name.*
