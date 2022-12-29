@@ -1,0 +1,33 @@
+[{
+    "eventType": "START",
+    "inputs": [
+        {
+            "name": "testfile",
+            "namespace": "s3://testbucket"
+        }
+    ],
+    "job": {
+        "facets": {},
+        "name": "s3copy_dag.s3copy_task"
+    },
+    "outputs": [
+        {
+            "name": "testfile2",
+            "namespace": "s3://testbucket"
+        }
+    ],
+    "run": {
+        "facets": {}
+    }
+},{
+    "eventType": "COMPLETE",
+    "inputs": [],
+    "job": {
+        "facets": {},
+        "name": "s3copy_dag.s3copy_task"
+    },
+    "outputs": [],
+    "run": {
+        "facets": {}
+    }
+}]
