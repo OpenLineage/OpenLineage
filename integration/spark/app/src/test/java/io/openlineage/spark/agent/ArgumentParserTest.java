@@ -99,7 +99,7 @@ class ArgumentParserTest {
   }
 
   @Test
-  void testOldConfig() {
+  void testDeprecatedConfig() {
     SparkConf sparkConf =
         new SparkConf()
             .set("spark.openlineage.host", URL)

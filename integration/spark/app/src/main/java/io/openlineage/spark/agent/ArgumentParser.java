@@ -57,7 +57,7 @@ public class ArgumentParser {
 
   public static ArgumentParser parse(SparkConf conf) {
     ArgumentParserBuilder builder = ArgumentParser.builder();
-    adjustOldConfigs(conf);
+    adjustDeprecatedConfigs(conf);
     conf.setIfMissing(SPARK_CONF_DISABLED_FACETS, DEFAULT_DISABLED_FACETS);
     conf.setIfMissing(SPARK_CONF_TRANSPORT_TYPE, "http");
 
@@ -76,7 +76,7 @@ public class ArgumentParser {
   }
 
   // adjust properties so the old pipelines are allowed
-  private static void adjustOldConfigs(SparkConf conf) {
+  private static void adjustDeprecatedConfigs(SparkConf conf) {
     findSparkConfigKey(conf, "spark.openlineage.host")
         .ifPresent(
             c -> {
@@ -108,14 +108,13 @@ public class ArgumentParser {
                   conf, UrlParser.SPARK_CONF_AUTH_TYPE, "api_key", "spark.openlineage.apiKey");
             });
 
-    findSparkConfigKey(conf, "spark.openlineage.consoleTransport")
+    findSparkConfigKey(conf, "spark.openlineage.consoleTransport").filter("true"::equalsIgnoreCase)
         .ifPresent(
             c -> {
-              if (c.equals("true")) {
                 conf.set(SPARK_CONF_TRANSPORT_TYPE, "console");
                 conf.remove("spark.openlineage.consoleTransport");
               }
-            });
+            );
     Arrays.stream(conf.getAllWithPrefix("spark.openlineage.url.param."))
         .forEach(
             c -> {

@@ -85,6 +85,8 @@ command line or in the `conf/spark-defaults.conf` file.
 
 The following parameters can be specified in the Spark configuration:
 
+> **_NOTE:_** The `console` transport mode does not require any additional config so it's preferable for debug or first time set up. Its enabled by setting `spark.openlineage.transport.type` value to `console`.
+
 ### General
 
 Parameters configuring the Spark integration
