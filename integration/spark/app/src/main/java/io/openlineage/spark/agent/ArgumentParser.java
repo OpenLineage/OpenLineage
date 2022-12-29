@@ -108,13 +108,13 @@ public class ArgumentParser {
                   conf, UrlParser.SPARK_CONF_AUTH_TYPE, "api_key", "spark.openlineage.apiKey");
             });
 
-    findSparkConfigKey(conf, "spark.openlineage.consoleTransport").filter("true"::equalsIgnoreCase)
+    findSparkConfigKey(conf, "spark.openlineage.consoleTransport")
+        .filter("true"::equalsIgnoreCase)
         .ifPresent(
             c -> {
-                conf.set(SPARK_CONF_TRANSPORT_TYPE, "console");
-                conf.remove("spark.openlineage.consoleTransport");
-              }
-            );
+              conf.set(SPARK_CONF_TRANSPORT_TYPE, "console");
+              conf.remove("spark.openlineage.consoleTransport");
+            });
     Arrays.stream(conf.getAllWithPrefix("spark.openlineage.url.param."))
         .forEach(
             c -> {

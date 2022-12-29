@@ -27,5 +27,4 @@ public class SparkConfUtilsTest {
     Optional<String> propertyValue = SparkConfUtils.findSparkConfigKey(conf, "existing.property");
     assertEquals(Optional.of("test"), propertyValue);
   }
-  
 }
