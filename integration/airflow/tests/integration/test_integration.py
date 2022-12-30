@@ -29,9 +29,9 @@ log = logging.getLogger(__name__)
 
 IS_GCP_AUTH = False
 try:
-    creds = json.loads("/opt/config/gcloud/gcloud-service-key.json")
-    if creds:
-        IS_GCP_AUTH = True
+    with open("/opt/config/gcloud/gcloud-service-key.json") as f:
+        if json.load(f):
+            IS_GCP_AUTH = True
 except:  # noqa
     pass
 

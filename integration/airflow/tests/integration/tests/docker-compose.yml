@@ -97,6 +97,7 @@ services:
       - app_net
     volumes:
       - ../docker/wait-for-it.sh:/wait-for-it.sh
+      - ../gcloud:/opt/config/gcloud
     depends_on:
       - airflow_scheduler
       - airflow_worker
