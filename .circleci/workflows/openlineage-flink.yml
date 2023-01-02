@@ -1,0 +1,19 @@
+workflows:
+  openlineage-java:
+    jobs:
+      - build-integration-flink:
+          matrix:
+            parameters:
+              flink-version: [ '1.14.5', '1.15.1' ]
+          requires:
+            - build-client-java
+      - integration-test-integration-flink:
+          matrix:
+            parameters:
+              flink-version: [ '1.14.5', '1.15.1' ]
+          requires:
+            - build-integration-flink
+      - workflow_complete:
+          requires:
+            - integration-test-integration-flink
+
