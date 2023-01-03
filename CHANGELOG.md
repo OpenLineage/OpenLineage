@@ -1,10 +1,31 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.18.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.19.0...HEAD)
 
+## [0.19.0](https://github.com/OpenLineage/OpenLineage/compare/0.18.0...0.19.0) - 2023-1-4
 ### Added
-* dbt: add support for postgres datasources [`#1417`](https://github.com/OpenLineage/OpenLineage/pull/1417) [@julienledem](https://github.com/julienledem)
-    * Adds the previously unsupported postgres datasource type
+* Airflow: add Trino extractor [`#1288`](https://github.com/OpenLineage/OpenLineage/pull/1288) [@sekikn](https://github.com/sekikn)  
+    *Adds a Trino extractor to the Airflow integration.*
+* Airflow: add `S3FileTransformOperator` extractor [`#1450`](https://github.com/OpenLineage/OpenLineage/pull/1450) [@sekikn](https://github.com/sekikn)  
+    *Adds an `S3FileTransformOperator` extractor to the Airflow integration.*
+* Airflow: add standardized run facet [`#1413`](https://github.com/OpenLineage/OpenLineage/pull/1413) [@JDarDagran](https://github.com/JDarDagran)  
+    *Creates one standardized run facet for the Airflow integration.*
+* Airflow: add `NominalTimeRunFacet` and `OwnershipJobFacet` [`#1410`](https://github.com/OpenLineage/OpenLineage/pull/1410) [@JDarDagran](https://github.com/JDarDagran)  
+    *Adds `nominalEndTime` and `OwnershipJobFacet` fields to the Airflow integration.*
+* dbt: add support for postgres datasources [`#1417`](https://github.com/OpenLineage/OpenLineage/pull/1417) [@julienledem](https://github.com/julienledem)  
+    *Adds the previously unsupported postgres datasource type.*
+* Proxy: add client-side proxy (skeletal version) [`#1439`](https://github.com/OpenLineage/OpenLineage/pull/1439) [`#1420`](https://github.com/OpenLineage/OpenLineage/pull/1420) [@fm100](https://github.com/fm100)  
+    *Implements a skeletal version of a client-side proxy.*
+* Proxy: add CI job to publish Docker image [`#1086`](https://github.com/OpenLineage/OpenLineage/pull/1086) [@wslulciuc](https://github.com/wslulciuc)   
+    *Includes a script to build and tag the image plus jobs to verify the build on every CI run and publish to Docker Hub.*
+* SQL: add `ExtractionErrorRunFacet` [`#1442`](https://github.com/OpenLineage/OpenLineage/pull/1442) [@mobuchowski](https://github.com/mobuchowski)  
+    *Adds a facet to the spec to reflect internal processing errors, especially failed or incomplete parsing of SQL jobs.*
+* Spark: pass config parameters to the OL client [`#1383`](https://github.com/OpenLineage/OpenLineage/pull/1383) [@tnazarew](https://github.com/tnazarew)  
+    *Adds a mechanism for making new lineage consumers transparent to the integration, easing the process of setting up new types of consumers.*
+
+### Fixed
+* Fix `collect_ignore`, add flags to Pytest for cleaner output [`#1437`](https://github.com/OpenLineage/OpenLineage/pull/1437) [@JDarDagran](https://github.com/JDarDagran)  
+    *Removes the `extractors` directory from the ignored list, improving unit testing.*
 
 ## [0.18.0](https://github.com/OpenLineage/OpenLineage/compare/0.17.0...0.18.0) - 2022-12-6
 ### Added
