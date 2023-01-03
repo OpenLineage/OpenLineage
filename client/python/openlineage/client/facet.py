@@ -375,3 +375,18 @@ class ProcessingEngineRunFacet(BaseFacet):
     version: str = attr.ib()
     name: str = attr.ib()
     openlineageAdapterVersion: str = attr.ib()
+
+
+@attr.s
+class ExtractionError(BaseFacet):
+    errorMessage: str = attr.ib()
+    stackTrace: Optional[str] = attr.ib()
+    task: Optional[str] = attr.ib()
+    taskNumber: Optional[int] = attr.ib()
+
+
+@attr.s
+class ExtractionErrorRunFacet(BaseFacet):
+    totalTasks: int = attr.ib()
+    failedTasks: int = attr.ib()
+    errors: List[ExtractionError] = attr.ib()
