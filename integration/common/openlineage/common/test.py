@@ -3,6 +3,8 @@
 
 import os
 import logging
+import json
+import uuid
 from dateutil.parser import parse
 from jinja2 import Environment
 from typing import Any, Optional
@@ -19,6 +21,15 @@ def any(result: Any):
 def is_datetime(result: Any):
     try:
         x = parse(result)  # noqa
+        return "true"
+    except:  # noqa
+        pass
+    return "false"
+
+
+def is_uuid(result: Any):
+    try:
+        uuid.UUID(result)  # noqa
         return "true"
     except:  # noqa
         pass
@@ -58,6 +69,7 @@ def setup_jinja() -> Environment:
     env = Environment()
     env.globals['any'] = any
     env.globals['is_datetime'] = is_datetime
+    env.globals['is_uuid'] = is_uuid
     env.globals['env_var'] = env_var
     env.globals['not_match'] = not_match
     env.filters['url_scheme_authority'] = url_scheme_authority
@@ -110,7 +122,10 @@ def match(expected, result) -> bool:
                     return False
             else:
                 if not match(x, result[i]):
-                    log.error(f"List not matched expected: {x} result: {result[i]}")
+                    log.error(
+                        f"List not matched at {i}\n" +
+                        f"  expected:\n{json.dumps(x)}\n" +
+                        f"  result: \n{json.dumps(result[i])}")
                     return False
     elif isinstance(expected, str):
         if '{{' in expected:

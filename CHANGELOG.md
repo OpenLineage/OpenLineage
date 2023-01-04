@@ -2,6 +2,10 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.18.0...HEAD)
 
+### Added
+* dbt: add support for postgres datasources [`#1417`](https://github.com/OpenLineage/OpenLineage/pull/1417) [@julienledem](https://github.com/julienledem)
+    * Adds the previously unsupported postgres datasource type
+
 ## [0.18.0](https://github.com/OpenLineage/OpenLineage/compare/0.17.0...0.18.0) - 2022-12-8
 ### Added
 * Airflow: support `SQLExecuteQueryOperator` [`#1379`](https://github.com/OpenLineage/OpenLineage/pull/1379) [@JDarDagran](https://github.com/JDarDagran)  
@@ -11,11 +15,17 @@
 * Airflow: add Sagemaker extractors [`#1136`](https://github.com/OpenLineage/OpenLineage/pull/1136) [@fhoda](https://github.com/fhoda)  
     *Creates extractors for `SagemakerProcessingOperator` and `SagemakerTransformOperator`.*
 * Airflow: add S3 extractor for Airflow operators [`#1166`](https://github.com/OpenLineage/OpenLineage/pull/1166) [@fhoda](https://github.com/fhoda)  
-    *Creates an extractor for the `S3CopyObject` in the Airflow integration.*
+    *Creates an extractor for the `S3CopyObject` in the Airflow integration.*  
+* Airflow: implement DagRun listener [`#1286`](https://github.com/OpenLineage/OpenLineage/pull/1286) [@mobuchowski](https://github.com/mobuchowski)  
+    *OpenLineage integration will now explicitly emit DagRun start and DagRun complete or DagRun failed events, which allows precise tracking of single dags.*
 * Spec: add spec file for `ExternalQueryRunFacet` [`#1262`](https://github.com/OpenLineage/OpenLineage/pull/1262) [@howardyoo](https://github.com/howardyoo)  
     *Adds a spec file to make this facet available for the Java client. Includes a README*
 * Docs: add a TSC doc [`#1303`](https://github.com/OpenLineage/OpenLineage/pull/1303) [@merobi-hub](https://github.com/merobi-hub)  
     *Adds a document listing the members of the Technical Steering Committee.*
+
+### Changed
+* Spark: enable usage of other Transports via Spark configuration [`#1383`](https://github.com/OpenLineage/OpenLineage/pull/1383) [@tnazarew](https://github.com/tnazarew)
+    * OL client argument parsing moved from Spark Integration to java client
 
 ### Fixed
 * Spark: improve Databricks to send better events [`#1330`](https://github.com/OpenLineage/OpenLineage/pull/1330) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  

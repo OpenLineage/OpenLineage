@@ -45,13 +45,13 @@ configurations {
 
 ext {
     assertjVersion = '3.23.1'
-    bigqueryVersion = '0.26.0'
+    bigqueryVersion = '0.27.1'
     junit5Version = '5.9.1'
     sparkVersion = '2.4.8'
     sparkVersionShort = '2.4'
     snowflakeVersion = '2.9.3'
     postgresqlVersion = '42.5.1'
-    mockitoVersion = '4.9.0'
+    mockitoVersion = '4.11.0'
     testcontainersVersion = '1.17.6'
 }
 
@@ -75,13 +75,13 @@ dependencies {
     compileOnly "org.apache.spark:spark-sql-kafka-0-10_2.11:${sparkVersion}"
     compileOnly "com.databricks:dbutils-api_2.11:0.0.5"
 
-    testFixturesApi platform('org.junit:junit-bom:5.7.1')
+    testFixturesApi platform('org.junit:junit-bom:5.9.1')
     testFixturesApi "org.junit.jupiter:junit-jupiter:${junit5Version}"
     testFixturesApi "org.junit.jupiter:junit-jupiter-params:${junit5Version}"
 
     testFixturesApi "org.postgresql:postgresql:${postgresqlVersion}"
     testFixturesApi 'org.hamcrest:hamcrest-library:2.2'
-    testFixturesApi 'org.xerial:sqlite-jdbc:3.39.4.0'
+    testFixturesApi 'org.xerial:sqlite-jdbc:3.40.0.0'
     testFixturesApi "org.testcontainers:junit-jupiter:${testcontainersVersion}"
     testFixturesApi "org.testcontainers:postgresql:${testcontainersVersion}"
     testFixturesApi "org.testcontainers:mockserver:${testcontainersVersion}"

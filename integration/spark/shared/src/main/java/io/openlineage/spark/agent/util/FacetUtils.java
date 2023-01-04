@@ -11,7 +11,7 @@ import java.util.Optional;
 
 public class FacetUtils {
 
-  private static final String SPARK_CONF_FACETS_DISABLED = "openlineage.facets.disabled";
+  private static final String SPARK_CONF_FACETS_DISABLED = "spark.openlineage.facets.disabled";
   private static final String disabledFacetsSeparator = ";";
 
   public static boolean isFacetDisabled(OpenLineageContext context, String facetName) {

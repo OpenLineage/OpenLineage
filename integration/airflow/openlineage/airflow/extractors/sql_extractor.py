@@ -31,6 +31,7 @@ class SqlExtractor(BaseExtractor):
     _information_schema_table_name = "information_schema.columns"
     _is_information_schema_cross_db = False
     _is_uppercase_names = False
+    _allow_trailing_semicolon = True
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -194,6 +195,7 @@ class SqlExtractor(BaseExtractor):
             information_schema_table_name=self._information_schema_table_name,
             tables_hierarchy=tables_hierarchy,
             uppercase_names=self._is_uppercase_names,
+            allow_trailing_semicolon=self._allow_trailing_semicolon,
         )
 
     @staticmethod

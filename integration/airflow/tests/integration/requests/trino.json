@@ -1,0 +1,93 @@
+[{
+    "eventType": "START",
+    "inputs": [{
+        "facets": {
+            "dataSource": {
+                "name": "trino://trino:8080",
+                "uri": "trino://trino:8080/default"
+            },
+            "schema": {
+                "fields": [{
+                    "name": "order_id",
+                    "type": "integer"
+                }, {
+                    "name": "order_placed_on",
+                    "type": "timestamp(6)"
+                }, {
+                    "name": "order_dispatched_on",
+                    "type": "timestamp(6)"
+                }, {
+                    "name": "order_delivered_on",
+                    "type": "timestamp(6)"
+                }, {
+                    "name": "order_delivery_time",
+                    "type": "double"
+                }, {
+                    "name": "customer_email",
+                    "type": "varchar(64)"
+                }, {
+                    "name": "restaurant_id",
+                    "type": "integer"
+                }, {
+                    "name": "driver_id",
+                    "type": "integer"
+                }]
+            }
+        },
+        "name": "memory.public.top_delivery_times",
+        "namespace": "trino://trino:8080"
+    }],
+    "job": {
+        "facets": {
+            "documentation": {
+                "description": "Determines the popular day of week orders are placed."
+            },
+            "sql": {
+                "query": "\n    CREATE TABLE memory.default.popular_orders_day_of_week AS\n    SELECT DAY_OF_WEEK(order_placed_on) AS order_day_of_week,\n           order_placed_on,\n           COUNT(*) AS orders_placed\n      FROM postgresql.public.top_delivery_times\n     GROUP BY order_placed_on\n    "
+            }
+        },
+        "name": "trino_orders_popular_day_of_week.trino_insert",
+        "namespace": "food_delivery"
+    },
+    "run": {
+        "facets": {
+            "airflow_runArgs": {
+                "externalTrigger": false
+            }
+        }
+    }
+},
+{
+    "eventType": "COMPLETE",
+    "job": {
+        "facets": {
+            "sql": {
+                "query": "\n    CREATE TABLE memory.default.popular_orders_day_of_week AS\n    SELECT DAY_OF_WEEK(order_placed_on) AS order_day_of_week,\n           order_placed_on,\n           COUNT(*) AS orders_placed\n      FROM postgresql.public.top_delivery_times\n     GROUP BY order_placed_on\n    "
+            }
+        },
+        "name": "trino_orders_popular_day_of_week.trino_insert",
+        "namespace": "food_delivery"
+    },
+    "outputs": [{
+        "facets": {
+            "dataSource": {
+                "name": "trino://trino:8080",
+                "uri": "trino://trino:8080/default"
+            },
+            "schema": {
+                "fields": [{
+                    "name": "order_day_of_week",
+                    "type": "bigint"
+                }, {
+                    "name": "order_placed_on",
+                    "type": "timestamp(6)"
+                }, {
+                    "name": "orders_placed",
+                    "type": "bigint"
+                }]
+            }
+        },
+        "name": "memory.default.popular_orders_day_of_week",
+        "namespace": "trino://trino:8080"
+    }]
+}]

@@ -1,0 +1,17 @@
+version: "3"
+
+services:
+  postgres:
+    image: postgres:13.4-bullseye
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=test
+    volumes:
+      - ./init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+      - ./create-databases.sql:/create-databases.sql
+      - ./metastore-2.3.0.sql:/metastore-2.3.0.sql
+      - ./metastore-3.1.0.sql:/metastore-3.1.0.sql

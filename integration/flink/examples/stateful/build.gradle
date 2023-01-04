@@ -57,7 +57,7 @@ dependencies {
     }
 
     testRuntimeOnly "org.junit.jupiter:junit-jupiter:5.9.1"
-    testCompileOnly 'org.codehaus.groovy:groovy-all:3.0.13'
+    testCompileOnly 'org.codehaus.groovy:groovy-all:3.0.14'
     testImplementation 'org.spockframework:spock-core:2.0-groovy-3.0'
     testImplementation 'org.awaitility:awaitility:4.2.0'
 
@@ -83,8 +83,8 @@ dependencies {
 
     implementation "com.typesafe:config:1.4.2"
     implementation "org.apache.avro:avro:1.11.1"
-    implementation 'io.confluent:kafka-schema-registry-client:7.2.2'
-    implementation 'io.confluent:kafka-avro-serializer:7.0.1'
+    implementation 'io.confluent:kafka-schema-registry-client:7.3.1'
+    implementation 'io.confluent:kafka-avro-serializer:7.3.1'
     implementation 'com.github.davidmc24.gradle.plugin:gradle-avro-plugin:1.5.0'
     implementation "org.apache.hadoop:hadoop-hdfs:$hadoopVersion"
     implementation "org.apache.hadoop:hadoop-common:$hadoopVersion"

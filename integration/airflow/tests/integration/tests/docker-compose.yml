@@ -26,6 +26,7 @@ x-airflow-base: &airflow-base
     AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT: 120
     AIRFLOW__LINEAGE__BACKEND: openlineage.lineage_backend.OpenLineageBackend
     AIRFLOW_CONN_MYSQL_CONN: mysql://food_delivery:food_delivery@mysql:3306/food_delivery
+    AIRFLOW_CONN_TRINO_CONN: trino://trino@trino:8080/default?catalog=memory
     AIRFLOW_CONN_BQ_CONN: google-cloud-platform://?extra__google_cloud_platform__project=openlineage-ci&extra__google_cloud_platform__key_path=%2Fopt%2Fconfig%2Fgcloud%2Fgcloud-service-key.json
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: ${DAGS_ARE_PAUSED_AT_CREATION:-False}
     BIGQUERY_PREFIX: ${BIGQUERY_PREFIX}
@@ -48,6 +49,7 @@ x-airflow-base: &airflow-base
     AIRFLOW__SECRETS__BACKEND_KWARGS: '{ "connections_file_path": "/opt/data/secrets/connections.json", "variables_file_path": "/opt/data/secrets/variables.json" }'
     AIRFLOW_CONN_SNOWFLAKE_CONN: "snowflake://${SNOWFLAKE_USER}:${SNOWFLAKE_PASSWORD}@${SNOWFLAKE_URI}/OPENLINEAGE?account=${SNOWFLAKE_ACCOUNT_ID}&database=SANDBOX&region=us-east-1&warehouse=ROBOTS&role=OPENLINEAGE"
     AIRFLOW_CONN_AWS_CONN: "aws://"
+    AIRFLOW_CONN_AWS_LOCAL_CONN: "aws://?aws_access_key_id=k&aws_secret_access_key=v&endpoint_url=http%3A%2F%2Flocalstack%3A4566"
     AIRFLOW_CONN_SFTP_CONN: sftp://airflow:airflow@openssh-server:2222
   volumes:
       - ./airflow/config/log_config.py:/opt/airflow/config/log_config.py
@@ -63,9 +65,13 @@ x-airflow-base: &airflow-base
       condition: service_healthy
     mysql:
       condition: service_healthy
+    trino:
+      condition: service_healthy
     openssh-server:
       condition: service_healthy
     backend:
+      condition: service_healthy
+    localstack:
       condition: service_healthy
 
 services:
@@ -86,6 +92,7 @@ services:
       AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
       AWS_ATHENA_OUTPUT_LOCATION: ${AWS_ATHENA_OUTPUT_LOCATION}
       AWS_ATHENA_SUFFIX: ${AWS_ATHENA_SUFFIX}
+      AIRFLOW_CONN_AWS_LOCAL_CONN: ${AIRFLOW_CONN_AWS_LOCAL_CONN}
     networks:
       - app_net
     volumes:
@@ -237,6 +244,22 @@ services:
     volumes:
       - ../docker/init-db-mysql.sh:/docker-entrypoint-initdb.d/init-db-mysql.sh
 
+  trino:
+    image: trinodb/trino:403
+    networks:
+      - app_net
+    expose:
+      - 8080
+    healthcheck:
+      test: ["CMD", "/usr/lib/trino/bin/health-check"]
+      interval: 5s
+      timeout: 30s
+      retries: 50
+    volumes:
+      - ../docker/catalog:/etc/trino/catalog
+    depends_on:
+      - postgres
+
   openssh-server:
     image: linuxserver/openssh-server:latest
     networks:
@@ -250,6 +273,20 @@ services:
       - PASSWORD_ACCESS=true
     healthcheck:
       test: ["CMD", "s6-svstat", "/run/service/svc-openssh-server"]
+      interval: 5s
+      timeout: 30s
+      retries: 50
+
+  localstack:
+    image: localstack/localstack
+    networks:
+      - app_net
+    expose:
+      - 4566
+    volumes:
+      - ../docker/s3:/docker-entrypoint-initaws.d
+    healthcheck:
+      test: ["CMD", "awslocal", "s3api", "list-buckets"]
       interval: 5s
       timeout: 30s
       retries: 50

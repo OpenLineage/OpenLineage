@@ -1,0 +1,108 @@
+[{
+    "eventType": "START",
+    "job": {
+        "name": "task_group_dag.extract",
+        "namespace": "food_delivery"
+    },
+    "run": {
+        "facets": {
+            "airflow": {
+                "dag": {
+                    "dag_id": "task_group_dag",
+                    "schedule_interval": "@once"
+                }
+            }
+        }
+    }
+},
+{
+    "eventType": "START",
+    "job": {
+        "name": "task_group_dag.transform_values.transform_avg",
+        "namespace": "food_delivery"
+    },
+    "run": {
+        "facets": {
+            "airflow": {
+                "dag": {
+                    "dag_id": "task_group_dag",
+                    "schedule_interval": "@once"
+                },
+                "task": {
+                    "task_group": {
+                        "group_id": "transform_values",
+                        "tooltip": "Transform tooltip"
+                    }
+                }
+            }
+        }
+    }
+},
+{
+    "eventType": "START",
+    "job": {
+        "name": "task_group_dag.transform_values.transform_sum",
+        "namespace": "food_delivery"
+    },
+    "run": {
+        "facets": {
+            "airflow": {
+                "dag": {
+                    "dag_id": "task_group_dag",
+                    "schedule_interval": "@once"
+                },
+                "task": {
+                    "task_group": {
+                        "group_id": "transform_values",
+                        "tooltip": "Transform tooltip"
+                    }
+                }
+            }
+        }
+    }
+},
+{
+    "eventType": "START",
+    "job": {
+        "name": "task_group_dag.load",
+        "namespace": "food_delivery"
+    },
+    "run": {
+        "facets": {
+            "airflow": {
+                "dag": {
+                    "dag_id": "task_group_dag",
+                    "schedule_interval": "@once"
+                }
+            }
+        }
+    }
+},
+{
+    "eventType": "COMPLETE",
+    "job": {
+        "name": "task_group_dag.extract",
+        "namespace": "food_delivery"
+    }
+},
+{
+    "eventType": "COMPLETE",
+    "job": {
+        "name": "task_group_dag.transform_values.transform_avg",
+        "namespace": "food_delivery"
+    }
+},
+{
+    "eventType": "COMPLETE",
+    "job": {
+        "name": "task_group_dag.transform_values.transform_sum",
+        "namespace": "food_delivery"
+    }
+},
+{
+    "eventType": "COMPLETE",
+    "job": {
+        "name": "task_group_dag.load",
+        "namespace": "food_delivery"
+    }
+}]

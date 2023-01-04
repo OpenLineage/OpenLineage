@@ -16,6 +16,7 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.containers.MockServerContainer;
 import org.testcontainers.containers.Network;
+import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
@@ -26,6 +27,21 @@ public class SparkContainerUtils {
             DockerImageName.parse("jamesdbloom/mockserver:mockserver-5.12.0"))
         .withNetwork(network)
         .withNetworkAliases("openlineageclient");
+  }
+
+  static PostgreSQLContainer<?> makeMetastoreContainer(Network network) {
+    String basePath = "src/test/resources/metastore_psql/";
+    return new PostgreSQLContainer<>(DockerImageName.parse("postgres:13.4-bullseye"))
+        .withNetwork(network)
+        .withNetworkAliases("metastore")
+        .withUsername("admin")
+        .withPassword("password")
+        .withDatabaseName("test")
+        .withFileSystemBind(basePath + "init-db.sh", "/docker-entrypoint-initdb.d/init-db.sh")
+        .withFileSystemBind(basePath + "create-databases.sql", "/create-databases.sql")
+        .withFileSystemBind(basePath + "metastore-2.3.0.sql", "/metastore-2.3.0.sql")
+        .withFileSystemBind(basePath + "metastore-3.1.0.sql", "/metastore-3.1.0.sql")
+        .withExposedPorts(5432);
   }
 
   private static GenericContainer<?> makePysparkContainer(
@@ -106,10 +122,10 @@ public class SparkContainerUtils {
 
     List<String> sparkConf = new ArrayList<>();
     sparkConfigParams.forEach(param -> addSparkConfig(sparkConf, param));
-    addSparkConfig(sparkConf, "spark.openlineage.host=" + openlineageUrl);
+    addSparkConfig(sparkConf, "spark.openlineage.transport.type=http");
     addSparkConfig(
         sparkConf,
-        "spark.openlineage.url="
+        "spark.openlineage.transport.url="
             + openlineageUrl
             + "/api/v1/namespaces/"
             + namespace
@@ -120,7 +136,7 @@ public class SparkContainerUtils {
     addSparkConfig(sparkConf, "spark.driver.extraJavaOptions=-Dderby.system.home=/tmp/derby");
     addSparkConfig(sparkConf, "spark.sql.warehouse.dir=/tmp/warehouse");
     addSparkConfig(sparkConf, "spark.jars.ivy=/tmp/.ivy2/");
-    addSparkConfig(sparkConf, "spark.openlineage.facets.disabled=''");
+    addSparkConfig(sparkConf, "spark.openlineage.facets.disabled=");
 
     List<String> sparkSubmit =
         new ArrayList(Arrays.asList("./bin/spark-submit", "--master", "local"));
