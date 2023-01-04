@@ -28,6 +28,7 @@ ext {
 dependencies {
     implementation 'org.apache.commons:commons-lang3:3.12.0'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.9.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.0'
 }
 
 compileJava {
@@ -53,6 +54,19 @@ task getDependencies(type: Copy) {
     exclude "**/*.dylib"
     into 'build/dependencies'
 }
+
+test {
+    useJUnitPlatform()
+    testLogging {
+        events "passed", "skipped", "failed"
+        showStandardStreams = true
+    }
+    systemProperties = [
+        'junit.platform.output.capture.stdout': 'true',
+        'junit.platform.output.capture.stderr': 'true',
+    ]
+}
+
 
 publishing {
     publications {

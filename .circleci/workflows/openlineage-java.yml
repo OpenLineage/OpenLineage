@@ -8,16 +8,6 @@ workflows:
           requires:
             - compile-integration-sql-java-linux
             - compile-integration-sql-java-macos
-      - build-integration-flink:
-          matrix:
-            parameters:
-              flink-version: [ '1.14.5', '1.15.1' ]
-      - integration-test-integration-flink:
-          matrix:
-            parameters:
-              flink-version: [ '1.14.5', '1.15.1' ]
-          requires:
-            - build-integration-flink
       - publish-snapshot-client-java:
           filters:
             branches:
@@ -25,24 +15,6 @@ workflows:
           context: release
           requires:
             - build-client-java
-      - build-integration-spark:
-          matrix:
-            parameters:
-              spark-version: [ '2.4.6', '3.1.3', '3.2.2', '3.3.1' ]
-      - integration-test-integration-spark:
-          context: integration-tests
-          matrix:
-            parameters:
-              spark-version: [ '2.4.6', '3.1.3', '3.2.2', '3.3.1' ]
-          requires:
-            - build-integration-spark
-      - publish-snapshot-integration-spark:
-          filters:
-            branches:
-              only: main
-          context: release
-          requires:
-            - integration-test-integration-spark
       - publish-javadoc:
           filters:
             branches:
@@ -50,6 +22,5 @@ workflows:
           context: release
       - workflow_complete:
           requires:
-            - publish-snapshot-integration-spark
-            - integration-test-integration-spark
-            - integration-test-integration-flink
+            - publish-snapshot-client-java
+            - publish-javadoc

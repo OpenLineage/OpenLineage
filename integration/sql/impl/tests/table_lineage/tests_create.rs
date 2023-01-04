@@ -1,10 +1,8 @@
 // Copyright 2018-2022 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
 
-use openlineage_sql::SqlMeta;
-
-mod test_utils;
-use test_utils::*;
+use crate::test_utils::*;
+use openlineage_sql::TableLineage;
 
 #[test]
 fn test_create_table() {
@@ -17,10 +15,12 @@ fn test_create_table() {
         FirstName varchar(255),
         Address varchar(255),
         City varchar(255));"
-        ),
-        SqlMeta {
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
             in_tables: vec![],
-            out_tables: table("Persons")
+            out_tables: tables(vec!["Persons"])
         }
     )
 }
@@ -28,10 +28,12 @@ fn test_create_table() {
 #[test]
 fn test_create_table_like() {
     assert_eq!(
-        test_sql("CREATE TABLE new LIKE original"),
-        SqlMeta {
-            in_tables: table("original"),
-            out_tables: table("new")
+        test_sql("CREATE TABLE new LIKE original")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["original"]),
+            out_tables: tables(vec!["new"])
         }
     )
 }
@@ -39,10 +41,12 @@ fn test_create_table_like() {
 #[test]
 fn test_create_table_clone() {
     assert_eq!(
-        test_sql("CREATE OR REPLACE TABLE new CLONE original"),
-        SqlMeta {
-            in_tables: table("original"),
-            out_tables: table("new")
+        test_sql("CREATE OR REPLACE TABLE new CLONE original")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["original"]),
+            out_tables: tables(vec!["new"])
         }
     )
 }
@@ -56,10 +60,12 @@ fn test_create_and_insert() {
         key int,
         value varchar(255));
         INSERT INTO Persons SELECT key, value FROM temp.table;"
-        ),
-        SqlMeta {
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
             in_tables: tables(vec!["temp.table"]),
-            out_tables: table("Persons")
+            out_tables: tables(vec!["Persons"])
         }
     )
 }
@@ -70,10 +76,12 @@ fn create_and_insert_multiple_stmts() {
         test_multiple_sql(vec![
             "CREATE TABLE Persons (key int, value varchar(255));",
             "INSERT INTO Persons SELECT key, value FROM temp.table;"
-        ]),
-        SqlMeta {
+        ])
+        .unwrap()
+        .table_lineage,
+        TableLineage {
             in_tables: tables(vec!["temp.table"]),
-            out_tables: table("Persons")
+            out_tables: tables(vec!["Persons"])
         }
     )
 }
@@ -101,10 +109,12 @@ fn create_hive_external_table_if_not_exist() {
                     TBLPROPERTIES ('parquet.compression'='SNAPPY');
         ",
             "hive"
-        ),
-        SqlMeta {
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
             in_tables: vec![],
-            out_tables: table("Testing_Versions_latest")
+            out_tables: tables(vec!["Testing_Versions_latest"])
         }
     )
 }
@@ -119,10 +129,12 @@ fn create_replace_as_select() {
             FROM dwh_dev.commons.calendar
             WHERE date BETWEEN '2022-01-01' AND CURRENT_DATE
         )"
-        ),
-        SqlMeta {
-            in_tables: table("dwh_dev.commons.calendar"),
-            out_tables: table("DATA_TEAM_DEMOS.ALL_DAYS")
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["dwh_dev.commons.calendar"]),
+            out_tables: tables(vec!["DATA_TEAM_DEMOS.ALL_DAYS"])
         }
     )
 }

@@ -10,7 +10,13 @@ from openlineage.airflow.extractors.dbapi_utils import (
 )
 from openlineage.airflow.utils import get_connection
 from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
-from openlineage.client.facet import BaseFacet, SqlJobFacet
+from openlineage.client.facet import (
+    BaseFacet,
+    SqlJobFacet,
+    ColumnLineageDatasetFacet,
+    ColumnLineageDatasetFacetFieldsAdditional,
+    ColumnLineageDatasetFacetFieldsAdditionalInputFields
+)
 from openlineage.common.sql import SqlMeta, parse, DbTableMeta
 from openlineage.common.dataset import Dataset, Source
 from abc import abstractmethod
@@ -95,6 +101,8 @@ class SqlExtractor(BaseExtractor):
 
         for ds in outputs:
             ds.output_facets = self._get_output_facets()
+            if len(outputs) == 1:  # Should be always true
+                self.attach_column_facet(ds, sql_meta)
 
         db_specific_run_facets = self._get_db_specific_run_facets(
             source, inputs, outputs
@@ -182,6 +190,26 @@ class SqlExtractor(BaseExtractor):
     @staticmethod
     def _normalize_name(name: str) -> str:
         return name.lower()
+
+    def attach_column_facet(self, dataset, sql_meta: SqlMeta):
+        if not len(sql_meta.column_lineage):
+            return
+        dataset.custom_facets['columnLineage'] = ColumnLineageDatasetFacet(
+            fields={
+                column_lineage.descendant.name: ColumnLineageDatasetFacetFieldsAdditional(
+                    inputFields=[
+                        ColumnLineageDatasetFacetFieldsAdditionalInputFields(
+                            namespace=dataset.source.name,
+                            name=column_meta.origin.qualified_name if column_meta.origin else "",
+                            field=column_meta.name
+                        ) for column_meta in column_lineage.lineage
+                    ],
+                    transformationType="",
+                    transformationDescription=""
+                ) for column_lineage in sql_meta.column_lineage
+
+            }
+        )
 
     def _information_schema_query(self, tables: List[DbTableMeta]) -> str:
         tables_hierarchy = self._get_tables_hierarchy(

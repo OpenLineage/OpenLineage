@@ -20,7 +20,7 @@
     *Includes a script to build and tag the image plus jobs to verify the build on every CI run and publish to Docker Hub.*
 * SQL: add `ExtractionErrorRunFacet` [`#1442`](https://github.com/OpenLineage/OpenLineage/pull/1442) [@mobuchowski](https://github.com/mobuchowski)  
     *Adds a facet to the spec to reflect internal processing errors, especially failed or incomplete parsing of SQL jobs.*
-* SQL: add column-level lineage to SQL parser [`#1432`](https://github.com/OpenLineage/OpenLineage/pull/1432) [`#1461`](https://github.com/OpenLineage/OpenLineage/pull/1461) [@mobuchowski](https://github.com/mobuchowski)  
+* SQL: add column-level lineage to SQL parser [`#1432`](https://github.com/OpenLineage/OpenLineage/pull/1432) [`#1461`](https://github.com/OpenLineage/OpenLineage/pull/1461) [@mobuchowski](https://github.com/mobuchowski) [@StarostaGit](https://github.com/StarostaGit)  
     *Adds support for extracting column-level lineage from SQL statements in the parser, including adjustments to Rust-Python and Rust-Java interfaces and the Airflow integration's SQL extractor to make use of the feature. Also includes more tests, removal of the old parser, and removal of the common-build cache in CI (which was breaking the parser).*
 * Spark: pass config parameters to the OL client [`#1383`](https://github.com/OpenLineage/OpenLineage/pull/1383) [@tnazarew](https://github.com/tnazarew)  
     *Adds a mechanism for making new lineage consumers transparent to the integration, easing the process of setting up new types of consumers.*
@@ -32,14 +32,14 @@
     *Fixes typos in the SPDX license headers.*
 
 
-## [0.18.0](https://github.com/OpenLineage/OpenLineage/compare/0.17.0...0.18.0) - 2022-12-6
+## [0.18.0](https://github.com/OpenLineage/OpenLineage/compare/0.17.0...0.18.0) - 2022-12-8
 ### Added
 * Airflow: support `SQLExecuteQueryOperator` [`#1379`](https://github.com/OpenLineage/OpenLineage/pull/1379) [@JDarDagran](https://github.com/JDarDagran)  
     *Changes the `SQLExtractor` and adds support for the dynamic assignment of extractors based on `conn_type`.*
 * Airflow: introduce a new extractor for `SFTPOperator` [`#1263`](https://github.com/OpenLineage/OpenLineage/pull/1263) [@sekikn](https://github.com/sekikn)  
     *Adds an extractor for tracing file transfers between local file systems.*
 * Airflow: add Sagemaker extractors [`#1136`](https://github.com/OpenLineage/OpenLineage/pull/1136) [@fhoda](https://github.com/fhoda)  
-    *Creates extractors for `SagemakeProcessingOperator` and `SagemakerTransformOperator`.*
+    *Creates extractors for `SagemakerProcessingOperator` and `SagemakerTransformOperator`.*
 * Airflow: add S3 extractor for Airflow operators [`#1166`](https://github.com/OpenLineage/OpenLineage/pull/1166) [@fhoda](https://github.com/fhoda)  
     *Creates an extractor for the `S3CopyObject` in the Airflow integration.*  
 * Airflow: implement DagRun listener [`#1286`](https://github.com/OpenLineage/OpenLineage/pull/1286) [@mobuchowski](https://github.com/mobuchowski)  

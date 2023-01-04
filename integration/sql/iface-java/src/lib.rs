@@ -7,7 +7,9 @@ use jni::objects::{JClass, JList, JObject, JString, JValue};
 use jni::sys::{jobject, jstring};
 use jni::JNIEnv;
 
-use rust_impl::{get_generic_dialect, parse_multiple_statements};
+use rust_impl::{
+    get_generic_dialect, parse_multiple_statements, DbTableMeta, SqlMeta, TableLineage,
+};
 
 trait AsJavaObject {
     fn as_java_object<'a, 'b>(&'b self, env: &'a JNIEnv) -> Result<JObject<'a>> {
@@ -31,7 +33,7 @@ impl AsJavaObject for rust_impl::SqlMeta {
     }
 
     fn ctor_signature() -> &'static str {
-        "(Ljava/util/List;Ljava/util/List;)V"
+        "(Ljava/util/List;Ljava/util/List;Ljava/util/List;)V"
     }
 
     fn ctor_arguments<'a, 'b>(&'b self, env: &'a JNIEnv) -> Result<Box<[JValue<'a>]>> {
@@ -44,19 +46,28 @@ impl AsJavaObject for rust_impl::SqlMeta {
         let outs = env
             .new_object(array_list_class, "()V", &[])
             .expect("Coudln't create a new ArrayList");
+        let columns = env
+            .new_object(array_list_class, "()V", &[])
+            .expect("Coudln't create a new ArrayList");
         let ins = JList::from_env(env, ins).unwrap();
         let outs = JList::from_env(env, outs).unwrap();
+        let columns = JList::from_env(env, columns).unwrap();
 
-        for e in &self.in_tables {
+        for e in &self.table_lineage.in_tables {
             ins.add(e.as_java_object(env)?)?;
         }
-        for e in &self.out_tables {
+        for e in &self.table_lineage.out_tables {
             outs.add(e.as_java_object(env)?)?;
+        }
+
+        for e in &self.column_lineage {
+            columns.add(e.as_java_object(env)?)?;
         }
 
         Ok(Box::new([
             JValue::Object(ins.into()),
             JValue::Object(outs.into()),
+            JValue::Object(columns.into()),
         ]))
     }
 }
@@ -85,6 +96,58 @@ impl AsJavaObject for rust_impl::DbTableMeta {
             JValue::Object(arg1),
             JValue::Object(arg2),
             JValue::Object(arg3),
+        ]))
+    }
+}
+
+impl AsJavaObject for rust_impl::ColumnMeta {
+    fn java_class_name() -> &'static str {
+        "io/openlineage/sql/ColumnMeta"
+    }
+
+    fn ctor_signature() -> &'static str {
+        "(Lio/openlineage/sql/DbTableMeta;Ljava/lang/String;)V"
+    }
+
+    fn ctor_arguments<'a, 'b>(&'b self, env: &'a JNIEnv) -> Result<Box<[JValue<'a>]>> {
+        let arg1 = match &self.origin {
+            Some(d) => d.as_java_object(env).unwrap().into(),
+            None => JObject::null(),
+        };
+        let arg2 = env.new_string(&self.name)?.into();
+
+        Ok(Box::new([JValue::Object(arg1), JValue::Object(arg2)]))
+    }
+}
+
+impl AsJavaObject for rust_impl::ColumnLineage {
+    fn java_class_name() -> &'static str {
+        "io/openlineage/sql/ColumnLineage"
+    }
+
+    fn ctor_signature() -> &'static str {
+        "(Lio/openlineage/sql/ColumnMeta;Ljava/util/List;)V"
+    }
+
+    fn ctor_arguments<'a, 'b>(&'b self, env: &'a JNIEnv) -> Result<Box<[JValue<'a>]>> {
+        let array_list_class = env
+            .find_class("java/util/ArrayList")
+            .expect("Couldn't find the ArrayList class");
+
+        let lineage = env
+            .new_object(array_list_class, "()V", &[])
+            .expect("Coudln't create a new ArrayList");
+        let lineage = JList::from_env(env, lineage).unwrap();
+
+        for e in &self.lineage {
+            lineage.add(e.as_java_object(env)?)?;
+        }
+
+        let descendant = self.descendant.as_java_object(env)?;
+
+        Ok(Box::new([
+            JValue::Object(descendant),
+            JValue::Object(lineage.into()),
         ]))
     }
 }
@@ -131,8 +194,7 @@ pub extern "system" fn Java_io_openlineage_sql_OpenLineageSql_parse(
     match f() {
         Ok(obj) => obj,
         Err(err) => {
-            env.throw_new("java/lang/RuntimeException", err.to_string())
-                .unwrap();
+            env.throw(err.to_string());
             JObject::null().into_inner()
         }
     }

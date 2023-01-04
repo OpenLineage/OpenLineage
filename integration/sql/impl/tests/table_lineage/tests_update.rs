@@ -1,18 +1,18 @@
 // Copyright 2018-2022 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
 
-use openlineage_sql::SqlMeta;
-
-mod test_utils;
-use test_utils::*;
+use crate::test_utils::*;
+use openlineage_sql::TableLineage;
 
 #[test]
 fn update_table() {
     assert_eq!(
-        test_sql("UPDATE table0 SET col0 = val0 WHERE col1 = val1"),
-        SqlMeta {
+        test_sql("UPDATE table0 SET col0 = val0 WHERE col1 = val1")
+            .unwrap()
+            .table_lineage,
+        TableLineage {
             in_tables: vec![],
-            out_tables: table("table0")
+            out_tables: tables(vec!["table0"])
         }
     );
 }
@@ -26,10 +26,12 @@ fn update_table_from() {
                 supply_constrained = false
             FROM dataset.NewArrivals n
             WHERE i.product = n.product"
-        ),
-        SqlMeta {
-            in_tables: table("dataset.NewArrivals"),
-            out_tables: table("dataset.Inventory")
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["dataset.NewArrivals"]),
+            out_tables: tables(vec!["dataset.Inventory"])
         }
     )
 }
@@ -44,10 +46,12 @@ fn update_table_from_subquery() {
             WHERE Inventory.product = NewArrivals.product),
             supply_constrained = false
             WHERE product IN (SELECT product FROM dataset.NewArrivals)"
-        ),
-        SqlMeta {
-            in_tables: table("dataset.NewArrivals"),
-            out_tables: table("dataset.Inventory")
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["dataset.NewArrivals"]),
+            out_tables: tables(vec!["dataset.Inventory"])
         }
     )
 }

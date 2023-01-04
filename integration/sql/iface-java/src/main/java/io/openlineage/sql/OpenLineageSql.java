@@ -38,7 +38,8 @@ public final class OpenLineageSql {
       return Optional.empty();
     }
     try {
-      return Optional.of(parse(sql, null, null));
+      SqlMeta x = parse(sql, null, null);
+      return Optional.ofNullable(x);
     } catch (RuntimeException e) {
       return Optional.empty();
     }
