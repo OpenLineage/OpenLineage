@@ -9,6 +9,8 @@ set -e
 
 if [ -x "$(command -v /usr/local/bin/python3.7)" ]; then
   /usr/local/bin/python3.7 -m venv .env
+elif [ -x "$(command -v python3.7)" ]; then
+  python3.7 -m venv .env
 else
   python -m venv .env
 fi
