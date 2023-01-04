@@ -59,7 +59,7 @@ This produces an `openlineage-sql.jar` in the `iface-java/target` directory.
 The interface can be manually tested by running the integration test from the `iface-java` directory. When no arguments are provided, the test runs in interactive mode.
 
 ```bash
-./tests/integration/run_test.sh [sql]
+./src/test/integration/run_test.sh [sql]
 ```
 
 #### Todo:

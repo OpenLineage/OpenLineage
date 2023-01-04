@@ -1,9 +1,11 @@
 # Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Optional, List
-from openlineage.common.sql import DbTableMeta
+from typing import Optional, List, TYPE_CHECKING
 from openlineage.client.utils import RedactMixin
+
+if TYPE_CHECKING:
+    from openlineage.common.sql import DbTableMeta
 
 
 class DbColumn(RedactMixin):

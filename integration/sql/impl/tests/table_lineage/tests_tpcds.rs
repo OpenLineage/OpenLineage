@@ -1,10 +1,8 @@
 // Copyright 2018-2022 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
 
-use openlineage_sql::SqlMeta;
-
-mod test_utils;
-use test_utils::*;
+use crate::test_utils::*;
+use openlineage_sql::TableLineage;
 
 #[test]
 fn test_tpcds_cte_query() {
@@ -83,7 +81,7 @@ fn test_tpcds_cte_query() {
                         t_s_secyear.customer_preferred_cust_flag
             LIMIT 100;
             ",
-    ), SqlMeta {
+    ).unwrap().table_lineage, TableLineage {
         in_tables: tables(vec![
             "date_dim",
             "store_sales",
@@ -120,8 +118,10 @@ fn test_tcpds_query_1() {
                AND ctr1.ctr_customer_sk = c_customer_sk
         ORDER  BY c_customer_id
         LIMIT 100;",
-        ),
-        SqlMeta {
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
             in_tables: tables(vec!["customer", "date_dim", "store", "store_returns",]),
             out_tables: vec![]
         }
@@ -211,8 +211,10 @@ fn test_tcpds_query_2() {
                    AND d_year = 1998 + 1) z
     WHERE  d_week_seq1 = d_week_seq2 - 53
     ORDER  BY d_week_seq1;",
-        ),
-        SqlMeta {
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
             in_tables: tables(vec!["catalog_sales", "date_dim", "web_sales",]),
             out_tables: vec![]
         }
@@ -243,8 +245,10 @@ fn test_tcpds_query_3() {
                   brand_id
         LIMIT 100;
         ",
-        ),
-        SqlMeta {
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
             in_tables: tables(vec!["date_dim", "item", "store_sales",]),
             out_tables: vec![]
         }
@@ -408,8 +412,10 @@ fn test_tcpds_query_4() {
                   t_s_secyear.customer_preferred_cust_flag
         LIMIT 100;
         ",
-        ),
-        SqlMeta {
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
             in_tables: tables(vec![
                 "catalog_sales",
                 "customer",
@@ -551,7 +557,7 @@ fn test_tcpds_query_5() {
             ORDER BY channel ,
                      id
             LIMIT 100; ",
-    ), SqlMeta {
+    ).unwrap().table_lineage, TableLineage {
         in_tables: tables(vec![
             "catalog_page",
             "catalog_returns",
@@ -596,8 +602,10 @@ fn test_tcpds_query_6() {
         ORDER  BY cnt
         LIMIT 100;
     ",
-        ),
-        SqlMeta {
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
             in_tables: tables(vec![
                 "customer",
                 "customer_address",
@@ -639,8 +647,10 @@ fn test_tcpds_query_7() {
         ORDER  BY i_item_id
         LIMIT 100;
     ",
-        ),
-        SqlMeta {
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
             in_tables: tables(vec![
                 "customer_demographics",
                 "date_dim",
@@ -701,8 +711,10 @@ fn test_tcpds_query_8() {
         ORDER  BY s_store_name
         LIMIT 100;
     ",
-        ),
-        SqlMeta {
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
             in_tables: tables(vec![
                 "customer",
                 "customer_address",
@@ -783,8 +795,10 @@ fn test_tcpds_query_9() {
         FROM   reason
         WHERE  r_reason_sk = 1;
     ",
-        ),
-        SqlMeta {
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
             in_tables: tables(vec!["reason", "store_sales"]),
             out_tables: vec![]
         }

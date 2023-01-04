@@ -417,6 +417,7 @@ jobs:
     resource_class: medium
     steps:
       - *checkout_project_root
+      - run: RUN_TESTS=true bash iface-py/script/setup-macos.sh
       - run: RUN_TESTS=true bash iface-py/script/build-macos.sh
       - persist_to_workspace:
           root: ./iface-py
@@ -529,16 +530,9 @@ jobs:
           install_parser: << parameters.install_parser >>
       - run: pip install tox==3.27.1 mypy==0.971
       - run: python -m mypy --install-types --non-interactive --ignore-missing-imports openlineage
-      - restore_cache:
-          keys:
-            - v1-toxenv-<< parameters.airflow-version >>-{{ checksum "setup.cfg" }}-{{ checksum "setup.py" }}
       - run: tox -e py3-<< parameters.airflow-version >>
       - store_test_results:
           path: test-results
-      - save_cache:
-          paths:
-            - ./.tox
-          key: v1-toxenv-<< parameters.airflow-version >>-{{ checksum "setup.cfg" }}-{{ checksum "setup.py" }}
       - run: bash <(curl -s https://codecov.io/bash)
 
   build-integration-airflow:
@@ -809,6 +803,12 @@ workflows:
               only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
             branches:
               ignore: /.*/
+      - build-integration-sql-java:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+            branches:
+              ignore: /.*/
       - build-integration-sql:
           matrix:
             alias: build-integration-sql-x86
@@ -860,3 +860,4 @@ workflows:
             - build-integration-sql-x86
             - build-integration-sql-arm
             - build-integration-sql-macos
+            - build-integration-sql-java

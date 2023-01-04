@@ -32,12 +32,13 @@ fi
 ./gradlew shadowJar
 
 # Run a simple integration test
-printf "\n------ Running integration tests ------\n"
-EXPECTED="{{\"inTables\": [table1], \"outTables\": []}}"
-OUTPUT=$(./tests/integration/run_test.sh "SELECT * FROM table1;")
+printf "\n------ Running smoke test ------\n"
+EXPECTED="{{\"inTables\": [table1], \"outTables\": [], \"columnLineage\": []}}"
+OUTPUT=$(./src/test/integration/run_test.sh "SELECT * FROM table1;")
 if [ "$OUTPUT" = "$EXPECTED" ]; then
-    printf "\n${GREEN}Integration Tests Passed!${NC}\n"
+    printf "\n${GREEN}Smoke Test Passed!${NC}\n"
 else
-    printf "\n${RED}Integration Tests Failed!${NC}\n"
+    printf "\n${RED}Smoke Test Failed!${NC}\n"
+    printf "Expected ${EXPECTED}\n Got ${OUTPUT}"
     exit 1
 fi
