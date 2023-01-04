@@ -1,12 +1,12 @@
 {
   "eventType" : "START",
   "job" : {
-    "namespace" : "testV2Commands",
-    "name" : "open_lineage_integration_delta.append_data_exec_v1"
+    "namespace" : "delta-namespace",
+    "name" : "delta_integration_test.append_data_exec_v1"
   },
   "inputs": [ {
     "namespace" : "file",
-    "name" : "/tmp/versioned_input_table",
+    "name" : "/tmp/delta/versioned_input_table",
     "facets" : {
       "dataSource": {
         "name": "file",
@@ -34,7 +34,7 @@
       "symlinks": {
         "identifiers": [
           {
-            "namespace": "/tmp",
+            "namespace": "/tmp/delta",
             "name": "default.versioned_input_table",
             "type": "TABLE"
           }

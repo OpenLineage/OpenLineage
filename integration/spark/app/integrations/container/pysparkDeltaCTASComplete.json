@@ -2,28 +2,9 @@
   "eventType": "COMPLETE",
   "inputs": [],
   "job": {
-    "name": "open_lineage_integration_delta.atomic_create_table_as_select",
-    "namespace": "testCTASDelta"
+    "name": "delta_integration_test.atomic_create_table_as_select",
+    "namespace": "delta-namespace"
   },
-  "inputs" : [ {
-    "namespace" : "file",
-    "name" : "/tmp/delta/temp",
-    "facets" : {
-      "dataSource" : {
-        "name" : "file",
-        "uri" : "file"
-      },
-      "schema" : {
-        "fields" : [ {
-          "name" : "a",
-          "type" : "long"
-        }, {
-          "name" : "b",
-          "type" : "long"
-        } ]
-      }
-    }
-  } ],
   "outputs": [
     {
       "facets": {

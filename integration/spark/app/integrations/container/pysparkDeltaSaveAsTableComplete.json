@@ -1,8 +1,8 @@
 {
   "eventType": "COMPLETE",
   "job": {
-    "name": "open_lineage_delta_save_as_table.execute_create_data_source_table_as_select_command",
-    "namespace": "testDeltaSaveAsTable"
+    "name": "delta_integration_test.execute_create_data_source_table_as_select_command",
+    "namespace": "delta-namespace"
   },
   "inputs": [],
   "outputs": [

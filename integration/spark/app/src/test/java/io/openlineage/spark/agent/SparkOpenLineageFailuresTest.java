@@ -31,6 +31,7 @@ import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -69,6 +70,16 @@ class SparkOpenLineageFailuresTest {
     if (mockServerClient != null) {
       mockServerClient.reset();
     }
+  }
+
+  @BeforeAll
+  public static void setup() {
+    mockServerClient =
+        new MockServerClient(
+            openLineageClientMockContainer.getHost(),
+            openLineageClientMockContainer.getServerPort());
+
+    Awaitility.await().until(openLineageClientMockContainer::isRunning);
   }
 
   @Test

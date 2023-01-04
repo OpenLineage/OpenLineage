@@ -1,8 +1,8 @@
 {
   "eventType" : "START",
   "job" : {
-    "namespace" : "testV2Commands",
-    "name" : "open_lineage_integration_delta.atomic_replace_table"
+    "namespace" : "delta-namespace",
+    "name" : "delta_integration_test.atomic_replace_table"
   },
   "inputs" : [ ],
   "outputs" : [ ]
