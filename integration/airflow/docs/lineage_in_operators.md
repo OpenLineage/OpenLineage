@@ -31,7 +31,7 @@ This information needs to be shared for each dataset being read and written in a
 
 For metadata about the execution of the task, a queryId or executionId should be exposed for data sources that support them. With that identifier, we can query the data source about the execution and gather statistics, such as "d" number of records read/written.
 
-The astro library also includes data quality assertions, which we collect with OpenLineage and expose in the Datakin product. The OpenLineage [DataQuality facet specification can be found in here](https://github.com/OpenLineage/OpenLineage/blob/main/spec/facets/DataQualityAssertionsDatasetFacet.json).
+An operator can also includes data quality assertions. The  [DataQuality facet specification can be found in here](https://github.com/OpenLineage/OpenLineage/blob/main/spec/facets/DataQualityAssertionsDatasetFacet.json).
 
 ## Implementation
 Each TaskInstance exposes the following methods returning the structure defined below:
