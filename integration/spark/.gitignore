@@ -1,2 +1,4 @@
 bin/
 *.class
+*/metastore_db
+*/spark-warehouse

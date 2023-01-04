@@ -271,7 +271,7 @@ class StorageDatasetFacet(BaseFacet):
 @attr.s
 class OwnershipJobFacetOwners:
     name: str = attr.ib()
-    type: str = attr.ib()
+    type: Optional[str] = attr.ib(default=None)
 
 
 @attr.s
@@ -368,3 +368,25 @@ class ColumnLineageDatasetFacet(BaseFacet):
     @staticmethod
     def _get_schema() -> str:
         return SCHEMA_URI + "#/definitions/ColumnLineageDatasetFacet"
+
+
+@attr.s
+class ProcessingEngineRunFacet(BaseFacet):
+    version: str = attr.ib()
+    name: str = attr.ib()
+    openlineageAdapterVersion: str = attr.ib()
+
+
+@attr.s
+class ExtractionError(BaseFacet):
+    errorMessage: str = attr.ib()
+    stackTrace: Optional[str] = attr.ib()
+    task: Optional[str] = attr.ib()
+    taskNumber: Optional[int] = attr.ib()
+
+
+@attr.s
+class ExtractionErrorRunFacet(BaseFacet):
+    totalTasks: int = attr.ib()
+    failedTasks: int = attr.ib()
+    errors: List[ExtractionError] = attr.ib()

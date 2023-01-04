@@ -16,17 +16,17 @@ import com.google.common.util.concurrent.ListenableFuture;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClientUtils;
 import java.nio.ByteBuffer;
-import java.util.Optional;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 @Slf4j
 public class KinesisTransport extends Transport {
   private final String streamName;
   private final String region;
-  private final Optional<String> roleArn;
+  private final String roleArn;
 
   private final KinesisProducer producer;
 
@@ -48,15 +48,13 @@ public class KinesisTransport extends Transport {
     this.streamName = kinesisConfig.getStreamName();
     this.region = kinesisConfig.getRegion();
     this.roleArn = kinesisConfig.getRoleArn();
-
     KinesisProducerConfiguration config =
         KinesisProducerConfiguration.fromProperties(kinesisConfig.getProperties());
     config.setRegion(this.region);
-    roleArn.ifPresent(
-        s ->
-            config.setCredentialsProvider(
-                new STSAssumeRoleSessionCredentialsProvider.Builder(s, "OLProducer").build()));
-
+    if (StringUtils.isNotBlank(roleArn)) {
+      config.setCredentialsProvider(
+          new STSAssumeRoleSessionCredentialsProvider.Builder(roleArn, "OLProducer").build());
+    }
     this.producer = new KinesisProducer(config);
     this.listeningExecutor = Executors.newSingleThreadExecutor();
   }

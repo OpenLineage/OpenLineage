@@ -530,16 +530,9 @@ jobs:
           install_parser: << parameters.install_parser >>
       - run: pip install tox==3.27.1 mypy==0.971
       - run: python -m mypy --install-types --non-interactive --ignore-missing-imports openlineage
-      - restore_cache:
-          keys:
-            - v1-toxenv-<< parameters.airflow-version >>-{{ checksum "setup.cfg" }}-{{ checksum "setup.py" }}
       - run: tox -e py3-<< parameters.airflow-version >>
       - store_test_results:
           path: test-results
-      - save_cache:
-          paths:
-            - ./.tox
-          key: v1-toxenv-<< parameters.airflow-version >>-{{ checksum "setup.cfg" }}-{{ checksum "setup.py" }}
       - run: bash <(curl -s https://codecov.io/bash)
 
   build-integration-airflow:
@@ -679,7 +672,7 @@ jobs:
       - run: spec/release.sh
 
   build-proxy-backend:
-    working_directory: ~/openlineage/proxy
+    working_directory: ~/openlineage/proxy/backend
     docker:
       - image: cimg/openjdk:11.0
     steps:
@@ -702,7 +695,7 @@ jobs:
             - ~/.gradle
 
   build-image-proxy-backend:
-    working_directory: ~/openlineage/proxy
+    working_directory: ~/openlineage/proxy/backend
     machine:
       image: ubuntu-2004:current
     steps:
@@ -713,7 +706,7 @@ jobs:
           path: proxy.tar
 
   release-proxy-backend:
-    working_directory: ~/openlineage/proxy
+    working_directory: ~/openlineage/proxy/backend
     docker:
       - image: cimg/openjdk:11.0
     steps:
@@ -731,7 +724,7 @@ jobs:
           ./gradlew publish
 
   release-docker-proxy-backend:
-    working_directory: ~/openlineage/proxy
+    working_directory: ~/openlineage/proxy/backend
     machine:
       image: ubuntu-2004:current
     steps:

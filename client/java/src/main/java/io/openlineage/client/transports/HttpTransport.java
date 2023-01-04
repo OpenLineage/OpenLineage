@@ -24,6 +24,7 @@ import javax.annotation.Nullable;
 import lombok.NonNull;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -68,26 +69,32 @@ public final class HttpTransport extends Transport implements Closeable {
     super(Type.HTTP);
     this.http = httpClient;
     try {
-      URI configUri = httpConfig.getUrl();
-      if (configUri.getPath() != null && !configUri.getPath().equals("")) {
-        if (httpConfig.getEndpoint() != null && !httpConfig.getEndpoint().equals("")) {
-          throw new OpenLineageClientException("You can't pass both uri and endpoint parameters.");
-        }
-        this.uri = httpConfig.getUrl();
-      } else {
-        String endpoint =
-            httpConfig.getEndpoint() != null && !httpConfig.getEndpoint().equals("")
-                ? httpConfig.getEndpoint()
-                : API_V1 + "/lineage";
-        this.uri =
-            new URIBuilder(httpConfig.getUrl())
-                .setPath(httpConfig.getUrl().getPath() + endpoint)
-                .build();
-      }
+      this.uri = getUri(httpConfig);
     } catch (URISyntaxException e) {
       throw new OpenLineageClientException(e);
     }
     this.tokenProvider = httpConfig.getAuth();
+  }
+
+  private URI getUri(HttpConfig httpConfig) throws URISyntaxException {
+    URI url = httpConfig.getUrl();
+    URIBuilder builder = new URIBuilder(url);
+    if (StringUtils.isNotBlank(url.getPath())) {
+      if (StringUtils.isNotBlank(httpConfig.getEndpoint())) {
+        throw new OpenLineageClientException("You can't pass both uri and endpoint parameters.");
+      }
+    } else {
+      String endpoint =
+          StringUtils.isNotBlank(httpConfig.getEndpoint())
+              ? httpConfig.getEndpoint()
+              : API_V1 + "/lineage";
+      builder.setPath(endpoint);
+    }
+    if (httpConfig.getUrlParams() != null) {
+      httpConfig.getUrlParams().entrySet().stream()
+          .forEach(e -> builder.addParameter(e.getKey().replace("url.param.", ""), e.getValue()));
+    }
+    return builder.build();
   }
 
   @Override

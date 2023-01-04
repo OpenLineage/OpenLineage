@@ -7,6 +7,13 @@
             },
             "sql": {
                 "query": "\n    CREATE TABLE IF NOT EXISTS popular_orders_day_of_week (\n      order_day_of_week VARCHAR(64) NOT NULL,\n      order_placed_on   TIMESTAMP NOT NULL,\n      orders_placed     INTEGER NOT NULL\n    )"
+            },
+			"ownership": {
+                "owners": [
+                    {
+                        "name": "datascience"
+                    }
+                ]
             }
         },
         "name": "postgres_orders_popular_day_of_week.postgres_if_not_exists",
@@ -16,6 +23,10 @@
         "facets": {
             "airflow_runArgs": {
               "externalTrigger": false
+            },
+			"nominalTime": {
+                "nominalEndTime": "{{ is_datetime(result) }}",
+                "nominalStartTime": "{{ is_datetime(result) }}"
             }
         }
     }

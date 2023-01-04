@@ -55,7 +55,7 @@ jobs:
           function check_change () {
             MOD=$1
             shift
-            if [ $(git diff --name-only main $MOD | wc -l) -gt 0 ]; then
+            if [ $(git diff --name-only main $MOD | grep -v "README.md" | wc -l) -gt 0 ]; then
               echo "Change found in $MOD"
               if [ "$1" == "*" ]; then
                 ls -d $PWD/.circleci/workflows/* > workflow_files.txt
@@ -89,7 +89,7 @@ jobs:
             check_change integration/dagster/ openlineage-integration-python.yml openlineage-integration-dagster.yml
             check_change integration/dbt/ openlineage-integration-python.yml openlineage-integration-dbt.yml
             check_change integration/sql/ openlineage-integration-python.yml openlineage-integration-airflow.yml
-            check_change proxy openlineage-proxy.yml
+            check_change proxy/backend/ openlineage-proxy-backend.yml
           fi
           touch workflow_files.txt
           FILES=$(sort workflow_files.txt | uniq | tr "\n" " ")

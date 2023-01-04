@@ -5,19 +5,16 @@
 
 package io.openlineage.spark.agent;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import io.openlineage.client.OpenLineageYaml;
+import io.openlineage.client.transports.ApiKeyTokenProvider;
+import io.openlineage.client.transports.ConsoleConfig;
+import io.openlineage.client.transports.HttpConfig;
+import io.openlineage.client.transports.KafkaConfig;
+import io.openlineage.client.transports.KinesisConfig;
+import org.apache.spark.SparkConf;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
 
 class ArgumentParserTest {
 
@@ -26,191 +23,136 @@ class ArgumentParserTest {
   private static final String URL = "http://localhost:5000";
   private static final String RUN_ID = "ea445b5c-22eb-457a-8007-01c7c52b6e54";
   private static final String APP_NAME = "test";
+  private static final String DISABLED_FACETS = "facet1;facet2";
+  private static final String ENDPOINT = "api/v1/lineage";
+  private static final String AUTH_TYPE = "api_key";
+  private static final String API_KEY = "random_token";
 
-  public static Collection<Object[]> data() {
-    List<Object[]> pass = new ArrayList<>();
-    pass.add(
-        new Object[] {
-          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54?api_key=abc",
-          URL,
-          "v1",
-          NS_NAME,
-          JOB_NAME,
-          RUN_ID,
-          false,
-          Optional.of("abc"),
-          Optional.empty(),
-          Optional.empty(),
-          Optional.empty()
-        });
-    pass.add(
-        new Object[] {
-          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54",
-          URL,
-          "v1",
-          NS_NAME,
-          JOB_NAME,
-          RUN_ID,
-          false,
-          Optional.empty(),
-          Optional.empty(),
-          Optional.empty(),
-          Optional.empty()
-        });
-    pass.add(
-        new Object[] {
-          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54?api_key=",
-          URL,
-          "v1",
-          NS_NAME,
-          JOB_NAME,
-          RUN_ID,
-          false,
-          Optional.empty(),
-          Optional.empty(),
-          Optional.empty(),
-          Optional.empty()
-        });
-    pass.add(
-        new Object[] {
-          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name?api_key=",
-          URL,
-          "v1",
-          NS_NAME,
-          JOB_NAME,
-          null,
-          true,
-          Optional.empty(),
-          Optional.empty(),
-          Optional.empty(),
-          Optional.empty()
-        });
-    pass.add(
-        new Object[] {
-          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54?api_key=abc&myParam=xyz",
-          URL,
-          "v1",
-          NS_NAME,
-          JOB_NAME,
-          RUN_ID,
-          false,
-          Optional.of("abc"),
-          Optional.empty(),
-          Optional.empty(),
-          Optional.of(Collections.singletonMap("myParam", "xyz"))
-        });
-    pass.add(
-        new Object[] {
-          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54?api_key=&myParam=xyz",
-          URL,
-          "v1",
-          NS_NAME,
-          JOB_NAME,
-          RUN_ID,
-          false,
-          Optional.empty(),
-          Optional.empty(),
-          Optional.empty(),
-          Optional.of(Collections.singletonMap("myParam", "xyz"))
-        });
-    pass.add(
-        new Object[] {
-          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54?timeout=5000",
-          URL,
-          "v1",
-          NS_NAME,
-          JOB_NAME,
-          RUN_ID,
-          false,
-          Optional.empty(),
-          Optional.of(5000.0),
-          Optional.empty(),
-          Optional.empty()
-        });
-    pass.add(
-        new Object[] {
-          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54?timeout=",
-          URL,
-          "v1",
-          NS_NAME,
-          JOB_NAME,
-          RUN_ID,
-          false,
-          Optional.empty(),
-          Optional.empty(),
-          Optional.empty(),
-          Optional.empty()
-        });
-    pass.add(
-        new Object[] {
-          "http://localhost:5000/api/v1/namespaces/ns_name/jobs/job_name/runs/ea445b5c-22eb-457a-8007-01c7c52b6e54?app_name="
-              + APP_NAME,
-          URL,
-          "v1",
-          NS_NAME,
-          JOB_NAME,
-          RUN_ID,
-          false,
-          Optional.empty(),
-          Optional.empty(),
-          Optional.of(APP_NAME),
-          Optional.empty()
-        });
-    return pass;
-  }
-
-  @ParameterizedTest
-  @MethodSource("data")
-  void testArgument(
-      String input,
-      String host,
-      String version,
-      String namespace,
-      String jobName,
-      String runId,
-      boolean defaultRunId,
-      Optional<String> apiKey,
-      Optional<Double> timeout,
-      Optional<String> appName,
-      Optional<Map<String, String>> urlParams) {
-    ArgumentParser.ArgumentParserBuilder builder = new ArgumentParser.ArgumentParserBuilder();
-    ArgumentParser.parse(builder, input);
-    ArgumentParser parser = builder.build();
-    assertEquals(host, parser.getHost());
-    assertEquals(version, parser.getVersion());
-    assertEquals(namespace, parser.getNamespace());
-    assertEquals(jobName, parser.getJobName());
-    if (defaultRunId) {
-      assertNull(parser.getParentRunId());
-    } else {
-      assertEquals(runId, parser.getParentRunId());
-    }
-    assertEquals(apiKey, parser.getApiKey());
-    assertEquals(timeout, parser.getTimeout());
-    assertEquals(appName, parser.getAppName());
-    assertEquals(urlParams, parser.getUrlParams());
-    urlParams.ifPresent(
-        par -> par.forEach((k, v) -> assertEquals(par.get(k), parser.getUrlParam(k))));
+  @Test
+  void testDefaults() {
+    ArgumentParser argumentParser = ArgumentParser.parse(new SparkConf());
+    assertEquals(
+        ArgumentParser.DEFAULT_DISABLED_FACETS.split(";")[0],
+        argumentParser.getOpenLineageYaml().getFacetsConfig().getDisabledFacets()[0]);
+    assert (argumentParser.getOpenLineageYaml().getTransportConfig() instanceof HttpConfig);
   }
 
   @Test
-  void testGetDisabledFacets() {
-    ArgumentParser.ArgumentParserBuilder builder = new ArgumentParser.ArgumentParserBuilder();
-    builder.host("host");
-    builder.disabledFacets("spark_unknown;spark.logicalPlan");
-    ArgumentParser parser = builder.build();
+  void testTransportTypes() {
+    ArgumentParser argumentParserConsole =
+        ArgumentParser.parse(
+            new SparkConf().set(ArgumentParser.SPARK_CONF_TRANSPORT_TYPE, "console"));
+    ArgumentParser argumentParserHttp =
+        ArgumentParser.parse(new SparkConf().set(ArgumentParser.SPARK_CONF_TRANSPORT_TYPE, "http"));
+    ArgumentParser argumentParserKafka =
+        ArgumentParser.parse(
+            new SparkConf().set(ArgumentParser.SPARK_CONF_TRANSPORT_TYPE, "kafka"));
+    ArgumentParser argumentParserKinesis =
+        ArgumentParser.parse(
+            new SparkConf().set(ArgumentParser.SPARK_CONF_TRANSPORT_TYPE, "kinesis"));
 
-    assertThat(parser.getDisabledFacets())
-        .contains("spark_unknown")
-        .contains("spark.logicalPlan")
-        .hasSize(2);
+    assert (argumentParserConsole.getOpenLineageYaml().getTransportConfig()
+        instanceof ConsoleConfig);
+    assert (argumentParserHttp.getOpenLineageYaml().getTransportConfig() instanceof HttpConfig);
+    assert (argumentParserKafka.getOpenLineageYaml().getTransportConfig() instanceof KafkaConfig);
+    assert (argumentParserKinesis.getOpenLineageYaml().getTransportConfig()
+        instanceof KinesisConfig);
   }
 
   @Test
-  void testGetDisabledFacetsWhenNoEntry() {
-    ArgumentParser.ArgumentParserBuilder builder = new ArgumentParser.ArgumentParserBuilder();
-    ArgumentParser parser = builder.build();
+  void testLoadingSparkConfig() {
+    SparkConf sparkConf =
+        new SparkConf()
+            .set(ArgumentParser.SPARK_CONF_NAMESPACE, NS_NAME)
+            .set(ArgumentParser.SPARK_CONF_JOB_NAME, JOB_NAME)
+            .set(ArgumentParser.SPARK_CONF_PARENT_RUN_ID, RUN_ID)
+            .set(ArgumentParser.SPARK_CONF_APP_NAME, APP_NAME);
+    ArgumentParser argumentParser = ArgumentParser.parse(sparkConf);
+    assertEquals(NS_NAME, argumentParser.getNamespace());
+    assertEquals(JOB_NAME, argumentParser.getJobName());
+    assertEquals(RUN_ID, argumentParser.getParentRunId());
+    assertEquals(APP_NAME, argumentParser.getAppName());
+  }
 
-    assertThat(parser.getDisabledFacets()).contains("spark_unknown").hasSize(1);
+  @Test
+  void testConfToHttpConfig() {
+    SparkConf sparkConf =
+        new SparkConf()
+            .set("spark.openlineage.transport.type", "http")
+            .set("spark.openlineage.transport.url", URL)
+            .set("spark.openlineage.transport.endpoint", ENDPOINT)
+            .set("spark.openlineage.transport.auth.type", AUTH_TYPE)
+            .set("spark.openlineage.transport.auth.apiKey", API_KEY)
+            .set("spark.openlineage.transport.timeout", "5000")
+            .set("spark.openlineage.facets.disabled", DISABLED_FACETS)
+            .set("spark.openlineage.transport.urlParams.test1", "test1")
+            .set("spark.openlineage.transport.urlParams.test2", "test2");
+
+    OpenLineageYaml openLineageYaml = ArgumentParser.extractOpenlineageConfFromSparkConf(sparkConf);
+    HttpConfig transportConfig = (HttpConfig) openLineageYaml.getTransportConfig();
+    assertEquals(URL, transportConfig.getUrl().toString());
+    assertEquals(ENDPOINT, transportConfig.getEndpoint());
+    assert (transportConfig.getAuth() != null);
+    assert (transportConfig.getAuth() instanceof ApiKeyTokenProvider);
+    assertEquals("Bearer random_token", transportConfig.getAuth().getToken());
+    assertEquals(5000, transportConfig.getTimeout());
+  }
+
+  @Test
+  void testDeprecatedConfig() {
+    SparkConf sparkConf =
+        new SparkConf()
+            .set("spark.openlineage.host", URL)
+            .set("spark.openlineage.version", "1")
+            .set("spark.openlineage.apiKey", API_KEY)
+            .set("spark.openlineage.timeout", "5000")
+            .set("spark.openlineage.facets.disabled", DISABLED_FACETS)
+            .set("spark.openlineage.url.param.test1", "test1")
+            .set("spark.openlineage.url.param.test2", "test2");
+
+    OpenLineageYaml openLineageYaml = ArgumentParser.parse(sparkConf).getOpenLineageYaml();
+    HttpConfig transportConfig = (HttpConfig) openLineageYaml.getTransportConfig();
+    assertEquals(URL, transportConfig.getUrl().toString());
+    assertEquals(ENDPOINT, transportConfig.getEndpoint());
+    assert (transportConfig.getAuth() != null);
+    assert (transportConfig.getAuth() instanceof ApiKeyTokenProvider);
+    assertEquals("Bearer random_token", transportConfig.getAuth().getToken());
+    assertEquals(5000, transportConfig.getTimeout());
+  }
+
+  @Test
+  void testConfToKafkaConfig() {
+    SparkConf sparkConf =
+        new SparkConf()
+            .set("spark.openlineage.transport.type", "kafka")
+            .set("spark.openlineage.transport.topicName", "test")
+            .set("spark.openlineage.transport.localServerId", "test")
+            .set("spark.openlineage.transport.properties.test1", "test1")
+            .set("spark.openlineage.transport.properties.test2", "test2");
+    OpenLineageYaml openLineageYaml = ArgumentParser.extractOpenlineageConfFromSparkConf(sparkConf);
+    KafkaConfig transportConfig = (KafkaConfig) openLineageYaml.getTransportConfig();
+    assertEquals("test", transportConfig.getTopicName());
+    assertEquals("test", transportConfig.getLocalServerId());
+    assertEquals("test1", transportConfig.getProperties().get("test1"));
+    assertEquals("test2", transportConfig.getProperties().get("test2"));
+  }
+
+  @Test
+  void testConfToKinesisConfig() {
+    SparkConf sparkConf =
+        new SparkConf()
+            .set("spark.openlineage.transport.type", "kinesis")
+            .set("spark.openlineage.transport.streamName", "test")
+            .set("spark.openlineage.transport.region", "test")
+            .set("spark.openlineage.transport.roleArn", "test")
+            .set("spark.openlineage.transport.properties.test1", "test1")
+            .set("spark.openlineage.transport.properties.test2", "test2");
+    OpenLineageYaml openLineageYaml = ArgumentParser.extractOpenlineageConfFromSparkConf(sparkConf);
+    KinesisConfig transportConfig = (KinesisConfig) openLineageYaml.getTransportConfig();
+    assertEquals("test", transportConfig.getStreamName());
+    assertEquals("test", transportConfig.getRegion());
+    assertEquals("test", transportConfig.getRoleArn());
+    assertEquals("test1", transportConfig.getProperties().get("test1"));
+    assertEquals("test2", transportConfig.getProperties().get("test2"));
   }
 }

@@ -36,5 +36,5 @@ echo "Platform:"
 python -c "from distutils import util; print(util.get_platform())"
 # Verify that it imports and works properly
 python -m pip install openlineage-sql --no-index --find-links target/wheels --force-reinstall
-python -c "from openlineage_sql import parse; import sys; sys.exit(len(parse([\"SELECT b.a from b\"]).column_lineage) != 1)"
+python -c "from openlineage_sql import parse, ColumnLineage; import sys; sys.exit(len(parse([\"SELECT b.a from b\"]).column_lineage) != 1)"
 echo "all good"

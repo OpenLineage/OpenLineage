@@ -12,7 +12,7 @@ readonly ORG="openlineage"
 
 # Change working directory to proxy module
 project_root=$(git rev-parse --show-toplevel)
-cd "${project_root}/proxy"
+cd "${project_root}/proxy/backend"
 
 # Version X.Y.Z of proxy image to build
 version="${1}"

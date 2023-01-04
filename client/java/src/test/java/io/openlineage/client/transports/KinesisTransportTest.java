@@ -16,7 +16,6 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClient;
 import java.io.IOException;
 import java.net.URI;
-import java.util.Optional;
 import java.util.Properties;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -31,7 +30,7 @@ class KinesisTransportTest {
     properties.setProperty("MinConnections", "1");
 
     config.setRegion("us-west-2");
-    config.setRoleArn(Optional.of("test-role"));
+    config.setRoleArn("test-role");
     config.setStreamName("test-stream");
     config.setProperties(properties);
 

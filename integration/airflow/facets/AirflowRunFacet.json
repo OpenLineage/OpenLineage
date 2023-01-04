@@ -1,0 +1,173 @@
+// TODO: that is Airflow specific facet that should be placed in new system-specific directory
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openlineage.io/spec/facets/1-0-0/AirflowRunFacet.json",
+  "$defs": {
+    "AirflowRunFacet": {
+      "allOf": [
+        {
+          "$ref": "https://openlineage.io/spec/1-0-3/OpenLineage.json#/$defs/RunFacet"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "task": {
+              "$ref": "#/$defs/Task"
+            },
+            "dag": {
+              "$ref": "#/$defs/DAG"
+            },
+            "taskInstance": {
+              "$ref": "#/$defs/TaskInstance"
+            },
+            "dagRun": {
+              "$ref": "#/$defs/DagRun"
+            },
+            "taskUuid": {
+              "type": "string"
+            }
+          },
+          "required": ["task", "dag", "taskInstance", "dagRun", "taskUuid"]
+        }
+      ]
+    },
+    "Task": {
+      "type": "object",
+      "description": "An object containing task-related attributes",
+      "properties": {
+        "operator_class": {
+          "description": "Module + class name of the operator",
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "args": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "downstream_group_ids": {
+          "type": "string"
+        },
+        "downstream_task_ids": {
+          "type": "string"
+        },
+        "upstream_group_ids": {
+          "type": "string"
+        },
+        "upstream_task_ids": {
+          "type": "string"
+        },
+        "task_group": {
+          "description": "Task group related information",
+          "type": "object",
+          "properties": {
+            "children": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "downstream_group_ids": {
+              "type": "string"
+            },
+            "downstream_task_ids": {
+              "type": "string"
+            },
+            "prefix_group_id": {
+              "type": "boolean"
+            },
+            "tooltip": {
+              "type": "string"
+            },
+            "upstream_group_ids": {
+              "type": "string"
+            },
+            "upstream_task_ids": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": true
+        }
+      },
+      "required": ["operator_class"]
+    },
+    "DAG": {
+      "type": "object",
+      "description": "A DAG-attributes representing object",
+      "properties": {
+        "dag_id": {
+          "type": "string"
+        },
+        "schedule_interval": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "string"
+        },
+        "start_date": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "timetable": {
+          "description": "Describes timetable (successor of schedule_interval)",
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true,
+      "required": ["dag_id", "schedule_interval", "tags", "start_date"]
+    },
+    "TaskInstance": {
+      "type": "object",
+      "properties": {
+        "duration": {
+          "type": "number"
+        },
+        "try_number": {
+          "type": "integer"
+        },
+        "map_index": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": true,
+      "required": ["duration", "try_number"]
+    },
+    "DagRun": {
+      "type": "object",
+      "properties": {
+        "conf": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "dag_id": {
+          "type": "string"
+        },
+        "data_interval_start": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "data_interval_end": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "run_type": {
+          "type": "string"
+        },
+        "external_trigger": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": true,
+      "required": ["dag_id", "external_trigger"]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "airflow": {
+      "$ref": "#/$defs/AirflowRunFacet"
+    }
+  }
+}

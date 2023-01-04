@@ -10,7 +10,7 @@ plugins {
     id 'java-test-fixtures'
     id 'com.diffplug.spotless' version '6.12.0'
     id "com.adarshr.test-logger" version "3.2.0"
-    id "org.gradle.test-retry" version "1.4.1"
+    id "org.gradle.test-retry" version "1.5.0"
     id "com.github.johnrengelman.shadow" version "7.1.2"
     id "pmd"
 }
@@ -124,12 +124,23 @@ dependencies {
         exclude group: 'com.fasterxml.jackson.module'
     }
 
-    testFixturesApi("org.apache.hadoop:hadoop-client:2.10.2") { force=true }
-    pysparkContainerOnly "com.google.cloud.bigdataoss:gcs-connector:${versions.gcs}:shaded"
+    testFixturesApi("org.apache.hadoop:hadoop-client:3.3.4") { force=true }
+    pysparkContainerOnly("com.google.cloud.bigdataoss:gcs-connector:${versions.gcs}:shaded"){
+        exclude group: 'com.google.guava', module: 'guava'
+    }
+    pysparkContainerOnly("com.google.guava:guava:30.1-jre")
 
     if(versions.delta != "NA") { testFixturesApi "io.delta:delta-core_2.12:${versions.delta}" }
 
     testImplementation(project(":${versions.module}"))
+    if(versions.module != "spark2") {
+        testImplementation("com.google.cloud.bigdataoss:gcs-connector:hadoop3-2.2.9"){
+            exclude group: 'com.google.guava', module: 'guava'
+        }
+        pysparkContainerOnly("com.google.guava:guava:30.1-jre")
+    }
+    
+    
     testImplementation testFixtures(project(":${versions.module}")){
         exclude group: 'org.apache.avro'
     }
