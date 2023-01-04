@@ -6,14 +6,14 @@
 * dbt: add support for postgres datasources [`#1417`](https://github.com/OpenLineage/OpenLineage/pull/1417) [@julienledem](https://github.com/julienledem)
     * Adds the previously unsupported postgres datasource type
 
-## [0.18.0](https://github.com/OpenLineage/OpenLineage/compare/0.17.0...0.18.0) - 2022-12-6
+## [0.18.0](https://github.com/OpenLineage/OpenLineage/compare/0.17.0...0.18.0) - 2022-12-8
 ### Added
 * Airflow: support `SQLExecuteQueryOperator` [`#1379`](https://github.com/OpenLineage/OpenLineage/pull/1379) [@JDarDagran](https://github.com/JDarDagran)  
     *Changes the `SQLExtractor` and adds support for the dynamic assignment of extractors based on `conn_type`.*
 * Airflow: introduce a new extractor for `SFTPOperator` [`#1263`](https://github.com/OpenLineage/OpenLineage/pull/1263) [@sekikn](https://github.com/sekikn)  
     *Adds an extractor for tracing file transfers between local file systems.*
 * Airflow: add Sagemaker extractors [`#1136`](https://github.com/OpenLineage/OpenLineage/pull/1136) [@fhoda](https://github.com/fhoda)  
-    *Creates extractors for `SagemakeProcessingOperator` and `SagemakerTransformOperator`.*
+    *Creates extractors for `SagemakerProcessingOperator` and `SagemakerTransformOperator`.*
 * Airflow: add S3 extractor for Airflow operators [`#1166`](https://github.com/OpenLineage/OpenLineage/pull/1166) [@fhoda](https://github.com/fhoda)  
     *Creates an extractor for the `S3CopyObject` in the Airflow integration.*  
 * Airflow: implement DagRun listener [`#1286`](https://github.com/OpenLineage/OpenLineage/pull/1286) [@mobuchowski](https://github.com/mobuchowski)  
