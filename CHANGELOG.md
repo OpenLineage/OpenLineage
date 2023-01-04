@@ -1,13 +1,36 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.18.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.19.0...HEAD)
 
-### Added:
-* SQL parser: ability to extract column-level lineage from SQL statements [@StarostaGit](https://github.com/StarostaGit)
-* SQL parser: adjust Rust-Python and Rust-Java interfaces for SQL parser [@StarostaGit](https://github.com/StarostaGit), [@mobuchowski](https://github.com/mobuchowski)
-* Airflow: use SQL parser to extract column-level lineage in SQL Extractor [@mobuchowski](https://github.com/mobuchowski)
-* dbt: add support for postgres datasources [`#1417`](https://github.com/OpenLineage/OpenLineage/pull/1417) [@julienledem](https://github.com/julienledem)
-    * Adds the previously unsupported postgres datasource type
+## [0.19.0](https://github.com/OpenLineage/OpenLineage/compare/0.18.0...0.19.0) - 2023-1-4
+### Added
+* Airflow: add Trino extractor [`#1288`](https://github.com/OpenLineage/OpenLineage/pull/1288) [@sekikn](https://github.com/sekikn)  
+    *Adds a Trino extractor to the Airflow integration.*
+* Airflow: add `S3FileTransformOperator` extractor [`#1450`](https://github.com/OpenLineage/OpenLineage/pull/1450) [@sekikn](https://github.com/sekikn)  
+    *Adds an `S3FileTransformOperator` extractor to the Airflow integration.*
+* Airflow: add standardized run facet [`#1413`](https://github.com/OpenLineage/OpenLineage/pull/1413) [@JDarDagran](https://github.com/JDarDagran)  
+    *Creates one standardized run facet for the Airflow integration.*
+* Airflow: add `NominalTimeRunFacet` and `OwnershipJobFacet` [`#1410`](https://github.com/OpenLineage/OpenLineage/pull/1410) [@JDarDagran](https://github.com/JDarDagran)  
+    *Adds `nominalEndTime` and `OwnershipJobFacet` fields to the Airflow integration.*
+* dbt: add support for postgres datasources [`#1417`](https://github.com/OpenLineage/OpenLineage/pull/1417) [@julienledem](https://github.com/julienledem)  
+    *Adds the previously unsupported postgres datasource type.*
+* Proxy: add client-side proxy (skeletal version) [`#1439`](https://github.com/OpenLineage/OpenLineage/pull/1439) [`#1420`](https://github.com/OpenLineage/OpenLineage/pull/1420) [@fm100](https://github.com/fm100)  
+    *Implements a skeletal version of a client-side proxy.*
+* Proxy: add CI job to publish Docker image [`#1086`](https://github.com/OpenLineage/OpenLineage/pull/1086) [@wslulciuc](https://github.com/wslulciuc)   
+    *Includes a script to build and tag the image plus jobs to verify the build on every CI run and publish to Docker Hub.*
+* SQL: add `ExtractionErrorRunFacet` [`#1442`](https://github.com/OpenLineage/OpenLineage/pull/1442) [@mobuchowski](https://github.com/mobuchowski)  
+    *Adds a facet to the spec to reflect internal processing errors, especially failed or incomplete parsing of SQL jobs.*
+* SQL: add column-level lineage to SQL parser [`#1432`](https://github.com/OpenLineage/OpenLineage/pull/1432) [`#1461`](https://github.com/OpenLineage/OpenLineage/pull/1461) [@mobuchowski](https://github.com/mobuchowski) [@StarostaGit](https://github.com/StarostaGit)  
+    *Adds support for extracting column-level lineage from SQL statements in the parser, including adjustments to Rust-Python and Rust-Java interfaces and the Airflow integration's SQL extractor to make use of the feature. Also includes more tests, removal of the old parser, and removal of the common-build cache in CI (which was breaking the parser).*
+* Spark: pass config parameters to the OL client [`#1383`](https://github.com/OpenLineage/OpenLineage/pull/1383) [@tnazarew](https://github.com/tnazarew)  
+    *Adds a mechanism for making new lineage consumers transparent to the integration, easing the process of setting up new types of consumers.*
+
+### Fixed
+* Airflow: fix `collect_ignore`, add flags to Pytest for cleaner output [`#1437`](https://github.com/OpenLineage/OpenLineage/pull/1437) [@JDarDagran](https://github.com/JDarDagran)  
+    *Removes the `extractors` directory from the ignored list, improving unit testing.*
+* Spark & Java client: fix README typos [@versaurabh](https://github.com/versaurabh)  
+    *Fixes typos in the SPDX license headers.*
+
 
 ## [0.18.0](https://github.com/OpenLineage/OpenLineage/compare/0.17.0...0.18.0) - 2022-12-8
 ### Added
