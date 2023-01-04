@@ -25,4 +25,4 @@ rustup target add aarch64-apple-darwin
 
 # Maturin is build tool that we're using. It can build python wheels based on standard Rust Cargo.toml.
 echo "Installing Maturin"
-python -m pip install maturin
+python3.7 -m pip install maturin
