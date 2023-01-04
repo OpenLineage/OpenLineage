@@ -312,17 +312,10 @@ jobs:
       - attach_workspace:
           at: .
       - run: pip install tox==3.27.1
-      - restore_cache:
-          keys:
-            - v1-toxenv-common-{{ .Branch }}-{{ checksum "setup.cfg" }}-{{ checksum "setup.py" }}
       - run: tox -p all
       - run: bash <(curl -s https://codecov.io/bash)
       - store_test_results:
           path: test-results
-      - save_cache:
-          paths:
-            - ./.tox
-          key: v1-toxenv-common-{{ .Branch }}-{{ checksum "setup.cfg" }}-{{ checksum "setup.py" }}
 
   build-integration-common:
     working_directory: ~/openlineage/integration/common
