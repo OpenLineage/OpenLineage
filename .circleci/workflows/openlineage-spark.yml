@@ -1,0 +1,28 @@
+workflows:
+  openlineage-spark:
+    jobs:
+      - build-integration-spark:
+          matrix:
+            parameters:
+              spark-version: [ '2.4.6', '3.2.2', '3.3.1' ]
+          requires:
+           - build-client-java
+      - integration-test-integration-spark:
+          context: integration-tests
+          matrix:
+            parameters:
+              spark-version: [ '2.4.6', '3.2.2', '3.3.1' ]
+          requires:
+            - build-integration-spark
+      - publish-snapshot-integration-spark:
+          filters:
+            branches:
+              only: main
+          context: release
+          requires:
+            - integration-test-integration-spark
+      - workflow_complete:
+          requires:
+            - publish-snapshot-integration-spark
+            - integration-test-integration-spark
+            
