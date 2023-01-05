@@ -1,8 +1,8 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.19.1...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.19.2...HEAD)
 
-## [0.19.1](https://github.com/OpenLineage/OpenLineage/compare/0.18.0...0.19.1) - 2023-1-4
+## [0.19.2](https://github.com/OpenLineage/OpenLineage/compare/0.18.0...0.19.2) - 2023-1-4
 ### Added
 * Airflow: add Trino extractor [`#1288`](https://github.com/OpenLineage/OpenLineage/pull/1288) [@sekikn](https://github.com/sekikn)  
     *Adds a Trino extractor to the Airflow integration.*
