@@ -721,7 +721,7 @@ jobs:
     machine:
       image: ubuntu-2004:current
     steps:
-      - checkout
+      - *checkout_project_root
       - run: pwd && ls
       #- run: ./docker/login.sh
       #- run: ./docker/build-and-push-proxy.sh $CIRCLE_TAG
