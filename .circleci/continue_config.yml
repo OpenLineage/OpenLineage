@@ -722,7 +722,7 @@ jobs:
       image: ubuntu-2004:current
     steps:
       - checkout
-      - pwd && ls
+      - run: pwd && ls
       #- run: ./docker/login.sh
       #- run: ./docker/build-and-push-proxy.sh $CIRCLE_TAG
 
