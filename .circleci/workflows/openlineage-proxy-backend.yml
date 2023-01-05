@@ -5,6 +5,7 @@ workflows:
       - build-image-proxy-backend:
           requires:
             - build-proxy-backend
+      - release-docker-proxy-backend
       - workflow_complete:
           requires:
             - build-proxy-backend
