@@ -50,3 +50,7 @@ kafka-topic-setup   /bin/sh -c                       Exit 0
 
 To be able to test if the Flink application is able to process events we have to sent events to the Input topic, and we can expect events in output topic.
 For this purpose, there is [Sandbox](src/test/groovy/io/openlineage/sandbox/Sandbox.groovy) created with useful commands to try-out.
+
+----
+SPDX-License-Identifier: Apache-2.0\
+Copyright 2018-2023 contributors to the OpenLineage project
