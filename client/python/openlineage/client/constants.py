@@ -1,7 +1,7 @@
 # Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-__version__ = "0.19.1"
+__version__ = "0.20.0"
 
 DEFAULT_TIMEOUT_MS = 5000
 DEFAULT_NAMESPACE_NAME = 'default'
