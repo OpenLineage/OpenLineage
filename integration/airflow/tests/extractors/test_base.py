@@ -1,5 +1,6 @@
-# Copyright 2018-2022 contributors to the OpenLineage project
+# Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
+
 from airflow.models import Connection
 from openlineage.airflow.extractors.base import BaseExtractor
 from urllib.parse import urlparse, parse_qs

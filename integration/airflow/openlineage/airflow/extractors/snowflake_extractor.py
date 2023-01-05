@@ -1,5 +1,6 @@
-# Copyright 2018-2022 contributors to the OpenLineage project
+# Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
+
 from typing import List, Dict
 
 from openlineage.airflow.extractors.dbapi_utils import execute_query_on_hook

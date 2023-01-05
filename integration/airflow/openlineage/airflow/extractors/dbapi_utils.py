@@ -1,5 +1,6 @@
-# Copyright 2018-2022 contributors to the OpenLineage project
+# Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
+
 import logging
 from contextlib import closing
 from typing import Optional, TYPE_CHECKING, List, Tuple, Dict, Iterator

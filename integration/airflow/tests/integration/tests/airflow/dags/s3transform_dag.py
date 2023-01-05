@@ -1,5 +1,6 @@
-# Copyright 2018-2022 contributors to the OpenLineage project
+# Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
+
 from airflow import DAG
 from airflow.providers.amazon.aws.operators.s3 import S3FileTransformOperator
 from airflow.utils.dates import days_ago

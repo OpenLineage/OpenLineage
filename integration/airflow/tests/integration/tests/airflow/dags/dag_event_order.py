@@ -1,5 +1,6 @@
-# Copyright 2018-2022 contributors to the OpenLineage project
+# Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
+
 from airflow import DAG
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
