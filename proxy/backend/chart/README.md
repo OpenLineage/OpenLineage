@@ -64,3 +64,7 @@ helm delete openlineage-proxy
 | `proxy.ingress.hosts`            | Hostname applied to ingress routes   | `nil`               |
 | `proxy.ingress.tls`              | TLS settings for hostname            | `nil`               |
 | `proxy.podAnnotations`           | Additional pod annotations for Proxy | `{}`                |
+
+----
+SPDX-License-Identifier: Apache-2.0\
+Copyright 2018-2023 contributors to the OpenLineage project
