@@ -146,3 +146,6 @@ Example of valid name is `BigQueryStatisticsJobFacet` and it's key `bigQuery_sta
 #### Output Dataset Facets
 - **outputStatistics**: Captures the size of the output written to a dataset (row count and byte size).
 
+----
+SPDX-License-Identifier: Apache-2.0\
+Copyright 2018-2023 contributors to the OpenLineage project
