@@ -168,4 +168,4 @@ be resolved by voting. The voting process is a simple majority in which each com
 
 ----
 SPDX-License-Identifier: Apache-2.0\
-Copyright 2018-2022 contributors to the OpenLineage project
+Copyright 2018-2023 contributors to the OpenLineage project

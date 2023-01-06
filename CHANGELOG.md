@@ -511,3 +511,7 @@ OpenLineage is an _Open Standard_ for lineage metadata collection designed to re
   * [`Apache Spark`](https://github.com/OpenLineage/OpenLineage/tree/main/integration/spark)
   * [`dbt`](https://github.com/OpenLineage/OpenLineage/tree/main/integration/dbt)
 * **Clients** that send OpenLineage events to an HTTP backend. Both [`java`](https://github.com/OpenLineage/OpenLineage/tree/main/client/java) and [`python`](https://github.com/OpenLineage/OpenLineage/tree/main/client/python) are initially supported.
+
+----
+SPDX-License-Identifier: Apache-2.0\
+Copyright 2018-2023 contributors to the OpenLineage project
