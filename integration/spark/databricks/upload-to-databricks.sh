@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright 2018-2022 contributors to the OpenLineage project
+# Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 #
 # You can run this on Windows as well, just change to a batch files.
