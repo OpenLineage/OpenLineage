@@ -14,3 +14,7 @@ Please describe the corresponding use cases.
 **Proposed implementation**
 This section describes *how* you propose to model it. 
 If you are you proposing a new facet, please mention its name and schema.
+
+----
+SPDX-License-Identifier: Apache-2.0\
+Copyright 2018-2023 contributors to the OpenLineage project
