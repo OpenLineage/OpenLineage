@@ -18,3 +18,7 @@ A happy flow consists of the following stages:
 The OpenLineage integration is an Airflow Plugin that provides a listener instance.
 Listeners are running on Airflow workers and are invoked by Airflow when a task starts and finishes, as well as when a task fails.
 [More information about listeners in Airflow docs.](https://github.com/apache/airflow/blob/main/docs/apache-airflow/listeners.rst)
+
+----
+SPDX-License-Identifier: Apache-2.0\
+Copyright 2018-2023 contributors to the OpenLineage project
