@@ -134,7 +134,7 @@ dependencies {
 
     testImplementation(project(":${versions.module}"))
     if(versions.module != "spark2") {
-        testImplementation("com.google.cloud.bigdataoss:gcs-connector:hadoop3-2.2.9"){
+        testImplementation("com.google.cloud.bigdataoss:gcs-connector:1.9.4-hadoop3"){
             exclude group: 'com.google.guava', module: 'guava'
         }
         pysparkContainerOnly("com.google.guava:guava:30.1-jre")
