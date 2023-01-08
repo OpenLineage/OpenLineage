@@ -42,7 +42,7 @@ repositories {
 }
 
 ext {
-    assertjVersion = '3.23.1'
+    assertjVersion = '3.24.1'
     jacksonVersion = "2.13.4"
     jacksonDatabindVersion = "2.13.4.2"
     junit5Version = '5.9.1'
