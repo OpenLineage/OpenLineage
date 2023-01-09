@@ -1,5 +1,5 @@
 workflows:
-  openlineage-java:
+  openlineage-flink:
     jobs:
       - build-integration-flink:
           matrix:
