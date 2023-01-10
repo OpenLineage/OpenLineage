@@ -25,4 +25,3 @@ workflows:
           requires:
             - publish-snapshot-integration-spark
             - integration-test-integration-spark
-            
