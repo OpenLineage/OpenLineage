@@ -50,7 +50,3 @@ You'll see a message in the Log4j output that looks like the following snippet.
 ```
 YY/MM/DD HH:mm:ss INFO OpenLineageContext: Lineage completed successfully: ResponseMessage(responseCode=200, body=null, error=null) <... LINEAGE INFO ...>
 ```
-
-----
-SPDX-License-Identifier: Apache-2.0\
-Copyright 2018-2023 contributors to the OpenLineage project
