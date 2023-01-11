@@ -26,7 +26,6 @@ By signing your work, you are confirming that the origin of the content
 makes it suitable to add to this project.  See
 [Developer Certificate of Origin (DCO)](https://developercertificate.org/).
 
-
 ----
 SPDX-License-Identifier: Apache-2.0\
-Copyright 2018-2022 contributors to the OpenLineage project
+Copyright 2018-2023 contributors to the OpenLineage project

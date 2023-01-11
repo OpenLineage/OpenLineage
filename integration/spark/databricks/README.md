@@ -1,8 +1,6 @@
-<!-- SPDX-License-Identifier: Apache-2.0 -->
+# OpenLineage in Databricks
 
-# Open Lineage in Databricks
-
-Open Lineage's [Spark Integration](../README.md) can be installed on Databricks leveraging init scripts. Please note, Databricks on Google Cloud does not currently support the DBFS CLI so the proposed solution will not work for Google Cloud until that feature is enabled. 
+OpenLineage's [Spark Integration](../README.md) can be installed on Databricks leveraging init scripts. Please note, Databricks on Google Cloud does not currently support the DBFS CLI so the proposed solution will not work for Google Cloud until that feature is enabled. 
 
 * [Azure Databricks Init Scripts](https://docs.microsoft.com/en-us/azure/databricks/clusters/init-scripts)
 * [GCP Databricks Init Scripts](https://docs.gcp.databricks.com/clusters/init-scripts.html)

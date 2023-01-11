@@ -97,3 +97,7 @@ particular transports. The default implementation of `TransportFactory` for it m
 different.
 
 More details on `ProxyBackend` should be on [it's own github issue](https://github.com/OpenLineage/OpenLineage/issues/269).
+
+----
+SPDX-License-Identifier: Apache-2.0\
+Copyright 2018-2023 contributors to the OpenLineage project

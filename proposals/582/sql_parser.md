@@ -112,3 +112,7 @@ Java has a JNI API that is used to implement foreign function interface.
 There are Rust crates that make using it simpler. 
 
 In the future, Java aims to make interfacing with native libraries significantly easier by Project Panama. However, the earliest we could realistically use it is in next LTS release of Java in September 2023. 
+
+----
+SPDX-License-Identifier: Apache-2.0\
+Copyright 2018-2023 contributors to the OpenLineage project

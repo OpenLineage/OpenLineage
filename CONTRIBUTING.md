@@ -109,4 +109,4 @@ to trigger a CI run on a separate branch with the same commit ID. This will upda
 
 ----
 SPDX-License-Identifier: Apache-2.0\
-Copyright 2018-2022 contributors to the OpenLineage project
+Copyright 2018-2023 contributors to the OpenLineage project

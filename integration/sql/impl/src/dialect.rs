@@ -1,3 +1,6 @@
+// Copyright 2018-2023 contributors to the OpenLineage project
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::bigquery::BigQueryDialect;
 use sqlparser::dialect::{
     AnsiDialect, Dialect, GenericDialect, HiveDialect, MsSqlDialect, MySqlDialect,

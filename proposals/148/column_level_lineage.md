@@ -1,5 +1,3 @@
-<!-- SPDX-License-Identifier: Apache-2.0 -->
-
 ---
 Status: IN PROGRESS  
 Author: Julien Le Dem (original issue) / Pawel Leszczynski (this document)  
@@ -135,3 +133,6 @@ We will use OpenLineage Spark integration to test `columnLineage` in action.
 
 OpenLineage & Spark integration relies on implementing visitors that traverse Spark LogicalPlan and extract meaningful information when encountered. We do already identify the outputs and the inputs with their schemas. Attributes within LogicalPlan's nodes contain `ExprId` which define the dependencies between attributes of adjacent nodes. Traversing whole `LogicalPlan` allows capturing all the dependencies required to build column level lineage.
 
+----
+SPDX-License-Identifier: Apache-2.0\
+Copyright 2018-2023 contributors to the OpenLineage project

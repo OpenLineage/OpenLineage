@@ -1,5 +1,6 @@
-# Copyright 2018-2022 contributors to the OpenLineage project
-# SPDX-License-Identifier: Apache-2.0.
+# Copyright 2018-2023 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
+
 from typing import List, Optional, TYPE_CHECKING, Dict, Tuple, Callable, Iterable, Union
 from urllib.parse import urlparse
 

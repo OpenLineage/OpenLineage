@@ -1,5 +1,3 @@
-<!-- SPDX-License-Identifier: Apache-2.0 -->
-
 ---
 Author: Julien Le Dem
 Created: November 3rd
@@ -29,3 +27,6 @@ Define a design review for proposals that warant more discussion and design than
 - once the PR is approved, the design is approved (and in the main branch). It can be prioritized for implementation.
 - [a] separate[s] ticket[s] can be created for the implementation (attaching them to a milestone allows tracking progress of the implementation)
 
+----
+SPDX-License-Identifier: Apache-2.0\
+Copyright 2018-2023 contributors to the OpenLineage project

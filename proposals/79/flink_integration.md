@@ -1,5 +1,3 @@
-<!-- SPDX-License-Identifier: Apache-2.0 -->
-
 ---
 Author: Ziyoiddin Yusupov
 Created: February 17, 2022
@@ -138,7 +136,8 @@ We managed to get the StreamGraph this way.
 We should be able to construct the pipeline from `StreamGraph` and get pipeline view.<br/>
 We have to find a way to read Source/Sink related metadate (e.g. Kafka - topic, partition, brokers etc)<br/>
 
-
-
+----
+SPDX-License-Identifier: Apache-2.0\
+Copyright 2018-2023 contributors to the OpenLineage project
 
 

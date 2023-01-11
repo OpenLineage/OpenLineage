@@ -67,7 +67,3 @@ This way of configuring the client supports only `http` transport, and only a su
 * `OPENLINEAGE_API_KEY` - set if the consumer of OpenLineage events requires a `Bearer` authentication key.
 
 `OPENLINEAGE_URL` and `OPENLINEAGE_API_KEY` can also be set up manually when creating a client instance.
-
-----
-SPDX-License-Identifier: Apache-2.0\
-Copyright 2018-2022 contributors to the OpenLineage project

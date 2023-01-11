@@ -1,3 +1,6 @@
+// Copyright 2018-2023 contributors to the OpenLineage project
+// SPDX-License-Identifier: Apache-2.0
+
 pub mod tests_copy;
 pub mod tests_create;
 pub mod tests_cte;

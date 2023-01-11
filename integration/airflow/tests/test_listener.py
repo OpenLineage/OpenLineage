@@ -1,3 +1,6 @@
+# Copyright 2018-2023 contributors to the OpenLineage project
+# SPDX-License-Identifier: Apache-2.0
+
 from airflow.models import BaseOperator
 from airflow.models import TaskInstance, DAG
 from airflow.utils.dates import days_ago

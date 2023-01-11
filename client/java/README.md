@@ -178,7 +178,7 @@ If contributing changes, additions or fixes to the Java client, please include t
 
 ```
 /*
-/* Copyright 2018-2022 contributors to the OpenLineage project
+/* Copyright 2018-2023 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0 
 */
 ```
@@ -189,4 +189,4 @@ Thanks for your contributions to the project!
 
 ----
 SPDX-License-Identifier: Apache-2.0\
-Copyright 2018-2022 contributors to the OpenLineage project
+Copyright 2018-2023 contributors to the OpenLineage project

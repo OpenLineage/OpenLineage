@@ -37,3 +37,6 @@ MODEL-REVISION-ADDITION
   - CI publishes to github pages when the $id changes on main (when this particular url does not exist yet)
   - CI tags main with OpenLineage.json-{version}
 
+----
+SPDX-License-Identifier: Apache-2.0\
+Copyright 2018-2023 contributors to the OpenLineage project

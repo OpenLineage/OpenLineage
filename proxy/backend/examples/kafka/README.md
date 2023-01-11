@@ -58,3 +58,7 @@ You’ll see the OpenLineage event that you emitted in **Step 2**:
   "producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client"
 }
 ```
+
+----
+SPDX-License-Identifier: Apache-2.0\
+Copyright 2018-2023 contributors to the OpenLineage project

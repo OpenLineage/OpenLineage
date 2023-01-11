@@ -1,5 +1,3 @@
-<!-- SPDX-License-Identifier: Apache-2.0 -->
-
 ---
 Author: Michael Collado
 Created: December 14
@@ -269,3 +267,7 @@ public class OutputStatisticsFacetBuilder implements CustomFacetBuilder<StageInf
     }
 }
 ```
+
+----
+SPDX-License-Identifier: Apache-2.0\
+Copyright 2018-2023 contributors to the OpenLineage project
