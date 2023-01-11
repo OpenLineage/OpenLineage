@@ -8,7 +8,7 @@ import (
 
 type ValidatorTestSuite struct {
 	suite.Suite
-	validator *Validator
+	validator *validator
 }
 
 func (suite *ValidatorTestSuite) SetupSuite() {

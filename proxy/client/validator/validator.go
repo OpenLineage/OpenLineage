@@ -34,7 +34,7 @@ var schemaURLs = map[string]string{
 	"OutputStatisticsOutputDatasetFacet.json":  "https://openlineage.io/spec/facets/1-0-0/OutputStatisticsOutputDatasetFacet.json",
 }
 
-type Validator struct {
+type validator struct {
 	mainSchema             *jsonschema.Schema
 	baseRunFacetSchema     *jsonschema.Schema
 	runFacetSchemas        []*jsonschema.Schema
@@ -48,11 +48,14 @@ type Validator struct {
 	datasetFacetSchemas    []*jsonschema.Schema
 }
 
+// IEventValidator is an interface for the event validator.
 type IEventValidator interface {
 	Validate(event string) error
 }
 
-func (validator *Validator) Validate(event string) error {
+// Validate is the function that implements interface of IEventValidator, and it is responsible for
+// validating if the given event is compliant with the schema defined in OpenLineage spec.
+func (validator *validator) Validate(event string) error {
 	var doc interface{}
 	if err := json.Unmarshal([]byte(event), &doc); err != nil {
 		return err
@@ -151,7 +154,7 @@ func (validator *Validator) Validate(event string) error {
 	return nil
 }
 
-func New() *Validator {
+func New() *validator {
 	jsonschema.Loaders["https"] = loadSchema
 
 	compiler := jsonschema.NewCompiler()
@@ -212,7 +215,7 @@ func New() *Validator {
 		panic(err)
 	}
 
-	return &Validator{
+	return &validator{
 		mainSchema:             mainSchema,
 		baseRunFacetSchema:     baseRunFacetSchema,
 		baseJobFacetSchema:     baseJobFacetSchema,
