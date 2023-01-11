@@ -49,19 +49,19 @@ updates:
     schedule:
       interval: "weekly"
       day: "sunday"
-    ignore:
-      - dependency-name: "jackson-databind"
-      - dependency-name: "jackson-core"
-      - dependency-name: "jackson-annotations"
-      - dependency-name: "jackson-dataformat-yaml"
-      - dependency-name: "jackson-datatype-jdk8"
-      - dependency-name: "jackson-datatype-jsr310"
     labels:
       - "dependencies"
       - "dependabot"
     ignore:
       - dependency-name: "com.fasterxml.jackson*"
       - dependency-name: "org.slf4j.slf4j-api"
+      - dependency-name: "jackson-databind"
+      - dependency-name: "jackson-core"
+      - dependency-name: "jackson-annotations"
+      - dependency-name: "jackson-dataformat-yaml"
+      - dependency-name: "jackson-datatype-jdk8"
+      - dependency-name: "jackson-datatype-jsr310"
+      - dependency-name: "com.google.guava*"
 
   - package-ecosystem: "pip"
     directory: "client/python"
