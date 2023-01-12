@@ -28,6 +28,9 @@ x-airflow-base: &airflow-base
     AIRFLOW_CONN_MYSQL_CONN: mysql://food_delivery:food_delivery@mysql:3306/food_delivery
     AIRFLOW_CONN_TRINO_CONN: trino://trino@trino:8080/default?catalog=memory
     AIRFLOW_CONN_BQ_CONN: google-cloud-platform://?extra__google_cloud_platform__project=openlineage-ci&extra__google_cloud_platform__key_path=%2Fopt%2Fconfig%2Fgcloud%2Fgcloud-service-key.json
+    AIRFLOW_CONN_GCS_CONN: google-cloud-platform://?extra__google_cloud_platform__key_path=%2Fopt%2Fconfig%2Fgcloud%2Fgcloud-service-key.json
+    GOOGLE_CLOUD_STORAGE_SOURCE_URI: ${GOOGLE_CLOUD_STORAGE_SOURCE_URI}
+    GOOGLE_CLOUD_STORAGE_DESTINATION_URI: ${GOOGLE_CLOUD_STORAGE_DESTINATION_URI}
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: ${DAGS_ARE_PAUSED_AT_CREATION:-False}
     BIGQUERY_PREFIX: ${BIGQUERY_PREFIX}
     DBT_DATASET_PREFIX: ${DBT_DATASET_PREFIX}_dbt
@@ -93,6 +96,8 @@ services:
       AWS_ATHENA_OUTPUT_LOCATION: ${AWS_ATHENA_OUTPUT_LOCATION}
       AWS_ATHENA_SUFFIX: ${AWS_ATHENA_SUFFIX}
       AIRFLOW_CONN_AWS_LOCAL_CONN: ${AIRFLOW_CONN_AWS_LOCAL_CONN}
+      GOOGLE_CLOUD_STORAGE_SOURCE_URI: ${GOOGLE_CLOUD_STORAGE_SOURCE_URI}
+      GOOGLE_CLOUD_STORAGE_DESTINATION_URI: ${GOOGLE_CLOUD_STORAGE_DESTINATION_URI}
     networks:
       - app_net
     volumes:
