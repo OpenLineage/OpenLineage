@@ -46,7 +46,7 @@ configurations {
 ext {
     assertjVersion = '3.23.1'
     bigqueryVersion = '0.27.1'
-    junit5Version = '5.9.1'
+    junit5Version = '5.9.2'
     sparkVersion = '2.4.8'
     sparkVersionShort = '2.4'
     snowflakeVersion = '2.9.3'
