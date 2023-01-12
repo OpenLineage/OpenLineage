@@ -146,11 +146,11 @@ def main():
     # or does not exist, do not emit dbt events.
     try:
         if os.stat(processor.run_result_path).st_mtime < pre_run_time:
-            logger.info(f"OpenLineage events not emittled: run_result file "
+            logger.info(f"OpenLineage events not emitted: run_result file "
                         f"({processor.run_result_path}) was not modified by dbt")
             return
     except FileNotFoundError:
-        logger.info(f"OpenLineage events not emittled:"
+        logger.info(f"OpenLineage events not emitted:"
                     f"did not find run_result file ({processor.run_result_path})")
         return
 
