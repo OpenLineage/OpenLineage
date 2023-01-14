@@ -55,66 +55,67 @@ type IEventValidator interface {
 
 // Validate is the function that implements interface of IEventValidator, and it is responsible for
 // validating if the given event is compliant with the schema defined in OpenLineage spec.
-func (validator *validator) Validate(event string) error {
+func (v *validator) Validate(event string) error {
 	var doc interface{}
 	if err := json.Unmarshal([]byte(event), &doc); err != nil {
 		return err
 	}
 
-	if err := validator.mainSchema.Validate(doc); err != nil {
+	if err := v.mainSchema.Validate(doc); err != nil {
 		return err
 	}
+	runEvent := doc.(map[string]interface{})
 
-	run := doc.(map[string]interface{})["run"]
-	if facets, ok := run.(map[string]interface{})["facets"]; ok {
-		for _, facetSchema := range validator.runFacetSchemas {
+	run := runEvent["run"].(map[string]interface{})
+	if facets, ok := run["facets"]; ok {
+		for _, facetSchema := range v.runFacetSchemas {
 			if err := facetSchema.Validate(facets); err != nil {
 				return err
 			}
 		}
 		for _, facet := range facets.(map[string]interface{}) {
-			if err := validator.baseRunFacetSchema.Validate(facet); err != nil {
+			if err := v.baseRunFacetSchema.Validate(facet); err != nil {
 				return err
 			}
 		}
 	}
 
-	job := doc.(map[string]interface{})["job"]
-	if facets, ok := job.(map[string]interface{})["facets"]; ok {
-		for _, facetSchema := range validator.jobFacetSchemas {
+	job := runEvent["job"].(map[string]interface{})
+	if facets, ok := job["facets"]; ok {
+		for _, facetSchema := range v.jobFacetSchemas {
 			if err := facetSchema.Validate(facets); err != nil {
 				return err
 			}
 		}
 		for _, facet := range facets.(map[string]interface{}) {
-			if err := validator.baseJobFacetSchema.Validate(facet); err != nil {
+			if err := v.baseJobFacetSchema.Validate(facet); err != nil {
 				return err
 			}
 		}
 	}
 
-	if inputs, ok := doc.(map[string]interface{})["inputs"]; ok {
+	if inputs, ok := runEvent["inputs"]; ok {
 		for _, input := range inputs.([]interface{}) {
 			if facets, ok := input.(map[string]interface{})["inputFacets"]; ok {
-				for _, facetSchema := range validator.inputFacetSchemas {
+				for _, facetSchema := range v.inputFacetSchemas {
 					if err := facetSchema.Validate(facets); err != nil {
 						return err
 					}
 				}
 				for _, facet := range facets.(map[string]interface{}) {
-					if err := validator.baseInputFacetSchema.Validate(facet); err != nil {
+					if err := v.baseInputFacetSchema.Validate(facet); err != nil {
 						return err
 					}
 				}
 			}
 			if facets, ok := input.(map[string]interface{})["facets"]; ok {
-				for _, facetSchema := range validator.datasetFacetSchemas {
+				for _, facetSchema := range v.datasetFacetSchemas {
 					if err := facetSchema.Validate(facets); err != nil {
 						return err
 					}
 				}
 				for _, facet := range facets.(map[string]interface{}) {
-					if err := validator.baseDatasetFacetSchema.Validate(facet); err != nil {
+					if err := v.baseDatasetFacetSchema.Validate(facet); err != nil {
 						return err
 					}
 				}
@@ -122,28 +123,28 @@ func (validator *validator) Validate(event string) error {
 		}
 	}
 
-	if outputs, ok := doc.(map[string]interface{})["outputs"]; ok {
+	if outputs, ok := runEvent["outputs"]; ok {
 		for _, output := range outputs.([]interface{}) {
 			if facets, ok := output.(map[string]interface{})["outputFacets"]; ok {
-				for _, facetSchema := range validator.outputFacetSchemas {
+				for _, facetSchema := range v.outputFacetSchemas {
 					if err := facetSchema.Validate(facets); err != nil {
 						return err
 					}
 				}
 				for _, facet := range facets.(map[string]interface{}) {
-					if err := validator.baseOutputFacetSchema.Validate(facet); err != nil {
+					if err := v.baseOutputFacetSchema.Validate(facet); err != nil {
 						return err
 					}
 				}
 			}
 			if facets, ok := output.(map[string]interface{})["facets"]; ok {
-				for _, facetSchema := range validator.datasetFacetSchemas {
+				for _, facetSchema := range v.datasetFacetSchemas {
 					if err := facetSchema.Validate(facets); err != nil {
 						return err
 					}
 				}
 				for _, facet := range facets.(map[string]interface{}) {
-					if err := validator.baseDatasetFacetSchema.Validate(facet); err != nil {
+					if err := v.baseDatasetFacetSchema.Validate(facet); err != nil {
 						return err
 					}
 				}
@@ -154,7 +155,7 @@ func (validator *validator) Validate(event string) error {
 	return nil
 }
 
-func New() *validator {
+func New() (*validator, error) {
 	jsonschema.Loaders["https"] = loadSchema
 
 	compiler := jsonschema.NewCompiler()
@@ -162,57 +163,57 @@ func New() *validator {
 
 	mainSchema, err := compiler.Compile("https://openlineage.io/spec/1-0-5/OpenLineage.json")
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	baseRunFacetSchema, err := compiler.Compile("https://openlineage.io/spec/1-0-5/OpenLineage.json#/$defs/RunFacet")
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	runFacetSchemas, err := compileRunFacetSchemas(compiler)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	baseJobFacetSchema, err := compiler.Compile("https://openlineage.io/spec/1-0-5/OpenLineage.json#/$defs/JobFacet")
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	jobFacetSchemas, err := compileJobFacetSchemas(compiler)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	baseInputFacetSchema, err := compiler.Compile("https://openlineage.io/spec/1-0-5/OpenLineage.json#/$defs/InputDatasetFacet")
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	inputFacetSchemas, err := compileInputFacetSchemas(compiler)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	baseOutputFacetSchema, err := compiler.Compile("https://openlineage.io/spec/1-0-5/OpenLineage.json#/$defs/OutputDatasetFacet")
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	outputFacetSchemas, err := compileOutputFacetSchemas(compiler)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	baseDatasetFacetSchema, err := compiler.Compile("https://openlineage.io/spec/1-0-5/OpenLineage.json#/$defs/DatasetFacet")
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	datasetFacetSchemas, err := compileDatasetFacetSchemas(compiler)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	return &validator{
@@ -227,10 +228,10 @@ func New() *validator {
 		outputFacetSchemas:     outputFacetSchemas,
 		baseDatasetFacetSchema: baseDatasetFacetSchema,
 		datasetFacetSchemas:    datasetFacetSchemas,
-	}
+	}, nil
 }
 
-func compileRunFacetSchemas(compiler *jsonschema.Compiler) (schemas []*jsonschema.Schema, err error) {
+func compileRunFacetSchemas(compiler *jsonschema.Compiler) ([]*jsonschema.Schema, error) {
 	facets := []string{
 		"ErrorMessageRunFacet.json",
 		"ExternalQueryRunFacet.json",
@@ -242,7 +243,7 @@ func compileRunFacetSchemas(compiler *jsonschema.Compiler) (schemas []*jsonschem
 	return compileFacetSchemas(compiler, facets)
 }
 
-func compileJobFacetSchemas(compiler *jsonschema.Compiler) (schemas []*jsonschema.Schema, err error) {
+func compileJobFacetSchemas(compiler *jsonschema.Compiler) ([]*jsonschema.Schema, error) {
 	facets := []string{
 		"DocumentationJobFacet.json",
 		"OwnershipJobFacet.json",
@@ -253,17 +254,17 @@ func compileJobFacetSchemas(compiler *jsonschema.Compiler) (schemas []*jsonschem
 	return compileFacetSchemas(compiler, facets)
 }
 
-func compileInputFacetSchemas(compiler *jsonschema.Compiler) (schemas []*jsonschema.Schema, err error) {
+func compileInputFacetSchemas(compiler *jsonschema.Compiler) ([]*jsonschema.Schema, error) {
 	facets := []string{"DataQualityMetricsInputDatasetFacet.json"}
 	return compileFacetSchemas(compiler, facets)
 }
 
-func compileOutputFacetSchemas(compiler *jsonschema.Compiler) (schemas []*jsonschema.Schema, err error) {
+func compileOutputFacetSchemas(compiler *jsonschema.Compiler) ([]*jsonschema.Schema, error) {
 	facets := []string{"OutputStatisticsOutputDatasetFacet.json"}
 	return compileFacetSchemas(compiler, facets)
 }
 
-func compileDatasetFacetSchemas(compiler *jsonschema.Compiler) (schemas []*jsonschema.Schema, err error) {
+func compileDatasetFacetSchemas(compiler *jsonschema.Compiler) ([]*jsonschema.Schema, error) {
 	facets := []string{
 		"ColumnLineageDatasetFacet.json",
 		"DatasetVersionDatasetFacet.json",
@@ -279,16 +280,17 @@ func compileDatasetFacetSchemas(compiler *jsonschema.Compiler) (schemas []*jsons
 	return compileFacetSchemas(compiler, facets)
 }
 
-func compileFacetSchemas(compiler *jsonschema.Compiler, facets []string) (schemas []*jsonschema.Schema, err error) {
-	schemas = make([]*jsonschema.Schema, len(facets))
+func compileFacetSchemas(compiler *jsonschema.Compiler, facets []string) ([]*jsonschema.Schema, error) {
+	schemas := make([]*jsonschema.Schema, len(facets))
 	for i, schemaKey := range facets {
 		schemaURL := schemaURLs[schemaKey]
-		schemas[i], err = compiler.Compile(schemaURL)
+		schema, err := compiler.Compile(schemaURL)
 		if err != nil {
-			return
+			return nil, err
 		}
+		schemas[i] = schema
 	}
-	return
+	return schemas, nil
 }
 
 func loadSchema(url string) (io.ReadCloser, error) {

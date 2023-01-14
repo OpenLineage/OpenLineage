@@ -24,7 +24,10 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	lineageService := LineageService.New(db, failedEventHandler)
+	lineageService, err := LineageService.New(db, failedEventHandler)
+	if err != nil {
+		log.Fatalln(err)
+	}
 	lineageController := LineageController.New(lineageService)
 
 	transport, err := transports.Create(conf)

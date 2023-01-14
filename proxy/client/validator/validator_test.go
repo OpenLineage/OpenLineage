@@ -12,7 +12,11 @@ type ValidatorTestSuite struct {
 }
 
 func (suite *ValidatorTestSuite) SetupSuite() {
-	suite.validator = New()
+	var err error
+	suite.validator, err = New()
+	if err != nil {
+		suite.Fail("Fail to initialize validator")
+	}
 }
 
 func (suite *ValidatorTestSuite) TestValidateMinimalValidEvent() {
