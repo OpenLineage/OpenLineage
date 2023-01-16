@@ -10,6 +10,7 @@ from openlineage_sql import (  # noqa: F401
     DbTableMeta,  # noqa: F401
     ColumnLineage,  # noqa: F401
     ColumnMeta,  # noqa: F401
+    ExtractionError,  # noqa: F401
     provider  # noqa: F401
 )  # noqa: F401
 

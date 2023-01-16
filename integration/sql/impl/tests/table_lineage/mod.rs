@@ -5,6 +5,7 @@ pub mod tests_copy;
 pub mod tests_create;
 pub mod tests_cte;
 pub mod tests_delete;
+pub mod tests_error_handling;
 pub mod tests_insert;
 pub mod tests_merge;
 pub mod tests_select;

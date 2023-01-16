@@ -33,7 +33,7 @@ fi
 
 # Run a simple integration test
 printf "\n------ Running smoke test ------\n"
-EXPECTED="{{\"inTables\": [table1], \"outTables\": [], \"columnLineage\": []}}"
+EXPECTED="{{\"inTables\": [table1], \"outTables\": [], \"columnLineage\": [], \"errors\": []}}"
 OUTPUT=$(./src/test/integration/run_test.sh "SELECT * FROM table1;")
 if [ "$OUTPUT" = "$EXPECTED" ]; then
     printf "\n${GREEN}Smoke Test Passed!${NC}\n"

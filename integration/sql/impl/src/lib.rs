@@ -17,6 +17,7 @@ use visitor::Visit;
 
 use anyhow::{anyhow, Result};
 use sqlparser::parser::Parser;
+use sqlparser::parser::ParserError::ParserError;
 
 pub fn parse_multiple_statements(
     sql: Vec<&str>,
@@ -26,9 +27,20 @@ pub fn parse_multiple_statements(
     let mut inputs: HashSet<DbTableMeta> = HashSet::new();
     let mut outputs: HashSet<DbTableMeta> = HashSet::new();
     let mut column_lineage: Vec<ColumnLineage> = vec![];
+    let mut errors: Vec<ExtractionError> = vec![];
 
-    for statement in sql {
-        let ast = Parser::parse_sql(dialect.as_base(), statement)?;
+    for (index, statement) in sql.iter().enumerate() {
+        let ast = Parser::parse_sql(dialect.as_base(), statement);
+
+        if let Err(ParserError(s)) = ast {
+            errors.push(ExtractionError {
+                index: index,
+                message: s.clone(),
+                origin_statement: statement.to_string(),
+            });
+            continue;
+        }
+        let ast = ast.unwrap();
 
         if ast.is_empty() {
             return Err(anyhow!("Empty statement list"));
@@ -51,6 +63,7 @@ pub fn parse_multiple_statements(
         inputs.into_iter().collect(),
         outputs.into_iter().collect(),
         column_lineage,
+        errors,
     ))
 }
 

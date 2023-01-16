@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::test_utils::*;
-use openlineage_sql::{parse_sql, TableLineage};
+use openlineage_sql::{parse_sql, ExtractionError, TableLineage};
 use sqlparser::dialect::PostgreSqlDialect;
 
 #[test]
@@ -33,26 +33,28 @@ fn parse_simple_cte() {
 
 #[test]
 fn parse_bugged_cte() {
-    assert_eq!(
-        parse_sql(
-            "
-                WITH sum_trans (
-                    SELECT user_id, COUNT(*) as cnt, SUM(amount) as balance
-                    FROM transactions
-                    WHERE created_date > '2020-01-01'
-                    GROUP BY user_id
-                )
-                INSERT INTO potential_fraud (user_id, cnt, balance)
-                SELECT user_id, cnt, balance
-                FROM sum_trans
-                WHERE count > 1000 OR balance > 100000;",
-            &PostgreSqlDialect {},
-            None
+    let sql = "
+        WITH sum_trans (
+            SELECT user_id, COUNT(*) as cnt, SUM(amount) as balance
+            FROM transactions
+            WHERE created_date > '2020-01-01'
+            GROUP BY user_id
         )
-        .unwrap_err()
-        .to_string(),
-        "sql parser error: Expected AS, found: ("
-    )
+        INSERT INTO potential_fraud (user_id, cnt, balance)
+        SELECT user_id, cnt, balance
+        FROM sum_trans
+        WHERE count > 1000 OR balance > 100000;";
+    let meta = parse_sql(sql, &PostgreSqlDialect {}, None).unwrap();
+
+    assert_eq!(meta.errors.len(), 1);
+    assert_eq!(
+        meta.errors.get(0).unwrap(),
+        &ExtractionError {
+            index: 0,
+            message: "Expected AS, found: (".to_string(),
+            origin_statement: sql.to_string(),
+        }
+    );
 }
 
 #[test]

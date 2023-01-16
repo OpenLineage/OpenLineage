@@ -1,14 +1,13 @@
 // Copyright 2018-2023 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
 
-use openlineage_sql::parse_sql;
+use openlineage_sql::{parse_sql, SqlMeta, TableLineage};
 use sqlparser::dialect::SnowflakeDialect;
 
 #[test]
 fn parse_copy_from() {
-    assert_eq!(
-        parse_sql(
-            "
+    let meta = parse_sql(
+        "
             COPY INTO SCHEMA.SOME_MONITORING_SYSTEM
                 FROM (
                 SELECT
@@ -38,11 +37,13 @@ fn parse_copy_from() {
                 CURRENT_TIMESTAMP AS lts
                 FROM @schema.general_finished AS t
             )",
-            &SnowflakeDialect {},
-            None
-        )
-        .unwrap_err()
-        .to_string(),
-        "sql parser error: Expected FROM or TO, found: SCHEMA"
+        &SnowflakeDialect {},
+        None,
+    )
+    .unwrap();
+    assert_eq!(meta.errors.len(), 1);
+    assert_eq!(
+        meta.errors.get(0).unwrap().message,
+        "Expected FROM or TO, found: SCHEMA".to_string()
     )
 }
