@@ -23,7 +23,7 @@ class ArgumentParserTest {
   private static final String URL = "http://localhost:5000";
   private static final String RUN_ID = "ea445b5c-22eb-457a-8007-01c7c52b6e54";
   private static final String APP_NAME = "test";
-  private static final String DISABLED_FACETS = "facet1;facet2";
+  private static final String DISABLED_FACETS = "[facet1;facet2]";
   private static final String ENDPOINT = "api/v1/lineage";
   private static final String AUTH_TYPE = "api_key";
   private static final String API_KEY = "random_token";
@@ -32,7 +32,7 @@ class ArgumentParserTest {
   void testDefaults() {
     ArgumentParser argumentParser = ArgumentParser.parse(new SparkConf());
     assertEquals(
-        ArgumentParser.DEFAULT_DISABLED_FACETS.split(";")[0],
+        ArgumentParser.DEFAULT_DISABLED_FACETS.substring(1, ArgumentParser.DEFAULT_DISABLED_FACETS.length() - 1).split(";")[0],
         argumentParser.getOpenLineageYaml().getFacetsConfig().getDisabledFacets()[0]);
     assert (argumentParser.getOpenLineageYaml().getTransportConfig() instanceof HttpConfig);
   }
