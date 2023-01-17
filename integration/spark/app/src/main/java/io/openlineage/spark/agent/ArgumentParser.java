@@ -149,9 +149,10 @@ public class ArgumentParser {
           }
           nodePointer = (ObjectNode) nodePointer.get(node);
         }
-        if (isArrayType(value)) {
+        if (isArrayType(value) || SPARK_CONF_DISABLED_FACETS.equals("spark.openlineage." + keyPath)) {
           ArrayNode arrayNode = nodePointer.putArray(leaf);
-          Arrays.stream(value.substring(1, value.length() - 1).split(DISABLED_FACETS_SEPARATOR))
+          String valueWithoutBrackets = isArrayType(value) ? value.substring(1, value.length() - 1) : value;
+          Arrays.stream(valueWithoutBrackets.split(DISABLED_FACETS_SEPARATOR))
               .filter(StringUtils::isNotBlank)
               .forEach(arrayNode::add);
         } else {
