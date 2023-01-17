@@ -1,3 +1,5 @@
 -e ../../client/python
 -e ../common[sql]
 -e .[dev,airflow]
+-e ../dbt
+colorama==0.4.5

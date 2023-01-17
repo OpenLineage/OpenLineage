@@ -150,3 +150,7 @@ shadowJar {
     }
     zip64 true
 }
+
+assemble.dependsOn {
+    shadowJar
+}

@@ -20,9 +20,6 @@ requirements = [
 ]
 
 extras_require = {
-    "python-sql": [
-        "sqlparse>=0.3.1",
-    ],
     "tests": [
         "pytest",
         "pytest-cov",
@@ -32,7 +29,11 @@ extras_require = {
         "SQLAlchemy",       # must be set to 1.3.* for airflow tests compatibility
         "Flask-SQLAlchemy",  # must be set to 2.4.* for airflow tests compatibility
         "pandas-gbq==0.14.1",       # must be set to 0.14.* for airflow tests compatibility
-        "snowflake-connector-python"
+        "snowflake-connector-python",
+        "dbt-core==1.3.2",
+        "dbt-bigquery==1.3.0",
+        "dbt-snowflake==1.3.0",
+        "colorama==0.4.5"
     ],
     "airflow": [
         "apache-airflow-providers-postgres>=2.0.0",

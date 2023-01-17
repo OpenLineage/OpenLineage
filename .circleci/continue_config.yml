@@ -402,6 +402,31 @@ jobs:
           path: ./build/libs
           destination: sql-java-artifacts
 
+  release-integration-sql-java:
+    working_directory: ~/openlineage/integration/sql/iface-java
+    docker:
+      - image: cimg/openjdk:8
+    steps:
+      - *checkout_project_root
+      - restore_cache:
+          keys:
+            - v1-release-client-java-{{ .Branch }}-{{ .Revision }}
+            - v1-release-client-java-{{ .Branch }}
+      - *checkout_project_root
+      - attach_workspace:
+          at: ../
+      - run: bash script/build.sh
+      - run: |
+          # Get, then decode the GPG private key used to sign *.jar
+          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
+          export RELEASE_PASSWORD=$(echo $SONATYPE_PASSWORD)
+          export RELEASE_USERNAME=$(echo $SONATYPE_USER)
+
+          cd ../../client/java
+          ./gradlew --no-daemon publishToMavenLocal
+          cd -
+          # Publish *.jar
+          ./gradlew --no-daemon publish
 
   build-integration-sql-macos:
     working_directory: ~/openlineage/integration/sql
@@ -766,6 +791,24 @@ workflows:
           context: release
           requires:
             - release-client-java
+      - release-integration-sql-java:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+            branches:
+              ignore: /.*/
+          context: release
+          requires:
+            - build-integration-sql-java
+      - release-integration-flink:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+            branches:
+              ignore: /.*/
+          context: release
+          requires:
+            - release-client-java
       - release-proxy-backend:
           filters:
             tags:
@@ -805,18 +848,6 @@ workflows:
             branches:
               ignore: /.*/
       - build-integration-dagster:
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
-            branches:
-              ignore: /.*/
-      - compile-integration-sql-java-linux:
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
-            branches:
-              ignore: /.*/
-      - compile-integration-sql-java-macos:
           filters:
             tags:
               only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
@@ -882,4 +913,3 @@ workflows:
             - build-integration-sql-x86
             - build-integration-sql-arm
             - build-integration-sql-macos
-            - build-integration-sql-java

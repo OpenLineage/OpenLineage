@@ -1,6 +1,7 @@
 ARG AIRFLOW_IMAGE=apache/airflow:2.4.0-python3.7
 FROM $AIRFLOW_IMAGE AS airflow
 COPY integration/sql /app/openlineage/integration/sql
+COPY integration/dbt /app/openlineage/integration/dbt
 COPY integration/common /app/openlineage/integration/common
 COPY integration/airflow /app/openlineage/integration/airflow
 COPY client/python /app/openlineage/client/python
@@ -20,6 +21,7 @@ RUN AIRFLOW_VERSION=`airflow version` && \
     cd ../airflow && \
     pip install --no-cache-dir --use-deprecated=legacy-resolver -r dev-requirements.txt \
     --constraint=https://raw.githubusercontent.com/apache/airflow/constraints-$AIRFLOW_VERSION/constraints-$PYTHON_VERSION.txt
+RUN pip install --force-reinstall colorama==0.4.5 typing-extensions==4.4.0 jsonschema==3.2.0
 
 
 FROM python:3.7-slim as integration
