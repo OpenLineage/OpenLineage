@@ -75,7 +75,7 @@ dependencies {
     compileOnly "org.apache.spark:spark-sql-kafka-0-10_2.11:${sparkVersion}"
     compileOnly "com.databricks:dbutils-api_2.11:0.0.5"
 
-    testFixturesApi platform('org.junit:junit-bom:5.9.1')
+    testFixturesApi platform('org.junit:junit-bom:5.9.2')
     testFixturesApi "org.junit.jupiter:junit-jupiter:${junit5Version}"
     testFixturesApi "org.junit.jupiter:junit-jupiter-params:${junit5Version}"
 
