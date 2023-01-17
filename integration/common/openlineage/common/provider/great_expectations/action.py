@@ -31,6 +31,7 @@ from openlineage.common.provider.great_expectations.results import (
     EXPECTATIONS_PARSERS,
     GreatExpectationsAssertion,
 )
+from openlineage.common.provider.snowflake import fix_snowflake_sqlalchemy_uri
 from openlineage.common.sql import parse
 
 from great_expectations.checkpoint import ValidationAction
@@ -389,6 +390,13 @@ class OpenLineageValidationAction(ValidationAction):
         if isinstance(engine, Connection):
             engine = engine.engine
         datasource_url = engine.url
+
+        if engine.dialect.name.lower() == "snowflake":
+            if engine.connection_string:
+                datasource_url = engine.connection_string
+            else:
+                datasource_url = engine.url
+            datasource_url = fix_snowflake_sqlalchemy_uri(datasource_url)
 
         # bug in sql parser doesn't strip ` character from bigquery tables
         if table_name.endswith("`") or table_name.startswith("`"):

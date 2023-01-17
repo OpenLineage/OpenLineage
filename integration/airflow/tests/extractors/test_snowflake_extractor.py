@@ -89,6 +89,7 @@ TASK = SnowflakeOperator(
 def mock_get_hook(operator):
     mocked = mock.MagicMock()
     mocked.return_value.conn_name_attr = 'snowflake_conn_id'
+    mocked.return_value.get_uri.return_value = "snowflake://user:pass@xy123456/db/schema"
     if hasattr(operator, 'get_db_hook'):
         operator.get_db_hook = mocked
     else:

@@ -135,6 +135,28 @@ class OpenLineageSqlTest {
   }
 
   @Test
+  void columnLevelLineageCte() {
+      SqlMeta output = OpenLineageSql.parse(Collections.singletonList("" +
+        "WITH cte1 AS (\n" +
+        "    SELECT col1, col2\n" +
+        "    FROM table1\n" +
+        "    WHERE col1 = 'value1'\n" +
+        "), cte2 AS (\n" +
+        "    SELECT col3, col4\n" +
+        "    FROM table2\n" +
+        "    WHERE col2 = 'value2'\n" +
+        ")\n" +
+        "SELECT cte1.col1, cte2.col3\n" +
+        "FROM cte1\n" +
+        "JOIN cte2 ON cte1.col2 = cte2.col4\n")).get();
+      assertEquals(
+        Arrays.asList(
+            columnLineage("col1", "table1", "col1"),
+            columnLineage("col3", "table2", "col3")),
+        output.columnLineage());
+  }
+
+  @Test
   void returnedError() {
     SqlMeta output = OpenLineageSql.parse(Collections.singletonList("NOT A STATEMENT")).get();
     assertEquals(1, output.errors().size());
