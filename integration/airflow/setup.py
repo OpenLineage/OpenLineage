@@ -20,9 +20,6 @@ requirements = [
 ]
 
 extras_require = {
-    "python-sql": [
-        "sqlparse>=0.3.1",
-    ],
     "tests": [
         "pytest",
         "pytest-cov",

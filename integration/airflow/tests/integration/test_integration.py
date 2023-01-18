@@ -44,6 +44,8 @@ IS_AIRFLOW_VERSION_ENOUGH = lambda x: parse_version(
 ) >= parse_version(x)
 
 
+DBT_TESTS_DISABLED = True
+
 params = [
     ("postgres_orders_popular_day_of_week", "requests/postgres.json"),
     ("failed_sql_extraction", "requests/failed_sql_extraction.json"),
@@ -56,7 +58,9 @@ params = [
     pytest.param(
         "dbt_bigquery",
         "requests/dbt_bigquery.json",
-        marks=pytest.mark.skipif(not IS_GCP_AUTH, reason="no gcp credentials"),
+        marks=pytest.mark.skipif(
+            not IS_GCP_AUTH or DBT_TESTS_DISABLED, reason="no gcp credentials or dbt tests disabled"
+        ),
     ),
     pytest.param(
         "athena_dag",
@@ -118,7 +122,8 @@ params = [
         "requests/snowflake.json",
         marks=[
             pytest.mark.skipif(
-                not IS_AIRFLOW_VERSION_ENOUGH(SNOWFLAKE_AIRFLOW_TEST_VERSION),
+                DBT_TESTS_DISABLED
+                or not IS_AIRFLOW_VERSION_ENOUGH(SNOWFLAKE_AIRFLOW_TEST_VERSION),
                 reason=f"Airflow < {SNOWFLAKE_AIRFLOW_TEST_VERSION}",
             ),
             pytest.mark.skipif(

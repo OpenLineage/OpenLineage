@@ -88,10 +88,10 @@ def match(expected, result) -> bool:
         # Take a look only at keys present at expected dictionary
         for k, v in expected.items():
             if k not in result:
-                log.error(f"Key {k} not in event {result}\nExpected {expected}")
+                log.error(f"Key {k} not in received event {result}\nExpected {expected}")
                 return False
             if not match(v, result[k]):
-                log.error(f"For key {k}, value {v} not equals {result[k]}"
+                log.error(f"For key {k}, expected value {v} not equals received {result[k]}"
                           f"\nExpected {expected}, request {result}")
                 return False
     elif isinstance(expected, list):
