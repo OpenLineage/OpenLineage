@@ -34,7 +34,7 @@ dag = DAG(
 t1 = BashOperator(
     task_id='dbt_seed',
     dag=dag,
-    bash_command=f"dbt seed --full-refresh --project-dir={PROJECT_DIR} --profiles-dir={PROFILE_DIR}",
+    bash_command=f"source /opt/airflow/dbt_venv/bin/activate && dbt seed --full-refresh --project-dir={PROJECT_DIR} --profiles-dir={PROFILE_DIR} && deactivate",
     env={
         **os.environ,
         "OPENLINEAGE_PARENT_ID": PLUGIN_MACRO,
@@ -45,7 +45,7 @@ t1 = BashOperator(
 t2 = BashOperator(
     task_id='dbt_run',
     dag=dag,
-    bash_command=f"dbt-ol run --project-dir={PROJECT_DIR} --profiles-dir={PROFILE_DIR}",
+    bash_command=f"source /opt/airflow/dbt_venv/bin/activate && dbt-ol run --project-dir={PROJECT_DIR} --profiles-dir={PROFILE_DIR} && deactivate",
     env={
         **os.environ,
         "OPENLINEAGE_PARENT_ID": PLUGIN_MACRO,

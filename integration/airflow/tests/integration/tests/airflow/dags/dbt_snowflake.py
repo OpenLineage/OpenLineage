@@ -52,7 +52,7 @@ if AIRFLOW_VERSION == os.environ.get("SNOWFLAKE_AIRFLOW_TEST_VERSION", "2.3.4"):
     t1 = BashOperator(
         task_id='dbt_seed',
         dag=dag,
-        bash_command=f"dbt seed --full-refresh --project-dir={PROJECT_DIR} --profiles-dir={PROFILE_DIR}",
+        bash_command=f"source /opt/airflow/dbt_venv/bin/activate && dbt seed --full-refresh --project-dir={PROJECT_DIR} --profiles-dir={PROFILE_DIR} && deactivate",
         env={
             **os.environ,
             "OPENLINEAGE_PARENT_ID": "{{ lineage_parent_id(run_id, task) }}",
@@ -63,7 +63,7 @@ if AIRFLOW_VERSION == os.environ.get("SNOWFLAKE_AIRFLOW_TEST_VERSION", "2.3.4"):
     t2 = BashOperator(
         task_id='dbt_run',
         dag=dag,
-        bash_command=f"dbt-ol run --project-dir={PROJECT_DIR} --profiles-dir={PROFILE_DIR}",
+        bash_command=f"source /opt/airflow/dbt_venv/bin/activate && dbt-ol run --project-dir={PROJECT_DIR} --profiles-dir={PROFILE_DIR}",
         env={
             **os.environ,
             "OPENLINEAGE_PARENT_ID": "{{ lineage_parent_id(run_id, task) }}",
