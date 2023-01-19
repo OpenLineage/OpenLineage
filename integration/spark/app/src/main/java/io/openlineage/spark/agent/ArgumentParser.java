@@ -149,9 +149,11 @@ public class ArgumentParser {
           }
           nodePointer = (ObjectNode) nodePointer.get(node);
         }
-        if (isArrayType(value) || SPARK_CONF_DISABLED_FACETS.equals("spark.openlineage." + keyPath)) {
+        if (isArrayType(value)
+            || SPARK_CONF_DISABLED_FACETS.equals("spark.openlineage." + keyPath)) {
           ArrayNode arrayNode = nodePointer.putArray(leaf);
-          String valueWithoutBrackets = isArrayType(value) ? value.substring(1, value.length() - 1) : value;
+          String valueWithoutBrackets =
+              isArrayType(value) ? value.substring(1, value.length() - 1) : value;
           Arrays.stream(valueWithoutBrackets.split(DISABLED_FACETS_SEPARATOR))
               .filter(StringUtils::isNotBlank)
               .forEach(arrayNode::add);
@@ -191,7 +193,7 @@ public class ArgumentParser {
 
   private static boolean isArrayType(String value) {
     return value.startsWith(ARRAY_PREFIX_CHAR)
-            && value.endsWith(ARRAY_SUFFIX_CHAR)
-            && value.contains(DISABLED_FACETS_SEPARATOR);
+        && value.endsWith(ARRAY_SUFFIX_CHAR)
+        && value.contains(DISABLED_FACETS_SEPARATOR);
   }
 }

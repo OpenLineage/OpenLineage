@@ -32,7 +32,9 @@ class ArgumentParserTest {
   void testDefaults() {
     ArgumentParser argumentParser = ArgumentParser.parse(new SparkConf());
     assertEquals(
-        ArgumentParser.DEFAULT_DISABLED_FACETS.substring(1, ArgumentParser.DEFAULT_DISABLED_FACETS.length() - 1).split(";")[0],
+        ArgumentParser.DEFAULT_DISABLED_FACETS.substring(
+                1, ArgumentParser.DEFAULT_DISABLED_FACETS.length() - 1)
+            .split(";")[0],
         argumentParser.getOpenLineageYaml().getFacetsConfig().getDisabledFacets()[0]);
     assert (argumentParser.getOpenLineageYaml().getTransportConfig() instanceof HttpConfig);
   }
