@@ -55,11 +55,11 @@ ext {
     sparkVersion = project.getProperty('spark.version')
     postgresqlVersion = '42.2.19'
     mockitoVersion = '3.11.2'
-    testcontainersVersion = '1.15.3'
+    testcontainersVersion = '1.17.6'
     shortVersion = sparkVersion.substring(0,3)
 
     versionsMap = [
-            "3.3": ["module": "spark33", "scala": "2.12", "delta": "NA",    "gcs": "hadoop3-2.2.9", "snowflake": "2.11.0-spark_3.3"],
+            "3.3": ["module": "spark33", "scala": "2.12", "delta": "2.1.0",    "gcs": "hadoop3-2.2.9", "snowflake": "2.11.0-spark_3.3"],
             "3.2": ["module": "spark32", "scala": "2.12", "delta": "1.1.0", "gcs": "hadoop3-2.2.9", "snowflake": "2.11.0-spark_3.2"],
             "3.1": ["module": "spark3",  "scala": "2.12", "delta": "1.0.0", "gcs": "hadoop3-2.2.9", "snowflake": "2.11.0-spark_3.1"],
             "2.4": ["module": "spark2",  "scala": "2.11", "delta": "NA",    "gcs": "hadoop2-2.2.9", "snowflake": "2.9.3-spark_2.4"]
@@ -125,6 +125,14 @@ dependencies {
     }
 
     testFixturesApi("org.apache.hadoop:hadoop-client:3.3.4") { force=true }
+    testFixturesApi("org.mock-server:mockserver-netty:5.14.0:shaded") {
+        exclude group: 'com.google.guava', module: 'guava'
+        exclude group: 'com.fasterxml.jackson.core'
+        exclude group: 'com.fasterxml.jackson.datatype'
+        exclude group: 'com.fasterxml.jackson.dataformat'
+        exclude group: 'org.mock-server.mockserver-client-java'
+    }
+
     pysparkContainerOnly("com.google.cloud.bigdataoss:gcs-connector:${versions.gcs}:shaded"){
         exclude group: 'com.google.guava', module: 'guava'
     }
@@ -190,6 +198,11 @@ task copyDependencies(type: Copy) {
 }
 
 task integrationTest(type: Test) {
+    // integrationTest depends on shadowJar which dependsOn test
+    // exclude all the tests and add manually tagged with integration-test
+    test {
+        exclude "**"
+    }
     dependsOn shadowJar, copyDependencies
     retry {
         boolean isCiServer = System.getenv().containsKey("CI")

@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import org.mockserver.client.MockServerClient;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.containers.MockServerContainer;
@@ -22,9 +23,12 @@ import org.testcontainers.utility.DockerImageName;
 
 public class SparkContainerUtils {
 
+  public static final DockerImageName MOCKSERVER_IMAGE =
+      DockerImageName.parse("mockserver/mockserver")
+          .withTag("mockserver-" + MockServerClient.class.getPackage().getImplementationVersion());
+
   static MockServerContainer makeMockServerContainer(Network network) {
-    return new MockServerContainer(
-            DockerImageName.parse("jamesdbloom/mockserver:mockserver-5.12.0"))
+    return new MockServerContainer(MOCKSERVER_IMAGE)
         .withNetwork(network)
         .withNetworkAliases("openlineageclient");
   }

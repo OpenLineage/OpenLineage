@@ -1,13 +1,13 @@
 {
   "eventType": "COMPLETE",
   "job": {
-    "namespace": "testSaveIntoDataSource"
+    "namespace": "delta-namespace"
   },
   "inputs": [],
   "outputs": [
     {
       "namespace": "file",
-      "name": "/tmp/save_into_data_source_target/",
+      "name": "/tmp/delta/save_into_data_source_target/",
       "facets": {
         "dataSource": {
           "name": "file",
