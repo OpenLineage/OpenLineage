@@ -42,7 +42,9 @@ public class ArgumentParser {
   public static final String SPARK_CONF_PARENT_RUN_ID = "spark.openlineage.parentRunId";
   public static final String SPARK_CONF_APP_NAME = "spark.openlineage.appName";
   public static final String SPARK_CONF_DISABLED_FACETS = "spark.openlineage.facets.disabled";
-  public static final String DEFAULT_DISABLED_FACETS = "spark_unknown;";
+  public static final String DEFAULT_DISABLED_FACETS = "[spark_unknown;]";
+  public static final String ARRAY_PREFIX_CHAR = "[";
+  public static final String ARRAY_SUFFIX_CHAR = "]";
   public static final String DISABLED_FACETS_SEPARATOR = ";";
   public static final String SPARK_CONF_TRANSPORT_TYPE = "spark.openlineage.transport.type";
   public static final String SPARK_CONF_HTTP_URL = "spark.openlineage.transport.url";
@@ -147,9 +149,12 @@ public class ArgumentParser {
           }
           nodePointer = (ObjectNode) nodePointer.get(node);
         }
-        if (value.contains(DISABLED_FACETS_SEPARATOR)) {
+        if (isArrayType(value)
+            || SPARK_CONF_DISABLED_FACETS.equals("spark.openlineage." + keyPath)) {
           ArrayNode arrayNode = nodePointer.putArray(leaf);
-          Arrays.stream(value.split(DISABLED_FACETS_SEPARATOR))
+          String valueWithoutBrackets =
+              isArrayType(value) ? value.substring(1, value.length() - 1) : value;
+          Arrays.stream(valueWithoutBrackets.split(DISABLED_FACETS_SEPARATOR))
               .filter(StringUtils::isNotBlank)
               .forEach(arrayNode::add);
         } else {
@@ -184,5 +189,11 @@ public class ArgumentParser {
                 })
             .orElseGet(() -> Arrays.asList(keyPath.split("\\.")));
     return pathKeys;
+  }
+
+  private static boolean isArrayType(String value) {
+    return value.startsWith(ARRAY_PREFIX_CHAR)
+        && value.endsWith(ARRAY_SUFFIX_CHAR)
+        && value.contains(DISABLED_FACETS_SEPARATOR);
   }
 }
