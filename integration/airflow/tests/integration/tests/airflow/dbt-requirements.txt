@@ -1,0 +1,6 @@
+-e ../../client/python
+-e ../common[sql]
+-e ../dbt
+dbt-core==1.3.2
+dbt-snowflake==1.3.0
+dbt-bigquery==1.3.0
