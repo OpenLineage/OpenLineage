@@ -1,12 +1,12 @@
 {
   "eventType" : "COMPLETE",
   "job" : {
-    "namespace" : "testWriteIcebergTableVersion",
-    "name" : "open_lineage_integration_iceberg.append_data"
+    "namespace" : "iceberg-namespace",
+    "name" : "iceberg_integration_test.append_data"
   },
   "outputs" : [ {
     "namespace" : "file",
-    "name" : "/tmp/write_iceberg_table_version/db.table",
+    "name" : "/tmp/iceberg/default.table",
     "facets" : {
       "schema" : {
         "fields" : [ {
@@ -20,8 +20,8 @@
       "symlinks": {
         "identifiers": [
           {
-            "namespace": "/tmp/write_iceberg_table_version",
-            "name": "db.table",
+            "namespace": "/tmp/iceberg",
+            "name": "default.table",
             "type": "TABLE"
           }
         ]

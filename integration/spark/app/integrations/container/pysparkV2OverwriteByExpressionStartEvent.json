@@ -1,8 +1,7 @@
 {
   "eventType" : "START",
   "job" : {
-    "namespace" : "testV2Commands",
-    "name" : "open_lineage_integration_v2_commands.overwrite_by_expression"
+    "namespace" : "iceberg-namespace",
   },
   "inputs" : [ ],
   "outputs" : [ ]
