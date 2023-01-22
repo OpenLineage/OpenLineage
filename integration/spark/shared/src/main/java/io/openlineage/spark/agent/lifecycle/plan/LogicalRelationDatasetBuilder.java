@@ -11,14 +11,19 @@ import io.openlineage.spark.agent.util.JdbcUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.agent.util.TableNameParser;
 import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
+
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -57,145 +62,180 @@ import scala.collection.JavaConversions;
  */
 @Slf4j
 public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
-    extends AbstractQueryPlanDatasetBuilder<SparkListenerEvent, LogicalRelation, D> {
+        extends AbstractQueryPlanDatasetBuilder<SparkListenerEvent, LogicalRelation, D> {
 
-  private final DatasetFactory<D> datasetFactory;
+    private final DatasetFactory<D> datasetFactory;
 
-  public LogicalRelationDatasetBuilder(
-      OpenLineageContext context, DatasetFactory<D> datasetFactory, boolean searchDependencies) {
-    super(context, searchDependencies);
-    this.datasetFactory = datasetFactory;
-  }
-
-  @Override
-  public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
-    return x instanceof LogicalRelation
-        && (((LogicalRelation) x).relation() instanceof HadoopFsRelation
-            || ((LogicalRelation) x).relation() instanceof JDBCRelation
-            || ((LogicalRelation) x).catalogTable().isDefined());
-  }
-
-  @Override
-  public List<D> apply(LogicalRelation logRel) {
-    if (logRel.catalogTable() != null && logRel.catalogTable().isDefined()) {
-      return handleCatalogTable(logRel);
-    } else if (logRel.relation() instanceof HadoopFsRelation) {
-      return handleHadoopFsRelation(logRel);
-    } else if (logRel.relation() instanceof JDBCRelation) {
-      return handleJdbcRelation(logRel);
+    public LogicalRelationDatasetBuilder(
+            OpenLineageContext context, DatasetFactory<D> datasetFactory, boolean searchDependencies) {
+        super(context, searchDependencies);
+        this.datasetFactory = datasetFactory;
     }
-    throw new IllegalArgumentException(
-        "Expected logical plan to be either HadoopFsRelation, JDBCRelation, "
-            + "or CatalogTable but was "
-            + logRel);
-  }
 
-  private List<D> handleCatalogTable(LogicalRelation logRel) {
-    CatalogTable catalogTable = logRel.catalogTable().get();
+    @Override
+    public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
+        return x instanceof LogicalRelation
+                && (((LogicalRelation) x).relation() instanceof HadoopFsRelation
+                || ((LogicalRelation) x).relation() instanceof JDBCRelation
+                || ((LogicalRelation) x).catalogTable().isDefined());
+    }
 
-    DatasetIdentifier di = PathUtils.fromCatalogTable(catalogTable);
+    @Override
+    public List<D> apply(LogicalRelation logRel) {
+        if (logRel.catalogTable() != null && logRel.catalogTable().isDefined()) {
+            return handleCatalogTable(logRel);
+        } else if (logRel.relation() instanceof HadoopFsRelation) {
+            return handleHadoopFsRelation(logRel);
+        } else if (logRel.relation() instanceof JDBCRelation) {
+            return handleJdbcRelation(logRel);
+        }
+        throw new IllegalArgumentException(
+                "Expected logical plan to be either HadoopFsRelation, JDBCRelation, "
+                        + "or CatalogTable but was "
+                        + logRel);
+    }
 
-    OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
-        context.getOpenLineage().newDatasetFacetsBuilder();
-    datasetFacetsBuilder.schema(PlanUtils.schemaFacet(context.getOpenLineage(), logRel.schema()));
-    datasetFacetsBuilder.dataSource(
-        PlanUtils.datasourceFacet(context.getOpenLineage(), di.getNamespace()));
+    private List<D> handleCatalogTable(LogicalRelation logRel) {
+        CatalogTable catalogTable = logRel.catalogTable().get();
 
-    getDatasetVersion(logRel)
-        .map(
-            version ->
-                datasetFacetsBuilder.version(
-                    context.getOpenLineage().newDatasetVersionDatasetFacet(version)));
+        DatasetIdentifier di = PathUtils.fromCatalogTable(catalogTable);
 
-    return Collections.singletonList(datasetFactory.getDataset(di, datasetFacetsBuilder));
-  }
+        OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
+                context.getOpenLineage().newDatasetFacetsBuilder();
+        datasetFacetsBuilder.schema(PlanUtils.schemaFacet(context.getOpenLineage(), logRel.schema()));
+        datasetFacetsBuilder.dataSource(
+                PlanUtils.datasourceFacet(context.getOpenLineage(), di.getNamespace()));
 
-  private List<D> handleHadoopFsRelation(LogicalRelation x) {
-    HadoopFsRelation relation = (HadoopFsRelation) x.relation();
-    try {
-      return context
-          .getSparkSession()
-          .map(
-              session -> {
-                Configuration hadoopConfig =
-                    session.sessionState().newHadoopConfWithOptions(relation.options());
-
-                OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
-                    context.getOpenLineage().newDatasetFacetsBuilder();
-                getDatasetVersion(x)
-                    .map(
+        getDatasetVersion(logRel)
+                .map(
                         version ->
-                            datasetFacetsBuilder.version(
-                                context.getOpenLineage().newDatasetVersionDatasetFacet(version)));
+                                datasetFacetsBuilder.version(
+                                        context.getOpenLineage().newDatasetVersionDatasetFacet(version)));
 
-                return JavaConversions.asJavaCollection(relation.location().rootPaths()).stream()
-                    .map(p -> PlanUtils.getDirectoryPath(p, hadoopConfig))
-                    .distinct()
-                    .map(
-                        p -> {
-                          // TODO- refactor this to return a single partitioned dataset based on
-                          // static
-                          // static partitions in the relation
-                          return datasetFactory.getDataset(
-                              p.toUri(), relation.schema(), datasetFacetsBuilder);
-                        })
-                    .collect(Collectors.toList());
-              })
-          .orElse(Collections.emptyList());
-    } catch (Exception e) {
-      if ("com.databricks.backend.daemon.data.client.adl.AzureCredentialNotFoundException"
-          .equals(e.getClass().getName())) {
-        // This is a fallback that can occur when hadoop configurations cannot be
-        // reached. This occurs in Azure Databricks when credential passthrough
-        // is enabled and you're attempting to get the data lake credentials.
-        // The Spark Listener context cannot use the user credentials
-        // thus we need a fallback.
-        // This is similar to the InsertIntoHadoopRelationVisitor's process for getting
-        // Datasets
-        List<D> inputDatasets = new ArrayList<D>();
-        List<Path> paths =
-            JavaConversions.asJavaCollection(relation.location().rootPaths()).stream()
-                .collect(Collectors.toList());
-
-        for (Path p : paths) {
-          inputDatasets.add(datasetFactory.getDataset(p.toUri(), relation.schema()));
-        }
-        if (inputDatasets.isEmpty()) {
-          return Collections.emptyList();
-        } else {
-          return inputDatasets;
-        }
-      } else {
-        throw e;
-      }
+        return Collections.singletonList(datasetFactory.getDataset(di, datasetFacetsBuilder));
     }
-  }
 
-  protected Optional<String> getDatasetVersion(LogicalRelation x) {
-    // not implemented
-    return Optional.empty();
-  }
+    private List<D> handleHadoopFsRelation(LogicalRelation x) {
+        HadoopFsRelation relation = (HadoopFsRelation) x.relation();
+        try {
+            return context
+                    .getSparkSession()
+                    .map(
+                            session -> {
+                                Configuration hadoopConfig =
+                                        session.sessionState().newHadoopConfWithOptions(relation.options());
 
-  private List<D> handleJdbcRelation(LogicalRelation x) {
-    JDBCRelation relation = (JDBCRelation) x.relation();
-    // TODO- if a relation is composed of a complex sql query, we should attempt to
-    // extract the
-    // table names so that we can construct a true lineage
-    String tableName =
-        relation
-            .jdbcOptions()
-            .parameters()
-            .get(JDBCOptions.JDBC_TABLE_NAME())
-            .getOrElse(ScalaConversionUtils.toScalaFn(() -> "COMPLEX"));
-    // strip the jdbc: prefix from the url. this leaves us with a url like
-    // postgresql://<hostname>:<port>/<database_name>?params
-    // we don't parse the URI here because different drivers use different
-    // connection
-    // formats that aren't always amenable to how Java parses URIs. E.g., the oracle
-    // driver format looks like oracle:<drivertype>:<user>/<password>@<database>
-    // whereas postgres, mysql, and sqlserver use the scheme://hostname:port/db
-    // format.
-    String url = JdbcUtils.sanitizeJdbcUrl(relation.jdbcOptions().url());
-    return Collections.singletonList(datasetFactory.getDataset(tableName, url, relation.schema()));
-  }
+                                OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
+                                        context.getOpenLineage().newDatasetFacetsBuilder();
+                                getDatasetVersion(x)
+                                        .map(
+                                                version ->
+                                                        datasetFacetsBuilder.version(
+                                                                context.getOpenLineage().newDatasetVersionDatasetFacet(version)));
+
+                                return JavaConversions.asJavaCollection(relation.location().rootPaths()).stream()
+                                        .map(p -> PlanUtils.getDirectoryPath(p, hadoopConfig))
+                                        .distinct()
+                                        .map(
+                                                p -> {
+                                                    // TODO- refactor this to return a single partitioned dataset based on
+                                                    // static
+                                                    // static partitions in the relation
+                                                    return datasetFactory.getDataset(
+                                                            p.toUri(), relation.schema(), datasetFacetsBuilder);
+                                                })
+                                        .collect(Collectors.toList());
+                            })
+                    .orElse(Collections.emptyList());
+        } catch (Exception e) {
+            if ("com.databricks.backend.daemon.data.client.adl.AzureCredentialNotFoundException"
+                    .equals(e.getClass().getName())) {
+                // This is a fallback that can occur when hadoop configurations cannot be
+                // reached. This occurs in Azure Databricks when credential passthrough
+                // is enabled and you're attempting to get the data lake credentials.
+                // The Spark Listener context cannot use the user credentials
+                // thus we need a fallback.
+                // This is similar to the InsertIntoHadoopRelationVisitor's process for getting
+                // Datasets
+                List<D> inputDatasets = new ArrayList<D>();
+                List<Path> paths =
+                        JavaConversions.asJavaCollection(relation.location().rootPaths()).stream()
+                                .collect(Collectors.toList());
+
+                for (Path p : paths) {
+                    inputDatasets.add(datasetFactory.getDataset(p.toUri(), relation.schema()));
+                }
+                if (inputDatasets.isEmpty()) {
+                    return Collections.emptyList();
+                } else {
+                    return inputDatasets;
+                }
+            } else {
+                throw e;
+            }
+        }
+    }
+
+    protected Optional<String> getDatasetVersion(LogicalRelation x) {
+        // not implemented
+        return Optional.empty();
+    }
+
+    private List<D> handleJdbcRelation(LogicalRelation x) {
+        JDBCRelation relation = (JDBCRelation) x.relation();
+        // TODO- if a relation is composed of a complex sql query, we should attempt to
+        // extract the
+        // table names so that we can construct a true lineage
+        String tableName =
+                relation
+                        .jdbcOptions()
+                        .parameters()
+                        .get(JDBCOptions.JDBC_TABLE_NAME())
+                        .getOrElse(ScalaConversionUtils.toScalaFn(() -> "COMPLEX"));
+        // strip the jdbc: prefix from the url. this leaves us with a url like
+        // postgresql://<hostname>:<port>/<database_name>?params
+        // we don't parse the URI here because different drivers use different
+        // connection
+        // formats that aren't always amenable to how Java parses URIs. E.g., the oracle
+        // driver format looks like oracle:<drivertype>:<user>/<password>@<database>
+        // whereas postgres, mysql, and sqlserver use the scheme://hostname:port/db
+        // format.
+        String url = JdbcUtils.sanitizeJdbcUrl(relation.jdbcOptions().url());
+        Set<String> tableNames = extractTableNames(tableName, url);
+
+        return tableNames.stream()
+                .map(t -> {
+                    String namespace = t.substring(t.lastIndexOf(".") + 1);
+                    DatasetIdentifier di = new DatasetIdentifier(tableName, namespace);
+                    OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder = context.getOpenLineage().newDatasetFacetsBuilder();
+                    datasetFacetsBuilder.schema(PlanUtils.schemaFacet(context.getOpenLineage(), relation.schema()));
+                    datasetFacetsBuilder.dataSource(PlanUtils.datasourceFacet(context.getOpenLineage(), di.getNamespace()));
+
+                    OpenLineage.SymlinksDatasetFacetIdentifiers symLink = context
+                            .getOpenLineage()
+                            .newSymlinksDatasetFacetIdentifiersBuilder()
+                            .name(t)
+                            .namespace(namespace)
+                            .build();
+
+                    datasetFacetsBuilder.symlinks(context.getOpenLineage().newSymlinksDatasetFacet(Collections.singletonList(symLink)));
+                    return datasetFactory.getDataset(di, datasetFacetsBuilder);
+                }).collect(Collectors.toList());
+    }
+
+    private Set<String> extractTableNames(String query, String url) {
+        Set<String> tableNames = new TableNameParser(query).tables().stream().collect(Collectors.toSet());
+        String dbName = extractDbNameFromUrl(url);
+        if (dbName == null) {
+            return tableNames;
+        }
+        return tableNames.stream()
+                .map(t -> t.contains(".") ? t : dbName + "." + t)
+                .collect(Collectors.toSet());
+    }
+
+    private String extractDbNameFromUrl(String url) {
+        URI uri = URI.create(url);
+        return (uri.getPath().startsWith("/")) ? uri.getPath().substring(1) : null;
+    }
 }
