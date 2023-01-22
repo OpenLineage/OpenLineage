@@ -58,7 +58,7 @@ ext {
     flinkVersion = project.getProperty('flink.version')
     flinkVersionShort = flinkVersion.substring(0,4)
     flinkVersionWithScala212 = flinkVersion.contains('1.14') ? "_2.12:$flinkVersion" : ":$flinkVersion"
-    assertjVersion = '3.24.1'
+    assertjVersion = '3.24.2'
     junit5Version = '5.9.2'
     lombokVersion = '1.18.24'
     mockitoVersion = '5.0.0'
