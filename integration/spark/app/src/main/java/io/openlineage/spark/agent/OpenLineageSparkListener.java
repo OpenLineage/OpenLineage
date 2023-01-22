@@ -74,14 +74,18 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   @Override
   public void onOtherEvent(SparkListenerEvent event) {
-    if (isDisabled) {
-      return;
-    }
-    initializeContextFactoryIfNotInitialized();
-    if (event instanceof SparkListenerSQLExecutionStart) {
-      sparkSQLExecStart((SparkListenerSQLExecutionStart) event);
-    } else if (event instanceof SparkListenerSQLExecutionEnd) {
-      sparkSQLExecEnd((SparkListenerSQLExecutionEnd) event);
+    try {
+      if (isDisabled) {
+        return;
+      }
+      initializeContextFactoryIfNotInitialized();
+      if (event instanceof SparkListenerSQLExecutionStart) {
+        sparkSQLExecStart((SparkListenerSQLExecutionStart) event);
+      } else if (event instanceof SparkListenerSQLExecutionEnd) {
+        sparkSQLExecEnd((SparkListenerSQLExecutionEnd) event);
+      }
+    } catch (Exception e) {
+      log.error("Open Lineage failed to handle event due to: {}", e.getMessage(), e);
     }
   }
 
@@ -102,52 +106,56 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   /** called by the SparkListener when a job starts */
   @Override
   public void onJobStart(SparkListenerJobStart jobStart) {
-    if (isDisabled) {
-      return;
-    }
-    initializeContextFactoryIfNotInitialized();
-    Optional<ActiveJob> activeJob =
-        asJavaOptional(
-                SparkSession.getDefaultSession()
-                    .map(sparkContextFromSession)
-                    .orElse(activeSparkContext))
-            .flatMap(
-                ctx ->
-                    Optional.ofNullable(ctx.dagScheduler())
-                        .map(ds -> ds.jobIdToActiveJob().get(jobStart.jobId())))
-            .flatMap(ScalaConversionUtils::asJavaOptional);
-    Set<Integer> stages =
-        ScalaConversionUtils.fromSeq(jobStart.stageIds()).stream()
-            .map(Integer.class::cast)
-            .collect(Collectors.toSet());
+    try {
+      if (isDisabled) {
+        return;
+      }
+      initializeContextFactoryIfNotInitialized();
+      Optional<ActiveJob> activeJob =
+              asJavaOptional(
+                      SparkSession.getDefaultSession()
+                              .map(sparkContextFromSession)
+                              .orElse(activeSparkContext))
+                      .flatMap(
+                              ctx ->
+                                      Optional.ofNullable(ctx.dagScheduler())
+                                              .map(ds -> ds.jobIdToActiveJob().get(jobStart.jobId())))
+                      .flatMap(ScalaConversionUtils::asJavaOptional);
+      Set<Integer> stages =
+              ScalaConversionUtils.fromSeq(jobStart.stageIds()).stream()
+                      .map(Integer.class::cast)
+                      .collect(Collectors.toSet());
 
-    if (sparkVersion.startsWith("3")) {
-      jobMetrics.addJobStages(jobStart.jobId(), stages);
-    }
+      if (sparkVersion.startsWith("3")) {
+        jobMetrics.addJobStages(jobStart.jobId(), stages);
+      }
 
-    Optional.ofNullable(getSqlExecutionId(jobStart.properties()))
-        .map(Optional::of)
-        .orElseGet(
-            () ->
-                asJavaOptional(
-                        SparkSession.getDefaultSession()
-                            .map(sparkContextFromSession)
-                            .orElse(activeSparkContext))
-                    .flatMap(
-                        ctx ->
-                            Optional.ofNullable(ctx.dagScheduler())
-                                .map(ds -> ds.jobIdToActiveJob().get(jobStart.jobId()))
-                                .flatMap(ScalaConversionUtils::asJavaOptional))
-                    .map(job -> getSqlExecutionId(job.properties())))
-        .map(Long::parseLong)
-        .map(id -> getExecutionContext(jobStart.jobId(), id))
-        .orElseGet(() -> getExecutionContext(jobStart.jobId()))
-        .ifPresent(
-            context -> {
-              // set it in the rddExecutionRegistry so jobEnd is called
-              activeJob.ifPresent(context::setActiveJob);
-              context.start(jobStart);
-            });
+      Optional.ofNullable(getSqlExecutionId(jobStart.properties()))
+              .map(Optional::of)
+              .orElseGet(
+                      () ->
+                              asJavaOptional(
+                                      SparkSession.getDefaultSession()
+                                              .map(sparkContextFromSession)
+                                              .orElse(activeSparkContext))
+                                      .flatMap(
+                                              ctx ->
+                                                      Optional.ofNullable(ctx.dagScheduler())
+                                                              .map(ds -> ds.jobIdToActiveJob().get(jobStart.jobId()))
+                                                              .flatMap(ScalaConversionUtils::asJavaOptional))
+                                      .map(job -> getSqlExecutionId(job.properties())))
+              .map(Long::parseLong)
+              .map(id -> getExecutionContext(jobStart.jobId(), id))
+              .orElseGet(() -> getExecutionContext(jobStart.jobId()))
+              .ifPresent(
+                      context -> {
+                        // set it in the rddExecutionRegistry so jobEnd is called
+                        activeJob.ifPresent(context::setActiveJob);
+                        context.start(jobStart);
+                      });
+    } catch (Exception e) {
+      log.error("Open Lineage failed to handle event due to: {}", e.getMessage(), e);
+    }
   }
 
   private String getSqlExecutionId(Properties properties) {
@@ -157,15 +165,19 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
   /** called by the SparkListener when a job ends */
   @Override
   public void onJobEnd(SparkListenerJobEnd jobEnd) {
-    if (isDisabled) {
-      return;
-    }
-    ExecutionContext context = rddExecutionRegistry.remove(jobEnd.jobId());
-    if (context != null) {
-      context.end(jobEnd);
-    }
-    if (sparkVersion.startsWith("3")) {
-      jobMetrics.cleanUp(jobEnd.jobId());
+    try {
+      if (isDisabled) {
+        return;
+      }
+      ExecutionContext context = rddExecutionRegistry.remove(jobEnd.jobId());
+      if (context != null) {
+        context.end(jobEnd);
+      }
+      if (sparkVersion.startsWith("3")) {
+        jobMetrics.cleanUp(jobEnd.jobId());
+      }
+    } catch (Exception e) {
+      log.error("Open Lineage failed to handle event due to: {}", e.getMessage(), e);
     }
   }
 

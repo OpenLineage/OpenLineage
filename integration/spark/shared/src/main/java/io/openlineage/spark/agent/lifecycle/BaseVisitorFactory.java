@@ -9,7 +9,9 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.Dataset;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.spark.agent.lifecycle.plan.AlterTableAddColumnsCommandVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.AlterTableAddPartitionCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.AlterTableRenameCommandVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.AlterTableSetLocationCommandVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeInputVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeOutputVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.CreateDataSourceTableAsSelectCommandVisitor;
@@ -120,6 +122,8 @@ abstract class BaseVisitorFactory implements VisitorFactory {
     list.add(new CreateTableCommandVisitor(context));
     list.add(new DropTableCommandVisitor(context));
     list.add(new TruncateTableCommandVisitor(context));
+    list.add(new AlterTableSetLocationCommandVisitor(context));
+    list.add(new AlterTableAddPartitionCommandVisitor(context));
     return list;
   }
 }

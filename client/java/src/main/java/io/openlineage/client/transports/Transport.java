@@ -14,7 +14,8 @@ public abstract class Transport {
     HTTP,
     KAFKA,
     KINESIS,
-    NOOP
+    NOOP,
+    OPEN_METADATA
   };
 
   @SuppressWarnings("PMD") // unused constructor type used for @NonNull validation

@@ -13,6 +13,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
   @JsonSubTypes.Type(value = HttpConfig.class, name = "http"),
   @JsonSubTypes.Type(value = KafkaConfig.class, name = "kafka"),
   @JsonSubTypes.Type(value = KinesisConfig.class, name = "kinesis"),
+  @JsonSubTypes.Type(value = OpenMetadataConfig.class, name = "openMetadata"),
 })
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 public interface TransportConfig {}

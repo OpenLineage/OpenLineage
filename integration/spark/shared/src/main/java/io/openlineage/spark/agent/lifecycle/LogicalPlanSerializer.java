@@ -168,8 +168,11 @@ class LogicalPlanSerializer {
               .put(PythonRDD.class, PythonRDDMixin.class)
               .put(ClassLoader.class, IgnoredType.class)
               .put(RDD.class, RDDMixin.class)
-              .put(SQLExecutionRDD.class, SqlConfigMixin.class)
               .put(FunctionRegistry.class, IgnoredType.class);
+
+      if (VisitorFactory.classPresent("org.apache.spark.sql.execution.SQLExecutionRDD")) {
+        builder.put(SQLExecutionRDD.class, SqlConfigMixin.class);
+      }
       try {
         Class<?> c = PolymorficMixIn.class.getClassLoader().loadClass("java.lang.Module");
         builder.put(c, IgnoredType.class);

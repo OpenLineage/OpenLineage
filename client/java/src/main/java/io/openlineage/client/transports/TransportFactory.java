@@ -46,9 +46,11 @@ public final class TransportFactory {
     } else if (transportConfig instanceof KinesisConfig) {
       final KinesisConfig config = (KinesisConfig) transportConfig;
       return new KinesisTransport(config);
-    } else {
-      throw new IllegalArgumentException(
-          "Transport must be of type 'Console', 'HTTP', 'Kafka' or 'Kinesis'.");
-    }
+    } else if (transportConfig instanceof OpenMetadataConfig) {
+      return new OpenMetadataTransport((OpenMetadataConfig) transportConfig);
+    } else{
+        throw new IllegalArgumentException(
+                "Transport must be of type 'Console', 'HTTP', 'Kafka' or 'Kinesis'.");
+      }
   }
 }
