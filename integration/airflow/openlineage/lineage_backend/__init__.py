@@ -6,9 +6,10 @@ import time
 import uuid
 from typing import Optional
 
+from pkg_resources import parse_version
+
 from airflow.lineage.backend import LineageBackend
 from airflow.version import version as AIRFLOW_VERSION
-from pkg_resources import parse_version
 
 
 class Backend:
@@ -33,8 +34,14 @@ class Backend:
         Send_lineage ignores manually provided inlets and outlets. The data collection mechanism
         is automatic, and bases on the passed context.
         """
-        from openlineage.airflow.utils import DagUtils, get_custom_facets, \
-            get_job_name, get_task_location, get_airflow_run_facet, get_dagrun_start_end
+        from openlineage.airflow.utils import (
+            DagUtils,
+            get_airflow_run_facet,
+            get_custom_facets,
+            get_dagrun_start_end,
+            get_job_name,
+            get_task_location,
+        )
         dag = context['dag']
         dagrun = context['dag_run']
         task_instance = context['task_instance']

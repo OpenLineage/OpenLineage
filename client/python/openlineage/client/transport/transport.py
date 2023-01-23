@@ -3,7 +3,6 @@
 
 from openlineage.client.run import RunEvent
 
-
 """
 To implement custom Transport implement Config and Transport classes.
 

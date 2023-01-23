@@ -1,8 +1,8 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-from openlineage.common.sql import DbTableMeta
 from openlineage.airflow.extractors.sql_extractor import SqlExtractor
+from openlineage.common.sql import DbTableMeta
 
 
 def normalize_name_lower(name: str) -> str:

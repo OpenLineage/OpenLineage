@@ -3,13 +3,12 @@
 
 import os
 
-from airflow.plugins_manager import AirflowPlugin
-from airflow.version import version as AIRFLOW_VERSION
-from pkg_resources import parse_version
-
-
 # Provide empty plugin for older version
 from openlineage.airflow.macros import lineage_parent_id, lineage_run_id
+from pkg_resources import parse_version
+
+from airflow.plugins_manager import AirflowPlugin
+from airflow.version import version as AIRFLOW_VERSION
 
 
 def _is_disabled():

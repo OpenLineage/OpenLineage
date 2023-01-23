@@ -9,7 +9,7 @@ from openlineage.airflow.extractors.sql_extractor import SqlExtractor
 from openlineage.client.facet import SqlJobFacet
 from openlineage.common.dataset import Dataset, Source
 from openlineage.common.models import DbColumn, DbTableSchema
-from openlineage.common.sql import DbTableMeta, parse, SqlMeta
+from openlineage.common.sql import DbTableMeta, SqlMeta, parse
 
 
 class AthenaExtractor(BaseExtractor):

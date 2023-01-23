@@ -3,14 +3,12 @@
 
 import logging
 import os
-from typing import Optional
-from typing import Dict
+from typing import Dict, Optional
 
 from openlineage.client import OpenLineageClient, set_producer
 from openlineage.client.constants import DEFAULT_NAMESPACE_NAME
 from openlineage.client.facet import ParentRunFacet
-from openlineage.client.run import RunEvent, RunState, Run, Job
-
+from openlineage.client.run import Job, Run, RunEvent, RunState
 from openlineage.dagster import __version__ as OPENLINEAGE_DAGSTER_VERSION
 from openlineage.dagster.utils import make_step_job_name, to_utc_iso_8601
 

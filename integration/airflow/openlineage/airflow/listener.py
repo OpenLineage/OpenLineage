@@ -6,25 +6,26 @@ import logging
 import threading
 import uuid
 from concurrent.futures import Executor, ThreadPoolExecutor
-from typing import TYPE_CHECKING, Optional, Callable, Union
+from typing import TYPE_CHECKING, Callable, Optional, Union
 
 import attr
-from airflow.listeners import hookimpl
-
 from openlineage.airflow.adapter import OpenLineageAdapter
 from openlineage.airflow.extractors import ExtractorManager
 from openlineage.airflow.utils import (
     DagUtils,
-    get_dagrun_start_end,
-    get_task_location,
-    get_job_name,
-    get_custom_facets,
     get_airflow_run_facet,
+    get_custom_facets,
+    get_dagrun_start_end,
+    get_job_name,
+    get_task_location,
 )
 
+from airflow.listeners import hookimpl
+
 if TYPE_CHECKING:
-    from airflow.models import TaskInstance, BaseOperator, MappedOperator, DagRun
     from sqlalchemy.orm import Session
+
+    from airflow.models import BaseOperator, DagRun, MappedOperator, TaskInstance
 
 
 @attr.s(frozen=True)

@@ -5,7 +5,6 @@ from airflow import DAG
 from airflow.providers.sftp.operators.sftp import SFTPOperator
 from airflow.utils.dates import days_ago
 
-
 with DAG(dag_id="sftp_dag", start_date=days_ago(7), schedule_interval="@once") as dag:
     SFTPOperator(
         task_id="sftp_task",

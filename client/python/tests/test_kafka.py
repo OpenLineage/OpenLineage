@@ -6,11 +6,10 @@ import uuid
 from unittest.mock import patch
 
 import pytest
-
 from openlineage.client import OpenLineageClient
-from openlineage.client.run import RunEvent, RunState, Run, Job
+from openlineage.client.run import Job, Run, RunEvent, RunState
 from openlineage.client.serde import Serde
-from openlineage.client.transport.kafka import KafkaTransport, KafkaConfig
+from openlineage.client.transport.kafka import KafkaConfig, KafkaTransport
 
 
 def test_kafka_loads_full_config():

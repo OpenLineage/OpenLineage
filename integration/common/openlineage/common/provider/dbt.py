@@ -8,23 +8,25 @@ import logging
 import os
 import uuid
 from enum import Enum
-from typing import Dict, List, Optional, Tuple, TypeVar, Any
+from typing import Any, Dict, List, Optional, Tuple, TypeVar
 
 import attr
 import yaml
 from jinja2 import Environment, Undefined
-from openlineage.client.facet import (Assertion, BaseFacet,
-                                      DataQualityAssertionsDatasetFacet,
-                                      DataSourceDatasetFacet,
-                                      OutputStatisticsOutputDatasetFacet,
-                                      ParentRunFacet, SchemaDatasetFacet,
-                                      SchemaField, SqlJobFacet)
-from openlineage.client.run import (Dataset, Job, OutputDataset, Run, RunEvent,
-                                    RunState)
-
+from openlineage.client.facet import (
+    Assertion,
+    BaseFacet,
+    DataQualityAssertionsDatasetFacet,
+    DataSourceDatasetFacet,
+    OutputStatisticsOutputDatasetFacet,
+    ParentRunFacet,
+    SchemaDatasetFacet,
+    SchemaField,
+    SqlJobFacet,
+)
+from openlineage.client.run import Dataset, Job, OutputDataset, Run, RunEvent, RunState
 from openlineage.common.schema import GITHUB_LOCATION
-from openlineage.common.utils import (get_from_multiple_chains,
-                                      get_from_nullable_chain)
+from openlineage.common.utils import get_from_multiple_chains, get_from_nullable_chain
 
 
 class Adapter(Enum):

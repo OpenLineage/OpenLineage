@@ -5,7 +5,7 @@
 #
 # -*- coding: utf-8 -*-
 
-from setuptools import setup, find_namespace_packages
+from setuptools import find_namespace_packages, setup
 
 with open("README.md") as readme_file:
     readme = readme_file.read()
@@ -24,12 +24,11 @@ extras_require = {
         "pytest",
         "pytest-cov",
         "mock",
-        "flake8",
-        "mypy>=0.9.6",
+        "ruff",
         "SQLAlchemy",       # must be set to 1.3.* for airflow tests compatibility
         "Flask-SQLAlchemy",  # must be set to 2.4.* for airflow tests compatibility
         "pandas-gbq==0.14.1",       # must be set to 0.14.* for airflow tests compatibility
-        "snowflake-connector-python"
+        "snowflake-connector-python",
     ],
     "airflow": [
         "apache-airflow-providers-postgres>=2.0.0",

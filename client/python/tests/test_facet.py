@@ -1,19 +1,28 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-import json
 import copy
-
+import json
 from unittest.mock import MagicMock
 
 from openlineage.client.client import OpenLineageClient
-from openlineage.client.facet import SymlinksDatasetFacet, SymlinksDatasetFacetIdentifiers, \
-    StorageDatasetFacet, OwnershipJobFacet, OwnershipJobFacetOwners, DatasetVersionDatasetFacet, \
-    LifecycleStateChangeDatasetFacet, LifecycleStateChangeDatasetFacetPreviousIdentifier, \
-    LifecycleStateChange, OwnershipDatasetFacetOwners, OwnershipDatasetFacet, \
-    ColumnLineageDatasetFacet, ColumnLineageDatasetFacetFieldsAdditional, \
-    ColumnLineageDatasetFacetFieldsAdditionalInputFields
-from openlineage.client.run import RunEvent, RunState, Run, Job, Dataset
+from openlineage.client.facet import (
+    ColumnLineageDatasetFacet,
+    ColumnLineageDatasetFacetFieldsAdditional,
+    ColumnLineageDatasetFacetFieldsAdditionalInputFields,
+    DatasetVersionDatasetFacet,
+    LifecycleStateChange,
+    LifecycleStateChangeDatasetFacet,
+    LifecycleStateChangeDatasetFacetPreviousIdentifier,
+    OwnershipDatasetFacet,
+    OwnershipDatasetFacetOwners,
+    OwnershipJobFacet,
+    OwnershipJobFacetOwners,
+    StorageDatasetFacet,
+    SymlinksDatasetFacet,
+    SymlinksDatasetFacetIdentifiers,
+)
+from openlineage.client.run import Dataset, Job, Run, RunEvent, RunState
 
 openlineage_event = {
     "eventType": "START",

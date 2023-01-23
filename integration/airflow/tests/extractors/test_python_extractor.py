@@ -5,11 +5,11 @@ import inspect
 import os
 from unittest.mock import patch
 
-from airflow.operators.python_operator import PythonOperator
-
 from openlineage.airflow.extractors.example_dag import python_task_getcwd
 from openlineage.airflow.extractors.python_extractor import PythonExtractor
 from openlineage.client.facet import SourceCodeJobFacet
+
+from airflow.operators.python_operator import PythonOperator
 
 
 def callable():

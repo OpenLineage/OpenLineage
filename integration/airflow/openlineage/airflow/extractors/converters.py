@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from openlineage.client.run import Dataset
+
 from airflow.lineage.entities import Table
 
 

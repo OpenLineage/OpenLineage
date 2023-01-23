@@ -6,9 +6,9 @@ import uuid
 from unittest.mock import patch
 
 from openlineage.client.constants import DEFAULT_NAMESPACE_NAME
-from openlineage.client.run import RunEvent, RunState, Run, Job
-
+from openlineage.client.run import Job, Run, RunEvent, RunState
 from openlineage.dagster.adapter import OpenLineageAdapter
+
 from .conftest import PRODUCER
 
 

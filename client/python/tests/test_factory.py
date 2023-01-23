@@ -5,10 +5,14 @@ import os
 from unittest.mock import patch
 
 from openlineage.client import OpenLineageClient
-from openlineage.client.transport import DefaultTransportFactory, \
-    get_default_factory, KafkaTransport
+from openlineage.client.transport import (
+    DefaultTransportFactory,
+    KafkaTransport,
+    get_default_factory,
+)
 from openlineage.client.transport.http import HttpTransport
 from openlineage.client.transport.noop import NoopTransport
+
 from tests.transport import AccumulatingTransport, FakeTransport
 
 current_path = os.path.join(os.getcwd(), "tests")

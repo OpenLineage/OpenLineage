@@ -7,7 +7,6 @@ from typing import Iterable, Optional
 
 from dagster import DagsterInstance, EventLogRecord, EventRecordsFilter  # type: ignore
 
-
 NOMINAL_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
 

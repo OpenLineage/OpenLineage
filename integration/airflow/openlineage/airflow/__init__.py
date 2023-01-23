@@ -2,10 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # -*- coding: utf-8 -*-
-from pkg_resources import parse_version
-from airflow.version import version as AIRFLOW_VERSION
-from openlineage.airflow.version import __version__
 import logging
+
+from openlineage.airflow.version import __version__
+from pkg_resources import parse_version
+
+from airflow.version import version as AIRFLOW_VERSION
 
 __author__ = """OpenLineage"""
 
@@ -19,4 +21,5 @@ if parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"):     # type: ignore
     )
 
 from airflow.models import DAG
+
 __all__ = ["DAG", "__version__"]

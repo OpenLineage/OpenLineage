@@ -5,7 +5,7 @@
 #
 # -*- coding: utf-8 -*-
 # import setuptools
-from setuptools import setup, find_namespace_packages
+from setuptools import find_namespace_packages, setup
 
 with open("README.md") as readme_file:
     readme = readme_file.read()
@@ -26,7 +26,7 @@ extras_require = {
     "tests": [
         "pytest",
         "pytest-cov",
-        "flake8",
+        "ruff",
         "mypy>=0.9.6"
     ],
 }

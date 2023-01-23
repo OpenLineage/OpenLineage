@@ -4,16 +4,19 @@
 import json
 import logging
 import traceback
-import attr
-from typing import Tuple, Optional, Dict, List, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
+import attr
+from openlineage.client.facet import (
+    BaseFacet,
+    ExternalQueryRunFacet,
+    OutputStatisticsOutputDatasetFacet,
+)
 from openlineage.common.dataset import Dataset, Source
-from openlineage.common.models import DbTableSchema, DbColumn
+from openlineage.common.models import DbColumn, DbTableSchema
 from openlineage.common.schema import GITHUB_LOCATION
 from openlineage.common.sql import DbTableMeta
 from openlineage.common.utils import get_from_nullable_chain
-from openlineage.client.facet import BaseFacet, OutputStatisticsOutputDatasetFacet, \
-    ExternalQueryRunFacet
 
 _BIGQUERY_CONN_URL = 'bigquery'
 

@@ -5,7 +5,7 @@ import json
 from unittest.mock import MagicMock
 
 from openlineage.client.facet import ExternalQueryRunFacet
-from openlineage.common.dataset import Dataset, Source, Field
+from openlineage.common.dataset import Dataset, Field, Source
 from openlineage.common.provider.bigquery import BigQueryDatasetsProvider, BigQueryJobRunFacet
 
 

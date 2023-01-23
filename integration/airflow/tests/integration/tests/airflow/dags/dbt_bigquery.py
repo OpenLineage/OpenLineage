@@ -6,8 +6,6 @@ import os
 from airflow import DAG
 from airflow.operators.bash import BashOperator
 from airflow.utils.dates import days_ago
-from airflow.utils.session import create_session
-
 
 PLUGIN_MACRO = "{{ macros.OpenLineagePlugin.lineage_parent_id(run_id, task) }}"
 
@@ -34,7 +32,7 @@ dag = DAG(
 t1 = BashOperator(
     task_id='dbt_seed',
     dag=dag,
-    bash_command=f"source /opt/airflow/dbt_venv/bin/activate && dbt seed --full-refresh --project-dir={PROJECT_DIR} --profiles-dir={PROFILE_DIR} && deactivate",
+    bash_command=f"source /opt/airflow/dbt_venv/bin/activate && dbt seed --full-refresh --project-dir={PROJECT_DIR} --profiles-dir={PROFILE_DIR} && deactivate",  # noqa: E501
     env={
         **os.environ,
         "OPENLINEAGE_PARENT_ID": PLUGIN_MACRO,
@@ -45,7 +43,7 @@ t1 = BashOperator(
 t2 = BashOperator(
     task_id='dbt_run',
     dag=dag,
-    bash_command=f"source /opt/airflow/dbt_venv/bin/activate && dbt-ol run --project-dir={PROJECT_DIR} --profiles-dir={PROFILE_DIR} && deactivate",
+    bash_command=f"source /opt/airflow/dbt_venv/bin/activate && dbt-ol run --project-dir={PROJECT_DIR} --profiles-dir={PROFILE_DIR} && deactivate",  # noqa: E501
     env={
         **os.environ,
         "OPENLINEAGE_PARENT_ID": PLUGIN_MACRO,

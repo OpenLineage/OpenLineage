@@ -2,16 +2,15 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
-
-from typing import Type, Optional
+from typing import Optional, Type
 
 from openlineage.airflow.extractors.base import BaseExtractor, DefaultExtractor
-from openlineage.airflow.utils import import_from_string, try_import_from_string
 from openlineage.airflow.extractors.sql_check_extractors import get_check_extractors
 from openlineage.airflow.extractors.sql_execute_query import (
-    sql_extractors,
     get_sql_execute_query_extractor,
+    sql_extractors,
 )
+from openlineage.airflow.utils import import_from_string, try_import_from_string
 
 _extractors = list(
     filter(

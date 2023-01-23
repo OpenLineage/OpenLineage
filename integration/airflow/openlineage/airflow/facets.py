@@ -1,14 +1,14 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, Dict
+from typing import Dict, List
 
 import attr
-from airflow.version import version as AIRFLOW_VERSION
-from openlineage.client.facet import BaseFacet
-
 from openlineage.airflow.version import __version__ as OPENLINEAGE_AIRFLOW_VERSION
+from openlineage.client.facet import BaseFacet
 from openlineage.client.utils import RedactMixin
+
+from airflow.version import version as AIRFLOW_VERSION
 
 
 @attr.s

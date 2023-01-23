@@ -4,11 +4,11 @@
 import os
 from unittest.mock import patch
 
-from airflow.operators.bash_operator import BashOperator
-
 from openlineage.airflow.extractors.bash_extractor import BashExtractor
 from openlineage.airflow.extractors.example_dag import bash_task
 from openlineage.client.facet import SourceCodeJobFacet
+
+from airflow.operators.bash_operator import BashOperator
 
 
 def test_extract_operator_bash_command_disables_without_env():

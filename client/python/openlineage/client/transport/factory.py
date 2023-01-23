@@ -2,15 +2,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import inspect
+import logging
 import os
 import sys
-import logging
-from typing import Type, Union, Optional
+from typing import Optional, Type, Union
 
 from openlineage.client.transport.noop import NoopConfig, NoopTransport
 from openlineage.client.transport.transport import Config, Transport, TransportFactory
 from openlineage.client.utils import try_import_from_string
-
 
 log = logging.getLogger(__name__)
 
@@ -41,7 +40,7 @@ class DefaultTransportFactory(TransportFactory):
         if http:
             return http
         # If there is no HTTP transport, log events to console
-        from openlineage.client.transport.console import ConsoleTransport, ConsoleConfig
+        from openlineage.client.transport.console import ConsoleConfig, ConsoleTransport
         log.warning("Couldn't initialize transport; will print events to console.")
         return ConsoleTransport(ConsoleConfig())
 
@@ -116,8 +115,11 @@ class DefaultTransportFactory(TransportFactory):
 
     @staticmethod
     def _try_http_from_env_config() -> Optional[Transport]:
-        from openlineage.client.transport.http import HttpTransport, HttpConfig, \
-            create_token_provider
+        from openlineage.client.transport.http import (
+            HttpConfig,
+            HttpTransport,
+            create_token_provider,
+        )
         # backwards compatibility: create Transport from
         # OPENLINEAGE_URL and OPENLINEAGE_API_KEY
         if 'OPENLINEAGE_URL' not in os.environ:

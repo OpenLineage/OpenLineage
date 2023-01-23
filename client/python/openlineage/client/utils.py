@@ -1,13 +1,13 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
+import importlib
 import inspect
-from typing import Type, List
+import logging
+from typing import List, Type
+from warnings import warn
 
 import attr
-import importlib
-from warnings import warn
-import logging
 
 log = logging.getLogger(__name__)
 

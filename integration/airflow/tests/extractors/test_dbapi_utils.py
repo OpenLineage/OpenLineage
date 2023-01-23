@@ -4,10 +4,10 @@
 from unittest.mock import MagicMock
 
 from openlineage.airflow.extractors.dbapi_utils import (
-    get_table_schemas,
     create_filter_clauses,
+    get_table_schemas,
 )
-from openlineage.common.dataset import Source, Dataset
+from openlineage.common.dataset import Dataset, Source
 from openlineage.common.models import DbColumn, DbTableSchema
 from openlineage.common.sql import DbTableMeta
 

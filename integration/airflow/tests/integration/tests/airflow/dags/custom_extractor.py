@@ -1,11 +1,11 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Union, Optional, List
+from typing import List, Optional, Union
 
-from openlineage.client.run import Dataset
 from openlineage.airflow.extractors import TaskMetadata
 from openlineage.airflow.extractors.base import BaseExtractor
+from openlineage.client.run import Dataset
 
 
 class CustomExtractor(BaseExtractor):

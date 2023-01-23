@@ -1,15 +1,15 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, Optional, Union, Dict
+from typing import Dict, List, Optional, Union
 
 import attr
-from great_expectations.core import IDDict
-from great_expectations.core.batch import BatchMarkers, BatchDefinition
-from great_expectations.core.id_dict import BatchSpec, BatchKwargs
 from openlineage.client.facet import BaseFacet
-
 from openlineage.common.provider.great_expectations.results import GreatExpectationsAssertion
+
+from great_expectations.core import IDDict
+from great_expectations.core.batch import BatchDefinition, BatchMarkers
+from great_expectations.core.id_dict import BatchKwargs, BatchSpec
 
 
 @attr.s

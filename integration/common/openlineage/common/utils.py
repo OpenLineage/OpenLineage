@@ -1,7 +1,7 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 
 def get_from_nullable_chain(source: Any, chain: List[str]) -> Optional[Any]:

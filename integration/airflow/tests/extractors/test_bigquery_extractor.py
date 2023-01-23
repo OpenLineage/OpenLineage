@@ -9,19 +9,22 @@ import uuid
 from datetime import datetime
 
 import mock
-from pkg_resources import parse_version
 import pytz
-from airflow.utils import timezone
-from airflow.models import TaskInstance, DAG
-from airflow.utils.state import State
-from airflow.version import version as AIRFLOW_VERSION
-
 from openlineage.airflow.extractors.bigquery_extractor import BigQueryExtractor
 from openlineage.airflow.utils import try_import_from_string
-from openlineage.client.facet import OutputStatisticsOutputDatasetFacet, ExternalQueryRunFacet
-from openlineage.common.provider.bigquery import BigQueryJobRunFacet, \
-    BigQueryStatisticsDatasetFacet, BigQueryErrorRunFacet
+from openlineage.client.facet import ExternalQueryRunFacet, OutputStatisticsOutputDatasetFacet
+from openlineage.common.provider.bigquery import (
+    BigQueryErrorRunFacet,
+    BigQueryJobRunFacet,
+    BigQueryStatisticsDatasetFacet,
+)
 from openlineage.common.utils import get_from_nullable_chain
+from pkg_resources import parse_version
+
+from airflow.models import DAG, TaskInstance
+from airflow.utils import timezone
+from airflow.utils.state import State
+from airflow.version import version as AIRFLOW_VERSION
 
 log = logging.getLogger(__name__)
 

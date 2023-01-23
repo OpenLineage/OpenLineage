@@ -4,19 +4,16 @@
 from unittest import mock
 
 import pytest
+from openlineage.airflow.extractors.mysql_extractor import MySqlExtractor
+from openlineage.airflow.utils import get_connection, try_import_from_string
+from openlineage.common.dataset import Dataset, Field, Source
+from openlineage.common.models import DbColumn, DbTableSchema
+from openlineage.common.sql import DbTableMeta
+
+from airflow import DAG
 from airflow.models import Connection
 from airflow.utils.dates import days_ago
-from airflow import DAG
 from airflow.utils.session import create_session
-
-from openlineage.airflow.utils import get_connection, try_import_from_string
-from openlineage.common.models import (
-    DbTableSchema,
-    DbColumn
-)
-from openlineage.common.sql import DbTableMeta
-from openlineage.common.dataset import Source, Dataset, Field
-from openlineage.airflow.extractors.mysql_extractor import MySqlExtractor
 
 MySqlOperator = try_import_from_string("airflow.providers.mysql.operators.mysql.MySqlOperator")
 MySqlHook = try_import_from_string("airflow.providers.mysql.hooks.mysql.MySqlHook")

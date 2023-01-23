@@ -2,10 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
-import sys
 import logging
+import sys
 from enum import Enum
-from typing import List, Dict
+from typing import Dict, List
 
 import attr
 

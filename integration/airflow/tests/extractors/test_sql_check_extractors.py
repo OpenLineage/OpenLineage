@@ -4,7 +4,6 @@
 from openlineage.airflow.extractors.postgres_extractor import PostgresExtractor
 from openlineage.airflow.extractors.sql_check_extractors import get_check_extractors
 
-
 COLUMN_CHECK_MAPPING = {
     "X": {
         "null_check": {

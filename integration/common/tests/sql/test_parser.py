@@ -4,7 +4,7 @@
 import logging
 
 import pytest
-from openlineage.common.sql import parse, DbTableMeta, provider, ExtractionError
+from openlineage.common.sql import DbTableMeta, ExtractionError, parse, provider
 
 log = logging.getLogger(__name__)
 

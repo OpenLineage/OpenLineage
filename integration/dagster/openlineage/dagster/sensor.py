@@ -2,22 +2,21 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import Optional, Dict
-
-from dagster import (   # type: ignore
-    DagsterEventType,
-    sensor,
-    SensorDefinition,
-    SensorEvaluationContext,
-    SkipReason
-)
-
-from dagster.core.definitions.sensor_definition import DEFAULT_SENSOR_DAEMON_INTERVAL
-from dagster.core.events import PIPELINE_EVENTS, STEP_EVENTS
+from typing import Dict, Optional
 
 from openlineage.dagster.adapter import OpenLineageAdapter
 from openlineage.dagster.cursor import OpenLineageCursor, RunningPipeline, RunningStep
-from openlineage.dagster.utils import make_step_run_id, get_event_log_records, get_repository_name
+from openlineage.dagster.utils import get_event_log_records, get_repository_name, make_step_run_id
+
+from dagster import (  # type: ignore
+    DagsterEventType,
+    SensorDefinition,
+    SensorEvaluationContext,
+    SkipReason,
+    sensor,
+)
+from dagster.core.definitions.sensor_definition import DEFAULT_SENSOR_DAEMON_INTERVAL
+from dagster.core.events import PIPELINE_EVENTS, STEP_EVENTS
 
 _ADAPTER = OpenLineageAdapter()
 

@@ -2,20 +2,19 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+import traceback
+from typing import Any, Dict, List, Optional
+
 import attr
-
-from typing import Any, Optional, Dict, List
 import botocore
-
-from openlineage.common.dataset import Dataset, Source
-from openlineage.common.models import DbTableSchema, DbColumn
-from openlineage.common.sql import DbTableMeta
 from openlineage.client.facet import (
     BaseFacet,
     ErrorMessageRunFacet,
     OutputStatisticsOutputDatasetFacet,
 )
-import traceback
+from openlineage.common.dataset import Dataset, Source
+from openlineage.common.models import DbColumn, DbTableSchema
+from openlineage.common.sql import DbTableMeta
 
 
 @attr.s

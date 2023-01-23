@@ -1,13 +1,12 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-import json
 import os
+
+from openlineage.airflow.utils import JobIdMapping
 
 from airflow.operators.bash_operator import BashOperator
 from airflow.utils.dates import days_ago
-
-from openlineage.airflow.utils import JobIdMapping
 
 try:
     from airflow.utils.db import create_session
@@ -52,7 +51,7 @@ if AIRFLOW_VERSION == os.environ.get("SNOWFLAKE_AIRFLOW_TEST_VERSION", "2.3.4"):
     t1 = BashOperator(
         task_id='dbt_seed',
         dag=dag,
-        bash_command=f"source /opt/airflow/dbt_venv/bin/activate && dbt seed --full-refresh --project-dir={PROJECT_DIR} --profiles-dir={PROFILE_DIR} && deactivate",
+        bash_command=f"source /opt/airflow/dbt_venv/bin/activate && dbt seed --full-refresh --project-dir={PROJECT_DIR} --profiles-dir={PROFILE_DIR} && deactivate",  # noqa: E501
         env={
             **os.environ,
             "OPENLINEAGE_PARENT_ID": "{{ lineage_parent_id(run_id, task) }}",
@@ -63,7 +62,7 @@ if AIRFLOW_VERSION == os.environ.get("SNOWFLAKE_AIRFLOW_TEST_VERSION", "2.3.4"):
     t2 = BashOperator(
         task_id='dbt_run',
         dag=dag,
-        bash_command=f"source /opt/airflow/dbt_venv/bin/activate && dbt-ol run --project-dir={PROJECT_DIR} --profiles-dir={PROFILE_DIR}",
+        bash_command=f"source /opt/airflow/dbt_venv/bin/activate && dbt-ol run --project-dir={PROJECT_DIR} --profiles-dir={PROFILE_DIR}",  # noqa: E501
         env={
             **os.environ,
             "OPENLINEAGE_PARENT_ID": "{{ lineage_parent_id(run_id, task) }}",

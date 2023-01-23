@@ -1,14 +1,16 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-import os
 import json
+import os
 import uuid
 from unittest.mock import patch
 
-from dagster import SensorDefinition, build_sensor_context, DagsterEventType
-from dagster.core.test_utils import instance_for_test
 from openlineage.dagster.cursor import OpenLineageCursor, RunningPipeline, RunningStep
+
+from dagster import DagsterEventType, SensorDefinition, build_sensor_context
+from dagster.core.test_utils import instance_for_test
+
 from .conftest import make_test_event_log_record
 
 

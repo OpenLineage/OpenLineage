@@ -2,11 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+from typing import TYPE_CHECKING, Dict, Optional
 from urllib.parse import urljoin
 
 import attr
-
-from typing import Optional, Dict, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from requests import Session

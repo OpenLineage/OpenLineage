@@ -4,8 +4,8 @@
 from typing import List
 from urllib.parse import urlparse
 
-from openlineage.airflow.utils import try_import_from_string
 from openlineage.airflow.extractors.sql_extractor import SqlExtractor
+from openlineage.airflow.utils import try_import_from_string
 
 
 class PostgresExtractor(SqlExtractor):

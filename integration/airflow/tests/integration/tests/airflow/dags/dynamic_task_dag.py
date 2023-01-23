@@ -5,9 +5,8 @@ from datetime import datetime
 
 from airflow import DAG, XComArg
 from airflow.decorators import task
-from airflow.operators.python import PythonOperator
 from airflow.operators.bash import BashOperator
-
+from airflow.operators.python import PythonOperator
 
 with DAG(
     dag_id="mapped_dag", start_date=datetime(2020, 4, 7), schedule_interval="@once"

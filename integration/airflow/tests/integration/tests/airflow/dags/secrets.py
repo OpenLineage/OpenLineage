@@ -2,18 +2,19 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+
+from openlineage.client import set_producer
+
 from airflow import DAG
 from airflow.models import BaseOperator
 from airflow.utils.dates import days_ago
 from airflow.utils.log.secrets_masker import mask_secret
 
-from openlineage.client import set_producer
-
 set_producer("https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow")
 
 
 class SecretsOperator(BaseOperator):
-    """This shouldn't have extractor - we're testing if we'll see password in UnknownSourceAttribute"""
+    """This shouldn't have extractor - testing if we'll see password in UnknownSourceAttribute"""
     template_fields = ['password']
 
     def __init__(self, password, **kwargs):

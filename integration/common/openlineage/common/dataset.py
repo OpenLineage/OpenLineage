@@ -1,13 +1,19 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, Optional, Dict
+from typing import Dict, List, Optional
 
-from openlineage.common.models import DbTableSchema, DbColumn
-from openlineage.client.facet import BaseFacet, DataSourceDatasetFacet, \
-    DocumentationDatasetFacet, SchemaDatasetFacet, SchemaField
-from openlineage.client.run import Dataset as OpenLineageDataset, InputDataset, OutputDataset
+from openlineage.client.facet import (
+    BaseFacet,
+    DataSourceDatasetFacet,
+    DocumentationDatasetFacet,
+    SchemaDatasetFacet,
+    SchemaField,
+)
+from openlineage.client.run import Dataset as OpenLineageDataset
+from openlineage.client.run import InputDataset, OutputDataset
 from openlineage.client.utils import RedactMixin
+from openlineage.common.models import DbColumn, DbTableSchema
 
 
 class Source(RedactMixin):

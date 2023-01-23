@@ -1,13 +1,12 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Dict, List, Optional
-from enum import Enum
-from dateutil import parser
-
 import uuid
-import attr
+from enum import Enum
+from typing import Dict, List, Optional
 
+import attr
+from dateutil import parser
 from openlineage.client.facet import NominalTimeRunFacet, ParentRunFacet
 from openlineage.client.utils import RedactMixin
 
@@ -82,6 +81,6 @@ class RunEvent(RedactMixin):
     @eventTime.validator
     def check(self, attribute, value):
         parser.isoparse(value)
-        if not ("t" in value.lower()):
+        if 't' not in value.lower():
             # make sure date-time contains time
             raise ValueError("Parsed date-time has to contain time: {}".format(value))

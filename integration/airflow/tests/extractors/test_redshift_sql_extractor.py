@@ -2,21 +2,20 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from unittest import mock
+from urllib.parse import parse_qs, urlparse
 
 import pytest
-from airflow.models import Connection
-from airflow.utils.dates import days_ago
-from airflow import DAG
-from airflow.utils.session import create_session
-from urllib.parse import urlparse, parse_qs
-
-from openlineage.airflow.utils import get_connection
-from openlineage.common.models import DbTableSchema, DbColumn
-from openlineage.common.sql import DbTableMeta
-from openlineage.common.dataset import Source, Dataset, Field
 from openlineage.airflow.extractors.redshift_sql_extractor import RedshiftSQLExtractor
-from airflow.providers.amazon.aws.operators.redshift_sql import RedshiftSQLOperator
+from openlineage.airflow.utils import get_connection
+from openlineage.common.dataset import Dataset, Field, Source
+from openlineage.common.models import DbColumn, DbTableSchema
+from openlineage.common.sql import DbTableMeta
 
+from airflow import DAG
+from airflow.models import Connection
+from airflow.providers.amazon.aws.operators.redshift_sql import RedshiftSQLOperator
+from airflow.utils.dates import days_ago
+from airflow.utils.session import create_session
 
 CONN_ID = "food_delivery_db"
 CONN_URI = (

@@ -5,13 +5,13 @@ import datetime
 import os
 import uuid
 
+from openlineage.client import OpenLineageClient, set_producer
+from openlineage.client.run import Job, Run, RunEvent, RunState
+
 from airflow import DAG
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 from airflow.utils.dates import days_ago
-from openlineage.client import set_producer, OpenLineageClient
-from openlineage.client.run import RunEvent, Run, Job, RunState
-
 
 _PRODUCER="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow"
 

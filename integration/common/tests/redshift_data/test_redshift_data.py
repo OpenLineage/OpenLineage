@@ -4,10 +4,10 @@
 import json
 from unittest.mock import MagicMock
 
-from openlineage.common.sql import DbTableMeta
-from openlineage.common.models import DbTableSchema, DbColumn
-from openlineage.common.dataset import Source, Dataset, Field
+from openlineage.common.dataset import Dataset, Field, Source
+from openlineage.common.models import DbColumn, DbTableSchema
 from openlineage.common.provider.redshift_data import RedshiftDataDatasetsProvider
+from openlineage.common.sql import DbTableMeta
 
 REDSHIFT_DATABASE = "dev"
 REDSHIFT_DATABASE_USER = "admin"

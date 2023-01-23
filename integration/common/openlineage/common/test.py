@@ -1,15 +1,15 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-import os
-import logging
 import json
+import logging
+import os
 import uuid
-from dateutil.parser import parse
-from jinja2 import Environment
 from typing import Any, Optional
 from urllib.parse import urlparse
 
+from dateutil.parser import parse
+from jinja2 import Environment
 
 log = logging.getLogger(__name__)
 

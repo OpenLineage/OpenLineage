@@ -5,10 +5,11 @@ import logging
 import os
 
 import pytest
-
-from pkg_resources import parse_version
-from airflow.version import version as AIRFLOW_VERSION
 from mock import patch
+from pkg_resources import parse_version
+
+from airflow.version import version as AIRFLOW_VERSION
+
 log = logging.getLogger(__name__)
 
 collect_ignore = []
@@ -46,8 +47,8 @@ def dagbag():
     os.environ['AIRFLOW__CORE__SQL_ALCHEMY_CONN'] = 'sqlite://'
     os.environ['MARQUEZ_NAMESPACE'] = 'test-marquez'
 
-    from airflow import settings
     import airflow.utils.db as db_utils
+    from airflow import settings
     db_utils.resetdb(settings.RBAC)
     from airflow.models import DagBag
     dagbag = DagBag(include_examples=False)

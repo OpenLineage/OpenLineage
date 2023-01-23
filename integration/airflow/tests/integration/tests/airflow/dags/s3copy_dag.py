@@ -5,7 +5,6 @@ from airflow import DAG
 from airflow.providers.amazon.aws.operators.s3 import S3CopyObjectOperator
 from airflow.utils.dates import days_ago
 
-
 with DAG(dag_id="s3copy_dag", start_date=days_ago(7), schedule_interval="@once") as dag:
     S3CopyObjectOperator(
         task_id="s3copy_task",

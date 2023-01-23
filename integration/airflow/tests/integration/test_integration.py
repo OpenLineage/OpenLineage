@@ -5,17 +5,16 @@ import json
 import logging
 import os
 import sys
+import time
+import unittest
 from typing import List
 
-from pkg_resources import parse_version
-
 import psycopg2
-import time
-import requests
-from retrying import retry
 import pytest
-import unittest
+import requests
 from openlineage.common.test import match, setup_jinja
+from pkg_resources import parse_version
+from retrying import retry
 
 env = setup_jinja()
 
@@ -39,9 +38,8 @@ except:  # noqa
 SNOWFLAKE_AIRFLOW_TEST_VERSION = os.environ.get("SNOWFLAKE_AIRFLOW_TEST_VERSION", "2.2.4")
 
 
-IS_AIRFLOW_VERSION_ENOUGH = lambda x: parse_version(
-    os.environ.get("AIRFLOW_VERSION", "0.0.0")
-) >= parse_version(x)
+def IS_AIRFLOW_VERSION_ENOUGH(x):
+    return parse_version(os.environ.get("AIRFLOW_VERSION", "0.0.0")) >= parse_version(x)
 
 
 params = [

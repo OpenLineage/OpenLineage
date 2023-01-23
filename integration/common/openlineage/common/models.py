@@ -1,7 +1,8 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Optional, List, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
+
 from openlineage.client.utils import RedactMixin
 
 if TYPE_CHECKING:

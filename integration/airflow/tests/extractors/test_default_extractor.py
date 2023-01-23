@@ -2,22 +2,21 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from typing import Any
-
-from airflow.models import BaseOperator
-from airflow.operators.python import PythonOperator
 from unittest import mock
-import attr
 
+import attr
 from openlineage.airflow.extractors import Extractors
 from openlineage.airflow.extractors.base import (
-    OperatorLineage,
     DefaultExtractor,
+    OperatorLineage,
     TaskMetadata,
 )
 from openlineage.airflow.extractors.python_extractor import PythonExtractor
-from openlineage.client.facet import ParentRunFacet, SqlJobFacet, BaseFacet
+from openlineage.client.facet import BaseFacet, ParentRunFacet, SqlJobFacet
 from openlineage.client.run import Dataset
 
+from airflow.models import BaseOperator
+from airflow.operators.python import PythonOperator
 
 INPUTS = [Dataset(namespace="database://host:port", name="inputtable")]
 OUTPUTS = [Dataset(namespace="database://host:port", name="inputtable")]

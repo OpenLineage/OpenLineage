@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
-from airflow.decorators import dag, task, task_group
 
+from airflow.decorators import dag, task, task_group
 from airflow.utils.dates import days_ago
 
 

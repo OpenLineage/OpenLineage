@@ -2,12 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import socket
-from typing import Optional, List
+from typing import List, Optional
 
 import paramiko
-
 from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
-from openlineage.common.dataset import Source, Dataset
+from openlineage.common.dataset import Dataset, Source
+
 from airflow.providers.sftp.hooks.sftp import SFTPHook
 from airflow.providers.sftp.operators.sftp import SFTPOperation
 
