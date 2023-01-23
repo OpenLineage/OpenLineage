@@ -221,14 +221,14 @@ pub extern "system" fn Java_io_openlineage_sql_OpenLineageSql_parse(
             dialect,
             default_schema,
         )?;
-        Ok(parsed.as_java_object(&env)?.into_inner())
+        Ok(parsed.as_java_object(&env)?.into_raw())
     };
 
     match f() {
         Ok(obj) => obj,
         Err(err) => {
             env.throw(err.to_string());
-            JObject::null().into_inner()
+            JObject::null().into_raw()
         }
     }
 }
@@ -239,5 +239,5 @@ pub extern "system" fn Java_io_openlineage_sql_OpenLineageSql_provider(
     _class: JClass,
 ) -> jstring {
     let output = env.new_string("rust").unwrap();
-    output.into_inner()
+    output.into_raw()
 }
