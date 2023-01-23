@@ -8,9 +8,11 @@ package io.openlineage.kafka;
 import io.openlineage.flink.avro.event.InputEvent;
 import io.openlineage.flink.avro.event.OutputEvent;
 import io.openlineage.flink.visitor.wrapper.FlinkKafkaProducerWrapper;
+import java.util.regex.Pattern;
 import org.apache.flink.connector.kafka.sink.KafkaRecordSerializationSchema;
 import org.apache.flink.connector.kafka.sink.KafkaSink;
 import org.apache.flink.connector.kafka.source.KafkaSource;
+import org.apache.flink.connector.kafka.source.KafkaSourceBuilder;
 import org.apache.flink.formats.avro.registry.confluent.ConfluentRegistryAvroDeserializationSchema;
 import org.apache.flink.formats.avro.registry.confluent.ConfluentRegistryAvroSerializationSchema;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
@@ -32,22 +34,40 @@ public class KafkaClientProvider {
     }
 
     public static KafkaSource<InputEvent> aKafkaSource(String... topics) {
-        return KafkaSource.<InputEvent>builder()
-                .setTopics(topics)
-                .setProperties(fromResource("kafka-consumer.conf").toProperties())
-                .setBootstrapServers("kafka:9092")
-                .setValueOnlyDeserializer(ConfluentRegistryAvroDeserializationSchema
-                        .forSpecific(InputEvent.class, SCHEMA_REGISTRY_URL))
-                .build();
+        KafkaSourceBuilder<InputEvent> builder = KafkaSource.<InputEvent>builder()
+            .setProperties(fromResource("kafka-consumer.conf").toProperties())
+            .setBootstrapServers("kafka:9092")
+            .setValueOnlyDeserializer(ConfluentRegistryAvroDeserializationSchema
+                .forSpecific(InputEvent.class, SCHEMA_REGISTRY_URL));
+
+        if (topics.length == 1 && topics[0].contains(".*")) {
+            // set topic pattern
+            builder.setTopicPattern(Pattern.compile(topics[0]));
+        } else {
+            // set topics
+            builder.setTopics(topics);
+        }
+
+        return builder.build();
     }
 
 
     public static FlinkKafkaConsumer<InputEvent> legacyKafkaSource(String... topics) {
-        return new FlinkKafkaConsumer(
-          Arrays.asList(topics),
-          ConfluentRegistryAvroDeserializationSchema.forSpecific(InputEvent.class, SCHEMA_REGISTRY_URL),
-          fromResource("kafka-consumer.conf").toProperties()
-        );
+        if (topics.length == 1 && topics[0].contains(".*")) {
+            // set topic pattern
+            return new FlinkKafkaConsumer(
+                Pattern.compile(topics[0]),
+                ConfluentRegistryAvroDeserializationSchema.forSpecific(InputEvent.class, SCHEMA_REGISTRY_URL),
+                fromResource("kafka-consumer.conf").toProperties()
+            );
+        } else {
+            // set topics
+            return new FlinkKafkaConsumer(
+                Arrays.asList(topics),
+                ConfluentRegistryAvroDeserializationSchema.forSpecific(InputEvent.class, SCHEMA_REGISTRY_URL),
+                fromResource("kafka-consumer.conf").toProperties()
+            );
+        }
     }
 
     public static KafkaSink<OutputEvent> aKafkaSink(String topic) {

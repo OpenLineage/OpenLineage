@@ -33,7 +33,7 @@ public class WrapperUtils {
     try {
       return Optional.ofNullable((T) FieldUtils.getField(aClass, field, true).get(object));
     } catch (IllegalAccessException | ClassCastException | NullPointerException e) {
-      log.error("cannot extract field {} from {}", field, aClass.getName(), e);
+      log.debug("cannot extract field {} from {}", field, aClass.getName(), e);
       return Optional.empty();
     }
   }

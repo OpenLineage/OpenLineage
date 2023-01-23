@@ -1,6 +1,9 @@
 # Changelog
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.19.2...HEAD)
+### Added
+* Flink: support Flink version 1.16.0. Resolve Kafka topic names from regex at job start [`#1522`](https://github.com/OpenLineage/OpenLineage/pull/1522) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+
 ### Fixed
 * DBT: fix `dbt-ol test` output [`#1542`](https://github.com/OpenLineage/OpenLineage/pull/1542) [@JDarDagran](https://github.com/JDarDagran)  
     *Edits the docs for consistency.*
