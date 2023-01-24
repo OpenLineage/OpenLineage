@@ -1,8 +1,8 @@
 # Naming
 
-We define the unique name strategy per resource to ensure it is followed uniformly independently from who is producing metadata and we can connect lineage from various sources.
+We define the unique name strategy per resource to ensure it is followed uniformly independently of who is producing metadata, so we can connect lineage from various sources.
 
-Both Jobs and Datasets are in their own namespaces. Job namespaces are related to their scheduler. The namespace for a dataset is the unique name for its datasource.
+Both Jobs and Datasets are in their own namespaces. Job namespaces are related to their schedulers. The namespace for a dataset is the unique name for its datasource.
 
 ## Datasets
 The namespace and name of a datasource can be combined to form a URI (scheme:[//authority]path)
@@ -10,7 +10,7 @@ The namespace and name of a datasource can be combined to form a URI (scheme:[//
 * Name = path (the datasets)
 
 ### Data warehouses/data bases
-Datasets are called tables. Tables are organised in databases and schemas.
+Datasets are called tables. Tables are organized into databases and schemas.
 #### Postgres:
 Datasource hierarchy:
  * Host
@@ -77,7 +77,7 @@ Naming hierarchy:
  * Schema
  * Table
 
-One can interact with Redshift using SQL or Data API. Combination of cluster identifier + region name is the only common unique id available to both ways of interaction.
+One can interact with Redshift using SQL or Data API. The combination of cluster identifier and region name is the only common unique ID available to both.
 
 Identifier:
  * Namespace: redshift://{cluster_identifier}.{region_name}:{port} of the cluster instance.
@@ -113,8 +113,8 @@ Naming hierarchy:
  * Schema: {schema name} => unique within the database
  * Table: {table name} => unique within the schema
 
-Database, schema, table or column names are uppercase in Snowflake.
-Clients should make sure that they are sending those as uppercase.
+Database, schema, table and column names are uppercase in Snowflake.
+Clients should make sure that they are sending them in uppercase.
 
 Identifier:
  * Namespace: snowflake://{account name}
@@ -134,12 +134,12 @@ Datasource hierarchy:
 
 Naming hierarchy:
  * Project Name: {project name} => is not unique
- * Project number: {project number} => numeric: is unique across google cloud
- * Project ID: {project id} => readable: is unique across google cloud
+ * Project number: {project number} => numeric: is unique across Google cloud
+ * Project ID: {project id} => readable: is unique across Google cloud
  * dataset: {dataset name} => is unique within a project
  * table: {table name} => is unique within a dataset
 
-Identifier :
+Identifier:
  * Namespace: bigquery
    * Scheme = bigquery
    * Authority = 
@@ -289,13 +289,13 @@ Identifier :
 ## Jobs
 ### Context
 
-A `Job` is a recurring data transformation with Inputs and outputs. Each execution is captured as a `Run` with corresponding metadata.
+A `Job` is a recurring data transformation with inputs and outputs. Each execution is captured as a `Run` with corresponding metadata.
 A `Run` event identifies the `Job` it is an instance of by providing the job’s unique identifier.
 The `Job` identifier is composed of a `Namespace` and a `Name`. The job name is unique within that namespace.
 
 The core property we want to identify about a `Job` is how it changes over time. Different schedules of the same logic applied to different datasets (possibly with different parameters) are different jobs. The notion of a `job` is tied to a recurring schedule with specific inputs and outputs. It could be an incremental update or a full reprocess or even a streaming job.
  
-If the same code artifact (for example a spark jar or a templated SQL query) is used in the context of different schedules with different input or outputs then they are different jobs.
+If the same code artifact (for example a Spark jar or a templated SQL query) is used in the context of different schedules with different input or outputs, then they are different jobs.
 We are interested first in how they affect the datasets they produce.
 
 ### Job Namespace and constructing job names
@@ -306,21 +306,21 @@ The Namespace is the root of the naming hierarchy. The job name is constructed t
 
 Example:
  - Airflow:
-   - Namespace: the namespace is assigned to the airflow instance. Ex: airflow-staging, airflow-prod
+   - Namespace: the namespace is assigned to the Airflow instance. Ex: airflow-staging, airflow-prod
    - Job: each task in a DAG is a job. name: {dag name}.{task name}
  - Spark:
-   - Namespace: the namespace is provided as a configuration parameter as in airflow. If there's a parent job, we use the same namespace, otherwise it is provided by configuration.
+   - Namespace: the namespace is provided as a configuration parameter as in Airflow. If there's a parent job, we use the same namespace, otherwise it is provided by configuration.
    - Spark app job name: the spark.app.name
    - Spark action job name: {spark.app.name}.{node.name}
 
 ### Parent job run: a nested hierarchy of Jobs
 
 It is often the case that jobs are part of a nested hierarchy.
-For example an Airflow DAG contains tasks. An instance of the DAG is finished when all of the tasks are finished. Similarly a Spark job can spawn multiple actions each of them running independently. Additionally, a Spark job can be launched by an Airflow task within a DAG.
+For example, an Airflow DAG contains tasks. An instance of the DAG is finished when all of the tasks are finished. Similarly, a Spark job can spawn multiple actions, each of them running independently. Additionally, a Spark job can be launched by an Airflow task within a DAG.
 
-Since what we care about is identifying the job as rooted in a recurring schedule, we want to capture that connection and make sure that we treat the same application logic triggered at different schedules as different jobs. For example: if an Airflow DAG runs individual tasks per partition (for example market segments) using the same underlying job logic, they will be tracked as separate jobs.
+Since what we care about is identifying the job as rooted in a recurring schedule, we want to capture that connection and make sure that we treat the same application logic triggered at different schedules as different jobs. For example: if an Airflow DAG runs individual tasks per partition (e.g., market segments) using the same underlying job logic, they will be tracked as separate jobs.
 
-To capture this, a run event provides [a `ParentRun` facet](https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#L282-L331), referring to the parent `Job` and `Run`. This allows tracking a recurring job from the root of the schedule it is running for.
+To capture this, a run event provides [a `ParentRun` facet](https://github.com/OpenLineage/OpenLineage/blob/main/spec/OpenLineage.json#L282-L331) referring to the parent `Job` and `Run`. This allows tracking a recurring job from the root of the schedule for which it is running.
 If there's a parent job, we use the same namespace, otherwise it is provided by configuration.
 
 Example:
