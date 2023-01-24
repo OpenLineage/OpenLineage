@@ -24,8 +24,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.mockserver.client.MockServerClient;
 import org.mockserver.model.RegexBody;
 import org.slf4j.Logger;
@@ -244,82 +242,6 @@ class SparkContainerIntegrationTest {
     verifyEvents(mockServerClient, "pysparkSymlinksComplete.json");
   }
 
-  /*
-   * Alter table differs between Spark 3.1 and Spark 3.2.
-   * These test should only apply for Spark 3.1
-   */
-  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = "(3.1.*)")
-  @ParameterizedTest
-  @CsvSource(
-      value = {
-        "spark_v2_alter.py:pysparkV2AlterTableStartEvent.json:pysparkV2AlterTableCompleteEvent.json:true",
-      },
-      delimiter = ':')
-  void testAlterTableSpark_3_1(
-      String pysparkScript,
-      String expectedStartEvent,
-      String expectedCompleteEvent,
-      String isIceberg) {
-    testV2Commands(pysparkScript, expectedStartEvent, expectedCompleteEvent, isIceberg);
-  }
-
-  @Test
-  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = "(3.2.*)")
-  void testAlterTableSpark_3_2() {
-    testV2Commands(
-        "spark_v2_alter.py",
-        "pysparkV2AlterTableStartEvent.json",
-        "pysparkV2AlterTableCompleteEvent.json",
-        "true");
-  }
-
-  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3) // Spark version >= 3.*
-  @ParameterizedTest
-  @CsvSource(
-      value = {
-        "spark_v2_create.py:pysparkV2CreateTableStartEvent.json:pysparkV2CreateTableCompleteEvent.json:true",
-        "spark_v2_create_as_select.py:pysparkV2CreateTableAsSelectStartEvent.json:pysparkV2CreateTableAsSelectCompleteEvent.json:true",
-        "spark_v2_overwrite_by_expression.py:pysparkV2OverwriteByExpressionStartEvent.json:pysparkV2OverwriteByExpressionCompleteEvent.json:true",
-        "spark_v2_overwrite_partitions.py:pysparkV2OverwritePartitionsStartEvent.json:pysparkV2OverwritePartitionsCompleteEvent.json:true",
-        "spark_v2_replace_table_as_select.py:pysparkV2ReplaceTableAsSelectStartEvent.json:pysparkV2ReplaceTableAsSelectCompleteEvent.json:true",
-        "spark_v2_delete.py:pysparkV2DeleteStartEvent.json:pysparkV2DeleteCompleteEvent.json:true",
-        "spark_v2_update.py:pysparkV2UpdateStartEvent.json:pysparkV2UpdateCompleteEvent.json:true",
-        "spark_v2_merge_into_table.py:pysparkV2MergeIntoTableStartEvent.json:pysparkV2MergeIntoTableCompleteEvent.json:true",
-        "spark_v2_drop.py:pysparkV2DropTableStartEvent.json:pysparkV2DropTableCompleteEvent.json:true",
-        "spark_v2_append.py:pysparkV2AppendDataStartEvent.json:pysparkV2AppendDataCompleteEvent.json:true",
-      },
-      delimiter = ':')
-  void testV2Commands(
-      String pysparkScript,
-      String expectedStartEvent,
-      String expectedCompleteEvent,
-      String isIceberg) {
-    pyspark =
-        SparkContainerUtils.makePysparkContainerWithDefaultConf(
-            network,
-            openLineageClientMockContainer,
-            "testV2Commands",
-            PACKAGES,
-            getIcebergPackageName(),
-            "/opt/spark_scripts/" + pysparkScript);
-    pyspark.start();
-    verifyEvents(mockServerClient, expectedStartEvent, expectedCompleteEvent);
-  }
-
-  private String getIcebergPackageName() {
-    String sparkVersion = System.getProperty(SPARK_VERSION);
-    if (sparkVersion.startsWith("3.1")) {
-      return "org.apache.iceberg:iceberg-spark-runtime-3.1_2.12:0.13.0";
-    } else if (sparkVersion.startsWith("3.2")) {
-      return "org.apache.iceberg:iceberg-spark-runtime-3.2_2.12:0.13.0";
-    } else if (sparkVersion.startsWith("3.3")) {
-      return "org.apache.iceberg:iceberg-spark-runtime-3.3_2.12:0.14.0";
-    } else {
-      // return previously used package name
-      return "org.apache.iceberg:iceberg-spark3-runtime:0.12.0";
-    }
-  }
-
   @Test
   void testCreateTable() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
@@ -356,20 +278,6 @@ class SparkContainerIntegrationTest {
         "testOptimizedCreateAsSelectAndLoad",
         "spark_octas_load.py");
     verifyEvents(mockServerClient, "pysparkOCTASStart.json", "pysparkOCTASEnd.json");
-  }
-
-  @Test
-  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3) // Spark version >= 3.*
-  void testWriteIcebergTableVersion() {
-    SparkContainerUtils.makePysparkContainerWithDefaultConf(
-            network,
-            openLineageClientMockContainer,
-            "testWriteIcebergTableVersion",
-            PACKAGES,
-            getIcebergPackageName(),
-            "/opt/spark_scripts/spark_write_iceberg_table_version.py")
-        .start();
-    verifyEvents(mockServerClient, "pysparkWriteIcebergTableVersionEnd.json");
   }
 
   @Test

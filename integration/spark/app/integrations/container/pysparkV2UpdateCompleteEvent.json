@@ -1,13 +1,13 @@
 {
   "eventType" : "COMPLETE",
   "job" : {
-    "namespace" : "testV2Commands",
-    "name" : "open_lineage_integration_v2_commands.replace_data"
+    "namespace" :  "iceberg-namespace",
+    "name" : "iceberg_integration_test.replace_data"
   },
   "inputs" : [ ],
   "outputs" : [ {
     "namespace" : "file",
-    "name" : "/tmp/v2_update_table/db.tbl",
+    "name" : "/tmp/iceberg/default.tbl_update",
     "facets" : {
       "dataSource" : {
         "name" : "file",
@@ -25,8 +25,8 @@
       "symlinks": {
         "identifiers": [
           {
-            "namespace": "/tmp/v2_update_table",
-            "name": "db.tbl",
+            "namespace": "/tmp/iceberg",
+            "name": "default.tbl_update",
             "type": "TABLE"
           }
         ]

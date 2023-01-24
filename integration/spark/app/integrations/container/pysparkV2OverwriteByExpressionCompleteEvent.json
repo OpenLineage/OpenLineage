@@ -1,13 +1,12 @@
 {
   "eventType" : "COMPLETE",
   "job" : {
-    "namespace" : "testV2Commands",
-    "name" : "open_lineage_integration_v2_commands.overwrite_by_expression"
+    "namespace" : "iceberg-namespace"
   },
   "inputs" : [ ],
   "outputs" : [ {
     "namespace" : "file",
-    "name" : "/tmp/v2_overwrite/db.tbl",
+    "name" : "/tmp/iceberg/default.tbl",
     "facets" : {
       "dataSource" : {
         "name" : "file",
@@ -25,8 +24,8 @@
       "symlinks": {
         "identifiers": [
           {
-            "namespace": "/tmp/v2_overwrite",
-            "name": "db.tbl",
+            "namespace": "/tmp/iceberg",
+            "name": "default.tbl",
             "type": "TABLE"
           }
         ]

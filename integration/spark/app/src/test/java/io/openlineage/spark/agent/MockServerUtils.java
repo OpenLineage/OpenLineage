@@ -25,38 +25,19 @@ public class MockServerUtils {
 
   static void verifyEvents(MockServerClient mockServerClient, String... eventFiles) {
     Path eventFolder = Paths.get("integrations/container/");
-    mockServerClient.verify(
-        Arrays.stream(eventFiles)
-            .map(
-                fileEvent ->
-                    request()
-                        .withPath("/api/v1/lineage")
-                        .withBody(readJson(eventFolder.resolve(fileEvent))))
-            .collect(Collectors.toList())
-            .toArray(new RequestDefinition[0]));
-  }
-
-  /**
-   * Waits for the mockserver to get COMPLETE event for a given job name. Before verifying requests
-   * we need to make sure that requests have been sent to mock server.
-   *
-   * @param jobName
-   */
-  static void waitForJobComplete(MockServerClient mockServerClient, String jobName) {
     await()
         .atMost(Duration.ofSeconds(10))
         .untilAsserted(
-            () -> {
-              mockServerClient.verify(
-                  request()
-                      .withPath("/api/v1/lineage")
-                      .withBody(
-                          json(
-                              "{\"eventType\": \"COMPLETE\", \"job\": {\"name\": \""
-                                  + jobName
-                                  + "\"}}",
-                              MatchType.ONLY_MATCHING_FIELDS)));
-            });
+            () ->
+                mockServerClient.verify(
+                    Arrays.stream(eventFiles)
+                        .map(
+                            fileEvent ->
+                                request()
+                                    .withPath("/api/v1/lineage")
+                                    .withBody(readJson(eventFolder.resolve(fileEvent))))
+                        .collect(Collectors.toList())
+                        .toArray(new RequestDefinition[0])));
   }
 
   @SneakyThrows

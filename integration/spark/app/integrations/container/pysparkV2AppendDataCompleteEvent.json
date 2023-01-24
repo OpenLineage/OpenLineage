@@ -1,12 +1,12 @@
 {
   "eventType" : "COMPLETE",
   "job" : {
-    "namespace" : "testV2Commands",
-    "name" : "open_lineage_integration_v2_commands.append_data"
+    "namespace" : "iceberg-namespace",
+    "name" : "iceberg_integration_test.append_data"
   },
   "outputs" : [ {
     "namespace" : "file",
-    "name" : "/tmp/append_data/db.append_table",
+    "name" : "/tmp/iceberg/default.append_table",
     "facets" : {
       "dataSource" : {
         "name" : "file",
@@ -25,12 +25,12 @@
             "inputFields": [
               {
                 "namespace": "file",
-                "name": "/tmp/append_data/db.source1",
+                "name": "/tmp/iceberg/default.append_source1",
                 "field": "a"
               },
               {
                 "namespace": "file",
-                "name": "/tmp/append_data/db.source2",
+                "name": "/tmp/iceberg/default.append_source2",
                 "field": "a"
               }
             ]
@@ -40,8 +40,8 @@
       "symlinks": {
         "identifiers": [
           {
-            "namespace": "/tmp/append_data",
-            "name": "db.append_table",
+            "namespace": "/tmp/iceberg",
+            "name": "default.append_table",
             "type": "TABLE"
           }
         ]

@@ -1,12 +1,12 @@
 {
   "eventType" : "START",
   "job" : {
-    "namespace" : "testV2Commands",
-    "name" : "open_lineage_integration_v2_commands.overwrite_partitions_dynamic"
+    "namespace" :  "iceberg-namespace",
+    "name" : "iceberg_integration_test.overwrite_partitions_dynamic"
   },
   "inputs" : [  {
     "namespace" : "file",
-    "name" : "/tmp/v2_overwrite/db.source",
+    "name" : "/tmp/iceberg/default.source",
     "facets" : {
       "dataSource": {
         "name": "file",
@@ -27,8 +27,8 @@
       "symlinks": {
         "identifiers": [
           {
-            "namespace": "/tmp/v2_overwrite",
-            "name": "db.source",
+            "namespace": "/tmp/iceberg",
+            "name": "default.source",
             "type": "TABLE"
           }
         ]

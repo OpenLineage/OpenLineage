@@ -1,8 +1,8 @@
 {
   "eventType" : "START",
   "job" : {
-    "namespace" : "testV2Commands",
-    "name" : "open_lineage_integration_v2_commands.alter_table"
+    "namespace" : "iceberg-namespace",
+    "name" : "iceberg_integration_test.alter_table"
   },
   "inputs" : [ ],
   "outputs" : [ ]

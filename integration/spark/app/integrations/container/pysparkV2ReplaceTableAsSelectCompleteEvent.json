@@ -1,13 +1,13 @@
 {
   "eventType" : "COMPLETE",
   "job" : {
-    "namespace" : "testV2Commands",
-    "name" : "open_lineage_integration_v2_commands.atomic_replace_table_as_select"
+    "namespace" :  "iceberg-namespace",
+    "name" : "iceberg_integration_test.atomic_replace_table_as_select"
   },
   "inputs" : [ ],
   "outputs" : [ {
     "namespace" : "file",
-    "name" : "/tmp/v2_replace_table_as_select/db.tbl",
+    "name" : "/tmp/iceberg/default.tbl_replace",
     "facets" : {
       "dataSource" : {
         "name" : "file",
@@ -25,8 +25,8 @@
       "symlinks": {
         "identifiers": [
           {
-            "namespace": "/tmp/v2_replace_table_as_select",
-            "name": "db.tbl",
+            "namespace": "/tmp/iceberg",
+            "name": "default.tbl_replace",
             "type": "TABLE"
           }
         ]

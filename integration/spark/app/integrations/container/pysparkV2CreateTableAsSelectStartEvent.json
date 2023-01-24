@@ -1,12 +1,12 @@
 {
   "eventType" : "START",
   "job" : {
-    "namespace" : "testV2Commands",
-    "name" : "open_lineage_integration_v2_commands.atomic_create_table_as_select"
+    "namespace" : "iceberg-namespace",
+    "name" : "iceberg_integration_test.atomic_create_table_as_select"
   },
   "inputs" : [ {
     "namespace" : "file",
-    "name" : "/tmp/v2/db.source1",
+    "name" : "/tmp/iceberg/default.source1",
     "facets" : {
       "dataSource": {
         "name": "file",
@@ -27,8 +27,8 @@
       "symlinks": {
         "identifiers": [
           {
-            "namespace": "/tmp/v2",
-            "name": "db.source1",
+            "namespace": "/tmp/iceberg",
+            "name": "default.source1",
             "type": "TABLE"
           }
         ]
@@ -36,7 +36,7 @@
     }
   }, {
     "namespace" : "file",
-    "name" : "/tmp/v2/db.source2",
+    "name" : "/tmp/iceberg/default.source2",
     "facets" : {
       "dataSource": {
         "name": "file",
@@ -57,8 +57,8 @@
       "symlinks": {
         "identifiers": [
           {
-            "namespace": "/tmp/v2",
-            "name": "db.source2",
+            "namespace": "/tmp/iceberg",
+            "name": "default.source2",
             "type": "TABLE"
           }
         ]
