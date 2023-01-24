@@ -2,16 +2,16 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
-
 from urllib.parse import urlparse
+
+from openlineage.airflow.utils import try_import_from_string
+from openlineage.client import set_producer
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from airflow.utils.dates import days_ago
 
-from openlineage.airflow.utils import try_import_from_string
-from openlineage.client import set_producer
 set_producer("https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow")
 
 AthenaOperator = try_import_from_string(

@@ -1,12 +1,13 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Any, Optional, List
+from typing import Any, List, Optional
 from unittest.mock import MagicMock
-from airflow.models import BaseOperator
 
-from openlineage.airflow.extractors import ExtractorManager, BaseExtractor, TaskMetadata
+from openlineage.airflow.extractors import BaseExtractor, ExtractorManager, TaskMetadata
 from openlineage.airflow.extractors.postgres_extractor import PostgresExtractor
+
+from airflow.models import BaseOperator
 
 
 class FakeOperator(BaseOperator):
@@ -72,8 +73,9 @@ def test_adding_extractors_to_manager():
 
 
 def test_extracting_inlets_and_outlets():
-    from airflow.lineage.entities import Table
     from openlineage.client.run import Dataset
+
+    from airflow.lineage.entities import Table
 
     metadata = TaskMetadata(name="fake-name", job_facets={})
     inlets = [Dataset(namespace="c1", name="d1.t0", facets={}),
@@ -90,8 +92,9 @@ def test_extracting_inlets_and_outlets():
 
 
 def test_extraction_from_inlets_and_outlets_without_extractor():
-    from airflow.lineage.entities import Table
     from openlineage.client.run import Dataset
+
+    from airflow.lineage.entities import Table
 
     dagrun = MagicMock()
 
@@ -112,8 +115,9 @@ def test_extraction_from_inlets_and_outlets_without_extractor():
 
 
 def test_extraction_from_inlets_and_outlets_ignores_unhandled_types():
-    from airflow.lineage.entities import Table, File
     from openlineage.client.run import Dataset
+
+    from airflow.lineage.entities import File, Table
 
     dagrun = MagicMock()
 
@@ -132,8 +136,9 @@ def test_extraction_from_inlets_and_outlets_ignores_unhandled_types():
 
 
 def test_fake_extractor_extracts_from_inlets_and_outlets():
-    from airflow.lineage.entities import Table
     from openlineage.client.run import Dataset
+
+    from airflow.lineage.entities import Table
 
     dagrun = MagicMock()
 
@@ -161,8 +166,9 @@ def test_fake_extractor_extracts_from_inlets_and_outlets():
 
 
 def test_fake_extractor_extracts_and_discards_inlets_and_outlets():
-    from airflow.lineage.entities import Table
     from openlineage.client.run import Dataset
+
+    from airflow.lineage.entities import Table
 
     dagrun = MagicMock()
 

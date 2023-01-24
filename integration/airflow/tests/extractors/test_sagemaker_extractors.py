@@ -2,27 +2,27 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-import unittest
-from unittest import mock, TestCase
 import random
+import unittest
+from datetime import datetime
+from unittest import TestCase, mock
+
 import pytz
 from openlineage.airflow.extractors.sagemaker_extractors import (
     SageMakerProcessingExtractor,
     SageMakerTrainingExtractor,
-    SageMakerTransformExtractor
+    SageMakerTransformExtractor,
 )
+from pkg_resources import parse_version
 
+from airflow.models import DAG, TaskInstance
 from airflow.providers.amazon.aws.operators.sagemaker import (
     SageMakerProcessingOperator,
     SageMakerTrainingOperator,
-    SageMakerTransformOperator
+    SageMakerTransformOperator,
 )
-
-from datetime import datetime
-from airflow.models import TaskInstance, DAG
-from airflow.utils.state import State
 from airflow.utils import timezone
-from pkg_resources import parse_version
+from airflow.utils.state import State
 from airflow.version import version as AIRFLOW_VERSION
 
 log = logging.getLogger(__name__)

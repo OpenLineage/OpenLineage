@@ -1,12 +1,12 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Optional, Any
+from typing import Any, Optional
 
 import attr
-from great_expectations.core import ExpectationValidationResult
-
 from openlineage.common.utils import get_from_nullable_chain
+
+from great_expectations.core import ExpectationValidationResult
 
 
 @attr.s

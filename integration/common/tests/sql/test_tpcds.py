@@ -1,7 +1,7 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-from openlineage.common.sql import parse, DbTableMeta
+from openlineage.common.sql import DbTableMeta, parse
 
 
 def test_tpcds_cte_query():

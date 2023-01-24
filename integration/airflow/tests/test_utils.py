@@ -1,36 +1,36 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-import os
-import json
-import uuid
-import pytest
-
-import pendulum
 import datetime
-from airflow.models import DAG as AIRFLOW_DAG, DagModel
-from airflow.utils.dates import days_ago
-from airflow.utils.state import State
-from airflow.operators.dummy import DummyOperator
-from airflow.version import version as AIRFLOW_VERSION
-from pkg_resources import parse_version
-
-from openlineage.airflow.utils import (
-    url_to_https,
-    get_location,
-    get_connection,
-    to_json_encodable,
-    DagUtils,
-    SafeStrDict,
-    _is_name_redactable,
-    redact_with_exclusions,
-    InfoJsonEncodable,
-    get_dagrun_start_end,
-)
-from openlineage.client.utils import RedactMixin
-import attr
+import json
+import os
+import uuid
 from json import JSONEncoder
 
+import attr
+import pendulum
+import pytest
+from openlineage.airflow.utils import (
+    DagUtils,
+    InfoJsonEncodable,
+    SafeStrDict,
+    _is_name_redactable,
+    get_connection,
+    get_dagrun_start_end,
+    get_location,
+    redact_with_exclusions,
+    to_json_encodable,
+    url_to_https,
+)
+from openlineage.client.utils import RedactMixin
+from pkg_resources import parse_version
+
+from airflow.models import DAG as AIRFLOW_DAG
+from airflow.models import DagModel
+from airflow.operators.dummy import DummyOperator
+from airflow.utils.dates import days_ago
+from airflow.utils.state import State
+from airflow.version import version as AIRFLOW_VERSION
 
 AIRFLOW_CONN_ID = 'test_db'
 AIRFLOW_CONN_URI = 'postgres://localhost:5432/testdb'

@@ -2,9 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from great_expectations_provider.operators.great_expectations import GreatExpectationsOperator
+from openlineage.client import set_producer
+
 from airflow import DAG
 from airflow.utils.dates import days_ago
-from openlineage.client import set_producer
+
 set_producer("https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow")
 
 

@@ -2,10 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from typing import Any
+
 from airflow import DAG
 from airflow.models import BaseOperator
-from airflow.utils.decorators import apply_defaults
 from airflow.utils.dates import days_ago
+from airflow.utils.decorators import apply_defaults
 
 
 class TestUnknownDummyOperator(BaseOperator):

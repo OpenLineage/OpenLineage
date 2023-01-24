@@ -13,7 +13,7 @@ with open("README.md") as readme_file:
 __version__ = "0.20.0"
 
 requirements = [
-    f"tqdm>=4.62.0",
+    "tqdm>=4.62.0",
     f"openlineage-integration-common[dbt]=={__version__}",
 ]
 
@@ -23,7 +23,7 @@ extras_require = {
         "pytest",
         "pytest-cov",
         "mock",
-        "flake8",
+        "ruff"
         "mypy>=0.9.6",
         "python-dateutil"
     ],

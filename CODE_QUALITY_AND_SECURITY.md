@@ -19,7 +19,7 @@ The specific security and analysis methodologies that we employ include but are 
 ## Analysis
 
 - Use of [PMD](https://pmd.github.io/) and [Spotless](https://github.com/diffplug/spotless) for Java code linting on pull requests and builds
-- Use of [Flake8](https://flake8.pycqa.org/en/latest/) and [Mypy](https://github.com/python/mypy) for Python code linting on pull requests and builds
+- Use of [Ruff](https://github.com//ruff) and [Mypy](https://github.com/python/mypy) for Python code linting on pull requests and builds
 - Use of GitHub Issues for bug reporting and tracking
 
 ## Contact

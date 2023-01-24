@@ -5,19 +5,19 @@ import time
 import uuid
 from typing import Optional
 
-from dagster import DagsterEventType, EventLogRecord, EventLogEntry, DagsterEvent, PipelineRun
+from openlineage.dagster import __version__ as OPENLINEAGE_DAGSTER_VERSION
+from pkg_resources import parse_version
+
+from dagster import DagsterEvent, DagsterEventType, EventLogEntry, EventLogRecord, PipelineRun
 from dagster.core.code_pointer import FileCodePointer
 from dagster.core.definitions.reconstructable import ReconstructableRepository
-from dagster.core.execution.plan.objects import StepSuccessData, StepFailureData
+from dagster.core.execution.plan.objects import StepFailureData, StepSuccessData
 from dagster.core.host_representation import (
     ExternalPipelineOrigin,
     ExternalRepositoryOrigin,
-    InProcessRepositoryLocationOrigin
+    InProcessRepositoryLocationOrigin,
 )
 from dagster.version import __version__ as DAGSTER_VERSION
-from pkg_resources import parse_version
-
-from openlineage.dagster import __version__ as OPENLINEAGE_DAGSTER_VERSION
 
 PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/" \
            f"{OPENLINEAGE_DAGSTER_VERSION}/integration/dagster"

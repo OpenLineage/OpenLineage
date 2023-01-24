@@ -3,14 +3,13 @@
 
 import json
 import os
-from typing import Optional, List
+from typing import List, Optional
 
 import attr
 import pytest
-
+from openlineage.client import facet, run, set_producer
 from openlineage.client.run import RunState
 from openlineage.client.serde import Serde
-from openlineage.client import run, facet, set_producer
 
 
 @pytest.fixture(scope='session', autouse=True)

@@ -4,15 +4,17 @@
 import logging
 import unittest
 from unittest import TestCase
-from airflow.models import DAG
-from airflow.providers.amazon.aws.operators.s3 import S3CopyObjectOperator, S3FileTransformOperator
-from airflow.utils import timezone
+
 from openlineage.airflow.extractors.base import TaskMetadata
 from openlineage.airflow.extractors.s3_extractor import (
     S3CopyObjectExtractor,
-    S3FileTransformExtractor
+    S3FileTransformExtractor,
 )
 from openlineage.client.run import Dataset
+
+from airflow.models import DAG
+from airflow.providers.amazon.aws.operators.s3 import S3CopyObjectOperator, S3FileTransformOperator
+from airflow.utils import timezone
 
 log = logging.getLogger(__name__)
 

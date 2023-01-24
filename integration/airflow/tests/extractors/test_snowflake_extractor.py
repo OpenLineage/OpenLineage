@@ -2,20 +2,17 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from unittest import mock
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import parse_qs, urlparse
 
-from airflow.providers.snowflake.operators.snowflake import SnowflakeOperator
-from airflow.models import Connection
-from airflow import DAG
-from airflow.utils.dates import days_ago
-
-from openlineage.common.models import (
-    DbTableSchema,
-    DbColumn
-)
-from openlineage.common.sql import DbTableMeta
-from openlineage.common.dataset import Source, Dataset, Field
 from openlineage.airflow.extractors.snowflake_extractor import SnowflakeExtractor
+from openlineage.common.dataset import Dataset, Field, Source
+from openlineage.common.models import DbColumn, DbTableSchema
+from openlineage.common.sql import DbTableMeta
+
+from airflow import DAG
+from airflow.models import Connection
+from airflow.providers.snowflake.operators.snowflake import SnowflakeOperator
+from airflow.utils.dates import days_ago
 
 CONN_ID = 'food_delivery_db'
 CONN_URI = 'snowflake://snowflake.example/db-schema?account=test_account&database=FOOD_DELIVERY&region=us-east&warehouse=snow-warehouse&secret=hideit'  # noqa

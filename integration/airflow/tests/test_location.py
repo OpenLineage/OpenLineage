@@ -7,9 +7,10 @@ import sys
 from unittest.mock import patch
 
 import pytest
+from openlineage.airflow.utils import get_location
+
 from tests.mocks.git_mock import execute_git_mock
 
-from openlineage.airflow.utils import get_location
 log = logging.getLogger(__name__)
 
 

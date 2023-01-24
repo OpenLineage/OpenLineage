@@ -1,9 +1,10 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, TYPE_CHECKING
-from openlineage.airflow.extractors.postgres_extractor import PostgresExtractor
+from typing import TYPE_CHECKING, List
+
 import boto3
+from openlineage.airflow.extractors.postgres_extractor import PostgresExtractor
 
 if TYPE_CHECKING:
     from airflow.hooks.base import BaseHook

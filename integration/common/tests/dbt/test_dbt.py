@@ -2,18 +2,16 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
+import os
 import textwrap
 from enum import Enum
 from unittest import mock
 
 import attr
 import pytest
-
-from openlineage.common.provider.dbt import DbtArtifactProcessor, ParentRunMetadata, DbtRunContext
 from openlineage.client import set_producer
+from openlineage.common.provider.dbt import DbtArtifactProcessor, DbtRunContext, ParentRunMetadata
 from openlineage.common.test import match
-
-import os
 
 
 @pytest.fixture(scope='session', autouse=True)

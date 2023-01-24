@@ -1,9 +1,11 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-from airflow.models import Connection
+from urllib.parse import parse_qs, urlparse
+
 from openlineage.airflow.extractors.base import BaseExtractor
-from urllib.parse import urlparse, parse_qs
+
+from airflow.models import Connection
 
 AIRFLOW_CONN_ID = "test_db"
 AIRFLOW_CONN_URI = "postgres://localhost:5432/testdb"

@@ -1,13 +1,12 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Optional, List
-
-from openlineage.client.facet import SqlJobFacet
-from openlineage.common.provider.redshift_data import RedshiftDataDatasetsProvider
+from typing import List, Optional
 
 from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
 from openlineage.airflow.utils import get_job_name
+from openlineage.client.facet import SqlJobFacet
+from openlineage.common.provider.redshift_data import RedshiftDataDatasetsProvider
 from openlineage.common.sql import SqlMeta, parse
 
 

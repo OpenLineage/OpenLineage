@@ -1,30 +1,28 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-import os
 import logging
+import os
 import uuid
-from typing import Optional, Dict, Type, TYPE_CHECKING, List
+from typing import TYPE_CHECKING, Dict, List, Optional, Type
 
-from openlineage.airflow.version import __version__ as OPENLINEAGE_AIRFLOW_VERSION
+import requests.exceptions
 from openlineage.airflow.extractors import TaskMetadata
-
+from openlineage.airflow.utils import DagUtils, redact_with_exclusions
+from openlineage.airflow.version import __version__ as OPENLINEAGE_AIRFLOW_VERSION
 from openlineage.client import OpenLineageClient, OpenLineageClientOptions, set_producer
 from openlineage.client.facet import (
+    BaseFacet,
     DocumentationJobFacet,
+    ErrorMessageRunFacet,
+    NominalTimeRunFacet,
     OwnershipJobFacet,
     OwnershipJobFacetOwners,
-    SourceCodeLocationJobFacet,
-    NominalTimeRunFacet,
     ParentRunFacet,
-    BaseFacet,
-    ErrorMessageRunFacet,
     ProcessingEngineRunFacet,
+    SourceCodeLocationJobFacet,
 )
-from openlineage.airflow.utils import redact_with_exclusions, DagUtils
-from openlineage.client.run import RunEvent, RunState, Run, Job
-import requests.exceptions
-
+from openlineage.client.run import Job, Run, RunEvent, RunState
 
 if TYPE_CHECKING:
     from airflow.models.dagrun import DagRun

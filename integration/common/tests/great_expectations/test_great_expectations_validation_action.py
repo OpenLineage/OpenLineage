@@ -10,33 +10,34 @@ from unittest.mock import patch
 
 import pandas
 import pytest
-from ruamel import yaml
-from great_expectations.core import (
-  ExpectationSuiteValidationResult,
-  ExpectationValidationResult,
-  ExpectationConfiguration, RunIdentifier,
-)
-from great_expectations.data_context.types.resource_identifiers import (
-  ExpectationSuiteIdentifier, ValidationResultIdentifier,
-)
-from great_expectations.core.expectation_suite import ExpectationSuite
-from great_expectations.checkpoint.checkpoint import (
-  Checkpoint,
-)
-from great_expectations.data_context import BaseDataContext
-from great_expectations.data_context.types.base import (
-  DataContextConfig,
-  FilesystemStoreBackendDefaults,
-)
-from great_expectations.dataset import SqlAlchemyDataset, PandasDataset
 from openlineage.client.facet import SchemaField
+from openlineage.common.provider.great_expectations import OpenLineageValidationAction
+from openlineage.common.provider.great_expectations.results import (
+    GreatExpectationsAssertion,
+)
+from ruamel import yaml
 from sqlalchemy import create_engine
 
-from openlineage.common.provider.great_expectations import \
-  OpenLineageValidationAction
-from openlineage.common.provider.great_expectations.results import (
-  GreatExpectationsAssertion,
+from great_expectations.checkpoint.checkpoint import (
+    Checkpoint,
 )
+from great_expectations.core import (
+    ExpectationConfiguration,
+    ExpectationSuiteValidationResult,
+    ExpectationValidationResult,
+    RunIdentifier,
+)
+from great_expectations.core.expectation_suite import ExpectationSuite
+from great_expectations.data_context import BaseDataContext
+from great_expectations.data_context.types.base import (
+    DataContextConfig,
+    FilesystemStoreBackendDefaults,
+)
+from great_expectations.data_context.types.resource_identifiers import (
+    ExpectationSuiteIdentifier,
+    ValidationResultIdentifier,
+)
+from great_expectations.dataset import PandasDataset, SqlAlchemyDataset
 
 current_env = os.environ
 

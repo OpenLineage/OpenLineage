@@ -4,12 +4,13 @@
 import os
 import time
 
+from openlineage.client import set_producer
+
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.providers.google.cloud.operators.bigquery import BigQueryExecuteQueryOperator
 from airflow.utils.dates import days_ago
 
-from openlineage.client import set_producer
 set_producer("https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow")
 
 
@@ -85,7 +86,7 @@ t4 = BigQueryExecuteQueryOperator(
         order_placed_on,
         COUNT(*) AS orders_placed
     FROM airflow_integration.{PREFIX}top_delivery_times
-    GROUP BY order_placed_on;''',
+    GROUP BY order_placed_on;''',  # noqa: E501
     use_legacy_sql=False,
     dag=dag
 )

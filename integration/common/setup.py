@@ -46,7 +46,7 @@ extras_require = {
         "pytest",
         "pytest-cov",
         "mock",
-        "flake8",
+        "ruff",
         "pandas",
         "jinja2",
         "python-dateutil",

@@ -4,9 +4,9 @@
 import pytest
 from openlineage.client.facet import DataSourceDatasetFacet, SchemaDatasetFacet, SchemaField
 from openlineage.client.run import Dataset as OpenLineageDataset
+from openlineage.common.dataset import Dataset, Source
 from openlineage.common.models import DbColumn, DbTableSchema
 from openlineage.common.sql import DbTableMeta
-from openlineage.common.dataset import Source, Dataset
 
 
 @pytest.fixture

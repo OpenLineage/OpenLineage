@@ -1,11 +1,12 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
+from openlineage.client import set_producer
+
 from airflow import DAG
 from airflow.providers.trino.operators.trino import TrinoOperator
 from airflow.utils.dates import days_ago
 
-from openlineage.client import set_producer
 set_producer("https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow")
 
 

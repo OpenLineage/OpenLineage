@@ -5,12 +5,11 @@ import datetime
 import uuid
 from unittest.mock import patch
 
-from requests import Session
-
 from openlineage.client import OpenLineageClient
-from openlineage.client.run import RunEvent, RunState, Run, Job
+from openlineage.client.run import Job, Run, RunEvent, RunState
 from openlineage.client.serde import Serde
 from openlineage.client.transport.http import HttpConfig, HttpTransport
+from requests import Session
 
 
 def test_http_loads_full_config():

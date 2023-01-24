@@ -1,0 +1,12 @@
+[tool.ruff]
+line-length = 100
+select = [
+    "F",
+    "E",
+    "W",
+    "I001"
+]
+target-version = "py37"
+ignore-init-module-imports = true
+src = ["openlineage", "tests"]
+namespace-packages = ["openlineage/dagster"]

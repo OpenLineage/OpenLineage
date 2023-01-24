@@ -1,16 +1,16 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Any, List, Optional, Dict
 from collections import defaultdict
+from typing import Any, Dict, List, Optional
 
 from openlineage.airflow.extractors.base import TaskMetadata
-from openlineage.client.facet import BaseFacet
 from openlineage.client.facet import (
-    DataQualityMetricsInputDatasetFacet,
+    Assertion,
+    BaseFacet,
     ColumnMetric,
     DataQualityAssertionsDatasetFacet,
-    Assertion
+    DataQualityMetricsInputDatasetFacet,
 )
 
 

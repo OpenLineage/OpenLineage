@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import os
+
 from openlineage.airflow.utils import JobIdMapping, openlineage_job_name
 
 _JOB_NAMESPACE = os.getenv('OPENLINEAGE_NAMESPACE', 'default')

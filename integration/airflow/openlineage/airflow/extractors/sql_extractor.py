@@ -1,32 +1,32 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, Optional, TYPE_CHECKING, Dict, Tuple, Callable, Iterable, Union
+from abc import abstractmethod
+from typing import TYPE_CHECKING, Callable, Dict, Iterable, List, Optional, Tuple, Union
 from urllib.parse import urlparse
 
+from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
 from openlineage.airflow.extractors.dbapi_utils import (
-    get_table_schemas,
+    TablesHierarchy,
     create_information_schema_query,
-    TablesHierarchy
+    get_table_schemas,
 )
 from openlineage.airflow.utils import get_connection
-from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
 from openlineage.client.facet import (
     BaseFacet,
-    SqlJobFacet,
     ColumnLineageDatasetFacet,
     ColumnLineageDatasetFacetFieldsAdditional,
     ColumnLineageDatasetFacetFieldsAdditionalInputFields,
     ExtractionError,
-    ExtractionErrorRunFacet
+    ExtractionErrorRunFacet,
+    SqlJobFacet,
 )
-from openlineage.common.sql import SqlMeta, parse, DbTableMeta
 from openlineage.common.dataset import Dataset, Source
-from abc import abstractmethod
+from openlineage.common.sql import DbTableMeta, SqlMeta, parse
 
 if TYPE_CHECKING:
-    from airflow.models import Connection
     from airflow.hooks.base import BaseHook
+    from airflow.models import Connection
 
 
 class SqlExtractor(BaseExtractor):

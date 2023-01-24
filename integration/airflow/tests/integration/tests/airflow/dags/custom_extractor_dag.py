@@ -3,10 +3,12 @@
 
 import os
 from typing import Any
+
+from openlineage.client import set_producer
+
 from airflow import DAG
 from airflow.models import BaseOperator
 from airflow.utils.dates import days_ago
-from openlineage.client import set_producer
 
 os.environ["OPENLINEAGE_EXTRACTOR_CustomOperator"] = 'custom_extractor.CustomExtractor'
 set_producer("https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow")

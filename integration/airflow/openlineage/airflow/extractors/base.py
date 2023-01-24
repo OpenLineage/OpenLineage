@@ -1,16 +1,15 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-import attr
-from abc import ABC, abstractmethod
-
-from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
 import json
+from abc import ABC, abstractmethod
+from typing import Dict, List, Optional
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
-from openlineage.client.run import Dataset
-from typing import List, Dict, Optional
-from openlineage.client.facet import BaseFacet
+import attr
 from openlineage.airflow.utils import LoggingMixin, get_job_name
+from openlineage.client.facet import BaseFacet
+from openlineage.client.run import Dataset
 
 
 @attr.s

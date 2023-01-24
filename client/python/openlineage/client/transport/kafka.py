@@ -5,10 +5,9 @@ import logging
 from typing import Dict
 
 import attr
-
 from openlineage.client.run import RunEvent
 from openlineage.client.serde import Serde
-from openlineage.client.transport.transport import Transport, Config
+from openlineage.client.transport.transport import Config, Transport
 from openlineage.client.utils import get_only_specified_fields
 
 log = logging.getLogger(__name__)

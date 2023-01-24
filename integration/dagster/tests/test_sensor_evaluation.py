@@ -5,12 +5,20 @@ import tempfile
 import time
 import uuid
 from unittest import mock
-from unittest.mock import patch, call
-
-from dagster import job, op, execute_pipeline, reconstructable, build_sensor_context, DagsterEventType  # noqa: E501
-from dagster.core.test_utils import instance_for_test
+from unittest.mock import call, patch
 
 from openlineage.dagster.sensor import openlineage_sensor
+
+from dagster import (  # noqa: E501
+    DagsterEventType,
+    build_sensor_context,
+    execute_pipeline,
+    job,
+    op,
+    reconstructable,
+)
+from dagster.core.test_utils import instance_for_test
+
 from .conftest import make_test_event_log_record
 
 

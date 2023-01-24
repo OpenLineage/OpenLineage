@@ -6,13 +6,14 @@ import typing
 from typing import Optional
 
 import attr
+
 if typing.TYPE_CHECKING:
     from requests import Session
     from requests.adapters import HTTPAdapter
 
 from openlineage.client.run import RunEvent
 from openlineage.client.transport import Transport, get_default_factory
-from openlineage.client.transport.http import HttpTransport, HttpConfig
+from openlineage.client.transport.http import HttpConfig, HttpTransport
 
 
 @attr.s

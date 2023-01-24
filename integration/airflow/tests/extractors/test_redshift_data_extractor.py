@@ -1,29 +1,27 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-import random
-from unittest import mock
-from mock import PropertyMock
-
-from airflow.models import TaskInstance, DAG
-from airflow.utils.state import State
-from datetime import datetime
-import pytz
-import uuid
 import json
 import logging
+import random
 import unittest
+import uuid
+from datetime import datetime
+from unittest import mock
 
-from pkg_resources import parse_version
-from airflow.utils import timezone
-from airflow.version import version as AIRFLOW_VERSION
-from openlineage.common.models import DbTableSchema, DbColumn
-from openlineage.common.sql import DbTableMeta
-
+import pytz
+from mock import PropertyMock
 from openlineage.airflow.extractors.redshift_data_extractor import RedshiftDataExtractor
-from airflow.providers.amazon.aws.operators.redshift_data import RedshiftDataOperator
 from openlineage.client.facet import ErrorMessageRunFacet, OutputStatisticsOutputDatasetFacet
+from openlineage.common.models import DbColumn, DbTableSchema
+from openlineage.common.sql import DbTableMeta
+from pkg_resources import parse_version
 
+from airflow.models import DAG, TaskInstance
+from airflow.providers.amazon.aws.operators.redshift_data import RedshiftDataOperator
+from airflow.utils import timezone
+from airflow.utils.state import State
+from airflow.version import version as AIRFLOW_VERSION
 
 CONN_ID = "food_delivery_db"
 CONN_URI = (

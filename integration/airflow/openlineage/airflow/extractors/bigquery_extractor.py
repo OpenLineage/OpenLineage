@@ -2,16 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import traceback
-from typing import Optional, List
+from typing import List, Optional
 
+from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
+from openlineage.airflow.utils import get_job_name, try_import_from_string
 from openlineage.client.facet import SqlJobFacet
 from openlineage.common.provider.bigquery import BigQueryDatasetsProvider, BigQueryErrorRunFacet
-
-from openlineage.airflow.extractors.base import (
-    BaseExtractor,
-    TaskMetadata
-)
-from openlineage.airflow.utils import get_job_name, try_import_from_string
 
 _BIGQUERY_CONN_URL = 'bigquery'
 

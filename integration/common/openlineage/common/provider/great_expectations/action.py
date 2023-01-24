@@ -6,51 +6,51 @@ import logging
 import os
 from collections import defaultdict
 from datetime import datetime
-from typing import Optional, List, Union, Dict
+from typing import Dict, List, Optional, Union
 from urllib.parse import urlparse
 from uuid import uuid4
 
-from great_expectations.checkpoint import ValidationAction
-from great_expectations.core import ExpectationSuiteValidationResult
-from great_expectations.data_context.types.resource_identifiers import (
-    ValidationResultIdentifier,
-)
-from great_expectations.dataset import (
-    SqlAlchemyDataset,
-    PandasDataset,
-    Dataset as GEDataset,
-)
-from great_expectations.execution_engine import (
-    SqlAlchemyExecutionEngine,
-    PandasExecutionEngine,
-)
-from great_expectations.execution_engine.sqlalchemy_batch_data import (
-    SqlAlchemyBatchData,
-)
-from great_expectations.validator.validator import Validator
-
 from openlineage.client import OpenLineageClient, OpenLineageClientOptions
 from openlineage.client.facet import (
-    ParentRunFacet,
-    DocumentationJobFacet,
-    SourceCodeLocationJobFacet,
-    DataQualityMetricsInputDatasetFacet,
     ColumnMetric,
+    DataQualityMetricsInputDatasetFacet,
+    DocumentationJobFacet,
+    ParentRunFacet,
+    SourceCodeLocationJobFacet,
 )
-from openlineage.client.run import RunEvent, RunState, Run, Job
+from openlineage.client.run import Job, Run, RunEvent, RunState
 from openlineage.client.serde import Serde
-from openlineage.common.dataset import Dataset, Source, Field
+from openlineage.common.dataset import Dataset, Field, Source
 from openlineage.common.dataset import Dataset as OLDataset
 from openlineage.common.provider.great_expectations.facets import (
     GreatExpectationsAssertionsDatasetFacet,
     GreatExpectationsRunFacet,
 )
 from openlineage.common.provider.great_expectations.results import (
-    EXPECTATIONS_PARSERS,
     COLUMN_EXPECTATIONS_PARSER,
+    EXPECTATIONS_PARSERS,
     GreatExpectationsAssertion,
 )
 from openlineage.common.sql import parse
+
+from great_expectations.checkpoint import ValidationAction
+from great_expectations.core import ExpectationSuiteValidationResult
+from great_expectations.data_context.types.resource_identifiers import (
+    ValidationResultIdentifier,
+)
+from great_expectations.dataset import Dataset as GEDataset
+from great_expectations.dataset import (
+    PandasDataset,
+    SqlAlchemyDataset,
+)
+from great_expectations.execution_engine import (
+    PandasExecutionEngine,
+    SqlAlchemyExecutionEngine,
+)
+from great_expectations.execution_engine.sqlalchemy_batch_data import (
+    SqlAlchemyBatchData,
+)
+from great_expectations.validator.validator import Validator
 
 # There is no guarantee that SqlAlchemy is available with Great Expectations.
 # Especially, it could be used only with Pandas datasets, in which case

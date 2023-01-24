@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import json
-from typing import Optional, Dict, List
+from typing import Dict, List, Optional
 
 import attr
 import cattr

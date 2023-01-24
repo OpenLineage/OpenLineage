@@ -1,24 +1,22 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-import paramiko
-import pytest
 import socket
-
-from pkg_resources import parse_version
 from unittest import mock
 
-from airflow.models import Connection, DAG
+import paramiko
+import pytest
+from openlineage.airflow.extractors.sftp_extractor import SFTPExtractor
+from openlineage.airflow.utils import try_import_from_string
+from openlineage.common.dataset import Dataset, Source
+from pkg_resources import parse_version
+
+from airflow.models import DAG, Connection
 from airflow.providers.sftp.hooks.sftp import SFTPHook
 from airflow.providers.sftp.operators.sftp import SFTPOperation
 from airflow.providers.ssh.hooks.ssh import SSHHook
 from airflow.providers_manager import ProvidersManager
 from airflow.utils import timezone
-
-from openlineage.airflow.extractors.sftp_extractor import SFTPExtractor
-from openlineage.airflow.utils import try_import_from_string
-from openlineage.common.dataset import Source, Dataset
-
 
 SFTP_PROVIDER_VERSION = parse_version(
     ProvidersManager().providers["apache-airflow-providers-sftp"].version

@@ -3,15 +3,14 @@
 
 import logging
 import sys
+import time
+import unittest
 
 import psycopg2
-import time
+import pytest
 import requests
 from requests.auth import HTTPBasicAuth
 from retrying import retry
-import pytest
-import unittest
-
 
 logging.basicConfig(
     format="[%(asctime)s] {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s",
@@ -55,6 +54,7 @@ def wait_for_dag(dag_id):
         raise Exception('Retry!')
     return True
 
+
 @pytest.fixture(scope="module", autouse=True)
 def airflow_db_conn():
     yield setup_db()
@@ -71,6 +71,7 @@ def setup_db():
     )
     airflow_db_conn.autocommit = True
 
+
 @pytest.mark.parametrize("dag_id", ["wait_dag", "test_dag", "hanging_extractor_dag"])
 def test_failure(dag_id):
     trigger_dag(dag_id)
@@ -78,7 +79,11 @@ def test_failure(dag_id):
 
 
 def trigger_dag(dag_id):
-    r = requests.post(f"http://airflow:8080/api/v1/dags/{dag_id}/dagRuns", auth=HTTPBasicAuth('airflow', 'airflow'), json={})
+    r = requests.post(
+        f"http://airflow:8080/api/v1/dags/{dag_id}/dagRuns",
+        auth=HTTPBasicAuth('airflow', 'airflow'),
+        json={}
+    )
     r.raise_for_status()
 
 

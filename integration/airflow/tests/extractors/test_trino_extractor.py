@@ -1,22 +1,18 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-import pytest
-
 from unittest import mock
 
+import pytest
+from openlineage.airflow.extractors.trino_extractor import TrinoExtractor
+from openlineage.airflow.utils import try_import_from_string
+from openlineage.common.dataset import Dataset, Field, Source
+from openlineage.common.models import DbColumn, DbTableSchema
+from openlineage.common.sql import DbTableMeta
+
+from airflow import DAG
 from airflow.models import Connection
 from airflow.utils.dates import days_ago
-from airflow import DAG
-
-from openlineage.airflow.utils import try_import_from_string
-from openlineage.common.models import (
-    DbTableSchema,
-    DbColumn
-)
-from openlineage.common.sql import DbTableMeta
-from openlineage.common.dataset import Source, Dataset, Field
-from openlineage.airflow.extractors.trino_extractor import TrinoExtractor
 
 TrinoOperator = try_import_from_string(
     "airflow.providers.trino.operators.trino.TrinoOperator"

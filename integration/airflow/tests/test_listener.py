@@ -1,17 +1,18 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-from airflow.models import BaseOperator
-from airflow.models import TaskInstance, DAG
-from airflow.utils.dates import days_ago
-import pandas as pd
 import uuid
 from unittest.mock import patch
-from airflow.utils.state import State
+
+import pandas as pd
+
 from airflow.listeners.events import (
     register_task_instance_state_events,
     unregister_task_instance_state_events,
 )
+from airflow.models import DAG, BaseOperator, TaskInstance
+from airflow.utils.dates import days_ago
+from airflow.utils.state import State
 
 
 class TemplateOperator(BaseOperator):

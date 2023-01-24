@@ -1,11 +1,12 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
+from openlineage.client import set_producer
+
 from airflow import DAG
 from airflow.providers.snowflake.operators.snowflake import SnowflakeOperator
 from airflow.utils.dates import days_ago
 
-from openlineage.client import set_producer
 set_producer("https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow")
 
 
@@ -30,7 +31,7 @@ CONNECTION = "snowflake_conn"
 t1 = SnowflakeOperator(
     task_id='snowflake_if_not_exists',
     snowflake_conn_id=CONNECTION,
-    sql=f'''
+    sql='''
     CREATE TABLE IF NOT EXISTS test_orders (
       ord   NUMBER,
       str   STRING,
@@ -42,7 +43,7 @@ t1 = SnowflakeOperator(
 t2 = SnowflakeOperator(
     task_id='snowflake_insert',
     snowflake_conn_id=CONNECTION,
-    sql=f'''
+    sql='''
     INSERT INTO test_orders (ord, str, num) VALUES
     (1, 'b', 15),
     (2, 'a', 21),
@@ -54,7 +55,7 @@ t2 = SnowflakeOperator(
 t3 = SnowflakeOperator(
     task_id='snowflake_truncate',
     snowflake_conn_id=CONNECTION,
-    sql=f"TRUNCATE TABLE test_orders;",
+    sql="TRUNCATE TABLE test_orders;",
     dag=dag
 )
 

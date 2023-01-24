@@ -7,25 +7,24 @@ import json
 import logging
 import os
 import subprocess
-import attr
-from typing import TYPE_CHECKING, Type, Dict, Any, List
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 from uuid import uuid4
-from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
-from typing import Optional
-from airflow.models import DAG as AIRFLOW_DAG
 
+import attr
 from openlineage.airflow.facets import (
     AirflowMappedTaskRunFacet,
-    AirflowVersionRunFacet,
     AirflowRunArgsRunFacet,
-    AirflowRunFacet
+    AirflowRunFacet,
+    AirflowVersionRunFacet,
 )
 from openlineage.client.utils import RedactMixin
 from pendulum import from_timestamp
 
+from airflow.models import DAG as AIRFLOW_DAG
 
 if TYPE_CHECKING:
-    from airflow.models import Connection, BaseOperator, TaskInstance, DagRun, DAG
+    from airflow.models import DAG, BaseOperator, Connection, DagRun, TaskInstance
 
 
 log = logging.getLogger(__name__)

@@ -42,7 +42,7 @@ jobs:
     steps:
       - *checkout_project_root
       - run: pip install -e .[dev]
-      - run: python -m flake8 --extend-ignore=F401
+      - run: ruff . --no-update-check
       - run: python -m mypy --install-types --non-interactive --ignore-missing-imports --no-namespace-packages openlineage
       - run: python -m pytest --cov=openlineage tests/
       - run: bash <(curl -s https://codecov.io/bash)
@@ -311,7 +311,7 @@ jobs:
       - *checkout_project_root
       - attach_workspace:
           at: .
-      - run: pip install tox==3.27.1
+      - run: pip install tox==3.27.1 ruff
       - run: tox -p all
       - run: bash <(curl -s https://codecov.io/bash)
       - store_test_results:
@@ -452,6 +452,8 @@ jobs:
     <<: *param_build_tag
     steps:
       - *checkout_project_root
+      - run: pip install ruff
+      - run: ruff . --no-update-check
       - run: python setup.py egg_info -b "<< parameters.build_tag >>" sdist bdist_wheel
       - persist_to_workspace:
           root: .
@@ -622,7 +624,7 @@ jobs:
       - *checkout_project_root
       - *install_python_client
       - run: pip install -e .[dev]
-      - run: flake8
+      - run: ruff . --no-update-check
       - run: python -m mypy --ignore-missing-imports --no-namespace-packages openlineage
       - run: pytest --cov=openlineage tests/
       - run: bash <(curl -s https://codecov.io/bash)

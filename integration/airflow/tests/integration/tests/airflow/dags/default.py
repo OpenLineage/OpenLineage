@@ -3,15 +3,14 @@
 
 from typing import Any
 
-from airflow import DAG
-from airflow.models import BaseOperator
-from airflow.utils.dates import days_ago
 import attr
-
 from openlineage.airflow.extractors.base import OperatorLineage
 from openlineage.client.facet import BaseFacet, ParentRunFacet, SqlJobFacet
 from openlineage.client.run import Dataset
 
+from airflow import DAG
+from airflow.models import BaseOperator
+from airflow.utils.dates import days_ago
 
 INPUTS = [Dataset(namespace="database://host:port", name="inputtable")]
 OUTPUTS = [Dataset(namespace="database://host:port", name="inputtable")]

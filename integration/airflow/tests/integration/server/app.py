@@ -1,15 +1,15 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
+import json
 import logging
 import os
+import sqlite3
 import sys
 import time
 
-from flask import Flask, request, g, jsonify
 from dateutil.parser import parse
-import sqlite3
-import json
+from flask import Flask, g, jsonify, request
 
 app = Flask(__name__)
 

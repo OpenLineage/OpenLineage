@@ -3,12 +3,11 @@
 
 import logging
 from contextlib import closing
-from typing import Optional, TYPE_CHECKING, List, Tuple, Dict, Iterator
+from typing import TYPE_CHECKING, Dict, Iterator, List, Optional, Tuple
 
-from openlineage.common.dataset import Source, Dataset
-from openlineage.common.models import DbTableSchema, DbColumn
+from openlineage.common.dataset import Dataset, Source
+from openlineage.common.models import DbColumn, DbTableSchema
 from openlineage.common.sql import DbTableMeta
-
 
 if TYPE_CHECKING:
     from airflow.hooks.base import BaseHook
