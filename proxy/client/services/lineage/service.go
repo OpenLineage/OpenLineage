@@ -4,6 +4,7 @@
 package lineage
 
 import (
+	"github.com/OpenLineage/OpenLineage/client-proxy/config"
 	"github.com/OpenLineage/OpenLineage/client-proxy/database"
 	"github.com/OpenLineage/OpenLineage/client-proxy/logger"
 	"github.com/OpenLineage/OpenLineage/client-proxy/validator"
@@ -21,17 +22,20 @@ type ILineageService interface {
 }
 
 func (s *Service) CreateLineage(lineageEvent string) int {
-	err := s.validator.Validate(lineageEvent)
-	if err != nil {
+	if err := s.validator.Validate(lineageEvent); err != nil {
 		go s.failedEventHandler.Handle(lineageEvent)
 		return http.StatusBadRequest
 	}
 
-	s.eventLogger.Log(lineageEvent)
+	if err := s.eventLogger.Log(lineageEvent); err != nil {
+		go s.failedEventHandler.Handle(lineageEvent)
+		return http.StatusInternalServerError
+	}
+
 	return http.StatusCreated
 }
 
-func New(db database.IDatabase, h validator.IFailedEventHandler) (*Service, error) {
+func New(conf config.Config, db database.IDatabase, h validator.IFailedEventHandler) (*Service, error) {
 	v, err := validator.New()
 	if err != nil {
 		return nil, err
@@ -40,6 +44,6 @@ func New(db database.IDatabase, h validator.IFailedEventHandler) (*Service, erro
 	return &Service{
 		validator:          v,
 		failedEventHandler: h,
-		eventLogger:        logger.New(db),
+		eventLogger:        logger.New(conf, db),
 	}, nil
 }

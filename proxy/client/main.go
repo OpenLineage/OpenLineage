@@ -21,13 +21,21 @@ func main() {
 		log.Fatalln("Cannot load config:", err)
 	}
 
-	db := database.New(conf)
+	err = database.Migrate(conf)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	db, err := database.New(conf)
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 	failedEventHandler, err := validator.NewFailedEventHandler(conf)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	lineageService, err := LineageService.New(db, failedEventHandler)
+	lineageService, err := LineageService.New(conf, db, failedEventHandler)
 	if err != nil {
 		log.Fatalln(err)
 	}

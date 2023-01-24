@@ -11,14 +11,14 @@ import (
 
 type ValidatorTestSuite struct {
 	suite.Suite
-	validator *validator
+	validator *Validator
 }
 
 func (suite *ValidatorTestSuite) SetupSuite() {
 	var err error
 	suite.validator, err = New()
 	if err != nil {
-		suite.Fail("Fail to initialize validator")
+		suite.Fail("Fail to initialize Validator")
 	}
 }
 
