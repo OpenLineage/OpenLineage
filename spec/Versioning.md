@@ -1,16 +1,16 @@
 # Versioning
 ## Context
-the OpenLineage spec gets versioned and published.
+The OpenLineage spec gets versioned and published.
 
 Requirements:
 - The OpenLineage spec and related libraries are in the OpenLineage repo.
 - The OpenLineage spec version changes only when the spec itself changes.
 - The libraries in the repo change more frequently than the spec (including when the spec changes).
-- We want to version the OpenLineage spec independently of the api spec.
-- The mechanism to version and publish the OpenLineage core spec apply to publishing custom facets.
+- We want to version the OpenLineage spec independently of the API spec.
+- The mechanism to version and publish the OpenLineage core spec applies to publishing custom facets.
 
 ## Mechanism
-- The spec defines it’s current version using the `“$id”` field:
+- The spec defines its current version using the `“$id”` field:
   - See:
     - [json schema core doc](https://json-schema.org/draft/2020-12/json-schema-core.html#rfc.section.8.2.1)
     - [Json schema spec $id](https://json-schema.org/draft/2019-09/schema)
@@ -25,17 +25,17 @@ MODEL-REVISION-ADDITION
   - REVISION when you introduce a schema change which may prevent interaction with some historical data
   - ADDITION when you make a schema change that is compatible with all historical data
 
-## Implementation plan
+## Implementation Plan
 - CI verifies that:
-  - the $id field has the right domain prefix
-  - the version changes when the spec changed: When resolving “$id”, the build fails if the spec is not exactly the same.
+  - The $id field has the right domain prefix.
+  - The version changes when the spec changes: When resolving “$id”, the build fails if the spec is not exactly the same.
   - The version does not change when the spec does not change. We can verify that the current version of the spec is not already published with a different version.
-  - Libraries are generating event with current version
-  - Make sure the spec is backward compatible (only add optional fields) and consistent with the versioning semantics
+  - Libraries are generating events with the current version.
+  - The spec is backward-compatible (only add optional fields) and consistent with the versioning semantics.
 - git pre commit: Increments the versions automatically when the spec changes.
-- spec publication:
-  - CI publishes to github pages when the $id changes on main (when this particular url does not exist yet)
-  - CI tags main with OpenLineage.json-{version}
+- Spec publication:
+  - CI publishes to github pages when the $id changes on main (when this particular URL does not exist yet).
+  - CI tags main with OpenLineage.json-{version}.
 
 ----
 SPDX-License-Identifier: Apache-2.0\

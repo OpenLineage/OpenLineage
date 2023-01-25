@@ -2,6 +2,9 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.19.2...HEAD)
 
+* Docs: edit spec READMEs [`#1528`](https://github.com/OpenLineage/OpenLineage/pull/1528) [@merobi-hub](https://github.com/merobi-hub)  
+    *Edits the docs for consistency.*
+
 ## [0.19.2](https://github.com/OpenLineage/OpenLineage/compare/0.18.0...0.19.2) - 2023-1-4
 ### Added
 * Airflow: add Trino extractor [`#1288`](https://github.com/OpenLineage/OpenLineage/pull/1288) [@sekikn](https://github.com/sekikn)  
