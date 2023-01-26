@@ -1,11 +1,10 @@
 ARG AIRFLOW_IMAGE=apache/airflow:2.4.0-python3.7
 FROM $AIRFLOW_IMAGE AS airflow
-COPY integration/sql /app/openlineage/integration/sql
 COPY integration/dbt /app/openlineage/integration/dbt
 COPY integration/common /app/openlineage/integration/common
 COPY integration/airflow /app/openlineage/integration/airflow
-COPY client/python /app/openlineage/client/python
 COPY integration/target /app/openlineage/integration/sql/target
+COPY client/python /app/openlineage/client/python
 USER root
 RUN mkdir -p /opt/data
 RUN apt-get update && apt-get install -y git
@@ -30,15 +29,19 @@ RUN python -m virtualenv dbt_venv && pwd && source dbt_venv/bin/activate &&  \
 
 
 FROM python:3.7-slim as integration
-RUN mkdir -p /app && mkdir -p /opt/openlineage
+RUN mkdir -p /app/openlineage
 RUN apt-get update && \
     apt-get install -y python3-dev default-libmysqlclient-dev build-essential
-COPY integration/common /opt/openlineage/integration/common
-COPY integration/airflow /opt/openlineage/integration/airflow
-COPY client/python /opt/openlineage/client/python
-COPY integration/airflow/integration-requirements.txt /opt/openlineage/integration/integration-requirements.txt
+COPY integration/common /app/openlineage/integration/common
+COPY integration/target /app/openlineage/integration/sql/target
+COPY integration/airflow /app/openlineage/integration/airflow
+COPY integration/airflow/integration-requirements.txt /app/openlineage/integration/integration-requirements.txt
+COPY client/python /app/openlineage/client/python
+
 WORKDIR /app
 COPY integration/airflow/tests/integration/*.py ./
 COPY integration/airflow/tests/integration/pytest.ini ./
 COPY integration/airflow/tests/integration/requests requests
-RUN cd /opt/openlineage/integration/ && pip install --use-deprecated=legacy-resolver --user -r integration-requirements.txt
+RUN cd /app/openlineage/integration/ && \
+    pip install --use-deprecated=legacy-resolver --find-links /app/openlineage/integration/sql/target/wheels --user -r integration-requirements.txt
+
