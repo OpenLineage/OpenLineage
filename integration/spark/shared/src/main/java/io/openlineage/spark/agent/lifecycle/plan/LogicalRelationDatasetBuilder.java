@@ -192,6 +192,7 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
                         .parameters()
                         .get(JDBCOptions.JDBC_TABLE_NAME())
                         .getOrElse(ScalaConversionUtils.toScalaFn(() -> "COMPLEX"));
+
         // strip the jdbc: prefix from the url. this leaves us with a url like
         // postgresql://<hostname>:<port>/<database_name>?params
         // we don't parse the URI here because different drivers use different
@@ -201,7 +202,9 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
         // whereas postgres, mysql, and sqlserver use the scheme://hostname:port/db
         // format.
         String url = JdbcUtils.sanitizeJdbcUrl(relation.jdbcOptions().url());
+        log.debug("Extracting table named from query: {}", tableName);
         Set<String> tableNames = extractTableNames(tableName, url);
+        log.debug("Extracted tableNames: {}", tableNames);
 
         return tableNames.stream()
                 .map(t -> {
