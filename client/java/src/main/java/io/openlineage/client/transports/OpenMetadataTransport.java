@@ -36,7 +36,6 @@ import static org.apache.http.Consts.UTF_8;
 import static org.apache.http.HttpHeaders.*;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
-// TODO natalie remove error logs
 @Slf4j
 @Builder
 public final class OpenMetadataTransport extends Transport implements Closeable {
@@ -112,23 +111,17 @@ public final class OpenMetadataTransport extends Transport implements Closeable 
     @Override
     public void emit(@NonNull OpenLineage.RunEvent runEvent) {
         try {
-            final String eventAsJson = OpenLineageClientUtils.toJson(runEvent);
-            log.debug("POST {}: {}", uri, eventAsJson);
-
             if (runEvent.getEventType() != OpenLineage.RunEvent.EventType.START) {
                 return;
             }
 
-//            String pipelineName = "budget-cap-run-rate-natalie"; // todo Natalie pass as parameter
             Set<String> inputTableNames = getTableNames(runEvent.getInputs());
             inputTableNames.forEach(tableName -> {
-                log.error("### input table name: {}", tableName);
                 sendToOpenMetadata(tableName, pipelineName, LineageType.INLET);
             });
 
             Set<String> outputTableNames = getTableNames(runEvent.getOutputs());
             outputTableNames.forEach(tableName -> {
-                log.error("### output table name: {}", tableName);
                 sendToOpenMetadata(tableName, pipelineName, LineageType.OUTLET);
             });
         } catch (Exception e) {
@@ -151,16 +144,12 @@ public final class OpenMetadataTransport extends Transport implements Closeable 
     private void sendToOpenMetadata(String tableName, String pipelineName, LineageType lineageType) {
         try {
             Set<String> tableIds = getTableIds(tableName);
-            log.error("### tableId = {}", tableIds);
 
             tableIds.forEach(tableId -> {
                 String pipelineServiceId = createOrUpdatePipelineService();
-                log.error("### pipelineServiceId = {}", pipelineServiceId);
                 String pipelineId = createOrUpdatePipeline(pipelineServiceId, pipelineName);
-                log.error("### pipelineId = {}", pipelineId);
                 createOrUpdateLineage(pipelineId, tableId, lineageType);
-                log.error("### lineage was created successfully for pipeline: {}, table: {}", pipelineName, tableName);
-                log.info("{} lineage was created successfully for pipeline: {}, table: {}", lineageType, pipelineName, tableName);
+                log.info("{} lineage was sent successfully to OpenMetadata for pipeline: {}, table: {}", lineageType, pipelineName, tableName);
             });
         } catch (Exception e) {
             log.error("Failed to send {} lineage to OpenMetadata for table {} pipeline {} due to: {}", lineageType, tableName, pipelineName, e.getMessage(), e);
@@ -183,6 +172,7 @@ public final class OpenMetadataTransport extends Transport implements Closeable 
             Map<String, Object> hitsResult = (Map<String, Object>) response.get("hits");
             int totalHits = Integer.parseInt(((Map<String, Object>) hitsResult.get("total")).get("value").toString());
             if (totalHits == 0) {
+                log.error("Failed to get id of table {} from OpenMetadata.", tableName);
                 return Collections.emptySet();
             }
             List<Map<String, Object>> tablesData = (List<Map<String, Object>>) hitsResult.get("hits");
