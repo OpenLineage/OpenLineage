@@ -5,8 +5,8 @@ package lineage
 
 import (
 	"github.com/OpenLineage/OpenLineage/client-proxy/config"
-	"github.com/OpenLineage/OpenLineage/client-proxy/database"
 	"github.com/OpenLineage/OpenLineage/client-proxy/logger"
+	"github.com/OpenLineage/OpenLineage/client-proxy/storage"
 	"github.com/OpenLineage/OpenLineage/client-proxy/validator"
 	"net/http"
 )
@@ -35,7 +35,7 @@ func (s *Service) CreateLineage(lineageEvent string) int {
 	return http.StatusCreated
 }
 
-func New(conf config.Config, db database.IDatabase, h validator.IFailedEventHandler) (*Service, error) {
+func New(conf config.Config, storage storage.IStorage, h validator.IFailedEventHandler) (*Service, error) {
 	v, err := validator.New()
 	if err != nil {
 		return nil, err
@@ -44,6 +44,6 @@ func New(conf config.Config, db database.IDatabase, h validator.IFailedEventHand
 	return &Service{
 		validator:          v,
 		failedEventHandler: h,
-		eventLogger:        logger.New(conf, db),
+		eventLogger:        logger.New(conf, storage),
 	}, nil
 }

@@ -1,4 +1,4 @@
-package database
+package storage
 
 import (
 	"fmt"
@@ -11,13 +11,13 @@ import (
 	"testing"
 )
 
-type DatabaseTestSuite struct {
+type StorageTestSuite struct {
 	suite.Suite
-	db   *Database
+	db   *Storage
 	conf config.Config
 }
 
-func (suite *DatabaseTestSuite) BeforeTest(suiteName, testName string) {
+func (suite *StorageTestSuite) BeforeTest(suiteName, testName string) {
 	var err error
 	tempDb := fmt.Sprintf("%s-%s.db", suiteName, testName)
 	suite.conf = config.Config{
@@ -38,11 +38,11 @@ func (suite *DatabaseTestSuite) BeforeTest(suiteName, testName string) {
 	log.Printf("Initialized %s", suite.conf.SqliteDatabasePath)
 }
 
-func (suite *DatabaseTestSuite) AfterTest(_, _ string) {
+func (suite *StorageTestSuite) AfterTest(_, _ string) {
 	_ = os.Remove(suite.conf.SqliteDatabasePath)
 }
 
-func (suite *DatabaseTestSuite) TestGetCurrentPartition() {
+func (suite *StorageTestSuite) TestGetCurrentPartition() {
 	p, err := suite.db.GetCurrentPartition()
 	suite.Nil(err)
 
@@ -51,7 +51,7 @@ func (suite *DatabaseTestSuite) TestGetCurrentPartition() {
 	suite.True(p.IsCurrent)
 }
 
-func (suite *DatabaseTestSuite) TestRotatePartition() {
+func (suite *StorageTestSuite) TestRotatePartition() {
 	currentPartition, err := suite.db.GetCurrentPartition()
 	suite.Nil(err)
 
@@ -65,7 +65,7 @@ func (suite *DatabaseTestSuite) TestRotatePartition() {
 	suite.NotEqual(p, currentPartition)
 }
 
-func (suite *DatabaseTestSuite) TestInsertLineageEvent() {
+func (suite *StorageTestSuite) TestInsertLineageEvent() {
 	p, err := suite.db.GetCurrentPartition()
 	suite.Nil(err)
 
@@ -78,6 +78,6 @@ func (suite *DatabaseTestSuite) TestInsertLineageEvent() {
 	suite.Equal(rowCount, 1)
 }
 
-func TestDatabaseTestSuite(t *testing.T) {
-	suite.Run(t, new(DatabaseTestSuite))
+func TestStorageTestSuite(t *testing.T) {
+	suite.Run(t, new(StorageTestSuite))
 }

@@ -1,7 +1,7 @@
 // Copyright 2018-2023 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
 
-package database
+package storage
 
 import (
 	"database/sql"
@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-type Database struct {
+type Storage struct {
 	db *sql.DB
 }
 
@@ -24,8 +24,8 @@ type Partition struct {
 	IsCurrent bool
 }
 
-// IDatabase is an interface for interaction with database
-type IDatabase interface {
+// IStorage is an interface for interaction with local storage database
+type IStorage interface {
 	GetCurrentPartition() (*Partition, error)
 	RotatePartition() (*Partition, error)
 	InsertLineageEvent(*Partition, string) error
@@ -33,20 +33,20 @@ type IDatabase interface {
 
 // GetCurrentPartition returns the `Partition` where its `isCurrent` is true if available. Otherwise,
 // sql.ErrNoRows will be returned.
-func (db *Database) GetCurrentPartition() (*Partition, error) {
-	return getCurrentPartition(db.db)
+func (s *Storage) GetCurrentPartition() (*Partition, error) {
+	return getCurrentPartition(s.db)
 }
 
 // RotatePartition rotates the lineage events partitions when the current partition hits the bytes or
 // hours limits. It marks the current partition is done for adding more event records, creates a new
 // lineage events partition table, and creates a new record in partitions table.
-func (db *Database) RotatePartition() (*Partition, error) {
-	p, err := getCurrentPartition(db.db)
+func (s *Storage) RotatePartition() (*Partition, error) {
+	p, err := getCurrentPartition(s.db)
 	if err != nil {
 		return nil, err
 	}
 
-	err = inTransaction(db.db, func(tx *sql.Tx) error {
+	err = inTransaction(s.db, func(tx *sql.Tx) error {
 		if _, err := tx.Exec(fmt.Sprintf("INSERT INTO %s(event, continue) VALUES('', false)", p.Name)); err != nil {
 			return err
 		}
@@ -66,11 +66,11 @@ func (db *Database) RotatePartition() (*Partition, error) {
 		return nil, err
 	}
 
-	return getCurrentPartition(db.db)
+	return getCurrentPartition(s.db)
 }
 
-func (db *Database) InsertLineageEvent(p *Partition, lineageEvent string) error {
-	return inTransaction(db.db, func(tx *sql.Tx) error {
+func (s *Storage) InsertLineageEvent(p *Partition, lineageEvent string) error {
+	return inTransaction(s.db, func(tx *sql.Tx) error {
 		_, err := tx.Exec(fmt.Sprintf("INSERT INTO %s(event, continue) VALUES(?, true)", p.Name), lineageEvent)
 		if err != nil {
 			return err
@@ -85,8 +85,8 @@ func (db *Database) InsertLineageEvent(p *Partition, lineageEvent string) error 
 	})
 }
 
-// New returns a Database instance which manages the partitions and checkpoint.
-func New(conf config.Config) (*Database, error) {
+// New returns a Storage instance which manages the partitions and checkpoint.
+func New(conf config.Config) (*Storage, error) {
 	db, err := sql.Open("sqlite3", conf.SqliteDatabasePath)
 	if err != nil {
 		return nil, err
@@ -96,7 +96,7 @@ func New(conf config.Config) (*Database, error) {
 		return nil, err
 	}
 
-	return &Database{db: db}, nil
+	return &Storage{db: db}, nil
 }
 
 func initDB(db *sql.DB) error {

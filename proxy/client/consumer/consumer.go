@@ -4,12 +4,12 @@
 package consumer
 
 import (
-	"github.com/OpenLineage/OpenLineage/client-proxy/database"
+	"github.com/OpenLineage/OpenLineage/client-proxy/storage"
 	"github.com/OpenLineage/OpenLineage/client-proxy/transports"
 )
 
 type Consumer struct {
-	db        database.IDatabase
+	storage   storage.IStorage
 	transport transports.ITransport
 }
 
@@ -22,6 +22,6 @@ func (consumer *Consumer) Run() {
 	// Consume lineage events from database in an infinite loop and send it to transport
 }
 
-func New(db database.IDatabase, transport transports.ITransport) *Consumer {
-	return &Consumer{db: db, transport: transport}
+func New(storage storage.IStorage, transport transports.ITransport) *Consumer {
+	return &Consumer{storage: storage, transport: transport}
 }

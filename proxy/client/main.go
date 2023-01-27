@@ -7,8 +7,8 @@ import (
 	"github.com/OpenLineage/OpenLineage/client-proxy/config"
 	"github.com/OpenLineage/OpenLineage/client-proxy/consumer"
 	LineageController "github.com/OpenLineage/OpenLineage/client-proxy/controllers/lineage"
-	"github.com/OpenLineage/OpenLineage/client-proxy/database"
 	LineageService "github.com/OpenLineage/OpenLineage/client-proxy/services/lineage"
+	"github.com/OpenLineage/OpenLineage/client-proxy/storage"
 	"github.com/OpenLineage/OpenLineage/client-proxy/transports"
 	"github.com/OpenLineage/OpenLineage/client-proxy/validator"
 	"github.com/gin-gonic/gin"
@@ -21,12 +21,12 @@ func main() {
 		log.Fatalln("Cannot load config:", err)
 	}
 
-	err = database.Migrate(conf)
+	err = storage.Migrate(conf)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	db, err := database.New(conf)
+	storage, err := storage.New(conf)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -35,7 +35,7 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	lineageService, err := LineageService.New(conf, db, failedEventHandler)
+	lineageService, err := LineageService.New(conf, storage, failedEventHandler)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -45,7 +45,7 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	lineageEventConsumer := consumer.New(db, transport)
+	lineageEventConsumer := consumer.New(storage, transport)
 	go lineageEventConsumer.Run()
 
 	router := gin.Default()

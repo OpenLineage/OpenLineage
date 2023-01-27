@@ -5,13 +5,13 @@ package logger
 
 import (
 	"github.com/OpenLineage/OpenLineage/client-proxy/config"
-	"github.com/OpenLineage/OpenLineage/client-proxy/database"
+	"github.com/OpenLineage/OpenLineage/client-proxy/storage"
 	"sync"
 	"time"
 )
 
 type EventLogger struct {
-	db                  database.IDatabase
+	storage             storage.IStorage
 	partitionLimitHours uint
 	partitionLimitBytes uint64
 	lock                sync.Mutex
@@ -26,7 +26,7 @@ func (l *EventLogger) Log(lineageEvent string) error {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 
-	p, err := l.db.GetCurrentPartition()
+	p, err := l.storage.GetCurrentPartition()
 	if err != nil {
 		return err
 	}
@@ -35,18 +35,18 @@ func (l *EventLogger) Log(lineageEvent string) error {
 		p.CreatedAt.Add(time.Hour*time.Duration(l.partitionLimitHours)).After(time.Now())
 
 	if !continuePartition {
-		p, err = l.db.RotatePartition()
+		p, err = l.storage.RotatePartition()
 		if err != nil {
 			return err
 		}
 	}
 
-	return l.db.InsertLineageEvent(p, lineageEvent)
+	return l.storage.InsertLineageEvent(p, lineageEvent)
 }
 
-func New(conf config.Config, db database.IDatabase) *EventLogger {
+func New(conf config.Config, storage storage.IStorage) *EventLogger {
 	return &EventLogger{
-		db:                  db,
+		storage:             storage,
 		partitionLimitHours: conf.PartitionLimitHours,
 		partitionLimitBytes: conf.PartitionLimitBytes,
 	}
