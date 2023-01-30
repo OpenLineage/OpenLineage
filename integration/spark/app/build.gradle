@@ -59,10 +59,10 @@ ext {
     shortVersion = sparkVersion.substring(0,3)
 
     versionsMap = [
-            "3.3": ["module": "spark33", "scala": "2.12", "delta": "2.1.0",    "gcs": "hadoop3-2.2.9", "snowflake": "2.11.0-spark_3.3", "iceberg": "iceberg-spark-runtime-3.3_2.12:0.14.0"],
+            "3.3": ["module": "spark33", "scala": "2.12", "delta": "2.1.0", "gcs": "hadoop3-2.2.9", "snowflake": "2.11.0-spark_3.3", "iceberg": "iceberg-spark-runtime-3.3_2.12:0.14.0"],
             "3.2": ["module": "spark32", "scala": "2.12", "delta": "1.1.0", "gcs": "hadoop3-2.2.9", "snowflake": "2.11.0-spark_3.2", "iceberg": "iceberg-spark-runtime-3.2_2.12:0.13.0"],
             "3.1": ["module": "spark3",  "scala": "2.12", "delta": "1.0.0", "gcs": "hadoop3-2.2.9", "snowflake": "2.11.0-spark_3.1", "iceberg": "iceberg-spark-runtime-3.1_2.12:0.13.0"],
-            "2.4": ["module": "spark2",  "scala": "2.11", "delta": "NA",    "gcs": "hadoop2-2.2.9", "snowflake": "2.9.3-spark_2.4", "iceberg": "NA"]
+            "2.4": ["module": "spark2",  "scala": "2.11", "delta": "NA",    "gcs": "hadoop2-2.2.9", "snowflake": "2.9.3-spark_2.4",  "iceberg": "NA"]
     ]
     versions = versionsMap[shortVersion]
 }
