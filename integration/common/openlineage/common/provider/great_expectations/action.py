@@ -60,9 +60,9 @@ try:
     from sqlalchemy import MetaData, Table
     from sqlalchemy.engine import Connection
 except ImportError:
-    MetaData = None
-    Table = None
-    Connection = None
+    MetaData = None  # type: ignore
+    Table = None  # type: ignore
+    Connection = None  # type: ignore
 
 
 class OpenLineageValidationAction(ValidationAction):

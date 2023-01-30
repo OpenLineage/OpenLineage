@@ -15,15 +15,10 @@ __version__ = "0.20.0"
 requirements = [
     "attrs>=19.3.0",
     f"openlineage-python=={__version__}",
+    f"openlineage_sql=={__version__}"
 ]
 
 extras_require = {
-    "python-sql": [
-        "sqlparse>=0.3.1",
-    ],
-    "sql": [
-        f"openlineage_sql=={__version__}"
-    ],
     "bigquery": [
         "google-api-core>=1.26.3",
         "google-auth>=1.30.0",
@@ -37,7 +32,7 @@ extras_require = {
     ],
     "great_expectations": [
         "great_expectations>=0.13.26,<0.15.35",
-        "sqlalchemy>=1.3.24"
+        "sqlalchemy>=1.3.24,<2.0.0"
     ],
     "redshift": [
         "boto3>=1.15.0"
