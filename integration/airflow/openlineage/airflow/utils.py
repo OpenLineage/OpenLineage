@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import subprocess
+from functools import wraps
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 from uuid import uuid4
@@ -20,6 +21,7 @@ from openlineage.airflow.facets import (
 )
 from openlineage.client.utils import RedactMixin
 from pendulum import from_timestamp
+from pkg_resources import parse_version
 
 from airflow.models import DAG as AIRFLOW_DAG
 
@@ -572,3 +574,30 @@ class LoggingMixin:
                 "openlineage.airflow.extractors."
                 f"{self.__class__.__module__}.{self.__class__.__name__}"
             )
+
+
+def is_airflow_version_enough(version):
+    from airflow.version import version as AIRFLOW_VERSION
+    return parse_version(
+        AIRFLOW_VERSION
+    ) >= parse_version(version)
+
+
+def is_airflow_version_between(at_least, not_at):
+    """ Finds if Airflow version is between (inclusive) at_least and (not inclusive) not at"""
+    from airflow.version import version as AIRFLOW_VERSION
+    log.error(f"V: {AIRFLOW_VERSION}")
+    log.error(f"{at_least} - {is_airflow_version_enough(at_least)}")
+    log.error(f"{not_at} - {is_airflow_version_enough(not_at)}")
+    log.error(f"res - {is_airflow_version_enough(at_least) and not is_airflow_version_enough(not_at)}")
+    return is_airflow_version_enough(at_least) and not is_airflow_version_enough(not_at)
+
+
+def print_exception(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except Exception as e:
+            log.exception(e)
+    return wrapper

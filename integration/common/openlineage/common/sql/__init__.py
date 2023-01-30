@@ -4,15 +4,27 @@
 import logging
 from typing import List, Optional, Union
 
-from openlineage_sql import (
-    ColumnLineage,  # noqa: F401
-    ColumnMeta,  # noqa: F401
-    DbTableMeta,  # noqa: F401
-    ExtractionError,  # noqa: F401
-    SqlMeta,  # noqa: F401
-    provider,  # noqa: F401
-)
-from openlineage_sql import parse as parse_sql  # noqa: F401  # noqa: F401
+try:
+    from openlineage_sql import (
+        ColumnLineage,  # noqa: F401
+        ColumnMeta,  # noqa: F401
+        DbTableMeta,  # noqa: F401
+        ExtractionError,  # noqa: F401
+        SqlMeta,  # noqa: F401
+        provider,  # noqa: F401
+    )
+    from openlineage_sql import parse as parse_sql  # noqa: F401  # noqa: F401
+except Exception:
+    class Dummy:
+        pass
+
+    SqlMeta = Dummy
+    DbTableMeta = Dummy
+    ColumnLineage = Dummy
+    ColumnMeta = Dummy
+    ExtractionError = Dummy
+    provider = Dummy
+    parse_sql = Dummy
 
 log = logging.getLogger(__name__)
 

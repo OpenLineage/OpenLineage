@@ -80,6 +80,16 @@ _extractors += get_check_extractors(
     )
 )
 
+try:
+    _extractors += get_check_extractors(
+        try_import_from_string(
+            'openlineage.airflow.extractors.sql_extractor.SqlExtractor'
+        )
+    )
+except:
+    pass
+
+
 _check_providers = {
     "PostgresExtractor": "postgres",
     "MySqlExtractor": "mysql",

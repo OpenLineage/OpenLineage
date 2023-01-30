@@ -123,7 +123,7 @@ class DefaultTransportFactory(TransportFactory):
         # backwards compatibility: create Transport from
         # OPENLINEAGE_URL and OPENLINEAGE_API_KEY
         if 'OPENLINEAGE_URL' not in os.environ:
-            log.error("Did not find openlineage.yml and OPENLINEAGE_URL is not set")
+            log.warning("Did not find openlineage.yml and OPENLINEAGE_URL is not set")
             return None
         config = HttpConfig(
             url=os.environ['OPENLINEAGE_URL'],
