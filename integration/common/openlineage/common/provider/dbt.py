@@ -449,10 +449,10 @@ class DbtArtifactProcessor:
                 assertion_facet,
                 has_facets=False
             )
-
+            
             job_name = f"{node['database']}.{node['schema']}." \
                 f"{self.removeprefix(node['unique_id'], 'model.')}" \
-                + (".build.test" if self.command == 'build' else "")
+                + (".build.test" if self.command == 'build' else ".test")
 
             run_id = str(uuid.uuid4())
             events.add(self.to_openlineage_events(

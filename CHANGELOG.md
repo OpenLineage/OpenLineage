@@ -1,7 +1,10 @@
 # Changelog
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.19.2...HEAD)
-
+### Fixed
+* DBT: fix `dbt-ol test` output [`#1542`](https://github.com/OpenLineage/OpenLineage/pull/1542) [@JDarDagran](https://github.com/JDarDagran)  
+    *Edits the docs for consistency.*
+### Changed
 * Docs: edit spec READMEs [`#1528`](https://github.com/OpenLineage/OpenLineage/pull/1528) [@merobi-hub](https://github.com/merobi-hub)  
     *Edits the docs for consistency.*
 
