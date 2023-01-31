@@ -9,7 +9,7 @@
             }
         ],
         "job": {
-            "name": "random-gcp-project.dbt_test1.dbt_bigquery_test.test_third_dbt_model",
+            "name": "random-gcp-project.dbt_test1.dbt_bigquery_test.test_third_dbt_model.test",
             "namespace": "dbt-test-namespace"
         },
         "outputs": [],
@@ -23,12 +23,12 @@
         "eventType": "START",
         "inputs": [
             {
-                "name": "random-gcp-project.dbt_test1.test_second_parallel_dbt_model",
+                "name": "random-gcp-project.dbt_test1.test_second_parallel_dbt_model.test",
                 "namespace": "bigquery"
             }
         ],
         "job": {
-            "name": "random-gcp-project.dbt_test1.dbt_bigquery_test.test_second_parallel_dbt_model",
+            "name": "random-gcp-project.dbt_test1.dbt_bigquery_test.test_second_parallel_dbt_model.test",
             "namespace": "dbt-test-namespace"
         },
         "outputs": [],
@@ -47,7 +47,7 @@
             }
         ],
         "job": {
-            "name": "random-gcp-project.dbt_test1.dbt_bigquery_test.test_second_dbt_model",
+            "name": "random-gcp-project.dbt_test1.dbt_bigquery_test.test_second_dbt_model.test",
             "namespace": "dbt-test-namespace"
         },
         "outputs": [],
@@ -66,7 +66,7 @@
             }
         ],
         "job": {
-            "name": "random-gcp-project.dbt_test1.dbt_bigquery_test.test_first_dbt_model",
+            "name": "random-gcp-project.dbt_test1.dbt_bigquery_test.test_first_dbt_model.test",
             "namespace": "dbt-test-namespace"
         },
         "outputs": [],
@@ -114,7 +114,7 @@
         ],
         "job": {
             "facets": {},
-            "name": "random-gcp-project.dbt_test1.dbt_bigquery_test.test_third_dbt_model",
+            "name": "random-gcp-project.dbt_test1.dbt_bigquery_test.test_third_dbt_model.test",
             "namespace": "dbt-test-namespace"
         },
         "outputs": [],
@@ -158,7 +158,7 @@
             }
         ],
         "job": {
-            "name": "random-gcp-project.dbt_test1.dbt_bigquery_test.test_second_parallel_dbt_model",
+            "name": "random-gcp-project.dbt_test1.dbt_bigquery_test.test_second_parallel_dbt_model.test",
             "namespace": "dbt-test-namespace"
         },
         "outputs": [],
@@ -205,7 +205,7 @@
         ],
         "job": {
             "facets": {},
-            "name": "random-gcp-project.dbt_test1.dbt_bigquery_test.test_second_dbt_model",
+            "name": "random-gcp-project.dbt_test1.dbt_bigquery_test.test_second_dbt_model.test",
             "namespace": "dbt-test-namespace"
         },
         "outputs": [],
@@ -271,7 +271,7 @@
         ],
         "job": {
             "facets": {},
-            "name": "random-gcp-project.dbt_test1.dbt_bigquery_test.test_first_dbt_model",
+            "name": "random-gcp-project.dbt_test1.dbt_bigquery_test.test_first_dbt_model.test",
             "namespace": "dbt-test-namespace"
         },
         "outputs": [],
