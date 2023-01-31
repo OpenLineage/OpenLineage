@@ -59,6 +59,21 @@ params = [
         ),
     ),
     pytest.param(
+        "gcs_dag",
+        "requests/gcs.json",
+        marks=[
+            pytest.mark.skipif(not IS_GCP_AUTH, reason="no gcp credentials"),
+            pytest.mark.skipif(
+                os.environ.get("GOOGLE_CLOUD_STORAGE_SOURCE_URI") == "",
+                reason="no gcs source uri"
+            ),
+            pytest.mark.skipif(
+                os.environ.get("GOOGLE_CLOUD_STORAGE_DESTINATION_URI") == "",
+                reason="no gcs destination uri"
+            ),
+        ]
+    ),
+    pytest.param(
         "athena_dag",
         "requests/athena.json",
         marks=pytest.mark.skipif(
