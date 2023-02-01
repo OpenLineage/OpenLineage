@@ -1,13 +1,11 @@
 # Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 import os
-
 from urllib.parse import urlparse
 
 from airflow import DAG
 from airflow.providers.google.cloud.transfers.gcs_to_gcs import GCSToGCSOperator
 from airflow.utils.dates import days_ago
-
 
 GOOGLE_CLOUD_STORAGE_SOURCE_URI = os.environ["GOOGLE_CLOUD_STORAGE_SOURCE_URI"]
 SOURCE_PARSED = urlparse(GOOGLE_CLOUD_STORAGE_SOURCE_URI)

@@ -2,7 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import Optional, List
+from typing import List, Optional
+
 from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
 from openlineage.client.run import Dataset
 
