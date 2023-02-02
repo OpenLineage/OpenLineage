@@ -1,12 +1,32 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.19.2...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.20.0...HEAD)
+
+## [0.20.0](https://github.com/OpenLineage/OpenLineage/compare/0.19.2...0.20.0) - 2023-2-6
+
+### Added
+* Airflow: add new extractor for `GCSToGCSOperator` [`#1495`](https://github.com/OpenLineage/OpenLineage/pull/1495) [@sekikn](https://github.com/sekikn)  
+    *Adds a new extractor for this operator.*
+* Proxy: implement lineage event validator for client proxy [`#1469`](https://github.com/OpenLineage/OpenLineage/pull/1469) [@fm100](https://github.com/fm100)  
+    *Implements logic for validating and handling lineage events.*
+* Proposals: add proposal for a client proxy [`#1509`](https://github.com/OpenLineage/OpenLineage/pull/1509) [@fm100](https://github.com/fm100)  
+    *Proposes the creation of a client-side proxy for receiving events to handle outages and network issues.*
+
 ### Fixed
-* DBT: fix `dbt-ol test` output [`#1542`](https://github.com/OpenLineage/OpenLineage/pull/1542) [@JDarDagran](https://github.com/JDarDagran)  
-    *Edits the docs for consistency.*
-### Changed
+* Common: add explicit SQL dependency [`#1532`](https://github.com/OpenLineage/OpenLineage/pull/1532) [@mobuchowski](https://github.com/mobuchowski)  
+    *Addresses 0.19.2 breaking change to GE integration by including SQL dependency explicitly.*
+* DBT: adjust `tqdm` logging in `dbt-ol` [`#1549`](https://github.com/OpenLineage/OpenLineage/pull/1549) [@JdarDagran](https://github.com/JDarDagran)  
+    *Adjusts `tqdm` to show the correct number of iterations and adds START events for parent runs.*
+* DBT: fix typo in log output [`#1493`](https://github.com/OpenLineage/OpenLineage/pull/1493) [@denimalpaca](https://github.com/denimalpaca)  
+    *Fixes 'emittled' typo in log output.*
+* Spark: add square brackets for list-based Spark configs [`#1507`](https://github.com/OpenLineage/OpenLineage/pull/1507) [@Varunvaruns9](https://github.com/Varunvaruns9)  
+    *Adds condition to treat configs with [] as lists. [] will be required for list-based configs starting with 0.21.0.*
+* SQL: only report partial failures [`#1479](https://github.com/OpenLineage/OpenLineage/pull/1479) [@mobuchowski](https://github.com/mobuchowski)  
+    *Changes the parser so it reports partial failures instead of failing the whole extraction.*
 * Docs: edit spec READMEs [`#1528`](https://github.com/OpenLineage/OpenLineage/pull/1528) [@merobi-hub](https://github.com/merobi-hub)  
     *Edits the docs for consistency.*
+* Dev/ops: tweak contributor stats script in dev [`#1546`](https://github.com/OpenLineage/OpenLineage/pull/1546) [@rossturk](https://github.com/rossturk)  
+    *Adds a requirements.txt file, shebang and `gitignore`.*
 
 ## [0.19.2](https://github.com/OpenLineage/OpenLineage/compare/0.18.0...0.19.2) - 2023-1-4
 ### Added
