@@ -190,7 +190,7 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
       listBuilder.add(new DatabricksEnvironmentFacetBuilder());
     }
     if (CustomEnvironmentFacetBuilder.isCustomEnvironmentVarCollectionEnabled()) {
-      listBuilder.add(new CustomEnvironmentFacetBuilder())
+      listBuilder.add(new CustomEnvironmentFacetBuilder());
     }
     return listBuilder.build();
   }
