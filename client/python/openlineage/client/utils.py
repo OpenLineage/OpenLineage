@@ -5,7 +5,6 @@ import importlib
 import inspect
 import logging
 from typing import List, Type
-from warnings import warn
 
 import attr
 
@@ -18,14 +17,14 @@ def import_from_string(path: str):
         module = importlib.import_module(module_path)
         return getattr(module, target)
     except Exception as e:
+        log.warning(e)
         raise ImportError(f"Failed to import {path}") from e
 
 
 def try_import_from_string(path: str):
     try:
         return import_from_string(path)
-    except ImportError as e:
-        warn(e.msg)
+    except ImportError:
         return None
 
 

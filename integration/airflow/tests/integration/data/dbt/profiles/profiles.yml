@@ -16,7 +16,7 @@ snowflake:
     outputs:
         prod:
           type: snowflake
-          account: "{{ env_var('SNOWFLAKE_ACCOUNT_ID') }}.us-east-1"
+          account: "{{ env_var('SNOWFLAKE_ACCOUNT_ID') | lower  }}.us-east-1"
           user: "{{ env_var('SNOWFLAKE_USER') }}"
           password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
           role: OPENLINEAGE

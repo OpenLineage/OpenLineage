@@ -2,10 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from typing import Dict, List
+from urllib.parse import urlparse
 
 from openlineage.airflow.extractors.dbapi_utils import execute_query_on_hook
 from openlineage.airflow.extractors.sql_extractor import SqlExtractor
 from openlineage.client.facet import BaseFacet, ExternalQueryRunFacet
+from openlineage.common.provider.snowflake import fix_snowflake_sqlalchemy_uri
 
 
 class SnowflakeExtractor(SqlExtractor):
@@ -47,11 +49,8 @@ class SnowflakeExtractor(SqlExtractor):
         ) or self.conn.extra_dejson.get("database", "")
 
     def _get_authority(self) -> str:
-        if hasattr(self.operator, "account") and self.operator.account is not None:
-            return self.operator.account
-        return self.conn.extra_dejson.get(
-            "extra__snowflake__account", ""
-        ) or self.conn.extra_dejson.get("account", "")
+        uri = fix_snowflake_sqlalchemy_uri(self.hook.get_uri())
+        return urlparse(uri).hostname
 
     def _get_hook(self):
         if hasattr(self.operator, "get_db_hook"):
