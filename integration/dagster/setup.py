@@ -27,7 +27,8 @@ extras_require = {
         "pytest",
         "pytest-cov",
         "ruff",
-        "mypy>=0.9.6"
+        "mypy>=0.9.6",
+        "sqlalchemy<2.0.0"
     ],
 }
 
