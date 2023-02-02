@@ -96,9 +96,6 @@ private static Set<Integer> toDelimiterSet(final char[] delimiters) {
     String customVars = System.getenv().get("CUSTOM_VARS");
     List<String> customPropertiesToExtract  = Arrays.asList(customVars.split(","));
 
-    // List<String> customPropertiesToExtract = Arrays.asList("SPLINE_AIRFLOW_DAG_ID", "SPLINE_AIRFLOW_TASK_ID", "SPLINE_AIRFLOW_EXEC_DATE",
-    // "SPLINE_AIRFLOW_TRY_NUMBER", "HADOOP_USER_NAME", "SPLINE_ENVIRONMENT");
-
     customPropertiesToExtract.stream()
         .forEach(
             (p) -> {
