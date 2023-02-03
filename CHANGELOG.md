@@ -9,8 +9,6 @@
     *Adds a new extractor for this operator.*
 * Proxy: implement lineage event validator for client proxy [`#1469`](https://github.com/OpenLineage/OpenLineage/pull/1469) [@fm100](https://github.com/fm100)  
     *Implements logic for validating and handling lineage events.*
-* Proposals: add proposal for a client proxy [`#1509`](https://github.com/OpenLineage/OpenLineage/pull/1509) [@fm100](https://github.com/fm100)  
-    *Proposes the creation of a client-side proxy for receiving events to handle outages and network issues.*
 
 ### Fixed
 * Clients: Java: Kafka does not initialize properties if they are empty, Python: notify about Confluent-Kafka requirement [`#1556`](https://github.com/OpenLineage/OpenLineage/pull/1556) [@mobuchowski](https://github.com/mobuchowski)  
@@ -21,10 +19,6 @@
     *Adjusts `tqdm` to show the correct number of iterations and adds START events for parent runs.*
 * DBT: fix typo in log output [`#1493`](https://github.com/OpenLineage/OpenLineage/pull/1493) [@denimalpaca](https://github.com/denimalpaca)  
     *Fixes 'emittled' typo in log output.*
-* Docs: edit spec READMEs [`#1528`](https://github.com/OpenLineage/OpenLineage/pull/1528) [@merobi-hub](https://github.com/merobi-hub)  
-    *Edits the docs for consistency.*
-* Dev/ops: tweak contributor stats script in dev [`#1546`](https://github.com/OpenLineage/OpenLineage/pull/1546) [@rossturk](https://github.com/rossturk)  
-    *Adds a requirements.txt file, shebang and `gitignore`.*
 * Great Expectations, Airflow: follow Snowflake dataset naming rules [`#1527`](https://github.com/OpenLineage/OpenLineage/pull/1527) [@mobuchowski](https://github.com/mobuchowski)  
     *Normalize Snowflake dataset and datasource naming rules among DBT/Airflow/GX; canonize old Snowflake account paths around making them all full size with account, region and cloud names.*
 * Spark: add square brackets for list-based Spark configs [`#1507`](https://github.com/OpenLineage/OpenLineage/pull/1507) [@Varunvaruns9](https://github.com/Varunvaruns9)  
