@@ -13,20 +13,24 @@
     *Proposes the creation of a client-side proxy for receiving events to handle outages and network issues.*
 
 ### Fixed
+* Clients: Java: Kafka does not initialize properties if they are empty, Python: notify about Confluent-Kafka requirement [`#1556`](https://github.com/OpenLineage/OpenLineage/pull/1556) [@mobuchowski](https://github.com/mobuchowski)  
+    *Fixes Spark failure to initialize `KafkaTransport`.*
 * Common: add explicit SQL dependency [`#1532`](https://github.com/OpenLineage/OpenLineage/pull/1532) [@mobuchowski](https://github.com/mobuchowski)  
     *Addresses 0.19.2 breaking change to GE integration by including SQL dependency explicitly.*
 * DBT: adjust `tqdm` logging in `dbt-ol` [`#1549`](https://github.com/OpenLineage/OpenLineage/pull/1549) [@JdarDagran](https://github.com/JDarDagran)  
     *Adjusts `tqdm` to show the correct number of iterations and adds START events for parent runs.*
 * DBT: fix typo in log output [`#1493`](https://github.com/OpenLineage/OpenLineage/pull/1493) [@denimalpaca](https://github.com/denimalpaca)  
     *Fixes 'emittled' typo in log output.*
-* Spark: add square brackets for list-based Spark configs [`#1507`](https://github.com/OpenLineage/OpenLineage/pull/1507) [@Varunvaruns9](https://github.com/Varunvaruns9)  
-    *Adds condition to treat configs with [] as lists. [] will be required for list-based configs starting with 0.21.0.*
-* SQL: only report partial failures [`#1479](https://github.com/OpenLineage/OpenLineage/pull/1479) [@mobuchowski](https://github.com/mobuchowski)  
-    *Changes the parser so it reports partial failures instead of failing the whole extraction.*
 * Docs: edit spec READMEs [`#1528`](https://github.com/OpenLineage/OpenLineage/pull/1528) [@merobi-hub](https://github.com/merobi-hub)  
     *Edits the docs for consistency.*
 * Dev/ops: tweak contributor stats script in dev [`#1546`](https://github.com/OpenLineage/OpenLineage/pull/1546) [@rossturk](https://github.com/rossturk)  
     *Adds a requirements.txt file, shebang and `gitignore`.*
+* Great Expectations, Airflow: follow Snowflake dataset naming rules [`#1527`](https://github.com/OpenLineage/OpenLineage/pull/1527) [@mobuchowski](https://github.com/mobuchowski)  
+    *Normalize Snowflake dataset and datasource naming rules among DBT/Airflow/GX; canonize old Snowflake account paths around making them all full size with account, region and cloud names.*
+* Spark: add square brackets for list-based Spark configs [`#1507`](https://github.com/OpenLineage/OpenLineage/pull/1507) [@Varunvaruns9](https://github.com/Varunvaruns9)  
+    *Adds a condition to treat configs with [] as lists. [] will be required for list-based configs starting with 0.21.0.*
+* SQL: only report partial failures [`#1479](https://github.com/OpenLineage/OpenLineage/pull/1479) [@mobuchowski](https://github.com/mobuchowski)  
+    *Changes the parser so it reports partial failures instead of failing the whole extraction.*
 
 ## [0.19.2](https://github.com/OpenLineage/OpenLineage/compare/0.18.0...0.19.2) - 2023-1-4
 ### Added
