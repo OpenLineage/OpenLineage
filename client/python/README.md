@@ -49,6 +49,9 @@ Specifications for the built-in options are below.
 
 #### Kafka
 
+For KafkaTransport, `confluent-kafka` needs to be installed.
+You can also install `pip install openlineage-python[kafka]`
+
 * `config` - required string parameter. A dictionary that contains a Kafka producer config as in [Kafka producer config](https://docs.confluent.io/platform/current/clients/confluent-kafka-python/html/index.html#kafka-client-configuration).
 * `topic` - required string parameter. The topic on what events will be sent.
 * `flush` - optional boolean parameter. If set to True, Kafka will flush after each event. By default true.
