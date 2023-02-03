@@ -244,11 +244,13 @@ public class SparkIcebergIntegrationTest {
   }
 
   @Test
-  void testDrop() {
-    clearTables("drop_table_test");
-    spark.sql("CREATE TABLE drop_table_test (a string, b string) USING iceberg");
-    spark.sql("INSERT INTO drop_table_test VALUES ('a', 'b')");
-    spark.sql("DROP TABLE drop_table_test");
+  void testDrop() throws InterruptedException {
+    String tableName = "iceberg_drop_table_test";
+    clearTables(tableName);
+    spark.sql(String.format("CREATE TABLE %s (a string, b string) USING iceberg", tableName));
+    spark.sql(String.format("INSERT INTO %s VALUES ('a', 'b')", tableName));
+    Thread.sleep(1000);
+    spark.sql("DROP TABLE " + tableName);
 
     verifyEvents(
         mockServer, "pysparkV2DropTableStartEvent.json", "pysparkV2DropTableCompleteEvent.json");
