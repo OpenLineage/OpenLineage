@@ -8,7 +8,7 @@
 * Airflow: add new extractor for `GCSToGCSOperator` [`#1495`](https://github.com/OpenLineage/OpenLineage/pull/1495) [@sekikn](https://github.com/sekikn)  
     *Adds a new extractor for this operator.*
 * Proxy: implement lineage event validator for client proxy [`#1469`](https://github.com/OpenLineage/OpenLineage/pull/1469) [@fm100](https://github.com/fm100)  
-    *Implements logic for validating and handling lineage events.*
+    *Implements logic in the proxy (which is still in development) for validating and handling lineage events.*
 
 ### Fixed
 * Clients: Java: Kafka does not initialize properties if they are empty, Python: notify about Confluent-Kafka requirement [`#1556`](https://github.com/OpenLineage/OpenLineage/pull/1556) [@mobuchowski](https://github.com/mobuchowski)  
