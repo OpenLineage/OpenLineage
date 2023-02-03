@@ -114,6 +114,7 @@ suited to extract metadata from a particular operator (or operators).
 * `TrinoOperator`
 * `GreatExpectationsOperator`
 * `SFTPOperator`
+* `FTPFileTransmitOperator`
 * `PythonOperator`
 * `RedshiftDataOperator`, `RedshiftSQLOperator`
 * `SageMakerProcessingOperator`, `SageMakerProcessingOperatorAsync`
