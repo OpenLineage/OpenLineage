@@ -32,7 +32,7 @@ class TrinoExtractor(SqlExtractor):
         return "trino"
 
     def _get_database(self) -> str:
-        return self.conn.extra_dejson["catalog"]
+        return self.conn.extra_dejson.get("catalog", "hive")
 
     def _get_authority(self) -> str:
         if self.conn.host and self.conn.port:
