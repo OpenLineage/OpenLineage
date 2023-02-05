@@ -87,7 +87,7 @@ dependencies {
     testFixturesApi "org.testcontainers:mockserver:${testcontainersVersion}"
     testFixturesApi "org.testcontainers:kafka:${testcontainersVersion}"
     testFixturesApi "org.apache.kafka:kafka-clients:3.3.1"
-    testFixturesApi('org.mock-server:mockserver-client-java:5.14.0') {
+    testFixturesApi('org.mock-server:mockserver-client-java:5.15.0') {
         exclude group: 'com.google.guava', module: 'guava'
         exclude group: 'com.fasterxml.jackson.core'
         exclude group: 'com.fasterxml.jackson.datatype'
