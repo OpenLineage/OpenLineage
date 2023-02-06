@@ -32,7 +32,8 @@ class TrinoExtractor(SqlExtractor):
         return "trino"
 
     def _get_database(self) -> str:
-        return self.conn.extra_dejson["catalog"]
+        # hive is default in airflow trino provider, not in trino package
+        return self.conn.extra_dejson.get("catalog", "hive")
 
     def _get_authority(self) -> str:
         if self.conn.host and self.conn.port:
