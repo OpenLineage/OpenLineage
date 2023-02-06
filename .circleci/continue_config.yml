@@ -422,7 +422,7 @@ jobs:
           export RELEASE_PASSWORD=$(echo $SONATYPE_PASSWORD)
           export RELEASE_USERNAME=$(echo $SONATYPE_USER)
 
-          cd ../../client/java
+          cd ../../../client/java
           ./gradlew --no-daemon publishToMavenLocal
           cd -
           # Publish *.jar
