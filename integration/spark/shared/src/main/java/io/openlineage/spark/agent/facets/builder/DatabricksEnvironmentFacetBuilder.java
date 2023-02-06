@@ -11,7 +11,6 @@ import io.openlineage.spark.agent.facets.EnvironmentFacet;
 import io.openlineage.spark.agent.models.DatabricksMountpoint;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Parameter;
@@ -41,14 +40,17 @@ public class DatabricksEnvironmentFacetBuilder
     return System.getenv().containsKey("DATABRICKS_RUNTIME_VERSION");
   }
 
-  public DatabricksEnvironmentFacetBuilder() {
- }
+  public DatabricksEnvironmentFacetBuilder() {}
 
- public DatabricksEnvironmentFacetBuilder(OpenLineageContext openLineageContext) {
-  dbProperties = new HashMap<>();
-  // extract some custom environment variables if needed
-  openLineageContext.getCustomEnvironmentVariables().ifPresent(envVars -> envVars.forEach(envVar -> dbProperties.put(envVar, System.getenv().get(envVar))));
-}
+  public DatabricksEnvironmentFacetBuilder(OpenLineageContext openLineageContext) {
+    dbProperties = new HashMap<>();
+    // extract some custom environment variables if needed
+    openLineageContext
+        .getCustomEnvironmentVariables()
+        .ifPresent(
+            envVars ->
+                envVars.forEach(envVar -> dbProperties.put(envVar, System.getenv().get(envVar))));
+  }
 
   @Override
   protected void build(
@@ -62,7 +64,7 @@ public class DatabricksEnvironmentFacetBuilder
     if (dbProperties == null) {
       dbProperties = new HashMap<>();
     }
-    
+
     // These are useful properties to extract if they are available
     List<String> dbPropertiesKeys =
         Arrays.asList(
