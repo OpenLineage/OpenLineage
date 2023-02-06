@@ -4,13 +4,13 @@ workflows:
       - build-integration-flink:
           matrix:
             parameters:
-              flink-version: [ '1.14.5', '1.15.1' ]
+              flink-version: [ '1.14.5', '1.15.3', '1.16.0' ]
           requires:
             - build-client-java
       - integration-test-integration-flink:
           matrix:
             parameters:
-              flink-version: [ '1.14.5', '1.15.1' ]
+              flink-version: [ '1.14.5', '1.15.3', '1.16.0' ]
           requires:
             - build-integration-flink
       - workflow_complete:

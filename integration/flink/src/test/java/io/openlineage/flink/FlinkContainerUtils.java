@@ -13,6 +13,7 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
 import lombok.SneakyThrows;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.MockServerContainer;
@@ -100,7 +101,11 @@ public class FlinkContainerUtils {
   }
 
   static GenericContainer<?> makeFlinkJobManagerContainer(
-      String jobName, String configPath, Network network, List<Startable> startables) {
+      String jobName, Network network, List<Startable> startables, Properties jobProperties) {
+    String inputTopics =
+        jobProperties.getProperty(
+            "inputTopics", "io.openlineage.flink.kafka.input1,io.openlineage.flink.kafka.input2");
+    String configPath = jobProperties.getProperty("configPath", "/opt/flink/lib/openlineage.yml");
     GenericContainer<?> container =
         genericContainer(network, FLINK_IMAGE, "jobmanager")
             .withExposedPorts(8081)
@@ -113,20 +118,15 @@ public class FlinkContainerUtils {
             .withCommand(
                 "standalone-job "
                     + String.format("--job-classname %s ", jobName)
-                    + "--input-topics io.openlineage.flink.kafka.input1,io.openlineage.flink.kafka.input2 "
-                    + "--output-topic io.openlineage.flink.kafka.output ")
+                    + "--input-topics "
+                    + inputTopics
+                    + " --output-topic io.openlineage.flink.kafka.output ")
             .withEnv(
                 "FLINK_PROPERTIES", "jobmanager.rpc.address: jobmanager\nexecution.attached: true")
             .withEnv("OPENLINEAGE_CONFIG", configPath)
             .withStartupTimeout(Duration.of(5, ChronoUnit.MINUTES))
             .dependsOn(startables);
     return container;
-  }
-
-  static GenericContainer<?> makeFlinkJobManagerContainer(
-      String jobName, Network network, List<Startable> startables) {
-    return makeFlinkJobManagerContainer(
-        jobName, "/opt/flink/lib/openlineage.yml", network, startables);
   }
 
   static GenericContainer<?> makeFlinkTaskManagerContainer(
@@ -154,6 +154,14 @@ public class FlinkContainerUtils {
                 // do nothing, perhaps already stopped
               }
             });
+  }
+
+  static boolean verifyJobManagerReachedCheckpointOrFinished(GenericContainer jobManager) {
+    String logs = jobManager.getLogs();
+
+    // list of log entries that should stop the test
+    return logs.contains("New checkpoint encountered")
+        || logs.contains("Shutting down remote daemon.");
   }
 
   private static GenericContainer<?> genericContainer(
