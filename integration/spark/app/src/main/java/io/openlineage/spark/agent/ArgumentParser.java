@@ -95,10 +95,17 @@ public class ArgumentParser {
     findSparkConfigKey(conf, "spark.openlineage.version")
         .ifPresent(
             c -> {
+              String apiVersion;
+              try {
+                int version = Integer.parseInt(c);
+                apiVersion = String.format("v%d", version);
+              } catch (NumberFormatException ex) {
+                apiVersion = c;
+              }
               replaceConfigEntry(
                   conf,
                   UrlParser.SPARK_CONF_API_ENDPOINT,
-                  String.format("api/v%s/lineage", c),
+                  String.format("api/%s/lineage", apiVersion),
                   "spark.openlineage.version");
             });
 

@@ -44,6 +44,7 @@ import org.apache.spark.SparkContext;
 import org.apache.spark.SparkContext$;
 import org.apache.spark.TaskContext;
 import org.apache.spark.internal.io.HadoopMapRedWriteConfigUtil;
+import org.apache.spark.internal.io.HadoopMapReduceWriteConfigUtil;
 import org.apache.spark.rdd.HadoopRDD;
 import org.apache.spark.rdd.MapPartitionsRDD;
 import org.apache.spark.rdd.NewHadoopRDD;
@@ -107,20 +108,23 @@ class RddExecutionContext implements ExecutionContext {
       try {
         Field f = getConfigField(fn);
         f.setAccessible(true);
+        Object conf = f.get(fn);
 
-        HadoopMapRedWriteConfigUtil configUtil =
-            Optional.of(f.get(fn))
-                .filter(HadoopMapRedWriteConfigUtil.class::isInstance)
-                .map(HadoopMapRedWriteConfigUtil.class::cast)
-                .orElseThrow(
-                    () ->
-                        new NoSuchFieldException(
-                            "Field is not instance of HadoopMapRedWriteConfigUtil"));
-
-        Field confField = HadoopMapRedWriteConfigUtil.class.getDeclaredField("conf");
-        confField.setAccessible(true);
-        SerializableJobConf conf = (SerializableJobConf) confField.get(configUtil);
-        jc = conf.value();
+        if (conf instanceof HadoopMapRedWriteConfigUtil) {
+          Field confField = HadoopMapRedWriteConfigUtil.class.getDeclaredField("conf");
+          confField.setAccessible(true);
+          SerializableJobConf serializableJobConf = (SerializableJobConf) confField.get(conf);
+          jc = serializableJobConf.value();
+        } else if (conf instanceof HadoopMapReduceWriteConfigUtil) {
+          Field confField = HadoopMapReduceWriteConfigUtil.class.getDeclaredField("conf");
+          confField.setAccessible(true);
+          SerializableJobConf serializableJobConf = (SerializableJobConf) confField.get(conf);
+          jc = serializableJobConf.value();
+        } else {
+          log.info(
+              "Config field is not HadoopMapRedWriteConfigUtil or HadoopMapReduceWriteConfigUtil, it's {}",
+              conf.getClass().getCanonicalName());
+        }
       } catch (IllegalAccessException | NoSuchFieldException nfe) {
         log.warn("Unable to access job conf from RDD", nfe);
       }
