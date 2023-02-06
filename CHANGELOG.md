@@ -1,20 +1,40 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.19.2...HEAD)
-### Added
-* Flink: support Flink version 1.16.0. Resolve Kafka topic names from regex at job start [`#1522`](https://github.com/OpenLineage/OpenLineage/pull/1522) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.20.0...HEAD)
 
-### Fixed
-* DBT: fix `dbt-ol test` output [`#1542`](https://github.com/OpenLineage/OpenLineage/pull/1542) [@JDarDagran](https://github.com/JDarDagran)  
-    *Edits the docs for consistency.*
-* Harmonized Snowflake naming schemes across all Python integrations [#PR num](https://github.com/OpenLineage/OpenLineage/pull/1) [@mobuchowski](https://github.com/mobuchowski)  
-  *This fixes a bug where same dataset would be represented by different name/namespace across different integrations.*
+## [0.20.0](https://github.com/OpenLineage/OpenLineage/compare/0.19.2...0.20.0) - 2023-2-6
+
+### Added
+* Airflow: add new extractor for `GCSToGCSOperator` [`#1495`](https://github.com/OpenLineage/OpenLineage/pull/1495) [@sekikn](https://github.com/sekikn)  
+    *Adds a new extractor for this operator.*
+* Flink: resolve topic names from regex, support 1.16.0 [`#1522`](https://github.com/OpenLineage/OpenLineage/pull/1522) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Adds support for Flink 1.16.0 and makes the integration resolve topic names from Kafka topic patterns.*
+* Proxy: implement lineage event validator for client proxy [`#1469`](https://github.com/OpenLineage/OpenLineage/pull/1469) [@fm100](https://github.com/fm100)  
+    *Implements logic in the proxy (which is still in development) for validating and handling lineage events.*
 
 ### Changed
-* Use ruff tool instead of flake8 [`#1526`](https://github.com/OpenLineage/OpenLineage/pull/1288) [@mobuchowski](https://github.com/mobuchowski)  
-  *All Python code pieces are now formatted by ruff tool, that combines functionality of a lot of other tools in one package*
-* Docs: edit spec READMEs [`#1528`](https://github.com/OpenLineage/OpenLineage/pull/1528) [@merobi-hub](https://github.com/merobi-hub)  
-    *Edits the docs for consistency.*
+* CI: use `ruff` instead of flake8, isort, etc., for linting and formatting [`#1526`](https://github.com/OpenLineage/OpenLineage/pull/1526) [@mobuchowski](https://github.com/mobuchowski)  
+    *Adopts the `ruff` package, which combines several linters and formatters into one fast binary.*
+
+### Fixed
+* Airflow: make the Trino catalog non-mandatory [`#1572`](https://github.com/OpenLineage/OpenLineage/pull/1572) [@JDarDagran](https://github.com/JDarDagran)  
+    *Makes the Trino catalog optional in the Trino extractor.*
+* Common: add explicit SQL dependency [`#1532`](https://github.com/OpenLineage/OpenLineage/pull/1532) [@mobuchowski](https://github.com/mobuchowski)  
+    *Addresses a 0.19.2 breaking change to the GE integration by including the SQL dependency explicitly.*
+* DBT: adjust `tqdm` logging in `dbt-ol` [`#1549`](https://github.com/OpenLineage/OpenLineage/pull/1549) [@JdarDagran](https://github.com/JDarDagran)  
+    *Adjusts `tqdm` to show the correct number of iterations and adds START events for parent runs.*
+* DBT: fix typo in log output [`#1493`](https://github.com/OpenLineage/OpenLineage/pull/1493) [@denimalpaca](https://github.com/denimalpaca)  
+    *Fixes 'emittled' typo in log output.*
+* Great Expectations/Airflow: follow Snowflake dataset naming rules [`#1527`](https://github.com/OpenLineage/OpenLineage/pull/1527) [@mobuchowski](https://github.com/mobuchowski)  
+    *Normalizes Snowflake dataset and datasource naming rules among DBT/Airflow/GE; canonizes old Snowflake account paths around making them all full-size with account, region and cloud names.*
+* Java and Python Clients: Kafka does not initialize properties if they are empty; check and notify about Confluent-Kafka requirement [`#1556`](https://github.com/OpenLineage/OpenLineage/pull/1556) [@mobuchowski](https://github.com/mobuchowski)  
+    *Fixes the failure to initialize `KafkaTransport` in the Java client and adds an exception if the required `confluent-kafka` module is missing from the Python client.*
+* Spark: add square brackets for list-based Spark configs [`#1507`](https://github.com/OpenLineage/OpenLineage/pull/1507) [@Varunvaruns9](https://github.com/Varunvaruns9)  
+    *Adds a condition to treat configs with `[]` as lists. Note: `[]` will be required for list-based configs starting with 0.21.0.*
+* Spark: fix several Spark/BigQuery-related issues [`#1557`](https://github.com/OpenLineage/OpenLineage/pull/1557) [@mobuchowski](https://github.com/mobuchowski)  
+    *Fixes the assumption that a version is always a number; adds support for `HadoopMapReduceWriteConfigUtil`; makes the integration access `BigQueryUtil` and `getTableId` using reflection, which supports all BigQuery versions; makes logs provide the full serialized LogicalPlan on `debug`.*
+* SQL: only report partial failures [`#1479](https://github.com/OpenLineage/OpenLineage/pull/1479) [@mobuchowski](https://github.com/mobuchowski)  
+    *Changes the parser so it reports partial failures instead of failing the whole extraction.*
 
 ## [0.19.2](https://github.com/OpenLineage/OpenLineage/compare/0.18.0...0.19.2) - 2023-1-4
 ### Added
