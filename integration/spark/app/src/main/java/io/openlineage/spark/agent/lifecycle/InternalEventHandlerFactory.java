@@ -191,6 +191,7 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
     } else if (context.getCustomEnvironmentVariables() != null) {
       listBuilder.add(new CustomEnvironmentFacetBuilder(context));
     }
+  
     return listBuilder.build();
   }
 
