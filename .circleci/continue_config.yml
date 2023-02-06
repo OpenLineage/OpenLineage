@@ -405,7 +405,7 @@ jobs:
   release-integration-sql-java:
     working_directory: ~/openlineage/integration/sql/iface-java
     docker:
-      - image: cimg/openjdk:8
+      - image: cimg/openjdk:8.0
     steps:
       - *checkout_project_root
       - restore_cache:
