@@ -60,10 +60,11 @@ ext {
     flinkVersionWithScala212 = flinkVersion.contains('1.14') ? "_2.12:$flinkVersion" : ":$flinkVersion"
     assertjVersion = '3.24.2'
     junit5Version = '5.9.2'
-    lombokVersion = '1.18.24'
-    mockitoVersion = '5.0.0'
+    lombokVersion = '1.18.26'
+    mockitoVersion = '5.1.1'
     testcontainersVersion = '1.15.3'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
+    icebergVersion = "1.1.0"
 }
 
 dependencies {
@@ -74,8 +75,8 @@ dependencies {
     compileOnly "org.apache.flink:flink-connector-kafka$flinkVersionWithScala212"
     compileOnly "org.apache.flink:flink-avro:$flinkVersion"
     compileOnly "org.apache.flink:flink-avro-confluent-registry:$flinkVersion"
-    compileOnly "org.apache.iceberg:iceberg-flink-$flinkVersionShort:0.14.0"
-    compileOnly "org.apache.iceberg:iceberg-flink-runtime-$flinkVersionShort:0.14.0"
+    compileOnly "org.apache.iceberg:iceberg-flink:$icebergVersion"
+    compileOnly "org.apache.iceberg:iceberg-flink-runtime-$flinkVersionShort:$icebergVersion"
 
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
@@ -89,8 +90,8 @@ dependencies {
     testImplementation "org.apache.flink:flink-connector-kafka$flinkVersionWithScala212"
     testImplementation "org.apache.flink:flink-avro:$flinkVersion"
     testImplementation "org.apache.flink:flink-avro-confluent-registry:$flinkVersion"
-    testImplementation "org.apache.iceberg:iceberg-flink-$flinkVersionShort:0.14.0"
-    testImplementation "org.apache.iceberg:iceberg-flink-runtime-$flinkVersionShort:0.14.0"
+    testImplementation "org.apache.iceberg:iceberg-flink:$icebergVersion"
+    testImplementation "org.apache.iceberg:iceberg-flink-runtime-$flinkVersionShort:$icebergVersion"
     testImplementation platform('org.junit:junit-bom:5.9.2')
     testImplementation 'org.hamcrest:hamcrest-library:2.2'
     testImplementation "org.testcontainers:mockserver:${testcontainersVersion}"

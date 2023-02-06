@@ -5,6 +5,8 @@
 
 package io.openlineage.spark.agent.lifecycle.plan;
 
+import static io.openlineage.spark.agent.util.ReflectionUtils.tryExecuteMethod;
+
 import com.google.cloud.spark.bigquery.BigQueryRelation;
 import com.google.cloud.spark.bigquery.BigQueryRelationProvider;
 import com.google.cloud.spark.bigquery.SparkBigQueryConfig;
@@ -31,8 +33,6 @@ import scala.Option;
  * used for naming is a URI of <code>
  * bigquery://&lt;projectId&gt;.&lt;.datasetId&gt;.&lt;tableName&gt;</code> . The namespace for
  * bigquery tables is always <code>bigquery</code> and the name is the FQN.
- *
- * @param <D> the type of {@link OpenLineage.Dataset} created by this visitor
  */
 @Slf4j
 public class BigQueryNodeOutputVisitor
@@ -74,20 +74,25 @@ public class BigQueryNodeOutputVisitor
     return getBigQueryTableName(config).get();
   }
 
-  private Optional<String> getBigQueryTableName(SparkBigQueryConfig config) {
+  private static Optional<Object> extractDatasetIdentifierFromTableId(Object tableId) {
     return Stream.of(
             ReflectionUtils.tryExecuteStaticMethodForClassName(
                 "com.google.cloud.bigquery.connector.common.BigQueryUtil",
                 "friendlyTableName",
-                config.getTableId()),
+                tableId),
             ReflectionUtils.tryExecuteStaticMethodForClassName(
                 "com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.connector.common.BigQueryUtil",
                 "friendlyTableName",
-                config.getTableId()))
+                tableId))
         .filter(Optional::isPresent)
         .map(Optional::get)
-        .map(x -> (String) x)
         .findFirst();
+  }
+
+  private Optional<String> getBigQueryTableName(SparkBigQueryConfig config) {
+    return tryExecuteMethod(config, "getTableId")
+        .flatMap(BigQueryNodeOutputVisitor::extractDatasetIdentifierFromTableId)
+        .map(x -> (String) x);
   }
 
   @Override

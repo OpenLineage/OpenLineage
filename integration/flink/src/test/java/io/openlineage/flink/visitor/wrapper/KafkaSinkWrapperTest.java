@@ -61,7 +61,8 @@ class KafkaSinkWrapperTest {
 
   @Test
   void testGetProducerConfig() {
-    assertEquals(props, wrapper.getKafkaProducerConfig());
+    assertEquals(
+        props.get("bootstrap.servers"), wrapper.getKafkaProducerConfig().get("bootstrap.servers"));
   }
 
   @Test

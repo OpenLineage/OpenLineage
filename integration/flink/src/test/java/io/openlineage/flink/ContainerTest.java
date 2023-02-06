@@ -14,6 +14,7 @@ import com.google.common.io.Resources;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Properties;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
@@ -107,22 +108,28 @@ class ContainerTest {
     network.close();
   }
 
-  void runUntilCheckpoint(String jobName) {
+  void runUntilCheckpoint(String jobName, Properties jobProperties) {
     jobManager =
         FlinkContainerUtils.makeFlinkJobManagerContainer(
-            jobName, network, Arrays.asList(generateEvents, openLineageClientMockContainer));
+            jobName,
+            network,
+            Arrays.asList(generateEvents, openLineageClientMockContainer),
+            jobProperties);
     taskManager =
         FlinkContainerUtils.makeFlinkTaskManagerContainer(network, Arrays.asList(jobManager));
     taskManager.start();
     await()
         .atMost(Duration.ofMinutes(5))
-        .until(() -> jobManager.getLogs().contains("New checkpoint encountered"));
+        .until(() -> FlinkContainerUtils.verifyJobManagerReachedCheckpointOrFinished(jobManager));
   }
 
   void runUntilFailed(String jobName) {
     jobManager =
         FlinkContainerUtils.makeFlinkJobManagerContainer(
-            jobName, network, Arrays.asList(generateEvents, openLineageClientMockContainer));
+            jobName,
+            network,
+            Arrays.asList(generateEvents, openLineageClientMockContainer),
+            new Properties());
     taskManager =
         FlinkContainerUtils.makeFlinkTaskManagerContainer(network, Arrays.asList(jobManager));
     taskManager.start();
@@ -138,7 +145,17 @@ class ContainerTest {
   @Test
   @SneakyThrows
   void testOpenLineageEventSentForKafkaJob() {
-    runUntilCheckpoint("io.openlineage.flink.FlinkStatefulApplication");
+    runUntilCheckpoint("io.openlineage.flink.FlinkStatefulApplication", new Properties());
+    mockServerClient.verify(
+        getEvent("events/expected_kafka.json"), getEvent("events/expected_kafka_checkpoints.json"));
+  }
+
+  @Test
+  @SneakyThrows
+  void testOpenLineageEventSentForKafkaJobWithTopicPattern() {
+    Properties jobProperties = new Properties();
+    jobProperties.put("inputTopics", "io.openlineage.flink.kafka.input.*");
+    runUntilCheckpoint("io.openlineage.flink.FlinkStatefulApplication", jobProperties);
     mockServerClient.verify(
         getEvent("events/expected_kafka.json"), getEvent("events/expected_kafka_checkpoints.json"));
   }
@@ -146,14 +163,23 @@ class ContainerTest {
   @Test
   @SneakyThrows
   void testOpenLineageEventSentForLegacyKafkaJob() {
-    runUntilCheckpoint("io.openlineage.flink.FlinkLegacyKafkaApplication");
+    runUntilCheckpoint("io.openlineage.flink.FlinkLegacyKafkaApplication", new Properties());
+    mockServerClient.verify(getEvent("events/expected_legacy_kafka.json"));
+  }
+
+  @Test
+  @SneakyThrows
+  void testOpenLineageEventSentForLegacyKafkaJobWithTopicPattern() {
+    Properties jobProperties = new Properties();
+    jobProperties.put("inputTopics", "io.openlineage.flink.kafka.input.*");
+    runUntilCheckpoint("io.openlineage.flink.FlinkLegacyKafkaApplication", jobProperties);
     mockServerClient.verify(getEvent("events/expected_legacy_kafka.json"));
   }
 
   @Test
   @SneakyThrows
   void testOpenLineageEventSentForIcebergJob() {
-    runUntilCheckpoint("io.openlineage.flink.FlinkIcebergApplication");
+    runUntilCheckpoint("io.openlineage.flink.FlinkIcebergApplication", new Properties());
     mockServerClient.verify(getEvent("events/expected_iceberg.json"));
   }
 

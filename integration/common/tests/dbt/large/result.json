@@ -11,7 +11,7 @@
 	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 	"inputs": [],
 	"outputs": [{
-		"namespace": "snowflake://ASDF1234.eu-central-1",
+		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
 		"name": "DEMO_DB.public.stg_orders"
 	}]
 }, {
@@ -27,7 +27,7 @@
 	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 	"inputs": [],
 	"outputs": [{
-		"namespace": "snowflake://ASDF1234.eu-central-1",
+		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
 		"name": "DEMO_DB.public.stg_payments"
 	}]
 }, {
@@ -43,7 +43,7 @@
 	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 	"inputs": [],
 	"outputs": [{
-		"namespace": "snowflake://ASDF1234.eu-central-1",
+		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
 		"name": "DEMO_DB.public.stg_customers"
 	}]
 }, {
@@ -58,14 +58,14 @@
 	},
 	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 	"inputs": [{
-		"namespace": "snowflake://ASDF1234.eu-central-1",
+		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
 		"name": "DEMO_DB.public.stg_orders"
 	}, {
-		"namespace": "snowflake://ASDF1234.eu-central-1",
+		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
 		"name": "DEMO_DB.public.stg_payments"
 	}],
 	"outputs": [{
-		"namespace": "snowflake://ASDF1234.eu-central-1",
+		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
 		"name": "DEMO_DB.public.orders"
 	}]
 }, {
@@ -80,17 +80,17 @@
 	},
 	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 	"inputs": [{
-		"namespace": "snowflake://ASDF1234.eu-central-1",
+		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
 		"name": "DEMO_DB.public.stg_customers"
 	}, {
-		"namespace": "snowflake://ASDF1234.eu-central-1",
+		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
 		"name": "DEMO_DB.public.stg_orders"
 	}, {
-		"namespace": "snowflake://ASDF1234.eu-central-1",
+		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
 		"name": "DEMO_DB.public.stg_payments"
 	}],
 	"outputs": [{
-		"namespace": "snowflake://ASDF1234.eu-central-1",
+		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
 		"name": "DEMO_DB.public.customers"
 	}]
 }, {
@@ -121,12 +121,12 @@
 	},
 	"inputs": [],
 	"outputs": [{
-		"namespace": "snowflake://ASDF1234.eu-central-1",
+		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
 		"name": "DEMO_DB.public.stg_orders",
 		"facets": {
 			"dataSource": {
-				"name": "snowflake://ASDF1234.eu-central-1",
-				"uri": "snowflake://ASDF1234.eu-central-1"
+				"name": "snowflake://ASDF1234.eu-central-1.aws",
+				"uri": "snowflake://ASDF1234.eu-central-1.aws"
 			},
 			"schema": {
 				"fields": [{
@@ -169,12 +169,12 @@
 	},
 	"inputs": [],
 	"outputs": [{
-		"namespace": "snowflake://ASDF1234.eu-central-1",
+		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
 		"name": "DEMO_DB.public.stg_payments",
 		"facets": {
 			"dataSource": {
-				"name": "snowflake://ASDF1234.eu-central-1",
-				"uri": "snowflake://ASDF1234.eu-central-1"
+				"name": "snowflake://ASDF1234.eu-central-1.aws",
+				"uri": "snowflake://ASDF1234.eu-central-1.aws"
 			},
 			"schema": {
 				"fields": [{
@@ -219,12 +219,12 @@
 	},
 	"inputs": [],
 	"outputs": [{
-		"namespace": "snowflake://ASDF1234.eu-central-1",
+		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
 		"name": "DEMO_DB.public.stg_customers",
 		"facets": {
 			"dataSource": {
-				"name": "snowflake://ASDF1234.eu-central-1",
-				"uri": "snowflake://ASDF1234.eu-central-1"
+				"name": "snowflake://ASDF1234.eu-central-1.aws",
+				"uri": "snowflake://ASDF1234.eu-central-1.aws"
 			},
 			"schema": {
 				"fields": [{
@@ -260,12 +260,12 @@
 	},
 	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 	"inputs": [{
-		"namespace": "snowflake://ASDF1234.eu-central-1",
+		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
 		"name": "DEMO_DB.public.stg_orders",
 		"facets": {
 			"dataSource": {
-				"name": "snowflake://ASDF1234.eu-central-1",
-				"uri": "snowflake://ASDF1234.eu-central-1"
+				"name": "snowflake://ASDF1234.eu-central-1.aws",
+				"uri": "snowflake://ASDF1234.eu-central-1.aws"
 			},
 			"schema": {
 				"fields": [{
@@ -278,12 +278,12 @@
 			}
 		}
 	}, {
-		"namespace": "snowflake://ASDF1234.eu-central-1",
+		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
 		"name": "DEMO_DB.public.stg_payments",
 		"facets": {
 			"dataSource": {
-				"name": "snowflake://ASDF1234.eu-central-1",
-				"uri": "snowflake://ASDF1234.eu-central-1"
+				"name": "snowflake://ASDF1234.eu-central-1.aws",
+				"uri": "snowflake://ASDF1234.eu-central-1.aws"
 			},
 			"schema": {
 				"fields": [{
@@ -297,12 +297,12 @@
 		}
 	}],
 	"outputs": [{
-		"namespace": "snowflake://ASDF1234.eu-central-1",
+		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
 		"name": "DEMO_DB.public.orders",
 		"facets": {
 			"dataSource": {
-				"name": "snowflake://ASDF1234.eu-central-1",
-				"uri": "snowflake://ASDF1234.eu-central-1"
+				"name": "snowflake://ASDF1234.eu-central-1.aws",
+				"uri": "snowflake://ASDF1234.eu-central-1.aws"
 			},
 			"schema": {
 				"fields": [{
@@ -362,12 +362,12 @@
 		}
 	},
 	"inputs": [{
-		"namespace": "snowflake://ASDF1234.eu-central-1",
+		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
 		"name": "DEMO_DB.public.stg_customers",
 		"facets": {
 			"dataSource": {
-				"name": "snowflake://ASDF1234.eu-central-1",
-				"uri": "snowflake://ASDF1234.eu-central-1"
+				"name": "snowflake://ASDF1234.eu-central-1.aws",
+				"uri": "snowflake://ASDF1234.eu-central-1.aws"
 			},
 			"schema": {
 				"fields": [{
@@ -377,12 +377,12 @@
 			}
 		}
 	}, {
-		"namespace": "snowflake://ASDF1234.eu-central-1",
+		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
 		"name": "DEMO_DB.public.stg_orders",
 		"facets": {
 			"dataSource": {
-				"name": "snowflake://ASDF1234.eu-central-1",
-				"uri": "snowflake://ASDF1234.eu-central-1"
+				"name": "snowflake://ASDF1234.eu-central-1.aws",
+				"uri": "snowflake://ASDF1234.eu-central-1.aws"
 			},
 			"schema": {
 				"fields": [{
@@ -395,12 +395,12 @@
 			}
 		}
 	}, {
-		"namespace": "snowflake://ASDF1234.eu-central-1",
+		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
 		"name": "DEMO_DB.public.stg_payments",
 		"facets": {
 			"dataSource": {
-				"name": "snowflake://ASDF1234.eu-central-1",
-				"uri": "snowflake://ASDF1234.eu-central-1"
+				"name": "snowflake://ASDF1234.eu-central-1.aws",
+				"uri": "snowflake://ASDF1234.eu-central-1.aws"
 			},
 			"schema": {
 				"fields": [{
@@ -414,14 +414,14 @@
 		}
 	}],
 	"outputs": [{
-		"namespace": "snowflake://ASDF1234.eu-central-1",
+		"namespace": "snowflake://ASDF1234.eu-central-1.aws",
 		"name": "DEMO_DB.public.customers",
 		"facets": {
 			"dataSource": {
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
-				"name": "snowflake://ASDF1234.eu-central-1",
-				"uri": "snowflake://ASDF1234.eu-central-1"
+				"name": "snowflake://ASDF1234.eu-central-1.aws",
+				"uri": "snowflake://ASDF1234.eu-central-1.aws"
 			},
 			"schema": {
 				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",

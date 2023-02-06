@@ -312,7 +312,7 @@ jobs:
       - attach_workspace:
           at: .
       - run: pip install tox==3.27.1 ruff
-      - run: tox -p all
+      - run: tox
       - run: bash <(curl -s https://codecov.io/bash)
       - store_test_results:
           path: test-results

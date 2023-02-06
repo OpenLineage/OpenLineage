@@ -98,7 +98,7 @@ public abstract class QueryPlanVisitor<T extends LogicalPlan, D extends OpenLine
       Type arg = typeArgs[0];
       boolean isAssignable = ((Class) arg).isAssignableFrom(x.getClass());
       if (isAssignable) {
-        logger.info("Matched {} to logical plan {}", this, x);
+        logger.debug("Matched {} to logical plan {}", this, x);
       }
       return isAssignable;
     }

@@ -8,7 +8,7 @@
   "outputs": [
     {
       "namespace": "file",
-      "name": "/tmp/iceberg/default.drop_table_test",
+      "name": "/tmp/iceberg/default.iceberg_drop_table_test",
       "facets": {
         "dataSource": {
           "name": "file",
@@ -21,7 +21,7 @@
           "identifiers": [
             {
               "namespace": "/tmp/iceberg",
-              "name": "default.drop_table_test",
+              "name": "default.iceberg_drop_table_test",
               "type": "TABLE"
             }
           ]

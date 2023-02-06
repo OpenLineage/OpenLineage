@@ -6,9 +6,11 @@
 package io.openlineage.flink.visitor.wrapper;
 
 import java.lang.reflect.Field;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.regex.Pattern;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.Schema;
@@ -18,6 +20,8 @@ import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.enumerator.subscriber.KafkaSubscriber;
 import org.apache.flink.connector.kafka.source.reader.deserializer.KafkaRecordDeserializationSchema;
 import org.apache.flink.formats.avro.AvroDeserializationSchema;
+import org.apache.flink.streaming.connectors.kafka.internals.KafkaPartitionDiscoverer;
+import org.apache.flink.streaming.connectors.kafka.internals.KafkaTopicsDescriptor;
 
 /**
  * Wrapper class to extract hidden fields and call hidden methods on {@link KafkaSource} object. It
@@ -53,9 +57,31 @@ public class KafkaSourceWrapper {
   }
 
   public List<String> getTopics() throws IllegalAccessException {
-    return WrapperUtils.<List<String>>getFieldValue(
-            kafkaSubscriber.getClass(), kafkaSubscriber, "topics")
-        .get();
+    Optional<List<String>> topics =
+        WrapperUtils.<List<String>>getFieldValue(
+            kafkaSubscriber.getClass(), kafkaSubscriber, "topics");
+
+    if (topics.isPresent()) {
+      return topics.get();
+    }
+
+    Optional<Pattern> topicPattern =
+        WrapperUtils.<Pattern>getFieldValue(
+            kafkaSubscriber.getClass(), kafkaSubscriber, "topicPattern");
+
+    // TODO: write some unit test to this
+    if (topicPattern.isPresent()) {
+      KafkaTopicsDescriptor descriptor = new KafkaTopicsDescriptor(null, topicPattern.get());
+
+      KafkaPartitionDiscoverer partitionDiscoverer =
+          new KafkaPartitionDiscoverer(descriptor, 0, 0, getProps());
+      WrapperUtils.<List<String>>invoke(
+          KafkaPartitionDiscoverer.class, partitionDiscoverer, "initializeConnections");
+      return WrapperUtils.<List<String>>invoke(
+              KafkaPartitionDiscoverer.class, partitionDiscoverer, "getAllTopics")
+          .get();
+    }
+    return Collections.emptyList();
   }
 
   public KafkaRecordDeserializationSchema getDeserializationSchema() throws IllegalAccessException {

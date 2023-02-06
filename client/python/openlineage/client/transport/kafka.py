@@ -41,11 +41,16 @@ class KafkaTransport(Transport):
     config = KafkaConfig
 
     def __init__(self, config: KafkaConfig):
-        import confluent_kafka as kafka
-        self.producer = kafka.Producer(config.config)
-        self.topic = config.topic
-        self.flush = config.flush
-
+        try:
+            import confluent_kafka as kafka
+            self.producer = kafka.Producer(config.config)
+            self.topic = config.topic
+            self.flush = config.flush
+        except ModuleNotFoundError:
+            log.error("OpenLineage client did not found confluent-kafka module. "
+                      "Installing it is required for KafkaTransport to work. "
+                      "You can also get it via `pip install openlineage-python[kafka]`")
+            raise
         log.debug(f"Constructing openlineage client to send events to topic {config.topic}")
 
     def emit(self, event: RunEvent):
