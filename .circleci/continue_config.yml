@@ -228,7 +228,7 @@ jobs:
   release-integration-flink:
     working_directory: ~/openlineage/integration/flink
     docker:
-      - image: cimg/openjdk:11
+      - image: cimg/openjdk:11.0
     steps:
       - *checkout_project_root
       - restore_cache:
@@ -250,7 +250,7 @@ jobs:
   publish-snapshot-integration-flink:
     working_directory: ~/openlineage/integration/flink
     docker:
-      - image: cimg/openjdk:11
+      - image: cimg/openjdk:11.0
     steps:
       - *checkout_project_root
       - restore_cache:
