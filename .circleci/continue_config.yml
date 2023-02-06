@@ -312,7 +312,7 @@ jobs:
       - attach_workspace:
           at: .
       - run: pip install tox==3.27.1 ruff
-      - run: tox -p all
+      - run: tox
       - run: bash <(curl -s https://codecov.io/bash)
       - store_test_results:
           path: test-results
@@ -564,7 +564,7 @@ jobs:
       - *checkout_project_root
       - *install_python_client
       - install_integration_common:
-          install_parser: false
+          install_parser: true
       - run: python setup.py egg_info -b "<< parameters.build_tag >>" sdist bdist_wheel
       - persist_to_workspace:
           root: .

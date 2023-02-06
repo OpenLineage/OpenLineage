@@ -463,14 +463,14 @@ def import_from_string(path: str):
         module = importlib.import_module(module_path)
         return getattr(module, target)
     except Exception as e:
+        log.warning(e)
         raise ImportError(f"Failed to import {path}") from e
 
 
 def try_import_from_string(path: str):
     try:
         return import_from_string(path)
-    except ImportError as e:
-        log.info(e.msg)  # type: ignore
+    except ImportError:
         return None
 
 

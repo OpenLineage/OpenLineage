@@ -116,16 +116,22 @@ def main():
 
     # Always emit "wrapping event" around dbt run. This indicates start of dbt execution, since
     # both the start and complete events for dbt models won't get emitted until end of execution.
-    dbt_run_event = dbt_run_event_start(
+    start_event = dbt_run_event_start(
         job_name=f"dbt-run-{processor.project['name']}",
         job_namespace=job_namespace,
         parent_run_metadata=parent_run_metadata
     )
     dbt_run_metadata = ParentRunMetadata(
-        run_id=dbt_run_event.run.runId,
-        job_name=dbt_run_event.job.name,
-        job_namespace=dbt_run_event.job.namespace
+        run_id=start_event.run.runId,
+        job_name=start_event.job.name,
+        job_namespace=start_event.job.namespace
     )
+
+    # Failed start event emit should not stop dbt command from running.
+    try:
+        client.emit(start_event)
+    except Exception as e:
+        logger.warning("OpenLineage client failed to emit start event. Exception: %s", e)
 
     # Set parent run metadata to use it as parent run facet
     processor.dbt_run_metadata = dbt_run_metadata
@@ -156,15 +162,21 @@ def main():
 
     events = processor.parse().events()
 
-    for event in tqdm(events, desc="Emitting OpenLineage events"):
-        client.emit(event)
-
-    client.emit(dbt_run_event_end(
+    end_event = dbt_run_event_end(
         run_id=dbt_run_metadata.run_id,
         job_namespace=dbt_run_metadata.job_namespace,
         job_name=dbt_run_metadata.job_name,
         parent_run_metadata=parent_run_metadata
-    ))
+    )
+
+    for event in tqdm(
+        events + [end_event],
+        desc="Emitting OpenLineage events",
+        initial=1,
+        total=len(events) + 2,
+    ):
+        client.emit(event)
+
     logger.info(f"Emitted {len(events) + 2} openlineage events")
 
 

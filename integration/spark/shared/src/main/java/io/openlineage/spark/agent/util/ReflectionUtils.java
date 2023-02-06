@@ -31,4 +31,13 @@ public class ReflectionUtils {
       return Optional.empty();
     }
   }
+
+  public static Optional<Object> tryExecuteMethod(
+      Object object, String methodName, Object... args) {
+    try {
+      return Optional.of(MethodUtils.invokeMethod(object, methodName, args));
+    } catch (Exception exception) {
+      return Optional.empty();
+    }
+  }
 }

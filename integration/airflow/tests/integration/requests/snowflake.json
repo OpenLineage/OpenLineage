@@ -13,7 +13,7 @@
 	"outputs": [{
 		"facets": {
 			"dataSource": {
-				"name": "snowflake://{{ env_var('SNOWFLAKE_ACCOUNT_ID') }}",
+				"name": "snowflake://{{ env_var('SNOWFLAKE_ACCOUNT_ID') | lower  }}.us-east-1.aws",
 				"uri": "{{ any(result) }}"
 			},
 			"schema": {
@@ -30,7 +30,7 @@
 			}
 		},
 		"name": "SANDBOX.OPENLINEAGE.TEST_ORDERS",
-		"namespace": "snowflake://{{ env_var('SNOWFLAKE_ACCOUNT_ID') }}"
+		"namespace": "snowflake://{{ env_var('SNOWFLAKE_ACCOUNT_ID') | lower  }}.us-east-1.aws"
 	}],
 	"run": {
 		"facets": {

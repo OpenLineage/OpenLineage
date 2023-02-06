@@ -192,9 +192,7 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
 
   public static Optional<ExecutionContext> getExecutionContext(int jobId, long executionId) {
     Optional<ExecutionContext> executionContext = getSparkSQLExecutionContext(executionId);
-    if (executionContext.isPresent()) {
-      rddExecutionRegistry.put(jobId, executionContext.get());
-    }
+    executionContext.ifPresent(context -> rddExecutionRegistry.put(jobId, context));
     return executionContext;
   }
 
