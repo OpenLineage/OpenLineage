@@ -12,14 +12,12 @@ import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.transports.FacetsConfig;
 import io.openlineage.client.transports.TransportFactory;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import java.util.List;
-import org.apache.commons.lang3.StringUtils;
 
 @Slf4j
 public class EventEmitter {
@@ -35,7 +33,10 @@ public class EventEmitter {
     this.parentJobName = argument.getJobName();
     this.parentRunId = convertToUUID(argument.getParentRunId());
     this.appName = Optional.ofNullable(argument.getAppName());
-    this.customEnvironmentVariables = Optional.of(Arrays.asList(argument.getOpenLineageYaml().getFacetsConfig().getCustomEnvironmentVariables()));
+    this.customEnvironmentVariables =
+        Optional.of(
+            Arrays.asList(
+                argument.getOpenLineageYaml().getFacetsConfig().getCustomEnvironmentVariables()));
     String[] disabledFacets =
         Optional.ofNullable(argument.getOpenLineageYaml().getFacetsConfig())
             .orElse(new FacetsConfig().withDisabledFacets(new String[0]))
