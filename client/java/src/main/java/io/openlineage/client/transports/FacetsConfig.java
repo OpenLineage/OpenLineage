@@ -21,4 +21,8 @@ public class FacetsConfig {
   @Getter
   @JsonProperty("disabled")
   private String[] disabledFacets;
+
+  @Getter
+  @JsonProperty("custom_environment_variables")
+  private String[] customEnvironmentVariables;
 }
