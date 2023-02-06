@@ -10,6 +10,8 @@ import com.databricks.dbutils_v1.DbfsUtils;
 import io.openlineage.spark.agent.facets.EnvironmentFacet;
 import io.openlineage.spark.agent.models.DatabricksMountpoint;
 import io.openlineage.spark.api.CustomFacetBuilder;
+import io.openlineage.spark.api.OpenLineageContext;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Parameter;
@@ -39,6 +41,15 @@ public class DatabricksEnvironmentFacetBuilder
     return System.getenv().containsKey("DATABRICKS_RUNTIME_VERSION");
   }
 
+  public DatabricksEnvironmentFacetBuilder() {
+ }
+
+ public DatabricksEnvironmentFacetBuilder(OpenLineageContext openLineageContext) {
+  dbProperties = new HashMap<>();
+  // extract some custom environment variables if needed
+  openLineageContext.getCustomEnvironmentVariables().ifPresent(envVars -> envVars.forEach(envVar -> dbProperties.put(envVar, System.getenv().get(envVar))));
+}
+
   @Override
   protected void build(
       SparkListenerJobStart event, BiConsumer<String, ? super EnvironmentFacet> consumer) {
@@ -48,9 +59,11 @@ public class DatabricksEnvironmentFacetBuilder
   }
 
   private Map<String, Object> getDatabricksEnvironmentalAttributes(SparkListenerJobStart jobStart) {
-    dbProperties = new HashMap<>();
+    if (dbProperties == null) {
+      dbProperties = new HashMap<>();
+    }
+    
     // These are useful properties to extract if they are available
-
     List<String> dbPropertiesKeys =
         Arrays.asList(
             "orgId",
@@ -86,7 +99,6 @@ public class DatabricksEnvironmentFacetBuilder
       log.warn("Failed to load dbutils in OpenLineageListener:", e);
       dbProperties.put("mountPoints", new ArrayList<DatabricksMountpoint>());
     }
-
     return dbProperties;
   }
 

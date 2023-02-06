@@ -187,11 +187,12 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
                 new LogicalPlanRunFacetBuilder(context),
                 new SparkVersionFacetBuilder(context));
     if (DatabricksEnvironmentFacetBuilder.isDatabricksRuntime()) {
-      listBuilder.add(new DatabricksEnvironmentFacetBuilder());
+      listBuilder.add(new DatabricksEnvironmentFacetBuilder(context));
     }
-    if (CustomEnvironmentFacetBuilder.isCustomEnvironmentVarCollectionEnabled()) {
-      listBuilder.add(new CustomEnvironmentFacetBuilder());
+    else if (context.getCustomEnvironmentVariables() != null) {
+      listBuilder.add(new CustomEnvironmentFacetBuilder(context));
     }
+  
     return listBuilder.build();
   }
 
