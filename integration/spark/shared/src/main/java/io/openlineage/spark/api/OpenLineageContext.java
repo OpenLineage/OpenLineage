@@ -54,6 +54,8 @@ public class OpenLineageContext {
   /** The non-null {@link SparkContext} running for the application we're reporting run data for */
   @NonNull SparkContext sparkContext;
 
+  /** The list of custom environment variables to be captured */
+  Optional<List<String>> customEnvironmentVariables;
   /**
    * A non-null, preconfigured {@link OpenLineage} client instance for constructing OpenLineage
    * model objects
