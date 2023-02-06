@@ -35,7 +35,7 @@ extras_require["dev"] = set(sum(extras_require.values(), []))
 
 setup(
     name="openlineage-python",
-    version="0.20.1",
+    version="0.21.0",
     description="OpenLineage Python Client",
     long_description=readme,
     long_description_content_type="text/markdown",
