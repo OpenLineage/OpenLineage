@@ -39,7 +39,8 @@ public class ContextFactory {
                       .sparkContext(sparkSession.sparkContext())
                       .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
                       .queryExecution(queryExecution)
-                      .customEnvironmentVariables(this.openLineageEventEmitter.getCustomEnvironmentVariables())
+                      .customEnvironmentVariables(
+                          this.openLineageEventEmitter.getCustomEnvironmentVariables())
                       .build();
               OpenLineageRunEventBuilder runEventBuilder =
                   new OpenLineageRunEventBuilder(olContext, handlerFactory);
