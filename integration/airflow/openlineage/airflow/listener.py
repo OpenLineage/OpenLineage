@@ -4,11 +4,9 @@
 import copy
 import logging
 import threading
-import uuid
 from concurrent.futures import Executor, ThreadPoolExecutor
-from typing import TYPE_CHECKING, Callable, Optional, Union
+from typing import TYPE_CHECKING, Callable, Optional
 
-import attr
 from openlineage.airflow.adapter import OpenLineageAdapter
 from openlineage.airflow.extractors import ExtractorManager
 from openlineage.airflow.utils import (
@@ -25,16 +23,11 @@ from airflow.listeners import hookimpl
 if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
-    from airflow.models import BaseOperator, DagRun, MappedOperator, TaskInstance
+    from airflow.models import BaseOperator, DagRun, TaskInstance
 
 
-@attr.s(frozen=True)
-class ActiveRun:
-    run_id: str = attr.ib()
-    task: Union["BaseOperator", "MappedOperator"] = attr.ib()
 
-
-class ActiveRunManager:
+class TaskHolder:
     """Class that stores run data - run_id and task in-memory. This is needed because Airflow
     does not always pass all runtime info to on_task_instance_success and
     on_task_instance_failed that is needed to emit events. This is not a big problem since
@@ -45,10 +38,10 @@ class ActiveRunManager:
     def __init__(self):
         self.run_data = {}
 
-    def set_active_run(self, task_instance: "TaskInstance", run_id: str):
-        self.run_data[self._pk(task_instance)] = ActiveRun(run_id, task_instance.task)
+    def set_task(self, task_instance: "TaskInstance"):
+        self.run_data[self._pk(task_instance)] = task_instance.task
 
-    def get_active_run(self, task_instance: "TaskInstance") -> Optional[ActiveRun]:
+    def get_task(self, task_instance: "TaskInstance") -> Optional["BaseOperator"]:
         return self.run_data.get(self._pk(task_instance))
 
     @staticmethod
@@ -76,7 +69,7 @@ def execute_in_thread(target: Callable, kwargs=None):
     thread.join(timeout=10)
 
 
-run_data_holder = ActiveRunManager()
+task_holder = TaskHolder()
 extractor_manager = ExtractorManager()
 adapter = OpenLineageAdapter()
 
@@ -97,8 +90,11 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
         task_instance_copy.render_templates()
         task = task_instance_copy.task
 
-        run_id = str(uuid.uuid4())
-        run_data_holder.set_active_run(task_instance_copy, run_id)
+        task_holder.set_task(task_instance_copy)
+        # that's a workaround to detect task running from deferred state
+        # we return here because Airflow 2.3 needs task from deferred state
+        if task_instance.next_method is not None:
+            return
         parent_run_id = adapter.build_dag_run_id(dag.dag_id, dagrun.run_id)
 
         task_uuid = adapter.build_task_instance_run_id(
@@ -110,7 +106,7 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
         start, end = get_dagrun_start_end(dagrun=dagrun, dag=dag)
 
         adapter.start_task(
-            run_id=run_id,
+            run_id=task_uuid,
             job_name=get_job_name(task),
             job_description=dag.description,
             event_time=DagUtils.get_start_time(task_instance_copy.start_date),
@@ -136,17 +132,20 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
 @hookimpl
 def on_task_instance_success(previous_state, task_instance: "TaskInstance", session):
     log.debug("OpenLineage listener got notification about task instance success")
-    run_data = run_data_holder.get_active_run(task_instance)
+    task = task_holder.get_task(task_instance) or task_instance.task
 
     dagrun = task_instance.dag_run
-    task = run_data.task if run_data else None
+
+    task_uuid = adapter.build_task_instance_run_id(
+        task.task_id, task_instance.execution_date, task_instance.try_number - 1
+    )
 
     def on_success():
         task_metadata = extractor_manager.extract_metadata(
             dagrun, task, complete=True, task_instance=task_instance
         )
         adapter.complete_task(
-            run_id=run_data.run_id,
+            run_id=task_uuid,
             job_name=get_job_name(task),
             end_time=DagUtils.to_iso_8601(task_instance.end_date),
             task=task_metadata,
@@ -158,10 +157,13 @@ def on_task_instance_success(previous_state, task_instance: "TaskInstance", sess
 @hookimpl
 def on_task_instance_failed(previous_state, task_instance: "TaskInstance", session):
     log.debug("OpenLineage listener got notification about task instance failure")
-    run_data = run_data_holder.get_active_run(task_instance)
+    task = task_holder.get_task(task_instance) or task_instance.task
 
     dagrun = task_instance.dag_run
-    task = run_data.task if run_data else None
+
+    task_uuid = adapter.build_task_instance_run_id(
+        task.task_id, task_instance.execution_date, task_instance.try_number - 1
+    )
 
     def on_failure():
         task_metadata = extractor_manager.extract_metadata(
@@ -169,7 +171,7 @@ def on_task_instance_failed(previous_state, task_instance: "TaskInstance", sessi
         )
 
         adapter.fail_task(
-            run_id=run_data.run_id,
+            run_id=task_uuid,
             job_name=get_job_name(task),
             end_time=DagUtils.to_iso_8601(task_instance.end_date),
             task=task_metadata,

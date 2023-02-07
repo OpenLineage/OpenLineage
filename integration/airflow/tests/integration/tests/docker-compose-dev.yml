@@ -6,8 +6,6 @@ x-dev-mounts: &dev-mounts
 
 services:
   integration:
-    volumes:
-      - ../:/app
     entrypoint: /bin/bash
     tty: true
 
