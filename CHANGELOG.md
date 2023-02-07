@@ -1,8 +1,8 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.20.3...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.20.4...HEAD)
 
-## [0.20.3](https://github.com/OpenLineage/OpenLineage/compare/0.19.2...0.20.3) - 2023-2-7
+## [0.20.4](https://github.com/OpenLineage/OpenLineage/compare/0.19.2...0.20.4) - 2023-2-7
 
 ### Added
 * Airflow: add new extractor for `GCSToGCSOperator` [`#1495`](https://github.com/OpenLineage/OpenLineage/pull/1495) [@sekikn](https://github.com/sekikn)  
