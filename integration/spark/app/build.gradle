@@ -125,7 +125,7 @@ dependencies {
     }
 
     testFixturesApi("org.apache.hadoop:hadoop-client:3.3.4") { force=true }
-    testFixturesApi("org.mock-server:mockserver-netty:5.14.0:shaded") {
+    testFixturesApi("org.mock-server:mockserver-netty:5.15.0:shaded") {
         exclude group: 'com.google.guava', module: 'guava'
         exclude group: 'com.fasterxml.jackson.core'
         exclude group: 'com.fasterxml.jackson.datatype'
