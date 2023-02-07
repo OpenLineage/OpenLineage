@@ -4,7 +4,7 @@ commit_changelog: true
 comment_changelog: false
 include_unlabeled_changes: true
 unlabeled_group_title: 'Unlabeled Changes'
-pull_request_title_regex: '.*'
+pull_request_title_regex: '^update changelog|prepare changelog'
 version_regex: '.*'
 exclude_labels:
   - bot

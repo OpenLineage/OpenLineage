@@ -16,6 +16,5 @@ jobs:
         with:
           changelog_filename: CHANGELOG.md
           config_file: .github/changelog-ci-config.yml
-          committer_username: 'merobi-hub'
-          committer_email: 'merobi@gmail.com'
-          # github_token: ${{ secrets.GITHUB_TOKEN }}
+          committer_username: 'github-actions[bot]'
+          committer_email: 'github-actions[bot]@users.noreply.github.com'
