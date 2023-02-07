@@ -10,14 +10,14 @@ Maven:
 <dependency>
     <groupId>io.openlineage</groupId>
     <artifactId>openlineage-java</artifactId>
-    <version>0.20.1</version>
+    <version>0.20.2</version>
 </dependency>
 ```
 
 or Gradle:
 
 ```groovy
-implementation 'io.openlineage:openlineage-java:0.20.1'
+implementation 'io.openlineage:openlineage-java:0.20.2'
 ```
 
 ## Usage
