@@ -35,12 +35,15 @@ public class EventEmitter {
     this.appName = Optional.ofNullable(argument.getAppName());
     this.customEnvironmentVariables =
         argument.getOpenLineageYaml().getFacetsConfig() != null
-            ? Optional.of(
-                Arrays.asList(
-                    argument
-                        .getOpenLineageYaml()
-                        .getFacetsConfig()
-                        .getCustomEnvironmentVariables()))
+            ? argument.getOpenLineageYaml().getFacetsConfig().getCustomEnvironmentVariables()
+                    != null
+                ? Optional.of(
+                    Arrays.asList(
+                        argument
+                            .getOpenLineageYaml()
+                            .getFacetsConfig()
+                            .getCustomEnvironmentVariables()))
+                : Optional.empty()
             : Optional.empty();
     String[] disabledFacets =
         Optional.ofNullable(argument.getOpenLineageYaml().getFacetsConfig())
@@ -57,6 +60,9 @@ public class EventEmitter {
   public void emit(OpenLineage.RunEvent event) {
     try {
       this.client.emit(event);
+      log.info(
+          "These are additional properties: {}",
+          event.getRun().getFacets().getAdditionalProperties());
       log.debug(
           "Emitting lineage completed successfully: {}", OpenLineageClientUtils.toJson(event));
     } catch (OpenLineageClientException exception) {
