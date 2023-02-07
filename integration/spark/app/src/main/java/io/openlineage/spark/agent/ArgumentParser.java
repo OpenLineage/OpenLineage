@@ -85,6 +85,12 @@ public class ArgumentParser {
               replaceConfigEntry(conf, SPARK_CONF_HTTP_URL, c, "spark.openlineage.host");
             });
 
+    findSparkConfigKey(conf, "spark.openlineage.url")
+        .ifPresent(
+            c -> {
+              replaceConfigEntry(conf, SPARK_CONF_HTTP_URL, c, "spark.openlineage.url");
+            });
+
     findSparkConfigKey(conf, "spark.openlineage.timeout")
         .ifPresent(
             c -> {

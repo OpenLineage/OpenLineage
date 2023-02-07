@@ -104,7 +104,7 @@ class ArgumentParserTest {
   void testDeprecatedConfig() {
     SparkConf sparkConf =
         new SparkConf()
-            .set("spark.openlineage.host", URL)
+            .set("spark.openlineage.url", URL)
             .set("spark.openlineage.version", "1")
             .set("spark.openlineage.apiKey", API_KEY)
             .set("spark.openlineage.timeout", "5000")
