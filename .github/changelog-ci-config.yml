@@ -1,5 +1,4 @@
 changelog_type: 'pull_request'
-header_prefix: 'Version:'
 commit_changelog: true
 comment_changelog: false
 include_unlabeled_changes: true
