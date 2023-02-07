@@ -14,8 +14,8 @@ jobs:
       - name: Run Changelog CI
         uses: saadmk11/changelog-ci@v1.1.1
         with:
-          config-file: changelog-ci-config.yml
-          committer-username: 'merobi-hub'
-          committer-email: 'merobi@gmail.com'
-          release-version: 'add change fix'
+          changelog_filename: CHANGELOG.md
+          config_file: changelog-ci-config.yml
+          committer_username: 'merobi-hub'
+          committer_email: 'merobi@gmail.com'
           github_token: ${{ secrets.GITHUB_TOKEN }}
