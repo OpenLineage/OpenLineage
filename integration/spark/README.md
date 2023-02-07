@@ -102,19 +102,19 @@ Parameters configuring the Spark integration
 
 ### HTTP
 
-| Parameter                                    | Definition                                                                                                                                 | Example               |
-----------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|-----------------------
-| spark.openlineage.transport.endpoint         | Path to resource                                                                                                                           | /api/v1/lineage       |
-| *DEPRECATED* spark.openlineage.version       | The API version of the OpenLineage API server (unavailable from x.x.x)                                                                     | 1                     |
-| spark.openlineage.transport.apiKey           | An API key to be used when sending events to the OpenLineage server                                                                        | abcdefghijk           |
-| *DEPRECATED* spark.openlineage.apiKey        | An API key to be used when sending events to the OpenLineage server (unavailable from x.x.x)                                               | abcdefghijk           |
-| spark.openlineage.transport.timeout          | Timeout for sending OpenLineage info in milliseconds                                                                                       | 5000                  |
-| *DEPRECATED* spark.openlineage.timeout       | Timeout for sending OpenLineage info in milliseconds (unavailable from x.x.x)                                                              | 5000                  |
-| spark.openlineage.transport.urlParams.xyz    | A URL parameter (replace xyz) and value to be included in requests to the OpenLineage API server                                           | abcdefghijk           |
-| *DEPRECATED* spark.openlineage.url.param.xyz | A URL parameter (replace xyz) and value to be included in requests to the OpenLineage API server (unavailable from x.x.x)                  | abcdefghijk           |
-| spark.openlineage.transport.url              | The hostname of the OpenLineage API server where events should be reported, it can have other properties embeded                           | http://localhost:5000 |
-| *DEPRECATED* spark.openlineage.url           | The hostname of the OpenLineage API server where events should be reported (unavailable from x.x.x) (alternatively spark.openlineage.host) | http://localhost:5000 |
-| *DEPRECATED* spark.openlineage.host          | The hostname of the OpenLineage API server where events should be reported (unavailable from x.x.x) (alternatively spark.openlineage.url)  | http://localhost:5000 |
+| Parameter                                     | Definition                                                                                                                                  | Example               |
+----------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|-----------------------
+| spark.openlineage.transport.endpoint          | Path to resource                                                                                                                            | /api/v1/lineage       |
+| *DEPRECATED* spark.openlineage.version        | The API version of the OpenLineage API server (unavailable from 0.22.0)                                                                     | 1                     |
+| spark.openlineage.transport.apiKey            | An API key to be used when sending events to the OpenLineage server                                                                         | abcdefghijk           |
+| *DEPRECATED* spark.openlineage.apiKey         | An API key to be used when sending events to the OpenLineage server (unavailable from 0.22.0)                                               | abcdefghijk           |
+| spark.openlineage.transport.timeout           | Timeout for sending OpenLineage info in milliseconds                                                                                        | 5000                  |
+| *DEPRECATED* spark.openlineage.timeout        | Timeout for sending OpenLineage info in milliseconds (unavailable from 0.22.0)                                                              | 5000                  |
+| spark.openlineage.transport.urlParams.xyz     | A URL parameter (replace xyz) and value to be included in requests to the OpenLineage API server                                            | abcdefghijk           |
+| *DEPRECATED* spark.openlineage.url.param.xyz  | A URL parameter (replace xyz) and value to be included in requests to the OpenLineage API server (unavailable from 0.22.0)                  | abcdefghijk           |
+| spark.openlineage.transport.url               | The hostname of the OpenLineage API server where events should be reported, it can have other properties embeded                            | http://localhost:5000 |
+| *DEPRECATED* spark.openlineage.url           | The hostname of the OpenLineage API server where events should be reported (alternatively spark.openlineage.host) (unavailable from 0.22.0) | http://localhost:5000 |
+| *DEPRECATED* spark.openlineage.host          | The hostname of the OpenLineage API server where events should be reported (alternatively spark.openlineage.url) (unavailable from 0.22.0)  | http://localhost:5000 |
 
 ##### URL
 
