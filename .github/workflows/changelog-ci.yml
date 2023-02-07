@@ -17,4 +17,5 @@ jobs:
           config-file: changelog-ci-config.yml
           committer-username: 'merobi-hub'
           committer-email: 'merobi@gmail.com'
+          release-version: 'add change fix'
           github_token: ${{ secrets.GITHUB_TOKEN }}

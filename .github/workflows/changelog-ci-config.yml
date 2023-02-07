@@ -5,7 +5,8 @@ comment_changelog: false
 include_unlabeled_changes: true
 unlabeled_group_title: 'Unlabeled Changes'
 pull_request_title_regex: '.*'
-version_regex: 'v?([0-9]{1,2})+[.]+([0-9]{1,2})+[.]+([0-9]{1,2})\s\(\d{1,2}-\d{1,2}-\d{4}\)'
+# version_regex: 'v?([0-9]{1,2})+[.]+([0-9]{1,2})+[.]+([0-9]{1,2})\s\(\d{1,2}-\d{1,2}-\d{4}\)'
+version_regex: 'add|change|fix'
 exclude_labels:
   - bot
   - dependabot
