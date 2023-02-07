@@ -69,6 +69,7 @@ class ArgumentParserTest {
             .set(ArgumentParser.SPARK_CONF_JOB_NAME, JOB_NAME)
             .set(ArgumentParser.SPARK_CONF_PARENT_RUN_ID, RUN_ID)
             .set(ArgumentParser.SPARK_CONF_APP_NAME, APP_NAME);
+
     ArgumentParser argumentParser = ArgumentParser.parse(sparkConf);
     assertEquals(NS_NAME, argumentParser.getNamespace());
     assertEquals(JOB_NAME, argumentParser.getJobName());
