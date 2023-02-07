@@ -49,6 +49,14 @@ shadowJar {
     }
 }
 
+ext {
+    flinkVersion = project.getProperty('flink.version')
+    flinkVersionShort = flinkVersion.substring(0,4)
+    flinkVersionWithScala212 = flinkVersion.contains('1.14') ? "_2.12:$flinkVersion" : ":$flinkVersion"
+    hadoopVersion = '3.3.1'
+    icebergVersion = "1.1.0"
+}
+
 dependencies {
     implementation project(':')
     configurations.all {
@@ -61,10 +69,6 @@ dependencies {
     testImplementation 'org.spockframework:spock-core:2.3-groovy-4.0'
     testImplementation 'org.awaitility:awaitility:4.2.0'
 
-    def flinkVersion = project.getProperty('flink.version')
-    def flinkVersionShort = flinkVersion.substring(0,4)
-    def flinkVersionWithScala212 = flinkVersion.contains('1.14') ? "_2.12:$flinkVersion" : ":$flinkVersion"
-    def hadoopVersion = '3.3.1'
     implementation("io.openlineage:openlineage-java:$project.version")
     implementation "org.apache.flink:flink-java:$flinkVersion"
     implementation "org.apache.flink:flink-streaming-java$flinkVersionWithScala212"
@@ -93,8 +97,8 @@ dependencies {
     }
     implementation "org.apache.avro:avro"
 
-    compileOnly "org.apache.iceberg:iceberg-flink-$flinkVersionShort:0.14.0"
-    implementation "org.apache.iceberg:iceberg-flink-runtime-$flinkVersionShort:0.14.0"
+    compileOnly "org.apache.iceberg:iceberg-flink:$icebergVersion"
+    implementation "org.apache.iceberg:iceberg-flink-runtime-$flinkVersionShort:$icebergVersion"
 }
 
 assemble {

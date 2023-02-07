@@ -228,7 +228,7 @@ jobs:
   release-integration-flink:
     working_directory: ~/openlineage/integration/flink
     docker:
-      - image: cimg/openjdk:11
+      - image: cimg/openjdk:11.0
     steps:
       - *checkout_project_root
       - restore_cache:
@@ -250,7 +250,7 @@ jobs:
   publish-snapshot-integration-flink:
     working_directory: ~/openlineage/integration/flink
     docker:
-      - image: cimg/openjdk:11
+      - image: cimg/openjdk:11.0
     steps:
       - *checkout_project_root
       - restore_cache:
@@ -405,7 +405,7 @@ jobs:
   release-integration-sql-java:
     working_directory: ~/openlineage/integration/sql/iface-java
     docker:
-      - image: cimg/openjdk:8
+      - image: cimg/openjdk:8.0
     steps:
       - *checkout_project_root
       - restore_cache:
@@ -422,7 +422,7 @@ jobs:
           export RELEASE_PASSWORD=$(echo $SONATYPE_PASSWORD)
           export RELEASE_USERNAME=$(echo $SONATYPE_USER)
 
-          cd ../../client/java
+          cd ../../../client/java
           ./gradlew --no-daemon publishToMavenLocal
           cd -
           # Publish *.jar
@@ -843,6 +843,10 @@ workflows:
               only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
             branches:
               ignore: /.*/
+          requires:
+            - build-integration-sql-x86
+            - build-integration-sql-arm
+            - build-integration-sql-macos
       - build-integration-dbt:
           filters:
             tags:

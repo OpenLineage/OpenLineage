@@ -45,6 +45,8 @@ public class FlinkKafkaConsumerWrapper {
 
     KafkaPartitionDiscoverer partitionDiscoverer =
         new KafkaPartitionDiscoverer(descriptor, 0, 0, kafkaProperties);
+    WrapperUtils.<List<String>>invoke(
+        KafkaPartitionDiscoverer.class, partitionDiscoverer, "initializeConnections");
     return WrapperUtils.<List<String>>invoke(
             KafkaPartitionDiscoverer.class, partitionDiscoverer, "getAllTopics")
         .get();

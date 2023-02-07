@@ -7,7 +7,9 @@
 # It's assumed that it will be run on MacOS
 set -e
 
-if [ -x "$(command -v /usr/local/bin/python3.7)" ]; then
+if [ -x "$(command -v /usr/local/opt/python@3.7/bin/python3)" ]; then
+  /usr/local/opt/python@3.7/bin/python3 -m pip install maturin
+elif [ -x "$(command -v /usr/local/bin/python3.7)" ]; then
   /usr/local/bin/python3.7 -m venv .env
 elif [ -x "$(command -v python3.7)" ]; then
   python3.7 -m venv .env

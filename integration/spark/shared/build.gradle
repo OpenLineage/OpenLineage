@@ -50,7 +50,7 @@ ext {
     sparkVersion = '2.4.8'
     sparkVersionShort = '2.4'
     snowflakeVersion = '2.9.3'
-    postgresqlVersion = '42.5.1'
+    postgresqlVersion = '42.5.3'
     mockitoVersion = '4.11.0'
     testcontainersVersion = '1.17.6'
 }
@@ -81,7 +81,7 @@ dependencies {
 
     testFixturesApi "org.postgresql:postgresql:${postgresqlVersion}"
     testFixturesApi 'org.hamcrest:hamcrest-library:2.2'
-    testFixturesApi 'org.xerial:sqlite-jdbc:3.40.0.0'
+    testFixturesApi 'org.xerial:sqlite-jdbc:3.40.1.0'
     testFixturesApi "org.testcontainers:junit-jupiter:${testcontainersVersion}"
     testFixturesApi "org.testcontainers:postgresql:${testcontainersVersion}"
     testFixturesApi "org.testcontainers:mockserver:${testcontainersVersion}"

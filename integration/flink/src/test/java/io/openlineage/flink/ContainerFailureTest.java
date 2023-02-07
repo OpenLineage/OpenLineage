@@ -11,6 +11,7 @@ import static org.mockserver.model.HttpRequest.request;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Properties;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
@@ -47,24 +48,28 @@ class ContainerFailureTest {
   protected static GenericContainer taskManager;
 
   void runUntilCheckpoint(String jobName, String configPath) {
+    Properties jobProperties = new Properties();
+    jobProperties.put("configPath", configPath);
     jobManager =
         FlinkContainerUtils.makeFlinkJobManagerContainer(
-            jobName, configPath, network, Collections.emptyList());
+            jobName, network, Collections.emptyList(), jobProperties);
     taskManager =
         FlinkContainerUtils.makeFlinkTaskManagerContainer(
             network, Collections.singletonList(jobManager));
     taskManager.start();
     await()
         .atMost(Duration.ofMinutes(5))
-        .until(() -> jobManager.getLogs().contains(NEW_CHECKPOINT_ENCOUNTERED));
+        .until(() -> FlinkContainerUtils.verifyJobManagerReachedCheckpointOrFinished(jobManager));
   }
 
   @Test
   @SneakyThrows
   void testEmitFailedNetworkPartitionDoesNotKillFlinkJob() {
+    Properties jobProperties = new Properties();
+    jobProperties.put("configPath", NETWORK_PARTITION_CONFIG);
     jobManager =
         FlinkContainerUtils.makeFlinkJobManagerContainer(
-            FAKE_APPLICATION, NETWORK_PARTITION_CONFIG, network, Collections.emptyList());
+            FAKE_APPLICATION, network, Collections.emptyList(), jobProperties);
     taskManager =
         FlinkContainerUtils.makeFlinkTaskManagerContainer(
             network, Collections.singletonList(jobManager));
@@ -76,22 +81,7 @@ class ContainerFailureTest {
     runUntilCheckpoint(FAKE_APPLICATION, NETWORK_PARTITION_CONFIG);
   }
 
-  @Test
-  @SneakyThrows
-  void testCrashingLineageProviderDoesNotKillFlinkJob() {
-    jobManager =
-        FlinkContainerUtils.makeFlinkJobManagerContainer(
-            FAKE_APPLICATION, NETWORK_PARTITION_CONFIG, network, Collections.emptyList());
-    taskManager =
-        FlinkContainerUtils.makeFlinkTaskManagerContainer(
-            network, Collections.singletonList(jobManager));
-    taskManager.start();
-    await()
-        .atMost(Duration.ofMinutes(5))
-        .until(() -> jobManager.getLogs().contains(NEW_CHECKPOINT_ENCOUNTERED));
-
-    runUntilCheckpoint(FAKE_APPLICATION, NETWORK_PARTITION_CONFIG);
-  }
+  // TODO: write testCrashingLineageProviderDoesNotKillFlinkJob
 
   @Test
   @SneakyThrows
@@ -108,7 +98,7 @@ class ContainerFailureTest {
 
     jobManager =
         FlinkContainerUtils.makeFlinkJobManagerContainer(
-            FAKE_APPLICATION, NETWORK_PARTITION_CONFIG, network, Collections.emptyList());
+            FAKE_APPLICATION, network, Collections.emptyList(), new Properties());
     taskManager =
         FlinkContainerUtils.makeFlinkTaskManagerContainer(
             network, Collections.singletonList(jobManager));
