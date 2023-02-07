@@ -15,7 +15,7 @@ Maven:
 <dependency>
     <groupId>io.openlineage</groupId>
     <artifactId>openlineage-flink</artifactId>
-    <version>0.20.3</version>
+    <version>0.20.4</version>
 </dependency>
 ```
 
