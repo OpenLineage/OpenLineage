@@ -34,9 +34,14 @@ public class EventEmitter {
     this.parentRunId = convertToUUID(argument.getParentRunId());
     this.appName = Optional.ofNullable(argument.getAppName());
     this.customEnvironmentVariables =
-        Optional.of(
-            Arrays.asList(
-                argument.getOpenLineageYaml().getFacetsConfig().getCustomEnvironmentVariables()));
+        argument.getOpenLineageYaml().getFacetsConfig() != null
+            ? Optional.of(
+                Arrays.asList(
+                    argument
+                        .getOpenLineageYaml()
+                        .getFacetsConfig()
+                        .getCustomEnvironmentVariables()))
+            : Optional.empty();
     String[] disabledFacets =
         Optional.ofNullable(argument.getOpenLineageYaml().getFacetsConfig())
             .orElse(new FacetsConfig().withDisabledFacets(new String[0]))
