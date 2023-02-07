@@ -18,4 +18,4 @@ jobs:
           config_file: .github/changelog-ci-config.yml
           committer_username: 'merobi-hub'
           committer_email: 'merobi@gmail.com'
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          # github_token: ${{ secrets.GITHUB_TOKEN }}
