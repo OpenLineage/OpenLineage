@@ -395,9 +395,13 @@ class DbtArtifactProcessor:
                 + (".build.run" if self.command == 'build' else "")
 
             if self.manifest_version >= 7:
-                sql = output_node['compiled_code']
+                sql = output_node.get('compiled_code', None)
             else:
                 sql = output_node['compiled_sql']
+
+            job_facets = {}
+            if sql:
+                job_facets['sql'] = SqlJobFacet(sql)
 
             events.add(self.to_openlineage_events(
                 run['status'],
@@ -407,9 +411,7 @@ class DbtArtifactProcessor:
                 Job(
                     namespace=self.job_namespace,
                     name=job_name,
-                    facets={
-                        'sql': SqlJobFacet(sql)
-                    }
+                    facets=job_facets
                 ),
                 [self.node_to_dataset(node, has_facets=True) for node in inputs],
                 self.node_to_output_dataset(
