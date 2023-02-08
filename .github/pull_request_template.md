@@ -22,6 +22,7 @@ If you're contributing a new integration, please specify the scope of the integr
 - [ ] Your changes are accompanied by tests (_if relevant_)
 - [ ] Your change contains a [small diff](https://kurtisnusbaum.medium.com/stacked-diffs-keeping-phabricator-diffs-small-d9964f4dcfa6) and is self-contained
 - [ ] You've updated any relevant documentation (_if relevant_)
+- [ ] Your comment includes a one-liner for the changelog about the specific purpose of the change (_if necessary_)
 - [ ] You've versioned the core OpenLineage model or facets according to [SchemaVer](https://docs.snowplowanalytics.com/docs/pipeline-components-and-applications/iglu/common-architecture/schemaver) (_if relevant_)
 - [ ] You've added a [header](https://github.com/OpenLineage/OpenLineage/tree/main/.github/header_templates.md) to source files (_if relevant_)
 
