@@ -117,6 +117,7 @@ public class SparkAgentTestExtension
         .config("spark.driver.host", LOCAL_IP)
         .config("spark.driver.bindAddress", LOCAL_IP)
         .config("spark.sql.warehouse.dir", warehouseDir)
+        .config("spark.openlineage.facets.custom_environment_variables", "[TEST_VAR;]")
         .getOrCreate();
   }
 
@@ -125,6 +126,7 @@ public class SparkAgentTestExtension
         .sparkSession(Optional.of(sparkSession))
         .sparkContext(sparkSession.sparkContext())
         .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+        .customEnvironmentVariables(Optional.of(Arrays.asList("TEST_VAR")))
         .build();
   }
 }

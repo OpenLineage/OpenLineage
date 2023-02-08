@@ -15,6 +15,7 @@ import io.openlineage.spark.api.OpenLineageContext;
 import java.net.URI;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Semaphore;
@@ -121,6 +122,7 @@ public class StaticExecutionContextFactory extends ContextFactory {
                       .sparkSession(Optional.of(session))
                       .sparkContext(sparkContext)
                       .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+                      .customEnvironmentVariables(Optional.of(Arrays.asList("TEST_VAR")))
                       .queryExecution(qe)
                       .build();
               OpenLineageRunEventBuilder runEventBuilder =
@@ -134,7 +136,6 @@ public class StaticExecutionContextFactory extends ContextFactory {
               List<PartialFunction<LogicalPlan, List<OutputDataset>>> outputDatasets =
                   visitorFactory.getOutputVisitors(olContext);
               olContext.getOutputDatasetQueryPlanVisitors().addAll(outputDatasets);
-
               return new SparkSQLExecutionContext(
                   executionId, openLineageEventEmitter, olContext, runEventBuilder) {
                 @Override
