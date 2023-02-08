@@ -165,6 +165,25 @@ def test_jinja_undefined_method_with_args(jinja_env):
     text = "# {{ does_not_exist(some_arg.subarg.subarg2) }}"
     assert text == DbtArtifactProcessor.render_values_jinja(jinja_env, text)
 
+@mock.patch.dict(os.environ, {"PORT": "1111"})
+def test_jinja_include_section(jinja_env):
+    object = {
+        "proper_one": "{{ env_var('PORT') }}",
+        "to_ignore": "{{ env_var('FAKE_VAR') }}",
+    }
+
+    parsed = DbtArtifactProcessor.render_values_jinja(
+        jinja_env, object, include_section=["proper_one"]
+    )
+
+    assert parsed == {"proper_one": "1111"}
+
+    with pytest.raises(Exception):
+        DbtArtifactProcessor.render_values_jinja(
+            jinja_env, object, include_section=[]
+        )
+
+
 
 def test_jinja_multiline(jinja_env):
     os.environ['PORT_REDSHIFT'] = "13"
