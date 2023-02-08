@@ -1,0 +1,19 @@
+changelog_type: 'pull_request'
+commit_changelog: true
+comment_changelog: false
+include_unlabeled_changes: true
+unlabeled_group_title: 'Unlabeled Changes'
+pull_request_title_regex: '^update changelog|prepare changelog'
+version_regex: '([0-9]{1,2})+[.]+([0-9]{1,2})+[.]+([0-9]{1,2})'
+exclude_labels:
+  - bot
+  - dependabot
+  - dependencies
+  - ci
+  - documentation
+  - dev/ops
+  - proposal
+group_config:
+  - title: Fixed
+    labels:
+      - bug
