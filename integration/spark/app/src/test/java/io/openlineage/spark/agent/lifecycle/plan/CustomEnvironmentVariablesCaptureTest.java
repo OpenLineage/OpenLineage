@@ -65,8 +65,7 @@ class CustomEnvironmentVariablesCaptureTest {
             });
     Dataset<Row> df =
         spark.createDataFrame(
-            Arrays.asList(
-                new GenericRowWithSchema(new Object[] {"john", 25L}, tableSchema),
+            Arrays.asList(new GenericRowWithSchema(new Object[] {"john", 25L}, tableSchema)),
             tableSchema);
 
     String deltaDir = tempDir.resolve("deltaData").toAbsolutePath().toString();
@@ -110,8 +109,7 @@ class CustomEnvironmentVariablesCaptureTest {
             });
     Dataset<Row> df =
         spark.createDataFrame(
-            Arrays.asList(
-                new GenericRowWithSchema(new Object[] {"john", 25L}, tableSchema),
+            Arrays.asList(new GenericRowWithSchema(new Object[] {"john", 25L}, tableSchema)),
             tableSchema);
 
     String deltaDir = tempDir.resolve("parquetData").toAbsolutePath().toString();
