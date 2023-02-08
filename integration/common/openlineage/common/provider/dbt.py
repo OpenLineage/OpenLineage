@@ -225,7 +225,7 @@ class DbtArtifactProcessor:
                 raise KeyError(f'profile not found in {self.project}')
 
         profile = self.load_yaml_with_jinja(
-            os.path.join(profile_dir, 'profiles.yml')
+            os.path.join(profile_dir, 'profiles.yml'), include_section=[self.profile_name]
         )[self.profile_name]
 
         if not self.target:
@@ -330,22 +330,38 @@ class DbtArtifactProcessor:
         env.globals["env_var"] = DbtArtifactProcessor.env_var
         return env
 
-    def load_yaml_with_jinja(self, path: str) -> Dict:
+    def load_yaml_with_jinja(
+        self, path: str, include_section: Optional[List[Optional[str]]] = None
+    ) -> Dict:
         loaded = self.load_yaml(path)
         if not self.jinja_environment:
             self.jinja_environment = self.setup_jinja()
-        return self.render_values_jinja(environment=self.jinja_environment, value=loaded)
+        return self.render_values_jinja(
+            environment=self.jinja_environment,
+            value=loaded,
+            include_section=include_section,
+        )
 
     @classmethod
-    def render_values_jinja(cls, environment: Environment, value: T) -> T:
+    def render_values_jinja(
+        cls,
+        environment: Environment,
+        value: T,
+        include_section: Optional[List[Optional[str]]] = None,
+    ) -> T:
         """
         Traverses passed dictionary and render any string value using jinja.
         Returns copy of the dict with parsed values.
         """
+        include_section = include_section or []
         if isinstance(value, dict):
             parsed_dict = {}
             for key, val in value.items():
-                parsed_dict[key] = cls.render_values_jinja(environment, val)
+                if include_section and key != include_section[0]:
+                    continue
+                parsed_dict[key] = cls.render_values_jinja(
+                    environment, val, include_section=include_section[1:]
+                )
             return parsed_dict      # type: ignore
         elif isinstance(value, list):
             parsed_list = []
