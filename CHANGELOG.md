@@ -1,6 +1,9 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.20.4...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.20.5...HEAD)
+
+## [0.20.5](https://github.com/OpenLineage/OpenLineage/compare/0.20.4...0.20.5) - 2023-2-8
+
 ### Changed
 * Airflow: make extractors for async operators work. Send deterministic Run UUID for Airflow runs [`#1601`](https://github.com/OpenLineage/OpenLineage/pull/1601) [@JDarDagran](https://github.com/JDarDagran)
 
