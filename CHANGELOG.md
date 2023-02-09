@@ -1,3 +1,11 @@
+# Version: 0.20.5
+
+
+#### Unlabeled Changes
+
+* [#1599](https://github.com/OpenLineage/OpenLineage/pull/1599): dbt: render actual profile only in profiles.yml
+
+
 # Changelog
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.20.5...HEAD)
