@@ -1,11 +1,3 @@
-# Version: 0.20.5
-
-
-#### Unlabeled Changes
-
-* [#1599](https://github.com/OpenLineage/OpenLineage/pull/1599): dbt: render actual profile only in profiles.yml
-
-
 # Changelog
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.20.5...HEAD)
@@ -13,7 +5,14 @@
 ## [0.20.5](https://github.com/OpenLineage/OpenLineage/compare/0.20.4...0.20.5) - 2023-2-8
 
 ### Changed
-* Airflow: make extractors for async operators work. Send deterministic Run UUID for Airflow runs [`#1601`](https://github.com/OpenLineage/OpenLineage/pull/1601) [@JDarDagran](https://github.com/JDarDagran)
+* Airflow: make extractors for async operators work [`#1601`](https://github.com/OpenLineage/OpenLineage/pull/1601) [@JDarDagran](https://github.com/JDarDagran)  
+    *Sends a deterministic Run UUID for Airflow runs.*
+
+### Fixed
+* dbt: render actual profile only in profiles.yml [#1599](https://github.com/OpenLineage/OpenLineage/pull/1599) [@mobuchowski](https://github.com/mobuchowski)  
+    *Adds an `include_section` argument for the Jinja render method to include only one profile if needed.*
+* dbt: make `compiled_code` optional [#1595](https://github.com/OpenLineage/OpenLineage/pull/1595) [@JDarDagran](https://github.com/JDarDagran)  
+    *Makes `compiled_code` optional for manifest > v7.*
 
 ## [0.20.4](https://github.com/OpenLineage/OpenLineage/compare/0.19.2...0.20.4) - 2023-2-7
 
