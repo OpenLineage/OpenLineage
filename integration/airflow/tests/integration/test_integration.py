@@ -43,17 +43,19 @@ def IS_AIRFLOW_VERSION_ENOUGH(x):
 
 
 params = [
-    ("postgres_orders_popular_day_of_week", "requests/postgres.json"),
-    ("failed_sql_extraction", "requests/failed_sql_extraction.json"),
-    ("great_expectations_validation", "requests/great_expectations.json"),
+    ("postgres_orders_popular_day_of_week", "requests/postgres.json", True),
+    ("failed_sql_extraction", "requests/failed_sql_extraction.json", True),
+    ("great_expectations_validation", "requests/great_expectations.json", True),
     pytest.param(
         "bigquery_orders_popular_day_of_week",
         "requests/bigquery.json",
+        True,
         marks=pytest.mark.skipif(not IS_GCP_AUTH, reason="no gcp credentials"),
     ),
     pytest.param(
         "dbt_bigquery",
         "requests/dbt_bigquery.json",
+        True,
         marks=pytest.mark.skipif(
             not IS_GCP_AUTH, reason="no gcp credentials or dbt tests disabled"
         ),
@@ -61,6 +63,7 @@ params = [
     pytest.param(
         "gcs_dag",
         "requests/gcs.json",
+        True,
         marks=[
             pytest.mark.skipif(not IS_GCP_AUTH, reason="no gcp credentials"),
             pytest.mark.skipif(
@@ -76,25 +79,28 @@ params = [
     pytest.param(
         "athena_dag",
         "requests/athena.json",
+        True,
         marks=pytest.mark.skipif(
             os.environ.get("AWS_ACCESS_KEY_ID", "") == "",
             reason="no aws credentials",
         ),
     ),
-    ("source_code_dag", "requests/source_code.json"),
+    ("source_code_dag", "requests/source_code.json", True),
     pytest.param(
         "default_extractor_dag",
         "requests/default_extractor.json",
+        True,
         marks=pytest.mark.skipif(
             not IS_AIRFLOW_VERSION_ENOUGH("2.3.0"),  # both extract and extract_on_complete
             reason="Airflow < 2.3.0"                 # run on 2.3+
         )
     ),
-    ("custom_extractor", "requests/custom_extractor.json"),
-    ("unknown_operator_dag", "requests/unknown_operator.json"),
+    ("custom_extractor", "requests/custom_extractor.json", True),
+    ("unknown_operator_dag", "requests/unknown_operator.json", True),
     pytest.param(
         "secrets",
         "requests/secrets.json",
+        True,
         marks=pytest.mark.skipif(
             not IS_AIRFLOW_VERSION_ENOUGH("2.1.0"),
             reason="Airflow < 2.1.0"
@@ -103,6 +109,7 @@ params = [
     pytest.param(
         "mysql_orders_popular_day_of_week",
         "requests/mysql.json",
+        True,
         marks=pytest.mark.skipif(
             not IS_AIRFLOW_VERSION_ENOUGH("2.2.4"), reason="Airflow < 2.2.4"
         ),
@@ -110,6 +117,7 @@ params = [
     pytest.param(
         "trino_orders_popular_day_of_week",
         "requests/trino.json",
+        True,
         marks=pytest.mark.skipif(
             not IS_AIRFLOW_VERSION_ENOUGH("2.4.0"), reason="Airflow < 2.4.0"
         ),
@@ -117,6 +125,7 @@ params = [
     pytest.param(
         "dbt_snowflake",
         "requests/dbt_snowflake.json",
+        True,
         marks=[
             pytest.mark.skipif(
                 not IS_AIRFLOW_VERSION_ENOUGH(SNOWFLAKE_AIRFLOW_TEST_VERSION),
@@ -131,6 +140,7 @@ params = [
     pytest.param(
         "snowflake",
         "requests/snowflake.json",
+        True,
         marks=[
             pytest.mark.skipif(
                 not IS_AIRFLOW_VERSION_ENOUGH(SNOWFLAKE_AIRFLOW_TEST_VERSION),
@@ -145,6 +155,7 @@ params = [
     pytest.param(
         "mapped_dag",
         "requests/mapped_dag.json",
+        False,
         marks=pytest.mark.skipif(
             not IS_AIRFLOW_VERSION_ENOUGH("2.3.0"), reason="Airflow < 2.3.0"
         ),
@@ -152,14 +163,16 @@ params = [
     pytest.param(
         "task_group_dag",
         "requests/task_group.json",
+        False,
         marks=pytest.mark.skipif(
             not IS_AIRFLOW_VERSION_ENOUGH("2.3.0"), reason="Airflow < 2.3.0"
         ),
     ),
-    ("sftp_dag", "requests/sftp.json"),
+    ("sftp_dag", "requests/sftp.json", True),
     pytest.param(
         "s3copy_dag",
         "requests/s3copy.json",
+        True,
         marks=pytest.mark.skipif(
             not IS_AIRFLOW_VERSION_ENOUGH("2.3.0"), reason="Airflow < 2.3.0"
         ),
@@ -167,6 +180,7 @@ params = [
     pytest.param(
         "s3transform_dag",
         "requests/s3transform.json",
+        True,
         marks=pytest.mark.skipif(
             not IS_AIRFLOW_VERSION_ENOUGH("2.3.0"), reason="Airflow < 2.3.0"
         ),
@@ -175,7 +189,7 @@ params = [
 
 
 @retry(wait_exponential_multiplier=1000, wait_exponential_max=10000, stop_max_delay=1000*10*60)
-def wait_for_dag(dag_id, airflow_db_conn) -> bool:
+def wait_for_dag(dag_id, airflow_db_conn, should_fail=False) -> bool:
     log.info(f"Waiting for DAG '{dag_id}'...")
 
     cur = airflow_db_conn.cursor()
@@ -192,14 +206,16 @@ def wait_for_dag(dag_id, airflow_db_conn) -> bool:
     cur.close()
 
     log.info(f"DAG '{dag_id}' state set to '{state}'.")
-    if state == "failed":
+    expected_state = "failed" if should_fail else "success"
+    failing_state = "success" if should_fail else "failed"
+    if state == failing_state:
         return False
-    elif state != "success":
+    elif state != expected_state:
         raise Exception("Retry!")
     return True
 
 
-def check_matches(expected_events, actual_events) -> bool:
+def check_matches(expected_events, actual_events, check_duplicates: bool = None) -> bool:
     for expected in expected_events:
         expected_job_name = env.from_string(expected["job"]["name"]).render()
         is_compared = False
@@ -209,13 +225,17 @@ def check_matches(expected_events, actual_events) -> bool:
                 expected["eventType"] == actual["eventType"]
                 and expected_job_name == actual["job"]["name"]
             ):
+                if is_compared and check_duplicates:
+                    log.info(
+                        f"found more than one event expected {expected}\n duplicate: {actual}"
+                    )
+                    return False
                 is_compared = True
                 if not match(expected, actual):
                     log.info(
                         f"failed to compare expected {expected}\nwith actual {actual}"
                     )
                     return False
-                break
         if not is_compared:
             log.info(
                 f"not found event comparable to {expected['eventType']} "
@@ -286,8 +306,8 @@ def airflow_db_conn():
     yield setup_db()
 
 
-@pytest.mark.parametrize("dag_id, request_path", params)
-def test_integration(dag_id, request_path, airflow_db_conn):
+@pytest.mark.parametrize("dag_id, request_path, check_duplicates", params)
+def test_integration(dag_id, request_path, check_duplicates, airflow_db_conn):
     log.info(f"Checking dag {dag_id}")
     # (1) Wait for DAG to complete
     result = wait_for_dag(dag_id, airflow_db_conn)
@@ -301,8 +321,34 @@ def test_integration(dag_id, request_path, airflow_db_conn):
     actual_events = get_events()
 
     # (3) Verify events emitted
-    log.info(f"failed to compare events for dag {dag_id}!")
-    assert check_matches(expected_events, actual_events) is True
+    assert check_matches(expected_events, actual_events, check_duplicates) is True
+    log.info(f"Events for dag {dag_id} verified!")
+
+@pytest.mark.parametrize("dag_id, request_path, check_duplicates", [
+    pytest.param(
+        "async_dag",
+        "requests/failing/async.json",
+        True,
+        marks=pytest.mark.skipif(
+            not IS_AIRFLOW_VERSION_ENOUGH("2.3.0"), reason="Airflow < 2.3.0"
+        ),
+    ),
+])
+def test_failing_dag(dag_id, request_path, check_duplicates, airflow_db_conn):
+    log.info(f"Checking dag {dag_id}")
+    # (1) Wait for DAG to complete
+    result = wait_for_dag(dag_id, airflow_db_conn, should_fail=True)
+    assert result is True
+
+    # (2) Read expected events
+    with open(request_path, "r") as f:
+        expected_events = json.load(f)
+
+    # (3) Get actual events
+    actual_events = get_events()
+
+    # (3) Verify events emitted
+    assert check_matches(expected_events, actual_events, check_duplicates) is True
     log.info(f"Events for dag {dag_id} verified!")
 
 

@@ -106,6 +106,7 @@ services:
     depends_on:
       - airflow_scheduler
       - airflow_worker
+      - airflow_triggerer
       - backend
     entrypoint: ["/wait-for-it.sh", "backend:5000", "--", "python", '-m', 'pytest', 'test_integration.py']
 
@@ -116,6 +117,22 @@ services:
       - app_net
     healthcheck:
       test: [ "CMD-SHELL", 'airflow jobs check --job-type SchedulerJob --hostname "$${HOSTNAME}"' ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow_init:
+        condition: service_completed_successfully
+
+  airflow_triggerer:
+    <<: *airflow-base
+    command: triggerer
+    networks:
+      - app_net
+    healthcheck:
+      test: ["CMD-SHELL", 'airflow jobs check --job-type TriggererJob --hostname "$${HOSTNAME}"']
       interval: 10s
       timeout: 10s
       retries: 5

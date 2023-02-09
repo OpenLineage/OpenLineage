@@ -1,0 +1,72 @@
+[{
+    "eventType": "START",
+    "inputs": [],
+    "job": {
+        "name": "async_dag.timedelta_sensor",
+        "namespace": "food_delivery"
+    },
+    "outputs": [],
+    "run": {
+        "facets": {
+            "airflow": {
+                "dag": {
+                    "dag_id": "async_dag",
+                    "timetable": {}
+                },
+                "dagRun": {
+                    "dag_id": "async_dag"
+                },
+                "task": {
+                },
+                "taskInstance": {
+                    "try_number": 1
+                }
+            }
+        }
+    }
+},
+{
+    "eventType": "START",
+    "inputs": [],
+    "job": {
+        "name": "async_dag.failing_sensor",
+        "namespace": "food_delivery"
+    },
+    "outputs": [],
+    "run": {
+        "facets": {
+            "airflow": {
+                "dag": {
+                    "dag_id": "async_dag",
+                    "timetable": {}
+                },
+                "dagRun": {
+                    "dag_id": "async_dag"
+                },
+                "task": {
+                },
+                "taskInstance": {
+                    "try_number": 1
+                }
+            }
+        }
+    }
+},
+{
+    "eventType": "COMPLETE",
+    "inputs": [],
+    "job": {
+        "name": "async_dag.timedelta_sensor",
+        "namespace": "food_delivery"
+    },
+    "outputs": []
+},
+{
+    "eventType": "FAIL",
+    "inputs": [],
+    "job": {
+        "name": "async_dag.failing_sensor",
+        "namespace": "food_delivery"
+    },
+    "outputs": []
+}]
