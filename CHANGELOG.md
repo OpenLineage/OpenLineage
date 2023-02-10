@@ -1,16 +1,13 @@
-# Version: 0.20.6
-
-
-#### Unlabeled Changes
-
-* [#1599](https://github.com/OpenLineage/OpenLineage/pull/1599): dbt: render actual profile only in profiles.yml
-
-
 # Changelog
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.20.6...HEAD)
 
 ## [0.20.6](https://github.com/OpenLineage/OpenLineage/compare/0.20.4...0.20.6) - 2023-2-10
+
+### Added
+
+* Airflow: add new extractor for `FTPFileTransmitOperator` [`#1603`](https://github.com/OpenLineage/OpenLineage/pull/1601) [@sekikn](https://github.com/sekikn)  
+    *Adds a new extractor for this Airflow operator serving legacy systems.*
 
 ### Changed
 * Airflow: make extractors for async operators work [`#1601`](https://github.com/OpenLineage/OpenLineage/pull/1601) [@JDarDagran](https://github.com/JDarDagran)  
