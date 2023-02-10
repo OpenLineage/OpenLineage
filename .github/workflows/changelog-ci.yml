@@ -2,7 +2,8 @@ name: Changelog CI
 
 on:
   pull_request:
-    types: [ opened ]
+    types: [ opened, reopened ]
+    if: ${{ !github.event.pull_request.head.repo.fork }} 
 
 jobs:
   build:
