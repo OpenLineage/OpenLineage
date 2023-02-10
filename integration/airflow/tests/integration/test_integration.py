@@ -172,6 +172,7 @@ params = [
     pytest.param(
         "ftp_dag",
         "requests/ftp.json",
+        True,
         marks=pytest.mark.skipif(
             not IS_AIRFLOW_VERSION_ENOUGH("2.5.0"), reason="Airflow < 2.5.0"
         ),
