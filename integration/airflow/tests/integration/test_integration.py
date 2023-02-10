@@ -170,6 +170,13 @@ params = [
     ),
     ("sftp_dag", "requests/sftp.json", True),
     pytest.param(
+        "ftp_dag",
+        "requests/ftp.json",
+        marks=pytest.mark.skipif(
+            not IS_AIRFLOW_VERSION_ENOUGH("2.5.0"), reason="Airflow < 2.5.0"
+        ),
+    ),
+    pytest.param(
         "s3copy_dag",
         "requests/s3copy.json",
         True,

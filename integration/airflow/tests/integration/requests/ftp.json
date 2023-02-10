@@ -1,0 +1,68 @@
+[{
+    "eventType": "START",
+    "inputs": [
+        {
+            "facets": {
+                "dataSource": {
+                    "name": "file://172.16.238.100:21",
+                    "uri": "file://172.16.238.100:21/opt/airflow/airflow.cfg"
+                }
+            },
+            "name": "/opt/airflow/airflow.cfg",
+            "namespace": "file://172.16.238.100:21"
+        }
+    ],
+    "job": {
+        "name": "ftp_dag.ftp_task",
+        "namespace": "food_delivery"
+    },
+    "outputs": [
+        {
+            "facets": {
+                "dataSource": {
+                    "name": "file://pure-ftpd:21",
+                    "uri": "file://pure-ftpd:21/airflow.cfg"
+                }
+            },
+            "name": "/airflow.cfg",
+            "namespace": "file://pure-ftpd:21"
+        }
+    ],
+    "run": {
+        "facets": {}
+    }
+},
+{
+    "eventType": "COMPLETE",
+    "inputs": [
+        {
+            "facets": {
+                "dataSource": {
+                    "name": "file://172.16.238.100:21",
+                    "uri": "file://172.16.238.100:21/opt/airflow/airflow.cfg"
+                }
+            },
+            "name": "/opt/airflow/airflow.cfg",
+            "namespace": "file://172.16.238.100:21"
+        }
+    ],
+    "job": {
+        "name": "ftp_dag.ftp_task",
+        "namespace": "food_delivery"
+    },
+    "outputs": [
+        {
+            "facets": {
+                "dataSource": {
+                    "name": "file://pure-ftpd:21",
+                    "uri": "file://pure-ftpd:21/airflow.cfg"
+                }
+            },
+            "name": "/airflow.cfg",
+            "namespace": "file://pure-ftpd:21"
+        }
+    ],
+    "run": {
+        "facets": {}
+    }
+}]
