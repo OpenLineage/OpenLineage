@@ -22,6 +22,7 @@ curl https://sh.rustup.rs -sSf | sh -s -- -y
 source $HOME/.cargo/env
 
 rustup target add aarch64-apple-darwin
+rustup target add x86_64-apple-darwin
 
 # Maturin is build tool that we're using. It can build python wheels based on standard Rust Cargo.toml.
 echo "Installing Maturin"

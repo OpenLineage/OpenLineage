@@ -378,7 +378,7 @@ jobs:
   compile-integration-sql-java-macos:
     working_directory: ~/openlineage/integration/sql/iface-java
     macos:
-      xcode: 13.2.1
+      xcode: 14.2.0
     resource_class: medium
     steps:
       - *checkout_project_root
@@ -431,7 +431,7 @@ jobs:
   build-integration-sql-macos:
     working_directory: ~/openlineage/integration/sql
     macos:
-      xcode: 13.2.1
+      xcode: 14.2.0
     resource_class: medium
     steps:
       - *checkout_project_root
