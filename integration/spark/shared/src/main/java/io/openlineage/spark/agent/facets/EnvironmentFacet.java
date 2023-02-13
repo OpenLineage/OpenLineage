@@ -19,6 +19,10 @@ public class EnvironmentFacet extends OpenLineage.DefaultRunFacet {
   @SuppressWarnings("PMD")
   private Map<String, Object> properties;
 
+  public Map<String, Object> getProperties() {
+    return properties;
+  }
+
   public EnvironmentFacet(Map<String, Object> environmentDetails) {
     super(Versions.OPEN_LINEAGE_PRODUCER_URI);
     this.properties = environmentDetails;

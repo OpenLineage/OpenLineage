@@ -12,6 +12,8 @@ import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.client.transports.FacetsConfig;
 import io.openlineage.client.transports.TransportFactory;
 import java.net.URISyntaxException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.Getter;
@@ -24,12 +26,25 @@ public class EventEmitter {
   @Getter private String jobNamespace;
   @Getter private String parentJobName;
   @Getter private Optional<UUID> parentRunId;
+  @Getter private Optional<List<String>> customEnvironmentVariables;
 
   public EventEmitter(ArgumentParser argument) throws URISyntaxException {
     this.jobNamespace = argument.getNamespace();
     this.parentJobName = argument.getJobName();
     this.parentRunId = convertToUUID(argument.getParentRunId());
     this.appName = Optional.ofNullable(argument.getAppName());
+    this.customEnvironmentVariables =
+        argument.getOpenLineageYaml().getFacetsConfig() != null
+            ? argument.getOpenLineageYaml().getFacetsConfig().getCustomEnvironmentVariables()
+                    != null
+                ? Optional.of(
+                    Arrays.asList(
+                        argument
+                            .getOpenLineageYaml()
+                            .getFacetsConfig()
+                            .getCustomEnvironmentVariables()))
+                : Optional.empty()
+            : Optional.empty();
     String[] disabledFacets =
         Optional.ofNullable(argument.getOpenLineageYaml().getFacetsConfig())
             .orElse(new FacetsConfig().withDisabledFacets(new String[0]))
