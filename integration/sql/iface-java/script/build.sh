@@ -19,7 +19,7 @@ mkdir -p $RESOURCES
 if [[ -f "$ROOT/../target/debug/libopenlineage_sql_java.so" ]]; then
     cp $ROOT/../target/debug/libopenlineage_sql_java.so $RESOURCES
 fi
-if [[ "$ROOT/../target/debug/libopenlineage_sql_java.dylib" ]]; then
+if [[ -f "$ROOT/../target/debug/libopenlineage_sql_java.dylib" ]]; then
     cp $ROOT/../target/debug/libopenlineage_sql_java.dylib $RESOURCES
 fi
 
