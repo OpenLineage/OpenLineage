@@ -13,10 +13,11 @@ The page lists Spark commands which are supported by OpenLineage.
 | InsertIntoHiveTable                     | &check;                | `INSERT INTO t1 SELECT * from t2` <br/>when table created with `using HIVE`       |
 | OptimizedCreateHiveTableAsSelectCommand | &check;                | `CREATE TABLE t STORED AS PARQUET LOCATION '...' `<br/>`AS SELECT a, b FROM temp` |
 | AlterTableChangeColumnCommand           | &cross;                | irrelevant as only column comment changes are allowed in Spark                    |
-| AlterTableAddPartitionCommand           | &cross;                | not implemented                                                                   |
+| AlterTableAddPartitionCommand           | &cross;                | `ALTER TABLE t ADD IF NOT EXISTS PARTITION (a='b')`                               |
 | AlterTableRenamePartitionCommand        | &cross;                | not implemented                                                                   |
 | AlterTableDropPartitionCommand          | &cross;                | not implemented                                                                   |
 | AlterTableRecoverPartitionsCommand      | &cross;                | not implemented                                                                   |
+| AlterTableSetLocationCommand            | &cross;                | `ALTER TABLE t SET LOCATION '...'`                                                |
 | Generate                                | &cross;                |                                                                                   |
 | ReturnAnswer                            | &cross;                |                                                                                   |
 | SaveAsHiveFile                          | &cross;                |                                                                                   |
