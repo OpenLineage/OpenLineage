@@ -21,4 +21,5 @@ class ConsoleTransport(Transport):
         self.log.debug("Constructing openlineage client to send events to console or logs")
 
     def emit(self, event: RunEvent):
+        # If logging is set to DEBUG, this will also log event in client.py
         self.log.info(Serde.to_json(event))

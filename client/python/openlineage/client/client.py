@@ -6,6 +6,7 @@ import typing
 from typing import Optional
 
 import attr
+from openlineage.client.serde import Serde
 
 if typing.TYPE_CHECKING:
     from requests import Session
@@ -67,6 +68,10 @@ class OpenLineageClient:
         if not self.transport:
             log.error("Tried to emit OpenLineage event, but transport is not configured.")
         else:
+            if log.isEnabledFor(logging.DEBUG):
+                log.debug(
+                    f"OpenLineageClient will emit event {Serde.to_json(event).encode('utf-8')}"
+                )
             self.transport.emit(event)
 
     @classmethod

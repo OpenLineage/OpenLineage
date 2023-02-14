@@ -56,4 +56,4 @@ class KafkaTransport(Transport):
     def emit(self, event: RunEvent):
         self.producer.produce(topic=self.topic, value=Serde.to_json(event).encode('utf-8'))
         if self.flush:
-            self.producer.flush(timeout=2)
+            self.producer.flush(timeout=5)
