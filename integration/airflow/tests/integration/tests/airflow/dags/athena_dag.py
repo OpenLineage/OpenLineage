@@ -89,6 +89,16 @@ t2 = AthenaOperator(
 )
 
 t3 = AthenaOperator(
+    task_id='athena_select_from_other_db',
+    aws_conn_id=CONNECTION,
+    query=f"SELECT * FROM {DATABASE}.test_orders;",
+    database="default",
+    output_location=OUTPUT_LOCATION,
+    max_tries=4,
+    dag=dag
+)
+
+t4 = AthenaOperator(
     task_id='athena_drop_table',
     aws_conn_id=CONNECTION,
     query="DROP TABLE test_orders;",
@@ -105,10 +115,10 @@ def delete_objects():
     hook.delete_objects(bucket=S3_BUCKET, keys=keys)
 
 
-t4 = PythonOperator(
+t5 = PythonOperator(
     task_id="delete_s3_objects",
     python_callable=delete_objects,
     dag=dag
 )
 
-t0 >> t1 >> t2 >> t3 >> t4
+t0 >> t1 >> t2 >> t3 >> t4 >> t5
