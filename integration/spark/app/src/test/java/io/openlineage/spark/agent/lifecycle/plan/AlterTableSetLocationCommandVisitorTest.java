@@ -5,8 +5,12 @@
 
 package io.openlineage.spark.agent.lifecycle.plan;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
+import java.util.List;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.execution.command.AlterTableSetLocationCommand;
@@ -21,11 +25,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import scala.Option;
 import scala.collection.Map$;
 import scala.collection.immutable.HashMap;
-
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
 
 @ExtendWith(SparkAgentTestExtension.class)
 class AlterTableSetLocationCommandVisitorTest {
@@ -59,8 +58,8 @@ class AlterTableSetLocationCommandVisitorTest {
 
     StructType schema =
         new StructType(
-            new StructField[]{
-                new StructField("col1", StringType$.MODULE$, false, new Metadata(new HashMap<>()))
+            new StructField[] {
+              new StructField("col1", StringType$.MODULE$, false, new Metadata(new HashMap<>()))
             });
 
     session.catalog().createTable(TABLE_1, "csv", schema, Map$.MODULE$.empty());
@@ -81,7 +80,9 @@ class AlterTableSetLocationCommandVisitorTest {
     assertThat(visitor.isDefinedAt(command)).isTrue();
     List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
     assertEquals(1, datasets.get(0).getFacets().getSchema().getFields().size());
-    assertEquals("default.table1", datasets.get(0).getFacets().getSymlinks().getIdentifiers().get(0).getName());
+    assertEquals(
+        "default.table1",
+        datasets.get(0).getFacets().getSymlinks().getIdentifiers().get(0).getName());
     assertThat(datasets)
         .singleElement()
         .hasFieldOrPropertyWithValue("name", "/tmp/dir")

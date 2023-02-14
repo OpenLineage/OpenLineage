@@ -5,8 +5,12 @@
 
 package io.openlineage.spark.agent.lifecycle.plan;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
+import java.util.List;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.execution.command.AlterTableAddPartitionCommand;
@@ -19,11 +23,6 @@ import scala.Tuple2;
 import scala.collection.Seq;
 import scala.collection.Seq$;
 import scala.collection.immutable.Map;
-
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
 
 @ExtendWith(SparkAgentTestExtension.class)
 class AlterTableAddPartitionCommandVisitorTest {
@@ -57,9 +56,10 @@ class AlterTableAddPartitionCommandVisitorTest {
             .getOrCreate();
 
     dropTables();
-    session.sql("CREATE TABLE `table5` (col2 varchar(31)) PARTITIONED BY (\n" +
-        "  `col1` string)\n" +
-        "STORED AS PARQUET");
+    session.sql(
+        "CREATE TABLE `table5` (col2 varchar(31)) PARTITIONED BY (\n"
+            + "  `col1` string)\n"
+            + "STORED AS PARQUET");
     visitor = new AlterTableAddPartitionCommandVisitor(SparkAgentTestExtension.newContext(session));
   }
 
@@ -73,20 +73,23 @@ class AlterTableAddPartitionCommandVisitorTest {
             .result();
 
     Seq<Tuple2<Map<String, String>, Option<String>>> partitionSpecsAndLocs =
-        Seq$.MODULE$.<Tuple2<Map<String, String>, Option<String>>>newBuilder().$plus$eq(Tuple2.apply(params, Option.apply("file:///tmp/dir"))).result();
+        Seq$.MODULE$
+            .<Tuple2<Map<String, String>, Option<String>>>newBuilder()
+            .$plus$eq(Tuple2.apply(params, Option.apply("file:///tmp/dir")))
+            .result();
 
     AlterTableAddPartitionCommand command =
         new AlterTableAddPartitionCommand(
-            new TableIdentifier(TABLE_5, Option.apply("default")),
-            partitionSpecsAndLocs,
-            false);
+            new TableIdentifier(TABLE_5, Option.apply("default")), partitionSpecsAndLocs, false);
 
     command.run(session);
 
     assertThat(visitor.isDefinedAt(command)).isTrue();
     List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
     assertEquals(2, datasets.get(0).getFacets().getSchema().getFields().size());
-    assertEquals("default.table5", datasets.get(0).getFacets().getSymlinks().getIdentifiers().get(0).getName());
+    assertEquals(
+        "default.table5",
+        datasets.get(0).getFacets().getSymlinks().getIdentifiers().get(0).getName());
     assertThat(datasets)
         .singleElement()
         .hasFieldOrPropertyWithValue("name", "/tmp/warehouse/table5")
