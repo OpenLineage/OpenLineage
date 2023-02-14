@@ -50,6 +50,8 @@ public class ArgumentParser {
   public static final String SPARK_CONF_HTTP_URL = "spark.openlineage.transport.url";
   public static final Set<String> PROPERTIES_PREFIXES =
       new HashSet<>(Arrays.asList("transport.properties.", "transport.urlParams."));
+  public static final String SPARK_CONF_CUSTOM_ENVIRONMENT_VARIABLES =
+      "spark.openlineage.facets.custom_environment_variables";
 
   @Builder.Default private String namespace = "default";
   @Builder.Default private String jobName = "default";
@@ -83,6 +85,12 @@ public class ArgumentParser {
         .ifPresent(
             c -> {
               replaceConfigEntry(conf, SPARK_CONF_HTTP_URL, c, "spark.openlineage.host");
+            });
+
+    findSparkConfigKey(conf, "spark.openlineage.url")
+        .ifPresent(
+            c -> {
+              replaceConfigEntry(conf, SPARK_CONF_HTTP_URL, c, "spark.openlineage.url");
             });
 
     findSparkConfigKey(conf, "spark.openlineage.timeout")

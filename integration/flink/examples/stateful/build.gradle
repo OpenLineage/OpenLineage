@@ -5,10 +5,10 @@ plugins {
     id 'signing'
     id 'jacoco'
     id "com.adarshr.test-logger" version "3.2.0"
-    id 'com.diffplug.spotless' version '6.14.0'
+    id 'com.diffplug.spotless' version '6.15.0'
     id "com.github.johnrengelman.shadow" version "7.1.2"
     id "pmd"
-    id "com.github.davidmc24.gradle.plugin.avro" version "1.5.0"
+    id "com.github.davidmc24.gradle.plugin.avro" version "1.6.0"
 }
 
 pmd {
@@ -65,7 +65,7 @@ dependencies {
     }
 
     testRuntimeOnly "org.junit.jupiter:junit-jupiter:5.9.2"
-    testCompileOnly 'org.codehaus.groovy:groovy-all:3.0.14'
+    testCompileOnly 'org.codehaus.groovy:groovy-all:3.0.15'
     testImplementation 'org.spockframework:spock-core:2.3-groovy-4.0'
     testImplementation 'org.awaitility:awaitility:4.2.0'
 
@@ -89,7 +89,7 @@ dependencies {
     implementation "org.apache.avro:avro:1.11.1"
     implementation 'io.confluent:kafka-schema-registry-client:7.3.1'
     implementation 'io.confluent:kafka-avro-serializer:7.3.1'
-    implementation 'com.github.davidmc24.gradle.plugin:gradle-avro-plugin:1.5.0'
+    implementation 'com.github.davidmc24.gradle.plugin:gradle-avro-plugin:1.6.0'
     implementation "org.apache.hadoop:hadoop-hdfs:$hadoopVersion"
     implementation "org.apache.hadoop:hadoop-common:$hadoopVersion"
     implementation("org.apache.hadoop:hadoop-minicluster:$hadoopVersion") {

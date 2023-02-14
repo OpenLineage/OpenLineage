@@ -69,6 +69,7 @@ class ArgumentParserTest {
             .set(ArgumentParser.SPARK_CONF_JOB_NAME, JOB_NAME)
             .set(ArgumentParser.SPARK_CONF_PARENT_RUN_ID, RUN_ID)
             .set(ArgumentParser.SPARK_CONF_APP_NAME, APP_NAME);
+
     ArgumentParser argumentParser = ArgumentParser.parse(sparkConf);
     assertEquals(NS_NAME, argumentParser.getNamespace());
     assertEquals(JOB_NAME, argumentParser.getJobName());
@@ -104,7 +105,7 @@ class ArgumentParserTest {
   void testDeprecatedConfig() {
     SparkConf sparkConf =
         new SparkConf()
-            .set("spark.openlineage.host", URL)
+            .set("spark.openlineage.url", URL)
             .set("spark.openlineage.version", "1")
             .set("spark.openlineage.apiKey", API_KEY)
             .set("spark.openlineage.timeout", "5000")

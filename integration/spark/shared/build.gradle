@@ -45,7 +45,7 @@ configurations {
 
 ext {
     assertjVersion = '3.24.2'
-    bigqueryVersion = '0.27.1'
+    bigqueryVersion = '0.28.0'
     junit5Version = '5.9.2'
     sparkVersion = '2.4.8'
     sparkVersionShort = '2.4'
@@ -86,7 +86,7 @@ dependencies {
     testFixturesApi "org.testcontainers:postgresql:${testcontainersVersion}"
     testFixturesApi "org.testcontainers:mockserver:${testcontainersVersion}"
     testFixturesApi "org.testcontainers:kafka:${testcontainersVersion}"
-    testFixturesApi "org.apache.kafka:kafka-clients:3.3.1"
+    testFixturesApi "org.apache.kafka:kafka-clients:3.4.0"
     testFixturesApi('org.mock-server:mockserver-client-java:5.14.0') {
         exclude group: 'com.google.guava', module: 'guava'
         exclude group: 'com.fasterxml.jackson.core'
