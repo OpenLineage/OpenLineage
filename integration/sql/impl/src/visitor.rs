@@ -8,11 +8,7 @@ use crate::context::Context;
 use crate::lineage::*;
 
 use anyhow::{anyhow, Result};
-use sqlparser::ast::{
-    Expr, Function, FunctionArg, FunctionArgExpr, Ident, ListAggOnOverflow, OrderByExpr, Query,
-    Select, SelectItem, SetExpr, Statement, TableAlias, TableFactor, TableWithJoins, WindowSpec,
-    With,
-};
+use sqlparser::ast::{Expr, Function, FunctionArg, FunctionArgExpr, Ident, ListAggOnOverflow, OrderByExpr, Query, Select, SelectItem, SetExpr, Statement, Table, TableAlias, TableFactor, TableWithJoins, WindowSpec, With};
 
 pub trait Visit {
     fn visit(&self, context: &mut Context) -> Result<()>;
@@ -471,13 +467,14 @@ impl Visit for SetExpr {
             SetExpr::Query(q) => q.visit(context),
             SetExpr::SetOperation {
                 op: _,
-                all: _,
+                set_quantifier: _,
                 left,
                 right,
             } => {
                 left.visit(context)?;
                 right.visit(context)
             }
+            SetExpr::Table(table) => table.visit(context)
         }
     }
 }
@@ -546,6 +543,7 @@ impl Visit for Statement {
                 assignments: _,
                 from,
                 selection,
+                returning
             } => {
                 let name = get_table_name_from_table_factor(&table.relation)?;
                 context.add_output(name);
@@ -564,6 +562,7 @@ impl Visit for Statement {
                 table_name,
                 using,
                 selection,
+                returning
             } => {
                 let table_name = get_table_name_from_table_factor(table_name)?;
                 context.add_output(table_name);
@@ -582,6 +581,15 @@ impl Visit for Statement {
         let frame = context.pop_frame().unwrap();
         context.collect(frame);
 
+        Ok(())
+    }
+}
+
+impl Visit for Table {
+    fn visit(&self, context: &mut Context) -> Result<()> {
+        if let Some(name) = &self.table_name {
+            context.add_input(name.clone())
+        }
         Ok(())
     }
 }
