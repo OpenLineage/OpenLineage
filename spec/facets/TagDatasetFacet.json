@@ -1,0 +1,47 @@
+{
+  "$schema" : "https://json-schema.org/draft/2020-12/schema",
+  "$id" : "https://openlineage.io/spec/facets/1-0-0/TagDatasetFacet.json",
+  "$defs" : {
+    "TagDatasetFacet" : {
+      "allOf" : [ {
+        "$ref" : "https://openlineage.io/spec/1-0-2/OpenLineage.json#/$defs/DatasetFacet"
+      }, {
+        "type" : "object",
+        "properties" : {
+          "tags" : {
+            "description" : "Tags specified on this table",
+            "type" : "array",
+            "items" : {
+              "type" : "object",
+              "properties" : {
+                "key" : {
+                  "description" : "The name of this tag.",
+                  "type" : "string",
+                  "example" : "key1"
+                },
+                "value" : {
+                  "description" : "The value of this tag.",
+                  "type" : "string",
+                  "example" : "true"
+                },
+                "field" : {
+                  "description" : "Column in this dataset that this tag applies to.",
+                  "type" : "string",
+                  "example": "email"
+                }
+              },
+              "required" : [ "key" ]
+            }
+          }
+        }
+      } ],
+      "type" : "object"
+    }
+  },
+  "type" : "object",
+  "properties" : {
+    "tag" : {
+      "$ref" : "#/$defs/TagDatasetFacet"
+    }
+  }
+}

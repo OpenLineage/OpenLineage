@@ -21,6 +21,8 @@ from openlineage.client.facet import (
     StorageDatasetFacet,
     SymlinksDatasetFacet,
     SymlinksDatasetFacetIdentifiers,
+    Tag,
+    TagDatasetFacet,
 )
 from openlineage.client.run import Dataset, Job, Run, RunEvent, RunState
 
@@ -196,6 +198,65 @@ def test_ownership_job_facet():
     expected_event["job"]["facets"] = dict()
     expected_event["job"]["facets"]["ownership"] = ownership_job_facet
 
+    assert expected_event == event_sent
+
+
+def test_tag_dataset_facet():
+    session = MagicMock()
+    client = OpenLineageClient(url="http://example.com", session=session)
+
+    tag_dataset_facet = {
+        "tags": [{
+            "key": "pii",
+            "value": "true",
+            "field": "email"
+        }, {
+            "key": "pii",
+            "value": "true",
+            "field": "name"
+        }, {
+            "key": "public",
+            "value": "false"
+        }],
+        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python",
+        "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec"
+                      "/OpenLineage.json#/definitions/TagDatasetFacet",
+    }
+
+    client.emit(
+        RunEvent(
+            RunState.START,
+            "2021-11-03T10:53:52.427343",
+            Run("69f4acab-b87d-4fc0-b27b-8ea950370ff3"),
+            Job(
+                "openlineage",
+                "job",
+                {
+                    "tag": TagDatasetFacet(
+                        tags=[
+                            Tag("pii", "true", "email"),
+                            Tag("pii", "true", "name"),
+                            Tag("public", "false")
+                        ]
+                    )
+                }
+            ),
+            "some-producer",
+            [],
+            [
+                Dataset(
+                    namespace="some-namespace",
+                    name="input-dataset"
+                )
+            ]
+        )
+    )
+
+    event_sent = json.loads(session.post.call_args[0][1])
+
+    expected_event = copy.deepcopy(openlineage_event)
+    expected_event["job"]["facets"] = dict()
+    expected_event["job"]["facets"]["tag"] = tag_dataset_facet
     assert expected_event == event_sent
 
 

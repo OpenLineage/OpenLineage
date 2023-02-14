@@ -398,3 +398,19 @@ class ExtractionErrorRunFacet(BaseFacet):
     @staticmethod
     def _get_schema() -> str:
         return SCHEMA_URI + "#/definitions/ExtractionErrorRunFacet"
+
+
+@attr.s
+class Tag:
+    key: str = attr.ib()
+    value: Optional[str] = attr.ib(default=None)
+    field: Optional[str] = attr.ib(default=None)
+
+
+@attr.s
+class TagDatasetFacet(BaseFacet):
+    tags: List[Tag] = attr.ib()
+
+    @staticmethod
+    def _get_schema() -> str:
+        return SCHEMA_URI + "#/definitions/TagDatasetFacet"
