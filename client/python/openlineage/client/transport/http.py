@@ -117,8 +117,6 @@ class HttpTransport(Transport):
 
     def emit(self, event: RunEvent):
         event = Serde.to_json(event)
-        if log.isEnabledFor(logging.DEBUG):
-            log.debug(f"Sending openlineage event {event}")
         resp = self.session.post(
             urljoin(self.url, self.endpoint),
             event,
