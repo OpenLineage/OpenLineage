@@ -5,6 +5,7 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
+import static org.apache.spark.sql.functions.col;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -340,6 +341,38 @@ class ColumnLevelLineageUtilsV2CatalogTest {
     assertColumnDependsOn(facet, "d", FILE, T1_EXPECTED_NAME, "b");
     assertColumnDependsOnInputs(facet, "c", 1);
     assertColumnDependsOnInputs(facet, "d", 1);
+  }
+
+  @Test
+  void testJobWithCachedDataset() {
+    spark.sql(CREATE_T1_FROM_TEMP);
+
+    Dataset<Row> cachedDataset1 = spark.read().table("local.db.t1").cache();
+    cachedDataset1.take(1);
+    cachedDataset1.count(); // run some action to warm-up cache
+
+    Dataset<Row> cachedDataset2 = cachedDataset1.select(col("a").as("c"), col("b").as("d")).cache();
+    cachedDataset2.take(1);
+    cachedDataset2.count();
+
+    cachedDataset2.select(col("c").as("e"), col("d").as("f")).write().saveAsTable("local.db.t3");
+
+    OpenLineage.SchemaDatasetFacet outputSchema =
+        openLineage.newSchemaDatasetFacet(
+            Arrays.asList(
+                openLineage.newSchemaDatasetFacetFieldsBuilder().name("e").type(INT_TYPE).build(),
+                openLineage.newSchemaDatasetFacetFieldsBuilder().name("f").type(INT_TYPE).build()));
+
+    LogicalPlan plan = LastQueryExecutionSparkEventListener.getLastExecutedLogicalPlan().get();
+    when(queryExecution.optimizedPlan()).thenReturn(plan);
+
+    OpenLineage.ColumnLineageDatasetFacet facet =
+        ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, outputSchema).get();
+
+    assertColumnDependsOn(facet, "e", FILE, T1_EXPECTED_NAME, "a");
+    assertColumnDependsOn(facet, "f", FILE, T1_EXPECTED_NAME, "b");
+    assertColumnDependsOnInputs(facet, "e", 1);
+    assertColumnDependsOnInputs(facet, "f", 1);
   }
 
   private void assertColumnDependsOn(

@@ -100,7 +100,6 @@ public class UrlParser {
     if (check) {
       return Optional.of(elements[index + 1]);
     } else {
-      log.warn("missing " + name + " in " + Arrays.toString(elements) + " at " + index);
       return Optional.empty();
     }
   }
