@@ -2,25 +2,25 @@
 
 The page lists Spark commands which are supported by OpenLineage.
 
-| Command                                 | Output visitor support | Example SQL / Notes                                                                                      |
-|-----------------------------------------|------------------------|----------------------------------------------------------------------------------------------------------|
-| AlterTableAddColumnsCommand             | &check;                | `ALTER TABLE t ADD COLUMNS (a string, b string)`                                                         |
-| AlterTableRenameCommand                 | &check;                | `ALTER TABLE t1 RENAME TO t2`                                                                            |
-| AppendData                              | &check;                |                                                                                                          |                                                                                                                                                                                                                                                                                                |
-| CreateHiveTableAsSelectCommand          | &check;                | `CREATE TABLE t USING hive LOCATION '...' `<br/>`AS SELECT a, b FROM temp`                               |
-| InsertIntoDataSourceDirCommand          | &check;                | `INSERT OVERWRITE DIRECTORY '...' USING PARQUET SELECT * from t`                                         |
-| InsertIntoHiveDirCommand                | &check;                | `INSERT OVERWRITE DIRECTORY '...' SELECT * from t`                                                       |
-| InsertIntoHiveTable                     | &check;                | `INSERT INTO t1 SELECT * from t2` <br/>when table created with `using HIVE`                              |
-| OptimizedCreateHiveTableAsSelectCommand | &check;                | `CREATE TABLE t STORED AS PARQUET LOCATION '...' `<br/>`AS SELECT a, b FROM temp`                        |
-| AlterTableChangeColumnCommand           | &cross;                | irrelevant as only column comment changes are allowed in Spark                                           |
-| AlterTableAddPartitionCommand           | &check;                | `ALTER TABLE t ADD IF NOT EXISTS PARTITION (a='b')`. Generated datasets exclude partition/location info. |
-| AlterTableRenamePartitionCommand        | &cross;                | not implemented                                                                                          |
-| AlterTableDropPartitionCommand          | &cross;                | not implemented                                                                                          |
-| AlterTableRecoverPartitionsCommand      | &cross;                | not implemented                                                                                          |
-| AlterTableSetLocationCommand            | &check;                | `ALTER TABLE t SET LOCATION '...'`. Generated datasets exclude partition/location info.                  |
-| Generate                                | &cross;                |                                                                                                          |
-| ReturnAnswer                            | &cross;                |                                                                                                          |
-| SaveAsHiveFile                          | &cross;                |                                                                                                          |
+| Command                                 | Output visitor support | Example SQL / Notes                                                                                                |
+|-----------------------------------------|------------------------|--------------------------------------------------------------------------------------------------------------------|
+| AlterTableAddColumnsCommand             | &check;                | `ALTER TABLE t ADD COLUMNS (a string, b string)`                                                                   |
+| AlterTableRenameCommand                 | &check;                | `ALTER TABLE t1 RENAME TO t2`                                                                                      |
+| AppendData                              | &check;                |                                                                                                                    |                                                                                                                                                                                                                                                                                                |
+| CreateHiveTableAsSelectCommand          | &check;                | `CREATE TABLE t USING hive LOCATION '...' `<br/>`AS SELECT a, b FROM temp`                                         |
+| InsertIntoDataSourceDirCommand          | &check;                | `INSERT OVERWRITE DIRECTORY '...' USING PARQUET SELECT * from t`                                                   |
+| InsertIntoHiveDirCommand                | &check;                | `INSERT OVERWRITE DIRECTORY '...' SELECT * from t`                                                                 |
+| InsertIntoHiveTable                     | &check;                | `INSERT INTO t1 SELECT * from t2` <br/>when table created with `using HIVE`                                        |
+| OptimizedCreateHiveTableAsSelectCommand | &check;                | `CREATE TABLE t STORED AS PARQUET LOCATION '...' `<br/>`AS SELECT a, b FROM temp`                                  |
+| AlterTableChangeColumnCommand           | &cross;                | irrelevant as only column comment changes are allowed in Spark                                                     |
+| AlterTableAddPartitionCommand           | &check;                | `ALTER TABLE t ADD IF NOT EXISTS PARTITION (a='b')`. <br/> Generated datasets exclude partition and location info. |
+| AlterTableRenamePartitionCommand        | &cross;                | not implemented                                                                                                    |
+| AlterTableDropPartitionCommand          | &cross;                | not implemented                                                                                                    |
+| AlterTableRecoverPartitionsCommand      | &cross;                | not implemented                                                                                                    |
+| AlterTableSetLocationCommand            | &check;                | `ALTER TABLE t SET LOCATION '...'`. <br/> Generated datasets exclude partition and location info.                  |
+| Generate                                | &cross;                |                                                                                                                    |
+| ReturnAnswer                            | &cross;                |                                                                                                                    |
+| SaveAsHiveFile                          | &cross;                |                                                                                                                    |
 
 
 ## V2 commands 
