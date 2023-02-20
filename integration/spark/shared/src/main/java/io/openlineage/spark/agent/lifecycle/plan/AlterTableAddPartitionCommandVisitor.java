@@ -36,6 +36,7 @@ public class AlterTableAddPartitionCommandVisitor
 
     CatalogTable catalogTable = tableOption.get();
 
+    // The generated datasets will not include partition nor location information
     return Collections.singletonList(
         outputDataset()
             .getDataset(PathUtils.fromCatalogTable(catalogTable), catalogTable.schema()));
