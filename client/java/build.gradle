@@ -69,7 +69,7 @@ dependencies {
     implementation 'org.slf4j:slf4j-api:1.7.36'
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
     compileOnly 'org.apache.kafka:kafka-clients:3.4.0'
-    compileOnly 'com.amazonaws:amazon-kinesis-producer:0.15.2'
+    compileOnly 'com.amazonaws:amazon-kinesis-producer:0.15.5'
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
