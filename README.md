@@ -80,11 +80,11 @@ The OpenLineage repository contains integrations with several systems.
 - Website: [openlineage.io](http://openlineage.io)
 
 ## Talks
- - [Metadata Day 2020. Open Lineage lightning talk](https://www.youtube.com/watch?v=anlV5Er_BpM)
- - [Open Core Summit 2020. Observability for data pipelines. OpenLineage project launch](https://www.coss.community/coss/ocs-2020-breakout-julien-le-dem-3eh4)
- - [Data Driven NYC February 2021. Data Observability and Pipelines: OpenLineage and Marquez](https://mattturck.com/datakin/)
- - [Big Data Technology Warsaw Summit February 2021. Data lineage and Observability with Marquez and OpenLineage](https://bigdatatechwarsaw.eu/edition-2021/)
- - [Berlin Buzzwords June 2021. Observability for Data Pipelines with OpenLineage](https://2021.berlinbuzzwords.de/member/julien-le-dem)
+- [Berlin Buzzwords June 2021. Observability for Data Pipelines with OpenLineage](https://2021.berlinbuzzwords.de/member/julien-le-dem)
+- [Data Driven NYC February 2021. Data Observability and Pipelines: OpenLineage and Marquez](https://mattturck.com/datakin/)
+- [Big Data Technology Warsaw Summit February 2021. Data lineage and Observability with Marquez and OpenLineage](https://bigdatatechwarsaw.eu/edition-2021/)
+- [Metadata Day 2020. OpenLineage Lightning Talk](https://www.youtube.com/watch?v=anlV5Er_BpM)
+- [Open Core Summit 2020. Observability for Data Pipelines: OpenLineage Project Launch](https://www.coss.community/coss/ocs-2020-breakout-julien-le-dem-3eh4)
 
 ## Contributing
 
