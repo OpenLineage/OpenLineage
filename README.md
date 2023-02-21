@@ -80,6 +80,7 @@ The OpenLineage repository contains integrations with several systems.
 - Website: [openlineage.io](http://openlineage.io)
 
 ## Talks
+- [Berlin Buzzwords June 2022. Cross-Platform Data Lineage with OpenLineage](https://www.youtube.com/watch?v=pLBVGIPuwEo)
 - [Berlin Buzzwords June 2021. Observability for Data Pipelines with OpenLineage](https://2021.berlinbuzzwords.de/member/julien-le-dem)
 - [Data Driven NYC February 2021. Data Observability and Pipelines: OpenLineage and Marquez](https://mattturck.com/datakin/)
 - [Big Data Technology Warsaw Summit February 2021. Data lineage and Observability with Marquez and OpenLineage](https://bigdatatechwarsaw.eu/edition-2021/)
