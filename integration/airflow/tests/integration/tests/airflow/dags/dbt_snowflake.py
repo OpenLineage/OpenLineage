@@ -3,30 +3,16 @@
 
 import os
 
-from openlineage.airflow.utils import JobIdMapping
-
-from airflow.operators.bash_operator import BashOperator
-from airflow.utils.dates import days_ago
-
-try:
-    from airflow.utils.db import create_session
-except ImportError:
-    from airflow.utils.session import create_session
-
 # do not need airflow integration
 from airflow import DAG
+from airflow.operators.bash_operator import BashOperator
+from airflow.utils.dates import days_ago
 from airflow.version import version as AIRFLOW_VERSION
-
-
-def lineage_parent_id(run_id, task):
-    with create_session() as session:
-        job_name = f"{task.dag_id}.{task.task_id}"
-        ids = str(JobIdMapping.get(job_name, run_id, session))
-        return f"{os.getenv('OPENLINEAGE_NAMESPACE')}/{job_name}/{ids}"
-
 
 PROJECT_DIR = "/opt/data/dbt/testproject"
 PROFILE_DIR = "/opt/data/dbt/profiles"
+
+PLUGIN_MACRO = "{{ macros.OpenLineagePlugin.lineage_parent_id(run_id, task, task_instance) }}"
 
 default_args = {
     'owner': 'datascience',
@@ -42,10 +28,7 @@ if AIRFLOW_VERSION == os.environ.get("SNOWFLAKE_AIRFLOW_TEST_VERSION", "2.3.4"):
         'dbt_snowflake',
         schedule_interval='@once',
         default_args=default_args,
-        description='Runs dbt model build.',
-        user_defined_macros={
-            "lineage_parent_id": lineage_parent_id,
-        }
+        description='Runs dbt model build.'
     )
 
     t1 = BashOperator(
@@ -54,7 +37,7 @@ if AIRFLOW_VERSION == os.environ.get("SNOWFLAKE_AIRFLOW_TEST_VERSION", "2.3.4"):
         bash_command=f"source /opt/airflow/dbt_venv/bin/activate && dbt seed --full-refresh --project-dir={PROJECT_DIR} --profiles-dir={PROFILE_DIR} && deactivate",  # noqa: E501
         env={
             **os.environ,
-            "OPENLINEAGE_PARENT_ID": "{{ lineage_parent_id(run_id, task) }}",
+            "OPENLINEAGE_PARENT_ID": PLUGIN_MACRO,
             "DBT_PROFILE": "snowflake"
         }
     )
@@ -65,7 +48,7 @@ if AIRFLOW_VERSION == os.environ.get("SNOWFLAKE_AIRFLOW_TEST_VERSION", "2.3.4"):
         bash_command=f"source /opt/airflow/dbt_venv/bin/activate && dbt-ol run --project-dir={PROJECT_DIR} --profiles-dir={PROFILE_DIR}",  # noqa: E501
         env={
             **os.environ,
-            "OPENLINEAGE_PARENT_ID": "{{ lineage_parent_id(run_id, task) }}",
+            "OPENLINEAGE_PARENT_ID": PLUGIN_MACRO,
             "DBT_PROFILE": "snowflake"
         }
     )
