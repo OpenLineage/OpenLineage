@@ -74,7 +74,8 @@ class OpenLineageAdapter:
             uuid.uuid3(uuid.NAMESPACE_URL, f"{_DAG_NAMESPACE}.{dag_id}.{dag_run_id}")
         )
 
-    def build_task_instance_run_id(self, task_id, execution_date, try_number):
+    @staticmethod
+    def build_task_instance_run_id(task_id, execution_date, try_number):
         return str(
             uuid.uuid3(
                 uuid.NAMESPACE_URL,
