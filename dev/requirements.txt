@@ -1,5 +1,8 @@
+github-action-utils~=1.1.0
 pendulum==2.1.2
 PyGithub==1.57
 python_dateutil==2.8.2
+PyYAML~=5.4.1
+requests~=2.25.1
 rich==13.3.1
 rich_click==1.6.1
