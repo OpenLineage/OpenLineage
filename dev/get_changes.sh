@@ -6,7 +6,7 @@
 export INPUT_CHANGELOG_FILENAME=CHANGES.md
 export GITHUB_REPOSITORY=OpenLineage/OpenLineage
 
-git clone git@github.com:merobi-hub/changelog-ci.git
+git clone --branch add-test-script git@github.com:merobi-hub/changelog-ci.git
 
 python3 changelog-ci/scripts/main.py
 
