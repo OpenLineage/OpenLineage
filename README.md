@@ -21,13 +21,13 @@ The core lineage model is extensible by defining specific facets to enrich those
 
 ## Status
 
-OpenLineage is an [LF AI & Data Foundation](https://lfaidata.foundation/projects/openlineage) sandbox project under active development and we'd love your help!
+OpenLineage is an [LF AI & Data Foundation](https://lfaidata.foundation/projects/openlineage) incubation project under active development, and we'd love your help!
 
 ## Problem
 
 ### Before
 
-- Duplication of effort: Each project has to instrument all jobs
+- Duplication of effort: each project has to instrument all jobs
 - Integrations are external and can break with new versions
 
 ![Before OpenLineage](doc/before-ol.svg)
@@ -62,22 +62,30 @@ The OpenLineage repository contains integrations with several systems.
 - [Apache Airflow](https://github.com/OpenLineage/OpenLineage/tree/main/integration/airflow)
 - [Dagster](https://github.com/OpenLineage/OpenLineage/tree/main/integration/dagster)
 - [dbt](https://github.com/OpenLineage/OpenLineage/tree/main/integration/dbt)
+- [Flink](https://github.com/OpenLineage/OpenLineage/tree/main/integration/flink)
 
 ## Related projects
 - [Marquez](https://marquezproject.ai/): Marquez is an [LF AI & DATA](https://lfaidata.foundation/) project to collect, aggregate, and visualize a data ecosystem's metadata. It is the reference implementation of the OpenLineage API.
   - [OpenLineage collection implementation](https://github.com/MarquezProject/marquez/blob/main/api/src/main/java/marquez/api/OpenLineageResource.java)
-- [Egeria](https://egeria.odpi.org/): Egeria Open Metadata and Governance. A metadata bus.
+- [Egeria](https://egeria.odpi.org/): Egeria offers open metadata and governance for enterprises - automatically capturing, managing and exchanging metadata between tools and platforms, no matter the vendor.
 
 ## Community
-- Slack: [OpenLineage.slack.com](http://bit.ly/OpenLineageSlack)
+- Slack: [OpenLineage.slack.com](http://bit.ly/OLslack)
 - Twitter: [@OpenLineage](https://twitter.com/OpenLineage)
-- Google group: [openlineage@googlegroups.com](https://groups.google.com/g/openlineage)
+- Mailing list: [openlineage-tsc](https://lists.lfaidata.foundation/g/openlineage-tsc)
+- Wiki: [OpenLineage+Home](https://wiki.lfaidata.foundation/display/OpenLineage/OpenLineage+Home)
+- LinkedIn: [13927795](https://www.linkedin.com/groups/13927795/)
+- YouTube: [channel](https://www.youtube.com/channel/UCRMLy4AaSw_ka-gNV9nl7VQ)
+- Mastodon: [@openlineage@fostodon.org](openlineage@fosstodon.org)
+- Website: [openlineage.io](http://openlineage.io)
 
 ## Talks
- - [Metadata day 2020. Open Lineage lightning talk](https://www.youtube.com/watch?v=anlV5Er_BpM)
- - [Open Core Summit 2020. Observability for data pipelines. OpenLineage project launch](https://www.coss.community/coss/ocs-2020-breakout-julien-le-dem-3eh4)
- - [Data Driven NYC Feb 2021. Data Observability and Pipelines: OpenLineage and Marquez](https://mattturck.com/datakin/)
- - [Big Data Technology Warsaw Summit. Data lineage and Observability with Marquez and OpenLineage](https://conference.bigdatatechwarsaw.eu/julien-le-dem/)
+- [Berlin Buzzwords June 2022. Cross-Platform Data Lineage with OpenLineage](https://www.youtube.com/watch?v=pLBVGIPuwEo)
+- [Berlin Buzzwords June 2021. Observability for Data Pipelines with OpenLineage](https://2021.berlinbuzzwords.de/member/julien-le-dem)
+- [Data Driven NYC February 2021. Data Observability and Pipelines: OpenLineage and Marquez](https://mattturck.com/datakin/)
+- [Big Data Technology Warsaw Summit February 2021. Data lineage and Observability with Marquez and OpenLineage](https://bigdatatechwarsaw.eu/edition-2021/)
+- [Metadata Day 2020. OpenLineage Lightning Talk](https://www.youtube.com/watch?v=anlV5Er_BpM)
+- [Open Core Summit 2020. Observability for Data Pipelines: OpenLineage Project Launch](https://www.coss.community/coss/ocs-2020-breakout-julien-le-dem-3eh4)
 
 ## Contributing
 
