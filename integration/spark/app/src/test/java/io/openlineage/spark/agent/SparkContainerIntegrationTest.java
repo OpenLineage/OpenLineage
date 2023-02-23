@@ -256,7 +256,7 @@ class SparkContainerIntegrationTest {
   void testDropTable() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network, openLineageClientMockContainer, "testDropTable", "spark_drop_table.py");
-    verifyEvents(mockServerClient, "pysparkDropTableStartEvent.json");
+    verifyEvents(mockServerClient, "pysparkDropTableCompleteEvent.json");
   }
 
   @Test

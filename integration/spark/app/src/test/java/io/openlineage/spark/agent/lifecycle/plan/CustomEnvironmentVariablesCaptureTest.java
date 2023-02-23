@@ -54,6 +54,7 @@ class CustomEnvironmentVariablesCaptureTest {
   }
 
   @Test
+  @Tag("delta")
   void testInsertIntoDeltaSource(@TempDir Path tempDir, SparkSession spark)
       throws InterruptedException, TimeoutException {
     CustomEnvironmentVariablesCaptureTest.setEnv("TEST_VAR", "test");

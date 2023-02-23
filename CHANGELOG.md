@@ -5,6 +5,8 @@
 ### Fixed
 * Column lineage extraction in Spark supports caching. [`#1634`](https://github.com/OpenLineage/OpenLineage/pull/1634) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Collect column lineage from Spark logical plans that contain cached datasets.*
+* Collect complete event for really quick Spark jobs. [`#1650`](https://github.com/OpenLineage/OpenLineage/pull/1650) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)   
+    *Improve collecting OpenLineage events on SQL complete in case of quick operations.*
 
 ## [0.20.6](https://github.com/OpenLineage/OpenLineage/compare/0.20.4...0.20.6) - 2023-2-10
 
