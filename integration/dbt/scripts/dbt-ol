@@ -145,7 +145,7 @@ def main():
     )
     process.wait()
 
-    if len(sys.argv) < 2 or sys.argv[1] not in ['run', 'test', 'build']:
+    if len(sys.argv) < 2 or sys.argv[1] not in ['run', 'test', 'build', 'seed']:
         return
 
     # If run_result has modification time before dbt command
