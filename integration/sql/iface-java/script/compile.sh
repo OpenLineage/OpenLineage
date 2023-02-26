@@ -17,8 +17,10 @@ JAVA_SRC=$SRC/java/io/openlineage/sql
 RESOURCES=$ROOT/src/main/resources/io/openlineage/sql
 SCRIPTS=$ROOT/script
 
-if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    NATIVE_LIB_NAME=libopenlineage_sql_java.so
+if [[ "$OSTYPE" == "linux-gnu"* && "$(uname -m)" == "x86_64" ]]; then
+    NATIVE_LIB_NAME=libopenlineage_sql_java_x86_64.so
+elif [[ "$OSTYPE" == "linux-gnu"* && "$(uname -m)" == "aarch64" ]]; then
+    NATIVE_LIB_NAME=libopenlineage_sql_java_aarch64.so
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     NATIVE_LIB_NAME=libopenlineage_sql_java.dylib
 else
@@ -29,3 +31,6 @@ fi
 rm -rf build/libs/*
 cd $ROOT/..
 cargo build -p openlineage_sql_java
+
+shopt -s extglob
+mv target/debug/libopenlineage_sql_java*(*.so|*.dylib) target/debug/$NATIVE_LIB_NAME

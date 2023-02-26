@@ -45,7 +45,7 @@ public class SqlMeta {
   @Override
   public String toString() {
     return String.format(
-        "{{\"inTables\": %s, \"outTables\": %s, \"columnLineage\": %s, \"errors\": %s}}",
+        "{\"inTables\": %s, \"outTables\": %s, \"columnLineage\": %s, \"errors\": %s}",
         Arrays.toString(inTables.toArray()),
         Arrays.toString(outTables.toArray()),
         Arrays.toString(columnLineage.toArray()),
