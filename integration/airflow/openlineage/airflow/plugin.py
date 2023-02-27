@@ -12,8 +12,9 @@ from airflow.version import version as AIRFLOW_VERSION
 
 
 def _is_disabled():
-    return os.getenv("OPENLINEAGE_DISABLED", None) in [True, 'true', "True"]
-
+    return "OPENLINEAGE_URL" not in os.getenv or os.getenv(
+        "OPENLINEAGE_DISABLED", None
+    ) in [True, "true", "True"]
 
 if parse_version(AIRFLOW_VERSION) \
         < parse_version("2.3.0.dev0") or _is_disabled():      # type: ignore
