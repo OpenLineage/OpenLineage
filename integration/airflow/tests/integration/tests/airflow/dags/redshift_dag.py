@@ -42,7 +42,7 @@ with DAG(
 ) as dag:
     # [START howto_operator_redshift_data]
     task_query = RedshiftDataOperator(
-        # aws_conn_id="redshit", 
+        # aws_conn_id="redshit",
         task_id='redshift_query',
         database=REDSHIFT_DATABASE,
         db_user=REDSHIFT_DATABASE_USER,
