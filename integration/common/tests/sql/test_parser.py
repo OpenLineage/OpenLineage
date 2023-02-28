@@ -266,7 +266,7 @@ def test_parse_bugged_cte():
             WHERE count > 1000 OR balance > 100000;
     """
     assert parse(sql).errors == [
-        ExtractionError(0, "Expected AS, found: (", sql)
+        ExtractionError(0, "Expected ), found: user_id", sql)
     ]
 
 
