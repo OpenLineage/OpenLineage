@@ -157,7 +157,7 @@ params = [
         "requests/mapped_dag.json",
         False,
         marks=pytest.mark.skipif(
-            not IS_AIRFLOW_VERSION_ENOUGH("2.3.0"), reason="Airflow < 2.3.0"
+            not IS_AIRFLOW_VERSION_ENOUGH("2.4.0"), reason="Airflow < 2.4.0"
         ),
     ),
     pytest.param(
@@ -421,7 +421,7 @@ def test_airflow_run_facet(dag_id, request_path, airflow_db_conn):
     assert check_matches(expected_events, actual_events) is True
 
 
-@pytest.mark.skipif(not IS_AIRFLOW_VERSION_ENOUGH("2.3.0"), reason="Airflow < 2.3.0")
+@pytest.mark.skipif(not IS_AIRFLOW_VERSION_ENOUGH("2.4.0"), reason="Airflow < 2.4.0")
 def test_airflow_mapped_task_facet(airflow_db_conn):
     dag_id = "mapped_dag"
     task_id = "multiply"

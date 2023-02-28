@@ -468,7 +468,7 @@ class DbtArtifactProcessor:
                 assertion_facet,
                 has_facets=False
             )
-            
+
             job_name = f"{node['database']}.{node['schema']}." \
                 f"{self.removeprefix(node['unique_id'], 'model.')}" \
                 + (".build.test" if self.command == 'build' else ".test")

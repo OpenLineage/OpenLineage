@@ -44,7 +44,7 @@ dag = DAG(
 )
 
 if parse_version(AIRFLOW_VERSION) < parse_version('2.5.0'):
-    t1 = PostgresOperator(    
+    t1 = PostgresOperator(
         task_id='postgres_if_not_exists',
         postgres_conn_id='food_delivery_db',
         sql="{{ get_sql() }}",
