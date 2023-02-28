@@ -200,11 +200,6 @@ task copyDependencies(type: Copy) {
 }
 
 task integrationTest(type: Test) {
-    // integrationTest depends on shadowJar which dependsOn test
-    // exclude all the tests and add manually tagged with integration-test
-    test {
-        exclude "**"
-    }
     dependsOn shadowJar, copyDependencies
     retry {
         boolean isCiServer = System.getenv().containsKey("CI")
