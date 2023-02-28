@@ -8,7 +8,7 @@
     *Ensures that the `DEBUG` loglevel on properly configured loggers will always log events, regardless of the chosen transport.*
 * Spark: add `CustomEnvironmentFacetBuilder` class [`#1545`](https://github.com/OpenLineage/OpenLineage/pull/1545) ***New contributor*** [@Anirudh181001](https://github.com/Anirudh181001)  
     *Enables the capture of custom environment variables from Spark.*
-* Spark: introduce the new output visitors `AlterTableAddPartitionCommandVisitor` and `AlterTableSetLocationCommandVisitor` [`#1629`](https://github.com/OpenLineage/OpenLineage/pull/1629) *New contributor* [@nataliezeller1](https://github.com/nataliezeller1)  
+* Spark: introduce the new output visitors `AlterTableAddPartitionCommandVisitor` and `AlterTableSetLocationCommandVisitor` [`#1629`](https://github.com/OpenLineage/OpenLineage/pull/1629) ***New contributor*** [@nataliezeller1](https://github.com/nataliezeller1)  
     *Adds visitors for extracting table names from the Spark commands `AlterTableAddPartitionCommand` and `AlterTableSetLocationCommand`. The intended use case is a custom transport for the OpenMetadata lineage API.*
 * SQL: add linux-arch64 native library to Java SQL parser [`#1664`](https://github.com/OpenLineage/OpenLineage/pull/1664) [@mobuchowski](https://github.com/mobuchowski)  
     *Adds a linux-arm version of the native library. The Java SQL parser interface had only linux-x64 and MacOS universal binary variants previously.*
