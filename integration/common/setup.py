@@ -41,7 +41,7 @@ extras_require = {
         "pytest",
         "pytest-cov",
         "mock",
-        "ruff",
+        "ruff==0.0.250",
         "pandas",
         "jinja2",
         "python-dateutil",

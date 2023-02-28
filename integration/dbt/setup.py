@@ -23,7 +23,7 @@ extras_require = {
         "pytest",
         "pytest-cov",
         "mock",
-        "ruff"
+        "ruff==0.0.250"
         "mypy>=0.9.6",
         "python-dateutil"
     ],
