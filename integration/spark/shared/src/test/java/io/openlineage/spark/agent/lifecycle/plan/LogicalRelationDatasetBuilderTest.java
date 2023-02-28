@@ -29,6 +29,7 @@ import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
+import org.apache.spark.sql.catalyst.plans.logical.Project;
 import org.apache.spark.sql.execution.QueryExecution;
 import org.apache.spark.sql.execution.datasources.FileIndex;
 import org.apache.spark.sql.execution.datasources.HadoopFsRelation;
@@ -93,21 +94,23 @@ class LogicalRelationDatasetBuilderTest {
     QueryExecution qe = mock(QueryExecution.class);
     when(qe.optimizedPlan())
         .thenReturn(
-            new LogicalRelation(
-                relation,
-                Seq$.MODULE$
-                    .<AttributeReference>newBuilder()
-                    .$plus$eq(
-                        new AttributeReference(
-                            "name",
-                            StringType$.MODULE$,
-                            false,
-                            null,
-                            ExprId.apply(1L),
-                            Seq$.MODULE$.<String>empty()))
-                    .result(),
-                Option.empty(),
-                false));
+            new Project(
+                Seq$.MODULE$.<String>empty(),
+                new LogicalRelation(
+                    relation,
+                    Seq$.MODULE$
+                        .<AttributeReference>newBuilder()
+                        .$plus$eq(
+                            new AttributeReference(
+                                "name",
+                                StringType$.MODULE$,
+                                false,
+                                null,
+                                ExprId.apply(1L),
+                                Seq$.MODULE$.<String>empty()))
+                        .result(),
+                    Option.empty(),
+                    false)));
     OpenLineageContext context =
         OpenLineageContext.builder()
             .sparkContext(mock(SparkContext.class))
@@ -116,7 +119,7 @@ class LogicalRelationDatasetBuilderTest {
             .build();
     LogicalRelationDatasetBuilder visitor =
         new LogicalRelationDatasetBuilder<>(
-            context, DatasetFactory.output(openLineageContext), false);
+            context, DatasetFactory.output(openLineageContext), true);
     List<OutputDataset> datasets =
         visitor.apply(new SparkListenerJobStart(1, 1, Seq$.MODULE$.empty(), null));
     assertEquals(1, datasets.size());

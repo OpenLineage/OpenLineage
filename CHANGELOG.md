@@ -7,6 +7,9 @@
     *Collect column lineage from Spark logical plans that contain cached datasets.*
 * Collect complete event for really quick Spark jobs. [`#1650`](https://github.com/OpenLineage/OpenLineage/pull/1650) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)   
     *Improve collecting OpenLineage events on SQL complete in case of quick operations.*
+* Spark: fix input/outputs for one node `LogicalRelation` plans.[`#1668`](https://github.com/OpenLineage/OpenLineage/pull/1668) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *For simple queries like "select * from my_db.my_table" that do not write output, Spark plan contained just a single node,
+  which was wrongly treated as both input and output dataset.*
 
 ## [0.20.6](https://github.com/OpenLineage/OpenLineage/compare/0.20.4...0.20.6) - 2023-2-10
 
