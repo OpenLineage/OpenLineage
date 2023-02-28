@@ -18,6 +18,18 @@ import org.apache.spark.sql.catalyst.plans.logical.Project;
 class OutputFieldsCollector {
 
   static void collect(LogicalPlan plan, ColumnLevelLineageBuilder builder) {
+    getOutputExpressionsFromRoot(plan).stream()
+        .forEach(expr -> builder.addOutput(expr.exprId(), expr.name()));
+    CustomCollectorsUtils.collectOutputs(plan, builder);
+
+    if (!builder.hasOutputs()) {
+      // extract outputs from the children
+      ScalaConversionUtils.<LogicalPlan>fromSeq(plan.children()).stream()
+          .forEach(childPlan -> collect(childPlan, builder));
+    }
+  }
+
+  static List<NamedExpression> getOutputExpressionsFromRoot(LogicalPlan plan) {
     List<NamedExpression> expressions =
         ScalaConversionUtils.fromSeq(plan.output()).stream()
             .filter(attr -> attr instanceof Attribute)
@@ -31,15 +43,16 @@ class OutputFieldsCollector {
       expressions.addAll(
           ScalaConversionUtils.<NamedExpression>fromSeq(((Project) plan).projectList()));
     }
+    return expressions;
+  }
 
-    expressions.stream().forEach(expr -> builder.addOutput(expr.exprId(), expr.name()));
-
-    CustomCollectorsUtils.collectOutputs(plan, builder);
-
-    if (!builder.hasOutputs()) {
+  static List<NamedExpression> getOutputExpressionsFromTree(LogicalPlan plan) {
+    List<NamedExpression> expressions = getOutputExpressionsFromRoot(plan);
+    if (expressions == null || expressions.isEmpty()) {
       // extract outputs from the children
       ScalaConversionUtils.<LogicalPlan>fromSeq(plan.children()).stream()
-          .forEach(childPlan -> collect(childPlan, builder));
+          .forEach(childPlan -> expressions.addAll(getOutputExpressionsFromTree(childPlan)));
     }
+    return expressions;
   }
 }
