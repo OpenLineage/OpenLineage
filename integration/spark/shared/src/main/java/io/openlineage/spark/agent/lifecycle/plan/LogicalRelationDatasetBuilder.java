@@ -13,16 +13,15 @@ import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.sql.ColumnMeta;
+import io.openlineage.sql.DbTableMeta;
+import io.openlineage.sql.ExtractionError;
+import io.openlineage.sql.SqlMeta;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
-import io.openlineage.sql.ColumnMeta;
-import io.openlineage.sql.DbTableMeta;
-import io.openlineage.sql.ExtractionError;
-import io.openlineage.sql.SqlMeta;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -204,43 +203,43 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
     SqlMeta sqlMeta = JdbcUtils.extractQueryFromSpark(relation).get();
     if (!sqlMeta.errors().isEmpty()) { // error return nothing
       log.error(
-              String.format(
-                      "error while parsing query: %s",
-                      sqlMeta.errors().stream()
-                              .map(ExtractionError::toString)
-                              .collect(Collectors.joining(","))));
+          String.format(
+              "error while parsing query: %s",
+              sqlMeta.errors().stream()
+                  .map(ExtractionError::toString)
+                  .collect(Collectors.joining(","))));
     } else if (sqlMeta.inTables().isEmpty()) {
       log.error("no tables defined in query, this should not happen");
     } else if (sqlMeta.columnLineage().isEmpty()) {
       return Collections.singletonList(
-              datasetFactory.getDataset(
-                      sqlMeta.inTables().get(0).qualifiedName(), url, relation.schema()));
+          datasetFactory.getDataset(
+              sqlMeta.inTables().get(0).qualifiedName(), url, relation.schema()));
     } else {
       return sqlMeta.inTables().stream()
-              .map(
-                      dbtm ->
-                              datasetFactory.getDataset(
-                                      dbtm.qualifiedName(),
-                                      url,
-                                      generateJDBCSchema(dbtm, relation.schema(), sqlMeta)))
-              .collect(Collectors.toList());
+          .map(
+              dbtm ->
+                  datasetFactory.getDataset(
+                      dbtm.qualifiedName(),
+                      url,
+                      generateJDBCSchema(dbtm, relation.schema(), sqlMeta)))
+          .collect(Collectors.toList());
     }
     return Collections.emptyList();
   }
 
   private static StructType generateJDBCSchema(
-          DbTableMeta origin, StructType schema, SqlMeta sqlMeta) {
+      DbTableMeta origin, StructType schema, SqlMeta sqlMeta) {
     StructType originSchema = new StructType();
     for (StructField f : schema.fields()) {
       List<ColumnMeta> fields =
-              sqlMeta.columnLineage().stream()
-                      .filter(cl -> cl.descendant().name().equals(f.name()))
-                      .flatMap(
-                              cl ->
-                                      cl.lineage().stream()
-                                              .filter(
-                                                      cm -> cm.origin().isPresent() && cm.origin().get().equals(origin)))
-                      .collect(Collectors.toList());
+          sqlMeta.columnLineage().stream()
+              .filter(cl -> cl.descendant().name().equals(f.name()))
+              .flatMap(
+                  cl ->
+                      cl.lineage().stream()
+                          .filter(
+                              cm -> cm.origin().isPresent() && cm.origin().get().equals(origin)))
+              .collect(Collectors.toList());
       for (ColumnMeta cm : fields) {
         originSchema = originSchema.add(cm.name(), f.dataType());
       }
