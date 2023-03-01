@@ -4,33 +4,33 @@
 
 ## [0.21.0](https://github.com/OpenLineage/OpenLineage/compare/0.20.6...0.21.0) - 2023-3-1
 ### Added
-* Clients: add `DEBUG` logging of events to transports. [`#1633`](https://github.com/OpenLineage/OpenLineage/pull/1633) by [@mobuchowski](https://github.com/mobuchowski)  
+* **Clients: add `DEBUG` logging of events to transports** [`#1633`](https://github.com/OpenLineage/OpenLineage/pull/1633) by [@mobuchowski](https://github.com/mobuchowski)  
     *Ensures that the `DEBUG` loglevel on properly configured loggers will always log events, regardless of the chosen transport.*
-* Spark: add `CustomEnvironmentFacetBuilder` class. [`#1545`](https://github.com/OpenLineage/OpenLineage/pull/1545) by ***New contributor*** [@Anirudh181001](https://github.com/Anirudh181001)  
+* **Spark: add `CustomEnvironmentFacetBuilder` class** [`#1545`](https://github.com/OpenLineage/OpenLineage/pull/1545) by ***New contributor*** [@Anirudh181001](https://github.com/Anirudh181001)  
     *Enables the capture of custom environment variables from Spark.*
-* Spark: introduce the new output visitors `AlterTableAddPartitionCommandVisitor` and `AlterTableSetLocationCommandVisitor`. [`#1629`](https://github.com/OpenLineage/OpenLineage/pull/1629) by ***New contributor*** [@nataliezeller1](https://github.com/nataliezeller1)  
+* **Spark: introduce the new output visitors `AlterTableAddPartitionCommandVisitor` and `AlterTableSetLocationCommandVisitor`** [`#1629`](https://github.com/OpenLineage/OpenLineage/pull/1629) by ***New contributor*** [@nataliezeller1](https://github.com/nataliezeller1)  
     *Adds visitors for extracting table names from the Spark commands `AlterTableAddPartitionCommand` and `AlterTableSetLocationCommand`. The intended use case is a custom transport for the OpenMetadata lineage API.*
-* SQL: add linux-aarch64 native library to Java SQL parser. [`#1664`](https://github.com/OpenLineage/OpenLineage/pull/1664) by [@mobuchowski](https://github.com/mobuchowski)  
+* **SQL: add linux-aarch64 native library to Java SQL parser** [`#1664`](https://github.com/OpenLineage/OpenLineage/pull/1664) by [@mobuchowski](https://github.com/mobuchowski)  
     *Adds a Linux-ARM version of the native library. The Java SQL parser interface had only Linux-x64 and MacOS universal binary variants previously.*
 
 ### Changed
-* Airflow: get table database in Athena extractor. [`#1631`](https://github.com/OpenLineage/OpenLineage/pull/1631) by ***New contributor*** [@rinzool](https://github.com/rinzool)  
+* **Airflow: get table database in Athena extractor** [`#1631`](https://github.com/OpenLineage/OpenLineage/pull/1631) by ***New contributor*** [@rinzool](https://github.com/rinzool)  
     *Changes the extractor to get a table's database from the `table.schema` field or the operator default if the field is `None`.*
 
 ### Fixed
-* dbt: add dbt `seed` to the list of dbt-ol events. [`#1649`](https://github.com/OpenLineage/OpenLineage/pull/1649) by ***New contributor*** [@pohek321](https://github.com/pohek321)  
+* **dbt: add dbt `seed` to the list of dbt-ol events** [`#1649`](https://github.com/OpenLineage/OpenLineage/pull/1649) by ***New contributor*** [@pohek321](https://github.com/pohek321)  
     *Ensures that `dbt-ol test` no longer fails when run against an event seed.*
-* Spark: make column lineage extraction in Spark support caching. [`#1634`](https://github.com/OpenLineage/OpenLineage/pull/1634) by [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+* **Spark: make column lineage extraction in Spark support caching** [`#1634`](https://github.com/OpenLineage/OpenLineage/pull/1634) by [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Collect column lineage from Spark logical plans that contain cached datasets.*
-* Spark: add support for a deprecated config. [`#1586`](https://github.com/OpenLineage/OpenLineage/pull/1586) by [@tnazarew](https://github.com/tnazarew)  
+* **Spark: add support for a deprecated config** [`#1586`](https://github.com/OpenLineage/OpenLineage/pull/1586) by [@tnazarew](https://github.com/tnazarew)  
     *Maps the deprecated `spark.openlineage.url` to `spark.openlienage.transport.url`.*
-* Spark: add error message in case of null in url. [`#1590`](https://github.com/OpenLineage/OpenLineage/pull/1590) by [@tnazarew](https://github.com/tnazarew)  
+* **Spark: add error message in case of null in url** [`#1590`](https://github.com/OpenLineage/OpenLineage/pull/1590) by [@tnazarew](https://github.com/tnazarew)  
     *Improves error logging in the case of undefined URLs.*
-* SQL: fix file existence check in build script for openlineage-sql-java. [`#1613`](https://github.com/OpenLineage/OpenLineage/pull/1613) by [@sekikn](https://github.com/sekikn)  
+* **SQL: fix file existence check in build script for openlineage-sql-java** [`#1613`](https://github.com/OpenLineage/OpenLineage/pull/1613) by [@sekikn](https://github.com/sekikn)  
     *Ensures that the build script works if the library is compiled solely for Linux.*
 
 ### Removed
-* Airflow: remove `JobIdMapping` and update macros to better support Airflow version 2+. [`#1645`](https://github.com/OpenLineage/OpenLineage/pull/1645) by [@JDarDagran](https://github.com/JDarDagran)  
+* **Airflow: remove `JobIdMapping` and update macros to better support Airflow version 2+** [`#1645`](https://github.com/OpenLineage/OpenLineage/pull/1645) by [@JDarDagran](https://github.com/JDarDagran)  
     *Updates macros to use `OpenLineageAdapter`'s method to generate deterministic run UUIDs because using the `JobIdMapping` utility is incompatible with Airflow 2+.*
 
 ## [0.20.6](https://github.com/OpenLineage/OpenLineage/compare/0.20.4...0.20.6) - 2023-2-10
