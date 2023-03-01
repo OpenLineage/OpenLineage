@@ -1,0 +1,149 @@
+{
+  "eventType": "START",
+  "job": {
+    "namespace": "default",
+    "name": "iceberg_integration_test.execute_save_into_data_source_command"
+  },
+  "inputs": [
+    {
+      "name": "jdbc_source1",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "k",
+              "type": "integer"
+            },
+            {
+              "name": "j1",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "jdbc_source2",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "j2",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "namespace": "file",
+      "name": "/tmp/iceberg/default.v2_source_1",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "k",
+              "type": "integer"
+            },
+            {
+              "name": "v1",
+              "type": "string"
+            }
+          ]
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "/tmp/iceberg",
+              "name": "default.v2_source_1",
+              "type": "TABLE"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "namespace": "file",
+      "name": "/tmp/iceberg/default.v2_source_2",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "k",
+              "type": "integer"
+            },
+            {
+              "name": "v2",
+              "type": "string"
+            }
+          ]
+        },
+        "symlinks": {
+          "identifiers": [
+            {
+              "namespace": "/tmp/iceberg",
+              "name": "default.v2_source_2",
+              "type": "TABLE"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "outputs": [
+    {
+      "name": "test",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "k",
+              "type": "integer"
+            },
+            {
+              "name": "value",
+              "type": "string"
+            }
+          ]
+        },
+        "columnLineage": {
+          "fields": {
+            "k": {
+              "inputFields": [
+                {
+                  "namespace": "file",
+                  "name": "/tmp/iceberg/default.v2_source_1",
+                  "field": "k"
+                }
+              ]
+            },
+            "value": {
+              "inputFields": [
+                {
+                  "namespace": "file",
+                  "name": "/tmp/iceberg/default.v2_source_2",
+                  "field": "v2"
+                },
+                {
+                  "namespace": "jdbc",
+                  "name": "jdbc_source1",
+                  "field": "j1"
+                },
+                {
+                  "namespace": "jdbc",
+                  "name": "jdbc_source2",
+                  "field": "j2"
+                },
+                {
+                  "namespace": "file",
+                  "name": "/tmp/iceberg/default.v2_source_1",
+                  "field": "v1"
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
+}
