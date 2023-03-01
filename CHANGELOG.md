@@ -30,7 +30,8 @@
     *Improves the collecting of OpenLineage events on SQL complete in the case of quick operations.*
 * **Spark: fix input/outputs for one node `LogicalRelation` plans** [`#1668`](https://github.com/OpenLineage/OpenLineage/pull/1668) by [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *For simple queries like `select * from my_db.my_table` that do not write output, 
-  the Spark plan contained just a single node, which was wrongly treated as both input and output dataset.*
+  the Spark plan contained just a single node, which was wrongly treated as both 
+  an input and output dataset.*
 * **SQL: fix file existence check in build script for openlineage-sql-java** [`#1613`](https://github.com/OpenLineage/OpenLineage/pull/1613) by [@sekikn](https://github.com/sekikn)  
     *Ensures that the build script works if the library is compiled solely for Linux.*
 
