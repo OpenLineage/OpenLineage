@@ -103,7 +103,7 @@ class InputFieldsCollector {
                   .filter(
                       cm ->
                           cm.origin().isPresent() && cm.origin().get().name().equals(di.getName()))
-                  .forEach(cm -> builder.addInput(builder.getMappig(cm), di, cm.name())));
+                  .forEach(cm -> builder.addInput(builder.getMapping(cm), di, cm.name())));
     }
   }
 

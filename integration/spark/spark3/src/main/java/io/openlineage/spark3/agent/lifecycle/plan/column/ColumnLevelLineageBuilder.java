@@ -212,7 +212,7 @@ public class ColumnLevelLineageBuilder {
     externalExpressionMappings.putIfAbsent(meta, exprid);
   }
 
-  public ExprId getMappig(ColumnMeta columnMeta) {
+  public ExprId getMapping(ColumnMeta columnMeta) {
     return externalExpressionMappings.get(columnMeta);
   }
 }

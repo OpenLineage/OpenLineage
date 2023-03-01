@@ -93,7 +93,7 @@ public class ExpressionDependencyCollector {
                     .forEach(e -> builder.addExternalMapping(e, NamedExpression.newExprId()));
                 if (p.lineage().size() > 1) {
                   p.lineage().stream()
-                      .map(builder::getMappig)
+                      .map(builder::getMapping)
                       .forEach(eid -> builder.addDependency(decendantId, eid));
                 }
               });
