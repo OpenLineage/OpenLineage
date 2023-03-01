@@ -96,6 +96,8 @@ public class OpenLineageSparkListener extends org.apache.spark.scheduler.SparkLi
     ExecutionContext context = sparkSqlExecutionRegistry.remove(endEvent.executionId());
     if (context != null) {
       context.end(endEvent);
+    } else {
+      contextFactory.createSparkSQLExecutionContext(endEvent).ifPresent(c -> c.end(endEvent));
     }
   }
 

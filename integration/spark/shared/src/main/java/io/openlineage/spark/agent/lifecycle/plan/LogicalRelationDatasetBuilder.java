@@ -69,10 +69,25 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
 
   @Override
   public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
+    // if a LogicalPlan is a single node plan like `select * from temp`,
+    // then it's leaf node and should not be considered output node
+    if (x instanceof LogicalRelation && isSingleNodeLogicalPlan(x) && !searchDependencies) {
+      return false;
+    }
+
     return x instanceof LogicalRelation
         && (((LogicalRelation) x).relation() instanceof HadoopFsRelation
             || ((LogicalRelation) x).relation() instanceof JDBCRelation
             || ((LogicalRelation) x).catalogTable().isDefined());
+  }
+
+  private boolean isSingleNodeLogicalPlan(LogicalPlan x) {
+    return context
+            .getQueryExecution()
+            .map(qe -> qe.optimizedPlan())
+            .filter(p -> p.equals(x))
+            .isPresent()
+        && (x.children() == null || x.children().isEmpty());
   }
 
   @Override
