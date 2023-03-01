@@ -11,7 +11,7 @@
 * **Spark: introduce the new output visitors `AlterTableAddPartitionCommandVisitor` and `AlterTableSetLocationCommandVisitor`** [`#1629`](https://github.com/OpenLineage/OpenLineage/pull/1629) by ***New contributor*** [@nataliezeller1](https://github.com/nataliezeller1)  
     *Adds visitors for extracting table names from the Spark commands `AlterTableAddPartitionCommand` and `AlterTableSetLocationCommand`. The intended use case is a custom transport for the OpenMetadata lineage API.*
 * **Spark: add column lineage for JDBC relations** [`#1636`](https://github.com/OpenLineage/OpenLineage/pull/1636) by [@tnazarew](https://github.com/tnazarew)  
-    *Adds column lineage info to JDBC events with data extracted from query by the SQL parser.*
+    *Adds column lineage information to JDBC events with data extracted from query by the SQL parser.*
 * **SQL: add linux-aarch64 native library to Java SQL parser** [`#1664`](https://github.com/OpenLineage/OpenLineage/pull/1664) by [@mobuchowski](https://github.com/mobuchowski)  
     *Adds a Linux-ARM version of the native library. The Java SQL parser interface had only Linux-x64 and MacOS universal binary variants previously.*
 
