@@ -28,11 +28,14 @@ fi
 
 # Let's generate this header every run so that it is always
 # up to date.
-./gradlew clean getDependencies
+$ROOT/gradlew clean getDependencies
 ./$SCRIPTS/generate_jni_header.sh
 
+# Install to maven
+$ROOT/gradlew --info -x javadoc publishToMavenLocal
+
 # Package into jar
-./gradlew shadowJar
+$ROOT/gradlew shadowJar
 
 # Run a simple integration test
 printf "\n------ Running smoke test ------\n"

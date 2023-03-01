@@ -6,6 +6,7 @@ workflows:
             parameters:
               spark-version: [ '2.4.6', '3.2.2', '3.3.1' ]
           requires:
+           - build-integration-sql-java
            - build-client-java
       - integration-test-integration-spark:
           context: integration-tests

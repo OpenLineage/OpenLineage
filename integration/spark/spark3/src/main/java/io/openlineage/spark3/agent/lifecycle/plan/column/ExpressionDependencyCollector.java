@@ -5,14 +5,20 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
+import io.openlineage.spark.agent.util.JdbcUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.ExpressionDependencyVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.IcebergMergeIntoDependencyVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.UnionDependencyVisitor;
+import io.openlineage.sql.ColumnMeta;
+import io.openlineage.sql.ExtractionError;
+import io.openlineage.sql.SqlMeta;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.expressions.Expression;
 import org.apache.spark.sql.catalyst.expressions.NamedExpression;
@@ -20,6 +26,8 @@ import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression;
 import org.apache.spark.sql.catalyst.plans.logical.Aggregate;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.Project;
+import org.apache.spark.sql.execution.datasources.LogicalRelation;
+import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 
 /**
  * Traverses LogicalPlan and collects dependencies between the expressions and operations used
@@ -32,6 +40,7 @@ public class ExpressionDependencyCollector {
       Arrays.asList(new UnionDependencyVisitor(), new IcebergMergeIntoDependencyVisitor());
 
   static void collect(LogicalPlan plan, ColumnLevelLineageBuilder builder) {
+
     plan.foreach(
         node -> {
           expressionDependencyVisitors.stream()
@@ -47,11 +56,56 @@ public class ExpressionDependencyCollector {
             expressions.addAll(
                 ScalaConversionUtils.<NamedExpression>fromSeq(
                     ((Aggregate) node).aggregateExpressions()));
+          } else if (node instanceof LogicalRelation) {
+            if (((LogicalRelation) node).relation() instanceof JDBCRelation) {
+              extractExpressionsFromJDBC(node, builder, node);
+            }
           }
+
           expressions.stream()
               .forEach(expr -> traverseExpression((Expression) expr, expr.exprId(), builder));
           return scala.runtime.BoxedUnit.UNIT;
         });
+  }
+
+  private static void extractExpressionsFromJDBC(
+      LogicalPlan node, ColumnLevelLineageBuilder builder, LogicalPlan plan) {
+    SqlMeta sqlMeta =
+        JdbcUtils.extractQueryFromSpark((JDBCRelation) ((LogicalRelation) node).relation()).get();
+    if (!sqlMeta.errors().isEmpty()) { // error return nothing
+      log.error(
+          String.format(
+              "error while parsing query: %s",
+              sqlMeta.errors().stream()
+                  .map(ExtractionError::toString)
+                  .collect(Collectors.joining(","))));
+    } else if (sqlMeta.inTables().isEmpty()) {
+      log.error("no tables defined in query, this should not happen");
+    } else {
+      sqlMeta
+          .columnLineage()
+          .forEach(
+              p -> {
+                ExprId decendantId = getDecendantId(plan, p.descendant());
+                builder.addExternalMapping(p.descendant(), decendantId);
+
+                p.lineage()
+                    .forEach(e -> builder.addExternalMapping(e, NamedExpression.newExprId()));
+                if (p.lineage().size() > 1) {
+                  p.lineage().stream()
+                      .map(builder::getMappig)
+                      .forEach(eid -> builder.addDependency(decendantId, eid));
+                }
+              });
+    }
+  }
+
+  private static ExprId getDecendantId(LogicalPlan plan, ColumnMeta column) {
+    return ScalaConversionUtils.<Attribute>fromSeq(plan.output()).stream()
+        .filter(e -> e.name().equals(column.name()))
+        .map(NamedExpression::exprId)
+        .findFirst()
+        .orElseGet(NamedExpression::newExprId);
   }
 
   public static void traverseExpression(

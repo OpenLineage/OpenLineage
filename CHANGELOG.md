@@ -11,6 +11,11 @@
   *For simple queries like "select * from my_db.my_table" that do not write output, Spark plan contained just a single node,
   which was wrongly treated as both input and output dataset.*
 
+### Added
+
+* Spark: column lineage for JDBC relations [`#1636`](https://github.com/OpenLineage/OpenLineage/pull/1636) [@tnazarew](https://github.com/tnazarew)
+  * Adds column lineage info to JDBC events with data extracted form query by OL SQL parser
+
 ## [0.20.6](https://github.com/OpenLineage/OpenLineage/compare/0.20.4...0.20.6) - 2023-2-10
 
 ### Added

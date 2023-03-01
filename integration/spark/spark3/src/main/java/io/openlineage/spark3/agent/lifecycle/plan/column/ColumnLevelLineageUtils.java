@@ -17,6 +17,7 @@ import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.columnar.InMemoryRelation;
+import org.apache.spark.sql.execution.datasources.SaveIntoDataSourceCommand;
 
 /**
  * Utility functions for detecting column level lineage within {@link
@@ -34,7 +35,7 @@ public class ColumnLevelLineageUtils {
     }
 
     ColumnLevelLineageBuilder builder = new ColumnLevelLineageBuilder(schemaFacet, context);
-    LogicalPlan plan = context.getQueryExecution().get().optimizedPlan();
+    LogicalPlan plan = getAdjustedPlan(context);
 
     collectInputsAndExpressionDependencies(context, plan, builder);
     OutputFieldsCollector.collect(plan, builder);
@@ -48,8 +49,20 @@ public class ColumnLevelLineageUtils {
     if (facet.getFields().getAdditionalProperties().isEmpty()) {
       return Optional.empty();
     } else {
-      return Optional.of(facetBuilder.build());
+      return Optional.of(facet);
     }
+  }
+
+  private static LogicalPlan getAdjustedPlan(OpenLineageContext context) {
+    LogicalPlan logicalPlan = context.getQueryExecution().get().optimizedPlan();
+
+    LogicalPlan plan;
+    if (logicalPlan instanceof SaveIntoDataSourceCommand) {
+      plan = ((SaveIntoDataSourceCommand) logicalPlan).query();
+    } else {
+      plan = logicalPlan;
+    }
+    return plan;
   }
 
   private static void collectInputsAndExpressionDependencies(

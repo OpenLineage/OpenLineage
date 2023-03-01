@@ -28,7 +28,8 @@ public class ColumnMeta {
   @Override
   public String toString() {
     return String.format(
-        "{\"origin\": %s, \"name\": \"%s\"}", origin.isPresent() ? origin.get().toString() : "\"unknown\"", name);
+        "{\"origin\": %s, \"name\": \"%s\"}",
+        origin.isPresent() ? origin.get().toString() : "\"unknown\"", name);
   }
 
   @Override
