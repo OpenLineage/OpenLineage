@@ -25,13 +25,13 @@
 * **Spark: make column lineage extraction in Spark support caching** [`#1634`](https://github.com/OpenLineage/OpenLineage/pull/1634) by [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Collect column lineage from Spark logical plans that contain cached datasets.*
 * **Spark: add support for a deprecated config** [`#1586`](https://github.com/OpenLineage/OpenLineage/pull/1586) by [@tnazarew](https://github.com/tnazarew)  
-    *Maps the deprecated `spark.openlineage.url` to `spark.openlienage.transport.url`.*
+    *Maps the deprecated `spark.openlineage.url` to `spark.openlineage.transport.url`.*
 * **Spark: add error message in case of null in url** [`#1590`](https://github.com/OpenLineage/OpenLineage/pull/1590) by [@tnazarew](https://github.com/tnazarew)  
     *Improves error logging in the case of undefined URLs.*
 * **Spark: collect complete event for really quick Spark jobs** [`#1650`](https://github.com/OpenLineage/OpenLineage/pull/1650) by [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)   
     *Improves the collecting of OpenLineage events on SQL complete in the case of quick operations.*
 * **Spark: fix input/outputs for one node `LogicalRelation` plans** [`#1668`](https://github.com/OpenLineage/OpenLineage/pull/1668) by [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-    *For simple queries like* `select * from my_db.my_table` *that do not write output, 
+    *For simple queries like `select col1, col2 from my_db.my_table` that do not write output, 
     the Spark plan contained just a single node, which was wrongly treated as both 
     an input and output dataset.*
 * **SQL: fix file existence check in build script for openlineage-sql-java** [`#1613`](https://github.com/OpenLineage/OpenLineage/pull/1613) by [@sekikn](https://github.com/sekikn)  
