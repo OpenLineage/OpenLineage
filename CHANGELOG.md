@@ -1,15 +1,45 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.20.6...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.21.0...HEAD)
+
+## [0.21.0](https://github.com/OpenLineage/OpenLineage/compare/0.20.6...0.21.0) - 2023-3-2
+### Added
+* **Clients: add `DEBUG` logging of events to transports** [`#1633`](https://github.com/OpenLineage/OpenLineage/pull/1633) by [@mobuchowski](https://github.com/mobuchowski)  
+    *Ensures that the `DEBUG` loglevel on properly configured loggers will always log events, regardless of the chosen transport.*
+* **Spark: add `CustomEnvironmentFacetBuilder` class** [`#1545`](https://github.com/OpenLineage/OpenLineage/pull/1545) by ***New contributor*** [@Anirudh181001](https://github.com/Anirudh181001)  
+    *Enables the capture of custom environment variables from Spark.*
+* **Spark: introduce the new output visitors `AlterTableAddPartitionCommandVisitor` and `AlterTableSetLocationCommandVisitor`** [`#1629`](https://github.com/OpenLineage/OpenLineage/pull/1629) by ***New contributor*** [@nataliezeller1](https://github.com/nataliezeller1)  
+    *Adds visitors for extracting table names from the Spark commands `AlterTableAddPartitionCommand` and `AlterTableSetLocationCommand`. The intended use case is a custom transport for the OpenMetadata lineage API.*
+* **Spark: add column lineage for JDBC relations** [`#1636`](https://github.com/OpenLineage/OpenLineage/pull/1636) by [@tnazarew](https://github.com/tnazarew)  
+    *Adds column lineage information to JDBC events with data extracted from query by the SQL parser.*
+* **SQL: add linux-aarch64 native library to Java SQL parser** [`#1664`](https://github.com/OpenLineage/OpenLineage/pull/1664) by [@mobuchowski](https://github.com/mobuchowski)  
+    *Adds a Linux-ARM version of the native library. The Java SQL parser interface had only Linux-x64 and MacOS universal binary variants previously.*
+
+### Changed
+* **Airflow: get table database in Athena extractor** [`#1631`](https://github.com/OpenLineage/OpenLineage/pull/1631) by ***New contributor*** [@rinzool](https://github.com/rinzool)  
+    *Changes the extractor to get a table's database from the `table.schema` field or the operator default if the field is `None`.*
 
 ### Fixed
-* Column lineage extraction in Spark supports caching. [`#1634`](https://github.com/OpenLineage/OpenLineage/pull/1634) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+* **dbt: add dbt `seed` to the list of dbt-ol events** [`#1649`](https://github.com/OpenLineage/OpenLineage/pull/1649) by ***New contributor*** [@pohek321](https://github.com/pohek321)  
+    *Ensures that `dbt-ol test` no longer fails when run against an event seed.*
+* **Spark: make column lineage extraction in Spark support caching** [`#1634`](https://github.com/OpenLineage/OpenLineage/pull/1634) by [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Collect column lineage from Spark logical plans that contain cached datasets.*
-* Collect complete event for really quick Spark jobs. [`#1650`](https://github.com/OpenLineage/OpenLineage/pull/1650) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)   
-    *Improve collecting OpenLineage events on SQL complete in case of quick operations.*
-* Spark: fix input/outputs for one node `LogicalRelation` plans.[`#1668`](https://github.com/OpenLineage/OpenLineage/pull/1668) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *For simple queries like "select * from my_db.my_table" that do not write output, Spark plan contained just a single node,
-  which was wrongly treated as both input and output dataset.*
+* **Spark: add support for a deprecated config** [`#1586`](https://github.com/OpenLineage/OpenLineage/pull/1586) by [@tnazarew](https://github.com/tnazarew)  
+    *Maps the deprecated `spark.openlineage.url` to `spark.openlineage.transport.url`.*
+* **Spark: add error message in case of null in url** [`#1590`](https://github.com/OpenLineage/OpenLineage/pull/1590) by [@tnazarew](https://github.com/tnazarew)  
+    *Improves error logging in the case of undefined URLs.*
+* **Spark: collect complete event for really quick Spark jobs** [`#1650`](https://github.com/OpenLineage/OpenLineage/pull/1650) by [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)   
+    *Improves the collecting of OpenLineage events on SQL complete in the case of quick operations.*
+* **Spark: fix input/outputs for one node `LogicalRelation` plans** [`#1668`](https://github.com/OpenLineage/OpenLineage/pull/1668) by [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *For simple queries like `select col1, col2 from my_db.my_table` that do not write output, 
+    the Spark plan contained just a single node, which was wrongly treated as both 
+    an input and output dataset.*
+* **SQL: fix file existence check in build script for openlineage-sql-java** [`#1613`](https://github.com/OpenLineage/OpenLineage/pull/1613) by [@sekikn](https://github.com/sekikn)  
+    *Ensures that the build script works if the library is compiled solely for Linux.*
+
+### Removed
+* **Airflow: remove `JobIdMapping` and update macros to better support Airflow version 2+** [`#1645`](https://github.com/OpenLineage/OpenLineage/pull/1645) by [@JDarDagran](https://github.com/JDarDagran)  
+    *Updates macros to use `OpenLineageAdapter`'s method to generate deterministic run UUIDs because using the `JobIdMapping` utility is incompatible with Airflow 2+.*
 
 ### Added
 
@@ -17,9 +47,7 @@
   * Adds column lineage info to JDBC events with data extracted form query by OL SQL parser
 
 ## [0.20.6](https://github.com/OpenLineage/OpenLineage/compare/0.20.4...0.20.6) - 2023-2-10
-
 ### Added
-
 * Airflow: add new extractor for `FTPFileTransmitOperator` [`#1603`](https://github.com/OpenLineage/OpenLineage/pull/1601) [@sekikn](https://github.com/sekikn)  
     *Adds a new extractor for this Airflow operator serving legacy systems.*
 
@@ -34,7 +62,6 @@
     *Makes `compiled_code` optional for manifest > v7.*
 
 ## [0.20.4](https://github.com/OpenLineage/OpenLineage/compare/0.19.2...0.20.4) - 2023-2-7
-
 ### Added
 * Airflow: add new extractor for `GCSToGCSOperator` [`#1495`](https://github.com/OpenLineage/OpenLineage/pull/1495) [@sekikn](https://github.com/sekikn)  
     *Adds a new extractor for this operator.*
