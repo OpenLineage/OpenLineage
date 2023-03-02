@@ -7,6 +7,7 @@ package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -22,7 +23,7 @@ import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 import org.junit.jupiter.api.Test;
 
-public class JdbcColumnLineageCollectorTest {
+public class JdbcColumnLineageInputCollectorTest {
   ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
   JDBCRelation relation = mock(JDBCRelation.class);
   JDBCOptions jdbcOptions = mock(JDBCOptions.class);
@@ -73,7 +74,7 @@ public class JdbcColumnLineageCollectorTest {
     JdbcColumnLineageCollector.extractExternalInputs(
         invalidRelation, builder, Arrays.asList(datasetIdentifier1, datasetIdentifier2));
 
-    verify(builder, times(0))
+    verify(builder, never())
         .addInput(any(ExprId.class), any(DatasetIdentifier.class), any(String.class));
   }
 }
