@@ -145,6 +145,8 @@ jobs:
           keys:
             - v1-release-client-java-{{ .Branch }}-{{ .Revision }}
             - v1-release-client-java-{{ .Branch }}
+      - attach_workspace:
+          at: ~/.m2/repository/io/openlineage/
       - run: |
           # Get, then decode the GPG private key used to sign *.jar
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
@@ -826,6 +828,7 @@ workflows:
           context: release
           requires:
             - release-client-java
+            - build-integration-sql-java
       - release-integration-sql-java:
           filters:
             tags:
@@ -834,7 +837,9 @@ workflows:
               ignore: /.*/
           context: release
           requires:
-            - build-integration-sql-java
+            - compile-integration-sql-java-linux-x86
+            - compile-integration-sql-java-linux-arm
+            - compile-integration-sql-java-macos
       - release-integration-flink:
           filters:
             tags:

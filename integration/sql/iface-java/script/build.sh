@@ -32,7 +32,7 @@ $ROOT/gradlew clean getDependencies
 ./$SCRIPTS/generate_jni_header.sh
 
 # Install to maven
-$ROOT/gradlew --info -x javadoc publishToMavenLocal
+$ROOT/gradlew --info -x javadoc -x sign publishToMavenLocal
 
 # Package into jar
 $ROOT/gradlew shadowJar
