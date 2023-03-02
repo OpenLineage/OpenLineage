@@ -13,7 +13,6 @@ import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
