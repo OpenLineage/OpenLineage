@@ -16,17 +16,12 @@ import io.openlineage.spark.agent.util.ReflectionUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
-import io.openlineage.sql.ColumnLineage;
-import io.openlineage.sql.ColumnMeta;
-import io.openlineage.sql.ExtractionError;
-import io.openlineage.sql.OpenLineageSql;
 import io.openlineage.sql.SqlMeta;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
@@ -134,22 +129,14 @@ class InputFieldsCollector {
   }
 
   private static List<DatasetIdentifier> extractDatasetIdentifier(JDBCRelation relation) {
-    String tableOrQuery =
-        relation
-            .jdbcOptions()
-            .tableOrQuery()
-            .replaceFirst("\\(", "")
-            .replaceAll("\\) SPARK_GEN_SUBQ_0", "");
-
-    if (tableOrQuery.contains(" ")) { // assume query for now
-      SqlMeta sqlMeta = OpenLineageSql.parse(Collections.singletonList(tableOrQuery)).get();
-      return sqlMeta.inTables().stream()
-          .map(e -> new DatasetIdentifier(e.name(), "jdbc"))
-          .collect(Collectors.toList());
-    } else {
-      return Collections.singletonList(
-          new DatasetIdentifier(tableOrQuery, relation.jdbcOptions().url()));
-    }
+    Optional<SqlMeta> sqlMeta = JdbcUtils.extractQueryFromSpark(relation);
+    return sqlMeta
+        .map(
+            meta ->
+                meta.inTables().stream()
+                    .map(e -> new DatasetIdentifier(e.name(), relation.jdbcOptions().url()))
+                    .collect(Collectors.toList()))
+        .orElse(Collections.emptyList());
   }
 
   private static List<DatasetIdentifier> extractDatasetIdentifier(LogicalRDD logicalRDD) {

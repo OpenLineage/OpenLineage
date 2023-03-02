@@ -6,12 +6,16 @@
 package io.openlineage.spark.agent.util;
 
 import io.openlineage.sql.DbTableMeta;
+import io.openlineage.sql.ExtractionError;
 import io.openlineage.sql.OpenLineageSql;
 import io.openlineage.sql.SqlMeta;
 import java.util.Collections;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 
+@Slf4j
 public class JdbcUtils {
   /**
    * JdbcUrl can contain username and password this method clean-up credentials from jdbcUrl and
@@ -27,17 +31,32 @@ public class JdbcUtils {
 
   public static Optional<SqlMeta> extractQueryFromSpark(JDBCRelation relation) {
     String tableOrQuery = relation.jdbcOptions().tableOrQuery();
-    if (tableOrQuery.contains(") SPARK_GEN_SUBQ_")) {
-      String query =
-          tableOrQuery.replaceFirst("\\(", "").replaceAll("\\) SPARK_GEN_SUBQ_[0-9]+", "");
-      return OpenLineageSql.parse(Collections.singletonList(query));
-    } else {
+    if (!tableOrQuery.contains(") SPARK_GEN_SUBQ_")) {
       return Optional.of(
           new SqlMeta(
               Collections.singletonList(new DbTableMeta(null, null, tableOrQuery)),
               Collections.emptyList(),
               Collections.emptyList(),
               Collections.emptyList()));
+    } else {
+      String query =
+          tableOrQuery.replaceFirst("\\(", "").replaceAll("\\) SPARK_GEN_SUBQ_[0-9]+", "");
+
+      SqlMeta sqlMeta = OpenLineageSql.parse(Collections.singletonList(query)).get();
+
+      if (!sqlMeta.errors().isEmpty()) { // error return nothing
+        log.error(
+            String.format(
+                "error while parsing query: %s",
+                sqlMeta.errors().stream()
+                    .map(ExtractionError::toString)
+                    .collect(Collectors.joining(","))));
+        return Optional.empty();
+      } else if (sqlMeta.inTables().isEmpty()) {
+        log.error("no tables defined in query, this should not happen");
+        return Optional.empty();
+      }
+      return Optional.of(sqlMeta);
     }
   }
 }

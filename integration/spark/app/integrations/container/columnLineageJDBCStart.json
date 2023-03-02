@@ -125,12 +125,10 @@
                   "field": "v2"
                 },
                 {
-                  "namespace": "jdbc",
                   "name": "jdbc_source1",
                   "field": "j1"
                 },
                 {
-                  "namespace": "jdbc",
                   "name": "jdbc_source2",
                   "field": "j2"
                 },
