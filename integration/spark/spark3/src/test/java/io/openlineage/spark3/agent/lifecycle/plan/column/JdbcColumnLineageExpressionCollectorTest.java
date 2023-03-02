@@ -6,49 +6,48 @@
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.sql.ColumnMeta;
-import io.openlineage.sql.DbTableMeta;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.spark.sql.catalyst.expressions.Attribute;
+import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
+import org.apache.spark.sql.types.IntegerType$;
+import org.apache.spark.sql.types.Metadata$;
+import org.apache.spark.sql.types.StringType$;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class JdbcColumnLineageInputCollectorTest {
+public class JdbcColumnLineageExpressionCollectorTest {
   ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
+  ExprId exprId1 = ExprId.apply(20);
+  ExprId exprId2 = ExprId.apply(21);
+  ExprId dependencyId1 = ExprId.apply(0);
+  ExprId dependencyId2 = ExprId.apply(1);
+
+  Attribute expression1 =
+      new AttributeReference(
+          "k", IntegerType$.MODULE$, false, Metadata$.MODULE$.empty(), exprId1, null);
+  Attribute expression2 =
+      new AttributeReference(
+          "j", StringType$.MODULE$, false, Metadata$.MODULE$.empty(), exprId2, null);
+
   JDBCRelation relation = mock(JDBCRelation.class);
   JDBCOptions jdbcOptions = mock(JDBCOptions.class);
   String jdbcQuery =
       "(select js1.k, CONCAT(js1.j1, js2.j2) as j from jdbc_source1 js1 join jdbc_source2 js2 on js1.k = js2.k) SPARK_GEN_SUBQ_0";
   String invalidJdbcQuery = "(INVALID) SPARK_GEN_SUBQ_0";
-  DatasetIdentifier datasetIdentifier1 = new DatasetIdentifier("jdbc_source1", "jdbc");
-  DatasetIdentifier datasetIdentifier2 = new DatasetIdentifier("jdbc_source2", "jdbc");
-
-  static ExprId exprId1 = ExprId.apply(1);
-  static ExprId exprId2 = ExprId.apply(2);
-  static ExprId exprId3 = ExprId.apply(3);
-  Map<ColumnMeta, ExprId> mockMap = getMockMap();
-
-  private static Map<ColumnMeta, ExprId> getMockMap() {
-    Map<ColumnMeta, ExprId> map = new HashMap<>();
-
-    map.put(new ColumnMeta(new DbTableMeta(null, null, "jdbc_source1"), "k"), exprId1);
-
-    map.put(new ColumnMeta(new DbTableMeta(null, null, "jdbc_source1"), "j1"), exprId2);
-
-    map.put(new ColumnMeta(new DbTableMeta(null, null, "jdbc_source2"), "j2"), exprId3);
-    return map;
-  }
+  Map<ColumnMeta, ExprId> mockMap = new HashMap<>();
 
   @BeforeEach
   void setup() {
@@ -58,25 +57,28 @@ public class JdbcColumnLineageInputCollectorTest {
   @Test
   void testInputCollection() {
     when(jdbcOptions.tableOrQuery()).thenReturn(jdbcQuery);
+    doAnswer(
+            invocation -> mockMap.putIfAbsent(invocation.getArgument(0), invocation.getArgument(1)))
+        .when(builder)
+        .addExternalMapping(any(ColumnMeta.class), any(ExprId.class));
+
     when(builder.getMapping(any(ColumnMeta.class)))
         .thenAnswer(invocation -> mockMap.get(invocation.getArgument(0)));
 
-    JdbcColumnLineageCollector.extractExternalInputs(
-        relation, builder, Arrays.asList(datasetIdentifier1, datasetIdentifier2));
+    JdbcColumnLineageCollector.extractExpressionsFromJDBC(
+        relation, builder, Arrays.asList(expression1, expression2));
 
-    verify(builder, times(1)).addInput(exprId1, datasetIdentifier1, "k");
-    verify(builder, times(1)).addInput(exprId2, datasetIdentifier1, "j1");
-    verify(builder, times(1)).addInput(exprId3, datasetIdentifier2, "j2");
+    verify(builder, times(1)).addDependency(exprId2, dependencyId1);
+    verify(builder, times(1)).addDependency(exprId2, dependencyId2);
   }
 
   @Test
   void testInvalidQuery() {
     when(jdbcOptions.tableOrQuery()).thenReturn(invalidJdbcQuery);
 
-    JdbcColumnLineageCollector.extractExternalInputs(
-        relation, builder, Arrays.asList(datasetIdentifier1, datasetIdentifier2));
+    JdbcColumnLineageCollector.extractExpressionsFromJDBC(
+        relation, builder, Arrays.asList(expression1, expression2));
 
-    verify(builder, never())
-        .addInput(any(ExprId.class), any(DatasetIdentifier.class), any(String.class));
+    verify(builder, never()).addDependency(any(ExprId.class), any(ExprId.class));
   }
 }
