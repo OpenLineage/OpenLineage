@@ -2,7 +2,7 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.21.0...HEAD)
 
-## [0.21.0](https://github.com/OpenLineage/OpenLineage/compare/0.20.6...0.21.0) - 2023-3-1
+## [0.21.0](https://github.com/OpenLineage/OpenLineage/compare/0.20.6...0.21.0) - 2023-3-2
 ### Added
 * **Clients: add `DEBUG` logging of events to transports** [`#1633`](https://github.com/OpenLineage/OpenLineage/pull/1633) by [@mobuchowski](https://github.com/mobuchowski)  
     *Ensures that the `DEBUG` loglevel on properly configured loggers will always log events, regardless of the chosen transport.*
