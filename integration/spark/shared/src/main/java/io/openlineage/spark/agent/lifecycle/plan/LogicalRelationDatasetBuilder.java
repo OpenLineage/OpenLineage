@@ -6,11 +6,10 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.lifecycle.plan.handlers.JdbcRelationHandler;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
-import io.openlineage.spark.agent.util.JdbcUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
-import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
@@ -97,7 +96,7 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
     } else if (logRel.relation() instanceof HadoopFsRelation) {
       return handleHadoopFsRelation(logRel);
     } else if (logRel.relation() instanceof JDBCRelation) {
-      return handleJdbcRelation(logRel);
+      return new JdbcRelationHandler<>(datasetFactory).handleRelation(logRel);
     }
     throw new IllegalArgumentException(
         "Expected logical plan to be either HadoopFsRelation, JDBCRelation, "
@@ -169,9 +168,7 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
         // Datasets
         List<D> inputDatasets = new ArrayList<D>();
         List<Path> paths =
-            JavaConversions.asJavaCollection(relation.location().rootPaths()).stream()
-                .collect(Collectors.toList());
-
+            new ArrayList<>(JavaConversions.asJavaCollection(relation.location().rootPaths()));
         for (Path p : paths) {
           inputDatasets.add(datasetFactory.getDataset(p.toUri(), relation.schema()));
         }
@@ -189,28 +186,5 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
   protected Optional<String> getDatasetVersion(LogicalRelation x) {
     // not implemented
     return Optional.empty();
-  }
-
-  private List<D> handleJdbcRelation(LogicalRelation x) {
-    JDBCRelation relation = (JDBCRelation) x.relation();
-    // TODO- if a relation is composed of a complex sql query, we should attempt to
-    // extract the
-    // table names so that we can construct a true lineage
-    String tableName =
-        relation
-            .jdbcOptions()
-            .parameters()
-            .get(JDBCOptions.JDBC_TABLE_NAME())
-            .getOrElse(ScalaConversionUtils.toScalaFn(() -> "COMPLEX"));
-    // strip the jdbc: prefix from the url. this leaves us with a url like
-    // postgresql://<hostname>:<port>/<database_name>?params
-    // we don't parse the URI here because different drivers use different
-    // connection
-    // formats that aren't always amenable to how Java parses URIs. E.g., the oracle
-    // driver format looks like oracle:<drivertype>:<user>/<password>@<database>
-    // whereas postgres, mysql, and sqlserver use the scheme://hostname:port/db
-    // format.
-    String url = JdbcUtils.sanitizeJdbcUrl(relation.jdbcOptions().url());
-    return Collections.singletonList(datasetFactory.getDataset(tableName, url, relation.schema()));
   }
 }

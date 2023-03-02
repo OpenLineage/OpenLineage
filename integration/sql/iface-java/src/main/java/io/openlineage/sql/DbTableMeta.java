@@ -32,12 +32,14 @@ public class DbTableMeta {
 
   public String qualifiedName() {
     return String.format(
-        "\"%s%s%s\"", database != null ? database + "." : "", schema != null ? schema + "." : "", name);
+        "%s%s%s", database != null ? database + "." : "", schema != null ? schema + "." : "", name);
   }
 
   @Override
   public String toString() {
-    return qualifiedName();
+    return String.format(
+        "\"%s%s%s\"",
+        database != null ? database + "." : "", schema != null ? schema + "." : "", name);
   }
 
   @Override

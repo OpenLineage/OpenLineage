@@ -200,7 +200,7 @@ jobs:
             - v1-integration-spark-{{ .Branch }}-{{ .Revision }}
             - v1-integration-spark-{{ .Branch }}
       - attach_workspace:
-          at: .
+          at: ~/.m2/repository/io/openlineage/
       - run: |
           sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
           sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
@@ -403,6 +403,11 @@ jobs:
       - attach_workspace:
           at: ../
       - run: bash script/build.sh
+      - persist_to_workspace:
+          root: ~/.m2/repository/io/openlineage/
+          paths:
+            - openlineage-sql-java
+      - run: find ~/.m2/repository/io/openlineage/
       - store_artifacts:
           path: ./build/libs
           destination: sql-java-artifacts
@@ -486,6 +491,8 @@ jobs:
           keys:
             - v1-integration-spark-{{ .Branch }}-{{ .Revision }}
             - v1-integration-spark-{{ .Branch }}
+      - attach_workspace:
+          at: ~/.m2/repository/io/openlineage/
       - run: |
           sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
           sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac

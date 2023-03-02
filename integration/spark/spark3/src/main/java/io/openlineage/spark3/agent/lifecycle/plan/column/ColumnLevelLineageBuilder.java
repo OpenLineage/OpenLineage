@@ -12,6 +12,7 @@ import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacetFields;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.api.OpenLineageContext;
+import io.openlineage.sql.ColumnMeta;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,6 +42,7 @@ public class ColumnLevelLineageBuilder {
   private Map<ExprId, Set<ExprId>> exprDependencies = new HashMap<>();
   private Map<ExprId, List<Pair<DatasetIdentifier, String>>> inputs = new HashMap<>();
   private Map<OpenLineage.SchemaDatasetFacetFields, ExprId> outputs = new HashMap<>();
+  private Map<ColumnMeta, ExprId> externalExpressionMappings = new HashMap<>();
   private final OpenLineage.SchemaDatasetFacet schema;
   private final OpenLineageContext context;
 
@@ -204,5 +206,13 @@ public class ColumnLevelLineageBuilder {
     }
 
     return dependentInputs;
+  }
+
+  public void addExternalMapping(ColumnMeta meta, ExprId exprid) {
+    externalExpressionMappings.putIfAbsent(meta, exprid);
+  }
+
+  public ExprId getMapping(ColumnMeta columnMeta) {
+    return externalExpressionMappings.get(columnMeta);
   }
 }
