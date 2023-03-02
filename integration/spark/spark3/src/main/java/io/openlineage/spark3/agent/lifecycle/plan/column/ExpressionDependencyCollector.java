@@ -58,7 +58,7 @@ public class ExpressionDependencyCollector {
                     ((Aggregate) node).aggregateExpressions()));
           } else if (node instanceof LogicalRelation) {
             if (((LogicalRelation) node).relation() instanceof JDBCRelation) {
-              extractExpressionsFromJDBC(node, builder, node);
+              JdbcColumnLineageCollector.extractExpressionsFromJDBC(node, builder);
             }
           }
 
@@ -66,46 +66,6 @@ public class ExpressionDependencyCollector {
               .forEach(expr -> traverseExpression((Expression) expr, expr.exprId(), builder));
           return scala.runtime.BoxedUnit.UNIT;
         });
-  }
-
-  private static void extractExpressionsFromJDBC(
-      LogicalPlan node, ColumnLevelLineageBuilder builder, LogicalPlan plan) {
-    SqlMeta sqlMeta =
-        JdbcUtils.extractQueryFromSpark((JDBCRelation) ((LogicalRelation) node).relation()).get();
-    if (!sqlMeta.errors().isEmpty()) { // error return nothing
-      log.error(
-          String.format(
-              "error while parsing query: %s",
-              sqlMeta.errors().stream()
-                  .map(ExtractionError::toString)
-                  .collect(Collectors.joining(","))));
-    } else if (sqlMeta.inTables().isEmpty()) {
-      log.error("no tables defined in query, this should not happen");
-    } else {
-      sqlMeta
-          .columnLineage()
-          .forEach(
-              p -> {
-                ExprId decendantId = getDecendantId(plan, p.descendant());
-                builder.addExternalMapping(p.descendant(), decendantId);
-
-                p.lineage()
-                    .forEach(e -> builder.addExternalMapping(e, NamedExpression.newExprId()));
-                if (p.lineage().size() > 1) {
-                  p.lineage().stream()
-                      .map(builder::getMapping)
-                      .forEach(eid -> builder.addDependency(decendantId, eid));
-                }
-              });
-    }
-  }
-
-  private static ExprId getDecendantId(LogicalPlan plan, ColumnMeta column) {
-    return ScalaConversionUtils.<Attribute>fromSeq(plan.output()).stream()
-        .filter(e -> e.name().equals(column.name()))
-        .map(NamedExpression::exprId)
-        .findFirst()
-        .orElseGet(NamedExpression::newExprId);
   }
 
   public static void traverseExpression(

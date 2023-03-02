@@ -102,7 +102,7 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
     } else if (logRel.relation() instanceof HadoopFsRelation) {
       return handleHadoopFsRelation(logRel);
     } else if (logRel.relation() instanceof JDBCRelation) {
-      return handleJdbcRelation(logRel, datasetFactory);
+      return handleJdbcRelation(logRel);
     }
     throw new IllegalArgumentException(
         "Expected logical plan to be either HadoopFsRelation, JDBCRelation, "
@@ -189,7 +189,7 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
     }
   }
 
-  private List<D> handleJdbcRelation(LogicalRelation x, DatasetFactory<D> datasetFactory) {
+  private List<D> handleJdbcRelation(LogicalRelation x) {
     // strip the jdbc: prefix from the url. this leaves us with a url like
     // postgresql://<hostname>:<port>/<database_name>?params
     // we don't parse the URI here because different drivers use different

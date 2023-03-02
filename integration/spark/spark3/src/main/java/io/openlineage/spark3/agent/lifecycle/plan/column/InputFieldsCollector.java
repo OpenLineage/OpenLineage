@@ -71,39 +71,9 @@ class InputFieldsCollector {
       OpenLineageContext context, LogicalPlan node, ColumnLevelLineageBuilder builder) {
     List<DatasetIdentifier> datasetIdentifiers = extractDatasetIdentifier(context, node);
     if (isJDBCNode(node)) {
-      extractExternalInputs(node, builder, datasetIdentifiers);
+      JdbcColumnLineageCollector.extractExternalInputs(node, builder, datasetIdentifiers);
     } else {
       extreactInternalInputs(node, builder, datasetIdentifiers);
-    }
-  }
-
-  private static void extractExternalInputs(
-      LogicalPlan node,
-      ColumnLevelLineageBuilder builder,
-      List<DatasetIdentifier> datasetIdentifiers) {
-    SqlMeta sqlMeta =
-        JdbcUtils.extractQueryFromSpark((JDBCRelation) ((LogicalRelation) node).relation()).get();
-    if (!sqlMeta.errors().isEmpty()) { // error return nothing
-      log.error(
-          String.format(
-              "error while parsing query: %s",
-              sqlMeta.errors().stream()
-                  .map(ExtractionError::toString)
-                  .collect(Collectors.joining(","))));
-    } else if (sqlMeta.inTables().isEmpty()) {
-      log.error("no tables defined in query, this should not happen");
-    } else {
-      List<ColumnLineage> columnLineages = sqlMeta.columnLineage();
-      Set<ColumnMeta> inputs =
-          columnLineages.stream().flatMap(cl -> cl.lineage().stream()).collect(Collectors.toSet());
-      columnLineages.forEach(cl -> inputs.remove(cl.descendant()));
-      datasetIdentifiers.forEach(
-          di ->
-              inputs.stream()
-                  .filter(
-                      cm ->
-                          cm.origin().isPresent() && cm.origin().get().name().equals(di.getName()))
-                  .forEach(cm -> builder.addInput(builder.getMapping(cm), di, cm.name())));
     }
   }
 
