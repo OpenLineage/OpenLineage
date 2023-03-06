@@ -8,7 +8,8 @@ use crate::context::Context;
 use crate::lineage::*;
 
 use anyhow::{anyhow, Result};
-use sqlparser::ast::{Expr, Function, FunctionArg, FunctionArgExpr, Ident, ListAggOnOverflow, OrderByExpr, Query, Select, SelectItem, SetExpr, Statement, Table, TableAlias, TableFactor, TableWithJoins, WindowSpec, With};
+use sqlparser::ast::{AlterTableOperation, Expr, Function, FunctionArg, FunctionArgExpr, Ident, ListAggOnOverflow, OrderByExpr, Query, Select, SelectItem, SetExpr, Statement, Table, TableAlias, TableFactor, TableWithJoins, WindowSpec, With};
+use sqlparser::test_utils::table;
 
 pub trait Visit {
     fn visit(&self, context: &mut Context) -> Result<()>;
@@ -558,6 +559,29 @@ impl Visit for Statement {
                     expr.visit(context)?;
                 }
             }
+            Statement::AlterTable {
+                name,
+                operation
+            } => {
+
+                match operation {
+                    AlterTableOperation::SwapWith { table_name } => {
+                        // both table names are inputs and outputs of the swap operation
+                        context.add_input(table_name.to_string());
+                        context.add_input(name.to_string());
+
+                        context.add_output(table_name.to_string());
+                        context.add_output(name.to_string());
+                    }
+                    AlterTableOperation::RenameTable { table_name } => {
+                        context.add_input(name.to_string());
+                        context.add_output(table_name.to_string());
+                    }
+                    _ => {
+                        context.add_output(name.to_string())
+                    }
+                }
+            }
             Statement::Delete {
                 table_name,
                 using,
@@ -573,6 +597,24 @@ impl Visit for Statement {
 
                 if let Some(expr) = selection {
                     expr.visit(context)?;
+                }
+            }
+            Statement::Truncate {
+                table_name,
+                partitions
+            } => {
+                context.add_output(table_name.to_string())
+            }
+            Statement::Drop {
+                object_type,
+                if_exists,
+                names,
+                cascade,
+                restrict,
+                purge
+            } => {
+                for name in names {
+                    context.add_output(name.to_string())
                 }
             }
             _ => {}
