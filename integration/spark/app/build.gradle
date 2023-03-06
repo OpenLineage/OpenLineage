@@ -239,10 +239,7 @@ assemble {
 }
 
 shadowJar {
-    if (!gradle.startParameter.taskNames.toString().contains('integrationTest')) {
-        // apply shadowJar after test except for integrationTest where we don't want to run unit tests
-        dependsOn test
-    }
+    dependsOn test
 
     minimize(){
         exclude (project(":shared"))

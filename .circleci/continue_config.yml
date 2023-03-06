@@ -46,6 +46,7 @@ jobs:
       - run: python -m mypy --install-types --non-interactive --ignore-missing-imports --no-namespace-packages openlineage
       - run: python -m pytest --cov=openlineage tests/
       - run: bash <(curl -s https://codecov.io/bash)
+        
   build-client-python:
     working_directory: ~/openlineage/client/python
     docker:
@@ -62,6 +63,7 @@ jobs:
           paths:
             - ./dist/*.tar.gz
             - ./dist/*.whl
+
   build-client-java:
     working_directory: ~/openlineage/client/java
     docker:
@@ -94,6 +96,7 @@ jobs:
           key: v1-client-java-{{ .Branch }}-{{ .Revision }}
           paths:
             - ~/.gradle
+            
   release-client-java:
     working_directory: ~/openlineage/client/java
     docker:
@@ -118,6 +121,7 @@ jobs:
           key: v1-release-client-java-{{ .Branch }}-{{ .Revision }}
           paths:
             - ~/.m2
+            
   publish-snapshot-client-java:
     working_directory: ~/openlineage/client/java
     docker:
@@ -135,6 +139,7 @@ jobs:
           key: v1-release-client-java-snapshot-{{ .Branch }}-{{ .Revision }}
           paths:
             - ~/.m2
+            
   release-integration-spark:
     working_directory: ~/openlineage/integration/spark
     docker:
@@ -161,6 +166,7 @@ jobs:
       - store_artifacts:
           path: ./build/libs
           destination: spark-client-artifacts
+          
   publish-snapshot-integration-spark:
     working_directory: ~/openlineage/integration/spark
     docker:
@@ -223,6 +229,7 @@ jobs:
           key: v1-integration-spark-{{ .Branch }}-{{ .Revision }}
           paths:
             - ~/.gradle
+            
   release-integration-flink:
     working_directory: ~/openlineage/integration/flink
     docker:
@@ -300,6 +307,7 @@ jobs:
           key: v1-integration-flink-{{ .Branch }}-{{ .Revision }}
           paths:
             - ~/.gradle
+            
   unit-test-integration-common:
     working_directory: ~/openlineage/integration/common
     docker:
@@ -313,6 +321,7 @@ jobs:
       - run: bash <(curl -s https://codecov.io/bash)
       - store_test_results:
           path: test-results
+          
   build-integration-common:
     working_directory: ~/openlineage/integration/common
     docker:
@@ -326,6 +335,7 @@ jobs:
           paths:
             - ./dist/*.whl
             - ./dist/*.tar.gz
+            
   build-integration-sql:
     parameters:
       image:
@@ -356,6 +366,7 @@ jobs:
       - store_artifacts:
           path: ./iface-py/target/wheels
           destination: sql-artifacts
+          
   compile-integration-sql-java-linux:
     parameters:
       image:
@@ -373,6 +384,7 @@ jobs:
           root: ./
           paths:
             - target/debug/*.so
+            
   compile-integration-sql-java-macos:
     working_directory: ~/openlineage/integration/sql/iface-java
     macos:
@@ -385,6 +397,7 @@ jobs:
           root: ../
           paths:
             - target/debug/libopenlineage_sql_java.dylib
+            
   build-integration-sql-java:
     working_directory: ~/openlineage/integration/sql/iface-java
     docker:
@@ -402,6 +415,7 @@ jobs:
       - store_artifacts:
           path: ./build/libs
           destination: sql-java-artifacts
+          
   release-integration-sql-java:
     working_directory: ~/openlineage/integration/sql/iface-java
     docker:
@@ -444,6 +458,7 @@ jobs:
       - store_artifacts:
           path: ./iface-py/target/wheels
           destination: sql-artifacts-macos
+          
   build-integration-dbt:
     working_directory: ~/openlineage/integration/dbt
     docker:
@@ -459,6 +474,7 @@ jobs:
           paths:
             - ./dist/*.whl
             - ./dist/*.tar.gz
+            
   integration-test-integration-spark:
     parameters:
       spark-version:
@@ -484,7 +500,7 @@ jobs:
       - run: |
           sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
           sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
-      - run: ./gradlew --no-daemon integrationTest -Pspark.version=<< parameters.spark-version >>
+      - run: ./gradlew --no-daemon integrationTest -x test   -Pspark.version=<< parameters.spark-version >>
       - run:
           when: on_fail
           command: cat build/test-results/integrationTest/TEST-*.xml
@@ -498,6 +514,7 @@ jobs:
           key: v1-integration-spark-{{ .Branch }}-{{ .Revision }}
           paths:
             - ~/.gradle
+  
   integration-test-integration-flink:
     parameters:
       flink-version:
@@ -531,6 +548,7 @@ jobs:
           key: v1-integration-flink-{{ .Branch }}-{{ .Revision }}
           paths:
             - ~/.gradle
+
   unit-test-integration-airflow:
     parameters:
       install_parser:
@@ -551,6 +569,7 @@ jobs:
       - store_test_results:
           path: test-results
       - run: bash <(curl -s https://codecov.io/bash)
+
   build-integration-airflow:
     working_directory: ~/openlineage/integration/airflow
     docker:
@@ -567,6 +586,7 @@ jobs:
           paths:
             - ./dist/*.whl
             - ./dist/*.tar.gz
+
   integration-test-integration-airflow:
     parameters:
       airflow-image:
@@ -592,6 +612,7 @@ jobs:
           path: airflow/tests/integration/tests/events
           destination: events
           when: always
+
   integration-test-integration-airflow-failure:
     parameters:
         failure-type:
@@ -609,6 +630,7 @@ jobs:
       - store_artifacts:
           path: airflow/tests/integration/failures/airflow/logs
           destination: airflow-logs
+
   unit-test-integration-dagster:
     working_directory: ~/openlineage/integration/dagster
     docker:
@@ -621,6 +643,7 @@ jobs:
       - run: python -m mypy --ignore-missing-imports --no-namespace-packages openlineage
       - run: pytest --cov=openlineage tests/
       - run: bash <(curl -s https://codecov.io/bash)
+        
   build-integration-dagster:
     working_directory: ~/openlineage/integration/dagster
     docker:
@@ -635,6 +658,7 @@ jobs:
           paths:
             - ./dist/*.whl
             - ./dist/*.tar.gz
+
   publish-snapshot-python:
     working_directory: ~/openlineage
     docker:
@@ -646,6 +670,7 @@ jobs:
       - run: pip install wheel twine
       - run: mkdir -p target/wheels && cp target/wheels/* dist/
       - run: python -m twine upload --non-interactive --verbose -u $ARTIFACTORY_USERNAME -p $ARTIFACTORY_PASSWORD --repository-url https://astronomer.jfrog.io/artifactory/api/pypi/pypi-public-libs-release dist/*
+  
   release-python:
     working_directory: ~/openlineage
     docker:
