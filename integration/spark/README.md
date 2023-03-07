@@ -157,11 +157,20 @@ Testing requires a Java 8 JVM to test the Scala Spark components.
 
 ## Preparation
 
-Before testing or building the jar, run the following command from the client/java directory
-to install the openlineage-java jar, on which this module depends:
+The integration depends on two libraries that are build locally `openlineage-java` and `openlineage-sql-java`, 
+so before any testing or building of a package you need to publish the appropriate artifacts to local maven repository.
+To build the packages you need to execute.
+
+To install `openlineage-java` in local maven repo run:
+```sh
+cd ../../client/java/ && ./gradlew publishToMavenLocal
+```
+
+For `openlineage-sql-java` run:
 
 ```sh
-$ ./gradlew publishToMavenLocal
+../../integration/sql/iface-java/ && ./script/compile.sh
+../../integration/sql/iface-java/ && ./script/build.sh
 ```
 
 ## Testing
