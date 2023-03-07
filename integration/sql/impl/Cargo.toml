@@ -13,4 +13,5 @@ crate-type = ["rlib"]
 
 [dependencies]
 anyhow = {workspace = true}
-sqlparser = {git = "https://github.com/mobuchowski/sqlparser-rs", branch = "sqlp-release"}
+
+sqlparser = {git = "https://github.com/sqlparser-rs/sqlparser-rs", branch = "main"}
