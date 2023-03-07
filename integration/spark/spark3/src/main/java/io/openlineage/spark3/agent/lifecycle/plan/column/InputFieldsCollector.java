@@ -32,7 +32,9 @@ import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.catalog.HiveTableRelation;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.plans.logical.LeafNode;
+import org.apache.spark.sql.catalyst.plans.logical.LocalRelation;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.catalyst.plans.logical.OneRowRelation;
 import org.apache.spark.sql.catalyst.plans.logical.UnaryNode;
 import org.apache.spark.sql.execution.LogicalRDD;
 import org.apache.spark.sql.execution.columnar.InMemoryRelation;
@@ -124,6 +126,8 @@ class InputFieldsCollector {
       // implemented in
       // io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelLineageUtils.collectInputsAndExpressionDependencies
       // requires merging multiple LogicalPlans
+    } else if (node instanceof OneRowRelation || node instanceof LocalRelation) {
+      // skip without warning
     } else if (node instanceof LeafNode) {
       log.warn("Could not extract dataset identifier from {}", node.getClass().getCanonicalName());
     }
