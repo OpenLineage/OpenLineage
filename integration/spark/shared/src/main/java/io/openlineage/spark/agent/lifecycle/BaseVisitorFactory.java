@@ -36,6 +36,7 @@ import io.openlineage.spark.agent.lifecycle.plan.SnowflakeRelationVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.SqlDWDatabricksVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.SqlExecutionRDDVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.TruncateTableCommandVisitor;
+import io.openlineage.spark.agent.util.BigQueryUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.ArrayList;
@@ -77,7 +78,7 @@ abstract class BaseVisitorFactory implements VisitorFactory {
     List<PartialFunction<LogicalPlan, List<InputDataset>>> inputVisitors =
         new ArrayList<>(getCommonVisitors(context, factory));
 
-    if (BigQueryNodeInputVisitor.hasBigQueryClasses()) {
+    if (BigQueryUtils.hasBigQueryClasses()) {
       inputVisitors.add(new BigQueryNodeInputVisitor(context, factory));
     }
 
@@ -98,7 +99,7 @@ abstract class BaseVisitorFactory implements VisitorFactory {
     List<PartialFunction<LogicalPlan, List<OpenLineage.OutputDataset>>> list =
         new ArrayList<>(outputCommonVisitors);
 
-    if (BigQueryNodeOutputVisitor.hasBigQueryClasses()) {
+    if (BigQueryUtils.hasBigQueryClasses()) {
       list.add(new BigQueryNodeOutputVisitor(context, factory));
     }
 

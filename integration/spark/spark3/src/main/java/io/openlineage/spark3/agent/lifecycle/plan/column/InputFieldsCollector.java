@@ -9,6 +9,7 @@ import static io.openlineage.spark.agent.util.ReflectionUtils.tryExecuteMethod;
 
 import com.google.cloud.spark.bigquery.BigQueryRelation;
 import io.openlineage.spark.agent.lifecycle.Rdds;
+import io.openlineage.spark.agent.util.BigQueryUtils;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.JdbcUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
@@ -109,6 +110,7 @@ class InputFieldsCollector {
       HadoopFsRelation relation = (HadoopFsRelation) ((LogicalRelation) node).relation();
       return extractDatasetIdentifier(relation);
     } else if (node instanceof LogicalRelation
+        && BigQueryUtils.hasBigQueryClasses()
         && ((LogicalRelation) node).relation() instanceof BigQueryRelation) {
       BigQueryRelation relation = (BigQueryRelation) ((LogicalRelation) node).relation();
       return extractDatasetIdentifier(relation);
