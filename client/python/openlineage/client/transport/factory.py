@@ -28,7 +28,7 @@ class DefaultTransportFactory(TransportFactory):
         self.transports[type] = clazz
 
     def create(self) -> Transport:
-        if os.environ.get("OPENLINEAGE_DISABLED", False) in [True, "true", "True"]:
+        if os.getenv("OPENLINEAGE_DISABLED", "").lower() == "true":
             return NoopTransport(NoopConfig())
 
         if 'yaml' in sys.modules:

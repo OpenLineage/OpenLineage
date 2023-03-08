@@ -104,7 +104,7 @@ class OpenLineageBackend(LineageBackend):
         if parse_version(AIRFLOW_VERSION) >= parse_version("2.3.0.dev0"):
             return
         # Make this method a noop if OPENLINEAGE_DISABLED is set to true
-        if os.getenv("OPENLINEAGE_DISABLED", None) in [True, 'true', "True"]:
+        if os.getenv("OPENLINEAGE_DISABLED", "").lower() == "true":
             return
         if not cls.backend:
             cls.backend = Backend()

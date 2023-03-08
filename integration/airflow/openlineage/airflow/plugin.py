@@ -12,7 +12,7 @@ from airflow.version import version as AIRFLOW_VERSION
 
 
 def _is_disabled():
-    return os.getenv("OPENLINEAGE_DISABLED", None) in [True, 'true', "True"]
+    return os.getenv("OPENLINEAGE_DISABLED", "").lower() == "true"
 
 
 if parse_version(AIRFLOW_VERSION) \
