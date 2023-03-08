@@ -4,6 +4,7 @@
 import os
 from unittest.mock import patch
 
+import pytest
 from openlineage.client import OpenLineageClient
 from openlineage.client.transport import (
     DefaultTransportFactory,
@@ -96,10 +97,19 @@ def test_transport_decorator_registers(join, listdir, yaml):
     assert isinstance(transport, FakeTransport)
 
 
-@patch.dict(os.environ, {"OPENLINEAGE_DISABLED": "true"})
-def test_env_disables_client():
-    transport = get_default_factory().create()
-    assert isinstance(transport, NoopTransport)
+@pytest.mark.parametrize("env_var_value, should_be_noop", [
+    ("true", True),
+    ("True", True),
+    ("TRUE", True),
+    ("false", False),
+    ("False", False),
+    ("FALSE", False),
+])
+def test_env_disables_client(env_var_value, should_be_noop):
+    with patch.dict(os.environ, {"OPENLINEAGE_DISABLED": env_var_value}):
+        transport = get_default_factory().create()
+        is_noop = isinstance(transport, NoopTransport)
+        assert is_noop is should_be_noop
 
 
 @patch.dict(os.environ, {
