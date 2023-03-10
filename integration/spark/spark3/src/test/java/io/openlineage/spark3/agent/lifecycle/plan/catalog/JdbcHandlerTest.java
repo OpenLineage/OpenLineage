@@ -39,6 +39,6 @@ class JdbcHandlerTest {
             new HashMap<>());
 
     assertEquals("database.schema.table", datasetIdentifier.getName());
-    assertEquals("postgresql://postgreshost:5432", datasetIdentifier.getNamespace());
+    assertEquals("postgres://postgreshost:5432", datasetIdentifier.getNamespace());
   }
 }
