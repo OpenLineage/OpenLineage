@@ -44,7 +44,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.MockedStatic;
 import org.postgresql.Driver;
 import scala.Option;
@@ -69,10 +68,10 @@ class LogicalRelationDatasetBuilderTest {
 
   @ParameterizedTest
   @CsvSource({
-          "jdbc:postgresql://postgreshost:5432/sparkdata,postgres://postgreshost:5432/sparkdata",
-          "jdbc:oracle:oci8:@sparkdata,oracle:oci8:@sparkdata",
-          "jdbc:oracle:thin@sparkdata:1521:orcl,oracle:thin@sparkdata:1521:orcl",
-          "jdbc:mysql://localhost/sparkdata,mysql://localhost/sparkdata"
+    "jdbc:postgresql://postgreshost:5432/sparkdata,postgres://postgreshost:5432/sparkdata",
+    "jdbc:oracle:oci8:@sparkdata,oracle:oci8:@sparkdata",
+    "jdbc:oracle:thin@sparkdata:1521:orcl,oracle:thin@sparkdata:1521:orcl",
+    "jdbc:mysql://localhost/sparkdata,mysql://localhost/sparkdata"
   })
   void testApply(String connectionUri, String targetUri) {
     OpenLineage openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
