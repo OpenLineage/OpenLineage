@@ -85,6 +85,30 @@ In the above outline, regular expressions replace the `namespace` and `name` lis
 
 A major drawback of using regular expressions here is the rigidity of the expression: real-world input is messy, and restrictive expressions will likely break on legitimate cases. 
 
-Both of the above examples also do not allow for multiple correct `unique_names`, for instance, if a warehouse accepts a URI both with and without a region, both of the above would only accept cases without the region. This may be solved by either having multiple files for these cases, or, in the regex example, have a list of valid regexes in `namespace` or `name`.
+Both of the above examples also do not allow for multiple correct `unique_names`, for instance, if a warehouse accepts a URI both with and without a region, both of the above would only accept cases without the region. This may be solved by either having multiple files for these cases, or, in the regex example, have a list of valid regexes in `namespace` or `name`. To ensure a valid `name` and `namespace` is always supplied, additions to the `Dataset` and `Job` classes in the client should be added in the form of validators. An additional naming format fields could be added which would represent the valid syntax of the `name` and `namespace`, as well as the valid way to combine these fields into a unique name. The validator would verify that the `Dataset` or `Job` instance's `name` and `namespace` fields conform to this given naming format. The naming format fields would come from the new naming schemas, and should be added to `Dataset` or `Job` instances at runtime, when the appropriate integration is known.
 
-In addition to the documents themselves, some testing framework should be developed (or tests simply added to integrations) to ensure that naming matches the structure and casing of the JSON in the files exactly.
+As an example, the `Dataset` class would be modified to use regular expressions to check the `name` and `namespace`:
+
+```python
+@attr.s
+class Dataset(RedactMixin):
+    namespace: str = attr.ib()
+    name: str = attr.ib()
+    namespace_regex: str = attr.ib()
+    name_regex: str = attr.ib()
+    facets: Dict = attr.ib(factory=dict)
+
+    _skip_redact: List[str] = ['namespace', 'name']
+
+    @namespace.validator
+    def check_namespace(self, attribute, value):
+        if not re.fullmatch(self.namesapce_regex, value):
+            raise ValueError(f"Given namespace: {value} does not match the provider's expected namespace regex.")
+
+    @name.validator
+    def check_name(self, attribute, value):
+        if not re.fullmatch(self.name_regex, value):
+            raise ValueError(f"Given name: {value} does not match the provider's expected name regex.")
+```
+
+In addition to the documents themselves, some testing framework should be developed (or tests simply added to integrations) to ensure that naming matches the structure and casing of the JSON in the files exactly. This should include a validation framework available in the client that integrations can run against.
