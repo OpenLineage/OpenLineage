@@ -57,14 +57,14 @@ class PlanUtilsTest {
             "db2://[2001:DB8:0:0:8:800:200C:417A]:5021/test:"),
         Arguments.of(
             "jdbc:postgresql://localhost/test?user=fred&password=secret&ssl=true",
-            "postgresql://localhost/test"),
+            "postgres://localhost/test"),
         Arguments.of(
             "jdbc:postgresql://localhost:5432/test?user=fred&password=secret&ssl=true",
-            "postgresql://localhost:5432/test"),
+            "postgres://localhost:5432/test"),
         Arguments.of(
             "jdbc:postgresql://192.168.1.1:5432/test?user=fred&password=secret&ssl=true",
-            "postgresql://192.168.1.1:5432/test"),
-        Arguments.of("jdbc:postgresql://192.168.1.1:5432", "postgresql://192.168.1.1:5432"),
+            "postgres://192.168.1.1:5432/test"),
+        Arguments.of("jdbc:postgresql://192.168.1.1:5432", "postgres://192.168.1.1:5432"),
         Arguments.of(
             "jdbc:oracle:thin:us%2Ar/p%40%24%24w0rd@some.host:1521:orcl",
             "oracle:thin:@some.host:1521:orcl"),
