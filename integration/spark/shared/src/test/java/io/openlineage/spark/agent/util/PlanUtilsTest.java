@@ -56,20 +56,20 @@ class PlanUtilsTest {
             "jdbc:db2://[2001:DB8:0:0:8:800:200C:417A]:5021/test:user=dba%20adm;password=db%40dm;",
             "db2://[2001:DB8:0:0:8:800:200C:417A]:5021/test:"),
         Arguments.of(
-            "jdbc:postgresql://localhost/test",
+            "jdbc:postgresql://localhost/test?user=fred&password=secret&ssl=true",
             "postgresql://localhost/test"),
         Arguments.of(
-            "jdbc:postgresql://localhost:5432/test",
+            "jdbc:postgresql://localhost:5432/test?user=fred&password=secret&ssl=true",
             "postgresql://localhost:5432/test"),
         Arguments.of(
-            "jdbc:postgresql://192.168.1.1:5432/test",
+            "jdbc:postgresql://192.168.1.1:5432/test?user=fred&password=secret&ssl=true",
             "postgresql://192.168.1.1:5432/test"),
         Arguments.of("jdbc:postgresql://192.168.1.1:5432", "postgresql://192.168.1.1:5432"),
         Arguments.of(
             "jdbc:oracle:thin:us%2Ar/p%40%24%24w0rd@some.host:1521:orcl",
             "oracle:thin:@some.host:1521:orcl"),
         Arguments.of(
-            "jdbc:oracle:thin:@10.253.102.122:1521:dg01",
+            "jdbc:oracle:thin:@10.253.102.122:1521:dg01?key=value",
             "oracle:thin:@10.253.102.122:1521:dg01"),
         Arguments.of(
             "jdbc:oracle:thin:user/password@some.host:1521:orcl",
@@ -88,7 +88,7 @@ class PlanUtilsTest {
             "jdbc:oracle:thin:@//localhost:1521/serviceName",
             "oracle:thin:@//localhost:1521/serviceName"),
         Arguments.of(
-            "jdbc:oracle:thin:@dbname_high",
+            "jdbc:oracle:thin:@dbname_high?TNS_ADMIN=/Users/test/wallet_dbname",
             "oracle:thin:@dbname_high"),
         Arguments.of(
             "jdbc:mysql://10.253.102.122:1521/dbname;key=value",
@@ -100,7 +100,7 @@ class PlanUtilsTest {
         Arguments.of(
             "jdbc:mysql://username:pwd@host.name.com/dbname", "mysql://host.name.com/dbname"),
         Arguments.of(
-            "jdbc:mysql://username:pwd@host.name.com/dbname",
+            "jdbc:mysql://username:pwd@host.name.com/dbname?key=value;key2=value2",
             "mysql://host.name.com/dbname"),
         Arguments.of(
             "jdbc:mysql://username:pwd@myhost1:1111,username:pwd@myhost2:2222/db",
