@@ -24,9 +24,12 @@ public class JdbcUtils {
   public static String sanitizeJdbcUrl(String jdbcUrl) {
     String jdbcUrlCroppedPrefix = jdbcUrl.substring(5);
     return jdbcUrlCroppedPrefix
+        .replaceFirst("^jdbc:", "")
+        .replaceFirst("^postgresql:", "postgres:")
         .replaceAll(PlanUtils.SLASH_DELIMITER_USER_PASSWORD_REGEX, "@")
         .replaceAll(PlanUtils.COLON_DELIMITER_USER_PASSWORD_REGEX, "$1")
-        .replaceAll("(?<=[?,;&:)=])\\(?(?i)(?:user|username|password)=[^;&,)]+(?:[;&;)]|$)", "");
+        .replaceAll("(?<=[?,;&:)=])\\(?(?i)(?:user|username|password)=[^;&,)]+(?:[;&;)]|$)", "")
+        .replaceAll("\\?.+$", "");
   }
 
   public static Optional<SqlMeta> extractQueryFromSpark(JDBCRelation relation) {

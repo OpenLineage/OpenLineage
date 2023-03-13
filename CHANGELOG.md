@@ -2,6 +2,11 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.21.1...HEAD)
 
+### Changed
+* **Spark: remove url parameters for jdbc namespaces** [`#1708`](https://github.com/OpenLineage/OpenLineage/pull/1708) by [@tnazarew](https://github.com/tnazarew)    
+  *Make namespace value from event conform to naming convention specified in* [Naming.md](https://github.com/OpenLineage/OpenLineage/blob/main/spec/Naming.md)
+
+
 ## [0.21.1](https://github.com/OpenLineage/OpenLineage/compare/0.20.6...0.21.1) - 2023-3-2
 ### Added
 * **Clients: add `DEBUG` logging of events to transports** [`#1633`](https://github.com/OpenLineage/OpenLineage/pull/1633) by [@mobuchowski](https://github.com/mobuchowski)  
