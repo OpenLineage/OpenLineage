@@ -127,10 +127,11 @@ public class ColumnLineageIntegrationTest {
         .config("spark.sql.shuffle.partitions", 1)
         .config("spark.sql.warehouse.dir", "file:/tmp/iceberg/")
         .config("spark.driver.extraJavaOptions", "-Dderby.system.home=/tmp/iceberg")
-        .config("spark.openlineage.transport.type", "http")
-        .config(
-            "spark.openlineage.transport.url",
-            "http://localhost:" + mockServer.getPort() + "/api/v1/namespaces/default")
+        .config("spark.openlineage.transport.type", "console")
+//        .config("spark.openlineage.transport.type", "http")
+//        .config(
+//            "spark.openlineage.transport.url",
+//            "http://localhost:" + mockServer.getPort() + "/api/v1/namespaces/default")
         .config("spark.openlineage.facets.disabled", "spark_unknown;spark.logicalPlan")
         .config("spark.extraListeners", OpenLineageSparkListener.class.getName())
         .config("spark.sql.catalog.spark_catalog", "org.apache.iceberg.spark.SparkCatalog")
