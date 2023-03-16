@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.spark.agent.facets.builder;
 
 import io.openlineage.spark.agent.facets.SparkPropertyFacet;
@@ -39,6 +44,6 @@ public class SparkPropertyFacetBuilder
     event.properties().entrySet().stream()
         .filter(e -> allowerProperties.contains(e.getKey()))
         .forEach(e -> m.putIfAbsent(e.getKey().toString(), e.getValue()));
-    consumer.accept("spark-properties", new SparkPropertyFacet(m));
+    consumer.accept("spark_properties", new SparkPropertyFacet(m));
   }
 }
