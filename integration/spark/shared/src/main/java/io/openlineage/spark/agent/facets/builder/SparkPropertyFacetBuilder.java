@@ -2,20 +2,43 @@ package io.openlineage.spark.agent.facets.builder;
 
 import io.openlineage.spark.agent.facets.SparkPropertyFacet;
 import io.openlineage.spark.api.CustomFacetBuilder;
-import org.apache.spark.scheduler.SparkListenerJobStart;
-
+import io.openlineage.spark.api.OpenLineageContext;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import org.apache.spark.SparkConf;
+import org.apache.spark.scheduler.SparkListenerJobStart;
 
-public class SparkPropertyFacetBuilder extends CustomFacetBuilder<SparkListenerJobStart, SparkPropertyFacet> {
-    @Override
-    protected void build(SparkListenerJobStart event, BiConsumer<String, ? super SparkPropertyFacet> consumer) {
-        Stream<Map.Entry<Object, Object>> stream = event.properties().entrySet().stream();
-        Map<String, Object> collect = stream.collect(Collectors.toMap(k -> k.getKey().toString(), Map.Entry::getValue));
-        consumer.accept("spark-properties", new SparkPropertyFacet(collect));
-    }
+public class SparkPropertyFacetBuilder
+    extends CustomFacetBuilder<SparkListenerJobStart, SparkPropertyFacet> {
+  private static final Set<String> DEFAULT_ALLOWED_PROPERTIES =
+      new HashSet<>(Arrays.asList("spark.master", "spark.app.name"));
+  private static final String ALLOWED_PROPERTIES_KEY = "spark.openlineage.allowerProperties";
+  private final SparkConf conf;
+  private final Set<String> allowerProperties;
 
+  public SparkPropertyFacetBuilder(OpenLineageContext context) {
+    conf = context.getSparkContext().getConf();
+    allowerProperties =
+        conf.contains(ALLOWED_PROPERTIES_KEY)
+            ? Arrays.stream(conf.get(ALLOWED_PROPERTIES_KEY).split(",")).collect(Collectors.toSet())
+            : DEFAULT_ALLOWED_PROPERTIES;
+  }
 
+  @Override
+  protected void build(
+      SparkListenerJobStart event, BiConsumer<String, ? super SparkPropertyFacet> consumer) {
+    Map<String, Object> m = new HashMap<>();
+    Arrays.stream(conf.getAll())
+        .filter(t -> allowerProperties.contains(t._1))
+        .forEach(t -> m.putIfAbsent(t._1, t._2));
+    event.properties().entrySet().stream()
+        .filter(e -> allowerProperties.contains(e.getKey()))
+        .forEach(e -> m.putIfAbsent(e.getKey().toString(), e.getValue()));
+    consumer.accept("spark-properties", new SparkPropertyFacet(m));
+  }
 }
