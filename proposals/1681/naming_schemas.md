@@ -40,6 +40,7 @@ Where CONTRIBUTING.md (or something like it) would take the place of the current
 
 Each file under `naming/` would specify the particular convention for that integration or dataset. However, they would have some common required fields. The base schema would look something like:
 
+[Generic Example]
 ```json
 {
     "integration_name": {
@@ -64,17 +65,54 @@ Each file under `naming/` would specify the particular convention for that integ
 }
 ```
 
+[Snowflake Example]
+```json
+{
+    "snowflake": {
+        "type": "Dataset",
+        "namespace": [
+            "scheme"
+            "authority"
+        ],
+        "name": [
+            "database",
+            "schema",
+            "table"
+        ],
+        "scheme": "snowflake://",
+        "example_namespace": "snowflake://abcd1234.us-east-1",
+        "example_name": "MY_DB.MY_SCHEMA.MY_TABLE",
+        "example_unique_name": "snowflake://abcd1234.us-east-1/MY_DB.MY_SCHEMA.MY_TABLE",
+        "case_sensitive": true,
+        "case": "upper"
+  }
+}
+```
+
 In the above outline, the `integration_name` would match the name of the file. The `type` is one of "Job" or "Dataset". The `namespace` list contains all the elements, in order, needed to generate the namespace (this may be an issue if, like Redshift, there are multiple options. This might necessitate two files, one for each namespace). The `name` field is similar, but for elements to generate the name of the entity. Three examples are given, one for the namespace, another for the name, and a last for the unique name as a combination of the two, for clarity. Finally, a note about case sensitivity is included to ensure that all integrations are completely matching the spec.
 
 Although one drawback with this type of schema is that the casing must have its own rule as to what fields it applies to; in the example, the `namespace` does not need the rule while the `name` does.
 
 Another potential json schema could look like:
 
+[Generic Example]
 ```json
 {
     "integration_name": {
         "type": "Job" | "Dataset",
         "namespace": "^(?<uri>[A-Za-z]+://)(?<auth>[A-Za-z0-9]*)\.(?<host>[A-Za-z0-9]+):(?<port>[0-9]{1,6})$",
+        "name": "^(?<database>[A-Z]+)\.(?<schema>[A-Z]+)\.(?<table>[A-Z]+)$",
+        "unique_name": "$namespace/$name"
+  }
+}
+```
+
+[Snowflake Example]
+```json
+{
+    "snowflake": {
+        "type": "Dataset",
+        "namespace": "^(?<scheme>snowflake://)(?<auth>[A-Za-z0-9]{9}\.[a-z]{2}-[a-z]{4,6}-[0-9]{1})$",
         "name": "^(?<database>[A-Z]+)\.(?<schema>[A-Z]+)\.(?<table>[A-Z]+)$",
         "unique_name": "$namespace/$name"
   }
