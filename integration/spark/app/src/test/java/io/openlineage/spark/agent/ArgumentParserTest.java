@@ -89,7 +89,9 @@ class ArgumentParserTest {
             .set("spark.openlineage.transport.timeout", "5000")
             .set("spark.openlineage.facets.disabled", DISABLED_FACETS)
             .set("spark.openlineage.transport.urlParams.test1", "test1")
-            .set("spark.openlineage.transport.urlParams.test2", "test2");
+            .set("spark.openlineage.transport.urlParams.test2", "test2")
+            .set("spark.openlineage.transport.headers.test1", "test1")
+            .set("spark.openlineage.transport.headers.test2", "test2");
 
     OpenLineageYaml openLineageYaml = ArgumentParser.extractOpenlineageConfFromSparkConf(sparkConf);
     HttpConfig transportConfig = (HttpConfig) openLineageYaml.getTransportConfig();
@@ -99,6 +101,8 @@ class ArgumentParserTest {
     assert (transportConfig.getAuth() instanceof ApiKeyTokenProvider);
     assertEquals("Bearer random_token", transportConfig.getAuth().getToken());
     assertEquals(5000, transportConfig.getTimeout());
+    assertEquals("test1", transportConfig.getHeaders().get("test1"));
+    assertEquals("test2", transportConfig.getHeaders().get("test2"));
   }
 
   @Test

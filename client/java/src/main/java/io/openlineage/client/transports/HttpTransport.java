@@ -43,6 +43,8 @@ public final class HttpTransport extends Transport implements Closeable {
   private final URI uri;
   private @Nullable final TokenProvider tokenProvider;
 
+  private final Map<String, String> headers;
+
   public HttpTransport(@NonNull final HttpConfig httpConfig) {
     this(withTimeout(httpConfig.getTimeout()), httpConfig);
   }
@@ -74,6 +76,7 @@ public final class HttpTransport extends Transport implements Closeable {
       throw new OpenLineageClientException(e);
     }
     this.tokenProvider = httpConfig.getAuth();
+    this.headers = httpConfig.getHeaders();
   }
 
   private URI getUri(HttpConfig httpConfig) throws URISyntaxException {
@@ -108,13 +111,10 @@ public final class HttpTransport extends Transport implements Closeable {
     try {
       final HttpPost request = new HttpPost();
       request.setURI(uri);
-      request.addHeader(ACCEPT, APPLICATION_JSON.toString());
-      request.addHeader(CONTENT_TYPE, APPLICATION_JSON.toString());
+      setHeaders(request);
       request.setEntity(new StringEntity(eventAsJson, APPLICATION_JSON));
 
-      if (tokenProvider != null) {
-        request.addHeader(AUTHORIZATION, tokenProvider.getToken());
-      }
+
 
       try (CloseableHttpResponse response = http.execute(request)) {
         throwOnHttpError(response);
@@ -123,6 +123,17 @@ public final class HttpTransport extends Transport implements Closeable {
     } catch (IOException e) {
       throw new OpenLineageClientException(e);
     }
+  }
+
+  private void setHeaders(HttpPost request) {
+    // set headers to accept json
+    headers.put(ACCEPT, APPLICATION_JSON.toString());
+    headers.put(CONTENT_TYPE, APPLICATION_JSON.toString());
+    // if tokenProvider preset overwrite authorization
+    if (tokenProvider != null) {
+      headers.put(AUTHORIZATION, tokenProvider.getToken());
+    }
+    headers.forEach(request::addHeader);
   }
 
   private void throwOnHttpError(@NonNull HttpResponse response) throws IOException {
