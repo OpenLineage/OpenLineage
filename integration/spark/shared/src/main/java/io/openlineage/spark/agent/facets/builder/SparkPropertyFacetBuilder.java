@@ -22,7 +22,7 @@ public class SparkPropertyFacetBuilder
     extends CustomFacetBuilder<SparkListenerJobStart, SparkPropertyFacet> {
   private static final Set<String> DEFAULT_ALLOWED_PROPERTIES =
       new HashSet<>(Arrays.asList("spark.master", "spark.app.name"));
-  private static final String ALLOWED_PROPERTIES_KEY = "spark.openlineage.allowerProperties";
+  private static final String ALLOWED_PROPERTIES_KEY = "spark.openlineage.allowedProperties";
   private final SparkConf conf;
   private final Set<String> allowerProperties;
 
