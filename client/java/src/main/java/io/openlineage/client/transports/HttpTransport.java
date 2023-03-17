@@ -114,8 +114,6 @@ public final class HttpTransport extends Transport implements Closeable {
       setHeaders(request);
       request.setEntity(new StringEntity(eventAsJson, APPLICATION_JSON));
 
-
-
       try (CloseableHttpResponse response = http.execute(request)) {
         throwOnHttpError(response);
         EntityUtils.consume(response.getEntity());
