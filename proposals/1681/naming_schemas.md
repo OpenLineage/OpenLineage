@@ -40,113 +40,239 @@ Where CONTRIBUTING.md (or something like it) would take the place of the current
 
 Each file under `naming/` would specify the particular convention for that integration or dataset. However, they would have some common required fields. The base schema would look something like:
 
-[Generic Example]
+[Base Example]
 ```json
 {
-    "integration_name": {
-        "type": "Job" | "Dataset",
-        "namespace": [
-            "uri_base",
-            "auth",
-            "host",
-            "port"
-        ],
-        "name": [
-            "db",
-            "schema",
-            "table"
-        ],
-        "example_namespace": "uri://auth.host:port",
-        "example_name": "MY_DB.MY_SCHEMA.MY_TABLE",
-        "example_unique_name": "uri://auth.host:port/MY_DB.MY_SCHEMA.MY_TABLE",
-        "case_sensitive": true | false,
-        "case": "upper" | "lower" | null
-  }
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openlineage.io/spec/naming/1-0-0/Naming.json",
+  "$defs": {
+    "DatasetNameBase": {
+      "type": "object",
+      "properties": {
+        "namespace": {
+          "description": "The components that describe the namespace for this integration.",
+          "type": "object",
+          "properties": {
+            "uri_base": {
+              "description": "The base of a uri that specifies where the source object came from.",
+              "type": "string",
+              "example": "uri://"
+            },
+            "auth": {
+              "description": "Authentication string for the connection.",
+              "type": "string",
+              "example": "account_string_123"
+            },
+            "host": {
+              ... # other common namespace properties could go here to be ref'd by implementations
+            },
+            "port": {
+              ...
+            }
+          },
+          "example": "uri://auth.host:port",
+          "required": ["uri_base", "host"] # require only a minimum subset of namespace properties
+        },
+        "name": {
+          "description": "The name of the dataset, unique within a namespace.",
+          "type": "object",
+          "properties": {
+            # like namespace, outline common properties to ref, but don't need to make any required to keep flexbility
+            "database": {
+              ...
+            },
+            "schema": {
+              ...
+            },
+            "table": {
+              ...
+            }
+          },
+          "example_name": "MY_DB.MY_SCHEMA.MY_TABLE"
+        },
+        "unique_name_qualifier": {
+          "description": "How the namespace and name are combined to form a universally unique name.",
+          "type": "string",
+          "example": "/"
+        },
+        "case_sensitivity": {
+          "description": "Whether or not the integration uses case-sensitive names.",
+          "type": "object",
+          "properties": {
+            "case_sensitive": {
+              "type": "boolean",
+            },
+            "case": {
+              "type": "string",
+              "enum": ["upper", "lower"]
+            }
+          },
+          "required": ["case_sensitive"]
+        }
+      }
+    },
+    "JobNameBase": {
+      ...
+    }
+  },
+  "$ref": "#/$defs/DatasetNameBase"
 }
 ```
+
+In the above example, the Naming.json schema is provided with a detailed example for a Dataset. The schema would live in a new `spec/naming` folder under the name `NamingBase.json`. This would be analogous to the `spec/OpenLineage.json` file that outlines the `RunEvent` and other top-level OpenLineage abstractions. An example is given only for Datasets for brevity. The goal of this example is to show how properties for a `namespace` and `name` can be defined generically with a JSON schema, to be implemented by individual integrations. For a dataset, four pieces of information are needed:
+  1. The `namespace`, which minimally should include a `uri` and a `host` for some uniqueness and consistency in naming. The base spec can also define any number of common namespace attributes, such as `auth` and `port`, to be `$ref`'d by implementers.
+  2. The `name`, whose required properties, if any, are left to discussion. Again, properties can be defined to be re-used in implementations.
+  3. The `unique_name_qualifier`, which is a character or short string that will combine the `namespace` and `name`. Often, this will simply be a `/`.
+  4. The `case_sensitivity` is an object that will allow case-sensitive enforcement. This is necessary for some implementers, like Snowflake, and will ensure that all integrations correctly capitalize datasets.
+
+A similar set of requirements can be developed for Jobs. In this example, each potential element of a `namespace` or `name` is given explicitly as an object. This has the benefit of creating re-usable properties, even if it is verbose. Additionally, some of these properties could be defined as `pattern`s instead of `string`s to enforce certain conventions.
+
+Although one drawback with this type of schema is that the casing must have its own rule as to what fields it applies to; in the example, the `namespace` does not need the rule while the `name` does. Casing may be moved then to each of `namespace` and `name`, or defined elsewhere and `$ref`'d in each property.
 
 [Snowflake Example]
 ```json
 {
-    "snowflake": {
-        "type": "Dataset",
-        "namespace": [
-            "scheme"
-            "authority"
-        ],
-        "name": [
-            "database",
-            "schema",
-            "table"
-        ],
-        "scheme": "snowflake://",
-        "example_namespace": "snowflake://abcd1234.us-east-1",
-        "example_name": "MY_DB.MY_SCHEMA.MY_TABLE",
-        "example_unique_name": "snowflake://abcd1234.us-east-1/MY_DB.MY_SCHEMA.MY_TABLE",
-        "case_sensitive": true,
-        "case": "upper"
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openlineage.io/spec/naming/snowflake/1-0-0/Snowflake.json",
+  "$defs": {
+    "SnowflakeDataset": {
+      "allOf": [{
+        "$ref": "https://openlineage.io/spec/naming/1-0-0/Naming.json#/$defs/DatasetNameBase"
+      }],
+      "type": "object",
+    }
+  },
+  "type": "object",
+  "properties": { # not entirely sure what this part is doing
+    "name": {
+      "$ref": "#/$defs/SnowflakeDataset"
+    }
   }
 }
 ```
 
-In the above outline, the `integration_name` would match the name of the file. The `type` is one of "Job" or "Dataset". The `namespace` list contains all the elements, in order, needed to generate the namespace (this may be an issue if, like Redshift, there are multiple options. This might necessitate two files, one for each namespace). The `name` field is similar, but for elements to generate the name of the entity. Three examples are given, one for the namespace, another for the name, and a last for the unique name as a combination of the two, for clarity. Finally, a note about case sensitivity is included to ensure that all integrations are completely matching the spec.
+In the Snowflake example above, the `SnowflakeDataset` would be implemented simply by referencing the `DatasetNameBase` schema. This simplifies the implementation greatly, but may cause some other issues.
 
-Although one drawback with this type of schema is that the casing must have its own rule as to what fields it applies to; in the example, the `namespace` does not need the rule while the `name` does.
+One potential issue is that either Snowflake relies on `DatasetNameBase` to implement properties like `region` within the `namespace` property, which the `DatasetNameBase` example above does **not** do, or the `DatasetNameBase` example should implement each property outside of `namespace` and `name` (in other words, to have the list of `DatasetNameBase` properties be `uri_base`, `auth`, `database`, etc...) and have the `namespace` and `name` properties simply state how these other properties are put together. An example of this is given below:
 
-Another potential json schema could look like:
-
-[Generic Example]
+[Base Example 2]
+[Base Example]
 ```json
 {
-    "integration_name": {
-        "type": "Job" | "Dataset",
-        "namespace": "^(?<uri>[A-Za-z]+://)(?<auth>[A-Za-z0-9]*)\.(?<host>[A-Za-z0-9]+):(?<port>[0-9]{1,6})$",
-        "name": "^(?<database>[A-Z]+)\.(?<schema>[A-Z]+)\.(?<table>[A-Z]+)$",
-        "unique_name": "$namespace/$name"
-  }
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openlineage.io/spec/naming/1-0-0/Naming.json",
+  "$defs": {
+    "DatasetNameBase": {
+      "type": "object",
+      "properties": {
+        "uri_base": {
+          "description": "The base of a uri that specifies where the source object came from.",
+          "type": "string",
+          "example": "uri://"
+        },
+        "auth": {
+          "description": "Authentication string for the connection.",
+          "type": "string",
+          "example": "account_string_123"
+        },
+        "host": {
+          ...
+        },
+        "port": {
+          ...
+        },
+        "database": {
+          ...
+        },
+        "schema": {
+          ...
+        },
+        "table": {
+          ...
+        },
+        "namespace": {
+          "description": "The components that describe the namespace for this integration.",
+          "type": "object",
+          "properties": {
+            # potentially ref the above properties or do an anyOf?
+          },
+          "additionalProperties": {"type": "string"} # using this as a means of hacking around the above issue,
+          # essentially leaving properties unimplemented but required, so the implementer can fill it in as-needed
+        },
+        "name": {
+          "description": "The name of the dataset, unique within a namespace.",
+          "type": "object",
+          "properties": {
+            # same issue as in namesapce, do we ref or use anyOf
+            # or does name, namespace, and unique_name_qualifier get moved out of
+            # this object entirely and have their own Name, Namespace, etc... objects
+          },
+          "additionalProperties": {"type": "string"},
+          "example_name": "MY_DB.MY_SCHEMA.MY_TABLE"
+        },
+        "unique_name_qualifier": {
+          "description": "How the namespace and name are combined to form a universally unique name.",
+          "type": "string",
+          "example": "/"
+        },
+        "case_sensitivity": {
+          "description": "Whether or not the integration uses case-sensitive names.",
+          "type": "object",
+          "properties": {
+            "case_sensitive": {
+              "type": "boolean",
+            },
+            "case": {
+              "type": "string",
+              "enum": ["upper", "lower"]
+            }
+          },
+          "required": ["case_sensitive"]
+        }
+      },
+      "required": ["name", "namespace"]
+    },
+    "JobNameBase": {
+      ...
+    }
+  },
+  "$ref": "#/$defs/DatasetNameBase"
 }
 ```
 
-[Snowflake Example]
+In the case above, we flatten the hierarchy of properties in the `DatasetNameBase` to allow all sorts of basic properties that can be referenced, as in the Snowflake example below.
+
+[Snowflake Example 2]
 ```json
 {
-    "snowflake": {
-        "type": "Dataset",
-        "namespace": "^(?<scheme>snowflake://)(?<auth>[A-Za-z0-9]{9}\.[a-z]{2}-[a-z]{4,6}-[0-9]{1})$",
-        "name": "^(?<database>[A-Z]+)\.(?<schema>[A-Z]+)\.(?<table>[A-Z]+)$",
-        "unique_name": "$namespace/$name"
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openlineage.io/spec/naming/snowflake/1-0-0/Snowflake.json",
+  "$defs": {
+    "SnowflakeDataset": {
+      "allOf": [{
+        "$ref": "https://openlineage.io/spec/naming/1-0-0/Naming.json#/$defs/DatasetNameBase"
+      }, {
+        "type": "object",
+        "properties": {
+          "region": {...},
+          "warehouse": {...}
+        },
+        "required": ["warehouse"]
+      }],
+      "type": "object",
+    }
+  },
+  "type": "object",
+  "properties": { # not entirely sure what this part is doing
+    "name": {
+      "$ref": "#/$defs/SnowflakeDataset"
+    }
   }
 }
 ```
 
-In the above outline, regular expressions replace the `namespace` and `name` lists. This also negates the need for examples, as the required input is self-evident (or at least as evident as regexes ever are). The regular expressions in each of `namespace` and `name` have named matching groups for each componenet, and are themselves referenced in whole by `unique_name`, which provides the rule for combining these expressions. Finally, the two fields to determine casing are removed, as the regular expression conveys the necessary casing rules.
+In this Snowflake schema, we can add the properties relevant only to Snowflake and require ones that are absolutely necessary. The open question here is how to define the correct `name` and `namespace` in this subschema, as the author is unsure how. Perhaps in this method, `name` and `namespace` simply need to be their own schemas that are part of the `allOf`.
 
-A major drawback of using regular expressions here is the rigidity of the expression: real-world input is messy, and restrictive expressions will likely break on legitimate cases. 
-
-Both of the above examples also do not allow for multiple correct `unique_names`, for instance, if a warehouse accepts a URI both with and without a region, both of the above would only accept cases without the region. This may be solved by either having multiple files for these cases, or, in the regex example, have a list of valid regexes in `namespace` or `name`. To ensure a valid `name` and `namespace` is always supplied, additions to the `Dataset` and `Job` classes in the client should be added in the form of validators. An additional naming format fields could be added which would represent the valid syntax of the `name` and `namespace`, as well as the valid way to combine these fields into a unique name. The validator would verify that the `Dataset` or `Job` instance's `name` and `namespace` fields conform to this given naming format. The naming format fields would come from the new naming schemas, and should be added to `Dataset` or `Job` instances at runtime, when the appropriate integration is known.
-
-As an example, the `Dataset` class would be modified to use regular expressions to check the `name` and `namespace`:
-
-```python
-@attr.s
-class Dataset(RedactMixin):
-    namespace: str = attr.ib()
-    name: str = attr.ib()
-    namespace_regex: str = attr.ib()
-    name_regex: str = attr.ib()
-    facets: Dict = attr.ib(factory=dict)
-
-    _skip_redact: List[str] = ['namespace', 'name']
-
-    @namespace.validator
-    def check_namespace(self, attribute, value):
-        if not re.fullmatch(self.namesapce_regex, value):
-            raise ValueError(f"Given namespace: {value} does not match the provider's expected namespace regex.")
-
-    @name.validator
-    def check_name(self, attribute, value):
-        if not re.fullmatch(self.name_regex, value):
-            raise ValueError(f"Given name: {value} does not match the provider's expected name regex.")
-```
+Ultimately, these JSON schemas should get created into classes with various attributes and validation.
 
 In addition to the documents themselves, some testing framework should be developed (or tests simply added to integrations) to ensure that naming matches the structure and casing of the JSON in the files exactly. This should include a validation framework available in the client that integrations can run against.
