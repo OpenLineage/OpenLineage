@@ -56,7 +56,7 @@ public class SparkPropertyFacetBuilderTest {
                 .setAppName("SparkPropertyFacetBuilderTest")
                 .setMaster("local")
                 .set("test.key.1", "test")
-                .set("spark.openlineage.allowedProperties", "test.key.1"));
+                .set("spark.openlineage.capturedProperties", "test.key.1"));
 
     Consumer<OpenLineage.RunFacet> runFacetConsumer =
         facet -> {
