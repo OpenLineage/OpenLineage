@@ -4,7 +4,7 @@
 
 ### Changed
 * **Spark: remove url parameters for jdbc namespaces** [`#1708`](https://github.com/OpenLineage/OpenLineage/pull/1708) by [@tnazarew](https://github.com/tnazarew)    
-  *Make namespace value from event conform to naming convention specified in*
+  *Make namespace value from event conform to naming convention specified in* [Naming.md](https://github.com/OpenLineage/OpenLineage/blob/main/spec/Naming.md)
 * **Spark: remove deprecated configs** [`#1711`](https://github.com/OpenLineage/OpenLineage/pull/1711) by [@tnazarew](https://github.com/tnazarew)    
   *Remove support for deprecated configs*
 
