@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
 import lombok.NonNull;
@@ -76,7 +77,7 @@ public final class HttpTransport extends Transport implements Closeable {
       throw new OpenLineageClientException(e);
     }
     this.tokenProvider = httpConfig.getAuth();
-    this.headers = httpConfig.getHeaders();
+    this.headers = httpConfig.getHeaders() != null ? httpConfig.getHeaders() : new HashMap<>();
   }
 
   private URI getUri(HttpConfig httpConfig) throws URISyntaxException {
