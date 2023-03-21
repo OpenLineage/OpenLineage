@@ -2,9 +2,15 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.21.1...HEAD)
 
+### Added
+* **Spark: spark properties facet** [`#1717`](https://github.com/OpenLineage/OpenLineage/pull/1717) by [@tnazarew](https://github.com/tnazarew)    
+  *Add facet to capture specified Spark properties*
+
 ### Changed
 * **Spark: remove url parameters for jdbc namespaces** [`#1708`](https://github.com/OpenLineage/OpenLineage/pull/1708) by [@tnazarew](https://github.com/tnazarew)    
   *Make namespace value from event conform to naming convention specified in* [Naming.md](https://github.com/OpenLineage/OpenLineage/blob/main/spec/Naming.md)
+* **Spark: remove deprecated configs** [`#1711`](https://github.com/OpenLineage/OpenLineage/pull/1711) by [@tnazarew](https://github.com/tnazarew)    
+  *Remove support for deprecated configs*
 
 
 ## [0.21.1](https://github.com/OpenLineage/OpenLineage/compare/0.20.6...0.21.1) - 2023-3-2

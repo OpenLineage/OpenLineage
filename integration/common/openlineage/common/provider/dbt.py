@@ -53,6 +53,8 @@ class SparkConnectionMethod(Enum):
     def methods():
         return [x.value for x in SparkConnectionMethod]
 
+class UnsupportedDbtCommand(Exception):
+    pass
 
 class SkipUndefined(Undefined):
     def __getattr__(self, name):
@@ -245,7 +247,7 @@ class DbtArtifactProcessor:
         context = DbtRunContext(manifest, run_result, catalog)
 
         if self.command not in ['run', 'build', 'test', 'seed']:
-            raise ValueError(
+            raise UnsupportedDbtCommand(
                 f"Not recognized run command "
                 f"{self.command} - should be run, test, seed or build"
             )
