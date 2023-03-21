@@ -61,9 +61,8 @@ public class ArgumentParser {
 
   public static ArgumentParser parse(SparkConf conf) {
     ArgumentParserBuilder builder = ArgumentParser.builder();
-    adjustDeprecatedConfigs(conf);
     conf.setIfMissing(SPARK_CONF_DISABLED_FACETS, DEFAULT_DISABLED_FACETS);
-    conf.setIfMissing(SPARK_CONF_TRANSPORT_TYPE, "http");
+    conf.setIfMissing(SPARK_CONF_TRANSPORT_TYPE, "console");
 
     if (conf.get(SPARK_CONF_TRANSPORT_TYPE).equals("http")) {
       findSparkConfigKey(conf, SPARK_CONF_HTTP_URL)
@@ -77,73 +76,6 @@ public class ArgumentParser {
     findSparkConfigKey(conf, SPARK_CONF_PARENT_RUN_ID).ifPresent(builder::parentRunId);
     builder.openLineageYaml(extractOpenlineageConfFromSparkConf(conf));
     return builder.build();
-  }
-
-  // adjust properties so the old pipelines are allowed
-  private static void adjustDeprecatedConfigs(SparkConf conf) {
-    findSparkConfigKey(conf, "spark.openlineage.host")
-        .ifPresent(
-            c -> {
-              replaceConfigEntry(conf, SPARK_CONF_HTTP_URL, c, "spark.openlineage.host");
-            });
-
-    findSparkConfigKey(conf, "spark.openlineage.url")
-        .ifPresent(
-            c -> {
-              replaceConfigEntry(conf, SPARK_CONF_HTTP_URL, c, "spark.openlineage.url");
-            });
-
-    findSparkConfigKey(conf, "spark.openlineage.timeout")
-        .ifPresent(
-            c -> {
-              replaceConfigEntry(
-                  conf, UrlParser.SPARK_CONF_TIMEOUT, c, "spark.openlineage.timeout");
-            });
-
-    findSparkConfigKey(conf, "spark.openlineage.version")
-        .ifPresent(
-            c -> {
-              String apiVersion;
-              try {
-                int version = Integer.parseInt(c);
-                apiVersion = String.format("v%d", version);
-              } catch (NumberFormatException ex) {
-                apiVersion = c;
-              }
-              replaceConfigEntry(
-                  conf,
-                  UrlParser.SPARK_CONF_API_ENDPOINT,
-                  String.format("api/%s/lineage", apiVersion),
-                  "spark.openlineage.version");
-            });
-
-    findSparkConfigKey(conf, "spark.openlineage.apiKey")
-        .ifPresent(
-            c -> {
-              conf.setIfMissing(UrlParser.SPARK_CONF_API_KEY, c);
-              replaceConfigEntry(
-                  conf, UrlParser.SPARK_CONF_AUTH_TYPE, "api_key", "spark.openlineage.apiKey");
-            });
-
-    findSparkConfigKey(conf, "spark.openlineage.consoleTransport")
-        .filter("true"::equalsIgnoreCase)
-        .ifPresent(
-            c -> {
-              conf.set(SPARK_CONF_TRANSPORT_TYPE, "console");
-              conf.remove("spark.openlineage.consoleTransport");
-            });
-    Arrays.stream(conf.getAllWithPrefix("spark.openlineage.url.param."))
-        .forEach(
-            c -> {
-              conf.set("spark.openlineage.transport.urlParams." + c._1, c._2);
-              conf.remove("spark.openlineage.url.param." + c._1);
-            });
-  }
-
-  private static void replaceConfigEntry(
-      SparkConf conf, String sparkConfHttpUrl, String c, String key) {
-    conf.setIfMissing(sparkConfHttpUrl, c);
-    conf.remove(key);
   }
 
   public static OpenLineageYaml extractOpenlineageConfFromSparkConf(SparkConf conf) {
