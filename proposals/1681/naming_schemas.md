@@ -53,10 +53,10 @@ Each file under `naming/` would specify the particular convention for that integ
           "description": "The components that describe the namespace for this integration.",
           "type": "object",
           "properties": {
-            "uri_base": {
+            "scheme": {
               "description": "The base of a uri that specifies where the source object came from.",
               "type": "string",
-              "example": "uri://"
+              "example": "uri:"
             },
             "auth": {
               "description": "Authentication string for the connection.",
@@ -68,10 +68,19 @@ Each file under `naming/` would specify the particular convention for that integ
             },
             "port": {
               ...
+            },
+            "path": {
+              ...
+            },
+            "query": {
+              ...
+            },
+            "fragment": {
+              ...
             }
           },
-          "example": "uri://auth.host:port",
-          "required": ["uri_base", "host"] # require only a minimum subset of namespace properties
+          "example": "uri:path",
+          "required": ["uri_base", "path"] # require only these in accordance with standard URI syntax
         },
         "name": {
           "description": "The name of the dataset, unique within a namespace.",
@@ -88,7 +97,7 @@ Each file under `naming/` would specify the particular convention for that integ
               ...
             }
           },
-          "example_name": "MY_DB.MY_SCHEMA.MY_TABLE"
+          "example": "MY_DB.MY_SCHEMA.MY_TABLE"
         },
         "unique_name_qualifier": {
           "description": "How the namespace and name are combined to form a universally unique name.",
@@ -120,14 +129,14 @@ Each file under `naming/` would specify the particular convention for that integ
 ```
 
 In the above example, the Naming.json schema is provided with a detailed example for a Dataset. The schema would live in a new `spec/naming` folder under the name `NamingBase.json`. This would be analogous to the `spec/OpenLineage.json` file that outlines the `RunEvent` and other top-level OpenLineage abstractions. An example is given only for Datasets for brevity. The goal of this example is to show how properties for a `namespace` and `name` can be defined generically with a JSON schema, to be implemented by individual integrations. For a dataset, four pieces of information are needed:
-  1. The `namespace`, which minimally should include a `uri` and a `host` for some uniqueness and consistency in naming. The base spec can also define any number of common namespace attributes, such as `auth` and `port`, to be `$ref`'d by implementers.
+  1. The `namespace`, which minimally should include a `scheme` and a `path` as this seems to be consistent with URI naming conventions, see the [syntax diagram](https://upload.wikimedia.org/wikipedia/commons/d/d6/URI_syntax_diagram.svg). The base spec can also define any URI attributes, such as `auth`/`userinfo`, `host`, or `port`, to be `$ref`'d by implementers.
   2. The `name`, whose required properties, if any, are left to discussion. Again, properties can be defined to be re-used in implementations.
-  3. The `unique_name_qualifier`, which is a character or short string that will combine the `namespace` and `name`. Often, this will simply be a `/`.
-  4. The `case_sensitivity` is an object that will allow case-sensitive enforcement. This is necessary for some implementers, like Snowflake, and will ensure that all integrations correctly capitalize datasets.
+  3. The `unique_name_qualifier`, which is a character or short string that will combine the `namespace` and `name`. Often, this will simply be a `/`. This may not be necessary if there's a way of generating the classes that has this rule already.
+  4. The `case_sensitivity` is an object that will allow case-sensitive enforcement. This is necessary for some implementers, like Snowflake, and will ensure that all integrations correctly capitalize datasets. This field may also be unnecessary if the class generator can handle this.
 
 A similar set of requirements can be developed for Jobs. In this example, each potential element of a `namespace` or `name` is given explicitly as an object. This has the benefit of creating re-usable properties, even if it is verbose. Additionally, some of these properties could be defined as `pattern`s instead of `string`s to enforce certain conventions.
 
-Although one drawback with this type of schema is that the casing must have its own rule as to what fields it applies to; in the example, the `namespace` does not need the rule while the `name` does. Casing may be moved then to each of `namespace` and `name`, or defined elsewhere and `$ref`'d in each property.
+Although one drawback with this type of schema is that the casing must have its own rule as to what fields it applies to; in the example, the `namespace` does not need the rule while the `name` does. Casing may be moved then to each of `namespace` and `name`, defined elsewhere and `$ref`'d in each property, or moved to the class generator.
 
 [Snowflake Example]
 ```json
@@ -272,6 +281,8 @@ In the case above, we flatten the hierarchy of properties in the `DatasetNameBas
 ```
 
 In this Snowflake schema, we can add the properties relevant only to Snowflake and require ones that are absolutely necessary. The open question here is how to define the correct `name` and `namespace` in this subschema, as the author is unsure how. Perhaps in this method, `name` and `namespace` simply need to be their own schemas that are part of the `allOf`.
+
+Another possibility is to only specify `namespace` and `name` schemas that the `main/spec/OpenLineage.json` defs can then reference, as `Datasets` and `Jobs` are already defined there. Then these `namespace` and `name` schemas can be defined very precisely, with each integration getting more specific, and a `Dataset` can be updated to take one of these more specific schemas. This may be much simpler than the above.
 
 Ultimately, these JSON schemas should get created into classes with various attributes and validation.
 
