@@ -5,6 +5,8 @@
 ### Added
 * **Spark: spark properties facet** [`#1717`](https://github.com/OpenLineage/OpenLineage/pull/1717) by [@tnazarew](https://github.com/tnazarew)    
   *Add facet to capture specified Spark properties*
+* **Java: add configurable headers to http transport** [`#1718`](https://github.com/OpenLineage/OpenLineage/pull/1718) by [@tnazarew](https://github.com/tnazarew)    
+  *Add custom headers handling to HttpTransport and to spark integration*
 
 ### Changed
 * **Spark: remove url parameters for jdbc namespaces** [`#1708`](https://github.com/OpenLineage/OpenLineage/pull/1708) by [@tnazarew](https://github.com/tnazarew)    

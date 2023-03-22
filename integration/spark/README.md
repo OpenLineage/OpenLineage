@@ -105,13 +105,14 @@ Parameters configuring the Spark integration
 
 ### HTTP
 
-| Parameter                                     | Definition                                                                                                                                  | Example               |
+| Parameter                                    | Definition                                                                                                                                  | Example               |
 ----------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|-----------------------
 | spark.openlineage.transport.endpoint          | Path to resource                                                                                                                            | /api/v1/lineage       |
 | spark.openlineage.transport.apiKey            | An API key to be used when sending events to the OpenLineage server                                                                         | abcdefghijk           |
 | spark.openlineage.transport.timeout           | Timeout for sending OpenLineage info in milliseconds                                                                                        | 5000                  |
 | spark.openlineage.transport.urlParams.xyz     | A URL parameter (replace xyz) and value to be included in requests to the OpenLineage API server                                            | abcdefghijk           |
 | spark.openlineage.transport.url               | The hostname of the OpenLineage API server where events should be reported, it can have other properties embeded                            | http://localhost:5000 |
+| spark.openlineage.transport.headers.xyz       | Request headers (replace xyz) and value to be included in requests to the OpenLineage API server                                            | abcdefghijk           |
 
 ##### URL
 
