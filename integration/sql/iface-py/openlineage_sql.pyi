@@ -1,5 +1,6 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
+from enum import Enum
 
 """
 Definition of the public interface for openlineage_sql
@@ -14,6 +15,11 @@ class DbTableMeta:
     database: str | None
     schema: str | None
     name: str
+    # determines if namespace is already contained within a name, for example
+    # external stage location for Snowflake
+    provided_namespace: bool
+    # determines if fields schema is provided by parser
+    provided_field_schema: bool
     def __init__(self, name: str) -> None: ...
 
 class ColumnMeta:

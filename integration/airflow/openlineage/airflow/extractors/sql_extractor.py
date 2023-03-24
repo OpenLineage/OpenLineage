@@ -103,17 +103,50 @@ class SqlExtractor(BaseExtractor):
         # as the current connection. We need to also fetch the schema for the
         # input tables to format the dataset name as:
         # {schema_name}.{table_name}
+        in_tables = [
+            t for t in sql_meta.in_tables if not t.provided_field_schema
+        ]
+        out_tables = [
+            t for t in sql_meta.out_tables if not t.provided_field_schema
+        ]
         inputs, outputs = get_table_schemas(
             self.hook,
             source,
             database,
-            self._information_schema_query(sql_meta.in_tables)
-            if sql_meta.in_tables
-            else None,
-            self._information_schema_query(sql_meta.out_tables)
-            if sql_meta.out_tables
-            else None,
+            self._information_schema_query(in_tables) if in_tables else None,
+            self._information_schema_query(out_tables) if out_tables else None,
         )
+
+        # (4) Map external stage tables to datasets
+        # (no need to query information schema)
+        for in_table in sql_meta.in_tables:
+            if in_table.provided_field_schema:
+                if in_table.provided_namespace:
+                    inputs.append(Dataset.from_table(
+                        source=source,
+                        table_name=in_table.name
+                    ))
+                else:
+                    inputs.append(Dataset.from_table(
+                        source=source,
+                        table_name=in_table.name,
+                        schema_name=in_table.schema,
+                        database_name=in_table.database or database,
+                    ))
+        for out_table in sql_meta.out_tables:
+            if out_table.provided_field_schema:
+                if out_table.provided_namespace:
+                    outputs.append(Dataset.from_table(
+                        source=source,
+                        table_name=out_table.name
+                    ))
+                else:
+                    outputs.append(Dataset.from_table(
+                        source=source,
+                        table_name=out_table.name,
+                        schema_name=out_table.schema,
+                        database_name=out_table.database or database,
+                    ))
 
         for ds in inputs:
             ds.input_facets = self._get_input_facets()

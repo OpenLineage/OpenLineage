@@ -33,6 +33,12 @@ impl DbTableMeta {
         self.0.database.as_deref()
     }
 
+    #[getter(provided_namespace)]
+    pub fn provided_namespace(&self) -> bool { self.0.provided_namespace }
+
+    #[getter(provided_field_schema)]
+    pub fn provided_field_schema(&self) -> bool { self.0.provided_field_schema }
+
     #[getter(schema)]
     pub fn schema(&self) -> Option<&str> {
         self.0.schema.as_deref()

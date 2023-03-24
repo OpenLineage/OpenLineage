@@ -77,7 +77,7 @@ pub fn parse_sql(
 
 #[cfg(test)]
 mod tests {
-    use crate::DbTableMeta;
+    use crate::{DbTableMeta};
 
     #[test]
     fn compare_db_meta() {
@@ -85,12 +85,17 @@ mod tests {
             DbTableMeta {
                 database: None,
                 schema: None,
-                name: "discount".to_string()
+                name: "discount".to_string(),
+                provided_namespace: false,
+                provided_field_schema: false,
             },
+
             DbTableMeta {
                 database: None,
                 schema: Some("public".to_string()),
-                name: "discount".to_string()
+                name: "discount".to_string(),
+                provided_namespace: false,
+                provided_field_schema: false,
             }
         );
     }

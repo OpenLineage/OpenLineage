@@ -7,9 +7,7 @@ use openlineage_sql::TableLineage;
 #[test]
 fn truncate_table() {
     assert_eq!(
-        test_sql("TRUNCATE TABLE a.b",)
-            .unwrap()
-            .table_lineage,
+        test_sql("TRUNCATE TABLE a.b",).unwrap().table_lineage,
         TableLineage {
             in_tables: vec![],
             out_tables: tables(vec!["a.b"])
