@@ -53,7 +53,7 @@ ext {
     flinkVersion = project.getProperty('flink.version')
     flinkVersionShort = flinkVersion.substring(0,4)
     flinkVersionWithScala212 = flinkVersion.contains('1.14') ? "_2.12:$flinkVersion" : ":$flinkVersion"
-    hadoopVersion = '3.3.1'
+    hadoopVersion = '3.3.5'
     icebergVersion = "1.1.0"
 }
 
