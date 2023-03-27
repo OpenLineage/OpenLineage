@@ -177,6 +177,8 @@ jobs:
           keys:
             - v1-release-client-java-snapshot-{{ .Branch }}-{{ .Revision }}
             - v1-release-client-java-snapshot-{{ .Branch }}
+      - attach_workspace:
+          at: ~/.m2/repository/io/openlineage/
       - run: |
           # Get, then decode the GPG private key used to sign *.jar
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
@@ -397,7 +399,7 @@ jobs:
           root: ../
           paths:
             - target/debug/libopenlineage_sql_java.dylib
-  
+
   build-integration-sql-java:
     working_directory: ~/openlineage/integration/sql/iface-java
     docker:
@@ -415,7 +417,33 @@ jobs:
       - store_artifacts:
           path: ./build/libs
           destination: sql-java-artifacts
-  
+
+  publish-snapshot-sql-java:
+    working_directory: ~/openlineage/integration/sql/iface-java
+    docker:
+      - image: cimg/openjdk:8.0
+    resource_class: medium
+    steps:
+      - *checkout_project_root
+      - restore_cache:
+          keys:
+            - v1-release-client-java-{{ .Branch }}-{{ .Revision }}
+            - v1-release-client-java-{{ .Branch }}
+      - attach_workspace:
+          at: ../
+      - run: bash script/build.sh
+      - run: |
+          # Get, then decode the GPG private key used to sign *.jar
+          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
+          export RELEASE_PASSWORD=$(echo $ARTIFACTORY_PASSWORD)
+          export RELEASE_USERNAME=$(echo $ARTIFACTORY_USERNAME)
+
+          cd ../../../client/java
+          ./gradlew --no-daemon publishToMavenLocal
+          cd -
+          # Publish *.jar
+          ./gradlew --no-daemon publish
+
   release-integration-sql-java:
     working_directory: ~/openlineage/integration/sql/iface-java
     docker:
@@ -426,7 +454,6 @@ jobs:
           keys:
             - v1-release-client-java-{{ .Branch }}-{{ .Revision }}
             - v1-release-client-java-{{ .Branch }}
-      - *checkout_project_root
       - attach_workspace:
           at: ../
       - run: bash script/build.sh
