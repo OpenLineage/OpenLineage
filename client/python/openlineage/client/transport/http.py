@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+import warnings
 from typing import TYPE_CHECKING, Dict, Optional
 from urllib.parse import urljoin
 
@@ -29,7 +30,14 @@ class TokenProvider:
 
 class ApiKeyTokenProvider(TokenProvider):
     def __init__(self, config: Dict):
-        self.api_key = config['api_key']
+        try:
+            self.api_key = config["api_key"]
+            warnings.warn(
+                "'api_key' option is deprecated, please use 'apiKey'",
+                DeprecationWarning,
+            )
+        except KeyError:
+            self.api_key = config["apiKey"]
 
     def get_bearer(self) -> Optional[str]:
         return f"Bearer {self.api_key}"

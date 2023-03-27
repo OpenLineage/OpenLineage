@@ -27,9 +27,12 @@ class DefaultTransportFactory(TransportFactory):
     def register_transport(self, type: str, clazz: Union[Type[Transport], str]):
         self.transports[type] = clazz
 
-    def create(self) -> Transport:
+    def create(self, config: Optional[dict] = None) -> Transport:
         if os.getenv("OPENLINEAGE_DISABLED", "").lower() == "true":
             return NoopTransport(NoopConfig())
+
+        if config:
+            return self._create_transport(config)
 
         if 'yaml' in sys.modules:
             yml_config = self._try_config_from_yaml()
@@ -45,7 +48,10 @@ class DefaultTransportFactory(TransportFactory):
         return ConsoleTransport(ConsoleConfig())
 
     def _create_transport(self, config: dict):
-        transport_type = config['type']
+        try:
+            transport_type = config['type']
+        except IndexError:
+            raise TypeError("You need to pass transport type in config.")
 
         if transport_type in self.transports:
             transport_class = self.transports[transport_type]
