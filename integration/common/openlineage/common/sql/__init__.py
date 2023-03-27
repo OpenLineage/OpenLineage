@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 def parse(
     sql: Union[List[str], str],
     dialect: Optional[str] = None,
-    default_schema: Optional[str] = None
+    default_schema: Optional[str] = None,
 ) -> Optional[SqlMeta]:
     if isinstance(sql, str):
         sql = [sql]
