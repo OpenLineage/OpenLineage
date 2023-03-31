@@ -27,7 +27,8 @@ The current OpenLineage committers are:
 | Jakub Dardziński   | |
 | Tomasz Nazarewicz  | |
 | Minkyu Park        | |
-| Benji Lampel        | |
+| Benji Lampel       | |
+| Kengo Seki         | |
 
 To understand how to become an OpenLineage committer,
 read the [OpenLineage Governance Guide](GOVERNANCE.md).
