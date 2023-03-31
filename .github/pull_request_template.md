@@ -15,6 +15,8 @@ Please describe your change as it relates to the problem, or bug fix, as well as
 
 If you're contributing a new integration, please specify the scope of the integration and how/where it has been tested (e.g., Apache Spark integration supports `S3` and `GCS` filesystem operations, tested with AWS EMR).
 
+#### One-line summary:
+
 ### Checklist
 
 - [ ] You've [signed-off](https://github.com/OpenLineage/OpenLineage/blob/main/why-the-dco.md) your work
