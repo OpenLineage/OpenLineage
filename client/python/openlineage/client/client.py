@@ -77,3 +77,7 @@ class OpenLineageClient:
     @classmethod
     def from_environment(cls):
         return cls(transport=get_default_factory().create())
+
+    @classmethod
+    def from_dict(cls, config: dict):
+        return cls(transport=get_default_factory().create(config=config))

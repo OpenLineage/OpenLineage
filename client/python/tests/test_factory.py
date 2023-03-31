@@ -79,6 +79,29 @@ def test_factory_registers_transports_from_yaml_config():
     transport = factory.create()
     assert isinstance(transport, FakeTransport)
 
+@patch.dict(os.environ, {"OPENLINEAGE_CONFIG": "tests/config/http.yml"})
+def test_factory_configures_http_transport_from_yaml_config():
+    factory = get_default_factory()
+    transport = factory.create()
+    assert isinstance(transport, HttpTransport)
+
+
+def test_factory_registers_from_dict():
+    factory = DefaultTransportFactory()
+    factory.register_transport(
+        "fake",
+        clazz="tests.transport.FakeTransport"
+    )
+    factory.register_transport(
+        "accumulating",
+        clazz="tests.transport.AccumulatingTransport"
+    )
+    config = {
+        "type": "accumulating"
+    }
+    transport = factory.create(config=config)
+    assert isinstance(transport, AccumulatingTransport)
+
 
 def test_automatically_registers_http_kafka():
     factory = get_default_factory()
