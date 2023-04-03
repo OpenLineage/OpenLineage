@@ -1,19 +1,37 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.21.1...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.22.0...HEAD)
 
+## [0.22.0](https://github.com/OpenLineage/OpenLineage/compare/0.21.1...0.22.0) - 2023-4-3
 ### Added
-* **Spark: spark properties facet** [`#1717`](https://github.com/OpenLineage/OpenLineage/pull/1717) by [@tnazarew](https://github.com/tnazarew)    
-  *Add facet to capture specified Spark properties*
-* **Java: add configurable headers to http transport** [`#1718`](https://github.com/OpenLineage/OpenLineage/pull/1718) by [@tnazarew](https://github.com/tnazarew)    
-  *Add custom headers handling to HttpTransport and to spark integration*
+* **Spark: properties facet** [`#1717`](https://github.com/OpenLineage/OpenLineage/pull/1717) by [@tnazarew](https://github.com/tnazarew)    
+    *Adds a new facet to capture specified Spark properties.*
+* **SQL: SQLParser supports `alter`, `truncate` and `drop` statements** [`#1695`](https://github.com/OpenLineage/OpenLineage/pull/1695) by [pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Adds support for the statements to the parser.*
+* **Common/SQL: provide public interface for openlineage_sql package** [`#1727`](https://github.com/OpenLineage/OpenLineage/pull/1727) by [JDarDagran](https://github.com/JDarDagran)  
+    *Provides a `.pyi` public interface file for providing typing hints.*
+* **Java client: add configurable headers to HTTP transport** [`#1718`](https://github.com/OpenLineage/OpenLineage/pull/1718) by [@tnazarew](https://github.com/tnazarew)    
+    *Adds custom header handling to `HttpTransport` and the Spark integration.*
+* **Python client: create client from dictionary** [`#1745`](https://github.com/OpenLineage/OpenLineage/pull/1745) by [JDarDagran](https://github.com/JDarDagran)  
+    *Adds a new `from_dict` method to the Python client to support creating it from a dictionary.*
 
 ### Changed
-* **Spark: remove url parameters for jdbc namespaces** [`#1708`](https://github.com/OpenLineage/OpenLineage/pull/1708) by [@tnazarew](https://github.com/tnazarew)    
-  *Make namespace value from event conform to naming convention specified in* [Naming.md](https://github.com/OpenLineage/OpenLineage/blob/main/spec/Naming.md)
-* **Spark: remove deprecated configs** [`#1711`](https://github.com/OpenLineage/OpenLineage/pull/1711) by [@tnazarew](https://github.com/tnazarew)    
-  *Remove support for deprecated configs*
+* **Spark: remove URL parameters for JDBC namespaces** [`#1708`](https://github.com/OpenLineage/OpenLineage/pull/1708) by [@tnazarew](https://github.com/tnazarew)      
+    *Makes the namespace value from an event conform to the naming convention specified in* [Naming.md](https://github.com/OpenLineage/OpenLineage/blob/main/spec/Naming.md).
+* **Make `OPENLINEAGE_DISABLED` case-insensitive** [`#1705`](https://github.com/OpenLineage/OpenLineage/pull/1705) by [jedcunningham](https://github.com/jedcunningham)  
+    *Makes the environment variable for disabling OpenLineage in the Python client and Airflow integration case-insensitive.*
 
+### Fixed
+* **Spark: fix missing BigQuery class in column lineage** [`#1698`](https://github.com/OpenLineage/OpenLineage/pull/1698) by [pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *The Spark integration now checks if the BigQuery classes are available on the classpath before attempting to use them.*
+* **DBT: throw `UnsupportedDbtCommand` when finding unsupported entry in `args.which`** [`#1724`](https://github.com/OpenLineage/OpenLineage/pull/1724) by [JDarDagran](https://github.com/JDarDagran)  
+    *Adjusts the `dbt-ol` script to detect DBT commands in `run_results.json` only.*
+
+### Removed
+* **Spark: remove unnecessary warnings for column lineage** [`#1700`](https://github.com/OpenLineage/OpenLineage/pull/1700) by [pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Removes the warnings about `OneRowRelation` and `LocalRelation` nodes.*
+* **Spark: remove deprecated configs** [`#1711`](https://github.com/OpenLineage/OpenLineage/pull/1711) by [@tnazarew](https://github.com/tnazarew)    
+    *Removes support for deprecated configs.*
 
 ## [0.21.1](https://github.com/OpenLineage/OpenLineage/compare/0.20.6...0.21.1) - 2023-3-2
 ### Added
