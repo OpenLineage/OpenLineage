@@ -1,4 +1,5 @@
 require "fluent/plugin/parser"
+require 'fluent/plugin/parser_json'
 require 'json'
 require "rusty_json_schema"
 require 'uri'
