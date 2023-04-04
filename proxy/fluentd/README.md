@@ -45,6 +45,7 @@ example usage scenario provided:
 
 ```shell
 docker build -t openlineage-fluentd:latest ./
+docker run  openlineage-fluentd:latest -p /fluentd/openlineage-parser
 ```
 
 ### Development
@@ -52,6 +53,7 @@ docker build -t openlineage-fluentd:latest ./
 To build dependencies: 
 ```shell
 bundle install
+bundle
 ```
 
 To run the tests:

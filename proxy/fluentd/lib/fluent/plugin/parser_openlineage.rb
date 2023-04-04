@@ -7,7 +7,7 @@ require 'net/http'
 module Fluent
   module Plugin
     class OpenlineageParser < Fluent::Plugin::JSONParser
-      Fluent::Plugin.register_parser("openlineage_parser", self)
+      Fluent::Plugin.register_parser("openlineage", self)
 
       DEFAULT_SCHEMA="https://openlineage.io/spec/1-0-5/OpenLineage.json"
 
