@@ -5,15 +5,14 @@
 
 package io.openlineage.client;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import java.util.Objects;
 
 public class SchemaParser {
 
@@ -33,23 +32,34 @@ public class SchemaParser {
         if (typeName.equals("string") && typeJson.has("enum")) {
           Iterator<JsonNode> valuesIterator = typeJson.get("enum").elements();
           Iterable<JsonNode> valuesIterable = () -> valuesIterator;
-          List<String> values = StreamSupport
-              .stream(valuesIterable.spliterator(), false)
-              .map(jsonNode -> jsonNode.asText())
-              .collect(Collectors.toList());
+          List<String> values =
+              StreamSupport.stream(valuesIterable.spliterator(), false)
+                  .map(jsonNode -> jsonNode.asText())
+                  .collect(Collectors.toList());
           return new EnumType(values);
-        } else if (typeName.equals("string") || typeName.equals("integer") || typeName.equals("number") || typeName.equals("boolean")) {
-          return new PrimitiveType(typeName, typeJson.has("format") ? typeJson.get("format").asText() : null);
-        } else if (typeName.equals("object") && (typeJson.has("properties") || typeJson.has("additionalProperties") || typeJson.has("patternProperties"))) {
+        } else if (typeName.equals("string")
+            || typeName.equals("integer")
+            || typeName.equals("number")
+            || typeName.equals("boolean")) {
+          return new PrimitiveType(
+              typeName, typeJson.has("format") ? typeJson.get("format").asText() : null);
+        } else if (typeName.equals("object")
+            && (typeJson.has("properties")
+                || typeJson.has("additionalProperties")
+                || typeJson.has("patternProperties"))) {
           List<Field> fields = new ArrayList<Field>();
           boolean hasAdditionalProperties = false;
           Type additionalPropertiesType = null;
           if (typeJson.has("properties")) {
             JsonNode properties = typeJson.get("properties");
-            for (Iterator<Entry<String, JsonNode>> fieldsJson = properties.fields(); fieldsJson.hasNext(); ) {
+            for (Iterator<Entry<String, JsonNode>> fieldsJson = properties.fields();
+                fieldsJson.hasNext(); ) {
               Entry<String, JsonNode> field = fieldsJson.next();
               Type fieldType = parse(field.getValue());
-              String description = field.getValue().has("description") ? field.getValue().get("description").asText() : null;
+              String description =
+                  field.getValue().has("description")
+                      ? field.getValue().get("description").asText()
+                      : null;
               fields.add(new Field(field.getKey(), fieldType, description));
             }
           }
@@ -64,8 +74,11 @@ public class SchemaParser {
             JsonNode patternProperties = typeJson.get("patternProperties");
             if (patternProperties.isObject()) {
               Iterator<Entry<String, JsonNode>> patternFields = patternProperties.fields();
-              Entry<String, JsonNode> patternField = patternFields.hasNext() ? patternFields.next() : null;
-              if (patternField == null || patternFields.hasNext() || !patternField.getValue().isObject()) {
+              Entry<String, JsonNode> patternField =
+                  patternFields.hasNext() ? patternFields.next() : null;
+              if (patternField == null
+                  || patternFields.hasNext()
+                  || !patternField.getValue().isObject()) {
                 throw new RuntimeException("can't parse type " + patternProperties);
               }
               additionalPropertiesType = parse(patternField.getValue());
@@ -119,16 +132,20 @@ public class SchemaParser {
         throw new RuntimeException("Error while visiting " + type, e);
       }
     }
-
   }
 
   interface Type {
 
     <T> T accept(TypeVisitor<T> visitor);
-    default boolean isObject() { return false; };
-    default ObjectType asObject() { return (ObjectType) this; };
-  }
 
+    default boolean isObject() {
+      return false;
+    };
+
+    default ObjectType asObject() {
+      return (ObjectType) this;
+    };
+  }
 
   static class RefType implements Type {
 
@@ -186,7 +203,6 @@ public class SchemaParser {
     public <T> T accept(TypeVisitor<T> visitor) {
       return visitor.visit(this);
     }
-
 
     @Override
     public String toString() {
@@ -395,14 +411,17 @@ public class SchemaParser {
     private final boolean additionalProperties;
     private final Type additionalPropertiesType;
 
-    public ObjectType(List<Field> properties, boolean additionalProperties, Type additionalPropertiesType) {
+    public ObjectType(
+        List<Field> properties, boolean additionalProperties, Type additionalPropertiesType) {
       super();
       this.properties = properties;
       this.additionalProperties = additionalProperties;
       this.additionalPropertiesType = additionalPropertiesType;
     }
 
-    public boolean isObject() { return true; };
+    public boolean isObject() {
+      return true;
+    };
 
     @Override
     public <T> T accept(TypeVisitor<T> visitor) {
@@ -425,7 +444,6 @@ public class SchemaParser {
     public String toString() {
       return "ObjectType{properties: " + properties + "}";
     }
-
   }
 
   static class ArrayType implements Type {
@@ -444,6 +462,7 @@ public class SchemaParser {
     public <T> T accept(TypeVisitor<T> visitor) {
       return visitor.visit(this);
     }
+
     @Override
     public String toString() {
       return "ArrayType{items: " + items + "}";
@@ -483,13 +502,11 @@ public class SchemaParser {
 
     @Override
     public String toString() {
-      return "EnumType{values=(" + String.join(",", values)  + ")}";
+      return "EnumType{values=(" + String.join(",", values) + ")}";
     }
 
     public List<String> getValues() {
       return values;
     }
-
   }
-
 }

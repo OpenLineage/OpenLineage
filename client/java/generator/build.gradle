@@ -9,6 +9,8 @@
 plugins {
     // Apply the Java Gradle plugin development plugin to add support for developing Gradle plugins
     id 'java'
+    id("io.freefair.lombok") version "8.0.1"
+    id 'com.diffplug.spotless' version '6.13.0'
 }
 
 repositories {
@@ -24,3 +26,18 @@ dependencies {
     implementation group: 'org.slf4j', name: 'slf4j-simple', version: '2.0.7'
 }
 
+spotless {
+    def disallowWildcardImports = {
+        String text = it
+        def regex = ~/import .*\.\*;/
+        def m = regex.matcher(text)
+        if (m.find()) {
+            throw new AssertionError("Wildcard imports disallowed - ${m.findAll()}")
+        }
+    }
+    java {
+        googleJavaFormat()
+        removeUnusedImports()
+        custom 'disallowWildcardImports', disallowWildcardImports
+    }
+}

@@ -5,9 +5,20 @@
 
 package io.openlineage.client;
 
-
 import static java.util.Arrays.asList;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.openlineage.client.SchemaParser.AllOfType;
+import io.openlineage.client.SchemaParser.AnyOfType;
+import io.openlineage.client.SchemaParser.ArrayType;
+import io.openlineage.client.SchemaParser.Field;
+import io.openlineage.client.SchemaParser.ObjectType;
+import io.openlineage.client.SchemaParser.OneOfType;
+import io.openlineage.client.SchemaParser.PrimitiveType;
+import io.openlineage.client.SchemaParser.RefType;
+import io.openlineage.client.SchemaParser.Type;
+import io.openlineage.client.SchemaParser.TypeVisitor;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -22,30 +33,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import io.openlineage.client.SchemaParser.AllOfType;
-import io.openlineage.client.SchemaParser.ArrayType;
-import io.openlineage.client.SchemaParser.Field;
-import io.openlineage.client.SchemaParser.ObjectType;
-import io.openlineage.client.SchemaParser.OneOfType;
-import io.openlineage.client.SchemaParser.AnyOfType;
-import io.openlineage.client.SchemaParser.PrimitiveType;
-import io.openlineage.client.SchemaParser.RefType;
-import io.openlineage.client.SchemaParser.Type;
-import io.openlineage.client.SchemaParser.TypeVisitor;
-
-/**
- * Resolves the types in a Schema. (ref, etc)
- */
+/** Resolves the types in a Schema. (ref, etc) */
 public class TypeResolver {
 
   private Map<String, ObjectResolvedType> types = new HashMap<>();
   private Set<String> referencedTypes = new HashSet<>();
   private Set<String> baseTypes = new HashSet<>();
 
-  private Map<URL, ResolvedType> rootResolvedTypePerURL = new HashMap<URL, TypeResolver.ResolvedType>();
+  private Map<URL, ResolvedType> rootResolvedTypePerURL =
+      new HashMap<URL, TypeResolver.ResolvedType>();
 
   public TypeResolver(Collection<URL> baseUrls) {
     super();
@@ -58,176 +54,201 @@ public class TypeResolver {
       SchemaParser parser = new SchemaParser();
       Type rootType = parser.parse(rootSchema);
 
-      TypeVisitor<ResolvedType> visitor = new TypeVisitor<ResolvedType>(){
+      TypeVisitor<ResolvedType> visitor =
+          new TypeVisitor<ResolvedType>() {
 
-        String currentName = "";
-        String currentProperty;
-        String currentObjectName;
+            String currentName = "";
+            String currentProperty;
+            String currentObjectName;
 
-        @Override
-        public ResolvedType visit(PrimitiveType primitiveType) {
-          return new PrimitiveResolvedType(primitiveType);
-        }
-
-        @Override
-        public ResolvedType visit(ObjectType objectType) {
-          List<Field> properties = objectType.getProperties();
-          currentObjectName = currentName;
-          List<ResolvedField> resolvedFields = new ArrayList<>(properties.size());
-          resolvedFields.addAll(resolveFields(properties));
-          ObjectResolvedType objectResolvedType = new ObjectResolvedType(
-              container,
-              asList(objectType),
-              currentName,
-              Collections.emptySet(),
-              resolvedFields,
-              objectType.hasAdditionalProperties(),
-              visit(currentName + "Additional", objectType.getAdditionalPropertiesType()));
-          String key = container + "." + objectResolvedType.getName();
-          if (types.put(key, objectResolvedType) != null) {
-            throw new RuntimeException("Duplicated type: " + objectResolvedType.getName());
-          };
-          return objectResolvedType;
-        }
-
-        @Override
-        public EnumResolvedType visit(SchemaParser.EnumType enumType) {
-          return new EnumResolvedType(currentProperty, enumType.getValues(), currentObjectName);
-        }
-
-        private List<ResolvedField> resolveFields(List<Field> properties) {
-          List<ResolvedField> resolvedFields = new ArrayList<>(properties.size());
-          String previousCurrentName = currentName;
-          for (Field property : properties) {
-            currentProperty = titleCase(property.getName());
-            currentName = previousCurrentName + currentProperty;
-            ResolvedField resolvedField = new ResolvedField(property, visit(property.getType()));
-            resolvedFields.add(resolvedField);
-            referencedTypes.add(resolvedField.getType().accept(new ResolvedTypeVisitor<String>() {
-              @Override
-              public String visit(PrimitiveResolvedType primitiveType) {
-                return primitiveType.getName();
-              }
-
-              @Override
-              public String visit(ObjectResolvedType objectType) {
-                return objectType.getName();
-              }
-
-              @Override
-              public String visit(ArrayResolvedType arrayType) {
-                return visit(arrayType.items);
-              }
-
-              @Override
-              public String visit(EnumResolvedType enumType) {
-                return enumType.getName();
-              }
-
-            }));
-          }
-          currentName = previousCurrentName;
-          return resolvedFields;
-        }
-
-        @Override
-        public ResolvedType visit(ArrayType arrayType) {
-          return new ArrayResolvedType(arrayType, visit(arrayType.getItems()));
-        }
-
-        @Override
-        public ResolvedType visit(OneOfType oneOfType) {
-          throw new UnsupportedOperationException("oneOf is not supported yet " + oneOfType);
-        }
-
-        @Override
-        public ResolvedType visit(AnyOfType oneOfType) {
-          // in case of anyOf we generate code based on the first type available
-          return visit(oneOfType.getChildren().get(0));
-        }
-
-        @Override
-        public ResolvedType visit(AllOfType allOfType) {
-          List<Type> children = allOfType.getChildren();
-          List<ObjectType> castChildren = new ArrayList<>(children.size());
-          LinkedHashSet<ResolvedField> combinedProperties = new LinkedHashSet<>();
-          boolean additionalProperties = false;
-          ResolvedType additionalPropertiesType = null;
-          Set<ObjectResolvedType> parents = new LinkedHashSet<>();
-          for (Type child : children) {
-            ObjectResolvedType resolvedChildType = (ObjectResolvedType) visit(child);
-            List<ObjectType> objectTypes = resolvedChildType.getObjectTypes();
-            if (!currentName.equals(resolvedChildType.getName())) {
-              // base interface
-              baseTypes.add(resolvedChildType.getName());
-              parents.add(resolvedChildType);
+            @Override
+            public ResolvedType visit(PrimitiveType primitiveType) {
+              return new PrimitiveResolvedType(primitiveType);
             }
-            castChildren.addAll(objectTypes);
-            combinedProperties.addAll(resolvedChildType.getProperties());
-            if (resolvedChildType.hasAdditionalProperties()) {
-              additionalProperties = true;
-              if (resolvedChildType.getAdditionalPropertiesType() != null) {
-                if (additionalPropertiesType == null) {
-                  additionalPropertiesType = resolvedChildType.getAdditionalPropertiesType();
-                } else {
-                  if (!additionalPropertiesType.equals(resolvedChildType.getAdditionalPropertiesType())) {
-                    throw new UnsupportedOperationException("can not combine different additionalProperties types in allOf " + children);
+
+            @Override
+            public ResolvedType visit(ObjectType objectType) {
+              List<Field> properties = objectType.getProperties();
+              currentObjectName = currentName;
+              List<ResolvedField> resolvedFields = new ArrayList<>(properties.size());
+              resolvedFields.addAll(resolveFields(properties));
+              ObjectResolvedType objectResolvedType =
+                  new ObjectResolvedType(
+                      container,
+                      asList(objectType),
+                      currentName,
+                      Collections.emptySet(),
+                      resolvedFields,
+                      objectType.hasAdditionalProperties(),
+                      visit(currentName + "Additional", objectType.getAdditionalPropertiesType()));
+              String key = container + "." + objectResolvedType.getName();
+              if (types.put(key, objectResolvedType) != null) {
+                throw new RuntimeException("Duplicated type: " + objectResolvedType.getName());
+              }
+              ;
+              return objectResolvedType;
+            }
+
+            @Override
+            public EnumResolvedType visit(SchemaParser.EnumType enumType) {
+              return new EnumResolvedType(currentProperty, enumType.getValues(), currentObjectName);
+            }
+
+            private List<ResolvedField> resolveFields(List<Field> properties) {
+              List<ResolvedField> resolvedFields = new ArrayList<>(properties.size());
+              String previousCurrentName = currentName;
+              for (Field property : properties) {
+                currentProperty = titleCase(property.getName());
+                currentName = previousCurrentName + currentProperty;
+                ResolvedField resolvedField =
+                    new ResolvedField(property, visit(property.getType()));
+                resolvedFields.add(resolvedField);
+                referencedTypes.add(
+                    resolvedField
+                        .getType()
+                        .accept(
+                            new ResolvedTypeVisitor<String>() {
+                              @Override
+                              public String visit(PrimitiveResolvedType primitiveType) {
+                                return primitiveType.getName();
+                              }
+
+                              @Override
+                              public String visit(ObjectResolvedType objectType) {
+                                return objectType.getName();
+                              }
+
+                              @Override
+                              public String visit(ArrayResolvedType arrayType) {
+                                return visit(arrayType.items);
+                              }
+
+                              @Override
+                              public String visit(EnumResolvedType enumType) {
+                                return enumType.getName();
+                              }
+                            }));
+              }
+              currentName = previousCurrentName;
+              return resolvedFields;
+            }
+
+            @Override
+            public ResolvedType visit(ArrayType arrayType) {
+              return new ArrayResolvedType(arrayType, visit(arrayType.getItems()));
+            }
+
+            @Override
+            public ResolvedType visit(OneOfType oneOfType) {
+              throw new UnsupportedOperationException("oneOf is not supported yet " + oneOfType);
+            }
+
+            @Override
+            public ResolvedType visit(AnyOfType oneOfType) {
+              // in case of anyOf we generate code based on the first type available
+              return visit(oneOfType.getChildren().get(0));
+            }
+
+            @Override
+            public ResolvedType visit(AllOfType allOfType) {
+              List<Type> children = allOfType.getChildren();
+              List<ObjectType> castChildren = new ArrayList<>(children.size());
+              LinkedHashSet<ResolvedField> combinedProperties = new LinkedHashSet<>();
+              boolean additionalProperties = false;
+              ResolvedType additionalPropertiesType = null;
+              Set<ObjectResolvedType> parents = new LinkedHashSet<>();
+              for (Type child : children) {
+                ObjectResolvedType resolvedChildType = (ObjectResolvedType) visit(child);
+                List<ObjectType> objectTypes = resolvedChildType.getObjectTypes();
+                if (!currentName.equals(resolvedChildType.getName())) {
+                  // base interface
+                  baseTypes.add(resolvedChildType.getName());
+                  parents.add(resolvedChildType);
+                }
+                castChildren.addAll(objectTypes);
+                combinedProperties.addAll(resolvedChildType.getProperties());
+                if (resolvedChildType.hasAdditionalProperties()) {
+                  additionalProperties = true;
+                  if (resolvedChildType.getAdditionalPropertiesType() != null) {
+                    if (additionalPropertiesType == null) {
+                      additionalPropertiesType = resolvedChildType.getAdditionalPropertiesType();
+                    } else {
+                      if (!additionalPropertiesType.equals(
+                          resolvedChildType.getAdditionalPropertiesType())) {
+                        throw new UnsupportedOperationException(
+                            "can not combine different additionalProperties types in allOf "
+                                + children);
+                      }
+                    }
                   }
                 }
               }
+              ObjectResolvedType objectResolvedType =
+                  new ObjectResolvedType(
+                      container,
+                      castChildren,
+                      currentName,
+                      parents,
+                      new ArrayList<>(combinedProperties),
+                      additionalProperties,
+                      additionalPropertiesType);
+              String key = container + "." + objectResolvedType.getName();
+              types.put(key, objectResolvedType);
+              return objectResolvedType;
             }
-          }
-          ObjectResolvedType objectResolvedType = new ObjectResolvedType(container, castChildren, currentName, parents, new ArrayList<>(combinedProperties), additionalProperties, additionalPropertiesType);
-          String key = container + "." + objectResolvedType.getName();
-          types.put(key, objectResolvedType);
-          return objectResolvedType;
-        }
 
-        @Override
-        public ResolvedType visit(RefType refType) {
-          String absolutePointer = refType.getPointer();
-          int anchorIndex = absolutePointer.indexOf('#');
-          String pointer = absolutePointer.substring(anchorIndex + 1);
-          String base = absolutePointer.substring(0, anchorIndex);
-          String typeName = titleCase(lastPart(pointer));
-          final String refContainer;
-          if (anchorIndex > 0) {
-            String file = base.substring(base.lastIndexOf('/') + 1);
-            refContainer = file.substring(0, file.lastIndexOf('.'));
-          } else {
-            refContainer = container;
-          }
-          String key = refContainer + "." + typeName;
-          if (types.containsKey(key)) {
-            return types.get(key);
-          }
-          if (anchorIndex > 0) {
-            throw new RuntimeException("This ref should have been resolved already: " + refContainer + " " + refType.getPointer() + " => "+ key + " keys: " + types.keySet());
-          }
+            @Override
+            public ResolvedType visit(RefType refType) {
+              String absolutePointer = refType.getPointer();
+              int anchorIndex = absolutePointer.indexOf('#');
+              String pointer = absolutePointer.substring(anchorIndex + 1);
+              String base = absolutePointer.substring(0, anchorIndex);
+              String typeName = titleCase(lastPart(pointer));
+              final String refContainer;
+              if (anchorIndex > 0) {
+                String file = base.substring(base.lastIndexOf('/') + 1);
+                refContainer = file.substring(0, file.lastIndexOf('.'));
+              } else {
+                refContainer = container;
+              }
+              String key = refContainer + "." + typeName;
+              if (types.containsKey(key)) {
+                return types.get(key);
+              }
+              if (anchorIndex > 0) {
+                throw new RuntimeException(
+                    "This ref should have been resolved already: "
+                        + refContainer
+                        + " "
+                        + refType.getPointer()
+                        + " => "
+                        + key
+                        + " keys: "
+                        + types.keySet());
+              }
 
-          final JsonNode ref = rootSchema.at(pointer);
-          if (ref.isMissingNode()) {
-            throw new RuntimeException("ref " + pointer + " not found in " + rootSchema);
-          }
-          return visit(typeName, parser.parse(ref));
-        }
+              final JsonNode ref = rootSchema.at(pointer);
+              if (ref.isMissingNode()) {
+                throw new RuntimeException("ref " + pointer + " not found in " + rootSchema);
+              }
+              return visit(typeName, parser.parse(ref));
+            }
 
-        private String lastPart(String pointer) {
-          int i = pointer.lastIndexOf("/");
-          return pointer.substring(i + 1);
-        }
+            private String lastPart(String pointer) {
+              int i = pointer.lastIndexOf("/");
+              return pointer.substring(i + 1);
+            }
 
-        ResolvedType visit(String name, Type type) {
-          String previousCurrentName = currentName;
-          currentName = name;
-          try {
-            return visit(type);
-          } finally {
-            currentName = previousCurrentName;
-          }
-        }
-
-      };
+            ResolvedType visit(String name, Type type) {
+              String previousCurrentName = currentName;
+              currentName = name;
+              try {
+                return visit(type);
+              } finally {
+                currentName = previousCurrentName;
+              }
+            }
+          };
 
       this.rootResolvedTypePerURL.put(baseUrl, rootType.accept(visitor));
     }
@@ -281,19 +302,25 @@ public class TypeResolver {
         throw new RuntimeException("Exception while visiting " + type, e);
       }
     }
-
   }
 
   public static class DefaultResolvedTypeVisitor<T> implements ResolvedTypeVisitor<T> {
 
-    public T visit(PrimitiveResolvedType primitiveType) { return null; }
+    public T visit(PrimitiveResolvedType primitiveType) {
+      return null;
+    }
 
-    public T visit(ObjectResolvedType objectType) { return null; }
+    public T visit(ObjectResolvedType objectType) {
+      return null;
+    }
 
-    public T visit(ArrayResolvedType arrayType) { return null; }
+    public T visit(ArrayResolvedType arrayType) {
+      return null;
+    }
 
-    public T visit(EnumResolvedType enumResolvedType) { return null; }
-
+    public T visit(EnumResolvedType enumResolvedType) {
+      return null;
+    }
   }
 
   static class PrimitiveResolvedType implements ResolvedType {
@@ -359,7 +386,7 @@ public class TypeResolver {
 
     @Override
     public String toString() {
-      return "ResolvedField{name: " + field.getName() + ", type: " + type +  "}";
+      return "ResolvedField{name: " + field.getName() + ", type: " + type + "}";
     }
 
     @Override
@@ -380,7 +407,6 @@ public class TypeResolver {
     }
   }
 
-
   static class ObjectResolvedType implements ResolvedType {
     private String container;
     private final List<ObjectType> objectTypes;
@@ -390,7 +416,14 @@ public class TypeResolver {
     private final ResolvedType additionalPropertiesType;
     private final Set<ObjectResolvedType> parents;
 
-    public ObjectResolvedType(String container, List<ObjectType> objectTypes, String name, Set<ObjectResolvedType> parents, List<ResolvedField> properties, boolean additionalProperties, ResolvedType additionalPropertiesType) {
+    public ObjectResolvedType(
+        String container,
+        List<ObjectType> objectTypes,
+        String name,
+        Set<ObjectResolvedType> parents,
+        List<ResolvedField> properties,
+        boolean additionalProperties,
+        ResolvedType additionalPropertiesType) {
       super();
       this.container = container;
       this.objectTypes = objectTypes;
@@ -452,16 +485,25 @@ public class TypeResolver {
         return false;
       }
       ObjectResolvedType that = (ObjectResolvedType) o;
-      return additionalProperties == that.additionalProperties && Objects.equals(container,
-          that.container) && objectTypes.equals(that.objectTypes) && name.equals(that.name)
-          && properties.equals(that.properties) && Objects.equals(additionalPropertiesType,
-          that.additionalPropertiesType) && parents.equals(that.parents);
+      return additionalProperties == that.additionalProperties
+          && Objects.equals(container, that.container)
+          && objectTypes.equals(that.objectTypes)
+          && name.equals(that.name)
+          && properties.equals(that.properties)
+          && Objects.equals(additionalPropertiesType, that.additionalPropertiesType)
+          && parents.equals(that.parents);
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(container, objectTypes, name, properties, additionalProperties,
-          additionalPropertiesType, parents);
+      return Objects.hash(
+          container,
+          objectTypes,
+          name,
+          properties,
+          additionalProperties,
+          additionalPropertiesType,
+          parents);
     }
   }
 
@@ -521,7 +563,7 @@ public class TypeResolver {
 
     @Override
     public String toString() {
-      return "ObjectResolvedType{" + name + ", [" +  String.join(",", values) + "]}";
+      return "ObjectResolvedType{" + name + ", [" + String.join(",", values) + "]}";
     }
 
     public String getName() {
@@ -536,5 +578,4 @@ public class TypeResolver {
       return parentName;
     }
   }
-
 }
