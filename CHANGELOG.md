@@ -1,6 +1,7 @@
 # Changelog
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.22.0...HEAD)
+* **SQL parser improvements to support: `copy into`, `create stage`, `pivot`** [`#1742`](https://github.com/OpenLineage/OpenLineage/pull/1742) by [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
 
 ## [0.22.0](https://github.com/OpenLineage/OpenLineage/compare/0.21.1...0.22.0) - 2023-4-3
 ### Added

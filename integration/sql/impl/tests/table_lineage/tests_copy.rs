@@ -1,49 +1,138 @@
 // Copyright 2018-2023 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
 
-use openlineage_sql::{parse_sql, SqlMeta, TableLineage};
+use crate::test_utils::tables;
+use openlineage_sql::{DbTableMeta, parse_sql, TableLineage};
 use sqlparser::dialect::SnowflakeDialect;
 
 #[test]
-fn parse_copy_from() {
+fn parse_copy_into_table() {
     let meta = parse_sql(
-        "
-            COPY INTO SCHEMA.SOME_MONITORING_SYSTEM
-                FROM (
-                SELECT
-                t.$1:st AS st,
-                t.$1:index AS index,
-                t.$1:cid AS cid,
-                t.$1:k8s AS k8s,
-                t.$1:cn AS cn,
-                t.$1:did AS did,
-                t.$1:tid AS tid,
-                t.$1:tn AS tn,
-                t.$1:mt AS mt,
-                t.$1:op AS op,
-                t.$1:drid AS drid,
-                t.$1:mi AS mi,
-                t.$1:q3dm17 AS q3dm17,
-                t.$1:rsd AS rsd,
-                t.$1:red AS red,
-                t.$1:rd AS rd,
-                t.$1:state AS state,
-                t.$1:es AS es,
-                t.$1:pool AS pool,
-                t.$1:queue AS queue,
-                t.$1:pw AS pw,
-                metadata$fn AS load_fn,
-                metadata$frn AS load_filerow,
-                CURRENT_TIMESTAMP AS lts
-                FROM @schema.general_finished AS t
-            )",
+        "COPY INTO SCHEMA.SOME_MONITORING_SYSTEM
+        FROM (SELECT t.$1:st AS st FROM @schema.general_finished)",
         &SnowflakeDialect {},
         None,
     )
     .unwrap();
-    assert_eq!(meta.errors.len(), 1);
     assert_eq!(
-        meta.errors.get(0).unwrap().message,
-        "Expected FROM or TO, found: SCHEMA".to_string()
+        meta.table_lineage,
+        TableLineage {
+            in_tables: vec![DbTableMeta::new_default_dialect_with_namespace_and_schema(
+                "@schema.general_finished".to_string(),
+                true,
+                true,
+            )],
+            out_tables: tables(vec!["SCHEMA.SOME_MONITORING_SYSTEM"])
+        }
     )
+}
+
+#[test]
+fn parse_copy_into_with_snowflake_stage_locations() {
+    // gcs with single quote
+    assert_eq!(
+        parse_sql(
+            "COPY INTO my_company.emp_basic FROM 'gcs://mybucket/./../a.csv'",
+            &SnowflakeDialect {},
+            None,
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: vec![DbTableMeta::new_default_dialect_with_namespace_and_schema(
+                "gcs://mybucket/./../a.csv".to_string(),
+                true,
+                true,
+            )],
+            out_tables: tables(vec!["my_company.emp_basic"])
+        }
+    );
+
+    // s3 with double quote
+    assert_eq!(
+        parse_sql(
+            "COPY INTO my_company.emp_basic FROM \"s3://mybucket/./../a.csv\"",
+            &SnowflakeDialect {},
+            None,
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: vec![DbTableMeta::new_default_dialect_with_namespace_and_schema(
+                "s3://mybucket/./../a.csv".to_string(),
+                true,
+                true,
+            )],
+            out_tables: tables(vec!["my_company.emp_basic"])
+        }
+    );
+
+    // azure location without quotes
+    assert_eq!(
+        parse_sql(
+            "COPY INTO my_company.emp_basic FROM 'azure://mybucket/./../a.csv'",
+            &SnowflakeDialect {},
+            None,
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: vec![DbTableMeta::new_default_dialect_with_namespace_and_schema(
+                "azure://mybucket/./../a.csv".to_string(),
+                true,
+                true,
+            )],
+            out_tables: tables(vec!["my_company.emp_basic"])
+        }
+    );
+}
+
+#[test]
+fn parse_copy_into_with_snowflake_internal_stages() {
+    let stage_names = vec![
+        "@namespace.stage_name",
+        "@namespace.stage_name/path",
+        "@namespace.%table_name/path",
+        "@~/path"
+    ];
+
+    for stage_name in stage_names {
+        assert_eq!(
+            parse_sql(
+                format!("COPY INTO a.b FROM {}", stage_name).as_str(),
+                &SnowflakeDialect {},
+                None,
+            )
+                .unwrap()
+                .table_lineage,
+            TableLineage {
+                out_tables: tables(vec!["a.b"]),
+                in_tables: vec![DbTableMeta::new_default_dialect_with_namespace_and_schema(
+                    stage_name.to_string(),
+                    true,
+                    true,
+                )],
+            }
+        );
+    }
+}
+
+#[test]
+fn parse_pivot_table() {
+    assert_eq!(
+        parse_sql(concat!(
+        "SELECT * FROM monthly_sales AS a ",
+        "PIVOT(SUM(a.amount) FOR a.MONTH IN ('JAN', 'FEB', 'MAR', 'APR')) AS p (c, d) ",
+        "ORDER BY EMPID"
+        ),
+        &SnowflakeDialect {},
+        None,
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["monthly_sales"]),
+            out_tables: tables(vec![])
+        }
+    );
 }

@@ -9,7 +9,6 @@ use std::ops::Deref;
 use crate::dialect::CanonicalDialect;
 use crate::lineage::*;
 use alias_table::AliasTable;
-
 use sqlparser::dialect::SnowflakeDialect;
 
 type ColumnAncestors = HashSet<ColumnMeta>;
@@ -101,8 +100,36 @@ impl<'a> Context<'a> {
         }
     }
 
+    pub fn add_non_table_input(&mut self, table: String, provided_namespace: bool, provided_field_schema: bool) {
+        let name = DbTableMeta::new_with_namespace_and_schema(
+            table,
+            self.dialect.deref(),
+            self.default_schema.clone(),
+            provided_namespace,
+            provided_field_schema,
+            false,
+        );
+        if !self.is_table_alias(&name) {
+            self.inputs.insert(name);
+        }
+    }
+
     pub fn add_output(&mut self, output: String) {
         let name = DbTableMeta::new(output, self.dialect.deref(), self.default_schema.clone());
+        if !self.is_table_alias(&name) {
+            self.outputs.insert(name);
+        }
+    }
+
+    pub fn add_non_table_output(&mut self, output: String, provided_namespace: bool, provided_field_schema: bool) {
+        let name = DbTableMeta::new_with_namespace_and_schema(
+            output,
+            self.dialect.deref(),
+            self.default_schema.clone(),
+            provided_namespace,
+            provided_field_schema,
+            false,
+        );
         if !self.is_table_alias(&name) {
             self.outputs.insert(name);
         }
@@ -189,7 +216,7 @@ impl<'a> Context<'a> {
     // from the narrower scope and allow the visitor
     // to compute synthesized attributes.
 
-    pub fn coalesce(&mut self, mut old: ContextFrame) {
+    pub fn coalesce(&mut self, old: ContextFrame) {
         if self.frames.last().is_none() {
             return;
         }
