@@ -18,8 +18,8 @@ RUN buildDeps="sudo make gcc g++ libc-dev" \
  && rm -rf /var/lib/apt/lists/* \
  && rm -rf /tmp/* /var/tmp/* /usr/lib/ruby/gems/*/cache/*.gem
 
-ADD fluent.conf /fluentd/etc/fluent.conf
+#ADD fluent.conf /fluentd/etc/fluent.conf
 ADD entrypoint.sh /bin/entrypoint.sh
-ADD lib/fluent/plugin/parser_openlineage.rb /fluentd/openlineage-parser/parser_openlineage.rb
+#ADD lib/fluent/plugin/parser_openlineage.rb /fluentd/openlineage-parser/parser_openlineage.rb
 
 USER fluent
