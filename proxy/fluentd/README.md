@@ -41,13 +41,46 @@ Openlineage-parser is a fluentd plugin that verifies if a JSON matches Openlinea
 ### Usage
 
 Please refer to `Dockerfile` and `fluent.conf` to see how to build and install the plugin with
-example usage scenario provided:
+example usage scenario provided in `docker-compose.yml`. To run example setup go to `docker` directory and execute following command.
 
 ```shell
-docker build -t openlineage-fluentd:latest ./
-docker run  openlineage-fluentd:latest -p /fluentd/openlineage-parser
+docker-compose up
 ```
 
+After all the containers started send some http requests. 
+
+```shell
+curl -X POST \
+-d '{"test":"test"}' \
+-H 'Content-Type: application/json' \
+http://localhost:5000/api/v1/lineage
+```
+In response, you should see following message:
+
+`{"errors":["job must not be null","eventTime must not be null","run must not be null","producer must not be null"]}`
+
+Next send some valid requests:
+
+```shell
+curl -X POST \
+-d "$(cat test-start.json)" \
+-H 'Content-Type: application/json' \
+http://localhost:5000/api/v1/lineage
+```
+
+```shell
+curl -X POST \
+-d "$(cat test-complete.json)" \
+-H 'Content-Type: application/json' \
+http://localhost:5000/api/v1/lineage
+```
+
+After that you should see entities in marquez http://localhost:3000/ in `my-namespace` namespace.
+
+To clean up run
+```shell
+docker-compose down
+```
 ### Development
 
 To build dependencies: 
