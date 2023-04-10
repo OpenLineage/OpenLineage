@@ -112,20 +112,6 @@ def get_hook_method(operator):
         return operator.get_hook
 
 
-def get_ti(task):
-    kwargs = {}
-    if parse_version(AIRFLOW_VERSION) > parse_version("2.2.0"):
-        kwargs['run_id'] = 'test_run_id'  # change in 2.2.0
-    task_instance = TaskInstance(
-        task=task,
-        execution_date=datetime.utcnow().replace(tzinfo=pytz.utc),
-        state=State.SUCCESS,
-        **kwargs)
-    task_instance.job_id = random.randrange(10000)
-
-    return task_instance
-
-
 def mock_get_table():
     mocked = mock.MagicMock()
     columns = [
@@ -145,7 +131,7 @@ def mock_get_table():
     return mocked.return_value
 
 
-@mock.patch('openlineage.airflow.extractors.sql_extractor.get_table_schemas')  # noqa
+@mock.patch('openlineage.airflow.extractors.s3_snowflake_extractor.get_table_schemas')  # noqa
 @mock.patch("airflow.hooks.base.BaseHook.get_connection")
 def test_extract_on_complete(get_connection, mock_get_table_schemas):
     source = Source(
@@ -185,8 +171,7 @@ def test_extract_on_complete(get_connection, mock_get_table_schemas):
         ).to_openlineage_dataset()
     ]
 
-    task_instance = get_ti(TASK)
-    task_metadata = S3ToSnowflakeExtractor(TASK).extract_on_complete(task_instance)
+    task_metadata = S3ToSnowflakeExtractor(TASK).extract_on_complete()
 
     assert task_metadata.name == f"{DAG_ID}.{TASK_ID}"
     assert task_metadata.inputs == expected_inputs

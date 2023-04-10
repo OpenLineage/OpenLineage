@@ -42,7 +42,12 @@ class S3ToSnowflakeExtractor(SnowflakeExtractor):
             return None
 
         new_fields = list(fields)
-        schema_name = new_fields[0][0]
+        try:
+            schema_name = new_fields[0][0]
+        except IndexError:
+            self.log.debug(f'Schema not found: {new_fields}')
+            schema_name = None
+
         self.log.debug("Database Schema is {}".format(schema_name))
 
         columns = [
@@ -65,7 +70,7 @@ class S3ToSnowflakeExtractor(SnowflakeExtractor):
             return []
         return [self._get_table(table) for table in tables]
 
-    def extract_on_complete(self, task_instance) -> Optional[TaskMetadata]:
+    def extract_on_complete(self) -> Optional[TaskMetadata]:
         inputs = InputDataset(
             # since no parameter for s3 bucket, relying on stage for namespace
             namespace="snowflake_stage_{}".format(self.operator.stage),
