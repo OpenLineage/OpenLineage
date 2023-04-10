@@ -13,8 +13,7 @@ from openlineage.common.models import DbColumn, DbTableSchema
 from openlineage.common.sql import DbTableMeta
 from pkg_resources import parse_version
 
-from airflow.models import DAG, TaskInstance
-from airflow.models import Connection
+from airflow.models import DAG, Connection, TaskInstance
 from airflow.providers.snowflake.transfers.s3_to_snowflake import S3ToSnowflakeOperator
 from airflow.utils.dates import days_ago
 from airflow.utils.state import State
