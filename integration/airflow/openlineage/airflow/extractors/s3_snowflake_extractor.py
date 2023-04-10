@@ -13,7 +13,7 @@ from openlineage.common.sql import DbTableMeta
 log = logging.getLogger(__name__)
 
 
-class S3ToSnowflakeOperatorExtractor(SnowflakeExtractor):
+class S3ToSnowflakeExtractor(SnowflakeExtractor):
 
     @classmethod
     def get_operator_classnames(cls) -> List[str]:

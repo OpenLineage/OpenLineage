@@ -6,7 +6,7 @@ from datetime import datetime
 from unittest import mock
 
 import pytz
-from openlineage.airflow.extractors.s3_snowflake_extractor import S3ToSnowflakeOperatorExtractor
+from openlineage.airflow.extractors.s3_snowflake_extractor import S3ToSnowflakeExtractor
 from openlineage.client.run import Dataset as InputDataset
 from openlineage.common.dataset import Dataset, Field, Source
 from openlineage.common.models import DbColumn, DbTableSchema
@@ -125,10 +125,29 @@ def get_ti(task):
 
     return task_instance
 
+
+def mock_get_table():
+    mocked = mock.MagicMock()
+    columns = [
+        DbColumn(
+            name='col1',
+            type='dt1',
+            ordinal_position=1,
+        )
+    ]
+
+    mocked.return_value = DbTableSchema(
+        schema_name='schema',
+        table_name='table',
+        columns=columns,
+    )
+
+    return mocked.return_value
+
+
 @mock.patch('openlineage.airflow.extractors.sql_extractor.get_table_schemas')  # noqa
 @mock.patch("airflow.hooks.base.BaseHook.get_connection")
-@mock.patch('openlineage.airflow.extractors.snowflake_extractor.execute_query_on_hook')
-def test_extract_on_complete(execute_query_on_hook, get_connection, mock_get_table_schemas):
+def test_extract_on_complete(get_connection, mock_get_table_schemas):
     source = Source(
         scheme='snowflake',
         authority='test_account',
@@ -167,7 +186,7 @@ def test_extract_on_complete(execute_query_on_hook, get_connection, mock_get_tab
     ]
 
     task_instance = get_ti(TASK)
-    task_metadata = S3ToSnowflakeOperatorExtractor(TASK).extract_on_complete(task_instance)
+    task_metadata = S3ToSnowflakeExtractor(TASK).extract_on_complete(task_instance)
 
     assert task_metadata.name == f"{DAG_ID}.{TASK_ID}"
     assert task_metadata.inputs == expected_inputs
