@@ -20,9 +20,9 @@ from airflow.utils.state import State
 from airflow.version import version as AIRFLOW_VERSION
 
 CONN_ID = 'food_delivery_db'
-CONN_URI = 'snowflake://snowflake:example/db-schema?account=test_account&database=FOOD_DELIVERY&region=us-east&warehouse=snow-warehouse&secret=hideit'  # noqa
-CONN_URI_WITH_EXTRA_PREFIX = 'snowflake://snowflake:example/db-schema?extra__snowflake__account=test_account&extra__snowflake__database=FOOD_DELIVERY&extra__snowflake__region=us-east&extra__snowflake__warehouse=snow-warehouse&extra__snowflake__secret=hideit'  # noqa
-CONN_URI_URIPARSED = 'snowflake://snowflake:example/db-schema?account=%5B%27test_account%27%5D&database=%5B%27FOOD_DELIVERY%27%5D&region=%5B%27us-east%27%5D&warehouse=%5B%27snow-warehouse%27%5D'  # noqa
+CONN_URI = 'snowflake://snowflake.example/db-schema?account=test_account&database=FOOD_DELIVERY&region=us-east&warehouse=snow-warehouse&secret=hideit'  # noqa
+CONN_URI_WITH_EXTRA_PREFIX = 'snowflake://snowflake.example/db-schema?extra__snowflake__account=test_account&extra__snowflake__database=FOOD_DELIVERY&extra__snowflake__region=us-east&extra__snowflake__warehouse=snow-warehouse&extra__snowflake__secret=hideit'  # noqa
+CONN_URI_URIPARSED = 'snowflake://snowflake.example/db-schema?account=%5B%27test_account%27%5D&database=%5B%27FOOD_DELIVERY%27%5D&region=%5B%27us-east%27%5D&warehouse=%5B%27snow-warehouse%27%5D'  # noqa
 
 DB_NAME = 'FOOD_DELIVERY'
 DB_SCHEMA_NAME = 'PUBLIC'
