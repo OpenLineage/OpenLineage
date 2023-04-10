@@ -125,7 +125,7 @@ def mock_get_table():
     return mocked.return_value
 
 
-@mock.patch('openlineage.airflow.extractors.s3_snowflake_extractor.get_table_schemas')  # noqa
+@mock.patch('openlineage.airflow.extractors.s3_snowflake_extractor._get_table_schemas')  # noqa
 @mock.patch("airflow.hooks.base.BaseHook.get_connection")
 def test_extract_on_complete(get_connection, mock_get_table_schemas):
     source = Source(
