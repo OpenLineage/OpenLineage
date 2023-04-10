@@ -1,23 +1,17 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-import random
-from datetime import datetime
 from unittest import mock
 
-import pytz
 from openlineage.airflow.extractors.s3_snowflake_extractor import S3ToSnowflakeExtractor
 from openlineage.client.run import Dataset as InputDataset
 from openlineage.common.dataset import Dataset, Field, Source
 from openlineage.common.models import DbColumn, DbTableSchema
 from openlineage.common.sql import DbTableMeta
-from pkg_resources import parse_version
 
-from airflow.models import DAG, Connection, TaskInstance
+from airflow.models import DAG, Connection
 from airflow.providers.snowflake.transfers.s3_to_snowflake import S3ToSnowflakeOperator
 from airflow.utils.dates import days_ago
-from airflow.utils.state import State
-from airflow.version import version as AIRFLOW_VERSION
 
 CONN_ID = 'food_delivery_db'
 CONN_URI = 'snowflake://snowflake.example/db-schema?account=test_account&database=FOOD_DELIVERY&region=us-east&warehouse=snow-warehouse&secret=hideit'  # noqa
