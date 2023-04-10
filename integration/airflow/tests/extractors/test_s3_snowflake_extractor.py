@@ -148,7 +148,7 @@ def test_extract_on_complete(get_connection):
     source = Source(
         scheme='snowflake',
         authority='test_account',
-        connection_url=CONN_URI_URIPARSED
+        connection_url=CONN_URI
     )
 
     expected_inputs = [
