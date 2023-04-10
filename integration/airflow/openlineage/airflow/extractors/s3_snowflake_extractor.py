@@ -18,7 +18,7 @@ class S3ToSnowflakeOperatorExtractor(SnowflakeExtractor):
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
         return ['S3ToSnowflakeOperator']
-    
+
     def _get_hook(self):
         if hasattr(self.operator, "get_db_hook"):
             return self.operator.get_db_hook()
