@@ -144,8 +144,7 @@ def test_extract_on_complete(execute_query_on_hook, get_connection, mock_get_tab
     ]
 
     mock_get_table_schemas.return_value = (
-        [Dataset.from_table_schema(source, DB_TABLE_SCHEMA, DB_NAME)],
-        [],
+        [Dataset.from_table_schema(source, DB_TABLE_SCHEMA, DB_NAME)]
     )
 
     conn = Connection()
