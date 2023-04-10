@@ -125,9 +125,26 @@ def mock_get_table():
     return mocked.return_value
 
 
-@mock.patch('openlineage.airflow.extractors.s3_snowflake_extractor._get_table_schemas')  # noqa
+def mock_get_table_schemas():
+    mocked = mock.MagicMock()
+    columns = [
+        DbColumn(
+            name='col1',
+            type='dt1',
+            ordinal_position=1,
+        )
+    ]
+    mocked.return_value = [DbTableSchema(
+        schema_name='schema',
+        table_name='table',
+        columns=columns,
+    )]
+
+    return mocked.return_value
+
+
 @mock.patch("airflow.hooks.base.BaseHook.get_connection")
-def test_extract_on_complete(get_connection, mock_get_table_schemas):
+def test_extract_on_complete(get_connection):
     source = Source(
         scheme='snowflake',
         authority='test_account',
@@ -142,9 +159,8 @@ def test_extract_on_complete(get_connection, mock_get_table_schemas):
         )
     ]
 
-    mock_get_table_schemas.return_value = (
-        [Dataset.from_table_schema(source, DB_TABLE_SCHEMA, DB_NAME)]
-    )
+    mock_get_table()
+    mock_get_table_schemas()
 
     conn = Connection()
     conn.parse_from_uri(uri=CONN_URI)
