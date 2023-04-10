@@ -2,12 +2,35 @@ workflows:
   openlineage-java:
     jobs:
       - build-client-java
-      - compile-integration-sql-java-linux
+      - compile-integration-sql-java-linux:
+          matrix:
+            alias: compile-integration-sql-java-linux-x86
+            parameters:
+              image: [
+                "quay.io/pypa/manylinux2014_x86_64",
+              ]
+              resource_class: [ "medium" ]
+      - compile-integration-sql-java-linux:
+          matrix:
+            alias: compile-integration-sql-java-linux-arm
+            parameters:
+              image: [
+                "quay.io/pypa/manylinux2014_aarch64",
+              ]
+              resource_class: [ "arm.medium" ]
       - compile-integration-sql-java-macos
       - build-integration-sql-java:
           requires:
-            - compile-integration-sql-java-linux
+            - compile-integration-sql-java-linux-arm
+            - compile-integration-sql-java-linux-x86
             - compile-integration-sql-java-macos
+      - publish-snapshot-sql-java:
+          filters:
+            branches:
+              only: main
+          context: release
+          requires:
+            - build-integration-sql-java
       - publish-snapshot-client-java:
           filters:
             branches:

@@ -36,7 +36,7 @@ class ArgumentParserTest {
                 1, ArgumentParser.DEFAULT_DISABLED_FACETS.length() - 1)
             .split(";")[0],
         argumentParser.getOpenLineageYaml().getFacetsConfig().getDisabledFacets()[0]);
-    assert (argumentParser.getOpenLineageYaml().getTransportConfig() instanceof HttpConfig);
+    assert (argumentParser.getOpenLineageYaml().getTransportConfig() instanceof ConsoleConfig);
   }
 
   @Test
@@ -89,7 +89,9 @@ class ArgumentParserTest {
             .set("spark.openlineage.transport.timeout", "5000")
             .set("spark.openlineage.facets.disabled", DISABLED_FACETS)
             .set("spark.openlineage.transport.urlParams.test1", "test1")
-            .set("spark.openlineage.transport.urlParams.test2", "test2");
+            .set("spark.openlineage.transport.urlParams.test2", "test2")
+            .set("spark.openlineage.transport.headers.testHeader1", "test1")
+            .set("spark.openlineage.transport.headers.testHeader2", "test2");
 
     OpenLineageYaml openLineageYaml = ArgumentParser.extractOpenlineageConfFromSparkConf(sparkConf);
     HttpConfig transportConfig = (HttpConfig) openLineageYaml.getTransportConfig();
@@ -99,28 +101,8 @@ class ArgumentParserTest {
     assert (transportConfig.getAuth() instanceof ApiKeyTokenProvider);
     assertEquals("Bearer random_token", transportConfig.getAuth().getToken());
     assertEquals(5000, transportConfig.getTimeout());
-  }
-
-  @Test
-  void testDeprecatedConfig() {
-    SparkConf sparkConf =
-        new SparkConf()
-            .set("spark.openlineage.url", URL)
-            .set("spark.openlineage.version", "1")
-            .set("spark.openlineage.apiKey", API_KEY)
-            .set("spark.openlineage.timeout", "5000")
-            .set("spark.openlineage.facets.disabled", DISABLED_FACETS)
-            .set("spark.openlineage.url.param.test1", "test1")
-            .set("spark.openlineage.url.param.test2", "test2");
-
-    OpenLineageYaml openLineageYaml = ArgumentParser.parse(sparkConf).getOpenLineageYaml();
-    HttpConfig transportConfig = (HttpConfig) openLineageYaml.getTransportConfig();
-    assertEquals(URL, transportConfig.getUrl().toString());
-    assertEquals(ENDPOINT, transportConfig.getEndpoint());
-    assert (transportConfig.getAuth() != null);
-    assert (transportConfig.getAuth() instanceof ApiKeyTokenProvider);
-    assertEquals("Bearer random_token", transportConfig.getAuth().getToken());
-    assertEquals(5000, transportConfig.getTimeout());
+    assertEquals("test1", transportConfig.getHeaders().get("testHeader1"));
+    assertEquals("test2", transportConfig.getHeaders().get("testHeader2"));
   }
 
   @Test

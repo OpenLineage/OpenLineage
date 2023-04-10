@@ -10,14 +10,14 @@ Maven:
 <dependency>
     <groupId>io.openlineage</groupId>
     <artifactId>openlineage-spark</artifactId>
-    <version>0.20.6</version>
+    <version>0.22.0</version>
 </dependency>
 ```
 
 or Gradle:
 
 ```groovy
-implementation 'io.openlineage:openlineage-spark:0.20.6'
+implementation 'io.openlineage:openlineage-spark:0.22.0'
 ```
 
 ## Getting started
@@ -50,9 +50,9 @@ from pyspark.sql import SparkSession
 
 spark = (SparkSession.builder.master('local')
          .appName('sample_spark')
-         .config('spark.jars.packages', 'io.openlineage:openlineage-spark:0.20.6')
+         .config('spark.jars.packages', 'io.openlineage:openlineage-spark:0.22.0')
          .config('spark.extraListeners', 'io.openlineage.spark.agent.OpenLineageSparkListener')
-         .config('spark.openlineage.url', 'http://{openlineage.client.host}/api/v1/namespaces/spark_integration/')
+         .config('spark.openlineage.transport.url', 'http://{openlineage.client.host}/api/v1/namespaces/spark_integration/')
          .getOrCreate())
 ```
 To use the local jar, you can build it with
@@ -66,7 +66,7 @@ container):
 ```python
 from pyspark.sql import SparkSession
 
-file = "/home/jovyan/openlineage/libs/openlineage-spark-0.20.6.jar"
+file = "/home/jovyan/openlineage/libs/openlineage-spark-0.22.0.jar"
 
 spark = (SparkSession.builder.master('local').appName('rdd_to_dataframe')
              .config('spark.jars', file)
@@ -91,30 +91,28 @@ The following parameters can be specified in the Spark configuration:
 
 Parameters configuring the Spark integration
 
+
 | Parameter                                | Definition                                                                                                                                          | Example                             |
 ------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------
-| spark.openlineage.transport.type         | The transport type used for event emit, default type is `http`                                                                                      | http                                |
+| spark.openlineage.transport.type         | The transport type used for event emit, default type is `console`                                                                                   | http                                |
 | spark.openlineage.namespace              | The default namespace to be applied for any jobs submitted                                                                                          | MyNamespace                         |
 | spark.openlineage.parentJobName          | The job name to be used for the parent job facet                                                                                                    | ParentJobName                       |
 | spark.openlineage.parentRunId            | The RunId of the parent job that initiated this Spark job                                                                                           | xxxx-xxxx-xxxx-xxxx                 |
 | spark.openlineage.appName                | Custom value overwriting Spark app name in events                                                                                                   | AppName                             |
 | spark.openlineage.facets.disabled        | List of facets to disable, enclosed in `[]` (required from 0.21.x) and separated by `;`, default is `[spark_unknown;]` (currently must contain `;`) | \[spark_unknown;spark.logicalPlan\] |
+| spark.openlineage.capturedProperties     | comma separated list of properties to be captured in spark properties facet (default `spark.master`, `spark.app.name`)                              | "spark.example1,spark.example2"     |
+
 
 ### HTTP
 
-| Parameter                                     | Definition                                                                                                                                  | Example               |
+| Parameter                                    | Definition                                                                                                                                  | Example               |
 ----------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|-----------------------
 | spark.openlineage.transport.endpoint          | Path to resource                                                                                                                            | /api/v1/lineage       |
-| *DEPRECATED* spark.openlineage.version        | The API version of the OpenLineage API server (unavailable from 0.22.0)                                                                     | 1                     |
 | spark.openlineage.transport.apiKey            | An API key to be used when sending events to the OpenLineage server                                                                         | abcdefghijk           |
-| *DEPRECATED* spark.openlineage.apiKey         | An API key to be used when sending events to the OpenLineage server (unavailable from 0.22.0)                                               | abcdefghijk           |
 | spark.openlineage.transport.timeout           | Timeout for sending OpenLineage info in milliseconds                                                                                        | 5000                  |
-| *DEPRECATED* spark.openlineage.timeout        | Timeout for sending OpenLineage info in milliseconds (unavailable from 0.22.0)                                                              | 5000                  |
 | spark.openlineage.transport.urlParams.xyz     | A URL parameter (replace xyz) and value to be included in requests to the OpenLineage API server                                            | abcdefghijk           |
-| *DEPRECATED* spark.openlineage.url.param.xyz  | A URL parameter (replace xyz) and value to be included in requests to the OpenLineage API server (unavailable from 0.22.0)                  | abcdefghijk           |
 | spark.openlineage.transport.url               | The hostname of the OpenLineage API server where events should be reported, it can have other properties embeded                            | http://localhost:5000 |
-| *DEPRECATED* spark.openlineage.url           | The hostname of the OpenLineage API server where events should be reported (alternatively spark.openlineage.host) (unavailable from 0.22.0) | http://localhost:5000 |
-| *DEPRECATED* spark.openlineage.host          | The hostname of the OpenLineage API server where events should be reported (alternatively spark.openlineage.url) (unavailable from 0.22.0)  | http://localhost:5000 |
+| spark.openlineage.transport.headers.xyz       | Request headers (replace xyz) and value to be included in requests to the OpenLineage API server                                            | abcdefghijk           |
 
 ##### URL
 
@@ -157,11 +155,20 @@ Testing requires a Java 8 JVM to test the Scala Spark components.
 
 ## Preparation
 
-Before testing or building the jar, run the following command from the client/java directory
-to install the openlineage-java jar, on which this module depends:
+The integration depends on two libraries that are build locally `openlineage-java` and `openlineage-sql-java`, 
+so before any testing or building of a package you need to publish the appropriate artifacts to local maven repository.
+To build the packages you need to execute.
+
+To install `openlineage-java` in local maven repo run:
+```sh
+cd ../../client/java/ && ./gradlew publishToMavenLocal
+```
+
+For `openlineage-sql-java` run:
 
 ```sh
-$ ./gradlew publishToMavenLocal
+../../integration/sql/iface-java/ && ./script/compile.sh
+../../integration/sql/iface-java/ && ./script/build.sh
 ```
 
 ## Testing

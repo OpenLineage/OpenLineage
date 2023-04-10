@@ -62,7 +62,6 @@ public class KinesisTransport extends Transport {
   @Override
   public void emit(@NonNull OpenLineage.RunEvent runEvent) {
     final String eventAsJson = OpenLineageClientUtils.toJson(runEvent);
-    log.debug("Received lineage event: {}", eventAsJson);
     ListenableFuture<UserRecordResult> future =
         this.producer.addUserRecord(
             new UserRecord(

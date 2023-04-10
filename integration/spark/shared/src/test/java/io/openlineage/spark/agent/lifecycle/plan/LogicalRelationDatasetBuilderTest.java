@@ -29,6 +29,7 @@ import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
+import org.apache.spark.sql.catalyst.plans.logical.Project;
 import org.apache.spark.sql.execution.QueryExecution;
 import org.apache.spark.sql.execution.datasources.FileIndex;
 import org.apache.spark.sql.execution.datasources.HadoopFsRelation;
@@ -42,7 +43,7 @@ import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.MockedStatic;
 import org.postgresql.Driver;
 import scala.Option;
@@ -66,16 +67,14 @@ class LogicalRelationDatasetBuilderTest {
   }
 
   @ParameterizedTest
-  @ValueSource(
-      strings = {
-        "postgresql://postgreshost:5432/sparkdata",
-        "jdbc:oracle:oci8:@sparkdata",
-        "jdbc:oracle:thin@sparkdata:1521:orcl",
-        "mysql://localhost/sparkdata"
-      })
-  void testApply(String connectionUri) {
+  @CsvSource({
+    "jdbc:postgresql://postgreshost:5432/sparkdata,postgres://postgreshost:5432/sparkdata",
+    "jdbc:oracle:oci8:@sparkdata,oracle:oci8:@sparkdata",
+    "jdbc:oracle:thin@sparkdata:1521:orcl,oracle:thin@sparkdata:1521:orcl",
+    "jdbc:mysql://localhost/sparkdata,mysql://localhost/sparkdata"
+  })
+  void testApply(String connectionUri, String targetUri) {
     OpenLineage openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
-    String jdbcUrl = "jdbc:" + connectionUri;
     String sparkTableName = "my_spark_table";
     JDBCRelation relation =
         new JDBCRelation(
@@ -83,7 +82,7 @@ class LogicalRelationDatasetBuilderTest {
                 new StructField[] {new StructField("name", StringType$.MODULE$, false, null)}),
             new Partition[] {},
             new JDBCOptions(
-                jdbcUrl,
+                connectionUri,
                 sparkTableName,
                 Map$.MODULE$
                     .<String, String>newBuilder()
@@ -93,21 +92,23 @@ class LogicalRelationDatasetBuilderTest {
     QueryExecution qe = mock(QueryExecution.class);
     when(qe.optimizedPlan())
         .thenReturn(
-            new LogicalRelation(
-                relation,
-                Seq$.MODULE$
-                    .<AttributeReference>newBuilder()
-                    .$plus$eq(
-                        new AttributeReference(
-                            "name",
-                            StringType$.MODULE$,
-                            false,
-                            null,
-                            ExprId.apply(1L),
-                            Seq$.MODULE$.<String>empty()))
-                    .result(),
-                Option.empty(),
-                false));
+            new Project(
+                Seq$.MODULE$.<String>empty(),
+                new LogicalRelation(
+                    relation,
+                    Seq$.MODULE$
+                        .<AttributeReference>newBuilder()
+                        .$plus$eq(
+                            new AttributeReference(
+                                "name",
+                                StringType$.MODULE$,
+                                false,
+                                null,
+                                ExprId.apply(1L),
+                                Seq$.MODULE$.<String>empty()))
+                        .result(),
+                    Option.empty(),
+                    false)));
     OpenLineageContext context =
         OpenLineageContext.builder()
             .sparkContext(mock(SparkContext.class))
@@ -116,15 +117,15 @@ class LogicalRelationDatasetBuilderTest {
             .build();
     LogicalRelationDatasetBuilder visitor =
         new LogicalRelationDatasetBuilder<>(
-            context, DatasetFactory.output(openLineageContext), false);
+            context, DatasetFactory.output(openLineageContext), true);
     List<OutputDataset> datasets =
         visitor.apply(new SparkListenerJobStart(1, 1, Seq$.MODULE$.empty(), null));
     assertEquals(1, datasets.size());
     OutputDataset ds = datasets.get(0);
-    assertEquals(connectionUri, ds.getNamespace());
+    assertEquals(targetUri, ds.getNamespace());
     assertEquals(sparkTableName, ds.getName());
-    assertEquals(URI.create(connectionUri), ds.getFacets().getDataSource().getUri());
-    assertEquals(connectionUri, ds.getFacets().getDataSource().getName());
+    assertEquals(URI.create(targetUri), ds.getFacets().getDataSource().getUri());
+    assertEquals(targetUri, ds.getFacets().getDataSource().getName());
   }
 
   @Test

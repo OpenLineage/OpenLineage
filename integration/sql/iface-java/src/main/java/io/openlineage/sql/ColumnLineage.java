@@ -29,7 +29,7 @@ public class ColumnLineage {
   @Override
   public String toString() {
     return String.format(
-        "{{\"descendant\": %s, \"lineage\": %s}}",
+        "{\"descendant\": %s, \"lineage\": %s}",
         descendant.toString(), Arrays.toString(lineage.toArray()));
   }
 

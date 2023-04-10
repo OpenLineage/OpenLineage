@@ -39,6 +39,10 @@ public final class OpenLineageClient {
    * @param runEvent The run event to emit.
    */
   public void emit(@NonNull OpenLineage.RunEvent runEvent) {
+    if (log.isDebugEnabled()) {
+      log.debug(
+          "OpenLineageClient will emit lineage event: {}", OpenLineageClientUtils.toJson(runEvent));
+    }
     transport.emit(runEvent);
   }
 

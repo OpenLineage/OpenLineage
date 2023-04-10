@@ -264,3 +264,79 @@ def test_information_schema_query(get_connection):
         extractor._information_schema_query(different_databases_mixed)
         == different_databases_mixed_sql
     )
+
+@mock.patch("airflow.hooks.base.BaseHook.get_connection")
+@mock.patch('openlineage.airflow.extractors.snowflake_extractor.execute_query_on_hook')
+def test_extract_create_stage(execute_query_on_hook, get_connection):
+    Source(
+        scheme='snowflake',
+        authority='test_account',
+        connection_url=CONN_URI_URIPARSED
+    )
+
+    execute_query_on_hook.return_value = "public"
+
+    conn = Connection()
+    conn.parse_from_uri(uri=CONN_URI)
+    get_connection.return_value = conn
+
+    task = SnowflakeOperator(
+        task_id="snowflake_op_create_stage",
+        sql="""
+              CREATE STAGE IF NOT EXISTS IN_OPENLINEAGE.DATA
+              URL='gcs://openlineage/data/'
+              storage_integration = GCS_INT
+              FILE_FORMAT=(TYPE=PARQUET TRIM_SPACE=TRUE)
+              COPY_OPTIONS=(MATCH_BY_COLUMN_NAME=CASE_INSENSITIVE)
+        """,
+        parameters={"id": 57},
+    )
+
+    mock_get_hook(task)
+
+    get_hook_method(task).return_value._get_conn_params.return_value = {
+        'account': 'test_account',
+        'database': DB_NAME
+    }
+
+    metadata = SnowflakeExtractor(task).extract()
+    assert metadata.outputs[0].name == "FOOD_DELIVERY.IN_OPENLINEAGE.DATA"
+    assert metadata.inputs[0].name == "gcs://openlineage/data/"
+
+@mock.patch('openlineage.airflow.extractors.sql_extractor.get_table_schemas')  # noqa
+@mock.patch("airflow.hooks.base.BaseHook.get_connection")
+@mock.patch('openlineage.airflow.extractors.snowflake_extractor.execute_query_on_hook')
+def test_extract_copy_from_external_stage(
+    execute_query_on_hook,
+    get_connection,
+    mock_get_table_schemas,
+):
+    source = Source(
+        scheme='snowflake',
+        authority='test_account',
+        connection_url=CONN_URI_URIPARSED
+    )
+    mock_get_table_schemas.return_value = (
+        [],
+        [Dataset.from_table_schema(source, DB_TABLE_SCHEMA, DB_NAME)],
+    )
+    execute_query_on_hook.return_value = "public"
+
+    conn = Connection()
+    conn.parse_from_uri(uri=CONN_URI)
+    get_connection.return_value = conn
+
+    task = SnowflakeOperator(
+        task_id="snowflake_op_copy_into",
+        sql="COPY INTO {}.{} FROM 'azure://mybucket/a.csv'".format(
+            DB_NAME,
+            DB_TABLE_NAME
+        ),
+        parameters={"id": 57},
+    )
+
+    mock_get_hook(task)
+
+    metadata = SnowflakeExtractor(task).extract()
+    assert metadata.inputs[0].name == "azure://mybucket/a.csv"
+    assert metadata.outputs[0].name == "{}.PUBLIC.{}".format(DB_NAME, DB_TABLE_NAME)

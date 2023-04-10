@@ -45,18 +45,20 @@ configurations {
 
 ext {
     assertjVersion = '3.24.2'
-    bigqueryVersion = '0.28.0'
+    bigqueryVersion = '0.29.0'
     junit5Version = '5.9.2'
     sparkVersion = '2.4.8'
     sparkVersionShort = '2.4'
     snowflakeVersion = '2.9.3'
-    postgresqlVersion = '42.5.3'
+    postgresqlVersion = '42.6.0'
     mockitoVersion = '4.11.0'
     testcontainersVersion = '1.17.6'
 }
 
 dependencies {
     api "io.openlineage:openlineage-java:${project.version}"
+    api "io.openlineage:openlineage-sql-java:${project.version}"
+
 
     compileOnly "org.apache.spark:spark-core_2.11:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql_2.11:${sparkVersion}"
@@ -81,7 +83,7 @@ dependencies {
 
     testFixturesApi "org.postgresql:postgresql:${postgresqlVersion}"
     testFixturesApi 'org.hamcrest:hamcrest-library:2.2'
-    testFixturesApi 'org.xerial:sqlite-jdbc:3.40.1.0'
+    testFixturesApi 'org.xerial:sqlite-jdbc:3.41.2.1'
     testFixturesApi "org.testcontainers:junit-jupiter:${testcontainersVersion}"
     testFixturesApi "org.testcontainers:postgresql:${testcontainersVersion}"
     testFixturesApi "org.testcontainers:mockserver:${testcontainersVersion}"

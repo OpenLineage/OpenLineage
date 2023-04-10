@@ -1,0 +1,9 @@
+{
+  "eventType": "COMPLETE",
+  "job": {
+    "namespace": "testDropTable",
+    "name": "open_lineage_integration_drop_table.execute_drop_table_command"
+  },
+  "inputs": [],
+  "outputs": [ ]
+}

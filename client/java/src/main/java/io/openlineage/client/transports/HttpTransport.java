@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
 import lombok.NonNull;
@@ -42,6 +43,8 @@ public final class HttpTransport extends Transport implements Closeable {
   private final CloseableHttpClient http;
   private final URI uri;
   private @Nullable final TokenProvider tokenProvider;
+
+  private final Map<String, String> headers;
 
   public HttpTransport(@NonNull final HttpConfig httpConfig) {
     this(withTimeout(httpConfig.getTimeout()), httpConfig);
@@ -74,6 +77,7 @@ public final class HttpTransport extends Transport implements Closeable {
       throw new OpenLineageClientException(e);
     }
     this.tokenProvider = httpConfig.getAuth();
+    this.headers = httpConfig.getHeaders() != null ? httpConfig.getHeaders() : new HashMap<>();
   }
 
   private URI getUri(HttpConfig httpConfig) throws URISyntaxException {
@@ -104,17 +108,12 @@ public final class HttpTransport extends Transport implements Closeable {
   @Override
   public void emit(@NonNull OpenLineage.RunEvent runEvent) {
     final String eventAsJson = OpenLineageClientUtils.toJson(runEvent);
-    log.debug("POST {}: {}", uri, eventAsJson);
+    log.debug("POST event on URL {}", uri);
     try {
       final HttpPost request = new HttpPost();
       request.setURI(uri);
-      request.addHeader(ACCEPT, APPLICATION_JSON.toString());
-      request.addHeader(CONTENT_TYPE, APPLICATION_JSON.toString());
+      setHeaders(request);
       request.setEntity(new StringEntity(eventAsJson, APPLICATION_JSON));
-
-      if (tokenProvider != null) {
-        request.addHeader(AUTHORIZATION, tokenProvider.getToken());
-      }
 
       try (CloseableHttpResponse response = http.execute(request)) {
         throwOnHttpError(response);
@@ -123,6 +122,17 @@ public final class HttpTransport extends Transport implements Closeable {
     } catch (IOException e) {
       throw new OpenLineageClientException(e);
     }
+  }
+
+  private void setHeaders(HttpPost request) {
+    // set headers to accept json
+    headers.put(ACCEPT, APPLICATION_JSON.toString());
+    headers.put(CONTENT_TYPE, APPLICATION_JSON.toString());
+    // if tokenProvider preset overwrite authorization
+    if (tokenProvider != null) {
+      headers.put(AUTHORIZATION, tokenProvider.getToken());
+    }
+    headers.forEach(request::addHeader);
   }
 
   private void throwOnHttpError(@NonNull HttpResponse response) throws IOException {

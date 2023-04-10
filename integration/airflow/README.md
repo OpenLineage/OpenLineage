@@ -217,7 +217,7 @@ t1 = DataProcPySparkOperator(
     job_name=job_name,
     dataproc_pyspark_properties={
         'spark.driver.extraJavaOptions':
-            f"-javaagent:{jar}={os.environ.get('OPENLINEAGE_URL')}/api/v1/namespaces/{os.getenv('OPENLINEAGE_NAMESPACE', 'default')}/jobs/{job_name}/runs/{{{{macros.OpenLineagePlugin.lineage_run_id(run_id, task)}}}}?api_key={os.environ.get('OPENLINEAGE_API_KEY')}"
+            f"-javaagent:{jar}={os.environ.get('OPENLINEAGE_URL')}/api/v1/namespaces/{os.getenv('OPENLINEAGE_NAMESPACE', 'default')}/jobs/{job_name}/runs/{{{{macros.OpenLineagePlugin.lineage_run_id(task, task_instance)}}}}?api_key={os.environ.get('OPENLINEAGE_API_KEY')}"
         dag=dag)
 ```
 

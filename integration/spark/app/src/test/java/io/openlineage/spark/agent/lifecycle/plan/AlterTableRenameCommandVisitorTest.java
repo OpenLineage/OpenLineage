@@ -10,6 +10,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import java.util.List;
+import lombok.SneakyThrows;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.execution.command.AlterTableRenameCommand;
@@ -39,6 +42,7 @@ class AlterTableRenameCommandVisitorTest {
     dropTables();
   }
 
+  @SneakyThrows
   private void dropTables() {
     session
         .sessionState()
@@ -48,6 +52,11 @@ class AlterTableRenameCommandVisitorTest {
         .sessionState()
         .catalog()
         .dropTable(new TableIdentifier(NEW_TABLE, Option.apply(database)), true, true);
+
+    FileSystem.get(session.sparkContext().hadoopConfiguration())
+        .delete(new Path("/tmp/warehouse/new_table"), true);
+    FileSystem.get(session.sparkContext().hadoopConfiguration())
+        .delete(new Path("/tmp/warehouse/old_table"), true);
   }
 
   @BeforeEach

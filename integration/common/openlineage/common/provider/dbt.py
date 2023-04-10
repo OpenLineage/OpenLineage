@@ -53,6 +53,8 @@ class SparkConnectionMethod(Enum):
     def methods():
         return [x.value for x in SparkConnectionMethod]
 
+class UnsupportedDbtCommand(Exception):
+    pass
 
 class SkipUndefined(Undefined):
     def __getattr__(self, name):
@@ -244,14 +246,14 @@ class DbtArtifactProcessor:
 
         context = DbtRunContext(manifest, run_result, catalog)
 
-        if self.command not in ['run', 'build', 'test']:
-            raise ValueError(
+        if self.command not in ['run', 'build', 'test', 'seed']:
+            raise UnsupportedDbtCommand(
                 f"Not recognized run command "
-                f"{self.command} - should be run, test or build"
+                f"{self.command} - should be run, test, seed or build"
             )
 
         events = DbtEvents()
-        if self.command in ['run', 'build']:
+        if self.command in ['run', 'build', 'seed']:
             events += self.parse_execution(context, nodes)
         if self.command in ['test', 'build']:
             events += self.parse_test(context, nodes)
@@ -468,7 +470,7 @@ class DbtArtifactProcessor:
                 assertion_facet,
                 has_facets=False
             )
-            
+
             job_name = f"{node['database']}.{node['schema']}." \
                 f"{self.removeprefix(node['unique_id'], 'model.')}" \
                 + (".build.test" if self.command == 'build' else ".test")

@@ -34,6 +34,7 @@ class Backend:
         Send_lineage ignores manually provided inlets and outlets. The data collection mechanism
         is automatic, and bases on the passed context.
         """
+        from openlineage.airflow.adapter import OpenLineageAdapter
         from openlineage.airflow.utils import (
             DagUtils,
             get_airflow_run_facet,
@@ -57,7 +58,7 @@ class Backend:
             task_instance=task_instance
         )
 
-        task_uuid = self.adapter.build_task_instance_run_id(
+        task_uuid = OpenLineageAdapter.build_task_instance_run_id(
             operator.task_id, task_instance.execution_date, task_instance.try_number
         )
         start, end = get_dagrun_start_end(dagrun, dag)
@@ -103,7 +104,7 @@ class OpenLineageBackend(LineageBackend):
         if parse_version(AIRFLOW_VERSION) >= parse_version("2.3.0.dev0"):
             return
         # Make this method a noop if OPENLINEAGE_DISABLED is set to true
-        if os.getenv("OPENLINEAGE_DISABLED", None) in [True, 'true', "True"]:
+        if os.getenv("OPENLINEAGE_DISABLED", "").lower() == "true":
             return
         if not cls.backend:
             cls.backend = Backend()

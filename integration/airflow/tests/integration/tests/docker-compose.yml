@@ -310,7 +310,7 @@ services:
     expose:
       - 4566
     volumes:
-      - ../docker/s3:/docker-entrypoint-initaws.d
+      - ../docker/s3/create-bucket.sh:/etc/localstack/init/ready.d/init-aws.sh
     healthcheck:
       test: ["CMD", "awslocal", "s3api", "list-buckets"]
       interval: 5s

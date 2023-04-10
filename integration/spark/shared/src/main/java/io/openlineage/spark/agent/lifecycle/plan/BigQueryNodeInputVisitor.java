@@ -41,18 +41,6 @@ public class BigQueryNodeInputVisitor
     this.factory = factory;
   }
 
-  public static boolean hasBigQueryClasses() {
-    try {
-      BigQueryNodeOutputVisitor.class
-          .getClassLoader()
-          .loadClass("com.google.cloud.spark.bigquery.BigQueryRelation");
-      return true;
-    } catch (Exception e) {
-      // swallow- we don't care
-    }
-    return false;
-  }
-
   @Override
   public boolean isDefinedAt(LogicalPlan plan) {
     return plan instanceof LogicalRelation

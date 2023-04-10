@@ -20,6 +20,8 @@ import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression;
 import org.apache.spark.sql.catalyst.plans.logical.Aggregate;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.Project;
+import org.apache.spark.sql.execution.datasources.LogicalRelation;
+import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 
 /**
  * Traverses LogicalPlan and collects dependencies between the expressions and operations used
@@ -32,6 +34,7 @@ public class ExpressionDependencyCollector {
       Arrays.asList(new UnionDependencyVisitor(), new IcebergMergeIntoDependencyVisitor());
 
   static void collect(LogicalPlan plan, ColumnLevelLineageBuilder builder) {
+
     plan.foreach(
         node -> {
           expressionDependencyVisitors.stream()
@@ -47,7 +50,12 @@ public class ExpressionDependencyCollector {
             expressions.addAll(
                 ScalaConversionUtils.<NamedExpression>fromSeq(
                     ((Aggregate) node).aggregateExpressions()));
+          } else if (node instanceof LogicalRelation) {
+            if (((LogicalRelation) node).relation() instanceof JDBCRelation) {
+              JdbcColumnLineageCollector.extractExpressionsFromJDBC(node, builder);
+            }
           }
+
           expressions.stream()
               .forEach(expr -> traverseExpression((Expression) expr, expr.exprId(), builder));
           return scala.runtime.BoxedUnit.UNIT;

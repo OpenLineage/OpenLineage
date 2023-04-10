@@ -10,7 +10,7 @@ from setuptools import find_namespace_packages, setup
 with open("README.md") as readme_file:
     readme = readme_file.read()
 
-__version__ = "0.21.0"
+__version__ = "0.23.0"
 
 requirements = [
     "attrs>=19.3",
@@ -42,7 +42,7 @@ extras_require = {
         "apache-airflow-providers-ftp>=3.3.0",
         "airflow-provider-great-expectations==0.1.5",
         "great-expectations<=0.15.23",
-        "protobuf==3.20.*",
+        "protobuf>=3.20,<4.23",
     ],
 }
 

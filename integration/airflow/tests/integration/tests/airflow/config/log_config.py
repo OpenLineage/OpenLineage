@@ -23,6 +23,7 @@ levels = {
     "great_expectations": "INFO",
     "airflow.lineage": "DEBUG",
     "airflow.processor_manager": "WARNING",
+    "airflow.models.dagrun": "DEBUG",
     "botocore": "INFO",
 }
 

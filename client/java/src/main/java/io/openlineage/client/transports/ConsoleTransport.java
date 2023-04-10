@@ -17,6 +17,7 @@ public final class ConsoleTransport extends Transport {
 
   @Override
   public void emit(OpenLineage.RunEvent runEvent) {
+    // if DEBUG loglevel is enabled, this will double-log even due to OpenLineageClient also logging
     log.info(OpenLineageClientUtils.toJson(runEvent));
   }
 }

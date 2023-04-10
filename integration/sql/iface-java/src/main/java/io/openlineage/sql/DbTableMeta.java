@@ -37,7 +37,9 @@ public class DbTableMeta {
 
   @Override
   public String toString() {
-    return qualifiedName();
+    return String.format(
+        "\"%s%s%s\"",
+        database != null ? database + "." : "", schema != null ? schema + "." : "", name);
   }
 
   @Override

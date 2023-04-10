@@ -9,12 +9,15 @@ import static io.openlineage.spark.agent.util.ReflectionUtils.tryExecuteMethod;
 
 import com.google.cloud.spark.bigquery.BigQueryRelation;
 import io.openlineage.spark.agent.lifecycle.Rdds;
+import io.openlineage.spark.agent.util.BigQueryUtils;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
+import io.openlineage.spark.agent.util.JdbcUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ReflectionUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
+import io.openlineage.sql.SqlMeta;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -29,11 +32,15 @@ import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.catalog.HiveTableRelation;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.plans.logical.LeafNode;
+import org.apache.spark.sql.catalyst.plans.logical.LocalRelation;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.catalyst.plans.logical.OneRowRelation;
 import org.apache.spark.sql.catalyst.plans.logical.UnaryNode;
 import org.apache.spark.sql.execution.LogicalRDD;
+import org.apache.spark.sql.execution.columnar.InMemoryRelation;
 import org.apache.spark.sql.execution.datasources.HadoopFsRelation;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
+import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2ScanRelation;
 import scala.collection.JavaConversions;
@@ -60,13 +67,33 @@ class InputFieldsCollector {
 
   private static void discoverInputsFromNode(
       OpenLineageContext context, LogicalPlan node, ColumnLevelLineageBuilder builder) {
-    extractDatasetIdentifier(context, node).stream()
+    List<DatasetIdentifier> datasetIdentifiers = extractDatasetIdentifier(context, node);
+    if (isJDBCNode(node)) {
+      JdbcColumnLineageCollector.extractExternalInputs(node, builder, datasetIdentifiers);
+    } else {
+      extreactInternalInputs(node, builder, datasetIdentifiers);
+    }
+  }
+
+  private static boolean isJDBCNode(LogicalPlan node) {
+    return node instanceof LogicalRelation
+        && ((LogicalRelation) node).relation() instanceof JDBCRelation;
+  }
+
+  private static void extreactInternalInputs(
+      LogicalPlan node,
+      ColumnLevelLineageBuilder builder,
+      List<DatasetIdentifier> datasetIdentifiers) {
+
+    datasetIdentifiers.stream()
         .forEach(
-            di ->
-                ScalaConversionUtils.fromSeq(node.output()).stream()
-                    .filter(attr -> attr instanceof AttributeReference)
-                    .map(attr -> (AttributeReference) attr)
-                    .forEach(attr -> builder.addInput(attr.exprId(), di, attr.name())));
+            di -> {
+              ScalaConversionUtils.fromSeq(node.output()).stream()
+                  .filter(attr -> attr instanceof AttributeReference)
+                  .map(attr -> (AttributeReference) attr)
+                  .collect(Collectors.toList())
+                  .forEach(attr -> builder.addInput(attr.exprId(), di, attr.name()));
+            });
   }
 
   private static List<DatasetIdentifier> extractDatasetIdentifier(
@@ -85,15 +112,37 @@ class InputFieldsCollector {
       HadoopFsRelation relation = (HadoopFsRelation) ((LogicalRelation) node).relation();
       return extractDatasetIdentifier(relation);
     } else if (node instanceof LogicalRelation
+        && BigQueryUtils.hasBigQueryClasses()
         && ((LogicalRelation) node).relation() instanceof BigQueryRelation) {
       BigQueryRelation relation = (BigQueryRelation) ((LogicalRelation) node).relation();
       return extractDatasetIdentifier(relation);
+    } else if (node instanceof LogicalRelation
+        && ((LogicalRelation) node).relation() instanceof JDBCRelation) {
+      JDBCRelation relation = (JDBCRelation) ((LogicalRelation) node).relation();
+      return extractDatasetIdentifier(relation);
     } else if (node instanceof LogicalRDD) {
       return extractDatasetIdentifier((LogicalRDD) node);
+    } else if (node instanceof InMemoryRelation) {
+      // implemented in
+      // io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelLineageUtils.collectInputsAndExpressionDependencies
+      // requires merging multiple LogicalPlans
+    } else if (node instanceof OneRowRelation || node instanceof LocalRelation) {
+      // skip without warning
     } else if (node instanceof LeafNode) {
       log.warn("Could not extract dataset identifier from {}", node.getClass().getCanonicalName());
     }
     return Collections.emptyList();
+  }
+
+  private static List<DatasetIdentifier> extractDatasetIdentifier(JDBCRelation relation) {
+    Optional<SqlMeta> sqlMeta = JdbcUtils.extractQueryFromSpark(relation);
+    return sqlMeta
+        .map(
+            meta ->
+                meta.inTables().stream()
+                    .map(e -> new DatasetIdentifier(e.name(), relation.jdbcOptions().url()))
+                    .collect(Collectors.toList()))
+        .orElse(Collections.emptyList());
   }
 
   private static List<DatasetIdentifier> extractDatasetIdentifier(LogicalRDD logicalRDD) {
