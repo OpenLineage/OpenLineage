@@ -153,8 +153,8 @@ def test_extract_on_complete(get_connection):
 
     expected_inputs = [
         InputDataset(
-            namespace="s3://source-bucket",
-            name="s3://source-bucket/path/to/source_file.csv",
+            namespace="snowflake_stage_MY_S3_STAGE",
+            name="my_api_data.json",
             facets={}
         )
     ]
