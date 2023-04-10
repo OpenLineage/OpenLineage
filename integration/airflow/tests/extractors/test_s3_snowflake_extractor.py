@@ -92,7 +92,8 @@ TASK = S3ToSnowflakeOperator(
 def mock_get_hook(operator):
     mocked = mock.MagicMock()
     mocked.return_value.conn_name_attr = 'snowflake_conn_id'
-    mocked.return_value.get_uri.return_value = "snowflake://user:pass@xy123456/db/schema"
+    mocked.return_value.get_uri.return_value = \
+        "snowflake://user:pass@xy123456.us-west-1.aws/database/schema"
     if hasattr(operator, 'get_db_hook'):
         operator.get_db_hook = mocked
     else:
@@ -147,8 +148,8 @@ def mock_get_table_schemas():
 def test_extract_on_complete(get_connection):
     source = Source(
         scheme='snowflake',
-        authority='test_account',
-        connection_url=CONN_URI
+        authority='xy123456.us-west-1.aws',
+        connection_url=CONN_URI_URIPARSED
     )
 
     expected_inputs = [
@@ -175,7 +176,7 @@ def test_extract_on_complete(get_connection):
 
     expected_outputs = [
         Dataset(
-            name=f"{DB_NAME}.{DB_SCHEMA_NAME}.{DB_TABLE_NAME.name}",
+            name=f"{DB_NAME}.{DB_TABLE_NAME.name}",
             source=source,
             fields=[Field.from_column(column) for column in DB_TABLE_COLUMNS],
         ).to_openlineage_dataset()
