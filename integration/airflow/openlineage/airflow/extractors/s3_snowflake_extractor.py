@@ -18,26 +18,12 @@ class S3ToSnowflakeOperatorExtractor(SnowflakeExtractor):
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
         return ['S3ToSnowflakeOperator']
-
+    
     def _get_hook(self):
-        return self._get_db_hook()
-
-    def _get_db_hook(self):
-        """
-        Create and return SnowflakeHook.
-        :return: a SnowflakeHook instance.
-        :rtype: SnowflakeHook
-        """
-        from airflow.providers.snowflake.hooks.snowflake import SnowflakeHook
-        return SnowflakeHook(
-            snowflake_conn_id=self.operator.snowflake_conn_id,
-            warehouse=self.operator.warehouse,
-            database=self.operator.database,
-            role=self.operator.role,
-            schema=self.operator.schema,
-            authenticator=self.operator.authenticator,
-            session_parameters=self.operator.session_parameters,
-        )
+        if hasattr(self.operator, "get_db_hook"):
+            return self.operator.get_db_hook()
+        else:
+            return self.operator.get_hook()
 
     def execute_query_on_hook(self, hook, query) -> Iterator[tuple]:
         with closing(hook.get_conn()) as conn:
@@ -48,7 +34,7 @@ class S3ToSnowflakeOperatorExtractor(SnowflakeExtractor):
         self.log.debug("Getting table details")
         sql = self._information_schema_query([table])
         self.log.debug("Executing query for schema: {}".format(sql))
-        fields = self.execute_query_on_hook(hook=self._get_db_hook(), query=sql)
+        fields = self.execute_query_on_hook(hook=self._get_hook(), query=sql)
         self.log.debug(type(fields))
         self.log.debug("Table Structure: {}".format(fields))
 
