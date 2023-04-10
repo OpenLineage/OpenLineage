@@ -181,8 +181,11 @@ def test_extract_on_complete(get_connection):
         ).to_openlineage_dataset()
     ]
 
+    print(expected_outputs)
+
     task_metadata = S3ToSnowflakeExtractor(TASK).extract_on_complete()
 
+    print(task_metadata.outputs)
     assert task_metadata.name == f"{DAG_ID}.{TASK_ID}"
     assert task_metadata.inputs == expected_inputs
     assert task_metadata.outputs == expected_outputs
