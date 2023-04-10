@@ -14,6 +14,7 @@ from openlineage.common.sql import DbTableMeta
 from pkg_resources import parse_version
 
 from airflow.models import DAG, TaskInstance
+from airflow.models import Connection
 from airflow.providers.snowflake.transfers.s3_to_snowflake import S3ToSnowflakeOperator
 from airflow.utils.dates import days_ago
 from airflow.utils.state import State
@@ -111,6 +112,7 @@ def get_hook_method(operator):
     else:
         return operator.get_hook
 
+
 def get_ti(task):
     kwargs = {}
     if parse_version(AIRFLOW_VERSION) > parse_version("2.2.0"):
@@ -147,9 +149,9 @@ def test_extract_on_complete(execute_query_on_hook, get_connection, mock_get_tab
         [],
     )
 
-    # conn = Connection()
-    # conn.parse_from_uri(uri=CONN_URI)
-    # get_connection.return_value = conn
+    conn = Connection()
+    conn.parse_from_uri(uri=CONN_URI)
+    get_connection.return_value = conn
 
     mock_get_hook(TASK)
 
