@@ -26,15 +26,17 @@ class OpenlineageParserTest < Test::Unit::TestCase
   test "event full test" do
       @parser.configure('json_parser' => 'yajl')
       ol_event = File.read("events/event_full.json")
-      parsed = @parser.instance.parse(ol_event)
-      assert_equal("ea041791-68bc-4ae1-bd89-4c8106a157e4", parsed['run']['runId'])
+      @parser.instance.parse(ol_event) { | time, json |
+         assert_equal("ea041791-68bc-4ae1-bd89-4c8106a157e4", json['run']['runId'])
+      }
   end
 
   test "event simple test" do
       @parser.configure('json_parser' => 'yajl')
       ol_event = File.read("events/event_simple.json")
-      parsed = @parser.instance.parse(ol_event)
-      assert_equal("41fb5137-f0fd-4ee5-ba5c-56f8571d1bd7", parsed['run']['runId'])
+      @parser.instance.parse(ol_event) { | time, json |
+        assert_equal("41fb5137-f0fd-4ee5-ba5c-56f8571d1bd7", json['run']['runId'])
+      }
   end
 
  test "invalid schemaURL test" do

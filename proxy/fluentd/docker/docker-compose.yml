@@ -9,6 +9,8 @@ services:
     ports:
       - "9880:9880"
     entrypoint: ["/bin/entrypoint.sh", "-p", "/fluentd/openlineage-parser"]
+    depends_on:
+      - api
   
   api:
     image: marquezproject/marquez
