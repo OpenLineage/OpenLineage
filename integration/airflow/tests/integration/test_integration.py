@@ -53,7 +53,7 @@ params = [
         marks=pytest.mark.skipif(not IS_GCP_AUTH, reason="no gcp credentials"),
     ),
     pytest.param(
-        "dbt_bigquery",
+        "dbt",
         "requests/dbt_bigquery.json",
         True,
         marks=pytest.mark.skipif(
@@ -123,7 +123,7 @@ params = [
         ),
     ),
     pytest.param(
-        "dbt_snowflake",
+        "dbt",
         "requests/dbt_snowflake.json",
         True,
         marks=[

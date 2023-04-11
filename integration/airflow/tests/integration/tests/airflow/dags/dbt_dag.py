@@ -6,6 +6,7 @@ import os
 from airflow import DAG
 from airflow.operators.bash import BashOperator
 from airflow.utils.dates import days_ago
+from airflow.version import version as AIRFLOW_VERSION
 
 PLUGIN_MACRO = "{{ macros.OpenLineagePlugin.lineage_parent_id(run_id, task, task_instance) }}"
 
@@ -23,7 +24,7 @@ default_args = {
 }
 
 dag = DAG(
-    'dbt_bigquery',
+    'dbt',
     schedule_interval='@once',
     default_args=default_args,
     description='Runs dbt model build.',
@@ -52,3 +53,28 @@ t2 = BashOperator(
 )
 
 t1 >> t2
+
+if AIRFLOW_VERSION == os.environ.get("SNOWFLAKE_AIRFLOW_TEST_VERSION", "2.3.4"):
+    t3 = BashOperator(
+        task_id='dbt_seed_snowflake',
+        dag=dag,
+        bash_command=f"source /opt/airflow/dbt_venv/bin/activate && dbt seed --full-refresh --project-dir={PROJECT_DIR} --profiles-dir={PROFILE_DIR} && deactivate",  # noqa: E501
+        env={
+            **os.environ,
+            "OPENLINEAGE_PARENT_ID": PLUGIN_MACRO,
+            "DBT_PROFILE": "snowflake"
+        }
+    )
+
+    t4 = BashOperator(
+        task_id='dbt_run_snowflake',
+        dag=dag,
+        bash_command=f"source /opt/airflow/dbt_venv/bin/activate && dbt-ol run --project-dir={PROJECT_DIR} --profiles-dir={PROFILE_DIR}",  # noqa: E501
+        env={
+            **os.environ,
+            "OPENLINEAGE_PARENT_ID": PLUGIN_MACRO,
+            "DBT_PROFILE": "snowflake"
+        }
+    )
+
+    t2 >> t3 >> t4
