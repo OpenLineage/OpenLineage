@@ -53,7 +53,7 @@ After all the containers started send some http requests.
 curl -X POST \
 -d '{"test":"test"}' \
 -H 'Content-Type: application/json' \
-http://localhost:5000/api/v1/lineage
+http://localhost:9880/api/v1/lineage
 ```
 In response, you should see following message:
 
@@ -65,14 +65,14 @@ Next send some valid requests:
 curl -X POST \
 -d "$(cat test-start.json)" \
 -H 'Content-Type: application/json' \
-http://localhost:5000/api/v1/lineage
+http://localhost:9880/api/v1/lineage
 ```
 
 ```shell
 curl -X POST \
 -d "$(cat test-complete.json)" \
 -H 'Content-Type: application/json' \
-http://localhost:5000/api/v1/lineage
+http://localhost:9880/api/v1/lineage
 ```
 
 After that you should see entities in marquez http://localhost:3000/ in `my-namespace` namespace.

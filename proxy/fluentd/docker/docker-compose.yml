@@ -4,8 +4,8 @@ services:
     build: .
     container_name: openlineage-fluentd
     volumes:
-      - ./fluent.conf /fluentd/etc/fluent.conf
-      - ../lib/fluent/plugin/parser_openlineage.rb /fluentd/openlineage-parser/parser_openlineage.rb
+      - ./conf:/fluentd/etc/
+      - ../lib/fluent/plugin/:/fluentd/openlineage-parser/
     ports:
       - "9880:9880"
     entrypoint: ["/bin/entrypoint.sh", "-p", "/fluentd/openlineage-parser"]
