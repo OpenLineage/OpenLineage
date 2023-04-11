@@ -8,7 +8,7 @@ plugins {
     id 'com.diffplug.spotless' version '6.17.0'
     id "com.github.johnrengelman.shadow" version "7.1.2"
     id "pmd"
-    id "com.github.davidmc24.gradle.plugin.avro" version "1.6.0"
+    id "com.github.davidmc24.gradle.plugin.avro" version "1.7.0"
 }
 
 pmd {
