@@ -40,6 +40,3 @@ class GCSToGCSExtractor(BaseExtractor):
             inputs=input_objects,
             outputs=[output_object],
         )
-
-    def extract_on_complete(self, task_instance) -> Optional[TaskMetadata]:
-        pass

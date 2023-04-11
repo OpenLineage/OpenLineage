@@ -41,9 +41,6 @@ class S3CopyObjectExtractor(BaseExtractor):
             outputs=[output_object],
         )
 
-    def extract_on_complete(self, task_instance) -> Optional[TaskMetadata]:
-        pass
-
 
 class S3FileTransformExtractor(BaseExtractor):
     @classmethod
