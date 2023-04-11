@@ -5,7 +5,7 @@ from unittest import mock
 
 from openlineage.airflow.extractors.s3_snowflake_extractor import S3ToSnowflakeExtractor
 from openlineage.client.run import Dataset as InputDataset
-from openlineage.common.dataset import Dataset, Source
+from openlineage.common.dataset import Dataset, Field, Source
 from openlineage.common.models import DbColumn, DbTableSchema
 from openlineage.common.sql import DbTableMeta
 
@@ -138,6 +138,7 @@ def test_extract_on_complete(get_connection):
     ]
 
     table_schemas = mock_get_table_schemas()
+    print('table_schemas', table_schemas)
 
     conn = Connection()
     conn.parse_from_uri(uri=CONN_URI)
@@ -151,19 +152,12 @@ def test_extract_on_complete(get_connection):
     }
 
     expected_outputs = [
-        Dataset.from_table_schema(
+        Dataset(
+            name=f"{DB_NAME}.{DB_TABLE_NAME.name}",
             source=source,
-            table_schema=out_table_schema,
-            database_name=DB_NAME
-        ) for out_table_schema in table_schemas
+            fields=[Field.from_column(column) for column in DB_TABLE_COLUMNS],
+        ).to_openlineage_dataset()
     ]
-    # expected_outputs = [
-    #     Dataset(
-    #         name=f"{DB_NAME}.{DB_TABLE_NAME.name}",
-    #         source=source,
-    #         fields=[Field.from_column(column) for column in DB_TABLE_COLUMNS],
-    #     ).to_openlineage_dataset()
-    # ]
 
     print(expected_outputs)
 
