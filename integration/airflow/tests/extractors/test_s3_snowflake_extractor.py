@@ -161,7 +161,10 @@ def test_extract_on_complete(get_connection):
 
     print(expected_outputs)
 
-    task_metadata = S3ToSnowflakeExtractor(TASK).extract_on_complete()
+    with mock.patch("openlineage.airflow.extractors.s3_snowflake_extractor._get_table_schemas") \
+        as mocked:
+        mocked.return_value = [DB_TABLE_SCHEMA]
+        task_metadata = S3ToSnowflakeExtractor(TASK).extract_on_complete()
 
     print(task_metadata.outputs)
     assert task_metadata.name == f"{DAG_ID}.{TASK_ID}"
