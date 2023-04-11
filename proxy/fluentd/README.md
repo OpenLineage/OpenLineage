@@ -57,7 +57,7 @@ http://localhost:9880/api/v1/lineage
 ```
 In response, you should see following message:
 
-`{"errors":["job must not be null","eventTime must not be null","run must not be null","producer must not be null"]}`
+`Openlineage validation failed: path "/": "run" is a required property, path "/": "job" is a required property, path "/": "eventTime" is a required property, path "/": "producer" is a required property, path "/": "schemaURL" is a required property`
 
 Next send some valid requests:
 
