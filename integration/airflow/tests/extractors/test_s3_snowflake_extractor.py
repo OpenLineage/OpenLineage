@@ -107,41 +107,18 @@ def get_hook_method(operator):
         return operator.get_hook
 
 
-def mock_get_table():
-    mocked = mock.MagicMock()
-    columns = [
-        DbColumn(
-            name='col1',
-            type='dt1',
-            ordinal_position=1,
-        )
-    ]
+# def mock_get_table():
+#     mocked = mock.MagicMock()
+#     mocked.return_value = DB_TABLE_SCHEMA
 
-    mocked.return_value = DbTableSchema(
-        schema_name='schema',
-        table_name='table',
-        columns=columns,
-    )
-
-    return mocked.return_value
+#     return mocked.return_value
 
 
 def mock_get_table_schemas():
-    mocked = mock.MagicMock()
-    columns = [
-        DbColumn(
-            name='col1',
-            type='dt1',
-            ordinal_position=1,
-        )
-    ]
-    mocked.return_value = [DbTableSchema(
-        schema_name='schema',
-        table_name='table',
-        columns=columns,
-    )]
+    mock_get_table = mock.MagicMock()
+    mock_get_table.return_value = DB_TABLE_SCHEMA
 
-    return mocked.return_value
+    return [DB_TABLE_SCHEMA]
 
 
 @mock.patch("airflow.hooks.base.BaseHook.get_connection")
@@ -160,7 +137,6 @@ def test_extract_on_complete(get_connection):
         )
     ]
 
-    mock_get_table()
     mock_get_table_schemas()
 
     conn = Connection()
