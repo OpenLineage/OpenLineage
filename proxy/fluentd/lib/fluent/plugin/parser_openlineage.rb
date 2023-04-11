@@ -19,7 +19,7 @@ module Fluent
         # parse JSON with default JSONParser
         super(text) { | time, json |
           validate_openlineage(json)
-          return json
+          yield time, json
         }
       end
 
