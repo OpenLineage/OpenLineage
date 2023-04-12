@@ -55,6 +55,13 @@ function compose_up() {
   export DBT_DATASET_PREFIX=$(echo "$AIRFLOW_VERSION" | tr "-" "_" | tr "." "_")_dbt
   export DAGS_ARE_PAUSED_AT_CREATION=True
 
+  # Add commit ID to the BIGQUERY_PREFIX variable
+  # to avoid concurrent table update issue
+  COMMIT_ID=$(git rev-parse HEAD 2>/dev/null)
+  if [[ -n "${COMMIT_ID}" ]]; then
+    BIGQUERY_PREFIX="${BIGQUERY_PREFIX}_${COMMIT_ID}"
+  fi
+
   if [[ "$(id -u)" == "0" ]]; then
     set_write_permissions
     export AIRFLOW_UID=50000

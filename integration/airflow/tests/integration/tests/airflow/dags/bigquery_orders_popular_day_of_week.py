@@ -49,11 +49,39 @@ t1 = BigQueryExecuteQueryOperator(
 )
 
 t2 = BigQueryExecuteQueryOperator(
+    task_id='bigquery_alter_table_1',
+    gcp_conn_id=CONNECTION,
+    sql=f'''
+    ALTER TABLE `{PROJECT_ID}.{DATASET_ID}.{PREFIX}popular_orders_day_of_week`
+    SET OPTIONS (
+    expiration_timestamp = TIMESTAMP '{{{{
+        (macros.datetime.utcnow() + macros.timedelta(hours=1)).isoformat()
+    }}}}'
+    );''',
+    use_legacy_sql=False,
+    dag=dag
+)
+
+t3 = BigQueryExecuteQueryOperator(
     task_id='bigquery_empty_table',
     gcp_conn_id='bq_conn',
     sql=f'''
     CREATE TABLE IF NOT EXISTS `{PROJECT_ID}.{DATASET_ID}.{PREFIX}top_delivery_times` (
       order_placed_on     TIMESTAMP NOT NULL,
+    );''',
+    use_legacy_sql=False,
+    dag=dag
+)
+
+t4 = BigQueryExecuteQueryOperator(
+    task_id='bigquery_alter_table_2',
+    gcp_conn_id=CONNECTION,
+    sql=f'''
+    ALTER TABLE `{PROJECT_ID}.{DATASET_ID}.{PREFIX}top_delivery_times`
+    SET OPTIONS (
+    expiration_timestamp = TIMESTAMP '{{{{
+        (macros.datetime.utcnow() + macros.timedelta(hours=1)).isoformat()
+    }}}}'
     );''',
     use_legacy_sql=False,
     dag=dag
@@ -65,7 +93,7 @@ delay_1 = PythonOperator(
     python_callable=lambda: time.sleep(10)
 )
 
-t3 = BigQueryExecuteQueryOperator(
+t5 = BigQueryExecuteQueryOperator(
     task_id='bigquery_seed',
     gcp_conn_id='bq_conn',
     sql=f'''
@@ -77,7 +105,7 @@ t3 = BigQueryExecuteQueryOperator(
     dag=dag
 )
 
-t4 = BigQueryExecuteQueryOperator(
+t6 = BigQueryExecuteQueryOperator(
     task_id='bigquery_insert',
     gcp_conn_id='bq_conn',
     sql=f'''
@@ -91,22 +119,22 @@ t4 = BigQueryExecuteQueryOperator(
     dag=dag
 )
 
-t5 = BigQueryExecuteQueryOperator(
-    task_id='bigquery_truncate_top_delivery_times',
+t7 = BigQueryExecuteQueryOperator(
+    task_id='bigquery_drop_top_delivery_times',
     gcp_conn_id='bq_conn',
     sql=f'''
-    TRUNCATE TABLE `{PROJECT_ID}.{DATASET_ID}.{PREFIX}top_delivery_times`;''',
+    DROP TABLE `{PROJECT_ID}.{DATASET_ID}.{PREFIX}top_delivery_times`;''',
     use_legacy_sql=False,
     dag=dag
 )
 
-t6 = BigQueryExecuteQueryOperator(
-    task_id='bigquery_truncate_popular_orders_day_of_week',
+t8 = BigQueryExecuteQueryOperator(
+    task_id='bigquery_drop_popular_orders_day_of_week',
     gcp_conn_id='bq_conn',
     sql=f'''
-    TRUNCATE TABLE `{PROJECT_ID}.{DATASET_ID}.{PREFIX}popular_orders_day_of_week`;''',
+    DROP TABLE `{PROJECT_ID}.{DATASET_ID}.{PREFIX}popular_orders_day_of_week`;''',
     use_legacy_sql=False,
     dag=dag
 )
 
-t1 >> t2 >> delay_1 >> t3 >> t4 >> t5 >> t6
+t1 >> t2 >> t3 >> t4 >> delay_1 >> t5 >> t6 >> t7 >> t8
