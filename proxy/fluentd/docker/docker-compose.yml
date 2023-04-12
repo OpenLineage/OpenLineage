@@ -8,6 +8,8 @@ services:
       - ../lib/fluent/plugin/:/fluentd/openlineage-parser/
     ports:
       - "9880:9880"
+    environment:
+      - MARQUEZ_HTTP_ENDPOINT=http://marquez-api:5000/api/v1/lineage
     entrypoint: ["/bin/entrypoint.sh", "-p", "/fluentd/openlineage-parser"]
     depends_on:
       - api
