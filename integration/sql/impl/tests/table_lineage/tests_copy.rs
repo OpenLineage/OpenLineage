@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::test_utils::tables;
-use openlineage_sql::{DbTableMeta, parse_sql, TableLineage};
+use openlineage_sql::{parse_sql, DbTableMeta, TableLineage};
 use sqlparser::dialect::SnowflakeDialect;
 
 #[test]
@@ -93,7 +93,7 @@ fn parse_copy_into_with_snowflake_internal_stages() {
         "@namespace.stage_name",
         "@namespace.stage_name/path",
         "@namespace.%table_name/path",
-        "@~/path"
+        "@~/path",
     ];
 
     for stage_name in stage_names {
@@ -103,8 +103,8 @@ fn parse_copy_into_with_snowflake_internal_stages() {
                 &SnowflakeDialect {},
                 None,
             )
-                .unwrap()
-                .table_lineage,
+            .unwrap()
+            .table_lineage,
             TableLineage {
                 out_tables: tables(vec!["a.b"]),
                 in_tables: vec![DbTableMeta::new_default_dialect_with_namespace_and_schema(
@@ -120,13 +120,14 @@ fn parse_copy_into_with_snowflake_internal_stages() {
 #[test]
 fn parse_pivot_table() {
     assert_eq!(
-        parse_sql(concat!(
-        "SELECT * FROM monthly_sales AS a ",
-        "PIVOT(SUM(a.amount) FOR a.MONTH IN ('JAN', 'FEB', 'MAR', 'APR')) AS p (c, d) ",
-        "ORDER BY EMPID"
-        ),
-        &SnowflakeDialect {},
-        None,
+        parse_sql(
+            concat!(
+                "SELECT * FROM monthly_sales AS a ",
+                "PIVOT(SUM(a.amount) FOR a.MONTH IN ('JAN', 'FEB', 'MAR', 'APR')) AS p (c, d) ",
+                "ORDER BY EMPID"
+            ),
+            &SnowflakeDialect {},
+            None,
         )
         .unwrap()
         .table_lineage,

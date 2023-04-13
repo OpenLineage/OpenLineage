@@ -90,14 +90,7 @@ impl DbTableMeta {
         dialect: &dyn CanonicalDialect,
         default_schema: Option<String>,
     ) -> Self {
-        DbTableMeta::new_with_namespace_and_schema(
-            name,
-            dialect,
-            default_schema,
-            true,
-            true,
-            true
-        )
+        DbTableMeta::new_with_namespace_and_schema(name, dialect, default_schema, true, true, true)
     }
 
     pub fn new_with_namespace_and_schema(
@@ -108,8 +101,7 @@ impl DbTableMeta {
         provided_field_schema: bool,
         with_split_name: bool,
     ) -> Self {
-        if !with_split_name
-        {
+        if !with_split_name {
             // for example: snowflake external location with no namespace nor name split
             return DbTableMeta {
                 database: None,
@@ -127,10 +119,7 @@ impl DbTableMeta {
         let table_name: &str = split.first().unwrap_or(&name.as_str());
         DbTableMeta {
             database: split.get(2).map(ToString::to_string),
-            schema: split
-                .get(1)
-                .map(ToString::to_string)
-                .or_else(|| default_schema),
+            schema: split.get(1).map(ToString::to_string).or(default_schema),
             name: table_name.to_string(),
             provided_namespace: false,
             provided_field_schema: false,
@@ -167,8 +156,7 @@ impl DbTableMeta {
             None,
             provided_namespace,
             provided_field_schema,
-            false
+            false,
         )
     }
-
 }

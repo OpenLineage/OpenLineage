@@ -69,6 +69,7 @@ pub struct Context<'a> {
 }
 
 impl<'a> Context<'a> {
+    #![allow(dead_code)]
     pub fn default() -> Context<'a> {
         Context {
             inputs: HashSet::new(),
@@ -100,7 +101,12 @@ impl<'a> Context<'a> {
         }
     }
 
-    pub fn add_non_table_input(&mut self, table: String, provided_namespace: bool, provided_field_schema: bool) {
+    pub fn add_non_table_input(
+        &mut self,
+        table: String,
+        provided_namespace: bool,
+        provided_field_schema: bool,
+    ) {
         let name = DbTableMeta::new_with_namespace_and_schema(
             table,
             self.dialect.deref(),
@@ -121,7 +127,12 @@ impl<'a> Context<'a> {
         }
     }
 
-    pub fn add_non_table_output(&mut self, output: String, provided_namespace: bool, provided_field_schema: bool) {
+    pub fn add_non_table_output(
+        &mut self,
+        output: String,
+        provided_namespace: bool,
+        provided_field_schema: bool,
+    ) {
         let name = DbTableMeta::new_with_namespace_and_schema(
             output,
             self.dialect.deref(),
@@ -314,7 +325,6 @@ impl<'a> Context<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::lineage::*;
 
     #[test]
     fn test_coalesce_columns() {
@@ -390,7 +400,7 @@ mod tests {
         context.coalesce(old_frame);
 
         let mut ancestry = Vec::from_iter(context.frames.last().unwrap().column_ancestry.iter());
-        ancestry.sort_by(|a, b| a.0.cmp(&b.0));
+        ancestry.sort_by(|a, b| a.0.cmp(b.0));
         assert_eq!(
             ancestry,
             vec![
@@ -447,7 +457,7 @@ mod tests {
         context.collect_with_table(frame, DbTableMeta::new_default_dialect("alias".to_string()));
 
         let mut ancestry = Vec::from_iter(context.frames.last().unwrap().column_ancestry.iter());
-        ancestry.sort_by(|a, b| a.0.cmp(&b.0));
+        ancestry.sort_by(|a, b| a.0.cmp(b.0));
         assert_eq!(
             ancestry,
             vec![

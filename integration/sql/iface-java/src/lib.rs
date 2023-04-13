@@ -10,12 +10,10 @@ use jni::objects::{JClass, JList, JObject, JString, JValue};
 use jni::sys::{jobject, jstring};
 use jni::JNIEnv;
 
-use rust_impl::{
-    get_generic_dialect, parse_multiple_statements, DbTableMeta, SqlMeta, TableLineage,
-};
+use rust_impl::{get_generic_dialect, parse_multiple_statements};
 
 trait AsJavaObject {
-    fn as_java_object<'a, 'b>(&'b self, env: &'a JNIEnv) -> Result<JObject<'a>> {
+    fn as_java_object<'a>(&self, env: &'a JNIEnv) -> Result<JObject<'a>> {
         let classname = Self::java_class_name();
         let java_class = env.find_class(classname)?;
         let signature = Self::ctor_signature();
@@ -27,7 +25,7 @@ trait AsJavaObject {
 
     fn java_class_name() -> &'static str;
     fn ctor_signature() -> &'static str;
-    fn ctor_arguments<'a, 'b>(&'b self, env: &'a JNIEnv) -> Result<Box<[JValue<'a>]>>;
+    fn ctor_arguments<'a>(&self, env: &'a JNIEnv) -> Result<Box<[JValue<'a>]>>;
 }
 
 impl AsJavaObject for rust_impl::SqlMeta {
@@ -39,7 +37,7 @@ impl AsJavaObject for rust_impl::SqlMeta {
         "(Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/util/List;)V"
     }
 
-    fn ctor_arguments<'a, 'b>(&'b self, env: &'a JNIEnv) -> Result<Box<[JValue<'a>]>> {
+    fn ctor_arguments<'a>(&self, env: &'a JNIEnv) -> Result<Box<[JValue<'a>]>> {
         let array_list_class = env
             .find_class("java/util/ArrayList")
             .expect("Couldn't find the ArrayList class");
@@ -93,7 +91,7 @@ impl AsJavaObject for rust_impl::DbTableMeta {
         "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V"
     }
 
-    fn ctor_arguments<'a, 'b>(&'b self, env: &'a JNIEnv) -> Result<Box<[JValue<'a>]>> {
+    fn ctor_arguments<'a>(&self, env: &'a JNIEnv) -> Result<Box<[JValue<'a>]>> {
         let arg1 = match &self.database {
             Some(d) => env.new_string(d)?.into(),
             None => JObject::null(),
@@ -121,9 +119,9 @@ impl AsJavaObject for rust_impl::ColumnMeta {
         "(Lio/openlineage/sql/DbTableMeta;Ljava/lang/String;)V"
     }
 
-    fn ctor_arguments<'a, 'b>(&'b self, env: &'a JNIEnv) -> Result<Box<[JValue<'a>]>> {
+    fn ctor_arguments<'a>(&self, env: &'a JNIEnv) -> Result<Box<[JValue<'a>]>> {
         let arg1 = match &self.origin {
-            Some(d) => d.as_java_object(env).unwrap().into(),
+            Some(d) => d.as_java_object(env).unwrap(),
             None => JObject::null(),
         };
         let arg2 = env.new_string(&self.name)?.into();
@@ -141,7 +139,7 @@ impl AsJavaObject for rust_impl::ColumnLineage {
         "(Lio/openlineage/sql/ColumnMeta;Ljava/util/List;)V"
     }
 
-    fn ctor_arguments<'a, 'b>(&'b self, env: &'a JNIEnv) -> Result<Box<[JValue<'a>]>> {
+    fn ctor_arguments<'a>(&self, env: &'a JNIEnv) -> Result<Box<[JValue<'a>]>> {
         let array_list_class = env
             .find_class("java/util/ArrayList")
             .expect("Couldn't find the ArrayList class");
@@ -173,7 +171,7 @@ impl AsJavaObject for rust_impl::ExtractionError {
         "(JLjava/lang/String;Ljava/lang/String;)V"
     }
 
-    fn ctor_arguments<'a, 'b>(&'b self, env: &'a JNIEnv) -> Result<Box<[JValue<'a>]>> {
+    fn ctor_arguments<'a>(&self, env: &'a JNIEnv) -> Result<Box<[JValue<'a>]>> {
         let message = env.new_string(&self.message)?.into();
         let origin_statement = env.new_string(&self.origin_statement)?.into();
 
@@ -227,7 +225,7 @@ pub extern "system" fn Java_io_openlineage_sql_OpenLineageSql_parse(
     match f() {
         Ok(obj) => obj,
         Err(err) => {
-            env.throw(err.to_string());
+            let _ = env.throw(err.to_string());
             JObject::null().into_raw()
         }
     }

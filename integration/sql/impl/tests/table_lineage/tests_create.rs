@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::test_utils::*;
-use openlineage_sql::{DbTableMeta, parse_sql, TableLineage};
+use openlineage_sql::{parse_sql, DbTableMeta, TableLineage};
 use sqlparser::dialect::SnowflakeDialect;
 
 #[test]
@@ -171,11 +171,11 @@ fn create_stage() {
              FILE_FORMAT=(TYPE=PARQUET TRIM_SPACE=TRUE)
              COPY_OPTIONS=(MATCH_BY_COLUMN_NAME=CASE_INSENSITIVE)
          ",
-         &SnowflakeDialect {},
-         None,
+            &SnowflakeDialect {},
+            None,
         )
-            .unwrap()
-            .table_lineage,
+        .unwrap()
+        .table_lineage,
         TableLineage {
             in_tables: vec![DbTableMeta::new_default_dialect_with_namespace_and_schema(
                 "gcs://openlineage/data/".to_string(),
