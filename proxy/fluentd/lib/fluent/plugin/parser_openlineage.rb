@@ -12,7 +12,10 @@ module Fluent
 
       DEFAULT_SCHEMA="https://openlineage.io/spec/1-0-5/OpenLineage.json"
 
-      @@cached_schemas = {}
+      def configure(conf)
+        super
+        @cached_schemas = {}
+      end
 
       # https://docs.fluentd.org/plugin-development/api-plugin-parser
       def parse(text)
@@ -40,16 +43,16 @@ module Fluent
       end
 
       def get_schema(schema_url)
-        if !@@cached_schemas.key?(schema_url)
+        if !@cached_schemas.key?(schema_url)
           response = Net::HTTP.get_response(URI(schema_url))
           case response
           when Net::HTTPSuccess then
-            @@cached_schemas[:schema_url] = response.body
+            @cached_schemas[schema_url] = response.body
           else
             raise ParserError, "Openlineage validation failed, unable to fetch schema " + schema_url
           end
         end
-        return @@cached_schemas[:schema_url]
+        return @cached_schemas[schema_url]
       end
     end
   end

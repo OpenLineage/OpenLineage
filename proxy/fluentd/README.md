@@ -32,18 +32,15 @@ Some interesting fluentd features available on [official documentation](https://
    * [Output S3 plugin](https://docs.fluentd.org/output/s3),
    * [Output copy plugin](https://docs.fluentd.org/output/copy),
    * [Output http plugin](https://docs.fluentd.org/output/http) with following options like [retryable_response_codes](https://docs.fluentd.org/output/http#retryable_response_codes) to specify backend codes that should cause a retry,
-   * [Buffer configuration](https://docs.fluentd.org/configuration/buffer-section).
+ * [Buffer configuration](https://docs.fluentd.org/configuration/buffer-section),
+ * [Embedding Ruby Expressions in config files to contain environment variables](https://docs.fluentd.org/configuration/config-file#embedding-ruby-expressions).
 
 Fluentd official documentation does not mention guarantees on event ordering. However, retrieving
 Openlineage events and buffering in file/memory should be considered millisecond long operation, 
 while any HTTP backend cannot guarantee ordering in such case. On the other hand, by default
 the amount of threads to flush the buffer is set to 1 and configurable ([flush_thread_count](https://docs.fluentd.org/output#flush_thread_count)).
 
-## Openlineage parser plugin
-
-Openlineage-parser is a fluentd plugin that verifies if a JSON matches Openlineage schema. 
-
-### Usage
+## Quickstart with Docker
 
 Please refer to `Dockerfile` and `fluent.conf` to see how to build and install the plugin with
 example usage scenario provided in `docker-compose.yml`. To run example setup go to `docker` directory and execute following command.
@@ -86,6 +83,15 @@ To clean up run
 ```shell
 docker-compose down
 ```
+
+## Deployment on Kubernetes
+
+***Section under construction***
+
+## Parser plugin
+
+Openlineage-parser is a fluentd plugin that verifies if a JSON matches Openlineage schema.
+
 ### Development
 
 To build dependencies: 
@@ -101,15 +107,12 @@ bundle exec rake test
 
 #### Installation
 
-The easiest way to install the plugin is to install external package `rusty_json_schema`, which 
-can be done with: 
+The easiest way to install the plugin is to install external packages:
+ * `rusty_json_schema` to install JSON validation library for Rust, 
+ * `fluent-plugin-out-http` to allow non bulk HTTP out requests (sending each OpenLineage event in separate request).
 ```shell
-gem install rusty_json_schema
+fluent-gem install rusty_json_schema
+fluent-gem install fluent-plugin-out-http
 ```
-Once the external dependency is installed, a single ruby code file `parser_openlineage.rb` needs 
+Once the external dependencies are installed, a single ruby code file `parser_openlineage.rb` needs 
 to be copied into fluentd plugins directory ([installing custom plugin](https://docs.fluentd.org/plugin-development#installing-custom-plugins)).
-
-## Future work
-
- * Include running unit tests in CI, 
- * Ship parser as a gem.

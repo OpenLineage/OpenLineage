@@ -10,6 +10,7 @@ RUN buildDeps="sudo make gcc g++ libc-dev" \
  && apt-get install -y git \
  && gem install ffi -v '1.15.5' --source 'https://rubygems.org/' \
  && gem install rusty_json_schema \
+ && fluent-gem install fluent-plugin-out-http \
  && sudo gem sources --clear-all \
  && SUDO_FORCE_REMOVE=yes \
     apt-get purge -y --auto-remove \
