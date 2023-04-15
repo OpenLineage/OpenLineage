@@ -31,9 +31,6 @@ class GreatExpectationsExtractorImpl(BaseExtractor):
     def extract(self) -> Optional[TaskMetadata]:
         return None
 
-    def extract_on_complete(self, task_instance) -> Optional[TaskMetadata]:
-        return None
-
 
 if _has_great_expectations:
     GreatExpectationsExtractor = GreatExpectationsExtractorImpl
