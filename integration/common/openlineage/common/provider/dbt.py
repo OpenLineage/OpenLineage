@@ -239,21 +239,21 @@ class DbtArtifactProcessor:
         self.extract_dataset_namespace(profile)
 
         nodes = {}
-        # Filter non-model or test nodes
+        # Filter nodes
         for name, node in manifest['nodes'].items():
-            if name.startswith('model.') or name.startswith('test.'):
+            if any(name.startswith(prefix) for prefix in ('model.', 'test.', 'snapshot.')):
                 nodes[name] = node
 
         context = DbtRunContext(manifest, run_result, catalog)
 
-        if self.command not in ['run', 'build', 'test', 'seed']:
+        if self.command not in ['run', 'build', 'test', 'seed', 'snapshot']:
             raise UnsupportedDbtCommand(
                 f"Not recognized run command "
                 f"{self.command} - should be run, test, seed or build"
             )
 
         events = DbtEvents()
-        if self.command in ['run', 'build', 'seed']:
+        if self.command in ['run', 'build', 'seed', 'snapshot']:
             events += self.parse_execution(context, nodes)
         if self.command in ['test', 'build']:
             events += self.parse_test(context, nodes)
@@ -383,16 +383,13 @@ class DbtArtifactProcessor:
         events = DbtEvents()
         for run in context.run_results['results']:
             name = run['unique_id']
-            if not name.startswith('model.') and not name.startswith('source.'):
+            if not any(name.startswith(prefix) for prefix in ('model.', 'source.', 'snapshot.')):
                 continue
             if run['status'] == 'skipped':
                 continue
 
             output_node = nodes[name]
             started_at, completed_at = self.get_timings(run['timing'])
-            namespace, name, _ = self.extract_dataset_data(
-                ModelNode(output_node), None, has_facets=False
-            )
 
             inputs = []
             for node in context.manifest['parent_map'][run['unique_id']]:
@@ -408,9 +405,14 @@ class DbtArtifactProcessor:
                     ))
 
             run_id = str(uuid.uuid4())
-            job_name = f"{output_node['database']}.{output_node['schema']}" \
-                f".{self.removeprefix(run['unique_id'], 'model.')}" \
-                + (".build.run" if self.command == 'build' else "")
+            if name.startswith('snapshot.'):
+                job_name = f"{output_node['database']}.{output_node['schema']}" \
+                    f".{self.removeprefix(run['unique_id'], 'snapshot.')}" \
+                    + (".build.snapshot" if self.command == 'build' else ".snapshot")
+            else:
+                job_name = f"{output_node['database']}.{output_node['schema']}" \
+                    f".{self.removeprefix(run['unique_id'], 'model.')}" \
+                    + (".build.run" if self.command == 'build' else "")
 
             if self.manifest_version >= 7:
                 sql = output_node.get('compiled_code', None)

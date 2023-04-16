@@ -11,6 +11,17 @@
         }
     },
     {
+	    "eventTime": "{{ is_datetime(result) }}",
+        "eventType": "START",
+        "job": {
+            "namespace": "job-namespace",
+            "name": "random-gcp-project.dbt_test1.dbt_bigquery_test.orders_snapshot.build.snapshot"
+        },
+        "run": {
+		    "runId": "{{ any(result) }}"
+        }
+    },
+    {
         "eventTime": "{{ is_datetime(result) }}",
         "eventType": "START",
         "job": {
@@ -37,6 +48,55 @@
             "namespace": "job-namespace"
         },
         "inputs": [],
+        "run": {
+            "facets": {
+                "parent": {
+                    "job": {"name": "dbt-job-name", "namespace": "dbt"},
+                    "run": {"runId": "{{ any(result) }}"}
+                },
+                "dbt_version": {
+                    "version": "0.21.0"
+                }
+            },
+            "runId": "{{ any(result) }}"
+        }
+    },
+    {
+	    "eventTime": "{{ is_datetime(result) }}",
+        "eventType": "COMPLETE",
+        "outputs": [
+            {
+                "facets": {},
+                "name": "random-gcp-project.dbt_test1.orders_snapshot",
+                "namespace": "bigquery"
+            }
+        ],
+        "job": {
+            "facets": {},
+            "name": "random-gcp-project.dbt_test1.dbt_bigquery_test.orders_snapshot.build.snapshot",
+            "namespace": "job-namespace"
+        },
+        "inputs": [
+            {
+              "facets": {
+                "dataSource": {
+                  "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+                  "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/DataSourceDatasetFacet",
+                  "name": "bigquery",
+                  "uri": "bigquery"
+                },
+                "schema": {
+                  "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+                  "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
+                  "fields": [
+                    { "description": "The primary key for this table", "name": "id" }
+                  ]
+                }
+              },
+              "name": "random-gcp-project.dbt_test1.test_first_dbt_model",
+              "namespace": "bigquery"
+            }
+        ],
         "run": {
             "facets": {
                 "parent": {
