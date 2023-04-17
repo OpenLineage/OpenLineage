@@ -29,6 +29,7 @@ impl AliasTable {
         current
     }
 
+    #[allow(dead_code)]
     pub fn is_table_alias(&self, name: &DbTableMeta) -> bool {
         self.resolve_table(name) != name
     }

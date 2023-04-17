@@ -13,6 +13,7 @@ use sqlparser::ast::{
 pub trait Visit {
     fn visit(&self, context: &mut Context) -> Result<()>;
 }
+
 impl Visit for With {
     fn visit(&self, context: &mut Context) -> Result<()> {
         for cte in &self.cte_tables {
@@ -46,23 +47,25 @@ impl Visit for TableFactor {
                     context.default_schema().clone(),
                 );
                 if let Some(alias) = alias {
-                    context.add_table_alias(table.clone(), alias.name.value.clone());
+                    context.add_table_alias(table, alias.name.value.clone());
                 }
                 context.add_input(name.to_string());
                 Ok(())
-            },
-            TableFactor::Pivot { name, pivot_alias, ..} => {
+            }
+            TableFactor::Pivot {
+                name, pivot_alias, ..
+            } => {
                 let table = DbTableMeta::new(
                     name.to_string(),
                     context.dialect(),
                     context.default_schema().clone(),
                 );
                 if let Some(pivot_alias) = pivot_alias {
-                    context.add_table_alias(table.clone(), pivot_alias.name.value.clone());
+                    context.add_table_alias(table, pivot_alias.name.value.clone());
                 }
                 context.add_input(name.to_string());
                 Ok(())
-            },
+            }
             TableFactor::Derived {
                 lateral: _,
                 subquery,
@@ -163,7 +166,7 @@ impl Visit for Expr {
                     let table = DbTableMeta::new(
                         prefix,
                         context.dialect(),
-                        context.default_schema().clone()
+                        context.default_schema().clone(),
                     );
                     context.add_column_ancestors(
                         ColumnMeta::new(descendant, None),
@@ -308,10 +311,11 @@ impl Visit for Expr {
                 if let Some(e) = &list.separator {
                     e.visit(context)?;
                 }
-                if let Some(ListAggOnOverflow::Truncate { filler, .. }) = &list.on_overflow {
-                    if let Some(e) = filler {
-                        e.visit(context)?;
-                    }
+                if let Some(ListAggOnOverflow::Truncate {
+                    filler: Some(e), ..
+                }) = &list.on_overflow
+                {
+                    e.visit(context)?;
                 }
                 for order_by in &list.within_group {
                     order_by.expr.visit(context)?;
@@ -404,7 +408,7 @@ impl Visit for Select {
                 let table = DbTableMeta::new(
                     name.to_string(),
                     context.dialect(),
-                    context.default_schema().clone()
+                    context.default_schema().clone(),
                 );
                 if let Some(alias) = alias {
                     context.add_table_alias(table.clone(), alias.name.value.clone());
@@ -551,21 +555,19 @@ impl Visit for Statement {
             Statement::CreateView { name, query, .. } => {
                 query.visit(context)?;
                 context.add_output(name.to_string());
-            },
-            Statement::CreateStage { name, stage_params, .. } => {
+            }
+            Statement::CreateStage {
+                name, stage_params, ..
+            } => {
                 if stage_params.url.as_ref().is_some() {
                     context.add_non_table_input(
                         stage_params.url.as_ref().unwrap().to_string(),
                         true,
-                        true
+                        true,
                     );
                 }
-                context.add_non_table_output(
-                    name.to_string(),
-                    false,
-                    true
-                );
-            },
+                context.add_non_table_output(name.to_string(), false, true);
+            }
             Statement::Update {
                 table,
                 assignments: _,
@@ -630,16 +632,14 @@ impl Visit for Statement {
                 into, from_stage, ..
             } => {
                 context.add_output(into.to_string());
-                if from_stage.to_string().contains("gcs://") ||
-                    from_stage.to_string().contains("s3://") ||
-                    from_stage.to_string().contains("azure://") {
+                if from_stage.to_string().contains("gcs://")
+                    || from_stage.to_string().contains("s3://")
+                    || from_stage.to_string().contains("azure://")
+                {
                     context.add_non_table_input(
-                        from_stage
-                            .to_string()
-                            .replace("'", "")
-                            .replace("\"", ""), // just unquoted location URL with,
+                        from_stage.to_string().replace(['\"', '\''], ""), // just unquoted location URL with,
                         true,
-                        true
+                        true,
                     );
                 } else {
                     // Stage

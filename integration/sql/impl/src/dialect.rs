@@ -8,12 +8,12 @@ use sqlparser::dialect::{
 };
 
 pub trait CanonicalDialect: Dialect {
-    fn canonical_name<'a, 'b>(&'a self, name: &'b str) -> Option<&'b str>;
+    fn canonical_name<'b>(&self, name: &'b str) -> Option<&'b str>;
     fn as_base(&self) -> &dyn Dialect;
 }
 
 impl<T: Dialect> CanonicalDialect for T {
-    fn canonical_name<'a, 'b>(&'a self, name: &'b str) -> Option<&'b str> {
+    fn canonical_name<'b>(&self, name: &'b str) -> Option<&'b str> {
         name.chars().next().map(|x| {
             if self.is_delimited_identifier_start(x) {
                 let mut chars = name.chars();
