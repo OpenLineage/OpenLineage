@@ -92,6 +92,23 @@ class JobMetricsHolderTest {
     assertThat(jobMetrics).isEmpty();
   }
 
+  @Test
+  void testAddMetricsWhenNull() {
+    JobMetricsHolder underTest = new JobMetricsHolder();
+    underTest.addMetrics(1, null);
+    underTest.addJobStages(0, new HashSet<>(Arrays.asList(1)));
+
+    assertThat(underTest.pollMetrics(0)).isEmpty();
+  }
+
+  @Test
+  void testAddJobStagesWhenNull() {
+    JobMetricsHolder underTest = new JobMetricsHolder();
+    underTest.addJobStages(0, null);
+
+    assertThat(underTest.pollMetrics(0)).isEmpty();
+  }
+
   private TaskMetrics outputTaskMetrics(int bytes, int records) {
     TaskMetrics taskMetrics = new TaskMetrics();
     taskMetrics.outputMetrics()._bytesWritten().add(bytes);

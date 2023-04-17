@@ -33,16 +33,25 @@ public class JobMetricsHolder {
   JobMetricsHolder() {}
 
   public void addJobStages(int jobId, Set<Integer> stages) {
-    jobStages.put(jobId, stages);
+    if (stages != null) {
+      jobStages.put(jobId, stages);
+    }
   }
 
   public void addMetrics(int stage, TaskMetrics taskMetrics) {
-    stageMetrics.put(stage, taskMetrics);
+    if (taskMetrics != null) {
+      stageMetrics.put(stage, taskMetrics);
+    }
   }
 
   public Map<Metric, Number> pollMetrics(int jobId) {
     return Optional.ofNullable(jobStages.remove(jobId))
-        .map(stages -> stages.stream().map(stageMetrics::remove).collect(Collectors.toList()))
+        .map(
+            stages ->
+                stages.stream()
+                    .map(stageMetrics::remove)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList()))
         .filter(l -> !l.isEmpty())
         .map(this::mapOutputMetrics)
         .orElse(Collections.emptyMap());
