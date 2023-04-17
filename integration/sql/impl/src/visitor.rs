@@ -84,7 +84,12 @@ impl Visit for TableFactor {
                 }
 
                 Ok(())
-            }
+            },
+            TableFactor::TableFunction { .. } => {
+                // https://docs.snowflake.com/en/sql-reference/functions-table
+                // We can skip them as we don't support extracting lineage from functions
+                Ok(())
+            },
             _ => Err(anyhow!(
                 "TableFactor other than table or subquery not implemented: {self}"
             )),
