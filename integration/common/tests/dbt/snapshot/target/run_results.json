@@ -1,0 +1,53 @@
+{
+    "metadata": {
+      "dbt_schema_version": "https://schemas.getdbt.com/dbt/run-results/v4.json",
+      "dbt_version": "1.0.4",
+      "generated_at": "2023-04-16T21:37:18.396840Z",
+      "invocation_id": "69c7b548-c6fd-4a70-87b8-9f111378149b",
+      "env": {}
+    },
+    "results": [
+      {
+        "status": "success",
+        "timing": [
+          {
+            "name": "compile",
+            "started_at": "2023-04-16T21:37:18.145987Z",
+            "completed_at": "2023-04-16T21:37:18.149603Z"
+          },
+          {
+            "name": "execute",
+            "started_at": "2023-04-16T21:37:18.150055Z",
+            "completed_at": "2023-04-16T21:37:18.384583Z"
+          }
+        ],
+        "thread_id": "Thread-1",
+        "execution_time": 0.23990797996520996,
+        "adapter_response": {
+          "_message": "INSERT 0 0",
+          "code": "INSERT",
+          "rows_affected": 0
+        },
+        "message": "INSERT 0 0",
+        "failures": null,
+        "unique_id": "snapshot.snapshot_test.orders_snapshot"
+      }
+    ],
+    "elapsed_time": 0.3368213176727295,
+    "args": {
+      "write_json": true,
+      "use_colors": true,
+      "printer_width": 80,
+      "version_check": true,
+      "partial_parse": true,
+      "static_parser": true,
+      "profiles_dir": "./tests/dbt/snapshot",
+      "send_anonymous_usage_stats": true,
+      "event_buffer_size": 100000,
+      "profile": "postgres_profile",
+      "which": "snapshot",
+      "rpc_method": "snapshot",
+      "indirect_selection": "eager"
+    }
+  }
+  

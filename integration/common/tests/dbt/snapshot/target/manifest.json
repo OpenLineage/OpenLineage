@@ -1,0 +1,432 @@
+{
+    "metadata": {
+      "dbt_schema_version": "https://schemas.getdbt.com/dbt/manifest/v4.json",
+      "dbt_version": "1.0.4",
+      "generated_at": "2023-04-16T21:37:18.026738Z",
+      "invocation_id": "69c7b548-c6fd-4a70-87b8-9f111378149b",
+      "env": {},
+      "project_id": "4430c87ea5501796c2dbfd0caec9631e",
+      "user_id": "a36bb38c-bade-444b-aee0-c7c7caef1074",
+      "send_anonymous_usage_stats": true,
+      "adapter_type": "postgres"
+    },
+    "nodes": {
+      "model.snapshot_test.my_second_dbt_model": {
+        "raw_sql": "-- Use the `ref` function to select from other models\n\nselect *\nfrom {{ ref('my_first_dbt_model') }}\nwhere id <> 1",
+        "resource_type": "model",
+        "depends_on": {
+          "macros": [],
+          "nodes": ["model.snapshot_test.my_first_dbt_model"]
+        },
+        "config": {
+          "enabled": true,
+          "alias": null,
+          "schema": null,
+          "database": null,
+          "tags": [],
+          "meta": {},
+          "materialized": "view",
+          "persist_docs": {},
+          "quoting": {},
+          "column_types": {},
+          "full_refresh": null,
+          "on_schema_change": "ignore",
+          "post-hook": [],
+          "pre-hook": []
+        },
+        "database": "postgres",
+        "schema": "postgres",
+        "fqn": ["snapshot_test", "example", "my_second_dbt_model"],
+        "unique_id": "model.snapshot_test.my_second_dbt_model",
+        "package_name": "snapshot_test",
+        "root_path": "/usr/local/airflow/dbt/snapshot_test",
+        "path": "example/my_second_dbt_model.sql",
+        "original_file_path": "models/example/my_second_dbt_model.sql",
+        "name": "my_second_dbt_model",
+        "alias": "my_second_dbt_model",
+        "checksum": {
+          "name": "sha256",
+          "checksum": "d34391d15bf21d7a35cd0f5e19374f5802a0abb890084fdd143352fbaeae12f1"
+        },
+        "tags": [],
+        "refs": [["my_first_dbt_model"]],
+        "sources": [],
+        "description": "A starter dbt model",
+        "columns": {
+          "id": {
+            "name": "id",
+            "description": "The primary key for this table",
+            "meta": {},
+            "data_type": null,
+            "quote": null,
+            "tags": []
+          }
+        },
+        "meta": {},
+        "docs": { "show": true },
+        "patch_path": "snapshot_test://models/example/schema.yml",
+        "compiled_path": null,
+        "build_path": null,
+        "deferred": false,
+        "unrendered_config": {},
+        "created_at": 1681681033.1458995
+      },
+      "model.snapshot_test.my_first_dbt_model": {
+        "raw_sql": "/*\n    Welcome to your first dbt model!\n    Did you know that you can also configure models directly within SQL files?\n    This will override configurations stated in dbt_project.yml\n\n    Try changing \"table\" to \"view\" below\n*/\n\n{{ config(materialized='table') }}\n\nwith source_data as (\n\n    select 1 as id\n    union all\n    select null as id\n\n)\n\nselect *\nfrom source_data\n\n/*\n    Uncomment the line below to remove records with null `id` values\n*/\n\n-- where id is not null",
+        "resource_type": "model",
+        "depends_on": { "macros": [], "nodes": [] },
+        "config": {
+          "enabled": true,
+          "alias": null,
+          "schema": null,
+          "database": null,
+          "tags": [],
+          "meta": {},
+          "materialized": "table",
+          "persist_docs": {},
+          "quoting": {},
+          "column_types": {},
+          "full_refresh": null,
+          "on_schema_change": "ignore",
+          "post-hook": [],
+          "pre-hook": []
+        },
+        "database": "postgres",
+        "schema": "postgres",
+        "fqn": ["snapshot_test", "example", "my_first_dbt_model"],
+        "unique_id": "model.snapshot_test.my_first_dbt_model",
+        "package_name": "snapshot_test",
+        "root_path": "/usr/local/airflow/dbt/snapshot_test",
+        "path": "example/my_first_dbt_model.sql",
+        "original_file_path": "models/example/my_first_dbt_model.sql",
+        "name": "my_first_dbt_model",
+        "alias": "my_first_dbt_model",
+        "checksum": {
+          "name": "sha256",
+          "checksum": "842251f5ed1d97920d3748d9686b8c05a3a0071ec7990f948f36796491788aed"
+        },
+        "tags": [],
+        "refs": [],
+        "sources": [],
+        "description": "A starter dbt model",
+        "columns": {
+          "id": {
+            "name": "id",
+            "description": "The primary key for this table",
+            "meta": {},
+            "data_type": null,
+            "quote": null,
+            "tags": []
+          }
+        },
+        "meta": {},
+        "docs": { "show": true },
+        "patch_path": "snapshot_test://models/example/schema.yml",
+        "compiled_path": null,
+        "build_path": null,
+        "deferred": false,
+        "unrendered_config": { "materialized": "table" },
+        "created_at": 1681681033.1450233
+      },
+      "snapshot.snapshot_test.orders_snapshot": {
+        "raw_sql": "\n\n{{\n    config(\n      target_schema='postgres',\n      unique_key='id',\n\n      strategy='check',\n      check_cols=['id'],\n      invalidate_hard_deletes = True,\n    )\n}}\n\nselect * from {{ ref('my_second_dbt_model') }}\n\n",
+        "compiled": true,
+        "resource_type": "snapshot",
+        "depends_on": {
+          "macros": [
+            "macro.dbt.get_or_create_relation",
+            "macro.dbt.run_hooks",
+            "macro.dbt.strategy_dispatch",
+            "macro.dbt.snapshot_check_strategy",
+            "macro.dbt.build_snapshot_staging_table",
+            "macro.dbt.create_columns",
+            "macro.dbt.snapshot_merge_sql",
+            "macro.dbt.statement",
+            "macro.dbt.persist_docs",
+            "macro.dbt.post_snapshot"
+          ],
+          "nodes": ["model.snapshot_test.my_second_dbt_model"]
+        },
+        "config": {
+          "enabled": true,
+          "alias": null,
+          "schema": null,
+          "database": null,
+          "tags": [],
+          "meta": {},
+          "materialized": "snapshot",
+          "persist_docs": {},
+          "quoting": {},
+          "column_types": {},
+          "full_refresh": null,
+          "on_schema_change": "ignore",
+          "strategy": "check",
+          "unique_key": "id",
+          "target_schema": "postgres",
+          "check_cols": ["id"],
+          "invalidate_hard_deletes": true,
+          "post-hook": [],
+          "pre-hook": []
+        },
+        "database": "postgres",
+        "schema": "postgres",
+        "fqn": ["snapshot_test", "my_test_snapshot", "orders_snapshot"],
+        "unique_id": "snapshot.snapshot_test.orders_snapshot",
+        "package_name": "snapshot_test",
+        "root_path": "/usr/local/airflow/dbt/snapshot_test",
+        "path": "my_test_snapshot.sql",
+        "original_file_path": "snapshots/my_test_snapshot.sql",
+        "name": "orders_snapshot",
+        "alias": "orders_snapshot",
+        "checksum": {
+          "name": "sha256",
+          "checksum": "23fdb93435571362eec0a828815bf68838cacf0a77bfcc0b8820503c390ee33e"
+        },
+        "tags": [],
+        "refs": [["my_second_dbt_model"]],
+        "sources": [],
+        "description": "Snapshot",
+        "columns": {
+          "id": {
+            "name": "id",
+            "description": "Order id",
+            "meta": {},
+            "data_type": null,
+            "quote": null,
+            "tags": []
+          }
+        },
+        "meta": {},
+        "docs": { "show": true },
+        "patch_path": "snapshot_test://models/example/schema.yml",
+        "compiled_path": null,
+        "build_path": "target/run/snapshot_test/snapshots/my_test_snapshot.sql",
+        "deferred": false,
+        "unrendered_config": {
+          "target_schema": "postgres",
+          "unique_key": "id",
+          "strategy": "check",
+          "check_cols": ["id"],
+          "invalidate_hard_deletes": true
+        },
+        "created_at": 1681681033.1591396,
+        "compiled_sql": "\n\n\n\nselect * from \"postgres\".\"postgres\".\"my_second_dbt_model\"\n",
+        "extra_ctes_injected": true,
+        "extra_ctes": [],
+        "relation_name": "\"postgres\".\"postgres\".\"orders_snapshot\""
+      },
+      "test.snapshot_test.unique_my_first_dbt_model_id.16e066b321": {
+        "raw_sql": "{{ test_unique(**_dbt_generic_test_kwargs) }}",
+        "test_metadata": {
+          "name": "unique",
+          "kwargs": {
+            "column_name": "id",
+            "model": "{{ get_where_subquery(ref('my_first_dbt_model')) }}"
+          },
+          "namespace": null
+        },
+        "resource_type": "test",
+        "depends_on": {
+          "macros": ["macro.dbt.test_unique"],
+          "nodes": ["model.snapshot_test.my_first_dbt_model"]
+        },
+        "config": {
+          "enabled": true,
+          "alias": null,
+          "schema": "dbt_test__audit",
+          "database": null,
+          "tags": [],
+          "meta": {},
+          "materialized": "test",
+          "severity": "ERROR",
+          "store_failures": null,
+          "where": null,
+          "limit": null,
+          "fail_calc": "count(*)",
+          "warn_if": "!= 0",
+          "error_if": "!= 0"
+        },
+        "database": "postgres",
+        "schema": "postgres_dbt_test__audit",
+        "fqn": ["snapshot_test", "example", "unique_my_first_dbt_model_id"],
+        "unique_id": "test.snapshot_test.unique_my_first_dbt_model_id.16e066b321",
+        "package_name": "snapshot_test",
+        "root_path": "/usr/local/airflow/dbt/snapshot_test",
+        "path": "unique_my_first_dbt_model_id.sql",
+        "original_file_path": "models/example/schema.yml",
+        "name": "unique_my_first_dbt_model_id",
+        "alias": "unique_my_first_dbt_model_id",
+        "checksum": { "name": "none", "checksum": "" },
+        "tags": [],
+        "refs": [["my_first_dbt_model"]],
+        "sources": [],
+        "description": "",
+        "columns": {},
+        "meta": {},
+        "docs": { "show": true },
+        "patch_path": null,
+        "compiled_path": null,
+        "build_path": null,
+        "deferred": false,
+        "unrendered_config": {},
+        "created_at": 1681681033.1525576,
+        "column_name": "id",
+        "file_key_name": "models.my_first_dbt_model"
+      },
+      "test.snapshot_test.unique_my_second_dbt_model_id.57a0f8c493": {
+        "raw_sql": "{{ test_unique(**_dbt_generic_test_kwargs) }}",
+        "test_metadata": {
+          "name": "unique",
+          "kwargs": {
+            "column_name": "id",
+            "model": "{{ get_where_subquery(ref('my_second_dbt_model')) }}"
+          },
+          "namespace": null
+        },
+        "resource_type": "test",
+        "depends_on": {
+          "macros": ["macro.dbt.test_unique"],
+          "nodes": ["model.snapshot_test.my_second_dbt_model"]
+        },
+        "config": {
+          "enabled": true,
+          "alias": null,
+          "schema": "dbt_test__audit",
+          "database": null,
+          "tags": [],
+          "meta": {},
+          "materialized": "test",
+          "severity": "ERROR",
+          "store_failures": null,
+          "where": null,
+          "limit": null,
+          "fail_calc": "count(*)",
+          "warn_if": "!= 0",
+          "error_if": "!= 0"
+        },
+        "database": "postgres",
+        "schema": "postgres_dbt_test__audit",
+        "fqn": ["snapshot_test", "example", "unique_my_second_dbt_model_id"],
+        "unique_id": "test.snapshot_test.unique_my_second_dbt_model_id.57a0f8c493",
+        "package_name": "snapshot_test",
+        "root_path": "/usr/local/airflow/dbt/snapshot_test",
+        "path": "unique_my_second_dbt_model_id.sql",
+        "original_file_path": "models/example/schema.yml",
+        "name": "unique_my_second_dbt_model_id",
+        "alias": "unique_my_second_dbt_model_id",
+        "checksum": { "name": "none", "checksum": "" },
+        "tags": [],
+        "refs": [["my_second_dbt_model"]],
+        "sources": [],
+        "description": "",
+        "columns": {},
+        "meta": {},
+        "docs": { "show": true },
+        "patch_path": null,
+        "compiled_path": null,
+        "build_path": null,
+        "deferred": false,
+        "unrendered_config": {},
+        "created_at": 1681681033.1551812,
+        "column_name": "id",
+        "file_key_name": "models.my_second_dbt_model"
+      },
+      "test.snapshot_test.not_null_my_second_dbt_model_id.151b76d778": {
+        "raw_sql": "{{ test_not_null(**_dbt_generic_test_kwargs) }}",
+        "test_metadata": {
+          "name": "not_null",
+          "kwargs": {
+            "column_name": "id",
+            "model": "{{ get_where_subquery(ref('my_second_dbt_model')) }}"
+          },
+          "namespace": null
+        },
+        "resource_type": "test",
+        "depends_on": {
+          "macros": ["macro.dbt.test_not_null"],
+          "nodes": ["model.snapshot_test.my_second_dbt_model"]
+        },
+        "config": {
+          "enabled": true,
+          "alias": null,
+          "schema": "dbt_test__audit",
+          "database": null,
+          "tags": [],
+          "meta": {},
+          "materialized": "test",
+          "severity": "ERROR",
+          "store_failures": null,
+          "where": null,
+          "limit": null,
+          "fail_calc": "count(*)",
+          "warn_if": "!= 0",
+          "error_if": "!= 0"
+        },
+        "database": "postgres",
+        "schema": "postgres_dbt_test__audit",
+        "fqn": ["snapshot_test", "example", "not_null_my_second_dbt_model_id"],
+        "unique_id": "test.snapshot_test.not_null_my_second_dbt_model_id.151b76d778",
+        "package_name": "snapshot_test",
+        "root_path": "/usr/local/airflow/dbt/snapshot_test",
+        "path": "not_null_my_second_dbt_model_id.sql",
+        "original_file_path": "models/example/schema.yml",
+        "name": "not_null_my_second_dbt_model_id",
+        "alias": "not_null_my_second_dbt_model_id",
+        "checksum": { "name": "none", "checksum": "" },
+        "tags": [],
+        "refs": [["my_second_dbt_model"]],
+        "sources": [],
+        "description": "",
+        "columns": {},
+        "meta": {},
+        "docs": { "show": true },
+        "patch_path": null,
+        "compiled_path": null,
+        "build_path": null,
+        "deferred": false,
+        "unrendered_config": {},
+        "created_at": 1681681033.1570158,
+        "column_name": "id",
+        "file_key_name": "models.my_second_dbt_model"
+      }
+    },
+    "sources": {},
+    "exposures": {},
+    "metrics": {},
+    "selectors": {},
+    "disabled": {},
+    "parent_map": {
+      "model.snapshot_test.my_second_dbt_model": [
+        "model.snapshot_test.my_first_dbt_model"
+      ],
+      "model.snapshot_test.my_first_dbt_model": [],
+      "snapshot.snapshot_test.orders_snapshot": [
+        "model.snapshot_test.my_second_dbt_model"
+      ],
+      "test.snapshot_test.unique_my_first_dbt_model_id.16e066b321": [
+        "model.snapshot_test.my_first_dbt_model"
+      ],
+      "test.snapshot_test.unique_my_second_dbt_model_id.57a0f8c493": [
+        "model.snapshot_test.my_second_dbt_model"
+      ],
+      "test.snapshot_test.not_null_my_second_dbt_model_id.151b76d778": [
+        "model.snapshot_test.my_second_dbt_model"
+      ]
+    },
+    "child_map": {
+      "model.snapshot_test.my_second_dbt_model": [
+        "snapshot.snapshot_test.orders_snapshot",
+        "test.snapshot_test.not_null_my_second_dbt_model_id.151b76d778",
+        "test.snapshot_test.unique_my_second_dbt_model_id.57a0f8c493"
+      ],
+      "model.snapshot_test.my_first_dbt_model": [
+        "model.snapshot_test.my_second_dbt_model",
+        "test.snapshot_test.unique_my_first_dbt_model_id.16e066b321"
+      ],
+      "snapshot.snapshot_test.orders_snapshot": [],
+      "test.snapshot_test.unique_my_first_dbt_model_id.16e066b321": [],
+      "test.snapshot_test.unique_my_second_dbt_model_id.57a0f8c493": [],
+      "test.snapshot_test.not_null_my_second_dbt_model_id.151b76d778": []
+    }
+  }
+  
