@@ -1,1 +1,1 @@
-io.openlineage.spark3.agent.lifecycle.plan.column.CustomColumnLineageVisitorTestImpl
+io.openlineage.spark3.agent.lifecycle.plan.CustomColumnLineageVisitorTestImpl

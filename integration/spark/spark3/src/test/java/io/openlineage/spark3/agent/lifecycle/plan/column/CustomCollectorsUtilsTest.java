@@ -1,3 +1,8 @@
+/*
+/* Copyright 2018-2022 contributors to the OpenLineage project
+/* SPDX-License-Identifier: Apache-2.0
+*/
+
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -24,12 +29,12 @@ import scala.collection.Seq$;
 @Slf4j
 public class CustomCollectorsUtilsTest {
 
-  static final String OUTPUT_COL_NAME = "outputCol";
-  static final String INPUT_COL_NAME = "inputCol";
-  static ExprId childExprId = mock(ExprId.class);
-  static ExprId parentExprId = mock(ExprId.class);
+  public static final String OUTPUT_COL_NAME = "outputCol";
+  public static final String INPUT_COL_NAME = "inputCol";
+  public static ExprId childExprId = mock(ExprId.class);
+  public static ExprId parentExprId = mock(ExprId.class);
   static LogicalPlan plan = mock(LogicalPlan.class);
-  static LogicalPlan child = mock(LogicalPlan.class);
+  public static LogicalPlan child = mock(LogicalPlan.class);
 
   OpenLineageContext context = mock(OpenLineageContext.class);
   QueryExecution queryExecution = mock(QueryExecution.class);

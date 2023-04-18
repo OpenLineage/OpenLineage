@@ -8,7 +8,7 @@ package io.openlineage.spark3.agent.lifecycle.plan.column;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 
 /** Interface for implementing custom collectors of column level lineage. */
-interface CustomColumnLineageVisitor {
+public interface CustomColumnLineageVisitor {
 
   /**
    * Collect inputs for a given {@link LogicalPlan}. Column level lineage mechanism traverses
