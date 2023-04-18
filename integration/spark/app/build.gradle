@@ -259,7 +259,11 @@ shadowJar {
     relocate 'org.apache.commons.beanutils', 'io.openlineage.spark.shaded.org.apache.commons.beanutils'
     relocate 'org.apache.http', 'io.openlineage.spark.shaded.org.apache.http'
     relocate 'org.yaml.snakeyaml', 'io.openlineage.spark.shaded.org.yaml.snakeyaml'
-    relocate 'com.fasterxml.jackson', 'io.openlineage.spark.shaded.com.fasterxml.jackson'
+    relocate('com.fasterxml.jackson', 'io.openlineage.spark.shaded.com.fasterxml.jackson') {
+        exclude 'com.fasterxml.jackson.annotation.JsonIgnore'
+        exclude 'com.fasterxml.jackson.annotation.JsonIgnoreProperties'
+        exclude 'com.fasterxml.jackson.annotation.JsonIgnoreType'
+    }
     manifest {
         attributes(
                 'Created-By': "Gradle ${gradle.gradleVersion}",

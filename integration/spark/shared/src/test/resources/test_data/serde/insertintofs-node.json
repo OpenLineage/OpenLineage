@@ -1,5 +1,4 @@
 {
-  "@class": "org.apache.spark.sql.execution.datasources.InsertIntoHadoopFsRelationCommand",
   "outputPath": {
     "root": false,
     "uriPathAbsolute": true,
@@ -35,9 +34,7 @@
   "fileFormat": {},
   "options": {},
   "query": {
-    "@class": "org.apache.spark.sql.execution.datasources.LogicalRelation",
     "relation": {
-      "@class": "org.apache.spark.sql.execution.datasources.HadoopFsRelation",
       "location": {
         "table": {
           "identifier": {
