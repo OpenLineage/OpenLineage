@@ -6,7 +6,10 @@
 package io.openlineage.spark.agent.lifecycle;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableList.Builder;
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.InputDataset;
+import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.spark.agent.lifecycle.plan.CommandPlanVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.SaveIntoDataSourceCommandVisitor;
 import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
@@ -38,31 +41,41 @@ public class Spark32DatasetBuilderFactory implements DatasetBuilderFactory {
   public Collection<PartialFunction<Object, List<OpenLineage.InputDataset>>> getInputBuilders(
       OpenLineageContext context) {
     DatasetFactory<OpenLineage.InputDataset> datasetFactory = DatasetFactory.input(context);
-    return ImmutableList.<PartialFunction<Object, List<OpenLineage.InputDataset>>>builder()
-        .add(new LogicalRelationDatasetBuilder(context, datasetFactory, true))
-        .add(new InMemoryRelationInputDatasetBuilder(context))
-        .add(new CommandPlanVisitor(context))
-        .add(new DataSourceV2ScanRelationInputDatasetBuilder(context, datasetFactory))
-        .add(new DataSourceV2RelationInputDatasetBuilder(context, datasetFactory))
-        .add(new MergeIntoCommandInputDatasetBuilder(context))
-        .build();
+    Builder builder =
+        ImmutableList.<PartialFunction<Object, List<InputDataset>>>builder()
+            .add(new LogicalRelationDatasetBuilder(context, datasetFactory, true))
+            .add(new InMemoryRelationInputDatasetBuilder(context))
+            .add(new CommandPlanVisitor(context))
+            .add(new DataSourceV2ScanRelationInputDatasetBuilder(context, datasetFactory))
+            .add(new DataSourceV2RelationInputDatasetBuilder(context, datasetFactory));
+
+    if (MergeIntoCommandOutputDatasetBuilder.hasClasses()) {
+      builder.add(new MergeIntoCommandInputDatasetBuilder(context));
+    }
+
+    return builder.build();
   }
 
   @Override
   public Collection<PartialFunction<Object, List<OpenLineage.OutputDataset>>> getOutputBuilders(
       OpenLineageContext context) {
     DatasetFactory<OpenLineage.OutputDataset> datasetFactory = DatasetFactory.output(context);
-    return ImmutableList.<PartialFunction<Object, List<OpenLineage.OutputDataset>>>builder()
-        .add(new LogicalRelationDatasetBuilder(context, datasetFactory, false))
-        .add(new SaveIntoDataSourceCommandVisitor(context))
-        .add(new AppendDataDatasetBuilder(context, datasetFactory))
-        .add(new DataSourceV2RelationOutputDatasetBuilder(context, datasetFactory))
-        .add(new TableContentChangeDatasetBuilder(context))
-        .add(new MapPartitionsDatasetBuilder(context))
-        .add(new MergeIntoCommandOutputDatasetBuilder(context))
-        .add(getCreateReplaceDatasetBuilder(context))
-        .add(new AlterTableCommandDatasetBuilder(context))
-        .build();
+    Builder builder =
+        ImmutableList.<PartialFunction<Object, List<OutputDataset>>>builder()
+            .add(new LogicalRelationDatasetBuilder(context, datasetFactory, false))
+            .add(new SaveIntoDataSourceCommandVisitor(context))
+            .add(new AppendDataDatasetBuilder(context, datasetFactory))
+            .add(new DataSourceV2RelationOutputDatasetBuilder(context, datasetFactory))
+            .add(new TableContentChangeDatasetBuilder(context))
+            .add(new MapPartitionsDatasetBuilder(context))
+            .add(getCreateReplaceDatasetBuilder(context))
+            .add(new AlterTableCommandDatasetBuilder(context));
+
+    if (MergeIntoCommandOutputDatasetBuilder.hasClasses()) {
+      builder.add(new MergeIntoCommandOutputDatasetBuilder(context));
+    }
+
+    return builder.build();
   }
 
   private boolean hasAlterTableClass() {

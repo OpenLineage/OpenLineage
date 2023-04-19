@@ -4,7 +4,7 @@ workflows:
       - build-integration-spark:
           matrix:
             parameters:
-              spark-version: [ '2.4.6', '3.2.2', '3.3.1' ]
+              spark-version: [ '2.4.6', '3.2.4', '3.3.2', '3.4.0' ]
           requires:
            - build-integration-sql-java
            - build-client-java
@@ -12,7 +12,7 @@ workflows:
           context: integration-tests
           matrix:
             parameters:
-              spark-version: [ '2.4.6', '3.2.2', '3.3.1' ]
+              spark-version: [ '2.4.6', '3.2.4', '3.3.2', '3.4.0' ]
           requires:
             - build-integration-spark
       - workflow_complete:

@@ -13,7 +13,7 @@ import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.reflect.MethodUtils;
+import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.execution.QueryExecution;
 import org.apache.spark.sql.execution.SQLExecution;

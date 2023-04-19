@@ -1,6 +1,11 @@
 # Changelog
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.28.0...HEAD)
+### Added
+* **Support static lineage.** [`#1880`](https://github.com/OpenLineage/OpenLineage/pull/1880) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Extend specification and Java/Python client to support run-less events. See [proposal](https://github.com/OpenLineage/OpenLineage/blob/main/proposals/1837/static_lineage.md) for more details.*
+* **Spark: Support Spark 3.4** [`#1790`](https://github.com/OpenLineage/OpenLineage/pull/1790) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Introduce support to latest Spark version 3.4.0. Support 3.2.4 and 3.3.2.*
 
 ## [0.28.0](https://github.com/OpenLineage/OpenLineage/compare/0.27.2...0.28.0) - 2023-06-12
 ### Added
@@ -12,10 +17,6 @@
     *The client was not marking itself as type-annotated.*
 * **Python client: add `schemaURL` to run event** [`#1917`](https://github.com/OpenLineage/OpenLineage/pull/1917) [gaborbernat](https://github.com/gaborbernat)
     *Adds the missing `schemaURL` to the client's `RunState` class.*
-
-### Added
-* **Support static lineage.** [`#1880`](https://github.com/OpenLineage/OpenLineage/pull/1880) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Extend specification and Java/Python client to support run-less events. See [proposal](https://github.com/OpenLineage/OpenLineage/blob/main/proposals/1837/static_lineage.md) for more details.*
 
 ## [0.27.2](https://github.com/OpenLineage/OpenLineage/compare/0.27.1...0.27.2) - 2023-06-06
 ### Fixed

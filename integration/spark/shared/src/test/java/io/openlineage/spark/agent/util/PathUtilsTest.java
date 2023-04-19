@@ -120,7 +120,7 @@ class PathUtilsTest {
     when(sparkSession.sparkContext()).thenReturn(sparkContext);
 
     when(catalogTable.storage()).thenReturn(catalogStorageFormat);
-    when(catalogTable.qualifiedName()).thenReturn(TABLE);
+    when(catalogTable.identifier()).thenReturn(TableIdentifier.apply(TABLE));
     when(catalogStorageFormat.locationUri()).thenReturn(Option.apply(new URI("/tmp/warehouse")));
 
     DatasetIdentifier di = PathUtils.fromCatalogTable(catalogTable, Optional.of(sparkConf));
@@ -151,7 +151,8 @@ class PathUtilsTest {
         .thenReturn(Option.apply(new URI("hdfs://namenode:8020/warehouse/table")));
     TableIdentifier tableIdentifier = mock(TableIdentifier.class);
     when(catalogTable.identifier()).thenReturn(tableIdentifier);
-    when(tableIdentifier.unquotedString()).thenReturn("db.table");
+    when(tableIdentifier.database()).thenReturn(Option.apply("db"));
+    when(tableIdentifier.table()).thenReturn("table");
 
     DatasetIdentifier di = PathUtils.fromCatalogTable(catalogTable, Optional.of(sparkConf));
     assertThat(di.getName()).isEqualTo("/warehouse/table");

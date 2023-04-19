@@ -5,6 +5,8 @@
 
 package io.openlineage.spark.agent.filters;
 
+import static io.openlineage.spark.agent.filters.EventFilterUtils.isDeltaPlan;
+
 import io.openlineage.spark.api.OpenLineageContext;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerEvent;
@@ -26,6 +28,10 @@ public class AdaptivePlanEventFilter implements EventFilter {
    * @return
    */
   public boolean isDisabled(SparkListenerEvent event) {
+    if (!isDeltaPlan()) {
+      return false;
+    }
+
     return context
         .getQueryExecution()
         .filter(queryExecution -> queryExecution != null)

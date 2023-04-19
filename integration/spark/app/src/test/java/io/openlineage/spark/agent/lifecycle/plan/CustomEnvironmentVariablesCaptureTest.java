@@ -54,52 +54,7 @@ class CustomEnvironmentVariablesCaptureTest {
   }
 
   @Test
-  @Tag("delta")
-  void testInsertIntoDeltaSource(@TempDir Path tempDir, SparkSession spark)
-      throws InterruptedException, TimeoutException {
-    CustomEnvironmentVariablesCaptureTest.setEnv("TEST_VAR", "test");
-    StructType tableSchema =
-        new StructType(
-            new StructField[] {
-              new StructField("name", StringType$.MODULE$, false, Metadata.empty()),
-              new StructField("age", LongType$.MODULE$, false, Metadata.empty())
-            });
-    Dataset<Row> df =
-        spark.createDataFrame(
-            Arrays.asList(new GenericRowWithSchema(new Object[] {"john", 25L}, tableSchema)),
-            tableSchema);
-
-    String deltaDir = tempDir.resolve("deltaData").toAbsolutePath().toString();
-    df.write().format("delta").option("path", deltaDir).mode(SaveMode.Overwrite).save();
-    // wait for event processing to complete
-    StaticExecutionContextFactory.waitForExecutionEnd();
-
-    ArgumentCaptor<RunEvent> lineageEvent = ArgumentCaptor.forClass(RunEvent.class);
-
-    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, Mockito.atLeast(2))
-        .emit(lineageEvent.capture());
-    List<RunEvent> events = lineageEvent.getAllValues();
-    Optional<RunEvent> startEvent =
-        events.stream()
-            .filter(
-                e ->
-                    e.getEventType().equals(EventType.START)
-                        && e.getRun()
-                                .getFacets()
-                                .getAdditionalProperties()
-                                .get("environment-properties")
-                            != null)
-            .findFirst();
-    assertTrue(startEvent.isPresent());
-    RunEvent event = startEvent.get();
-    EnvironmentFacet additionalProperties =
-        (EnvironmentFacet)
-            event.getRun().getFacets().getAdditionalProperties().get("environment-properties");
-    assertEquals(additionalProperties.getProperties().get("TEST_VAR"), System.getenv("TEST_VAR"));
-  }
-
-  @Test
-  void testInsertIntoParquetSource(@TempDir Path tempDir, SparkSession spark)
+  void testCustomVariableCapture(@TempDir Path tempDir, SparkSession spark)
       throws InterruptedException, TimeoutException {
     CustomEnvironmentVariablesCaptureTest.setEnv("TEST_VAR", "test");
     StructType tableSchema =

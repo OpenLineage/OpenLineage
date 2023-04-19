@@ -15,6 +15,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkConf;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.internal.StaticSQLConf;
 
@@ -89,7 +90,7 @@ public class PathUtils {
           symlink.getName(), symlink.getNamespace(), DatasetIdentifier.SymlinkType.TABLE);
     } else {
       return di.withSymlink(
-          catalogTable.identifier().unquotedString(),
+          nameFromTableIdentifier(catalogTable.identifier()),
           StringUtils.substringBeforeLast(di.getName(), File.separator),
           DatasetIdentifier.SymlinkType.TABLE);
     }
@@ -111,7 +112,7 @@ public class PathUtils {
   @SneakyThrows
   private static DatasetIdentifier prepareHiveDatasetIdentifier(
       CatalogTable catalogTable, URI metastoreUri) {
-    String qualifiedName = catalogTable.qualifiedName();
+    String qualifiedName = nameFromTableIdentifier(catalogTable.identifier());
     if (!qualifiedName.startsWith("/")) {
       qualifiedName = String.format("/%s", qualifiedName);
     }
@@ -183,5 +184,20 @@ public class PathUtils {
                     + datasetName.substring(
                         matcher.end(REMOVE_PATTERN_GROUP), datasetName.length()))
         .orElse(datasetName);
+  }
+
+  private static String nameFromTableIdentifier(TableIdentifier identifier) {
+    // we create name instead of calling `unquotedString` method which includes spark_catalog
+    // for Spark 3.4
+    String name;
+    if (identifier.database().isDefined()) {
+      // include database in name
+      name = String.format("%s.%s", identifier.database().get(), identifier.table());
+    } else {
+      // just table name
+      name = identifier.table();
+    }
+
+    return name;
   }
 }

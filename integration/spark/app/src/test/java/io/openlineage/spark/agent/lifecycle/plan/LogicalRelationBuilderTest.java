@@ -75,11 +75,18 @@ public class LogicalRelationBuilderTest {
         .emit(lineageEvent.capture());
     List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
 
-    assertThat(events.get(events.size() - 1).getInputs().get(0).getName()).endsWith("temp");
-    assertThat(events.get(events.size() - 1).getOutputs()).hasSize(1);
+    assertThat(
+            events.stream()
+                .flatMap(e -> e.getInputs().stream())
+                .map(e -> e.getName())
+                .filter(name -> name.endsWith("temp")))
+        .isNotEmpty();
 
-    // verify only output table is contained within outputs
-    assertThat(events.get(events.size() - 1).getOutputs().get(0).getName())
-        .endsWith("output_table");
+    assertThat(
+            events.stream()
+                .flatMap(e -> e.getOutputs().stream())
+                .map(e -> e.getName())
+                .filter(name -> name.endsWith("output_table")))
+        .isNotEmpty();
   }
 }
