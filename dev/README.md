@@ -8,7 +8,7 @@ The changes will appear in this directory in a new file, CHANGES.md.
 
 #### Requirements
 
-Install dependencies with `pip install -r requirements.txt`.
+Install the required dependencies (e.g., `pip install -r requirements.txt`).
 
 The script also requires that the following environment variables be set:
 
