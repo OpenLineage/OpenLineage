@@ -5,17 +5,25 @@ import io.openlineage.client.python.DecoratorSpec;
 import io.openlineage.client.python.FieldSpec;
 import io.openlineage.client.python.PythonFile;
 import io.openlineage.client.python.TypeRef;
+
+import java.io.Console;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
 public class PythonGenerator {
   private final TypeResolver typeResolver;
-  private final Map<String, URL> containerToID;
+  private final Map<TypeRef, TypeRef> parentClassMapping;
 
   public void generate(PrintWriter printWriter) throws IOException {
     PythonFile file = new PythonFile();
@@ -39,27 +47,52 @@ public class PythonGenerator {
         }
       }
 
-      ClassSpec clazz = buildClass(type);
-      file.addClass(clazz);
+      Optional<ClassSpec> clazz = buildClass(type);
+      clazz.ifPresent(file::addClass);
     }
-    printWriter.print(file.dump(0));
+    printWriter.print(file.dump(0, parentClassMapping));
   }
 
-  ClassSpec buildClass(TypeResolver.ObjectResolvedType type) {
+  Optional<ClassSpec> buildClass(TypeResolver.ObjectResolvedType type) {
     ClassSpec.ClassSpecBuilder builder = ClassSpec.builder();
     builder.name(type.getName());
 
+    Set<String> parentFields = new HashSet<>();
+    Optional<ClassSpec> parentClass = Optional.empty();
     for (TypeResolver.ObjectResolvedType parent : type.getParents()) {
-      //      TODO: remove parent properties
-      //      parent.getProperties();
+      // Prune "empty" types
+      parentClass = buildClass(parent);
+      if (!parentClass.isPresent()) {
+        // Skip empty parent - look at it's parent
+        continue;
+      }
+
       builder.parent(TypeRef.builder().name(parent.getName()).isInternal(true).build());
+      for (TypeResolver.ResolvedField field: parent.getProperties()) {
+        parentFields.add(field.getName());
+      }
     }
+
+
     for (TypeResolver.ResolvedField field : type.getProperties()) {
       FieldSpec.FieldSpecBuilder fieldSpecBuilder = FieldSpec.builder();
       TypeRef typeRef = getTypeRef(field.getType());
 
-      if (!typeRef.isPrimitive()) {
-        builder.requirement(typeRef);
+      if (parentFields.contains(field.getName())) {
+//        System.out.printf("%s contains %s\n", parentFields, field.getName());
+        continue;
+      }
+
+      if (!typeRef.isPrimitive() && !typeRef.isInternal()) {
+        TypeRef arrayRef = typeRef.getArrayRef();
+        if (arrayRef != null) {
+          if (!arrayRef.isPrimitive() && !arrayRef.isInternal()) {
+            builder.requirement(arrayRef);
+          }
+        }
+        else {
+          builder.requirement(typeRef);
+        }
       }
       fieldSpecBuilder.name(field.getName());
       fieldSpecBuilder.type(typeRef);
@@ -68,7 +101,17 @@ public class PythonGenerator {
 
     builder.decorator(DecoratorSpec.builder().name("attrs.define").build());
 
-    return builder.build();
+    ClassSpec clazz = builder.build();
+    if (clazz.fields.isEmpty()) {
+//      System.out.printf("%s %s\n", clazz.getName(), Arrays.toString(clazz.getParents().toArray()));
+      if (parentClass.isPresent()) {
+        parentClassMapping.put(clazz.getTypeRef(), parentClass.get().getTypeRef());
+        return Optional.empty();
+      }
+      parentClassMapping.put(clazz.getTypeRef(), null);
+      return Optional.empty();
+    }
+    return Optional.of(clazz);
   }
 
   ClassSpec buildEnum(TypeResolver.EnumResolvedType type) {
@@ -127,10 +170,12 @@ public class PythonGenerator {
 
           @Override
           public TypeRef visit(TypeResolver.ArrayResolvedType arrayType) {
+            var internal = visit(arrayType.getItems());
             return TypeRef.builder()
-                .name(String.format("List[%s]", (visit(arrayType.getItems()).getName())))
-                .isPrimitive(true)  // TODO fix by subclassing;
-                .isInternal(false)  // TODO fix by subclassing;
+                .name(String.format("List[%s]", internal.getName()))
+                .arrayRef(internal)
+                .isPrimitive(false)
+                .isInternal(false)
                 .build();
           }
 

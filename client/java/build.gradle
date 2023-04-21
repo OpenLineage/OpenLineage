@@ -19,6 +19,12 @@ plugins {
     id "pmd"
 }
 
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(8)
+    }
+}
+
 pmd {
     consoleOutput = true
     toolVersion = "6.46.0"

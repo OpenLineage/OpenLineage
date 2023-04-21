@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.Set;
 import lombok.Builder;
 import lombok.Getter;
@@ -13,7 +14,7 @@ import lombok.Singular;
 
 @Getter
 @Builder
-public class ClassSpec implements Dump {
+public class ClassSpec {
   public String name;
 
   @Singular public List<TypeRef> parents;
@@ -45,10 +46,10 @@ public class ClassSpec implements Dump {
 
   public TypeRef getTypeRef() {
     // TODO: module? sameFile?
-    return new TypeRef(name, null, false, false, true);
+    return TypeRef.builder().name(name).isInternal(true).build();
   }
 
-  public String dump(int nestLevel) {
+  public String dump(int nestLevel, Map<TypeRef, TypeRef> parentClassMapping) {
     StringBuilder content = new StringBuilder();
 
     for (DecoratorSpec decorator : decorators) {
@@ -61,7 +62,15 @@ public class ClassSpec implements Dump {
       parentString.append("(");
       ListIterator<TypeRef> listIterator = parents.listIterator();
       while (listIterator.hasNext()) {
-        parentString.append(listIterator.next().getName());
+        TypeRef parent = listIterator.next();
+        if (parentClassMapping.containsKey(parent)) {
+          parent = parentClassMapping.get(parent);
+          if (parent == null || parent.isPrimitive()) {
+            continue;
+          }
+        }
+
+        parentString.append(parent.getName());
         if (listIterator.hasNext()) {
           parentString.append(",");
         }

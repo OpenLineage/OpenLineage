@@ -163,7 +163,7 @@ public class Generator {
       }
 
       try (PrintWriter printWriter = new PrintWriter(pythonOutput)) {
-        new PythonGenerator(typeResolver, containerToID).generate(printWriter);
+        new PythonGenerator(typeResolver, new HashMap<>()).generate(printWriter);
       }
 
     } catch (RuntimeException e) {

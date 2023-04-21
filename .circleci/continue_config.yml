@@ -67,7 +67,7 @@ jobs:
   build-client-java:
     working_directory: ~/openlineage/client/java
     docker:
-      - image: cimg/openjdk:11.0
+      - image: cimg/openjdk:17.0
     steps:
       - *checkout_project_root
       - restore_cache:

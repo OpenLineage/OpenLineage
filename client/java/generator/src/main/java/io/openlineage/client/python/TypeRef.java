@@ -30,4 +30,8 @@ public class TypeRef {
   boolean sameFile;
   boolean isPrimitive;
   boolean isInternal;
+
+  TypeRef arrayRef;
+  TypeRef keyRef;
+  TypeRef valueRef;
 }
