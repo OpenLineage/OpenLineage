@@ -131,6 +131,7 @@ public class SparkDeltaIntegrationTest {
     dataset.createOrReplaceTempView("temp");
     spark.sql("CREATE TABLE tbl USING delta LOCATION '/tmp/delta/tbl' AS SELECT * FROM temp");
 
+    verifyEvents(mockServer, "pysparkDeltaCTASStart.json");
     verifyEvents(mockServer, "pysparkDeltaCTASComplete.json");
   }
 

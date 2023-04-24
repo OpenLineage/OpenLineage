@@ -2,6 +2,14 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.23.0...HEAD)
 
+### Added
+* **Spark: support dataset name modification using regex** [`#1796`](https://github.com/OpenLineage/OpenLineage/pull/1796) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+    * It is a common scenario to write Spark output datasets with a location path ending with `/year=2023/month=04`. The introduced Spark parameter `spark.openlineage.dataset.removePath.pattern` allows removing certain elements from a path by a regex pattern provided.
+
+### Fixed
+* **Spark: catch exception when trying to obtain details of non-existing table.** [`#1798`](https://github.com/OpenLineage/OpenLineage/pull/1798) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+    * This mostly happens when getting table details on START event while the table is still not created. 
+
 ## [0.23.0](https://github.com/OpenLineage/OpenLineage/compare/0.22.0...0.23.0) - 2023-4-20
 ### Added
 * **SQL: parser improvements to support: `copy into`, `create stage`, `pivot`** [`#1742`](https://github.com/OpenLineage/OpenLineage/pull/1742) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
