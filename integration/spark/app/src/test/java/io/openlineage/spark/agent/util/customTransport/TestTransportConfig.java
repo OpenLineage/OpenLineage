@@ -13,5 +13,4 @@ import lombok.ToString;
 @NoArgsConstructor
 @ToString
 @Data
-public final class TestTransportConfig implements TransportConfig {
-}
+public final class TestTransportConfig implements TransportConfig {}

@@ -54,8 +54,7 @@ class ArgumentParserTest {
         ArgumentParser.parse(
             new SparkConf().set(ArgumentParser.SPARK_CONF_TRANSPORT_TYPE, "kinesis"));
     ArgumentParser argumentParserCustom =
-        ArgumentParser.parse(
-            new SparkConf().set(ArgumentParser.SPARK_CONF_TRANSPORT_TYPE, "test"));
+        ArgumentParser.parse(new SparkConf().set(ArgumentParser.SPARK_CONF_TRANSPORT_TYPE, "test"));
 
     assert (argumentParserConsole.getOpenLineageYaml().getTransportConfig()
         instanceof ConsoleConfig);
