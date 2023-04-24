@@ -13,6 +13,7 @@ import io.openlineage.client.transports.ConsoleConfig;
 import io.openlineage.client.transports.HttpConfig;
 import io.openlineage.client.transports.KafkaConfig;
 import io.openlineage.client.transports.KinesisConfig;
+import io.openlineage.spark.agent.util.customTransport.TestTransportConfig;
 import org.apache.spark.SparkConf;
 import org.junit.jupiter.api.Test;
 
@@ -52,6 +53,9 @@ class ArgumentParserTest {
     ArgumentParser argumentParserKinesis =
         ArgumentParser.parse(
             new SparkConf().set(ArgumentParser.SPARK_CONF_TRANSPORT_TYPE, "kinesis"));
+    ArgumentParser argumentParserCustom =
+        ArgumentParser.parse(
+            new SparkConf().set(ArgumentParser.SPARK_CONF_TRANSPORT_TYPE, "test"));
 
     assert (argumentParserConsole.getOpenLineageYaml().getTransportConfig()
         instanceof ConsoleConfig);
@@ -59,6 +63,8 @@ class ArgumentParserTest {
     assert (argumentParserKafka.getOpenLineageYaml().getTransportConfig() instanceof KafkaConfig);
     assert (argumentParserKinesis.getOpenLineageYaml().getTransportConfig()
         instanceof KinesisConfig);
+    assert (argumentParserCustom.getOpenLineageYaml().getTransportConfig()
+        instanceof TestTransportConfig);
   }
 
   @Test

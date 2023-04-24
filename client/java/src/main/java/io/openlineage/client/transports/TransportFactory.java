@@ -47,8 +47,7 @@ public final class TransportFactory {
       final KinesisConfig config = (KinesisConfig) transportConfig;
       return new KinesisTransport(config);
     } else {
-      throw new IllegalArgumentException(
-          "Transport must be of type 'Console', 'HTTP', 'Kafka' or 'Kinesis'.");
+      return CustomTransportResolver.resolveCustomTransportByConfig(transportConfig);
     }
   }
 }
