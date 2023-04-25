@@ -1,7 +1,5 @@
 {
-  "@class": "org.apache.spark.sql.execution.datasources.LogicalRelation",
   "relation": {
-    "@class": "org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation",
     "parts": [],
     "jdbcOptions": {
       "asProperties": {

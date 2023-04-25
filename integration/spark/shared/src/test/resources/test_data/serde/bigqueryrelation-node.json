@@ -1,7 +1,5 @@
 {
-  "@class":"org.apache.spark.sql.execution.datasources.LogicalRelation",
   "relation":{
-    "@class":"com.google.cloud.spark.bigquery.BigQueryRelation",
     "tableId": {
       "dataset":"dataset",
       "table":"test"

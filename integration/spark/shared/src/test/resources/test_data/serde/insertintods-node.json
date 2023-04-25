@@ -1,10 +1,6 @@
 {
-  "@class":"org.apache.spark.sql.execution.datasources.InsertIntoDataSourceCommand",
   "logicalRelation":{
-    "@class":"org.apache.spark.sql.execution.datasources.LogicalRelation",
     "relation":{
-      "@class":"com.google.cloud.spark.bigquery.BigQueryRelation",
-      "id": 3,
       "tableName": "dataset.test",
       "tableId": {
           "dataset":"dataset",
