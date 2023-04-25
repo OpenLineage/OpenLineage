@@ -2,9 +2,9 @@
 
 ## Why are Fluentd and Openlineage a perfect match?
 
-**Fluentd support is experimental and could be changed or removed in future releases.** 
+**Fluentd support is experimental and could be changed or removed in a future release.** 
 
-Modern data collectors (Fluentd, Logstash, Vector etc.) can be extremely useful when designing
+Modern data collectors (Fluentd, Logstash, Vector, etc.) can be extremely useful when designing
 production-grade architectures for processing Openlineage events. 
 
 They can be used for features such as:
