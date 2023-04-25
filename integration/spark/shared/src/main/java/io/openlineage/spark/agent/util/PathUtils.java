@@ -8,6 +8,7 @@ package io.openlineage.spark.agent.util;
 import java.io.File;
 import java.net.URI;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
@@ -21,6 +22,9 @@ import org.apache.spark.sql.internal.StaticSQLConf;
 public class PathUtils {
 
   private static final String DEFAULT_SCHEME = "file";
+  public static final String SPARK_OPENLINEAGE_DATASET_REMOVE_PATH_PATTERN =
+      "spark.openlineage.dataset.removePath.pattern";
+  public static final String REMOVE_PATTERN_GROUP = "remove";
 
   private static Optional<SparkConf> sparkConf = Optional.empty();
 
@@ -37,7 +41,13 @@ public class PathUtils {
         Optional.ofNullable(uri.getAuthority())
             .map(a -> String.format("%s://%s", uri.getScheme(), a))
             .orElseGet(() -> (uri.getScheme() != null) ? uri.getScheme() : defaultScheme);
-    String name = removeFirstSlashIfSingleSlashInString(uri.getPath());
+
+    String name =
+        Optional.of(uri.getPath())
+            .map(PathUtils::removeFirstSlashIfSingleSlashInString)
+            .map(PathUtils::removePathPattern)
+            .get();
+
     return new DatasetIdentifier(name, namespace);
   }
 
@@ -148,5 +158,30 @@ public class PathUtils {
       return name.substring(1);
     }
     return name;
+  }
+
+  private static String removePathPattern(String datasetName) {
+    return loadSparkConf()
+        .filter(conf -> conf.contains(SPARK_OPENLINEAGE_DATASET_REMOVE_PATH_PATTERN))
+        .map(conf -> conf.get(SPARK_OPENLINEAGE_DATASET_REMOVE_PATH_PATTERN))
+        .map(pattern -> Pattern.compile(pattern))
+        .map(pattern -> pattern.matcher(datasetName))
+        .filter(matcher -> matcher.find())
+        .filter(
+            matcher -> {
+              try {
+                matcher.group(REMOVE_PATTERN_GROUP);
+                return true;
+              } catch (IllegalStateException | IllegalArgumentException e) {
+                return false;
+              }
+            })
+        .filter(matcher -> StringUtils.isNotEmpty(matcher.group(REMOVE_PATTERN_GROUP)))
+        .map(
+            matcher ->
+                datasetName.substring(0, matcher.start(REMOVE_PATTERN_GROUP))
+                    + datasetName.substring(
+                        matcher.end(REMOVE_PATTERN_GROUP), datasetName.length()))
+        .orElse(datasetName);
   }
 }

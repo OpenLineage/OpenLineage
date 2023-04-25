@@ -69,19 +69,12 @@ public class DeltaHandler implements CatalogHandler {
     }
 
     // Delta uses spark2 catalog when location isn't specified.
-
-    String a = catalog.loadTable(identifier).properties().get("location");
-    String b =
-        location.orElse(
-            Optional.ofNullable(catalog.loadTable(identifier).properties().get("location"))
-                .orElse("dupa"));
     Path path =
         new Path(
             location.orElseGet(
                 () ->
                     Optional.ofNullable(catalog.loadTable(identifier).properties().get("location"))
                         .orElseGet(() -> getDefaultTablePath(session, identifier))));
-    log.info(path.toString());
     DatasetIdentifier di = PathUtils.fromPath(path, "file");
     return di.withSymlink(
         identifier.toString(),
