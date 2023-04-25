@@ -2,21 +2,30 @@ package io.openlineage.client.python;
 
 import static io.openlineage.client.python.Utils.nestString;
 
+import java.util.Map;
 import lombok.Builder;
 
 @Builder
-public class FieldSpec implements Dump {
+public class FieldSpec {
   public TypeRef type;
   public String name;
   public String defaultValue;
 
-  @Override
-  public String dump(int nestLevel) {
+  public String dump(int nestLevel, Map<TypeRef, TypeRef> parentClassMapping) {
     String resultType = "";
     String resultValue = "";
 
     if (type != null) {
-      resultType = String.format(": %s", type.getName());
+      if (parentClassMapping.containsKey(type)) {
+        TypeRef parent = parentClassMapping.get(type);
+        if (parent != null) {
+          resultType = String.format(": %s", parent.getName());
+        } else {
+          resultType = ": dict";
+        }
+      } else {
+        resultType = String.format(": %s", type.getName());
+      }
     }
 
     if (defaultValue != null) {

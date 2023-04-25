@@ -5,19 +5,13 @@ import io.openlineage.client.python.DecoratorSpec;
 import io.openlineage.client.python.FieldSpec;
 import io.openlineage.client.python.PythonFile;
 import io.openlineage.client.python.TypeRef;
-
-import java.io.Console;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.net.URL;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
@@ -29,7 +23,7 @@ public class PythonGenerator {
     PythonFile file = new PythonFile();
 
     file.requirements.add(TypeRef.builder().name("attrs").build());
-    file.requirements.add(TypeRef.builder().name("datetime").build());
+    file.requirements.add(TypeRef.builder().name("List").module("typing").build());
 
     Collection<TypeResolver.ObjectResolvedType> types = typeResolver.getTypes();
 
@@ -68,18 +62,17 @@ public class PythonGenerator {
       }
 
       builder.parent(TypeRef.builder().name(parent.getName()).isInternal(true).build());
-      for (TypeResolver.ResolvedField field: parent.getProperties()) {
+      for (TypeResolver.ResolvedField field : parent.getProperties()) {
         parentFields.add(field.getName());
       }
     }
-
 
     for (TypeResolver.ResolvedField field : type.getProperties()) {
       FieldSpec.FieldSpecBuilder fieldSpecBuilder = FieldSpec.builder();
       TypeRef typeRef = getTypeRef(field.getType());
 
       if (parentFields.contains(field.getName())) {
-//        System.out.printf("%s contains %s\n", parentFields, field.getName());
+        System.out.printf("%s contains %s\n", parentFields, field.getName());
         continue;
       }
 
@@ -89,8 +82,7 @@ public class PythonGenerator {
           if (!arrayRef.isPrimitive() && !arrayRef.isInternal()) {
             builder.requirement(arrayRef);
           }
-        }
-        else {
+        } else {
           builder.requirement(typeRef);
         }
       }
@@ -103,10 +95,11 @@ public class PythonGenerator {
 
     ClassSpec clazz = builder.build();
     if (clazz.fields.isEmpty()) {
-//      System.out.printf("%s %s\n", clazz.getName(), Arrays.toString(clazz.getParents().toArray()));
+      //      System.out.printf("%s %s\n", clazz.getName(),
+      // Arrays.toString(clazz.getParents().toArray()));
       if (parentClass.isPresent()) {
         parentClassMapping.put(clazz.getTypeRef(), parentClass.get().getTypeRef());
-        return Optional.empty();
+        return parentClass;
       }
       parentClassMapping.put(clazz.getTypeRef(), null);
       return Optional.empty();

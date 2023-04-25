@@ -140,11 +140,13 @@ public class SchemaParser {
 
     default boolean isObject() {
       return false;
-    };
+    }
+    ;
 
     default ObjectType asObject() {
       return (ObjectType) this;
-    };
+    }
+    ;
   }
 
   static class RefType implements Type {
@@ -421,7 +423,8 @@ public class SchemaParser {
 
     public boolean isObject() {
       return true;
-    };
+    }
+    ;
 
     @Override
     public <T> T accept(TypeVisitor<T> visitor) {

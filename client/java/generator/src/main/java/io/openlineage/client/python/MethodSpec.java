@@ -3,20 +3,20 @@ package io.openlineage.client.python;
 import static io.openlineage.client.python.Utils.nestString;
 
 import java.util.List;
+import java.util.Map;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Singular;
 
 @Getter
 @Builder
-public class MethodSpec implements Dump {
+public class MethodSpec {
   public String code;
   @Singular public List<ParameterSpec> params;
   public String name;
   public String codeBlock;
 
-  @Override
-  public String dump(int nextLevel) {
+  public String dump(int nextLevel, Map<TypeRef, TypeRef> parentClassMapping) {
     StringBuilder content = new StringBuilder();
     StringBuilder paramsList = new StringBuilder();
     boolean isFirst = true;
