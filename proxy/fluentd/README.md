@@ -11,7 +11,7 @@ They can be used for features such as:
  * A server-proxy in front of the Openlineage backend (like Marquez) to handle load spikes and buffer incoming events when the backend is down (e.g., due to a maintainance window).
  * The ability to copy the event to multiple backends such as HTTP, kafka or cloud object storage. Data collectors implement that out-of-the-box.
 
-They have great potential except for a single missing feature: *the ability to parse OpenLineage validate Openlineage events at the point of HTTP input*.
+They have great potential except for a single missing feature: *the ability to parse and validate Openlineage events at the point of HTTP input*.
 This is important as one would like to get a `Bad Request` response immediately when sending invalid Openlineage events to an endpoint.
 Fortunately, this missing feature can be implemented as a plugin. 
 
