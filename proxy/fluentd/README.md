@@ -43,7 +43,7 @@ the amount of threads to flush the buffer is set to 1 and configurable ([flush_t
 ## Quickstart with Docker
 
 Please refer to the [`Dockerfile`](docker/Dockerfile) and [`fluent.conf`](docker/conf/fluent.conf) to see how to build and install the plugin with
-example the usage scenario provided in [`docker-compose.yml`](docker/docker-compose.yml). To run the example setup, go to the `docker` directory and execute following command:
+the example usage scenario provided in [`docker-compose.yml`](docker/docker-compose.yml). To run the example setup, go to the `docker` directory and execute following command:
 
 ```shell
 docker-compose up
