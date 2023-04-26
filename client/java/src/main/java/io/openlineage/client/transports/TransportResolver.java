@@ -13,8 +13,7 @@ import java.util.stream.StreamSupport;
 public class TransportResolver {
 
   public static Class<? extends TransportConfig> resolveTransportConfigByType(String type) {
-    TransportBuilder builder =
-        getTransportBuilder(b -> b.getType().equalsIgnoreCase(type));
+    TransportBuilder builder = getTransportBuilder(b -> b.getType().equalsIgnoreCase(type));
     return builder.getConfig().getClass();
   }
 
@@ -30,8 +29,7 @@ public class TransportResolver {
     return builder.build(transportConfig);
   }
 
-  private static TransportBuilder getTransportBuilder(
-      Predicate<TransportBuilder> predicate) {
+  private static TransportBuilder getTransportBuilder(Predicate<TransportBuilder> predicate) {
     ServiceLoader<TransportBuilder> loader = ServiceLoader.load(TransportBuilder.class);
     Optional<TransportBuilder> optionalBuilder =
         StreamSupport.stream(loader.spliterator(), false).filter(predicate).findFirst();
