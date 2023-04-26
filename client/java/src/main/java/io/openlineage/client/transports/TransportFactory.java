@@ -22,7 +22,6 @@ import lombok.NonNull;
  * </ul>
  */
 public final class TransportFactory {
-  private static final String DEFAULT_LINEAGE_SOURCE = "openlineage-java";
 
   private final TransportConfig transportConfig;
 
@@ -31,23 +30,6 @@ public final class TransportFactory {
   }
 
   public Transport build() {
-    if (transportConfig instanceof ConsoleConfig) {
-      return new ConsoleTransport();
-    } else if (transportConfig instanceof HttpConfig) {
-      return new HttpTransport((HttpConfig) transportConfig);
-    } else if (transportConfig instanceof KafkaConfig) {
-      final KafkaConfig kafkaConfig = (KafkaConfig) transportConfig;
-      if (!kafkaConfig.hasLocalServerId()) {
-        // Set the local server ID to the lineage source when not specified
-        kafkaConfig.setLocalServerId(DEFAULT_LINEAGE_SOURCE);
-      }
-      kafkaConfig.getProperties().put("server.id", kafkaConfig.getLocalServerId());
-      return new KafkaTransport(kafkaConfig);
-    } else if (transportConfig instanceof KinesisConfig) {
-      final KinesisConfig config = (KinesisConfig) transportConfig;
-      return new KinesisTransport(config);
-    } else {
-      return CustomTransportResolver.resolveCustomTransportByConfig(transportConfig);
-    }
+    return TransportResolver.resolveTransportByConfig(transportConfig);
   }
 }

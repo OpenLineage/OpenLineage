@@ -5,7 +5,7 @@
 
 package io.openlineage.client.transports;
 
-public interface CustomTransportBuilder {
+public interface TransportBuilder {
   String getType();
 
   TransportConfig getConfig();

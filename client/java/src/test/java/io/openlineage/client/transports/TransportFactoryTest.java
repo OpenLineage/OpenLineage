@@ -7,8 +7,6 @@ package io.openlineage.client.transports;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.openlineage.client.transports.customTransport.TestTransport;
-import io.openlineage.client.transports.customTransport.TestTransportConfig;
 import java.net.URI;
 import java.util.Properties;
 import org.junit.jupiter.api.Test;
@@ -47,18 +45,5 @@ class TransportFactoryTest {
     TransportFactory transportFactory = new TransportFactory(config);
 
     assertThat(transportFactory.build()).isInstanceOf(KafkaTransport.class);
-  }
-
-  @Test
-  void createsCustomTransport() {
-    TestTransportConfig config = new TestTransportConfig();
-    config.setParam1("my_param1");
-    config.setParam2("my_param2");
-    TransportFactory transportFactory = new TransportFactory(config);
-
-    Transport transport = transportFactory.build();
-    assertThat(transport).isInstanceOf(TestTransport.class);
-    assertThat(((TestTransport) transport).getParam1()).isEqualTo(config.getParam1());
-    assertThat(((TestTransport) transport).getParam2()).isEqualTo(config.getParam2());
   }
 }
