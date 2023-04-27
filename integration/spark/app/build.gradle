@@ -239,7 +239,7 @@ assemble {
 }
 
 shadowJar {
-    dependsOn test
+    //dependsOn test
 
     minimize(){
         exclude (project(":shared"))

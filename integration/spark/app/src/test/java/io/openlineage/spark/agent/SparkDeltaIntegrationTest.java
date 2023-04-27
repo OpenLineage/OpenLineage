@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockserver.model.HttpRequest.request;
 
 import com.google.common.collect.ImmutableList;
+import io.delta.tables.DeltaTable;
 import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
@@ -299,6 +300,41 @@ public class SparkDeltaIntegrationTest {
         .save("/tmp/delta/save_into_data_source_target/");
 
     verifyEvents(mockServer, "pysparkSaveIntoDatasourceCompleteEvent.json");
+  }
+
+  @Test
+  void testDeltaMergeInto() {
+    Dataset<Row> dataset =
+        spark
+            .createDataFrame(
+                ImmutableList.of(
+                    RowFactory.create(1L, "bat")
+//                    RowFactory.create(3L, "mouse"),
+//                    RowFactory.create(3L, "horse")
+                   ),
+                new StructType(
+                    new StructField[] {
+                        new StructField("a", LongType$.MODULE$, false, Metadata.empty()),
+                        new StructField("b", StringType$.MODULE$, false, Metadata.empty())
+                    }))
+            .repartition(1);
+    dataset.createOrReplaceTempView("temp");
+
+    spark.sql("CREATE TABLE t1 USING delta LOCATION '/tmp/delta/tbl' AS SELECT * FROM temp");
+//
+//
+//    dataset
+//        .write()
+//        .mode("overwrite")
+//        .format("delta")
+//        .save("/tmp/delta/save_into_data_source_target/");
+
+    DeltaTable.forName("t1")
+        .alias("t2")
+        .merge(dataset.alias("t1"),"t1.a = t2.a")
+        .whenMatched().updateAll()
+        .whenNotMatched().insertAll()
+        .execute();
   }
 
   private void clearTables(String... tables) {
