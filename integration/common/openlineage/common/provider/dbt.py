@@ -344,7 +344,7 @@ class DbtArtifactProcessor:
             include_section=include_section,
         )
 
-    @classmethod
+    @classmethod  
     def render_values_jinja(
         cls,
         environment: Environment,
