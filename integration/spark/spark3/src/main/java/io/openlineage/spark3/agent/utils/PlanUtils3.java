@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.reflect.FieldUtils;
+import org.apache.spark.sql.catalyst.analysis.NoSuchTableException;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.connector.catalog.Identifier;
 import org.apache.spark.sql.connector.catalog.TableCatalog;
@@ -79,6 +80,12 @@ public class PlanUtils3 {
     } catch (UnsupportedCatalogException ex) {
       log.error(String.format("Catalog %s is unsupported", ex.getMessage()), ex);
       return Optional.empty();
+    } catch (Exception e) {
+      if (e instanceof NoSuchTableException) {
+        // probably trying to obtain table details on START event while table does not exist
+        return Optional.empty();
+      }
+      throw e;
     }
   }
 
