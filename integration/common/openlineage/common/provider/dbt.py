@@ -37,6 +37,7 @@ class Adapter(Enum):
     REDSHIFT = 'redshift'
     SPARK = 'spark'
     POSTGRES = 'postgres'
+    DATABRICKS = 'databricks'
 
     @staticmethod
     def adapters() -> str:
@@ -239,21 +240,21 @@ class DbtArtifactProcessor:
         self.extract_dataset_namespace(profile)
 
         nodes = {}
-        # Filter nodes
+        # Filter non-model or test nodes
         for name, node in manifest['nodes'].items():
-            if any(name.startswith(prefix) for prefix in ('model.', 'test.', 'snapshot.')):
+            if name.startswith('model.') or name.startswith('test.'):
                 nodes[name] = node
 
         context = DbtRunContext(manifest, run_result, catalog)
 
-        if self.command not in ['run', 'build', 'test', 'seed', 'snapshot']:
+        if self.command not in ['run', 'build', 'test', 'seed']:
             raise UnsupportedDbtCommand(
                 f"Not recognized run command "
                 f"{self.command} - should be run, test, seed or build"
             )
 
         events = DbtEvents()
-        if self.command in ['run', 'build', 'seed', 'snapshot']:
+        if self.command in ['run', 'build', 'seed']:
             events += self.parse_execution(context, nodes)
         if self.command in ['test', 'build']:
             events += self.parse_test(context, nodes)
@@ -304,7 +305,6 @@ class DbtArtifactProcessor:
     def env_var(var: str, default: Optional[str] = None) -> str:
         """The env_var() function. Return the environment variable named 'var'.
         If there is no such environment variable set, return the default.
-
         If the default is None, raise an exception for an undefined variable.
         """
         if var in os.environ:
@@ -383,13 +383,16 @@ class DbtArtifactProcessor:
         events = DbtEvents()
         for run in context.run_results['results']:
             name = run['unique_id']
-            if not any(name.startswith(prefix) for prefix in ('model.', 'source.', 'snapshot.')):
+            if not name.startswith('model.') and not name.startswith('source.'):
                 continue
             if run['status'] == 'skipped':
                 continue
 
             output_node = nodes[name]
             started_at, completed_at = self.get_timings(run['timing'])
+            namespace, name, _ = self.extract_dataset_data(
+                ModelNode(output_node), None, has_facets=False
+            )
 
             inputs = []
             for node in context.manifest['parent_map'][run['unique_id']]:
@@ -405,14 +408,9 @@ class DbtArtifactProcessor:
                     ))
 
             run_id = str(uuid.uuid4())
-            if name.startswith('snapshot.'):
-                job_name = f"{output_node['database']}.{output_node['schema']}" \
-                    f".{self.removeprefix(run['unique_id'], 'snapshot.')}" \
-                    + (".build.snapshot" if self.command == 'build' else ".snapshot")
-            else:
-                job_name = f"{output_node['database']}.{output_node['schema']}" \
-                    f".{self.removeprefix(run['unique_id'], 'model.')}" \
-                    + (".build.run" if self.command == 'build' else "")
+            job_name = f"{output_node['database']}.{output_node['schema']}" \
+                f".{self.removeprefix(run['unique_id'], 'model.')}" \
+                + (".build.run" if self.command == 'build' else "")
 
             if self.manifest_version >= 7:
                 sql = output_node.get('compiled_code', None)
@@ -719,6 +717,8 @@ class DbtArtifactProcessor:
             return f"redshift://{profile['host']}:{profile['port']}"
         elif self.adapter_type == Adapter.POSTGRES:
             return f"postgres://{profile['host']}:{profile['port']}"
+        elif self.adapter_type == Adapter.DATABRICKS:
+            return f"databricks://{profile['host']}:{profile['token']}"
         elif self.adapter_type == Adapter.SPARK:
             port = ""
 
