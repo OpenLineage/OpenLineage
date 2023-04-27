@@ -239,7 +239,7 @@ class DbtArtifactProcessor:
         self.extract_adapter_type(profile)
         self.extract_dataset_namespace(profile)
 
-        nodes = {}
+        nodes = {}    
         # Filter non-model or test nodes
         for name, node in manifest['nodes'].items():
             if name.startswith('model.') or name.startswith('test.'):
