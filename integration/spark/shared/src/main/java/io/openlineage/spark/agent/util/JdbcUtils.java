@@ -42,7 +42,11 @@ public class JdbcUtils {
               Collections.emptyList(),
               Collections.emptyList()));
     } else {
-      String query = tableOrQuery.substring(0, tableOrQuery.lastIndexOf(")")).replaceFirst("\\(", "").replaceAll("`", "");
+      String query =
+          tableOrQuery
+              .substring(0, tableOrQuery.lastIndexOf(")"))
+              .replaceFirst("\\(", "")
+              .replaceAll("`", "");
       SqlMeta sqlMeta = OpenLineageSql.parse(Collections.singletonList(query)).get();
 
       if (!sqlMeta.errors().isEmpty()) { // error return nothing
