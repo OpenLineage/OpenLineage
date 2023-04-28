@@ -101,7 +101,9 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
             task.task_id, task_instance.execution_date, task_instance.try_number
         )
 
-        task_metadata = extractor_manager.extract_metadata(dagrun, task)
+        task_metadata = extractor_manager.extract_metadata(
+            dagrun, task, task_uuid=task_uuid
+        )
 
         start, end = get_dagrun_start_end(dagrun=dagrun, dag=dag)
 

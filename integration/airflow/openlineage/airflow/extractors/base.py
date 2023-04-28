@@ -3,7 +3,7 @@
 
 import json
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 import attr
@@ -37,10 +37,14 @@ class BaseExtractor(ABC, LoggingMixin):
         super().__init__()
         self.operator = operator
         self.patch()
+        self.context: Dict[str, Any] = dict()
 
     def patch(self):
         # Extractor should register extension methods or patches to operator here
         pass
+
+    def set_context(self, key, value):
+        self.context[key] = value
 
     @classmethod
     def get_operator_classnames(cls) -> List[str]:

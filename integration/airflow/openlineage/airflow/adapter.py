@@ -54,19 +54,24 @@ class OpenLineageAdapter:
 
     _client = None
 
-    def get_or_create_openlineage_client(self) -> OpenLineageClient:
-        if not self._client:
+    @staticmethod
+    def get_or_create_openlineage_client() -> OpenLineageClient:
+        # Backcomp with Marquez integration
+        marquez_url = os.getenv("MARQUEZ_URL")
+        marquez_api_key = os.getenv("MARQUEZ_API_KEY")
+        if marquez_url:
+            log.info(f"Sending lineage events to {marquez_url}")
+            client = OpenLineageClient(
+                marquez_url, OpenLineageClientOptions(api_key=marquez_api_key)
+            )
+        else:
+            client = OpenLineageClient.from_environment()
+        return client
 
-            # Backcomp with Marquez integration
-            marquez_url = os.getenv("MARQUEZ_URL")
-            marquez_api_key = os.getenv("MARQUEZ_API_KEY")
-            if marquez_url:
-                log.info(f"Sending lineage events to {marquez_url}")
-                self._client = OpenLineageClient(
-                    marquez_url, OpenLineageClientOptions(api_key=marquez_api_key)
-                )
-            else:
-                self._client = OpenLineageClient.from_environment()
+    @property
+    def client(self) -> OpenLineageClient:
+        if not self._client:
+            self._client = OpenLineageAdapter.get_or_create_openlineage_client()
         return self._client
 
     def build_dag_run_id(self, dag_id, dag_run_id):
@@ -86,7 +91,7 @@ class OpenLineageAdapter:
     def emit(self, event: RunEvent):
         event = redact_with_exclusions(event)
         try:
-            return self.get_or_create_openlineage_client().emit(event)
+            return self.client.emit(event)
         except requests.exceptions.RequestException:
             log.exception(f"Failed to emit OpenLineage event of id {event.run.runId}")
 

@@ -73,6 +73,9 @@ _extractors = list(
             try_import_from_string(
                 'openlineage.airflow.extractors.gcs_extractor.GCSToGCSExtractor'
             ),
+            try_import_from_string(
+                'openlineage.airflow.extractors.dbt_cloud_extractor.DbtCloudExtractor'
+            ),
         ],
     )
 )

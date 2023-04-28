@@ -24,7 +24,8 @@ class ExtractorManager:
         dagrun,
         task,
         complete: bool = False,
-        task_instance=None
+        task_instance=None,
+        task_uuid = None
     ) -> TaskMetadata:
         extractor = self._get_extractor(task)
         task_info = f'task_type={get_operator_class(task).__name__} ' \
@@ -35,6 +36,8 @@ class ExtractorManager:
         if extractor:
             # Extracting advanced metadata is only possible when extractor for particular operator
             # is defined. Without it, we can't extract any input or output data.
+            if task_uuid:
+                extractor.set_context("task_uuid", task_uuid)
             try:
                 self.log.debug(
                     f'Using extractor {extractor.__class__.__name__} {task_info}')
