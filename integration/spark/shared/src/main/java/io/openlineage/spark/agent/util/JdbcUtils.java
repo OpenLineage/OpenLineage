@@ -34,7 +34,7 @@ public class JdbcUtils {
 
   public static Optional<SqlMeta> extractQueryFromSpark(JDBCRelation relation) {
     String tableOrQuery = relation.jdbcOptions().tableOrQuery();
-    if (!tableOrQuery.contains(") SPARK_GEN_SUBQ_")) {
+    if (!tableOrQuery.trim().startsWith("(")) {
       return Optional.of(
           new SqlMeta(
               Collections.singletonList(new DbTableMeta(null, null, tableOrQuery)),
@@ -42,9 +42,7 @@ public class JdbcUtils {
               Collections.emptyList(),
               Collections.emptyList()));
     } else {
-      String query =
-          tableOrQuery.replaceFirst("\\(", "").replaceAll("\\) SPARK_GEN_SUBQ_[0-9]+", "");
-
+      String query = tableOrQuery.substring(0, tableOrQuery.lastIndexOf(")")).replaceFirst("\\(", "").replaceAll("`", "");
       SqlMeta sqlMeta = OpenLineageSql.parse(Collections.singletonList(query)).get();
 
       if (!sqlMeta.errors().isEmpty()) { // error return nothing

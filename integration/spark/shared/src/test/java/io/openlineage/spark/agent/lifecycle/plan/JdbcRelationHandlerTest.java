@@ -30,6 +30,8 @@ public class JdbcRelationHandlerTest {
   JDBCOptions jdbcOptions = mock(JDBCOptions.class);
   String jdbcQuery =
       "(select js1.k, CONCAT(js1.j1, js2.j2) as j from jdbc_source1 js1 join jdbc_source2 js2 on js1.k = js2.k) SPARK_GEN_SUBQ_0";
+  String jdbcTableSubQuery =
+      "(select `js1`.`k`, CONCAT(js1.j1, js2.j2) as j from jdbc_source1 js1 join jdbc_source2 js2 on js1.k = js2.k) as table1";
   String jdbcTable = "tablename";
   String invalidJdbc = "(test) SPARK_GEN_SUBQ_0";
   String url = "postgresql://localhost:5432/test";
@@ -64,6 +66,19 @@ public class JdbcRelationHandlerTest {
     jdbcRelationHandler.getDatasets(relation, url);
 
     verify(datasetFactory, times(1)).getDataset("tablename", url, schema);
+  }
+
+  @Test
+  void testHandlingJdbcTableAsSubQuery() {
+    when(jdbcOptions.tableOrQuery()).thenReturn(jdbcTableSubQuery);
+    StructType schema1 =
+        new StructType().add("k", DataTypes.IntegerType).add("j1", DataTypes.StringType);
+    StructType schema2 = new StructType().add("j2", DataTypes.StringType);
+
+    jdbcRelationHandler.getDatasets(relation, url);
+
+    verify(datasetFactory, times(1)).getDataset("jdbc_source1", url, schema1);
+    verify(datasetFactory, times(1)).getDataset("jdbc_source2", url, schema2);
   }
 
   @Test
