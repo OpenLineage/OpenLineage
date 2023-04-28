@@ -1,0 +1,31 @@
+{
+  "eventType": "COMPLETE",
+  "job": {
+    "namespace": "delta-namespace"
+  },
+  "inputs": [ ],
+  "outputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/delta/t1",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "a",
+              "type": "long"
+            },
+            {
+              "name": "b",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -13,6 +13,8 @@ import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.AppendDataDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.LogicalRelationDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.MapPartitionsDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.MergeIntoCommandOutputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.TableContentChangeDatasetBuilder;
 import io.openlineage.spark32.agent.lifecycle.plan.AlterTableCommandDatasetBuilder;
 import io.openlineage.spark33.agent.lifecycle.plan.CreateReplaceDatasetBuilder;
@@ -37,6 +39,8 @@ public class Spark33DatasetBuilderFactory extends Spark32DatasetBuilderFactory
             .add(new AppendDataDatasetBuilder(context, datasetFactory))
             .add(new DataSourceV2RelationOutputDatasetBuilder(context, datasetFactory))
             .add(new TableContentChangeDatasetBuilder(context))
+            .add(new MapPartitionsDatasetBuilder(context))
+            .add(new MergeIntoCommandOutputDatasetBuilder(context))
             .add(new CreateReplaceDatasetBuilder(context))
             .add(new AlterTableCommandDatasetBuilder(context));
 

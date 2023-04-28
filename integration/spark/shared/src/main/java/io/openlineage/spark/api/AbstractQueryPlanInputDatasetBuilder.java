@@ -6,6 +6,8 @@
 package io.openlineage.spark.api;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.InputDataset;
+import java.util.List;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -30,5 +32,10 @@ public abstract class AbstractQueryPlanInputDatasetBuilder<P extends LogicalPlan
   public boolean isDefinedAt(SparkListenerEvent event) {
     return event instanceof SparkListenerJobStart
         || event instanceof SparkListenerSQLExecutionStart;
+  }
+
+  @Override
+  public List<InputDataset> apply(P logicalPlan) {
+    throw new UnsupportedOperationException("Unimplemented");
   }
 }

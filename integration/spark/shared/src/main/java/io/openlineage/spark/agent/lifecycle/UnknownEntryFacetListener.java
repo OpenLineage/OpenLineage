@@ -75,7 +75,6 @@ public class UnknownEntryFacetListener implements Consumer<LogicalPlan> {
     List<UnknownEntryFacet.AttributeField> output = attributeFields(x.outputSet());
     List<UnknownEntryFacet.AttributeField> input = attributeFields(x.inputSet());
     String serializedNode = planSerializer.serialize(x);
-    log.warn("unknown node: " + x.getClass().getCanonicalName());
     log.debug("Adding serialized node for unknown facet entry {}", serializedNode);
     return Optional.of(new UnknownEntryFacet.FacetEntry(serializedNode, input, output));
   }
