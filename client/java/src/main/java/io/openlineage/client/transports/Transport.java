@@ -6,8 +6,10 @@
 package io.openlineage.client.transports;
 
 import io.openlineage.client.OpenLineage;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 
+@NoArgsConstructor
 public abstract class Transport {
   enum Type {
     CONSOLE,
