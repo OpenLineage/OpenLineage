@@ -4,7 +4,7 @@ The `get_changes.sh` script uses a fork of saadmk11/changelog-ci to get all
 merged changes between two specified releases. To get all changes since the latest
 release, set `END_RELEASE_VERSION` to the planned next release. 
 
-The changes will appear in this directory in a new file, CHANGES.md.
+The changes will appear in ../CHANGELOG.md.
 
 #### Requirements
 
