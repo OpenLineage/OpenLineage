@@ -9,7 +9,7 @@ import pytest
 from openlineage.airflow.extractors.sftp_extractor import SFTPExtractor
 from openlineage.airflow.utils import try_import_from_string
 from openlineage.common.dataset import Dataset, Source
-from pkg_resources import parse_version
+from packaging.version import parse as parse_version
 
 from airflow.models import DAG, Connection
 from airflow.providers.sftp.hooks.sftp import SFTPHook

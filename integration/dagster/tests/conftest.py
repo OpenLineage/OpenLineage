@@ -6,7 +6,7 @@ import uuid
 from typing import Optional
 
 from openlineage.dagster import __version__ as OPENLINEAGE_DAGSTER_VERSION
-from pkg_resources import parse_version
+from packaging.version import parse as parse_version
 
 from dagster import DagsterEvent, DagsterEventType, EventLogEntry, EventLogRecord, PipelineRun
 from dagster.core.code_pointer import FileCodePointer

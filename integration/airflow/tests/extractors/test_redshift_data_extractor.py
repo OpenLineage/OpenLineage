@@ -15,7 +15,7 @@ from openlineage.airflow.extractors.redshift_data_extractor import RedshiftDataE
 from openlineage.client.facet import ErrorMessageRunFacet, OutputStatisticsOutputDatasetFacet
 from openlineage.common.models import DbColumn, DbTableSchema
 from openlineage.common.sql import DbTableMeta
-from pkg_resources import parse_version
+from packaging.version import parse as parse_version
 
 from airflow.models import DAG, TaskInstance
 from airflow.providers.amazon.aws.operators.redshift_data import RedshiftDataOperator

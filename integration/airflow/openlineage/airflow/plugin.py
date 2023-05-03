@@ -5,7 +5,7 @@ import os
 
 # Provide empty plugin for older version
 from openlineage.airflow.macros import lineage_parent_id, lineage_run_id
-from pkg_resources import parse_version
+from packaging.version import parse as parse_version
 
 from airflow.plugins_manager import AirflowPlugin
 from airflow.version import version as AIRFLOW_VERSION

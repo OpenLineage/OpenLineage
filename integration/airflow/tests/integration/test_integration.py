@@ -13,7 +13,7 @@ import psycopg2
 import pytest
 import requests
 from openlineage.common.test import match, setup_jinja
-from pkg_resources import parse_version
+from packaging.version import parse as parse_version
 from retrying import retry
 
 env = setup_jinja()

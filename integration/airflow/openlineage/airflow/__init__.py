@@ -5,7 +5,7 @@
 import logging
 
 from openlineage.airflow.version import __version__
-from pkg_resources import parse_version
+from packaging.version import parse as parse_version
 
 from airflow.version import version as AIRFLOW_VERSION
 

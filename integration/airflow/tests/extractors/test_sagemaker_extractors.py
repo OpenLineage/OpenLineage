@@ -13,7 +13,7 @@ from openlineage.airflow.extractors.sagemaker_extractors import (
     SageMakerTrainingExtractor,
     SageMakerTransformExtractor,
 )
-from pkg_resources import parse_version
+from packaging.version import parse as parse_version
 
 from airflow.models import DAG, TaskInstance
 from airflow.providers.amazon.aws.operators.sagemaker import (

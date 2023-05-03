@@ -6,7 +6,7 @@ import os
 
 import pytest
 from mock import patch
-from pkg_resources import parse_version
+from packaging.version import parse as parse_version
 
 from airflow.version import version as AIRFLOW_VERSION
 

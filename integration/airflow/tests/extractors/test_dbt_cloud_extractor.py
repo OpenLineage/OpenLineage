@@ -11,7 +11,7 @@ import pytz
 from mock import MagicMock
 from openlineage.airflow.extractors.dbt_cloud_extractor import DbtCloudExtractor
 from openlineage.airflow.utils import try_import_from_string
-from pkg_resources import parse_version
+from packaging.version import parse as parse_version
 
 from airflow.models import DAG, TaskInstance
 from airflow.utils import timezone
