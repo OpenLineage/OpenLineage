@@ -1,14 +1,23 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.23.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.24.0...HEAD)
 
+## [0.24.0](https://github.com/OpenLineage/OpenLineage/compare/0.23.0...0.24.0) - 2023-5-2
 ### Added
+* **Support custom transport types** [`#1795`](https://github.com/OpenLineage/OpenLineage/pull/1795) [@nataliezeller1](https://github.com/nataliezeller1)  
+    *Adds a new interface, `TransportBuilder`, for creating custom transport types without having to modify core components of OpenLineage.*
+* **Airflow: dbt Cloud integration** [`#1418`](https://github.com/OpenLineage/OpenLineage/pull/1418) [@howardyoo](https://github.com/howardyoo)  
+    *Adds a new OpenLineage extractor for dbt Cloud that uses the dbt Cloud hook provided by Airflow to communicate with dbt Cloud via its API.*
 * **Spark: support dataset name modification using regex** [`#1796`](https://github.com/OpenLineage/OpenLineage/pull/1796) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
-    * It is a common scenario to write Spark output datasets with a location path ending with `/year=2023/month=04`. The introduced Spark parameter `spark.openlineage.dataset.removePath.pattern` allows removing certain elements from a path by a regex pattern provided.
+    *It is a common scenario to write Spark output datasets with a location path ending with `/year=2023/month=04`. The Spark parameter `spark.openlineage.dataset.removePath.pattern` introduced here allows for removing certain elements from a path with a regex pattern.*
 
 ### Fixed
 * **Spark: catch exception when trying to obtain details of non-existing table.** [`#1798`](https://github.com/OpenLineage/OpenLineage/pull/1798) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
-    * This mostly happens when getting table details on START event while the table is still not created. 
+    *This mostly happens when getting table details on START event while the table is still not created.*
+* **Spark: LogicalPlanSerializer** [`#1792`](https://github.com/OpenLineage/OpenLineage/pull/1792) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Changes `LogicalPlanSerializer` to make use of non-shaded Jackson classes in order to serialize `LogicalPlans`. Note: class names are no longer serialized.* 
+* **Flink: fix Flink CI** [`#1801`](https://github.com/OpenLineage/OpenLineage/pull/1801) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Specifies an older image version that succeeds on CI in order to fix the Flink integration.*
 
 ## [0.23.0](https://github.com/OpenLineage/OpenLineage/compare/0.22.0...0.23.0) - 2023-4-20
 ### Added
