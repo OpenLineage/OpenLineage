@@ -35,7 +35,6 @@ class Adapter(Enum):
     SPARK = "spark"
     POSTGRES = "postgres"
     DATABRICKS = "databricks"
-
     @staticmethod
     def adapters() -> str:
         # String representation of all supported adapter names
