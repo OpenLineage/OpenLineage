@@ -26,7 +26,6 @@ from openlineage.common.provider.snowflake import fix_account_name
 from openlineage.common.schema import GITHUB_LOCATION
 from openlineage.common.utils import get_from_multiple_chains, get_from_nullable_chain
 
-
 class Adapter(Enum):
     # This class represents supported adapters.
     BIGQUERY = "bigquery"
