@@ -10,6 +10,8 @@
     *Adds a new OpenLineage extractor for dbt Cloud that uses the dbt Cloud hook provided by Airflow to communicate with dbt Cloud via its API.*
 * **Spark: support dataset name modification using regex** [`#1796`](https://github.com/OpenLineage/OpenLineage/pull/1796) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
     *It is a common scenario to write Spark output datasets with a location path ending with `/year=2023/month=04`. The Spark parameter `spark.openlineage.dataset.removePath.pattern` introduced here allows for removing certain elements from a path with a regex pattern.*
+* **Spark: filter adaptive plan events** [`#1830`](https://github.com/OpenLineage/OpenLineage/pull/1830) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+    *When spark plan is optimized, it is rewritten into adaptive plan which lead to duplicate Openlineage events: per normal and per adaptive plan. This changes filters the latter one.*
 
 ### Fixed
 * **Spark: catch exception when trying to obtain details of non-existing table.** [`#1798`](https://github.com/OpenLineage/OpenLineage/pull/1798) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
