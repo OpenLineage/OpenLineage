@@ -584,7 +584,7 @@ class DbtArtifactProcessor:
         elif self.adapter_type == Adapter.POSTGRES:
             return f"postgres://{profile['host']}:{profile['port']}"
         elif self.adapter_type == Adapter.DATABRICKS:
-            return f"databricks://{profile['host']}:{profile['token']}"
+            return f"databricks://{profile['host']}"
         elif self.adapter_type == Adapter.SPARK:
             port = ""
 
