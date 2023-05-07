@@ -30,17 +30,21 @@ public class JdbcRelationHandlerTest {
   JDBCOptions jdbcOptions = mock(JDBCOptions.class);
   String jdbcQuery =
       "(select js1.k, CONCAT(js1.j1, js2.j2) as j from jdbc_source1 js1 join jdbc_source2 js2 on js1.k = js2.k) SPARK_GEN_SUBQ_0";
-  String jdbcTableSubQuery =
-      "(select `js1`.`k`, CONCAT(js1.j1, js2.j2) as j from jdbc_source1 js1 join jdbc_source2 js2 on js1.k = js2.k) as table1";
+  String jdbcDbTableAsSubQuery =
+      "(select js1.k, CONCAT(js1.j1, js2.j2) as j from jdbc_source1 js1 join jdbc_source2 js2 on js1.k = js2.k) as table1";
+  String mysqlQuery =
+      "(select `js1`.`k`, CONCAT(js1.j1, js2.j2) as j from `jdbc_source1` js1 join `jdbc_source2` js2 on js1.k = js2.k) as table1";
   String jdbcTable = "tablename";
   String invalidJdbc = "(test) SPARK_GEN_SUBQ_0";
   String url = "postgresql://localhost:5432/test";
+  String mysqlUrl = "mysql://localhost:3306/test";
   StructType schema =
       new StructType().add("k", DataTypes.IntegerType).add("j", DataTypes.StringType);
 
   @BeforeEach
   void setup() {
     when(relation.jdbcOptions()).thenReturn(jdbcOptions);
+    when(jdbcOptions.url()).thenReturn("jdbc:" + url);
     when(relation.schema()).thenReturn(schema);
     jdbcRelationHandler = new JdbcRelationHandler(datasetFactory);
   }
@@ -69,8 +73,8 @@ public class JdbcRelationHandlerTest {
   }
 
   @Test
-  void testHandlingJdbcTableAsSubQuery() {
-    when(jdbcOptions.tableOrQuery()).thenReturn(jdbcTableSubQuery);
+  void testHandlingJdbcDbTableAsSubQuery() {
+    when(jdbcOptions.tableOrQuery()).thenReturn(jdbcDbTableAsSubQuery);
     StructType schema1 =
         new StructType().add("k", DataTypes.IntegerType).add("j1", DataTypes.StringType);
     StructType schema2 = new StructType().add("j2", DataTypes.StringType);
@@ -79,6 +83,20 @@ public class JdbcRelationHandlerTest {
 
     verify(datasetFactory, times(1)).getDataset("jdbc_source1", url, schema1);
     verify(datasetFactory, times(1)).getDataset("jdbc_source2", url, schema2);
+  }
+
+  @Test
+  void testMysqlDialect() {
+    when(jdbcOptions.tableOrQuery()).thenReturn(mysqlQuery);
+    when(jdbcOptions.url()).thenReturn("jdbc:" + mysqlUrl);
+    StructType schema1 =
+        new StructType().add("k", DataTypes.IntegerType).add("j1", DataTypes.StringType);
+    StructType schema2 = new StructType().add("j2", DataTypes.StringType);
+
+    jdbcRelationHandler.getDatasets(relation, mysqlUrl);
+
+    verify(datasetFactory, times(1)).getDataset("jdbc_source1", mysqlUrl, schema1);
+    verify(datasetFactory, times(1)).getDataset("jdbc_source2", mysqlUrl, schema2);
   }
 
   @Test

@@ -11,6 +11,8 @@ import io.openlineage.sql.OpenLineageSql;
 import io.openlineage.sql.SqlMeta;
 import java.util.Collections;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
@@ -43,11 +45,10 @@ public class JdbcUtils {
               Collections.emptyList()));
     } else {
       String query =
-          tableOrQuery
-              .substring(0, tableOrQuery.lastIndexOf(")"))
-              .replaceFirst("\\(", "")
-              .replaceAll("`", "");
-      SqlMeta sqlMeta = OpenLineageSql.parse(Collections.singletonList(query)).get();
+          tableOrQuery.substring(0, tableOrQuery.lastIndexOf(")")).replaceFirst("\\(", "");
+
+      String dialect = extractDialectFromJdbcUrl(relation.jdbcOptions().url());
+      SqlMeta sqlMeta = OpenLineageSql.parse(Collections.singletonList(query), dialect).get();
 
       if (!sqlMeta.errors().isEmpty()) { // error return nothing
         log.error(
@@ -62,6 +63,17 @@ public class JdbcUtils {
         return Optional.empty();
       }
       return Optional.of(sqlMeta);
+    }
+  }
+
+  private static String extractDialectFromJdbcUrl(String jdbcUrl) {
+    Pattern pattern = Pattern.compile("^jdbc:([^:]+):.*");
+    Matcher matcher = pattern.matcher(jdbcUrl);
+
+    if (matcher.find()) {
+      return matcher.group(1);
+    } else {
+      return null;
     }
   }
 }
