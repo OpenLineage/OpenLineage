@@ -25,6 +25,23 @@ or Gradle:
 implementation 'io.openlineage:openlineage-flink:0.16.0'
 ```
 
+## Usage 
+
+An instance of `OpenLineageFlinkJobListener` need to be created and registered as `jobListener`. 
+
+This can be achieved by: 
+```java
+StreamExecutionEnvironment env = ...
+
+JobListener jobListener = OpenLineageFlinkJobListener.builder()
+    .executionEnvironment(env)
+    .jobNamespace(jobNamespace)
+    .jobName(jobName)
+    .build();
+
+env.registerJobListener(jobListener);
+```
+
 ----
 SPDX-License-Identifier: Apache-2.0\
 Copyright 2018-2023 contributors to the OpenLineage project

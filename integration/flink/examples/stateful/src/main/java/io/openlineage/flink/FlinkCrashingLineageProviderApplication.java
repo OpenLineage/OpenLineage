@@ -7,6 +7,7 @@ package io.openlineage.flink;
 
 import io.openlineage.flink.api.DatasetFactory;
 import io.openlineage.flink.api.LineageProvider;
+import io.openlineage.util.FlinkListenerUtils;
 import org.apache.flink.core.execution.JobListener;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
@@ -23,12 +24,7 @@ public class FlinkCrashingLineageProviderApplication {
     StreamExecutionEnvironment env = setupEnv(args);
     env.addSource(new FakeSource()).addSink(new FakeSink());
 
-    // we use this app to test open lineage flink integration so it cannot make use of OpenLineageFlinkJobListener classes
-    JobListener openlineageJobListener = (JobListener) Class.forName("io.openlineage.flink.OpenLineageFlinkJobListener")
-      .getConstructor(StreamExecutionEnvironment.class)
-      .newInstance(env);
-
-    env.registerJobListener(openlineageJobListener);
+    env.registerJobListener(FlinkListenerUtils.instantiate(env));
     env.execute("flink-fake-application");
   }
 

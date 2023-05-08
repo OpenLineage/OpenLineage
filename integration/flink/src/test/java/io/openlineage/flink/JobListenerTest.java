@@ -5,7 +5,7 @@
 
 package io.openlineage.flink;
 
-import static org.mockito.ArgumentMatchers.any;
+import static io.openlineage.flink.OpenLineageFlinkJobListener.DEFAULT_JOB_NAMESPACE;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
@@ -29,6 +29,7 @@ import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.configuration.ReadableConfig;
 import org.apache.flink.core.execution.JobClient;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.graph.StreamGraphGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -41,6 +42,10 @@ class JobListenerTest {
   OpenLineageFlinkJobListener listener;
   FlinkExecutionContext context = mock(FlinkExecutionContext.class);
   ReadableConfig readableConfig = mock(ReadableConfig.class);
+
+  String jobName = "some-job-name";
+
+  String jobNamespace = "some-job-namespace";
 
   @BeforeEach
   @SneakyThrows
@@ -62,10 +67,18 @@ class JobListenerTest {
     OpenLineageContinousJobTracker tracker = mock(OpenLineageContinousJobTracker.class);
     doNothing().when(tracker).startTracking(context);
 
-    listener = new OpenLineageFlinkJobListener(streamExecutionEnvironment, tracker);
+    listener =
+        OpenLineageFlinkJobListener.builder()
+            .executionEnvironment(streamExecutionEnvironment)
+            .jobTracker(tracker)
+            .jobNamespace(jobNamespace)
+            .jobName(jobName)
+            .build();
+
     try (MockedStatic<FlinkExecutionContextFactory> contextFactory =
         mockStatic(FlinkExecutionContextFactory.class)) {
-      when(FlinkExecutionContextFactory.getContext(eq(jobId), eq(transformations)))
+      when(FlinkExecutionContextFactory.getContext(
+              eq(jobNamespace), eq(jobName), eq(jobId), eq(transformations)))
           .thenReturn(context);
       doNothing().when(context).onJobSubmitted();
 
@@ -96,12 +109,53 @@ class JobListenerTest {
 
     try (MockedStatic<FlinkExecutionContextFactory> contextFactory =
         mockStatic(FlinkExecutionContextFactory.class)) {
-      when(FlinkExecutionContextFactory.getContext(eq(jobId), any())).thenReturn(context);
+      when(FlinkExecutionContextFactory.getContext(
+              eq(jobNamespace), eq(jobName), eq(jobId), eq(transformations)))
+          .thenReturn(context);
       doNothing().when(context).onJobSubmitted();
 
-      listener = new OpenLineageFlinkJobListener(streamExecutionEnvironment, tracker);
+      listener =
+          OpenLineageFlinkJobListener.builder()
+              .executionEnvironment(streamExecutionEnvironment)
+              .jobTracker(tracker)
+              .build();
       listener.onJobSubmitted(jobClient, null);
       listener.onJobExecuted(jobExecutionResult, null);
+    }
+  }
+
+  @Test
+  @SneakyThrows
+  void testOnJobSubmittedWithDefaultNamespaceAndName() {
+    StreamExecutionEnvironment streamExecutionEnvironment = new StreamExecutionEnvironment();
+    FieldUtils.writeField(
+        FieldUtils.getField(StreamExecutionEnvironment.class, "transformations", true),
+        streamExecutionEnvironment,
+        transformations,
+        true);
+
+    OpenLineageContinousJobTracker tracker = mock(OpenLineageContinousJobTracker.class);
+    doNothing().when(tracker).startTracking(context);
+
+    listener =
+        OpenLineageFlinkJobListener.builder()
+            .executionEnvironment(streamExecutionEnvironment)
+            .jobTracker(tracker)
+            .build();
+
+    try (MockedStatic<FlinkExecutionContextFactory> contextFactory =
+        mockStatic(FlinkExecutionContextFactory.class)) {
+      when(FlinkExecutionContextFactory.getContext(
+              eq(DEFAULT_JOB_NAMESPACE),
+              eq(StreamGraphGenerator.DEFAULT_STREAMING_JOB_NAME),
+              eq(jobId),
+              eq(transformations)))
+          .thenReturn(context);
+      doNothing().when(context).onJobSubmitted();
+
+      listener.onJobSubmitted(jobClient, null);
+      verify(context, times(1)).onJobSubmitted();
+      verify(tracker, times(1)).startTracking(context);
     }
   }
 }

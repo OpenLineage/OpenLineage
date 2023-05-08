@@ -2,6 +2,10 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.24.0...HEAD)
 
+### Fixed
+* **Flink: include missing fields of Openlineage events.** [`#1840`](https://github.com/OpenLineage/OpenLineage/pull/1840) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Fields `eventTime`, `runId` and `job` have been added.*
+
 ## [0.24.0](https://github.com/OpenLineage/OpenLineage/compare/0.23.0...0.24.0) - 2023-05-02
 ### Added
 * **Support custom transport types** [`#1795`](https://github.com/OpenLineage/OpenLineage/pull/1795) [@nataliezeller1](https://github.com/nataliezeller1)  
