@@ -20,7 +20,11 @@ public class EventFilterUtils {
    * @return
    */
   public static boolean isDisabled(OpenLineageContext context, SparkListenerEvent event) {
-    return Arrays.asList(new DeltaEventFilter(context), new DatabricksEventFilter(context)).stream()
+    return Arrays.asList(
+            new DeltaEventFilter(context),
+            new DatabricksEventFilter(context),
+            new AdaptivePlanEventFilter(context))
+        .stream()
         .filter(filter -> filter.isDisabled(event.getClass().cast(event)))
         .findAny()
         .isPresent();

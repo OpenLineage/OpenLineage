@@ -611,11 +611,6 @@ class SparkReadWriteIntegTest {
         .emit(lineageEvent.capture());
     List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
 
-    // we expect 12 events and verify if there are 6 complete events
-    assertThat(events)
-        .filteredOn(e -> e.getEventType().equals(RunEvent.EventType.COMPLETE))
-        .hasSizeGreaterThanOrEqualTo(6);
-
     ObjectAssert<RunEvent> completionEvent =
         assertThat(events)
             .filteredOn(e -> e.getEventType().equals(RunEvent.EventType.COMPLETE))

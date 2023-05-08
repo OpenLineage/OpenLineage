@@ -160,7 +160,10 @@ public class SparkDeltaIntegrationTest {
 
     // 2 OL events expected
     spark.sql(
-        "CREATE TABLE delta_filter_t2 USING delta LOCATION '/tmp/delta/delta_filter_t2' AS SELECT * FROM delta_filter_temp WHERE a > 1");
+        "CREATE TABLE delta_filter_t2 USING delta LOCATION '/tmp/delta/delta_filter_t2' AS "
+            + "SELECT t1.* FROM delta_filter_temp t1 "
+            + "JOIN delta_filter_temp t2 ON t1.a = t2.a "
+            + "WHERE t1.a > 1");
 
     // 2 OL events expected
     spark.sql("INSERT INTO delta_filter_t1 VALUES (3,4)");
