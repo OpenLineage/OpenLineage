@@ -47,6 +47,7 @@ public class JdbcColumnLineageExpressionCollectorTest {
   String jdbcQuery =
       "(select js1.k, CONCAT(js1.j1, js2.j2) as j from jdbc_source1 js1 join jdbc_source2 js2 on js1.k = js2.k) SPARK_GEN_SUBQ_0";
   String invalidJdbcQuery = "(INVALID) SPARK_GEN_SUBQ_0";
+  String url = "postgresql://localhost:5432/test";
   Map<ColumnMeta, ExprId> mockMap = new HashMap<>();
 
   @BeforeEach
@@ -57,6 +58,7 @@ public class JdbcColumnLineageExpressionCollectorTest {
   @Test
   void testInputCollection() {
     when(jdbcOptions.tableOrQuery()).thenReturn(jdbcQuery);
+    when(jdbcOptions.url()).thenReturn("jdbc:" + url);
     doAnswer(
             invocation -> mockMap.putIfAbsent(invocation.getArgument(0), invocation.getArgument(1)))
         .when(builder)
@@ -75,6 +77,7 @@ public class JdbcColumnLineageExpressionCollectorTest {
   @Test
   void testInvalidQuery() {
     when(jdbcOptions.tableOrQuery()).thenReturn(invalidJdbcQuery);
+    when(jdbcOptions.url()).thenReturn("jdbc:" + url);
 
     JdbcColumnLineageCollector.extractExpressionsFromJDBC(
         relation, builder, Arrays.asList(expression1, expression2));
