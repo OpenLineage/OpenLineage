@@ -1,5 +1,5 @@
 ---
-Author: "Julien Le Dem (with contribution from Benji Lampel and Ross Turk)"
+Author: "Julien Le Dem (with contributions from Maciej Obuchowski, Benji Lampel and Ross Turk)"
 Created: May 9th 2023
 Issue: https://github.com/OpenLineage/OpenLineage/issues/1837
 ---
