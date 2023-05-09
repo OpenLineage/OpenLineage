@@ -301,6 +301,33 @@ public class SparkDeltaIntegrationTest {
     verifyEvents(mockServer, "pysparkSaveIntoDatasourceCompleteEvent.json");
   }
 
+  @Test
+  void testDeltaMergeInto() {
+    Dataset<Row> dataset =
+        spark
+            .createDataFrame(
+                ImmutableList.of(
+                    RowFactory.create(1L, "bat"),
+                    RowFactory.create(2L, "mouse"),
+                    RowFactory.create(3L, "horse")),
+                new StructType(
+                    new StructField[] {
+                      new StructField("a", LongType$.MODULE$, false, Metadata.empty()),
+                      new StructField("b", StringType$.MODULE$, false, Metadata.empty())
+                    }))
+            .repartition(1);
+    dataset.createOrReplaceTempView("temp");
+
+    spark.sql("CREATE TABLE t1 USING delta LOCATION '/tmp/delta/t1' AS SELECT * FROM temp");
+    spark.sql("CREATE TABLE t2 USING delta LOCATION '/tmp/delta/t2' AS SELECT * FROM temp");
+    spark.sql(
+        "MERGE INTO t1 USING t2 ON t1.a = t2.a"
+            + " WHEN MATCHED THEN UPDATE SET *"
+            + " WHEN NOT MATCHED THEN INSERT *");
+
+    verifyEvents(mockServer, "pysparkDeltaMergeIntoCompleteEvent.json");
+  }
+
   private void clearTables(String... tables) {
     Arrays.asList(tables).stream()
         .filter(t -> spark.catalog().tableExists(t))
