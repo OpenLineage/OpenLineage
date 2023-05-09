@@ -2,7 +2,7 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.24.0...HEAD)
 
-## [0.24.0](https://github.com/OpenLineage/OpenLineage/compare/0.23.0...0.24.0) - 2023-5-2
+## [0.24.0](https://github.com/OpenLineage/OpenLineage/compare/0.23.0...0.24.0) - 2023-05-02
 ### Added
 * **Support custom transport types** [`#1795`](https://github.com/OpenLineage/OpenLineage/pull/1795) [@nataliezeller1](https://github.com/nataliezeller1)  
     *Adds a new interface, `TransportBuilder`, for creating custom transport types without having to modify core components of OpenLineage.*
@@ -21,7 +21,7 @@
 * **Flink: fix Flink CI** [`#1801`](https://github.com/OpenLineage/OpenLineage/pull/1801) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Specifies an older image version that succeeds on CI in order to fix the Flink integration.*
 
-## [0.23.0](https://github.com/OpenLineage/OpenLineage/compare/0.22.0...0.23.0) - 2023-4-20
+## [0.23.0](https://github.com/OpenLineage/OpenLineage/compare/0.22.0...0.23.0) - 2023-04-20
 ### Added
 * **SQL: parser improvements to support: `copy into`, `create stage`, `pivot`** [`#1742`](https://github.com/OpenLineage/OpenLineage/pull/1742) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Adds support for additional syntax available in sqlparser-rs.*
@@ -44,7 +44,7 @@
 * **Airflow: Remove explicit `pass` from several `extract_on_complete` methods** [`#1771`](https://github.com/OpenLineage/OpenLineage/pull/1771) [JDarDagran](https://github.com/JDarDagran)  
     *Removes the code from three extractors.*
 
-## [0.22.0](https://github.com/OpenLineage/OpenLineage/compare/0.21.1...0.22.0) - 2023-4-3
+## [0.22.0](https://github.com/OpenLineage/OpenLineage/compare/0.21.1...0.22.0) - 2023-04-03
 ### Added
 * **Spark: properties facet** [`#1717`](https://github.com/OpenLineage/OpenLineage/pull/1717) [@tnazarew](https://github.com/tnazarew)    
     *Adds a new facet to capture specified Spark properties.*
@@ -75,7 +75,7 @@
 * **Spark: remove deprecated configs** [`#1711`](https://github.com/OpenLineage/OpenLineage/pull/1711) [@tnazarew](https://github.com/tnazarew)    
     *Removes support for deprecated configs.*
 
-## [0.21.1](https://github.com/OpenLineage/OpenLineage/compare/0.20.6...0.21.1) - 2023-3-2
+## [0.21.1](https://github.com/OpenLineage/OpenLineage/compare/0.20.6...0.21.1) - 2023-03-02
 ### Added
 * **Clients: add `DEBUG` logging of events to transports** [`#1633`](https://github.com/OpenLineage/OpenLineage/pull/1633) [@mobuchowski](https://github.com/mobuchowski)  
     *Ensures that the `DEBUG` loglevel on properly configured loggers will always log events, regardless of the chosen transport.*
@@ -119,7 +119,7 @@
 * Spark: column lineage for JDBC relations [`#1636`](https://github.com/OpenLineage/OpenLineage/pull/1636) [@tnazarew](https://github.com/tnazarew)
   * Adds column lineage info to JDBC events with data extracted form query by OL SQL parser
 
-## [0.20.6](https://github.com/OpenLineage/OpenLineage/compare/0.20.4...0.20.6) - 2023-2-10
+## [0.20.6](https://github.com/OpenLineage/OpenLineage/compare/0.20.4...0.20.6) - 2023-02-10
 ### Added
 * Airflow: add new extractor for `FTPFileTransmitOperator` [`#1603`](https://github.com/OpenLineage/OpenLineage/pull/1601) [@sekikn](https://github.com/sekikn)  
     *Adds a new extractor for this Airflow operator serving legacy systems.*
@@ -134,7 +134,7 @@
 * dbt: make `compiled_code` optional [`#1595`](https://github.com/OpenLineage/OpenLineage/pull/1595) [@JDarDagran](https://github.com/JDarDagran)  
     *Makes `compiled_code` optional for manifest > v7.*
 
-## [0.20.4](https://github.com/OpenLineage/OpenLineage/compare/0.19.2...0.20.4) - 2023-2-7
+## [0.20.4](https://github.com/OpenLineage/OpenLineage/compare/0.19.2...0.20.4) - 2023-02-07
 ### Added
 * Airflow: add new extractor for `GCSToGCSOperator` [`#1495`](https://github.com/OpenLineage/OpenLineage/pull/1495) [@sekikn](https://github.com/sekikn)  
     *Adds a new extractor for this operator.*
@@ -167,7 +167,7 @@
 * SQL: only report partial failures [`#1479](https://github.com/OpenLineage/OpenLineage/pull/1479) [@mobuchowski](https://github.com/mobuchowski)  
     *Changes the parser so it reports partial failures instead of failing the whole extraction.*
 
-## [0.19.2](https://github.com/OpenLineage/OpenLineage/compare/0.18.0...0.19.2) - 2023-1-4
+## [0.19.2](https://github.com/OpenLineage/OpenLineage/compare/0.18.0...0.19.2) - 2023-01-04
 ### Added
 * Airflow: add Trino extractor [`#1288`](https://github.com/OpenLineage/OpenLineage/pull/1288) [@sekikn](https://github.com/sekikn)  
     *Adds a Trino extractor to the Airflow integration.*
@@ -197,7 +197,7 @@
     *Fixes typos in the SPDX license headers.*
 
 
-## [0.18.0](https://github.com/OpenLineage/OpenLineage/compare/0.17.0...0.18.0) - 2022-12-8
+## [0.18.0](https://github.com/OpenLineage/OpenLineage/compare/0.17.0...0.18.0) - 2022-12-08
 ### Added
 * Airflow: support `SQLExecuteQueryOperator` [`#1379`](https://github.com/OpenLineage/OpenLineage/pull/1379) [@JDarDagran](https://github.com/JDarDagran)  
     *Changes the `SQLExtractor` and adds support for the dynamic assignment of extractors based on `conn_type`.*
@@ -271,7 +271,7 @@
 * Deprecate HttpTransport.Builder in favor of HttpConfig [`#1287`](https://github.com/OpenLineage/OpenLineage/pull/1287) [@collado-mike](https://github.com/collado-mike)  
     *Deprecates the Builder in favor of HttpConfig only and replaces the existing Builder implementation by delegating to the HttpConfig.*
 
-## [0.16.1](https://github.com/OpenLineage/OpenLineage/compare/0.15.1...0.16.1) - 2022-11-3
+## [0.16.1](https://github.com/OpenLineage/OpenLineage/compare/0.15.1...0.16.1) - 2022-11-03
 ### Added
 * Airflow: add `dag_run` information to Airflow version run facet [`#1133`](https://github.com/OpenLineage/OpenLineage/pull/1133) [@fm100](https://github.com/fm100)  
     *Adds the Airflow DAG run ID to the `taskInfo` facet, making this additional information available to the integration.*
@@ -470,7 +470,7 @@
 * Add check for missing **class** `org.apache.spark.sql.catalyst.plans.logical.CreateV2Table` in Spark integration ([`#866`](https://github.com/OpenLineage/OpenLineage/pull/866)) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
 * Fix static code analysis issues ([`#867`](https://github.com/OpenLineage/OpenLineage/pull/867),[`#874`](https://github.com/OpenLineage/OpenLineage/pull/874)) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
 
-## [0.9.0](https://github.com/OpenLineage/OpenLineage/compare/0.8.2...0.9.0)
+## [0.9.0](https://github.com/OpenLineage/OpenLineage/compare/0.8.2...0.9.0) - 2022-06-03
 ### Added
 * Spark: Column-level lineage introduced for Spark integration ([#698](https://github.com/OpenLineage/OpenLineage/pull/698), [#645](https://github.com/OpenLineage/OpenLineage/pull/645)) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
 * Java: Spark to use Java client directly ([#774](https://github.com/OpenLineage/OpenLineage/pull/774)) [@mobuchowski](https://github.com/mobuchowski)
@@ -481,7 +481,7 @@
 * Dagster: pin protobuf version to 3.20 as suggested by tests ([#787](https://github.com/OpenLineage/OpenLineage/pull/787)) [@mobuchowski](https://github.com/mobuchowski)
 * Add SafeStrDict to skip failing attibutes ([#798](https://github.com/OpenLineage/OpenLineage/pull/798)) [@JDarDagran](https://github.com/JDarDagran)
 
-## [0.8.2](https://github.com/OpenLineage/OpenLineage/compare/0.8.1...0.8.2)
+## [0.8.2](https://github.com/OpenLineage/OpenLineage/compare/0.8.1...0.8.2) - 2022-05-19
 ### Added
 * `openlineage-airflow` now supports getting credentials from [Airflows secrets backend](https://airflow.apache.org/docs/apache-airflow/stable/security/secrets/secrets-backend/index.html) ([#723](https://github.com/OpenLineage/OpenLineage/pull/723)) [@mobuchowski](https://github.com/mobuchowski)
 * `openlineage-spark` now supports [Azure Databricks Credential Passthrough](https://docs.microsoft.com/en-us/azure/databricks/security/credential-passthrough) ([#595](https://github.com/OpenLineage/OpenLineage/pull/595)) [@wjohnson](https://github.com/wjohnson)
@@ -492,7 +492,7 @@
 * SQL parser accepts lists of sql statements ([#734](https://github.com/OpenLineage/OpenLineage/issues/734)) [@mobuchowski](https://github.com/mobuchowski)
 * Missing schema when writing to Delta tables in Databricks ([#748](https://github.com/OpenLineage/OpenLineage/pull/748)) [@collado-mike](https://github.com/collado-mike)
 
-## [0.8.1](https://github.com/OpenLineage/OpenLineage/compare/0.7.1...0.8.1)
+## [0.8.1](https://github.com/OpenLineage/OpenLineage/compare/0.7.1...0.8.1) - 2022-04-29
 ### Added
 * Airflow integration uses [new TaskInstance listener API](https://github.com/apache/airflow/blob/main/docs/apache-airflow/listeners.rst) for Airflow 2.3+ ([#508](https://github.com/OpenLineage/OpenLineage/pull/508)) [@mobuchowski](https://github.com/mobuchowski)
 * Support for HiveTableRelation as input source in Spark integration ([#683](https://github.com/OpenLineage/OpenLineage/pull/683)) [@collado-mike](https://github.com/collado-mike)
@@ -502,7 +502,7 @@
 ### Fixed
 * GreatExpectations: Fixed bug when invoking GreatExpectations using v3 API ([#683](https://github.com/OpenLineage/OpenLineage/pull/689)) [@collado-mike](https://github.com/collado-mike)
  
-## [0.7.1](https://github.com/OpenLineage/OpenLineage/compare/0.6.2...0.7.1)
+## [0.7.1](https://github.com/OpenLineage/OpenLineage/compare/0.6.2...0.7.1) - 2022-04-19
 ### Added
 * Python implements Transport interface - HTTP and Kafka transports are available ([#530](https://github.com/OpenLineage/OpenLineage/pull/530)) [@mobuchowski](https://github.com/mobuchowski)
 * Add UnknownOperatorAttributeRunFacet and support in lineage backend ([#547](https://github.com/OpenLineage/OpenLineage/pull/547)) [@collado-mike](https://github.com/collado-mike)
@@ -520,7 +520,7 @@
 * Update parent_run_id to be a uuid from the dag name and run_id ([#664](https://github.com/OpenLineage/OpenLineage/pull/664)) [@collado-mike](https://github.com/collado-mike)
 * Spark: fix time zone inconsistency in testSerializeRunEvent ([#681](https://github.com/OpenLineage/OpenLineage/pull/681)) [@sekikn](https://github.com/sekikn)
 
-## [0.6.2](https://github.com/OpenLineage/OpenLineage/compare/0.6.1...0.6.2)
+## [0.6.2](https://github.com/OpenLineage/OpenLineage/compare/0.6.1...0.6.2) - 2022-03-16
 ### Added
 * CI: add integration tests for Airflow's SnowflakeOperator and dbt-snowflake [@mobuchowski](https://github.com/mobuchowski)
 * Introduce DatasetVersion facet in spec [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
@@ -531,7 +531,7 @@
 * Update artwork [@rossturk](https://github.com/rossturk)
 * Airflow tasks in a DAG now report a common ParentRunFacet [@collado-mike](https://github.com/collado-mike)
 
-## [0.6.1](https://github.com/OpenLineage/OpenLineage/compare/0.6.0...0.6.1)
+## [0.6.1](https://github.com/OpenLineage/OpenLineage/compare/0.6.0...0.6.1) - 2022-03-07
 ### Fixed
 * Catch possible failures when emitting events and log them [@mobuchowski](https://github.com/mobuchowski)
 
@@ -539,7 +539,7 @@
 * dbt: jinja2 code using do extensions does not crash [@mobuchowski](https://github.com/mobuchowski)
 
 
-## [0.6.0](https://github.com/OpenLineage/OpenLineage/compare/0.5.2...0.6.0)
+## [0.6.0](https://github.com/OpenLineage/OpenLineage/compare/0.5.2...0.6.0) - 2022-03-04
 ### Added
 * Extract source code of PythonOperator code similar to SQL facet [@mobuchowski](https://github.com/mobuchowski)
 * Add DatasetLifecycleStateDatasetFacet to spec [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
@@ -555,7 +555,7 @@
 * Remove AWS secret keys and extraneous Snowflake parameters from connection uri [@collado-mike](https://github.com/collado-mike)
 * Convert to LifecycleStateChangeDatasetFacet [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
 
-## [0.5.2](https://github.com/OpenLineage/OpenLineage/compare/0.5.1...0.5.2)
+## [0.5.2](https://github.com/OpenLineage/OpenLineage/compare/0.5.1...0.5.2) - 2022-02-10
 ### Added
 
 * Proxy backend example using `Kafka` [@wslulciuc](https://github.com/wslulciuc)
@@ -572,7 +572,7 @@
 * Fix Breaking SnowflakeOperator Changes from OSS Airflow [@denimalpaca](https://github.com/denimalpaca)
 * Made corrections to account for DeltaDataSource handling [@collado-mike](https://github.com/collado-mike)
 
-## [0.5.1](https://github.com/OpenLineage/OpenLineage/compare/0.4.0...0.5.1)
+## [0.5.1](https://github.com/OpenLineage/OpenLineage/compare/0.4.0...0.5.1) - 2022-01-18
 ### Added
 * Support for dbt-spark adapter [@mobuchowski](https://github.com/mobuchowski)
 * **New** `backend` to proxy OpenLineage events to one or more event streams 🎉 [@mandy-chessell](https://github.com/mandy-chessell) [@wslulciuc](https://github.com/wslulciuc)
