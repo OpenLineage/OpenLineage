@@ -71,6 +71,8 @@ In the description provide the following sections:
 This can be just a couple paragraphs to start with.
 
 Proposals that change OpenLineage specifications should be tagged as `spec`.
+Small changes to the spec, like adding a facet, only require opening an issue describing the new facet.
+Larger changes to the spec, changes to the core spec or new integrations require a longer form proposal following [this process](https://github.com/OpenLineage/OpenLineage/blob/main/proposals/336/PROPOSALS.md)
 
 ## New Integrations
 New integrations should be added under the [./integrations](/integrations) folder. Each module
