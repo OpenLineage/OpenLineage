@@ -33,6 +33,7 @@ public class JdbcColumnLineageInputCollectorTest {
   String invalidJdbcQuery = "(INVALID) SPARK_GEN_SUBQ_0";
   DatasetIdentifier datasetIdentifier1 = new DatasetIdentifier("jdbc_source1", "jdbc");
   DatasetIdentifier datasetIdentifier2 = new DatasetIdentifier("jdbc_source2", "jdbc");
+  String url = "jdbc:postgresql://localhost:5432/test";
 
   static ExprId exprId1 = ExprId.apply(1);
   static ExprId exprId2 = ExprId.apply(2);
@@ -58,6 +59,7 @@ public class JdbcColumnLineageInputCollectorTest {
   @Test
   void testInputCollection() {
     when(jdbcOptions.tableOrQuery()).thenReturn(jdbcQuery);
+    when(jdbcOptions.url()).thenReturn(url);
     when(builder.getMapping(any(ColumnMeta.class)))
         .thenAnswer(invocation -> mockMap.get(invocation.getArgument(0)));
 
@@ -72,6 +74,7 @@ public class JdbcColumnLineageInputCollectorTest {
   @Test
   void testInvalidQuery() {
     when(jdbcOptions.tableOrQuery()).thenReturn(invalidJdbcQuery);
+    when(jdbcOptions.url()).thenReturn(url);
 
     JdbcColumnLineageCollector.extractExternalInputs(
         relation, builder, Arrays.asList(datasetIdentifier1, datasetIdentifier2));

@@ -11,6 +11,8 @@ import io.openlineage.sql.OpenLineageSql;
 import io.openlineage.sql.SqlMeta;
 import java.util.Collections;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
@@ -34,7 +36,7 @@ public class JdbcUtils {
 
   public static Optional<SqlMeta> extractQueryFromSpark(JDBCRelation relation) {
     String tableOrQuery = relation.jdbcOptions().tableOrQuery();
-    if (!tableOrQuery.contains(") SPARK_GEN_SUBQ_")) {
+    if (!tableOrQuery.trim().startsWith("(")) {
       return Optional.of(
           new SqlMeta(
               Collections.singletonList(new DbTableMeta(null, null, tableOrQuery)),
@@ -43,9 +45,10 @@ public class JdbcUtils {
               Collections.emptyList()));
     } else {
       String query =
-          tableOrQuery.replaceFirst("\\(", "").replaceAll("\\) SPARK_GEN_SUBQ_[0-9]+", "");
+          tableOrQuery.substring(0, tableOrQuery.lastIndexOf(")")).replaceFirst("\\(", "");
 
-      SqlMeta sqlMeta = OpenLineageSql.parse(Collections.singletonList(query)).get();
+      String dialect = extractDialectFromJdbcUrl(relation.jdbcOptions().url());
+      SqlMeta sqlMeta = OpenLineageSql.parse(Collections.singletonList(query), dialect).get();
 
       if (!sqlMeta.errors().isEmpty()) { // error return nothing
         log.error(
@@ -60,6 +63,17 @@ public class JdbcUtils {
         return Optional.empty();
       }
       return Optional.of(sqlMeta);
+    }
+  }
+
+  private static String extractDialectFromJdbcUrl(String jdbcUrl) {
+    Pattern pattern = Pattern.compile("^jdbc:([^:]+):.*");
+    Matcher matcher = pattern.matcher(jdbcUrl);
+
+    if (matcher.find()) {
+      return matcher.group(1);
+    } else {
+      return null;
     }
   }
 }
