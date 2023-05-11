@@ -178,11 +178,14 @@ class OpenLineageRunEventBuilder {
   void registerJob(ActiveJob job) {
     jobMap.put(job.jobId(), job);
     stageMap.put(job.finalStage().id(), job.finalStage());
-    job.finalStage().parents().forall(toScalaFn(stage -> {
-        stageMap.put(stage.id(), stage);
-        return true;
-        }
-    ));
+    job.finalStage()
+        .parents()
+        .forall(
+            toScalaFn(
+                stage -> {
+                  stageMap.put(stage.id(), stage);
+                  return true;
+                }));
   }
 
   RunEvent buildRun(
