@@ -5,6 +5,7 @@
 
 package io.openlineage.flink;
 
+import io.openlineage.util.FlinkListenerUtils;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.core.execution.JobListener;
 import org.apache.flink.streaming.api.CheckpointingMode;
@@ -21,12 +22,7 @@ public class FlinkFakeApplication {
 
     env.addSource(new FakeSource()).addSink(new FakeSink());
 
-    // we use this app to test open lineage flink integration so it cannot make use of OpenLineageFlinkJobListener classes
-    JobListener openlineageJobListener = (JobListener) Class.forName("io.openlineage.flink.OpenLineageFlinkJobListener")
-      .getConstructor(StreamExecutionEnvironment.class)
-      .newInstance(env);
-
-    env.registerJobListener(openlineageJobListener);
+    env.registerJobListener(FlinkListenerUtils.instantiate(env));
     env.execute("flink-fake-application");
   }
 

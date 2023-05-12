@@ -1,5 +1,13 @@
 {
   "eventType" : "START",
+  "eventTime": "${json-unit.any-string}",
+  "job" : {
+    "namespace" : "flink_job_namespace",
+    "name": "flink_examples_stateful"
+  },
+  "run": {
+    "runId": "${json-unit.any-string}"
+  },
   "inputs": [
     {
       "namespace": "kafka:9092",
@@ -62,4 +70,4 @@
       }
     }
   ]
-}
+},

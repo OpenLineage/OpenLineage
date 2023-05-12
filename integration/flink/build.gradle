@@ -4,6 +4,7 @@
 */
 
 import org.apache.tools.ant.filters.ReplaceTokens
+import io.franzbecker.gradle.lombok.task.DelombokTask
 
 plugins {
     id 'java'
@@ -15,6 +16,7 @@ plugins {
     id 'com.diffplug.spotless' version '6.18.0'
     id "com.github.johnrengelman.shadow" version "7.1.2"
     id "pmd"
+    id 'io.franzbecker.gradle-lombok' version '5.0.0'
 }
 
 pmd {
@@ -62,7 +64,7 @@ ext {
     junit5Version = '5.9.3'
     lombokVersion = '1.18.26'
     mockitoVersion = '5.2.0'
-    testcontainersVersion = '1.15.3'
+    testcontainersVersion = '1.16.3'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
     icebergVersion = "1.1.0"
 }
@@ -109,7 +111,6 @@ dependencies {
     testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
     testImplementation "org.projectlombok:lombok:${lombokVersion}"
 
-    lombok  "org.projectlombok:lombok:${lombokVersion}"
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 }
 
@@ -176,7 +177,21 @@ task integrationTest(type: Test) {
 
 integrationTest.outputs.upToDateWhen { false }
 
+task delombok(type: DelombokTask, dependsOn: compileJava) {
+    ext.outputDir = file("$buildDir/delombok")
+    outputs.dir(outputDir)
+    sourceSets.main.java.srcDirs.each {
+        inputs.dir(it)
+        args(it, "-d", outputDir)
+    }
+    doFirst {
+        outputDir.deleteDir()
+    }
+}
+
 javadoc {
+    dependsOn delombok
+    source = delombok.outputDir
     options.tags = [ "apiNote" ]
 }
 

@@ -1,6 +1,12 @@
 {
   "eventType" : "RUNNING",
+  "eventTime": "${json-unit.any-string}",
+  "job" : {
+    "namespace" : "flink_job_namespace",
+    "name": "flink_examples_stateful"
+  },
   "run": {
+    "runId": "${json-unit.any-string}",
     "facets" : {
       "checkpoints": {
         "completed": "${json-unit.any-number}",
