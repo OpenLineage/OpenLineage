@@ -2,41 +2,41 @@
 
 ## Why are Fluentd and Openlineage a perfect match?
 
-**Fluentd support is experimental and could be changed or removed in a future release.** 
+**Fluentd support is experimental and could be changed or removed in a future release.**
 
 Modern data collectors (Fluentd, Logstash, Vector, etc.) can be extremely useful when designing
-production-grade architectures for processing Openlineage events. 
+production-grade architectures for processing Openlineage events.
 
 They can be used for features such as:
- * A server-proxy in front of the Openlineage backend (like Marquez) to handle load spikes and buffer incoming events when the backend is down (e.g., due to a maintainance window).
- * The ability to copy the event to multiple backends such as HTTP, Kafka or cloud object storage. Data collectors implement that out-of-the-box.
+* A server-proxy in front of the Openlineage backend (like Marquez) to handle load spikes and buffer incoming events when the backend is down (e.g., due to a maintainance window).
+* The ability to copy the event to multiple backends such as HTTP, Kafka or cloud object storage. Data collectors implement that out-of-the-box.
 
-They have great potential except for a single missing feature: *the ability to parse and validate Openlineage events at the point of HTTP input*.
-This is important as one would like to get a `Bad Request` response immediately when sending invalid Openlineage events to an endpoint.
-Fortunately, this missing feature can be implemented as a plugin. 
+They have great potential except for a single missing feature: *the ability to parse and validate OpenLineage events at the point of HTTP input*.
+This is important as one would like to get a `Bad Request` response immediately when sending invalid OpenLineage events to an endpoint.
+Fortunately, this missing feature can be implemented as a plugin.
 
-We decided to implement an Openlineage parser plugin for Fluentd because:
- * Fluentd has a small footprint in terms of resource utilization and does not require that JVM be installed,
- * Fluentd plugins can be installed from local files (no need to register in a plugin repository).
+We decided to implement an OpenLineage parser plugin for Fluentd because:
+* Fluentd has a small footprint in terms of resource utilization and does not require that JVM be installed,
+* Fluentd plugins can be installed from local files (no need to register in a plugin repository).
 
-As a side effect, the Fluentd integration can be also used as a Openlineage HTTP validation backend for 
+As a side effect, the Fluentd integration can be also used as a OpenLineage HTTP validation backend for
 development purposes.
 
 ## Fluentd features
 
 Some interesting Fluentd features are available according to the [official documentation](https://docs.fluentd.org/):
 
- * [Buffering/retrying parameters](https://docs.fluentd.org/output#buffering-retrying-parameters),
- * Useful output plugins:
+* [Buffering/retrying parameters](https://docs.fluentd.org/output#buffering-retrying-parameters),
+* Useful output plugins:
    * [Output Kafka plugin](https://docs.fluentd.org/output/kafka),
    * [Output S3 plugin](https://docs.fluentd.org/output/s3),
    * [Output copy plugin](https://docs.fluentd.org/output/copy),
    * [Output HTTP plugin](https://docs.fluentd.org/output/http) with options such as [retryable_response_codes](https://docs.fluentd.org/output/http#retryable_response_codes) to specify backend codes that should cause a retry,
- * [Buffer configuration](https://docs.fluentd.org/configuration/buffer-section),
- * [Embedding Ruby Expressions in config files to contain environment variables](https://docs.fluentd.org/configuration/config-file#embedding-ruby-expressions).
+* [Buffer configuration](https://docs.fluentd.org/configuration/buffer-section),
+* [Embedding Ruby Expressions in config files to contain environment variables](https://docs.fluentd.org/configuration/config-file#embedding-ruby-expressions).
 
 The official Fluentd documentation does not mention guarantees about event ordering. However, retrieving
-Openlineage events and buffering in file/memory should be considered a millisecond-long operation, 
+Openlineage events and buffering in file/memory should be considered a millisecond-long operation,
 while any HTTP backend cannot guarantee ordering in such a case. On the other hand, by default
 the amount of threads to flush the buffer is set to 1 and configurable ([flush_thread_count](https://docs.fluentd.org/output#flush_thread_count)).
 
@@ -49,7 +49,7 @@ the example usage scenario provided in [`docker-compose.yml`](docker/docker-comp
 docker-compose up
 ```
 
-After all the containers have started, send some HTTP requests: 
+After all the containers have started, send some HTTP requests:
 
 ```shell
 curl -X POST \
@@ -92,9 +92,24 @@ docker-compose down
 
 Openlineage-parser is a Fluentd plugin that verifies if a JSON matches the OpenLineage schema.
 
+### Configuration
+
+Although Openlineage event is specified according to Json-Schema, its real-life validation may
+vary and backends like Marquez may have less strict approach to validating certain types of facets. 
+For example, Marquez allows a non-valid `DataQualityMetricsInputDatasetFacet`. 
+To give more flexibility, fluentd parser allows following configuration parameters:
+```ruby
+validate_input_dataset_facets => true/false
+validate_output_dataset_facets => true/false
+validate_dataset_facets => true/false
+validate_run_facets => true/false
+validate_job_facets =>  true/false
+```
+Most of the is set to `true` except for `validate_input_dataset_facets` which is `false`.
+
 ### Development
 
-To build dependencies: 
+To build dependencies:
 ```shell
 bundle install
 bundle
@@ -108,13 +123,11 @@ bundle exec rake test
 #### Installation
 
 The easiest way to install the plugin is to install external packages:
- * `rusty_json_schema` installs a JSON validation library for Rust, 
- * `fluent-plugin-out-http` allows non-bulk HTTP out requests (sending each OpenLineage event in a separate request).
-
+* `rusty_json_schema` installs a JSON validation library for Rust,
+* `fluent-plugin-out-http` allows non-bulk HTTP out requests (sending each OpenLineage event in a separate request).
 ```shell
 fluent-gem install rusty_json_schema
 fluent-gem install fluent-plugin-out-http
 ```
-
-Once the external dependencies are installed, a single Ruby code file `parser_openlineage.rb` needs 
+Once the external dependencies are installed, a single Ruby code file `parser_openlineage.rb` needs
 to be copied into the Fluentd plugins directory ([installing custom plugin](https://docs.fluentd.org/plugin-development#installing-custom-plugins)).

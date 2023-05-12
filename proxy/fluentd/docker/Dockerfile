@@ -19,6 +19,7 @@ RUN buildDeps="sudo make gcc g++ libc-dev" \
  && rm -rf /var/lib/apt/lists/* \
  && rm -rf /tmp/* /var/tmp/* /usr/lib/ruby/gems/*/cache/*.gem
 
-ADD ./entrypoint.sh /bin/entrypoint.sh
+ADD proxy/fluentd/docker/entrypoint.sh /bin/entrypoint.sh
+COPY spec/ /etc/spec
 
 USER fluent

@@ -1,7 +1,9 @@
 version: "3.3"
 services:
   proxy:
-    build: .
+    build:
+      context: ../../..
+      dockerfile: proxy/fluentd/docker/Dockerfile
     container_name: openlineage-fluentd
     volumes:
       - ./conf:/fluentd/etc/
