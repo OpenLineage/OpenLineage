@@ -44,7 +44,7 @@ extras_require = {
         "apache-airflow-providers-dbt-cloud>=2.1.0",
         "airflow-provider-great-expectations==0.1.5",
         "great-expectations<=0.15.23",
-        "protobuf>=3.20,<4.23",
+        "protobuf>=3.20,<4.24",
     ],
 }
 
