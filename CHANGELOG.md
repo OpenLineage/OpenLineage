@@ -4,7 +4,7 @@
 
 ## [0.25.0](https://github.com/OpenLineage/OpenLineage/compare/0.24.0...0.25.0) - 2023-05-15
 ### Added
-* **Spark: add Spark/Delta move into support** [`#1823`](https://github.com/OpenLineage/OpenLineage/pull/1823) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+* **Spark: add Spark/Delta `merge into` support** [`#1823`](https://github.com/OpenLineage/OpenLineage/pull/1823) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Adds support for `merge into` queries.*
 
 ### Fixed
