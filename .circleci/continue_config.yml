@@ -122,24 +122,6 @@ jobs:
           paths:
             - ~/.m2
   
-  publish-snapshot-client-java:
-    working_directory: ~/openlineage/client/java
-    docker:
-      - image: cimg/openjdk:8.0
-    steps:
-      - *checkout_project_root
-      - run: |
-          # Get, then decode the GPG private key used to sign *.jar
-          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
-          export RELEASE_PASSWORD=$(echo $ARTIFACTORY_PASSWORD)
-          export RELEASE_USERNAME=$(echo $ARTIFACTORY_USERNAME)
-          # Publish *.jar
-          ./gradlew --no-daemon publish
-      - save_cache:
-          key: v1-release-client-java-snapshot-{{ .Branch }}-{{ .Revision }}
-          paths:
-            - ~/.m2
-  
   release-integration-spark:
     working_directory: ~/openlineage/integration/spark
     docker:
@@ -167,29 +149,6 @@ jobs:
           path: ./build/libs
           destination: spark-client-artifacts
   
-  publish-snapshot-integration-spark:
-    working_directory: ~/openlineage/integration/spark
-    docker:
-      - image: cimg/openjdk:8.0
-    steps:
-      - *checkout_project_root
-      - restore_cache:
-          keys:
-            - v1-release-client-java-snapshot-{{ .Branch }}-{{ .Revision }}
-            - v1-release-client-java-snapshot-{{ .Branch }}
-      - attach_workspace:
-          at: ~/.m2/repository/io/openlineage/
-      - run: |
-          # Get, then decode the GPG private key used to sign *.jar
-          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
-          export RELEASE_PASSWORD=$(echo $ARTIFACTORY_PASSWORD)
-          export RELEASE_USERNAME=$(echo $ARTIFACTORY_USERNAME)
-          cd ../../client/java
-          ./gradlew --no-daemon publishToMavenLocal
-          cd -
-          # Publish *.jar
-          ./gradlew --no-daemon publish
-
   build-integration-spark:
     parameters:
       spark-version:
@@ -248,27 +207,6 @@ jobs:
           export RELEASE_PASSWORD=$(echo $SONATYPE_PASSWORD)
           export RELEASE_USERNAME=$(echo $SONATYPE_USER)
 
-          cd ../../client/java
-          ./gradlew --no-daemon publishToMavenLocal
-          cd -
-          # Publish *.jar
-          ./gradlew --no-daemon publish
-
-  publish-snapshot-integration-flink:
-    working_directory: ~/openlineage/integration/flink
-    docker:
-      - image: cimg/openjdk:11.0
-    steps:
-      - *checkout_project_root
-      - restore_cache:
-          keys:
-            - v1-release-client-java-snapshot-{{ .Branch }}-{{ .Revision }}
-            - v1-release-client-java-snapshot-{{ .Branch }}
-      - run: |
-          # Get, then decode the GPG private key used to sign *.jar
-          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
-          export RELEASE_PASSWORD=$(echo $ARTIFACTORY_PASSWORD)
-          export RELEASE_USERNAME=$(echo $ARTIFACTORY_USERNAME)
           cd ../../client/java
           ./gradlew --no-daemon publishToMavenLocal
           cd -
@@ -417,32 +355,6 @@ jobs:
       - store_artifacts:
           path: ./build/libs
           destination: sql-java-artifacts
-
-  publish-snapshot-sql-java:
-    working_directory: ~/openlineage/integration/sql/iface-java
-    docker:
-      - image: cimg/openjdk:8.0
-    resource_class: medium
-    steps:
-      - *checkout_project_root
-      - restore_cache:
-          keys:
-            - v1-release-client-java-{{ .Branch }}-{{ .Revision }}
-            - v1-release-client-java-{{ .Branch }}
-      - attach_workspace:
-          at: ../
-      - run: bash script/build.sh
-      - run: |
-          # Get, then decode the GPG private key used to sign *.jar
-          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
-          export RELEASE_PASSWORD=$(echo $ARTIFACTORY_PASSWORD)
-          export RELEASE_USERNAME=$(echo $ARTIFACTORY_USERNAME)
-
-          cd ../../../client/java
-          ./gradlew --no-daemon publishToMavenLocal
-          cd -
-          # Publish *.jar
-          ./gradlew --no-daemon publish
 
   release-integration-sql-java:
     working_directory: ~/openlineage/integration/sql/iface-java
@@ -686,18 +598,6 @@ jobs:
             - ./dist/*.whl
             - ./dist/*.tar.gz
 
-  publish-snapshot-python:
-    working_directory: ~/openlineage
-    docker:
-      - image: cimg/python:3.7
-    steps:
-      - *checkout_project_root
-      - attach_workspace:
-          at: .
-      - run: pip install wheel twine
-      - run: mkdir -p target/wheels && cp target/wheels/* dist/
-      - run: python -m twine upload --non-interactive --verbose -u $ARTIFACTORY_USERNAME -p $ARTIFACTORY_PASSWORD --repository-url https://astronomer.jfrog.io/artifactory/api/pypi/pypi-public-libs-release dist/*
-  
   release-python:
     working_directory: ~/openlineage
     docker:

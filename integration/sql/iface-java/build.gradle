@@ -103,8 +103,7 @@ publishing {
 
     repositories {
         maven {
-            url = isReleaseVersion ? 'https://oss.sonatype.org/service/local/staging/deploy/maven2' :
-                    'https://astronomer.jfrog.io/artifactory/maven-public-libs-snapshot'
+            url = 'https://oss.sonatype.org/service/local/staging/deploy/maven2'
             credentials {
                 username = System.getenv('RELEASE_USERNAME')
                 password = System.getenv('RELEASE_PASSWORD')
