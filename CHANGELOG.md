@@ -10,7 +10,7 @@
 ### Fixed
 * **Spark: fix JDBC query handling** [`#1808`](https://github.com/OpenLineage/OpenLineage/pull/1808) [@nataliezeller1](https://github.com/nataliezeller1)  
     *Makes query handling more tolerant of variations in syntax and formatting.*
-* **Spark: filter delta adaptive plan events** [`#1830`](https://github.com/OpenLineage/OpenLineage/pull/1830) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+* **Spark: filter Delta adaptive plan events** [`#1830`](https://github.com/OpenLineage/OpenLineage/pull/1830) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Extends the `DeltaEventFilter` class to filter events in cases where rewritten queries in adaptive Spark plans generate extra events.*
 * **Spark: fix Java class cast exception** [`#1844`](https://github.com/OpenLineage/OpenLineage/pull/1844) [@Anirudh181001](https://github.com/Anirudh181001)  
     *Fixes the error caused by the `OpenLineageRunEventBuilder` when it cast the Spark scheduler's `ShuffleMapStage` to boolean.*
