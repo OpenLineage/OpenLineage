@@ -42,7 +42,7 @@ jobs:
     steps:
       - *checkout_project_root
       - run: pip install -e .[dev]
-      - run: ruff . --no-update-check
+      - run: ruff .
       - run: python -m mypy --install-types --non-interactive --ignore-missing-imports --no-namespace-packages openlineage
       - run: python -m pytest --cov=openlineage tests/
       - run: bash <(curl -s https://codecov.io/bash)
@@ -494,7 +494,7 @@ jobs:
     steps:
       - *checkout_project_root
       - run: pip install ruff
-      - run: ruff . --no-update-check
+      - run: ruff .
       - run: python setup.py egg_info -b "<< parameters.build_tag >>" sdist bdist_wheel
       - persist_to_workspace:
           root: .
@@ -666,7 +666,7 @@ jobs:
       - *checkout_project_root
       - *install_python_client
       - run: pip install -e .[dev]
-      - run: ruff . --no-update-check
+      - run: ruff .
       - run: python -m mypy --ignore-missing-imports --no-namespace-packages openlineage
       - run: pytest --cov=openlineage tests/
       - run: bash <(curl -s https://codecov.io/bash)
