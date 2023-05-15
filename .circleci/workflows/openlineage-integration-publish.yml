@@ -1,19 +1,6 @@
 workflows:
   openlineage-integration-publish:
     jobs:
-      - publish-snapshot-python:
-          filters:
-            branches:
-              only: main
-          context: release
-          requires:
-            - build-client-python
-            - build-integration-common
-            - build-integration-airflow
-            - build-integration-dbt
-            - build-integration-dagster
-            - build-integration-sql-x86
-            - build-integration-sql-arm
       - publish-spec:
           filters:
             branches:
@@ -21,5 +8,4 @@ workflows:
           context: release
       - workflow_complete:
           requires:
-            - publish-snapshot-python
             - publish-spec

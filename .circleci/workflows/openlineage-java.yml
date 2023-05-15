@@ -24,20 +24,6 @@ workflows:
             - compile-integration-sql-java-linux-arm
             - compile-integration-sql-java-linux-x86
             - compile-integration-sql-java-macos
-      - publish-snapshot-sql-java:
-          filters:
-            branches:
-              only: main
-          context: release
-          requires:
-            - build-integration-sql-java
-      - publish-snapshot-client-java:
-          filters:
-            branches:
-              only: main
-          context: release
-          requires:
-            - build-client-java
       - publish-javadoc:
           filters:
             branches:
@@ -45,5 +31,4 @@ workflows:
           context: release
       - workflow_complete:
           requires:
-            - publish-snapshot-client-java
             - publish-javadoc
