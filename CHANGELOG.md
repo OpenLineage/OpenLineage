@@ -1,10 +1,21 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.24.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.25.0...HEAD)
+
+## [0.25.0](https://github.com/OpenLineage/OpenLineage/compare/0.24.0...0.25.0) - 2023-05-15
+### Added
+* **Spark: add Spark/Delta `merge into` support** [`#1823`](https://github.com/OpenLineage/OpenLineage/pull/1823) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Adds support for `merge into` queries.*
 
 ### Fixed
-* **Flink: include missing fields of Openlineage events.** [`#1840`](https://github.com/OpenLineage/OpenLineage/pull/1840) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
-  *Fields `eventTime`, `runId` and `job` have been added.*
+* **Spark: fix JDBC query handling** [`#1808`](https://github.com/OpenLineage/OpenLineage/pull/1808) [@nataliezeller1](https://github.com/nataliezeller1)  
+    *Makes query handling more tolerant of variations in syntax and formatting.*
+* **Spark: filter Delta adaptive plan events** [`#1830`](https://github.com/OpenLineage/OpenLineage/pull/1830) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Extends the `DeltaEventFilter` class to filter events in cases where rewritten queries in adaptive Spark plans generate extra events.*
+* **Spark: fix Java class cast exception** [`#1844`](https://github.com/OpenLineage/OpenLineage/pull/1844) [@Anirudh181001](https://github.com/Anirudh181001)  
+    *Fixes the error caused by the `OpenLineageRunEventBuilder` when it cast the Spark scheduler's `ShuffleMapStage` to boolean.*
+* **Flink: include missing fields of Openlineage events** [`#1840`](https://github.com/OpenLineage/OpenLineage/pull/1840) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+    *Enriches Flink events so that missing `eventTime`, `runId` and `job` elements no longer produce errors.*
 
 ## [0.24.0](https://github.com/OpenLineage/OpenLineage/compare/0.23.0...0.24.0) - 2023-05-02
 ### Added
