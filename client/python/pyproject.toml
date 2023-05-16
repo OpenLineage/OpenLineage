@@ -1,3 +1,64 @@
+[build-system]
+build-backend = "hatchling.build"
+requires = [
+  "hatchling>=1.15",
+]
+
+[project]
+name = "openlineage-python"
+version = "0.26.0"
+description = "OpenLineage Python Client"
+readme = "README.md"
+keywords = [
+  "openlineage",
+]
+authors = [{ name = "OpenLineage", email = "info@openlineage.io" }]
+requires-python = ">=3.7"
+classifiers = [
+  "Operating System :: OS Independent",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+  "attrs>=23.1",
+  "python-dateutil>=2.8.2",
+  "pyyaml>=6",
+  "requests>=2.30",
+]
+optional-dependencies.kafka = [
+  "confluent-kafka>=2.1.1",
+]
+optional-dependencies.test = [
+  "covdefaults>=2.3",
+  "pytest>=7.3.1",
+  "pytest-cov>=4",
+  "pyyaml>=6",
+]
+
+[tool.hatch.build]
+artifacts = ["py.typed"]
+build.targets.wheel = ["openlineage"]
+
+[tool.coverage]
+html.show_contexts = true
+html.skip_covered = false
+report.fail_under = 92
+run.parallel = true
+run.plugins = ["covdefaults>=2.3"]
+
+[tool.mypy]
+show_error_codes = true
+overrides = [
+  { ignore_missing_imports = true, module = [
+  "confluent_kafka.*",
+] } ]
+
 [tool.ruff]
 line-length = 100
 select = [

@@ -1,0 +1,17 @@
+files: ^client/python/
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: check-ast
+      - id: check-builtin-literals
+      - id: check-merge-conflict
+      - id: check-toml
+      - id: debug-statements
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: "v0.0.265"
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
