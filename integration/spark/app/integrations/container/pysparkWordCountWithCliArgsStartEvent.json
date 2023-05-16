@@ -11,7 +11,7 @@
   "inputs": [
     {
       "namespace": "file",
-      "name": "/test_data",
+      "name": "/test_data/data.txt",
       "facets": {
         "schema": {
           "fields": [

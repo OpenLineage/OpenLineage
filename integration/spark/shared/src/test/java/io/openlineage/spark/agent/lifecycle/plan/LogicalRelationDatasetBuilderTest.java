@@ -17,11 +17,14 @@ import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.Partition;
 import org.apache.spark.SparkContext;
@@ -160,6 +163,40 @@ class LogicalRelationDatasetBuilderTest {
       assertEquals(1, datasets.size());
       OpenLineage.Dataset ds = datasets.get(0);
       assertEquals("/tmp", ds.getName());
+    }
+  }
+
+  @Test
+  void testApplyForSingleFileHadoopFsRelation() throws IOException, URISyntaxException {
+    HadoopFsRelation hadoopFsRelation = mock(HadoopFsRelation.class);
+    LogicalRelation logicalRelation = mock(LogicalRelation.class);
+    Configuration hadoopConfig = mock(Configuration.class);
+    SparkContext sparkContext = mock(SparkContext.class);
+    FileIndex fileIndex = mock(FileIndex.class);
+    SessionState sessionState = mock(SessionState.class);
+    Path p = mock(Path.class);
+    FileSystem fileSystem = mock(FileSystem.class);
+    when(p.getFileSystem(hadoopConfig)).thenReturn(fileSystem);
+    when(p.toUri()).thenReturn(new URI("/tmp/path.csv"));
+    when(fileSystem.isFile(p)).thenReturn(true);
+
+    when(logicalRelation.relation()).thenReturn(hadoopFsRelation);
+    when(openLineageContext.getSparkContext()).thenReturn(sparkContext);
+    when(openLineageContext.getSparkSession()).thenReturn(Optional.of(session));
+    when(session.sessionState()).thenReturn(sessionState);
+    when(sessionState.newHadoopConfWithOptions(any())).thenReturn(hadoopConfig);
+    when(hadoopFsRelation.location()).thenReturn(fileIndex);
+    when(fileIndex.rootPaths())
+        .thenReturn(
+            scala.collection.JavaConverters.collectionAsScalaIterableConverter(Arrays.asList(p))
+                .asScala()
+                .toSeq());
+
+    try (MockedStatic mocked = mockStatic(PlanUtils.class)) {
+      List<OpenLineage.Dataset> datasets = builder.apply(logicalRelation);
+      assertEquals(1, datasets.size());
+      OpenLineage.Dataset ds = datasets.get(0);
+      assertEquals("/tmp/path.csv", ds.getName());
     }
   }
 }

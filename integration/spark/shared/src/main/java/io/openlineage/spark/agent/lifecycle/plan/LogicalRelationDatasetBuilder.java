@@ -6,6 +6,7 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.DatasetFacetsBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.handlers.JdbcRelationHandler;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
@@ -13,7 +14,9 @@ import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -134,7 +137,7 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
                 Configuration hadoopConfig =
                     session.sessionState().newHadoopConfWithOptions(relation.options());
 
-                OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
+                DatasetFacetsBuilder datasetFacetsBuilder =
                     context.getOpenLineage().newDatasetFacetsBuilder();
                 getDatasetVersion(x)
                     .map(
@@ -142,22 +145,33 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
                             datasetFacetsBuilder.version(
                                 context.getOpenLineage().newDatasetVersionDatasetFacet(version)));
 
-                return JavaConversions.asJavaCollection(relation.location().rootPaths()).stream()
-                    .map(p -> PlanUtils.getDirectoryPath(p, hadoopConfig))
-                    .distinct()
-                    .map(
-                        p -> {
-                          // TODO- refactor this to return a single partitioned dataset based on
-                          // static
-                          // static partitions in the relation
-                          return datasetFactory.getDataset(
-                              p.toUri(), relation.schema(), datasetFacetsBuilder);
-                        })
-                    .collect(Collectors.toList());
+                Collection<Path> rootPaths =
+                    JavaConversions.asJavaCollection(relation.location().rootPaths());
+
+                if (isSingleFileRelation(rootPaths, hadoopConfig)) {
+                  return Collections.singletonList(
+                      datasetFactory.getDataset(
+                          rootPaths.stream().findFirst().get().toUri(),
+                          relation.schema(),
+                          datasetFacetsBuilder));
+                } else {
+                  return rootPaths.stream()
+                      .map(p -> PlanUtils.getDirectoryPath(p, hadoopConfig))
+                      .distinct()
+                      .map(
+                          p -> {
+                            // TODO- refactor this to return a single partitioned dataset based on
+                            // static
+                            // static partitions in the relation
+                            return datasetFactory.getDataset(
+                                p.toUri(), relation.schema(), datasetFacetsBuilder);
+                          })
+                      .collect(Collectors.toList());
+                }
               })
           .orElse(Collections.emptyList());
     } catch (Exception e) {
-      if ("com.databricks.backend.daemon.data.client.adl.AzureCredentialNotFoundException"
+      if ("com.databricks.backend.daemon.data.client.adl.AzureCredentialNotFoundExcepgittion"
           .equals(e.getClass().getName())) {
         // This is a fallback that can occur when hadoop configurations cannot be
         // reached. This occurs in Azure Databricks when credential passthrough
@@ -180,6 +194,19 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
       } else {
         throw e;
       }
+    }
+  }
+
+  private boolean isSingleFileRelation(Collection<Path> paths, Configuration hadoopConfig) {
+    if (paths.size() != 1) {
+      return false;
+    }
+
+    try {
+      Path path = paths.stream().findFirst().get();
+      return path.getFileSystem(hadoopConfig).isFile(path);
+    } catch (IOException e) {
+      return false;
     }
   }
 

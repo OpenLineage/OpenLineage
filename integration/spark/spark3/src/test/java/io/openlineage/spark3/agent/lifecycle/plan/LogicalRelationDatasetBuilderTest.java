@@ -77,7 +77,8 @@ class LogicalRelationDatasetBuilderTest {
     when(hadoopFsRelation.location()).thenReturn(fileIndex);
     when(fileIndex.rootPaths())
         .thenReturn(
-            scala.collection.JavaConverters.collectionAsScalaIterableConverter(Arrays.asList(path))
+            scala.collection.JavaConverters.collectionAsScalaIterableConverter(
+                    Arrays.asList(path, path))
                 .asScala()
                 .toSeq());
     when(openLineage.newDatasetFacetsBuilder()).thenReturn(new OpenLineage.DatasetFacetsBuilder());

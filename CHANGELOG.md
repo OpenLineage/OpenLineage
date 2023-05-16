@@ -7,6 +7,9 @@
 * **Spark: add Spark/Delta `merge into` support** [`#1823`](https://github.com/OpenLineage/OpenLineage/pull/1823) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Adds support for `merge into` queries.*
 
+* **Spark: support single file datasets.** [`#1855`](https://github.com/OpenLineage/OpenLineage/pull/1855) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Properly name datasets created on the top of single file, like `spark.read.csv('file.csv')`.*
+
 ### Fixed
 * **Spark: fix JDBC query handling** [`#1808`](https://github.com/OpenLineage/OpenLineage/pull/1808) [@nataliezeller1](https://github.com/nataliezeller1)  
     *Makes query handling more tolerant of variations in syntax and formatting.*
