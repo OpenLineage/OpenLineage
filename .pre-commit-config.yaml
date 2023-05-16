@@ -25,3 +25,4 @@ repos:
           - --license-filepath
           - LICENSE.insert.txt
           - --use-current-year
+          - --no-extra-eol
