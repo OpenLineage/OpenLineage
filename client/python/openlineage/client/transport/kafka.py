@@ -5,6 +5,7 @@ import logging
 from typing import Dict
 
 import attr
+
 from openlineage.client.run import RunEvent
 from openlineage.client.serde import Serde
 from openlineage.client.transport.transport import Config, Transport

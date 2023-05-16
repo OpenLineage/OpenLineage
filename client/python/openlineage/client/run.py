@@ -7,6 +7,7 @@ from typing import Dict, List, Optional
 
 import attr
 from dateutil import parser
+
 from openlineage.client.facet import NominalTimeRunFacet, ParentRunFacet
 from openlineage.client.utils import RedactMixin
 

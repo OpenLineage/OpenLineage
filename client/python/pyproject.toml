@@ -42,7 +42,6 @@ optional-dependencies.test = [
 ]
 
 [tool.hatch.build]
-artifacts = ["py.typed"]
 build.targets.wheel = ["openlineage"]
 
 [tool.coverage]

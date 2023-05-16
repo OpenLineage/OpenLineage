@@ -23,17 +23,18 @@ def get_default_factory():
 
 # decorator to wrap transports with
 def register_transport(clazz: Type[Transport]):
+    assert clazz.kind is not None
     _factory.register_transport(clazz.kind, clazz)
     return clazz
 
 
 __all__ = [
-    Config,
-    TransportFactory,
-    HttpConfig,
-    HttpTransport,
-    KafkaConfig,
-    KafkaTransport,
-    ConsoleTransport,
-    NoopTransport
+    "Config",
+    "TransportFactory",
+    "HttpConfig",
+    "HttpTransport",
+    "KafkaConfig",
+    "KafkaTransport",
+    "ConsoleTransport",
+    "NoopTransport"
 ]
