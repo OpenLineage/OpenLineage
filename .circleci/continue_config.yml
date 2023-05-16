@@ -37,16 +37,26 @@ commands:
 jobs:
   unit-test-client-python:
     working_directory: ~/openlineage/client/python
+    parameters:
+      tox_env:
+        type: string
+      py_env:
+        type: string
     docker:
-      - image: cimg/python:3.7
+      - image: cimg/python:<< parameters.py_env >>
     steps:
       - *checkout_project_root
-      - run: pip install -e .[dev]
-      - run: ruff .
-      - run: python -m mypy --install-types --non-interactive --ignore-missing-imports --no-namespace-packages openlineage
-      - run: python -m pytest --cov=openlineage tests/
-      - run: bash <(curl -s https://codecov.io/bash)
-  
+      - run: python -m pip install tox
+      - run: python -m tox r -e "<< parameters.tox_env >>" --notest
+      - run: python -m tox r -e "<< parameters.tox_env >>" --skip-pkg-install
+
+  unit-tests-client-python:
+    working_directory: ~/openlineage/client/python
+    docker:
+      - image: cimg/python:3.11
+    steps:
+      - run: echo "All Python tests done"
+
   build-client-python:
     working_directory: ~/openlineage/client/python
     docker:
@@ -57,7 +67,8 @@ jobs:
         type: string
     steps:
       - *checkout_project_root
-      - run: python setup.py egg_info -b "<< parameters.build_tag >>" sdist bdist_wheel
+      - run: python -m pip install build
+      - run: python -m build .
       - persist_to_workspace:
           root: .
           paths:

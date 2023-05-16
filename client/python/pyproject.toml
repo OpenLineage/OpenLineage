@@ -50,7 +50,7 @@ html.show_contexts = true
 html.skip_covered = false
 report.fail_under = 92
 run.parallel = true
-run.plugins = ["covdefaults>=2.3"]
+run.plugins = ["covdefaults"]
 
 [tool.mypy]
 show_error_codes = true
