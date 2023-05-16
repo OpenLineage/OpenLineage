@@ -15,3 +15,13 @@ repos:
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
+  - repo: https://github.com/Lucas-C/pre-commit-hooks
+    rev: v1.5.1
+    hooks:
+      - id: insert-license
+        files: \.py$
+        args:
+          - --detect-license-in-X-top-lines=2
+          - --license-filepath
+          - LICENSE.insert.txt
+          - --use-current-year
