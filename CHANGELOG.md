@@ -1,6 +1,9 @@
 # Changelog
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.25.0...HEAD)
+### Fixed
+* **Spark: fix logical plans' serialization issue on databricks platform** [`#1858`](https://github.com/OpenLineage/OpenLineage/pull/1858) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)   
+  *Disable by default `spark.logicalPlan` facet.*
 
 ## [0.25.0](https://github.com/OpenLineage/OpenLineage/compare/0.24.0...0.25.0) - 2023-05-15
 ### Added

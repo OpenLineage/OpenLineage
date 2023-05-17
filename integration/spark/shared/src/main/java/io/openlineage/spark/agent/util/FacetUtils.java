@@ -19,6 +19,7 @@ public class FacetUtils {
         .map(c -> c.getSparkContext())
         .map(sparkContext -> sparkContext.getConf())
         .flatMap(conf -> SparkConfUtils.findSparkConfigKey(conf, SPARK_CONF_FACETS_DISABLED))
+        .map(s -> s.replace("[", "").replace("]", ""))
         .map(s -> s.split(disabledFacetsSeparator))
         .map(facets -> Arrays.asList(facets).contains(facetName))
         .orElse(false);
