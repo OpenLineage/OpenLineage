@@ -7,12 +7,16 @@
   "job": {
     "namespace": "my-scheduler-namespace",
     "name": "myjob",
-    "ownership": {
-      "owners": [
-        {
-          "no-name": "no-name-owner"
-        }
-      ]
+    "facets": {
+      "ownership": {
+        "_producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
+        "_schemaURL": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/spec/OpenLineage.yml#whatever",
+        "owners": [
+          {
+            "no-name": "no-name-owner"
+          }
+        ]
+      }
     }
   },
   "inputs": [ ],

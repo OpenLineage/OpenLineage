@@ -3,13 +3,15 @@
   "eventTime": "2020-12-28T19:52:00.001+10:00",
   "run": {
     "runId": "41fb5137-f0fd-4ee5-ba5c-56f8571d1bd7",
-    "parent" : {
-      "run": {
-        "noRunId": "invalid run id"
-      },
-      "job": {
-        "namespace": "parent_namespace",
-        "name": "parent_name"
+    "facets": {
+      "parent": {
+        "run": {
+          "noRunId": "invalid run id"
+        },
+        "job": {
+          "namespace": "parent_namespace",
+          "name": "parent_name"
+        }
       }
     }
   },

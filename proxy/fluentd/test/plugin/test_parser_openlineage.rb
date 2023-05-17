@@ -6,7 +6,6 @@ class OpenlineageParserTest < Test::Unit::TestCase
     Fluent::Test.setup
     @parser = Fluent::Test::Driver::Parser.new(Fluent::Plugin::OpenlineageParser)
     @parser.configure(
-      'json_parser' => 'yajl',
       'spec_directory' => '../../spec/'
     )
   end
@@ -27,13 +26,10 @@ class OpenlineageParserTest < Test::Unit::TestCase
   end
 
   test "event full test" do
-    @parser.configure(
-      'json_parser' => 'yajl',
-      'spec_directory' => '../../spec/',
-    )
     ol_event = File.read("events/event_full.json")
     @parser.instance.parse(ol_event) { | time, json |
        assert_equal("ea041791-68bc-4ae1-bd89-4c8106a157e4", json['run']['runId'])
+       assert_equal(2000, json['outputs'][0]['outputFacets']['outputStatistics']['rowCount'])
     }
   end
 
@@ -47,7 +43,6 @@ class OpenlineageParserTest < Test::Unit::TestCase
  test "invalid spec_directory test" do
    assert_raise Fluent::ParserError do
      @parser.configure(
-       'json_parser' => 'yajl',
        'spec_directory' => './non-existent-spec/'
      )
    end
@@ -55,7 +50,6 @@ class OpenlineageParserTest < Test::Unit::TestCase
 
   test "valid spec_directory without slash" do
     @parser.configure(
-      'json_parser' => 'yajl',
       'spec_directory' => '../../spec'
     )
     ol_event = File.read("events/event_simple.json")
@@ -69,13 +63,12 @@ class OpenlineageParserTest < Test::Unit::TestCase
     err = assert_raise Fluent::ParserError do
       @parser.instance.parse(ol_event)
     end
-    assert_match "\"runId\" is a required property", err.message
+    assert_match "Openlineage validation failed: path \"/run/facets", err.message
   end
 
   test "run facet validation turned off" do
     ol_event = File.read("events/event_invalid_run_facet.json")
     @parser.configure(
-      'json_parser' => 'yajl',
       'spec_directory' => '../../spec/',
       'validate_run_facets' => false,
     )
@@ -89,13 +82,12 @@ class OpenlineageParserTest < Test::Unit::TestCase
     err = assert_raise Fluent::ParserError do
       @parser.instance.parse(ol_event)
     end
-    assert_match "\"/job/ownership/owners/0\": \"name\" is a required property", err.message
+    assert_match "Openlineage validation failed: path \"/job/facets/ownership", err.message
   end
 
   test "job facet validation turned off" do
     ol_event = File.read("events/event_invalid_job_facet.json")
     @parser.configure(
-      'json_parser' => 'yajl',
       'spec_directory' => '../../spec/',
       'validate_job_facets' => false,
     )
@@ -106,22 +98,14 @@ class OpenlineageParserTest < Test::Unit::TestCase
 
   test "dataset facet validation" do
     ol_event = File.read("events/event_invalid_dataset_facet.json")
+    @parser.configure(
+      'spec_directory' => '../../spec/',
+      'validate_dataset_facets' => true,
+    )
     err = assert_raise Fluent::ParserError do
       @parser.instance.parse(ol_event)
     end
-    assert_match "path \"/outputs/0/ownership/owners/0\": \"name\" is a required property", err.message
-  end
-
-  test "dataset facet validation turned off" do
-    ol_event = File.read("events/event_invalid_dataset_facet.json")
-    @parser.configure(
-      'json_parser' => 'yajl',
-      'spec_directory' => '../../spec/',
-      'validate_dataset_facets' => false,
-    )
-    @parser.instance.parse(ol_event) { | time, json |
-      assert_equal("41fb5137-f0fd-4ee5-ba5c-56f8571d1bd7", json['run']['runId'])
-    }
+    assert_match "Openlineage validation failed: path \"/outputs/0/facets/ownership/owners", err.message
   end
 
   test "input dataset facet validation" do
@@ -134,27 +118,19 @@ class OpenlineageParserTest < Test::Unit::TestCase
     err = assert_raise Fluent::ParserError do
       @parser.instance.parse(ol_event)
     end
-    assert_match "DataQualityMetricsInputDatasetFacet", err.message
+    assert_match "columnMetrics", err.message
   end
 
   test "output dataset facet validation" do
     ol_event = File.read("events/event_invalid_output_dataset_facet.json")
+    @parser.configure(
+      'spec_directory' => '../../spec/',
+      'validate_output_dataset_facets' => true,
+    )
     err = assert_raise Fluent::ParserError do
       @parser.instance.parse(ol_event)
     end
-    assert_match "OutputStatisticsOutputDatasetFacet", err.message
-  end
-
-  test "output dataset facet validation turned off" do
-    ol_event = File.read("events/event_invalid_output_dataset_facet.json")
-    @parser.configure(
-      'json_parser' => 'yajl',
-      'spec_directory' => '../../spec/',
-      'validate_output_dataset_facets' => false,
-    )
-    @parser.instance.parse(ol_event) { | time, json |
-      assert_equal("41fb5137-f0fd-4ee5-ba5c-56f8571d1bd7", json['run']['runId'])
-    }
+    assert_match "rowCount", err.message
   end
 
   private

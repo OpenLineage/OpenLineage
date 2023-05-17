@@ -105,7 +105,7 @@ validate_dataset_facets => true/false
 validate_run_facets => true/false
 validate_job_facets =>  true/false
 ```
-Most of the is set to `true` except for `validate_input_dataset_facets` which is `false`.
+By default, only `validate_run_facets` and `validate_job_facets` are set to `true`/
 
 ### Development
 

@@ -2,7 +2,8 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.25.0...HEAD)
 ### Added
-* **Proxy: Fluentd proxy support** [`#1757`](https://github.com/OpenLineage/OpenLineage/pull/1757) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+* **Proxy: Fluentd proxy support (experimental)
+* ** [`#1757`](https://github.com/OpenLineage/OpenLineage/pull/1757) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
   *Fluentd data collector can serve as a proxy to buffer Openlineage events, send them to multiple backends and many other purposes. A fluentd Openlineage parser has been implemented to validate incoming HTTP events at the beginning of the pipeline. See [readme](https://github.com/OpenLineage/OpenLineage/tree/main/proxy/fluentd) file for more details.*
 * **Spark: support single file datasets.** [`#1855`](https://github.com/OpenLineage/OpenLineage/pull/1855) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
   *Properly name datasets created on the top of single file, like `spark.read.csv('file.csv')`.*

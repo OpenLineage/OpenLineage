@@ -20,8 +20,8 @@ module Fluent
           @spec_directory += "/"
         end
         @validate_input_dataset_facets = conf.fetch('validate_input_dataset_facets', false)
-        @validate_output_dataset_facets = conf.fetch('validate_output_dataset_facets', true)
-        @validate_dataset_facets = conf.fetch('validate_dataset_facets', true)
+        @validate_output_dataset_facets = conf.fetch('validate_output_dataset_facets', false)
+        @validate_dataset_facets = conf.fetch('validate_dataset_facets', false)
         @validate_run_facets = conf.fetch('validate_run_facets', true)
         @validate_job_facets = conf.fetch('validate_job_facets', true)
         @validator = RustyJSONSchema.build(load_schema())
@@ -55,7 +55,7 @@ module Fluent
       end
 
       def load_schema()
-        schemaFile = @spec_directory + "/OpenLineage.json"
+        schemaFile = @spec_directory + "OpenLineage.json"
 
         if (not File.exist?(schemaFile))
           raise ParserError, "Couldn't find Openlineage.json file within a defined spec directory: " + schemaFile
@@ -80,109 +80,121 @@ module Fluent
         facets_path = @spec_directory + "facets/"
 
         # dataset facets
+        dataset_facets = schema_json["$defs"]["Dataset"]["properties"]["facets"]
         if @validate_dataset_facets
-          schema_json \
-            ["$defs"] \
-            ["Dataset"] \
-            ["properties"] \
-            ["facets"] \
+          dataset_facets \
             ["anyOf"].select {|el| el.key?("$ref") }.each { | facet_ref |
               facet_name =  facet_ref["$ref"].gsub("#/$defs/", "")
               facet_schema = JSON.parse(File.read(facets_path + facet_name + ".json"))
               property_name = facet_schema["properties"].keys[0]
-              schema_json["$defs"]["Dataset"]["properties"][property_name] = {
-                "$ref" => "#/$defs/" + facet_name
-            }
+              if not dataset_facets.key?("properties")
+                dataset_facets["properties"] = {}
+                dataset_facets["additionalProperties"] = { "$ref" => "#/$defs/DatasetFacet" }
+              end
+              dataset_facets["properties"][property_name] = {  "$ref" => "#/$defs/" + facet_name }
+
           }
+        else
+          dataset_facets["additionalProperties"] = { "type" => "object" }
         end
+        dataset_facets.delete("anyOf")
 
         # run facets
+        run_facets = schema_json["$defs"]["Run"]["properties"]["facets"]
         if @validate_run_facets
-          schema_json \
-            ["$defs"] \
-            ["Run"] \
-            ["properties"] \
-            ["facets"] \
+          run_facets \
             ["anyOf"].select {|el| el.key?("$ref") }.each { | facet_ref |
               facet_name =  facet_ref["$ref"].gsub("#/$defs/", "")
               facet_schema = JSON.parse(File.read(facets_path + facet_name + ".json"))
               property_name = facet_schema["properties"].keys[0]
-              schema_json["$defs"]["Run"]["properties"][property_name] = {
-                "$ref": "#/$defs/" + facet_name
-            }
+
+              if not run_facets.key?("properties")
+                run_facets["properties"] = {}
+                run_facets["additionalProperties"] = { "$ref" => "#/$defs/RunFacet" }
+              end
+              run_facets["properties"][property_name] = {  "$ref" => "#/$defs/" + facet_name }
           }
+        else
+          run_facets["additionalProperties"] = { "type" => "object" }
         end
+        run_facets.delete("anyOf")
 
         # job facets
+        job_facets = schema_json["$defs"]["Job"]["properties"]["facets"]
         if @validate_job_facets
-          schema_json \
-            ["$defs"] \
-            ["Job"] \
-            ["properties"] \
-            ["facets"] \
-            ["anyOf"].select {|el| el.key?("$ref") }.each { | facet_ref |
+          job_facets["anyOf"].select {|el| el.key?("$ref") }.each { | facet_ref |
               facet_name =  facet_ref["$ref"].gsub("#/$defs/", "")
               facet_schema = JSON.parse(File.read(facets_path + facet_name + ".json"))
               property_name = facet_schema["properties"].keys[0]
-              schema_json["$defs"]["Job"]["properties"][property_name] = {
-                "$ref": "#/$defs/" + facet_name
-              }
+
+              if not job_facets.key?("properties")
+                job_facets["properties"] = {}
+                job_facets["additionalProperties"] = { "$ref" => "#/$defs/JobFacet" }
+              end
+              job_facets["properties"][property_name] = {  "$ref" => "#/$defs/" + facet_name }
           }
+        else
+          job_facets["additionalProperties"] = { "type" => "object" }
         end
+        job_facets.delete("anyOf")
 
         # input dataset facets
         if @validate_input_dataset_facets
-          schema_json \
+          input_facets = schema_json \
             ["$defs"] \
             ["InputDataset"] \
             ["allOf"].select {|el| el.key?("type") } \
             [0] \
             ["properties"] \
-            ["inputFacets"] \
+            ["inputFacets"]
+          input_facets \
             ["anyOf"].select {|el| el.key?("$ref") }.each { | facet_ref |
               facet_name =  facet_ref["$ref"].gsub("#/$defs/", "")
               facet_schema = JSON.parse(File.read(facets_path + facet_name + ".json"))
               property_name = facet_schema["properties"].keys[0]
 
-              input_dataset = schema_json["$defs"]["InputDataset"]["allOf"]
-                .select {|el| el.key?("type") }[0]["properties"]["inputFacets"]["anyOf"]
-                .select {|el| el.key?("type") }[0]
-              if not input_dataset.key?("properties")
-                input_dataset["properties"] = {}
+              if not input_facets.key?("properties")
+                input_facets["properties"] = {}
+                input_facets["additionalProperties"] = { "$ref" => "#/$defs/OutputDatasetFacet" }
               end
-              input_dataset["properties"][property_name] = {  "$ref" => "#/$defs/" + facet_name }
+              input_facets["properties"][property_name] = {  "$ref" => "#/$defs/" + facet_name }
           }
+          input_facets.delete("anyOf")
         end
 
         # output dataset facets
         if @validate_output_dataset_facets
-          schema_json \
+          output_facets = schema_json \
             ["$defs"] \
             ["OutputDataset"] \
             ["allOf"].select {|el| el.key?("type") } \
             [0] \
             ["properties"] \
-            ["outputFacets"] \
+            ["outputFacets"]
+
+          output_facets \
             ["anyOf"].select {|el| el.key?("$ref") }.each { | facet_ref |
               facet_name =  facet_ref["$ref"].gsub("#/$defs/", "")
               facet_schema = JSON.parse(File.read(facets_path + facet_name + ".json"))
               property_name = facet_schema["properties"].keys[0]
-
-              output_dataset = schema_json["$defs"]["OutputDataset"]["allOf"]
-                .select {|el| el.key?("type") }[0]["properties"]["outputFacets"]["anyOf"]
-                .select {|el| el.key?("type") }[0]
-
-              if not output_dataset.key?("properties")
-                output_dataset["properties"] = {}
+              if not output_facets.key?("properties")
+                output_facets["properties"] = {}
+                output_facets["additionalProperties"] = { "$ref" => "#/$defs/OutputDatasetFacet" }
               end
-              output_dataset["properties"][property_name] = {  "$ref" => "#/$defs/" + facet_name }
+              output_facets["properties"][property_name] = {  "$ref" => "#/$defs/" + facet_name }
           }
+          output_facets.delete("anyOf")
         end
 
         # list all the facets
         Dir.entries(facets_path).each { |facet_file|
           if facet_file.end_with?(".json")
-            facet_schema =  JSON.parse(File.read(facets_path + facet_file))
+            facet_schema =  JSON.parse(
+              File.read(facets_path + facet_file).gsub(
+                /"https:\/\/openlineage\.io\/spec\/\d-\d-\d\/OpenLineage\.json#\/\$defs\/([a-zA-Z]+)"/,
+                '"#/$defs/\1"'
+              )
+            )
             # include facets' definitions within schema
             schema_json["$defs"] = schema_json["$defs"].merge(facet_schema["$defs"])
           end
