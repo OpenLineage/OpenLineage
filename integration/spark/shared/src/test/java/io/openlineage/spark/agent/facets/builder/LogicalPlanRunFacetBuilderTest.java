@@ -105,7 +105,7 @@ class LogicalPlanRunFacetBuilderTest {
                 .queryExecution(queryExecution)
                 .build());
 
-    sparkContext.conf().set("spark.openlineage.facets.disabled", "spark.logicalPlan");
+    sparkContext.conf().set("spark.openlineage.facets.disabled", "[spark.logicalPlan]");
     assertThat(
             builder.isDefinedAt(
                 new SparkListenerJobStart(1, 1L, Seq$.MODULE$.empty(), new Properties())))
