@@ -8,8 +8,8 @@
    *Adds a Fluentd data collector as a proxy to buffer Openlineage events and send them to multiple backends (among many other purposes). Also implements a Fluentd Openlineage parser to validate incoming HTTP events at the beginning of the pipeline. See the [readme](https://github.com/OpenLineage/OpenLineage/tree/main/proxy/fluentd) file for more details.*
 
 ### Changed
-* **Python client: use tox and hatchling over setuptools to orchestrate Python env setup** [`#1856`](https://github.com/OpenLineage/OpenLineage/pull/1856) [@gaborbernat](https://github.com/gaborbernat)  
-    *Replaces setuptools with Hatchling for building the backend. Also replaces pytest with tox for testing and includes a number of fixes, including to type definitions in `transport` and elsewhere.*
+* **Python client: use Hatchling over setuptools to orchestrate Python env setup** [`#1856`](https://github.com/OpenLineage/OpenLineage/pull/1856) [@gaborbernat](https://github.com/gaborbernat)  
+    *Replaces setuptools with Hatchling for building the backend. Also includes a number of fixes, including to type definitions in `transport` and elsewhere.*
 
 ### Fixed
 * **Spark: support single file datasets** [`#1855`](https://github.com/OpenLineage/OpenLineage/pull/1855) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
