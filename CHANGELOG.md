@@ -1,17 +1,21 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.25.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.26.0...HEAD)
+
+## [0.26.0](https://github.com/OpenLineage/OpenLineage/compare/0.25.0...0.26.0) - 2023-05-18
 ### Added
-* **Proxy: Fluentd proxy support (experimental)
-* ** [`#1757`](https://github.com/OpenLineage/OpenLineage/pull/1757) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
-  *Fluentd data collector can serve as a proxy to buffer Openlineage events, send them to multiple backends and many other purposes. A fluentd Openlineage parser has been implemented to validate incoming HTTP events at the beginning of the pipeline. See [readme](https://github.com/OpenLineage/OpenLineage/tree/main/proxy/fluentd) file for more details.*
-* **Spark: support single file datasets.** [`#1855`](https://github.com/OpenLineage/OpenLineage/pull/1855) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
-  *Properly name datasets created on the top of single file, like `spark.read.csv('file.csv')`.*
+* **Proxy: Fluentd proxy support (experimental)** [`#1757`](https://github.com/OpenLineage/OpenLineage/pull/1757) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+   *Adds a Fluentd data collector as a proxy to buffer Openlineage events and send them to multiple backends (among many other purposes). Also implements a Fluentd Openlineage parser to validate incoming HTTP events at the beginning of the pipeline. See the [readme](https://github.com/OpenLineage/OpenLineage/tree/main/proxy/fluentd) file for more details.*
+
+### Changed
+* **Python client: use tox and hatchling over setuptools to orchestrate Python env setup** [`#1856`](https://github.com/OpenLineage/OpenLineage/pull/1856) [@gaborbernat](https://github.com/gaborbernat)  
+    *Replaces setuptools with Hatchling for building the backend. Also replaces pytest with tox for testing and includes a number of fixes, including to type definitions in `transport` and elsewhere.*
 
 ### Fixed
-* **Spark: fix logical plans' serialization issue on databricks platform** [`#1858`](https://github.com/OpenLineage/OpenLineage/pull/1858) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)   
-  *Disable by default `spark_unknown
-* ` facet.*
+* **Spark: support single file datasets** [`#1855`](https://github.com/OpenLineage/OpenLineage/pull/1855) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Fixes the naming of single file datasets so they are no longer named using the parent directory's path: `spark.read.csv('file.csv')`.*
+* **Spark: fix `logicalPlan` serialization issue on Databricks** [`#1858`](https://github.com/OpenLineage/OpenLineage/pull/1858) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)   
+    *Disables the `spark_unknown` facet by default to turn off serialization of `logicalPlan`.*
 
 ## [0.25.0](https://github.com/OpenLineage/OpenLineage/compare/0.24.0...0.25.0) - 2023-05-15
 ### Added
