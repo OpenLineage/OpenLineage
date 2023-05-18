@@ -44,7 +44,9 @@ import io.openlineage.spark.agent.util.TestOpenLineageEventHandlerFactory;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -262,7 +264,7 @@ class SparkReadWriteIntegTest {
         .hasSize(1)
         .first()
         .hasFieldOrPropertyWithValue(NAMESPACE, FILE)
-        .hasFieldOrPropertyWithValue(NAME, testFile.toAbsolutePath().getParent().toString());
+        .hasFieldOrPropertyWithValue(NAME, testFile.toAbsolutePath().toString());
 
     completionEvent
         .extracting(RunEvent::getOutputs, InstanceOfAssertFactories.list(OutputDataset.class))
@@ -350,7 +352,7 @@ class SparkReadWriteIntegTest {
     List<InputDataset> inputs = event.getInputs();
     assertEquals(1, inputs.size());
     assertEquals(FILE, inputs.get(0).getNamespace());
-    assertEquals(testFile.toAbsolutePath().getParent().toString(), inputs.get(0).getName());
+    assertEquals(testFile.toAbsolutePath().toString(), inputs.get(0).getName());
   }
 
   @Test
@@ -627,7 +629,7 @@ class SparkReadWriteIntegTest {
         .hasSize(1)
         .first()
         .hasFieldOrPropertyWithValue(NAMESPACE, FILE)
-        .hasFieldOrPropertyWithValue(NAME, testFile.toAbsolutePath().getParent().toString());
+        .hasFieldOrPropertyWithValue(NAME, testFile.toAbsolutePath().toString());
 
     completionEvent
         .extracting(RunEvent::getOutputs, InstanceOfAssertFactories.list(OutputDataset.class))
@@ -644,6 +646,36 @@ class SparkReadWriteIntegTest {
                     .hasFieldOrPropertyWithValue("rowCount", 2L);
               }
             });
+  }
+
+  @Test
+  void testSingleFileDatasets(@TempDir Path writeDir, SparkSession spark)
+      throws IOException, InterruptedException, TimeoutException {
+    String fileName = writeDir + "/single_file.csv";
+    Files.write(Paths.get(fileName), "a,b".getBytes());
+
+    spark.read().csv(fileName).collect();
+
+    // wait for event processing to complete
+    StaticExecutionContextFactory.waitForExecutionEnd();
+
+    ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
+        ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+
+    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, atLeast(1))
+        .emit(lineageEvent.capture());
+    List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
+    ObjectAssert<RunEvent> completionEvent =
+        assertThat(events)
+            .filteredOn(e -> e.getEventType().equals(RunEvent.EventType.COMPLETE))
+            .isNotEmpty()
+            .first();
+    completionEvent
+        .extracting(RunEvent::getInputs, InstanceOfAssertFactories.list(InputDataset.class))
+        .hasSize(1)
+        .first()
+        .hasFieldOrPropertyWithValue(NAMESPACE, FILE)
+        .hasFieldOrPropertyWithValue(NAME, fileName);
   }
 
   private CompletableFuture sendMessage(
