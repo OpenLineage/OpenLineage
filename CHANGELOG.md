@@ -1,17 +1,22 @@
 # Changelog
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.25.0...HEAD)
+### Added
+* **Proxy: Fluentd proxy support (experimental)
+* ** [`#1757`](https://github.com/OpenLineage/OpenLineage/pull/1757) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Fluentd data collector can serve as a proxy to buffer Openlineage events, send them to multiple backends and many other purposes. A fluentd Openlineage parser has been implemented to validate incoming HTTP events at the beginning of the pipeline. See [readme](https://github.com/OpenLineage/OpenLineage/tree/main/proxy/fluentd) file for more details.*
+* **Spark: support single file datasets.** [`#1855`](https://github.com/OpenLineage/OpenLineage/pull/1855) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
+  *Properly name datasets created on the top of single file, like `spark.read.csv('file.csv')`.*
+
 ### Fixed
 * **Spark: fix logical plans' serialization issue on databricks platform** [`#1858`](https://github.com/OpenLineage/OpenLineage/pull/1858) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)   
-  *Disable by default `spark.logicalPlan` facet.*
+  *Disable by default `spark_unknown
+* ` facet.*
 
 ## [0.25.0](https://github.com/OpenLineage/OpenLineage/compare/0.24.0...0.25.0) - 2023-05-15
 ### Added
 * **Spark: add Spark/Delta `merge into` support** [`#1823`](https://github.com/OpenLineage/OpenLineage/pull/1823) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Adds support for `merge into` queries.*
-
-* **Spark: support single file datasets.** [`#1855`](https://github.com/OpenLineage/OpenLineage/pull/1855) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)
-  *Properly name datasets created on the top of single file, like `spark.read.csv('file.csv')`.*
 
 ### Fixed
 * **Spark: fix JDBC query handling** [`#1808`](https://github.com/OpenLineage/OpenLineage/pull/1808) [@nataliezeller1](https://github.com/nataliezeller1)  
