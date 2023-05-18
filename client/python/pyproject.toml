@@ -6,7 +6,7 @@ requires = [
 
 [project]
 name = "openlineage-python"
-version = "0.26.0"
+version = "0.27.0"
 description = "OpenLineage Python Client"
 readme = "README.md"
 keywords = [
