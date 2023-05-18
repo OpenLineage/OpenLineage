@@ -1,5 +1,6 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
+from typing import Optional, Type
 
 from openlineage.client.run import RunEvent
 
@@ -27,8 +28,8 @@ class Config:
 
 
 class Transport:
-    kind = None
-    config = Config
+    kind: Optional[str] = None
+    config: Type[Config] = Config
 
     def emit(self, event: RunEvent):
         raise NotImplementedError()

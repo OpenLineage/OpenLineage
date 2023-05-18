@@ -4,4 +4,8 @@
 from openlineage.client.client import OpenLineageClient, OpenLineageClientOptions
 from openlineage.client.facet import set_producer
 
-__all__ = [OpenLineageClient, OpenLineageClientOptions, set_producer]
+__all__ = [
+    "OpenLineageClient",
+    "OpenLineageClientOptions",
+    "set_producer",
+]

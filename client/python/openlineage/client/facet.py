@@ -5,6 +5,7 @@ from enum import Enum
 from typing import Dict, List, Optional
 
 import attr
+
 from openlineage.client.constants import DEFAULT_PRODUCER
 from openlineage.client.utils import RedactMixin
 

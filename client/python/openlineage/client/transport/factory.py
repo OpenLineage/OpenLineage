@@ -72,7 +72,7 @@ class DefaultTransportFactory(TransportFactory):
         if not inspect.isclass(config_class) or not issubclass(config_class, Config):
             raise TypeError(f"Config {config_class} has to be class, and subclass of Config")
 
-        return transport_class(config_class.from_dict(config))
+        return transport_class(config_class.from_dict(config))  # type: ignore[call-arg]
 
     def _try_config_from_yaml(self) -> Optional[dict]:
         file = self._find_yaml()

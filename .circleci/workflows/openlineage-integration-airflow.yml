@@ -48,7 +48,7 @@ workflows:
           requires:
             - unit-test-integration-airflow
             - unit-test-integration-common
-            - unit-test-client-python
+            - unit-tests-client-python
             - build-integration-sql-x86
           filters:
             branches:
@@ -65,7 +65,7 @@ workflows:
           requires:
             - unit-test-integration-airflow
             - unit-test-integration-common
-            - unit-test-client-python
+            - unit-tests-client-python
             - build-integration-sql-x86
           filters:
             branches:

@@ -20,8 +20,9 @@ RUN AIRFLOW_VERSION=`airflow version` && \
     cd ../airflow && \
     pip install --no-cache-dir --use-deprecated=legacy-resolver -r dev-requirements.txt \
     --constraint=https://raw.githubusercontent.com/apache/airflow/constraints-$AIRFLOW_VERSION/constraints-$PYTHON_VERSION.txt
-RUN python -m virtualenv dbt_venv && pwd && source dbt_venv/bin/activate &&  \
+RUN python -m virtualenv dbt_venv && pwd && source dbt_venv/bin/activate && \
     unset PIP_USER && \
+    python -m pip install pip --upgrade && \
     cd /app/openlineage/integration/sql && \
     pip install openlineage-sql --no-index --find-links target/wheels --force-reinstall && \
     cd ../airflow && \

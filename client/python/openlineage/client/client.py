@@ -6,6 +6,7 @@ import typing
 from typing import Optional
 
 import attr
+
 from openlineage.client.serde import Serde
 
 if typing.TYPE_CHECKING:

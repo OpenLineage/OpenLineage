@@ -127,7 +127,7 @@ class HttpTransport(Transport):
         event = Serde.to_json(event)
         resp = self.session.post(
             urljoin(self.url, self.endpoint),
-            event,
+            event,  # type: ignore[arg-type]
             timeout=self.timeout,
             verify=self.verify
         )

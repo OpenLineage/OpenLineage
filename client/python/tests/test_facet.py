@@ -97,7 +97,7 @@ def test_symlink_dataset_facet():
     event_sent = json.loads(session.post.call_args[0][1])
 
     expected_event = copy.deepcopy(openlineage_event)
-    expected_event["outputs"][0]["facets"] = dict()
+    expected_event["outputs"][0]["facets"] = {}
     expected_event["outputs"][0]["facets"]["symlinks"] = symlink_facet
 
     assert expected_event == event_sent
@@ -141,7 +141,7 @@ def test_storage_dataset_facet():
     event_sent = json.loads(session.post.call_args[0][1])
 
     expected_event = copy.deepcopy(openlineage_event)
-    expected_event["outputs"][0]["facets"] = dict()
+    expected_event["outputs"][0]["facets"] = {}
     expected_event["outputs"][0]["facets"]["storage"] = storage_facet
 
     assert expected_event == event_sent
@@ -193,7 +193,7 @@ def test_ownership_job_facet():
     event_sent = json.loads(session.post.call_args[0][1])
 
     expected_event = copy.deepcopy(openlineage_event)
-    expected_event["job"]["facets"] = dict()
+    expected_event["job"]["facets"] = {}
     expected_event["job"]["facets"]["ownership"] = ownership_job_facet
 
     assert expected_event == event_sent
@@ -238,7 +238,7 @@ def test_dataset_version_dataset_facet():
     event_sent = json.loads(session.post.call_args[0][1])
 
     expected_event = copy.deepcopy(openlineage_event)
-    expected_event["outputs"][0]["facets"] = dict()
+    expected_event["outputs"][0]["facets"] = {}
     expected_event["outputs"][0]["facets"]["version"] = dataset_version_facet
 
     assert expected_event == event_sent
@@ -290,7 +290,7 @@ def test_lifecycle_state_change_dataset_facet():
 
     event_sent = json.loads(session.post.call_args[0][1])
 
-    dataset_facets = dict()
+    dataset_facets = {}
     dataset_facets["lifecycleStateChange"] = lifecycle_state_change_dataset_facet
     expected_event = copy.deepcopy(openlineage_event)
     expected_event["outputs"][0]["facets"] = dataset_facets
@@ -345,7 +345,7 @@ def test_ownership_dataset_facet():
     event_sent = json.loads(session.post.call_args[0][1])
 
     expected_event = copy.deepcopy(openlineage_event)
-    expected_event["outputs"][0]["facets"] = dict()
+    expected_event["outputs"][0]["facets"] = {}
     expected_event["outputs"][0]["facets"]["ownership"] = ownership_dataset_facet
 
     assert expected_event == event_sent
@@ -414,7 +414,7 @@ def test_column_lineage_dataset_facet():
     event_sent = json.loads(session.post.call_args[0][1])
 
     expected_event = copy.deepcopy(openlineage_event)
-    expected_event["outputs"][0]["facets"] = dict()
+    expected_event["outputs"][0]["facets"] = {}
     expected_event["outputs"][0]["facets"]["columnLineage"] = column_lineage_dataset_facet
 
     assert expected_event == event_sent

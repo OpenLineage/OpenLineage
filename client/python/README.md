@@ -3,22 +3,22 @@
 To install from source, run:
 
 ```bash
-$ python setup.py install
+$ python -m pip install .
 ```
 
 ## Configuration
 ### Config file
 
 The most common way to configure the OpenLineage Client is by `.yaml` file, which contains all the
-details of how to connect to your OpenLineage backend. 
+details of how to connect to your OpenLineage backend.
 
 The config file is located by:
 1) looking at the `OPENLINEAGE_CONFIG` environment variable
 2) looking for the `openlineage.yml` file in the current working directory
 3) looking for the `openlineage.yml` file in the `$HOME/.openlineage` directory.
 
-Different ways of connecting to OpenLineage backend are supported 
-by the standarized `Transport` interface.  
+Different ways of connecting to OpenLineage backend are supported
+by the standarized `Transport` interface.
 This is an example config for specifying `http` transport:
 
 ```yaml
@@ -31,10 +31,10 @@ transport:
 ```
 
 The `type` property is required. It can be one of the built-in transports or a custom one.
-There are three built-in transports, `http`, `kafka` and `console`. 
+There are three built-in transports, `http`, `kafka` and `console`.
 Custom transports `type` is a fully qualified class name that can be imported.
 
-The rest of the properties are defined by the particular transport.  
+The rest of the properties are defined by the particular transport.
 Specifications for the built-in options are below.
 
 #### HTTP
@@ -45,7 +45,7 @@ Specifications for the built-in options are below.
 * `verify` optional boolean attribute specifying if the client should verify TLS certificates of the backend. By default true.
 * `auth` - optional dictionary specifying authentication options. The type property is required.
     * `type`: required property if an auth dictionary is set. Set to `api_key` or to the fully qualified class name of your TokenProvider.
-    * `api_key`: if `api_key` type is set, it sets value at `Authentication` HTTP header as `Bearer`. 
+    * `api_key`: if `api_key` type is set, it sets value at `Authentication` HTTP header as `Bearer`.
 
 #### Kafka
 
@@ -63,7 +63,7 @@ To implement a custom transport, follow the instructions in the `openlineage/cli
 
 ### Config as env vars
 
-If there is no config file found, the OpenLineage client looks at environment variables.  
+If there is no config file found, the OpenLineage client looks at environment variables.
 This way of configuring the client supports only `http` transport, and only a subset of its config.
 
 * `OPENLINEAGE_URL` - point to the service that will consume OpenLineage events.
