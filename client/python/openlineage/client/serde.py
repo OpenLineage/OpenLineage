@@ -1,11 +1,12 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
 
 import json
 import logging
 import sys
 from enum import Enum
-from typing import Dict, List
+from typing import Any, Dict, List
 
 import attr
 
@@ -19,34 +20,39 @@ except ImportError:
 
 class Serde:
     @classmethod
-    def remove_nulls_and_enums(cls, obj):
+    def remove_nulls_and_enums(cls, obj: Any) -> Any:  # noqa: ANN401
         if isinstance(obj, Enum):
             return obj.value
         if isinstance(obj, Dict):
-            return dict(filter(
-                lambda x: x[1] is not None,
-                {k: cls.remove_nulls_and_enums(v) for k, v in obj.items()}.items()
-            ))
+            return dict(
+                filter(
+                    lambda x: x[1] is not None,
+                    {k: cls.remove_nulls_and_enums(v) for k, v in obj.items()}.items(),
+                ),
+            )
         if isinstance(obj, List):
-            return list(filter(lambda x: x is not None and (isinstance(x, dict) and x != {}), [
-                cls.remove_nulls_and_enums(v) for v in obj if v is not None
-            ]))
+            return list(
+                filter(
+                    lambda x: x is not None and (isinstance(x, dict) and x != {}),
+                    [cls.remove_nulls_and_enums(v) for v in obj if v is not None],
+                ),
+            )
 
         # Pandas can use numpy.int64 object
-        if 'numpy' in sys.modules and isinstance(obj, numpy.int64):
+        if "numpy" in sys.modules and isinstance(obj, numpy.int64):
             return int(obj)
         return obj
 
     @classmethod
-    def to_dict(cls, obj):
+    def to_dict(cls, obj: Any) -> dict[Any, Any]:  # noqa: ANN401
         if not isinstance(obj, dict):
             obj = attr.asdict(obj)
         return cls.remove_nulls_and_enums(obj)
 
     @classmethod
-    def to_json(cls, obj):
+    def to_json(cls, obj: Any) -> str:  # noqa: ANN401
         return json.dumps(
             cls.to_dict(obj),
             sort_keys=True,
-            default=lambda o: f"<<non-serializable: {type(o).__qualname__}>>"
+            default=lambda o: f"<<non-serializable: {type(o).__qualname__}>>",
         )

@@ -1,9 +1,5 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
-from typing import Optional, Type
-
-from openlineage.client.run import RunEvent
-
 """
 To implement custom Transport implement Config and Transport classes.
 
@@ -20,21 +16,31 @@ DefaultTransportFactory instantiates custom transports by looking at `type` fiel
 class config.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, TypeVar
+
+if TYPE_CHECKING:
+    from openlineage.client.run import RunEvent
+
+
+_T = TypeVar("_T", bound="Config")
+
 
 class Config:
     @classmethod
-    def from_dict(cls, params: dict):
+    def from_dict(cls: type[_T], params: dict[str, Any]) -> _T:  # noqa: ARG003
         return cls()
 
 
 class Transport:
-    kind: Optional[str] = None
-    config: Type[Config] = Config
+    kind: str | None = None
+    config: type[Config] = Config
 
-    def emit(self, event: RunEvent):
-        raise NotImplementedError()
+    def emit(self, event: RunEvent) -> Any:  # noqa: ANN401
+        raise NotImplementedError
 
 
 class TransportFactory:
-    def create(self) -> Transport:  # type: ignore
-        pass
+    def create(self) -> Transport:
+        raise NotImplementedError

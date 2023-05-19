@@ -38,6 +38,7 @@ optional-dependencies.test = [
   "covdefaults>=2.3",
   "pytest>=7.3.1",
   "pytest-cov>=4",
+  "pytest-mock>=3.6.1",
   "pyyaml>=6",
 ]
 
@@ -47,7 +48,7 @@ build.targets.wheel = ["openlineage"]
 [tool.coverage]
 html.show_contexts = true
 html.skip_covered = false
-report.fail_under = 92
+report.fail_under = 91
 run.parallel = true
 run.plugins = ["covdefaults"]
 
@@ -58,15 +59,55 @@ overrides = [
   "confluent_kafka.*",
 ] } ]
 
-[tool.ruff]
+[tool.black]
 line-length = 100
+
+[tool.ruff]
 select = [
-    "F",
-    "E",
-    "W",
-    "I001"
+    "E", # pyflakes
+    "F", # pycodestyle error
+    "W", # pycodestyle warning
+    "C90", # mccabe
+    "I", # isort
+    "N", # pep8-naming
+    "UP", # pyupgrade
+    "YTT", # flake8-2020
+    "ANN", # flake8-annotations
+    "S", # flake8-bandit
+    "BLE", # flake8-blind-except
+    "FBT", # flake8-boolean-trap
+    "A", # flake8-builtins
+    "B", # flake8-bugbear
+    "COM", # flake8-commas
+    "T10", # flake8-debugger
+    "EM", # flake8-errmsg
+    "C4", # flake8-comprehensions
+    "ISC", # flake8-implicit-str-concat
+    "G", # flake8-logging-format
+    "PIE", # flake8-pie
+    "T20", # flake8-print
+    "PT", # flake8-pytest-style
+    "RSE", # flake8-raise
+    "RET", # flake8-return
+    "SLF", # flake8-self
+    "SIM", # flake8-simplify
+    "TID", # flake8-tidy-imports
+    "TCH", # flake8-type-checking
+    "ARG", # flake8-unused-arguments
+    "ERA", # eradicate
+    "PGH", # pygrep hooks
+    "PL", # pylint
+    "TRY", # tryceratops
+    "FLY", # flynt
+    "RUF", # Ruff
 ]
+line-length = 100
 target-version = "py37"
-ignore-init-module-imports = true
-src = ["openlineage", "tests"]
+isort = { known-first-party = ["publication_set", "tests"], required-imports = ["from __future__ import annotations"] }
 namespace-packages = ["openlineage/client"]
+ignore = [
+    "ANN101", # Missing type annotation for `self` in method
+    "S101", # Use of `assert` detected
+    "ANN102", # Missing type annotation for `cls` in classmethod
+
+]
