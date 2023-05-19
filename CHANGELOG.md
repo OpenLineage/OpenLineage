@@ -2,6 +2,10 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.26.0...HEAD)
 
+### Fixed
+* **Spark: fix column lineage for aggregate queries on databricks.** [`#1867`](https://github.com/OpenLineage/OpenLineage/pull/1867) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Aggregate queries on databricks did not return column lineage.*
+
 ## [0.26.0](https://github.com/OpenLineage/OpenLineage/compare/0.25.0...0.26.0) - 2023-05-18
 ### Added
 * **Proxy: Fluentd proxy support (experimental)** [`#1757`](https://github.com/OpenLineage/OpenLineage/pull/1757) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  

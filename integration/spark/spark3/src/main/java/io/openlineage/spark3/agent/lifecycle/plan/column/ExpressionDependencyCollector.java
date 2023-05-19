@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
 import org.apache.spark.sql.catalyst.expressions.Expression;
 import org.apache.spark.sql.catalyst.expressions.NamedExpression;
@@ -22,6 +23,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.Project;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
+import scala.collection.Seq;
 
 /**
  * Traverses LogicalPlan and collects dependencies between the expressions and operations used
@@ -76,7 +78,20 @@ public class ExpressionDependencyCollector {
 
     if (expr instanceof AggregateExpression) {
       AggregateExpression aggr = (AggregateExpression) expr;
-      builder.addDependency(ancestorId, aggr.resultId());
+
+      // in databricks `resultId` method is not present. Instead, there exists `resultIds`
+      if (MethodUtils.getAccessibleMethod(AggregateExpression.class, "resultId") != null) {
+        builder.addDependency(ancestorId, aggr.resultId());
+      } else {
+        try {
+          Seq<ExprId> resultIds = (Seq<ExprId>) MethodUtils.invokeMethod(aggr, "resultIds");
+          ScalaConversionUtils.<ExprId>fromSeq(resultIds).stream()
+              .forEach(e -> builder.addDependency(ancestorId, e));
+        } catch (Exception e) {
+          // do nothing
+          log.warn("Failed extracting resultIds from AggregateExpression", e);
+        }
+      }
     }
   }
 }
