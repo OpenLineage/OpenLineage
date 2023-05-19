@@ -1,0 +1,46 @@
+{
+	"eventTime": "2021-11-03T10:53:52.427343",
+	"job": {
+		"namespace":  "openlineage",
+		"name":  "name",
+		"facets": {}
+	},
+	"inputs": [
+		{
+			"namespace":  "openlineage",
+			"name":  "dataset_a",
+			"facets": {
+				"schema": {
+					"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python",
+					"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
+					"fields": [
+						{
+							"name": "a",
+							"type": "string"
+						}
+					]
+				}
+			}
+		}
+	],
+	"outputs": [
+		{
+			"namespace":  "openlineage",
+			"name":  "dataset_b",
+			"facets": {
+				"schema": {
+					"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python",
+					"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
+					"fields": [
+						{
+							"name": "a",
+							"type": "string"
+						}
+					]
+				}
+			}
+		}
+	],
+	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python",
+	"schemaURL": "https://openlineage.io/spec/2-0-0/OpenLineage.json#/$defs/JobEvent"
+}

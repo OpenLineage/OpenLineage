@@ -10,13 +10,16 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from openlineage.client.client import OpenLineageClient
-from openlineage.client.run import Job, Run, RunEvent, RunState
+from openlineage.client.run import Dataset, DatasetEvent, Job, JobEvent, Run, RunEvent, RunState
 
 
 def test_client_fails_with_wrong_event_type() -> None:
     client = OpenLineageClient(url="http://example.com", session=MagicMock())
 
-    with pytest.raises(ValueError, match="`emit` only accepts RunEvent class"):
+    with pytest.raises(
+        ValueError,
+        match="`emit` only accepts RunEvent, DatasetEvent, JobEvent class",
+    ):
         client.emit("event")
 
 
@@ -51,7 +54,7 @@ def test_client_passes_to_create_with_valid_url(url: str, res: str) -> None:
     assert OpenLineageClient(url=url, session=MagicMock()).transport.url == res
 
 
-def test_client_sends_proper_json_with_minimal_event() -> None:
+def test_client_sends_proper_json_with_minimal_run_event() -> None:
     session = MagicMock()
     client = OpenLineageClient(url="http://example.com", session=session)
 
@@ -71,6 +74,54 @@ def test_client_sends_proper_json_with_minimal_event() -> None:
         '{"facets": {}, "name": "job", "namespace": "openlineage"}, "outputs": [], '
         '"producer": "producer", "run": {"facets": {}, "runId": '
         '"69f4acab-b87d-4fc0-b27b-8ea950370ff3"}}',
+        timeout=5.0,
+        verify=True,
+    )
+
+
+def test_client_sends_proper_json_with_minimal_dataset_event() -> None:
+    session = MagicMock()
+    client = OpenLineageClient(url="http://example.com", session=session)
+
+    client.emit(
+        DatasetEvent(
+            eventTime="2021-11-03T10:53:52.427343",
+            producer="producer",
+            schemaURL="datasetSchemaUrl",
+            dataset=Dataset(namespace="my-namespace", name="my-ds"),
+        ),
+    )
+
+    session.post.assert_called_with(
+        "http://example.com/api/v1/lineage",
+        '{"dataset": {"facets": {}, "name": "my-ds", '
+        '"namespace": "my-namespace"}, "eventTime": '
+        '"2021-11-03T10:53:52.427343", "producer": "producer", '
+        '"schemaURL": "datasetSchemaUrl"}',
+        timeout=5.0,
+        verify=True,
+    )
+
+
+def test_client_sends_proper_json_with_minimal_job_event() -> None:
+    session = MagicMock()
+    client = OpenLineageClient(url="http://example.com", session=session)
+
+    client.emit(
+        JobEvent(
+            eventTime="2021-11-03T10:53:52.427343",
+            schemaURL="jobSchemaURL",
+            job=Job("openlineage", "job"),
+            producer="producer",
+        ),
+    )
+
+    session.post.assert_called_with(
+        "http://example.com/api/v1/lineage",
+        '{"eventTime": "2021-11-03T10:53:52.427343", '
+        '"inputs": [], "job": {"facets": {}, "name": "job", "namespace": '
+        '"openlineage"}, "outputs": [], "producer": "producer", '
+        '"schemaURL": "jobSchemaURL"}',
         timeout=5.0,
         verify=True,
     )

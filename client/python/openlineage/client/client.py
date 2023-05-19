@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar, Union
 
 import attr
 
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from requests import Session
     from requests.adapters import HTTPAdapter
 
-from openlineage.client.run import RunEvent
+from openlineage.client.run import DatasetEvent, JobEvent, RunEvent
 from openlineage.client.transport import Transport, TransportFactory, get_default_factory
 from openlineage.client.transport.http import HttpConfig, HttpTransport
 
@@ -84,9 +84,9 @@ class OpenLineageClient:
             ),
         )
 
-    def emit(self, event: RunEvent) -> None:
-        if not isinstance(event, RunEvent):
-            msg = "`emit` only accepts RunEvent class"
+    def emit(self, event: Union[RunEvent, DatasetEvent | JobEvent]) -> None:  # noqa: UP007
+        if not (isinstance(event, (RunEvent, DatasetEvent, JobEvent))):
+            msg = "`emit` only accepts RunEvent, DatasetEvent, JobEvent classes"
             raise ValueError(msg)  # noqa: TRY004
         if not self.transport:
             log.error("Tried to emit OpenLineage event, but transport is not configured.")
@@ -107,10 +107,13 @@ class OpenLineageClient:
     def from_dict(cls: type[_T], config: dict[str, str]) -> _T:
         return cls(transport=get_default_factory().create(config=config))
 
-    def filter_event(self, event: RunEvent) -> RunEvent | None:
+    def filter_event(
+        self,
+        event: Union[RunEvent, DatasetEvent, JobEvent],  # noqa: UP007
+    ) -> Union[RunEvent, DatasetEvent, JobEvent] | None:  # noqa: UP007
         """Filters jobs according to config-defined events"""
         for _filter in self._filters:
-            if _filter.filter_event(event) is None:
+            if isinstance(event, RunEvent) and _filter.filter_event(event) is None:
                 return None
         return event
 

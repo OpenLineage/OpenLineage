@@ -7,6 +7,10 @@
 * **Python client: add emission filtering mechanism and exact, regex filters** [`#1878`](https://github.com/OpenLineage/OpenLineage/pull/1878) [@mobuchowski](https://github.com/mobuchowski)  
     *Adds configurable job-name filtering to the Python client. Filters can be exact-match- or regex-based. Events will not be sent in the case of matches.*
 
+### Added
+* **Support static lineage.** [`#1880`](https://github.com/OpenLineage/OpenLineage/pull/1880) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Extend specification and Java/Python client to support run-less events. See [proposal](https://github.com/OpenLineage/OpenLineage/blob/main/proposals/1837/static_lineage.md) for more details.*
+
 ### Fixed
 * **Spark: fix column lineage for aggregate queries on databricks** [`#1867`](https://github.com/OpenLineage/OpenLineage/pull/1867) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Aggregate queries on databricks did not return column lineage.*
