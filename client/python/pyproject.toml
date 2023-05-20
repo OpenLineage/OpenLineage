@@ -104,7 +104,7 @@ select = [
 ]
 line-length = 100
 target-version = "py37"
-isort = { known-first-party = ["publication_set", "tests"], required-imports = ["from __future__ import annotations"] }
+isort = { known-first-party = ["publication_set", "tests"] }
 namespace-packages = ["openlineage/client"]
 ignore = [
     "ANN101", # Missing type annotation for `self` in method

@@ -1,10 +1,8 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
-from __future__ import annotations
-
 import uuid
 from enum import Enum
-from typing import Any
+from typing import Any, Dict, List, Optional
 
 import attr
 from dateutil import parser
@@ -31,9 +29,9 @@ _RUN_FACETS = [
 @attr.s
 class Run(RedactMixin):
     runId: str = attr.ib()  # noqa:  N815
-    facets: dict[Any, Any] = attr.ib(factory=dict)
+    facets: Dict[Any, Any] = attr.ib(factory=dict)
 
-    _skip_redact: list[str] = ["runId"]
+    _skip_redact: List[str] = ["runId"]
 
     @runId.validator
     def check(self, attribute: str, value: str) -> None:  # noqa: ARG002
@@ -44,28 +42,28 @@ class Run(RedactMixin):
 class Job(RedactMixin):
     namespace: str = attr.ib()
     name: str = attr.ib()
-    facets: dict[Any, Any] = attr.ib(factory=dict)
+    facets: Dict[Any, Any] = attr.ib(factory=dict)
 
-    _skip_redact: list[str] = ["namespace", "name"]
+    _skip_redact: List[str] = ["namespace", "name"]
 
 
 @attr.s
 class Dataset(RedactMixin):
     namespace: str = attr.ib()
     name: str = attr.ib()
-    facets: dict[Any, Any] = attr.ib(factory=dict)
+    facets: Dict[Any, Any] = attr.ib(factory=dict)
 
-    _skip_redact: list[str] = ["namespace", "name"]
+    _skip_redact: List[str] = ["namespace", "name"]
 
 
 @attr.s
 class InputDataset(Dataset):
-    inputFacets: dict[Any, Any] = attr.ib(factory=dict)  # noqa:  N815
+    inputFacets: Dict[Any, Any] = attr.ib(factory=dict)  # noqa:  N815
 
 
 @attr.s
 class OutputDataset(Dataset):
-    outputFacets: dict[Any, Any] = attr.ib(factory=dict)  # noqa:  N815
+    outputFacets: Dict[Any, Any] = attr.ib(factory=dict)  # noqa:  N815
 
 
 @attr.s
@@ -75,10 +73,10 @@ class RunEvent(RedactMixin):
     run: Run = attr.ib()
     job: Job = attr.ib()
     producer: str = attr.ib()
-    inputs: list[Dataset] | None = attr.ib(factory=list)  # type: ignore[assignment]
-    outputs: list[Dataset] | None = attr.ib(factory=list)  # type: ignore[assignment]
+    inputs: Optional[List[Dataset]] = attr.ib(factory=list)  # type: ignore[assignment]
+    outputs: Optional[List[Dataset]] = attr.ib(factory=list)  # type: ignore[assignment]
 
-    _skip_redact: list[str] = ["eventType", "eventTime", "producer"]
+    _skip_redact: List[str] = ["eventType", "eventTime", "producer"]
 
     @eventTime.validator
     def check(self, attribute: str, value: str) -> None:  # noqa: ARG002
