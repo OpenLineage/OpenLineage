@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from enum import Enum
+from typing import Any
 
 import attr
 
@@ -54,8 +55,8 @@ class NominalTimeRunFacet(BaseFacet):
 
 @attr.s
 class ParentRunFacet(BaseFacet):
-    run: dict = attr.ib()
-    job: dict = attr.ib()
+    run: dict[Any, Any] = attr.ib()
+    job: dict[Any, Any] = attr.ib()
 
     _additional_skip_redact: list[str] = ["job", "run"]
 

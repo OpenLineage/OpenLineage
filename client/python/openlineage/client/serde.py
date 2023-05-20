@@ -6,7 +6,7 @@ import json
 import logging
 import sys
 from enum import Enum
-from typing import Any, Dict, List
+from typing import Any, Dict, List, cast
 
 import attr
 
@@ -47,7 +47,7 @@ class Serde:
     def to_dict(cls, obj: Any) -> dict[Any, Any]:  # noqa: ANN401
         if not isinstance(obj, dict):
             obj = attr.asdict(obj)
-        return cls.remove_nulls_and_enums(obj)
+        return cast(Dict[Any, Any], cls.remove_nulls_and_enums(obj))
 
     @classmethod
     def to_json(cls, obj: Any) -> str:  # noqa: ANN401

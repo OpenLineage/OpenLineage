@@ -2,9 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
+import inspect
 import logging
 import warnings
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
 
 import attr
@@ -18,13 +19,13 @@ if TYPE_CHECKING:
 
 from openlineage.client.serde import Serde
 from openlineage.client.transport.transport import Config, Transport
-from openlineage.client.utils import get_only_specified_fields, try_import_subclass_from_string
+from openlineage.client.utils import get_only_specified_fields, try_import_from_string
 
 log = logging.getLogger(__name__)
 
 
 class TokenProvider:
-    def __init__(self, config: dict) -> None:
+    def __init__(self, config: dict[str, str]) -> None:
         ...
 
     def get_bearer(self) -> str | None:
@@ -32,7 +33,7 @@ class TokenProvider:
 
 
 class ApiKeyTokenProvider(TokenProvider):
-    def __init__(self, config: dict) -> None:
+    def __init__(self, config: dict[str, str]) -> None:
         super().__init__(config)
         try:
             self.api_key = config["api_key"]
@@ -45,15 +46,16 @@ class ApiKeyTokenProvider(TokenProvider):
         return f"Bearer {self.api_key}"
 
 
-def create_token_provider(auth: dict) -> TokenProvider:
+def create_token_provider(auth: dict[str, str]) -> TokenProvider:
     if "type" in auth:
         if auth["type"] == "api_key":
             return ApiKeyTokenProvider(auth)
-        try:
-            clazz = try_import_subclass_from_string(auth["type"], TokenProvider)
-            return clazz(auth)
-        except TypeError:
-            pass  # already logged
+
+        of_type: str = auth["type"]
+        subclass = try_import_from_string(of_type)
+        if inspect.isclass(subclass) and issubclass(subclass, TokenProvider):
+            return TokenProvider(auth)
+
     return TokenProvider({})
 
 
@@ -77,7 +79,7 @@ class HttpConfig(Config):
     adapter: HTTPAdapter | None = attr.ib(default=None)
 
     @classmethod
-    def from_dict(cls, params: dict) -> HttpConfig:
+    def from_dict(cls, params: dict[str, Any]) -> HttpConfig:
         if "url" not in params:
             msg = "`url` key not passed to HttpConfig"
             raise RuntimeError(msg)

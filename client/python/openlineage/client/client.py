@@ -84,5 +84,5 @@ class OpenLineageClient:
         return cls(transport=get_default_factory().create())
 
     @classmethod
-    def from_dict(cls: type[_T], config: dict) -> _T:
+    def from_dict(cls: type[_T], config: dict[str, str]) -> _T:
         return cls(transport=get_default_factory().create(config=config))

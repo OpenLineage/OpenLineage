@@ -27,7 +27,7 @@ class DefaultTransportFactory(TransportFactory):
     def register_transport(self, of_type: str, clazz: type[Transport] | str) -> None:
         self.transports[of_type] = clazz
 
-    def create(self, config: dict | None = None) -> Transport:
+    def create(self, config: dict[str, str] | None = None) -> Transport:
         if os.getenv("OPENLINEAGE_DISABLED", "").lower() == "true":
             return NoopTransport(NoopConfig())
 
@@ -63,9 +63,7 @@ class DefaultTransportFactory(TransportFactory):
             transport_class = transport_class_type_or_str
         if not inspect.isclass(transport_class) or not issubclass(transport_class, Transport):
             msg = f"Transport {transport_class} has to be class, and subclass of Transport"
-            raise TypeError(
-                msg,
-            )
+            raise TypeError(msg)
 
         config_class = transport_class.config
 
@@ -77,12 +75,12 @@ class DefaultTransportFactory(TransportFactory):
 
         return transport_class(config_class.from_dict(config))  # type: ignore[call-arg]
 
-    def _try_config_from_yaml(self) -> dict | None:
+    def _try_config_from_yaml(self) -> dict[str, str] | None:
         file = self._find_yaml()
         if file:
             try:
                 with open(file) as f:
-                    config = yaml.safe_load(f)
+                    config: dict[str, dict[str, str]] = yaml.safe_load(f)
                     return config["transport"]
             except Exception:  # noqa: BLE001, S110
                 # Just move to read env vars
@@ -138,7 +136,7 @@ class DefaultTransportFactory(TransportFactory):
             auth=create_token_provider(
                 {
                     "type": "api_key",
-                    "api_key": os.environ.get("OPENLINEAGE_API_KEY", None),
+                    "api_key": os.environ.get("OPENLINEAGE_API_KEY", ""),
                 },
             ),
         )

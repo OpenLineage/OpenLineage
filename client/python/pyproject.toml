@@ -58,6 +58,7 @@ overrides = [
   { ignore_missing_imports = true, module = [
   "confluent_kafka.*",
 ] } ]
+strict = true
 
 [tool.black]
 line-length = 100

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import importlib
-import inspect
 import logging
 from typing import Any, Type, cast
 
@@ -16,7 +15,7 @@ def import_from_string(path: str) -> type[Any]:
     try:
         module_path, target = path.rsplit(".", 1)
         module = importlib.import_module(module_path)
-        return getattr(module, target)
+        return cast(Type[Any], getattr(module, target))
     except Exception as e:  # noqa: BLE001
         log.warning(e)
         msg = f"Failed to import {path}"
@@ -28,14 +27,6 @@ def try_import_from_string(path: str) -> type[Any] | None:
         return import_from_string(path)
     except ImportError:
         return None
-
-
-def try_import_subclass_from_string(path: str, clazz: type[Any]) -> type[Any]:
-    subclass = try_import_from_string(path)
-    if not inspect.isclass(subclass) or not issubclass(subclass, clazz):
-        msg = f"Import path {path} - {subclass!s} has to be class, and subclass of {clazz!s}"
-        raise TypeError(msg)
-    return cast(Type[Any], subclass)
 
 
 # Filter dictionary to get only those key: value pairs that have

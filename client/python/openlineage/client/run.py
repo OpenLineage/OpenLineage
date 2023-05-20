@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 from enum import Enum
+from typing import Any
 
 import attr
 from dateutil import parser
@@ -30,7 +31,7 @@ _RUN_FACETS = [
 @attr.s
 class Run(RedactMixin):
     runId: str = attr.ib()  # noqa:  N815
-    facets: dict = attr.ib(factory=dict)
+    facets: dict[Any, Any] = attr.ib(factory=dict)
 
     _skip_redact: list[str] = ["runId"]
 
@@ -43,7 +44,7 @@ class Run(RedactMixin):
 class Job(RedactMixin):
     namespace: str = attr.ib()
     name: str = attr.ib()
-    facets: dict = attr.ib(factory=dict)
+    facets: dict[Any, Any] = attr.ib(factory=dict)
 
     _skip_redact: list[str] = ["namespace", "name"]
 
@@ -52,19 +53,19 @@ class Job(RedactMixin):
 class Dataset(RedactMixin):
     namespace: str = attr.ib()
     name: str = attr.ib()
-    facets: dict = attr.ib(factory=dict)
+    facets: dict[Any, Any] = attr.ib(factory=dict)
 
     _skip_redact: list[str] = ["namespace", "name"]
 
 
 @attr.s
 class InputDataset(Dataset):
-    inputFacets: dict = attr.ib(factory=dict)  # noqa:  N815
+    inputFacets: dict[Any, Any] = attr.ib(factory=dict)  # noqa:  N815
 
 
 @attr.s
 class OutputDataset(Dataset):
-    outputFacets: dict = attr.ib(factory=dict)  # noqa:  N815
+    outputFacets: dict[Any, Any] = attr.ib(factory=dict)  # noqa:  N815
 
 
 @attr.s
