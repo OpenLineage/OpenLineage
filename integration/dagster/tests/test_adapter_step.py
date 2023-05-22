@@ -14,7 +14,7 @@ from .conftest import PRODUCER
 
 
 @patch("openlineage.dagster.adapter.to_utc_iso_8601")
-@patch("openlineage.dagster.adapter.OpenLineageClient.from_environment")
+@patch("openlineage.dagster.adapter.OpenLineageClient")
 def test_start_pipeline(mock_client, mock_to_utc_iso_8601):
     event_time = "2022-01-01T00:00:00.000000Z"
     mock_to_utc_iso_8601.return_value = event_time
@@ -60,7 +60,7 @@ def test_start_pipeline(mock_client, mock_to_utc_iso_8601):
 
 
 @patch("openlineage.dagster.adapter.to_utc_iso_8601")
-@patch("openlineage.dagster.adapter.OpenLineageClient.from_environment")
+@patch("openlineage.dagster.adapter.OpenLineageClient")
 def test_complete_step(mock_client, mock_to_utc_iso_8601):
     event_time = "2022-01-01T00:00:00.000000Z"
     mock_to_utc_iso_8601.return_value = event_time
@@ -106,7 +106,7 @@ def test_complete_step(mock_client, mock_to_utc_iso_8601):
 
 
 @patch("openlineage.dagster.adapter.to_utc_iso_8601")
-@patch("openlineage.dagster.adapter.OpenLineageClient.from_environment")
+@patch("openlineage.dagster.adapter.OpenLineageClient")
 def test_fail_step(mock_client, mock_to_utc_iso_8601):
     event_time = "2022-01-01T00:00:00.000000Z"
     mock_to_utc_iso_8601.return_value = event_time

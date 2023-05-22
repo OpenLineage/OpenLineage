@@ -42,5 +42,5 @@ class Transport:
 
 
 class TransportFactory:
-    def create(self) -> Transport:
+    def create(self, config: dict[str, str] | None = None) -> Transport:
         raise NotImplementedError

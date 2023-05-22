@@ -13,7 +13,7 @@ with open("README.md") as readme_file:
 __version__ = "0.27.0"
 
 requirements = [
-    "attrs>=19.3",
+    "attrs>=20.3",
     "requests>=2.20.0",
     f"openlineage-integration-common[sql]=={__version__}",
     f"openlineage-python=={__version__}",
@@ -24,6 +24,7 @@ extras_require = {
         "aiohttp",          # tox Airflow 2.3.4 does not install it by default
         "pytest",
         "pytest-cov",
+        "pytest-mock",
         "mock",
         "ruff",
         "SQLAlchemy",       # must be set to 1.3.* for airflow tests compatibility
@@ -41,7 +42,7 @@ extras_require = {
         "apache-airflow-providers-sftp>=2.1.1",
         "apache-airflow-providers-ssh>=2.1.0",
         "apache-airflow-providers-ftp>=3.3.0",
-        "apache-airflow-providers-dbt-cloud>=2.1.0",
+        "apache-airflow-providers-dbt-cloud<3.2.0",
         "airflow-provider-great-expectations==0.1.5",
         "great-expectations<=0.15.23",
         "protobuf>=3.20,<4.23",

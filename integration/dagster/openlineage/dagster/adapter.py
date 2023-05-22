@@ -27,7 +27,7 @@ class OpenLineageAdapter:
     """
 
     def __init__(self):
-        self._client = OpenLineageClient.from_environment()
+        self._client = OpenLineageClient()
 
     def start_pipeline(
             self,

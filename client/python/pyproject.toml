@@ -53,6 +53,7 @@ run.parallel = true
 run.plugins = ["covdefaults"]
 
 [tool.mypy]
+disable_error_code = "no-redef"
 show_error_codes = true
 overrides = [
   { ignore_missing_imports = true, module = [
