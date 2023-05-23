@@ -1,5 +1,6 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
 
 import copy
 import json
@@ -30,40 +31,39 @@ openlineage_event = {
     "job": {
         "namespace": "openlineage",
         "name": "job",
-        "facets": {}
+        "facets": {},
     },
     "run": {
         "runId": "69f4acab-b87d-4fc0-b27b-8ea950370ff3",
-        "facets": {}
+        "facets": {},
     },
-    "inputs": [
-    ],
+    "inputs": [],
     "outputs": [
         {
             "namespace": "some-namespace",
             "name": "input-dataset",
-            "facets": {}
-        }
+            "facets": {},
+        },
     ],
-    "producer": "some-producer"
+    "producer": "some-producer",
 }
 
 
-def test_symlink_dataset_facet():
+def test_symlink_dataset_facet() -> None:
     session = MagicMock()
     client = OpenLineageClient(url="http://example.com", session=session)
 
     symlink_facet = {
         "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python",
         "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec"
-                      "/OpenLineage.json#/definitions/SymlinksDatasetFacet",
+        "/OpenLineage.json#/definitions/SymlinksDatasetFacet",
         "identifiers": [
             {
                 "namespace": "symlink-namespace",
                 "name": "symlink-name",
-                "type": "TABLE"
-            }
-        ]
+                "type": "TABLE",
+            },
+        ],
     }
 
     client.emit(
@@ -84,14 +84,14 @@ def test_symlink_dataset_facet():
                                 SymlinksDatasetFacetIdentifiers(
                                     namespace="symlink-namespace",
                                     name="symlink-name",
-                                    type="TABLE"
-                                )
-                            ]
-                        )
-                    }
-                )
-            ]
-        )
+                                    type="TABLE",
+                                ),
+                            ],
+                        ),
+                    },
+                ),
+            ],
+        ),
     )
 
     event_sent = json.loads(session.post.call_args[0][1])
@@ -103,7 +103,7 @@ def test_symlink_dataset_facet():
     assert expected_event == event_sent
 
 
-def test_storage_dataset_facet():
+def test_storage_dataset_facet() -> None:
     session = MagicMock()
     client = OpenLineageClient(url="http://example.com", session=session)
 
@@ -112,7 +112,7 @@ def test_storage_dataset_facet():
         "fileFormat": "parquet",
         "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python",
         "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec"
-                      "/OpenLineage.json#/definitions/StorageDatasetFacet",
+        "/OpenLineage.json#/definitions/StorageDatasetFacet",
     }
 
     client.emit(
@@ -130,12 +130,12 @@ def test_storage_dataset_facet():
                     facets={
                         "storage": StorageDatasetFacet(
                             storageLayer="iceberg",
-                            fileFormat="parquet"
-                        )
-                    }
-                )
-            ]
-        )
+                            fileFormat="parquet",
+                        ),
+                    },
+                ),
+            ],
+        ),
     )
 
     event_sent = json.loads(session.post.call_args[0][1])
@@ -147,7 +147,7 @@ def test_storage_dataset_facet():
     assert expected_event == event_sent
 
 
-def test_ownership_job_facet():
+def test_ownership_job_facet() -> None:
     session = MagicMock()
     client = OpenLineageClient(url="http://example.com", session=session)
 
@@ -155,12 +155,12 @@ def test_ownership_job_facet():
         "owners": [
             {
                 "name": "some-owner",
-                "type": "some-owner-type"
-            }
+                "type": "some-owner-type",
+            },
         ],
         "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python",
         "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec"
-                      "/OpenLineage.json#/definitions/OwnershipJobFacet",
+        "/OpenLineage.json#/definitions/OwnershipJobFacet",
     }
 
     client.emit(
@@ -174,20 +174,20 @@ def test_ownership_job_facet():
                 {
                     "ownership": OwnershipJobFacet(
                         owners=[
-                            OwnershipJobFacetOwners("some-owner", "some-owner-type")
-                        ]
-                    )
-                }
+                            OwnershipJobFacetOwners("some-owner", "some-owner-type"),
+                        ],
+                    ),
+                },
             ),
             "some-producer",
             [],
             [
                 Dataset(
                     namespace="some-namespace",
-                    name="input-dataset"
-                )
-            ]
-        )
+                    name="input-dataset",
+                ),
+            ],
+        ),
     )
 
     event_sent = json.loads(session.post.call_args[0][1])
@@ -199,7 +199,7 @@ def test_ownership_job_facet():
     assert expected_event == event_sent
 
 
-def test_dataset_version_dataset_facet():
+def test_dataset_version_dataset_facet() -> None:
     session = MagicMock()
     client = OpenLineageClient(url="http://example.com", session=session)
 
@@ -207,7 +207,7 @@ def test_dataset_version_dataset_facet():
         "datasetVersion": "v0.1",
         "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python",
         "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec"
-                      "/OpenLineage.json#/definitions/DatasetVersionDatasetFacet",
+        "/OpenLineage.json#/definitions/DatasetVersionDatasetFacet",
     }
 
     client.emit(
@@ -217,7 +217,7 @@ def test_dataset_version_dataset_facet():
             Run("69f4acab-b87d-4fc0-b27b-8ea950370ff3"),
             Job(
                 "openlineage",
-                "job"
+                "job",
             ),
             "some-producer",
             [],
@@ -227,12 +227,12 @@ def test_dataset_version_dataset_facet():
                     name="input-dataset",
                     facets={
                         "version": DatasetVersionDatasetFacet(
-                            datasetVersion="v0.1"
-                        )
-                    }
-                )
-            ]
-        )
+                            datasetVersion="v0.1",
+                        ),
+                    },
+                ),
+            ],
+        ),
     )
 
     event_sent = json.loads(session.post.call_args[0][1])
@@ -244,7 +244,7 @@ def test_dataset_version_dataset_facet():
     assert expected_event == event_sent
 
 
-def test_lifecycle_state_change_dataset_facet():
+def test_lifecycle_state_change_dataset_facet() -> None:
     session = MagicMock()
     client = OpenLineageClient(url="http://example.com", session=session)
 
@@ -252,11 +252,11 @@ def test_lifecycle_state_change_dataset_facet():
         "lifecycleStateChange": "DROP",
         "previousIdentifier": {
             "namespace": "previous-namespace",
-            "name": "previous-name"
+            "name": "previous-name",
         },
         "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python",
         "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec"
-                      "/OpenLineage.json#/definitions/LifecycleStateChangeDatasetFacet",
+        "/OpenLineage.json#/definitions/LifecycleStateChangeDatasetFacet",
     }
 
     client.emit(
@@ -266,7 +266,7 @@ def test_lifecycle_state_change_dataset_facet():
             Run("69f4acab-b87d-4fc0-b27b-8ea950370ff3"),
             Job(
                 "openlineage",
-                "job"
+                "job",
             ),
             "some-producer",
             [],
@@ -279,13 +279,13 @@ def test_lifecycle_state_change_dataset_facet():
                             lifecycleStateChange=LifecycleStateChange.DROP,
                             previousIdentifier=LifecycleStateChangeDatasetFacetPreviousIdentifier(
                                 namespace="previous-namespace",
-                                name="previous-name"
-                            )
-                        )
-                    }
-                )
-            ]
-        )
+                                name="previous-name",
+                            ),
+                        ),
+                    },
+                ),
+            ],
+        ),
     )
 
     event_sent = json.loads(session.post.call_args[0][1])
@@ -298,7 +298,7 @@ def test_lifecycle_state_change_dataset_facet():
     assert expected_event == event_sent
 
 
-def test_ownership_dataset_facet():
+def test_ownership_dataset_facet() -> None:
     session = MagicMock()
     client = OpenLineageClient(url="http://example.com", session=session)
 
@@ -306,12 +306,12 @@ def test_ownership_dataset_facet():
         "owners": [
             {
                 "name": "some-owner",
-                "type": "some-owner-type"
-            }
+                "type": "some-owner-type",
+            },
         ],
         "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python",
         "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec"
-                      "/OpenLineage.json#/definitions/OwnershipDatasetFacet",
+        "/OpenLineage.json#/definitions/OwnershipDatasetFacet",
     }
 
     client.emit(
@@ -321,7 +321,7 @@ def test_ownership_dataset_facet():
             Run("69f4acab-b87d-4fc0-b27b-8ea950370ff3"),
             Job(
                 "openlineage",
-                "job"
+                "job",
             ),
             "some-producer",
             [],
@@ -331,15 +331,17 @@ def test_ownership_dataset_facet():
                     name="input-dataset",
                     facets={
                         "ownership": OwnershipDatasetFacet(
-                            owners=[OwnershipDatasetFacetOwners(
-                                name="some-owner",
-                                type="some-owner-type"
-                            )]
-                        )
-                    }
-                )
-            ]
-        )
+                            owners=[
+                                OwnershipDatasetFacetOwners(
+                                    name="some-owner",
+                                    type="some-owner-type",
+                                ),
+                            ],
+                        ),
+                    },
+                ),
+            ],
+        ),
     )
 
     event_sent = json.loads(session.post.call_args[0][1])
@@ -351,7 +353,7 @@ def test_ownership_dataset_facet():
     assert expected_event == event_sent
 
 
-def test_column_lineage_dataset_facet():
+def test_column_lineage_dataset_facet() -> None:
     session = MagicMock()
     client = OpenLineageClient(url="http://example.com", session=session)
 
@@ -362,16 +364,16 @@ def test_column_lineage_dataset_facet():
                     {
                         "namespace": "namespace-of-input-field-dataset",
                         "name": "name-of-input-field-dataset",
-                        "field": "some-field-name"
-                    }
+                        "field": "some-field-name",
+                    },
                 ],
                 "transformationDescription": "some-transformation",
-                "transformationType": "some-transformation-type"
-            }
+                "transformationType": "some-transformation-type",
+            },
         },
         "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python",
         "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec"
-                      "/OpenLineage.json#/definitions/ColumnLineageDatasetFacet",
+        "/OpenLineage.json#/definitions/ColumnLineageDatasetFacet",
     }
 
     client.emit(
@@ -381,7 +383,7 @@ def test_column_lineage_dataset_facet():
             Run("69f4acab-b87d-4fc0-b27b-8ea950370ff3"),
             Job(
                 "openlineage",
-                "job"
+                "job",
             ),
             "some-producer",
             [],
@@ -399,16 +401,16 @@ def test_column_lineage_dataset_facet():
                                         ColumnLineageDatasetFacetFieldsAdditionalInputFields(
                                             namespace="namespace-of-input-field-dataset",
                                             name="name-of-input-field-dataset",
-                                            field="some-field-name"
-                                        )
-                                    ]
-                                )
-                            }
-                        )
-                    }
-                )
-            ]
-        )
+                                            field="some-field-name",
+                                        ),
+                                    ],
+                                ),
+                            },
+                        ),
+                    },
+                ),
+            ],
+        ),
     )
 
     event_sent = json.loads(session.post.call_args[0][1])

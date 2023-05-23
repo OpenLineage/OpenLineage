@@ -1,7 +1,6 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
-
-from typing import Type
+from __future__ import annotations
 
 from openlineage.client.transport.console import ConsoleTransport
 from openlineage.client.transport.factory import DefaultTransportFactory
@@ -17,12 +16,12 @@ _factory.register_transport(ConsoleTransport.kind, ConsoleTransport)
 _factory.register_transport(NoopTransport.kind, NoopTransport)
 
 
-def get_default_factory():
+def get_default_factory() -> DefaultTransportFactory:
     return _factory
 
 
 # decorator to wrap transports with
-def register_transport(clazz: Type[Transport]):
+def register_transport(clazz: type[Transport]) -> type[Transport]:
     assert clazz.kind is not None
     _factory.register_transport(clazz.kind, clazz)
     return clazz
@@ -36,5 +35,8 @@ __all__ = [
     "KafkaConfig",
     "KafkaTransport",
     "ConsoleTransport",
-    "NoopTransport"
+    "NoopTransport",
+    "Transport",
+    "register_transport",
+    "get_default_factory",
 ]
