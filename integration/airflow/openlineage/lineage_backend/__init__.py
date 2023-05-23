@@ -6,7 +6,7 @@ import time
 import uuid
 from typing import Optional
 
-from pkg_resources import parse_version
+from packaging.version import parse as parse_version
 
 from airflow.lineage.backend import LineageBackend
 from airflow.version import version as AIRFLOW_VERSION

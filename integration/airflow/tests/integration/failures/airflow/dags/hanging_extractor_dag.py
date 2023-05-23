@@ -5,7 +5,7 @@ import os
 from typing import Any
 
 from openlineage.client import set_producer
-from pkg_resources import parse_version
+from packaging.version import parse as parse_version
 
 from airflow import DAG
 from airflow.models import BaseOperator

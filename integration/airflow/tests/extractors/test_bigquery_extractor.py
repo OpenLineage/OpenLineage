@@ -19,7 +19,7 @@ from openlineage.common.provider.bigquery import (
     BigQueryStatisticsDatasetFacet,
 )
 from openlineage.common.utils import get_from_nullable_chain
-from pkg_resources import parse_version
+from packaging.version import parse as parse_version
 
 from airflow.models import DAG, TaskInstance
 from airflow.utils import timezone

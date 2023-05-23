@@ -23,7 +23,7 @@ from openlineage.airflow.utils import (
     url_to_https,
 )
 from openlineage.client.utils import RedactMixin
-from pkg_resources import parse_version
+from packaging.version import parse as parse_version
 
 from airflow.models import DAG as AIRFLOW_DAG
 from airflow.models import DagModel

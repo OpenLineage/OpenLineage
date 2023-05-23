@@ -1,7 +1,7 @@
 # Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 from openlineage.client import set_producer
-from pkg_resources import parse_version
+from packaging.version import parse as parse_version
 
 from airflow import DAG
 from airflow.providers.postgres.operators.postgres import PostgresOperator
