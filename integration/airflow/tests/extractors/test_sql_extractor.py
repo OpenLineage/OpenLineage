@@ -1,8 +1,10 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
-
+import pytest
 from openlineage.airflow.extractors.sql_extractor import SqlExtractor
 from openlineage.common.sql import DbTableMeta
+
+from airflow.providers.postgres.operators.postgres import PostgresOperator
 
 
 def normalize_name_lower(name: str) -> str:
@@ -51,12 +53,16 @@ def test_get_tables_hierarchy():
     ) == {"db": {"schema1": ["Table2"]}, "db2": {"schema1": ["Table1"]}}
 
 
-def test_get_sql_iterator():
-    assert SqlExtractor._normalize_sql("select * from asdf") == "select * from asdf"
-
-    assert SqlExtractor._normalize_sql(
-        ["select * from asdf", "insert into asdf values (1,2,3)"]
-    ) == "select * from asdf;\ninsert into asdf values (1,2,3)"
-
-    assert SqlExtractor._normalize_sql("select * from asdf;insert into asdf values (1,2,3)") \
-        == "select * from asdf;\ninsert into asdf values (1,2,3)"
+@pytest.mark.parametrize(
+    "input, output", [
+        ("select * from asdf", ["select * from asdf"]),
+        (["select * from asdf", "insert into asdf values (1,2,3)"],
+            ["select * from asdf", "insert into asdf values (1,2,3)"]),
+        ("select * from asdf;insert into asdf values (1,2,3)",
+            ["select * from asdf", "insert into asdf values (1,2,3)"])
+    ]
+)
+def test_get_sql_normalized(input, output):
+    operator = PostgresOperator(task_id="test_get_sql_normalized", sql=input)
+    extractor = SqlExtractor(operator)
+    assert extractor._normalize_sql() == output

@@ -20,6 +20,7 @@ from openlineage.airflow.facets import (
 )
 from openlineage.client.utils import RedactMixin
 from pendulum import from_timestamp
+from pkg_resources import parse_version
 
 from airflow.models import DAG as AIRFLOW_DAG
 
@@ -535,3 +536,7 @@ class LoggingMixin:
                 "openlineage.airflow.extractors."
                 f"{self.__class__.__module__}.{self.__class__.__name__}"
             )
+
+
+def is_airflow_version_enough(x):
+    return parse_version(os.environ.get("AIRFLOW_VERSION", "0.0.0")) >= parse_version(x)

@@ -1,8 +1,9 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Callable, Dict, Iterable, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
 from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
@@ -11,7 +12,7 @@ from openlineage.airflow.extractors.dbapi_utils import (
     create_information_schema_query,
     get_table_schemas,
 )
-from openlineage.airflow.utils import get_connection
+from openlineage.airflow.utils import get_connection, is_airflow_version_enough
 from openlineage.client.facet import (
     BaseFacet,
     ColumnLineageDatasetFacet,
@@ -51,13 +52,15 @@ class SqlExtractor(BaseExtractor):
 
     def extract(self) -> TaskMetadata:
         task_name = f"{self.operator.dag_id}.{self.operator.task_id}"
-        job_facets = {"sql": SqlJobFacet(query=self._normalize_sql(self.operator.sql))}
+        sqls = self._normalize_sql()
+        joined_sql = ";\n".join(sqls)
+        job_facets = {"sql": SqlJobFacet(query=joined_sql)}
         run_facets: Dict = {}
 
         # (1) Parse sql statement to obtain input / output tables.
-        self.log.debug(f"Sending SQL to parser: {self.operator.sql}")
+        self.log.debug(f"Sending SQL to parser: {joined_sql}")
         sql_meta: Optional[SqlMeta] = parse(
-            self.operator.sql,
+            sqls,
             dialect=self.dialect,
             default_schema=self.default_schema
         )
@@ -278,12 +281,13 @@ class SqlExtractor(BaseExtractor):
             allow_trailing_semicolon=self._allow_trailing_semicolon,
         )
 
-    @staticmethod
-    def _normalize_sql(sql: Union[str, Iterable[str]]):
+    def _normalize_sql(self) -> list[str]:
+        if is_airflow_version_enough("2.5.0") and isinstance(self.operator.sql, str):
+            return self.hook.split_sql_string(self.operator.sql)
+        sql = self.operator.sql
         if isinstance(sql, str):
             sql = [stmt for stmt in sql.split(";") if stmt != ""]
-        sql = [obj for stmt in sql for obj in stmt.split(";") if obj != ""]
-        return ";\n".join(sql)
+        return [obj for stmt in sql for obj in stmt.split(";") if obj != ""]
 
     @staticmethod
     def _get_tables_hierarchy(
