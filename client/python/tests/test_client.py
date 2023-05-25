@@ -2,8 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
+import os
 import re
-from unittest.mock import MagicMock
+import uuid
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -89,3 +91,44 @@ def test_client_uses_passed_transport() -> None:
         ),
     )
     client.transport.emit.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    ("name", "config_path", "should_emit"),
+    [
+        ("job", "tests/config/exact_filter.yml", False),
+        ("wrong", "tests/config/exact_filter.yml", False),
+        ("job1", "tests/config/exact_filter.yml", True),
+        ("1wrong", "tests/config/exact_filter.yml", True),
+        ("asdf", "tests/config/exact_filter.yml", True),
+        ("", "tests/config/exact_filter.yml", True),
+        ("whatever", "tests/config/regex_filter.yml", False),
+        ("something_whatever_asdf", "tests/config/regex_filter.yml", False),
+        ("$$$.whatever", "tests/config/regex_filter.yml", False),
+        ("asdf", "tests/config/regex_filter.yml", True),
+        ("", "tests/config/regex_filter.yml", True),
+    ],
+)
+def test_client_filters_exact_job_name_events(
+    name: str,
+    config_path: str,
+    *,
+    should_emit: bool,
+) -> None:
+    with patch.dict(os.environ, {"OPENLINEAGE_CONFIG": config_path}):
+        factory = MagicMock()
+        transport = MagicMock()
+        factory.create.return_value = transport
+        client = OpenLineageClient(factory=factory)
+
+        run = Run(runId=str(uuid.uuid4()))
+        event = RunEvent(
+            eventType=RunState.START,
+            eventTime="2021-11-03T10:53:52.427343",
+            run=run,
+            job=Job(name=name, namespace=""),
+            producer="",
+        )
+
+        client.emit(event)
+        assert transport.emit.called == should_emit

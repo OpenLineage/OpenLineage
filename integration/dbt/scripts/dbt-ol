@@ -113,7 +113,7 @@ def main():
         'dbt'
     )
 
-    client = OpenLineageClient.from_environment()
+    client = OpenLineageClient()
 
     if parent_id:
         parent_namespace, parent_job_name, parent_run_id = parent_id.split('/')

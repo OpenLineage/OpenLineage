@@ -5,19 +5,12 @@ from __future__ import annotations
 import inspect
 import logging
 import os
-import sys
 
 from openlineage.client.transport.noop import NoopConfig, NoopTransport
 from openlineage.client.transport.transport import Config, Transport, TransportFactory
 from openlineage.client.utils import try_import_from_string
 
 log = logging.getLogger(__name__)
-
-
-try:
-    import yaml
-except ImportError:
-    log.warning("ImportError occurred when trying to import yaml module.")
 
 
 class DefaultTransportFactory(TransportFactory):
@@ -34,10 +27,6 @@ class DefaultTransportFactory(TransportFactory):
         if config:
             return self._create_transport(config)
 
-        if "yaml" in sys.modules:
-            yml_config = self._try_config_from_yaml()
-            if yml_config:
-                return self._create_transport(yml_config)
         # Fallback to setting HTTP transport from env variables
         http = self._try_http_from_env_config()
         if http:
@@ -74,49 +63,6 @@ class DefaultTransportFactory(TransportFactory):
             raise TypeError(msg)
 
         return transport_class(config_class.from_dict(config))  # type: ignore[call-arg]
-
-    def _try_config_from_yaml(self) -> dict[str, str] | None:
-        file = self._find_yaml()
-        if file:
-            try:
-                with open(file) as f:
-                    config: dict[str, dict[str, str]] = yaml.safe_load(f)
-                    return config["transport"]
-            except Exception:  # noqa: BLE001, S110
-                # Just move to read env vars
-                pass
-        return None
-
-    @staticmethod
-    def _find_yaml() -> str | None:
-        # Check OPENLINEAGE_CONFIG env variable
-        path = os.getenv("OPENLINEAGE_CONFIG", None)
-        try:
-            if path and os.path.isfile(path) and os.access(path, os.R_OK):
-                return path
-        except Exception:  # noqa: BLE001
-            if path:
-                log.exception("Couldn't read file %s: ", path)
-            else:
-                pass  # We can get different errors depending on system
-
-        # Check current working directory:
-        try:
-            cwd = os.getcwd()
-            if "openlineage.yml" in os.listdir(cwd):
-                return os.path.join(cwd, "openlineage.yml")
-        except Exception:  # noqa: BLE001, S110
-            pass  # We can get different errors depending on system
-
-        # Check $HOME/.openlineage dir
-        try:
-            path = os.path.expanduser("~/.openlineage")
-            if "openlineage.yml" in os.listdir(path):
-                return os.path.join(path, "openlineage.yml")
-        except Exception:  # noqa: BLE001, S110
-            # We can get different errors depending on system
-            pass
-        return None
 
     @staticmethod
     def _try_http_from_env_config() -> Transport | None:

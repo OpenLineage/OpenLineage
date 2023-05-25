@@ -1,0 +1,7 @@
+filters:
+  - type: exact
+    match: job
+  - type: exact
+    match: wrong
+transport:
+  type: console

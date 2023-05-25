@@ -65,7 +65,7 @@ class OpenLineageAdapter:
                 marquez_url, OpenLineageClientOptions(api_key=marquez_api_key)
             )
         else:
-            client = OpenLineageClient.from_environment()
+            client = OpenLineageClient()
         return client
 
     @property

@@ -1,17 +1,15 @@
 # Copyright 2018-2022 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 import json
-import unittest
 import uuid
 from datetime import datetime
 
-import mock
 import pytest
 import pytz
 from mock import MagicMock
-from openlineage.airflow.extractors.dbt_cloud_extractor import DbtCloudExtractor
 from openlineage.airflow.utils import try_import_from_string
 from pkg_resources import parse_version
+from pytest_mock import MockerFixture
 
 from airflow.models import DAG, TaskInstance
 from airflow.utils import timezone
@@ -90,21 +88,26 @@ class MockResponse:
         return self.json_data
 
 
-class TestDbtCloudExtractorE2E(unittest.TestCase):
+class TestDbtCloudExtractorE2E:
     @pytest.mark.skipif(
         parse_version(AIRFLOW_VERSION) < parse_version("2.4.0"),
-        reason="Airflow < 2.4.0"
+        reason="Airflow < 2.4.0",
     )
-    @mock.patch("airflow.models.TaskInstance.xcom_pull")
-    @mock.patch("openlineage.airflow.adapter.OpenLineageAdapter")
-    @mock.patch("openlineage.airflow.extractors.dbt_cloud_extractor.BaseHook")
-    @mock.patch("openlineage.airflow.extractors.dbt_cloud_extractor.DbtCloudHook")
-    @mock.patch(
-        "openlineage.airflow.extractors.dbt_cloud_extractor.DbtCloudExtractor.get_job_run_artifact"
-    )
-    def test_extractor(
-        self, get_job_run_artifact, dbt_cloud_hook, base_hook, ol_adapter, xcom_mock
-    ):
+    def test_extractor(self, mocker: MockerFixture):
+        from openlineage.airflow.extractors.dbt_cloud_extractor import DbtCloudExtractor
+
+        xcom_mock = mocker.patch("airflow.models.TaskInstance.xcom_pull")
+        ol_adapter = mocker.patch("openlineage.airflow.adapter.OpenLineageAdapter")
+        base_hook = mocker.patch(
+            "openlineage.airflow.extractors.dbt_cloud_extractor.BaseHook"
+        )
+        dbt_cloud_hook = mocker.patch(
+            "openlineage.airflow.extractors.dbt_cloud_extractor.DbtCloudHook"
+        )
+        get_job_run_artifact = mocker.patch(
+            "openlineage.airflow.extractors.dbt_cloud_extractor.DbtCloudExtractor.get_job_run_artifact"
+        )
+
         base_hook.get_connection.return_value.login = 117664
         mock_hook = MagicMock()
         dbt_cloud_hook.return_value = mock_hook
