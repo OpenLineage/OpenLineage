@@ -1,0 +1,36 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: marquez
+  labels:
+    app.kubernetes.io/name: marquez
+    helm.sh/chart: marquez-0.34.0
+    app.kubernetes.io/instance: marquez
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+spec:
+  rules:
+    - host: "openlineage-fluentd-demo"
+      http:
+        paths:
+          - path: /api/v1/lineage
+            pathType: Exact
+            backend:
+              service:
+                name: openlineage-fluentd-demo
+                port:
+                  number: 9880
+          - path: /api/
+            pathType: Prefix
+            backend:
+              service:
+                name: openlineage-fluentd-demo-marquez
+                port:
+                  name: http
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: openlineage-fluentd-demo-marquez-web
+                port:
+                  name: http

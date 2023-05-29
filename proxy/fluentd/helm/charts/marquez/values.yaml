@@ -1,0 +1,200 @@
+# SPDX-License-Identifier: Apache-2.0
+## This can be used to override the image registry at a global level, which
+## can be useful when pulling from private hosts.
+##
+# global:
+#  imageRegistry: myRegistryName
+
+## Properties related to core Marquez backend functionality and API usage
+##
+marquez:
+  ## Number of desired replicas
+  ##
+  replicaCount: 1
+  ## Marquez image version
+  ## ref: https://hub.docker.com/r/marquezproject/marquez/tags/
+  ##
+  image:
+    registry: docker.io
+    repository: marquezproject/marquez
+    tag: 0.34.0
+    pullPolicy: IfNotPresent
+  ## Name of the existing secret containing credentials for the Marquez installation.
+  ## When this is specified, it will take precedence over the values configured in the 'db' section.
+  ##
+  # existingSecretName: marquez-secrets
+  ## Postgres database settings where Marquez data will persist
+  ##
+  db:
+    host: localhost
+    port: 5432
+    name: marquez
+    user: buendia
+    password: macondo
+  ## Indicates if Flyway database migration will execute upon deployment
+  ##
+  migrateOnStartup: true
+  ## Marquez will run using this hostname
+  ##
+  hostname: localhost
+  ## Marquez API will run on this port
+  ##
+  port: 5000
+  ## Heath and liveness checks will run on this port
+  ##
+  adminPort: 5001
+  ## Resource requests and limits
+  ## ref: http://kubernetes.io/docs/user-guide/compute-resources/
+  ##
+  resources:
+    # Typically best to not specify these settings, unless you've got a specific
+    # reason to customize.
+    limits: {}
+    #    cpu: 200m
+    #    memory: 1Gi
+    requests: {}
+    #    memory: 256Mi
+    #    cpu: 250m
+  podAnnotations: {}
+  ## - name:
+  ##   value:
+  ##
+
+## Properties related to Marquez frontend functionality
+##
+web:
+  ## Enables creation of the web UI
+  ##
+  enabled: true
+  ## Number of desired replicas
+  ##
+  replicaCount: 1
+  ## Marquez web image version
+  ## ref: https://hub.docker.com/r/marquezproject/marquez-web/tags/
+  ##
+  image:
+    registry: docker.io
+    repository: marquezproject/marquez-web
+    tag: 0.34.0
+    pullPolicy: IfNotPresent
+  ## Marquez website will run on this port
+  ##
+  port: 3000
+  ## Resource requests and limits
+  ## ref: http://kubernetes.io/docs/user-guide/compute-resources/
+  ##
+  resources:
+    # Typically best to not specify these settings, unless you've got a specific
+    # reason to customize.
+    limits: {}
+    #    cpu: 200m
+    #    memory: 1Gi
+    requests: {}
+    #    memory: 256Mi
+    #    cpu: 250m
+
+## PostgreSQL chart configuration
+## ref: https://github.com/bitnami/charts/blob/master/bitnami/postgresql/values.yaml
+##
+postgresql:
+  ## @param postgresql.enabled Deploy PostgreSQL container(s)
+  ##
+  enabled: true
+  ## Bitnami PostgreSQL image version
+  ## ref: https://hub.docker.com/r/bitnami/postgresql/tags/
+  ## @param image.registry PostgreSQL image registry
+  ## @param image.repository PostgreSQL image repository
+  ## @param image.tag PostgreSQL image tag (immutable tags are recommended)
+  ##
+  image:
+    tag: 12.1.0
+  ## Authentication parameters
+  ## ref: https://github.com/bitnami/bitnami-docker-postgresql/blob/master/README.md#setting-the-root-password-on-first-run
+  ## ref: https://github.com/bitnami/bitnami-docker-postgresql/blob/master/README.md#creating-a-database-on-first-run
+  ## ref: https://github.com/bitnami/bitnami-docker-postgresql/blob/master/README.md#creating-a-database-user-on-first-run
+  ##
+  auth:
+    ## @param auth.username Name for a custom user to create
+    ##
+    username: buendia
+    ## @param auth.password Password for the custom user to create
+    ##
+    password: macondo
+    ## @param auth.database Name for a custom database to create
+    ##
+    database: marquez
+    ## @param auth.existingSecret Name of existing secret to use for PostgreSQL credentials
+    ## `auth.postgresPassword`, `auth.password`, and `auth.replicationPassword` will be ignored and picked up from this secret
+    ## The secret must contain the keys `postgres-password` (which is the password for "postgres" admin user),
+    ## `password` (which is the password for the custom user to create when `auth.username` is set),
+    ## and `replication-password` (which is the password for replication user).
+    ## The secret might also contains the key `ldap-password` if LDAP is enabled. `ldap.bind_password` will be ignored and
+    ## picked from this secret in this case.
+    ## The value is evaluated as a template.
+    ##
+    existingSecret: ""
+
+## Additional labels to all the deployed resources; note that
+## the following standard labels will automatically be applied.
+##   app.kubernetes.io/name, helm.sh/chart,
+##   app.kubernetes.io/instance, app.kubernetes.io/managed-by
+##
+commonLabels: {}
+## - name: app.kubernetes.io/part-of
+##   value: "my-awesome-system"
+
+## Add annotations to all the deployed resources
+##
+commonAnnotations: {}
+## - name: support-contact
+##   value: "ops-team-name"
+##
+
+## Affinity for pod assignment
+## Ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+## Note: podAffinityPreset, podAntiAffinityPreset, and  nodeAffinityPreset will be ignored when it's set
+##
+affinity: {}
+
+## Tolerations for pod assignment
+## Ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+##
+tolerations: []
+
+## Node labels for pod assignment
+## Ref: https://kubernetes.io/docs/user-guide/node-selection/
+##
+nodeSelector: {}
+
+## Kubernetes configuration
+## For minikube, set this to NodePort, elsewhere use LoadBalancer
+##
+service:
+  type: ClusterIP
+  port: 80
+  ## Service annotations done as key:value pairs
+  ##
+  annotations:
+
+## Configure the ingress resource that allows you to access the
+## Marquez installation, without relying on local port forwarding.
+## ref: http://kubernetes.io/docs/user-guide/ingress/
+##
+ingress:
+  ## Set to true to enable ingress record generation
+  ##
+  enabled: false
+  ## Ingress annotations done as key:value pairs, and
+  ## will differ based on your chosen ingress controller.
+  ## For a list of popular ingress controllers, please see
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/ingress-controllers/
+  ##
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - chart-example.local
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local

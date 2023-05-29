@@ -1,0 +1,106 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "common.names.fullname" . }}
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+    {{- if .Values.commonLabels }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
+    {{- end }}
+    app.kubernetes.io/component: marquez
+  annotations:
+    {{- if .Values.commonAnnotations }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.commonAnnotations "context" $) | nindent 4 }}
+    {{- end }}
+    {{- range $key, $value := .Values.marquez.podAnnotations }}
+    {{ $key }}: {{ include "common.tplvalues.render" (dict "value" $value "context" $) | quote }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels: {{- include "common.labels.matchLabels" . | nindent 6 }}
+      app.kubernetes.io/component: marquez
+  replicas: {{ default 1 .Values.marquez.replicaCount }}
+  template:
+    metadata:
+      labels: {{- include "common.labels.standard" . | nindent 8 }}
+        app.kubernetes.io/component: marquez
+    spec:
+      {{- if .Values.postgresql.enabled }}
+      # This init container is for avoiding CrashLoopback errors in the Marquez container because the PostgreSQL container is not ready
+      initContainers:
+        - name: wait-for-db
+          image: postgres:12.1
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/bash
+          args:
+            - -ec
+            - until pg_isready -h ${POSTGRES_HOST} -p ${POSTGRES_PORT} -U ${POSTGRES_USER}; do echo waiting for database; sleep 2; done;
+          env:
+            - name: POSTGRES_HOST
+              value: {{ include "marquez.database.host" . | quote }}
+            - name: POSTGRES_PORT
+              value: {{ include "marquez.database.port" . | quote }}
+            - name: POSTGRES_USER
+              value: {{ include "marquez.database.user" . | quote }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ include "marquez.image" . }}
+          imagePullPolicy: {{ .Values.marquez.image.pullPolicy }}
+          volumeMounts:
+            - name: marquez-volume
+              mountPath: /usr/src/app/config.yml
+              subPath: config.yml
+          ports:
+            - name: http
+              containerPort: {{ .Values.marquez.port }}
+              protocol: TCP
+            - name: http-admin
+              containerPort: {{ .Values.marquez.adminPort }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthcheck
+              port: http-admin
+          readinessProbe:
+            httpGet:
+              path: /healthcheck
+              port: http-admin
+          env:
+            - name: MARQUEZ_PORT
+              value: {{ .Values.marquez.port | quote }}
+            - name: MARQUEZ_ADMIN_PORT
+              value: {{ .Values.marquez.adminPort | quote }}
+            - name: MARQUEZ_CONFIG
+              value: /usr/src/app/config.yml
+            - name: POSTGRES_HOST
+              value: {{ include "marquez.database.host" . | quote }}
+            - name: POSTGRES_PORT
+              value: {{ include "marquez.database.port" . | quote }}
+            - name: POSTGRES_DB
+              value: {{ include "marquez.database.name" . | quote }}
+            - name: POSTGRES_USER
+              value: {{ include "marquez.database.user" . | quote }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "marquez.postgresql.secretName" . }}
+                  key: {{ include "marquez.database.existingsecret.key" . }}
+            - name: MIGRATE_ON_STARTUP
+              value: {{ .Values.marquez.migrateOnStartup | quote }}
+          {{- if .Values.marquez.resources }}
+          resources: {{- toYaml .Values.marquez.resources | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: marquez-volume
+          configMap:
+            name: {{ include "marquez.fullname" . }}-config
+      {{- if .Values.affinity }}
+      affinity: {{- include "common.tplvalues.render" (dict "value" .Values.affinity "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector: {{- include "common.tplvalues.render" (dict "value" .Values.nodeSelector "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.tolerations }}
+      tolerations: {{- include "common.tplvalues.render" (dict "value" .Values.tolerations "context" $) | nindent 8 }}
+      {{- end }}

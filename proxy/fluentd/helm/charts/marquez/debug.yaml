@@ -1,0 +1,1131 @@
+NAME: marquez
+LAST DEPLOYED: Thu May 25 07:57:16 2023
+NAMESPACE: default
+STATUS: pending-install
+REVISION: 1
+USER-SUPPLIED VALUES:
+affinity: {}
+commonAnnotations: {}
+commonLabels: {}
+ingress:
+  annotations: {}
+  enabled: true
+  hosts:
+  - chart-example.local
+  tls: []
+marquez:
+  adminPort: 5001
+  db:
+    host: localhost
+    name: marquez
+    password: macondo
+    port: 5432
+    user: buendia
+  hostname: localhost
+  image:
+    pullPolicy: IfNotPresent
+    registry: docker.io
+    repository: marquezproject/marquez
+    tag: 0.34.0
+  migrateOnStartup: true
+  podAnnotations: {}
+  port: 5000
+  replicaCount: 1
+  resources:
+    limits: {}
+    requests: {}
+nodeSelector: {}
+postgresql:
+  auth:
+    database: marquez
+    existingSecret: ""
+    password: macondo
+    username: buendia
+  enabled: true
+  image:
+    tag: 12.1.0
+service:
+  annotations: null
+  port: 80
+  type: ClusterIP
+tolerations: []
+web:
+  enabled: true
+  image:
+    pullPolicy: IfNotPresent
+    registry: docker.io
+    repository: marquezproject/marquez-web
+    tag: 0.34.0
+  port: 3000
+  replicaCount: 1
+  resources:
+    limits: {}
+    requests: {}
+
+COMPUTED VALUES:
+affinity: {}
+common:
+  exampleValue: common-chart
+  global: {}
+commonAnnotations: {}
+commonLabels: {}
+ingress:
+  annotations: {}
+  enabled: true
+  hosts:
+  - chart-example.local
+  tls: []
+marquez:
+  adminPort: 5001
+  db:
+    host: localhost
+    name: marquez
+    password: macondo
+    port: 5432
+    user: buendia
+  hostname: localhost
+  image:
+    pullPolicy: IfNotPresent
+    registry: docker.io
+    repository: marquezproject/marquez
+    tag: 0.34.0
+  migrateOnStartup: true
+  podAnnotations: {}
+  port: 5000
+  replicaCount: 1
+  resources:
+    limits: {}
+    requests: {}
+nodeSelector: {}
+postgresql:
+  architecture: standalone
+  audit:
+    clientMinMessages: error
+    logConnections: false
+    logDisconnections: false
+    logHostname: false
+    logLinePrefix: ""
+    logTimezone: ""
+    pgAuditLog: ""
+    pgAuditLogCatalog: "off"
+  auth:
+    database: marquez
+    enablePostgresUser: true
+    existingSecret: ""
+    password: macondo
+    postgresPassword: ""
+    replicationPassword: ""
+    replicationUsername: repl_user
+    secretKeys:
+      adminPasswordKey: postgres-password
+      replicationPasswordKey: replication-password
+      userPasswordKey: password
+    usePasswordFiles: false
+    username: buendia
+  clusterDomain: cluster.local
+  common:
+    exampleValue: common-chart
+    global:
+      imagePullSecrets: []
+      imageRegistry: ""
+      postgresql:
+        auth:
+          database: ""
+          existingSecret: ""
+          password: ""
+          postgresPassword: ""
+          secretKeys:
+            adminPasswordKey: ""
+            replicationPasswordKey: ""
+            userPasswordKey: ""
+          username: ""
+        service:
+          ports:
+            postgresql: ""
+      storageClass: ""
+  commonAnnotations: {}
+  commonLabels: {}
+  containerPorts:
+    postgresql: 5432
+  diagnosticMode:
+    args:
+    - infinity
+    command:
+    - sleep
+    enabled: false
+  enabled: true
+  extraDeploy: []
+  fullnameOverride: ""
+  global:
+    imagePullSecrets: []
+    imageRegistry: ""
+    postgresql:
+      auth:
+        database: ""
+        existingSecret: ""
+        password: ""
+        postgresPassword: ""
+        secretKeys:
+          adminPasswordKey: ""
+          replicationPasswordKey: ""
+          userPasswordKey: ""
+        username: ""
+      service:
+        ports:
+          postgresql: ""
+    storageClass: ""
+  image:
+    debug: false
+    digest: ""
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+    registry: docker.io
+    repository: bitnami/postgresql
+    tag: 12.1.0
+  kubeVersion: ""
+  ldap:
+    basedn: ""
+    binddn: ""
+    bindpw: ""
+    enabled: false
+    port: ""
+    prefix: ""
+    scheme: ""
+    searchAttribute: ""
+    searchFilter: ""
+    server: ""
+    suffix: ""
+    tls:
+      enabled: false
+    uri: ""
+  metrics:
+    containerPorts:
+      metrics: 9187
+    containerSecurityContext:
+      enabled: true
+      runAsNonRoot: true
+      runAsUser: 1001
+    customLivenessProbe: {}
+    customMetrics: {}
+    customReadinessProbe: {}
+    customStartupProbe: {}
+    enabled: false
+    extraEnvVars: []
+    image:
+      digest: ""
+      pullPolicy: IfNotPresent
+      pullSecrets: []
+      registry: docker.io
+      repository: bitnami/postgres-exporter
+      tag: 0.11.1-debian-11-r0
+    livenessProbe:
+      enabled: true
+      failureThreshold: 6
+      initialDelaySeconds: 5
+      periodSeconds: 10
+      successThreshold: 1
+      timeoutSeconds: 5
+    prometheusRule:
+      enabled: false
+      labels: {}
+      namespace: ""
+      rules: []
+    readinessProbe:
+      enabled: true
+      failureThreshold: 6
+      initialDelaySeconds: 5
+      periodSeconds: 10
+      successThreshold: 1
+      timeoutSeconds: 5
+    resources:
+      limits: {}
+      requests: {}
+    service:
+      annotations:
+        prometheus.io/port: '{{ .Values.metrics.service.ports.metrics }}'
+        prometheus.io/scrape: "true"
+      clusterIP: ""
+      ports:
+        metrics: 9187
+      sessionAffinity: None
+    serviceMonitor:
+      enabled: false
+      honorLabels: false
+      interval: ""
+      jobLabel: ""
+      labels: {}
+      metricRelabelings: []
+      namespace: ""
+      relabelings: []
+      scrapeTimeout: ""
+      selector: {}
+    startupProbe:
+      enabled: false
+      failureThreshold: 15
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      successThreshold: 1
+      timeoutSeconds: 1
+  nameOverride: ""
+  networkPolicy:
+    egressRules:
+      customRules: {}
+      denyConnectionsToExternal: false
+    enabled: false
+    ingressRules:
+      primaryAccessOnlyFrom:
+        customRules: {}
+        enabled: false
+        namespaceSelector: {}
+        podSelector: {}
+      readReplicasAccessOnlyFrom:
+        customRules: {}
+        enabled: false
+        namespaceSelector: {}
+        podSelector: {}
+    metrics:
+      enabled: false
+      namespaceSelector: {}
+      podSelector: {}
+  postgresqlDataDir: /bitnami/postgresql/data
+  postgresqlSharedPreloadLibraries: pgaudit
+  primary:
+    affinity: {}
+    annotations: {}
+    args: []
+    command: []
+    configuration: ""
+    containerSecurityContext:
+      enabled: true
+      runAsUser: 1001
+    customLivenessProbe: {}
+    customReadinessProbe: {}
+    customStartupProbe: {}
+    existingConfigmap: ""
+    existingExtendedConfigmap: ""
+    extendedConfiguration: ""
+    extraEnvVars: []
+    extraEnvVarsCM: ""
+    extraEnvVarsSecret: ""
+    extraPodSpec: {}
+    extraVolumeMounts: []
+    extraVolumes: []
+    hostAliases: []
+    hostIPC: false
+    hostNetwork: false
+    initContainers: []
+    initdb:
+      args: ""
+      password: ""
+      postgresqlWalDir: ""
+      scripts: {}
+      scriptsConfigMap: ""
+      scriptsSecret: ""
+      user: ""
+    labels: {}
+    lifecycleHooks: {}
+    livenessProbe:
+      enabled: true
+      failureThreshold: 6
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      successThreshold: 1
+      timeoutSeconds: 5
+    name: primary
+    nodeAffinityPreset:
+      key: ""
+      type: ""
+      values: []
+    nodeSelector: {}
+    persistence:
+      accessModes:
+      - ReadWriteOnce
+      annotations: {}
+      dataSource: {}
+      enabled: true
+      existingClaim: ""
+      mountPath: /bitnami/postgresql
+      selector: {}
+      size: 8Gi
+      storageClass: ""
+      subPath: ""
+    pgHbaConfiguration: ""
+    podAffinityPreset: ""
+    podAnnotations: {}
+    podAntiAffinityPreset: soft
+    podLabels: {}
+    podSecurityContext:
+      enabled: true
+      fsGroup: 1001
+    priorityClassName: ""
+    readinessProbe:
+      enabled: true
+      failureThreshold: 6
+      initialDelaySeconds: 5
+      periodSeconds: 10
+      successThreshold: 1
+      timeoutSeconds: 5
+    resources:
+      limits: {}
+      requests:
+        cpu: 250m
+        memory: 256Mi
+    schedulerName: ""
+    service:
+      annotations: {}
+      clusterIP: ""
+      externalTrafficPolicy: Cluster
+      extraPorts: []
+      loadBalancerIP: ""
+      loadBalancerSourceRanges: []
+      nodePorts:
+        postgresql: ""
+      ports:
+        postgresql: 5432
+      sessionAffinity: None
+      sessionAffinityConfig: {}
+      type: ClusterIP
+    sidecars: []
+    standby:
+      enabled: false
+      primaryHost: ""
+      primaryPort: ""
+    startupProbe:
+      enabled: false
+      failureThreshold: 15
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      successThreshold: 1
+      timeoutSeconds: 1
+    terminationGracePeriodSeconds: ""
+    tolerations: []
+    topologySpreadConstraints: []
+    updateStrategy:
+      rollingUpdate: {}
+      type: RollingUpdate
+  psp:
+    create: false
+  rbac:
+    create: false
+    rules: []
+  readReplicas:
+    affinity: {}
+    annotations: {}
+    args: []
+    command: []
+    containerSecurityContext:
+      enabled: true
+      runAsUser: 1001
+    customLivenessProbe: {}
+    customReadinessProbe: {}
+    customStartupProbe: {}
+    extendedConfiguration: ""
+    extraEnvVars: []
+    extraEnvVarsCM: ""
+    extraEnvVarsSecret: ""
+    extraPodSpec: {}
+    extraVolumeMounts: []
+    extraVolumes: []
+    hostAliases: []
+    hostIPC: false
+    hostNetwork: false
+    initContainers: []
+    labels: {}
+    lifecycleHooks: {}
+    livenessProbe:
+      enabled: true
+      failureThreshold: 6
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      successThreshold: 1
+      timeoutSeconds: 5
+    name: read
+    nodeAffinityPreset:
+      key: ""
+      type: ""
+      values: []
+    nodeSelector: {}
+    persistence:
+      accessModes:
+      - ReadWriteOnce
+      annotations: {}
+      dataSource: {}
+      enabled: true
+      existingClaim: ""
+      mountPath: /bitnami/postgresql
+      selector: {}
+      size: 8Gi
+      storageClass: ""
+      subPath: ""
+    podAffinityPreset: ""
+    podAnnotations: {}
+    podAntiAffinityPreset: soft
+    podLabels: {}
+    podSecurityContext:
+      enabled: true
+      fsGroup: 1001
+    priorityClassName: ""
+    readinessProbe:
+      enabled: true
+      failureThreshold: 6
+      initialDelaySeconds: 5
+      periodSeconds: 10
+      successThreshold: 1
+      timeoutSeconds: 5
+    replicaCount: 1
+    resources:
+      limits: {}
+      requests:
+        cpu: 250m
+        memory: 256Mi
+    schedulerName: ""
+    service:
+      annotations: {}
+      clusterIP: ""
+      externalTrafficPolicy: Cluster
+      extraPorts: []
+      loadBalancerIP: ""
+      loadBalancerSourceRanges: []
+      nodePorts:
+        postgresql: ""
+      ports:
+        postgresql: 5432
+      sessionAffinity: None
+      sessionAffinityConfig: {}
+      type: ClusterIP
+    sidecars: []
+    startupProbe:
+      enabled: false
+      failureThreshold: 15
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      successThreshold: 1
+      timeoutSeconds: 1
+    terminationGracePeriodSeconds: ""
+    tolerations: []
+    topologySpreadConstraints: []
+    updateStrategy:
+      rollingUpdate: {}
+      type: RollingUpdate
+  replication:
+    applicationName: my_application
+    numSynchronousReplicas: 0
+    synchronousCommit: "off"
+  serviceAccount:
+    annotations: {}
+    automountServiceAccountToken: true
+    create: false
+    name: ""
+  shmVolume:
+    enabled: true
+    sizeLimit: ""
+  tls:
+    autoGenerated: false
+    certCAFilename: ""
+    certFilename: ""
+    certKeyFilename: ""
+    certificatesSecret: ""
+    crlFilename: ""
+    enabled: false
+    preferServerCiphers: true
+  volumePermissions:
+    containerSecurityContext:
+      runAsUser: 0
+    enabled: false
+    image:
+      digest: ""
+      pullPolicy: IfNotPresent
+      pullSecrets: []
+      registry: docker.io
+      repository: bitnami/bitnami-shell
+      tag: 11-debian-11-r27
+    resources:
+      limits: {}
+      requests: {}
+service:
+  port: 80
+  type: ClusterIP
+tolerations: []
+web:
+  enabled: true
+  image:
+    pullPolicy: IfNotPresent
+    registry: docker.io
+    repository: marquezproject/marquez-web
+    tag: 0.34.0
+  port: 3000
+  replicaCount: 1
+  resources:
+    limits: {}
+    requests: {}
+
+HOOKS:
+---
+# Source: marquez/templates/tests/marquez-test-connection.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "marquez-test-connection"
+  labels:
+    app.kubernetes.io/name: marquez
+    helm.sh/chart: marquez-0.34.0
+    app.kubernetes.io/instance: marquez
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    "helm.sh/hook": test-success
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args:  ['marquez:80/api/v1/namespaces']
+  restartPolicy: Never
+---
+# Source: marquez/templates/tests/marquez-web-test-connection.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "marquez-web-test-connection"
+  labels:
+    app.kubernetes.io/name: marquez
+    helm.sh/chart: marquez-0.34.0
+    app.kubernetes.io/instance: marquez
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    "helm.sh/hook": test-success
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args:  ['marquez-web:80']
+  restartPolicy: Never
+MANIFEST:
+---
+# Source: marquez/charts/postgresql/templates/secrets.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: marquez-postgresql
+  namespace: "default"
+  labels:
+    app.kubernetes.io/name: postgresql
+    helm.sh/chart: postgresql-11.8.1
+    app.kubernetes.io/instance: marquez
+    app.kubernetes.io/managed-by: Helm
+type: Opaque
+data:
+  postgres-password: "d0x1TXhqdnFweg=="
+  password: "bWFjb25kbw=="
+  # We don't auto-generate LDAP password when it's not provided as we do for other passwords
+---
+# Source: marquez/templates/marquez/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: marquez
+  labels:
+    app.kubernetes.io/name: marquez
+    helm.sh/chart: marquez-0.34.0
+    app.kubernetes.io/instance: marquez
+    app.kubernetes.io/managed-by: Helm
+type: Opaque
+data:
+  marquez-db-password: "bWFjb25kbw=="
+---
+# Source: marquez/templates/marquez/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: marquez-config
+  labels:
+    app.kubernetes.io/name: marquez
+    helm.sh/chart: marquez-0.34.0
+    app.kubernetes.io/instance: marquez
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: marquez
+  annotations:
+data:
+  ### HTTP SERVER CONFIG ###
+  
+  config.yml: |-
+    # Enables HTTP server configuration overrides (see: https://www.dropwizard.io/en/stable/manual/configuration.html#servers)      
+    server:
+      applicationConnectors:
+      - type: http
+        port: ${MARQUEZ_PORT}
+      adminConnectors:
+      - type: http
+        port: ${MARQUEZ_ADMIN_PORT}
+  
+    ### DATABASE CONFIG ###
+
+    # Enables database configuration overrides (see: https://www.dropwizard.io/en/stable/manual/configuration.html#database)    
+    db:
+      driverClass: org.postgresql.Driver
+      url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+      user: ${POSTGRES_USER}
+      password: ${POSTGRES_PASSWORD}
+
+    # Enables database migration on startup (default: true)
+    migrateOnStartup: ${MIGRATE_ON_STARTUP}
+    logging:
+      level: ${LOG_LEVEL}
+      appenders:
+        - type: console
+---
+# Source: marquez/charts/postgresql/templates/primary/svc-headless.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: marquez-postgresql-hl
+  namespace: "default"
+  labels:
+    app.kubernetes.io/name: postgresql
+    helm.sh/chart: postgresql-11.8.1
+    app.kubernetes.io/instance: marquez
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: primary
+    # Use this annotation in addition to the actual publishNotReadyAddresses
+    # field below because the annotation will stop being respected soon but the
+    # field is broken in some versions of Kubernetes:
+    # https://github.com/kubernetes/kubernetes/issues/58662
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+spec:
+  type: ClusterIP
+  clusterIP: None
+  # We want all pods in the StatefulSet to have their addresses published for
+  # the sake of the other Postgresql pods even before they're ready, since they
+  # have to be able to talk to each other in order to become ready.
+  publishNotReadyAddresses: true
+  ports:
+    - name: tcp-postgresql
+      port: 5432
+      targetPort: tcp-postgresql
+  selector:
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/instance: marquez
+    app.kubernetes.io/component: primary
+---
+# Source: marquez/charts/postgresql/templates/primary/svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: marquez-postgresql
+  namespace: "default"
+  labels:
+    app.kubernetes.io/name: postgresql
+    helm.sh/chart: postgresql-11.8.1
+    app.kubernetes.io/instance: marquez
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: primary
+  annotations:
+spec:
+  type: ClusterIP
+  sessionAffinity: None
+  ports:
+    - name: tcp-postgresql
+      port: 5432
+      targetPort: tcp-postgresql
+      nodePort: null
+  selector:
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/instance: marquez
+    app.kubernetes.io/component: primary
+---
+# Source: marquez/templates/marquez/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: marquez
+  labels:
+    app.kubernetes.io/name: marquez
+    helm.sh/chart: marquez-0.34.0
+    app.kubernetes.io/instance: marquez
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: marquez
+  annotations:
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+
+  selector:
+    app.kubernetes.io/name: marquez
+    app.kubernetes.io/instance: marquez
+    app.kubernetes.io/component: marquez
+---
+# Source: marquez/templates/web/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: marquez-web
+  labels:
+    app.kubernetes.io/name: marquez
+    helm.sh/chart: marquez-0.34.0
+    app.kubernetes.io/instance: marquez
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: web
+  annotations:
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+
+  selector:
+    app.kubernetes.io/name: marquez
+    app.kubernetes.io/instance: marquez
+    app.kubernetes.io/component: web
+---
+# Source: marquez/templates/marquez/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: marquez
+  labels:
+    app.kubernetes.io/name: marquez
+    helm.sh/chart: marquez-0.34.0
+    app.kubernetes.io/instance: marquez
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: marquez
+  annotations:
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: marquez
+      app.kubernetes.io/instance: marquez
+      app.kubernetes.io/component: marquez
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: marquez
+        helm.sh/chart: marquez-0.34.0
+        app.kubernetes.io/instance: marquez
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/component: marquez
+    spec:
+      # This init container is for avoiding CrashLoopback errors in the Marquez container because the PostgreSQL container is not ready
+      initContainers:
+        - name: wait-for-db
+          image: postgres:12.1
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/bash
+          args:
+            - -ec
+            - until pg_isready -h ${POSTGRES_HOST} -p ${POSTGRES_PORT} -U ${POSTGRES_USER}; do echo waiting for database; sleep 2; done;
+          env:
+            - name: POSTGRES_HOST
+              value: "marquez-postgresql"
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: POSTGRES_USER
+              value: "buendia"
+      containers:
+        - name: marquez
+          image: docker.io/marquezproject/marquez:0.34.0
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: marquez-volume
+              mountPath: /usr/src/app/config.yml
+              subPath: config.yml
+          ports:
+            - name: http
+              containerPort: 5000
+              protocol: TCP
+            - name: http-admin
+              containerPort: 5001
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthcheck
+              port: http-admin
+          readinessProbe:
+            httpGet:
+              path: /healthcheck
+              port: http-admin
+          env:
+            - name: MARQUEZ_PORT
+              value: "5000"
+            - name: MARQUEZ_ADMIN_PORT
+              value: "5001"
+            - name: MARQUEZ_CONFIG
+              value: /usr/src/app/config.yml
+            - name: POSTGRES_HOST
+              value: "marquez-postgresql"
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: POSTGRES_DB
+              value: "marquez"
+            - name: POSTGRES_USER
+              value: "buendia"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: marquez-postgresql
+                  key: password
+            - name: MIGRATE_ON_STARTUP
+              value: "true"
+          resources:
+            limits: {}
+            requests: {}
+      volumes:
+        - name: marquez-volume
+          configMap:
+            name: marquez-config
+---
+# Source: marquez/templates/web/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: marquez-web
+  labels:
+    app.kubernetes.io/name: marquez
+    helm.sh/chart: marquez-0.34.0
+    app.kubernetes.io/instance: marquez
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: web
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: marquez
+      app.kubernetes.io/instance: marquez
+      app.kubernetes.io/component: web
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: marquez
+        helm.sh/chart: marquez-0.34.0
+        app.kubernetes.io/instance: marquez
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/component: web
+    spec:
+      containers:
+        - name: marquez-web
+          image: docker.io/marquezproject/marquez-web:0.34.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthcheck
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /healthcheck
+              port: http
+          env:
+            - name: MARQUEZ_HOST
+              value: marquez
+            - name: MARQUEZ_PORT
+              value: "80"
+          resources:
+            limits: {}
+            requests: {}
+---
+# Source: marquez/charts/postgresql/templates/primary/statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: marquez-postgresql
+  namespace: "default"
+  labels:
+    app.kubernetes.io/name: postgresql
+    helm.sh/chart: postgresql-11.8.1
+    app.kubernetes.io/instance: marquez
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: primary
+  annotations:
+spec:
+  replicas: 1
+  serviceName: marquez-postgresql-hl
+  updateStrategy:
+    rollingUpdate: {}
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: postgresql
+      app.kubernetes.io/instance: marquez
+      app.kubernetes.io/component: primary
+  template:
+    metadata:
+      name: marquez-postgresql
+      labels:
+        app.kubernetes.io/name: postgresql
+        helm.sh/chart: postgresql-11.8.1
+        app.kubernetes.io/instance: marquez
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/component: primary
+      annotations:
+    spec:
+      serviceAccountName: default
+      
+      affinity:
+        podAffinity:
+          
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: postgresql
+                    app.kubernetes.io/instance: marquez
+                    app.kubernetes.io/component: primary
+                topologyKey: kubernetes.io/hostname
+              weight: 1
+        nodeAffinity:
+          
+      securityContext:
+        fsGroup: 1001
+      hostNetwork: false
+      hostIPC: false
+      initContainers:
+      containers:
+        - name: postgresql
+          image: docker.io/bitnami/postgresql:12.1.0
+          imagePullPolicy: "IfNotPresent"
+          securityContext:
+            runAsUser: 1001
+          env:
+            - name: BITNAMI_DEBUG
+              value: "false"
+            - name: POSTGRESQL_PORT_NUMBER
+              value: "5432"
+            - name: POSTGRESQL_VOLUME_DIR
+              value: "/bitnami/postgresql"
+            - name: PGDATA
+              value: "/bitnami/postgresql/data"
+            # Authentication
+            - name: POSTGRES_USER
+              value: "buendia"
+            - name: POSTGRES_POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: marquez-postgresql
+                  key: postgres-password
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: marquez-postgresql
+                  key: password
+            - name: POSTGRES_DB
+              value: "marquez"
+            # Replication
+            # Initdb
+            # Standby
+            # LDAP
+            - name: POSTGRESQL_ENABLE_LDAP
+              value: "no"
+            # TLS
+            - name: POSTGRESQL_ENABLE_TLS
+              value: "no"
+            # Audit
+            - name: POSTGRESQL_LOG_HOSTNAME
+              value: "false"
+            - name: POSTGRESQL_LOG_CONNECTIONS
+              value: "false"
+            - name: POSTGRESQL_LOG_DISCONNECTIONS
+              value: "false"
+            - name: POSTGRESQL_PGAUDIT_LOG_CATALOG
+              value: "off"
+            # Others
+            - name: POSTGRESQL_CLIENT_MIN_MESSAGES
+              value: "error"
+            - name: POSTGRESQL_SHARED_PRELOAD_LIBRARIES
+              value: "pgaudit"
+          ports:
+            - name: tcp-postgresql
+              containerPort: 5432
+          livenessProbe:
+            failureThreshold: 6
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - exec pg_isready -U "buendia" -d "dbname=marquez" -h 127.0.0.1 -p 5432
+          readinessProbe:
+            failureThreshold: 6
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - -e
+                
+                - |
+                  exec pg_isready -U "buendia" -d "dbname=marquez" -h 127.0.0.1 -p 5432
+                  [ -f /opt/bitnami/postgresql/tmp/.initialized ] || [ -f /bitnami/postgresql/.initialized ]
+          resources:
+            limits: {}
+            requests:
+              cpu: 250m
+              memory: 256Mi
+          volumeMounts:
+            - name: dshm
+              mountPath: /dev/shm
+            - name: data
+              mountPath: /bitnami/postgresql
+      volumes:
+        - name: dshm
+          emptyDir:
+            medium: Memory
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: "8Gi"
+---
+# Source: marquez/templates/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: marquez
+  labels:
+    app.kubernetes.io/name: marquez
+    helm.sh/chart: marquez-0.34.0
+    app.kubernetes.io/instance: marquez
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+spec:
+  rules:
+    - host: "chart-example.local"
+      http:
+        paths:
+          - path: /api/
+            pathType: Prefix
+            backend:
+              service:
+                name: marquez
+                port:
+                  name: http
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: marquez-web
+                port:
+                  name: http
+
+NOTES:
+1. Get the application URL by running these commands:

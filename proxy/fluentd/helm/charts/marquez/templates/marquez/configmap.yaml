@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "common.names.fullname" . }}-config
+  labels: {{- include "common.labels.standard" . | nindent 4 }}
+    {{- if .Values.commonLabels }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
+    {{- end }}
+    app.kubernetes.io/component: marquez
+  annotations:
+    {{- if .Values.commonAnnotations }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.commonAnnotations "context" $) | nindent 4 }}
+    {{- end }}
+data:
+  ### HTTP SERVER CONFIG ###
+  
+  config.yml: |-
+    # Enables HTTP server configuration overrides (see: https://www.dropwizard.io/en/stable/manual/configuration.html#servers)      
+    server:
+      applicationConnectors:
+      - type: http
+        port: ${MARQUEZ_PORT}
+      adminConnectors:
+      - type: http
+        port: ${MARQUEZ_ADMIN_PORT}
+  
+    ### DATABASE CONFIG ###
+
+    # Enables database configuration overrides (see: https://www.dropwizard.io/en/stable/manual/configuration.html#database)    
+    db:
+      driverClass: org.postgresql.Driver
+      url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+      user: ${POSTGRES_USER}
+      password: ${POSTGRES_PASSWORD}
+
+    # Enables database migration on startup (default: true)
+    migrateOnStartup: ${MIGRATE_ON_STARTUP}
+    logging:
+      level: ${LOG_LEVEL}
+      appenders:
+        - type: console

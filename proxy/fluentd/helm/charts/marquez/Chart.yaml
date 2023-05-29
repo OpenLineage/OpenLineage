@@ -1,0 +1,32 @@
+apiVersion: v2
+appVersion: "1.0"
+dependencies:
+  - name: common
+    repository: https://charts.bitnami.com/bitnami
+    tags:
+      - bitnami-common
+    version: 2.1.2
+  - condition: postgresql.enabled
+    name: postgresql
+    repository: https://charts.bitnami.com/bitnami
+    version: 11.8.1
+description: Marquez is an open source metadata service for the collection, aggregation, and visualization of a data ecosystem's metadata.
+home: https://github.com/MarquezProject/marquez/tree/main/chart
+icon: https://raw.githubusercontent.com/MarquezProject/marquez/main/web/src/img/marquez-logo.png
+keywords:
+  - metadata
+  - data-catalog
+  - data-discovery
+  - data-dictionary
+  - data-governance
+  - data-lineage
+  - data-ops
+  - data-provenance
+  - metadata-service
+  - marquez
+  - data-ecosystem-metadata
+name: marquez
+sources:
+  - https://github.com/MarquezProject/marquez
+  - https://marquezproject.github.io/marquez/
+version: 0.34.0
