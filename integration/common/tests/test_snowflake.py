@@ -15,7 +15,11 @@ from openlineage.common.provider.snowflake import fix_snowflake_sqlalchemy_uri
     ("snowflake://user:pass@xy12345.us-east4.gcp/database/schema",
         "snowflake://xy12345.us-east4.gcp/database/schema"),
     ("snowflake://user:pass@organization-account/database/schema",
-        "snowflake://organization-account/database/schema")
+        "snowflake://organization-account/database/schema"),
+    ("snowflake://user:p[ass@organization-account/database/schema",
+        "snowflake://organization-account/database/schema"),
+    ("snowflake://user:pass@organization]-account/database/schema",
+        "snowflake://organization%5D-account/database/schema")
 ])
 def test_snowflake_sqlite_account_urls(source, target):
     assert fix_snowflake_sqlalchemy_uri(source) == target
