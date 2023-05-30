@@ -1,14 +1,17 @@
 # Column level lineage
 
-The [column level lineage facet](ColumnLineageDatasetFacet.json) captures the lineage of columns of an output dataset from the columns in input datasets.
-It must refer to existing columns as defined in the [`schema` facet](SchemaDatasetFacet.json).
-Additional information on the transformation from the input columns to the output column is stored in the optional *transformationDescription* and *transformationType* fields.
- - *transformationDescription*: a human readable description of the transformation. ex: "(a+b)" or "identical"
- - *transformationType*: type of the transformation. possible values:
-  - "IDENTITY" exactly the same as the input.
-  - "MASKED" for example a hash of the input value that doesn't expose the original value.
+The [column level lineage facet](ColumnLineageDatasetFacet.json) captures the lineage of columns of an output dataset
+from the columns in input datasets. It must refer to existing columns as defined in the
+[`schema` facet](SchemaDatasetFacet.json). Additional information on the transformation from the input columns to the
+output column is stored in the optional _transformationDescription_ and _transformationType_ fields.
+
+- _transformationDescription_: a human readable description of the transformation. ex: "(a+b)" or "identical"
+- _transformationType_: type of the transformation. possible values:
+- "IDENTITY" exactly the same as the input.
+- "MASKED" for example a hash of the input value that doesn't expose the original value.
 
 Output Dataset example of adding a columnLineage facet:
+
 ```diff
     {
       "namespace": "{namespace of the outputdataset}",
@@ -38,7 +41,9 @@ Output Dataset example of adding a columnLineage facet:
       }
     }
 ```
+
 Full lineage event example:
+
 ```
 {
   "eventType": "START",
@@ -57,7 +62,7 @@ Full lineage event example:
       "facets": {
         "schema": {
           "fields": [
-            { "name": "ia", "type": "INT"}, 
+            { "name": "ia", "type": "INT"},
             { "name": "ib", "type": "INT"}
           ]
         },
@@ -71,7 +76,7 @@ Full lineage event example:
       "facets": {
         "schema": {
           "fields": [
-            { "name": "a", "type": "INT"}, 
+            { "name": "a", "type": "INT"},
             { "name": "b", "type": "INT"}
           ]
         },
@@ -95,6 +100,7 @@ Full lineage event example:
 }
 ```
 
-----
+---
+
 SPDX-License-Identifier: Apache-2.0\
 Copyright 2018-2023 contributors to the OpenLineage project

@@ -40,17 +40,11 @@
                     "type": "integer"
                   }
                 },
-                "required": [
-                  "errorMessage"
-                ]
+                "required": ["errorMessage"]
               }
             }
           },
-          "required": [
-            "totalElements",
-            "failedElements",
-            "errors"
-          ]
+          "required": ["totalElements", "failedElements", "errors"]
         }
       ]
     }
