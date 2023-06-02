@@ -15,6 +15,13 @@
  				"airflow_runArgs": {
  					"externalTrigger": false
  				},
+				"airflow": {
+					"dag_run": "{{ any(result) }}",
+					"dag": "{{ any(result) }}",
+					"task_instance": "{{ any(result) }}",
+					"task": "{{ any(result) }}",
+					"task_uuid": "{{ any(result) }}"
+				},
  				"parent": {
  					"job": {
  						"name": "unknown_operator_dag",
