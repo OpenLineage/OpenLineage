@@ -43,7 +43,7 @@ archivesBaseName='openlineage-spark-spark3'
 ext {
     sparkVersion = '3.3.1'
     jacksonVersion = '2.10.0'
-    lombokVersion = '1.18.26'
+    lombokVersion = '1.18.28'
 }
 
 configurations.all { // https://github.com/apache/spark/pull/38355 - can be remove for Spark 3.3.2
