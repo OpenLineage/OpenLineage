@@ -61,7 +61,7 @@ ext {
     junit5Version = '5.9.3'
     lombokVersion = '1.18.28'
     mockitoVersion = '5.2.0'
-    testcontainersVersion = '1.16.3'
+    testcontainersVersion = '1.18.3'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
     icebergVersion = "1.1.0"
 }
