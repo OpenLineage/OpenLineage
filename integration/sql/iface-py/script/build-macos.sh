@@ -35,7 +35,7 @@ if [[ -d "./iface-py" ]]
 then
   cd iface-py
 fi
-maturin build --universal2 --out target/wheels
+maturin build --target universal2-apple-darwin --out target/wheels
 
 echo "Package build, trying to import"
 echo "Platform:"
