@@ -1,8 +1,8 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.27.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.27.1...HEAD)
 
-## [0.27.0](https://github.com/OpenLineage/OpenLineage/compare/0.26.0...0.27.0) - 2023-06-05
+## [0.27.1](https://github.com/OpenLineage/OpenLineage/compare/0.26.0...0.27.1) - 2023-06-05
 ### Added
 * **Python client: add emission filtering mechanism and exact, regex filters** [`#1878`](https://github.com/OpenLineage/OpenLineage/pull/1878) [@mobuchowski](https://github.com/mobuchowski)  
     *Adds configurable job-name filtering to the Python client. Filters can be exact-match- or regex-based. Events will not be sent in the case of matches.*
