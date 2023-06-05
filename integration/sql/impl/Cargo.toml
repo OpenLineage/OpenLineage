@@ -1,7 +1,7 @@
 [package]
 name = "openlineage_sql"
 description = "Library extracting source and destination tables from sql statements"
-version = "0.27.1"
+version = "0.28.0"
 edition = "2021"
 authors = ["Maciej Obuchowski <obuchowski.maciej@gmail.com>", "Piotr Wojtczak <piotr.m.wojtczak@gmail.com"]
 keywords = ["sql", "lineage", "openlineage"]
