@@ -1,15 +1,22 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.26.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.27.0...HEAD)
+
+## [0.27.0](https://github.com/OpenLineage/OpenLineage/compare/0.26.0...0.27.0) - 2023-06-05
+### Added
+* **Python client: add emission filtering mechanism and exact, regex filters** [`#1878`](https://github.com/OpenLineage/OpenLineage/pull/1878) [@mobuchowski](https://github.com/mobuchowski)  
+    *Adds configurable job-name filtering to the Python client. Filters can be exact-match- or regex-based. Events will not be sent in the case of matches.*
 
 ### Fixed
-* **Spark: fix column lineage for aggregate queries on databricks.** [`#1867`](https://github.com/OpenLineage/OpenLineage/pull/1867) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Aggregate queries on databricks did not return column lineage.*
+* **Spark: fix column lineage for aggregate queries on databricks** [`#1867`](https://github.com/OpenLineage/OpenLineage/pull/1867) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Aggregate queries on databricks did not return column lineage.*
+* **Airflow: fix unquoted `[` and `]` in Snowflake URIs** [`#1883`](https://github.com/OpenLineage/OpenLineage/pull/1883) [@JDarDagran](https://github.com/JDarDagran)  
+    *Snowflake connections containing one of `[` or `]` were causing `urllib.parse.urlparse` to fail.*
 
 ## [0.26.0](https://github.com/OpenLineage/OpenLineage/compare/0.25.0...0.26.0) - 2023-05-18
 ### Added
 * **Proxy: Fluentd proxy support (experimental)** [`#1757`](https://github.com/OpenLineage/OpenLineage/pull/1757) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-   *Adds a Fluentd data collector as a proxy to buffer Openlineage events and send them to multiple backends (among many other purposes). Also implements a Fluentd Openlineage parser to validate incoming HTTP events at the beginning of the pipeline. See the [readme](https://github.com/OpenLineage/OpenLineage/tree/main/proxy/fluentd) file for more details.*
+    *Adds a Fluentd data collector as a proxy to buffer Openlineage events and send them to multiple backends (among many other purposes). Also implements a Fluentd Openlineage parser to validate incoming HTTP events at the beginning of the pipeline. See the [readme](https://github.com/OpenLineage/OpenLineage/tree/main/proxy/fluentd) file for more details.*
 
 ### Changed
 * **Python client: use Hatchling over setuptools to orchestrate Python env setup** [`#1856`](https://github.com/OpenLineage/OpenLineage/pull/1856) [@gaborbernat](https://github.com/gaborbernat)  
