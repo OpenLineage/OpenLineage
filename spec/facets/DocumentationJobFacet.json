@@ -1,27 +1,30 @@
 {
-  "$schema" : "https://json-schema.org/draft/2020-12/schema",
-  "$id" : "https://openlineage.io/spec/facets/1-0-0/DocumentationJobFacet.json",
-  "$defs" : {
-    "DocumentationJobFacet" : {
-      "allOf" : [ {
-        "$ref" : "https://openlineage.io/spec/1-0-2/OpenLineage.json#/$defs/JobFacet"
-      }, {
-        "type" : "object",
-        "properties" : {
-          "description" : {
-            "description" : "The description of the job.",
-            "type" : "string"
-          }
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openlineage.io/spec/facets/1-0-0/DocumentationJobFacet.json",
+  "$defs": {
+    "DocumentationJobFacet": {
+      "allOf": [
+        {
+          "$ref": "https://openlineage.io/spec/1-0-2/OpenLineage.json#/$defs/JobFacet"
         },
-        "required" : [ "description" ]
-      } ],
-      "type" : "object"
+        {
+          "type": "object",
+          "properties": {
+            "description": {
+              "description": "The description of the job.",
+              "type": "string"
+            }
+          },
+          "required": ["description"]
+        }
+      ],
+      "type": "object"
     }
   },
-  "type" : "object",
-  "properties" : {
-    "documentation" : {
-      "$ref" : "#/$defs/DocumentationJobFacet"
+  "type": "object",
+  "properties": {
+    "documentation": {
+      "$ref": "#/$defs/DocumentationJobFacet"
     }
   }
 }

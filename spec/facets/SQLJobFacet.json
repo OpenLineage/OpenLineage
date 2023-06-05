@@ -1,27 +1,30 @@
 {
-  "$schema" : "https://json-schema.org/draft/2020-12/schema",
-  "$id" : "https://openlineage.io/spec/facets/1-0-0/SQLJobFacet.json",
-  "$defs" : {
-    "SQLJobFacet" : {
-      "allOf" : [ {
-        "$ref" : "https://openlineage.io/spec/1-0-2/OpenLineage.json#/$defs/JobFacet"
-      }, {
-        "type" : "object",
-        "properties" : {
-          "query" : {
-            "type" : "string",
-            "example" : "SELECT * FROM foo"
-          }
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openlineage.io/spec/facets/1-0-0/SQLJobFacet.json",
+  "$defs": {
+    "SQLJobFacet": {
+      "allOf": [
+        {
+          "$ref": "https://openlineage.io/spec/1-0-2/OpenLineage.json#/$defs/JobFacet"
         },
-        "required" : [ "query" ]
-      } ],
-      "type" : "object"
+        {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "example": "SELECT * FROM foo"
+            }
+          },
+          "required": ["query"]
+        }
+      ],
+      "type": "object"
     }
   },
-  "type" : "object",
-  "properties" : {
-    "sql" : {
-      "$ref" : "#/$defs/SQLJobFacet"
+  "type": "object",
+  "properties": {
+    "sql": {
+      "$ref": "#/$defs/SQLJobFacet"
     }
   }
 }

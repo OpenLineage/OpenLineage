@@ -1,7 +1,7 @@
 {
-  "$schema" : "https://json-schema.org/draft/2020-12/schema",
-  "$id" : "https://openlineage.io/spec/facets/1-0-0/StorageDatasetFacet.json",
-  "$defs" : {
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openlineage.io/spec/facets/1-0-0/StorageDatasetFacet.json",
+  "$defs": {
     "StorageDatasetFacet": {
       "allOf": [
         {
@@ -20,18 +20,16 @@
             }
           },
           "additionalProperties": true,
-          "required": [
-            "storageLayer"
-          ]
+          "required": ["storageLayer"]
         }
       ],
       "type": "object"
     }
   },
-  "type" : "object",
-  "properties" : {
-    "storage" : {
-      "$ref" : "#/$defs/StorageDatasetFacet"
+  "type": "object",
+  "properties": {
+    "storage": {
+      "$ref": "#/$defs/StorageDatasetFacet"
     }
   }
 }

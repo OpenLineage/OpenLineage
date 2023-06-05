@@ -8,14 +8,7 @@
         "eventType": {
           "description": "the current transition of the run state. It is required to issue 1 START event and 1 of [ COMPLETE, ABORT, FAIL ] event per run. Additional events with OTHER eventType can be added to the same run. For example to send additional metadata after the run is complete",
           "type": "string",
-          "enum": [
-            "START",
-            "RUNNING",
-            "COMPLETE",
-            "ABORT",
-            "FAIL",
-            "OTHER"
-          ],
+          "enum": ["START", "RUNNING", "COMPLETE", "ABORT", "FAIL", "OTHER"],
           "example": "START|RUNNING|COMPLETE|ABORT|FAIL|OTHER"
         },
         "eventTime": {
@@ -56,13 +49,7 @@
           "example": "https://openlineage.io/spec/0-0-1/OpenLineage.json"
         }
       },
-      "required": [
-        "run",
-        "job",
-        "eventTime",
-        "producer",
-        "schemaURL"
-      ]
+      "required": ["run", "job", "eventTime", "producer", "schemaURL"]
     },
     "Run": {
       "type": "object",
@@ -76,7 +63,7 @@
           "description": "The run facets.",
           "type": "object",
           "anyOf": [
-            { 
+            {
               "type": "object",
               "additionalProperties": { "$ref": "#/$defs/RunFacet" }
             },
@@ -87,16 +74,12 @@
           ]
         }
       },
-      "required": [
-        "runId"
-      ]
+      "required": ["runId"]
     },
     "RunFacet": {
       "description": "A Run Facet",
       "type": "object",
-      "allOf": [
-        { "$ref": "#/$defs/BaseFacet" }
-      ]
+      "allOf": [{ "$ref": "#/$defs/BaseFacet" }]
     },
     "Job": {
       "type": "object",
@@ -115,7 +98,7 @@
           "description": "The job facets.",
           "type": "object",
           "anyOf": [
-            { 
+            {
               "type": "object",
               "additionalProperties": { "$ref": "#/$defs/JobFacet" }
             },
@@ -127,17 +110,12 @@
           ]
         }
       },
-      "required": [
-        "namespace",
-        "name"
-      ]
+      "required": ["namespace", "name"]
     },
     "JobFacet": {
       "description": "A Job Facet",
       "type": "object",
-      "allOf": [
-        { "$ref": "#/$defs/BaseFacet" }
-      ]
+      "allOf": [{ "$ref": "#/$defs/BaseFacet" }]
     },
     "InputDataset": {
       "description": "An input dataset",
@@ -155,7 +133,7 @@
                   "type": "object",
                   "additionalProperties": { "$ref": "#/$defs/InputDatasetFacet" }
                 },
-                { "$ref": "facets/DataQualityMetricsInputDatasetFacet.json"}
+                { "$ref": "facets/DataQualityMetricsInputDatasetFacet.json" }
               ]
             }
           }
@@ -165,9 +143,7 @@
     "InputDatasetFacet": {
       "description": "An Input Dataset Facet",
       "type": "object",
-      "allOf": [
-        { "$ref": "#/$defs/BaseFacet" }
-      ]
+      "allOf": [{ "$ref": "#/$defs/BaseFacet" }]
     },
     "OutputDataset": {
       "description": "An output dataset",
@@ -181,11 +157,11 @@
               "description": "The output facets for this dataset",
               "type": "object",
               "anyOf": [
-                { 
+                {
                   "type": "object",
                   "additionalProperties": { "$ref": "#/$defs/OutputDatasetFacet" }
                 },
-                { "$ref": "facets/OutputStatisticsOutputDatasetFacet.json"}
+                { "$ref": "facets/OutputStatisticsOutputDatasetFacet.json" }
               ]
             }
           }
@@ -195,9 +171,7 @@
     "OutputDatasetFacet": {
       "description": "An Output Dataset Facet",
       "type": "object",
-      "allOf": [
-        { "$ref": "#/$defs/BaseFacet" }
-      ]
+      "allOf": [{ "$ref": "#/$defs/BaseFacet" }]
     },
     "Dataset": {
       "type": "object",
@@ -232,18 +206,13 @@
           ]
         }
       },
-      "required": [
-        "namespace",
-        "name"
-      ]
+      "required": ["namespace", "name"]
     },
     "DatasetFacet": {
       "description": "A Dataset Facet",
       "type": "object",
-      "allOf": [
-        { "$ref": "#/$defs/BaseFacet" }
-      ]
-     },
+      "allOf": [{ "$ref": "#/$defs/BaseFacet" }]
+    },
     "BaseFacet": {
       "description": "all fields of the base facet are prefixed with _ to avoid name conflicts in facets",
       "type": "object",
@@ -262,10 +231,7 @@
         }
       },
       "additionalProperties": true,
-      "required": [
-        "_producer",
-        "_schemaURL"
-      ]
+      "required": ["_producer", "_schemaURL"]
     }
   },
   "$ref": "#/$defs/RunEvent"

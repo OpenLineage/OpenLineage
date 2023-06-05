@@ -1,33 +1,36 @@
 {
-    "$schema" : "https://json-schema.org/draft/2020-12/schema",
-    "$id" : "https://openlineage.io/spec/facets/1-0-0/ExternalQueryRunFacet.json",
-    "$defs" : {
-        "ExternalQueryRunFacet" : {
-        "allOf" : [ {
-            "$ref" : "https://openlineage.io/spec/1-0-2/OpenLineage.json#/$defs/RunFacet"
-        }, {
-            "type" : "object",
-            "properties" : {
-            "externalQueryId" : {
-                "description" : "Identifier for the external system",
-                "type" : "string",
-                "example" : "my-project-1234:US.bquijob_123x456_123y123z123c"
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openlineage.io/spec/facets/1-0-0/ExternalQueryRunFacet.json",
+  "$defs": {
+    "ExternalQueryRunFacet": {
+      "allOf": [
+        {
+          "$ref": "https://openlineage.io/spec/1-0-2/OpenLineage.json#/$defs/RunFacet"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "externalQueryId": {
+              "description": "Identifier for the external system",
+              "type": "string",
+              "example": "my-project-1234:US.bquijob_123x456_123y123z123c"
             },
-            "source" : {
-                "description" : "source of the external query",
-                "type" : "string",
-                "example" : "bigquery"
+            "source": {
+              "description": "source of the external query",
+              "type": "string",
+              "example": "bigquery"
             }
-            },
-            "required" : [ "externalQueryId", "source" ]
-        } ],
-        "type" : "object"
+          },
+          "required": ["externalQueryId", "source"]
         }
-    },
-    "type" : "object",
-    "properties" : {
-        "externalQuery" : {
-        "$ref" : "#/$defs/ExternalQueryRunFacet"
-        }
+      ],
+      "type": "object"
     }
+  },
+  "type": "object",
+  "properties": {
+    "externalQuery": {
+      "$ref": "#/$defs/ExternalQueryRunFacet"
+    }
+  }
 }

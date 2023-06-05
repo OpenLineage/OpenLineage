@@ -1,19 +1,19 @@
 {
-  "$schema" : "https://json-schema.org/draft/2020-12/schema",
-  "$id" : "https://openlineage.io/spec/facets/1-0-0/SymlinksDatasetFacet.json",
-  "$defs" : {
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openlineage.io/spec/facets/1-0-0/SymlinksDatasetFacet.json",
+  "$defs": {
     "SymlinksDatasetFacet": {
       "allOf": [
         {
           "$ref": "https://openlineage.io/spec/1-0-2/OpenLineage.json#/$defs/DatasetFacet"
         },
         {
-          "type" : "object",
+          "type": "object",
           "properties": {
             "identifiers": {
               "type": "array",
               "items": {
-                "type": "object", 
+                "type": "object",
                 "properties": {
                   "namespace": {
                     "type": "string",
@@ -38,10 +38,10 @@
       "type": "object"
     }
   },
-  "type" : "object",
-  "properties" : {
-    "symlinks" : {
-      "$ref" : "#/$defs/SymlinksDatasetFacet"
+  "type": "object",
+  "properties": {
+    "symlinks": {
+      "$ref": "#/$defs/SymlinksDatasetFacet"
     }
   }
 }

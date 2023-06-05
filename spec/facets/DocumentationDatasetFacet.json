@@ -1,28 +1,31 @@
 {
-  "$schema" : "https://json-schema.org/draft/2020-12/schema",
-  "$id" : "https://openlineage.io/spec/facets/1-0-0/DocumentationDatasetFacet.json",
-  "$defs" : {
-    "DocumentationDatasetFacet" : {
-      "allOf" : [ {
-        "$ref" : "https://openlineage.io/spec/1-0-2/OpenLineage.json#/$defs/DatasetFacet"
-      }, {
-        "type" : "object",
-        "properties" : {
-          "description" : {
-            "description" : "The description of the dataset.",
-            "type" : "string",
-            "example" : "canonical representation of entity Foo"
-          }
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openlineage.io/spec/facets/1-0-0/DocumentationDatasetFacet.json",
+  "$defs": {
+    "DocumentationDatasetFacet": {
+      "allOf": [
+        {
+          "$ref": "https://openlineage.io/spec/1-0-2/OpenLineage.json#/$defs/DatasetFacet"
         },
-        "required" : [ "description" ]
-      } ],
-      "type" : "object"
+        {
+          "type": "object",
+          "properties": {
+            "description": {
+              "description": "The description of the dataset.",
+              "type": "string",
+              "example": "canonical representation of entity Foo"
+            }
+          },
+          "required": ["description"]
+        }
+      ],
+      "type": "object"
     }
   },
-  "type" : "object",
-  "properties" : {
-    "documentation" : {
-      "$ref" : "#/$defs/DocumentationDatasetFacet"
+  "type": "object",
+  "properties": {
+    "documentation": {
+      "$ref": "#/$defs/DocumentationDatasetFacet"
     }
   }
 }

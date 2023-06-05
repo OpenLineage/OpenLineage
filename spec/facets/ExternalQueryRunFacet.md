@@ -1,12 +1,15 @@
 # External Query Run
 
-The [external query run facet](ExternalQueryRunFacet.json) captures the identifier of the query that ran on an external source systems such as [bigquery](https://cloud.google.com/bigquery).
+The [external query run facet](ExternalQueryRunFacet.json) captures the identifier of the query that ran on an external
+source systems such as [bigquery](https://cloud.google.com/bigquery).
 
-*externalQueryId* and *source* fields.
- - *externalQueryId*: unique identifier of the query from the source system.
- - *source*: type of the source (e.g. bigquery)
+_externalQueryId_ and _source_ fields.
+
+- _externalQueryId_: unique identifier of the query from the source system.
+- _source_: type of the source (e.g. bigquery)
 
 Full lineage event example:
+
 ```
 {
   "eventType": "START",
@@ -40,6 +43,7 @@ Full lineage event example:
 }
 ```
 
-----
+---
+
 SPDX-License-Identifier: Apache-2.0\
 Copyright 2018-2023 contributors to the OpenLineage project
