@@ -1,6 +1,11 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.27.1...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.27.2...HEAD)
+
+## [0.27.2](https://github.com/OpenLineage/OpenLineage/compare/0.27.1...0.27.2) - 2023-06-06
+### Fixed
+* **Python client: deprecate `client.from_environment`, do not skip loading config** [`#1908`](https://github.com/OpenLineage/OpenLineage/pull/1908) [@mobuchowski](https://github.com/mobuchowski)  
+    *Deprecates the `OpenLineage.from_environment` method and recommends using the constructor instead.*
 
 ## [0.27.1](https://github.com/OpenLineage/OpenLineage/compare/0.26.0...0.27.1) - 2023-06-05
 ### Added
