@@ -50,7 +50,7 @@
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "customer_id",
-					"type": null,
+					"type": "",
 					"description": ""
 				}]
 			}
@@ -109,11 +109,11 @@
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "order_id",
-					"type": null,
+					"type": "",
 					"description": ""
 				}, {
 					"name": "status",
-					"type": null,
+					"type": "",
 					"description": ""
 				}]
 			}
@@ -172,11 +172,11 @@
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "payment_id",
-					"type": null,
+					"type": "",
 					"description": ""
 				}, {
 					"name": "payment_method",
-					"type": null,
+					"type": "",
 					"description": ""
 				}]
 			}
@@ -227,7 +227,7 @@
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "customer_id",
-					"type": null,
+					"type": "",
 					"description": ""
 				}]
 			}
@@ -247,11 +247,11 @@
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "order_id",
-					"type": null,
+					"type": "",
 					"description": ""
 				}, {
 					"name": "status",
-					"type": null,
+					"type": "",
 					"description": ""
 				}]
 			}
@@ -271,11 +271,11 @@
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "payment_id",
-					"type": null,
+					"type": "",
 					"description": ""
 				}, {
 					"name": "payment_method",
-					"type": null,
+					"type": "",
 					"description": ""
 				}]
 			}
@@ -296,39 +296,39 @@
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "non_empty_column",
-					"type": null,
+					"type": "",
 					"description": "This is a test column"
 				}, {
 					"name": "empty_column",
-					"type": null,
+					"type": "",
 					"description": "This is a test column"
 				}, {
 					"name": "customer_id",
-					"type": null,
+					"type": "",
 					"description": "This is a unique identifier for a customer"
 				}, {
 					"name": "first_name",
-					"type": null,
+					"type": "",
 					"description": "Customer's first name. PII."
 				}, {
 					"name": "last_name",
-					"type": null,
+					"type": "",
 					"description": "Customer's last name. PII."
 				}, {
 					"name": "first_order",
-					"type": null,
+					"type": "",
 					"description": "Date (UTC) of a customer's first order"
 				}, {
 					"name": "most_recent_order",
-					"type": null,
+					"type": "",
 					"description": "Date (UTC) of a customer's most recent order"
 				}, {
 					"name": "number_of_orders",
-					"type": null,
+					"type": "",
 					"description": "Count of the number of orders a customer has placed"
 				}, {
 					"name": "total_order_amount",
-					"type": null,
+					"type": "",
 					"description": "Total value (AUD) of a customer's orders"
 				}]
 			}
@@ -386,11 +386,11 @@
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "order_id",
-					"type": null,
+					"type": "",
 					"description": ""
 				}, {
 					"name": "status",
-					"type": null,
+					"type": "",
 					"description": ""
 				}]
 			}
@@ -410,11 +410,11 @@
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "payment_id",
-					"type": null,
+					"type": "",
 					"description": ""
 				}, {
 					"name": "payment_method",
-					"type": null,
+					"type": "",
 					"description": ""
 				}]
 			}
@@ -435,39 +435,39 @@
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "order_id",
-					"type": null,
+					"type": "",
 					"description": "This is a unique identifier for an order"
 				}, {
 					"name": "customer_id",
-					"type": null,
+					"type": "",
 					"description": "Foreign key to the customers table"
 				}, {
 					"name": "order_date",
-					"type": null,
+					"type": "",
 					"description": "Date (UTC) that the order was placed"
 				}, {
 					"name": "status",
-					"type": null,
+					"type": "",
 					"description": "Orders can be one of the following statuses:\n\n| status         | description                                                                                                            |\n|----------------|------------------------------------------------------------------------------------------------------------------------|\n| placed         | The order has been placed but has not yet left the warehouse                                                           |\n| shipped        | The order has ben shipped to the customer and is currently in transit                                                  |\n| completed      | The order has been received by the customer                                                                            |\n| return_pending | The customer has indicated that they would like to return the order, but it has not yet been received at the warehouse |\n| returned       | The order has been returned by the customer and received at the warehouse                                              |"
 				}, {
 					"name": "amount",
-					"type": null,
+					"type": "",
 					"description": "Total amount (AUD) of the order"
 				}, {
 					"name": "credit_card_amount",
-					"type": null,
+					"type": "",
 					"description": "Amount of the order (AUD) paid for by credit card"
 				}, {
 					"name": "coupon_amount",
-					"type": null,
+					"type": "",
 					"description": "Amount of the order (AUD) paid for by coupon"
 				}, {
 					"name": "bank_transfer_amount",
-					"type": null,
+					"type": "",
 					"description": "Amount of the order (AUD) paid for by bank transfer"
 				}, {
 					"name": "gift_card_amount",
-					"type": null,
+					"type": "",
 					"description": "Amount of the order (AUD) paid for by gift card"
 				}]
 			}
@@ -526,7 +526,7 @@
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "customer_id",
-					"type": null,
+					"type": "",
 					"description": ""
 				}]
 			}
@@ -585,11 +585,11 @@
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "order_id",
-					"type": null,
+					"type": "",
 					"description": ""
 				}, {
 					"name": "status",
-					"type": null,
+					"type": "",
 					"description": ""
 				}]
 			}
@@ -648,11 +648,11 @@
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "payment_id",
-					"type": null,
+					"type": "",
 					"description": ""
 				}, {
 					"name": "payment_method",
-					"type": null,
+					"type": "",
 					"description": ""
 				}]
 			}
@@ -703,7 +703,7 @@
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "customer_id",
-					"type": null,
+					"type": "",
 					"description": ""
 				}]
 			}
@@ -723,11 +723,11 @@
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "order_id",
-					"type": null,
+					"type": "",
 					"description": ""
 				}, {
 					"name": "status",
-					"type": null,
+					"type": "",
 					"description": ""
 				}]
 			}
@@ -747,11 +747,11 @@
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "payment_id",
-					"type": null,
+					"type": "",
 					"description": ""
 				}, {
 					"name": "payment_method",
-					"type": null,
+					"type": "",
 					"description": ""
 				}]
 			}
@@ -772,39 +772,39 @@
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "non_empty_column",
-					"type": null,
+					"type": "",
 					"description": "This is a test column"
 				}, {
 					"name": "empty_column",
-					"type": null,
+					"type": "",
 					"description": "This is a test column"
 				}, {
 					"name": "customer_id",
-					"type": null,
+					"type": "",
 					"description": "This is a unique identifier for a customer"
 				}, {
 					"name": "first_name",
-					"type": null,
+					"type": "",
 					"description": "Customer's first name. PII."
 				}, {
 					"name": "last_name",
-					"type": null,
+					"type": "",
 					"description": "Customer's last name. PII."
 				}, {
 					"name": "first_order",
-					"type": null,
+					"type": "",
 					"description": "Date (UTC) of a customer's first order"
 				}, {
 					"name": "most_recent_order",
-					"type": null,
+					"type": "",
 					"description": "Date (UTC) of a customer's most recent order"
 				}, {
 					"name": "number_of_orders",
-					"type": null,
+					"type": "",
 					"description": "Count of the number of orders a customer has placed"
 				}, {
 					"name": "total_order_amount",
-					"type": null,
+					"type": "",
 					"description": "Total value (AUD) of a customer's orders"
 				}]
 			}
@@ -862,11 +862,11 @@
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "order_id",
-					"type": null,
+					"type": "",
 					"description": ""
 				}, {
 					"name": "status",
-					"type": null,
+					"type": "",
 					"description": ""
 				}]
 			}
@@ -886,11 +886,11 @@
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "payment_id",
-					"type": null,
+					"type": "",
 					"description": ""
 				}, {
 					"name": "payment_method",
-					"type": null,
+					"type": "",
 					"description": ""
 				}]
 			}
@@ -911,39 +911,39 @@
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "order_id",
-					"type": null,
+					"type": "",
 					"description": "This is a unique identifier for an order"
 				}, {
 					"name": "customer_id",
-					"type": null,
+					"type": "",
 					"description": "Foreign key to the customers table"
 				}, {
 					"name": "order_date",
-					"type": null,
+					"type": "",
 					"description": "Date (UTC) that the order was placed"
 				}, {
 					"name": "status",
-					"type": null,
+					"type": "",
 					"description": "Orders can be one of the following statuses:\n\n| status         | description                                                                                                            |\n|----------------|------------------------------------------------------------------------------------------------------------------------|\n| placed         | The order has been placed but has not yet left the warehouse                                                           |\n| shipped        | The order has ben shipped to the customer and is currently in transit                                                  |\n| completed      | The order has been received by the customer                                                                            |\n| return_pending | The customer has indicated that they would like to return the order, but it has not yet been received at the warehouse |\n| returned       | The order has been returned by the customer and received at the warehouse                                              |"
 				}, {
 					"name": "amount",
-					"type": null,
+					"type": "",
 					"description": "Total amount (AUD) of the order"
 				}, {
 					"name": "credit_card_amount",
-					"type": null,
+					"type": "",
 					"description": "Amount of the order (AUD) paid for by credit card"
 				}, {
 					"name": "coupon_amount",
-					"type": null,
+					"type": "",
 					"description": "Amount of the order (AUD) paid for by coupon"
 				}, {
 					"name": "bank_transfer_amount",
-					"type": null,
+					"type": "",
 					"description": "Amount of the order (AUD) paid for by bank transfer"
 				}, {
 					"name": "gift_card_amount",
-					"type": null,
+					"type": "",
 					"description": "Amount of the order (AUD) paid for by gift card"
 				}]
 			}

@@ -226,7 +226,7 @@ class OpenLineageAdapter:
             parent_job_name: Optional[str] = None
     ) -> Run:
         facets: Dict = {}
-        if parent_run_id:
+        if parent_run_id is not None and parent_job_name is not None:
             facets.update({
                 "parent": ParentRunFacet.create(parent_run_id, namespace, parent_job_name)
             })

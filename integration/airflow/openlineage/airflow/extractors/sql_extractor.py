@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Callable, Dict, Iterable, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Callable, Dict, Iterable, List, Mapping, Optional, Tuple, Union
 from urllib.parse import urlparse
 
 from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
@@ -230,7 +230,7 @@ class SqlExtractor(BaseExtractor):
         source: Source,
         inputs: Tuple[List[Dataset], ...],
         outputs: Tuple[List[Dataset], ...],
-    ) -> Dict[str, BaseFacet]:
+    ) -> Mapping[str, BaseFacet]:
         return {}
 
     def _get_input_facets(self) -> Dict[str, BaseFacet]:

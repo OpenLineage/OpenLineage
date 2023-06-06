@@ -169,28 +169,22 @@ class Dataset(RedactMixin):
                          {self.fields!r},{self.description!r})"
 
     def to_openlineage_dataset(self) -> OpenLineageDataset:
-        facets = {
-            "dataSource": DataSourceDatasetFacet(
-                self.source.name,
-                self.source.connection_url
-            )
-        }
+        facets: Dict[str, BaseFacet] = {"dataSource": DataSourceDatasetFacet(
+            name=self.source.name,
+            uri=self.source.connection_url or "",
+        )}
         if self.description:
-            facets.update({
-                "documentation": DocumentationDatasetFacet(
-                    description=self.description
-                )
-            })
+            facets["documentation"] = DocumentationDatasetFacet(
+                description=self.description
+            )
 
         if self.fields is not None and len(self.fields):
-            facets.update({
-                "schema": SchemaDatasetFacet(
-                    fields=[
-                        SchemaField(field.name, field.type, field.description)
-                        for field in self.fields
-                    ]
-                )
-            })
+            facets["schema"] = SchemaDatasetFacet(
+                fields=[
+                    SchemaField(field.name, field.type, field.description)
+                    for field in self.fields
+                ]
+            )
 
         if self.custom_facets:
             facets.update(self.custom_facets)

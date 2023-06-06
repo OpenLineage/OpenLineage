@@ -131,10 +131,10 @@
 			"schema": {
 				"fields": [{
 					"name": "order_id",
-					"type": null
+					"type": ""
 				}, {
 					"name": "status",
-					"type": null
+					"type": ""
 				}]
 			}
 		}
@@ -179,10 +179,10 @@
 			"schema": {
 				"fields": [{
 					"name": "payment_id",
-					"type": null
+					"type": ""
 				}, {
 					"name": "payment_method",
-					"type": null
+					"type": ""
 				}]
 			}
 		},
@@ -229,7 +229,7 @@
 			"schema": {
 				"fields": [{
 					"name": "customer_id",
-					"type": null
+					"type": ""
 				}]
 			}
 		}
@@ -270,10 +270,10 @@
 			"schema": {
 				"fields": [{
 					"name": "order_id",
-					"type": null
+					"type": ""
 				}, {
 					"name": "status",
-					"type": null
+					"type": ""
 				}]
 			}
 		}
@@ -288,10 +288,10 @@
 			"schema": {
 				"fields": [{
 					"name": "payment_id",
-					"type": null
+					"type": ""
 				}, {
 					"name": "payment_method",
-					"type": null
+					"type": ""
 				}]
 			}
 		}
@@ -307,31 +307,31 @@
 			"schema": {
 				"fields": [{
 					"name": "order_id",
-					"type": null
+					"type": ""
 				}, {
 					"name": "customer_id",
-					"type": null
+					"type": ""
 				}, {
 					"name": "order_date",
-					"type": null
+					"type": ""
 				}, {
 					"name": "status",
-					"type": null
+					"type": ""
 				}, {
 					"name": "amount",
-					"type": null
+					"type": ""
 				}, {
 					"name": "credit_card_amount",
-					"type": null
+					"type": ""
 				}, {
 					"name": "coupon_amount",
-					"type": null
+					"type": ""
 				}, {
 					"name": "bank_transfer_amount",
-					"type": null
+					"type": ""
 				}, {
 					"name": "gift_card_amount",
-					"type": null
+					"type": ""
 				}]
 			}
 		},
@@ -372,7 +372,7 @@
 			"schema": {
 				"fields": [{
 					"name": "customer_id",
-					"type": null
+					"type": ""
 				}]
 			}
 		}
@@ -387,10 +387,10 @@
 			"schema": {
 				"fields": [{
 					"name": "order_id",
-					"type": null
+					"type": ""
 				}, {
 					"name": "status",
-					"type": null
+					"type": ""
 				}]
 			}
 		}
@@ -405,10 +405,10 @@
 			"schema": {
 				"fields": [{
 					"name": "payment_id",
-					"type": null
+					"type": ""
 				}, {
 					"name": "payment_method",
-					"type": null
+					"type": ""
 				}]
 			}
 		}
@@ -428,25 +428,25 @@
 				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
 				"fields": [{
 					"name": "customer_id",
-					"type": null
+					"type": ""
 				}, {
 					"name": "first_name",
-					"type": null
+					"type": ""
 				}, {
 					"name": "last_name",
-					"type": null
+					"type": ""
 				}, {
 					"name": "first_order",
-					"type": null
+					"type": ""
 				}, {
 					"name": "most_recent_order",
-					"type": null
+					"type": ""
 				}, {
 					"name": "number_of_orders",
-					"type": null
+					"type": ""
 				}, {
 					"name": "total_order_amount",
-					"type": null
+					"type": ""
 				}]
 			}
 		}

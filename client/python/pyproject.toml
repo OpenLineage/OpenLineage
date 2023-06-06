@@ -43,7 +43,8 @@ optional-dependencies.test = [
 ]
 
 [tool.hatch.build]
-build.targets.wheel = ["openlineage"]
+exclude = [".idea", ".ruff_cache", ".gitignore", "setup.cfg"]
+targets.wheel = {packages = ["openlineage"]}
 
 [tool.coverage]
 html.show_contexts = true

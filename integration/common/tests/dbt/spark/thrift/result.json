@@ -303,37 +303,37 @@
                             {
                                 "description": "This is a unique identifier for a customer",
                                 "name": "customer_id",
-                                "type": null
+                                "type": ""
                             },
                             {
                                 "description": "Customer's first name. PII.",
                                 "name": "first_name",
-                                "type": null
+                                "type": ""
                             },
                             {
                                 "description": "Customer's last name. PII.",
                                 "name": "last_name",
-                                "type": null
+                                "type": ""
                             },
                             {
                                 "description": "Date (UTC) of a customer's first order",
                                 "name": "first_order",
-                                "type": null
+                                "type": ""
                             },
                             {
                                 "description": "Date (UTC) of a customer's most recent order",
                                 "name": "most_recent_order",
-                                "type": null
+                                "type": ""
                             },
                             {
                                 "description": "Count of the number of orders a customer has placed",
                                 "name": "number_of_orders",
-                                "type": null
+                                "type": ""
                             },
                             {
                                 "description": "Total value (AUD) of a customer's orders",
                                 "name": "total_order_amount",
-                                "type": null
+                                "type": ""
                             }
                         ]
                     }
@@ -1089,37 +1089,37 @@
                             {
                                 "description": "This is a unique identifier for a customer",
                                 "name": "customer_id",
-                                "type": null
+                                "type": ""
                             },
                             {
                                 "description": "Customer's first name. PII.",
                                 "name": "first_name",
-                                "type": null
+                                "type": ""
                             },
                             {
                                 "description": "Customer's last name. PII.",
                                 "name": "last_name",
-                                "type": null
+                                "type": ""
                             },
                             {
                                 "description": "Date (UTC) of a customer's first order",
                                 "name": "first_order",
-                                "type": null
+                                "type": ""
                             },
                             {
                                 "description": "Date (UTC) of a customer's most recent order",
                                 "name": "most_recent_order",
-                                "type": null
+                                "type": ""
                             },
                             {
                                 "description": "Count of the number of orders a customer has placed",
                                 "name": "number_of_orders",
-                                "type": null
+                                "type": ""
                             },
                             {
                                 "description": "Total value (AUD) of a customer's orders",
                                 "name": "total_order_amount",
-                                "type": null
+                                "type": ""
                             }
                         ]
                     }

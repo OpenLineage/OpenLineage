@@ -1,7 +1,7 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Dict, List
+from typing import Dict, List, Mapping
 from urllib.parse import urlparse
 
 from openlineage.airflow.extractors.dbapi_utils import execute_query_on_hook
@@ -66,9 +66,9 @@ class SnowflakeExtractor(SqlExtractor):
     def _get_scheme(self):
         return "snowflake"
 
-    def _get_db_specific_run_facets(self, source, *_) -> Dict[str, BaseFacet]:
+    def _get_db_specific_run_facets(self, source, *_) -> Mapping[str, BaseFacet]:
         query_ids = self._get_query_ids()
-        run_facets = {}
+        run_facets: Dict[str, BaseFacet] = {}
         if len(query_ids) == 1:
             run_facets["externalQuery"] = ExternalQueryRunFacet(
                 externalQueryId=query_ids[0], source=source.name
