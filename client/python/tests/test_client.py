@@ -5,12 +5,25 @@ from __future__ import annotations
 import os
 import re
 import uuid
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from openlineage.client.client import OpenLineageClient
-from openlineage.client.run import Dataset, DatasetEvent, Job, JobEvent, Run, RunEvent, RunState
+from openlineage.client.run import (
+    SCHEMA_URL,
+    Dataset,
+    DatasetEvent,
+    Job,
+    JobEvent,
+    Run,
+    RunEvent,
+    RunState,
+)
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def test_client_fails_with_wrong_event_type() -> None:
@@ -73,7 +86,7 @@ def test_client_sends_proper_json_with_minimal_run_event() -> None:
         '{"eventTime": "2021-11-03T10:53:52.427343", "eventType": "START", "inputs": [], "job": '
         '{"facets": {}, "name": "job", "namespace": "openlineage"}, "outputs": [], '
         '"producer": "producer", "run": {"facets": {}, "runId": '
-        '"69f4acab-b87d-4fc0-b27b-8ea950370ff3"}}',
+        f'"69f4acab-b87d-4fc0-b27b-8ea950370ff3"}}, "schemaURL": "{SCHEMA_URL}"}}',
         timeout=5.0,
         verify=True,
     )
@@ -139,6 +152,7 @@ def test_client_uses_passed_transport() -> None:
             Run("69f4acab-b87d-4fc0-b27b-8ea950370ff3"),
             Job("openlineage", "job"),
             "producer",
+            "schemaURL",
         ),
     )
     client.transport.emit.assert_called_once()
@@ -147,26 +161,27 @@ def test_client_uses_passed_transport() -> None:
 @pytest.mark.parametrize(
     ("name", "config_path", "should_emit"),
     [
-        ("job", "tests/config/exact_filter.yml", False),
-        ("wrong", "tests/config/exact_filter.yml", False),
-        ("job1", "tests/config/exact_filter.yml", True),
-        ("1wrong", "tests/config/exact_filter.yml", True),
-        ("asdf", "tests/config/exact_filter.yml", True),
-        ("", "tests/config/exact_filter.yml", True),
-        ("whatever", "tests/config/regex_filter.yml", False),
-        ("something_whatever_asdf", "tests/config/regex_filter.yml", False),
-        ("$$$.whatever", "tests/config/regex_filter.yml", False),
-        ("asdf", "tests/config/regex_filter.yml", True),
-        ("", "tests/config/regex_filter.yml", True),
+        ("job", "exact_filter.yml", False),
+        ("wrong", "exact_filter.yml", False),
+        ("job1", "exact_filter.yml", True),
+        ("1wrong", "exact_filter.yml", True),
+        ("asdf", "exact_filter.yml", True),
+        ("", "exact_filter.yml", True),
+        ("whatever", "regex_filter.yml", False),
+        ("something_whatever_asdf", "regex_filter.yml", False),
+        ("$$$.whatever", "regex_filter.yml", False),
+        ("asdf", "regex_filter.yml", True),
+        ("", "regex_filter.yml", True),
     ],
 )
 def test_client_filters_exact_job_name_events(
     name: str,
     config_path: str,
+    root: Path,
     *,
     should_emit: bool,
 ) -> None:
-    with patch.dict(os.environ, {"OPENLINEAGE_CONFIG": config_path}):
+    with patch.dict(os.environ, {"OPENLINEAGE_CONFIG": str(root / "config" / config_path)}):
         factory = MagicMock()
         transport = MagicMock()
         factory.create.return_value = transport
@@ -179,6 +194,7 @@ def test_client_filters_exact_job_name_events(
             run=run,
             job=Job(name=name, namespace=""),
             producer="",
+            schemaURL="",
         )
 
         client.emit(event)

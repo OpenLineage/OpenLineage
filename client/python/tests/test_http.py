@@ -71,6 +71,7 @@ def test_client_with_http_transport_emits(mocker: MockerFixture) -> None:
         run=Run(runId=str(uuid.uuid4())),
         job=Job(namespace="http", name="test"),
         producer="prod",
+        schemaURL="schema",
     )
 
     client.emit(event)
@@ -100,6 +101,7 @@ def test_client_with_http_transport_emits_custom_endpoint(mocker: MockerFixture)
         run=Run(runId=str(uuid.uuid4())),
         job=Job(namespace="http", name="test"),
         producer="prod",
+        schemaURL="schema",
     )
 
     client.emit(event)

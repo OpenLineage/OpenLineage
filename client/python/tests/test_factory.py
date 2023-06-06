@@ -55,8 +55,8 @@ def test_factory_registers_transports_from_string(mocker: MockerFixture) -> None
     assert isinstance(OpenLineageClient(factory=factory).transport, AccumulatingTransport)
 
 
-def test_factory_registers_transports_from_yaml(mocker: MockerFixture) -> None:
-    mocker.patch.dict(os.environ, {"OPENLINEAGE_CONFIG": "tests/config/openlineage.yml"})
+def test_factory_registers_transports_from_yaml(mocker: MockerFixture, root: Path) -> None:
+    mocker.patch.dict(os.environ, {"OPENLINEAGE_CONFIG": str(root / "config" / "openlineage.yml")})
     mocker.patch("os.getcwd", return_value=str(Path(__file__).parent))
 
     factory = DefaultTransportFactory()
@@ -67,8 +67,8 @@ def test_factory_registers_transports_from_yaml(mocker: MockerFixture) -> None:
     assert isinstance(OpenLineageClient(factory=factory).transport, AccumulatingTransport)
 
 
-def test_factory_registers_transports_from_yaml_config(mocker: MockerFixture) -> None:
-    mocker.patch.dict(os.environ, {"OPENLINEAGE_CONFIG": "tests/config/config.yml"})
+def test_factory_registers_transports_from_yaml_config(mocker: MockerFixture, root: Path) -> None:
+    mocker.patch.dict(os.environ, {"OPENLINEAGE_CONFIG": str(root / "config" / "config.yml")})
     factory = DefaultTransportFactory()
     factory.register_transport(
         "fake",
@@ -77,16 +77,19 @@ def test_factory_registers_transports_from_yaml_config(mocker: MockerFixture) ->
     assert isinstance(OpenLineageClient(factory=factory).transport, FakeTransport)
 
 
-def test_factory_configures_http_transport_from_yaml_config(mocker: MockerFixture) -> None:
-    mocker.patch.dict(os.environ, {"OPENLINEAGE_CONFIG": "tests/config/http.yml"})
+def test_factory_configures_http_transport_from_yaml_config(
+    mocker: MockerFixture,
+    root: Path,
+) -> None:
+    mocker.patch.dict(os.environ, {"OPENLINEAGE_CONFIG": str(root / "config" / "http.yml")})
     factory = DefaultTransportFactory()
     factory.register_transport("http", HttpTransport)
     transport = OpenLineageClient(factory=factory).transport
     assert isinstance(transport, HttpTransport)
 
 
-def test_factory_registers_from_dict(mocker: MockerFixture) -> None:
-    mocker.patch.dict(os.environ, {"OPENLINEAGE_CONFIG": "tests/config/openlineage.yml"})
+def test_factory_registers_from_dict(mocker: MockerFixture, root: Path) -> None:
+    mocker.patch.dict(os.environ, {"OPENLINEAGE_CONFIG": str(root / "config" / "openlineage.yml")})
     factory = DefaultTransportFactory()
     factory.register_transport(
         "fake",
@@ -139,10 +142,10 @@ def test_env_disables_client(env_var_value: str, should_be_noop: str) -> None:
         assert is_noop is should_be_noop
 
 
-def test_env_disabled_ignores_config(mocker: MockerFixture) -> None:
+def test_env_disabled_ignores_config(mocker: MockerFixture, root: Path) -> None:
     env = {
         "OPENLINEAGE_DISABLED": "true",
-        "OPENLINEAGE_CONFIG": "tests/config/config.yml",
+        "OPENLINEAGE_CONFIG": str(root / "config" / "config.yml"),
     }
     mocker.patch.dict(os.environ, env)
     factory = DefaultTransportFactory()

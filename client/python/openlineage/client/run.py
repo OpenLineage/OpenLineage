@@ -10,6 +10,8 @@ from dateutil import parser
 from openlineage.client.facet import NominalTimeRunFacet, ParentRunFacet
 from openlineage.client.utils import RedactMixin
 
+SCHEMA_URL = "https://openlineage.io/spec/1-0-5/OpenLineage.json#/definitions/RunEvent"
+
 
 class RunState(Enum):
     START = "START"
@@ -97,8 +99,9 @@ class RunEvent(RedactMixin):
     producer: str = attr.ib()
     inputs: Optional[List[Dataset]] = attr.ib(factory=list)  # type: ignore[assignment]
     outputs: Optional[List[Dataset]] = attr.ib(factory=list)  # type: ignore[assignment]
+    schemaURL: str = attr.ib(default=SCHEMA_URL)  # noqa: N815
 
-    _skip_redact: List[str] = ["eventType", "eventTime", "producer"]
+    _skip_redact: List[str] = ["eventType", "eventTime", "producer", "schemaURL"]
 
     @eventTime.validator
     def check(self, attribute: str, value: str) -> None:  # noqa: ARG002

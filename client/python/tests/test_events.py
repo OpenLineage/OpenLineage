@@ -8,14 +8,9 @@ import os
 import attr
 import pytest
 
-from openlineage.client import facet, run, set_producer
+from openlineage.client import facet, run
 from openlineage.client.run import RunState
 from openlineage.client.serde import Serde
-
-
-@pytest.fixture(scope="session", autouse=True)
-def _setup_producer() -> None:
-    set_producer("https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python")
 
 
 def get_sorted_json(file_name: str) -> str:
@@ -46,6 +41,7 @@ def test_full_core_event_serializes_properly() -> None:
         inputs=[],
         outputs=[],
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python",
+        schemaURL="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python",
     )
 
     assert Serde.to_json(run_event) == get_sorted_json("serde_example_run_event.json")
@@ -66,6 +62,7 @@ def test_run_event_type_validated() -> None:
         run.Run("69f4acab-b87d-4fc0-b27b-8ea950370ff3", {}),
         run.Job("default", "name"),
         "producer",
+        "schemaURL",
     )
     with pytest.raises(ValueError, match="'eventType' must be in <enum"):
         run.RunEvent(
@@ -74,6 +71,7 @@ def test_run_event_type_validated() -> None:
             valid_event.run,
             valid_event.job,
             valid_event.producer,
+            valid_event.schemaURL,
         )
 
     with pytest.raises(ValueError, match="Parsed date-time has to contain time: 2021-11-03"):
@@ -83,6 +81,7 @@ def test_run_event_type_validated() -> None:
             valid_event.run,
             valid_event.job,
             valid_event.producer,
+            valid_event.schemaURL,
         )
 
 

@@ -72,6 +72,7 @@ def test_client_with_kafka_transport_emits(mocker: MockerFixture) -> None:
         run=Run(runId=str(uuid.uuid4())),
         job=Job(namespace="kafka", name="test"),
         producer="prod",
+        schemaURL="schema",
     )
 
     client.emit(event)
