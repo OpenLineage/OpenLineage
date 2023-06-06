@@ -41,7 +41,7 @@ def test_full_core_event_serializes_properly() -> None:
         inputs=[],
         outputs=[],
         producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python",
-        schemaURL="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python",
+        schemaURL="https://openlineage.io/spec/1-0-5/OpenLineage.json#/definitions/RunEvent",
     )
 
     assert Serde.to_json(run_event) == get_sorted_json("serde_example_run_event.json")
