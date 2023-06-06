@@ -2,39 +2,13 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://openlineage.io/spec/2-0-0/OpenLineage.json",
   "$defs": {
-    "RunEvent": {
+    "BaseEvent": {
       "type": "object",
       "properties": {
-        "eventType": {
-          "description": "the current transition of the run state. It is required to issue 1 START event and 1 of [ COMPLETE, ABORT, FAIL ] event per run. Additional events with OTHER eventType can be added to the same run. For example to send additional metadata after the run is complete",
-          "type": "string",
-          "enum": ["START", "RUNNING", "COMPLETE", "ABORT", "FAIL", "OTHER"],
-          "example": "START|RUNNING|COMPLETE|ABORT|FAIL|OTHER"
-        },
         "eventTime": {
           "description": "the time the event occurred at",
           "type": "string",
           "format": "date-time"
-        },
-        "run": {
-          "$ref": "#/$defs/Run"
-        },
-        "job": {
-          "$ref": "#/$defs/Job"
-        },
-        "inputs": {
-          "description": "The set of **input** datasets.",
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/InputDataset"
-          }
-        },
-        "outputs": {
-          "description": "The set of **output** datasets.",
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/OutputDataset"
-          }
         },
         "producer": {
           "description": "URI identifying the producer of this metadata. For example this could be a git url with a given tag or sha",
@@ -49,82 +23,85 @@
           "example": "https://openlineage.io/spec/0-0-1/OpenLineage.json"
         }
       },
-      "required": ["run", "job", "eventTime", "producer", "schemaURL"]
+      "required": ["eventTime", "producer", "schemaURL"]
+    },
+    "RunEvent": {
+      "allOf": [
+        { "$ref": "#/$defs/BaseEvent" },
+        {
+          "type": "object",
+          "properties": {
+            "eventType": {
+              "description": "the current transition of the run state. It is required to issue 1 START event and 1 of [ COMPLETE, ABORT, FAIL ] event per run. Additional events with OTHER eventType can be added to the same run. For example to send additional metadata after the run is complete",
+              "type": "string",
+              "enum": ["START", "RUNNING", "COMPLETE", "ABORT", "FAIL", "OTHER"],
+              "example": "START|RUNNING|COMPLETE|ABORT|FAIL|OTHER"
+            },
+            "run": {
+              "$ref": "#/$defs/Run"
+            },
+            "job": {
+              "$ref": "#/$defs/Job"
+            },
+            "inputs": {
+              "description": "The set of **input** datasets.",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/InputDataset"
+              }
+            },
+            "outputs": {
+              "description": "The set of **output** datasets.",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/OutputDataset"
+              }
+            }
+          },
+          "required": ["run", "job"]
+        }
+      ]
     },
     "DatasetEvent": {
-      "type": "object",
-      "properties": {
-        "eventTime": {
-          "description": "the time the event occurred at",
-          "type": "string",
-          "format": "date-time"
-        },
-        "dataset": {
-          "$ref": "#/$defs/StaticDataset"
-        },
-        "producer": {
-          "description": "URI identifying the producer of this metadata. For example this could be a git url with a given tag or sha",
-          "type": "string",
-          "format": "uri",
-          "example": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client"
-        },
-        "schemaURL": {
-          "description": "The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version of the schema definition for this RunEvent",
-          "type": "string",
-          "format": "uri",
-          "example": "https://openlineage.io/spec/2-0-0/OpenLineage.json#/$defs/DatasetEvent"
+      "allOf": [
+        { "$ref": "#/$defs/BaseEvent" },
+        {
+          "type": "object",
+          "properties": {
+            "dataset": {
+              "$ref": "#/$defs/StaticDataset"
+            }
+          },
+          "required": ["dataset"]
         }
-      },
-      "required": [
-        "eventTime",
-        "dataset",
-        "producer",
-        "schemaURL"
       ]
     },
     "JobEvent": {
-      "type": "object",
-      "properties": {
-        "eventTime": {
-          "description": "the time the event occurred at",
-          "type": "string",
-          "format": "date-time"
-        },
-        "job": {
-          "$ref": "#/$defs/Job"
-        },
-        "inputs": {
-          "description": "The set of **input** datasets.",
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/InputDataset"
-          }
-        },
-        "outputs": {
-          "description": "The set of **output** datasets.",
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/OutputDataset"
-          }
-        },
-        "producer": {
-          "description": "URI identifying the producer of this metadata. For example this could be a git url with a given tag or sha",
-          "type": "string",
-          "format": "uri",
-          "example": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client"
-        },
-        "schemaURL": {
-          "description": "The JSON Pointer (https://tools.ietf.org/html/rfc6901) URL to the corresponding version of the schema definition for this RunEvent",
-          "type": "string",
-          "format": "uri",
-          "example": "https://openlineage.io/spec/2-0-0/OpenLineage.json#/$defs/JobEvent"
+      "allOf": [
+        { "$ref": "#/$defs/BaseEvent" },
+        {
+          "type": "object",
+          "properties": {
+            "job": {
+              "$ref": "#/$defs/Job"
+            },
+            "inputs": {
+              "description": "The set of **input** datasets.",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/InputDataset"
+              }
+            },
+            "outputs": {
+              "description": "The set of **output** datasets.",
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/OutputDataset"
+              }
+            }
+          },
+          "required": ["job"]
         }
-      },
-      "required": [
-        "eventTime",
-        "job",
-        "producer",
-        "schemaURL"
       ]
     },
     "Run": {
@@ -207,7 +184,9 @@
               "anyOf": [
                 {
                   "type": "object",
-                  "additionalProperties": { "$ref": "#/$defs/InputDatasetFacet" }
+                  "additionalProperties": {
+                    "$ref": "#/$defs/InputDatasetFacet"
+                  }
                 },
                 { "$ref": "facets/DataQualityMetricsInputDatasetFacet.json" }
               ]
@@ -235,7 +214,9 @@
               "anyOf": [
                 {
                   "type": "object",
-                  "additionalProperties": { "$ref": "#/$defs/OutputDatasetFacet" }
+                  "additionalProperties": {
+                    "$ref": "#/$defs/OutputDatasetFacet"
+                  }
                 },
                 { "$ref": "facets/OutputStatisticsOutputDatasetFacet.json" }
               ]
@@ -287,9 +268,7 @@
     "StaticDataset": {
       "description": "A Dataset sent within static metadata events",
       "type": "object",
-      "allOf": [
-          { "$ref": "#/$defs/Dataset" }
-      ]
+      "allOf": [{ "$ref": "#/$defs/Dataset" }]
     },
     "DatasetFacet": {
       "description": "A Dataset Facet",
@@ -317,9 +296,5 @@
       "required": ["_producer", "_schemaURL"]
     }
   },
-  "oneOf": [
-    { "$ref": "#/$defs/RunEvent" },
-    { "$ref": "#/$defs/DatasetEvent" },
-    { "$ref": "#/$defs/JobEvent" }
-  ]
+  "oneOf": [{ "$ref": "#/$defs/RunEvent" }, { "$ref": "#/$defs/DatasetEvent" }, { "$ref": "#/$defs/JobEvent" }]
 }

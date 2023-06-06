@@ -65,7 +65,7 @@ class OpenLineageTest {
     List<InputDataset> inputs = Arrays.asList(ol.newInputDataset("ins", "input", null, null));
     List<OutputDataset> outputs = Arrays.asList(ol.newOutputDataset("ons", "output", null, null));
     RunEvent runStateUpdate =
-        ol.newRunEvent(OpenLineage.RunEvent.EventType.START, now, run, job, inputs, outputs);
+        ol.newRunEvent(now, OpenLineage.RunEvent.EventType.START, run, job, inputs, outputs);
 
     String json = mapper.writeValueAsString(runStateUpdate);
     RunEvent read = mapper.readValue(json, RunEvent.class);
