@@ -101,7 +101,8 @@ class OpenLineageClient:
 
     @classmethod
     def from_environment(cls: type[_T]) -> _T:
-        return cls(transport=get_default_factory().create())
+        # Deprecated way of creating client, use constructor or from_dict
+        return cls()
 
     @classmethod
     def from_dict(cls: type[_T], config: dict[str, str]) -> _T:
