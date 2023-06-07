@@ -1,0 +1,25 @@
+{
+	"eventTime": "2021-11-03T10:53:52.427343",
+	"dataset": {
+		"namespace":  "openlineage",
+		"name":  "name",
+		"facets": {
+			"schema": {
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python",
+				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/SchemaDatasetFacet",
+				"fields": [
+					{
+						"name": "a",
+						"type": "string"
+					},
+					{
+						"name": "b",
+						"type": "string"
+					}
+				]
+			}
+		}
+	},
+	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python",
+	"schemaURL": "https://openlineage.io/spec/2-0-0/OpenLineage.json#/$defs/DatasetEvent"
+}
