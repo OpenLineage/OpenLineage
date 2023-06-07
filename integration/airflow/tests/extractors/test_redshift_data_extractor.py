@@ -156,7 +156,7 @@ class TestRedshiftDataExtractor(unittest.TestCase):
             task_meta.outputs[0].facets["dataSource"].name
             == f"redshift://{CLUSTER_IDENTIFIER}.{REGION_NAME}:5439"
         )
-        assert task_meta.outputs[0].facets["dataSource"].uri is None
+        assert task_meta.outputs[0].facets["dataSource"].uri == ""
         assert len(task_meta.outputs[0].facets["schema"].fields) == 3
 
         assert (
@@ -213,7 +213,7 @@ class TestRedshiftDataExtractor(unittest.TestCase):
             task_meta.outputs[0].facets["dataSource"].name
             == f"redshift://{CLUSTER_IDENTIFIER}.{REGION_NAME}:5439"
         )
-        assert task_meta.outputs[0].facets["dataSource"].uri is None
+        assert task_meta.outputs[0].facets["dataSource"].uri == ""
 
     def read_file_json(self, file):
         f = open(file=file, mode="r")

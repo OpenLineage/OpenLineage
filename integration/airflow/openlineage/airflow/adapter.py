@@ -4,7 +4,7 @@
 import logging
 import os
 import uuid
-from typing import TYPE_CHECKING, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 import requests.exceptions
 from openlineage.airflow.extractors import TaskMetadata
@@ -31,9 +31,10 @@ if TYPE_CHECKING:
 _DAG_DEFAULT_OWNER = "anonymous"
 _DAG_DEFAULT_NAMESPACE = "default"
 
-_DAG_NAMESPACE = os.getenv("OPENLINEAGE_NAMESPACE", None)
-if not _DAG_NAMESPACE:
-    _DAG_NAMESPACE = os.getenv("MARQUEZ_NAMESPACE", _DAG_DEFAULT_NAMESPACE)
+_DAG_NAMESPACE = os.getenv(
+    "OPENLINEAGE_NAMESPACE",
+    os.getenv("MARQUEZ_NAMESPACE", _DAG_DEFAULT_NAMESPACE)
+)
 
 _PRODUCER = (
     f"https://github.com/OpenLineage/OpenLineage/tree/"
@@ -58,11 +59,10 @@ class OpenLineageAdapter:
     def get_or_create_openlineage_client() -> OpenLineageClient:
         # Backcomp with Marquez integration
         marquez_url = os.getenv("MARQUEZ_URL")
-        marquez_api_key = os.getenv("MARQUEZ_API_KEY")
         if marquez_url:
             log.info(f"Sending lineage events to {marquez_url}")
             client = OpenLineageClient(
-                marquez_url, OpenLineageClientOptions(api_key=marquez_api_key)
+                marquez_url, OpenLineageClientOptions(api_key=os.environ["MARQUEZ_API_KEY"])
             )
         else:
             client = OpenLineageClient()
@@ -108,7 +108,7 @@ class OpenLineageAdapter:
         nominal_end_time: str,
         owners: List[str],
         task: Optional[TaskMetadata],
-        run_facets: Optional[Dict[str, Type[BaseFacet]]] = None,  # Custom run facets
+        run_facets: Optional[Dict[str, BaseFacet]] = None,  # Custom run facets
     ) -> str:
         """
         Emits openlineage event of type START
@@ -134,7 +134,8 @@ class OpenLineageAdapter:
             name="Airflow",
             openlineageAdapterVersion=OPENLINEAGE_AIRFLOW_VERSION,
         )
-
+        if run_facets is None:
+            run_facets = {}
         run_facets["processing_engine"] = processing_engine_version_facet  # type: ignore
         event = RunEvent(
             eventType=RunState.START,
@@ -266,18 +267,19 @@ class OpenLineageAdapter:
         nominal_end_time: Optional[str] = None,
         run_facets: Dict[str, BaseFacet] = None,
     ) -> Run:
-        facets = {}
+        facets: Dict[str, BaseFacet] = {}
         if nominal_start_time:
             facets.update({
                 "nominalTime": NominalTimeRunFacet(
                     nominal_start_time, nominal_end_time
                 )
             })
-        if parent_run_id:
+        parent_name = parent_job_name or job_name
+        if parent_run_id is not None and parent_name is not None:
             parent_run_facet = ParentRunFacet.create(
                 runId=parent_run_id,
                 namespace=_DAG_NAMESPACE,
-                name=parent_job_name or job_name,
+                name=parent_name,
             )
             facets.update({
                 "parent": parent_run_facet,
@@ -297,7 +299,7 @@ class OpenLineageAdapter:
         owners: List[str] = None,
         job_facets: Dict[str, BaseFacet] = None,
     ):
-        facets = {}
+        facets: Dict[str, BaseFacet] = {}
 
         if job_description:
             facets.update({"documentation": DocumentationJobFacet(job_description)})

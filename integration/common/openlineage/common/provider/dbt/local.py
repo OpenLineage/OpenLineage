@@ -4,7 +4,7 @@
 import json
 import logging
 import os
-from typing import Any, Dict, List, Optional, TypeVar
+from typing import Any, Dict, List, Optional, Tuple, TypeVar
 
 import yaml
 from jinja2 import Environment, Undefined
@@ -74,7 +74,7 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
     @classmethod
     def load_metadata(
         cls, path: str, desired_schema_versions: List[int], logger: logging.Logger
-    ) -> Dict:
+    ) -> Dict[Any, Any]:
         with open(path, "r") as f:
             metadata = json.load(f)
             str_schema_version = get_from_nullable_chain(
@@ -167,7 +167,9 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
         else:
             return value
 
-    def get_dbt_metadata(self):
+    def get_dbt_metadata(self) -> Tuple[
+        Dict[Any, Any], Dict[Any, Any], Dict[Any, Any], Optional[Dict[Any, Any]]
+    ]:
         manifest = self.load_metadata(
             self.manifest_path, [2, 3, 4, 5, 6, 7], self.logger
         )

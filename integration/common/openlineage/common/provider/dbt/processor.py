@@ -534,13 +534,13 @@ class DbtArtifactProcessor:
         """
         fields = []
         for field in columns:
-            type, description = None, None
+            of_type, description = None, None
             if "data_type" in field and field["data_type"] is not None:
-                type = field["data_type"]
+                of_type = field["data_type"]
             if "description" in field and field["description"] is not None:
                 description = field["description"]
             fields.append(
-                SchemaField(name=field["name"], type=type, description=description)
+                SchemaField(name=field["name"], type=of_type or "", description=description)
             )
         return fields
 
@@ -558,6 +558,7 @@ class DbtArtifactProcessor:
             description = get_from_nullable_chain(
                 metadata_columns, [name, "description"]
             )
+            assert isinstance(type, str)
             fields.append(SchemaField(name=name, type=type, description=description))
         return fields
 
