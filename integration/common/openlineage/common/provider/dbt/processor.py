@@ -34,7 +34,7 @@ class Adapter(Enum):
     REDSHIFT = "redshift"
     SPARK = "spark"
     POSTGRES = "postgres"
-
+    DATABRICKS = "databricks"
     @staticmethod
     def adapters() -> str:
         # String representation of all supported adapter names
@@ -584,6 +584,8 @@ class DbtArtifactProcessor:
             return f"redshift://{profile['host']}:{profile['port']}"
         elif self.adapter_type == Adapter.POSTGRES:
             return f"postgres://{profile['host']}:{profile['port']}"
+        elif self.adapter_type == Adapter.DATABRICKS:
+            return f"databricks://{profile['host']}"
         elif self.adapter_type == Adapter.SPARK:
             port = ""
 
