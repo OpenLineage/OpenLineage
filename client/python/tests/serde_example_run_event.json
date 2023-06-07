@@ -19,5 +19,6 @@
 	},
 	"inputs": [],
 	"outputs": [],
-	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python"
+	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python",
+	"schemaURL": "https://openlineage.io/spec/1-0-5/OpenLineage.json#/definitions/RunEvent"
 }
