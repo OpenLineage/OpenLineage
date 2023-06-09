@@ -29,27 +29,6 @@ _RUN_FACETS = [
 
 
 @attr.s
-class Run(RedactMixin):
-    runId: str = attr.ib()  # noqa:  N815
-    facets: Dict[Any, Any] = attr.ib(factory=dict)
-
-    _skip_redact: List[str] = ["runId"]
-
-    @runId.validator
-    def check(self, attribute: str, value: str) -> None:  # noqa: ARG002
-        uuid.UUID(value)
-
-
-@attr.s
-class Job(RedactMixin):
-    namespace: str = attr.ib()
-    name: str = attr.ib()
-    facets: Dict[Any, Any] = attr.ib(factory=dict)
-
-    _skip_redact: List[str] = ["namespace", "name"]
-
-
-@attr.s
 class Dataset(RedactMixin):
     namespace: str = attr.ib()
     name: str = attr.ib()
@@ -66,6 +45,49 @@ class InputDataset(Dataset):
 @attr.s
 class OutputDataset(Dataset):
     outputFacets: Dict[Any, Any] = attr.ib(factory=dict)  # noqa:  N815
+
+
+@attr.s
+class DatasetEvent(RedactMixin):
+    eventTime: str = attr.ib()  # noqa:  N815
+    producer: str = attr.ib()
+    schemaURL: str = attr.ib()  # noqa: N815
+    dataset: Dataset = attr.ib()
+
+    _skip_redact: List[str] = ["producer"]
+
+
+@attr.s
+class Job(RedactMixin):
+    namespace: str = attr.ib()
+    name: str = attr.ib()
+    facets: Dict[Any, Any] = attr.ib(factory=dict)
+
+    _skip_redact: List[str] = ["namespace", "name"]
+
+
+@attr.s
+class JobEvent(RedactMixin):
+    eventTime: str = attr.ib()  # noqa:  N815
+    producer: str = attr.ib()
+    schemaURL: str = attr.ib()  # noqa: N815
+    job: Job = attr.ib()
+    inputs: Optional[List[Dataset]] = attr.ib(factory=list)  # type: ignore[assignment]
+    outputs: Optional[List[Dataset]] = attr.ib(factory=list)  # type: ignore[assignment]
+
+    _skip_redact: List[str] = ["producer"]
+
+
+@attr.s
+class Run(RedactMixin):
+    runId: str = attr.ib()  # noqa:  N815
+    facets: Dict[Any, Any] = attr.ib(factory=dict)
+
+    _skip_redact: List[str] = ["runId"]
+
+    @runId.validator
+    def check(self, attribute: str, value: str) -> None:  # noqa: ARG002
+        uuid.UUID(value)
 
 
 @attr.s

@@ -2,6 +2,10 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.27.2...HEAD)
 
+### Added
+* **Support static lineage.** [`#1880`](https://github.com/OpenLineage/OpenLineage/pull/1880) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Extend specification and Java/Python client to support run-less events. See [proposal](https://github.com/OpenLineage/OpenLineage/blob/main/proposals/1837/static_lineage.md) for more details.*
+
 ## [0.27.2](https://github.com/OpenLineage/OpenLineage/compare/0.27.1...0.27.2) - 2023-06-06
 ### Fixed
 * **Python client: deprecate `client.from_environment`, do not skip loading config** [`#1908`](https://github.com/OpenLineage/OpenLineage/pull/1908) [@mobuchowski](https://github.com/mobuchowski)  

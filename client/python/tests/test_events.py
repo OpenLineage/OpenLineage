@@ -44,7 +44,7 @@ def test_full_core_event_serializes_properly() -> None:
         schemaURL="https://openlineage.io/spec/1-0-5/OpenLineage.json#/definitions/RunEvent",
     )
 
-    assert Serde.to_json(run_event) == get_sorted_json("serde_example.json")
+    assert Serde.to_json(run_event) == get_sorted_json("serde_example_run_event.json")
 
 
 def test_run_id_uuid_check() -> None:
@@ -142,3 +142,66 @@ def test_serde_nested_nulls() -> None:
         )
         == '{"nested": []}'
     )
+
+
+def test_dataset_event() -> None:
+    dataset_event = run.DatasetEvent(
+        eventTime="2021-11-03T10:53:52.427343",
+        dataset=run.Dataset(
+            namespace="openlineage",
+            name="name",
+            facets={
+                "schema": facet.SchemaDatasetFacet(
+                    fields=[
+                        facet.SchemaField(name="a", type="string"),
+                        facet.SchemaField(name="b", type="string"),
+                    ],
+                ),
+            },
+        ),
+        producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python",
+        schemaURL="https://openlineage.io/spec/2-0-0/OpenLineage.json#/$defs/DatasetEvent",
+    )
+
+    assert Serde.to_json(dataset_event) == get_sorted_json("serde_example_dataset_event.json")
+
+
+def test_job_event() -> None:
+    job_event = run.JobEvent(
+        eventTime="2021-11-03T10:53:52.427343",
+        job=run.Job(
+            namespace="openlineage",
+            name="name",
+            facets={},
+        ),
+        inputs=[
+            run.Dataset(
+                namespace="openlineage",
+                name="dataset_a",
+                facets={
+                    "schema": facet.SchemaDatasetFacet(
+                        fields=[
+                            facet.SchemaField(name="a", type="string"),
+                        ],
+                    ),
+                },
+            ),
+        ],
+        outputs=[
+            run.Dataset(
+                namespace="openlineage",
+                name="dataset_b",
+                facets={
+                    "schema": facet.SchemaDatasetFacet(
+                        fields=[
+                            facet.SchemaField(name="a", type="string"),
+                        ],
+                    ),
+                },
+            ),
+        ],
+        producer="https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python",
+        schemaURL="https://openlineage.io/spec/2-0-0/OpenLineage.json#/$defs/JobEvent",
+    )
+
+    assert Serde.to_json(job_event) == get_sorted_json("serde_example_job_event.json")

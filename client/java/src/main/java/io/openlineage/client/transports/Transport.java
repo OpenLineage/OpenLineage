@@ -23,4 +23,8 @@ public abstract class Transport {
   Transport(@NonNull final Type type) {}
 
   public abstract void emit(OpenLineage.RunEvent runEvent);
+
+  public void emit(String evenJson) {
+    throw new UnsupportedOperationException("Emitting DatasetEvent not implemented");
+  }
 }

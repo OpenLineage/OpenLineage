@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, TypeVar, Union
 
 import attr
 
@@ -12,7 +12,7 @@ from openlineage.client.transport.transport import Config, Transport
 from openlineage.client.utils import get_only_specified_fields
 
 if TYPE_CHECKING:
-    from openlineage.client.run import RunEvent
+    from openlineage.client.run import DatasetEvent, JobEvent, RunEvent
 log = logging.getLogger(__name__)
 
 _T = TypeVar("_T", bound="KafkaConfig")
@@ -63,7 +63,7 @@ class KafkaTransport(Transport):
             raise
         log.debug("Constructing openlineage client to send events to topic %s", config.topic)
 
-    def emit(self, event: RunEvent) -> None:
+    def emit(self, event: Union[RunEvent, DatasetEvent, JobEvent]) -> None:  # noqa: UP007
         self.producer.produce(topic=self.topic, value=Serde.to_json(event).encode("utf-8"))
         if self.flush:
             self.producer.flush(timeout=5)

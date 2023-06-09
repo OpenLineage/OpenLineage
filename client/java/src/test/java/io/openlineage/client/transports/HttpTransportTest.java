@@ -5,7 +5,9 @@
 
 package io.openlineage.client.transports;
 
-import static io.openlineage.client.Events.event;
+import static io.openlineage.client.Events.datasetEvent;
+import static io.openlineage.client.Events.jobEvent;
+import static io.openlineage.client.Events.runEvent;
 import static java.util.Collections.singletonMap;
 import static org.apache.http.HttpHeaders.ACCEPT;
 import static org.apache.http.HttpHeaders.CONTENT_TYPE;
@@ -72,7 +74,7 @@ class HttpTransportTest {
 
     when(http.execute(any(HttpUriRequest.class))).thenReturn(response);
 
-    client.emit(event());
+    client.emit(runEvent());
 
     verify(http, times(1)).execute(any());
   }
@@ -101,7 +103,7 @@ class HttpTransportTest {
     when(response.getStatusLine().getStatusCode()).thenReturn(200);
     when(http.execute(any(HttpUriRequest.class))).thenReturn(response);
 
-    client.emit(event());
+    client.emit(runEvent());
 
     verify(http, times(1)).execute(captor.capture());
 
@@ -125,7 +127,7 @@ class HttpTransportTest {
     when(response.getStatusLine().getStatusCode()).thenReturn(200);
     when(http.execute(any(HttpUriRequest.class))).thenReturn(response);
 
-    client.emit(event());
+    client.emit(runEvent());
 
     verify(http, times(1)).execute(captor.capture());
 
@@ -146,7 +148,7 @@ class HttpTransportTest {
 
     when(http.execute(any(HttpUriRequest.class))).thenReturn(response);
 
-    assertThrows(OpenLineageClientException.class, () -> client.emit(event()));
+    assertThrows(OpenLineageClientException.class, () -> client.emit(runEvent()));
 
     verify(http, times(1)).execute(any());
   }
@@ -159,7 +161,7 @@ class HttpTransportTest {
 
     when(http.execute(any(HttpUriRequest.class))).thenThrow(new IOException(""));
 
-    assertThrows(OpenLineageClientException.class, () -> client.emit(event()));
+    assertThrows(OpenLineageClientException.class, () -> client.emit(runEvent()));
 
     verify(http, times(1)).execute(any());
   }
@@ -189,7 +191,7 @@ class HttpTransportTest {
 
     ArgumentCaptor<HttpUriRequest> captor = ArgumentCaptor.forClass(HttpUriRequest.class);
 
-    client.emit(event());
+    client.emit(runEvent());
 
     verify(http, times(1)).execute(captor.capture());
 
@@ -213,7 +215,7 @@ class HttpTransportTest {
 
     when(http.execute(any(HttpUriRequest.class))).thenReturn(response);
 
-    client.emit(event());
+    client.emit(runEvent());
 
     verify(response, times(1)).close();
     verify(response.getEntity().getContent(), times(1)).close();
@@ -246,7 +248,7 @@ class HttpTransportTest {
               return response;
             });
 
-    client.emit(event());
+    client.emit(runEvent());
     Map<String, String> resultHeaders =
         Arrays.stream(map.get("test").getAllHeaders())
             .collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue));
@@ -255,5 +257,41 @@ class HttpTransportTest {
         .containsEntry(CONTENT_TYPE, APPLICATION_JSON.toString())
         .containsEntry("testHeader1", "test1")
         .containsEntry("testHeader2", "test2");
+  }
+
+  @Test
+  void clientEmitsDatasetEventHttpTransport() throws IOException {
+    CloseableHttpClient http = mock(CloseableHttpClient.class);
+    HttpConfig config = new HttpConfig();
+    config.setUrl(URI.create("https://localhost:1500/api/v1/lineage"));
+    Transport transport = new HttpTransport(http, config);
+    OpenLineageClient client = new OpenLineageClient(transport);
+
+    CloseableHttpResponse response = mock(CloseableHttpResponse.class, RETURNS_DEEP_STUBS);
+    when(response.getStatusLine().getStatusCode()).thenReturn(200);
+
+    when(http.execute(any(HttpUriRequest.class))).thenReturn(response);
+
+    client.emit(datasetEvent());
+
+    verify(http, times(1)).execute(any());
+  }
+
+  @Test
+  void clientEmitsJobEventHttpTransport() throws IOException {
+    CloseableHttpClient http = mock(CloseableHttpClient.class);
+    HttpConfig config = new HttpConfig();
+    config.setUrl(URI.create("https://localhost:1500/api/v1/lineage"));
+    Transport transport = new HttpTransport(http, config);
+    OpenLineageClient client = new OpenLineageClient(transport);
+
+    CloseableHttpResponse response = mock(CloseableHttpResponse.class, RETURNS_DEEP_STUBS);
+    when(response.getStatusLine().getStatusCode()).thenReturn(200);
+
+    when(http.execute(any(HttpUriRequest.class))).thenReturn(response);
+
+    client.emit(jobEvent());
+
+    verify(http, times(1)).execute(any());
   }
 }

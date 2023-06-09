@@ -47,6 +47,35 @@ public final class OpenLineageClient {
   }
 
   /**
+   * Emit the given dataset event to HTTP backend. The method will return successfully after the
+   * dataset event has been emitted, regardless of any exceptions thrown by the HTTP backend.
+   *
+   * @param datasetEvent The dataset event to emit.
+   */
+  public void emit(@NonNull OpenLineage.DatasetEvent datasetEvent) {
+    if (log.isDebugEnabled()) {
+      log.debug(
+          "OpenLineageClient will emit lineage event: {}",
+          OpenLineageClientUtils.toJson(datasetEvent));
+    }
+    transport.emit(OpenLineageClientUtils.toJson(datasetEvent));
+  }
+
+  /**
+   * Emit the given run event to HTTP backend. The method will return successfully after the run
+   * event has been emitted, regardless of any exceptions thrown by the HTTP backend.
+   *
+   * @param jobEvent The job event to emit.
+   */
+  public void emit(@NonNull OpenLineage.JobEvent jobEvent) {
+    if (log.isDebugEnabled()) {
+      log.debug(
+          "OpenLineageClient will emit lineage event: {}", OpenLineageClientUtils.toJson(jobEvent));
+    }
+    transport.emit(OpenLineageClientUtils.toJson(jobEvent));
+  }
+
+  /**
    * Returns an new {@link OpenLineageClient.Builder} object for building {@link
    * OpenLineageClient}s.
    */
