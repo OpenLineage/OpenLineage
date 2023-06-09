@@ -2,12 +2,10 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.28.0...HEAD)
 
-## [0.28.0](https://github.com/OpenLineage/OpenLineage/compare/0.27.2...0.28.0) - 2023-06-08
+## [0.28.0](https://github.com/OpenLineage/OpenLineage/compare/0.27.2...0.28.0) - 2023-06-09
 ### Added
 * **Common: add Databricks compatibility** [`#1829`](https://github.com/OpenLineage/OpenLineage/pull/1829) [Ines70](https://github.com/Ines70)  
     *Enables launching OpenLineage with a Databricks profile.*
-* **Spec: emit job and dataset runless metadata** [`#1880`](https://github.com/OpenLineage/OpenLineage/pull/1880) [pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-    *Adds the proposed event types to the spec and support in the Python client for static AKA runless metadata.*
 
 ### Fixed
 * **Fix type-checked marker and packaging** [`#1913`](https://github.com/OpenLineage/OpenLineage/pull/1913) [gaborbernat](https://github.com/gaborbernat)  
