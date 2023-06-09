@@ -5,7 +5,7 @@
 
 package io.openlineage.client.transports;
 
-import static io.openlineage.client.Events.runEvent;
+import static io.openlineage.client.Events.event;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -39,7 +39,7 @@ class KafkaTransportTest {
 
     when(producer.send(any(ProducerRecord.class))).thenReturn(mock(Future.class));
 
-    client.emit(runEvent());
+    client.emit(event());
 
     ArgumentCaptor<ProducerRecord<String, String>> captor =
         ArgumentCaptor.forClass(ProducerRecord.class);

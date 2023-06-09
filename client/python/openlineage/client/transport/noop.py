@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from openlineage.client.transport.transport import Config, Transport
 
 if TYPE_CHECKING:
-    from openlineage.client.run import DatasetEvent, JobEvent, RunEvent
+    from openlineage.client.run import RunEvent
 
 log = logging.getLogger(__name__)
 
@@ -24,5 +24,5 @@ class NoopTransport(Transport):
     def __init__(self, config: NoopConfig) -> None:  # noqa: ARG002
         log.info("OpenLineage client is disabled. NoopTransport.")
 
-    def emit(self, event: Union[RunEvent, DatasetEvent, JobEvent]) -> None:  # noqa: ARG002, UP007
+    def emit(self, event: RunEvent) -> None:  # noqa: ARG002
         return None

@@ -35,7 +35,6 @@ import io.openlineage.client.SchemaParser.PrimitiveType;
 import io.openlineage.client.SchemaParser.RefType;
 import io.openlineage.client.SchemaParser.Type;
 import io.openlineage.client.SchemaParser.TypeVisitor;
-import java.util.stream.Collectors;
 
 /**
  * Resolves the types in a Schema. (ref, etc)
@@ -138,15 +137,7 @@ public class TypeResolver {
 
         @Override
         public ResolvedType visit(OneOfType oneOfType) {
-          List<ResolvedType> resolvedTypes = oneOfType
-              .getTypes()
-              .stream()
-              .filter(type -> type instanceof RefType)
-              .map(refType -> visit(refType))
-              .collect(Collectors.toList());
-
-          // return first of
-          return resolvedTypes.get(0);
+          throw new UnsupportedOperationException("oneOf is not supported yet " + oneOfType);
         }
 
         @Override

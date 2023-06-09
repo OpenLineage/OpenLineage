@@ -18,10 +18,7 @@ paths:
         content:
           application/json:
             schema:
-              oneOf:
-                - $ref: "OpenLineage.json#/$defs/RunEvent"
-                - $ref: "OpenLineage.json#/$defs/DatasetEvent"
-                - $ref: "OpenLineage.json#/$defs/JobEvent"
+              $ref: "OpenLineage.json#/$defs/RunEvent"
       responses:
         "200":
           description: OK
