@@ -1,14 +1,40 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://openlineage.io/spec/2-0-0/OpenLineage.json",
+  "$id": "https://openlineage.io/spec/1-0-5/OpenLineage.json",
   "$defs": {
-    "BaseEvent": {
+    "RunEvent": {
       "type": "object",
       "properties": {
+        "eventType": {
+          "description": "the current transition of the run state. It is required to issue 1 START event and 1 of [ COMPLETE, ABORT, FAIL ] event per run. Additional events with OTHER eventType can be added to the same run. For example to send additional metadata after the run is complete",
+          "type": "string",
+          "enum": ["START", "RUNNING", "COMPLETE", "ABORT", "FAIL", "OTHER"],
+          "example": "START|RUNNING|COMPLETE|ABORT|FAIL|OTHER"
+        },
         "eventTime": {
           "description": "the time the event occurred at",
           "type": "string",
           "format": "date-time"
+        },
+        "run": {
+          "$ref": "#/$defs/Run"
+        },
+        "job": {
+          "$ref": "#/$defs/Job"
+        },
+        "inputs": {
+          "description": "The set of **input** datasets.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/InputDataset"
+          }
+        },
+        "outputs": {
+          "description": "The set of **output** datasets.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/OutputDataset"
+          }
         },
         "producer": {
           "description": "URI identifying the producer of this metadata. For example this could be a git url with a given tag or sha",
@@ -23,86 +49,7 @@
           "example": "https://openlineage.io/spec/0-0-1/OpenLineage.json"
         }
       },
-      "required": ["eventTime", "producer", "schemaURL"]
-    },
-    "RunEvent": {
-      "allOf": [
-        { "$ref": "#/$defs/BaseEvent" },
-        {
-          "type": "object",
-          "properties": {
-            "eventType": {
-              "description": "the current transition of the run state. It is required to issue 1 START event and 1 of [ COMPLETE, ABORT, FAIL ] event per run. Additional events with OTHER eventType can be added to the same run. For example to send additional metadata after the run is complete",
-              "type": "string",
-              "enum": ["START", "RUNNING", "COMPLETE", "ABORT", "FAIL", "OTHER"],
-              "example": "START|RUNNING|COMPLETE|ABORT|FAIL|OTHER"
-            },
-            "run": {
-              "$ref": "#/$defs/Run"
-            },
-            "job": {
-              "$ref": "#/$defs/Job"
-            },
-            "inputs": {
-              "description": "The set of **input** datasets.",
-              "type": "array",
-              "items": {
-                "$ref": "#/$defs/InputDataset"
-              }
-            },
-            "outputs": {
-              "description": "The set of **output** datasets.",
-              "type": "array",
-              "items": {
-                "$ref": "#/$defs/OutputDataset"
-              }
-            }
-          },
-          "required": ["run", "job"]
-        }
-      ]
-    },
-    "DatasetEvent": {
-      "allOf": [
-        { "$ref": "#/$defs/BaseEvent" },
-        {
-          "type": "object",
-          "properties": {
-            "dataset": {
-              "$ref": "#/$defs/StaticDataset"
-            }
-          },
-          "required": ["dataset"]
-        }
-      ]
-    },
-    "JobEvent": {
-      "allOf": [
-        { "$ref": "#/$defs/BaseEvent" },
-        {
-          "type": "object",
-          "properties": {
-            "job": {
-              "$ref": "#/$defs/Job"
-            },
-            "inputs": {
-              "description": "The set of **input** datasets.",
-              "type": "array",
-              "items": {
-                "$ref": "#/$defs/InputDataset"
-              }
-            },
-            "outputs": {
-              "description": "The set of **output** datasets.",
-              "type": "array",
-              "items": {
-                "$ref": "#/$defs/OutputDataset"
-              }
-            }
-          },
-          "required": ["job"]
-        }
-      ]
+      "required": ["run", "job", "eventTime", "producer", "schemaURL"]
     },
     "Run": {
       "type": "object",
@@ -184,9 +131,7 @@
               "anyOf": [
                 {
                   "type": "object",
-                  "additionalProperties": {
-                    "$ref": "#/$defs/InputDatasetFacet"
-                  }
+                  "additionalProperties": { "$ref": "#/$defs/InputDatasetFacet" }
                 },
                 { "$ref": "facets/DataQualityMetricsInputDatasetFacet.json" }
               ]
@@ -214,9 +159,7 @@
               "anyOf": [
                 {
                   "type": "object",
-                  "additionalProperties": {
-                    "$ref": "#/$defs/OutputDatasetFacet"
-                  }
+                  "additionalProperties": { "$ref": "#/$defs/OutputDatasetFacet" }
                 },
                 { "$ref": "facets/OutputStatisticsOutputDatasetFacet.json" }
               ]
@@ -265,11 +208,6 @@
       },
       "required": ["namespace", "name"]
     },
-    "StaticDataset": {
-      "description": "A Dataset sent within static metadata events",
-      "type": "object",
-      "allOf": [{ "$ref": "#/$defs/Dataset" }]
-    },
     "DatasetFacet": {
       "description": "A Dataset Facet",
       "type": "object",
@@ -296,5 +234,5 @@
       "required": ["_producer", "_schemaURL"]
     }
   },
-  "oneOf": [{ "$ref": "#/$defs/RunEvent" }, { "$ref": "#/$defs/DatasetEvent" }, { "$ref": "#/$defs/JobEvent" }]
+  "$ref": "#/$defs/RunEvent"
 }
