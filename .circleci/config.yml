@@ -14,6 +14,9 @@ parameters:
     type: enum
     default: "*"
     enum: ["*", "airflow", "dagster", "dbt", "publish", "python"]
+  databricks-test:
+    type: string
+    default: "disabled"
 
 jobs:
   # Determine the modules that have changed and trigger a series of workflow tasks as necessary.
