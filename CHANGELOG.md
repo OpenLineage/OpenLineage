@@ -1,6 +1,17 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.27.2...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.28.0...HEAD)
+
+## [0.28.0](https://github.com/OpenLineage/OpenLineage/compare/0.27.2...0.28.0) - 2023-06-09
+### Added
+* **dbt: add Databricks compatibility** [`#1829`](https://github.com/OpenLineage/OpenLineage/pull/1829) [Ines70](https://github.com/Ines70)  
+    *Enables launching OpenLineage with a Databricks profile.*
+
+### Fixed
+* **Fix type-checked marker and packaging** [`#1913`](https://github.com/OpenLineage/OpenLineage/pull/1913) [gaborbernat](https://github.com/gaborbernat)  
+    *The client was not marking itself as type-annotated.*
+* **Python client: add `schemaURL` to run event** [`#1917`](https://github.com/OpenLineage/OpenLineage/pull/1917) [gaborbernat](https://github.com/gaborbernat)
+    *Adds the missing `schemaURL` to the client's `RunState` class.*
 
 ## [0.27.2](https://github.com/OpenLineage/OpenLineage/compare/0.27.1...0.27.2) - 2023-06-06
 ### Fixed
