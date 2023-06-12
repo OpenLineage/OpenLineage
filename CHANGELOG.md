@@ -2,7 +2,7 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.28.0...HEAD)
 
-## [0.28.0](https://github.com/OpenLineage/OpenLineage/compare/0.27.2...0.28.0) - 2023-06-09
+## [0.28.0](https://github.com/OpenLineage/OpenLineage/compare/0.27.2...0.28.0) - 2023-06-12
 ### Added
 * **dbt: add Databricks compatibility** [`#1829`](https://github.com/OpenLineage/OpenLineage/pull/1829) [Ines70](https://github.com/Ines70)  
     *Enables launching OpenLineage with a Databricks profile.*
