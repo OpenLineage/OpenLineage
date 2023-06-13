@@ -65,7 +65,7 @@ dependencies {
     implementation 'org.yaml:snakeyaml:1.33'
     implementation 'org.slf4j:slf4j-api:1.7.36'
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
-    compileOnly 'org.apache.kafka:kafka-clients:3.4.0'
+    compileOnly 'org.apache.kafka:kafka-clients:3.5.0'
     compileOnly 'com.amazonaws:amazon-kinesis-producer:0.15.7'
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
