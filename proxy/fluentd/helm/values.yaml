@@ -1,0 +1,3 @@
+openlineage-fluentd:
+  marquez:
+    urlOverride: "http://openlineage-fluentd-demo-marquez:80/api/v1/lineage/"

@@ -39,23 +39,23 @@ spec:
             - /fluentd/openlineage-parser
           env:
             - name: MARQUEZ_HTTP_ENDPOINT
-              value: {{ include "openlineage-fluentd.marquez-url" . | quote}}
+              value: {{ include "openlineage-fluentd.marquez-api-url" . | quote}}
           ports:
             - name: http
               containerPort: 9880
               protocol: TCP
           livenessProbe:
             httpGet:
-              path: /
+              path: /api/plugins
               port: 24220
           readinessProbe:
             httpGet:
-              path: /
+              path: /api/plugins
               port: 24220
           volumeMounts:
             - mountPath: /fluentd/etc/fluent.conf
               name: fluent-conf
-              subPath: fluent.conf  
+              subPath: fluent.conf
             - mountPath: /fluentd/openlineage-parser/parser_openlineage.rb
               name: fluent-plugin
               subPath: parser_openlineage.rb

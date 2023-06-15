@@ -64,8 +64,11 @@ Create the name of the service account to use
 {{/*
 Create the marquez url
 */}}
-{{- define "openlineage-fluentd.marquez-url" -}}
-{{- $name := printf "%s-%s" .Release.Name "marquez" | trunc 63 | trimSuffix "-" }}
-{{- printf "http://%s:80/api/v1/lineage/" $name }}
+{{- define "openlineage-fluentd.marquez-api-url" -}}
+{{- if .Values.marquez.urlOverride }}
+{{- .Values.marquez.urlOverride  | trunc 63 | trimSuffix "-" }}
+{{- else }}
+{{- default "http://marquez:80/api/v1/lineage/" .Values.marquez.url }}
+{{- end }}
 {{- end }}
 
