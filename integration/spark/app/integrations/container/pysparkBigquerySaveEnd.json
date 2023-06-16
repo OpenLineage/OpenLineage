@@ -6,7 +6,7 @@
   },
   "inputs": [{
     "namespace": "bigquery",
-    "name": "openlineage-ci.airflow_integration.3_3_1_source",
+    "name": "openlineage-ci.airflow_integration.{spark_version}_source",
     "facets": {
       "schema": {
         "fields": [{
@@ -21,6 +21,6 @@
   }],
   "outputs": [{
     "namespace": "bigquery",
-    "name": "openlineage-ci.airflow_integration.3_3_1_target"
+    "name": "openlineage-ci.airflow_integration.{spark_version}_target"
   }]
 }

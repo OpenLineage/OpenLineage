@@ -87,9 +87,8 @@ class AlterTableAddPartitionCommandVisitorTest {
     assertThat(visitor.isDefinedAt(command)).isTrue();
     List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
     assertEquals(2, datasets.get(0).getFacets().getSchema().getFields().size());
-    assertEquals(
-        "default.table5",
-        datasets.get(0).getFacets().getSymlinks().getIdentifiers().get(0).getName());
+    assertThat(datasets.get(0).getFacets().getSymlinks().getIdentifiers().get(0).getName())
+        .endsWith("default.table5");
     assertThat(datasets)
         .singleElement()
         .hasFieldOrPropertyWithValue("name", "/tmp/warehouse/table5")

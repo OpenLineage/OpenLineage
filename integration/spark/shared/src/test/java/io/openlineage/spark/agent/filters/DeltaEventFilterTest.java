@@ -26,6 +26,7 @@ import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.plans.logical.Filter;
 import org.apache.spark.sql.catalyst.plans.logical.LocalRelation;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.catalyst.plans.logical.Project;
 import org.apache.spark.sql.execution.LogicalRDD;
 import org.apache.spark.sql.execution.QueryExecution;
 import org.junit.jupiter.api.BeforeEach;
@@ -148,6 +149,30 @@ public class DeltaEventFilterTest {
       when(sparkConf.get("spark.sql.extensions", ""))
           .thenReturn("io.delta.sql.DeltaSparkSessionExtension");
       when(queryExecution.optimizedPlan()).thenReturn(logicalPlan);
+
+      assertTrue(filter.isDisabled(sparkListenerEvent));
+    }
+  }
+
+  @Test
+  void testDisabledForDeltaLogFileProject() {
+    try (MockedStatic mocked = mockStatic(SparkSession.class)) {
+      LogicalPlan project = mock(Project.class);
+      ;
+      Seq<Attribute> attributeSeq =
+          Arrays.asList(
+                  attributeWithName("protocol"),
+                  attributeWithName("metaData"),
+                  attributeWithName("action_sort_column"))
+              .stream()
+              .collect(ScalaConversionUtils.toSeq());
+      when(project.output()).thenReturn(attributeSeq);
+      when(project.collectLeaves()).thenReturn(Seq$.MODULE$.empty());
+
+      when(SparkSession.active()).thenReturn(sparkSession);
+      when(sparkConf.get("spark.sql.extensions", ""))
+          .thenReturn("io.delta.sql.DeltaSparkSessionExtension");
+      when(queryExecution.optimizedPlan()).thenReturn(project);
 
       assertTrue(filter.isDisabled(sparkListenerEvent));
     }

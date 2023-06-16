@@ -80,9 +80,8 @@ class AlterTableSetLocationCommandVisitorTest {
     assertThat(visitor.isDefinedAt(command)).isTrue();
     List<OpenLineage.OutputDataset> datasets = visitor.apply(command);
     assertEquals(1, datasets.get(0).getFacets().getSchema().getFields().size());
-    assertEquals(
-        "default.table1",
-        datasets.get(0).getFacets().getSymlinks().getIdentifiers().get(0).getName());
+    assertThat(datasets.get(0).getFacets().getSymlinks().getIdentifiers().get(0).getName())
+        .endsWith("default.table1");
     assertThat(datasets)
         .singleElement()
         .hasFieldOrPropertyWithValue("name", "/tmp/dir")

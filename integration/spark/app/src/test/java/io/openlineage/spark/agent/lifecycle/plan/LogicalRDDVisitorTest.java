@@ -12,7 +12,6 @@ import static org.mockito.Mockito.when;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import io.openlineage.spark.agent.Versions;
-import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.nio.file.Path;
@@ -27,10 +26,7 @@ import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.SparkSession$;
 import org.apache.spark.sql.catalyst.InternalRow;
-import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.GenericInternalRow;
-import org.apache.spark.sql.catalyst.expressions.SortOrder;
-import org.apache.spark.sql.catalyst.plans.physical.SinglePartition$;
 import org.apache.spark.sql.execution.LogicalRDD;
 import org.apache.spark.sql.types.IntegerType$;
 import org.apache.spark.sql.types.Metadata;
@@ -42,7 +38,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
-import scala.collection.Seq$;
 import scala.collection.immutable.HashMap;
 
 @ExtendWith(SparkAgentTestExtension.class)
@@ -87,16 +82,10 @@ class LogicalRDDVisitorTest {
             .map(t -> (InternalRow) new GenericInternalRow(new Object[] {t._2.toString()}))
             .rdd();
 
-    LogicalRDD logicalRDD =
-        new LogicalRDD(
-            ScalaConversionUtils.fromSeq(schema.toAttributes()).stream()
-                .map(AttributeReference::toAttribute)
-                .collect(ScalaConversionUtils.toSeq()),
-            hadoopRdd,
-            SinglePartition$.MODULE$,
-            Seq$.MODULE$.<SortOrder>empty(),
-            false,
-            session);
+    LogicalRDD logicalRDD = mock(LogicalRDD.class);
+    when(logicalRDD.rdd()).thenReturn(hadoopRdd);
+    when(logicalRDD.schema()).thenReturn(schema);
+
     assertThat(visitor.isDefinedAt(logicalRDD)).isTrue();
     List<OpenLineage.Dataset> datasets = visitor.apply(logicalRDD);
     assertThat(datasets)

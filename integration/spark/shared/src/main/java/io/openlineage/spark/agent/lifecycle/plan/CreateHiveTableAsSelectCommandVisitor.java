@@ -11,8 +11,10 @@ import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.QueryPlanVisitor;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.IntStream;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
@@ -36,13 +38,24 @@ public class CreateHiveTableAsSelectCommandVisitor
     CreateHiveTableAsSelectCommand command = (CreateHiveTableAsSelectCommand) x;
     CatalogTable table = command.tableDesc();
     DatasetIdentifier di = PathUtils.fromCatalogTable(table);
-    StructType schema = outputSchema(ScalaConversionUtils.fromSeq(command.outputColumns()));
+
+    // zip query outputs with attribute names
+    LogicalPlan query = command.query();
+    List<Attribute> attributes = ScalaConversionUtils.fromSeq(command.query().output());
+
+    List<Attribute> schemaAttributes = new ArrayList<>();
+    IntStream.range(0, attributes.size())
+        .filter(index -> index < query.output().size())
+        .forEach(
+            index ->
+                schemaAttributes.add(
+                    attributes.get(index).withName(command.outputColumnNames().apply(index))));
 
     return Collections.singletonList(
         outputDataset()
             .getDataset(
                 di,
-                schema,
+                outputSchema(schemaAttributes),
                 OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange.CREATE));
   }
 

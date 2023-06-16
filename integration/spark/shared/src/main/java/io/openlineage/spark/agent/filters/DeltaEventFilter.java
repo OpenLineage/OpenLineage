@@ -5,20 +5,20 @@
 
 package io.openlineage.spark.agent.filters;
 
+import static io.openlineage.spark.agent.filters.EventFilterUtils.getLogicalPlan;
+import static io.openlineage.spark.agent.filters.EventFilterUtils.isDeltaPlan;
+
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.SparkListenerEvent;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
-import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.plans.logical.Filter;
 import org.apache.spark.sql.catalyst.plans.logical.LocalRelation;
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
+import org.apache.spark.sql.catalyst.plans.logical.Project;
 import org.apache.spark.sql.execution.LogicalRDD;
 import scala.collection.JavaConverters;
 
@@ -30,18 +30,22 @@ public class DeltaEventFilter implements EventFilter {
   private static final List<String> DELTA_INTERNAL_RDD_COLUMNS =
       Arrays.asList("txn", "add", "remove", "metaData", "cdc", "protocol", "commitInfo");
 
+  private static final List<String> DELTA_LOG_INTERNAL_COLUMNS =
+      Arrays.asList("protocol", "metaData", "action_sort_column");
+
   public DeltaEventFilter(OpenLineageContext context) {
     this.context = context;
   }
 
   public boolean isDisabled(SparkListenerEvent event) {
-    if (!isDelta()) {
+    if (!isDeltaPlan()) {
       return false;
     }
 
     return isFilterRoot()
         || isLocalRelationOnly()
         || isLogicalRDDWithInternalDataColumns()
+        || isDeltaLogProjection()
         || isOnJobStartOrEnd(event);
   }
 
@@ -62,7 +66,7 @@ public class DeltaEventFilter implements EventFilter {
    * @return
    */
   private boolean isLocalRelationOnly() {
-    return getLogicalPlan()
+    return getLogicalPlan(context)
         .filter(plan -> plan.children() != null)
         .filter(plan -> plan.children().size() == 0)
         .filter(plan -> plan instanceof LocalRelation)
@@ -75,23 +79,20 @@ public class DeltaEventFilter implements EventFilter {
    * @return
    */
   private boolean isFilterRoot() {
-    return getLogicalPlan().filter(plan -> plan instanceof Filter).isPresent();
+    return getLogicalPlan(context).filter(plan -> plan instanceof Filter).isPresent();
   }
 
-  /**
-   * Verifies if `spark.sql.extensions` is set in Spark configuration and checks if it is a delta
-   * extension.
-   *
-   * @return
-   */
-  private boolean isDelta() {
-    return Optional.of(SparkSession.active())
-        .map(SparkSession::sparkContext)
-        .filter(context -> context != null)
-        .map(SparkContext::conf)
-        .map(conf -> conf.get("spark.sql.extensions", ""))
-        .filter(extension -> extension.equals("io.delta.sql.DeltaSparkSessionExtension"))
-        .isPresent();
+  private boolean isDeltaLogProjection() {
+    return getLogicalPlan(context)
+        .filter(plan -> plan instanceof Project)
+        .map(project -> JavaConverters.seqAsJavaListConverter(project.output()).asJava())
+        .map(
+            attributes ->
+                attributes.stream()
+                    .map(a -> a.name())
+                    .collect(Collectors.toList())
+                    .containsAll(DELTA_LOG_INTERNAL_COLUMNS))
+        .orElse(false);
   }
 
   /**
@@ -100,7 +101,7 @@ public class DeltaEventFilter implements EventFilter {
    * columns, we disable OL event.
    */
   private boolean isLogicalRDDWithInternalDataColumns() {
-    return getLogicalPlan()
+    return getLogicalPlan(context)
         .map(
             plan ->
                 JavaConverters.seqAsJavaListConverter(plan.collectLeaves()).asJava().stream()
@@ -114,13 +115,5 @@ public class DeltaEventFilter implements EventFilter {
                     .findAny()
                     .isPresent())
         .orElse(false);
-  }
-
-  private Optional<LogicalPlan> getLogicalPlan() {
-    return context
-        .getQueryExecution()
-        .filter(queryExecution -> queryExecution != null)
-        .map(queryExecution -> queryExecution.optimizedPlan())
-        .filter(plan -> plan != null);
   }
 }

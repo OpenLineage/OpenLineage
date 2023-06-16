@@ -278,10 +278,12 @@ public class PlanUtils {
       // do nothing
       return false;
     } catch (Exception e) {
-      log.info("isDefinedAt method failed on {}", e);
+      if (e != null) {
+        log.info("isDefinedAt method failed on {}", e);
+      }
       return false;
     } catch (NoClassDefFoundError e) {
-      log.info("isDefinedAt method failed on {}", pfn.getClass().getCanonicalName());
+      log.info("isDefinedAt method failed on {}", e.getMessage());
       return false;
     }
   }

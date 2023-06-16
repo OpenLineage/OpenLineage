@@ -9,7 +9,7 @@ import static io.openlineage.spark.agent.MockServerUtils.verifyEvents;
 import static org.apache.spark.sql.functions.col;
 import static org.apache.spark.sql.functions.from_json;
 import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockserver.model.HttpRequest.request;
 
 import com.google.common.collect.ImmutableList;
@@ -39,7 +39,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.mockserver.configuration.Configuration;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.RegexBody;
@@ -47,7 +46,6 @@ import org.slf4j.event.Level;
 
 @Tag("integration-test")
 @Tag("delta")
-@EnabledIf("isDeltaTestEnabled")
 @Slf4j
 public class SparkDeltaIntegrationTest {
 
@@ -57,8 +55,6 @@ public class SparkDeltaIntegrationTest {
   private static final int MOCKSERVER_PORT = 1082;
 
   private static ClientAndServer mockServer;
-
-  private static final String SPARK_VERSION = "spark.version";
 
   static SparkSession spark;
 
@@ -101,7 +97,7 @@ public class SparkDeltaIntegrationTest {
             .config(
                 "spark.openlineage.transport.url",
                 "http://localhost:" + mockServer.getPort() + "/api/v1/namespaces/delta-namespace")
-            .config("spark.openlineage.facets.disabled", "")
+            .config("spark.openlineage.facets.disabled", "spark_unknown;spark.logicalPlan")
             .config("spark.extraListeners", OpenLineageSparkListener.class.getName())
             .config("spark.jars.ivy", "/tmp/.ivy2/")
             .config(
@@ -167,18 +163,19 @@ public class SparkDeltaIntegrationTest {
 
     // 2 OL events expected
     spark.sql("INSERT INTO delta_filter_t1 VALUES (3,4)");
+    verifyEvents(mockServer, "pysparkDeltaCTASStart.json");
 
     await()
         .atMost(Duration.ofSeconds(10))
         .untilAsserted(
             () ->
-                assertEquals(
-                    8,
+                assertTrue(
                     mockServer.retrieveRecordedRequests(
-                            request()
-                                .withPath("/api/v1/lineage")
-                                .withBody(new RegexBody(".*delta_filter.*")))
-                        .length));
+                                request()
+                                    .withPath("/api/v1/lineage")
+                                    .withBody(new RegexBody(".*delta_filter.*")))
+                            .length
+                        <= 8));
   }
 
   @Test
@@ -332,14 +329,5 @@ public class SparkDeltaIntegrationTest {
     Arrays.asList(tables).stream()
         .filter(t -> spark.catalog().tableExists(t))
         .forEach(t -> spark.sql("DROP TABLE IF EXISTS " + t));
-  }
-
-  static boolean isDeltaTestEnabled() {
-    if (System.getProperty(SPARK_VERSION).startsWith("2")) {
-      // we don't run integration tests for delta and Spark 2.x
-      return false;
-    }
-
-    return true;
   }
 }

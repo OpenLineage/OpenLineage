@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import scala.PartialFunction;
 
 @Slf4j
-public class Spark33DatasetBuilderFactory extends Spark32DatasetBuilderFactory
+public class Spark34DatasetBuilderFactory extends Spark32DatasetBuilderFactory
     implements DatasetBuilderFactory {
 
   @Override
@@ -43,12 +43,12 @@ public class Spark33DatasetBuilderFactory extends Spark32DatasetBuilderFactory
             .add(new CreateReplaceDatasetBuilder(context))
             .add(new AlterTableCommandDatasetBuilder(context));
 
-    if (MergeIntoCommandOutputDatasetBuilder.hasClasses()) {
-      builder.add(new MergeIntoCommandOutputDatasetBuilder(context));
-    }
-
     if (ReplaceIcebergDataDatasetBuilder.hasClasses()) {
       builder.add(new ReplaceIcebergDataDatasetBuilder(context));
+    }
+
+    if (MergeIntoCommandOutputDatasetBuilder.hasClasses()) {
+      builder.add(new MergeIntoCommandOutputDatasetBuilder(context));
     }
 
     return builder.build();

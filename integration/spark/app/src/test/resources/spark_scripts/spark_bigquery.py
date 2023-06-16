@@ -23,7 +23,7 @@ target_table = f"{PROJECT_ID}.{DATASET_ID}.{version_name}_target"
 spark.sparkContext.setLogLevel('info')
 
 
-## ran this once to create source table
+# # ran this once to create source table
 # df = spark.createDataFrame([
 #     {'a': 1, 'b': 2},
 #     {'a': 3, 'b': 4}

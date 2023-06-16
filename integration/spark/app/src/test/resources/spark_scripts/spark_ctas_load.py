@@ -21,6 +21,6 @@ df = spark.createDataFrame([
     {'a': 3, 'b': 4}
 ])
 
-df.write.saveAsTable('temp')
+df.write.option("compression", "none").saveAsTable('temp')
 spark.sql("CREATE TABLE tbl1 USING hive LOCATION '/tmp/ctas_load/tbl1' AS SELECT a, b FROM temp")
 spark.sql(f"LOAD DATA LOCAL INPATH '/test_data/test_data.csv' INTO TABLE tbl1")
