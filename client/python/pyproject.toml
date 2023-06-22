@@ -28,7 +28,7 @@ classifiers = [
 dependencies = [
   "attrs>=23.1",
   "python-dateutil>=2.8.2",
-  "pyyaml>=6",
+  "pyyaml>=5.4",
   "requests>=2.31",
 ]
 optional-dependencies.kafka = [
@@ -39,7 +39,7 @@ optional-dependencies.test = [
   "pytest>=7.3.1",
   "pytest-cov>=4.1",
   "pytest-mock>=3.10",
-  "pyyaml>=6",
+  "pyyaml>=5.4",
 ]
 
 [tool.hatch.build]
