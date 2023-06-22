@@ -12,7 +12,9 @@ from openlineage.common.dataset import Dataset, Source
 from airflow.models import DAG, Connection
 from airflow.utils import timezone
 
-FTPOperator = try_import_from_string("airflow.providers.ftp.operators.ftp.FTPFileTransmitOperator")
+FTPOperator = try_import_from_string(
+    "airflow.providers.ftp.operators.ftp.FTPFileTransmitOperator"
+)
 FTPOperation = try_import_from_string("airflow.providers.ftp.operators.ftp.FTPOperation")
 
 SCHEME = "file"
