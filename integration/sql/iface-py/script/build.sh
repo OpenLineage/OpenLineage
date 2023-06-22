@@ -32,7 +32,7 @@ fi
 
 # Build release wheels
 cd iface-py
-maturin build --sdist --out target/wheels
+maturin build --sdist --out target/wheels --release --strip
 
 # Verify that it imports properly
 python -m pip install openlineage-sql --no-index --find-links target/wheels --force-reinstall
