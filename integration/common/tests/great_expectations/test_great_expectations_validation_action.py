@@ -523,7 +523,7 @@ def test_dataset_from_sql_custom_query_v3_api(test_db_file, tmpdir):
            include_schema_name: true
     """
 
-    ctx.add_datasource(**yaml.load(datasource_yaml))
+    ctx.add_datasource(**yaml.safe_load(datasource_yaml))
     checkpoint: Checkpoint = Checkpoint(
         "test_checkpoint",
         ctx,
