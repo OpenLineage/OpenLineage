@@ -82,7 +82,8 @@ def trigger_dag(dag_id):
     r = requests.post(
         f"http://airflow:8080/api/v1/dags/{dag_id}/dagRuns",
         auth=HTTPBasicAuth('airflow', 'airflow'),
-        json={}
+        json={},
+        timeout=5,
     )
     r.raise_for_status()
 

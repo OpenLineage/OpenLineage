@@ -113,7 +113,7 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
     @staticmethod
     def load_yaml(path: str) -> Dict:
         with open(path, "r") as f:
-            return yaml.load(f, Loader=yaml.FullLoader)
+            return yaml.safe_load(f)
 
     @staticmethod
     def setup_jinja() -> Environment:
