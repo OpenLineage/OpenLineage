@@ -147,6 +147,7 @@ class ContainerTest {
   void verify(String... eventFiles) {
     await()
         .atMost(Duration.ofSeconds(10))
+        .pollInterval(Duration.ofSeconds(2))
         .untilAsserted(
             () ->
                 mockServerClient.verify(
@@ -161,6 +162,14 @@ class ContainerTest {
   void testOpenLineageEventSentForKafkaJob() {
     runUntilCheckpoint("io.openlineage.flink.FlinkStatefulApplication", new Properties());
     verify("events/expected_kafka.json", "events/expected_kafka_checkpoints.json");
+  }
+
+  @Test
+  @SneakyThrows
+  void testOpenLineageEventSentForKafkaSourceWithGenericRecord() {
+    runUntilCheckpoint(
+        "io.openlineage.flink.FlinkSourceWithGenericRecordApplication", new Properties());
+    verify("events/expected_kafka_generic_record.json");
   }
 
   @Test

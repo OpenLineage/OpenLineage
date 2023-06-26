@@ -70,7 +70,7 @@ public class FlinkContainerUtils {
         .withEnv("KAFKA_BROKER_ID", "1")
         .withEnv(
             "KAFKA_CREATE_TOPICS",
-            "io.openlineage.flink.kafka.input1:1:1,io.openlineage.flink.kafka.input2:1:1,io.openlineage.flink.kafka.output:1:1")
+            "io.openlineage.flink.kafka.input1:1:1,io.openlineage.flink.kafka.input2:1:1,io.openlineage.flink.kafka.output:1:1,io.openlineage.flink.kafka.input_no_schema_registry:1:1")
         .withEnv(
             "KAFKA_LOG4J_LOGGERS",
             "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO")
@@ -87,7 +87,7 @@ public class FlinkContainerUtils {
             MountableFile.forHostPath(Resources.getResource("events.json").getPath()),
             "/tmp/events.json")
         .withCommand(
-            "/bin/sh",
+            "/bin/bash",
             "-c",
             Resources.toString(Resources.getResource("generate_events.sh"), StandardCharsets.UTF_8))
         .dependsOn(initTopics);

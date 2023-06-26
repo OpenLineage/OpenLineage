@@ -34,6 +34,6 @@ public class FlinkLegacyKafkaApplication {
 
 
     env.registerJobListener(FlinkListenerUtils.instantiate(env));
-    env.execute("flink-examples-stateful");
+    env.execute("flink-legacy-stateful");
   }
 }
