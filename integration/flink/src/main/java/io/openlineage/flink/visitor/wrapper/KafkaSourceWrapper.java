@@ -103,8 +103,20 @@ public class KafkaSourceWrapper {
           .filter(schema -> schema instanceof AvroDeserializationSchema)
           .map(schema -> (AvroDeserializationSchema) schema)
           .map(schema -> schema.getProducedType())
-          .flatMap(typeInformation -> Optional.ofNullable(typeInformation.getTypeClass()))
-          .flatMap(aClass -> WrapperUtils.<Schema>invokeStatic(aClass, "getClassSchema"));
+          .flatMap(
+              typeInformation -> {
+                if (typeInformation
+                    .getTypeClass()
+                    .equals(org.apache.avro.generic.GenericRecord.class)) {
+                  // GenericRecordAvroTypeInfo -> try to extract private schema field
+                  return WrapperUtils.<Schema>getFieldValue(
+                      typeInformation.getClass(), typeInformation, "schema");
+                } else {
+                  return Optional.ofNullable(typeInformation.getTypeClass())
+                      .flatMap(
+                          aClass -> WrapperUtils.<Schema>invokeStatic(aClass, "getClassSchema"));
+                }
+              });
     } catch (ClassNotFoundException | IllegalAccessException e) {
       log.error("Cannot extract Avro schema: ", e);
       return Optional.empty();
