@@ -8,6 +8,8 @@
   *Introduce support to latest Spark version 3.4.0. Support 3.2.4 and 3.3.2.*
 * **Flink: fix `KafkaSource` with `GenericRecord`** [`#1944`](https://github.com/OpenLineage/OpenLineage/pull/1944) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Extract dataset schema from `KafkaSource` when `GenericRecord` deserialized is used.*
+* **Flink: support Flink version 1.17.1** [`#1947`](https://github.com/OpenLineage/OpenLineage/pull/1947) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Support Flink versions: 1.15.4, 1.16.2 and 1.17.1.*
 
 ## [0.28.0](https://github.com/OpenLineage/OpenLineage/compare/0.27.2...0.28.0) - 2023-06-12
 ### Added
