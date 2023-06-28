@@ -153,4 +153,12 @@ class ColumnLevelLineageBuilderTest {
 
     assertEquals(1, facetFields.size());
   }
+
+  @Test
+  void testGetOutputExprIdByFieldName() {
+    ExprId exprId = mock(ExprId.class);
+    builder.addOutput(exprId, "a");
+
+    assertEquals(exprId, builder.getOutputExprIdByFieldName("a").get());
+  }
 }

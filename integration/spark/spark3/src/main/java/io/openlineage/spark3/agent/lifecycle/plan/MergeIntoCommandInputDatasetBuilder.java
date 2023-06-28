@@ -33,12 +33,28 @@ public class MergeIntoCommandInputDatasetBuilder
 
   @Override
   protected List<OpenLineage.InputDataset> apply(SparkListenerEvent event, MergeIntoCommand x) {
-    return delegate(
-            context.getInputDatasetQueryPlanVisitors(), context.getInputDatasetBuilders(), event)
-        .applyOrElse(
-            x.source(),
-            ScalaConversionUtils.toScalaFn((lp) -> Collections.<InputDataset>emptyList()))
-        .stream()
-        .collect(Collectors.toList());
+    List<OpenLineage.InputDataset> datasets =
+        delegate(
+                context.getInputDatasetQueryPlanVisitors(),
+                context.getInputDatasetBuilders(),
+                event)
+            .applyOrElse(
+                x.target(),
+                ScalaConversionUtils.toScalaFn((lp) -> Collections.<InputDataset>emptyList()))
+            .stream()
+            .collect(Collectors.toList());
+
+    datasets.addAll(
+        delegate(
+                context.getInputDatasetQueryPlanVisitors(),
+                context.getInputDatasetBuilders(),
+                event)
+            .applyOrElse(
+                x.source(),
+                ScalaConversionUtils.toScalaFn((lp) -> Collections.<InputDataset>emptyList()))
+            .stream()
+            .collect(Collectors.toList()));
+
+    return datasets;
   }
 }

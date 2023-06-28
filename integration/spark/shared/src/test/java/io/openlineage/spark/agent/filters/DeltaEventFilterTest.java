@@ -27,6 +27,7 @@ import org.apache.spark.sql.catalyst.plans.logical.Filter;
 import org.apache.spark.sql.catalyst.plans.logical.LocalRelation;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.Project;
+import org.apache.spark.sql.catalyst.plans.logical.SerializeFromObject;
 import org.apache.spark.sql.execution.LogicalRDD;
 import org.apache.spark.sql.execution.QueryExecution;
 import org.junit.jupiter.api.BeforeEach;
@@ -158,7 +159,6 @@ public class DeltaEventFilterTest {
   void testDisabledForDeltaLogFileProject() {
     try (MockedStatic mocked = mockStatic(SparkSession.class)) {
       LogicalPlan project = mock(Project.class);
-      ;
       Seq<Attribute> attributeSeq =
           Arrays.asList(
                   attributeWithName("protocol"),
@@ -173,6 +173,23 @@ public class DeltaEventFilterTest {
       when(sparkConf.get("spark.sql.extensions", ""))
           .thenReturn("io.delta.sql.DeltaSparkSessionExtension");
       when(queryExecution.optimizedPlan()).thenReturn(project);
+
+      assertTrue(filter.isDisabled(sparkListenerEvent));
+    }
+  }
+
+  @Test
+  void testDisabledForSerializeFromObject() {
+    try (MockedStatic mocked = mockStatic(SparkSession.class)) {
+      LocalRelation localRelation = mock(LocalRelation.class);
+      when(localRelation.children())
+          .thenReturn((Seq<LogicalPlan>) Seq$.MODULE$.<LogicalPlan>empty());
+      when(SparkSession.active()).thenReturn(sparkSession);
+      when(sparkConf.get("spark.sql.extensions", ""))
+          .thenReturn("io.delta.sql.DeltaSparkSessionExtension");
+      SerializeFromObject serializeFromObject = mock(SerializeFromObject.class);
+      when(serializeFromObject.collectLeaves()).thenReturn(Seq$.MODULE$.empty());
+      when(queryExecution.optimizedPlan()).thenReturn(serializeFromObject);
 
       assertTrue(filter.isDisabled(sparkListenerEvent));
     }

@@ -9,6 +9,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
+import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Arrays;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
@@ -27,6 +28,7 @@ class OutputFieldsCollectorTest {
   private static final String SOME_NAME = "some-name";
   LogicalPlan plan = mock(LogicalPlan.class);
   ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
+  OpenLineageContext context = mock(OpenLineageContext.class);
 
   Attribute attr1 = mock(Attribute.class);
   Attribute attr2 = mock(Attribute.class);
@@ -55,7 +57,7 @@ class OutputFieldsCollectorTest {
   void verifyOutputAttributeIsCollected() {
     when(plan.output()).thenReturn(attrs);
 
-    OutputFieldsCollector.collect(plan, builder);
+    OutputFieldsCollector.collect(context, plan, builder);
 
     Mockito.verify(builder, times(1)).addOutput(exprId1, "name1");
     Mockito.verify(builder, times(1)).addOutput(exprId2, "name2");
@@ -78,7 +80,7 @@ class OutputFieldsCollectorTest {
                 .asScala()
                 .toSeq());
 
-    OutputFieldsCollector.collect(aggregate, builder);
+    OutputFieldsCollector.collect(context, aggregate, builder);
 
     Mockito.verify(builder, times(1)).addOutput(exprId, SOME_NAME);
   }
@@ -100,7 +102,7 @@ class OutputFieldsCollectorTest {
                 .asScala()
                 .toSeq());
 
-    OutputFieldsCollector.collect(project, builder);
+    OutputFieldsCollector.collect(context, project, builder);
 
     Mockito.verify(builder, times(1)).addOutput(exprId, SOME_NAME);
   }
@@ -119,7 +121,7 @@ class OutputFieldsCollectorTest {
                 .asScala()
                 .toSeq());
 
-    OutputFieldsCollector.collect(plan, builder);
+    OutputFieldsCollector.collect(context, plan, builder);
 
     Mockito.verify(builder, times(1)).addOutput(exprId1, "name1");
     Mockito.verify(builder, times(1)).addOutput(exprId2, "name2");

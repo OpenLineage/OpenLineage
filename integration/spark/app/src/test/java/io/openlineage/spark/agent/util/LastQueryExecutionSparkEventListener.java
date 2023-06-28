@@ -3,8 +3,10 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark3.agent.utils;
+package io.openlineage.spark.agent.util;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import org.apache.spark.scheduler.SparkListener;
 import org.apache.spark.scheduler.SparkListenerEvent;
@@ -15,19 +17,29 @@ import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
 
 public class LastQueryExecutionSparkEventListener extends SparkListener {
 
-  private static Optional<QueryExecution> lastQueryExecution = Optional.empty();
+  private static List<LogicalPlan> queryExecutions = new ArrayList<>();
 
   @Override
   public void onOtherEvent(SparkListenerEvent event) {
     if (event instanceof SparkListenerSQLExecutionStart) {
-      lastQueryExecution =
-          Optional.ofNullable(
-              SQLExecution.getQueryExecution(
-                  ((SparkListenerSQLExecutionStart) event).executionId()));
+      QueryExecution queryExecution =
+          SQLExecution.getQueryExecution(((SparkListenerSQLExecutionStart) event).executionId());
+
+      if (queryExecution != null) {
+        queryExecutions.add(queryExecution.optimizedPlan());
+      }
     }
   }
 
   public static Optional<LogicalPlan> getLastExecutedLogicalPlan() {
-    return lastQueryExecution.map(qe -> qe.optimizedPlan());
+    if (queryExecutions.isEmpty()) {
+      return Optional.empty();
+    } else {
+      return Optional.of(queryExecutions.get(queryExecutions.size() - 1));
+    }
+  }
+
+  public static List<LogicalPlan> getExecutedLogicalPlans() {
+    return queryExecutions;
   }
 }

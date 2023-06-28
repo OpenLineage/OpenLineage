@@ -26,18 +26,6 @@ public class MergeIntoCommandOutputDatasetBuilder
     super(context, false);
   }
 
-  public static boolean hasClasses() {
-    try {
-      MergeIntoCommandOutputDatasetBuilder.class
-          .getClassLoader()
-          .loadClass("org.apache.spark.sql.delta.commands.MergeIntoCommand");
-      return true;
-    } catch (Exception e) {
-      // swallow- we don't care
-    }
-    return false;
-  }
-
   @Override
   public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
     return x instanceof MergeIntoCommand;

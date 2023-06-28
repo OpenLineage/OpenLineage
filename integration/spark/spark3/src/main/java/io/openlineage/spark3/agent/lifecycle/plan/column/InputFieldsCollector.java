@@ -47,12 +47,12 @@ import scala.collection.JavaConversions;
 
 /** Traverses LogicalPlan and collect input fields with the corresponding ExprId. */
 @Slf4j
-class InputFieldsCollector {
+public class InputFieldsCollector {
 
-  static void collect(
+  public static void collect(
       OpenLineageContext context, LogicalPlan plan, ColumnLevelLineageBuilder builder) {
     discoverInputsFromNode(context, plan, builder);
-    CustomCollectorsUtils.collectInputs(plan, builder);
+    CustomCollectorsUtils.collectInputs(context, plan, builder);
 
     // hacky way to replace `plan instanceof UnaryNode` which fails for Spark 3.2.1
     // because of java.lang.IncompatibleClassChangeError: UnaryNode, but class was expected

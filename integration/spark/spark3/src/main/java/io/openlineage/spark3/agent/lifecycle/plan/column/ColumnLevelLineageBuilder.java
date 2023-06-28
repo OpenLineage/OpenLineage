@@ -94,6 +94,13 @@ public class ColumnLevelLineageBuilder {
     return !outputs.isEmpty();
   }
 
+  public Optional<ExprId> getOutputExprIdByFieldName(String field) {
+    return outputs.keySet().stream()
+        .filter(fields -> fields.getName().equals(field))
+        .findAny()
+        .map(f -> outputs.get(f));
+  }
+
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();

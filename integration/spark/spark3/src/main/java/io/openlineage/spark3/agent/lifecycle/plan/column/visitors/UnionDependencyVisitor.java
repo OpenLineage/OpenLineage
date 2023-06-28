@@ -5,10 +5,9 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.column.visitors;
 
-import static io.openlineage.spark3.agent.lifecycle.plan.column.ExpressionDependencyCollector.traverseExpression;
-
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.column.ExpressionDependencyCollector;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -57,7 +56,10 @@ public class UnionDependencyVisitor implements ExpressionDependencyVisitor {
               ExprId firstExpr = childrenAttributes.get(0).get(position).exprId();
               IntStream.range(1, children.size())
                   .mapToObj(childIndex -> childrenAttributes.get(childIndex).get(position))
-                  .forEach(attr -> traverseExpression(attr, firstExpr, builder));
+                  .forEach(
+                      attr ->
+                          ExpressionDependencyCollector.traverseExpression(
+                              attr, firstExpr, builder));
             });
   }
 }

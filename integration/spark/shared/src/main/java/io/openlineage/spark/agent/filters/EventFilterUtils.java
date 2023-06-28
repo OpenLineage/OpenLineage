@@ -28,7 +28,8 @@ public class EventFilterUtils {
             new DeltaEventFilter(context),
             new DatabricksEventFilter(context),
             new ProjectFilter(context),
-            new AdaptivePlanEventFilter(context))
+            new AdaptivePlanEventFilter(context),
+            new ShowTablesFilter(context))
         .stream()
         .filter(filter -> filter.isDisabled(event.getClass().cast(event)))
         .findAny()

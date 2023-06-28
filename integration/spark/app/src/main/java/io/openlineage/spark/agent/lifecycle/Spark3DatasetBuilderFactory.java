@@ -11,6 +11,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.spark.agent.lifecycle.plan.CommandPlanVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.SaveIntoDataSourceCommandVisitor;
+import io.openlineage.spark.agent.util.DeltaUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.AlterTableDatasetBuilder;
@@ -21,9 +22,9 @@ import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationOutputData
 import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2ScanRelationInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.InMemoryRelationInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.LogicalRelationDatasetBuilder;
-import io.openlineage.spark3.agent.lifecycle.plan.MapPartitionsDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.MergeIntoCommandInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.MergeIntoCommandOutputDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.SubqueryAliasInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.TableContentChangeDatasetBuilder;
 import java.util.Collection;
 import java.util.List;
@@ -41,9 +42,10 @@ public class Spark3DatasetBuilderFactory implements DatasetBuilderFactory {
             .add(new CommandPlanVisitor(context))
             .add(new DataSourceV2ScanRelationInputDatasetBuilder(context, datasetFactory))
             .add(new DataSourceV2RelationInputDatasetBuilder(context, datasetFactory))
+            .add(new SubqueryAliasInputDatasetBuilder(context))
             .add(new MergeIntoCommandInputDatasetBuilder(context));
 
-    if (MergeIntoCommandOutputDatasetBuilder.hasClasses()) {
+    if (DeltaUtils.hasMergeIntoClasses()) {
       builder.add(new MergeIntoCommandInputDatasetBuilder(context));
     }
 
@@ -60,7 +62,6 @@ public class Spark3DatasetBuilderFactory implements DatasetBuilderFactory {
         .add(new AppendDataDatasetBuilder(context, datasetFactory))
         .add(new DataSourceV2RelationOutputDatasetBuilder(context, datasetFactory))
         .add(new TableContentChangeDatasetBuilder(context))
-        .add(new MapPartitionsDatasetBuilder(context))
         .add(new MergeIntoCommandOutputDatasetBuilder(context))
         .add(new CreateReplaceDatasetBuilder(context))
         .add(new AlterTableDatasetBuilder(context))
