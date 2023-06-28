@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.openlineage.client.OpenLineage.RunEvent;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -85,6 +86,14 @@ public final class OpenLineageClientUtils {
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }
+  }
+
+  /**
+   * Converts the provided Json {@code string} to {@link RunEvent}. Useful as other `fromJson`
+   * method gets shaded.
+   */
+  public static RunEvent runEventFromJson(@NonNull final String json) {
+    return fromJson(json, new TypeReference<RunEvent>() {});
   }
 
   public static <T> T convertValue(Object fromValue, Class<T> toValueType) {

@@ -13,6 +13,7 @@ import lombok.NonNull;
 public abstract class Transport {
   enum Type {
     CONSOLE,
+    FILE,
     HTTP,
     KAFKA,
     KINESIS,

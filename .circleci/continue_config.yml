@@ -34,6 +34,11 @@ commands:
             - run: pip install target/wheels/*manylinux_2_17_x86_64*.whl
       - run: (cd ~/openlineage/integration/common && pip install . --user)
 
+parameters:
+  databricks-test:
+    type: string
+    default: "disabled"
+
 jobs:
   unit-test-client-python:
     working_directory: ~/openlineage/client/python
@@ -451,20 +456,58 @@ jobs:
           sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
           sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
       - run: ./gradlew --no-daemon integrationTest -x test   -Pspark.version=<< parameters.spark-version >>
-      - run:
-          when: on_fail
-          command: cat build/test-results/integrationTest/TEST-*.xml
       - run: ./gradlew --no-daemon jacocoTestReport
       - store_test_results:
-          path: build/test-results/integrationTest
+          path: app/build/test-results/integrationTest
       - store_artifacts:
-          path: build/reports/tests/integrationTest
+          path: app/build/reports/tests/integrationTest
           destination: test-report
       - save_cache:
           key: v1-integration-spark-{{ .Branch }}-{{ .Revision }}
           paths:
             - ~/.gradle
-  
+
+  integration-test-databricks-integration-spark:
+    parameters:
+      spark-version:
+        type: string
+    working_directory: ~/openlineage/integration/spark
+    machine:
+      image: ubuntu-2004:current
+    resource_class: large
+    environment:
+      TESTCONTAINERS_RYUK_DISABLED: "true"
+      JDK8_HOME: /usr/lib/jvm/java-8-openjdk-amd64
+    steps:
+      - *checkout_project_root
+      - when:
+          condition:
+            equal: [ enabled, << pipeline.parameters.databricks-test >> ]
+          steps:
+            - restore_cache:
+                keys:
+                  - v1-integration-spark-{{ .Branch }}-{{ .Revision }}
+                  - v1-integration-spark-{{ .Branch }}
+            - attach_workspace:
+                at: ~/.m2/repository/io/openlineage/
+            - run: |
+                sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
+                sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
+            - run: ./gradlew shadowJar -x test
+            - run: ./gradlew --no-daemon databricksIntegrationTest -x test   -Pspark.version=<< parameters.spark-version >> -PdatabricksHost=$DATABRICKS_HOST -PdatabricksToken=$DATABRICKS_TOKEN
+            - store_test_results:
+                path: app/build/test-results/databricksIntegrationTest
+            - store_artifacts:
+                path: app/build/reports/tests/databricksIntegrationTest
+                destination: test-report
+            - store_artifacts:
+                path: app/build/cluster-log4j.log
+                destination: cluster-log4j.log
+            - save_cache:
+                key: v1-databricks-integration-spark-{{ .Branch }}-{{ .Revision }}
+                paths:
+                  - ~/.gradle
+
   integration-test-integration-flink:
     parameters:
       flink-version:

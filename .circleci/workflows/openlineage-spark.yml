@@ -8,6 +8,13 @@ workflows:
           requires:
            - build-integration-sql-java
            - build-client-java
+      - integration-test-databricks-integration-spark:
+          context: integration-tests
+          matrix:
+            parameters:
+              spark-version: [ '3.4.0' ]
+          requires:
+            - build-integration-spark
       - integration-test-integration-spark:
           context: integration-tests
           matrix:
