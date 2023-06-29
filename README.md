@@ -70,16 +70,19 @@ The OpenLineage repository contains integrations with several systems.
 - [Egeria](https://egeria.odpi.org/): Egeria offers open metadata and governance for enterprises - automatically capturing, managing and exchanging metadata between tools and platforms, no matter the vendor.
 
 ## Community
+- Website: [openlineage.io](http://openlineage.io)
 - Slack: [OpenLineage.slack.com](http://bit.ly/OLslack)
+  - Not a member? Join [here](bit.ly/OpenLineageSlack).
 - Twitter: [@OpenLineage](https://twitter.com/OpenLineage)
 - Mailing list: [openlineage-tsc](https://lists.lfaidata.foundation/g/openlineage-tsc)
 - Wiki: [OpenLineage+Home](https://wiki.lfaidata.foundation/display/OpenLineage/OpenLineage+Home)
 - LinkedIn: [13927795](https://www.linkedin.com/groups/13927795/)
 - YouTube: [channel](https://www.youtube.com/channel/UCRMLy4AaSw_ka-gNV9nl7VQ)
 - Mastodon: [@openlineage@fostodon.org](openlineage@fosstodon.org)
-- Website: [openlineage.io](http://openlineage.io)
 
 ## Talks
+- [Data+AI Summit June 2023. Cross-Platform Data Lineage with OpenLineage](https://www.databricks.com/dataaisummit/session/cross-platform-data-lineage-openlineage/)
+- [Berlin Buzzwords June 2023. Column-Level Lineage is Coming to the Rescue](https://youtu.be/xFVSZCCbZlY)
 - [Berlin Buzzwords June 2022. Cross-Platform Data Lineage with OpenLineage](https://www.youtube.com/watch?v=pLBVGIPuwEo)
 - [Berlin Buzzwords June 2021. Observability for Data Pipelines with OpenLineage](https://2021.berlinbuzzwords.de/member/julien-le-dem)
 - [Data Driven NYC February 2021. Data Observability and Pipelines: OpenLineage and Marquez](https://mattturck.com/datakin/)
