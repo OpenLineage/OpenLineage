@@ -71,8 +71,8 @@ The OpenLineage repository contains integrations with several systems.
 
 ## Community
 - Website: [openlineage.io](http://openlineage.io)
-- Slack: [OpenLineage.slack.com](http://bit.ly/OLslack)
-  - Not a member? Join [here](bit.ly/OpenLineageSlack).
+- Slack: [OpenLineage.slack.com](http://bit.ly/OpenLineageSlack)
+  - Not a member? Join [here](https://bit.ly/lineageslack).
 - Twitter: [@OpenLineage](https://twitter.com/OpenLineage)
 - Mailing list: [openlineage-tsc](https://lists.lfaidata.foundation/g/openlineage-tsc)
 - Wiki: [OpenLineage+Home](https://wiki.lfaidata.foundation/display/OpenLineage/OpenLineage+Home)
