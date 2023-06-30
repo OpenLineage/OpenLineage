@@ -21,7 +21,7 @@ from openlineage.common.provider.dbt import (
 )
 from tqdm import tqdm
 
-__version__ = "0.30.0"
+__version__ = "0.29.2"
 
 from openlineage.common.utils import parse_single_arg
 
