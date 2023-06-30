@@ -1,17 +1,24 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.28.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.29.0...HEAD)
+
+## [0.29.0](https://github.com/OpenLineage/OpenLineage/compare/0.28.0...0.29.0) - 2023-06-30
 ### Added
-* **Support static lineage.** [`#1880`](https://github.com/OpenLineage/OpenLineage/pull/1880) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Extend specification and Java/Python client to support run-less events. See [proposal](https://github.com/OpenLineage/OpenLineage/blob/main/proposals/1837/static_lineage.md) for more details.*
-* **Spark: Support Spark 3.4** [`#1790`](https://github.com/OpenLineage/OpenLineage/pull/1790) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Introduce support to latest Spark version 3.4.0. Support 3.2.4 and 3.3.2.*
-* **Flink: fix `KafkaSource` with `GenericRecord`** [`#1944`](https://github.com/OpenLineage/OpenLineage/pull/1944) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Extract dataset schema from `KafkaSource` when `GenericRecord` deserialized is used.*
 * **Flink: support Flink version 1.17.1** [`#1947`](https://github.com/OpenLineage/OpenLineage/pull/1947) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Support Flink versions: 1.15.4, 1.16.2 and 1.17.1.*
-* **Spark: Databricks platform integration test.** [`#1928`](https://github.com/OpenLineage/OpenLineage/pull/1928) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Spark integration test to verify behaviour on databricks platform to be run manually in CircleCI when needed.*
+    *Support Flink versions: 1.15.4, 1.16.2 and 1.17.1.*
+* **Spark: support Spark 3.4** [`#1790`](https://github.com/OpenLineage/OpenLineage/pull/1790) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Introduce support for latest Spark version 3.4.0, along with 3.2.4 and 3.3.2.*
+* **Spark: add Databricks platform integration test** [`#1928`](https://github.com/OpenLineage/OpenLineage/pull/1928) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Spark integration test to verify behaviour on databricks platform to be run manually in CircleCI when needed.*
+
+### Removed
+* **Proxy: remove unused Golang client approach** [`#1926`](https://github.com/OpenLineage/OpenLineage/pull/1926) [@mobuchowski](https://github.com/mobuchowski)  
+
+### Fixed
+* **Flink: fix `KafkaSource` with `GenericRecord`** [`#1944`](https://github.com/OpenLineage/OpenLineage/pull/1944) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Extract dataset schema from `KafkaSource` when `GenericRecord` deserialized is used.*
+* **dbt: fix security vulnerabilities** [`#1945`](https://github.com/OpenLineage/OpenLineage/pull/1945) [@JDarDagran](https://github.com/JDarDagran)  
+    *Fixes vulnerabilities in the dbt integration and integration tests.*
 
 ## [0.28.0](https://github.com/OpenLineage/OpenLineage/compare/0.27.2...0.28.0) - 2023-06-12
 ### Added
