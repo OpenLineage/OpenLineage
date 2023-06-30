@@ -8,9 +8,9 @@
 set -e
 
 # Manylinux image has multiple "pythons" - in /opt/python directory.
-# We use Python 3.7, since it's the lowest we want to use
+# We use Python 3.8, since it's the lowest we want to use
 # and create local virtualenv - it's easier to proceed in venv than use python behind long absolute path
-/opt/python/cp37-cp37m/bin/python -m venv .env
+/opt/python/cp38-cp38/bin/python -m venv .env
 source .env/bin/activate
 
 # Maturin is build tool that we're using. It can build python wheels based on standard Rust Cargo.toml.

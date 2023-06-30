@@ -11,7 +11,7 @@ Wrapper script for automatic metadata collection from dbt
 
 ## Requirements
 
-- [Python >= 3.7](https://www.python.org/downloads)
+- [Python >= 3.8](https://www.python.org/downloads)
 - [dbt >= 0.20](https://www.getdbt.com/)
 
 Right now, `openlineage-dbt` only supports `bigquery`, `snowflake`, `spark` and `redshift` dbt adapters.

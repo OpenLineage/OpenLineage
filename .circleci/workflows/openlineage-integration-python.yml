@@ -2,10 +2,6 @@ workflows:
   openlineage-integration-python:
     jobs:
       - unit-test-client-python:
-          name: "CPython 3.7"
-          tox_env: py37
-          py_env: "3.7"
-      - unit-test-client-python:
           name: "CPython 3.8"
           tox_env: py38
           py_env: "3.8"
@@ -31,7 +27,6 @@ workflows:
           py_env: "3.11"
       - unit-tests-client-python:
           requires:
-            - "CPython 3.7"
             - "CPython 3.8"
             - "CPython 3.9"
             - "CPython 3.10"

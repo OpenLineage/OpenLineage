@@ -65,7 +65,7 @@ jobs:
   build-client-python:
     working_directory: ~/openlineage/client/python
     docker:
-      - image: cimg/python:3.7
+      - image: cimg/python:3.8
     parameters:
       build_tag:
         default: ""
@@ -267,7 +267,7 @@ jobs:
   unit-test-integration-common:
     working_directory: ~/openlineage/integration/common
     docker:
-      - image: cimg/python:3.7
+      - image: cimg/python:3.8
     steps:
       - *checkout_project_root
       - attach_workspace:
@@ -281,7 +281,7 @@ jobs:
   build-integration-common:
     working_directory: ~/openlineage/integration/common
     docker:
-      - image: cimg/python:3.7
+      - image: cimg/python:3.8
     <<: *param_build_tag
     steps:
       - *checkout_project_root
@@ -417,7 +417,7 @@ jobs:
   build-integration-dbt:
     working_directory: ~/openlineage/integration/dbt
     docker:
-      - image: cimg/python:3.7
+      - image: cimg/python:3.8
     <<: *param_build_tag
     steps:
       - *checkout_project_root
@@ -550,7 +550,7 @@ jobs:
         type: string
     working_directory: ~/openlineage/integration/airflow
     docker:
-      - image: cimg/python:3.7
+      - image: cimg/python:3.8
     steps:
       - *checkout_project_root
       - *install_python_client
@@ -566,7 +566,7 @@ jobs:
   build-integration-airflow:
     working_directory: ~/openlineage/integration/airflow
     docker:
-      - image: cimg/python:3.7
+      - image: cimg/python:3.8
     <<: *param_build_tag
     steps:
       - *checkout_project_root
@@ -619,7 +619,7 @@ jobs:
       - run: cp -r ../client/python python
       - attach_workspace:
           at: .
-      - run: AIRFLOW_IMAGE=apache/airflow:2.3.4-python3.7 ./airflow/tests/integration/docker/up-failure.sh << parameters.failure-type >>
+      - run: AIRFLOW_IMAGE=apache/airflow:2.3.4-python3.8 ./airflow/tests/integration/docker/up-failure.sh << parameters.failure-type >>
       - store_artifacts:
           path: airflow/tests/integration/failures/airflow/logs
           destination: airflow-logs
@@ -627,7 +627,7 @@ jobs:
   unit-test-integration-dagster:
     working_directory: ~/openlineage/integration/dagster
     docker:
-      - image: cimg/python:3.7
+      - image: cimg/python:3.8
     steps:
       - *checkout_project_root
       - *install_python_client
@@ -640,7 +640,7 @@ jobs:
   build-integration-dagster:
     working_directory: ~/openlineage/integration/dagster
     docker:
-      - image: cimg/python:3.7
+      - image: cimg/python:3.8
     <<: *param_build_tag
     steps:
       - *checkout_project_root
@@ -655,7 +655,7 @@ jobs:
   release-python:
     working_directory: ~/openlineage
     docker:
-      - image: cimg/python:3.7
+      - image: cimg/python:3.8
     steps:
       - *checkout_project_root
       - attach_workspace:

@@ -38,11 +38,11 @@ workflows:
           matrix:
             parameters:
               airflow-image: [
-                'apache/airflow:2.1.4-python3.7',
-                'apache/airflow:2.2.4-python3.7',
-                'apache/airflow:2.3.4-python3.7',
-                'apache/airflow:2.4.3-python3.7',
-                'apache/airflow:2.5.0-python3.7'
+                'apache/airflow:2.1.4-python3.8',
+                'apache/airflow:2.2.4-python3.8',
+                'apache/airflow:2.3.4-python3.8',
+                'apache/airflow:2.4.3-python3.8',
+                'apache/airflow:2.5.0-python3.8'
               ]
           context: integration-tests
           requires:
