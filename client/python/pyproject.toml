@@ -13,12 +13,11 @@ keywords = [
   "openlineage",
 ]
 authors = [{ name = "OpenLineage", email = "info@openlineage.io" }]
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 classifiers = [
   "Operating System :: OS Independent",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.7",
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
@@ -105,7 +104,7 @@ select = [
     "RUF", # Ruff
 ]
 line-length = 100
-target-version = "py37"
+target-version = "py38"
 isort = { known-first-party = ["publication_set", "tests"] }
 namespace-packages = ["openlineage/client"]
 ignore = [
