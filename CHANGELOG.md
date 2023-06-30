@@ -1,8 +1,8 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.29.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.29.1...HEAD)
 
-## [0.29.0](https://github.com/OpenLineage/OpenLineage/compare/0.28.0...0.29.0) - 2023-06-30
+## [0.29.1](https://github.com/OpenLineage/OpenLineage/compare/0.28.0...0.29.1) - 2023-06-30
 ### Added
 * **Flink: support Flink version 1.17.1** [`#1947`](https://github.com/OpenLineage/OpenLineage/pull/1947) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Support Flink versions: 1.15.4, 1.16.2 and 1.17.1.*
@@ -13,6 +13,9 @@
 
 ### Removed
 * **Proxy: remove unused Golang client approach** [`#1926`](https://github.com/OpenLineage/OpenLineage/pull/1926) [@mobuchowski](https://github.com/mobuchowski)  
+    *Removes the unused Golang proxy, rendered redundant by the fluentd proxy.*
+* **Req: bump minimum supported Python version to 3.8** [`#1950`](https://github.com/OpenLineage/OpenLineage/pull/1950) [@mobuchowski](https://github.com/mobuchowski)  
+    *Python 3.7 is at EOL. This bumps the minimum supported version to 3.8 to keep the project aligned with the Python EOL schedule.*
 
 ### Fixed
 * **Flink: fix `KafkaSource` with `GenericRecord`** [`#1944`](https://github.com/OpenLineage/OpenLineage/pull/1944) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
