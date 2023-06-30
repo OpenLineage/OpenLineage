@@ -10,7 +10,7 @@ from setuptools import setup
 with open("README.md") as readme_file:
      readme = readme_file.read()
 
-__version__ = "0.30.0"
+__version__ = "0.29.1"
 
 requirements = [
     "tqdm>=4.62.0",
