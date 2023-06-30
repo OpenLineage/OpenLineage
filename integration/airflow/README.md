@@ -23,7 +23,7 @@ A library that integrates [Airflow `DAGs`]() with [OpenLineage](https://openline
 
 ## Requirements
 
-- [Python 3.7](https://www.python.org/downloads)
+- [Python 3.8](https://www.python.org/downloads)
 - [Airflow 2.1+](https://pypi.org/project/apache-airflow)
 
 ## Installation
@@ -262,7 +262,7 @@ $ AIRFLOW_IMAGE=<name-of-airflow-image> ./tests/integration/docker/up.sh
 ```
 
 ```bash
-$ AIRFLOW_IMAGE=apache/airflow:2.3.1-python3.7 ./tests/integration/docker/up.sh
+$ AIRFLOW_IMAGE=apache/airflow:2.3.1-python3.8 ./tests/integration/docker/up.sh
 ```
 
 When using `run-dev-airflow.sh`, you can add the `-i` flag or `--attach-integration` flag to run integration tests in a dev environment.
