@@ -16,6 +16,7 @@ repos:
         files: ^client/python/
       - id: trailing-whitespace
         files: ^client/python/
+        exclude: ^.*\.cfg$
   - repo: https://github.com/psf/black
     rev: 23.3.0
     hooks:
