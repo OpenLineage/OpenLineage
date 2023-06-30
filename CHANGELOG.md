@@ -1,8 +1,8 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.29.1...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.29.2...HEAD)
 
-## [0.29.1](https://github.com/OpenLineage/OpenLineage/compare/0.28.0...0.29.1) - 2023-06-30
+## [0.29.2](https://github.com/OpenLineage/OpenLineage/compare/0.28.0...0.29.2) - 2023-06-30
 ### Added
 * **Flink: support Flink version 1.17.1** [`#1947`](https://github.com/OpenLineage/OpenLineage/pull/1947) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Support Flink versions: 1.15.4, 1.16.2 and 1.17.1.*
