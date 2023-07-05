@@ -26,7 +26,6 @@ if TYPE_CHECKING:
     from airflow.models import BaseOperator, DagRun, TaskInstance
 
 
-
 class TaskHolder:
     """Class that stores run data - run_id and task in-memory. This is needed because Airflow
     does not always pass all runtime info to on_task_instance_success and

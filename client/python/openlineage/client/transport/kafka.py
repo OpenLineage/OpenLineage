@@ -6,12 +6,15 @@ import logging
 from typing import TYPE_CHECKING, TypeVar, Union
 
 import attr
+from pkg_resources import parse_version
 
 from openlineage.client.serde import Serde
 from openlineage.client.transport.transport import Config, Transport
 from openlineage.client.utils import get_only_specified_fields
 
 if TYPE_CHECKING:
+    from confluent_kafka import KafkaError, Message
+
     from openlineage.client.run import DatasetEvent, JobEvent, RunEvent
 log = logging.getLogger(__name__)
 
@@ -42,18 +45,53 @@ class KafkaConfig(Config):
         return cls(**get_only_specified_fields(cls, params))
 
 
-# Very basic transport impl
+def on_delivery(err: KafkaError, msg: Message) -> None:
+    # Used as callback for Kafka producer delivery confirmation
+    if err:
+        log.exception(err)
+    log.debug("Send message %s", msg)
+
+
 class KafkaTransport(Transport):
     kind = "kafka"
     config = KafkaConfig
 
     def __init__(self, config: KafkaConfig) -> None:
+        self.topic = config.topic
+        self.flush = config.flush
+        self.kafka_config = config
+        self._is_airflow_sqlalchemy = _check_if_airflow_sqlalchemy_context()
+        self.producer = None
+        if not self._is_airflow_sqlalchemy:
+            self._setup_producer(self.kafka_config.config)
+        log.debug("Constructing openlineage client to send events to topic %s", config.topic)
+
+    def emit(self, event: Union[RunEvent, DatasetEvent, JobEvent]) -> None:  # noqa: UP007
+        if self._is_airflow_sqlalchemy:
+            self._setup_producer(self.kafka_config.config)
+        self.producer.produce(  # type: ignore[attr-defined]
+            topic=self.topic,
+            value=Serde.to_json(event).encode("utf-8"),
+            on_delivery=on_delivery,
+        )
+        if self.flush:
+            rest = self.producer.flush(timeout=10)  # type: ignore[attr-defined]
+            log.debug("Amount of messages left in Kafka buffers after flush %d", rest)
+        if self._is_airflow_sqlalchemy:
+            self.producer = None
+
+    def _setup_producer(self, config: dict) -> None:  # type: ignore[type-arg]
         try:
             import confluent_kafka as kafka
 
-            self.producer = kafka.Producer(config.config)
-            self.topic = config.topic
-            self.flush = config.flush
+            added_config = {}
+            if log.isEnabledFor(logging.DEBUG):
+                added_config = {
+                    "logger": log,
+                    "debug": "all",
+                    "log_level": 7,
+                }
+            self.producer = kafka.Producer({**added_config, **config})
         except ModuleNotFoundError:
             log.exception(
                 "OpenLineage client did not found confluent-kafka module. "
@@ -61,9 +99,15 @@ class KafkaTransport(Transport):
                 "You can also get it via `pip install openlineage-python[kafka]`",
             )
             raise
-        log.debug("Constructing openlineage client to send events to topic %s", config.topic)
 
-    def emit(self, event: Union[RunEvent, DatasetEvent, JobEvent]) -> None:  # noqa: UP007
-        self.producer.produce(topic=self.topic, value=Serde.to_json(event).encode("utf-8"))
-        if self.flush:
-            self.producer.flush(timeout=5)
+
+def _check_if_airflow_sqlalchemy_context() -> bool:
+    try:
+        from airflow.version import version  # type: ignore[import]
+
+        parsed_version = parse_version(version)
+        if parse_version("2.3.0") <= parsed_version < parse_version("2.6.0"):
+            return True
+    except ImportError:
+        pass  # we want to leave it to false if airflow import fails
+    return False
