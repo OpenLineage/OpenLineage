@@ -19,7 +19,10 @@ import io.openlineage.flink.visitor.VisitorFactory;
 import io.openlineage.flink.visitor.VisitorFactoryImpl;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.Builder;
@@ -71,16 +74,19 @@ public class FlinkExecutionContext implements ExecutionContext {
 
   public OpenLineage.RunEventBuilder buildEventForEventType(EventType eventType) {
     TransformationUtils converter = new TransformationUtils();
+
     List<SinkLineage> sinkLineages = converter.convertToVisitable(transformations);
 
     VisitorFactory visitorFactory = new VisitorFactoryImpl();
     List<OpenLineage.InputDataset> inputDatasets = new ArrayList<>();
     List<OpenLineage.OutputDataset> outputDatasets = new ArrayList<>();
 
+    Set<Object> sources = new HashSet<>();
     for (var lineage : sinkLineages) {
-      inputDatasets.addAll(getInputDatasets(visitorFactory, lineage.getSources()));
+      sources.addAll(lineage.getSources());
       outputDatasets.addAll(getOutputDatasets(visitorFactory, lineage.getSink()));
     }
+    inputDatasets.addAll(getInputDatasets(visitorFactory, Arrays.asList(sources.toArray())));
 
     return commonEventBuilder().inputs(inputDatasets).outputs(outputDatasets).eventType(eventType);
   }

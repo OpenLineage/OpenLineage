@@ -1,6 +1,10 @@
 # Changelog
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.29.2...HEAD)
+### Added
+* **Flink: support Iceberg sinks** [`#1960`](https://github.com/OpenLineage/OpenLineage/pull/1960) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Detect output datasets when using Iceberg table as a sink.*
+
 ### Fixed
 * **Spark: fix custom environment variables facet** [`#1973`](https://github.com/OpenLineage/OpenLineage/pull/1973) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Spark environment variables facet sent in non-deterministic way.*

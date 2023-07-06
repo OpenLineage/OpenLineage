@@ -6,6 +6,7 @@
 package io.openlineage.flink;
 
 import static java.nio.file.Files.readAllBytes;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.JsonBody.json;
@@ -18,6 +19,7 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -202,6 +204,13 @@ class ContainerTest {
   void testOpenLineageEventSentForIcebergJob() {
     runUntilCheckpoint("io.openlineage.flink.FlinkIcebergApplication", new Properties());
     verify("events/expected_iceberg.json");
+
+    // verify input dataset is available only once
+    HttpRequest request =
+        mockServerClient.retrieveRecordedRequests(this.getEvent("events/expected_iceberg.json"))[0];
+
+    assertThat(StringUtils.countMatches(request.getBodyAsString(), "tmp/warehouse/db/source"))
+        .isEqualTo(1);
   }
 
   @Test
