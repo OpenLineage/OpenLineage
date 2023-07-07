@@ -6,7 +6,6 @@ import os
 import uuid
 from typing import TYPE_CHECKING, Dict, List, Optional
 
-import requests.exceptions
 from openlineage.airflow.extractors import TaskMetadata
 from openlineage.airflow.utils import DagUtils, redact_with_exclusions
 from openlineage.airflow.version import __version__ as OPENLINEAGE_AIRFLOW_VERSION
@@ -92,8 +91,9 @@ class OpenLineageAdapter:
         event = redact_with_exclusions(event)
         try:
             return self.client.emit(event)
-        except requests.exceptions.RequestException:
+        except Exception as e:
             log.exception(f"Failed to emit OpenLineage event of id {event.run.runId}")
+            log.debug(e)
 
     def start_task(
         self,
