@@ -98,9 +98,9 @@ public class IcebergHandler implements CatalogHandler {
               di.getName(), File.separator), // parent location from a name becomes a namespace
           DatasetIdentifier.SymlinkType.TABLE);
     } else if (catalogConf.get(TYPE).equals("rest")) {
-      di.withSymlink(  
+      di.withSymlink(
           getRestIdentifier(
-            session, catalogConf.get(CatalogProperties.URI), identifier.toString()));
+              session, catalogConf.get(CatalogProperties.URI), identifier.toString()));
     }
 
     return di;
@@ -133,10 +133,7 @@ public class IcebergHandler implements CatalogHandler {
       SparkSession session, @Nullable String confUri, String table) {
 
     String uri = new URI(confUri).toString();
-    return new DatasetIdentifier.Symlink(
-        table,
-        uri,
-        DatasetIdentifier.SymlinkType.TABLE);
+    return new DatasetIdentifier.Symlink(table, uri, DatasetIdentifier.SymlinkType.TABLE);
   }
 
   @Override
