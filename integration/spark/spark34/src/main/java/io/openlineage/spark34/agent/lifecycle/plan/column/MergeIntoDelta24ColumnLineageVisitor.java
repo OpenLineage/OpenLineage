@@ -6,7 +6,7 @@
 package io.openlineage.spark34.agent.lifecycle.plan.column;
 
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
-import io.openlineage.spark.agent.util.DeltaUtils;
+import io.openlineage.spark.agent.util.ReflectionUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.stream.Stream;
@@ -22,7 +22,7 @@ public class MergeIntoDelta24ColumnLineageVisitor
     implements ColumnLevelLineageVisitor {
 
   public static boolean hasClasses() {
-    return DeltaUtils.hasClasses(
+    return ReflectionUtils.hasClasses(
         "org.apache.spark.sql.delta.commands.MergeIntoCommand",
         "org.apache.spark.sql.catalyst.plans.logical.DeltaMergeIntoNotMatchedClause");
   }
