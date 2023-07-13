@@ -4,6 +4,11 @@ Created: May 9th 2023
 Issue: https://github.com/OpenLineage/OpenLineage/issues/1837
 ---
 
+# Changelog
+
+- Created: May 9th 2023
+- Updated to add facet deletion: July 13th 2023
+
 # Purpose
 
 Today OpenLineage captures metadata mainly in the context of a run that is actively accessing and modifying/producing data. The metadata collected covers both dynamic aspects that are specific to the run (how long it took, how many rows were produced, ...) and static metadata that does not change every time the job runs (inputs, outputs, dataset schema, code version, ...).
@@ -104,10 +109,102 @@ Facets are attached to the particular version created by a run:
 
 Now, we are adding Job and Dataset events that will add facets at a point in time. 
 
-The expected semantics is that job and dataset facets apply to that entity for that moment on until they are replaced by a new version of the same facet. For example, sending a Dataset event with an ownership facet on a dataset, replaces any previously defined ownership facet and applies to all versions moving forward until replaced by a new one.
+The expected semantics is that job and dataset facets apply to that entity from that moment on until they are replaced by a new version of the same facet. For example, sending a Dataset event with an ownership facet on a dataset, replaces any previously defined ownership facet and applies to all versions moving forward until replaced by a new one.
 
 In contrast, run, input and output facets only apply to the run they are attached to and the specific Job or Dataset versions.
 
+Since those facets apply to all versions moving forward we need the ability to remove one such facet when it is no longer applicable.
+To do so you can mark the facet as deleted by using a deleted facet ```{ _deleted: true }``` object that can take the place of any job or dataset facet (but not run or input/output facets which are valid only for a specific run)
+
+### update lyfecycle
+
+Behavior:
+A new facet replaces the previous one for the same name. We always keep the latest facet for a given facet name. For example, if there’s a new owner facet then it replaces what came before for that name. the { _deleted: true } facet removes the owner facet so that there is no owner anymore (we don’t get back to the previous one)
+
+Series of dataset events:
+
+Event 1:
+```
+{
+	"eventTime": "2021-11-03T10:53:52.427343",
+	"dataset": {
+		"namespace":  "openlineage",
+		"name":  "name",
+		"facets": {
+			"owner": {
+			  "name": "Harel"
+			}
+		}
+	},
+}
+```
+The owner facet for the the dataset is {"name": "Harel"}
+
+Event 2:
+```
+{
+	"eventTime": "2021-11-03T10:53:52.427343",
+	"dataset": {
+		"namespace":  "openlineage",
+		"name":  "name",
+		"facets": {
+			"owner": {
+			  "name": "Pawel"
+			}
+		}
+	},
+}
+```
+The owner facet for the the dataset is now {"name": "Pawel"}
+
+Event 2:
+```
+{
+	"eventTime": "2021-11-03T10:53:52.427343",
+	"dataset": {
+		"namespace":  "openlineage",
+		"name":  "name",
+		"facets": {
+			"owner": {
+			  "_deleted": true
+			}
+		}
+	},
+}
+```
+There is no owner facet for the the dataset.
+
+### implementation of the facet deletion
+
+We add the option to mark any job or dataset facet deleted by using ```{ _deleted: true }```
+```
+"facets": {
+  "description": "The facets for this {dataset,job}",
+  "type": "object",
+  "additionalProperties": {
+    "anyOf": [
+      { "$ref": "#/$defs/{Dataset,Job}Facet" },
+      { "$ref": "#/$defs/DeletedFacet" }
+    ]
+  }
+}
+```
+
+DeletedFacet schema:
+```
+"DeletedFacet": {
+  "description": "to specify that a facet is deleted",
+  "type": "object",
+  "properties": {
+    "_producer": {
+      "type": "string",
+      "format": "uri",
+    },
+    "_deleted": { "const": true }
+  }
+  "required": ["_producer", "_deleted"]
+}
+```
 
 ----
 SPDX-License-Identifier: Apache-2.0\
