@@ -59,7 +59,7 @@ dependencies {
     compileOnly "org.apache.spark:spark-sql_2.12:${sparkVersion}"
     compileOnly "org.apache.spark:spark-hive_2.12:${sparkVersion}"
     compileOnly "org.apache.spark:spark-sql-kafka-0-10_2.12:${sparkVersion}"
-    compileOnly "org.apache.iceberg:iceberg-spark3-runtime:0.13.0"
+    compileOnly "org.apache.iceberg:iceberg-spark-runtime-3.2_2.13:1.3.0"
     compileOnly "io.delta:delta-core_2.12:1.1.0"
     compileOnly "com.databricks:dbutils-api_2.12:0.0.6"
 
@@ -69,7 +69,7 @@ dependencies {
     testFixturesApi "org.apache.spark:spark-hive_2.12:${sparkVersion}"
     testFixturesApi "org.apache.spark:spark-catalyst_2.12:${sparkVersion}"
     testFixturesApi "org.apache.spark:spark-sql-kafka-0-10_2.12:${sparkVersion}"
-    testFixturesApi "org.apache.iceberg:iceberg-spark-runtime-3.2_2.12:0.13.0"
+    testFixturesApi "org.apache.iceberg:iceberg-spark-runtime-3.2_2.13:1.3.0"
     testFixturesApi "io.delta:delta-core_2.12:1.1.0"
     testFixturesApi "com.databricks:dbutils-api_2.12:0.0.6"
     testImplementation(testFixtures(project(":shared")))
