@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.spark.scheduler.SparkListenerJobStart;
+import org.apache.spark.scheduler.SparkListenerEvent;
 
 /**
  * {@link CustomFacetBuilder} that generates a {@link EnvironmentFacet} when using OpenLineage on
@@ -22,7 +22,7 @@ import org.apache.spark.scheduler.SparkListenerJobStart;
  */
 @Slf4j
 public class CustomEnvironmentFacetBuilder
-    extends CustomFacetBuilder<SparkListenerJobStart, EnvironmentFacet> {
+    extends CustomFacetBuilder<SparkListenerEvent, EnvironmentFacet> {
   private Map<String, Object> envProperties;
   private Optional<List<String>> customEnvironmentVariables;
 
@@ -34,17 +34,23 @@ public class CustomEnvironmentFacetBuilder
 
   @Override
   protected void build(
-      SparkListenerJobStart event, BiConsumer<String, ? super EnvironmentFacet> consumer) {
+      SparkListenerEvent event, BiConsumer<String, ? super EnvironmentFacet> consumer) {
     consumer.accept(
-        "environment-properties", new EnvironmentFacet(getCustomEnvironmentalAttributes(event)));
+        "environment-properties", new EnvironmentFacet(getCustomEnvironmentalAttributes()));
   }
 
-  private Map<String, Object> getCustomEnvironmentalAttributes(SparkListenerJobStart jobStart) {
+  private Map<String, Object> getCustomEnvironmentalAttributes() {
     envProperties = new HashMap<>();
     // extract some custom environment variables if needed
     customEnvironmentVariables.ifPresent(
         envVars ->
             envVars.forEach(envVar -> envProperties.put(envVar, System.getenv().get(envVar))));
+
     return envProperties;
+  }
+
+  @Override
+  public boolean isDefinedAt(Object x) {
+    return x instanceof SparkListenerEvent;
   }
 }

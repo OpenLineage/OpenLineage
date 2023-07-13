@@ -8,6 +8,7 @@ package io.openlineage.spark.agent;
 import static io.openlineage.spark.agent.MockServerUtils.verifyEvents;
 import static org.apache.spark.sql.functions.col;
 import static org.apache.spark.sql.functions.from_json;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertTrue;
 import static org.mockserver.model.HttpRequest.request;
@@ -41,6 +42,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockserver.configuration.Configuration;
 import org.mockserver.integration.ClientAndServer;
+import org.mockserver.model.HttpRequest;
 import org.mockserver.model.RegexBody;
 import org.slf4j.event.Level;
 
@@ -98,6 +100,9 @@ public class SparkDeltaIntegrationTest {
                 "spark.openlineage.transport.url",
                 "http://localhost:" + mockServer.getPort() + "/api/v1/namespaces/delta-namespace")
             .config("spark.openlineage.facets.disabled", "spark_unknown;spark.logicalPlan")
+            .config(
+                "spark.openlineage.facets.custom_environment_variables",
+                "[" + getAvailableEnvVariable() + ";]")
             .config("spark.extraListeners", OpenLineageSparkListener.class.getName())
             .config("spark.jars.ivy", "/tmp/.ivy2/")
             .config(
@@ -323,6 +328,37 @@ public class SparkDeltaIntegrationTest {
             + " WHEN NOT MATCHED THEN INSERT *");
 
     verifyEvents(mockServer, "pysparkDeltaMergeIntoCompleteEvent.json");
+  }
+
+  @Test
+  void testCustomEnvVar() {
+    spark.sql("DROP TABLE IF EXISTS test");
+    spark.sql("CREATE TABLE test (key INT, value STRING) using delta");
+
+    await()
+        .atMost(Duration.ofSeconds(10))
+        .pollInterval(Duration.ofSeconds(2))
+        .untilAsserted(
+            () -> {
+              HttpRequest[] requests =
+                  mockServer.retrieveRecordedRequests(request().withPath("/api/v1/lineage"));
+              assertThat(requests).isNotEmpty();
+
+              String body = requests[requests.length - 1].getBodyAsString();
+
+              assertThat(body).contains("COMPLETE");
+              assertThat(body).contains(getAvailableEnvVariable());
+            });
+  }
+
+  /**
+   * Environment variables differ on local environment and CI. This method returns any environment
+   * variable being set for testing.
+   *
+   * @return
+   */
+  String getAvailableEnvVariable() {
+    return (String) System.getenv().keySet().toArray()[0];
   }
 
   private void clearTables(String... tables) {
