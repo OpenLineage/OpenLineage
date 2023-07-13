@@ -199,6 +199,9 @@ Setting it in `great_expectations.yml` files isn't enough - the operator overrid
 
 To see an example of a working configuration, see [DAG](https://github.com/OpenLineage/OpenLineage/blob/main/integration/airflow/tests/integration/airflow/dags/greatexpectations_dag.py) and [Great Expectations configuration](https://github.com/OpenLineage/OpenLineage/tree/main/integration/airflow/tests/integration/data/great_expectations) in the integration tests.
 
+### Logging
+In addition to conventional logging approaches, the `openlineage-airflow` package provides an alternative way of configuring its logging behavior. By setting the `OPENLINEAGE_AIRFLOW_LOGGING` environment variable, you can establish the logging level for the `openlineage.airflow` and its child modules.
+
 ## Triggering Child Jobs
 Commonly, Airflow DAGs will trigger processes on remote systems, such as an Apache Spark or Apache
 Beam job. Those systems may have their own OpenLineage integrations and report their own

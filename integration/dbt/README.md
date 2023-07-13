@@ -42,6 +42,12 @@ The OpenLineage client depends on environment variables:
 * `OPENLINEAGE_NAMESPACE` - set if you are using something other than the `default` namespace for job namespace.
 
 
+### Logging
+
+In addition to conventional logging approaches, the OpenLineage dbt wrapper script provides an alternative way of configuring its logging behavior. By setting the `OPENLINEAGE_DBT_LOGGING` environment variable, you can establish the logging level for the `openlineage.dbt` and its child modules.
+
+You can also set log level of `dbtol` which is deprecated.
+
 ## Usage
 
 To begin collecting dbt metadata with OpenLineage, replace `dbt run` with `dbt-ol run`.

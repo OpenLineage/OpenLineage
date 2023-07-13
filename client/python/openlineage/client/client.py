@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from typing import TYPE_CHECKING, Any, TypeVar, Union
 
 import attr
@@ -41,6 +42,12 @@ class OpenLineageClient:
         transport: Transport | None = None,
         factory: TransportFactory | None = None,
     ) -> None:
+        # Set parent's logging level if environment variable is present
+        if "OPENLINEAGE_CLIENT_LOGGING" in os.environ:
+            logging.getLogger(__name__.rpartition(".")[0]).setLevel(
+                os.environ["OPENLINEAGE_CLIENT_LOGGING"],
+            )
+
         if factory is None:
             factory = get_default_factory()
 

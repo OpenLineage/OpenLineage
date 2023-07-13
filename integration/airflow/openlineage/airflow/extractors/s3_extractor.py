@@ -1,14 +1,11 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-import logging
 from typing import List, Optional
 from urllib.parse import urlparse
 
 from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
 from openlineage.client.run import Dataset
-
-log = logging.getLogger(__name__)
 
 
 class S3CopyObjectExtractor(BaseExtractor):

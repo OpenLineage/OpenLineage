@@ -70,3 +70,6 @@ This way of configuring the client supports only `http` transport, and only a su
 * `OPENLINEAGE_API_KEY` - set if the consumer of OpenLineage events requires a `Bearer` authentication key.
 
 `OPENLINEAGE_URL` and `OPENLINEAGE_API_KEY` can also be set up manually when creating a client instance.
+
+#### Logging level
+In addition to conventional logging approaches, the OpenLineage client library provides an alternative way of configuring its logging behavior. By setting the `OPENLINEAGE_CLIENT_LOGGING` environment variable, you can establish the logging level for the `openlineage.client` and its child modules.

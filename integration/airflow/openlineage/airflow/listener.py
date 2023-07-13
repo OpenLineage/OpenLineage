@@ -48,7 +48,7 @@ class TaskHolder:
         return ti.dag_id + ti.task_id + ti.run_id
 
 
-log = logging.getLogger("airflow")
+log = logging.getLogger(__name__)
 # TODO: move task instance runs to executor
 executor: Optional[Executor] = None
 
