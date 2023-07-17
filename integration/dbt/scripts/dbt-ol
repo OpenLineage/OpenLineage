@@ -52,7 +52,9 @@ def dbt_run_event(
     )
 
 
-def dbt_run_event_start(job_name: str, job_namespace: str, parent_run_metadata: ParentRunMetadata) -> RunEvent:
+def dbt_run_event_start(
+    job_name: str, job_namespace: str, parent_run_metadata: ParentRunMetadata
+) -> RunEvent:
     return dbt_run_event(
         state=RunState.START,
         job_name=job_name,
@@ -89,12 +91,14 @@ def dbt_run_event_failed(
         parent=parent_run_metadata
     )
 
-
+openlineage_logger = logging.getLogger("openlineage.dbt")
+openlineage_logger.setLevel(os.getenv("OPENLINEAGE_DBT_LOGGING", "INFO"))
+openlineage_logger.addHandler(logging.StreamHandler(sys.stdout))
+# deprecated dbtol logger
 logger = logging.getLogger("dbtol")
-logger.setLevel("INFO")
-logger.addHandler(logging.StreamHandler(sys.stdout))
-logging.basicConfig(level=logging.INFO)
-
+for handler in openlineage_logger.handlers:
+    logger.addHandler(handler)
+    logger.setLevel(openlineage_logger.level)
 
 def main():
     logger.info(f"Running OpenLineage dbt wrapper version {__version__}")

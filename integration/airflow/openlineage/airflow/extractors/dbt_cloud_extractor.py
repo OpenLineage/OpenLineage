@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import asyncio
-import logging
 import re
 import traceback
 
@@ -20,8 +19,6 @@ from airflow.providers.dbt.cloud.hooks.dbt import (
     DbtCloudHook,
     fallback_to_default_account,
 )
-
-log = logging.getLogger(__name__)
 
 
 class DbtCloudExtractor(BaseExtractor):
@@ -47,7 +44,7 @@ class DbtCloudExtractor(BaseExtractor):
             job_facets: Dict = {}
 
         except Exception as e:
-            log.exception("Exception has occurred in extract()")
+            self.log.exception("Exception has occurred in extract()")
             error = ErrorMessageRunFacet(str(e), "python")
             error.stackTrace = traceback.format_exc()
             run_facets["errorMessage"] = error
@@ -173,7 +170,7 @@ class DbtCloudExtractor(BaseExtractor):
                 producer=_PRODUCER,
                 job_namespace=_DAG_NAMESPACE,
                 skip_errors=False,
-                logger=log,
+                logger=self.log,
                 manifest=manifest,
                 run_result=artifacts["run_results"],
                 profile=connection,

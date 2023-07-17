@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
+import logging
 import os
 import re
 import uuid
@@ -181,7 +182,10 @@ def test_client_filters_exact_job_name_events(
     *,
     should_emit: bool,
 ) -> None:
-    with patch.dict(os.environ, {"OPENLINEAGE_CONFIG": str(root / "config" / config_path)}):
+    with patch.dict(
+        os.environ,
+        {"OPENLINEAGE_CONFIG": str(root / "config" / config_path)},
+    ):
         factory = MagicMock()
         transport = MagicMock()
         factory.create.return_value = transport
@@ -199,3 +203,19 @@ def test_client_filters_exact_job_name_events(
 
         client.emit(event)
         assert transport.emit.called == should_emit
+
+
+def test_setting_ol_client_log_level() -> None:
+    default_log_level = logging.WARNING
+    # without environment variable
+    OpenLineageClient()
+    parent_logger = logging.getLogger("openlineage.client")
+    logger = logging.getLogger("openlineage.client.client")
+    assert parent_logger.getEffectiveLevel() == default_log_level
+    assert logger.getEffectiveLevel() == default_log_level
+    with patch.dict(os.environ, {"OPENLINEAGE_CLIENT_LOGGING": "CRITICAL"}):
+        assert parent_logger.getEffectiveLevel() == default_log_level
+        assert logger.getEffectiveLevel() == default_log_level
+        OpenLineageClient()
+        assert parent_logger.getEffectiveLevel() == logging.CRITICAL
+        assert logger.getEffectiveLevel() == logging.CRITICAL

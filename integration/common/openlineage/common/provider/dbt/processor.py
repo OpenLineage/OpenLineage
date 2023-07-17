@@ -35,6 +35,7 @@ class Adapter(Enum):
     SPARK = "spark"
     POSTGRES = "postgres"
     DATABRICKS = "databricks"
+
     @staticmethod
     def adapters() -> str:
         # String representation of all supported adapter names
@@ -135,8 +136,6 @@ class DbtVersionRunFacet(BaseFacet):
         return GITHUB_LOCATION + "dbt-version-run-facet.json"
 
 
-logging.getLogger("null").addHandler(logging.NullHandler())
-
 
 class DbtArtifactProcessor:
     should_raise_on_unsupported_command = True
@@ -146,11 +145,13 @@ class DbtArtifactProcessor:
         producer: str,
         job_namespace: str,
         skip_errors: bool = False,
-        logger: logging.Logger = logging.getLogger("null"),
+        logger: Optional[logging.Logger] = None,
     ):
         self.producer = producer
         self._dbt_run_metadata: Optional[ParentRunMetadata] = None
-        self.logger = logger
+        self.logger = logger or logging.getLogger(
+            f"{self.__class__.__module__}.{self.__class__.__name__}"
+        )
 
         self.job_namespace = job_namespace
         self.dataset_namespace = ""
@@ -540,7 +541,9 @@ class DbtArtifactProcessor:
             if "description" in field and field["description"] is not None:
                 description = field["description"]
             fields.append(
-                SchemaField(name=field["name"], type=of_type or "", description=description)
+                SchemaField(
+                    name=field["name"], type=of_type or "", description=description
+                )
             )
         return fields
 

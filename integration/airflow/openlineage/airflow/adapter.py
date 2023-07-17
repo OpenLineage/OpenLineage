@@ -54,6 +54,10 @@ class OpenLineageAdapter:
 
     _client = None
 
+    def __init__(self):
+        if "OPENLINEAGE_AIRFLOW_LOGGING" in os.environ:
+            logging.getLogger(__name__.rpartition('.')[0]).setLevel(os.getenv("OPENLINEAGE_AIRFLOW_LOGGING"))
+
     @staticmethod
     def get_or_create_openlineage_client() -> OpenLineageClient:
         # Backcomp with Marquez integration
