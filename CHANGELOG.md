@@ -1,6 +1,9 @@
 # Changelog
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.29.2...HEAD)
+### Fixed
+* **Spark: fix custom environment variables facet** [`#1973`](https://github.com/OpenLineage/OpenLineage/pull/1973) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Spark environment variables facet sent in non-deterministic way.*
 
 ## [0.29.2](https://github.com/OpenLineage/OpenLineage/compare/0.28.0...0.29.2) - 2023-06-30
 ### Added
