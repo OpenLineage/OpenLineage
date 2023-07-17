@@ -27,6 +27,7 @@ public class EventFilterUtils {
     return Arrays.asList(
             new DeltaEventFilter(context),
             new DatabricksEventFilter(context),
+            new ProjectFilter(context),
             new AdaptivePlanEventFilter(context))
         .stream()
         .filter(filter -> filter.isDisabled(event.getClass().cast(event)))

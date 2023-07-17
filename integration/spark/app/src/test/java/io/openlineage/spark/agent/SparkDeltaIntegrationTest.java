@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertTrue;
 import static org.mockserver.model.HttpRequest.request;
+import static org.mockserver.model.JsonBody.json;
 
 import com.google.common.collect.ImmutableList;
 import java.io.File;
@@ -42,6 +43,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockserver.configuration.Configuration;
 import org.mockserver.integration.ClientAndServer;
+import org.mockserver.matchers.MatchType;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.model.RegexBody;
 import org.slf4j.event.Level;
@@ -348,6 +350,67 @@ public class SparkDeltaIntegrationTest {
 
               assertThat(body).contains("COMPLETE");
               assertThat(body).contains(getAvailableEnvVariable());
+            });
+  }
+
+  @Test
+  void testNoDuplicateEventsForDelta() {
+    clearTables("t1", "t2", "t3", "t4");
+
+    Dataset<Row> dataset =
+        spark
+            .createDataFrame(
+                ImmutableList.of(RowFactory.create(1L, "bat"), RowFactory.create(3L, "horse")),
+                new StructType(
+                    new StructField[] {
+                      new StructField("a", LongType$.MODULE$, false, Metadata.empty()),
+                      new StructField("b", StringType$.MODULE$, false, Metadata.empty())
+                    }))
+            .repartition(1);
+
+    dataset.write().mode("overwrite").format("delta").saveAsTable("t1");
+    dataset.write().mode("overwrite").format("delta").saveAsTable("t2");
+    dataset.write().mode("overwrite").format("delta").saveAsTable("t3");
+
+    // wait until t3 complete event is sent
+    await()
+        .pollInterval(Duration.ofSeconds(2))
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(
+            () ->
+                mockServer.verify(
+                    request()
+                        .withPath("/api/v1/lineage")
+                        .withBody(
+                            json(
+                                "{\"outputs\":[{\"name\": \"/tmp/delta/t3\"}]}",
+                                MatchType.ONLY_MATCHING_FIELDS))));
+
+    mockServer.reset();
+    mockServer
+        .when(request("/api/v1/lineage"))
+        .respond(org.mockserver.model.HttpResponse.response().withStatusCode(201));
+
+    // this operation should contain only START AND STOP JOB
+    spark.sql(
+        "CREATE TABLE t4 USING DELTA AS "
+            + "SELECT t1.a as a1, t2.a as a2, t3.b as b1 FROM t1 "
+            + "JOIN t2 on t1.a = t2.a JOIN t3 on t2.b=t3.b");
+
+    await()
+        .pollInterval(Duration.ofSeconds(2))
+        .atMost(Duration.ofSeconds(10))
+        .until(
+            () -> {
+              HttpRequest[] requests =
+                  mockServer.retrieveRecordedRequests(request().withPath("/api/v1/lineage"));
+
+              String lastRequestBody = requests[requests.length - 1].getBody().toString();
+
+              return lastRequestBody.contains("/tmp/delta/t4")
+                  && lastRequestBody.contains("create_table_as_select")
+                  && lastRequestBody.contains("COMPLETE")
+                  && requests.length == 2;
             });
   }
 
