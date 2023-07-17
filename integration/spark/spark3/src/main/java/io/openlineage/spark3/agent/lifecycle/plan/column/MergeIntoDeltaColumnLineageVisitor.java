@@ -5,6 +5,8 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.stream.Stream;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
@@ -13,7 +15,7 @@ import org.apache.spark.sql.catalyst.plans.logical.DeltaMergeAction;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.delta.commands.MergeIntoCommand;
 
-public abstract class MergeIntoDeltaColumnLineageVisitor implements CustomColumnLineageVisitor {
+public abstract class MergeIntoDeltaColumnLineageVisitor implements ColumnLevelLineageVisitor {
   protected OpenLineageContext context;
 
   public MergeIntoDeltaColumnLineageVisitor(OpenLineageContext context) {

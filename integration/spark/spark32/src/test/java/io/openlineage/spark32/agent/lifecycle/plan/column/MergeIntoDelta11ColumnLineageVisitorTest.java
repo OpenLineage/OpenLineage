@@ -10,9 +10,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import java.util.Collections;
 import java.util.Optional;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
@@ -28,10 +28,10 @@ import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.Test;
 import scala.Option;
 
-public class MergeIntoDeltaColumnLineageVisitorTest {
+public class MergeIntoDelta11ColumnLineageVisitorTest {
   OpenLineageContext context = mock(OpenLineageContext.class);
   MergeIntoCommand command = mock(MergeIntoCommand.class);
-  MergeIntoDeltaColumnLineageVisitor visitor = new MergeIntoDeltaColumnLineageVisitor(context);
+  MergeIntoDelta11ColumnLineageVisitor visitor = new MergeIntoDelta11ColumnLineageVisitor(context);
   ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
 
   @Test

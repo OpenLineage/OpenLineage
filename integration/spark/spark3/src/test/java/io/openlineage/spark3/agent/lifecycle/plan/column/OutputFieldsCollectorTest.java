@@ -9,6 +9,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Arrays;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
@@ -29,7 +30,6 @@ class OutputFieldsCollectorTest {
   LogicalPlan plan = mock(LogicalPlan.class);
   ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
   OpenLineageContext context = mock(OpenLineageContext.class);
-
   Attribute attr1 = mock(Attribute.class);
   Attribute attr2 = mock(Attribute.class);
   ExprId exprId1 = mock(ExprId.class);

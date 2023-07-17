@@ -42,7 +42,7 @@ public class Spark33DatasetBuilderFactory extends Spark32DatasetBuilderFactory
             .add(new CreateReplaceDatasetBuilder(context))
             .add(new AlterTableCommandDatasetBuilder(context));
 
-    if (DeltaUtils.hasMergeIntoClasses()) {
+    if (DeltaUtils.hasMergeIntoCommandClass()) {
       builder.add(new MergeIntoCommandOutputDatasetBuilder(context));
     }
 

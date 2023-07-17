@@ -5,18 +5,29 @@
 
 package io.openlineage.spark34.agent.lifecycle.plan.column;
 
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
+import io.openlineage.spark.agent.util.DeltaUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.stream.Stream;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.catalyst.expressions.Expression;
 import org.apache.spark.sql.catalyst.plans.logical.DeltaMergeIntoMatchedClause;
 import org.apache.spark.sql.catalyst.plans.logical.DeltaMergeIntoNotMatchedClause;
 import org.apache.spark.sql.delta.commands.MergeIntoCommand;
 
-public class MergeIntoDeltaColumnLineageVisitor
-    extends io.openlineage.spark3.agent.lifecycle.plan.column.MergeIntoDeltaColumnLineageVisitor {
+@Slf4j
+public class MergeIntoDelta24ColumnLineageVisitor
+    extends io.openlineage.spark3.agent.lifecycle.plan.column.MergeIntoDeltaColumnLineageVisitor
+    implements ColumnLevelLineageVisitor {
 
-  public MergeIntoDeltaColumnLineageVisitor(OpenLineageContext context) {
+  public static boolean hasClasses() {
+    return DeltaUtils.hasClasses(
+        "org.apache.spark.sql.delta.commands.MergeIntoCommand",
+        "org.apache.spark.sql.catalyst.plans.logical.DeltaMergeIntoNotMatchedClause");
+  }
+
+  public MergeIntoDelta24ColumnLineageVisitor(OpenLineageContext context) {
     super(context);
   }
 

@@ -11,9 +11,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.column.InputFieldsCollector;
 import io.openlineage.spark3.agent.lifecycle.plan.column.OutputFieldsCollector;
 import java.util.Collections;
@@ -32,11 +32,11 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import scala.Option;
 
-public class MergeIntoDeltaColumnLineageVisitorTest {
+public class MergeIntoDelta24ColumnLineageVisitorTest {
 
   OpenLineageContext context = mock(OpenLineageContext.class);
   MergeIntoCommand command = mock(MergeIntoCommand.class);
-  MergeIntoDeltaColumnLineageVisitor visitor = new MergeIntoDeltaColumnLineageVisitor(context);
+  MergeIntoDelta24ColumnLineageVisitor visitor = new MergeIntoDelta24ColumnLineageVisitor(context);
   ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
 
   @Test

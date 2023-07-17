@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableList;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.lifecycle.DatasetBuilderFactoryProvider;
 import io.openlineage.spark.agent.util.LastQueryExecutionSparkEventListener;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
@@ -87,6 +88,10 @@ public class ColumnLevelLineageDeltaTest {
             .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
             .queryExecution(queryExecution)
             .build();
+
+    context
+        .getColumnLevelLineageVisitors()
+        .addAll(DatasetBuilderFactoryProvider.getInstance().getColumnLevelLineageVisitors(context));
 
     FileSystem.get(spark.sparkContext().hadoopConfiguration())
         .delete(new Path("/tmp/delta/"), true);

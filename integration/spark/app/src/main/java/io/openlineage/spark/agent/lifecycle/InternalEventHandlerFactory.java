@@ -21,6 +21,7 @@ import io.openlineage.spark.agent.facets.builder.LogicalPlanRunFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.OutputStatisticsOutputDatasetFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.SparkPropertyFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.SparkVersionFacetBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
@@ -200,5 +201,21 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
   public List<CustomFacetBuilder<?, ? extends JobFacet>> createJobFacetBuilders(
       OpenLineageContext context) {
     return generate(eventHandlerFactories, factory -> factory.createJobFacetBuilders(context));
+  }
+
+  @Override
+  public List<ColumnLevelLineageVisitor> createColumnLevelLineageVisitors(
+      OpenLineageContext context) {
+    ImmutableList visitors =
+        ImmutableList.builder()
+            .addAll(
+                generate(
+                    eventHandlerFactories,
+                    factory -> factory.createColumnLevelLineageVisitors(context)))
+            .addAll(
+                DatasetBuilderFactoryProvider.getInstance().getColumnLevelLineageVisitors(context))
+            .build();
+    context.getColumnLevelLineageVisitors().addAll(visitors);
+    return visitors;
   }
 }

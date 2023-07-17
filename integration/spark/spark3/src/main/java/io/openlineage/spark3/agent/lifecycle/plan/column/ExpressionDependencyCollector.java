@@ -5,6 +5,7 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.ExpressionDependencyVisitor;
@@ -38,6 +39,7 @@ public class ExpressionDependencyCollector {
 
   static void collect(
       OpenLineageContext context, LogicalPlan plan, ColumnLevelLineageBuilder builder) {
+
     plan.foreach(
         node -> {
           expressionDependencyVisitors.stream()

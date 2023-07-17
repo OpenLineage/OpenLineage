@@ -6,6 +6,7 @@
 package io.openlineage.spark.api;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -197,6 +198,19 @@ public interface OpenLineageEventHandlerFactory {
    * @return
    */
   default Collection<CustomFacetBuilder<?, ? extends OpenLineage.JobFacet>> createJobFacetBuilders(
+      OpenLineageContext context) {
+    return Collections.emptyList();
+  }
+
+  /**
+   * Create a collection of {@link ColumnLevelLineageVisitor} that may be applied to construct a
+   * {@link OpenLineage.ColumnLineageDatasetFacet} which will be attached to the current {@link
+   * io.openlineage.client.OpenLineage.Dataset}
+   *
+   * @param context
+   * @return
+   */
+  default Collection<ColumnLevelLineageVisitor> createColumnLevelLineageVisitors(
       OpenLineageContext context) {
     return Collections.emptyList();
   }

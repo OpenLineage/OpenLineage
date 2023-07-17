@@ -46,7 +46,7 @@ public class Spark34DatasetBuilderFactory extends Spark32DatasetBuilderFactory
       builder.add(new ReplaceIcebergDataDatasetBuilder(context));
     }
 
-    if (DeltaUtils.hasMergeIntoClasses()) {
+    if (DeltaUtils.hasMergeIntoCommandClass()) {
       builder.add(new MergeIntoCommandOutputDatasetBuilder(context));
     }
 

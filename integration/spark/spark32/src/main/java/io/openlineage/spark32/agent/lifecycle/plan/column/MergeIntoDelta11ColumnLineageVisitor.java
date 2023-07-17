@@ -5,6 +5,7 @@
 
 package io.openlineage.spark32.agent.lifecycle.plan.column;
 
+import io.openlineage.spark.agent.util.DeltaUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.stream.Stream;
@@ -13,10 +14,16 @@ import org.apache.spark.sql.catalyst.plans.logical.DeltaMergeIntoInsertClause;
 import org.apache.spark.sql.catalyst.plans.logical.DeltaMergeIntoMatchedClause;
 import org.apache.spark.sql.delta.commands.MergeIntoCommand;
 
-public class MergeIntoDeltaColumnLineageVisitor
+public class MergeIntoDelta11ColumnLineageVisitor
     extends io.openlineage.spark3.agent.lifecycle.plan.column.MergeIntoDeltaColumnLineageVisitor {
 
-  public MergeIntoDeltaColumnLineageVisitor(OpenLineageContext context) {
+  public static boolean hasClasses() {
+    return DeltaUtils.hasClasses(
+        "org.apache.spark.sql.delta.commands.MergeIntoCommand",
+        "org.apache.spark.sql.catalyst.plans.logical.DeltaMergeIntoInsertClause");
+  }
+
+  public MergeIntoDelta11ColumnLineageVisitor(OpenLineageContext context) {
     super(context);
   }
 

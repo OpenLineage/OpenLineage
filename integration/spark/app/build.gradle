@@ -44,6 +44,7 @@ configurations {
     spark3.extendsFrom testImplementation
     spark32.extendsFrom testImplementation
     spark33.extendsFrom testImplementation
+    spark34.extendsFrom testImplementation
     pysparkContainerOnly
 }
 
@@ -273,6 +274,7 @@ assemble {
 }
 
 shadowJar {
+
     dependsOn test
 
     minimize(){

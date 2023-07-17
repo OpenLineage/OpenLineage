@@ -12,6 +12,7 @@ import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.spark.agent.lifecycle.plan.CommandPlanVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.SaveIntoDataSourceCommandVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import io.openlineage.spark.agent.util.DeltaUtils;
 import io.openlineage.spark.api.AbstractQueryPlanOutputDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
@@ -28,6 +29,8 @@ import io.openlineage.spark3.agent.lifecycle.plan.MergeIntoCommandOutputDatasetB
 import io.openlineage.spark3.agent.lifecycle.plan.SubqueryAliasInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.TableContentChangeDatasetBuilder;
 import io.openlineage.spark32.agent.lifecycle.plan.AlterTableCommandDatasetBuilder;
+import io.openlineage.spark32.agent.lifecycle.plan.column.MergeIntoDelta11ColumnLineageVisitor;
+import io.openlineage.spark34.agent.lifecycle.plan.column.MergeIntoDelta24ColumnLineageVisitor;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.List;
@@ -51,7 +54,7 @@ public class Spark32DatasetBuilderFactory implements DatasetBuilderFactory {
             .add(new SubqueryAliasInputDatasetBuilder(context))
             .add(new DataSourceV2RelationInputDatasetBuilder(context, datasetFactory));
 
-    if (DeltaUtils.hasMergeIntoClasses()) {
+    if (DeltaUtils.hasMergeIntoCommandClass()) {
       builder.add(new MergeIntoCommandInputDatasetBuilder(context));
     }
 
@@ -72,7 +75,7 @@ public class Spark32DatasetBuilderFactory implements DatasetBuilderFactory {
             .add(getCreateReplaceDatasetBuilder(context))
             .add(new AlterTableCommandDatasetBuilder(context));
 
-    if (DeltaUtils.hasMergeIntoClasses()) {
+    if (DeltaUtils.hasMergeIntoCommandClass()) {
       builder.add(new MergeIntoCommandOutputDatasetBuilder(context));
     }
 
@@ -109,5 +112,21 @@ public class Spark32DatasetBuilderFactory implements DatasetBuilderFactory {
     } else {
       return new io.openlineage.spark33.agent.lifecycle.plan.CreateReplaceDatasetBuilder(context);
     }
+  }
+
+  @Override
+  public Collection<ColumnLevelLineageVisitor> getColumnLevelLineageVisitors(
+      OpenLineageContext context) {
+    ImmutableList.Builder builder = ImmutableList.<ColumnLevelLineageVisitor>builder();
+
+    if (MergeIntoDelta24ColumnLineageVisitor.hasClasses()) {
+      builder.add(new MergeIntoDelta24ColumnLineageVisitor(context));
+    }
+
+    if (MergeIntoDelta11ColumnLineageVisitor.hasClasses()) {
+      builder.add(new MergeIntoDelta11ColumnLineageVisitor(context));
+    }
+
+    return builder.build();
   }
 }
