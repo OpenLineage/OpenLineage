@@ -100,7 +100,9 @@ class OpenLineageTest {
     DatasetEvent datasetEvent =
         ol.newDatasetEventBuilder()
             .eventTime(now)
-            .dataset(ol.newStaticDataset("ns", "ds", null))
+            .dataset(ol.newStaticDataset("ns", "ds",
+                ol.newDatasetFacetsBuilder().documentation(
+                    ol.newDocumentationDatasetFacet("foo")).build()))
             .build();
 
     String json = mapper.writeValueAsString(datasetEvent);
@@ -109,6 +111,32 @@ class OpenLineageTest {
     assertEquals("ns", read.getDataset().getNamespace());
     assertEquals("ds", read.getDataset().getName());
     assertEquals(now, read.getEventTime());
+    assertEquals("foo", read.getDataset().getFacets().getDocumentation().getDescription());
+  }
+
+  @Test
+  void jsonDatasetEventDeleteFacet() throws JsonProcessingException {
+    ZonedDateTime now = ZonedDateTime.now(ZoneId.of("UTC"));
+    URI producer = URI.create("producer");
+    OpenLineage ol = new OpenLineage(producer);
+
+    DatasetEvent datasetEvent =
+        ol.newDatasetEventBuilder()
+            .eventTime(now)
+            .dataset(ol.newStaticDataset("ns", "ds",
+                ol.newDatasetFacetsBuilder().documentation(
+                    ol.newDocumentationDatasetFacet("foo")).build()))
+            .build();
+
+    datasetEvent.getDataset().getFacets().getAdditionalProperties().put("documentation", ol.newDeletedDatasetFacet());
+
+    String json = mapper.writeValueAsString(datasetEvent);
+    DatasetEvent read = mapper.readValue(json, DatasetEvent.class);
+
+    assertEquals("ns", read.getDataset().getNamespace());
+    assertEquals("ds", read.getDataset().getName());
+    assertEquals(now, read.getEventTime());
+    assertEquals(Boolean.TRUE, read.getDataset().getFacets().getAdditionalProperties().get("documentation").get_deleted());
   }
 
   @Test
