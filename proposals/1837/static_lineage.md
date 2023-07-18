@@ -119,7 +119,7 @@ To do so you can mark the facet as deleted by using a deleted facet ```{ _delete
 ### update lyfecycle
 
 Behavior:
-A new facet replaces the previous one for the same name. We always keep the latest facet for a given facet name. For example, if there’s a new owner facet then it replaces what came before for that name. the { _deleted: true } facet removes the owner facet so that there is no owner anymore (we don’t get back to the previous one)
+A new facet replaces the previous one for the same name. We always keep the latest facet for a given facet name. For example, if there’s a new owner facet then it replaces what came before for that name. the ```{ _deleted: true }``` facet removes the owner facet so that there is no owner anymore (we don’t get back to the previous one)
 
 Series of dataset events:
 
@@ -176,34 +176,41 @@ There is no owner facet for the the dataset.
 
 ### implementation of the facet deletion
 
-We add the option to mark any job or dataset facet deleted by using ```{ _deleted: true }```
+We add the option to mark any job or dataset facet deleted by using ```{ _deleted: true }``` (but not RunFacets, InputDatasetFacets or OutputDatasetFacets)
 ```
-"facets": {
-  "description": "The facets for this {dataset,job}",
+"DatasetFacet": {
+  "description": "A Dataset Facet",
   "type": "object",
-  "additionalProperties": {
-    "anyOf": [
-      { "$ref": "#/$defs/{Dataset,Job}Facet" },
-      { "$ref": "#/$defs/DeletedFacet" }
-    ]
-  }
+  "allOf": [
+    { "$ref": "#/$defs/BaseFacet" },
+    {
+      "type": "object",
+      "properties": {
+        "_deleted": {
+          "description": "set to true to delete a facet",
+          "type": "boolean"
+        }
+      }
+    }
+  ]
+},
+"JobFacet": {
+  "description": "A Job Facet",
+  "type": "object",
+  "allOf": [
+    { "$ref": "#/$defs/BaseFacet" },
+    {
+      "type": "object",
+      "properties": {
+        "_deleted": {
+          "description": "set to true to delete a facet",
+          "type": "boolean"
+        }
+      }
+    }
+  ]
 }
-```
 
-DeletedFacet schema:
-```
-"DeletedFacet": {
-  "description": "to specify that a facet is deleted",
-  "type": "object",
-  "properties": {
-    "_producer": {
-      "type": "string",
-      "format": "uri",
-    },
-    "_deleted": { "const": true }
-  }
-  "required": ["_producer", "_deleted"]
-}
 ```
 
 ----
