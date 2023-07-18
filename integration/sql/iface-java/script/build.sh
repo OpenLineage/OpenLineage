@@ -25,6 +25,9 @@ fi
 if [[ -f "$ROOT/../target/debug/libopenlineage_sql_java.dylib" ]]; then
     cp $ROOT/../target/debug/libopenlineage_sql_java.dylib $RESOURCES
 fi
+if [[ -f "$ROOT/../target/debug/libopenlineage_sql_java_arm64.dylib" ]]; then
+    cp $ROOT/../target/debug/libopenlineage_sql_java_arm64.dylib $RESOURCES
+fi
 
 # Let's generate this header every run so that it is always
 # up to date.

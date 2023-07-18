@@ -21,6 +21,8 @@ if [[ "$OSTYPE" == "linux-gnu"* && "$(uname -m)" == "x86_64" ]]; then
     NATIVE_LIB_NAME=libopenlineage_sql_java_x86_64.so
 elif [[ "$OSTYPE" == "linux-gnu"* && "$(uname -m)" == "aarch64" ]]; then
     NATIVE_LIB_NAME=libopenlineage_sql_java_aarch64.so
+elif [[ "$OSTYPE" == "darwin"* && "$(uname -m)" == "arm64" ]]; then
+    NATIVE_LIB_NAME=libopenlineage_sql_java_arm64.dylib
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     NATIVE_LIB_NAME=libopenlineage_sql_java.dylib
 else

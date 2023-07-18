@@ -13,6 +13,7 @@ __pycache__/
 *$py.class
 
 # C extensions
+*.dylib
 *.so
 
 # Distribution / packaging
