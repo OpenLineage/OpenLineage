@@ -20,6 +20,7 @@ from openlineage.airflow.facets import (
 )
 from openlineage.client.utils import RedactMixin
 from pendulum import from_timestamp
+from pkg_resources import parse_version
 
 from airflow.models import DAG as AIRFLOW_DAG
 
@@ -535,3 +536,21 @@ class LoggingMixin:
                 "openlineage.airflow.extractors."
                 f"{self.__class__.__module__}.{self.__class__.__name__}"
             )
+
+
+def is_airflow_version_enough(x):
+    try:
+        from airflow.version import version as AIRFLOW_VERSION
+    except ImportError:
+        AIRFLOW_VERSION = "0.0.0"
+    return parse_version(AIRFLOW_VERSION) >= parse_version(x)
+
+
+def getboolean(env, default: bool = False) -> bool:
+    """Get boolean value from environment variable"""
+    val = os.getenv(env, None)
+    if val is None:
+        return default
+    if val.lower() in ("t", "true", "1"):
+        return True
+    return False

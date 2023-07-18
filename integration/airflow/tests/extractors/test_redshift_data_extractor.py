@@ -9,6 +9,7 @@ import uuid
 from datetime import datetime
 from unittest import mock
 
+import pytest
 import pytz
 from mock import PropertyMock
 from openlineage.airflow.extractors.redshift_data_extractor import RedshiftDataExtractor
@@ -118,6 +119,9 @@ class TestRedshiftDataExtractor(unittest.TestCase):
             start_date=timezone.datetime(2016, 2, 1, 0, 0, 0),
         )
 
+        if hasattr(task, "return_sql_result"):
+            task.return_sql_result = True
+
         return task
 
     @mock.patch(
@@ -125,8 +129,9 @@ class TestRedshiftDataExtractor(unittest.TestCase):
         new_callable=PropertyMock,
     )
     @mock.patch("botocore.client")
-    def test_extract_e2e(self, mock_client, mock_hook):
-
+    @mock.patch("airflow.models.TaskInstance.xcom_pull")
+    def test_extract_e2e(self, xcom_pull, mock_client, mock_hook):
+        xcom_pull.return_value = "test_id"
         mock_client.describe_statement.return_value = self.read_file_json(
             "tests/extractors/redshift_statement_details.json"
         )
@@ -135,6 +140,7 @@ class TestRedshiftDataExtractor(unittest.TestCase):
         )
         job_id = "test_id"
         mock_client.execute_statement.return_value = {"Id": job_id}
+        mock_client.get_statement_result.return_value = None
         mock_hook.return_value.conn = mock_client
 
         extractor = RedshiftDataExtractor(self.task)
@@ -166,6 +172,10 @@ class TestRedshiftDataExtractor(unittest.TestCase):
             ) == task_meta.outputs[0].facets['stats']
         )
 
+    @pytest.mark.skipif(
+        parse_version(AIRFLOW_VERSION) >= parse_version("2.5.0"),
+        reason="Airflow >= 2.5.0",
+    )
     @mock.patch(
         "airflow.providers.amazon.aws.operators.redshift_data."
         "RedshiftDataOperator.wait_for_results"
@@ -176,7 +186,6 @@ class TestRedshiftDataExtractor(unittest.TestCase):
     )
     @mock.patch("botocore.client")
     def test_extract_error(self, mock_client, mock_hook, mock_wait_for_results):
-
         mock_client.describe_statement.side_effect = Exception("redshift error")
         mock_client.describe_table.side_effect = Exception(
             "redshift error on describe table"
@@ -220,7 +229,3 @@ class TestRedshiftDataExtractor(unittest.TestCase):
         details = json.loads(f.read())
         f.close()
         return details
-
-
-if __name__ == "__main__":
-    unittest.main()

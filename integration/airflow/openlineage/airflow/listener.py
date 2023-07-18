@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import copy
+import datetime
 import logging
 import threading
 from concurrent.futures import Executor, ThreadPoolExecutor
@@ -16,6 +17,8 @@ from openlineage.airflow.utils import (
     get_dagrun_start_end,
     get_job_name,
     get_task_location,
+    getboolean,
+    is_airflow_version_enough,
 )
 
 from airflow.listeners import hookimpl
@@ -73,6 +76,18 @@ extractor_manager = ExtractorManager()
 adapter = OpenLineageAdapter()
 
 
+def direct_execution():
+    return is_airflow_version_enough("2.6.0") \
+        or getboolean("OPENLINEAGE_AIRFLOW_ENABLE_DIRECT_EXECUTION", False)
+
+
+def execute(_callable):
+    if direct_execution():
+        _callable()
+    else:
+        execute_in_thread(_callable)
+
+
 @hookimpl
 def on_task_instance_running(previous_state, task_instance: "TaskInstance", session: "Session"):
     if not hasattr(task_instance, 'task'):
@@ -82,22 +97,23 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
 
     log.debug("OpenLineage listener got notification about task instance start")
     dagrun = task_instance.dag_run
-    dag = task_instance.task.dag
 
     def on_running():
-        task_instance_copy = copy.deepcopy(task_instance)
-        task_instance_copy.render_templates()
-        task = task_instance_copy.task
+        nonlocal task_instance
+        ti = copy.deepcopy(task_instance)
+        ti.render_templates()
 
-        task_holder.set_task(task_instance_copy)
+        task = ti.task
+        dag = task.dag
+        task_holder.set_task(ti)
         # that's a workaround to detect task running from deferred state
         # we return here because Airflow 2.3 needs task from deferred state
-        if task_instance.next_method is not None:
+        if ti.next_method is not None:
             return
-        parent_run_id = adapter.build_dag_run_id(dag.dag_id, dagrun.run_id)
+        parent_run_id = adapter.build_dag_run_id(task.dag.dag_id, dagrun.run_id)
 
         task_uuid = OpenLineageAdapter.build_task_instance_run_id(
-            task.task_id, task_instance.execution_date, task_instance.try_number
+            task.task_id, ti.execution_date, ti.try_number
         )
 
         task_metadata = extractor_manager.extract_metadata(
@@ -110,7 +126,7 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
             run_id=task_uuid,
             job_name=get_job_name(task),
             job_description=dag.description,
-            event_time=DagUtils.get_start_time(task_instance_copy.start_date),
+            event_time=DagUtils.get_start_time(ti.start_date),
             parent_job_name=dag.dag_id,
             parent_run_id=parent_run_id,
             code_location=get_task_location(task),
@@ -121,13 +137,13 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
             run_facets={
                 **task_metadata.run_facets,
                 **get_custom_facets(
-                    dagrun, task, dagrun.external_trigger, task_instance_copy
+                    dagrun, task, dagrun.external_trigger, ti
                 ),
-                **get_airflow_run_facet(dagrun, dag, task_instance_copy, task, task_uuid)
+                **get_airflow_run_facet(dagrun, dag, ti, task, task_uuid)
             }
         )
 
-    execute_in_thread(on_running)
+    execute(on_running)
 
 
 @hookimpl
@@ -152,7 +168,7 @@ def on_task_instance_success(previous_state, task_instance: "TaskInstance", sess
             task=task_metadata,
         )
 
-    execute_in_thread(on_success)
+    execute(on_success)
 
 
 @hookimpl
@@ -171,14 +187,16 @@ def on_task_instance_failed(previous_state, task_instance: "TaskInstance", sessi
             dagrun, task, complete=True, task_instance=task_instance
         )
 
+        end_date = task_instance.end_date if task_instance.end_date else datetime.datetime.now()
+
         adapter.fail_task(
             run_id=task_uuid,
             job_name=get_job_name(task),
-            end_time=DagUtils.to_iso_8601(task_instance.end_date),
+            end_time=DagUtils.to_iso_8601(end_date),
             task=task_metadata,
         )
 
-    execute_in_thread(on_failure)
+    execute(on_failure)
 
 
 @hookimpl
