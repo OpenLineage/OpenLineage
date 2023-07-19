@@ -233,6 +233,19 @@ public class JavaPoetGenerator {
 
       jsonPropertyOrder.addMember("value", "$S", f.getName());
 
+      if (isADeletedField(f)) {
+        // add isDeleted() method in addition to get_deleted()
+        Builder isDeletedbuilder = MethodSpec
+            .methodBuilder("isDeleted")
+            .returns(getTypeName(f.getType()))
+            .addModifiers(PUBLIC)
+            .addCode("return $N;", f.getName());;
+        if (f.getDescription() != null) {
+          isDeletedbuilder.addJavadoc("@return $N", f.getDescription());
+        }
+        modelClassBuilder.addMethod(isDeletedbuilder.build());
+      }
+
     }
 
     if (type.hasAdditionalProperties()) {
@@ -528,87 +541,58 @@ public class JavaPoetGenerator {
       classBuilder.addMethod(constructor.build());
       containerTypeBuilder.addType(classBuilder.build());
 
-
-
+      createFactoryMethod(containerTypeBuilder, type, false);
 
       if (type.getProperties().stream().anyMatch(f -> isADeletedField(f))) {
         // allow creating a Deleted Facet as well
-
-        // factory method
-        Builder factory = MethodSpec.methodBuilder("newDeleted" + type.getName())
-            .addModifiers(PUBLIC)
-            .returns(getTypeName(type));
-
-        List<CodeBlock> factoryParams = new ArrayList<>();
-
-        handleProperties(type, new ResolvedFieldHandler() {
-
-          @Override
-          public void onProducer(ResolvedField f) {
-            // the producer is automatically set
-            factoryParams.add(CodeBlock.of("this.producer"));
-          }
-
-          @Override
-          public void onDeleted(ResolvedField f) {
-            // this is the case where we create a deleted facet
-            factoryParams.add(CodeBlock.of("true"));
-          }
-
-          @Override
-          public void onField(ResolvedField f) {
-            factory.addParameter(ParameterSpec.builder(getTypeName(f.getType()), f.getName()).build());
-            factory.addJavadoc("@param $N $N\n", f.getName(), f.getDescription() == null ? "the " + f.getName() : f.getDescription());
-            factoryParams.add(CodeBlock.of("$N", f.getName()));
-          }
-
-        });
-
-        factory.addJavadoc("@return a deleted $N", type.getName());
-        factory.addCode("return new $N(", "Default" + type.getName());
-        factory.addCode(CodeBlock.join(factoryParams, ", "));
-        factory.addCode(");\n");
-        containerTypeBuilder.addMethod(factory.build());
-      }
-      {
-        // factory method
-        Builder factory = MethodSpec.methodBuilder("new" + type.getName())
-            .addModifiers(PUBLIC)
-            .returns(getTypeName(type));
-
-        List<CodeBlock> factoryParams = new ArrayList<>();
-
-        handleProperties(type, new ResolvedFieldHandler() {
-
-          @Override
-          public void onProducer(ResolvedField f) {
-            // the producer is automatically set
-            factoryParams.add(CodeBlock.of("this.producer"));
-          }
-
-          @Override
-          public void onDeleted(ResolvedField f) {
-            // deleted is undefined by default
-            factoryParams.add(CodeBlock.of("null"));
-          }
-
-          @Override
-          public void onField(ResolvedField f) {
-            factory.addParameter(ParameterSpec.builder(getTypeName(f.getType()), f.getName()).build());
-            factory.addJavadoc("@param $N $N\n", f.getName(), f.getDescription() == null ? "the " + f.getName() : f.getDescription());
-            factoryParams.add(CodeBlock.of("$N", f.getName()));
-          }
-
-        });
-
-        factory.addJavadoc("@return $N", type.getName());
-        factory.addCode("return new $N(", "Default" + type.getName());
-        factory.addCode(CodeBlock.join(factoryParams, ", "));
-        factory.addCode(");\n");
-        containerTypeBuilder.addMethod(factory.build());
+        createFactoryMethod(containerTypeBuilder, type, true);
       }
     }
     ///////////////////////////////
+  }
+
+  /**
+   * Creates the factory method ( newFoo() ) to create a new Object with facetURL and producer pre-defined
+   * @param containerTypeBuilder The current builder to add the method to
+   * @param type the type we create the method for
+   * @param createDeleted to create a version that creates a deleted instance ( newDeletedFoo() ) to delete facets
+   */
+  private void createFactoryMethod(TypeSpec.Builder containerTypeBuilder, ObjectResolvedType type, boolean createDeleted) {
+    // factory method
+    Builder factory = MethodSpec.methodBuilder("new" + (createDeleted ? "Deleted" : "") + type.getName())
+        .addModifiers(PUBLIC)
+        .returns(getTypeName(type));
+
+    List<CodeBlock> factoryParams = new ArrayList<>();
+
+    handleProperties(type, new ResolvedFieldHandler() {
+
+      @Override
+      public void onProducer(ResolvedField f) {
+        // the producer is automatically set
+        factoryParams.add(CodeBlock.of("this.producer"));
+      }
+
+      @Override
+      public void onDeleted(ResolvedField f) {
+        // deleted is undefined by default and true if we're want to create a deleted facet
+        factoryParams.add(CodeBlock.of(createDeleted ? "true" : "null"));
+      }
+
+      @Override
+      public void onField(ResolvedField f) {
+        factory.addParameter(ParameterSpec.builder(getTypeName(f.getType()), f.getName()).build());
+        factory.addJavadoc("@param $N $N\n", f.getName(), f.getDescription() == null ? "the " + f.getName() : f.getDescription());
+        factoryParams.add(CodeBlock.of("$N", f.getName()));
+      }
+
+    });
+
+    factory.addJavadoc("@return " + (createDeleted ? "a deleted " : "") + "$N", type.getName());
+    factory.addCode("return new $N(", "Default" + type.getName());
+    factory.addCode(CodeBlock.join(factoryParams, ", "));
+    factory.addCode(");\n");
+    containerTypeBuilder.addMethod(factory.build());
   }
 
   private void addParameterFromField(MethodSpec.Builder factory, ResolvedField f, AnnotationSpec annotationSpec) {
