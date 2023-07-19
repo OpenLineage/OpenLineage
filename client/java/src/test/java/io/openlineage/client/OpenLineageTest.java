@@ -137,6 +137,7 @@ class OpenLineageTest {
     assertEquals("ds", read.getDataset().getName());
     assertEquals(now, read.getEventTime());
     assertEquals(Boolean.TRUE, read.getDataset().getFacets().getAdditionalProperties().get("documentation").get_deleted());
+    assertEquals(Boolean.TRUE, read.getDataset().getFacets().getAdditionalProperties().get("documentation").isDeleted());
   }
 
   @Test

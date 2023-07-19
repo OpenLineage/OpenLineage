@@ -7,6 +7,7 @@ package io.openlineage.client;
 
 import static io.openlineage.client.TypeResolver.titleCase;
 import static javax.lang.model.element.Modifier.ABSTRACT;
+import static javax.lang.model.element.Modifier.DEFAULT;
 import static javax.lang.model.element.Modifier.FINAL;
 import static javax.lang.model.element.Modifier.PRIVATE;
 import static javax.lang.model.element.Modifier.PUBLIC;
@@ -24,9 +25,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import javax.lang.model.element.Modifier;
+
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -232,19 +236,6 @@ public class JavaPoetGenerator {
       modelClassBuilder.addMethod(getterBuilder.build());
 
       jsonPropertyOrder.addMember("value", "$S", f.getName());
-
-      if (isADeletedField(f)) {
-        // add isDeleted() method in addition to get_deleted()
-        Builder isDeletedbuilder = MethodSpec
-            .methodBuilder("isDeleted")
-            .returns(getTypeName(f.getType()))
-            .addModifiers(PUBLIC)
-            .addCode("return $N;", f.getName());;
-        if (f.getDescription() != null) {
-          isDeletedbuilder.addJavadoc("@return $N", f.getDescription());
-        }
-        modelClassBuilder.addMethod(isDeletedbuilder.build());
-      }
 
     }
 
@@ -459,6 +450,20 @@ public class JavaPoetGenerator {
           .addModifiers(ABSTRACT, PUBLIC)
           .build();
       interfaceBuilder.addMethod(getter);
+
+      if (isADeletedField(f)) {
+        // add isDeleted() method in addition to get_deleted()
+        Builder isDeletedbuilder = MethodSpec
+            .methodBuilder("isDeleted")
+            .returns(getTypeName(f.getType()))
+            .addModifiers(PUBLIC, DEFAULT)
+            .addCode("return get_deleted();")
+            .addAnnotation(AnnotationSpec.builder(JsonIgnore.class).build());;
+        if (f.getDescription() != null) {
+          isDeletedbuilder.addJavadoc("@return $N", f.getDescription());
+        }
+        interfaceBuilder.addMethod(isDeletedbuilder.build());
+      }
     }
     if (type.hasAdditionalProperties()) {
       String fieldName = "additionalProperties";
