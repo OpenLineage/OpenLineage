@@ -342,23 +342,27 @@ jobs:
             - target/debug/*.so
   
   compile-integration-sql-java-macos:
+    parameters:
+      resource_class:
+        type: string
+        default: "medium"
     working_directory: ~/openlineage/integration/sql/iface-java
     macos:
       xcode: 14.2.0
-    resource_class: medium
+    resource_class: << parameters.resource_class >>
     steps:
       - *checkout_project_root
       - run: bash script/compile.sh
       - persist_to_workspace:
           root: ../
           paths:
-            - target/debug/libopenlineage_sql_java.dylib
+            - target/debug/*.dylib
 
   build-integration-sql-java:
     working_directory: ~/openlineage/integration/sql/iface-java
     docker:
       - image: cimg/openjdk:8.0
-    resource_class: medium
+    resource_class: "medium"
     steps:
       - *checkout_project_root
       - attach_workspace:
@@ -788,6 +792,21 @@ workflows:
               ignore: /.*/
           context: release
       - compile-integration-sql-java-macos:
+          matrix:
+            alias: compile-integration-sql-java-macos-x86
+            parameters:
+              resource_class: [ "medium" ]
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+            branches:
+              ignore: /.*/
+          context: release
+      - compile-integration-sql-java-macos:
+          matrix:
+            alias: compile-integration-sql-java-macos-arm
+            parameters:
+              resource_class: [ "macos.m1.medium.gen1" ]
           filters:
             tags:
               only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
@@ -821,7 +840,8 @@ workflows:
           requires:
             - compile-integration-sql-java-linux-x86
             - compile-integration-sql-java-linux-arm
-            - compile-integration-sql-java-macos
+            - compile-integration-sql-java-macos-x86
+            - compile-integration-sql-java-macos-arm
       - release-integration-flink:
           filters:
             tags:
@@ -888,7 +908,8 @@ workflows:
           requires:
             - compile-integration-sql-java-linux-x86
             - compile-integration-sql-java-linux-arm
-            - compile-integration-sql-java-macos
+            - compile-integration-sql-java-macos-x86
+            - compile-integration-sql-java-macos-arm
       - build-integration-sql:
           matrix:
             alias: build-integration-sql-x86
