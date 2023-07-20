@@ -15,5 +15,19 @@
       }
     }
   }],
-  "outputs": []
+  "outputs" : [{
+  "namespace" : "file",
+  "name" : "tmp/warehouse/db/sink",
+  "facets" : {
+    "schema" : {
+      "fields" : [ {
+        "name" : "x",
+        "type" : "INTEGER"
+      }, {
+        "name" : "y",
+        "type" : "INTEGER"
+      } ]
+    }
+  }
+  }]
 }

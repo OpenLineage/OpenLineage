@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.streaming.api.transformations.LegacySinkTransformation;
 import org.apache.flink.streaming.api.transformations.LegacySourceTransformation;
+import org.apache.flink.streaming.api.transformations.OneInputTransformation;
 import org.apache.flink.streaming.api.transformations.SinkTransformation;
 import org.apache.flink.streaming.api.transformations.SourceTransformation;
 
@@ -38,6 +39,8 @@ public class TransformationUtils {
       sink = processSinkTransformation(transformation);
     } else if (transformation instanceof LegacySinkTransformation) {
       sink = processLegacySinkTransformation(transformation);
+    } else if (transformation instanceof OneInputTransformation) {
+      sink = transformation;
     } else {
       return Optional.empty();
     }
