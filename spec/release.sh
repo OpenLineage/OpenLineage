@@ -13,7 +13,7 @@ git config --global user.email "openlineage-bot-key@openlineage.io"
 git config --global user.name "OpenLineage deploy bot"
 
 WEBSITE_DIR=${WEBSITE_DIR:-$HOME/build/website}
-REPO="git@github.com:OpenLineage/website"
+REPO="git@github.com:OpenLineage/docs"
 
 if [[ -d $WEBSITE_DIR ]]; then
   # Check if we're in git repository and the repository points at website
