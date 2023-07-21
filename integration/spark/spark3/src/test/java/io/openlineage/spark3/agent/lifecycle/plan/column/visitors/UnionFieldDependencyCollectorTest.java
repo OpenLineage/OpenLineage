@@ -11,7 +11,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import java.util.Arrays;
 import java.util.Collection;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;

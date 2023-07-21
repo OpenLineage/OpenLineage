@@ -5,10 +5,9 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.column.visitors;
 
-import static io.openlineage.spark3.agent.lifecycle.plan.column.ExpressionDependencyCollector.traverseExpression;
-
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
-import io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.column.ExpressionDependencyCollector;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -138,13 +137,19 @@ public class IcebergMergeIntoDependencyVisitor implements ExpressionDependencyVi
                   .filter(exprs -> exprs.size() > position)
                   .map(exprs -> exprs.get(position))
                   .filter(expr -> expr instanceof NamedExpression)
-                  .forEach(expr -> traverseExpression(expr, output[position].exprId(), builder));
+                  .forEach(
+                      expr ->
+                          ExpressionDependencyCollector.traverseExpression(
+                              expr, output[position].exprId(), builder));
 
               notMatched.stream()
                   .filter(exprs -> exprs.size() > position)
                   .map(exprs -> exprs.get(position))
                   .filter(expr -> expr instanceof NamedExpression)
-                  .forEach(expr -> traverseExpression(expr, output[position].exprId(), builder));
+                  .forEach(
+                      expr ->
+                          ExpressionDependencyCollector.traverseExpression(
+                              expr, output[position].exprId(), builder));
             });
   }
 

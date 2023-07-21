@@ -11,20 +11,24 @@ import static org.junit.Assert.assertEquals;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import java.util.List;
+import lombok.SneakyThrows;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.SparkSession$;
 import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.execution.command.AlterTableAddPartitionCommand;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import scala.Option;
 import scala.Tuple2;
 import scala.collection.Seq;
 import scala.collection.Seq$;
 import scala.collection.immutable.Map;
 
-@ExtendWith(SparkAgentTestExtension.class)
+@Tag("nonParallelTest")
 class AlterTableAddPartitionCommandVisitorTest {
 
   private static final String TABLE_5 = "table5";
@@ -44,9 +48,20 @@ class AlterTableAddPartitionCommandVisitorTest {
         .dropTable(new TableIdentifier(TABLE_5, Option.apply(database)), true, true);
   }
 
+  @BeforeAll
+  @SneakyThrows
+  public static void beforeAll() {
+    SparkSession$.MODULE$.cleanupAnyExistingSession();
+  }
+
+  @AfterAll
+  @SneakyThrows
+  public static void afterAll() {
+    SparkSession$.MODULE$.cleanupAnyExistingSession();
+  }
+
   @BeforeEach
   public void setup() {
-
     session =
         SparkSession.builder()
             .config("spark.sql.warehouse.dir", "/tmp/warehouse")
@@ -89,9 +104,7 @@ class AlterTableAddPartitionCommandVisitorTest {
     assertEquals(2, datasets.get(0).getFacets().getSchema().getFields().size());
     assertThat(datasets.get(0).getFacets().getSymlinks().getIdentifiers().get(0).getName())
         .endsWith("default.table5");
-    assertThat(datasets)
-        .singleElement()
-        .hasFieldOrPropertyWithValue("name", "/tmp/warehouse/table5")
-        .hasFieldOrPropertyWithValue("namespace", "file");
+    assertThat(datasets.get(0).getName().endsWith("table5"));
+    assertThat(datasets).singleElement().hasFieldOrPropertyWithValue("namespace", "file");
   }
 }

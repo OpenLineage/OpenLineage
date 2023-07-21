@@ -3,17 +3,18 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark3.agent.lifecycle.plan.column;
+package io.openlineage.spark.agent.column;
 
+import static io.openlineage.spark.agent.column.ColumnLevelLineageTestUtils.assertColumnDependsOn;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.util.LastQueryExecutionSparkEventListener;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark3.agent.utils.LastQueryExecutionSparkEventListener;
+import io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
 import java.util.Arrays;
 import java.util.Optional;
 import lombok.SneakyThrows;
@@ -28,9 +29,11 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 @Slf4j
-class ColumnLevelLineageUtilsNonV2CatalogTest {
+@EnabledIfSystemProperty(named = "spark.version", matches = "(3.*)")
+class ColumnLevelLineageHiveTest {
 
   private static final String FILE = "file";
 
@@ -126,20 +129,5 @@ class ColumnLevelLineageUtilsNonV2CatalogTest {
   void testWhenSchemaIsNull() {
     when(queryExecution.optimizedPlan()).thenReturn(mock(LogicalPlan.class));
     assertDoesNotThrow(() -> ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, null));
-  }
-
-  private void assertColumnDependsOn(
-      OpenLineage.ColumnLineageDatasetFacet facet,
-      String outputColumn,
-      String expectedNamespace,
-      String expectedName,
-      String expectedInputField) {
-    assertTrue(
-        facet.getFields().getAdditionalProperties().get(outputColumn).getInputFields().stream()
-            .filter(f -> f.getNamespace().equalsIgnoreCase(expectedNamespace))
-            .filter(f -> f.getName().endsWith(expectedName))
-            .filter(f -> f.getField().equalsIgnoreCase(expectedInputField))
-            .findAny()
-            .isPresent());
   }
 }

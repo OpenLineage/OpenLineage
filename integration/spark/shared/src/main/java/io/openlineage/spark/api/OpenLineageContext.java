@@ -8,6 +8,7 @@ package io.openlineage.spark.api;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -86,6 +87,12 @@ public class OpenLineageContext {
   @Default @NonNull
   List<PartialFunction<Object, Collection<OutputDataset>>> outputDatasetBuilders =
       new ArrayList<>();
+
+  /**
+   * List of column level lineage visitors to be added dynamically based on Spark version and
+   * versions of the 3rd party libraries
+   */
+  @Default @NonNull List<ColumnLevelLineageVisitor> columnLevelLineageVisitors = new ArrayList<>();
 
   /** Optional {@link QueryExecution} for runs that are Spark SQL queries. */
   @Default @NonNull Optional<QueryExecution> queryExecution = Optional.empty();

@@ -11,6 +11,8 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.spark.agent.lifecycle.plan.CommandPlanVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.SaveIntoDataSourceCommandVisitor;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
+import io.openlineage.spark.agent.util.DeltaUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.AlterTableDatasetBuilder;
@@ -21,10 +23,12 @@ import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2RelationOutputData
 import io.openlineage.spark3.agent.lifecycle.plan.DataSourceV2ScanRelationInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.InMemoryRelationInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.LogicalRelationDatasetBuilder;
-import io.openlineage.spark3.agent.lifecycle.plan.MapPartitionsDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.MergeIntoCommandInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.MergeIntoCommandOutputDatasetBuilder;
+import io.openlineage.spark3.agent.lifecycle.plan.SubqueryAliasInputDatasetBuilder;
 import io.openlineage.spark3.agent.lifecycle.plan.TableContentChangeDatasetBuilder;
+import io.openlineage.spark32.agent.lifecycle.plan.column.MergeIntoDelta11ColumnLineageVisitor;
+import io.openlineage.spark34.agent.lifecycle.plan.column.MergeIntoDelta24ColumnLineageVisitor;
 import java.util.Collection;
 import java.util.List;
 import scala.PartialFunction;
@@ -41,9 +45,10 @@ public class Spark3DatasetBuilderFactory implements DatasetBuilderFactory {
             .add(new CommandPlanVisitor(context))
             .add(new DataSourceV2ScanRelationInputDatasetBuilder(context, datasetFactory))
             .add(new DataSourceV2RelationInputDatasetBuilder(context, datasetFactory))
+            .add(new SubqueryAliasInputDatasetBuilder(context))
             .add(new MergeIntoCommandInputDatasetBuilder(context));
 
-    if (MergeIntoCommandOutputDatasetBuilder.hasClasses()) {
+    if (DeltaUtils.hasMergeIntoCommandClass()) {
       builder.add(new MergeIntoCommandInputDatasetBuilder(context));
     }
 
@@ -60,22 +65,25 @@ public class Spark3DatasetBuilderFactory implements DatasetBuilderFactory {
         .add(new AppendDataDatasetBuilder(context, datasetFactory))
         .add(new DataSourceV2RelationOutputDatasetBuilder(context, datasetFactory))
         .add(new TableContentChangeDatasetBuilder(context))
-        .add(new MapPartitionsDatasetBuilder(context))
         .add(new MergeIntoCommandOutputDatasetBuilder(context))
         .add(new CreateReplaceDatasetBuilder(context))
         .add(new AlterTableDatasetBuilder(context))
         .build();
   }
 
-  private boolean hasAlterTableClass() {
-    try {
-      Spark3DatasetBuilderFactory.class
-          .getClassLoader()
-          .loadClass("org.apache.spark.sql.catalyst.plans.logical.AlterTable");
-      return true;
-    } catch (Exception e) {
-      // swallow- we don't care
+  @Override
+  public Collection<ColumnLevelLineageVisitor> getColumnLevelLineageVisitors(
+      OpenLineageContext context) {
+    Builder<ColumnLevelLineageVisitor> builder = ImmutableList.<ColumnLevelLineageVisitor>builder();
+
+    if (MergeIntoDelta24ColumnLineageVisitor.hasClasses()) {
+      builder.add(new MergeIntoDelta24ColumnLineageVisitor(context));
     }
-    return false;
+
+    if (MergeIntoDelta11ColumnLineageVisitor.hasClasses()) {
+      builder.add(new MergeIntoDelta11ColumnLineageVisitor(context));
+    }
+
+    return builder.build();
   }
 }

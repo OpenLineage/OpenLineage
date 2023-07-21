@@ -3,19 +3,21 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark3.agent.lifecycle.plan.column;
+package io.openlineage.spark.agent.column;
 
+import static io.openlineage.spark.agent.column.ColumnLevelLineageTestUtils.assertColumnDependsOn;
+import static io.openlineage.spark.agent.column.ColumnLevelLineageTestUtils.assertColumnDependsOnInputs;
 import static org.apache.spark.sql.functions.col;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
+import io.openlineage.spark.agent.util.LastQueryExecutionSparkEventListener;
 import io.openlineage.spark.api.OpenLineageContext;
-import io.openlineage.spark3.agent.utils.LastQueryExecutionSparkEventListener;
 import java.util.Arrays;
 import java.util.Optional;
 import lombok.SneakyThrows;
@@ -37,11 +39,13 @@ import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import scala.collection.immutable.HashMap;
 
 @Slf4j
-class ColumnLevelLineageUtilsV2CatalogTest {
+@Tag("iceberg")
+class ColumnLevelLineageIcebergTest {
 
   @SuppressWarnings("PMD")
   private static final String LOCAL_IP = "127.0.0.1";
@@ -373,31 +377,5 @@ class ColumnLevelLineageUtilsV2CatalogTest {
     assertColumnDependsOn(facet, "f", FILE, T1_EXPECTED_NAME, "b");
     assertColumnDependsOnInputs(facet, "e", 1);
     assertColumnDependsOnInputs(facet, "f", 1);
-  }
-
-  private void assertColumnDependsOn(
-      OpenLineage.ColumnLineageDatasetFacet facet,
-      String outputColumn,
-      String expectedNamespace,
-      String expectedName,
-      String expectedInputField) {
-
-    assertTrue(
-        facet.getFields().getAdditionalProperties().get(outputColumn).getInputFields().stream()
-            .filter(f -> f.getNamespace().equalsIgnoreCase(expectedNamespace))
-            .filter(f -> f.getName().equals(expectedName))
-            .filter(f -> f.getField().equalsIgnoreCase(expectedInputField))
-            .findAny()
-            .isPresent());
-  }
-
-  private void assertColumnDependsOnInputs(
-      OpenLineage.ColumnLineageDatasetFacet facet,
-      String outputColumn,
-      int expectedAmountOfInputs) {
-
-    assertEquals(
-        expectedAmountOfInputs,
-        facet.getFields().getAdditionalProperties().get(outputColumn).getInputFields().size());
   }
 }

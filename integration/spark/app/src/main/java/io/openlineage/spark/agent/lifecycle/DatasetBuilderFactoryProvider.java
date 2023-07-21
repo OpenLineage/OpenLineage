@@ -20,7 +20,7 @@ public class DatasetBuilderFactoryProvider {
   private static final String SPARK34_FACTORY_NAME =
       "io.openlineage.spark.agent.lifecycle.Spark34DatasetBuilderFactory";
 
-  static DatasetBuilderFactory getInstance() {
+  public static DatasetBuilderFactory getInstance() {
     String version = package$.MODULE$.SPARK_VERSION();
     try {
       return (DatasetBuilderFactory)

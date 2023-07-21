@@ -5,7 +5,9 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
+import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.ExpressionDependencyVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.IcebergMergeIntoDependencyVisitor;
 import io.openlineage.spark3.agent.lifecycle.plan.column.visitors.UnionDependencyVisitor;
@@ -35,7 +37,8 @@ public class ExpressionDependencyCollector {
   private static final List<ExpressionDependencyVisitor> expressionDependencyVisitors =
       Arrays.asList(new UnionDependencyVisitor(), new IcebergMergeIntoDependencyVisitor());
 
-  static void collect(LogicalPlan plan, ColumnLevelLineageBuilder builder) {
+  static void collect(
+      OpenLineageContext context, LogicalPlan plan, ColumnLevelLineageBuilder builder) {
 
     plan.foreach(
         node -> {
@@ -43,7 +46,7 @@ public class ExpressionDependencyCollector {
               .filter(collector -> collector.isDefinedAt(node))
               .forEach(collector -> collector.apply(node, builder));
 
-          CustomCollectorsUtils.collectExpressionDependencies(node, builder);
+          CustomCollectorsUtils.collectExpressionDependencies(context, node, builder);
           List<NamedExpression> expressions = new LinkedList<>();
           if (node instanceof Project) {
             expressions.addAll(

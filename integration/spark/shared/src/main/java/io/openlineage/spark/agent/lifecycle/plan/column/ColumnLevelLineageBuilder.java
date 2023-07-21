@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark3.agent.lifecycle.plan.column;
+package io.openlineage.spark.agent.lifecycle.plan.column;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -46,7 +46,7 @@ public class ColumnLevelLineageBuilder {
   private final OpenLineage.SchemaDatasetFacet schema;
   private final OpenLineageContext context;
 
-  ColumnLevelLineageBuilder(
+  public ColumnLevelLineageBuilder(
       @NonNull final OpenLineage.SchemaDatasetFacet schema,
       @NonNull final OpenLineageContext context) {
     this.schema = schema;
@@ -92,6 +92,13 @@ public class ColumnLevelLineageBuilder {
 
   public boolean hasOutputs() {
     return !outputs.isEmpty();
+  }
+
+  public Optional<ExprId> getOutputExprIdByFieldName(String field) {
+    return outputs.keySet().stream()
+        .filter(fields -> fields.getName().equals(field))
+        .findAny()
+        .map(f -> outputs.get(f));
   }
 
   @Override

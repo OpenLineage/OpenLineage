@@ -4,6 +4,8 @@
 ### Added
 * **Flink: support Iceberg sinks** [`#1960`](https://github.com/OpenLineage/OpenLineage/pull/1960) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Detect output datasets when using Iceberg table as a sink.*
+* **Spark: column level lineage for `merge into` on delta tables.** [`#1958`](https://github.com/OpenLineage/OpenLineage/pull/1958) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Make column level lineage support `merge into` on delta tables. Refactor column level lineage to deal with multiple Spark versions.*
 
 ### Fixed
 * **Spark: fix custom environment variables facet** [`#1973`](https://github.com/OpenLineage/OpenLineage/pull/1973) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  

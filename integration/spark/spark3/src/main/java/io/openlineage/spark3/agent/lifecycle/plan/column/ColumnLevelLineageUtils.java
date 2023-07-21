@@ -6,6 +6,7 @@
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
@@ -37,8 +38,8 @@ public class ColumnLevelLineageUtils {
     ColumnLevelLineageBuilder builder = new ColumnLevelLineageBuilder(schemaFacet, context);
     LogicalPlan plan = getAdjustedPlan(context);
 
+    OutputFieldsCollector.collect(context, plan, builder);
     collectInputsAndExpressionDependencies(context, plan, builder);
-    OutputFieldsCollector.collect(plan, builder);
 
     OpenLineage.ColumnLineageDatasetFacetBuilder facetBuilder =
         context.getOpenLineage().newColumnLineageDatasetFacetBuilder();
@@ -67,7 +68,7 @@ public class ColumnLevelLineageUtils {
 
   private static void collectInputsAndExpressionDependencies(
       OpenLineageContext context, LogicalPlan plan, ColumnLevelLineageBuilder builder) {
-    ExpressionDependencyCollector.collect(plan, builder);
+    ExpressionDependencyCollector.collect(context, plan, builder);
     InputFieldsCollector.collect(context, plan, builder);
 
     // iterate children plans and see if they contain dataset caching

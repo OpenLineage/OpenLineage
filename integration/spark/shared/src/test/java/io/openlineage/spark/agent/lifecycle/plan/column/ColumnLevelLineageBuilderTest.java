@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark3.agent.lifecycle.plan.column;
+package io.openlineage.spark.agent.lifecycle.plan.column;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -152,5 +152,13 @@ class ColumnLevelLineageBuilderTest {
         builder.build().getAdditionalProperties().get("a").getInputFields();
 
     assertEquals(1, facetFields.size());
+  }
+
+  @Test
+  void testGetOutputExprIdByFieldName() {
+    ExprId exprId = mock(ExprId.class);
+    builder.addOutput(exprId, "a");
+
+    assertEquals(exprId, builder.getOutputExprIdByFieldName("a").get());
   }
 }

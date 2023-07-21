@@ -3,12 +3,12 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.spark3.agent.lifecycle.plan.column;
+package io.openlineage.spark.agent.lifecycle.plan.column;
 
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 
 /** Interface for implementing custom collectors of column level lineage. */
-public interface CustomColumnLineageVisitor {
+public interface ColumnLevelLineageVisitor {
 
   /**
    * Collect inputs for a given {@link LogicalPlan}. Column level lineage mechanism traverses

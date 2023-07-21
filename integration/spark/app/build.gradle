@@ -44,6 +44,7 @@ configurations {
     spark3.extendsFrom testImplementation
     spark32.extendsFrom testImplementation
     spark33.extendsFrom testImplementation
+    spark34.extendsFrom testImplementation
     pysparkContainerOnly
 }
 
@@ -86,6 +87,7 @@ dependencies {
     implementation(project(path: ":spark3"))
     implementation(project(path: ":spark32"))
     implementation(project(path: ":spark33"))
+    implementation(project(path: ":spark34"))
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.2.1'
 
 
@@ -184,10 +186,22 @@ def commonTestConfiguration = {
     classpath = project.sourceSets.test.runtimeClasspath
 }
 
+task nonParallelTest (type: Test) {
+    group = 'verification'
+    description = "Runs tests that cannot be run in parallel. For example test suites that require metastore_db"
+
+    maxParallelForks = 1
+
+    useJUnitPlatform {
+        includeTags("nonParallelTest")
+    }
+}
+
 // wrócić do jednego test z jakąś metodą zwracającą konfigurację żeby spark3 działał
 test {
+    dependsOn nonParallelTest
     useJUnitPlatform {i ->
-        excludeTags ('integration-test')
+        excludeTags ('integration-test', 'nonParallelTest')
         if(versions.delta == "NA") {excludeTags 'delta'}
         if(versions.iceberg == "NA") {excludeTags 'iceberg'}
     }
@@ -260,6 +274,7 @@ assemble {
 }
 
 shadowJar {
+
     dependsOn test
 
     minimize(){
@@ -268,6 +283,7 @@ shadowJar {
         exclude (project(":spark3"))
         exclude (project(":spark32"))
         exclude (project(":spark33"))
+        exclude (project(":spark34"))
     }
     classifier = ''
     // avoid conflict with any client version of that lib

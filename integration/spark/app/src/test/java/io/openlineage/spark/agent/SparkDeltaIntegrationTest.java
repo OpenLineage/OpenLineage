@@ -326,10 +326,13 @@ public class SparkDeltaIntegrationTest {
     spark.sql("CREATE TABLE t2 USING delta LOCATION '/tmp/delta/t2' AS SELECT * FROM temp");
     spark.sql(
         "MERGE INTO t1 USING t2 ON t1.a = t2.a"
-            + " WHEN MATCHED THEN UPDATE SET *"
+            + " WHEN MATCHED THEN UPDATE SET t1.b = t2.b"
             + " WHEN NOT MATCHED THEN INSERT *");
 
-    verifyEvents(mockServer, "pysparkDeltaMergeIntoCompleteEvent.json");
+    verifyEvents(
+        mockServer,
+        "pysparkDeltaMergeIntoStartEvent.json",
+        "pysparkDeltaMergeIntoCompleteEvent.json");
   }
 
   @Test

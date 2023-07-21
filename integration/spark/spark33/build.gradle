@@ -126,7 +126,6 @@ assemble {
     dependsOn shadowJar
 }
 
-
 shadowJar {
     minimize()
     classifier = ''

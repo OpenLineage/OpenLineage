@@ -19,6 +19,7 @@ import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.sql.catalyst.plans.logical.Filter;
 import org.apache.spark.sql.catalyst.plans.logical.LocalRelation;
 import org.apache.spark.sql.catalyst.plans.logical.Project;
+import org.apache.spark.sql.catalyst.plans.logical.SerializeFromObject;
 import org.apache.spark.sql.execution.LogicalRDD;
 import scala.collection.JavaConverters;
 
@@ -46,6 +47,7 @@ public class DeltaEventFilter implements EventFilter {
         || isLocalRelationOnly()
         || isLogicalRDDWithInternalDataColumns()
         || isDeltaLogProjection()
+        || isSerializeFromObject()
         || isOnJobStartOrEnd(event);
   }
 
@@ -115,5 +117,9 @@ public class DeltaEventFilter implements EventFilter {
                     .findAny()
                     .isPresent())
         .orElse(false);
+  }
+
+  private boolean isSerializeFromObject() {
+    return getLogicalPlan(context).map(plan -> plan instanceof SerializeFromObject).orElse(false);
   }
 }
