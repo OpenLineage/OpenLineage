@@ -7,6 +7,7 @@ package io.openlineage.client;
 
 import static io.openlineage.client.TypeResolver.titleCase;
 import static javax.lang.model.element.Modifier.ABSTRACT;
+import static javax.lang.model.element.Modifier.DEFAULT;
 import static javax.lang.model.element.Modifier.FINAL;
 import static javax.lang.model.element.Modifier.PRIVATE;
 import static javax.lang.model.element.Modifier.PUBLIC;
@@ -24,9 +25,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import javax.lang.model.element.Modifier;
+
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -44,6 +48,7 @@ import com.squareup.javapoet.TypeSpec;
 
 import com.squareup.javapoet.TypeVariableName;
 import io.openlineage.client.TypeResolver.ArrayResolvedType;
+import io.openlineage.client.TypeResolver.EnumResolvedType;
 import io.openlineage.client.TypeResolver.ObjectResolvedType;
 import io.openlineage.client.TypeResolver.PrimitiveResolvedType;
 import io.openlineage.client.TypeResolver.ResolvedField;
@@ -155,11 +160,29 @@ public class JavaPoetGenerator {
 
     constructor.addAnnotation(JsonCreator.class);
 
-    for (ResolvedField f : type.getProperties()) {
-      if (isASchemaUrlField(f)) {
+    handleProperties(type, new ResolvedFieldHandler() {
+
+      @Override
+      public void onProducer(ResolvedField f) {
+        // nothing special
+        onField(f);
+      }
+
+      @Override
+      public void onSchemaURL(ResolvedField f) {
+        // The schema URL is predefined as a constant in the constructor
         String schemaURL = containerToID.get(type.getContainer()) + "#/$defs/" + type.getName();
         constructor.addCode("this.$N = URI.create($S);\n", f.getName(), schemaURL);
-      } else {
+      }
+
+      @Override
+      public void onDeleted(ResolvedField f) {
+        // deleted is undefined by default
+        constructor.addCode("this._deleted = null;\n");
+      }
+
+      @Override
+      public void onField(ResolvedField f) {
         constructor.addJavadoc("@param $N $N\n", f.getName(), f.getDescription() == null ? "the " + f.getName() : f.getDescription());
         constructor.addParameter(
             ParameterSpec.builder(getTypeName(f.getType()), f.getName())
@@ -167,7 +190,9 @@ public class JavaPoetGenerator {
                 .build());
         constructor.addCode("this.$N = $N;\n", f.getName(), f.getName());
       }
-    }
+
+    });
+
     if (type.hasAdditionalProperties()) {
       constructor.addCode(CodeBlock.builder().addStatement("this.$N = new $T<>()", "additionalProperties", LinkedHashMap.class).build());
     }
@@ -260,12 +285,14 @@ public class JavaPoetGenerator {
         .addSuperinterface(ParameterizedTypeName.get(ClassName.get(containerPackage, containerClassName, "Builder"),
                 getTypeName(type)));
 
-    boolean producerFiledExist = type.getProperties().stream()
+    boolean producerFieldExist = type.getProperties().stream()
         .anyMatch(this::isAProducerField);
-    if (!producerFiledExist) builderClassBuilder.addModifiers(STATIC);
+    if (!producerFieldExist) builderClassBuilder.addModifiers(STATIC);
 
-    type.getProperties().stream().filter(f -> !isASchemaUrlField(f)).forEach(f -> {
-      if (!(isAProducerField(f))) {
+    handleProperties(type, new ResolvedFieldHandler() {
+      // only regular fields are used in the builder
+      @Override
+      public void onField(ResolvedField f) {
         builderClassBuilder.addField(getTypeName(f.getType()), f.getName(), PRIVATE);
         builderClassBuilder.addMethod(
             MethodSpec
@@ -280,6 +307,7 @@ public class JavaPoetGenerator {
                 .build());
       }
     });
+
     if (type.hasAdditionalProperties()) {
       String fieldName = "additionalProperties";
       TypeName additionalPropertiesValueType = type.getAdditionalPropertiesType() == null ? ClassName.get(Object.class) : getTypeName(type.getAdditionalPropertiesType());
@@ -312,10 +340,16 @@ public class JavaPoetGenerator {
 
   private Builder builderBuildMethod(ObjectResolvedType type) {
     List<CodeBlock> builderParams = new ArrayList<>();
-    type.getProperties().stream().filter(f -> !isASchemaUrlField(f)).forEach(f -> {
-      if (isAProducerField(f)) {
+    handleProperties(type, new ResolvedFieldHandler() {
+
+      @Override
+      public void onProducer(ResolvedField f) {
+        // producer is automatically set
         builderParams.add(CodeBlock.of(containerClassName + ".this.producer"));
-      } else {
+      }
+
+      @Override
+      public void onField(ResolvedField f) {
         builderParams.add(CodeBlock.of("$N", f.getName()));
       }
     });
@@ -343,20 +377,54 @@ public class JavaPoetGenerator {
 
     List<CodeBlock> factoryParams = new ArrayList<>();
 
-    type.getProperties().stream().filter(f -> !isASchemaUrlField(f)).forEach(f -> {
-      if (isAProducerField(f)) {
+    handleProperties(type, new ResolvedFieldHandler() {
+
+      @Override
+      public void onProducer(ResolvedField f) {
+        // the producer is automatically set
         factoryParams.add(CodeBlock.of("this.producer"));
-      } else {
+      }
+
+      @Override
+      public void onField(ResolvedField f) {
         factory.addParameter(ParameterSpec.builder(getTypeName(f.getType()), f.getName()).build());
         factory.addJavadoc("@param $N $N\n", f.getName(), f.getDescription() == null ? "the " + f.getName() : f.getDescription());
         factoryParams.add(CodeBlock.of("$N", f.getName()));
       }
+
     });
+
     factory.addJavadoc("@return $N", type.getName());
     factory.addCode("return new $N(", type.getName());
     factory.addCode(CodeBlock.join(factoryParams, ", "));
     factory.addCode(");\n");
     return factory.build();
+  }
+
+  /**
+   * To define special cases around producer, schemaURL and deleted fields
+   */
+  private interface ResolvedFieldHandler {
+    default void onProducer(ResolvedField f) {}
+    default void onSchemaURL(ResolvedField f) {}
+    default void onDeleted(ResolvedField f) {}
+    void onField(ResolvedField f);
+  }
+
+  private void handleField(ResolvedField f, ResolvedFieldHandler h) {
+    if (isASchemaUrlField(f)) {
+      h.onSchemaURL(f);
+    } else if (isAProducerField(f)) {
+      h.onProducer(f);
+    } else if (isADeletedField(f)) {
+      h.onDeleted(f);
+    } else {
+      h.onField(f);
+    }
+  }
+
+  private void handleProperties(ObjectResolvedType type, ResolvedFieldHandler h) {
+    type.getProperties().stream().forEach(f -> handleField(f, h));
   }
 
   private boolean isAProducerField(ResolvedField f) {
@@ -365,6 +433,10 @@ public class JavaPoetGenerator {
 
   private boolean isASchemaUrlField(ResolvedField f) {
     return !server && (f.getName().equals("_schemaURL") || f.getName().equals("schemaURL"));
+  }
+
+  private boolean isADeletedField(ResolvedField f) {
+    return f.getName().equals("_deleted");
   }
 
   private void generateInterface(TypeSpec.Builder containerTypeBuilder, ObjectResolvedType type) {
@@ -378,6 +450,20 @@ public class JavaPoetGenerator {
           .addModifiers(ABSTRACT, PUBLIC)
           .build();
       interfaceBuilder.addMethod(getter);
+
+      if (isADeletedField(f)) {
+        // add isDeleted() method in addition to get_deleted()
+        Builder isDeletedbuilder = MethodSpec
+            .methodBuilder("isDeleted")
+            .returns(getTypeName(f.getType()))
+            .addModifiers(PUBLIC, DEFAULT)
+            .addCode("return get_deleted();")
+            .addAnnotation(AnnotationSpec.builder(JsonIgnore.class).build());;
+        if (f.getDescription() != null) {
+          isDeletedbuilder.addJavadoc("@return $N", f.getDescription());
+        }
+        interfaceBuilder.addMethod(isDeletedbuilder.build());
+      }
     }
     if (type.hasAdditionalProperties()) {
       String fieldName = "additionalProperties";
@@ -419,11 +505,32 @@ public class JavaPoetGenerator {
       for (ResolvedField f : type.getProperties()) {
         classBuilder.addField(getTypeName(f.getType()), f.getName(), PRIVATE, FINAL);
         fieldNames.add(f.getName());
-        if (isASchemaUrlField(f)) {
-          setSchemaURLField(type, constructor, f);
-        } else {
-          addConstructorParameter(constructor, f);
-        }
+        handleField(f, new ResolvedFieldHandler() {
+          @Override
+          public void onProducer(ResolvedField f) {
+            // no special handling
+            onField(f);
+          }
+
+          @Override
+          public void onSchemaURL(ResolvedField f) {
+            // TODO: this should be set from the deserialization here
+            setSchemaURLField(type, constructor, f);
+          }
+
+
+          @Override
+          public void onDeleted(ResolvedField f) {
+            // no special handling
+            onField(f);
+          }
+
+          @Override
+          public void onField(ResolvedField f) {
+            addConstructorParameter(constructor, f);
+
+          }
+        });
         MethodSpec getter = getter(f)
             .addModifiers(PUBLIC)
             .addCode("return $N;", f.getName())
@@ -439,29 +546,58 @@ public class JavaPoetGenerator {
       classBuilder.addMethod(constructor.build());
       containerTypeBuilder.addType(classBuilder.build());
 
+      createFactoryMethod(containerTypeBuilder, type, false);
 
-      Builder factory = MethodSpec.methodBuilder("new" + type.getName())
-          .addModifiers(PUBLIC)
-          .returns(getTypeName(type));
-
-      List<CodeBlock> factoryParams = new ArrayList<>();
-
-      type.getProperties().stream().filter(f -> !isASchemaUrlField(f)).forEach(f -> {
-        if (isAProducerField(f)) {
-          factoryParams.add(CodeBlock.of("this.producer"));
-        } else {
-          factory.addParameter(ParameterSpec.builder(getTypeName(f.getType()), f.getName()).build());
-          factory.addJavadoc("@param $N $N\n", f.getName(), f.getDescription() == null ? "the " + f.getName() : f.getDescription());
-          factoryParams.add(CodeBlock.of("$N", f.getName()));
-        }
-      });
-      factory.addJavadoc("@return $N", type.getName());
-      factory.addCode("return new $N(", "Default" + type.getName());
-      factory.addCode(CodeBlock.join(factoryParams, ", "));
-      factory.addCode(");\n");
-      containerTypeBuilder.addMethod(factory.build());
+      if (type.getProperties().stream().anyMatch(f -> isADeletedField(f))) {
+        // allow creating a Deleted Facet as well
+        createFactoryMethod(containerTypeBuilder, type, true);
+      }
     }
     ///////////////////////////////
+  }
+
+  /**
+   * Creates the factory method ( newFoo() ) to create a new Object with facetURL and producer pre-defined
+   * @param containerTypeBuilder The current builder to add the method to
+   * @param type the type we create the method for
+   * @param createDeleted to create a version that creates a deleted instance ( newDeletedFoo() ) to delete facets
+   */
+  private void createFactoryMethod(TypeSpec.Builder containerTypeBuilder, ObjectResolvedType type, boolean createDeleted) {
+    // factory method
+    Builder factory = MethodSpec.methodBuilder("new" + (createDeleted ? "Deleted" : "") + type.getName())
+        .addModifiers(PUBLIC)
+        .returns(getTypeName(type));
+
+    List<CodeBlock> factoryParams = new ArrayList<>();
+
+    handleProperties(type, new ResolvedFieldHandler() {
+
+      @Override
+      public void onProducer(ResolvedField f) {
+        // the producer is automatically set
+        factoryParams.add(CodeBlock.of("this.producer"));
+      }
+
+      @Override
+      public void onDeleted(ResolvedField f) {
+        // deleted is undefined by default and true if we're want to create a deleted facet
+        factoryParams.add(CodeBlock.of(createDeleted ? "true" : "null"));
+      }
+
+      @Override
+      public void onField(ResolvedField f) {
+        factory.addParameter(ParameterSpec.builder(getTypeName(f.getType()), f.getName()).build());
+        factory.addJavadoc("@param $N $N\n", f.getName(), f.getDescription() == null ? "the " + f.getName() : f.getDescription());
+        factoryParams.add(CodeBlock.of("$N", f.getName()));
+      }
+
+    });
+
+    factory.addJavadoc("@return " + (createDeleted ? "a deleted " : "") + "$N", type.getName());
+    factory.addCode("return new $N(", "Default" + type.getName());
+    factory.addCode(CodeBlock.join(factoryParams, ", "));
+    factory.addCode(");\n");
+    containerTypeBuilder.addMethod(factory.build());
   }
 
   private void addParameterFromField(MethodSpec.Builder factory, ResolvedField f, AnnotationSpec annotationSpec) {

@@ -6,6 +6,7 @@
 package io.openlineage.client;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -100,7 +101,13 @@ class OpenLineageTest {
     DatasetEvent datasetEvent =
         ol.newDatasetEventBuilder()
             .eventTime(now)
-            .dataset(ol.newStaticDataset("ns", "ds", null))
+            .dataset(
+                ol.newStaticDataset(
+                    "ns",
+                    "ds",
+                    ol.newDatasetFacetsBuilder()
+                        .documentation(ol.newDocumentationDatasetFacet("foo"))
+                        .build()))
             .build();
 
     String json = mapper.writeValueAsString(datasetEvent);
@@ -109,6 +116,54 @@ class OpenLineageTest {
     assertEquals("ns", read.getDataset().getNamespace());
     assertEquals("ds", read.getDataset().getName());
     assertEquals(now, read.getEventTime());
+    assertEquals("foo", read.getDataset().getFacets().getDocumentation().getDescription());
+  }
+
+  @Test
+  void jsonDatasetEventDeleteFacet() throws JsonProcessingException {
+    ZonedDateTime now = ZonedDateTime.now(ZoneId.of("UTC"));
+    URI producer = URI.create("producer");
+    OpenLineage ol = new OpenLineage(producer);
+    final String documentation = "documentation";
+
+    DatasetEvent datasetEvent =
+        ol.newDatasetEventBuilder()
+            .eventTime(now)
+            .dataset(
+                ol.newStaticDataset(
+                    "ns",
+                    "ds",
+                    ol.newDatasetFacetsBuilder()
+                        .put(documentation, ol.newDocumentationDatasetFacet("foo"))
+                        .build()))
+            .build();
+
+    assertNull(
+        datasetEvent
+            .getDataset()
+            .getFacets()
+            .getAdditionalProperties()
+            .get(documentation)
+            .get_deleted());
+
+    String json1 = mapper.writeValueAsString(datasetEvent);
+    DatasetEvent read1 = mapper.readValue(json1, DatasetEvent.class);
+    assertNull(read1.getDataset().getFacets().getDocumentation().get_deleted());
+
+    datasetEvent
+        .getDataset()
+        .getFacets()
+        .getAdditionalProperties()
+        .put(documentation, ol.newDeletedDatasetFacet());
+
+    String json = mapper.writeValueAsString(datasetEvent);
+    DatasetEvent read = mapper.readValue(json, DatasetEvent.class);
+
+    assertEquals("ns", read.getDataset().getNamespace());
+    assertEquals("ds", read.getDataset().getName());
+    assertEquals(now, read.getEventTime());
+    assertEquals(Boolean.TRUE, read.getDataset().getFacets().getDocumentation().get_deleted());
+    assertEquals(Boolean.TRUE, read.getDataset().getFacets().getDocumentation().isDeleted());
   }
 
   @Test

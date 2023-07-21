@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://openlineage.io/spec/2-0-0/OpenLineage.json",
+  "$id": "https://openlineage.io/spec/2-0-1/OpenLineage.json",
   "$defs": {
     "BaseEvent": {
       "type": "object",
@@ -168,7 +168,18 @@
     "JobFacet": {
       "description": "A Job Facet",
       "type": "object",
-      "allOf": [{ "$ref": "#/$defs/BaseFacet" }]
+      "allOf": [
+        { "$ref": "#/$defs/BaseFacet" },
+        {
+          "type": "object",
+          "properties": {
+            "_deleted": {
+              "description": "set to true to delete a facet",
+              "type": "boolean"
+            }
+          }
+        }
+      ]
     },
     "InputDataset": {
       "description": "An input dataset",
@@ -273,7 +284,18 @@
     "DatasetFacet": {
       "description": "A Dataset Facet",
       "type": "object",
-      "allOf": [{ "$ref": "#/$defs/BaseFacet" }]
+      "allOf": [
+        { "$ref": "#/$defs/BaseFacet" },
+        {
+          "type": "object",
+          "properties": {
+            "_deleted": {
+              "description": "set to true to delete a facet",
+              "type": "boolean"
+            }
+          }
+        }
+      ]
     },
     "BaseFacet": {
       "description": "all fields of the base facet are prefixed with _ to avoid name conflicts in facets",
