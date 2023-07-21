@@ -5,6 +5,7 @@
 
 package io.openlineage.spark.agent.util;
 
+import java.util.Arrays;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.reflect.MethodUtils;
@@ -39,5 +40,20 @@ public class ReflectionUtils {
     } catch (Exception exception) {
       return Optional.empty();
     }
+  }
+
+  public static boolean hasClass(String aClass) {
+    try {
+      ReflectionUtils.class.getClassLoader().loadClass(aClass);
+      return true;
+    } catch (Exception e) {
+      //
+      // we don't care
+    }
+    return false;
+  }
+
+  public static boolean hasClasses(String... classes) {
+    return Arrays.stream(classes).allMatch(ReflectionUtils::hasClass);
   }
 }

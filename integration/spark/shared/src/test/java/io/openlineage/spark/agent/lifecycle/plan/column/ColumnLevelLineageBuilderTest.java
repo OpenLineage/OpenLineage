@@ -161,4 +161,15 @@ class ColumnLevelLineageBuilderTest {
 
     assertEquals(exprId, builder.getOutputExprIdByFieldName("a").get());
   }
+
+  @Test
+  void testAddInputDoesNotAddDuplicates() {
+    ExprId exprId = mock(ExprId.class);
+    DatasetIdentifier identifier = mock(DatasetIdentifier.class);
+
+    builder.addInput(exprId, identifier, "a");
+    builder.addInput(exprId, identifier, "a");
+
+    assertEquals(1, builder.getInputs().get(exprId).size());
+  }
 }

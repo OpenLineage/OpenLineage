@@ -24,6 +24,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
@@ -40,7 +41,7 @@ import org.apache.spark.sql.catalyst.expressions.ExprId;
 public class ColumnLevelLineageBuilder {
 
   private Map<ExprId, Set<ExprId>> exprDependencies = new HashMap<>();
-  private Map<ExprId, List<Pair<DatasetIdentifier, String>>> inputs = new HashMap<>();
+  @Getter private Map<ExprId, List<Pair<DatasetIdentifier, String>>> inputs = new HashMap<>();
   private Map<OpenLineage.SchemaDatasetFacetFields, ExprId> outputs = new HashMap<>();
   private Map<ColumnMeta, ExprId> externalExpressionMappings = new HashMap<>();
   private final OpenLineage.SchemaDatasetFacet schema;
@@ -61,9 +62,12 @@ public class ColumnLevelLineageBuilder {
    * @param attributeName
    */
   public void addInput(ExprId exprId, DatasetIdentifier datasetIdentifier, String attributeName) {
-    inputs
-        .computeIfAbsent(exprId, k -> new LinkedList<>())
-        .add(Pair.of(datasetIdentifier, attributeName));
+    inputs.computeIfAbsent(exprId, k -> new LinkedList<>());
+
+    Pair<DatasetIdentifier, String> input = Pair.of(datasetIdentifier, attributeName);
+    if (!inputs.get(exprId).contains(input)) {
+      inputs.get(exprId).add(input);
+    }
   }
 
   /**

@@ -274,7 +274,6 @@ assemble {
 }
 
 shadowJar {
-
     dependsOn test
 
     minimize(){

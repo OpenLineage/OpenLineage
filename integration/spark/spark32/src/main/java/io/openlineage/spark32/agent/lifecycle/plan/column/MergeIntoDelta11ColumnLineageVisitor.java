@@ -5,7 +5,7 @@
 
 package io.openlineage.spark32.agent.lifecycle.plan.column;
 
-import io.openlineage.spark.agent.util.DeltaUtils;
+import io.openlineage.spark.agent.util.ReflectionUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.stream.Stream;
@@ -18,7 +18,7 @@ public class MergeIntoDelta11ColumnLineageVisitor
     extends io.openlineage.spark3.agent.lifecycle.plan.column.MergeIntoDeltaColumnLineageVisitor {
 
   public static boolean hasClasses() {
-    return DeltaUtils.hasClasses(
+    return ReflectionUtils.hasClasses(
         "org.apache.spark.sql.delta.commands.MergeIntoCommand",
         "org.apache.spark.sql.catalyst.plans.logical.DeltaMergeIntoInsertClause");
   }

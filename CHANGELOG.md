@@ -6,6 +6,8 @@
   *Detect output datasets when using Iceberg table as a sink.*
 * **Spark: column level lineage for `merge into` on delta tables.** [`#1958`](https://github.com/OpenLineage/OpenLineage/pull/1958) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Make column level lineage support `merge into` on delta tables. Refactor column level lineage to deal with multiple Spark versions.*
+* **Spark: column level lineage for `merge into` on iceberg tables.** [`#1971`](https://github.com/OpenLineage/OpenLineage/pull/1971) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Make column level lineage support `merge into` on iceberg tables.*
 
 ### Fixed
 * **Spark: fix custom environment variables facet** [`#1973`](https://github.com/OpenLineage/OpenLineage/pull/1973) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  

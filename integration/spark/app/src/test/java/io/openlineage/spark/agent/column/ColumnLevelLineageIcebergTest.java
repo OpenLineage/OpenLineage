@@ -13,12 +13,15 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableList;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.Versions;
+import io.openlineage.spark.agent.lifecycle.DatasetBuilderFactoryProvider;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
 import io.openlineage.spark.agent.util.LastQueryExecutionSparkEventListener;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +29,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
+import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.SparkSession$;
@@ -33,7 +37,9 @@ import org.apache.spark.sql.catalyst.expressions.GenericRow;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.QueryExecution;
 import org.apache.spark.sql.types.IntegerType$;
+import org.apache.spark.sql.types.LongType$;
 import org.apache.spark.sql.types.Metadata;
+import org.apache.spark.sql.types.StringType$;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.AfterAll;
@@ -53,6 +59,7 @@ class ColumnLevelLineageIcebergTest {
   private static final String INT_TYPE = "int";
   private static final String FILE = "file";
   private static final String T1_EXPECTED_NAME = "/tmp/column_level_lineage/db.t1";
+  private static final String T2_EXPECTED_NAME = "/tmp/column_level_lineage/db.t2";
   private static final String CREATE_T1_FROM_TEMP =
       "CREATE TABLE local.db.t1 USING iceberg AS SELECT * FROM temp";
   SparkSession spark;
@@ -112,6 +119,10 @@ class ColumnLevelLineageIcebergTest {
             .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
             .queryExecution(queryExecution)
             .build();
+
+    context
+        .getColumnLevelLineageVisitors()
+        .addAll(DatasetBuilderFactoryProvider.getInstance().getColumnLevelLineageVisitors(context));
 
     FileSystem.get(spark.sparkContext().hadoopConfiguration())
         .delete(new Path("/tmp/column_level_lineage/"), true);
@@ -377,5 +388,54 @@ class ColumnLevelLineageIcebergTest {
     assertColumnDependsOn(facet, "f", FILE, T1_EXPECTED_NAME, "b");
     assertColumnDependsOnInputs(facet, "e", 1);
     assertColumnDependsOnInputs(facet, "f", 1);
+  }
+
+  @Test
+  void testMergeInto() {
+    Dataset<Row> dataset =
+        spark
+            .createDataFrame(
+                ImmutableList.of(
+                    RowFactory.create(1L, "bat"),
+                    RowFactory.create(2L, "mouse"),
+                    RowFactory.create(3L, "horse")),
+                new StructType(
+                    new StructField[] {
+                      new StructField("a", LongType$.MODULE$, false, Metadata.empty()),
+                      new StructField("b", StringType$.MODULE$, false, Metadata.empty())
+                    }))
+            .repartition(1);
+    dataset.createOrReplaceTempView("temp");
+
+    spark.sql("CREATE TABLE local.db.t1 USING iceberg AS SELECT * FROM temp");
+    spark.sql("CREATE TABLE local.db.t2 USING iceberg AS SELECT * FROM temp");
+
+    spark.sql(
+        "MERGE INTO local.db.t1 USING local.db.t2 ON local.db.t1.a = local.db.t2.a"
+            + " WHEN MATCHED THEN UPDATE SET *"
+            + " WHEN NOT MATCHED THEN INSERT *");
+
+    List<LogicalPlan> plans = LastQueryExecutionSparkEventListener.getExecutedLogicalPlans();
+
+    LogicalPlan plan =
+        plans.stream()
+            .filter(
+                p ->
+                    p.getClass().getCanonicalName().endsWith("ReplaceIcebergData")
+                        || p.getClass().getCanonicalName().endsWith("ReplaceData"))
+            .findAny()
+            .get();
+
+    when(queryExecution.optimizedPlan()).thenReturn(plan);
+    OpenLineage.ColumnLineageDatasetFacet facet =
+        io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelLineageUtils
+            .buildColumnLineageDatasetFacet(context, schemaDatasetFacet)
+            .get();
+
+    assertColumnDependsOn(facet, "a", "file", T1_EXPECTED_NAME, "a");
+    assertColumnDependsOn(facet, "b", "file", T1_EXPECTED_NAME, "b");
+
+    assertColumnDependsOn(facet, "a", "file", T2_EXPECTED_NAME, "a");
+    assertColumnDependsOn(facet, "b", "file", T2_EXPECTED_NAME, "b");
   }
 }

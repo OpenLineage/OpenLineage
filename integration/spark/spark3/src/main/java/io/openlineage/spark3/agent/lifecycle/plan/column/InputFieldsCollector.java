@@ -5,8 +5,6 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.column;
 
-import static io.openlineage.spark.agent.util.ReflectionUtils.tryExecuteMethod;
-
 import com.google.cloud.spark.bigquery.BigQueryRelation;
 import io.openlineage.spark.agent.lifecycle.Rdds;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
@@ -14,7 +12,6 @@ import io.openlineage.spark.agent.util.BigQueryUtils;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.JdbcUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
-import io.openlineage.spark.agent.util.ReflectionUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
@@ -25,7 +22,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.rdd.RDD;
@@ -116,7 +112,7 @@ public class InputFieldsCollector {
         && BigQueryUtils.hasBigQueryClasses()
         && ((LogicalRelation) node).relation() instanceof BigQueryRelation) {
       BigQueryRelation relation = (BigQueryRelation) ((LogicalRelation) node).relation();
-      return extractDatasetIdentifier(relation);
+      return BigQueryUtils.extractDatasetIdentifier(relation);
     } else if (node instanceof LogicalRelation
         && ((LogicalRelation) node).relation() instanceof JDBCRelation) {
       JDBCRelation relation = (JDBCRelation) ((LogicalRelation) node).relation();
@@ -160,31 +156,6 @@ public class InputFieldsCollector {
     return PlanUtils3.getDatasetIdentifier(context, relation)
         .map(Collections::singletonList)
         .orElse(Collections.emptyList());
-  }
-
-  private static Optional<Object> extractDatasetIdentifierFromTableId(Object tableId) {
-    return Stream.of(
-            ReflectionUtils.tryExecuteStaticMethodForClassName(
-                "com.google.cloud.bigquery.connector.common.BigQueryUtil",
-                "friendlyTableName",
-                tableId),
-            ReflectionUtils.tryExecuteStaticMethodForClassName(
-                "com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.connector.common.BigQueryUtil",
-                "friendlyTableName",
-                tableId))
-        .filter(Optional::isPresent)
-        .map(Optional::get)
-        .findFirst();
-  }
-
-  private static List<DatasetIdentifier> extractDatasetIdentifier(
-      BigQueryRelation bigQueryRelation) {
-
-    return tryExecuteMethod(bigQueryRelation, "getTableId")
-        .flatMap(InputFieldsCollector::extractDatasetIdentifierFromTableId)
-        .map(x -> new DatasetIdentifier((String) x, "namespace"))
-        .map(Collections::singletonList)
-        .orElseGet(Collections::emptyList);
   }
 
   private static List<DatasetIdentifier> extractDatasetIdentifier(CatalogTable catalogTable) {
