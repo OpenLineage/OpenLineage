@@ -75,6 +75,10 @@ public class Generator {
 
   private static void addURLs(Set<URL> urls, File dir)
       throws URISyntaxException, MalformedURLException {
+    if (dir.getName().equals("tests")) {
+      // Skip processing this directory if its name is "tests"
+      return;
+    }
     File[] jsonFiles = dir.listFiles((File f, String name) -> name.endsWith(JSON_EXT));
     for (File jsonFile : jsonFiles) {
       urls.add(jsonFile.toURI().toURL());

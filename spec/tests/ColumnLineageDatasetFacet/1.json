@@ -1,0 +1,30 @@
+{
+  "columnLineage": {
+    "fields": {
+      "order_day_of_week": {
+        "inputFields": [
+          {
+            "field": "order_placed_on",
+            "name": "public.top_delivery_times",
+            "namespace": "postgres://postgres:5432"
+          }
+        ],
+        "transformationDescription": "",
+        "transformationType": ""
+      },
+      "order_placed_on": {
+        "inputFields": [
+          {
+            "field": "order_placed_on",
+            "name": "public.top_delivery_times",
+            "namespace": "postgres://postgres:5432"
+          }
+        ],
+        "transformationDescription": "",
+        "transformationType": ""
+      }
+    },
+    "_producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
+    "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/ColumnLineageDatasetFacet.json"
+  }
+}
