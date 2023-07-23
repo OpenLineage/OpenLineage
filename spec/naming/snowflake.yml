@@ -1,0 +1,22 @@
+snowflake:
+  examples:
+    - snowflake://gp21411.us-east-1.aws
+    - snowflake://
+  documentation: Snowflake namespaces have two forms. https://docs.snowflake.com/en/user-guide/admin-account-identifier
+  constructors:
+    - name: "AccountLocator"
+      parts:
+        - accountLocator
+        - cloudRegionId
+        - cloud
+      format:
+        form: "snowflake://%s.%s.%s"
+        arguments:
+          - profileId
+          - asf
+    - name: "AccountName"
+      parts:
+        - orgName
+        - accountName
+      format:
+        form: "snowflake://%s-%s"
