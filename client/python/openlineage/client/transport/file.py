@@ -8,13 +8,15 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
+from openlineage.client.transport.transport import Config, Transport
+
 if TYPE_CHECKING:
-    from openlineage.client.run import RunEvent
+    from openlineage.client.run import DatasetEvent, JobEvent, RunEvent
 from openlineage.client.serde import Serde
 
 
 @dataclass
-class FileConfig:
+class FileConfig(Config):
     log_file_path: str
     append: bool = False
 
@@ -34,14 +36,14 @@ class FileConfig:
         return cls(log_file_path)
 
 
-class FileTransport:
+class FileTransport(Transport):
     kind = "file"
-    config: FileConfig
+    config_class = FileConfig
 
     def __init__(self, config: FileConfig) -> None:
         self.config = config
 
-    def emit(self, event: RunEvent) -> None:
+    def emit(self, event: RunEvent | DatasetEvent | JobEvent) -> None:
         if self.config.append:
             log_file_path = self.config.log_file_path
         else:

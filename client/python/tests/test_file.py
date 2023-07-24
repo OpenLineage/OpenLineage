@@ -7,14 +7,14 @@ import time
 import uuid
 from os import listdir
 from os.path import isfile, join
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from openlineage.client import OpenLineageClient
 from openlineage.client.run import Job, Run, RunEvent, RunState
 from openlineage.client.transport.file import FileConfig, FileTransport
 
 
-def emit_test_events(client: OpenLineageClient, debuff_time: int = 0) -> list[Dict[str, Any]]:
+def emit_test_events(client: OpenLineageClient, debuff_time: int = 0) -> List[Dict[str, Any]]:
     test_event_set = [
         {
             "eventType": RunState.START,
@@ -45,7 +45,7 @@ def emit_test_events(client: OpenLineageClient, debuff_time: int = 0) -> list[Di
     return test_event_set
 
 
-def assert_test_events(log_line: list[Dict[str, Any]], test_event: list[Dict[str, Any]]) -> None:
+def assert_test_events(log_line: List[Dict[str, Any]], test_event: List[Dict[str, Any]]) -> None:
     assert log_line["eventType"] == test_event["eventType"].name
     assert log_line["job"]["name"] == test_event["name"]
     assert log_line["job"]["namespace"] == test_event["namespace"]
