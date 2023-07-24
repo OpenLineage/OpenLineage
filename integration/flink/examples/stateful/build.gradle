@@ -5,7 +5,7 @@ plugins {
     id 'signing'
     id 'jacoco'
     id "com.adarshr.test-logger" version "3.2.0"
-    id 'com.diffplug.spotless' version '6.19.0'
+    id 'com.diffplug.spotless' version '6.20.0'
     id "com.github.johnrengelman.shadow" version "7.1.2"
     id "pmd"
     id "com.github.davidmc24.gradle.plugin.avro" version "1.7.1"
