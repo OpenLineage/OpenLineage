@@ -19,7 +19,7 @@ class NoopConfig(Config):
 
 class NoopTransport(Transport):
     kind = "noop"
-    config = NoopConfig
+    config_class = NoopConfig
 
     def __init__(self, config: NoopConfig) -> None:  # noqa: ARG002
         log.info("OpenLineage client is disabled. NoopTransport.")

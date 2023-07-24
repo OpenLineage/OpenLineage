@@ -108,7 +108,7 @@ class HttpConfig(Config):
 
 class HttpTransport(Transport):
     kind = "http"
-    config = HttpConfig
+    config_class = HttpConfig
 
     def __init__(self, config: HttpConfig) -> None:
         url = config.url.strip()

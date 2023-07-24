@@ -54,7 +54,7 @@ class DefaultTransportFactory(TransportFactory):
             msg = f"Transport {transport_class} has to be class, and subclass of Transport"
             raise TypeError(msg)
 
-        config_class = transport_class.config
+        config_class = transport_class.config_class
 
         if isinstance(config_class, str):
             config_class = try_import_from_string(config_class)

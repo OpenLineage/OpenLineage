@@ -54,7 +54,7 @@ def on_delivery(err: KafkaError, msg: Message) -> None:
 
 class KafkaTransport(Transport):
     kind = "kafka"
-    config = KafkaConfig
+    config_class = KafkaConfig
 
     def __init__(self, config: KafkaConfig) -> None:
         self.topic = config.topic
