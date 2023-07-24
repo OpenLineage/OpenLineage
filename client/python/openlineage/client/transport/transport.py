@@ -35,7 +35,7 @@ class Config:
 
 class Transport:
     kind: str | None = None
-    config: type[Config] = Config
+    config_class: type[Config] = Config
 
     def emit(self, event: Union[RunEvent, DatasetEvent, JobEvent]) -> Any:  # noqa: ANN401, UP007
         raise NotImplementedError

@@ -18,7 +18,7 @@ class ConsoleConfig(Config):
 
 class ConsoleTransport(Transport):
     kind = "console"
-    config = ConsoleConfig
+    config_class = ConsoleConfig
 
     def __init__(self, config: ConsoleConfig) -> None:  # noqa: ARG002
         self.log = logging.getLogger(__name__)
