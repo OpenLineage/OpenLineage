@@ -802,17 +802,6 @@ workflows:
             branches:
               ignore: /.*/
           context: release
-      - compile-integration-sql-java-macos:
-          matrix:
-            alias: compile-integration-sql-java-macos-arm
-            parameters:
-              resource_class: [ "macos.m1.medium.gen1" ]
-          filters:
-            tags:
-              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
-            branches:
-              ignore: /.*/
-          context: release
       - release-client-java:
           filters:
             tags:
@@ -841,7 +830,6 @@ workflows:
             - compile-integration-sql-java-linux-x86
             - compile-integration-sql-java-linux-arm
             - compile-integration-sql-java-macos-x86
-            - compile-integration-sql-java-macos-arm
       - release-integration-flink:
           filters:
             tags:
@@ -909,7 +897,6 @@ workflows:
             - compile-integration-sql-java-linux-x86
             - compile-integration-sql-java-linux-arm
             - compile-integration-sql-java-macos-x86
-            - compile-integration-sql-java-macos-arm
       - build-integration-sql:
           matrix:
             alias: build-integration-sql-x86
