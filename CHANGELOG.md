@@ -2,7 +2,7 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.30.0...HEAD)
 
-## [0.30.0](https://github.com/OpenLineage/OpenLineage/compare/0.29.2...0.30.0) - 2023-07-24
+## [0.30.0](https://github.com/OpenLineage/OpenLineage/compare/0.29.2...0.30.0) - 2023-07-25
 ### Added
 * **Flink: support Iceberg sinks** [`#1960`](https://github.com/OpenLineage/OpenLineage/pull/1960) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Detects output datasets when using an Iceberg table as a sink.*
