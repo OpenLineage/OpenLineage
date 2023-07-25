@@ -87,25 +87,24 @@ public class JavaPoetGenerator {
         .addModifiers(PUBLIC, FINAL);
 
     if (!server) {
-      containerTypeBuilder.addJavadoc("""
-          Usage:
-          <pre>
-            URI producer = URI.create("http://my.producer/uri");
-            $N ol = new $N(producer);
-            UUID runId = UUID.randomUUID();
-            RunFacets runFacets =
-              ol.newRunFacetsBuilder().nominalTime(ol.newNominalTimeRunFacet(now, now)).build();
-            Run run = ol.newRun(runId, runFacets);
-            String name = "jobName";
-            String namespace = "namespace";
-            JobFacets jobFacets = ol.newJobFacetsBuilder().build();
-            Job job = ol.newJob(namespace, name, jobFacets);
-            List<InputDataset> inputs = Arrays.asList(ol.newInputDataset("ins", "input", null, null));
-            List<OutputDataset> outputs = Arrays.asList(ol.newOutputDataset("ons", "output", null, null));
-            RunEvent runStateUpdate =
-              ol.newRunEvent(now, OpenLineage.RunEvent.EventType.START, run, job, inputs, outputs);
-          </pre>
-          """,
+      containerTypeBuilder.addJavadoc(
+          "Usage:\n" +
+          "<pre>\n" +
+          "  URI producer = URI.create(\"http://my.producer/uri\");\n" +
+          "  $N ol = new $N(producer);\n" +
+          "  UUID runId = UUID.randomUUID();\n" +
+          "  RunFacets runFacets =\n" +
+          "    ol.newRunFacetsBuilder().nominalTime(ol.newNominalTimeRunFacet(now, now)).build();\n" +
+          "  Run run = ol.newRun(runId, runFacets);\n" +
+          "  String name = \"jobName\";\n" +
+          "  String namespace = \"namespace\";\n" +
+          "  JobFacets jobFacets = ol.newJobFacetsBuilder().build();\n" +
+          "  Job job = ol.newJob(namespace, name, jobFacets);\n" +
+          "  List<InputDataset> inputs = Arrays.asList(ol.newInputDataset(\"ins\", \"input\", null, null));\n" +
+          "  List<OutputDataset> outputs = Arrays.asList(ol.newOutputDataset(\"ons\", \"output\", null, null));\n" +
+          "  RunEvent runStateUpdate =\n" +
+          "    ol.newRunEvent(now, OpenLineage.RunEvent.EventType.START, run, job, inputs, outputs);\n" +
+          "</pre>\n",
           containerClassName, containerClassName);
 
       containerTypeBuilder.addField(FieldSpec.builder(ClassName.get(URI.class), "producer", PRIVATE, FINAL).build());
