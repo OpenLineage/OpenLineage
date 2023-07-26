@@ -84,7 +84,7 @@ public final class HttpTransport extends Transport implements Closeable {
     URI url = httpConfig.getUrl();
     if (url == null) {
       throw new OpenLineageClientException(
-          "url can't be null, try setting openlineage.transport.host in config");
+          "url can't be null, try setting openlineage.transport.url in config");
     }
     URIBuilder builder = new URIBuilder(url);
     if (StringUtils.isNotBlank(url.getPath())) {
