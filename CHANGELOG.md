@@ -1,8 +1,8 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.30.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.30.1...HEAD)
 
-## [0.30.0](https://github.com/OpenLineage/OpenLineage/compare/0.29.2...0.30.0) - 2023-07-25
+## [0.30.1](https://github.com/OpenLineage/OpenLineage/compare/0.29.2...0.30.1) - 2023-07-25
 ### Added
 * **Flink: support Iceberg sinks** [`#1960`](https://github.com/OpenLineage/OpenLineage/pull/1960) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Detects output datasets when using an Iceberg table as a sink.*
@@ -18,6 +18,8 @@
     *Expands the OS/architecture checks when compiling to produce a specific file for Apple Silicon. Also expands the corresponding OS/architecture checks when loading the binary at runtime from Java code.*
 * **Spec: add facet deletion** [`#1975`](https://github.com/OpenLineage/OpenLineage/pull/1975) [@julienledem](https://github.com/julienledem)  
     *In order to add a mechanism for deleting job and dataset facets, adds a `{ _deleted: true }` object that can take the place of any job or dataset facet (but not run or input/output facets, which are valid only for a specific run).*
+* **Client: add a file transport** [`#1891`](https://github.com/OpenLineage/OpenLineage/pull/1891) [@Alexkuva](https://github.com/Alexkuva)  
+    *Creates a `FileTransport` and its configuration classes supporting append mode or write-new-file mode, which is especially useful when an object store does not support append mode, e.g. in the case of Databricks DBFS FUSE.*
 
 ### Changed
 * **Airflow: do not run plugin if OpenLineage provider is installed** [`#1999`](https://github.com/OpenLineage/OpenLineage/pull/1999) [@JDarDagran](https://github.com/JDarDagran)  
