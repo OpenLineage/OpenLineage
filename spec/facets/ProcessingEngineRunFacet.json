@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://openlineage.io/spec/facets/1-0-0/ProcessingEngineRunFacet.json",
+  "$id": "https://openlineage.io/spec/facets/1-1-0/ProcessingEngineRunFacet.json",
   "$defs": {
     "ProcessingEngineRunFacet": {
       "allOf": [
@@ -26,7 +26,7 @@
               "example": "0.19.0"
             }
           },
-          "required": ["engine_version"]
+          "required": ["version"]
         }
       ],
       "type": "object"

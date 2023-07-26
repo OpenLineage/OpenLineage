@@ -103,6 +103,17 @@ Look for tickets labeled ['good first issue'][goodfirstissues] and ['help wanted
 [goodfirstissues]: https://github.com/OpenLineage/OpenLineage/labels/good%20first%20issue
 [helpwantedissues]: https://github.com/OpenLineage/OpenLineage/labels/help%20wanted
 
+## Running pre-commit hooks
+
+Before submitting your pull request, make sure to set up and run pre-commit hooks to ensure code quality and consistency. [Pre-commit](pre-commit.com) hooks are automated checks that run before each commit is made. These checks include code formatting, linting and JSON Schema specification validations. To set up the pre-commit hooks for this project, follow these steps:
+
+* Install pre-commit: If you haven't already, install pre-commit on your local machine by running `pip install pre-commit` in your virtual environment.
+
+* Set up hooks: Once pre-commit is installed, navigate to the project's root directory and execute `pre-commit install`. This command will set up the necessary hooks in your local repository.
+
+* Run pre-commit: Now, every time you attempt to make a commit, the pre-commit hooks will automatically run on the staged files. If any issues are detected, the commit process will be halted, allowing you to address the problems before making the commit. You can also run `pre-commit run --all-files` to manually trigger the hooks for all files in the repository.
+
+
 ## Triggering CI runs from forks (committers)
 
 CI runs on forks are disabled due to the possibility of access by external services via CI run. 

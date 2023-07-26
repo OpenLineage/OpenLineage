@@ -45,3 +45,18 @@ repos:
       - id: prettier
         files: ^spec/
         args: ["--print-width=120", "--prose-wrap=always"]
+  - repo: local
+    hooks:
+      - id: check_schemas
+        name: Check JSON Schema spec files.
+        language: golang
+        additional_dependencies: ["github.com/santhosh-tekuri/jsonschema/cmd/jv@latest"]
+        entry: ./.pre_commit/json-schema/check-spec.sh
+        files: ^spec/.*\.json$
+        exclude: ^spec/tests/.*$
+      - id: test_events
+        name: Test events against JSON Schema spec files.
+        language: golang
+        additional_dependencies: ["github.com/santhosh-tekuri/jsonschema/cmd/jv@latest"]
+        entry: ./.pre_commit/json-schema/test-facets.sh
+        files: ^spec/facets/.*\.json$

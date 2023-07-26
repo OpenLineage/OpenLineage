@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://openlineage.io/spec/facets/1-0-0/ExtractionErrorRunFacet.json",
+  "$id": "https://openlineage.io/spec/facets/1-1-0/ExtractionErrorRunFacet.json",
   "$defs": {
     "ExtractionErrorRunFacet": {
       "allOf": [
@@ -44,7 +44,7 @@
               }
             }
           },
-          "required": ["totalElements", "failedElements", "errors"]
+          "required": ["totalTasks", "failedTasks", "errors"]
         }
       ]
     }

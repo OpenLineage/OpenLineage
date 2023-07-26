@@ -752,6 +752,38 @@ jobs:
       - run: ./docker/login.sh
       - run: ./docker/build-and-push-proxy.sh $CIRCLE_TAG
 
+  run-pre-commit:
+    # this job run pre-commit for Python client only
+    # add depedency to other files when pre-commit runs related checks
+    working_directory: ~/openlineage
+    docker:
+      - image: cimg/python:3.8
+    steps:
+      - *checkout_project_root
+      - restore_cache:
+          keys:
+          - v1-precommit-deps-{{ checksum ".pre-commit-config.yaml" }}
+
+      - run:
+          name: Install Dependencies
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install pre-commit
+            # Install the hooks now so that they'll be cached
+            pre-commit install-hooks
+      - save_cache:
+          paths:
+            - ~/.cache/pre-commit
+            - ./venv
+          key: v1-precommit-deps-{{ checksum ".pre-commit-config.yaml" }}
+
+      - run:
+          name: Run pre-commit
+          command: |
+            . venv/bin/activate
+            pre-commit run --show-diff-on-failure --all-files
+
   workflow_complete:
     working_directory: ~/openlineage
     machine:

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://openlineage.io/spec/2-0-1/OpenLineage.json",
+  "$id": "https://openlineage.io/spec/2-0-2/OpenLineage.json",
   "$defs": {
     "BaseEvent": {
       "type": "object",
@@ -72,7 +72,8 @@
               "$ref": "#/$defs/StaticDataset"
             }
           },
-          "required": ["dataset"]
+          "required": ["dataset"],
+          "not": { "required": ["job", "run"] }
         }
       ]
     },
@@ -100,7 +101,8 @@
               }
             }
           },
-          "required": ["job"]
+          "required": ["job"],
+          "not": { "required": ["run"] }
         }
       ]
     },
@@ -119,11 +121,7 @@
             {
               "type": "object",
               "additionalProperties": { "$ref": "#/$defs/RunFacet" }
-            },
-            { "$ref": "facets/ErrorMessageRunFacet.json" },
-            { "$ref": "facets/ExternalQueryRunFacet.json" },
-            { "$ref": "facets/NominalTimeRunFacet.json" },
-            { "$ref": "facets/ParentRunFacet.json" }
+            }
           ]
         }
       },
@@ -154,12 +152,7 @@
             {
               "type": "object",
               "additionalProperties": { "$ref": "#/$defs/JobFacet" }
-            },
-            { "$ref": "facets/DocumentationJobFacet.json" },
-            { "$ref": "facets/OwnershipJobFacet.json" },
-            { "$ref": "facets/SourceCodeJobFacet.json" },
-            { "$ref": "facets/SourceCodeLocationJobFacet.json" },
-            { "$ref": "facets/SQLJobFacet.json" }
+            }
           ]
         }
       },
@@ -198,8 +191,7 @@
                   "additionalProperties": {
                     "$ref": "#/$defs/InputDatasetFacet"
                   }
-                },
-                { "$ref": "facets/DataQualityMetricsInputDatasetFacet.json" }
+                }
               ]
             }
           }
@@ -228,8 +220,7 @@
                   "additionalProperties": {
                     "$ref": "#/$defs/OutputDatasetFacet"
                   }
-                },
-                { "$ref": "facets/OutputStatisticsOutputDatasetFacet.json" }
+                }
               ]
             }
           }
@@ -261,16 +252,7 @@
             {
               "type": "object",
               "additionalProperties": { "$ref": "#/$defs/DatasetFacet" }
-            },
-            { "$ref": "facets/ColumnLineageDatasetFacet.json" },
-            { "$ref": "facets/DatasourceDatasetFacet.json" },
-            { "$ref": "facets/DataQualityAssertionsDatasetFacet.json" },
-            { "$ref": "facets/LifecycleStateChangeDatasetFacet.json" },
-            { "$ref": "facets/OwnershipDatasetFacet.json" },
-            { "$ref": "facets/SchemaDatasetFacet.json" },
-            { "$ref": "facets/StorageDatasetFacet.json" },
-            { "$ref": "facets/SymlinksDatasetFacet.json" },
-            { "$ref": "facets/DatasetVersionDatasetFacet.json" }
+            }
           ]
         }
       },

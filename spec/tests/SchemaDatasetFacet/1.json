@@ -1,0 +1,24 @@
+{
+  "schema": {
+    "fields": [
+      {
+        "name": "user_id",
+        "type": "int64"
+      },
+      {
+        "name": "counterparty_id",
+        "type": "int64"
+      },
+      {
+        "name": "currency",
+        "type": "object"
+      },
+      {
+        "name": "amount",
+        "type": "int64"
+      }
+    ],
+    "_producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
+    "_schemaURL": "https://openlineage.io/spec/facets/1-0-0/SchemaDatasetFacet.json"
+  }
+}
