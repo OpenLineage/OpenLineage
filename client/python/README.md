@@ -31,7 +31,7 @@ transport:
 ```
 
 The `type` property is required. It can be one of the built-in transports or a custom one.
-There are three built-in transports, `http`, `kafka` and `console`.
+There are four built-in transports, `http`, `kafka`, `console` and `file`.
 Custom transports `type` is a fully qualified class name that can be imported.
 
 The rest of the properties are defined by the particular transport.
@@ -56,6 +56,10 @@ You can also install `pip install openlineage-python[kafka]`
 * `topic` - required string parameter. The topic on what events will be sent.
 * `flush` - optional boolean parameter. If set to True, Kafka will flush after each event. By default true.
 
+#### File
+
+* `log_file_path` - required string parameter specifying the path of the file (if `append` is true a file path is expected, otherwise a file prefix is expected).
+* `append` - optional boolean parameter. If set to True, each event will be appended to a single file (log_file_path), otherwise, all event would be written separatly in distinct files suffixed by a timestring. By default false.
 
 ### Custom transport
 
