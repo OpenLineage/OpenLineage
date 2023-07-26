@@ -22,7 +22,7 @@ def convert_from_object_storage_uri(uri: str) -> Optional[Dataset]:
             namespace=f"s3://{netloc}",
             name=path
         )
-    elif scheme.startswith("gcs") or scheme.startswith("gs"):
+    elif scheme.startswith(("gcs", "gs")):
         return Dataset(
             namespace=f"gs://{netloc}",
             name=path
