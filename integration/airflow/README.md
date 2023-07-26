@@ -268,6 +268,12 @@ $ AIRFLOW_IMAGE=<name-of-airflow-image> ./tests/integration/docker/up.sh
 $ AIRFLOW_IMAGE=apache/airflow:2.3.1-python3.8 ./tests/integration/docker/up.sh
 ```
 
+If you want to test with your custom build Airflow image instead of one build from current OL branch, you can use `TEST_IMAGE` variable:
+
+```bash
+$ TEST_IMAGE=my-test-image ./tests/integration/docker/up.sh
+```
+
 When using `run-dev-airflow.sh`, you can add the `-i` flag or `--attach-integration` flag to run integration tests in a dev environment.
 This can be helpful when you need to run arbitrary integration tests during development. For example, the following command run in the integration container...
 ```bash

@@ -27,22 +27,3 @@ RUN python -m virtualenv dbt_venv && pwd && source dbt_venv/bin/activate && \
     pip install openlineage-sql --no-index --find-links target/wheels --force-reinstall && \
     cd ../airflow && \
     python -m pip install -r tests/integration/tests/airflow/dbt-requirements.txt && deactivate  # We need separate env to run dbt due to dependency conflicts
-
-
-FROM python:3.8-slim as integration
-RUN mkdir -p /app/openlineage
-RUN apt-get update && \
-    apt-get install -y python3-dev default-libmysqlclient-dev build-essential pkg-config
-COPY integration/common /app/openlineage/integration/common
-COPY integration/target /app/openlineage/integration/sql/target
-COPY integration/airflow /app/openlineage/integration/airflow
-COPY integration/airflow/integration-requirements.txt /app/openlineage/integration/integration-requirements.txt
-COPY client/python /app/openlineage/client/python
-
-WORKDIR /app
-COPY integration/airflow/tests/integration/*.py ./
-COPY integration/airflow/tests/integration/pytest.ini ./
-COPY integration/airflow/tests/integration/requests requests
-RUN cd /app/openlineage/integration/ && \
-    pip install --use-deprecated=legacy-resolver --find-links /app/openlineage/integration/sql/target/wheels --user -r integration-requirements.txt
-

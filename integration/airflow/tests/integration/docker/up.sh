@@ -44,10 +44,22 @@ if [[ -n "${COMMIT_ID}" ]]; then
   BIGQUERY_PREFIX="${BIGQUERY_PREFIX}_${COMMIT_ID}"
 fi
 
+if [[ -z "${TEST_IMAGE}" ]]; then
+    (cd ../../../../../ && \
+      docker build \
+        --build-arg="${AIRFLOW_IMAGE}=${AIRFLOW_IMAGE}" \
+        --build-arg="${AIRFLOW_UID}=${AIRFLOW_UID}" \
+        -f integration/airflow/tests/integration/Dockerfile \
+        -t openlineage-test-airflow-image . )
+     export AIRFLOW_IMAGE="openlineage-test-airflow-image"
+  else
+     export AIRFLOW_IMAGE=$TEST_IMAGE
+fi
+
 # Bring down any existing containers and volumes
 docker-compose -f tests/docker-compose.yml down -v
 
-# Build the images
+# Build the integration image
 docker-compose -f tests/docker-compose.yml build
 
 # Run the integration tests

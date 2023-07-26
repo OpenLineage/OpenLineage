@@ -1,0 +1,15 @@
+FROM python:3.8-slim as integration
+RUN mkdir -p /app/openlineage
+RUN apt-get update && \
+    apt-get install -y python3-dev default-libmysqlclient-dev build-essential pkg-config
+COPY integration/common /app/openlineage/integration/common
+COPY integration/airflow/integration-requirements.txt /app/openlineage/integration/integration-requirements.txt
+
+WORKDIR /app
+COPY integration/airflow/tests/integration/*.py ./
+COPY integration/airflow/tests/integration/pytest.ini ./
+COPY integration/airflow/tests/integration/requests requests
+RUN cd /app/openlineage/integration/ && \
+    pip install --use-deprecated=legacy-resolver --user -r integration-requirements.txt
+RUN cd /app/openlineage/integration/ && \
+    pip install --use-deprecated=legacy-resolver --no-dependencies --user -e ./common

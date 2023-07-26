@@ -1,13 +1,7 @@
 version: "3.7"
 
 x-airflow-base: &airflow-base
-  build:
-    context: ../../../../../
-    target: airflow
-    dockerfile: integration/airflow/tests/integration/Dockerfile
-    args:
-      AIRFLOW_IMAGE: ${AIRFLOW_IMAGE}
-      AIRFLOW_UID: ${AIRFLOW_UID}
+  image: ${AIRFLOW_IMAGE}
   environment: &airflow-common-env
     DB_BACKEND: postgresql+psycopg2
     DB_HOST: postgres
@@ -24,7 +18,6 @@ x-airflow-base: &airflow-base
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
     AIRFLOW__CORE__LOAD_EXAMPLES: "False"
     AIRFLOW__CORE__DAGBAG_IMPORT_TIMEOUT: 120
-    AIRFLOW__LINEAGE__BACKEND: openlineage.lineage_backend.OpenLineageBackend
     AIRFLOW_CONN_MYSQL_CONN: mysql://food_delivery:food_delivery@mysql:3306/food_delivery
     AIRFLOW_CONN_TRINO_CONN: trino://trino@trino:8080/default?catalog=memory
     AIRFLOW_CONN_BQ_CONN: google-cloud-platform://?extra__google_cloud_platform__project=openlineage-ci&extra__google_cloud_platform__key_path=%2Fopt%2Fconfig%2Fgcloud%2Fgcloud-service-key.json
@@ -84,8 +77,7 @@ services:
   integration:
     build:
       context: ../../../../../
-      target: integration
-      dockerfile: integration/airflow/tests/integration/Dockerfile
+      dockerfile: integration/airflow/tests/integration/Dockerfile.integration
       args:
         AIRFLOW_IMAGE: ${AIRFLOW_IMAGE}
     environment:
@@ -200,7 +192,7 @@ services:
 
   airflow_init:
     <<: *airflow-base
-    command: -c "/entrypoint airflow db upgrade && airflow users create --username airflow --password airflow --firstname airflow --lastname airflow --email airflow@example.com --role Admin"
+    command: -c "airflow db upgrade && airflow users create --username airflow --password airflow --firstname airflow --lastname airflow --email airflow@example.com --role Admin"
     environment:
       <<: *airflow-common-env
       _AIRFLOW_DB_UPGRADE: 'true'
@@ -211,8 +203,9 @@ services:
     networks:
       - app_net
     depends_on:
-      - postgres
-    entrypoint: ["/opt/data/wait-for-it.sh", "postgres:5432", "--", "/bin/bash"]
+      postgres:
+        condition: service_healthy
+    entrypoint: ["/bin/bash"]
 
   redis:
     image: redis:latest

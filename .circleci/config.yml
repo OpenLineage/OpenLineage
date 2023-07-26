@@ -17,6 +17,9 @@ parameters:
   databricks-test:
     type: string
     default: "disabled"
+  airflow-test-image:
+    type: string
+    default: "disabled"
 
 jobs:
   # Determine the modules that have changed and trigger a series of workflow tasks as necessary.

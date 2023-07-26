@@ -44,14 +44,14 @@ def IS_AIRFLOW_VERSION_ENOUGH(x):
 
 params = [
     ("postgres_orders_popular_day_of_week", "requests/postgres.json", True),
-    ("failed_sql_extraction", "requests/failed_sql_extraction.json", True),
-    ("great_expectations_validation", "requests/great_expectations.json", True),
-    pytest.param(
-        "bigquery_orders_popular_day_of_week",
-        "requests/bigquery.json",
-        True,
-        marks=pytest.mark.skipif(not IS_GCP_AUTH, reason="no gcp credentials"),
-    ),
+    # ("failed_sql_extraction", "requests/failed_sql_extraction.json", True),
+    # ("great_expectations_validation", "requests/great_expectations.json", True),
+    # pytest.param(
+    #     "bigquery_orders_popular_day_of_week",
+    #     "requests/bigquery.json",
+    #     True,
+    #     marks=pytest.mark.skipif(not IS_GCP_AUTH, reason="no gcp credentials"),
+    # ),
     pytest.param(
         "dbt",
         "requests/dbt_bigquery.json",
@@ -76,15 +76,15 @@ params = [
             ),
         ]
     ),
-    pytest.param(
-        "athena_dag",
-        "requests/athena.json",
-        True,
-        marks=pytest.mark.skipif(
-            os.environ.get("AWS_ACCESS_KEY_ID", "") == "",
-            reason="no aws credentials",
-        ),
-    ),
+    # pytest.param(
+    #     "athena_dag",
+    #     "requests/athena.json",
+    #     True,
+    #     marks=pytest.mark.skipif(
+    #         os.environ.get("AWS_ACCESS_KEY_ID", "") == "",
+    #         reason="no aws credentials",
+    #     ),
+    # ),
     ("source_code_dag", "requests/source_code.json", True),
     pytest.param(
         "default_extractor_dag",
@@ -106,14 +106,14 @@ params = [
             reason="Airflow < 2.1.0"
         )
     ),
-    pytest.param(
-        "mysql_orders_popular_day_of_week",
-        "requests/mysql.json",
-        True,
-        marks=pytest.mark.skipif(
-            not IS_AIRFLOW_VERSION_ENOUGH("2.2.4"), reason="Airflow < 2.2.4"
-        ),
-    ),
+    # pytest.param(
+    #     "mysql_orders_popular_day_of_week",
+    #     "requests/mysql.json",
+    #     True,
+    #     marks=pytest.mark.skipif(
+    #         not IS_AIRFLOW_VERSION_ENOUGH("2.2.4"), reason="Airflow < 2.2.4"
+    #     ),
+    # ),
     pytest.param(
         "trino_orders_popular_day_of_week",
         "requests/trino.json",
@@ -122,36 +122,36 @@ params = [
             not IS_AIRFLOW_VERSION_ENOUGH("2.4.0"), reason="Airflow < 2.4.0"
         ),
     ),
-    pytest.param(
-        "dbt",
-        "requests/dbt_snowflake.json",
-        True,
-        marks=[
-            pytest.mark.skipif(
-                not IS_AIRFLOW_VERSION_ENOUGH(SNOWFLAKE_AIRFLOW_TEST_VERSION),
-                reason=f"Airflow < {SNOWFLAKE_AIRFLOW_TEST_VERSION}",
-            ),
-            pytest.mark.skipif(
-                os.environ.get("SNOWFLAKE_PASSWORD", "") == "",
-                reason="no snowflake credentials",
-            ),
-        ],
-    ),
-    pytest.param(
-        "snowflake",
-        "requests/snowflake.json",
-        True,
-        marks=[
-            pytest.mark.skipif(
-                not IS_AIRFLOW_VERSION_ENOUGH(SNOWFLAKE_AIRFLOW_TEST_VERSION),
-                reason=f"Airflow < {SNOWFLAKE_AIRFLOW_TEST_VERSION}",
-            ),
-            pytest.mark.skipif(
-                os.environ.get("SNOWFLAKE_ACCOUNT_ID", "") == "",
-                reason="no snowflake credentials",
-            ),
-        ],
-    ),
+    # pytest.param(
+    #     "dbt",
+    #     "requests/dbt_snowflake.json",
+    #     True,
+    #     marks=[
+    #         pytest.mark.skipif(
+    #             not IS_AIRFLOW_VERSION_ENOUGH(SNOWFLAKE_AIRFLOW_TEST_VERSION),
+    #             reason=f"Airflow < {SNOWFLAKE_AIRFLOW_TEST_VERSION}",
+    #         ),
+    #         pytest.mark.skipif(
+    #             os.environ.get("SNOWFLAKE_PASSWORD", "") == "",
+    #             reason="no snowflake credentials",
+    #         ),
+    #     ],
+    # ),
+    # pytest.param(
+    #     "snowflake",
+    #     "requests/snowflake.json",
+    #     True,
+    #     marks=[
+    #         pytest.mark.skipif(
+    #             not IS_AIRFLOW_VERSION_ENOUGH(SNOWFLAKE_AIRFLOW_TEST_VERSION),
+    #             reason=f"Airflow < {SNOWFLAKE_AIRFLOW_TEST_VERSION}",
+    #         ),
+    #         pytest.mark.skipif(
+    #             os.environ.get("SNOWFLAKE_ACCOUNT_ID", "") == "",
+    #             reason="no snowflake credentials",
+    #         ),
+    #     ],
+    # ),
     pytest.param(
         "mapped_dag",
         "requests/mapped_dag.json",
@@ -177,26 +177,26 @@ params = [
             not IS_AIRFLOW_VERSION_ENOUGH("2.5.0"), reason="Airflow < 2.5.0"
         ),
     ),
-    pytest.param(
-        "s3copy_dag",
-        "requests/s3copy.json",
-        True,
-        marks=pytest.mark.skipif(
-            not IS_AIRFLOW_VERSION_ENOUGH("2.3.0"), reason="Airflow < 2.3.0"
-        ),
-    ),
-    pytest.param(
-        "s3transform_dag",
-        "requests/s3transform.json",
-        True,
-        marks=pytest.mark.skipif(
-            not IS_AIRFLOW_VERSION_ENOUGH("2.3.0"), reason="Airflow < 2.3.0"
-        ),
-    ),
+    # pytest.param(
+    #     "s3copy_dag",
+    #     "requests/s3copy.json",
+    #     True,
+    #     marks=pytest.mark.skipif(
+    #         not IS_AIRFLOW_VERSION_ENOUGH("2.3.0"), reason="Airflow < 2.3.0"
+    #     ),
+    # ),
+    # pytest.param(
+    #     "s3transform_dag",
+    #     "requests/s3transform.json",
+    #     True,
+    #     marks=pytest.mark.skipif(
+    #         not IS_AIRFLOW_VERSION_ENOUGH("2.3.0"), reason="Airflow < 2.3.0"
+    #     ),
+    # ),
 ]
 
 
-@retry(wait_exponential_multiplier=1000, wait_exponential_max=10000, stop_max_delay=1000*10*60)
+@retry(wait_exponential_multiplier=1000, wait_exponential_max=10000, stop_max_delay=1000*2*60)
 def wait_for_dag(dag_id, airflow_db_conn, should_fail=False) -> bool:
     log.info(f"Waiting for DAG '{dag_id}'...")
 

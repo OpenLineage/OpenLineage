@@ -38,6 +38,9 @@ parameters:
   databricks-test:
     type: string
     default: "disabled"
+  airflow-test-image:
+    type: string
+    default: "disabled"
 
 jobs:
   unit-test-client-python:
@@ -588,6 +591,9 @@ jobs:
     parameters:
       airflow-image:
         type: string
+      test-image:
+        type: string
+        default: ""
     working_directory: ~/openlineage/integration/
     machine:
       image: ubuntu-2004:current
@@ -600,7 +606,7 @@ jobs:
       - run: cp -r ../client/python python
       - attach_workspace:
           at: .
-      - run: AIRFLOW_IMAGE=<< parameters.airflow-image >> ./airflow/tests/integration/docker/up.sh
+      - run: AIRFLOW_IMAGE=<< parameters.airflow-image >> TEST_IMAGE=<< parameters.test-image >> ./airflow/tests/integration/docker/up.sh
       - store_artifacts:
           path: airflow/tests/integration/tests/airflow/logs
           destination: airflow-logs
@@ -980,3 +986,18 @@ workflows:
             - build-integration-sql-x86
             - build-integration-sql-arm
             - build-integration-sql-macos
+  airflow-manual-integration-test:
+    when:
+      not:
+        equal: [ disabled, << pipeline.parameters.airflow-test-image >> ]
+    jobs:
+      - integration-test-integration-airflow:
+          matrix:
+            parameters:
+              airflow-image: [
+                'apache/airflow:2.6.2-python3.8'
+              ]
+              test-image: [
+                << pipeline.parameters.airflow-test-image >>
+              ]
+          context: integration-tests
