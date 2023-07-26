@@ -117,22 +117,30 @@ def test_extraction_from_inlets_and_outlets_without_extractor():
 def test_extraction_from_inlets_and_outlets_ignores_unhandled_types():
     from openlineage.client.run import Dataset
 
-    from airflow.lineage.entities import File, Table
+    from airflow.lineage.entities import File, Table, User
 
     dagrun = MagicMock()
 
     task = FakeOperator(
         task_id="task",
-        inlets=[Dataset(namespace="c1", name="d1.t0", facets={}),
-                File(url="http://test"), Table(database="d1", cluster="c1", name="t1")],
-        outlets=[Table(database="d1", cluster="c1", name="t2"), File(url="http://test")],
+        inlets=[
+            Dataset(namespace="c1", name="d1.t0", facets={}),
+            File(url="http://test"),
+            Table(database="d1", cluster="c1", name="t1"),
+            User(email="asdf@asdf.com")
+        ],
+        outlets=[
+            Table(database="d1", cluster="c1", name="t2"),
+            File(url="http://test"),
+            User(email="asdf@asdf.com")
+        ],
     )
 
     manager = ExtractorManager()
 
     metadata = manager.extract_metadata(dagrun, task)
-    # The File objects from inlets and outlets should not be converted
-    assert len(metadata.inputs) == 2 and len(metadata.outputs) == 1
+    # The User objects from inlets and outlets should not be converted
+    assert len(metadata.inputs) == 3 and len(metadata.outputs) == 2
 
 
 def test_fake_extractor_extracts_from_inlets_and_outlets():
