@@ -47,8 +47,7 @@ public class Spark3DatasetBuilderFactory implements DatasetBuilderFactory {
             .add(new CommandPlanVisitor(context))
             .add(new DataSourceV2ScanRelationInputDatasetBuilder(context, datasetFactory))
             .add(new DataSourceV2RelationInputDatasetBuilder(context, datasetFactory))
-            .add(new SubqueryAliasInputDatasetBuilder(context))
-            .add(new MergeIntoCommandInputDatasetBuilder(context));
+            .add(new SubqueryAliasInputDatasetBuilder(context));
 
     if (DeltaUtils.hasMergeIntoCommandClass()) {
       builder.add(new MergeIntoCommandInputDatasetBuilder(context));
@@ -61,16 +60,20 @@ public class Spark3DatasetBuilderFactory implements DatasetBuilderFactory {
   public Collection<PartialFunction<Object, List<OpenLineage.OutputDataset>>> getOutputBuilders(
       OpenLineageContext context) {
     DatasetFactory<OpenLineage.OutputDataset> datasetFactory = DatasetFactory.output(context);
-    return ImmutableList.<PartialFunction<Object, List<OpenLineage.OutputDataset>>>builder()
+    ImmutableList.Builder builder = ImmutableList.<PartialFunction<Object, List<OpenLineage.OutputDataset>>>builder()
         .add(new LogicalRelationDatasetBuilder(context, datasetFactory, false))
         .add(new SaveIntoDataSourceCommandVisitor(context))
         .add(new AppendDataDatasetBuilder(context, datasetFactory))
         .add(new DataSourceV2RelationOutputDatasetBuilder(context, datasetFactory))
         .add(new TableContentChangeDatasetBuilder(context))
-        .add(new MergeIntoCommandOutputDatasetBuilder(context))
         .add(new CreateReplaceDatasetBuilder(context))
-        .add(new AlterTableDatasetBuilder(context))
-        .build();
+        .add(new AlterTableDatasetBuilder(context));
+
+    if (DeltaUtils.hasMergeIntoCommandClass()) {
+      builder.add(new MergeIntoCommandOutputDatasetBuilder(context));
+    }
+
+    return builder.build();
   }
 
   @Override
