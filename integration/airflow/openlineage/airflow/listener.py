@@ -82,10 +82,14 @@ def direct_execution():
 
 
 def execute(_callable):
-    if direct_execution():
-        _callable()
-    else:
-        execute_in_thread(_callable)
+    try:
+        if direct_execution():
+            _callable()
+        else:
+            execute_in_thread(_callable)
+    except Exception:
+        # Make sure we're not failing task, even for things we think can't happen
+        log.exception("Failed to emit OpenLineage event due to exception")
 
 
 @hookimpl
@@ -120,13 +124,14 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
             dagrun, task, task_uuid=task_uuid
         )
 
+        ti_start_time = ti.start_date if ti.start_date else datetime.datetime.now()
         start, end = get_dagrun_start_end(dagrun=dagrun, dag=dag)
 
         adapter.start_task(
             run_id=task_uuid,
             job_name=get_job_name(task),
             job_description=dag.description,
-            event_time=DagUtils.get_start_time(ti.start_date),
+            event_time=DagUtils.get_start_time(ti_start_time),
             parent_job_name=dag.dag_id,
             parent_run_id=parent_run_id,
             code_location=get_task_location(task),
