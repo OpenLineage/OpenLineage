@@ -57,7 +57,7 @@ repos:
         types: [text]
         args:
           - --ignore-words=spelling_wordlist.txt
-          - --skip=*.js,*.rs,*.svg,*.xml,*/**/test/*,*/**/tests/*
+          - --skip=*.js,*.svg,*.xml,*/**/test/*,*/**/tests/*
   - repo: local
     hooks:
       - id: check_schemas
