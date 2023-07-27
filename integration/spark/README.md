@@ -113,7 +113,7 @@ Parameters configuring the Spark integration
 | spark.openlineage.transport.apiKey            | An API key to be used when sending events to the OpenLineage server                                                                         | abcdefghijk           |
 | spark.openlineage.transport.timeout           | Timeout for sending OpenLineage info in milliseconds                                                                                        | 5000                  |
 | spark.openlineage.transport.urlParams.xyz     | A URL parameter (replace xyz) and value to be included in requests to the OpenLineage API server                                            | abcdefghijk           |
-| spark.openlineage.transport.url               | The hostname of the OpenLineage API server where events should be reported, it can have other properties embeded                            | http://localhost:5000 |
+| spark.openlineage.transport.url               | The hostname of the OpenLineage API server where events should be reported, it can have other properties embedded                            | http://localhost:5000 |
 | spark.openlineage.transport.headers.xyz       | Request headers (replace xyz) and value to be included in requests to the OpenLineage API server                                            | abcdefghijk           |
 
 ##### URL
@@ -135,7 +135,7 @@ Also, KinesisTransport depends on you to provide artifact `com.amazonaws:amazon-
 | spark.openlineage.transport.streamName        | Required, the streamName of the Kinesis Stream                                                                                                                                               | some-stream-name |
 | spark.openlineage.transport.region            | Required, the region of the stream                                                                                                                                                           | us-east-2        |
 | spark.openlineage.transport.roleArn           | Optional, the roleArn which is allowed to read/write to Kinesis stream                                                                                                                       | some-role-arn    |
-| spark.openlineage.transport.properties.[xxx]  | Optional, the [xxx] is property of [Kinesis allowd properties](https://github.com/awslabs/amazon-kinesis-producer/blob/master/java/amazon-kinesis-producer-sample/default_config.properties) | 1                |
+| spark.openlineage.transport.properties.[xxx]  | Optional, the [xxx] is property of [Kinesis allowed properties](https://github.com/awslabs/amazon-kinesis-producer/blob/master/java/amazon-kinesis-producer-sample/default_config.properties) | 1                |
 
 ### Kafka 
 If `spark.openlineage.transport.type` is set to `kafka`, then the below parameters would be read and used when building KafkaProducer.
