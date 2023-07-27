@@ -60,14 +60,15 @@ public class Spark3DatasetBuilderFactory implements DatasetBuilderFactory {
   public Collection<PartialFunction<Object, List<OpenLineage.OutputDataset>>> getOutputBuilders(
       OpenLineageContext context) {
     DatasetFactory<OpenLineage.OutputDataset> datasetFactory = DatasetFactory.output(context);
-    ImmutableList.Builder builder = ImmutableList.<PartialFunction<Object, List<OpenLineage.OutputDataset>>>builder()
-        .add(new LogicalRelationDatasetBuilder(context, datasetFactory, false))
-        .add(new SaveIntoDataSourceCommandVisitor(context))
-        .add(new AppendDataDatasetBuilder(context, datasetFactory))
-        .add(new DataSourceV2RelationOutputDatasetBuilder(context, datasetFactory))
-        .add(new TableContentChangeDatasetBuilder(context))
-        .add(new CreateReplaceDatasetBuilder(context))
-        .add(new AlterTableDatasetBuilder(context));
+    ImmutableList.Builder builder =
+        ImmutableList.<PartialFunction<Object, List<OpenLineage.OutputDataset>>>builder()
+            .add(new LogicalRelationDatasetBuilder(context, datasetFactory, false))
+            .add(new SaveIntoDataSourceCommandVisitor(context))
+            .add(new AppendDataDatasetBuilder(context, datasetFactory))
+            .add(new DataSourceV2RelationOutputDatasetBuilder(context, datasetFactory))
+            .add(new TableContentChangeDatasetBuilder(context))
+            .add(new CreateReplaceDatasetBuilder(context))
+            .add(new AlterTableDatasetBuilder(context));
 
     if (DeltaUtils.hasMergeIntoCommandClass()) {
       builder.add(new MergeIntoCommandOutputDatasetBuilder(context));
