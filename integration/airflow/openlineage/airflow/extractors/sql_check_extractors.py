@@ -119,7 +119,7 @@ def get_check_extractors(super_):
             facet_data: Dict[str, Any] = {"columnMetrics": defaultdict(dict)}
             assertion_data: Dict[str, List[Assertion]] = {"assertions": []}
             for col_name, checks in self.operator.column_mapping.items():
-                col_name = col_name.upper() if self._is_uppercase_names else col_name
+                col_name = self._normalize_name(col_name)
                 for check, check_values in checks.items():
                     facet_key = map_facet_name(check)
                     facet_data["columnMetrics"][col_name][facet_key] = check_values.get("result")

@@ -5,6 +5,8 @@ from unittest import mock
 from urllib.parse import parse_qs, urlparse
 
 from openlineage.airflow.extractors.snowflake_extractor import SnowflakeExtractor
+from openlineage.client.facet import DataSourceDatasetFacet
+from openlineage.client.run import Dataset as OLDataset
 from openlineage.common.dataset import Dataset, Field, Source
 from openlineage.common.models import DbColumn, DbTableSchema
 from openlineage.common.sql import DbTableMeta
@@ -15,7 +17,7 @@ from airflow.providers.snowflake.operators.snowflake import SnowflakeOperator
 from airflow.utils.dates import days_ago
 
 CONN_ID = 'food_delivery_db'
-CONN_URI = 'snowflake://snowflake.example/db-schema?account=test_account&database=FOOD_DELIVERY&region=us-east&warehouse=snow-warehouse&secret=hideit'  # noqa
+CONN_URI = 'snowflake://snowflake.example/db-schema?account=test_account&database=FOOD_DELIVERY&region=us-east-1&warehouse=snow-warehouse&secret=hideit'  # noqa
 CONN_URI_WITH_EXTRA_PREFIX = 'snowflake://snowflake.example/db-schema?extra__snowflake__account=test_account&extra__snowflake__database=FOOD_DELIVERY&extra__snowflake__region=us-east&extra__snowflake__warehouse=snow-warehouse&extra__snowflake__secret=hideit'  # noqa
 CONN_URI_URIPARSED = 'snowflake://snowflake.example/db-schema?account=%5B%27test_account%27%5D&database=%5B%27FOOD_DELIVERY%27%5D&region=%5B%27us-east%27%5D&warehouse=%5B%27snow-warehouse%27%5D'  # noqa
 
@@ -167,7 +169,9 @@ def test_extract(execute_query_on_hook, get_connection, mock_get_table_schemas):
         ).to_openlineage_dataset()
     ]
 
-    task_metadata = SnowflakeExtractor(TASK).extract()
+    extractor = SnowflakeExtractor(TASK)
+    extractor._is_schema_query_enabled = True
+    task_metadata = extractor.extract()
 
     assert task_metadata.name == f"{DAG_ID}.{TASK_ID}"
     assert task_metadata.inputs == expected_inputs
@@ -192,7 +196,9 @@ def test_extract_query_ids(execute_query_on_hook, get_connection, mock_get_table
     mock_get_hook(TASK)
     TASK.query_ids = ["1500100900"]
 
-    task_metadata = SnowflakeExtractor(TASK).extract()
+    extractor = SnowflakeExtractor(TASK)
+    extractor._is_schema_query_enabled = True
+    task_metadata = extractor.extract()
 
     assert task_metadata.run_facets["externalQuery"].externalQueryId == "1500100900"
 
@@ -299,7 +305,10 @@ def test_extract_create_stage(execute_query_on_hook, get_connection):
         'database': DB_NAME
     }
 
-    metadata = SnowflakeExtractor(task).extract()
+    extractor = SnowflakeExtractor(task)
+    extractor._is_schema_query_enabled = True
+    metadata = extractor.extract()
+
     assert metadata.outputs[0].name == "FOOD_DELIVERY.IN_OPENLINEAGE.DATA"
     assert metadata.inputs[0].name == "gcs://openlineage/data/"
 
@@ -337,6 +346,54 @@ def test_extract_copy_from_external_stage(
 
     mock_get_hook(task)
 
-    metadata = SnowflakeExtractor(task).extract()
+    extractor = SnowflakeExtractor(task)
+    extractor._is_schema_query_enabled = True
+    metadata = extractor.extract()
     assert metadata.inputs[0].name == "azure://mybucket/a.csv"
     assert metadata.outputs[0].name == "{}.PUBLIC.{}".format(DB_NAME, DB_TABLE_NAME)
+
+
+@mock.patch("airflow.hooks.base.BaseHook.get_connection")
+def test_extract_no_query_results(get_connection):
+    task = SnowflakeOperator(
+        task_id="snowflake_merge_into",
+        sql="""
+            MERGE INTO target
+            USING src ON target.k = src.k
+            WHEN MATCHED AND src.v = 11 THEN DELETE
+            WHEN MATCHED THEN UPDATE SET target.v = src.v;
+        """,
+        parameters={"id": 37},
+    )
+
+    conn = Connection()
+    conn.parse_from_uri(uri=CONN_URI)
+    get_connection.return_value = conn
+
+    task_metadata = SnowflakeExtractor(task).extract()
+
+    assert task_metadata.name == "adhoc_airflow.snowflake_merge_into"
+    assert task_metadata.inputs == [
+        OLDataset(
+            namespace="snowflake://test_account.us-east-1.aws",
+            name="FOOD_DELIVERY.DB-SCHEMA.SRC",
+            facets={
+                "dataSource": DataSourceDatasetFacet(
+                    name='snowflake://test_account.us-east-1.aws',
+                    uri='snowflake://snowflake.example/db-schema?account=test_account&database=FOOD_DELIVERY&region=us-east-1&warehouse=snow-warehouse'
+                )
+            }
+        )
+    ]
+    assert task_metadata.outputs == [
+        OLDataset(
+            namespace="snowflake://test_account.us-east-1.aws",
+            name="FOOD_DELIVERY.DB-SCHEMA.TARGET",
+            facets={
+                "dataSource": DataSourceDatasetFacet(
+                    name='snowflake://test_account.us-east-1.aws',
+                    uri='snowflake://snowflake.example/db-schema?account=test_account&database=FOOD_DELIVERY&region=us-east-1&warehouse=snow-warehouse'
+                )
+            }
+        )
+    ]

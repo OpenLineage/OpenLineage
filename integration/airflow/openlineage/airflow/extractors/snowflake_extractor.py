@@ -21,7 +21,7 @@ class SnowflakeExtractor(SqlExtractor):
         "data_type",
     ]
     _is_information_schema_cross_db = True
-    _is_uppercase_names = True
+    _is_schema_query_enabled = False
 
     # extra prefix should be deprecated soon in Airflow
     _whitelist_query_params: List[str] = ["warehouse", "account", "database", "region"] + [
@@ -39,7 +39,14 @@ class SnowflakeExtractor(SqlExtractor):
 
     @property
     def default_schema(self):
-        return execute_query_on_hook(self.hook, "SELECT current_schema();")[0][0]  # row -> column
+        if self._is_schema_query_enabled:
+            return execute_query_on_hook(
+                self.hook, "SELECT current_schema();"
+            )[0][0]  # row -> column
+        else:
+            if hasattr(self.operator, "schema") and self.operator.schema is not None:
+                return self.operator.schema
+            return self.conn.schema or "PUBLIC"
 
     def _get_database(self) -> str:
         if hasattr(self.operator, "database") and self.operator.database is not None:
@@ -65,6 +72,12 @@ class SnowflakeExtractor(SqlExtractor):
 
     def _get_scheme(self):
         return "snowflake"
+
+    @staticmethod
+    def _normalize_name(name):
+        if isinstance(name, str):
+            return name.upper()
+        return name
 
     def _get_db_specific_run_facets(self, source, *_) -> Mapping[str, BaseFacet]:
         query_ids = self._get_query_ids()

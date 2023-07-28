@@ -2,7 +2,17 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Callable, Dict, Iterable, List, Mapping, Optional, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Tuple,
+    Union,
+)
 from urllib.parse import urlparse
 
 from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
@@ -39,8 +49,8 @@ class SqlExtractor(BaseExtractor):
     ]
     _information_schema_table_name = "information_schema.columns"
     _is_information_schema_cross_db = False
-    _is_uppercase_names = False
     _allow_trailing_semicolon = True
+    _is_schema_query_enabled = True
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -109,13 +119,31 @@ class SqlExtractor(BaseExtractor):
         out_tables = [
             t for t in sql_meta.out_tables if not t.provided_field_schema
         ]
-        inputs, outputs = get_table_schemas(
-            self.hook,
-            source,
-            database,
-            self._information_schema_query(in_tables) if in_tables else None,
-            self._information_schema_query(out_tables) if out_tables else None,
-        )
+        if self._is_schema_query_enabled:
+            inputs, outputs = get_table_schemas(
+                self.hook,
+                source,
+                database,
+                self._information_schema_query(in_tables) if in_tables else None,
+                self._information_schema_query(out_tables) if out_tables else None,
+            )
+        else:
+            inputs = [
+                Dataset.from_table(
+                    source=source,
+                    table_name=self._normalize_name(table.name),
+                    schema_name=self._normalize_name(table.schema),
+                    database_name=self._normalize_name(table.database or database)
+                ) for table in in_tables
+            ]
+            outputs = [
+                Dataset.from_table(
+                    source=source,
+                    table_name=self._normalize_name(table.name),
+                    schema_name=self._normalize_name(table.schema),
+                    database_name=self._normalize_name(table.database or database)
+                ) for table in out_tables
+            ]
 
         # (4) Map external stage tables to datasets
         # (no need to query information schema)
@@ -240,8 +268,10 @@ class SqlExtractor(BaseExtractor):
         return {}
 
     @staticmethod
-    def _normalize_name(name: str) -> str:
-        return name.lower()
+    def _normalize_name(name):
+        if isinstance(name, str):
+            return name.lower()
+        return name
 
     def attach_column_facet(self, dataset, sql_meta: SqlMeta):
         if not len(sql_meta.column_lineage):
@@ -274,7 +304,6 @@ class SqlExtractor(BaseExtractor):
             columns=self._information_schema_columns,
             information_schema_table_name=self._information_schema_table_name,
             tables_hierarchy=tables_hierarchy,
-            uppercase_names=self._is_uppercase_names,
             allow_trailing_semicolon=self._allow_trailing_semicolon,
         )
 
@@ -302,5 +331,5 @@ class SqlExtractor(BaseExtractor):
                 normalize_name(db) if db else db, {}
             ).setdefault(
                 normalize_name(table.schema) if table.schema else db, []
-            ).append(table.name)
+            ).append(normalize_name(table.name))
         return hierarchy

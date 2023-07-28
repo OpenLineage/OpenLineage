@@ -119,7 +119,6 @@ def create_information_schema_query(
     columns: List[str],
     information_schema_table_name: str,
     tables_hierarchy: TablesHierarchy,
-    uppercase_names: bool = False,
     allow_trailing_semicolon: bool = True,
 ) -> str:
     """
@@ -127,10 +126,10 @@ def create_information_schema_query(
     """
     sqls = []
     for db, schema_mapping in tables_hierarchy.items():
-        filter_clauses = create_filter_clauses(schema_mapping, uppercase_names)
+        filter_clauses = create_filter_clauses(schema_mapping)
         source = information_schema_table_name
         if db:
-            source = f"{db.upper() if uppercase_names else db}." f"{source}"
+            source = f"{db}." f"{source}"
         sqls.append(
             (
                 f"SELECT {', '.join(columns)} "
@@ -147,18 +146,18 @@ def create_information_schema_query(
     return sql
 
 
-def create_filter_clauses(schema_mapping, uppercase_names: bool = False) -> List[str]:
+def create_filter_clauses(schema_mapping) -> List[str]:
     filter_clauses = []
     for schema, tables in schema_mapping.items():
         table_names = ",".join(
             map(
-                lambda name: f"'{name.upper() if uppercase_names else name}'",
+                lambda name: f"'{name}'",
                 tables,
             )
         )
         if schema:
             filter_clauses.append(
-                f"( table_schema = '{schema.upper() if uppercase_names else schema}' "
+                f"( table_schema = '{schema}' "
                 f"AND table_name IN ({table_names}) )"
             )
         else:

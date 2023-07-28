@@ -50,5 +50,7 @@ class MySqlExtractor(SqlExtractor):
         )
 
     @staticmethod
-    def _normalize_name(name: str) -> str:
-        return name.upper()
+    def _normalize_name(name):
+        if isinstance(name, str):
+            return name.upper()
+        return name
