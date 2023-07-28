@@ -62,7 +62,7 @@ class ExtractorManager:
                     f'Failed to extract metadata {e} {task_info}',
                 )
         else:
-            self.log.warning(
+            self.log.debug(
                 f'Unable to find an extractor. {task_info}')
 
             # Only include the unkonwnSourceAttribute facet if there is no extractor
