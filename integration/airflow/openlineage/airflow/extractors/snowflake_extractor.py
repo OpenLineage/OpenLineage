@@ -1,9 +1,10 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Dict, List, Mapping
+from typing import Dict, List, Mapping, Optional
 from urllib.parse import urlparse
 
+from openlineage.airflow.extractors import TaskMetadata
 from openlineage.airflow.extractors.dbapi_utils import execute_query_on_hook
 from openlineage.airflow.extractors.sql_extractor import SqlExtractor
 from openlineage.client.facet import BaseFacet, ExternalQueryRunFacet
@@ -80,3 +81,6 @@ class SnowflakeExtractor(SqlExtractor):
                 "This might indicate that this task might be better as multiple jobs"
             )
         return run_facets
+
+    def extract_on_complete(self, task_instance) -> Optional[TaskMetadata]:
+        return None

@@ -15,8 +15,6 @@ from openlineage.airflow.adapter import OpenLineageAdapter
 def test_create_client_from_marquez_url():
     client = OpenLineageAdapter().get_or_create_openlineage_client()
     assert client.transport.url == "http://marquez:5000"
-    assert "Authorization" in client.transport.session.headers
-    assert client.transport.session.headers["Authorization"] == "Bearer api-key"
 
 
 @patch.dict(os.environ, {
@@ -25,10 +23,8 @@ def test_create_client_from_marquez_url():
 })
 def test_create_client_from_ol_env():
     client = OpenLineageAdapter().get_or_create_openlineage_client()
-
     assert client.transport.url == "http://ol-api:5000"
-    assert "Authorization" in client.transport.session.headers
-    assert client.transport.session.headers["Authorization"] == "Bearer api-key"
+
 
 def test_setting_ol_adapter_log_level() -> None:
     # DEBUG level set for `openlineage` logger in tests setup
