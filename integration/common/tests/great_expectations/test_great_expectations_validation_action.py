@@ -37,7 +37,15 @@ from great_expectations.data_context.types.resource_identifiers import (
     ExpectationSuiteIdentifier,
     ValidationResultIdentifier,
 )
-from great_expectations.dataset import PandasDataset, SqlAlchemyDataset
+
+try:
+    from great_expectations.dataset import (
+        PandasDataset,
+        SqlAlchemyDataset,
+    )
+except ImportError:
+    from great_expectations.dataset.pandas_dataset import PandasDataset
+    from great_expectations.dataset.sqlalchemy_dataset import SqlAlchemyDataset
 
 current_env = os.environ
 
