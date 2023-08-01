@@ -1,6 +1,27 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/0.30.1...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.0.0...HEAD)
+
+## [1.0.0](https://github.com/OpenLineage/OpenLineage/compare/0.30.1...1.0.0) - 2023-08-01
+### Added
+* **Airflow: convert lineage from legacy `File` definition** [`#2006`](https://github.com/OpenLineage/OpenLineage/pull/2006) [@mobuchowski](https://github.com/mobuchowski)  
+    *Adds coverage for `File` entity definition to enhance backwards compatibility.*
+
+### Removed
+* **Spec: remove facet ref from core** [`#1997`](https://github.com/OpenLineage/OpenLineage/pull/1997) [@JDarDagran](https://github.com/JDarDagran)  
+    *Removes references to facets from the core spec that broke compatibility with JSON schema specification.*
+
+### Changed 
+* **Airflow: change log level to `DEBUG` when extractor isn't found** [`#2012`](https://github.com/OpenLineage/OpenLineage/pull/2012) [@kaxil](https://github.com/kaxil)  
+    *Changes log level from `WARNING` to `DEBUG` when an extractor is not available.*
+* **Airflow: make sure we cannot fail in thread despite direct execution** [`#2010`](https://github.com/OpenLineage/OpenLineage/pull/2010) [@mobuchowski](https://github.com/mobuchowski)  
+    *Ensures the listener is not failing tasks, even in unlikely scenarios.*
+
+### Fixed
+* **Airflow: stop using reusable session by default, do not send full event on Snowflake complete** [`#2025`](https://github.com/OpenLineage/OpenLineage/pull/2025) [@mobuchowski](https://github.com/mobuchowski)  
+    *Fixes the issue of the Snowflake connector clashing with `HttpTransport` by disabling automatic `requests` session reuse and not running `SnowflakeExtractor` again on job completion.*
+* **Client: fix error message to avoid confusion** [`#2001`](https://github.com/OpenLineage/OpenLineage/pull/2001) [@mars-lan](https://github.com/mars-lan)  
+    *Fixes the error message in `HttpTransport` in the case of a null URL.*
 
 ## [0.30.1](https://github.com/OpenLineage/OpenLineage/compare/0.29.2...0.30.1) - 2023-07-25
 ### Added
