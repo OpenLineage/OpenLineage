@@ -21,7 +21,7 @@
 * **Airflow: stop using reusable session by default, do not send full event on Snowflake complete** [`#2025`](https://github.com/OpenLineage/OpenLineage/pull/2025) [@mobuchowski](https://github.com/mobuchowski)  
     *Fixes the issue of the Snowflake connector clashing with `HttpTransport` by disabling automatic `requests` session reuse and not running `SnowflakeExtractor` again on job completion.*
 * **Client: fix error message to avoid confusion** [`#2001`](https://github.com/OpenLineage/OpenLineage/pull/2001) [@mars-lan](https://github.com/mars-lan)  
-    *Fixes error message in `HttpTransport` in case of null URL.*
+    *Fixes the error message in `HttpTransport` in the case of a null URL.*
 
 ## [0.30.1](https://github.com/OpenLineage/OpenLineage/compare/0.29.2...0.30.1) - 2023-07-25
 ### Added
