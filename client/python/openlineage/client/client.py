@@ -59,10 +59,6 @@ class OpenLineageClient:
             # HTTP transport.
             if not options:
                 options = OpenLineageClientOptions()
-            if not session:
-                from requests import Session
-
-                session = Session()
             self._initialize_url(url, options, session)
         elif transport:
             self.transport = transport
@@ -81,7 +77,7 @@ class OpenLineageClient:
         self,
         url: str,
         options: OpenLineageClientOptions,
-        session: Session,
+        session: Session | None,
     ) -> None:
         self.transport = HttpTransport(
             HttpConfig.from_options(

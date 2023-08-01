@@ -11,11 +11,12 @@ from urllib.parse import urljoin
 import attr
 
 if TYPE_CHECKING:
-    from requests import Session
     from requests.adapters import HTTPAdapter, Response
 
     from openlineage.client.client import OpenLineageClientOptions
     from openlineage.client.run import DatasetEvent, JobEvent, RunEvent
+
+from requests import Session
 
 from openlineage.client.serde import Serde
 from openlineage.client.transport.transport import Config, Transport
@@ -74,7 +75,7 @@ class HttpConfig(Config):
     verify: bool = attr.ib(default=True)
     auth: TokenProvider = attr.ib(factory=lambda: TokenProvider({}))
     # not set by TransportFactory
-    session: Session = attr.ib(factory=get_session)
+    session: Session | None = attr.ib(default=None)
     # not set by TransportFactory
     adapter: HTTPAdapter | None = attr.ib(default=None)
 
@@ -101,7 +102,7 @@ class HttpConfig(Config):
             auth=ApiKeyTokenProvider({"api_key": options.api_key})
             if options.api_key
             else TokenProvider({}),
-            session=session if session else get_session(),
+            session=session,
             adapter=options.adapter,
         )
 
@@ -112,8 +113,9 @@ class HttpTransport(Transport):
 
     def __init__(self, config: HttpConfig) -> None:
         url = config.url.strip()
+        self.config = config
 
-        log.debug("Constructing openlineage client to send events to %s", url)
+        log.debug("Constructing openlineage client to send events to %s - config %s", url, config)
         try:
             from urllib3.util import parse_url
 
@@ -127,30 +129,50 @@ class HttpTransport(Transport):
                 raise ValueError(msg)
         self.url = url
         self.endpoint = config.endpoint
-        self.session = config.session
-        self.session.headers["Content-Type"] = "application/json"
+        self.session = None
+        if config.session:
+            self.session = config.session
+            self.session.headers["Content-Type"] = "application/json"
+            auth_headers = self._auth_headers(config.auth)
+            self.session.headers.update(auth_headers)
         self.timeout = config.timeout
         self.verify = config.verify
 
-        self._add_auth(config.auth)
         if config.adapter:
             self.set_adapter(config.adapter)
 
     def set_adapter(self, adapter: HTTPAdapter) -> None:
-        self.session.mount(self.url, adapter)
+        if self.session:
+            self.session.mount(self.url, adapter)
 
     def emit(self, event: Union[RunEvent, DatasetEvent, JobEvent]) -> Response:  # noqa: UP007
         event_str = Serde.to_json(event)
-        resp = self.session.post(
-            urljoin(self.url, self.endpoint),
-            event_str,
-            timeout=self.timeout,
-            verify=self.verify,
-        )
+        if self.session:
+            resp = self.session.post(
+                urljoin(self.url, self.endpoint),
+                event_str,
+                timeout=self.timeout,
+                verify=self.verify,
+            )
+        else:
+            headers = {
+                "Content-Type": "application/json",
+            }
+            headers.update(self._auth_headers(self.config.auth))
+            with Session() as session:
+                resp = session.post(
+                    urljoin(self.url, self.endpoint),
+                    event_str,
+                    headers=headers,
+                    timeout=self.timeout,
+                    verify=self.verify,
+                )
+            resp.close()
         resp.raise_for_status()
         return resp
 
-    def _add_auth(self, token_provider: TokenProvider) -> None:
+    def _auth_headers(self, token_provider: TokenProvider) -> dict:  # type: ignore[type-arg]
         bearer = token_provider.get_bearer()
         if bearer:
-            self.session.headers.update({"Authorization": bearer})
+            return {"Authorization": bearer}
+        return {}
