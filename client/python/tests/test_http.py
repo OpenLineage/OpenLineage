@@ -35,7 +35,7 @@ def test_http_loads_full_config() -> None:
     assert config.endpoint == "api/v1/lineage"
     assert config.verify is False
     assert config.auth.api_key == "1500100900"
-    assert isinstance(config.session, Session)
+    assert config.session is None
     assert config.adapter is None
 
 
@@ -49,7 +49,7 @@ def test_http_loads_minimal_config() -> None:
     assert config.url == "http://backend:5000/api/v1/lineage"
     assert config.verify is True
     assert not hasattr(config.auth, "api_key")
-    assert isinstance(config.session, Session)
+    assert config.session is None
     assert config.adapter is None
 
 
@@ -111,3 +111,13 @@ def test_client_with_http_transport_emits_custom_endpoint(mocker: MockerFixture)
         timeout=5.0,
         verify=True,
     )
+
+
+def test_http_config_configs_session() -> None:
+    with Session() as s:
+        config = HttpConfig(url="http://backend:5000/api/v1/lineage", session=s)
+        assert config.url == "http://backend:5000/api/v1/lineage"
+        assert config.verify is True
+        assert not hasattr(config.auth, "api_key")
+        assert config.session is s
+        assert config.adapter is None
