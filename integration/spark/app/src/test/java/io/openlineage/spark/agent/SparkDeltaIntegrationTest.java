@@ -419,6 +419,32 @@ public class SparkDeltaIntegrationTest {
             });
   }
 
+  @Test
+  @SneakyThrows
+  void testMergeInto() {
+    clearTables("events", "updates");
+    spark.sql("CREATE TABLE events (event_id long, last_updated_at long) USING delta");
+    spark.sql("CREATE TABLE updates (event_id long, updated_at long) USING delta");
+
+    spark.sql("INSERT INTO events VALUES (1, 1641290276);");
+    spark.sql("INSERT INTO updates VALUES (1, 1641290277);");
+    spark.sql("INSERT INTO updates VALUES (2, 1641290277);");
+
+    spark.read().table("events").write().format("delta").save("/tmp/delta/new-events");
+
+    spark.sql(
+        "MERGE INTO delta.`/tmp/delta/new-events` target USING updates "
+            + " ON target.event_id = updates.event_id"
+            + " WHEN MATCHED THEN UPDATE SET target.last_updated_at = updates.updated_at"
+            + " WHEN NOT MATCHED THEN INSERT (event_id, last_updated_at) "
+            + "VALUES (event_id, updated_at)");
+
+    verifyEvents(
+        mockServer,
+        "pysparkV2MergeIntoDeltaTableStartEvent.json",
+        "pysparkV2MergeIntoDeltaTableCompleteEvent.json");
+  }
+
   /**
    * Environment variables differ on local environment and CI. This method returns any environment
    * variable being set for testing.
