@@ -8,6 +8,7 @@ package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.JdbcUtils;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -40,11 +41,11 @@ public class JdbcHandler implements CatalogHandler {
     JDBCTableCatalog catalog = (JDBCTableCatalog) tableCatalog;
     JDBCOptions options = (JDBCOptions) FieldUtils.readField(catalog, "options", true);
 
-    String name =
+    List<String> parts =
         Stream.concat(Arrays.stream(identifier.namespace()), Stream.of(identifier.name()))
-            .collect(Collectors.joining("."));
+            .collect(Collectors.toList());
 
-    return new DatasetIdentifier(name, JdbcUtils.sanitizeJdbcUrl(options.url()));
+    return JdbcUtils.getDatasetIdentifierFromJdbcUrl(options.url(), parts);
   }
 
   @Override

@@ -6,9 +6,11 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m'
 
-# Install Rust
-curl https://sh.rustup.rs -sSf | sh -s -- -y
-source $HOME/.cargo/env
+if ! [ -x "$(command -v cargo)" ]; then
+  # Install Rust
+  curl https://sh.rustup.rs -sSf | sh -s -- -y
+  source $HOME/.cargo/env
+fi
 
 BASEDIR=$(dirname $BASH_SOURCE)
 ROOT=$BASEDIR/..
@@ -35,4 +37,5 @@ cd $ROOT/..
 cargo build -p openlineage_sql_java
 
 shopt -s extglob
+pwd
 mv target/debug/libopenlineage_sql_java*(*.so|*.dylib) target/debug/$NATIVE_LIB_NAME

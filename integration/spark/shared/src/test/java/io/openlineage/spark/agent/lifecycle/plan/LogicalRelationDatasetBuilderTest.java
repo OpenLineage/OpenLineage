@@ -71,12 +71,12 @@ class LogicalRelationDatasetBuilderTest {
 
   @ParameterizedTest
   @CsvSource({
-    "jdbc:postgresql://postgreshost:5432/sparkdata,postgres://postgreshost:5432/sparkdata",
-    "jdbc:oracle:oci8:@sparkdata,oracle:oci8:@sparkdata",
-    "jdbc:oracle:thin@sparkdata:1521:orcl,oracle:thin@sparkdata:1521:orcl",
-    "jdbc:mysql://localhost/sparkdata,mysql://localhost/sparkdata"
+    "jdbc:postgresql://postgreshost:5432/sparkdata,postgres://postgreshost:5432,sparkdata.my_spark_table",
+    "jdbc:oracle:oci8:@sparkdata,oracle:oci8:@sparkdata,my_spark_table",
+    "jdbc:oracle:thin@sparkdata:1521:orcl,oracle:thin@sparkdata:1521:orcl,my_spark_table",
+    "jdbc:mysql://localhost/sparkdata,mysql://localhost,sparkdata.my_spark_table"
   })
-  void testApply(String connectionUri, String targetUri) {
+  void testApply(String connectionUri, String targetUri, String targetTableName) {
     OpenLineage openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
     String sparkTableName = "my_spark_table";
     JDBCRelation relation =
@@ -126,7 +126,7 @@ class LogicalRelationDatasetBuilderTest {
     assertEquals(1, datasets.size());
     OutputDataset ds = datasets.get(0);
     assertEquals(targetUri, ds.getNamespace());
-    assertEquals(sparkTableName, ds.getName());
+    assertEquals(targetTableName, ds.getName());
     assertEquals(URI.create(targetUri), ds.getFacets().getDataSource().getUri());
     assertEquals(targetUri, ds.getFacets().getDataSource().getName());
   }
