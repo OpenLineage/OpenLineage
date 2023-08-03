@@ -307,6 +307,8 @@ public class SparkDeltaIntegrationTest {
 
   @Test
   void testDeltaMergeInto() {
+    clearTables("t1", "t2");
+
     Dataset<Row> dataset =
         spark
             .createDataFrame(
