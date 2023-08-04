@@ -44,6 +44,7 @@ def IS_AIRFLOW_VERSION_ENOUGH(x):
 
 params = [
     ("postgres_orders_popular_day_of_week", "requests/postgres.json", True),
+    ("postgres_ms", "requests/postgres_ms.json", True),
     ("failed_sql_extraction", "requests/failed_sql_extraction.json", True),
     ("great_expectations_validation", "requests/great_expectations.json", True),
     pytest.param(

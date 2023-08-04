@@ -1,0 +1,54 @@
+[{
+    "eventType": "START",
+    "inputs": [],
+    "job": {
+        "facets": {
+            "documentation": {
+                "description": "DAG that copies table by insert and select"
+            },
+            "ownership": {
+                "owners": [
+                    {
+                        "name": "someone"
+                    }
+                ]
+            },
+            "sql": {
+                "query": "\n        DROP TABLE IF EXISTS users;\n\n        CREATE TABLE IF NOT EXISTS users (\n                name VARCHAR NOT NULL,\n                age INTEGER\n        );\n\n        INSERT INTO users(name, age)\n        VALUES\n                ('deer', 22),\n                ('ruihua', 24),\n                ('kathy', 5),\n                ('john', 15);\n\n        "
+            }
+        },
+        "name": "postgres_ms.init_user",
+        "namespace": "food_delivery"
+    },
+    "outputs": []
+}, {
+    "eventType": "COMPLETE",
+    "job": {
+        "facets": {
+            "sql": {
+                "query": "\n        DROP TABLE IF EXISTS users;\n\n        CREATE TABLE IF NOT EXISTS users (\n                name VARCHAR NOT NULL,\n                age INTEGER\n        );\n\n        INSERT INTO users(name, age)\n        VALUES\n                ('deer', 22),\n                ('ruihua', 24),\n                ('kathy', 5),\n                ('john', 15);\n\n        "
+            }
+        },
+        "name": "postgres_ms.init_user",
+        "namespace": "food_delivery"
+    },
+    "outputs": [{
+        "facets": {
+            "schema": {
+                    "fields": [
+                        {
+                            "name": "name",
+                            "type": "varchar"
+                        },
+                        {
+                            "name": "age",
+                            "type": "int4"
+                        }
+                    ]
+                }
+            },
+            "name": "food_delivery.public.users",
+            "namespace": "postgres://postgres:5432"
+        }
+    ]
+}]
