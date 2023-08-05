@@ -82,7 +82,7 @@ class DefaultTransportFactory(TransportFactory):
             auth=create_token_provider(
                 {
                     "type": "api_key",
-                    "api_key": os.environ.get("OPENLINEAGE_API_KEY", ""),
+                    "apiKey": os.environ.get("OPENLINEAGE_API_KEY", ""),
                 },
             ),
         )
