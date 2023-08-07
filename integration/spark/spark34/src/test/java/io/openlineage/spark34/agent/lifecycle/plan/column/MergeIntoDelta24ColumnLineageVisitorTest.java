@@ -28,9 +28,11 @@ import org.apache.spark.sql.catalyst.plans.logical.DeltaMergeIntoNotMatchedClaus
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.delta.commands.MergeIntoCommand;
 import org.apache.spark.sql.delta.files.TahoeFileIndex;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import scala.Option;
+import scala.collection.Seq$;
 
 public class MergeIntoDelta24ColumnLineageVisitorTest {
 
@@ -38,6 +40,25 @@ public class MergeIntoDelta24ColumnLineageVisitorTest {
   MergeIntoCommand command = mock(MergeIntoCommand.class);
   MergeIntoDelta24ColumnLineageVisitor visitor = new MergeIntoDelta24ColumnLineageVisitor(context);
   ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
+  DeltaMergeIntoMatchedClause deltaMergeIntoMatchedClause = mock(DeltaMergeIntoMatchedClause.class);
+  DeltaMergeIntoNotMatchedClause deltaMergeIntoNotMatchedClause =
+      mock(DeltaMergeIntoNotMatchedClause.class);
+  DeltaMergeAction action1 = mock(DeltaMergeAction.class);
+  AttributeReference actionChild1 = mock(AttributeReference.class);
+  ExprId parentExprId1 = mock(ExprId.class);
+  ExprId action1ExprId = mock(ExprId.class);
+  DeltaMergeAction action2 = mock(DeltaMergeAction.class);
+  AttributeReference actionChild2 = mock(AttributeReference.class);
+  ExprId parentExprId2 = mock(ExprId.class);
+  ExprId action2ExprId = mock(ExprId.class);
+
+  @BeforeEach
+  void setup() {
+    when(deltaMergeIntoMatchedClause.actions())
+        .thenReturn(ScalaConversionUtils.<Expression>fromList(Collections.singletonList(action1)));
+    when(deltaMergeIntoNotMatchedClause.actions())
+        .thenReturn(ScalaConversionUtils.<Expression>fromList(Collections.singletonList(action2)));
+  }
 
   @Test
   void testCollectInputsIsCalled() {
@@ -46,6 +67,8 @@ public class MergeIntoDelta24ColumnLineageVisitorTest {
 
     when(command.source()).thenReturn(source);
     when(command.target()).thenReturn(target);
+    when(command.matchedClauses()).thenReturn(Seq$.MODULE$.empty());
+    when(command.notMatchedClauses()).thenReturn(Seq$.MODULE$.empty());
 
     try (MockedStatic mocked = mockStatic(InputFieldsCollector.class)) {
       visitor.collectInputs(command, builder);
@@ -75,21 +98,6 @@ public class MergeIntoDelta24ColumnLineageVisitorTest {
 
   @Test
   void testGetMergeActions() {
-    DeltaMergeIntoMatchedClause deltaMergeIntoMatchedClause =
-        mock(DeltaMergeIntoMatchedClause.class);
-    DeltaMergeIntoNotMatchedClause deltaMergeIntoNotMatchedClause =
-        mock(DeltaMergeIntoNotMatchedClause.class);
-
-    DeltaMergeAction action1 = mock(DeltaMergeAction.class);
-    AttributeReference actionChild1 = mock(AttributeReference.class);
-    ExprId parentExprId1 = mock(ExprId.class);
-    ExprId action1ExprId = mock(ExprId.class);
-
-    DeltaMergeAction action2 = mock(DeltaMergeAction.class);
-    AttributeReference actionChild2 = mock(AttributeReference.class);
-    ExprId parentExprId2 = mock(ExprId.class);
-    ExprId action2ExprId = mock(ExprId.class);
-
     when(action1.targetColNameParts())
         .thenReturn(ScalaConversionUtils.<String>fromList(Collections.singletonList("col_1")));
     when(action2.targetColNameParts())
@@ -103,11 +111,6 @@ public class MergeIntoDelta24ColumnLineageVisitorTest {
 
     when(builder.getOutputExprIdByFieldName("col_1")).thenReturn(Optional.of(parentExprId1));
     when(builder.getOutputExprIdByFieldName("col_2")).thenReturn(Optional.of(parentExprId2));
-
-    when(deltaMergeIntoMatchedClause.actions())
-        .thenReturn(ScalaConversionUtils.<Expression>fromList(Collections.singletonList(action1)));
-    when(deltaMergeIntoNotMatchedClause.actions())
-        .thenReturn(ScalaConversionUtils.<Expression>fromList(Collections.singletonList(action2)));
 
     MergeIntoCommand command =
         new MergeIntoCommand(
