@@ -301,6 +301,6 @@ class SqlExtractor(BaseExtractor):
             hierarchy.setdefault(
                 normalize_name(db) if db else db, {}
             ).setdefault(
-                normalize_name(table.schema) if table.schema else db, []
+                normalize_name(table.schema) if table.schema else None, []
             ).append(table.name)
         return hierarchy
