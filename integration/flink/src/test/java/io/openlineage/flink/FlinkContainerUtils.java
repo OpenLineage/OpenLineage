@@ -28,7 +28,7 @@ public class FlinkContainerUtils {
   private static final String SCHEMA_REGISTRY_IMAGE = getRegistryImage();
   private static final String KAFKA_IMAGE = "wurstmeister/kafka:2.13-2.8.1";
   private static final String ZOOKEEPER_IMAGE = "confluentinc/cp-zookeeper:" + CONFLUENT_VERSION;
-  private static final String FLINK_IMAGE =
+  static final String FLINK_IMAGE =
       String.format("flink:%s-java11", System.getProperty("flink.version"));
 
   static MockServerContainer makeMockServerContainer(Network network) {
@@ -164,8 +164,7 @@ public class FlinkContainerUtils {
         || logs.contains("Shutting down remote daemon.");
   }
 
-  private static GenericContainer<?> genericContainer(
-      Network network, String image, String hostname) {
+  static GenericContainer<?> genericContainer(Network network, String image, String hostname) {
     return new GenericContainer<>(DockerImageName.parse(image))
         .withNetwork(network)
         .withLogConsumer(of -> consumeOutput(hostname, of))
@@ -197,7 +196,7 @@ public class FlinkContainerUtils {
     return prefixTag + output.replace(System.lineSeparator(), System.lineSeparator() + prefixTag);
   }
 
-  private static String getOpenLineageJarPath() {
+  static String getOpenLineageJarPath() {
     return Arrays.stream((new File("build/libs")).listFiles())
         .filter(file -> file.getName().startsWith("openlineage-flink"))
         .map(file -> file.getPath())
@@ -205,7 +204,7 @@ public class FlinkContainerUtils {
         .get();
   }
 
-  private static String getExampleAppJarPath() {
+  static String getExampleAppJarPath() {
     return Arrays.stream((new File("examples/stateful/build/libs")).listFiles())
         .filter(file -> file.getName().startsWith("stateful"))
         .map(file -> file.getPath())
