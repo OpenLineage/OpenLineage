@@ -89,7 +89,7 @@ public class JavaPoetGenerator {
     if (!server) {
       containerTypeBuilder.addJavadoc(
           "Usage:\n" +
-          "<pre>\n" +
+          "<pre>{@code\n" +
           "  URI producer = URI.create(\"http://my.producer/uri\");\n" +
           "  $N ol = new $N(producer);\n" +
           "  UUID runId = UUID.randomUUID();\n" +
@@ -104,7 +104,7 @@ public class JavaPoetGenerator {
           "  List<OutputDataset> outputs = Arrays.asList(ol.newOutputDataset(\"ons\", \"output\", null, null));\n" +
           "  RunEvent runStateUpdate =\n" +
           "    ol.newRunEvent(now, OpenLineage.RunEvent.EventType.START, run, job, inputs, outputs);\n" +
-          "</pre>\n",
+          "}</pre>\n",
           containerClassName, containerClassName);
 
       containerTypeBuilder.addField(FieldSpec.builder(ClassName.get(URI.class), "producer", PRIVATE, FINAL).build());
@@ -471,7 +471,8 @@ public class JavaPoetGenerator {
 
   private void generateInterface(TypeSpec.Builder containerTypeBuilder, ObjectResolvedType type) {
     TypeSpec.Builder interfaceBuilder = TypeSpec.interfaceBuilder(type.getName())
-        .addModifiers(STATIC, PUBLIC);
+        .addModifiers(STATIC, PUBLIC)
+        .addJavadoc("Interface for $N\n", type.getName());
 
     generateDefaultImplementation(containerTypeBuilder, type, interfaceBuilder);
 
