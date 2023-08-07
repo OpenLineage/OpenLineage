@@ -6,6 +6,7 @@
 package io.openlineage.spark.agent.column;
 
 import static io.openlineage.spark.agent.column.ColumnLevelLineageTestUtils.assertColumnDependsOn;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -131,7 +132,7 @@ public class ColumnLevelLineageDeltaTest {
 
     spark.sql(
         "MERGE INTO t1 USING t2 ON t1.a = t2.a"
-            + " WHEN MATCHED THEN UPDATE SET *"
+            + " WHEN MATCHED THEN UPDATE SET t1.b=t2.b"
             + " WHEN NOT MATCHED THEN INSERT *");
 
     List<LogicalPlan> plans = LastQueryExecutionSparkEventListener.getExecutedLogicalPlans();
@@ -147,9 +148,10 @@ public class ColumnLevelLineageDeltaTest {
         ColumnLevelLineageUtils.buildColumnLineageDatasetFacet(context, schemaDatasetFacet).get();
 
     assertColumnDependsOn(facet, "a", "file", T1_EXPECTED_NAME, "a");
-    assertColumnDependsOn(facet, "b", "file", T1_EXPECTED_NAME, "b");
-
     assertColumnDependsOn(facet, "a", "file", T2_EXPECTED_NAME, "a");
     assertColumnDependsOn(facet, "b", "file", T2_EXPECTED_NAME, "b");
+
+    assertEquals(2, facet.getFields().getAdditionalProperties().get("a").getInputFields().size());
+    assertEquals(1, facet.getFields().getAdditionalProperties().get("b").getInputFields().size());
   }
 }
