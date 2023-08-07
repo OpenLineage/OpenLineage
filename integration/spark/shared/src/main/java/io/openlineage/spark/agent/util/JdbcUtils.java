@@ -43,6 +43,19 @@ public class JdbcUtils {
     return getDatasetIdentifierFromJdbcUrl(jdbcUrl, parts);
   }
 
+  /**
+   * The algorithm for this method is as follows. First we parse URI and check if it includes path
+   * part of URI. If yes, then we check if it contains database. Database is the first part after
+   * slash in URI - the "db" in something like postgres://host:5432/db. If it does contain it, and
+   * provided parts list has less than three elements, then we use it as database part of name -
+   * this indicates that database is the default one in this context. Otherwise, we take database
+   * from parts list.
+   *
+   * @param jdbcUrl String URI we want to take dataset identifier from
+   * @param parts Provided list of delimited parts of table qualified name parts. Can include
+   *     database name.
+   * @return DatasetIdentifier
+   */
   public static DatasetIdentifier getDatasetIdentifierFromJdbcUrl(
       String jdbcUrl, List<String> parts) {
     jdbcUrl = sanitizeJdbcUrl(jdbcUrl);
@@ -65,6 +78,8 @@ public class JdbcUtils {
         }
       }
     } catch (URISyntaxException ignored) {
+      // If URI parsing fails, we can't do anything smart - let's return provided URI
+      // as a dataset namespace
     }
 
     if (urlDatabase != null && parts.size() <= 3) {

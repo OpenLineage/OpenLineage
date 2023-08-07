@@ -37,5 +37,4 @@ cd $ROOT/..
 cargo build -p openlineage_sql_java
 
 shopt -s extglob
-pwd
 mv target/debug/libopenlineage_sql_java*(*.so|*.dylib) target/debug/$NATIVE_LIB_NAME
