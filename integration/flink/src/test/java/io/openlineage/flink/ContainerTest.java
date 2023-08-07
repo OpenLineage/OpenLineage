@@ -5,6 +5,10 @@
 
 package io.openlineage.flink;
 
+import static io.openlineage.flink.FlinkContainerUtils.FLINK_IMAGE;
+import static io.openlineage.flink.FlinkContainerUtils.genericContainer;
+import static io.openlineage.flink.FlinkContainerUtils.getExampleAppJarPath;
+import static io.openlineage.flink.FlinkContainerUtils.getOpenLineageJarPath;
 import static java.nio.file.Files.readAllBytes;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -14,6 +18,7 @@ import static org.mockserver.model.JsonBody.json;
 import com.google.common.io.Resources;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Properties;
 import java.util.stream.Collectors;
@@ -218,6 +223,42 @@ class ContainerTest {
   void testOpenLineageFailedEventSentForFailedJob() {
     runUntilFailed("io.openlineage.flink.FlinkFailedApplication");
     verify("events/expected_failed.json");
+  }
+
+  @Test
+  @SneakyThrows
+  void testFlinkConfigApplication() {
+    String inputTopics = "io.openlineage.flink.kafka.input1,io.openlineage.flink.kafka.input2";
+    GenericContainer<?> jobManager =
+        genericContainer(network, FLINK_IMAGE, "jobmanager")
+            .withExposedPorts(8081)
+            .withFileSystemBind(getOpenLineageJarPath(), "/opt/flink/lib/openlineage.jar")
+            .withFileSystemBind(getExampleAppJarPath(), "/opt/flink/lib/example-app.jar")
+            .withCommand(
+                "standalone-job "
+                    + String.format(
+                        "--job-classname %s ", "io.openlineage.flink.FlinkStatefulApplication")
+                    + "--input-topics "
+                    + inputTopics
+                    + " --output-topic io.openlineage.flink.kafka.output ")
+            .withEnv(
+                "FLINK_PROPERTIES",
+                "jobmanager.rpc.address: jobmanager\n"
+                    + "execution.attached: true\n"
+                    + "openlineage.transport.url: http://openlineageclient:1080\n"
+                    + "openlineage.transport.type: http\n")
+            .withStartupTimeout(Duration.of(5, ChronoUnit.MINUTES))
+            .dependsOn(Arrays.asList(generateEvents, openLineageClientMockContainer));
+
+    taskManager =
+        FlinkContainerUtils.makeFlinkTaskManagerContainer(network, Arrays.asList(jobManager));
+    taskManager.start();
+
+    await()
+        .atMost(Duration.ofMinutes(5))
+        .until(() -> FlinkContainerUtils.verifyJobManagerReachedCheckpointOrFinished(jobManager));
+
+    verify("events/expected_kafka.json", "events/expected_kafka_checkpoints.json");
   }
 
   @SneakyThrows
