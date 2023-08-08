@@ -2,7 +2,7 @@
   "eventType" : "COMPLETE",
   "job" : {
     "namespace" : "testAlterTable",
-    "name" : "open_lineage_integration_alter_table.execute_alter_table_rename_command"
+    "name" : "open_lineage_integration_alter_table_execute_alter_table_rename_command"
   },
   "inputs" : [ ],
   "outputs" : [ {

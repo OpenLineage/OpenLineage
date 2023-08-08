@@ -2,7 +2,7 @@
   "eventType": "COMPLETE",
   "job": {
     "namespace": "testDropTable",
-    "name": "open_lineage_integration_drop_table.execute_drop_table_command"
+    "name": "open_lineage_integration_drop_table_execute_drop_table_command_drop_test_drop_table_test"
   },
   "inputs": [],
   "outputs": [ ]

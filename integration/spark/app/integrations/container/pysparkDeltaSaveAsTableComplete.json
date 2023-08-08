@@ -1,7 +1,7 @@
 {
   "eventType": "COMPLETE",
   "job": {
-    "name": "delta_integration_test.execute_create_data_source_table_as_select_command",
+    "name": "delta_integration_test_execute_create_data_source_table_as_select_command_delta_movies",
     "namespace": "delta-namespace"
   },
   "inputs": [],

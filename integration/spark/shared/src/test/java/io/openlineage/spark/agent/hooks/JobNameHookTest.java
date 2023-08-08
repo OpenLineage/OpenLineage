@@ -18,22 +18,32 @@ import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.DatabricksUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Optional;
+import org.apache.spark.SparkConf;
+import org.apache.spark.SparkContext;
 import org.apache.spark.sql.execution.QueryExecution;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class DatabricksJobEventBuilderHookTest {
+public class JobNameHookTest {
 
   OpenLineageContext context = mock(OpenLineageContext.class);
   QueryExecution queryExecution = mock(QueryExecution.class, RETURNS_DEEP_STUBS);
-  DatabricksJobEventBuilderHook builderHook = new DatabricksJobEventBuilderHook(context);
+  JobNameHook builderHook = new JobNameHook(context);
+  SparkConf sparkConf = mock(SparkConf.class);
+  SparkContext sparkContext = mock(SparkContext.class);
   OpenLineage.RunEventBuilder runEventBuilder;
+  List<String> jobName = new LinkedList();
 
   @BeforeEach
   public void setup() {
     when(context.getQueryExecution()).thenReturn(Optional.of(queryExecution));
     when(context.getOpenLineage()).thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
+    when(context.getSparkContext()).thenReturn(sparkContext);
+    when(sparkContext.conf()).thenReturn(sparkConf);
+    when(sparkConf.get("spark.openlineage.appendDatasetNameToJobName", "true")).thenReturn("true");
     runEventBuilder = context.getOpenLineage().newRunEventBuilder();
 
     when(context
@@ -52,16 +62,12 @@ public class DatabricksJobEventBuilderHookTest {
             .getConf()
             .get(DatabricksUtils.SPARK_DATABRICKS_WORKSPACE_URL))
         .thenReturn("https://dbc-954f5d5f-34dd.cloud.databricks.com/");
+    when(context.getJobName()).thenReturn(jobName);
   }
 
   @Test
-  public void testPreBuildWhenNotRunningOnDatabricksPlatform() {
-    when(queryExecution
-            .sparkSession()
-            .sparkContext()
-            .getConf()
-            .contains(DatabricksUtils.SPARK_DATABRICKS_WORKSPACE_URL))
-        .thenReturn(false);
+  public void testPreBuildWhenAppendingDatasetNameToJobNameDisabled() {
+    when(sparkConf.get("spark.openlineage.appendDatasetNameToJobName", "true")).thenReturn("false");
 
     runEventBuilder = mock(OpenLineage.RunEventBuilder.class);
     builderHook.preBuild(runEventBuilder);
@@ -88,6 +94,9 @@ public class DatabricksJobEventBuilderHookTest {
     builderHook.preBuild(runEventBuilder);
     assertThat(runEventBuilder.build().getJob().getName())
         .isEqualTo("dbc-954f5d5f-34dd_append_data_exec_v1_air_companies_db_air_companies");
+    assertThat(jobName)
+        .hasSize(1)
+        .contains("dbc-954f5d5f-34dd_append_data_exec_v1_air_companies_db_air_companies");
   }
 
   @Test
@@ -108,5 +117,15 @@ public class DatabricksJobEventBuilderHookTest {
     builderHook.preBuild(runEventBuilder);
     assertThat(runEventBuilder.build().getJob().getName())
         .isEqualTo("non-default-name_append_data");
+  }
+
+  @Test
+  public void testPreBuildWhenJobNamePresentInContext() {
+    jobName.add("some-job-name");
+    runEventBuilder.job(context.getOpenLineage().newJobBuilder().build());
+    builderHook.preBuild(runEventBuilder);
+    assertThat(runEventBuilder.build().getJob().getName()).isEqualTo("some-job-name");
+
+    jobName.remove(0);
   }
 }

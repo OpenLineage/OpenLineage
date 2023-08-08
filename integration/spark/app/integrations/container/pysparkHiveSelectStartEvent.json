@@ -2,7 +2,7 @@
   "eventType": "START",
   "job": {
     "namespace": "testPysparkSQLHiveTest",
-    "name": "open_lineage_integration_hive.execute_insert_into_hive_table"
+    "name": "open_lineage_integration_hive_execute_insert_into_hive_table_warehouse_target"
   },
   "inputs": [
     {

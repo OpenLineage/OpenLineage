@@ -2,7 +2,7 @@
   "eventType" : "START",
   "job" : {
     "namespace" :  "iceberg-namespace",
-    "name" : "iceberg_integration_test.replace_data"
+    "name" : "iceberg_integration_test_replace_data_iceberg_default_tbl_delete"
   },
   "inputs" : [ ],
   "outputs" : [ ]

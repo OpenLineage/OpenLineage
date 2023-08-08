@@ -9,7 +9,7 @@
   },
   "job": {
     "namespace": "testPysparkKafkaReadWriteTest",
-    "name": "kafka_examples.collect_limit"
+    "name": "kafka_examples_collect_limit"
   },
   "inputs": [
     {
