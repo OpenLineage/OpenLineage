@@ -19,6 +19,7 @@ import java.net.URI;
 import java.net.URL;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -47,8 +48,8 @@ import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 
 import com.squareup.javapoet.TypeVariableName;
+
 import io.openlineage.client.TypeResolver.ArrayResolvedType;
-import io.openlineage.client.TypeResolver.EnumResolvedType;
 import io.openlineage.client.TypeResolver.ObjectResolvedType;
 import io.openlineage.client.TypeResolver.PrimitiveResolvedType;
 import io.openlineage.client.TypeResolver.ResolvedField;
@@ -86,9 +87,31 @@ public class JavaPoetGenerator {
         .addModifiers(PUBLIC, FINAL);
 
     if (!server) {
+      containerTypeBuilder.addJavadoc(
+          "Usage:\n" +
+          "<pre>{@code\n" +
+          "  URI producer = URI.create(\"http://my.producer/uri\");\n" +
+          "  $N ol = new $N(producer);\n" +
+          "  UUID runId = UUID.randomUUID();\n" +
+          "  RunFacets runFacets =\n" +
+          "    ol.newRunFacetsBuilder().nominalTime(ol.newNominalTimeRunFacet(now, now)).build();\n" +
+          "  Run run = ol.newRun(runId, runFacets);\n" +
+          "  String name = \"jobName\";\n" +
+          "  String namespace = \"namespace\";\n" +
+          "  JobFacets jobFacets = ol.newJobFacetsBuilder().build();\n" +
+          "  Job job = ol.newJob(namespace, name, jobFacets);\n" +
+          "  List<InputDataset> inputs = Arrays.asList(ol.newInputDataset(\"ins\", \"input\", null, null));\n" +
+          "  List<OutputDataset> outputs = Arrays.asList(ol.newOutputDataset(\"ons\", \"output\", null, null));\n" +
+          "  RunEvent runStateUpdate =\n" +
+          "    ol.newRunEvent(now, OpenLineage.RunEvent.EventType.START, run, job, inputs, outputs);\n" +
+          "}</pre>\n",
+          containerClassName, containerClassName);
+
       containerTypeBuilder.addField(FieldSpec.builder(ClassName.get(URI.class), "producer", PRIVATE, FINAL).build());
       containerTypeBuilder.addMethod(MethodSpec.constructorBuilder()
           .addModifiers(PUBLIC)
+          .addJavadoc("Starting point to create OpenLineage objects. Use the $N instance to create events and facets\n", containerClassName)
+          .addJavadoc("@param producer the identifier of the library using the client to generate OpenLineage events\n")
           .addParameter(
               ParameterSpec.builder(ClassName.get(URI.class), "producer").build()
               )
@@ -141,6 +164,8 @@ public class JavaPoetGenerator {
           containerTypeBuilder.addMethod(factoryModelMethodUnderContainer(type));
           containerTypeBuilder.addMethod(MethodSpec.methodBuilder("new" + type.getName() + "Builder")
               .addModifiers(PUBLIC)
+              .addJavadoc("Creates a builder for $N\n", type.getName())
+              .addJavadoc("@return a new builder for $N\n", type.getName())
               .returns(ClassName.get(containerClass, type.getName() + "Builder"))
               .addCode("return new $N();", type.getName() + "Builder")
               .build());
@@ -201,7 +226,8 @@ public class JavaPoetGenerator {
 
   private TypeSpec modelClass(ObjectResolvedType type) {
     TypeSpec.Builder modelClassBuilder = TypeSpec.classBuilder(type.getName())
-        .addModifiers(STATIC, PUBLIC);
+        .addModifiers(STATIC, PUBLIC)
+        .addJavadoc("model class for $N\n", type.getName());
     if (!server) {
       modelClassBuilder.addAnnotation(AnnotationSpec.builder(JsonDeserialize.class)
           .addMember("as", CodeBlock.of(type.getName() + ".class"))
@@ -283,7 +309,8 @@ public class JavaPoetGenerator {
     TypeSpec.Builder builderClassBuilder = TypeSpec.classBuilder(type.getName() + "Builder")
         .addModifiers(PUBLIC, FINAL)
         .addSuperinterface(ParameterizedTypeName.get(ClassName.get(containerPackage, containerClassName, "Builder"),
-                getTypeName(type)));
+                getTypeName(type)))
+        .addJavadoc("builder class for $N\n", type.getName());
 
     boolean producerFieldExist = type.getProperties().stream()
         .anyMatch(this::isAProducerField);
@@ -357,6 +384,7 @@ public class JavaPoetGenerator {
     Builder build = MethodSpec
         .methodBuilder("build")
         .addModifiers(PUBLIC)
+        .addJavadoc("build an instance of $N from the fields set in the builder", type.getName())
         .addAnnotation(Override.class)
         .returns(getTypeName(type))
         .addCode("$N __result = new $N(", type.getName(), type.getName())
@@ -373,6 +401,7 @@ public class JavaPoetGenerator {
   private MethodSpec factoryModelMethodUnderContainer(ObjectResolvedType type) {
     Builder factory = MethodSpec.methodBuilder("new" + type.getName())
         .addModifiers(PUBLIC)
+        .addJavadoc("Factory method for $N", type.getName())
         .returns(getTypeName(type));
 
     List<CodeBlock> factoryParams = new ArrayList<>();
@@ -394,10 +423,11 @@ public class JavaPoetGenerator {
 
     });
 
-    factory.addJavadoc("@return $N", type.getName());
-    factory.addCode("return new $N(", type.getName());
-    factory.addCode(CodeBlock.join(factoryParams, ", "));
-    factory.addCode(");\n");
+    factory
+      .addJavadoc("@return $N", type.getName())
+      .addCode("return new $N(", type.getName())
+      .addCode(CodeBlock.join(factoryParams, ", "))
+      .addCode(");\n");
     return factory.build();
   }
 
@@ -441,7 +471,8 @@ public class JavaPoetGenerator {
 
   private void generateInterface(TypeSpec.Builder containerTypeBuilder, ObjectResolvedType type) {
     TypeSpec.Builder interfaceBuilder = TypeSpec.interfaceBuilder(type.getName())
-        .addModifiers(STATIC, PUBLIC);
+        .addModifiers(STATIC, PUBLIC)
+        .addJavadoc("Interface for $N\n", type.getName());
 
     generateDefaultImplementation(containerTypeBuilder, type, interfaceBuilder);
 
