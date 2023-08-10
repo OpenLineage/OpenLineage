@@ -10,6 +10,7 @@ import static org.mockserver.model.HttpRequest.request;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
@@ -71,6 +72,7 @@ public class ColumnLineageIntegrationTest {
                 "/docker-entrypoint-initdb.d/init.sql");
   }
 
+  @SneakyThrows
   @BeforeAll
   public static void setup() {
     metastoreContainer.start();
@@ -161,7 +163,8 @@ public class ColumnLineageIntegrationTest {
     dataFrame.registerTempTable("temp" + type);
     spark.sql(
         String.format(
-            "create table v2_source_%s USING ICEBERG as select * from temp%s", type, type));
+            "create table if not exists v2_source_%s USING ICEBERG as select * from temp%s",
+            type, type));
     return dataFrame;
   }
 
