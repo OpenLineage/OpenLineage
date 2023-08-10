@@ -25,4 +25,16 @@ public class AvroUtils {
             })
         .flatMap(writer -> WrapperUtils.<Schema>getFieldValue(writer.getClass(), writer, "root"));
   }
+
+  public static Optional<Schema> getAvroSchema(Optional<SerializationSchema> serializationSchema) {
+    return serializationSchema
+        .filter(schema -> schema instanceof AvroSerializationSchema)
+        .map(schema -> (AvroSerializationSchema) schema)
+        .flatMap(
+            schema -> {
+              WrapperUtils.invoke(AvroSerializationSchema.class, schema, "checkAvroInitialized");
+              return WrapperUtils.invoke(AvroSerializationSchema.class, schema, "getDatumWriter");
+            })
+        .flatMap(writer -> WrapperUtils.<Schema>getFieldValue(writer.getClass(), writer, "root"));
+  }
 }
