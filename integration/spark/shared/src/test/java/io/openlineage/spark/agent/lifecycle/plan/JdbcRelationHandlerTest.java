@@ -13,6 +13,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.lifecycle.plan.handlers.JdbcRelationHandler;
 import io.openlineage.spark.api.DatasetFactory;
 import java.util.List;
@@ -58,8 +59,10 @@ public class JdbcRelationHandlerTest {
 
     jdbcRelationHandler.getDatasets(relation, url);
 
-    verify(datasetFactory, times(1)).getDataset("jdbc_source1", url, schema1);
-    verify(datasetFactory, times(1)).getDataset("jdbc_source2", url, schema2);
+    verify(datasetFactory, times(1))
+        .getDataset("test.jdbc_source1", "postgres://localhost:5432", schema1);
+    verify(datasetFactory, times(1))
+        .getDataset("test.jdbc_source2", "postgres://localhost:5432", schema2);
   }
 
   @Test
@@ -67,9 +70,10 @@ public class JdbcRelationHandlerTest {
     when(jdbcOptions.tableOrQuery()).thenReturn(jdbcTable);
     when(relation.schema()).thenReturn(schema);
 
-    jdbcRelationHandler.getDatasets(relation, url);
+    List<OpenLineage.Dataset> datasets = jdbcRelationHandler.getDatasets(relation, url);
 
-    verify(datasetFactory, times(1)).getDataset("tablename", url, schema);
+    verify(datasetFactory, times(1))
+        .getDataset("test.tablename", "postgres://localhost:5432", schema);
   }
 
   @Test
@@ -81,8 +85,10 @@ public class JdbcRelationHandlerTest {
 
     jdbcRelationHandler.getDatasets(relation, url);
 
-    verify(datasetFactory, times(1)).getDataset("jdbc_source1", url, schema1);
-    verify(datasetFactory, times(1)).getDataset("jdbc_source2", url, schema2);
+    verify(datasetFactory, times(1))
+        .getDataset("test.jdbc_source1", "postgres://localhost:5432", schema1);
+    verify(datasetFactory, times(1))
+        .getDataset("test.jdbc_source2", "postgres://localhost:5432", schema2);
   }
 
   @Test
@@ -95,8 +101,10 @@ public class JdbcRelationHandlerTest {
 
     jdbcRelationHandler.getDatasets(relation, mysqlUrl);
 
-    verify(datasetFactory, times(1)).getDataset("jdbc_source1", mysqlUrl, schema1);
-    verify(datasetFactory, times(1)).getDataset("jdbc_source2", mysqlUrl, schema2);
+    verify(datasetFactory, times(1))
+        .getDataset("test.jdbc_source1", "mysql://localhost:3306", schema1);
+    verify(datasetFactory, times(1))
+        .getDataset("test.jdbc_source2", "mysql://localhost:3306", schema2);
   }
 
   @Test
