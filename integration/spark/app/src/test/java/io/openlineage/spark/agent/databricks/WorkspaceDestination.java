@@ -10,6 +10,6 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public class DbfsDestination {
+public class WorkspaceDestination {
   String destination;
 }
