@@ -45,7 +45,7 @@ jobs:
   # workflow
   determine_changed_modules:
     docker:
-      - image: cimg/go:1.17.8
+      - image: cimg/go:1.21.0
     steps:
       - checkout
       - run:
