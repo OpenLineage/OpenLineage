@@ -126,7 +126,7 @@ dependencies {
         exclude group: 'com.fasterxml.jackson.core'
         exclude group: 'com.fasterxml.jackson.module'
     }
-    testFixturesApi("com.databricks:databricks-sdk-java:0.1.1") {
+    testFixturesApi("com.databricks:databricks-sdk-java:0.4.0") {
         exclude group: 'com.fasterxml.jackson.core'
         exclude group: 'com.fasterxml.jackson.module'
     }
