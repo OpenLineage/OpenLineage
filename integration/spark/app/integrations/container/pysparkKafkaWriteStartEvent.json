@@ -8,7 +8,7 @@
   },
   "job": {
     "namespace": "testPysparkKafkaReadWriteTest",
-    "name": "kafka_examples.execute_save_into_data_source_command"
+    "name": "kafka_examples.execute_save_into_data_source_command.topic1"
   },
   "inputs": [],
   "outputs": [

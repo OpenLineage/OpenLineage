@@ -170,7 +170,7 @@ public class SparkDeltaIntegrationTest {
 
     // 2 OL events expected
     spark.sql("INSERT INTO delta_filter_t1 VALUES (3,4)");
-    verifyEvents(mockServer, "pysparkDeltaCTASStart.json");
+    verifyEvents(mockServer, "pysparkDeltaFilterStart.json");
 
     await()
         .atMost(Duration.ofSeconds(10))

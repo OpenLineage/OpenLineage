@@ -40,4 +40,5 @@ spark.read.option('header', False).schema(schema)\
 spark.sql('SELECT * FROM test_people WHERE age > 20 AND age < 65')\
   .write\
   .mode('overwrite')\
+  .option("compression", "none")\
   .parquet('/tmp/test_data/rdd_to_table/')

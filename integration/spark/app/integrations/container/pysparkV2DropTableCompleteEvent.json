@@ -1,8 +1,7 @@
 {
   "eventType": "COMPLETE",
   "job": {
-    "namespace" : "iceberg-namespace",
-    "name" : "iceberg_integration_test.drop_table"
+    "namespace" : "iceberg-namespace"
   },
   "inputs": [],
   "outputs": [

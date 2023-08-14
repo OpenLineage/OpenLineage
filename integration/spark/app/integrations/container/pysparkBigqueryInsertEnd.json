@@ -1,8 +1,7 @@
 {
   "eventType": "COMPLETE",
   "job": {
-    "namespace": "testReadAndWriteFromBigquery",
-    "name": "open_lineage_spark_bigquery.execute_insert_into_hadoop_fs_relation_command"
+    "namespace": "testReadAndWriteFromBigquery"
   },
   "inputs": [{
     "namespace": "bigquery",

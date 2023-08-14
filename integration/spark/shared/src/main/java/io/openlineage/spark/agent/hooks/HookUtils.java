@@ -12,7 +12,6 @@ public class HookUtils {
 
   public static void preBuild(
       OpenLineageContext context, OpenLineage.RunEventBuilder runEventBuilder) {
-    Stream.of(new DatabricksJobEventBuilderHook(context))
-        .forEach(hook -> hook.preBuild(runEventBuilder));
+    Stream.of(new JobNameHook(context)).forEach(hook -> hook.preBuild(runEventBuilder));
   }
 }

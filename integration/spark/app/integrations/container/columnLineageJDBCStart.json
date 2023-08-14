@@ -2,7 +2,7 @@
   "eventType": "START",
   "job": {
     "namespace": "default",
-    "name": "iceberg_integration_test.execute_save_into_data_source_command"
+    "name": "iceberg_integration_test.execute_save_into_data_source_command.test_test"
   },
   "inputs": [
     {
