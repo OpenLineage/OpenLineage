@@ -4,6 +4,9 @@
 ### Added
 * **Flink: create Openlineage configuration based on Flink configuration.** [`#2033`](https://github.com/OpenLineage/OpenLineage/pull/2033) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Flink configuration entries starting with `openlineage.*` are passed to Openlineage client.*
+* **Spark: Append output dataset name to a job name.** [`#2036`](https://github.com/OpenLineage/OpenLineage/pull/2036) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Solves problem of multiple jobs, writing to different datasets while having the same job name. Feature is enabled by default and results in different job names and can be disabled with `spark.openlineage.jobName.appendDatasetName` set to `false`.*
+  *Unifies job names generated on Databricks platform (uses dot job part separator instead of underscore). Default behaviour can be altered with `spark.openlineage.jobName.replaceDotWithUnderscore`.*
 
 ### Fixed
 * **Spark: filter `CreateView` events** [`#1968`](https://github.com/OpenLineage/OpenLineage/pull/1968)[`#1987`](https://github.com/OpenLineage/OpenLineage/pull/1987) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  

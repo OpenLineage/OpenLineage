@@ -1,8 +1,7 @@
 {
   "eventType": "START",
   "job": {
-    "namespace": "testReadAndWriteFromBigquery",
-    "name": "open_lineage_spark_bigquery.execute_save_into_data_source_command"
+    "namespace": "testReadAndWriteFromBigquery"
   },
   "inputs": [{
     "namespace": "bigquery",

@@ -72,9 +72,17 @@ public class DeltaHandler implements CatalogHandler {
     Path path =
         new Path(
             location.orElseGet(
-                () ->
-                    Optional.ofNullable(catalog.loadTable(identifier).properties().get("location"))
-                        .orElseGet(() -> getDefaultTablePath(session, identifier))));
+                () -> {
+                  try {
+                    return Optional.ofNullable(
+                            catalog.loadTable(identifier).properties().get("location"))
+                        .orElseGet(() -> getDefaultTablePath(session, identifier));
+                  } catch (Exception e) {
+                    // loadTable failed
+                    return getDefaultTablePath(session, identifier);
+                  }
+                }));
+
     DatasetIdentifier di = PathUtils.fromPath(path, "file");
     return di.withSymlink(
         identifier.toString(),

@@ -2,7 +2,7 @@
   "eventType": "COMPLETE",
   "job": {
     "namespace": "testTruncateTable",
-    "name": "open_lineage_integration_truncate_table.execute_truncate_table_command"
+    "name": "open_lineage_integration_truncate_table.execute_truncate_table_command.truncate_test_truncate_table_test"
   },
   "inputs": [],
   "outputs": [

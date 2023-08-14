@@ -38,6 +38,7 @@ public class MockServerUtils {
   static void verifyEvents(
       MockServerClient mockServerClient, Map<String, String> replacements, String... eventFiles) {
     Path eventFolder = Paths.get("integrations/container/");
+
     await()
         .atMost(Duration.ofSeconds(10))
         .untilAsserted(

@@ -2,7 +2,7 @@
   "eventType" : "COMPLETE",
   "job" : {
     "namespace" : "iceberg-namespace",
-    "name" : "iceberg_integration_test.alter_table"
+    "name" : "iceberg_integration_test.alter_table.iceberg_default_alter_table_test"
   },
   "inputs" : [ ],
   "outputs" : [ {
