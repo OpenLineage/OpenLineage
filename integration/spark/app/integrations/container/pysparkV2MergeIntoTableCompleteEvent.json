@@ -2,7 +2,7 @@
   "eventType" : "COMPLETE",
   "job" : {
     "namespace" : "iceberg-namespace",
-    "name" : "iceberg_integration_test_replace_data_iceberg_default_events"
+    "name" : "iceberg_integration_test.replace_data.iceberg_default_events"
   },
   "inputs" : [  ],
   "outputs" : [ {

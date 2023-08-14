@@ -6,7 +6,7 @@
   },
   "job": {
     "namespace": "testPysparkRddToTable",
-    "name": "spark_rdd_to_table_execute_insert_into_hadoop_fs_relation_command_test_data_rdd_to_table"
+    "name": "spark_rdd_to_table.execute_insert_into_hadoop_fs_relation_command.test_data_rdd_to_table"
   },
   "inputs": [
     {

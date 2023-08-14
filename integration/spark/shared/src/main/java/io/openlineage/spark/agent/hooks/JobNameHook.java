@@ -15,10 +15,14 @@ import io.openlineage.spark.api.OpenLineageContext;
 
 public class JobNameHook implements RunEventBuilderHook {
 
-  public static final String SPARK_CONF_APPEND_DATASET_NAME_TO_JOB_NAME =
-      "spark.openlineage.appendDatasetNameToJobName";
+  public static final String SPARK_CONF_JOB_NAME_APPEND_DATASET_NAME =
+      "spark.openlineage.jobName.appendDatasetName";
 
-  private static final String SEPARATOR = "_";
+  public static final String SPARK_CONF_JOB_NAME_REPLACE_DOT_WITH_UNDERSCORE =
+      "spark.openlineage.jobName.replaceDotWithUnderscore";
+
+  private static final String JOB_NAME_PARTS_SEPARATOR = ".";
+  private static final String INNER_SEPARATOR = "_";
 
   private final OpenLineageContext openLineageContext;
 
@@ -35,7 +39,7 @@ public class JobNameHook implements RunEventBuilderHook {
             openLineageContext
                 .getSparkContext()
                 .conf()
-                .get(SPARK_CONF_APPEND_DATASET_NAME_TO_JOB_NAME, "true"))) {
+                .get(SPARK_CONF_JOB_NAME_APPEND_DATASET_NAME, "true"))) {
       return;
     }
 
@@ -69,12 +73,28 @@ public class JobNameHook implements RunEventBuilderHook {
 
     if (runEvent.getOutputs() != null && runEvent.getOutputs().size() > 0) {
       // append output dataset name to job name
-      jobNameBuilder.append(SEPARATOR).append(trimPath(runEvent.getOutputs().get(0).getName()));
+      jobNameBuilder
+          .append(JOB_NAME_PARTS_SEPARATOR)
+          .append(trimPath(runEvent.getOutputs().get(0).getName()).replace(".", INNER_SEPARATOR));
     }
 
-    String jobName = jobNameBuilder.toString().replace(".", SEPARATOR);
+    String jobName = jobNameBuilder.toString();
+
+    if (openLineageContext != null
+        && openLineageContext.getSparkContext() != null
+        && openLineageContext.getSparkContext().conf() != null
+        && Boolean.valueOf(
+            openLineageContext
+                .getSparkContext()
+                .conf()
+                .get(SPARK_CONF_JOB_NAME_REPLACE_DOT_WITH_UNDERSCORE, "false"))) {
+      // replace dots with underscore to get consistent with legacy databricks integration
+      // switched off by default
+      jobName = jobName.replace(".", "_");
+    }
 
     openLineageContext.getJobName().add(jobName);
+
     return jobName;
   }
 
@@ -84,7 +104,7 @@ public class JobNameHook implements RunEventBuilderHook {
       String[] parts = path.split("/");
       if (parts.length >= 2) {
         // concat two last elements of the path
-        return parts[parts.length - 2] + SEPARATOR + parts[parts.length - 1];
+        return parts[parts.length - 2] + INNER_SEPARATOR + parts[parts.length - 1];
       } else {
         // get last path element
         return parts[parts.length - 1];

@@ -2,7 +2,7 @@
     "eventType": "COMPLETE",
     "inputs": [],
     "job": {
-        "name": "app_name_execute_insert_into_hive_table_warehouse_target",
+        "name": "app_name.execute_insert_into_hive_table.warehouse_target",
         "namespace": "testPysparkSQLHiveTest"
     },
     "outputs": [

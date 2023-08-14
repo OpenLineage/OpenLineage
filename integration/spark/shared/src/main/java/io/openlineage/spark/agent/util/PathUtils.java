@@ -71,12 +71,10 @@ public class PathUtils {
 
     DatasetIdentifier di;
     if (catalogTable.storage() != null && catalogTable.storage().locationUri().isDefined()) {
-      log.error("From Storage");
       di = PathUtils.fromURI(catalogTable.storage().locationUri().get(), DEFAULT_SCHEME);
     } else {
       // try to obtain location
       try {
-        log.error("From Default Table Path");
         di = prepareDatasetIdentifierFromDefaultTablePath(catalogTable);
       } catch (IllegalStateException e) {
         // session inactive - no way to find DatasetProvider
@@ -86,13 +84,11 @@ public class PathUtils {
     }
 
     if (metastoreUri.isPresent() && metastoreUri.get() != null) {
-      log.error("From Metastore");
       // dealing with Hive tables
       DatasetIdentifier symlink = prepareHiveDatasetIdentifier(catalogTable, metastoreUri.get());
       return di.withSymlink(
           symlink.getName(), symlink.getNamespace(), DatasetIdentifier.SymlinkType.TABLE);
     } else {
-      log.error("From Table Identifier");
       return di.withSymlink(
           nameFromTableIdentifier(catalogTable.identifier()),
           StringUtils.substringBeforeLast(di.getName(), File.separator),

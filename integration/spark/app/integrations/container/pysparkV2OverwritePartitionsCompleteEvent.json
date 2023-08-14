@@ -2,7 +2,7 @@
   "eventType" : "COMPLETE",
   "job" : {
     "namespace" : "iceberg-namespace",
-    "name" : "iceberg_integration_test_overwrite_partitions_dynamic_iceberg_default_partitioned_tbl"
+    "name" : "iceberg_integration_test.overwrite_partitions_dynamic.iceberg_default_partitioned_tbl"
   },
   "inputs" : [ ],
   "outputs" : [ {

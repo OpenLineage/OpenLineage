@@ -2,7 +2,7 @@
   "eventType" : "START",
   "job" : {
     "namespace" :  "iceberg-namespace",
-    "name" : "iceberg_integration_test_atomic_replace_table_as_select_iceberg_default_tbl_replace"
+    "name" : "iceberg_integration_test.atomic_replace_table_as_select.iceberg_default_tbl_replace"
   },
   "inputs" : [ ],
   "outputs" : [ ]

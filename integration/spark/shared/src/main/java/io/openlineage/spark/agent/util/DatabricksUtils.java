@@ -41,7 +41,7 @@ public class DatabricksUtils {
     // replace default job name with workspace id when no app name specified;
     return jobName.replace(
         "databricks_shell.", // default name
-        extractWorkspaceId(DatabricksUtils.getWorkspaceUrl(context).get() + "_"));
+        extractWorkspaceId(DatabricksUtils.getWorkspaceUrl(context).get() + "."));
   }
 
   private static String extractWorkspaceId(String workspaceUrl) {

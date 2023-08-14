@@ -2,7 +2,7 @@
   "eventType" : "COMPLETE",
   "job" : {
     "namespace" : "delta-namespace",
-    "name" : "delta_integration_test_execute_merge_into_command_delta_new-events"
+    "name" : "delta_integration_test.execute_merge_into_command.delta_new-events"
   },
   "outputs" : [ {
     "namespace" : "file",

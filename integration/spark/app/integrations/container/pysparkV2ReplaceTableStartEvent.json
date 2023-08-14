@@ -2,7 +2,7 @@
   "eventType" : "START",
   "job" : {
     "namespace" : "delta-namespace",
-    "name" : "delta_integration_test_atomic_replace_table_delta_v2_replace_table"
+    "name" : "delta_integration_test.atomic_replace_table.delta_v2_replace_table"
   },
   "inputs" : [ ],
   "outputs" : [ ]

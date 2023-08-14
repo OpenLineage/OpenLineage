@@ -2,7 +2,7 @@
   "eventType": "START",
   "job": {
     "namespace": "testCreateTable",
-    "name": "open_lineage_integration_create_table_execute_create_table_command_create_test_create_table_test"
+    "name": "open_lineage_integration_create_table.execute_create_table_command.create_test_create_table_test"
   },
   "inputs": [],
   "outputs": [

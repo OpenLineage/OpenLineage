@@ -43,7 +43,7 @@ public class JobNameHookTest {
     when(context.getOpenLineage()).thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
     when(context.getSparkContext()).thenReturn(sparkContext);
     when(sparkContext.conf()).thenReturn(sparkConf);
-    when(sparkConf.get("spark.openlineage.appendDatasetNameToJobName", "true")).thenReturn("true");
+    when(sparkConf.get("spark.openlineage.jobName.appendDatasetName", "true")).thenReturn("true");
     runEventBuilder = context.getOpenLineage().newRunEventBuilder();
 
     when(context
@@ -67,7 +67,7 @@ public class JobNameHookTest {
 
   @Test
   public void testPreBuildWhenAppendingDatasetNameToJobNameDisabled() {
-    when(sparkConf.get("spark.openlineage.appendDatasetNameToJobName", "true")).thenReturn("false");
+    when(sparkConf.get("spark.openlineage.jobName.appendDatasetName", "true")).thenReturn("false");
 
     runEventBuilder = mock(OpenLineage.RunEventBuilder.class);
     builderHook.preBuild(runEventBuilder);
@@ -76,6 +76,34 @@ public class JobNameHookTest {
 
   @Test
   public void testPreBuild() {
+    runEventBuilder.job(
+        context
+            .getOpenLineage()
+            .newJobBuilder()
+            .name("databricks_shell.append_data_exec_v1")
+            .build());
+    runEventBuilder.outputs(
+        Collections.singletonList(
+            context
+                .getOpenLineage()
+                .newOutputDatasetBuilder()
+                .namespace("dsnamespace")
+                .name("/user/hive/warehouse/air_companies.db/air_companies")
+                .build()));
+
+    builderHook.preBuild(runEventBuilder);
+    assertThat(runEventBuilder.build().getJob().getName())
+        .isEqualTo("dbc-954f5d5f-34dd.append_data_exec_v1.air_companies_db_air_companies");
+    assertThat(jobName)
+        .hasSize(1)
+        .contains("dbc-954f5d5f-34dd.append_data_exec_v1.air_companies_db_air_companies");
+  }
+
+  @Test
+  public void testPreBuildWhenReplaceDotWithUnderscoreIsTrue() {
+    when(sparkConf.get("spark.openlineage.jobName.replaceDotWithUnderscore", "false"))
+        .thenReturn("true");
+
     runEventBuilder.job(
         context
             .getOpenLineage()
@@ -106,7 +134,7 @@ public class JobNameHookTest {
 
     builderHook.preBuild(runEventBuilder);
     assertThat(runEventBuilder.build().getJob().getName())
-        .isEqualTo("dbc-954f5d5f-34dd_append_data");
+        .isEqualTo("dbc-954f5d5f-34dd.append_data");
   }
 
   @Test
@@ -116,7 +144,7 @@ public class JobNameHookTest {
 
     builderHook.preBuild(runEventBuilder);
     assertThat(runEventBuilder.build().getJob().getName())
-        .isEqualTo("non-default-name_append_data");
+        .isEqualTo("non-default-name.append_data");
   }
 
   @Test
