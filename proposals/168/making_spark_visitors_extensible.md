@@ -157,8 +157,8 @@ For each `SparkListener` event, an `OpenLineage.RunEvent` will be constructed by
    the `OutputDataset`s
 
 `InputDatasetFacet`s and `OutputDatasetFacet`s will be attached to _any_ `InputDataset` or `OutputDataset`
-found for the event. This is because facets may be constructed from generic information that is not specifi**cally tied
-to a Dataset. For example, `OutputStatisticsOutputDatasetFacet`s are created from `TaskMetrics` attached to** the last
+found for the event. This is because facets may be constructed from generic information that is not specifically tied
+to a Dataset. For example, `OutputStatisticsOutputDatasetFacet`s are created from `TaskMetrics` attached to the last
 `StageInfo` for a given job execution. However, the `OutputDataset` is constructed by reading the `LogicalPlan`. There's
 no way to tie the output metrics in the `StageInfo` to the `OutputDataset` in the `LogicalPlan` except by inference.
 Similarly, input metrics can be found in the `StageInfo` for the stage that reads a dataset and the `InputDataset` can

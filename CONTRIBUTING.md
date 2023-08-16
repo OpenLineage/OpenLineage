@@ -80,7 +80,7 @@ should have its own build configuration (e.g., `build.gradle` for a Gradle proje
 python, etc.) with appropriate unit tests and integration tests (when possible).
 
 Adding a new integration requires updating the CI build configuration with a new workflow. Job
-definitions, orbs, parameters, etc. shoudl be added to the
+definitions, orbs, parameters, etc. should be added to the
 [.circleci/continue_config.yml](`continue_config.yml`) file. Workflow definition files are added to
 the [.circleci/workflows](.circleci/workflows) directory. Each workflow file adheres to the CircleCI
 config.yml schema, including only the workflows subschema (see

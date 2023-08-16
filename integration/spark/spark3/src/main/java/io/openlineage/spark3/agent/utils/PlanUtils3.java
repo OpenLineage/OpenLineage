@@ -42,7 +42,7 @@ public class PlanUtils3 {
       OpenLineageContext context, DataSourceV2Relation relation) {
 
     if (relation.identifier() == null || relation.identifier().isEmpty()) {
-      // Since identifier is null, short circuit and check if we can get the dataset identifer
+      // Since identifier is null, short circuit and check if we can get the dataset identifier
       // from the relation itself.
       return getDatasetIdentifierFromRelation(relation);
     }
