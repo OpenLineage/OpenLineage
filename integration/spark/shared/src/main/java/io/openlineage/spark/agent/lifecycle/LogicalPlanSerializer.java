@@ -40,7 +40,7 @@ class LogicalPlanSerializer {
       50000; // 50K UTF-8 chars should be ~200KB + some extra bytes added during json encoding
   private final Object objectMapper;
 
-  /** relocate plugin rewrites by default all occurences of com.fasterxml.jackson */
+  /** relocate plugin rewrites by default all occurrences of com.fasterxml.jackson */
   private static final String UNSHADED_JACKSON_PACKAGE = "com.".trim() + "fasterxml.jackson";
 
   public LogicalPlanSerializer() {

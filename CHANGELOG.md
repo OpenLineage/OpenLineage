@@ -43,7 +43,7 @@
     *Makes column-level lineage support `merge into` on Delta tables. Also refactors column-level lineage to deal with multiple Spark versions.*
 * **Spark: column-level lineage for `merge into` on Iceberg tables** [`#1971`](https://github.com/OpenLineage/OpenLineage/pull/1971) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Makes column-level lineage support `merge into` on Iceberg tables.*
-* **Spark: add supprt for Iceberg REST catalog** [`#1963`](https://github.com/OpenLineage/OpenLineage/pull/1963) [@juancappi](https://github.com/juancappi)  
+* **Spark: add support for Iceberg REST catalog** [`#1963`](https://github.com/OpenLineage/OpenLineage/pull/1963) [@juancappi](https://github.com/juancappi)  
     *Adds `rest` to the existing options of `hive` and `hadoop` in `IcebergHandler.getDatasetIdentifier()` to add support for Iceberg's `RestCatalog`.*
 * **Airflow: add possibility to force direct-execution based on environment variable** [`#1934`](https://github.com/OpenLineage/OpenLineage/pull/1934) [@mobuchowski](https://github.com/mobuchowski)  
     *Adds the option to use the direct-execution method on the Airflow listener when the existence of a non-SQLAlchemy-based Airflow event mechanism is confirmed. This happens when using Airflow 2.6 or when the `OPENLINEAGE_AIRFLOW_ENABLE_DIRECT_EXECUTION` environment variable exists.*
@@ -446,7 +446,7 @@
 * Airflow: enforce column casing in `SQLCheckExtractor`s [`#1159`](https://github.com/OpenLineage/OpenLineage/pull/1159) [@denimalpaca](https://github.com/denimalpaca)  
     *Uses the parent extractor's `_is_uppercase_names` property to determine if the column should be upper cased in the `SQLColumnCheckExtractor`'s `_get_input_facets()` method.*
 * Spark: prevent exception when no schema provided [`#1180`](https://github.com/OpenLineage/OpenLineage/pull/1180) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-    *Prevents evalution of column lineage when the `schemFacet` is `null`.*
+    *Prevents evaluation of column lineage when the `schemFacet` is `null`.*
 * Great Expectations: add V3 API compatibility [`#1194`](https://github.com/OpenLineage/OpenLineage/pull/1194) [@denimalpaca](https://github.com/denimalpaca)  
     *Fixes the Pandas datasource to make it V3 API-compatible.*
 
@@ -627,7 +627,7 @@
 ### Fixed
 * Set log to debug on unknown facet entry ([#766](https://github.com/OpenLineage/OpenLineage/pull/766)) [@wslulciuc](https://github.com/wslulciuc)
 * Dagster: pin protobuf version to 3.20 as suggested by tests ([#787](https://github.com/OpenLineage/OpenLineage/pull/787)) [@mobuchowski](https://github.com/mobuchowski)
-* Add SafeStrDict to skip failing attibutes ([#798](https://github.com/OpenLineage/OpenLineage/pull/798)) [@JDarDagran](https://github.com/JDarDagran)
+* Add SafeStrDict to skip failing attributes ([#798](https://github.com/OpenLineage/OpenLineage/pull/798)) [@JDarDagran](https://github.com/JDarDagran)
 
 ## [0.8.2](https://github.com/OpenLineage/OpenLineage/compare/0.8.1...0.8.2) - 2022-05-19
 ### Added
@@ -818,7 +818,7 @@
 
 OpenLineage is an _Open Standard_ for lineage metadata collection designed to record metadata for a job in execution. The initial public release includes:
 
-* **An inital specification.** The the inital version [`1-0-0`](https://github.com/OpenLineage/OpenLineage/blob/0.1.0/spec/OpenLineage.md) of the OpenLineage specification defines the core model and facets.
+* **An initial specification.** The the initial version [`1-0-0`](https://github.com/OpenLineage/OpenLineage/blob/0.1.0/spec/OpenLineage.md) of the OpenLineage specification defines the core model and facets.
 * **Integrations** that collect lineage metadata as OpenLineage events:
   * [`Apache Airflow`](https://github.com/OpenLineage/OpenLineage/tree/main/integration/airflow) with support for BigQuery, Great Expectations, Postgres, Redshift, Snowflake
   * [`Apache Spark`](https://github.com/OpenLineage/OpenLineage/tree/main/integration/spark)

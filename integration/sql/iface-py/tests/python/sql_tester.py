@@ -16,7 +16,7 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 # Usage: simply enter SQL statement from the input prompt or echo / cat SQL statement 
-# via UNIX pipe to the tool. In case of inputing direclty, make sure to press
+# via UNIX pipe to the tool. In case of inputing directly, make sure to press
 # Ctrl+D after the input to EOF the input.
 def main():
 

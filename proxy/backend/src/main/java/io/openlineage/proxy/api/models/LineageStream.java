@@ -33,7 +33,7 @@ public abstract class LineageStream {
   }
 
   /**
-   * Ths is the method that is called when a new lineage event is emitted from the data platform.
+   * This is the method that is called when a new lineage event is emitted from the data platform.
    * The specific destination class implements this method with the logic to send the event to its
    * supported destination.
    *

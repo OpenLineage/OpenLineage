@@ -143,7 +143,7 @@ To ensure OpenLineage logging propagation to custom extractors you should use `s
 
 #### Default Extractor
 
-When you own operators' code this is not neccessary to provide custom extractors. You can also use Default Extractor's capability.
+When you own operators' code this is not necessary to provide custom extractors. You can also use Default Extractor's capability.
 
 In order to do that you should define at least one of two methods in operator:
 

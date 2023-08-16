@@ -45,6 +45,19 @@ repos:
       - id: prettier
         files: ^spec/
         args: ["--print-width=120", "--prose-wrap=always"]
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.2.5
+    hooks:
+      - id: codespell
+        name: Run codespell to check for common misspellings in files
+        entry: bash -c 'echo "If you think that this failure is an error, consider adding the word(s)
+          to the codespell dictionary at spelling_wordlist.txt.
+          The word(s) should be in lowercase." && exec codespell "$@"' --
+        language: python
+        types: [text]
+        args:
+          - --ignore-words=spelling_wordlist.txt
+          - --skip=*.js,*.svg,*.xml,*/**/test/*,*/**/tests/*
   - repo: local
     hooks:
       - id: check_schemas

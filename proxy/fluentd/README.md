@@ -8,7 +8,7 @@ Modern data collectors (Fluentd, Logstash, Vector, etc.) can be extremely useful
 production-grade architectures for processing Openlineage events.
 
 They can be used for features such as:
-* A server-proxy in front of the Openlineage backend (like Marquez) to handle load spikes and buffer incoming events when the backend is down (e.g., due to a maintainance window).
+* A server-proxy in front of the Openlineage backend (like Marquez) to handle load spikes and buffer incoming events when the backend is down (e.g., due to a maintenance window).
 * The ability to copy the event to multiple backends such as HTTP, Kafka or cloud object storage. Data collectors implement that out-of-the-box.
 
 They have great potential except for a single missing feature: *the ability to parse and validate OpenLineage events at the point of HTTP input*.
