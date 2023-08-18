@@ -18,8 +18,5 @@ dbfs mkdirs dbfs:/databricks/openlineage
 echo "Uploading custom Spark Listener library"
 dbfs cp --overwrite ./build/libs/openlineage-spark-*.jar               dbfs:/databricks/openlineage/
 
-echo "Uploading cluster init script"
-dbfs cp --overwrite ./databricks/open-lineage-init-script.sh           dbfs:/databricks/openlineage/open-lineage-init-script.sh
-
 echo "Listing DBFS directory"
 dbfs ls dbfs:/databricks/openlineage

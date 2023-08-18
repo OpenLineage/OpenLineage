@@ -57,7 +57,9 @@ public class DatabricksIntegrationTest {
 
   @AfterAll
   public static void shutdown() {
-    DatabricksUtils.shutdown(workspace, clusterId);
+    if (clusterId != null) {
+      DatabricksUtils.shutdown(workspace, clusterId);
+    }
   }
 
   @Test
