@@ -11,5 +11,5 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class ClusterLogConf {
-  DbfsDestination dbfs;
+  WorkspaceDestination dbfs;
 }

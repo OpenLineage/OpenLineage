@@ -9,21 +9,22 @@ import static java.nio.file.Files.readAllBytes;
 import static org.awaitility.Awaitility.await;
 
 import com.databricks.sdk.WorkspaceClient;
+import com.databricks.sdk.service.compute.ClusterDetails;
 import com.databricks.sdk.service.compute.CreateClusterResponse;
 import com.databricks.sdk.service.compute.ListClustersRequest;
 import com.databricks.sdk.service.files.CreateResponse;
 import com.databricks.sdk.service.files.Delete;
-import com.databricks.sdk.service.jobs.RunSubmitTaskSettings;
+import com.databricks.sdk.service.jobs.Source;
 import com.databricks.sdk.service.jobs.SparkPythonTask;
-import com.databricks.sdk.service.jobs.SparkPythonTaskSource;
 import com.databricks.sdk.service.jobs.SubmitRun;
+import com.databricks.sdk.service.jobs.SubmitTask;
 import com.google.common.io.Resources;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.spark.agent.databricks.ClusterLogConf;
 import io.openlineage.spark.agent.databricks.CreateCluster;
-import io.openlineage.spark.agent.databricks.DbfsDestination;
 import io.openlineage.spark.agent.databricks.InitScript;
+import io.openlineage.spark.agent.databricks.WorkspaceDestination;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -49,14 +50,12 @@ import org.jetbrains.annotations.NotNull;
 public class DatabricksUtils {
 
   public static final String CLUSTER_NAME = "openlineage-test-cluster";
-
   public static final Map<String, String> PLATFORM_VERSIONS =
       Stream.of(new AbstractMap.SimpleEntry<>("3.4.0", "13.0.x-scala2.12"))
           .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-  public static final String NODE_TYPE = "m5d.large";
+  public static final String NODE_TYPE = "Standard_DS3_v2";
   public static final String DBFS_EVENTS_FILE = "dbfs:/databricks/openlineage/events.log";
-  public static final String DBFS_INIT_SCRIPT_FILE =
-      "dbfs:/databricks/openlineage/open-lineage-init-script.sh";
+  public static final String INIT_SCRIPT_FILE = "/Shared/open-lineage-init-script.sh";
   public static final String DBFS_CLUSTER_LOGS = "dbfs:/databricks/openlineage/cluster-logs";
   private static final String SPARK_VERSION = "spark.version";
 
@@ -71,13 +70,18 @@ public class DatabricksUtils {
     workspace.dbfs().delete(deleteClusterLogs);
 
     // check if cluster is available
-    String clusterId =
-        StreamSupport.stream(
-                workspace.clusters().list(new ListClustersRequest()).spliterator(), false)
-            .filter(cl -> cl.getClusterName().equals(getClusterName()))
-            .map(cl -> cl.getClusterId())
-            .findAny()
-            .orElseGet(() -> createCluster(workspace));
+    String clusterId;
+    Iterable<ClusterDetails> clusterDetails = workspace.clusters().list(new ListClustersRequest());
+    if (clusterDetails != null) {
+      clusterId =
+          StreamSupport.stream(clusterDetails.spliterator(), false)
+              .filter(cl -> cl.getClusterName().equals(getClusterName()))
+              .map(cl -> cl.getClusterId())
+              .findAny()
+              .orElseGet(() -> createCluster(workspace));
+    } else {
+      clusterId = createCluster(workspace);
+    }
 
     log.info("Ensuring cluster is running");
     workspace.clusters().ensureClusterIsRunning(clusterId);
@@ -126,7 +130,7 @@ public class DatabricksUtils {
 
   @SneakyThrows
   static List<RunEvent> runScript(WorkspaceClient workspace, String clusterId, String scriptName) {
-    // upload scripts upload init scripts
+    // upload scripts
     String dbfsScriptPath = "dbfs:/databricks/openlineage/scripts/" + scriptName;
     String taskName = scriptName.replace(".py", "");
 
@@ -138,10 +142,10 @@ public class DatabricksUtils {
                 Paths.get(Resources.getResource("databricks_notebooks/" + scriptName).getPath())));
 
     SparkPythonTask task = new SparkPythonTask();
-    task.setSource(SparkPythonTaskSource.WORKSPACE);
+    task.setSource(Source.WORKSPACE);
     task.setPythonFile(dbfsScriptPath);
 
-    RunSubmitTaskSettings runSubmitTaskSettings = new RunSubmitTaskSettings();
+    SubmitTask runSubmitTaskSettings = new SubmitTask();
     runSubmitTaskSettings.setTaskKey(taskName);
     runSubmitTaskSettings.setExistingClusterId(clusterId);
     runSubmitTaskSettings.setSparkPythonTask(task);
@@ -158,13 +162,6 @@ public class DatabricksUtils {
 
   @SneakyThrows
   private static String createCluster(WorkspaceClient workspace) {
-    // upload init scripts
-    workspace
-        .dbfs()
-        .write(
-            Paths.get(DBFS_INIT_SCRIPT_FILE),
-            readAllBytes(Paths.get("../databricks/open-lineage-init-script.sh")));
-
     CreateCluster createCluster =
         CreateCluster.builder()
             .cluster_name(getClusterName())
@@ -173,7 +170,7 @@ public class DatabricksUtils {
             .autotermination_minutes(10L)
             .num_workers(1L)
             .init_scripts(
-                new InitScript[] {new InitScript(new DbfsDestination(DBFS_INIT_SCRIPT_FILE))})
+                new InitScript[] {new InitScript(new WorkspaceDestination(INIT_SCRIPT_FILE))})
             .spark_conf(
                 new HashMap<String, String>() {
                   {
@@ -185,7 +182,7 @@ public class DatabricksUtils {
                     put("spark.openlineage.version", "v1");
                   }
                 })
-            .cluster_log_conf(new ClusterLogConf(new DbfsDestination(DBFS_CLUSTER_LOGS)))
+            .cluster_log_conf(new ClusterLogConf(new WorkspaceDestination(DBFS_CLUSTER_LOGS)))
             .build();
 
     log.info("Creating cluster");
@@ -219,12 +216,24 @@ public class DatabricksUtils {
             .findAny()
             .orElseThrow(() -> new RuntimeException("openlineage-spark jar not found"));
 
+    // make sure dbfs:/databricks/openlineage/ exists
+    try {
+      workspace.dbfs().mkdirs("dbfs:/databricks");
+    } catch (RuntimeException e) {
+    }
+    try {
+      workspace.dbfs().mkdirs("dbfs:/databricks/openlineage/");
+    } catch (RuntimeException e) {
+    }
+
     // clear other jars in DBFS
-    StreamSupport.stream(
-            workspace.dbfs().list("dbfs:/databricks/openlineage/").spliterator(), false)
-        .filter(f -> f.getPath().contains("openlineage-spark"))
-        .filter(f -> f.getPath().endsWith(".jar"))
-        .forEach(f -> workspace.dbfs().delete(f.getPath()));
+    if (workspace.dbfs().list("dbfs:/databricks/openlineage/") != null) {
+      StreamSupport.stream(
+              workspace.dbfs().list("dbfs:/databricks/openlineage/").spliterator(), false)
+          .filter(f -> f.getPath().contains("openlineage-spark"))
+          .filter(f -> f.getPath().endsWith(".jar"))
+          .forEach(f -> workspace.dbfs().delete(f.getPath()));
+    }
 
     // upload to DBFS -> 12MB file upload need to go in chunks smaller than 1MB each
     CreateResponse createResponse =

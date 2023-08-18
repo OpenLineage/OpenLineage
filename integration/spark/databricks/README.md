@@ -25,7 +25,8 @@ Follow the steps below to enable Open Lineage on Databricks.
     spark.openlineage.namespace YOURNAMESPACE
     spark.openlineage.url https://YOURHOST
     ```
-* Set the cluster Init script to be: `dbfs:/databricks/openlineage/open-lineage-init-script.sh`
+* Create manually `open-lineage-init-script.sh` through **Workspace** section in Databricks UI. Paste the script content from `open-lineage-init-script.sh` file within this directory.
+* Make the cluster init script to point to previously created file. For example, if you create `open-lineage-init-script.sh` within **Shared**, then init scripts should point to `/Shared/open-lineage-init-script.sh`. User's workspace may be used as well. Alternatively, init script can be located in S3. Please mind that **DBFS** located init script are no longer supported (starting September 2023).
 
 ## Observe Logs in Driver Logs
 

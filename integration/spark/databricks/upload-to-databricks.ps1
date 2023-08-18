@@ -16,8 +16,5 @@ ForEach-Object {
     dbfs cp --overwrite $_.FullName     dbfs:/databricks/$DBFS_OPENLINEAGE_DIR/
 }
 
-Write-Output "Uploading cluster init script"
-dbfs cp --overwrite ./databricks/open-lineage-init-script.sh           dbfs:/databricks/$DBFS_OPENLINEAGE_DIR/open-lineage-init-script.sh
-
 Write-Output "Listing DBFS directory"
 dbfs ls dbfs:/databricks/$DBFS_OPENLINEAGE_DIR
