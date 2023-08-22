@@ -34,18 +34,18 @@ jobs:
   # (e.g., if the python client changes it triggers the airflow, common, and dagster modules;
   # including dependencies means that each module would run the python client tests).
   #
-  # The workflow files in the subdirectory are yaml files that adhere to the schema of the worfklows
+  # The workflow files in the subdirectory are yaml files that adhere to the schema of the workflows
   # section of a circleci config.yml file. See the spec here: https://circleci.com/docs/2.0/configuration-reference/#workflows
   # In addition, each workflow should include a job called "workflow_complete". This workflow_complete
   # is defined as a no-op job in the continue_config.yml file. The job should have dependencies on
   # each required terminal step in the workflow. E.g., the Java workflow requires the Spark
   # integration test step which is the last required step in the workflow. All of the
-  # workflow_complete jobs will be merged together so the final workflow will hava a single
+  # workflow_complete jobs will be merged together so the final workflow will have a single
   # workflow_complete job that depends on all of the required terminal steps in each executed
   # workflow
   determine_changed_modules:
     docker:
-      - image: cimg/go:1.17.8
+      - image: cimg/go:1.21.0
     steps:
       - checkout
       - run:

@@ -11,6 +11,7 @@ import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -99,6 +100,13 @@ public class OpenLineageContext {
 
   /** Spark version of currently running job */
   String sparkVersion = package$.MODULE$.SPARK_VERSION();
+
+  /**
+   * Job name is build when the first event of the run is build is created on the top of ready event
+   * based on the output dataset being present within an event. It is stored within a context to
+   * become consistent over a run progress.
+   */
+  List<String> jobName = new LinkedList<>();
 
   /**
    * Override the default Builder class to take an unwrapped {@link QueryExecution} argument, rather

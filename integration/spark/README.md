@@ -92,17 +92,18 @@ The following parameters can be specified in the Spark configuration:
 Parameters configuring the Spark integration
 
 
-| Parameter                                    | Definition                                                                                                                                                                          | Example                         |
-----------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------
-| spark.openlineage.transport.type             | The transport type used for event emit, default type is `console`                                                                                                                   | http                            |
-| spark.openlineage.namespace                  | The default namespace to be applied for any jobs submitted                                                                                                                          | MyNamespace                     |
-| spark.openlineage.parentJobName              | The job name to be used for the parent job facet                                                                                                                                    | ParentJobName                   |
-| spark.openlineage.parentRunId                | The RunId of the parent job that initiated this Spark job                                                                                                                           | xxxx-xxxx-xxxx-xxxx             |
-| spark.openlineage.appName                    | Custom value overwriting Spark app name in events                                                                                                                                   | AppName                         |
-| spark.openlineage.facets.disabled            | List of facets to disable, enclosed in `[]` (required from 0.21.x) and separated by `;`, default is `[spark_unknown;]` (currently must contain `;`)                                 | \[spark_unknown;spark.logicalPlan\] |
-| spark.openlineage.capturedProperties         | comma separated list of properties to be captured in spark properties facet (default `spark.master`, `spark.app.name`)                                                              | "spark.example1,spark.example2" |
-| spark.openlineage.dataset.removePath.pattern | Java regular expression that removes `?<remove>` named group from dataset path. Can be used to last path subdirectories from paths like `s3://my-whatever-path/year=2023/month=04` | `(.*)(?<remove>\/.*\/.*)`     |
-
+| Parameter                                           | Definition                                                                                                                                                                         | Example                             |
+-----------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------
+| spark.openlineage.transport.type                    | The transport type used for event emit, default type is `console`                                                                                                                  | http                                |
+| spark.openlineage.namespace                         | The default namespace to be applied for any jobs submitted                                                                                                                         | MyNamespace                         |
+| spark.openlineage.parentJobName                     | The job name to be used for the parent job facet                                                                                                                                   | ParentJobName                       |
+| spark.openlineage.parentRunId                       | The RunId of the parent job that initiated this Spark job                                                                                                                          | xxxx-xxxx-xxxx-xxxx                 |
+| spark.openlineage.appName                           | Custom value overwriting Spark app name in events                                                                                                                                  | AppName                             |
+| spark.openlineage.facets.disabled                   | List of facets to disable, enclosed in `[]` (required from 0.21.x) and separated by `;`, default is `[spark_unknown;]` (currently must contain `;`)                                | \[spark_unknown;spark.logicalPlan\] |
+| spark.openlineage.capturedProperties                | comma separated list of properties to be captured in spark properties facet (default `spark.master`, `spark.app.name`)                                                             | "spark.example1,spark.example2"     |
+| spark.openlineage.dataset.removePath.pattern        | Java regular expression that removes `?<remove>` named group from dataset path. Can be used to last path subdirectories from paths like `s3://my-whatever-path/year=2023/month=04` | `(.*)(?<remove>\/.*\/.*)`           |
+| spark.openlineage.jobName.appendDatasetName         | Decides whether output dataset name should be appended to job name. By default `true`.                                                                                             | false                               |
+| spark.openlineage.jobName.replaceDotWithUnderscore  | Replaces dots in job name with underscore. Can be used to mimic legacy behaviour on Databricks platform. By default `false`.                                                       | false                               |
 
 ### HTTP
 
@@ -112,7 +113,7 @@ Parameters configuring the Spark integration
 | spark.openlineage.transport.apiKey            | An API key to be used when sending events to the OpenLineage server                                                                         | abcdefghijk           |
 | spark.openlineage.transport.timeout           | Timeout for sending OpenLineage info in milliseconds                                                                                        | 5000                  |
 | spark.openlineage.transport.urlParams.xyz     | A URL parameter (replace xyz) and value to be included in requests to the OpenLineage API server                                            | abcdefghijk           |
-| spark.openlineage.transport.url               | The hostname of the OpenLineage API server where events should be reported, it can have other properties embeded                            | http://localhost:5000 |
+| spark.openlineage.transport.url               | The hostname of the OpenLineage API server where events should be reported, it can have other properties embedded                            | http://localhost:5000 |
 | spark.openlineage.transport.headers.xyz       | Request headers (replace xyz) and value to be included in requests to the OpenLineage API server                                            | abcdefghijk           |
 
 ##### URL
@@ -134,7 +135,7 @@ Also, KinesisTransport depends on you to provide artifact `com.amazonaws:amazon-
 | spark.openlineage.transport.streamName        | Required, the streamName of the Kinesis Stream                                                                                                                                               | some-stream-name |
 | spark.openlineage.transport.region            | Required, the region of the stream                                                                                                                                                           | us-east-2        |
 | spark.openlineage.transport.roleArn           | Optional, the roleArn which is allowed to read/write to Kinesis stream                                                                                                                       | some-role-arn    |
-| spark.openlineage.transport.properties.[xxx]  | Optional, the [xxx] is property of [Kinesis allowd properties](https://github.com/awslabs/amazon-kinesis-producer/blob/master/java/amazon-kinesis-producer-sample/default_config.properties) | 1                |
+| spark.openlineage.transport.properties.[xxx]  | Optional, the [xxx] is property of [Kinesis allowed properties](https://github.com/awslabs/amazon-kinesis-producer/blob/master/java/amazon-kinesis-producer-sample/default_config.properties) | 1                |
 
 ### Kafka 
 If `spark.openlineage.transport.type` is set to `kafka`, then the below parameters would be read and used when building KafkaProducer.

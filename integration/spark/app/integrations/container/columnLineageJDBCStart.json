@@ -2,11 +2,11 @@
   "eventType": "START",
   "job": {
     "namespace": "default",
-    "name": "iceberg_integration_test.execute_save_into_data_source_command"
+    "name": "iceberg_integration_test.execute_save_into_data_source_command.test_test"
   },
   "inputs": [
     {
-      "name": "jdbc_source1",
+      "name": "test.jdbc_source1",
       "facets": {
         "schema": {
           "fields": [
@@ -23,7 +23,7 @@
       }
     },
     {
-      "name": "jdbc_source2",
+      "name": "test.jdbc_source2",
       "facets": {
         "schema": {
           "fields": [
@@ -92,7 +92,7 @@
   ],
   "outputs": [
     {
-      "name": "test",
+      "name": "test.test",
       "facets": {
         "schema": {
           "fields": [

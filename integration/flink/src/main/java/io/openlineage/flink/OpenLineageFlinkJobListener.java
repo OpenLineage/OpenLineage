@@ -25,6 +25,7 @@ import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.dag.Transformation;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.execution.DetachedJobExecutionResult;
 import org.apache.flink.core.execution.JobClient;
 import org.apache.flink.core.execution.JobListener;
@@ -119,7 +120,11 @@ public class OpenLineageFlinkJobListener implements JobListener {
 
       FlinkExecutionContext context =
           FlinkExecutionContextFactory.getContext(
-              jobNamespace, jobName, jobClient.getJobID(), transformations);
+              (Configuration) executionEnvironment.getConfiguration(),
+              jobNamespace,
+              jobName,
+              jobClient.getJobID(),
+              transformations);
 
       jobContexts.put(jobClient.getJobID(), context);
       context.onJobSubmitted();

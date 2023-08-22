@@ -6,6 +6,7 @@
 package io.openlineage.spark.agent.lifecycle.plan.handlers;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.JdbcUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.sql.ColumnMeta;
@@ -38,8 +39,7 @@ public class JdbcRelationHandler<D extends OpenLineage.Dataset> {
     // whereas postgres, mysql, and sqlserver use the scheme://hostname:port/db
     // format.
     JDBCRelation relation = (JDBCRelation) x.relation();
-    String url = JdbcUtils.sanitizeJdbcUrl(relation.jdbcOptions().url());
-    return getDatasets(relation, url);
+    return getDatasets(relation, relation.jdbcOptions().url());
   }
 
   public List<D> getDatasets(JDBCRelation relation, String url) {
@@ -48,17 +48,22 @@ public class JdbcRelationHandler<D extends OpenLineage.Dataset> {
       return Collections.emptyList();
     }
     if (sqlMeta.get().columnLineage().isEmpty()) {
+      DatasetIdentifier di =
+          JdbcUtils.getDatasetIdentifierFromJdbcUrl(
+              url, sqlMeta.get().inTables().get(0).qualifiedName());
       return Collections.singletonList(
-          datasetFactory.getDataset(
-              sqlMeta.get().inTables().get(0).qualifiedName(), url, relation.schema()));
+          datasetFactory.getDataset(di.getName(), di.getNamespace(), relation.schema()));
     }
     return sqlMeta.get().inTables().stream()
         .map(
-            dbtm ->
-                datasetFactory.getDataset(
-                    dbtm.qualifiedName(),
-                    url,
-                    generateJDBCSchema(dbtm, relation.schema(), sqlMeta.get())))
+            dbtm -> {
+              DatasetIdentifier di =
+                  JdbcUtils.getDatasetIdentifierFromJdbcUrl(url, dbtm.qualifiedName());
+              return datasetFactory.getDataset(
+                  di.getName(),
+                  di.getNamespace(),
+                  generateJDBCSchema(dbtm, relation.schema(), sqlMeta.get()));
+            })
         .collect(Collectors.toList());
   }
 

@@ -26,7 +26,7 @@ import org.apache.flink.api.common.ExecutionConfig;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.dag.Transformation;
-import org.apache.flink.configuration.ReadableConfig;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.execution.JobClient;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.graph.StreamGraphGenerator;
@@ -41,10 +41,8 @@ class JobListenerTest {
   List<Transformation<?>> transformations = new ArrayList<>();
   OpenLineageFlinkJobListener listener;
   FlinkExecutionContext context = mock(FlinkExecutionContext.class);
-  ReadableConfig readableConfig = mock(ReadableConfig.class);
-
+  Configuration readableConfig = new Configuration();
   String jobName = "some-job-name";
-
   String jobNamespace = "some-job-namespace";
 
   @BeforeEach
@@ -57,7 +55,8 @@ class JobListenerTest {
   @Test
   @SneakyThrows
   void testOnJobSubmitted() {
-    StreamExecutionEnvironment streamExecutionEnvironment = new StreamExecutionEnvironment();
+    StreamExecutionEnvironment streamExecutionEnvironment =
+        new StreamExecutionEnvironment(readableConfig);
     FieldUtils.writeField(
         FieldUtils.getField(StreamExecutionEnvironment.class, "transformations", true),
         streamExecutionEnvironment,
@@ -78,7 +77,7 @@ class JobListenerTest {
     try (MockedStatic<FlinkExecutionContextFactory> contextFactory =
         mockStatic(FlinkExecutionContextFactory.class)) {
       when(FlinkExecutionContextFactory.getContext(
-              eq(jobNamespace), eq(jobName), eq(jobId), eq(transformations)))
+              eq(readableConfig), eq(jobNamespace), eq(jobName), eq(jobId), eq(transformations)))
           .thenReturn(context);
       doNothing().when(context).onJobSubmitted();
 
@@ -110,7 +109,7 @@ class JobListenerTest {
     try (MockedStatic<FlinkExecutionContextFactory> contextFactory =
         mockStatic(FlinkExecutionContextFactory.class)) {
       when(FlinkExecutionContextFactory.getContext(
-              eq(jobNamespace), eq(jobName), eq(jobId), eq(transformations)))
+              eq(readableConfig), eq(jobNamespace), eq(jobName), eq(jobId), eq(transformations)))
           .thenReturn(context);
       doNothing().when(context).onJobSubmitted();
 
@@ -146,6 +145,7 @@ class JobListenerTest {
     try (MockedStatic<FlinkExecutionContextFactory> contextFactory =
         mockStatic(FlinkExecutionContextFactory.class)) {
       when(FlinkExecutionContextFactory.getContext(
+              eq(readableConfig),
               eq(DEFAULT_JOB_NAMESPACE),
               eq(StreamGraphGenerator.DEFAULT_STREAMING_JOB_NAME),
               eq(jobId),

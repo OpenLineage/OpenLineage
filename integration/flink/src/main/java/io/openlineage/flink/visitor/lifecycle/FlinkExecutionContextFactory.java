@@ -12,11 +12,16 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.dag.Transformation;
+import org.apache.flink.configuration.Configuration;
 
 public class FlinkExecutionContextFactory {
 
   public static FlinkExecutionContext getContext(
-      String jobNamespace, String jobName, JobID jobId, List<Transformation<?>> transformations) {
+      Configuration configuration,
+      String jobNamespace,
+      String jobName,
+      JobID jobId,
+      List<Transformation<?>> transformations) {
     return new FlinkExecutionContext.FlinkExecutionContextBuilder()
         .jobId(jobId)
         .jobName(jobName)
@@ -27,7 +32,7 @@ public class FlinkExecutionContextFactory {
             OpenLineageContext.builder()
                 .openLineage(new OpenLineage(EventEmitter.OPEN_LINEAGE_CLIENT_URI))
                 .build())
-        .eventEmitter(new EventEmitter())
+        .eventEmitter(new EventEmitter(configuration))
         .build();
   }
 }

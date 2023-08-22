@@ -2,7 +2,7 @@
     "eventType": "START",
     "inputs": [],
     "job": {
-        "name": "app_name.execute_insert_into_hive_table",
+        "name": "app_name.execute_insert_into_hive_table.warehouse_target",
         "namespace": "testPysparkSQLHiveTest"
     },
     "outputs": [
@@ -28,39 +28,19 @@
                     "identifiers": [
                         {
                             "namespace": "/tmp/warehouse",
-                            "name": "default.test",
+                            "name": "default.target",
                             "type": "TABLE"
                         }
                     ]
                 }
             },
-            "name": "/tmp/warehouse/test",
+            "name": "/tmp/warehouse/target",
             "namespace": "file"
         }
     ],
     "run": {
         "facets": {
             "spark.logicalPlan": {},
-            "spark_unknown": {
-                "inputs": [
-                    {
-                        "description": {},
-                        "inputAttributes": [],
-                        "outputAttributes": [
-                            {
-                                "metadata": {},
-                                "name": "key",
-                                "type": "integer"
-                            },
-                            {
-                                "metadata": {},
-                                "name": "value",
-                                "type": "string"
-                            }
-                        ]
-                    }
-                ]
-            },
             "spark_version": {
                 "spark-version": "${json-unit.any-string}",
                 "openlineage-spark-version": "${json-unit.any-string}"

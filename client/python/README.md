@@ -18,7 +18,7 @@ The config file is located by:
 3) looking for the `openlineage.yml` file in the `$HOME/.openlineage` directory.
 
 Different ways of connecting to OpenLineage backend are supported
-by the standarized `Transport` interface.
+by the standardized `Transport` interface.
 This is an example config for specifying `http` transport:
 
 ```yaml
@@ -59,7 +59,7 @@ You can also install `pip install openlineage-python[kafka]`
 #### File
 
 * `log_file_path` - required string parameter specifying the path of the file (if `append` is true a file path is expected, otherwise a file prefix is expected).
-* `append` - optional boolean parameter. If set to True, each event will be appended to a single file (log_file_path), otherwise, all event would be written separatly in distinct files suffixed by a timestring. By default false.
+* `append` - optional boolean parameter. If set to True, each event will be appended to a single file (log_file_path), otherwise, all event would be written separately in distinct files suffixed by a timestring. By default false.
 
 ### Custom transport
 

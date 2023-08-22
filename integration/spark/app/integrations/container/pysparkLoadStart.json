@@ -2,7 +2,7 @@
   "eventType" : "START",
   "job" : {
     "namespace" : "testCreateAsSelectAndLoad",
-    "name" : "open_lineage_integration_cta_s_load.execute_load_data_command"
+    "name" : "open_lineage_integration_cta_s_load.execute_load_data_command.ctas_load_tbl1"
   },
   "inputs" : [ ],
   "outputs" : [ {

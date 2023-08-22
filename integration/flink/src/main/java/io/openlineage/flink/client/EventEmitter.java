@@ -9,11 +9,15 @@ import io.openlineage.client.Clients;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineageClient;
 import io.openlineage.client.OpenLineageClientException;
+import io.openlineage.client.OpenLineageYaml;
+import io.openlineage.client.transports.TransportFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.util.Optional;
 import java.util.Properties;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.flink.configuration.Configuration;
 
 @Slf4j
 public class EventEmitter {
@@ -28,8 +32,18 @@ public class EventEmitter {
   public static final String OPEN_LINEAGE_SCHEMA_FACET_URI =
       "https://openlineage.io/spec/1-0-1/OpenLineage.json#/definitions/SchemaDatasetFacet";
 
-  public EventEmitter() {
-    client = Clients.newClient();
+  public EventEmitter(Configuration configuration) {
+    Optional<OpenLineageYaml> openLineageYaml = FlinkConfigParser.parse(configuration);
+    if (openLineageYaml.isPresent() && openLineageYaml.get().getTransportConfig() != null) {
+      // build emitter client based on flink configuration
+      this.client =
+          OpenLineageClient.builder()
+              .transport(new TransportFactory(openLineageYaml.get().getTransportConfig()).build())
+              .build();
+    } else {
+      // build emitter default way - openlineage.yml file or system properties
+      client = Clients.newClient();
+    }
   }
 
   public void emit(OpenLineage.RunEvent event) {

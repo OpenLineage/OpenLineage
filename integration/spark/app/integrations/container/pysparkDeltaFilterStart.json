@@ -1,0 +1,9 @@
+{
+  "eventType": "START",
+  "inputs": [],
+  "job": {
+    "name": "delta_integration_test.append_data_exec_v1.delta_delta_filter_t1",
+    "namespace": "delta-namespace"
+  },
+  "run": {}
+}

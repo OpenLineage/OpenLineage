@@ -1,0 +1,53 @@
+{
+  "eventType" : "COMPLETE",
+  "job" : {
+    "namespace" : "delta-namespace",
+    "name" : "delta_integration_test.execute_merge_into_command.delta_new-events"
+  },
+  "outputs" : [ {
+    "namespace" : "file",
+    "name" : "/tmp/delta/new-events",
+    "facets" : {
+      "dataSource" : {
+        "name" : "file",
+        "uri" : "file"
+      },
+      "schema" : {
+        "fields" : [ {
+          "name" : "event_id",
+          "type" : "long"
+        }, {
+          "name" : "last_updated_at",
+          "type" : "long"
+        } ]
+      },
+      "columnLineage": {
+        "fields": {
+          "event_id": {
+            "inputFields": [
+              {
+                "namespace": "file",
+                "name": "/tmp/delta/new-events",
+                "field": "event_id"
+              },
+              {
+                "namespace": "file",
+                "name": "/tmp/delta/updates",
+                "field": "event_id"
+              }
+            ]
+          },
+          "last_updated_at": {
+            "inputFields": [
+              {
+                "namespace": "file",
+                "name": "/tmp/delta/updates",
+                "field": "updated_at"
+              }
+            ]
+          }
+        }
+      }
+    }
+  } ]
+}

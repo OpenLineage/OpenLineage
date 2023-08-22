@@ -62,7 +62,7 @@ def execute_in_thread(target: Callable, kwargs=None):
     thread = threading.Thread(target=target, kwargs=kwargs, daemon=True)
     thread.start()
 
-    # Join, but ignore checking if thread stopped. If it did, then we shoudn't do anything.
+    # Join, but ignore checking if thread stopped. If it did, then we shouldn't do anything.
     # This basically gives this thread 5 seconds to complete work, then it can be killed,
     # as daemon=True. We don't want to deadlock Airflow if our code hangs.
 

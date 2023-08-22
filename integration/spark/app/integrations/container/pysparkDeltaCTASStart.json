@@ -2,7 +2,7 @@
   "eventType": "START",
   "inputs": [],
   "job": {
-    "name": "delta_integration_test.atomic_create_table_as_select",
+    "name": "delta_integration_test.atomic_create_table_as_select.delta_tbl",
     "namespace": "delta-namespace"
   },
   "run": {}

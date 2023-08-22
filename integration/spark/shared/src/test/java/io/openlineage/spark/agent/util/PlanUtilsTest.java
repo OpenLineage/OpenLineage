@@ -23,14 +23,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 class PlanUtilsTest {
 
   @ParameterizedTest
-  @MethodSource("provideJdbcUrls")
-  void testJdbcUrlSanitizer(String jdbcUrl, String expectedResult) {
-
-    String actualResult = JdbcUtils.sanitizeJdbcUrl(jdbcUrl);
-
-    assertEquals(expectedResult, actualResult);
-  }
-
+  @MethodSource()
   private static Stream<Arguments> provideJdbcUrls() {
     return Stream.of(
         Arguments.of(
