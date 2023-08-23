@@ -16,6 +16,7 @@ import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.RunEvent;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
@@ -76,5 +77,37 @@ public class DatabricksIntegrationTest {
 
     assertThat(inputDataset.getNamespace()).isEqualTo("dbfs");
     assertThat(inputDataset.getName()).isEqualTo("/user/hive/warehouse/temp");
+  }
+
+  @Test
+  @SneakyThrows
+  public void testNarrowTransformation() {
+    List<RunEvent> runEvents = runScript(workspace, clusterId, "narrow_transformation.py");
+    List<String> runEventJobNames =
+        runEvents.stream()
+            .map(runEvent -> runEvent.getJob().getName())
+            .collect(Collectors.toList());
+
+    assertThat(runEvents).isNotEmpty();
+
+    assertThat(runEventJobNames)
+        .anyMatch(s -> s.contains("execute_insert_into_hadoop_fs_relation_command"));
+    assertThat(runEventJobNames).noneMatch(s -> s.contains("adaptive_spark_plan"));
+  }
+
+  @Test
+  @SneakyThrows
+  public void testWideTransformation() {
+    List<RunEvent> runEvents = runScript(workspace, clusterId, "wide_transformation.py");
+    List<String> runEventJobNames =
+        runEvents.stream()
+            .map(runEvent -> runEvent.getJob().getName())
+            .collect(Collectors.toList());
+
+    assertThat(runEvents).isNotEmpty();
+
+    assertThat(runEventJobNames)
+        .noneMatch(s -> s.contains("execute_insert_into_hadoop_fs_relation_command"));
+    assertThat(runEventJobNames).anyMatch(s -> s.contains("adaptive_spark_plan"));
   }
 }

@@ -27,7 +27,6 @@ public class DatabricksEventFilter implements EventFilter {
           "collect_limit",
           "describe_table",
           "local_table_scan",
-          "adaptive_spark_plan",
           "serialize_from_object",
           "execute_set_catalog_command");
 
