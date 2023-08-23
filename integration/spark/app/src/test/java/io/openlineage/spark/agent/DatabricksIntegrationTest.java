@@ -9,7 +9,6 @@ import static io.openlineage.spark.agent.DatabricksUtils.DBFS_EVENTS_FILE;
 import static io.openlineage.spark.agent.DatabricksUtils.init;
 import static io.openlineage.spark.agent.DatabricksUtils.runScript;
 import static org.assertj.core.api.Assertions.assertThat;
-import java.util.stream.Collectors;
 
 import com.databricks.sdk.WorkspaceClient;
 import com.databricks.sdk.core.DatabricksConfig;
@@ -17,6 +16,7 @@ import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.RunEvent;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
@@ -81,14 +81,15 @@ public class DatabricksIntegrationTest {
   @SneakyThrows
   public void testNarrowTransformation() {
     List<RunEvent> runEvents = runScript(workspace, clusterId, "narrow_transformation.py");
-    List<String> runEventJobNames = runEvents
-                                      .stream()
-                                      .map(runEvent -> runEvent.getJob().getName())
-                                      .collect(Collectors.toList());
-    
+    List<String> runEventJobNames =
+        runEvents.stream()
+            .map(runEvent -> runEvent.getJob().getName())
+            .collect(Collectors.toList());
+
     assertThat(runEvents).isNotEmpty();
 
-    assertThat(runEventJobNames).anyMatch(s -> s.contains("execute_insert_into_hadoop_fs_relation_command"));
+    assertThat(runEventJobNames)
+        .anyMatch(s -> s.contains("execute_insert_into_hadoop_fs_relation_command"));
     assertThat(runEventJobNames).noneMatch(s -> s.contains("adaptive_spark_plan"));
   }
 
@@ -96,14 +97,15 @@ public class DatabricksIntegrationTest {
   @SneakyThrows
   public void testWideTransformation() {
     List<RunEvent> runEvents = runScript(workspace, clusterId, "wide_transformation.py");
-    List<String> runEventJobNames = runEvents
-                                      .stream()
-                                      .map(runEvent -> runEvent.getJob().getName())
-                                      .collect(Collectors.toList());
-    
+    List<String> runEventJobNames =
+        runEvents.stream()
+            .map(runEvent -> runEvent.getJob().getName())
+            .collect(Collectors.toList());
+
     assertThat(runEvents).isNotEmpty();
-    
-    assertThat(runEventJobNames).noneMatch(s -> s.contains("execute_insert_into_hadoop_fs_relation_command"));
+
+    assertThat(runEventJobNames)
+        .noneMatch(s -> s.contains("execute_insert_into_hadoop_fs_relation_command"));
     assertThat(runEventJobNames).anyMatch(s -> s.contains("adaptive_spark_plan"));
   }
 }
