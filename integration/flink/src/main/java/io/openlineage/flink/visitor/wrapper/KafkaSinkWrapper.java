@@ -55,7 +55,7 @@ public class KafkaSinkWrapper {
   }
 
   public Optional<Schema> getAvroSchema() {
-    return AvroUtils.getRegistryAvroSchema(
+    return AvroUtils.getAvroSchema(
         WrapperUtils.getFieldValue(
             serializationSchema.getClass(), serializationSchema, "valueSerializationSchema"));
   }
