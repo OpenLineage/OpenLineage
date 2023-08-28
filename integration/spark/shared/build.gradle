@@ -52,7 +52,7 @@ ext {
     snowflakeVersion = '2.9.3'
     postgresqlVersion = '42.6.0'
     mockitoVersion = '4.11.0'
-    testcontainersVersion = '1.18.1'
+    testcontainersVersion = '1.19.0'
 }
 
 dependencies {
