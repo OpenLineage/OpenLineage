@@ -112,7 +112,9 @@ dependencies {
     testFixturesApi "org.apache.spark:spark-sql_${versions.scala}:${sparkVersion}"
     testFixturesApi "org.apache.spark:spark-hive_${versions.scala}:${sparkVersion}"
     testFixturesApi 'commons-beanutils:commons-beanutils:1.9.4'
-
+    if(versions.module != "spark2") {
+        testFixturesApi "org.apache.spark:spark-hadoop-cloud_${versions.scala}:${sparkVersion}"
+    }
 
     testFixturesApi ("net.snowflake:spark-snowflake_${versions.scala}:${versions.snowflake}") {
         exclude group: 'com.google.guava:guava'

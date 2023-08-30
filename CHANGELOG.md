@@ -1,6 +1,9 @@
 # Changelog
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.1.0...HEAD)
+### Fixed
+* **Spark: Improve RDDs on S3 integration. (TODO PR number)** [`#2039`](https://github.com/OpenLineage/OpenLineage/pull/2039) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Prepare integration test to access S3, fix input dataset duplicates and other minor fixes.*
 
 ## [1.1.0](https://github.com/OpenLineage/OpenLineage/compare/1.0.0...1.1.0) - 2023-08-23
 ### Added
