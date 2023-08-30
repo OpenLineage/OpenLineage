@@ -9,7 +9,6 @@ import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.spark.agent.lifecycle.Rdds;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -27,15 +26,16 @@ public class SqlExecutionRDDVisitor extends AbstractRDDNodeVisitor<LogicalRDD, I
 
   @Override
   public boolean isDefinedAt(LogicalPlan x) {
-    return x instanceof LogicalRDD && !findSqlExecution((LogicalRDD) x).isEmpty();
+    return x instanceof LogicalRDD && containsSqlExecution((LogicalRDD) x);
   }
 
-  private Collection<SQLExecutionRDD> findSqlExecution(LogicalRDD logicalRDD) {
+  public static boolean containsSqlExecution(LogicalRDD logicalRDD) {
     Set<RDD<?>> rdds = Rdds.flattenRDDs(logicalRDD.rdd());
-    return rdds.stream()
+    return !rdds.stream()
         .filter(rdd -> rdd instanceof SQLExecutionRDD)
         .map(SQLExecutionRDD.class::cast)
-        .collect(Collectors.toList());
+        .collect(Collectors.toList())
+        .isEmpty();
   }
 
   @Override

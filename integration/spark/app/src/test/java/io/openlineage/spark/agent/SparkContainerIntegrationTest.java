@@ -335,4 +335,13 @@ class SparkContainerIntegrationTest {
 
     mockServerClient.verify(request().withPath("/api/v1/lineage").withBody(new RegexBody(regex)));
   }
+
+  @Test
+  @SneakyThrows
+  void testRddWithParquet() {
+    SparkContainerUtils.runPysparkContainerWithDefaultConf(
+        network, openLineageClientMockContainer, "testRddWithParquet", "spark_rdd_with_parquet.py");
+
+    verifyEvents(mockServerClient, "pysparkRDDWithParquetComplete.json");
+  }
 }

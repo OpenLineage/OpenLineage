@@ -10,6 +10,7 @@ import io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet.Lifecy
 import io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeOutputVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRelationDatasetBuilder;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
+import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import java.net.URI;
 import java.util.List;
@@ -123,9 +124,7 @@ public abstract class DatasetFactory<D extends OpenLineage.Dataset> {
    */
   public D getDataset(URI outputPath, StructType schema) {
     String namespace = PlanUtils.namespaceUri(outputPath);
-    return getDataset(
-        new DatasetIdentifier(outputPath.getPath(), namespace),
-        datasetFacetBuilder(schema, namespace));
+    return getDataset(PathUtils.fromURI(outputPath), datasetFacetBuilder(schema, namespace));
   }
 
   /**

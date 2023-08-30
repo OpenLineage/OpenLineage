@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapred.FileInputFormat;
+import org.apache.spark.package$;
 import org.apache.spark.rdd.HadoopRDD;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
@@ -238,7 +239,19 @@ public class PlanUtils {
                 FileScanRDD fileScanRDD = (FileScanRDD) rdd;
                 return ScalaConversionUtils.fromSeq(fileScanRDD.filePartitions()).stream()
                     .flatMap(fp -> Arrays.stream(fp.files()))
-                    .map(f -> new Path(f.filePath()).getParent());
+                    .map(
+                        f -> {
+                          if (package$.MODULE$.SPARK_VERSION().compareTo("3.4") > 0) {
+                            // filePath returns SparkPath for Spark 3.4
+                            return ReflectionUtils.tryExecuteMethod(f, "filePath")
+                                .map(o -> ReflectionUtils.tryExecuteMethod(o, "toPath"))
+                                .map(o -> (Path) o.get())
+                                .get()
+                                .getParent();
+                          } else {
+                            return new Path(f.filePath()).getParent();
+                          }
+                        });
               } else {
                 log.warn("Unknown RDD class {}", rdd.getClass().getCanonicalName());
                 return Stream.empty();

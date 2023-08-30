@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 import io.openlineage.spark.agent.lifecycle.Rdds;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
+import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark3.agent.utils.PlanUtils3;
@@ -151,12 +152,15 @@ class InputFieldsCollectorTest {
 
     try (MockedStatic rdds = mockStatic(Rdds.class)) {
       try (MockedStatic planUtils = mockStatic(PlanUtils.class)) {
-        when(Rdds.findFileLikeRdds(rdd)).thenReturn(listRDD);
-        when(PlanUtils.findRDDPaths(listRDD)).thenReturn(Collections.singletonList(path));
-        when(PlanUtils.namespaceUri(path.toUri())).thenReturn(FILE);
+        try (MockedStatic pathUtils = mockStatic(PathUtils.class)) {
+          when(Rdds.findFileLikeRdds(rdd)).thenReturn(listRDD);
+          when(PlanUtils.findRDDPaths(listRDD)).thenReturn(Collections.singletonList(path));
+          when(PathUtils.fromURI(path.toUri())).thenReturn(new DatasetIdentifier("/tmp", FILE));
 
-        InputFieldsCollector.collect(context, plan, builder);
-        verify(builder, times(1)).addInput(exprId, new DatasetIdentifier("/tmp", FILE), SOME_NAME);
+          InputFieldsCollector.collect(context, plan, builder);
+          verify(builder, times(1))
+              .addInput(exprId, new DatasetIdentifier("/tmp", FILE), SOME_NAME);
+        }
       }
     }
   }

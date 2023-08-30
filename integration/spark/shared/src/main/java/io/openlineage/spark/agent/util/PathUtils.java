@@ -52,6 +52,10 @@ public class PathUtils {
     return new DatasetIdentifier(name, namespace);
   }
 
+  public static DatasetIdentifier fromURI(URI location) {
+    return fromPath(new Path(location), DEFAULT_SCHEME);
+  }
+
   public static DatasetIdentifier fromURI(URI location, String defaultScheme) {
     return fromPath(new Path(location), defaultScheme);
   }
