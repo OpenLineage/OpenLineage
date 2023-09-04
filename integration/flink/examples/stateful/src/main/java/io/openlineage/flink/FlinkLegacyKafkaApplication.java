@@ -6,17 +6,14 @@
 package io.openlineage.flink;
 
 import io.openlineage.flink.avro.event.InputEvent;
-import io.openlineage.util.FlinkListenerUtils;
+import io.openlineage.util.OpenLineageFlinkJobListenerBuilder;
 import org.apache.flink.api.java.utils.ParameterTool;
-import org.apache.flink.core.execution.JobListener;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
-import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 
 import static io.openlineage.flink.StreamEnvironment.setupEnv;
 import static io.openlineage.kafka.KafkaClientProvider.legacyKafkaSink;
 import static io.openlineage.kafka.KafkaClientProvider.legacyKafkaSource;
-import static org.apache.flink.streaming.api.environment.CheckpointConfig.ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION;
 
 public class FlinkLegacyKafkaApplication {
 
@@ -32,8 +29,14 @@ public class FlinkLegacyKafkaApplication {
       .process(new StatefulCounter()).name("process").uid("process")
       .addSink(legacyKafkaSink(parameters.getRequired("output-topic"))).name("kafka-sink").uid("kafka-sink");
 
-
-    env.registerJobListener(FlinkListenerUtils.instantiate(env));
-    env.execute("flink-legacy-stateful");
+    String jobName = parameters.get("job-name", "flink_legacy_stateful");
+    env.registerJobListener(
+        OpenLineageFlinkJobListenerBuilder
+            .create()
+            .executionEnvironment(env)
+            .jobName(jobName)
+            .build()
+    );
+    env.execute(jobName);
   }
 }

@@ -117,10 +117,10 @@ class ContainerTest {
     network.close();
   }
 
-  void runUntilCheckpoint(String jobName, Properties jobProperties) {
+  void runUntilCheckpoint(String entrypointClass, Properties jobProperties) {
     jobManager =
         FlinkContainerUtils.makeFlinkJobManagerContainer(
-            jobName,
+            entrypointClass,
             network,
             Arrays.asList(generateEvents, openLineageClientMockContainer),
             jobProperties);
@@ -132,10 +132,10 @@ class ContainerTest {
         .until(() -> FlinkContainerUtils.verifyJobManagerReachedCheckpointOrFinished(jobManager));
   }
 
-  void runUntilFailed(String jobName) {
+  void runUntilNotRunning(String entrypointClass) {
     jobManager =
         FlinkContainerUtils.makeFlinkJobManagerContainer(
-            jobName,
+            entrypointClass,
             network,
             Arrays.asList(generateEvents, openLineageClientMockContainer),
             new Properties());
@@ -184,8 +184,11 @@ class ContainerTest {
   void testOpenLineageEventSentForKafkaJobWithTopicPattern() {
     Properties jobProperties = new Properties();
     jobProperties.put("inputTopics", "io.openlineage.flink.kafka.input.*");
+    jobProperties.put("jobName", "flink_topic_pattern");
     runUntilCheckpoint("io.openlineage.flink.FlinkStatefulApplication", jobProperties);
-    verify("events/expected_kafka.json", "events/expected_kafka_checkpoints.json");
+    verify(
+        "events/expected_kafka_topic_pattern.json",
+        "events/expected_kafka_topic_pattern_checkpoints.json");
   }
 
   @Test
@@ -200,8 +203,9 @@ class ContainerTest {
   void testOpenLineageEventSentForLegacyKafkaJobWithTopicPattern() {
     Properties jobProperties = new Properties();
     jobProperties.put("inputTopics", "io.openlineage.flink.kafka.input.*");
+    jobProperties.put("jobName", "flink_legacy_kafka_topic_pattern");
     runUntilCheckpoint("io.openlineage.flink.FlinkLegacyKafkaApplication", jobProperties);
-    verify("events/expected_legacy_kafka.json");
+    verify("events/expected_legacy_kafka_topic_pattern.json");
   }
 
   @Test
@@ -221,7 +225,7 @@ class ContainerTest {
   @Test
   @SneakyThrows
   void testOpenLineageFailedEventSentForFailedJob() {
-    runUntilFailed("io.openlineage.flink.FlinkFailedApplication");
+    runUntilNotRunning("io.openlineage.flink.FlinkFailedApplication");
     verify("events/expected_failed.json");
   }
 
@@ -240,7 +244,7 @@ class ContainerTest {
                         "--job-classname %s ", "io.openlineage.flink.FlinkStatefulApplication")
                     + "--input-topics "
                     + inputTopics
-                    + " --output-topic io.openlineage.flink.kafka.output ")
+                    + " --output-topic io.openlineage.flink.kafka.output --job-name flink_conf_job")
             .withEnv(
                 "FLINK_PROPERTIES",
                 "jobmanager.rpc.address: jobmanager\n"
@@ -256,9 +260,38 @@ class ContainerTest {
 
     await()
         .atMost(Duration.ofMinutes(5))
+        .pollDelay(Duration.ofSeconds(5))
+        .pollInterval(Duration.ofSeconds(1))
         .until(() -> FlinkContainerUtils.verifyJobManagerReachedCheckpointOrFinished(jobManager));
 
-    verify("events/expected_kafka.json", "events/expected_kafka_checkpoints.json");
+    verify("events/expected_flink_conf.json");
+  }
+
+  @Test
+  @SneakyThrows
+  void testJobTrackerStopsAfterJobIsExecuted() {
+    runUntilNotRunning("io.openlineage.flink.FlinkStoppableApplication");
+
+    await()
+        .atMost(Duration.ofSeconds(10))
+        .pollInterval(Duration.ofSeconds(2))
+        .untilAsserted(
+            () -> {
+              HttpRequest[] requests =
+                  mockServerClient.retrieveRecordedRequests(
+                      request()
+                          .withPath("/api/v1/lineage")
+                          .withBody(
+                              JsonBody.json("{\"job\":  {\"name\": \"flink-stoppable-job\"}}")));
+              // last element has to be "COMPLETE"
+              assertThat(
+                      Arrays.stream(requests)
+                          .map(request -> request.getBodyAsString())
+                          .map(body -> body.contains("\"COMPLETE\"") ? "complete" : body)
+                          .collect(Collectors.toList()))
+                  .last()
+                  .isEqualTo("complete");
+            });
   }
 
   @SneakyThrows

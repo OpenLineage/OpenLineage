@@ -14,15 +14,8 @@ import org.apache.flink.configuration.ReadableConfig;
  */
 public class OpenLineageContinousJobTrackerFactory {
 
-  /** Default duration between REST API calls. */
-  static final Duration defaultTrackingInterval = Duration.ofSeconds(10);
-
   public static OpenLineageContinousJobTracker getTracker(
       ReadableConfig config, Duration duration) {
     return new OpenLineageContinousJobTracker(config, duration);
-  }
-
-  public static OpenLineageContinousJobTracker getTracker(ReadableConfig config) {
-    return new OpenLineageContinousJobTracker(config, defaultTrackingInterval);
   }
 }
