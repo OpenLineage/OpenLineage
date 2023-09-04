@@ -5,10 +5,11 @@
 
 package io.openlineage.flink;
 
+import io.openlineage.flink.FlinkFakeApplication.FakeSink;
+import io.openlineage.flink.FlinkFakeApplication.FakeSource;
 import io.openlineage.flink.api.DatasetFactory;
 import io.openlineage.flink.api.LineageProvider;
-import io.openlineage.util.FlinkListenerUtils;
-import org.apache.flink.core.execution.JobListener;
+import io.openlineage.util.OpenLineageFlinkJobListenerBuilder;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
@@ -24,8 +25,13 @@ public class FlinkCrashingLineageProviderApplication {
     StreamExecutionEnvironment env = setupEnv(args);
     env.addSource(new FakeSource()).addSink(new FakeSink());
 
-    env.registerJobListener(FlinkListenerUtils.instantiate(env));
-    env.execute("flink-fake-application");
+    env.registerJobListener(
+        OpenLineageFlinkJobListenerBuilder
+            .create()
+            .executionEnvironment(env)
+            .jobName("flink-crushing-lineage-job")
+            .build()
+    );
   }
 
   static class FakeSource implements SourceFunction<Integer> {

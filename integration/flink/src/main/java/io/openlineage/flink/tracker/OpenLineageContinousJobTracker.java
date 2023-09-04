@@ -60,10 +60,14 @@ public class OpenLineageContinousJobTracker {
     trackingThread =
         (new Thread(
             () -> {
+              try {
+                Thread.sleep(trackingInterval.toMillis());
+              } catch (InterruptedException e) {
+                log.warn("Tracking thread interrupted", e);
+              }
+
               while (shouldContinue) {
                 try {
-                  Thread.sleep(trackingInterval.toMillis());
-
                   CloseableHttpResponse response = httpClient.execute(request);
                   String json = EntityUtils.toString(response.getEntity());
 
@@ -81,15 +85,19 @@ public class OpenLineageContinousJobTracker {
                           () -> log.info("no new checkpoint found"));
                 } catch (IOException | ParseException e) {
                   log.error("Connecting REST API failed", e);
-                } catch (InterruptedException e) {
-                  log.info("Stopping tracker thread", e);
-                  shouldContinue = false;
                 } catch (Exception e) {
                   log.error("tracker thread failed due not unknown exception", e);
                   shouldContinue = false;
                 }
+                try {
+                  Thread.sleep(trackingInterval.toMillis());
+                } catch (InterruptedException e) {
+                  log.warn("Tracking thread interrupted", e);
+                  shouldContinue = false;
+                }
               }
             }));
+    log.info("Starting tracking thread for jobId={}", context.getJobId().toString());
     trackingThread.start();
   }
 

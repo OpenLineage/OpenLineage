@@ -1,5 +1,9 @@
 {
   "eventType" : "FAIL",
+  "job" : {
+    "namespace" : "flink_job_namespace",
+    "name": "flink_failed_job"
+  },
   "run" : {
     "facets": {
       "errorMessage": {

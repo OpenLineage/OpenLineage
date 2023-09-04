@@ -5,12 +5,8 @@
 
 package io.openlineage.flink;
 
-import io.openlineage.util.FlinkListenerUtils;
-import org.apache.flink.api.common.functions.MapFunction;
+import io.openlineage.util.OpenLineageFlinkJobListenerBuilder;
 import org.apache.flink.api.common.restartstrategy.RestartStrategies;
-import org.apache.flink.api.java.utils.ParameterTool;
-import org.apache.flink.core.execution.JobListener;
-import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.data.RowData;
@@ -32,23 +28,29 @@ public class FlinkFailedApplication {
     TableLoader sinkLoader = TableLoader.fromHadoopTable("/tmp/warehouse/db/sink");
 
     DataStream<RowData> stream = FlinkSource.forRowData()
-      .env(env)
-      .tableLoader(sourceLoader)
-      .streaming(true)
-      .build();
+        .env(env)
+        .tableLoader(sourceLoader)
+        .streaming(true)
+        .build();
 
     DataStream<RowData> failedTransform = stream.map(
-      row -> {
-        throw new RuntimeException("fail");
-      }
+        row -> {
+          throw new RuntimeException("fail");
+        }
     );
 
     FlinkSink.forRowData(failedTransform)
-      .tableLoader(sinkLoader)
-      .overwrite(true)
-      .append();
+        .tableLoader(sinkLoader)
+        .overwrite(true)
+        .append();
 
-    env.registerJobListener(FlinkListenerUtils.instantiate(env));
-    env.execute("flink-failed-job");
+    env.registerJobListener(
+        OpenLineageFlinkJobListenerBuilder
+            .create()
+            .executionEnvironment(env)
+            .jobName("flink_failed_job")
+            .build()
+    );
+    env.execute("flink_failed_job");
   }
 }

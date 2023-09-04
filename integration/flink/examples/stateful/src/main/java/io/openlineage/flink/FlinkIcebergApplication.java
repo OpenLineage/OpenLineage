@@ -5,8 +5,7 @@
 
 package io.openlineage.flink;
 
-import io.openlineage.util.FlinkListenerUtils;
-import org.apache.flink.core.execution.JobListener;
+import io.openlineage.util.OpenLineageFlinkJobListenerBuilder;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.data.RowData;
@@ -35,7 +34,13 @@ public class FlinkIcebergApplication {
       .overwrite(true)
       .append();
 
-    env.registerJobListener(FlinkListenerUtils.instantiate(env));
-    env.execute("flink-examples-iceberg");
+    env.registerJobListener(
+        OpenLineageFlinkJobListenerBuilder
+            .create()
+            .executionEnvironment(env)
+            .jobName("flink_examples_iceberg")
+            .build()
+    );
+    env.execute("flink_examples_iceberg");
   }
 }

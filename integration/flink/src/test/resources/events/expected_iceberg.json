@@ -1,5 +1,9 @@
 {
   "eventType" : "START",
+  "job" : {
+    "namespace" : "flink_job_namespace",
+    "name": "flink_examples_iceberg"
+  },
   "inputs": [{
     "namespace": "file",
     "name": "tmp/warehouse/db/source",

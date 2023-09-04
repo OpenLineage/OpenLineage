@@ -5,6 +5,10 @@
 * **Spark: Improve RDDs on S3 integration. (TODO PR number)** [`#2039`](https://github.com/OpenLineage/OpenLineage/pull/2039) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Prepare integration test to access S3, fix input dataset duplicates and other minor fixes.*
 
+### Fixed
+* **Flink: prevent sending `running` events after job completes.** [`#2075`](https://github.com/OpenLineage/OpenLineage/pull/2075) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Flink checkpoint tracking thread did not get stopped properly on job complete.*
+
 ## [1.1.0](https://github.com/OpenLineage/OpenLineage/compare/1.0.0...1.1.0) - 2023-08-23
 ### Added
 * **Flink: create Openlineage configuration based on Flink configuration** [`#2033`](https://github.com/OpenLineage/OpenLineage/pull/2033) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  

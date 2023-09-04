@@ -101,10 +101,17 @@ public class FlinkContainerUtils {
   }
 
   static GenericContainer<?> makeFlinkJobManagerContainer(
-      String jobName, Network network, List<Startable> startables, Properties jobProperties) {
+      String entrypointClass,
+      Network network,
+      List<Startable> startables,
+      Properties jobProperties) {
     String inputTopics =
         jobProperties.getProperty(
             "inputTopics", "io.openlineage.flink.kafka.input1,io.openlineage.flink.kafka.input2");
+    String jobNameParam = "";
+    if (jobProperties.getProperty("jobName") != null) {
+      jobNameParam = "--job-name " + jobProperties.get("jobName") + " ";
+    }
     String configPath = jobProperties.getProperty("configPath", "/opt/flink/lib/openlineage.yml");
     GenericContainer<?> container =
         genericContainer(network, FLINK_IMAGE, "jobmanager")
@@ -117,10 +124,11 @@ public class FlinkContainerUtils {
                 configPath)
             .withCommand(
                 "standalone-job "
-                    + String.format("--job-classname %s ", jobName)
+                    + String.format("--job-classname %s ", entrypointClass)
                     + "--input-topics "
                     + inputTopics
-                    + " --output-topic io.openlineage.flink.kafka.output ")
+                    + " --output-topic io.openlineage.flink.kafka.output "
+                    + jobNameParam)
             .withEnv(
                 "FLINK_PROPERTIES", "jobmanager.rpc.address: jobmanager\nexecution.attached: true")
             .withEnv("OPENLINEAGE_CONFIG", configPath)

@@ -2,21 +2,13 @@ package io.openlineage.flink;
 
 import io.openlineage.flink.avro.event.InputEvent;
 import io.openlineage.flink.avro.event.OutputEvent;
-import io.openlineage.util.FlinkListenerUtils;
-import java.util.Collections;
-import java.util.Properties;
-import org.apache.avro.Schema;
-import org.apache.avro.Schema.Type;
+import io.openlineage.util.OpenLineageFlinkJobListenerBuilder;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.KafkaSourceBuilder;
-import org.apache.flink.connector.kafka.source.reader.deserializer.KafkaRecordDeserializationSchema;
-import org.apache.flink.formats.avro.AvroDeserializationSchema;
 import org.apache.flink.formats.avro.registry.confluent.ConfluentRegistryAvroDeserializationSchema;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.KeyedProcessFunction;
-import org.apache.flink.util.Collector;
 
 import static io.openlineage.common.config.ConfigWrapper.fromResource;
 import static io.openlineage.flink.StreamEnvironment.setupEnv;
@@ -50,7 +42,14 @@ public class FlinkSourceWithGenericRecordApplication {
         .process(new StatefulCounter()).name("process").uid("process")
         .sinkTo(aKafkaSink(parameters.getRequired("output-topic"))).name("kafka-sink").uid("kafka-sink");
 
-    env.registerJobListener(FlinkListenerUtils.instantiate(env));
-    env.execute("flink-source-with-generic-record");
+    String jobName = parameters.get("job-name", "flink_source_with_generic_record");
+    env.registerJobListener(
+        OpenLineageFlinkJobListenerBuilder
+            .create()
+            .executionEnvironment(env)
+            .jobName(jobName)
+            .build()
+    );
+    env.execute(jobName);
   }
 }

@@ -1,5 +1,9 @@
 {
   "eventType" : "START",
+  "job" : {
+    "namespace" : "flink_job_namespace",
+    "name": "flink_legacy_stateful"
+  },
   "inputs": [
     {
       "namespace": "kafka:9092",
