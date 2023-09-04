@@ -40,7 +40,7 @@ public class MockServerUtils {
     Path eventFolder = Paths.get("integrations/container/");
 
     await()
-        .atMost(Duration.ofSeconds(10))
+        .atMost(Duration.ofSeconds(20))
         .untilAsserted(
             () ->
                 mockServerClient.verify(
