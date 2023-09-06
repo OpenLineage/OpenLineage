@@ -33,7 +33,7 @@ class Serde:
         if isinstance(obj, List):
             return list(
                 filter(
-                    lambda x: False if x is None else not (isinstance(x, dict) and x == {}),
+                    lambda x: x is not None and (not isinstance(x, dict) or x != {}),
                     [cls.remove_nulls_and_enums(v) for v in obj if v is not None],
                 ),
             )
