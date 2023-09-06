@@ -10,7 +10,7 @@ plugins {
     id 'java-test-fixtures'
     id 'com.diffplug.spotless' version '6.12.0'
     id "com.adarshr.test-logger" version "3.2.0"
-    id "org.gradle.test-retry" version "1.5.1"
+    id "org.gradle.test-retry" version "1.5.4"
     id "com.github.johnrengelman.shadow" version "7.1.2"
     id "pmd"
 }
@@ -44,6 +44,7 @@ configurations {
     spark3.extendsFrom testImplementation
     spark32.extendsFrom testImplementation
     spark33.extendsFrom testImplementation
+    spark34.extendsFrom testImplementation
     pysparkContainerOnly
 }
 
@@ -59,10 +60,11 @@ ext {
     shortVersion = sparkVersion.substring(0,3)
 
     versionsMap = [
-            "3.3": ["module": "spark33", "scala": "2.12", "delta": "2.1.0", "gcs": "hadoop3-2.2.9", "snowflake": "2.11.0-spark_3.3", "iceberg": "iceberg-spark-runtime-3.3_2.12:0.14.0"],
-            "3.2": ["module": "spark32", "scala": "2.12", "delta": "1.1.0", "gcs": "hadoop3-2.2.9", "snowflake": "2.11.0-spark_3.2", "iceberg": "iceberg-spark-runtime-3.2_2.12:0.14.0"],
-            "3.1": ["module": "spark3",  "scala": "2.12", "delta": "1.0.0", "gcs": "hadoop3-2.2.9", "snowflake": "2.11.0-spark_3.1", "iceberg": "iceberg-spark-runtime-3.1_2.12:0.13.0"],
-            "2.4": ["module": "spark2",  "scala": "2.11", "delta": "NA",    "gcs": "hadoop2-2.2.9", "snowflake": "2.9.3-spark_2.4",  "iceberg": "NA"]
+            "3.4": ["module": "spark33", "scala": "2.12", "delta": "2.4.0", "gcs": "hadoop3-2.2.9", "snowflake": "2.11.0-spark_3.3", "iceberg": "iceberg-spark-runtime-3.4_2.12:1.3.0", "hadoopclient": "3.3.4"],
+            "3.3": ["module": "spark33", "scala": "2.12", "delta": "2.1.0", "gcs": "hadoop3-2.2.9", "snowflake": "2.11.0-spark_3.3", "iceberg": "iceberg-spark-runtime-3.3_2.12:0.14.0", "hadoopclient": "3.3.4"],
+            "3.2": ["module": "spark32", "scala": "2.12", "delta": "1.1.0", "gcs": "hadoop3-2.2.9", "snowflake": "2.11.0-spark_3.2", "iceberg": "iceberg-spark-runtime-3.2_2.12:0.14.0", "hadoopclient": "3.3.4"],
+            "3.1": ["module": "spark3",  "scala": "2.12", "delta": "1.0.0", "gcs": "hadoop3-2.2.9", "snowflake": "2.11.0-spark_3.1", "iceberg": "iceberg-spark-runtime-3.1_2.12:0.13.0", "hadoopclient": "3.3.4"],
+            "2.4": ["module": "spark2",  "scala": "2.11", "delta": "NA",    "gcs": "hadoop2-2.2.9", "snowflake": "2.9.3-spark_2.4",  "iceberg": "NA", "hadoopclient": "2.10.2"]
     ]
     versions = versionsMap[shortVersion]
 }
@@ -85,6 +87,7 @@ dependencies {
     implementation(project(path: ":spark3"))
     implementation(project(path: ":spark32"))
     implementation(project(path: ":spark33"))
+    implementation(project(path: ":spark34"))
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.2.1'
 
 
@@ -109,7 +112,9 @@ dependencies {
     testFixturesApi "org.apache.spark:spark-sql_${versions.scala}:${sparkVersion}"
     testFixturesApi "org.apache.spark:spark-hive_${versions.scala}:${sparkVersion}"
     testFixturesApi 'commons-beanutils:commons-beanutils:1.9.4'
-
+    if(versions.module != "spark2") {
+        testFixturesApi "org.apache.spark:spark-hadoop-cloud_${versions.scala}:${sparkVersion}"
+    }
 
     testFixturesApi ("net.snowflake:spark-snowflake_${versions.scala}:${versions.snowflake}") {
         exclude group: 'com.google.guava:guava'
@@ -123,8 +128,12 @@ dependencies {
         exclude group: 'com.fasterxml.jackson.core'
         exclude group: 'com.fasterxml.jackson.module'
     }
+    testFixturesApi("com.databricks:databricks-sdk-java:0.4.0") {
+        exclude group: 'com.fasterxml.jackson.core'
+        exclude group: 'com.fasterxml.jackson.module'
+    }
 
-    testFixturesApi("org.apache.hadoop:hadoop-client:3.3.4") { force=true }
+    testFixturesApi("org.apache.hadoop:hadoop-client:${versions.hadoopclient}") { force=true }
     testFixturesApi("org.mock-server:mockserver-netty:5.14.0:shaded") {
         exclude group: 'com.google.guava', module: 'guava'
         exclude group: 'com.fasterxml.jackson.core'
@@ -179,11 +188,24 @@ def commonTestConfiguration = {
     classpath = project.sourceSets.test.runtimeClasspath
 }
 
+task nonParallelTest (type: Test) {
+    group = 'verification'
+    description = "Runs tests that cannot be run in parallel. For example test suites that require metastore_db"
+
+    maxParallelForks = 1
+
+    useJUnitPlatform {
+        includeTags("nonParallelTest")
+    }
+}
+
 // wrócić do jednego test z jakąś metodą zwracającą konfigurację żeby spark3 działał
 test {
+    dependsOn nonParallelTest
     useJUnitPlatform {i ->
-        excludeTags ('integration-test')
+        excludeTags ('integration-test', 'nonParallelTest')
         if(versions.delta == "NA") {excludeTags 'delta'}
+        if(versions.iceberg == "NA") {excludeTags 'iceberg'}
     }
     configure commonTestConfiguration
     classpath = project.sourceSets.test.runtimeClasspath + configurations."${versions.module}"
@@ -200,11 +222,6 @@ task copyDependencies(type: Copy) {
 }
 
 task integrationTest(type: Test) {
-    // integrationTest depends on shadowJar which dependsOn test
-    // exclude all the tests and add manually tagged with integration-test
-    test {
-        exclude "**"
-    }
     dependsOn shadowJar, copyDependencies
     retry {
         boolean isCiServer = System.getenv().containsKey("CI")
@@ -216,10 +233,26 @@ task integrationTest(type: Test) {
     configure commonTestConfiguration
     useJUnitPlatform {
         includeTags "integration-test"
+        excludeTags "databricks"
         if(!sparkVersion.startsWith('3')) {excludeTags 'spark3'}
+        if(versions.delta == "NA") {excludeTags 'delta'}
+        if(versions.iceberg == "NA") {excludeTags 'iceberg'}
     }
+}
 
-
+task databricksIntegrationTest(type: Test) {
+    dependsOn shadowJar, copyDependencies
+    retry {
+        boolean isCiServer = System.getenv().containsKey("CI")
+        if (isCiServer) {
+            maxRetries = 3
+            maxFailures = 3
+        }
+    }
+    configure commonTestConfiguration
+    useJUnitPlatform {
+        includeTags "databricks"
+    }
 }
 
 spotless {
@@ -244,12 +277,14 @@ assemble {
 
 shadowJar {
     dependsOn test
+
     minimize(){
         exclude (project(":shared"))
         exclude (project(":spark2"))
         exclude (project(":spark3"))
         exclude (project(":spark32"))
         exclude (project(":spark33"))
+        exclude (project(":spark34"))
     }
     classifier = ''
     // avoid conflict with any client version of that lib
@@ -262,7 +297,11 @@ shadowJar {
     relocate 'org.apache.commons.beanutils', 'io.openlineage.spark.shaded.org.apache.commons.beanutils'
     relocate 'org.apache.http', 'io.openlineage.spark.shaded.org.apache.http'
     relocate 'org.yaml.snakeyaml', 'io.openlineage.spark.shaded.org.yaml.snakeyaml'
-    relocate 'com.fasterxml.jackson', 'io.openlineage.spark.shaded.com.fasterxml.jackson'
+    relocate('com.fasterxml.jackson', 'io.openlineage.spark.shaded.com.fasterxml.jackson') {
+        exclude 'com.fasterxml.jackson.annotation.JsonIgnore'
+        exclude 'com.fasterxml.jackson.annotation.JsonIgnoreProperties'
+        exclude 'com.fasterxml.jackson.annotation.JsonIgnoreType'
+    }
     manifest {
         attributes(
                 'Created-By': "Gradle ${gradle.gradleVersion}",

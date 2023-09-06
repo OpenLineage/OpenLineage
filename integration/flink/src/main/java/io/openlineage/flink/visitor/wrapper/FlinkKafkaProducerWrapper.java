@@ -46,7 +46,7 @@ public class FlinkKafkaProducerWrapper {
 
   private Optional<Schema> getKeyedAvroSchema(KeyedSerializationSchema serializationSchema) {
     if (serializationSchema instanceof KeyedSerializationSchemaWrapper) {
-      return AvroUtils.getRegistryAvroSchema(
+      return AvroUtils.getAvroSchema(
           WrapperUtils.getFieldValue(
               KeyedSerializationSchemaWrapper.class, serializationSchema, "serializationSchema"));
     }
@@ -56,7 +56,7 @@ public class FlinkKafkaProducerWrapper {
   private Optional<Schema> getKafkaAvroSchema() {
     KafkaSerializationSchema kafkaSchema = getField("kafkaSchema");
     if (kafkaSchema instanceof KafkaSerializationSchemaWrapper) {
-      return AvroUtils.getRegistryAvroSchema(
+      return AvroUtils.getAvroSchema(
           WrapperUtils.getFieldValue(
               KafkaSerializationSchemaWrapper.class, kafkaSchema, "serializationSchema"));
     }

@@ -12,7 +12,15 @@ from airflow.version import version as AIRFLOW_VERSION
 
 
 def _is_disabled():
-    return os.getenv("OPENLINEAGE_DISABLED", None) in [True, 'true', "True"]
+    try:
+        # If the Airflow provider is installed, skip running the openlineage-airflow plugin.
+        from airflow.providers.openlineage.plugins.openlineage import (
+            OpenLineageProviderPlugin,  # noqa: F401, I001
+        )
+        return True
+    except ImportError:
+        pass
+    return os.getenv("OPENLINEAGE_DISABLED", "").lower() == "true"
 
 
 if parse_version(AIRFLOW_VERSION) \

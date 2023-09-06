@@ -3,22 +3,22 @@
 To install from source, run:
 
 ```bash
-$ python setup.py install
+$ python -m pip install .
 ```
 
 ## Configuration
 ### Config file
 
 The most common way to configure the OpenLineage Client is by `.yaml` file, which contains all the
-details of how to connect to your OpenLineage backend. 
+details of how to connect to your OpenLineage backend.
 
 The config file is located by:
 1) looking at the `OPENLINEAGE_CONFIG` environment variable
 2) looking for the `openlineage.yml` file in the current working directory
 3) looking for the `openlineage.yml` file in the `$HOME/.openlineage` directory.
 
-Different ways of connecting to OpenLineage backend are supported 
-by the standarized `Transport` interface.  
+Different ways of connecting to OpenLineage backend are supported
+by the standardized `Transport` interface.
 This is an example config for specifying `http` transport:
 
 ```yaml
@@ -31,10 +31,10 @@ transport:
 ```
 
 The `type` property is required. It can be one of the built-in transports or a custom one.
-There are three built-in transports, `http`, `kafka` and `console`. 
+There are four built-in transports, `http`, `kafka`, `console` and `file`.
 Custom transports `type` is a fully qualified class name that can be imported.
 
-The rest of the properties are defined by the particular transport.  
+The rest of the properties are defined by the particular transport.
 Specifications for the built-in options are below.
 
 #### HTTP
@@ -45,7 +45,7 @@ Specifications for the built-in options are below.
 * `verify` optional boolean attribute specifying if the client should verify TLS certificates of the backend. By default true.
 * `auth` - optional dictionary specifying authentication options. The type property is required.
     * `type`: required property if an auth dictionary is set. Set to `api_key` or to the fully qualified class name of your TokenProvider.
-    * `api_key`: if `api_key` type is set, it sets value at `Authentication` HTTP header as `Bearer`. 
+    * `api_key`: if `api_key` type is set, it sets value at `Authentication` HTTP header as `Bearer`.
 
 #### Kafka
 
@@ -56,6 +56,10 @@ You can also install `pip install openlineage-python[kafka]`
 * `topic` - required string parameter. The topic on what events will be sent.
 * `flush` - optional boolean parameter. If set to True, Kafka will flush after each event. By default true.
 
+#### File
+
+* `log_file_path` - required string parameter specifying the path of the file (if `append` is true a file path is expected, otherwise a file prefix is expected).
+* `append` - optional boolean parameter. If set to True, each event will be appended to a single file (log_file_path), otherwise, all event would be written separately in distinct files suffixed by a timestring. By default false.
 
 ### Custom transport
 
@@ -63,10 +67,13 @@ To implement a custom transport, follow the instructions in the `openlineage/cli
 
 ### Config as env vars
 
-If there is no config file found, the OpenLineage client looks at environment variables.  
+If there is no config file found, the OpenLineage client looks at environment variables.
 This way of configuring the client supports only `http` transport, and only a subset of its config.
 
 * `OPENLINEAGE_URL` - point to the service that will consume OpenLineage events.
 * `OPENLINEAGE_API_KEY` - set if the consumer of OpenLineage events requires a `Bearer` authentication key.
 
 `OPENLINEAGE_URL` and `OPENLINEAGE_API_KEY` can also be set up manually when creating a client instance.
+
+#### Logging level
+In addition to conventional logging approaches, the OpenLineage client library provides an alternative way of configuring its logging behavior. By setting the `OPENLINEAGE_CLIENT_LOGGING` environment variable, you can establish the logging level for the `openlineage.client` and its child modules.

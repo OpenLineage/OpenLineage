@@ -75,6 +75,10 @@ public class Generator {
 
   private static void addURLs(Set<URL> urls, File dir)
       throws URISyntaxException, MalformedURLException {
+    if (dir.getName().equals("tests")) {
+      // Skip processing this directory if its name is "tests"
+      return;
+    }
     File[] jsonFiles = dir.listFiles((File f, String name) -> name.endsWith(JSON_EXT));
     for (File jsonFile : jsonFiles) {
       urls.add(jsonFile.toURI().toURL());
@@ -86,22 +90,26 @@ public class Generator {
   }
 
   public static URL verifySchemaVersion(URL url) throws IOException {
-    InputStream input = url.openStream();
-    ObjectMapper mapper = new ObjectMapper();
-    JsonNode schema = mapper.readValue(input, JsonNode.class);
-    if (schema.has("$id") && schema.get("$id").isTextual()) {
-      URL idURL = new URL(schema.get("$id").asText());
-      try (InputStream openStream = idURL.openStream();) {
-        JsonNode published = mapper.readValue(openStream, JsonNode.class);
-        if (!published.equals(schema)) {
-          throw new InvalidSchemaIDException("You must increment the version when modifying the schema. The current schema at " + url + " has the $id " + idURL + " but the version at that URL does not match.");
+    try {
+      InputStream input = url.openStream();
+      ObjectMapper mapper = new ObjectMapper();
+      JsonNode schema = mapper.readValue(input, JsonNode.class);
+      if (schema.has("$id") && schema.get("$id").isTextual()) {
+        URL idURL = new URL(schema.get("$id").asText());
+        try (InputStream openStream = idURL.openStream();) {
+          JsonNode published = mapper.readValue(openStream, JsonNode.class);
+          if (!published.equals(schema)) {
+            throw new InvalidSchemaIDException("You must increment the version when modifying the schema. The current schema at " + url + " has the $id " + idURL + " but the version at that URL does not match.");
+          }
+        } catch (FileNotFoundException e) {
+          logger.warn("This version of the spec is not published yet: " + idURL);
         }
-      } catch (FileNotFoundException e) {
-        logger.warn("This version of the spec is not published yet: " + idURL);
+        return idURL;
       }
-      return idURL;
-    }
-    return url;
+      return url;
+	} catch (JsonParseException e) {
+      throw new IllegalArgumentException("Invalid schema: " + url, e);
+	}
   }
 
   public static void generate(Set<URL> urls, String packageName, boolean server, File outputBase) throws FileNotFoundException {

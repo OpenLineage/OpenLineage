@@ -5,13 +5,12 @@
     }
   },
   "job": {
-    "namespace": "testPysparkWordCountWithCliArgs",
-    "name": "open_lineage_integration_word_count.execute_insert_into_hadoop_fs_relation_command"
+    "namespace": "testPysparkWordCountWithCliArgs"
   },
   "inputs": [
     {
       "namespace": "file",
-      "name": "/test_data",
+      "name": "/test_data/data.txt",
       "facets": {
         "schema": {
           "fields": [

@@ -7,7 +7,7 @@ plugins {
     id 'signing'
     id 'jacoco'
     id "com.adarshr.test-logger" version "3.2.0"
-    id "org.gradle.test-retry" version "1.5.1"
+    id "org.gradle.test-retry" version "1.5.4"
     id 'com.diffplug.spotless' version '6.12.0'
     id "com.github.johnrengelman.shadow" version "7.1.2"
 }
@@ -16,7 +16,7 @@ subprojects {
     apply plugin: 'java'
 
     ext {
-        lombokVersion = '1.18.26'
+        lombokVersion = '1.18.28'
         isReleaseVersion = !version.endsWith('SNAPSHOT')
     }
 
@@ -57,6 +57,7 @@ dependencies {
     implementation(project(path: ":spark3"))
     implementation(project(path: ":spark32"))
     implementation(project(path: ":spark33"))
+    implementation(project(path: ":spark34"))
 
     compileOnly "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
     compileOnly "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
@@ -217,6 +218,7 @@ shadowJar {
         exclude (project(":spark3"))
         exclude (project(":spark32"))
         exclude (project(":spark33"))
+        exclude (project(":spark34"))
         exclude (project(":app"))
     }
     dependencies {

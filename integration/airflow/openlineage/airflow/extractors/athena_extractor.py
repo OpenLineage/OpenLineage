@@ -26,14 +26,14 @@ class AthenaExtractor(BaseExtractor):
 
         sql_meta: Optional[SqlMeta] = parse(self.operator.query, "generic", None)
         inputs: List[Dataset] = list(filter(None, [
-            self._get_inout_dataset(self.operator.database, table.name)
+            self._get_inout_dataset(table.schema or self.operator.database, table.name)
             for table in sql_meta.in_tables
         ])) if sql_meta and sql_meta.in_tables else []
 
         # Athena can output query result to a new table with CTAS query.
         # cf. https://docs.aws.amazon.com/athena/latest/ug/ctas.html
         outputs: List[Dataset] = list(filter(None, [
-            self._get_inout_dataset(self.operator.database, table.name)
+            self._get_inout_dataset(table.schema or self.operator.database, table.name)
             for table in sql_meta.out_tables
         ])) if sql_meta and sql_meta.out_tables else []
 

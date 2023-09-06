@@ -34,7 +34,7 @@ pub fn parse_multiple_statements(
 
         if let Err(ParserError(s)) = ast {
             errors.push(ExtractionError {
-                index: index,
+                index,
                 message: s.clone(),
                 origin_statement: statement.to_string(),
             });
@@ -47,7 +47,7 @@ pub fn parse_multiple_statements(
         }
 
         for stmt in ast {
-            let mut context = Context::new(dialect.clone(), default_schema.clone());
+            let mut context = Context::new(dialect, default_schema.clone());
             stmt.visit(&mut context)?;
             column_lineage.extend(context.mut_columns().drain().map(|(descendant, lineage)| {
                 ColumnLineage {
@@ -85,12 +85,16 @@ mod tests {
             DbTableMeta {
                 database: None,
                 schema: None,
-                name: "discount".to_string()
+                name: "discount".to_string(),
+                provided_namespace: false,
+                provided_field_schema: false,
             },
             DbTableMeta {
                 database: None,
                 schema: Some("public".to_string()),
-                name: "discount".to_string()
+                name: "discount".to_string(),
+                provided_namespace: false,
+                provided_field_schema: false,
             }
         );
     }

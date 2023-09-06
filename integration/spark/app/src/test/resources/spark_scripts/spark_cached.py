@@ -19,8 +19,12 @@ spark.sparkContext.setLogLevel('info')
 spark.createDataFrame([
     {'a': 1, 'b': 2},
     {'a': 3, 'b': 4}
-]).write.saveAsTable('temp')
+]).write.option("compression", "none").saveAsTable('temp')
 
 cached = spark.read.table("temp").cache()       # create cached dataset
 cached.count()                                  # call an action on cached dataset
-cached.select('a').write.saveAsTable('target')  # target table lineage should be aware of temp table
+cached\
+    .select('a')\
+    .write\
+    .option("compression", "none")\
+    .saveAsTable('target')                      # target table lineage should be aware of temp table

@@ -43,7 +43,7 @@ class RedshiftDataDatasetsProvider:
     ) -> RedshiftFacets:
         ds_inputs = []
         ds_outputs = []
-        run_facets = {}
+        run_facets: Dict[str, BaseFacet] = {}
         dataset_stat_facet = None
 
         source = Source(

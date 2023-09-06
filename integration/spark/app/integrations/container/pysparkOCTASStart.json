@@ -1,8 +1,7 @@
 {
   "eventType" : "START",
   "job" : {
-    "namespace" : "testOptimizedCreateAsSelectAndLoad",
-    "name" : "open_lineage_integration_octa_s_load.execute_optimized_create_hive_table_as_select_command"
+    "namespace" : "testOptimizedCreateAsSelectAndLoad"
   },
   "inputs" : [ {
     "namespace" : "file",
@@ -39,15 +38,6 @@
           "name" : "b",
           "type" : "long"
         } ]
-      },
-      "symlinks": {
-        "identifiers": [
-          {
-            "namespace": "/tmp/ctas_load",
-            "name": "default.tbl2",
-            "type": "TABLE"
-          }
-        ]
       }
     }
   } ]

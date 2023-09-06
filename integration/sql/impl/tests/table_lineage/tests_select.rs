@@ -129,3 +129,22 @@ fn select_redshift() {
         }
     )
 }
+
+#[test]
+fn select_with_table_generator() {
+    assert_eq!(
+        test_sql(
+            "
+            SELECT row_number() OVER (ORDER BY col) row_num, d
+            FROM TABLE(GENERATOR(ROWCOUNT => (12 * 6)))
+            JOIN test_schema.test_table ON test_table.d = row_number()
+            "
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["test_schema.test_table"]),
+            out_tables: vec![]
+        }
+    )
+}

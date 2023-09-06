@@ -5,8 +5,13 @@
 
 package io.openlineage.client.transports;
 
-import static io.openlineage.client.Events.event;
+import static io.openlineage.client.Events.datasetEvent;
+import static io.openlineage.client.Events.jobEvent;
+import static io.openlineage.client.Events.runEvent;
 import static java.util.Collections.singletonMap;
+import static org.apache.http.HttpHeaders.ACCEPT;
+import static org.apache.http.HttpHeaders.CONTENT_TYPE;
+import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -23,8 +28,14 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.http.HttpEntity;
+import org.apache.http.NameValuePair;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.junit.jupiter.api.Test;
@@ -63,7 +74,7 @@ class HttpTransportTest {
 
     when(http.execute(any(HttpUriRequest.class))).thenReturn(response);
 
-    client.emit(event());
+    client.emit(runEvent());
 
     verify(http, times(1)).execute(any());
   }
@@ -92,7 +103,7 @@ class HttpTransportTest {
     when(response.getStatusLine().getStatusCode()).thenReturn(200);
     when(http.execute(any(HttpUriRequest.class))).thenReturn(response);
 
-    client.emit(event());
+    client.emit(runEvent());
 
     verify(http, times(1)).execute(captor.capture());
 
@@ -116,7 +127,7 @@ class HttpTransportTest {
     when(response.getStatusLine().getStatusCode()).thenReturn(200);
     when(http.execute(any(HttpUriRequest.class))).thenReturn(response);
 
-    client.emit(event());
+    client.emit(runEvent());
 
     verify(http, times(1)).execute(captor.capture());
 
@@ -137,7 +148,7 @@ class HttpTransportTest {
 
     when(http.execute(any(HttpUriRequest.class))).thenReturn(response);
 
-    assertThrows(OpenLineageClientException.class, () -> client.emit(event()));
+    assertThrows(OpenLineageClientException.class, () -> client.emit(runEvent()));
 
     verify(http, times(1)).execute(any());
   }
@@ -150,7 +161,7 @@ class HttpTransportTest {
 
     when(http.execute(any(HttpUriRequest.class))).thenThrow(new IOException(""));
 
-    assertThrows(OpenLineageClientException.class, () -> client.emit(event()));
+    assertThrows(OpenLineageClientException.class, () -> client.emit(runEvent()));
 
     verify(http, times(1)).execute(any());
   }
@@ -180,7 +191,7 @@ class HttpTransportTest {
 
     ArgumentCaptor<HttpUriRequest> captor = ArgumentCaptor.forClass(HttpUriRequest.class);
 
-    client.emit(event());
+    client.emit(runEvent());
 
     verify(http, times(1)).execute(captor.capture());
 
@@ -204,9 +215,83 @@ class HttpTransportTest {
 
     when(http.execute(any(HttpUriRequest.class))).thenReturn(response);
 
-    client.emit(event());
+    client.emit(runEvent());
 
     verify(response, times(1)).close();
     verify(response.getEntity().getContent(), times(1)).close();
+  }
+
+  @Test
+  void customHeaders() throws IOException {
+    HashMap<String, String> headers = new HashMap<>();
+    headers.put(ACCEPT, "not-application/json");
+    headers.put(CONTENT_TYPE, "not-application/json");
+    headers.put("testHeader1", "test1");
+    headers.put("testHeader2", "test2");
+
+    HttpConfig config = new HttpConfig();
+    config.setUrl(URI.create("https://localhost:1500/api/v1/lineage"));
+    config.setHeaders(headers);
+
+    CloseableHttpClient http = mock(CloseableHttpClient.class);
+    Transport transport = new HttpTransport(http, config);
+    OpenLineageClient client = new OpenLineageClient(transport);
+
+    CloseableHttpResponse response = mock(CloseableHttpResponse.class, RETURNS_DEEP_STUBS);
+    when(response.getStatusLine().getStatusCode()).thenReturn(200);
+    when(response.getEntity().isStreaming()).thenReturn(true);
+    Map<String, HttpPost> map = new HashMap<>();
+    when(http.execute(any(HttpUriRequest.class)))
+        .thenAnswer(
+            invocation -> {
+              map.put("test", invocation.getArgument(0));
+              return response;
+            });
+
+    client.emit(runEvent());
+    Map<String, String> resultHeaders =
+        Arrays.stream(map.get("test").getAllHeaders())
+            .collect(Collectors.toMap(NameValuePair::getName, NameValuePair::getValue));
+    assertThat(resultHeaders)
+        .containsEntry(ACCEPT, APPLICATION_JSON.toString())
+        .containsEntry(CONTENT_TYPE, APPLICATION_JSON.toString())
+        .containsEntry("testHeader1", "test1")
+        .containsEntry("testHeader2", "test2");
+  }
+
+  @Test
+  void clientEmitsDatasetEventHttpTransport() throws IOException {
+    CloseableHttpClient http = mock(CloseableHttpClient.class);
+    HttpConfig config = new HttpConfig();
+    config.setUrl(URI.create("https://localhost:1500/api/v1/lineage"));
+    Transport transport = new HttpTransport(http, config);
+    OpenLineageClient client = new OpenLineageClient(transport);
+
+    CloseableHttpResponse response = mock(CloseableHttpResponse.class, RETURNS_DEEP_STUBS);
+    when(response.getStatusLine().getStatusCode()).thenReturn(200);
+
+    when(http.execute(any(HttpUriRequest.class))).thenReturn(response);
+
+    client.emit(datasetEvent());
+
+    verify(http, times(1)).execute(any());
+  }
+
+  @Test
+  void clientEmitsJobEventHttpTransport() throws IOException {
+    CloseableHttpClient http = mock(CloseableHttpClient.class);
+    HttpConfig config = new HttpConfig();
+    config.setUrl(URI.create("https://localhost:1500/api/v1/lineage"));
+    Transport transport = new HttpTransport(http, config);
+    OpenLineageClient client = new OpenLineageClient(transport);
+
+    CloseableHttpResponse response = mock(CloseableHttpResponse.class, RETURNS_DEEP_STUBS);
+    when(response.getStatusLine().getStatusCode()).thenReturn(200);
+
+    when(http.execute(any(HttpUriRequest.class))).thenReturn(response);
+
+    client.emit(jobEvent());
+
+    verify(http, times(1)).execute(any());
   }
 }

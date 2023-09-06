@@ -1,0 +1,69 @@
+{
+  "eventType" : "START",
+  "job" : {
+    "namespace" : "flink_job_namespace",
+    "name": "flink_legacy_kafka_topic_pattern"
+  },
+  "inputs": [
+    {
+      "namespace": "kafka:9092",
+      "name": "io.openlineage.flink.kafka.input1",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "id",
+              "type": "string"
+            },
+            {
+              "name": "version",
+              "type": "long"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "namespace": "kafka:9092",
+      "name": "io.openlineage.flink.kafka.input2",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "id",
+              "type": "string"
+            },
+            {
+              "name": "version",
+              "type": "long"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "outputs": [
+    {
+      "namespace": "kafka:9092",
+      "name": "io.openlineage.flink.kafka.output",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "id",
+              "type": "string"
+            },
+            {
+              "name": "version",
+              "type": "long"
+            },
+            {
+              "name": "counter",
+              "type": "long"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

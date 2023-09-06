@@ -54,6 +54,7 @@ x-airflow-base: &airflow-base
     AIRFLOW_CONN_AWS_CONN: "aws://"
     AIRFLOW_CONN_AWS_LOCAL_CONN: "aws://?aws_access_key_id=k&aws_secret_access_key=v&endpoint_url=http%3A%2F%2Flocalstack%3A4566"
     AIRFLOW_CONN_SFTP_CONN: sftp://airflow:airflow@openssh-server:2222
+    AIRFLOW_CONN_FTP_CONN: ftp://airflow:airflow@pure-ftpd:21
   volumes:
       - ./airflow/config/log_config.py:/opt/airflow/config/log_config.py
       - $PWD/airflow/logs:/opt/airflow/logs
@@ -76,6 +77,8 @@ x-airflow-base: &airflow-base
       condition: service_healthy
     localstack:
       condition: service_healthy
+    pure-ftpd:
+      condition: service_started
 
 services:
   integration:
@@ -106,6 +109,7 @@ services:
     depends_on:
       - airflow_scheduler
       - airflow_worker
+      - airflow_triggerer
       - backend
     entrypoint: ["/wait-for-it.sh", "backend:5000", "--", "python", '-m', 'pytest', 'test_integration.py']
 
@@ -116,6 +120,22 @@ services:
       - app_net
     healthcheck:
       test: [ "CMD-SHELL", 'airflow jobs check --job-type SchedulerJob --hostname "$${HOSTNAME}"' ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow_init:
+        condition: service_completed_successfully
+
+  airflow_triggerer:
+    <<: *airflow-base
+    command: triggerer
+    networks:
+      - app_net
+    healthcheck:
+      test: ["CMD-SHELL", 'airflow jobs check --job-type TriggererJob --hostname "$${HOSTNAME}"']
       interval: 10s
       timeout: 10s
       retries: 5
@@ -290,12 +310,25 @@ services:
     expose:
       - 4566
     volumes:
-      - ../docker/s3:/docker-entrypoint-initaws.d
+      - ../docker/s3/create-bucket.sh:/etc/localstack/init/ready.d/init-aws.sh
     healthcheck:
       test: ["CMD", "awslocal", "s3api", "list-buckets"]
       interval: 5s
       timeout: 30s
       retries: 50
+
+  pure-ftpd:
+    image: stilliard/pure-ftpd
+    networks:
+      - app_net
+    expose:
+      - 21
+    environment:
+      PUBLICHOST: localhost
+      FTP_USER_NAME: airflow
+      FTP_USER_PASS: airflow
+      FTP_USER_HOME: /home/airflow
+    restart: always
 
 networks:
   app_net:

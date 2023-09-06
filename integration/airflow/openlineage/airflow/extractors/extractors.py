@@ -53,6 +53,9 @@ _extractors = list(
                 'openlineage.airflow.extractors.sftp_extractor.SFTPExtractor'
             ),
             try_import_from_string(
+                'openlineage.airflow.extractors.ftp_extractor.FTPExtractor'
+            ),
+            try_import_from_string(
                 'openlineage.airflow.extractors.sagemaker_extractors.SageMakerProcessingExtractor'
             ),
             try_import_from_string(
@@ -69,6 +72,9 @@ _extractors = list(
             ),
             try_import_from_string(
                 'openlineage.airflow.extractors.gcs_extractor.GCSToGCSExtractor'
+            ),
+            try_import_from_string(
+                'openlineage.airflow.extractors.dbt_cloud_extractor.DbtCloudExtractor'
             ),
         ],
     )
@@ -88,6 +94,7 @@ _check_providers = {
     "TrinoExtractor": "trino",
     "AthenaExtractor": "aws",
     "SFTPExtractor": ["sftp", "ssh"],
+    "FTPExtractor": "ftp",
 }
 
 

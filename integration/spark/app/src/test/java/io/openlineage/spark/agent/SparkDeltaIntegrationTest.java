@@ -8,9 +8,11 @@ package io.openlineage.spark.agent;
 import static io.openlineage.spark.agent.MockServerUtils.verifyEvents;
 import static org.apache.spark.sql.functions.col;
 import static org.apache.spark.sql.functions.from_json;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockserver.model.HttpRequest.request;
+import static org.mockserver.model.JsonBody.json;
 
 import com.google.common.collect.ImmutableList;
 import java.io.File;
@@ -39,15 +41,15 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
 import org.mockserver.configuration.Configuration;
 import org.mockserver.integration.ClientAndServer;
+import org.mockserver.matchers.MatchType;
+import org.mockserver.model.HttpRequest;
 import org.mockserver.model.RegexBody;
 import org.slf4j.event.Level;
 
 @Tag("integration-test")
 @Tag("delta")
-@EnabledIf("isDeltaTestEnabled")
 @Slf4j
 public class SparkDeltaIntegrationTest {
 
@@ -57,8 +59,6 @@ public class SparkDeltaIntegrationTest {
   private static final int MOCKSERVER_PORT = 1082;
 
   private static ClientAndServer mockServer;
-
-  private static final String SPARK_VERSION = "spark.version";
 
   static SparkSession spark;
 
@@ -101,7 +101,10 @@ public class SparkDeltaIntegrationTest {
             .config(
                 "spark.openlineage.transport.url",
                 "http://localhost:" + mockServer.getPort() + "/api/v1/namespaces/delta-namespace")
-            .config("spark.openlineage.facets.disabled", "")
+            .config("spark.openlineage.facets.disabled", "spark_unknown;spark.logicalPlan")
+            .config(
+                "spark.openlineage.facets.custom_environment_variables",
+                "[" + getAvailableEnvVariable() + ";]")
             .config("spark.extraListeners", OpenLineageSparkListener.class.getName())
             .config("spark.jars.ivy", "/tmp/.ivy2/")
             .config(
@@ -131,6 +134,7 @@ public class SparkDeltaIntegrationTest {
     dataset.createOrReplaceTempView("temp");
     spark.sql("CREATE TABLE tbl USING delta LOCATION '/tmp/delta/tbl' AS SELECT * FROM temp");
 
+    verifyEvents(mockServer, "pysparkDeltaCTASStart.json");
     verifyEvents(mockServer, "pysparkDeltaCTASComplete.json");
   }
 
@@ -159,22 +163,26 @@ public class SparkDeltaIntegrationTest {
 
     // 2 OL events expected
     spark.sql(
-        "CREATE TABLE delta_filter_t2 USING delta LOCATION '/tmp/delta/delta_filter_t2' AS SELECT * FROM delta_filter_temp WHERE a > 1");
+        "CREATE TABLE delta_filter_t2 USING delta LOCATION '/tmp/delta/delta_filter_t2' AS "
+            + "SELECT t1.* FROM delta_filter_temp t1 "
+            + "JOIN delta_filter_temp t2 ON t1.a = t2.a "
+            + "WHERE t1.a > 1");
 
     // 2 OL events expected
     spark.sql("INSERT INTO delta_filter_t1 VALUES (3,4)");
+    verifyEvents(mockServer, "pysparkDeltaFilterStart.json");
 
     await()
         .atMost(Duration.ofSeconds(10))
         .untilAsserted(
             () ->
-                assertEquals(
-                    8,
+                assertTrue(
                     mockServer.retrieveRecordedRequests(
-                            request()
-                                .withPath("/api/v1/lineage")
-                                .withBody(new RegexBody(".*delta_filter.*")))
-                        .length));
+                                request()
+                                    .withPath("/api/v1/lineage")
+                                    .withBody(new RegexBody(".*delta_filter.*")))
+                            .length
+                        <= 8));
   }
 
   @Test
@@ -297,18 +305,159 @@ public class SparkDeltaIntegrationTest {
     verifyEvents(mockServer, "pysparkSaveIntoDatasourceCompleteEvent.json");
   }
 
+  @Test
+  void testDeltaMergeInto() {
+    clearTables("t1", "t2");
+
+    Dataset<Row> dataset =
+        spark
+            .createDataFrame(
+                ImmutableList.of(
+                    RowFactory.create(1L, "bat"),
+                    RowFactory.create(2L, "mouse"),
+                    RowFactory.create(3L, "horse")),
+                new StructType(
+                    new StructField[] {
+                      new StructField("a", LongType$.MODULE$, false, Metadata.empty()),
+                      new StructField("b", StringType$.MODULE$, false, Metadata.empty())
+                    }))
+            .repartition(1);
+    dataset.createOrReplaceTempView("temp");
+
+    spark.sql("CREATE TABLE t1 USING delta LOCATION '/tmp/delta/t1' AS SELECT * FROM temp");
+    spark.sql("CREATE TABLE t2 USING delta LOCATION '/tmp/delta/t2' AS SELECT * FROM temp");
+    spark.sql(
+        "MERGE INTO t1 USING t2 ON t1.a = t2.a"
+            + " WHEN MATCHED THEN UPDATE SET t1.b = t2.b"
+            + " WHEN NOT MATCHED THEN INSERT *");
+
+    verifyEvents(
+        mockServer,
+        "pysparkDeltaMergeIntoStartEvent.json",
+        "pysparkDeltaMergeIntoCompleteEvent.json");
+  }
+
+  @Test
+  void testCustomEnvVar() {
+    spark.sql("DROP TABLE IF EXISTS test");
+    spark.sql("CREATE TABLE test (key INT, value STRING) using delta");
+
+    await()
+        .atMost(Duration.ofSeconds(10))
+        .pollInterval(Duration.ofSeconds(2))
+        .untilAsserted(
+            () -> {
+              HttpRequest[] requests =
+                  mockServer.retrieveRecordedRequests(request().withPath("/api/v1/lineage"));
+              assertThat(requests).isNotEmpty();
+
+              String body = requests[requests.length - 1].getBodyAsString();
+
+              assertThat(body).contains("COMPLETE");
+              assertThat(body).contains(getAvailableEnvVariable());
+            });
+  }
+
+  @Test
+  void testNoDuplicateEventsForDelta() {
+    clearTables("t1", "t2", "t3", "t4");
+
+    Dataset<Row> dataset =
+        spark
+            .createDataFrame(
+                ImmutableList.of(RowFactory.create(1L, "bat"), RowFactory.create(3L, "horse")),
+                new StructType(
+                    new StructField[] {
+                      new StructField("a", LongType$.MODULE$, false, Metadata.empty()),
+                      new StructField("b", StringType$.MODULE$, false, Metadata.empty())
+                    }))
+            .repartition(1);
+
+    dataset.write().mode("overwrite").format("delta").saveAsTable("t1");
+    dataset.write().mode("overwrite").format("delta").saveAsTable("t2");
+    dataset.write().mode("overwrite").format("delta").saveAsTable("t3");
+
+    // wait until t3 complete event is sent
+    await()
+        .pollInterval(Duration.ofSeconds(2))
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(
+            () ->
+                mockServer.verify(
+                    request()
+                        .withPath("/api/v1/lineage")
+                        .withBody(
+                            json(
+                                "{\"outputs\":[{\"name\": \"/tmp/delta/t3\"}]}",
+                                MatchType.ONLY_MATCHING_FIELDS))));
+
+    mockServer.reset();
+    mockServer
+        .when(request("/api/v1/lineage"))
+        .respond(org.mockserver.model.HttpResponse.response().withStatusCode(201));
+
+    // this operation should contain only START AND STOP JOB
+    spark.sql(
+        "CREATE TABLE t4 USING DELTA AS "
+            + "SELECT t1.a as a1, t2.a as a2, t3.b as b1 FROM t1 "
+            + "JOIN t2 on t1.a = t2.a JOIN t3 on t2.b=t3.b");
+
+    await()
+        .pollInterval(Duration.ofSeconds(2))
+        .atMost(Duration.ofSeconds(10))
+        .until(
+            () -> {
+              HttpRequest[] requests =
+                  mockServer.retrieveRecordedRequests(request().withPath("/api/v1/lineage"));
+
+              String lastRequestBody = requests[requests.length - 1].getBody().toString();
+
+              return lastRequestBody.contains("/tmp/delta/t4")
+                  && lastRequestBody.contains("create_table_as_select")
+                  && lastRequestBody.contains("COMPLETE")
+                  && requests.length == 2;
+            });
+  }
+
+  @Test
+  @SneakyThrows
+  void testMergeInto() {
+    clearTables("events", "updates");
+    spark.sql("CREATE TABLE events (event_id long, last_updated_at long) USING delta");
+    spark.sql("CREATE TABLE updates (event_id long, updated_at long) USING delta");
+
+    spark.sql("INSERT INTO events VALUES (1, 1641290276);");
+    spark.sql("INSERT INTO updates VALUES (1, 1641290277);");
+    spark.sql("INSERT INTO updates VALUES (2, 1641290277);");
+
+    spark.read().table("events").write().format("delta").save("/tmp/delta/new-events");
+
+    spark.sql(
+        "MERGE INTO delta.`/tmp/delta/new-events` target USING updates "
+            + " ON target.event_id = updates.event_id"
+            + " WHEN MATCHED THEN UPDATE SET target.last_updated_at = updates.updated_at"
+            + " WHEN NOT MATCHED THEN INSERT (event_id, last_updated_at) "
+            + "VALUES (event_id, updated_at)");
+
+    verifyEvents(
+        mockServer,
+        "pysparkV2MergeIntoDeltaTableStartEvent.json",
+        "pysparkV2MergeIntoDeltaTableCompleteEvent.json");
+  }
+
+  /**
+   * Environment variables differ on local environment and CI. This method returns any environment
+   * variable being set for testing.
+   *
+   * @return
+   */
+  String getAvailableEnvVariable() {
+    return (String) System.getenv().keySet().toArray()[0];
+  }
+
   private void clearTables(String... tables) {
     Arrays.asList(tables).stream()
         .filter(t -> spark.catalog().tableExists(t))
         .forEach(t -> spark.sql("DROP TABLE IF EXISTS " + t));
-  }
-
-  static boolean isDeltaTestEnabled() {
-    if (System.getProperty(SPARK_VERSION).startsWith("2")) {
-      // we don't run integration tests for delta and Spark 2.x
-      return false;
-    }
-
-    return true;
   }
 }

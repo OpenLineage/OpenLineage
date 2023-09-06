@@ -1,5 +1,9 @@
 {
   "eventType" : "START",
+  "job" : {
+    "namespace" : "flink_job_namespace",
+    "name": "flink_examples_iceberg"
+  },
   "inputs": [{
     "namespace": "file",
     "name": "tmp/warehouse/db/source",
@@ -15,5 +19,19 @@
       }
     }
   }],
-  "outputs": []
+  "outputs" : [{
+  "namespace" : "file",
+  "name" : "tmp/warehouse/db/sink",
+  "facets" : {
+    "schema" : {
+      "fields" : [ {
+        "name" : "x",
+        "type" : "INTEGER"
+      }, {
+        "name" : "y",
+        "type" : "INTEGER"
+      } ]
+    }
+  }
+  }]
 }

@@ -34,7 +34,6 @@ public final class KafkaTransport extends Transport {
   @Override
   public void emit(@NonNull OpenLineage.RunEvent runEvent) {
     final String eventAsJson = OpenLineageClientUtils.toJson(runEvent);
-    log.debug("Received lineage event: {}", eventAsJson);
     final ProducerRecord<String, String> record =
         new ProducerRecord<>(topicName, localServerId, eventAsJson);
     try {

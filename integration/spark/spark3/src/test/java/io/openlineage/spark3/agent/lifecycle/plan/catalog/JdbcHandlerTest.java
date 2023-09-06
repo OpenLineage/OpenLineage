@@ -39,6 +39,27 @@ class JdbcHandlerTest {
             new HashMap<>());
 
     assertEquals("database.schema.table", datasetIdentifier.getName());
-    assertEquals("postgresql://postgreshost:5432", datasetIdentifier.getNamespace());
+    assertEquals("postgres://postgreshost:5432", datasetIdentifier.getNamespace());
+  }
+
+  @Test
+  @SneakyThrows
+  void testGetDatasetIdentifierWithDatabase() {
+    JdbcHandler handler = new JdbcHandler();
+
+    JDBCTableCatalog tableCatalog = new JDBCTableCatalog();
+    JDBCOptions options = mock(JDBCOptions.class);
+    when(options.url()).thenReturn("jdbc:postgresql://postgreshost:5432/database");
+    FieldUtils.writeField(tableCatalog, "options", options, true);
+
+    DatasetIdentifier datasetIdentifier =
+        handler.getDatasetIdentifier(
+            mock(SparkSession.class),
+            tableCatalog,
+            Identifier.of(new String[] {"schema"}, "table"),
+            new HashMap<>());
+
+    assertEquals("database.schema.table", datasetIdentifier.getName());
+    assertEquals("postgres://postgreshost:5432", datasetIdentifier.getNamespace());
   }
 }

@@ -1,5 +1,4 @@
 {
-  "@class": "org.apache.spark.sql.catalyst.plans.logical.Aggregate",
   "groupingExpressions": [],
   "aggregateExpressions": [],
   "allAttributes": {

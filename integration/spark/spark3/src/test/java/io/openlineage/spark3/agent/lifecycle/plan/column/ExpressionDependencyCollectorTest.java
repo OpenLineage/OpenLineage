@@ -10,6 +10,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
+import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Arrays;
 import java.util.Collection;
 import org.apache.spark.sql.catalyst.expressions.Alias;
@@ -26,13 +28,15 @@ import org.apache.spark.sql.catalyst.plans.logical.Project;
 import org.apache.spark.sql.types.IntegerType$;
 import org.apache.spark.sql.types.Metadata$;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import scala.Option;
 import scala.collection.Seq;
 import scala.collection.Seq$;
 
 class ExpressionDependencyCollectorTest {
 
-  ColumnLevelLineageBuilder builder = mock(ColumnLevelLineageBuilder.class);
+  ColumnLevelLineageBuilder builder = Mockito.mock(ColumnLevelLineageBuilder.class);
+  OpenLineageContext context = mock(OpenLineageContext.class);
 
   ExprId exprId1 = mock(ExprId.class);
   ExprId exprId2 = mock(ExprId.class);
@@ -73,7 +77,7 @@ class ExpressionDependencyCollectorTest {
             mock(LogicalPlan.class));
     LogicalPlan plan = new CreateTableAsSelect(null, null, null, project, null, null, false);
 
-    ExpressionDependencyCollector.collect(plan, builder);
+    ExpressionDependencyCollector.collect(context, plan, builder);
 
     verify(builder, times(1)).addDependency(aliasExprId1, exprId1);
     verify(builder, times(1)).addDependency(aliasExprId2, exprId2);
@@ -88,7 +92,7 @@ class ExpressionDependencyCollectorTest {
             mock(LogicalPlan.class));
     LogicalPlan plan = new CreateTableAsSelect(null, null, null, aggregate, null, null, false);
 
-    ExpressionDependencyCollector.collect(plan, builder);
+    ExpressionDependencyCollector.collect(context, plan, builder);
 
     verify(builder, times(1)).addDependency(aliasExprId1, exprId1);
   }
@@ -124,7 +128,7 @@ class ExpressionDependencyCollectorTest {
     Project project = new Project(toScalaSeq(Arrays.asList(rootAlias)), mock(LogicalPlan.class));
     LogicalPlan plan = new CreateTableAsSelect(null, null, null, project, null, null, false);
 
-    ExpressionDependencyCollector.collect(plan, builder);
+    ExpressionDependencyCollector.collect(context, plan, builder);
 
     verify(builder, times(1)).addDependency(rootAliasExprId, exprId1);
     verify(builder, times(1)).addDependency(rootAliasExprId, exprId2);

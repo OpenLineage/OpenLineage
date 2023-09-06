@@ -43,7 +43,7 @@ public abstract class AbstractQueryPlanDatasetBuilder<T, P extends LogicalPlan, 
   private final UnknownEntryFacetListener unknownEntryFacetListener =
       UnknownEntryFacetListener.getInstance();
 
-  private final boolean searchDependencies;
+  protected final boolean searchDependencies;
 
   public AbstractQueryPlanDatasetBuilder(OpenLineageContext context, boolean searchDependencies) {
     this.context = context;

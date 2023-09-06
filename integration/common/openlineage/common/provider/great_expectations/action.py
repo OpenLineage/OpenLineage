@@ -12,6 +12,7 @@ from uuid import uuid4
 
 from openlineage.client import OpenLineageClient, OpenLineageClientOptions
 from openlineage.client.facet import (
+    BaseFacet,
     ColumnMetric,
     DataQualityMetricsInputDatasetFacet,
     DocumentationJobFacet,
@@ -195,18 +196,12 @@ class OpenLineageValidationAction(ValidationAction):
                 )
             }
         )
-        job_facets = {}
+        job_facets: Dict[str, BaseFacet] = {}
         if self.job_description:
-            job_facets.update(
-                {"documentation": DocumentationJobFacet(self.job_description)}
-            )
+            job_facets["documentation"] = DocumentationJobFacet(self.job_description)
         if self.code_location:
-            job_facets.update(
-                {
-                    "sourceCodeLocation": SourceCodeLocationJobFacet(
-                        "", self.code_location
-                    )
-                }
+            job_facets["sourceCodeLocation"] = SourceCodeLocationJobFacet(
+                type="", url=self.code_location
             )
 
         job_name = self.job_name
@@ -502,7 +497,7 @@ class OpenLineageValidationAction(ValidationAction):
                 facet_data["columnMetrics"][key] = ColumnMetric(
                     **facet_data["columnMetrics"][key]
                 )
-            return DataQualityMetricsInputDatasetFacet(**facet_data)
+            return DataQualityMetricsInputDatasetFacet(**facet_data)  # type: ignore[arg-type]
         except ValueError:
             self.log.exception(
                 "Great Expectations's CheckpointResult object does not have expected key"

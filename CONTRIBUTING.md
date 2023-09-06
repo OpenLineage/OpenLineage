@@ -71,6 +71,8 @@ In the description provide the following sections:
 This can be just a couple paragraphs to start with.
 
 Proposals that change OpenLineage specifications should be tagged as `spec`.
+Small changes to the spec, like adding a facet, only require opening an issue describing the new facet.
+Larger changes to the spec, changes to the core spec or new integrations require a longer form proposal following [this process](https://github.com/OpenLineage/OpenLineage/blob/main/proposals/336/PROPOSALS.md)
 
 ## New Integrations
 New integrations should be added under the [./integrations](/integrations) folder. Each module
@@ -78,7 +80,7 @@ should have its own build configuration (e.g., `build.gradle` for a Gradle proje
 python, etc.) with appropriate unit tests and integration tests (when possible).
 
 Adding a new integration requires updating the CI build configuration with a new workflow. Job
-definitions, orbs, parameters, etc. shoudl be added to the
+definitions, orbs, parameters, etc. should be added to the
 [.circleci/continue_config.yml](`continue_config.yml`) file. Workflow definition files are added to
 the [.circleci/workflows](.circleci/workflows) directory. Each workflow file adheres to the CircleCI
 config.yml schema, including only the workflows subschema (see
@@ -100,6 +102,17 @@ Look for tickets labeled ['good first issue'][goodfirstissues] and ['help wanted
 [contributionvideos]: https://egghead.io/courses/how-to-contribute-to-an-open-source-project-on-github
 [goodfirstissues]: https://github.com/OpenLineage/OpenLineage/labels/good%20first%20issue
 [helpwantedissues]: https://github.com/OpenLineage/OpenLineage/labels/help%20wanted
+
+## Running pre-commit hooks
+
+Before submitting your pull request, make sure to set up and run pre-commit hooks to ensure code quality and consistency. [Pre-commit](pre-commit.com) hooks are automated checks that run before each commit is made. These checks include code formatting, linting and JSON Schema specification validations. To set up the pre-commit hooks for this project, follow these steps:
+
+* Install pre-commit: If you haven't already, install pre-commit on your local machine by running `pip install pre-commit` in your virtual environment.
+
+* Set up hooks: Once pre-commit is installed, navigate to the project's root directory and execute `pre-commit install`. This command will set up the necessary hooks in your local repository.
+
+* Run pre-commit: Now, every time you attempt to make a commit, the pre-commit hooks will automatically run on the staged files. If any issues are detected, the commit process will be halted, allowing you to address the problems before making the commit. You can also run `pre-commit run --all-files` to manually trigger the hooks for all files in the repository.
+
 
 ## Triggering CI runs from forks (committers)
 

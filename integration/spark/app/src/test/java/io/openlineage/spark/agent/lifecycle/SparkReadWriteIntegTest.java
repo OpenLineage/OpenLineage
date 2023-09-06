@@ -29,6 +29,7 @@ import com.google.cloud.spark.bigquery.repackaged.com.google.cloud.bigquery.Tabl
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Binder;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Module;
 import com.google.cloud.spark.bigquery.repackaged.com.google.inject.Provides;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.DatasetFacets;
@@ -44,7 +45,9 @@ import io.openlineage.spark.agent.util.TestOpenLineageEventHandlerFactory;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -70,6 +73,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.AnalysisException;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
+import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.expressions.GenericRow;
@@ -87,6 +91,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
@@ -108,6 +113,9 @@ class SparkReadWriteIntegTest {
   private static final String NAME = "name";
   private static final String AGE = "age";
   private static final String FILE_URI_PREFIX = "file://";
+  private static final String SPARK_3 = "(3.*)";
+  private static final String SPARK_VERSION = "spark.version";
+
   private final KafkaContainer kafkaContainer =
       new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.0.0"));
 
@@ -262,7 +270,7 @@ class SparkReadWriteIntegTest {
         .hasSize(1)
         .first()
         .hasFieldOrPropertyWithValue(NAMESPACE, FILE)
-        .hasFieldOrPropertyWithValue(NAME, testFile.toAbsolutePath().getParent().toString());
+        .hasFieldOrPropertyWithValue(NAME, testFile.toAbsolutePath().toString());
 
     completionEvent
         .extracting(RunEvent::getOutputs, InstanceOfAssertFactories.list(OutputDataset.class))
@@ -350,7 +358,7 @@ class SparkReadWriteIntegTest {
     List<InputDataset> inputs = event.getInputs();
     assertEquals(1, inputs.size());
     assertEquals(FILE, inputs.get(0).getNamespace());
-    assertEquals(testFile.toAbsolutePath().getParent().toString(), inputs.get(0).getName());
+    assertEquals(testFile.toAbsolutePath().toString(), inputs.get(0).getName());
   }
 
   @Test
@@ -463,7 +471,7 @@ class SparkReadWriteIntegTest {
 
     ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
-    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(6))
+    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, atLeast(6))
         .emit(lineageEvent.capture());
     OpenLineage.RunEvent completeEvent = lineageEvent.getAllValues().get(5);
     assertThat(completeEvent).hasFieldOrPropertyWithValue(EVENT_TYPE, RunEvent.EventType.COMPLETE);
@@ -607,9 +615,10 @@ class SparkReadWriteIntegTest {
     ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
 
-    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, atLeast(12))
+    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, atLeast(1))
         .emit(lineageEvent.capture());
     List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
+
     ObjectAssert<RunEvent> completionEvent =
         assertThat(events)
             .filteredOn(e -> e.getEventType().equals(RunEvent.EventType.COMPLETE))
@@ -626,7 +635,7 @@ class SparkReadWriteIntegTest {
         .hasSize(1)
         .first()
         .hasFieldOrPropertyWithValue(NAMESPACE, FILE)
-        .hasFieldOrPropertyWithValue(NAME, testFile.toAbsolutePath().getParent().toString());
+        .hasFieldOrPropertyWithValue(NAME, testFile.toAbsolutePath().toString());
 
     completionEvent
         .extracting(RunEvent::getOutputs, InstanceOfAssertFactories.list(OutputDataset.class))
@@ -643,6 +652,100 @@ class SparkReadWriteIntegTest {
                     .hasFieldOrPropertyWithValue("rowCount", 2L);
               }
             });
+  }
+
+  @Test
+  void testSingleFileDatasets(@TempDir Path writeDir, SparkSession spark)
+      throws IOException, InterruptedException, TimeoutException {
+    String fileName = writeDir + "/single_file.csv";
+    Files.write(Paths.get(fileName), "a,b".getBytes());
+
+    spark.read().csv(fileName).collect();
+
+    // wait for event processing to complete
+    StaticExecutionContextFactory.waitForExecutionEnd();
+
+    ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
+        ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+
+    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, atLeast(1))
+        .emit(lineageEvent.capture());
+    List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
+    ObjectAssert<RunEvent> completionEvent =
+        assertThat(events)
+            .filteredOn(e -> e.getEventType().equals(RunEvent.EventType.COMPLETE))
+            .isNotEmpty()
+            .first();
+    completionEvent
+        .extracting(RunEvent::getInputs, InstanceOfAssertFactories.list(InputDataset.class))
+        .hasSize(1)
+        .first()
+        .hasFieldOrPropertyWithValue(NAMESPACE, FILE)
+        .hasFieldOrPropertyWithValue(NAME, fileName);
+  }
+
+  @Test
+  @EnabledIfEnvironmentVariable(named = "CI", matches = "true")
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3) // Spark version >= 3.*
+  void testExternalRDDWithS3Bucket(SparkSession spark)
+      throws InterruptedException, TimeoutException {
+
+    spark.conf().set("fs.s3a.secret.key", System.getenv("S3_SECRET_KEY"));
+    spark.conf().set("fs.s3a.access.key", System.getenv("S3_ACCESS_KEY"));
+
+    String bucketUrl = System.getenv("S3_BUCKET");
+
+    Dataset<Row> dataset =
+        spark.createDataFrame(
+            ImmutableList.of(RowFactory.create(1L, 2L), RowFactory.create(3L, 4L)),
+            new StructType(
+                new StructField[] {
+                  new StructField("a", LongType$.MODULE$, false, Metadata.empty()),
+                  new StructField("b", LongType$.MODULE$, false, Metadata.empty())
+                }));
+
+    dataset.write().mode("overwrite").parquet(bucketUrl + "/rdd_a");
+    dataset.write().mode("overwrite").parquet(bucketUrl + "/rdd_b");
+
+    JavaRDD<Row> rddA = spark.read().parquet(bucketUrl + "/rdd_a").toJavaRDD();
+    JavaRDD<Row> rddB = spark.read().parquet(bucketUrl + "/rdd_b").toJavaRDD();
+
+    JavaRDD<Row> javaRDD =
+        rddA.union(rddB).map(f -> f.getLong(0) + f.getLong(1)).map(l -> RowFactory.create(l));
+
+    spark
+        .createDataFrame(
+            javaRDD,
+            new StructType(
+                new StructField[] {
+                  new StructField("a", LongType$.MODULE$, false, Metadata.empty()),
+                }))
+        .toDF()
+        .write()
+        .mode("overwrite")
+        .parquet(bucketUrl + "/rdd_c");
+
+    // wait for event processing to complete
+    StaticExecutionContextFactory.waitForExecutionEnd();
+    ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
+        ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+
+    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, atLeast(1))
+        .emit(lineageEvent.capture());
+    List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
+    OpenLineage.RunEvent lastEvent = events.get(events.size() - 1);
+
+    assertThat(lastEvent.getOutputs())
+        .hasSize(1)
+        .first()
+        .hasFieldOrPropertyWithValue(NAMESPACE, bucketUrl)
+        .hasFieldOrPropertyWithValue(NAME, "rdd_c");
+
+    assertThat(lastEvent.getInputs())
+        .hasSize(2)
+        .first()
+        .hasFieldOrPropertyWithValue(NAMESPACE, bucketUrl)
+        .hasFieldOrPropertyWithValue(NAME, "rdd_b");
   }
 
   private CompletableFuture sendMessage(

@@ -1,4 +1,4 @@
-ARG AIRFLOW_IMAGE=apache/airflow:2.4.0-python3.7
+ARG AIRFLOW_IMAGE=apache/airflow:2.4.3-python3.8
 FROM $AIRFLOW_IMAGE AS airflow
 COPY integration/dbt /app/openlineage/integration/dbt
 COPY integration/common /app/openlineage/integration/common
@@ -20,18 +20,19 @@ RUN AIRFLOW_VERSION=`airflow version` && \
     cd ../airflow && \
     pip install --no-cache-dir --use-deprecated=legacy-resolver -r dev-requirements.txt \
     --constraint=https://raw.githubusercontent.com/apache/airflow/constraints-$AIRFLOW_VERSION/constraints-$PYTHON_VERSION.txt
-RUN python -m virtualenv dbt_venv && pwd && source dbt_venv/bin/activate &&  \
+RUN python -m virtualenv dbt_venv && pwd && source dbt_venv/bin/activate && \
     unset PIP_USER && \
+    python -m pip install pip --upgrade && \
     cd /app/openlineage/integration/sql && \
     pip install openlineage-sql --no-index --find-links target/wheels --force-reinstall && \
     cd ../airflow && \
     python -m pip install -r tests/integration/tests/airflow/dbt-requirements.txt && deactivate  # We need separate env to run dbt due to dependency conflicts
 
 
-FROM python:3.7-slim as integration
+FROM python:3.8-slim as integration
 RUN mkdir -p /app/openlineage
 RUN apt-get update && \
-    apt-get install -y python3-dev default-libmysqlclient-dev build-essential
+    apt-get install -y python3-dev default-libmysqlclient-dev build-essential pkg-config
 COPY integration/common /app/openlineage/integration/common
 COPY integration/target /app/openlineage/integration/sql/target
 COPY integration/airflow /app/openlineage/integration/airflow

@@ -1,0 +1,55 @@
+{
+  "eventType" : "START",
+  "eventTime": "${json-unit.any-string}",
+  "job" : {
+    "namespace" : "flink_job_namespace",
+    "name": "flink_source_with_generic_record"
+  },
+  "run": {
+    "runId": "${json-unit.any-string}"
+  },
+  "inputs": [
+    {
+      "namespace": "kafka:9092",
+      "name": "io.openlineage.flink.kafka.input_no_schema_registry",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "id",
+              "type": "string"
+            },
+            {
+              "name": "version",
+              "type": "long"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "outputs": [
+    {
+      "namespace": "kafka:9092",
+      "name": "io.openlineage.flink.kafka.output",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "id",
+              "type": "string"
+            },
+            {
+              "name": "version",
+              "type": "long"
+            },
+            {
+              "name": "counter",
+              "type": "long"
+            }
+          ]
+        }
+      }
+    }
+  ]
+},

@@ -1,0 +1,5 @@
+io.openlineage.client.transports.HttpTransportBuilder
+io.openlineage.client.transports.KafkaTransportBuilder
+io.openlineage.client.transports.ConsoleTransportBuilder
+io.openlineage.client.transports.FileTransportBuilder
+io.openlineage.client.transports.KinesisTransportBuilder

@@ -1,9 +1,10 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Dict, List
+from typing import Dict, List, Mapping, Optional
 from urllib.parse import urlparse
 
+from openlineage.airflow.extractors import TaskMetadata
 from openlineage.airflow.extractors.dbapi_utils import execute_query_on_hook
 from openlineage.airflow.extractors.sql_extractor import SqlExtractor
 from openlineage.client.facet import BaseFacet, ExternalQueryRunFacet
@@ -66,9 +67,9 @@ class SnowflakeExtractor(SqlExtractor):
     def _get_scheme(self):
         return "snowflake"
 
-    def _get_db_specific_run_facets(self, source, *_) -> Dict[str, BaseFacet]:
+    def _get_db_specific_run_facets(self, source, *_) -> Mapping[str, BaseFacet]:
         query_ids = self._get_query_ids()
-        run_facets = {}
+        run_facets: Dict[str, BaseFacet] = {}
         if len(query_ids) == 1:
             run_facets["externalQuery"] = ExternalQueryRunFacet(
                 externalQueryId=query_ids[0], source=source.name
@@ -80,3 +81,6 @@ class SnowflakeExtractor(SqlExtractor):
                 "This might indicate that this task might be better as multiple jobs"
             )
         return run_facets
+
+    def extract_on_complete(self, task_instance) -> Optional[TaskMetadata]:
+        return None

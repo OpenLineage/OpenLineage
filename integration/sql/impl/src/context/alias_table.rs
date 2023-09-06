@@ -1,7 +1,7 @@
 // Copyright 2018-2023 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::lineage::{ColumnMeta, DbTableMeta};
+use crate::lineage::DbTableMeta;
 
 use std::collections::HashMap;
 
@@ -29,6 +29,7 @@ impl AliasTable {
         current
     }
 
+    #[allow(dead_code)]
     pub fn is_table_alias(&self, name: &DbTableMeta) -> bool {
         self.resolve_table(name) != name
     }

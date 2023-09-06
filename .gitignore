@@ -13,6 +13,7 @@ __pycache__/
 *$py.class
 
 # C extensions
+*.dylib
 *.so
 
 # Distribution / packaging
@@ -162,3 +163,6 @@ gcloud-service-key.json
 *.java_version
 *.java-version
 *.DS_Store
+__pycache__
+/.tox
+/dist

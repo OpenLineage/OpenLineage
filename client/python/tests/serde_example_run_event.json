@@ -1,0 +1,24 @@
+{
+	"eventTime": "2021-11-03T10:53:52.427343",
+	"eventType": "START",
+	"run": {
+		"facets": {
+			"nominalTime": {
+				"_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python",
+				"_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/NominalTimeRunFacet",
+				"nominalEndTime": "2020-01-02",
+				"nominalStartTime": "2020-01-01"
+			}
+		},
+		"runId": "69f4acab-b87d-4fc0-b27b-8ea950370ff3"
+	},
+	"job": {
+		"namespace":  "openlineage",
+		"name":  "name",
+		"facets": {}
+	},
+	"inputs": [],
+	"outputs": [],
+	"producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python",
+	"schemaURL": "https://openlineage.io/spec/1-0-5/OpenLineage.json#/definitions/RunEvent"
+}

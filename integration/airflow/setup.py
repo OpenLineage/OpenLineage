@@ -10,10 +10,10 @@ from setuptools import find_namespace_packages, setup
 with open("README.md") as readme_file:
     readme = readme_file.read()
 
-__version__ = "0.21.0"
+__version__ = "1.2.0"
 
 requirements = [
-    "attrs>=19.3",
+    "attrs>=20.3",
     "requests>=2.20.0",
     f"openlineage-integration-common[sql]=={__version__}",
     f"openlineage-python=={__version__}",
@@ -21,8 +21,10 @@ requirements = [
 
 extras_require = {
     "tests": [
+        "aiohttp",          # tox Airflow 2.3.4 does not install it by default
         "pytest",
         "pytest-cov",
+        "pytest-mock",
         "mock",
         "ruff",
         "SQLAlchemy",       # must be set to 1.3.* for airflow tests compatibility
@@ -39,9 +41,11 @@ extras_require = {
         "apache-airflow-providers-amazon>=3.1.1",
         "apache-airflow-providers-sftp>=2.1.1",
         "apache-airflow-providers-ssh>=2.1.0",
+        "apache-airflow-providers-ftp>=3.3.0",
+        "apache-airflow-providers-dbt-cloud<3.2.0",
         "airflow-provider-great-expectations==0.1.5",
         "great-expectations<=0.15.23",
-        "protobuf==3.20.*",
+        "protobuf>=3.20,<4.23",
     ],
 }
 
@@ -58,7 +62,7 @@ setup(
     include_package_data=True,
     install_requires=requirements,
     extras_require=extras_require,
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     zip_safe=False,
     keywords="openlineage",
     entry_points={

@@ -38,28 +38,48 @@ import org.apache.spark.sql.execution.QueryExecution;
 import org.apache.spark.sql.execution.SparkPlan;
 import org.apache.spark.sql.execution.SparkPlanInfo;
 import org.apache.spark.sql.execution.datasources.InsertIntoHadoopFsRelationCommand;
+import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import scala.Option;
 import scala.collection.Map$;
 import scala.collection.Seq$;
 
 class OpenLineageSparkListenerTest {
 
-  @Test
-  void testSqlEventWithJobEventEmitsOnce() {
-    SparkSession sparkSession = mock(SparkSession.class);
-    SparkContext sparkContext = mock(SparkContext.class);
-    EventEmitter emitter = mock(EventEmitter.class);
-    QueryExecution qe = mock(QueryExecution.class);
-    LogicalPlan query = UnresolvedRelation$.MODULE$.apply(TableIdentifier.apply("tableName"));
-    SparkPlan plan = mock(SparkPlan.class);
+  SparkSession sparkSession = mock(SparkSession.class);
+  SparkContext sparkContext = mock(SparkContext.class);
+  EventEmitter emitter = mock(EventEmitter.class);
+  QueryExecution qe = mock(QueryExecution.class);
+  SparkPlan plan = mock(SparkPlan.class);
 
+  OpenLineageContext olContext;
+
+  @BeforeEach
+  void setup() {
     when(sparkSession.sparkContext()).thenReturn(sparkContext);
     when(sparkContext.appName()).thenReturn("appName");
     when(sparkContext.getConf()).thenReturn(new SparkConf());
+    when(plan.sparkContext()).thenReturn(sparkContext);
+    when(plan.nodeName()).thenReturn("execute");
+
+    olContext =
+        OpenLineageContext.builder()
+            .sparkSession(Optional.of(sparkSession))
+            .sparkContext(sparkSession.sparkContext())
+            .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
+            .queryExecution(qe)
+            .build();
+  }
+
+  @Test
+  void testSqlEventWithJobEventEmitsOnce() {
+    LogicalPlan query = UnresolvedRelation$.MODULE$.apply(TableIdentifier.apply("tableName"));
+
     when(qe.optimizedPlan())
         .thenReturn(
             new InsertIntoHadoopFsRelationCommand(
@@ -77,16 +97,7 @@ class OpenLineageSparkListenerTest {
                 Seq$.MODULE$.<String>empty()));
 
     when(qe.executedPlan()).thenReturn(plan);
-    when(plan.sparkContext()).thenReturn(sparkContext);
-    when(plan.nodeName()).thenReturn("execute");
 
-    OpenLineageContext olContext =
-        OpenLineageContext.builder()
-            .sparkSession(Optional.of(sparkSession))
-            .sparkContext(sparkSession.sparkContext())
-            .openLineage(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI))
-            .queryExecution(qe)
-            .build();
     olContext
         .getOutputDatasetQueryPlanVisitors()
         .add(new InsertIntoHadoopFsRelationVisitor(olContext));
@@ -130,5 +141,57 @@ class OpenLineageSparkListenerTest {
 
       verify(contextFactory, never()).createSparkSQLExecutionContext(anyLong());
     }
+  }
+
+  @Test
+  void testSparkSQLEndGetsQueryExecutionFromEvent() {
+    LogicalPlan query = UnresolvedRelation$.MODULE$.apply(TableIdentifier.apply("tableName"));
+
+    when(sparkSession.sparkContext()).thenReturn(sparkContext);
+    when(sparkContext.appName()).thenReturn("appName");
+    when(sparkContext.getConf()).thenReturn(new SparkConf());
+    when(qe.optimizedPlan())
+        .thenReturn(
+            new InsertIntoHadoopFsRelationCommand(
+                new Path("file:///tmp/dir"),
+                null,
+                false,
+                Seq$.MODULE$.empty(),
+                Option.empty(),
+                null,
+                Map$.MODULE$.empty(),
+                query,
+                SaveMode.Overwrite,
+                Option.empty(),
+                Option.empty(),
+                Seq$.MODULE$.<String>empty()));
+
+    when(qe.executedPlan()).thenReturn(plan);
+    when(qe.sparkSession()).thenReturn(sparkSession);
+    when(plan.sparkContext()).thenReturn(sparkContext);
+    when(plan.nodeName()).thenReturn("execute");
+
+    olContext
+        .getOutputDatasetQueryPlanVisitors()
+        .add(new InsertIntoHadoopFsRelationVisitor(olContext));
+    OpenLineageSparkListener listener = new OpenLineageSparkListener();
+    OpenLineageSparkListener.init(new StaticExecutionContextFactory(emitter));
+
+    SparkListenerSQLExecutionEnd event = mock(SparkListenerSQLExecutionEnd.class);
+    try (MockedStatic<EventFilterUtils> utils = mockStatic(EventFilterUtils.class)) {
+      try (MockedStatic<ContextFactory> contextFactory =
+          mockStatic(ContextFactory.class, Mockito.CALLS_REAL_METHODS)) {
+        utils.when(() -> EventFilterUtils.isDisabled(olContext, event)).thenReturn(false);
+        contextFactory
+            .when(() -> ContextFactory.executionFromCompleteEvent(event))
+            .thenReturn(Optional.of(qe)); // code should fail without this line
+        listener.onOtherEvent(event);
+      }
+    }
+
+    ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
+        ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
+
+    verify(emitter, times(1)).emit(lineageEvent.capture());
   }
 }

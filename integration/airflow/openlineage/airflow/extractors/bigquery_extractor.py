@@ -81,13 +81,16 @@ class BigQueryExtractor(BaseExtractor):
             'airflow.providers.google.cloud.operators.bigquery.BigQueryHook'
         )
         if BigQueryHook is not None:
-            hook = BigQueryHook(
-                gcp_conn_id=self.operator.gcp_conn_id,
-                use_legacy_sql=self.operator.use_legacy_sql,
-                delegate_to=self.operator.delegate_to,
-                location=self.operator.location,
-                impersonation_chain=self.operator.impersonation_chain,
-            )
+            params = {
+                "gcp_conn_id": self.operator.gcp_conn_id,
+                "use_legacy_sql": self.operator.use_legacy_sql,
+                "location": self.operator.location,
+                "impersonation_chain": self.operator.impersonation_chain,
+            }
+            if hasattr(self.operator, "delegate_to"):
+                params["delegate_to"] = self.operator.delegate_to
+
+            hook = BigQueryHook(**params)
             return hook.get_client(
                 project_id=hook.project_id,
                 location=hook.location

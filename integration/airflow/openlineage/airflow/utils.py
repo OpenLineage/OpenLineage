@@ -20,6 +20,7 @@ from openlineage.airflow.facets import (
 )
 from openlineage.client.utils import RedactMixin
 from pendulum import from_timestamp
+from pkg_resources import parse_version
 
 from airflow.models import DAG as AIRFLOW_DAG
 
@@ -39,43 +40,6 @@ def get_operator_class(task: "BaseOperator") -> Type:
     if task.__class__.__name__ in ("DecoratedMappedOperator", "MappedOperator"):
         return task.operator_class
     return task.__class__
-
-
-class JobIdMapping:
-    # job_name here is OL job name - aka combination of dag_id and task_id
-
-    @staticmethod
-    def set(job_name: str, dag_run_id: str, task_run_id: str):
-        from airflow.models import Variable
-
-        Variable.set(
-            JobIdMapping.make_key(job_name, dag_run_id), json.dumps(task_run_id)
-        )
-
-    @staticmethod
-    def pop(job_name, dag_run_id, session):
-        return JobIdMapping.get(job_name, dag_run_id, session, delete=True)
-
-    @staticmethod
-    def get(job_name, dag_run_id, session, delete=False):
-        key = JobIdMapping.make_key(job_name, dag_run_id)
-        if session:
-            from airflow.models import Variable
-
-            q = session.query(Variable).filter(Variable.key == key)
-            if not q.first():
-                return None
-            else:
-                val = q.first().val
-                if delete:
-                    q.delete(synchronize_session=False)
-                if val:
-                    return json.loads(val)
-                return None
-
-    @staticmethod
-    def make_key(job_name, run_id):
-        return "openlineage_id_mapping-{}-{}".format(job_name, run_id)
 
 
 def to_json_encodable(task: "BaseOperator") -> Dict[str, object]:
@@ -572,3 +536,21 @@ class LoggingMixin:
                 "openlineage.airflow.extractors."
                 f"{self.__class__.__module__}.{self.__class__.__name__}"
             )
+
+
+def is_airflow_version_enough(x):
+    try:
+        from airflow.version import version as AIRFLOW_VERSION
+    except ImportError:
+        AIRFLOW_VERSION = "0.0.0"
+    return parse_version(AIRFLOW_VERSION) >= parse_version(x)
+
+
+def getboolean(env, default: bool = False) -> bool:
+    """Get boolean value from environment variable"""
+    val = os.getenv(env, None)
+    if val is None:
+        return default
+    if val.lower() in ("t", "true", "1"):
+        return True
+    return False

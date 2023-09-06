@@ -9,7 +9,6 @@ use std::ops::Deref;
 use crate::dialect::CanonicalDialect;
 use crate::lineage::*;
 use alias_table::AliasTable;
-
 use sqlparser::dialect::SnowflakeDialect;
 
 type ColumnAncestors = HashSet<ColumnMeta>;
@@ -70,6 +69,7 @@ pub struct Context<'a> {
 }
 
 impl<'a> Context<'a> {
+    #![allow(dead_code)]
     pub fn default() -> Context<'a> {
         Context {
             inputs: HashSet::new(),
@@ -101,8 +101,46 @@ impl<'a> Context<'a> {
         }
     }
 
+    pub fn add_non_table_input(
+        &mut self,
+        table: String,
+        provided_namespace: bool,
+        provided_field_schema: bool,
+    ) {
+        let name = DbTableMeta::new_with_namespace_and_schema(
+            table,
+            self.dialect.deref(),
+            self.default_schema.clone(),
+            provided_namespace,
+            provided_field_schema,
+            false,
+        );
+        if !self.is_table_alias(&name) {
+            self.inputs.insert(name);
+        }
+    }
+
     pub fn add_output(&mut self, output: String) {
         let name = DbTableMeta::new(output, self.dialect.deref(), self.default_schema.clone());
+        if !self.is_table_alias(&name) {
+            self.outputs.insert(name);
+        }
+    }
+
+    pub fn add_non_table_output(
+        &mut self,
+        output: String,
+        provided_namespace: bool,
+        provided_field_schema: bool,
+    ) {
+        let name = DbTableMeta::new_with_namespace_and_schema(
+            output,
+            self.dialect.deref(),
+            self.default_schema.clone(),
+            provided_namespace,
+            provided_field_schema,
+            false,
+        );
         if !self.is_table_alias(&name) {
             self.outputs.insert(name);
         }
@@ -189,7 +227,7 @@ impl<'a> Context<'a> {
     // from the narrower scope and allow the visitor
     // to compute synthesized attributes.
 
-    pub fn coalesce(&mut self, mut old: ContextFrame) {
+    pub fn coalesce(&mut self, old: ContextFrame) {
         if self.frames.last().is_none() {
             return;
         }
@@ -287,7 +325,6 @@ impl<'a> Context<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::lineage::*;
 
     #[test]
     fn test_coalesce_columns() {
@@ -363,7 +400,7 @@ mod tests {
         context.coalesce(old_frame);
 
         let mut ancestry = Vec::from_iter(context.frames.last().unwrap().column_ancestry.iter());
-        ancestry.sort_by(|a, b| a.0.cmp(&b.0));
+        ancestry.sort_by(|a, b| a.0.cmp(b.0));
         assert_eq!(
             ancestry,
             vec![
@@ -420,7 +457,7 @@ mod tests {
         context.collect_with_table(frame, DbTableMeta::new_default_dialect("alias".to_string()));
 
         let mut ancestry = Vec::from_iter(context.frames.last().unwrap().column_ancestry.iter());
-        ancestry.sort_by(|a, b| a.0.cmp(&b.0));
+        ancestry.sort_by(|a, b| a.0.cmp(b.0));
         assert_eq!(
             ancestry,
             vec![

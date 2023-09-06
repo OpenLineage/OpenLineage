@@ -1,17 +1,13 @@
 // Copyright 2018-2023 contributors to the OpenLineage project
 // SPDX-License-Identifier: Apache-2.0
 
-use core::time;
-use std::sync::Arc;
-
 use crate::context::Context;
 use crate::lineage::*;
 
 use anyhow::{anyhow, Result};
 use sqlparser::ast::{
-    Expr, Function, FunctionArg, FunctionArgExpr, Ident, ListAggOnOverflow, OrderByExpr, Query,
-    Select, SelectItem, SetExpr, Statement, TableAlias, TableFactor, TableWithJoins, WindowSpec,
-    With,
+    AlterTableOperation, Expr, Function, FunctionArg, FunctionArgExpr, ListAggOnOverflow, Query,
+    Select, SelectItem, SetExpr, Statement, Table, TableFactor, WindowSpec, With,
 };
 
 pub trait Visit {
@@ -51,7 +47,21 @@ impl Visit for TableFactor {
                     context.default_schema().clone(),
                 );
                 if let Some(alias) = alias {
-                    context.add_table_alias(table.clone(), alias.name.value.clone());
+                    context.add_table_alias(table, alias.name.value.clone());
+                }
+                context.add_input(name.to_string());
+                Ok(())
+            }
+            TableFactor::Pivot {
+                name, pivot_alias, ..
+            } => {
+                let table = DbTableMeta::new(
+                    name.to_string(),
+                    context.dialect(),
+                    context.default_schema().clone(),
+                );
+                if let Some(pivot_alias) = pivot_alias {
+                    context.add_table_alias(table, pivot_alias.name.value.clone());
                 }
                 context.add_input(name.to_string());
                 Ok(())
@@ -76,6 +86,11 @@ impl Visit for TableFactor {
                     context.collect(frame);
                 }
 
+                Ok(())
+            }
+            TableFactor::TableFunction { .. } => {
+                // https://docs.snowflake.com/en/sql-reference/functions-table
+                // We can skip them as we don't support extracting lineage from functions
                 Ok(())
             }
             _ => Err(anyhow!(
@@ -301,10 +316,11 @@ impl Visit for Expr {
                 if let Some(e) = &list.separator {
                     e.visit(context)?;
                 }
-                if let Some(ListAggOnOverflow::Truncate { filler, .. }) = &list.on_overflow {
-                    if let Some(e) = filler {
-                        e.visit(context)?;
-                    }
+                if let Some(ListAggOnOverflow::Truncate {
+                    filler: Some(e), ..
+                }) = &list.on_overflow
+                {
+                    e.visit(context)?;
                 }
                 for order_by in &list.within_group {
                     order_by.expr.visit(context)?;
@@ -471,13 +487,14 @@ impl Visit for SetExpr {
             SetExpr::Query(q) => q.visit(context),
             SetExpr::SetOperation {
                 op: _,
-                all: _,
+                set_quantifier: _,
                 left,
                 right,
             } => {
                 left.visit(context)?;
                 right.visit(context)
             }
+            SetExpr::Table(table) => table.visit(context),
         }
     }
 }
@@ -508,7 +525,6 @@ impl Visit for Query {
 impl Visit for Statement {
     fn visit(&self, context: &mut Context) -> Result<()> {
         context.push_frame();
-
         match self {
             Statement::Query(query) => query.visit(context)?,
             Statement::Insert {
@@ -541,11 +557,28 @@ impl Visit for Statement {
 
                 context.add_output(name.to_string());
             }
+            Statement::CreateView { name, query, .. } => {
+                query.visit(context)?;
+                context.add_output(name.to_string());
+            }
+            Statement::CreateStage {
+                name, stage_params, ..
+            } => {
+                if stage_params.url.as_ref().is_some() {
+                    context.add_non_table_input(
+                        stage_params.url.as_ref().unwrap().to_string(),
+                        true,
+                        true,
+                    );
+                }
+                context.add_non_table_output(name.to_string(), false, true);
+            }
             Statement::Update {
                 table,
                 assignments: _,
                 from,
                 selection,
+                ..
             } => {
                 let name = get_table_name_from_table_factor(&table.relation)?;
                 context.add_output(name);
@@ -560,10 +593,28 @@ impl Visit for Statement {
                     expr.visit(context)?;
                 }
             }
+            Statement::AlterTable { name, operation } => {
+                match operation {
+                    AlterTableOperation::SwapWith { table_name } => {
+                        // both table names are inputs and outputs of the swap operation
+                        context.add_input(table_name.to_string());
+                        context.add_input(name.to_string());
+
+                        context.add_output(table_name.to_string());
+                        context.add_output(name.to_string());
+                    }
+                    AlterTableOperation::RenameTable { table_name } => {
+                        context.add_input(name.to_string());
+                        context.add_output(table_name.to_string());
+                    }
+                    _ => context.add_output(name.to_string()),
+                }
+            }
             Statement::Delete {
                 table_name,
                 using,
                 selection,
+                ..
             } => {
                 let table_name = get_table_name_from_table_factor(table_name)?;
                 context.add_output(table_name);
@@ -576,12 +627,45 @@ impl Visit for Statement {
                     expr.visit(context)?;
                 }
             }
+            Statement::Truncate { table_name, .. } => context.add_output(table_name.to_string()),
+            Statement::Drop { names, .. } => {
+                for name in names {
+                    context.add_output(name.to_string())
+                }
+            }
+            Statement::CopyIntoSnowflake {
+                into, from_stage, ..
+            } => {
+                context.add_output(into.to_string());
+                if from_stage.to_string().contains("gcs://")
+                    || from_stage.to_string().contains("s3://")
+                    || from_stage.to_string().contains("azure://")
+                {
+                    context.add_non_table_input(
+                        from_stage.to_string().replace(['\"', '\''], ""), // just unquoted location URL with,
+                        true,
+                        true,
+                    );
+                } else {
+                    // Stage
+                    context.add_non_table_input(from_stage.to_string(), true, true);
+                };
+            }
             _ => {}
         }
 
         let frame = context.pop_frame().unwrap();
         context.collect(frame);
 
+        Ok(())
+    }
+}
+
+impl Visit for Table {
+    fn visit(&self, context: &mut Context) -> Result<()> {
+        if let Some(name) = &self.table_name {
+            context.add_input(name.clone())
+        }
         Ok(())
     }
 }

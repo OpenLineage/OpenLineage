@@ -101,6 +101,37 @@ class IcebergHandlerTest {
   }
 
   @Test
+  void testGetDatasetIdentifierForRest() {
+    when(sparkSession.conf()).thenReturn(runtimeConfig);
+    when(runtimeConfig.getAll())
+        .thenReturn(
+            new Map.Map3<>(
+                "spark.sql.catalog.iceberg.type",
+                "rest",
+                "spark.sql.catalog.iceberg.uri",
+                "http://lakehouse-host:8080",
+                "spark.sql.catalog.iceberg.warehouse",
+                "s3a://lakehouse/"));
+    SparkCatalog sparkCatalog = mock(SparkCatalog.class);
+    when(sparkCatalog.name()).thenReturn("iceberg");
+
+    DatasetIdentifier datasetIdentifier =
+        icebergHandler.getDatasetIdentifier(
+            sparkSession,
+            sparkCatalog,
+            Identifier.of(new String[] {"schema"}, "table"),
+            new HashMap<>());
+
+    DatasetIdentifier.Symlink symlink = datasetIdentifier.getSymlinks().get(0);
+    assertEquals("schema.table", datasetIdentifier.getName());
+    assertEquals("s3a://lakehouse", datasetIdentifier.getNamespace());
+    // symlink
+    assertEquals("schema.table", symlink.getName());
+    assertEquals("http://lakehouse-host:8080", symlink.getNamespace());
+    assertEquals("TABLE", symlink.getType().toString());
+  }
+
+  @Test
   void testGetStorageDatasetFacet() {
     when(context.getOpenLineage()).thenReturn(new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI));
     Optional<OpenLineage.StorageDatasetFacet> storageDatasetFacet =

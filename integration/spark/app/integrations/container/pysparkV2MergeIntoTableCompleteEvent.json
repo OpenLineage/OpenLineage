@@ -2,7 +2,7 @@
   "eventType" : "COMPLETE",
   "job" : {
     "namespace" : "iceberg-namespace",
-    "name" : "iceberg_integration_test.replace_data"
+    "name" : "iceberg_integration_test.replace_data.iceberg_default_events"
   },
   "inputs" : [  ],
   "outputs" : [ {
@@ -41,11 +41,6 @@
           },
           "last_updated_at": {
             "inputFields": [
-              {
-                "namespace": "file",
-                "name": "/tmp/iceberg/default.events",
-                "field": "last_updated_at"
-              },
               {
                 "namespace": "file",
                 "name": "/tmp/iceberg/default.updates",

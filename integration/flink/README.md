@@ -1,8 +1,7 @@
 # OpenLineage Flink
 
 The OpenLineage Flink integration uses JVM instrumentation to emit OpenLineage metadata.
-
-The integration is currently very limited. See [more docs here](https://openlineage.io/docs/integrations/flink).
+See [more docs here](https://openlineage.io/docs/integrations/flink).
 
 ## Installation
 
@@ -15,7 +14,7 @@ Maven:
 <dependency>
     <groupId>io.openlineage</groupId>
     <artifactId>openlineage-flink</artifactId>
-    <version>0.20.0</version>
+    <version>1.1.0</version>
 </dependency>
 ```
 
@@ -23,6 +22,23 @@ or Gradle:
 
 ```groovy
 implementation 'io.openlineage:openlineage-flink:0.16.0'
+```
+
+## Usage 
+
+An instance of `OpenLineageFlinkJobListener` need to be created and registered as `jobListener`. 
+
+This can be achieved by: 
+```java
+StreamExecutionEnvironment env = ...
+
+JobListener jobListener = OpenLineageFlinkJobListener.builder()
+    .executionEnvironment(env)
+    .jobNamespace(jobNamespace)
+    .jobName(jobName)
+    .build();
+
+env.registerJobListener(jobListener);
 ```
 
 ----

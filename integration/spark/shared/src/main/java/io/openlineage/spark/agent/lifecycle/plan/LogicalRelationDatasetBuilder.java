@@ -6,15 +6,17 @@
 package io.openlineage.spark.agent.lifecycle.plan;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.DatasetFacetsBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.handlers.JdbcRelationHandler;
 import io.openlineage.spark.agent.util.DatasetIdentifier;
-import io.openlineage.spark.agent.util.JdbcUtils;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
-import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -69,10 +71,25 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
 
   @Override
   public boolean isDefinedAtLogicalPlan(LogicalPlan x) {
+    // if a LogicalPlan is a single node plan like `select * from temp`,
+    // then it's leaf node and should not be considered output node
+    if (x instanceof LogicalRelation && isSingleNodeLogicalPlan(x) && !searchDependencies) {
+      return false;
+    }
+
     return x instanceof LogicalRelation
         && (((LogicalRelation) x).relation() instanceof HadoopFsRelation
             || ((LogicalRelation) x).relation() instanceof JDBCRelation
             || ((LogicalRelation) x).catalogTable().isDefined());
+  }
+
+  private boolean isSingleNodeLogicalPlan(LogicalPlan x) {
+    return context
+            .getQueryExecution()
+            .map(qe -> qe.optimizedPlan())
+            .filter(p -> p.equals(x))
+            .isPresent()
+        && (x.children() == null || x.children().isEmpty());
   }
 
   @Override
@@ -82,7 +99,7 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
     } else if (logRel.relation() instanceof HadoopFsRelation) {
       return handleHadoopFsRelation(logRel);
     } else if (logRel.relation() instanceof JDBCRelation) {
-      return handleJdbcRelation(logRel);
+      return new JdbcRelationHandler<>(datasetFactory).handleRelation(logRel);
     }
     throw new IllegalArgumentException(
         "Expected logical plan to be either HadoopFsRelation, JDBCRelation, "
@@ -120,7 +137,7 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
                 Configuration hadoopConfig =
                     session.sessionState().newHadoopConfWithOptions(relation.options());
 
-                OpenLineage.DatasetFacetsBuilder datasetFacetsBuilder =
+                DatasetFacetsBuilder datasetFacetsBuilder =
                     context.getOpenLineage().newDatasetFacetsBuilder();
                 getDatasetVersion(x)
                     .map(
@@ -128,22 +145,33 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
                             datasetFacetsBuilder.version(
                                 context.getOpenLineage().newDatasetVersionDatasetFacet(version)));
 
-                return JavaConversions.asJavaCollection(relation.location().rootPaths()).stream()
-                    .map(p -> PlanUtils.getDirectoryPath(p, hadoopConfig))
-                    .distinct()
-                    .map(
-                        p -> {
-                          // TODO- refactor this to return a single partitioned dataset based on
-                          // static
-                          // static partitions in the relation
-                          return datasetFactory.getDataset(
-                              p.toUri(), relation.schema(), datasetFacetsBuilder);
-                        })
-                    .collect(Collectors.toList());
+                Collection<Path> rootPaths =
+                    JavaConversions.asJavaCollection(relation.location().rootPaths());
+
+                if (isSingleFileRelation(rootPaths, hadoopConfig)) {
+                  return Collections.singletonList(
+                      datasetFactory.getDataset(
+                          rootPaths.stream().findFirst().get().toUri(),
+                          relation.schema(),
+                          datasetFacetsBuilder));
+                } else {
+                  return rootPaths.stream()
+                      .map(p -> PlanUtils.getDirectoryPath(p, hadoopConfig))
+                      .distinct()
+                      .map(
+                          p -> {
+                            // TODO- refactor this to return a single partitioned dataset based on
+                            // static
+                            // static partitions in the relation
+                            return datasetFactory.getDataset(
+                                p.toUri(), relation.schema(), datasetFacetsBuilder);
+                          })
+                      .collect(Collectors.toList());
+                }
               })
           .orElse(Collections.emptyList());
     } catch (Exception e) {
-      if ("com.databricks.backend.daemon.data.client.adl.AzureCredentialNotFoundException"
+      if ("com.databricks.backend.daemon.data.client.adl.AzureCredentialNotFoundExcepgittion"
           .equals(e.getClass().getName())) {
         // This is a fallback that can occur when hadoop configurations cannot be
         // reached. This occurs in Azure Databricks when credential passthrough
@@ -154,9 +182,7 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
         // Datasets
         List<D> inputDatasets = new ArrayList<D>();
         List<Path> paths =
-            JavaConversions.asJavaCollection(relation.location().rootPaths()).stream()
-                .collect(Collectors.toList());
-
+            new ArrayList<>(JavaConversions.asJavaCollection(relation.location().rootPaths()));
         for (Path p : paths) {
           inputDatasets.add(datasetFactory.getDataset(p.toUri(), relation.schema()));
         }
@@ -171,31 +197,21 @@ public class LogicalRelationDatasetBuilder<D extends OpenLineage.Dataset>
     }
   }
 
+  private boolean isSingleFileRelation(Collection<Path> paths, Configuration hadoopConfig) {
+    if (paths.size() != 1) {
+      return false;
+    }
+
+    try {
+      Path path = paths.stream().findFirst().get();
+      return path.getFileSystem(hadoopConfig).isFile(path);
+    } catch (IOException e) {
+      return false;
+    }
+  }
+
   protected Optional<String> getDatasetVersion(LogicalRelation x) {
     // not implemented
     return Optional.empty();
-  }
-
-  private List<D> handleJdbcRelation(LogicalRelation x) {
-    JDBCRelation relation = (JDBCRelation) x.relation();
-    // TODO- if a relation is composed of a complex sql query, we should attempt to
-    // extract the
-    // table names so that we can construct a true lineage
-    String tableName =
-        relation
-            .jdbcOptions()
-            .parameters()
-            .get(JDBCOptions.JDBC_TABLE_NAME())
-            .getOrElse(ScalaConversionUtils.toScalaFn(() -> "COMPLEX"));
-    // strip the jdbc: prefix from the url. this leaves us with a url like
-    // postgresql://<hostname>:<port>/<database_name>?params
-    // we don't parse the URI here because different drivers use different
-    // connection
-    // formats that aren't always amenable to how Java parses URIs. E.g., the oracle
-    // driver format looks like oracle:<drivertype>:<user>/<password>@<database>
-    // whereas postgres, mysql, and sqlserver use the scheme://hostname:port/db
-    // format.
-    String url = JdbcUtils.sanitizeJdbcUrl(relation.jdbcOptions().url());
-    return Collections.singletonList(datasetFactory.getDataset(tableName, url, relation.schema()));
   }
 }

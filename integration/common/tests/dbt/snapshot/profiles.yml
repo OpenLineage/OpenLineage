@@ -1,0 +1,11 @@
+postgres_profile:
+  outputs:
+    dev:
+      dbname: 'POSTGRES_DATABASE'
+      host: 'POSTGRES_HOST'
+      pass: 'POSTGRES_PASSWORD'
+      port: 1234
+      schema: 'POSTGRES_SCHEMA'
+      type: postgres
+      user: 'POSTGRES_USER'
+  target: dev

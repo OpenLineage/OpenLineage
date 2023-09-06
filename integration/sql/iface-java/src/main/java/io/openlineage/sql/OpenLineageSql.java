@@ -71,10 +71,14 @@ public final class OpenLineageSql {
 
   static {
     String libName = "libopenlineage_sql_java";
-    if (SystemUtils.IS_OS_MAC_OSX) {
+    if (SystemUtils.IS_OS_MAC_OSX && SystemUtils.OS_ARCH.equals("aarch64")) {
+      libName += "_arm64.dylib";
+    } else if (SystemUtils.IS_OS_MAC_OSX) {
       libName += ".dylib";
-    } else if (SystemUtils.IS_OS_LINUX) {
-      libName += ".so";
+    } else if (SystemUtils.IS_OS_LINUX && SystemUtils.OS_ARCH.equals("aarch64")) {
+      libName += "_aarch64.so";
+    } else if (SystemUtils.IS_OS_LINUX && SystemUtils.OS_ARCH.equals("amd64")) {
+      libName += "_x86_64.so";
     } else {
       loadError = Optional.of("Cannot link native library: unsupported OS");
     }

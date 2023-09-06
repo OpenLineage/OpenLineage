@@ -25,4 +25,5 @@ public final class HttpConfig implements TransportConfig {
   @Getter @Setter private @Nullable Double timeout;
   @Getter @Setter private @Nullable TokenProvider auth;
   @Getter @Setter private @Nullable Map<String, String> urlParams;
+  @Getter @Setter private @Nullable Map<String, String> headers;
 }

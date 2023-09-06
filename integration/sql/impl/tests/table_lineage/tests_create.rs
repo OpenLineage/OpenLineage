@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::test_utils::*;
-use openlineage_sql::TableLineage;
+use openlineage_sql::{parse_sql, DbTableMeta, TableLineage};
+use sqlparser::dialect::SnowflakeDialect;
 
 #[test]
 fn test_create_table() {
@@ -135,6 +136,57 @@ fn create_replace_as_select() {
         TableLineage {
             in_tables: tables(vec!["dwh_dev.commons.calendar"]),
             out_tables: tables(vec!["DATA_TEAM_DEMOS.ALL_DAYS"])
+        }
+    )
+}
+
+#[test]
+fn create_view() {
+    assert_eq!(
+        test_sql(
+            "
+            CREATE OR REPLACE VIEW DATA_TEAM_DEMOS.ALL_DAYS AS (
+            SELECT date AS calendar_day, yyyy_mm as calendar_month, yyyy as calendar_year
+            FROM dwh_dev.commons.calendar
+            WHERE date BETWEEN '2022-01-01' AND CURRENT_DATE
+        )"
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: tables(vec!["dwh_dev.commons.calendar"]),
+            out_tables: tables(vec!["DATA_TEAM_DEMOS.ALL_DAYS"])
+        }
+    )
+}
+
+#[test]
+fn create_stage() {
+    assert_eq!(
+        parse_sql(
+            "
+             CREATE STAGE IF NOT EXISTS IN_OPENLINEAGE.DATA
+             URL='gcs://openlineage/data/'
+             storage_integration = GCS_INT
+             FILE_FORMAT=(TYPE=PARQUET TRIM_SPACE=TRUE)
+             COPY_OPTIONS=(MATCH_BY_COLUMN_NAME=CASE_INSENSITIVE)
+         ",
+            &SnowflakeDialect {},
+            None,
+        )
+        .unwrap()
+        .table_lineage,
+        TableLineage {
+            in_tables: vec![DbTableMeta::new_default_dialect_with_namespace_and_schema(
+                "gcs://openlineage/data/".to_string(),
+                true,
+                true,
+            )],
+            out_tables: vec![DbTableMeta::new_default_dialect_with_namespace_and_schema(
+                "IN_OPENLINEAGE.DATA".to_string(),
+                false,
+                true
+            )]
         }
     )
 }

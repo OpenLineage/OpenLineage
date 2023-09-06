@@ -4,21 +4,24 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
+import os
 import subprocess
 import sys
 import time
-import os
 import uuid
+from datetime import datetime, timezone
 from typing import Optional
 
-from tqdm import tqdm
-from datetime import datetime, timezone
-
-from openlineage.client.run import RunEvent, RunState, Run, Job
 from openlineage.client.client import OpenLineageClient
-from openlineage.common.provider.dbt import DbtArtifactProcessor, ParentRunMetadata
+from openlineage.client.run import Job, Run, RunEvent, RunState
+from openlineage.common.provider.dbt import (
+    DbtLocalArtifactProcessor,
+    ParentRunMetadata,
+    UnsupportedDbtCommand,
+)
+from tqdm import tqdm
 
-__version__ = "0.21.0"
+__version__ = "1.2.0"
 
 from openlineage.common.utils import parse_single_arg
 
@@ -49,7 +52,9 @@ def dbt_run_event(
     )
 
 
-def dbt_run_event_start(job_name: str, job_namespace: str, parent_run_metadata: ParentRunMetadata) -> RunEvent:
+def dbt_run_event_start(
+    job_name: str, job_namespace: str, parent_run_metadata: ParentRunMetadata
+) -> RunEvent:
     return dbt_run_event(
         state=RunState.START,
         job_name=job_name,
@@ -72,17 +77,34 @@ def dbt_run_event_end(
         parent=parent_run_metadata
     )
 
+def dbt_run_event_failed(
+    run_id: str,
+    job_namespace: str,
+    job_name: str,
+    parent_run_metadata: Optional[ParentRunMetadata]
+) -> RunEvent:
+    return dbt_run_event(
+        state=RunState.FAIL,
+        job_namespace=job_namespace,
+        job_name=job_name,
+        run_id=run_id,
+        parent=parent_run_metadata
+    )
 
+openlineage_logger = logging.getLogger("openlineage.dbt")
+openlineage_logger.setLevel(os.getenv("OPENLINEAGE_DBT_LOGGING", "INFO"))
+openlineage_logger.addHandler(logging.StreamHandler(sys.stdout))
+# deprecated dbtol logger
 logger = logging.getLogger("dbtol")
-logger.setLevel("INFO")
-logger.addHandler(logging.StreamHandler(sys.stdout))
-
+for handler in openlineage_logger.handlers:
+    logger.addHandler(handler)
+    logger.setLevel(openlineage_logger.level)
 
 def main():
     logger.info(f"Running OpenLineage dbt wrapper version {__version__}")
-    logger.info(f"This wrapper will send OpenLineage events at the end of dbt execution.")
+    logger.info("This wrapper will send OpenLineage events at the end of dbt execution.")
 
-    args = sys.argv[2:]
+    args = sys.argv[1:]
     target = parse_single_arg(args, ['-t', '--target'])
     project_dir = parse_single_arg(args, ['--project-dir'], default='./')
     profile_name = parse_single_arg(args, ['--profile'])
@@ -95,7 +117,7 @@ def main():
         'dbt'
     )
 
-    client = OpenLineageClient.from_environment()
+    client = OpenLineageClient()
 
     if parent_id:
         parent_namespace, parent_job_name, parent_run_id = parent_id.split('/')
@@ -105,7 +127,7 @@ def main():
             job_namespace=parent_namespace
         )
 
-    processor = DbtArtifactProcessor(
+    processor = DbtLocalArtifactProcessor(
         producer=PRODUCER,
         target=target,
         job_namespace=job_namespace,
@@ -117,7 +139,7 @@ def main():
     # Always emit "wrapping event" around dbt run. This indicates start of dbt execution, since
     # both the start and complete events for dbt models won't get emitted until end of execution.
     start_event = dbt_run_event_start(
-        job_name=f"dbt-run-{processor.project['name']}",
+        job_name=f"dbt-run-{processor.project_name}",
         job_namespace=job_namespace,
         parent_run_metadata=parent_run_metadata
     )
@@ -143,10 +165,7 @@ def main():
         stdout=sys.stdout,
         stderr=sys.stderr
     )
-    process.wait()
-
-    if len(sys.argv) < 2 or sys.argv[1] not in ['run', 'test', 'build']:
-        return
+    return_code = process.wait()
 
     # If run_result has modification time before dbt command
     # or does not exist, do not emit dbt events.
@@ -160,17 +179,30 @@ def main():
                     f"did not find run_result file ({processor.run_result_path})")
         return
 
-    events = processor.parse().events()
+    try:
+        events = processor.parse().events()
+    except UnsupportedDbtCommand as e:
+        # log exception message
+        logger.info(e)
+        events = []
 
-    end_event = dbt_run_event_end(
-        run_id=dbt_run_metadata.run_id,
-        job_namespace=dbt_run_metadata.job_namespace,
-        job_name=dbt_run_metadata.job_name,
-        parent_run_metadata=parent_run_metadata
-    )
+    if return_code == 0:
+        last_event = dbt_run_event_end(
+            run_id=dbt_run_metadata.run_id,
+            job_namespace=dbt_run_metadata.job_namespace,
+            job_name=dbt_run_metadata.job_name,
+            parent_run_metadata=parent_run_metadata
+        )
+    else:
+        last_event = dbt_run_event_failed(
+            run_id=dbt_run_metadata.run_id,
+            job_namespace=dbt_run_metadata.job_namespace,
+            job_name=dbt_run_metadata.job_name,
+            parent_run_metadata=parent_run_metadata
+        )
 
     for event in tqdm(
-        events + [end_event],
+        events + [last_event],
         desc="Emitting OpenLineage events",
         initial=1,
         total=len(events) + 2,

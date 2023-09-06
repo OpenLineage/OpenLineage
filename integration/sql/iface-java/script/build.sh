@@ -16,24 +16,33 @@ SCRIPTS=$ROOT/script
 mkdir -p $RESOURCES
 
 # Native lib should be compiled at this point by compile.sh
-if [[ -f "$ROOT/../target/debug/libopenlineage_sql_java.so" ]]; then
-    cp $ROOT/../target/debug/libopenlineage_sql_java.so $RESOURCES
+if [[ -f "$ROOT/../target/debug/libopenlineage_sql_java_x86_64.so" ]]; then
+    cp $ROOT/../target/debug/libopenlineage_sql_java_x86_64.so $RESOURCES
 fi
-if [[ "$ROOT/../target/debug/libopenlineage_sql_java.dylib" ]]; then
+if [[ -f "$ROOT/../target/debug/libopenlineage_sql_java_aarch64.so" ]]; then
+    cp $ROOT/../target/debug/libopenlineage_sql_java_aarch64.so $RESOURCES
+fi
+if [[ -f "$ROOT/../target/debug/libopenlineage_sql_java.dylib" ]]; then
     cp $ROOT/../target/debug/libopenlineage_sql_java.dylib $RESOURCES
+fi
+if [[ -f "$ROOT/../target/debug/libopenlineage_sql_java_arm64.dylib" ]]; then
+    cp $ROOT/../target/debug/libopenlineage_sql_java_arm64.dylib $RESOURCES
 fi
 
 # Let's generate this header every run so that it is always
 # up to date.
-./gradlew clean getDependencies
+$ROOT/gradlew clean getDependencies
 ./$SCRIPTS/generate_jni_header.sh
 
+# Install to maven
+$ROOT/gradlew --info -x javadoc -x sign publishToMavenLocal
+
 # Package into jar
-./gradlew shadowJar
+$ROOT/gradlew shadowJar
 
 # Run a simple integration test
 printf "\n------ Running smoke test ------\n"
-EXPECTED="{{\"inTables\": [table1], \"outTables\": [], \"columnLineage\": [], \"errors\": []}}"
+EXPECTED="{\"inTables\": [\"table1\"], \"outTables\": [], \"columnLineage\": [], \"errors\": []}"
 OUTPUT=$(./src/test/integration/run_test.sh "SELECT * FROM table1;")
 if [ "$OUTPUT" = "$EXPECTED" ]; then
     printf "\n${GREEN}Smoke Test Passed!${NC}\n"

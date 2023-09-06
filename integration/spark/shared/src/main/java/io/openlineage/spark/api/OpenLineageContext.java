@@ -8,8 +8,10 @@ package io.openlineage.spark.api;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -54,6 +56,8 @@ public class OpenLineageContext {
   /** The non-null {@link SparkContext} running for the application we're reporting run data for */
   @NonNull SparkContext sparkContext;
 
+  /** The list of custom environment variables to be captured */
+  Optional<List<String>> customEnvironmentVariables;
   /**
    * A non-null, preconfigured {@link OpenLineage} client instance for constructing OpenLineage
    * model objects
@@ -85,11 +89,24 @@ public class OpenLineageContext {
   List<PartialFunction<Object, Collection<OutputDataset>>> outputDatasetBuilders =
       new ArrayList<>();
 
+  /**
+   * List of column level lineage visitors to be added dynamically based on Spark version and
+   * versions of the 3rd party libraries
+   */
+  @Default @NonNull List<ColumnLevelLineageVisitor> columnLevelLineageVisitors = new ArrayList<>();
+
   /** Optional {@link QueryExecution} for runs that are Spark SQL queries. */
   @Default @NonNull Optional<QueryExecution> queryExecution = Optional.empty();
 
   /** Spark version of currently running job */
   String sparkVersion = package$.MODULE$.SPARK_VERSION();
+
+  /**
+   * Job name is build when the first event of the run is build is created on the top of ready event
+   * based on the output dataset being present within an event. It is stored within a context to
+   * become consistent over a run progress.
+   */
+  List<String> jobName = new LinkedList<>();
 
   /**
    * Override the default Builder class to take an unwrapped {@link QueryExecution} argument, rather

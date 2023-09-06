@@ -15,6 +15,7 @@ import java.util.Collections;
 import java.util.List;
 import lombok.SneakyThrows;
 import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.CreateTopicsResult;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
@@ -143,6 +144,7 @@ class SparkContainerIntegrationTest {
   }
 
   @Test
+  @SneakyThrows
   void testPysparkKafkaReadAssign() {
     kafka = SparkContainerUtils.makeKafkaContainer(network);
     kafka.start();
@@ -152,8 +154,12 @@ class SparkContainerIntegrationTest {
             "bootstrap.servers",
             kafka.getHost() + ":" + kafka.getMappedPort(KafkaContainer.KAFKA_PORT));
     AdminClient admin = AdminClient.create(kafkaProps);
-    admin.createTopics(
-        Arrays.asList(new NewTopic("topicA", 1, (short) 0), new NewTopic("topicB", 1, (short) 0)));
+    CreateTopicsResult topicsResult =
+        admin.createTopics(
+            Arrays.asList(
+                new NewTopic("topicA", 1, (short) 1), new NewTopic("topicB", 1, (short) 1)));
+    topicsResult.topicId("topicA").get();
+
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network,
         openLineageClientMockContainer,
@@ -256,7 +262,7 @@ class SparkContainerIntegrationTest {
   void testDropTable() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network, openLineageClientMockContainer, "testDropTable", "spark_drop_table.py");
-    verifyEvents(mockServerClient, "pysparkDropTableStartEvent.json");
+    verifyEvents(mockServerClient, "pysparkDropTableCompleteEvent.json");
   }
 
   @Test
@@ -290,9 +296,7 @@ class SparkContainerIntegrationTest {
 
   @Test
   @EnabledIfEnvironmentVariable(named = "CI", matches = "true")
-  @EnabledIfSystemProperty(
-      named = SPARK_VERSION,
-      matches = "(3.3.*)") // Only running on 3.3 because mockserver can't fill in the spark version
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3) // Spark version >= 3.*
   void testReadAndWriteFromBigquery() {
     List<String> sparkConfigParams = new ArrayList<>();
     sparkConfigParams.add(
@@ -312,10 +316,10 @@ class SparkContainerIntegrationTest {
         "spark_bigquery.py");
     verifyEvents(
         mockServerClient,
+        Collections.singletonMap(
+            "{spark_version}", System.getProperty(SPARK_VERSION).replace(".", "_")),
         "pysparkBigquerySaveStart.json",
         "pysparkBigqueryInsertStart.json",
-        "pysparkBigqueryInsertStart.json",
-        "pysparkBigqueryInsertEnd.json",
         "pysparkBigqueryInsertEnd.json",
         "pysparkBigquerySaveEnd.json");
   }
@@ -330,5 +334,14 @@ class SparkContainerIntegrationTest {
     String regex = "^((?!(spark_unknown|spark.logicalPlan|dataSource)).)*$";
 
     mockServerClient.verify(request().withPath("/api/v1/lineage").withBody(new RegexBody(regex)));
+  }
+
+  @Test
+  @SneakyThrows
+  void testRddWithParquet() {
+    SparkContainerUtils.runPysparkContainerWithDefaultConf(
+        network, openLineageClientMockContainer, "testRddWithParquet", "spark_rdd_with_parquet.py");
+
+    verifyEvents(mockServerClient, "pysparkRDDWithParquetComplete.json");
   }
 }

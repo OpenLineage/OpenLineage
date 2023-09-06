@@ -5,61 +5,117 @@
 
 package io.openlineage.spark.agent.lifecycle;
 
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonIgnoreType;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.introspect.ClassIntrospector;
-import com.google.common.collect.ImmutableList;
+import com.fasterxml.jackson.databind.introspect.ClassIntrospector.MixInResolver;
 import com.google.common.collect.ImmutableMap;
-import java.util.List;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.Map;
-import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.reflect.MethodUtils;
 import org.apache.spark.Partition;
 import org.apache.spark.api.python.PythonRDD;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.catalyst.analysis.FunctionRegistry;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.SQLExecutionRDD;
-import org.apache.spark.sql.sources.BaseRelation;
-import scala.PartialFunction;
-import scala.runtime.AbstractPartialFunction;
 
 /**
  * {@link LogicalPlan} serializer which serialize {@link LogicalPlan} to JSON string. This
  * serializer relies on Jackson's {@link com.fasterxml.jackson.module.scala.DefaultScalaModule},
- * which is scala-version specific. Currently, we depend on the Scala 2.11 version of the jar,
- * making this code incompatible with Spark 3 or other other Spark installations compiled with Scala
- * 2.12 or higher. In such cases, we'll fail to load the Jackson module, but will continue to
- * attempt serialization of the {@link LogicalPlan}. If serialization fails, the exception message
- * and stacktrace will be reported.
+ * which is scala-version specific. That is why we need to use Jackson library available within
+ * Spark and not shaded one included within openlineage-java. This poses some limitations as logical
+ * plan serialization relies on mixIns and annotations, however annotations class are relocated and
+ * cannot be replaced with dynamic proxy classes. The major limitation of this approach is that we
+ * cannot use JsonTypeInfo annotation to enrich jsons with class names within the plan.
  */
 @Slf4j
 class LogicalPlanSerializer {
   private static final int MAX_SERIALIZED_PLAN_LENGTH =
       50000; // 50K UTF-8 chars should be ~200KB + some extra bytes added during json encoding
-  private final ObjectMapper mapper;
+  private final Object objectMapper;
+
+  /** relocate plugin rewrites by default all occurrences of com.fasterxml.jackson */
+  private static final String UNSHADED_JACKSON_PACKAGE = "com.".trim() + "fasterxml.jackson";
 
   public LogicalPlanSerializer() {
-    mapper = new ObjectMapper();
-    try {
-      mapper.registerModule(
-          (Module)
-              Class.forName("com.fasterxml.jackson.module.scala.DefaultScalaModule$")
-                  .getDeclaredField("MODULE$")
-                  .get(null));
-    } catch (Exception t) {
-      log.warn("Can't register jackson scala module for serializing LogicalPlan");
-    }
+    // we need to use non-relocated Spark's ObjectMapper to serialize logical plan
+    objectMapper = getObjectMapper();
 
-    mapper.setMixInResolver(new LogicalPlanMixinResolver());
+    try {
+      /**
+       * We want to use LogicalPlanMixinResolver to add some extra Jackson annotations on how a plan
+       * should be serialized. This can be achieved by running: `objectMapper.setMixInResolver(new
+       * LogicalPlanMixinResolver)` However, this won't work as we want to use non-shaded original
+       * ObjectMapper and LogicalPlanMixinResolver available in this class will be relocated to
+       * other package. The issue can be solved by creating dynamic proxy class which will implement
+       * non-shaded MixInResolver and its methods will call shaded LogicalPlanMixinResolver methods.
+       * This allows merging together non-shaded and shaded Jackson classes.
+       */
+      Class clazz =
+          Class.forName(
+              UNSHADED_JACKSON_PACKAGE + ".databind.introspect.ClassIntrospector$MixInResolver");
+
+      Object resolver =
+          Proxy.newProxyInstance(
+              clazz.getClassLoader(),
+              new Class[] {clazz},
+              new InvocationHandler() {
+                LogicalPlanMixinResolver resolver = new LogicalPlanMixinResolver();
+
+                @Override
+                public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                  return MethodUtils.invokeMethod(resolver, method.getName(), args);
+                }
+              });
+
+      MethodUtils.invokeMethod(
+          objectMapper,
+          "registerModule",
+          Class.forName(UNSHADED_JACKSON_PACKAGE + ".module.scala.DefaultScalaModule$")
+              .getDeclaredField("MODULE$")
+              .get(null));
+
+      MethodUtils.invokeMethod(objectMapper, "setMixInResolver", resolver);
+    } catch (Exception | Error t) {
+      log.warn("Can't register jackson scala module for serializing LogicalPlan", t);
+    }
+  }
+
+  private Object getObjectMapper() {
+    try {
+      return Class.forName(UNSHADED_JACKSON_PACKAGE + ".databind.ObjectMapper")
+          .getConstructor()
+          .newInstance();
+    } catch (Exception e) {
+      log.warn("Couldn't instantiate ObjectMapper", e);
+
+      // didn't work. Let's get shaded one
+      return new ObjectMapper();
+    }
+  }
+
+  private String writeValueAsString(LogicalPlan x) {
+    try {
+      return (String) MethodUtils.invokeMethod(objectMapper, "writeValueAsString", x);
+    } catch (Exception e) {
+      log.warn("Unable to writeValueAsString", e);
+      return "";
+    }
+  }
+
+  private String writeValueAsString(String x) {
+    try {
+      return (String) MethodUtils.invokeMethod(objectMapper, "writeValueAsString", x);
+    } catch (Exception e) {
+      log.warn("Unable to writeValueAsString", e);
+      return "";
+    }
   }
 
   /**
@@ -69,37 +125,22 @@ class LogicalPlanSerializer {
    * @return
    */
   public String serialize(LogicalPlan x) {
-    try {
-      String serializedPlan = mapper.writeValueAsString(x);
-      if (serializedPlan.length() > MAX_SERIALIZED_PLAN_LENGTH) {
-        // entry is too long, we slice a substring it and send as String field
-        serializedPlan =
-            mapper.writeValueAsString(serializedPlan.substring(0, MAX_SERIALIZED_PLAN_LENGTH));
-      }
-      return serializedPlan;
-    } catch (Exception e) {
-      try {
-        return mapper.writeValueAsString(
-            "Unable to serialize logical plan due to: " + e.getMessage());
-      } catch (JsonProcessingException ex) {
-        return "\"Unable to serialize error message\"";
-      }
+    String serializedPlan = writeValueAsString(x);
+    if (serializedPlan.length() > MAX_SERIALIZED_PLAN_LENGTH) {
+      // entry is too long, we slice a substring it and send as String field
+      serializedPlan = writeValueAsString(serializedPlan.substring(0, MAX_SERIALIZED_PLAN_LENGTH));
     }
+    return serializedPlan;
   }
 
   @JsonIgnoreType
   public static class IgnoredType {}
-
-  @JsonTypeInfo(use = Id.CLASS)
-  @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "id")
-  public static class TypeInfoMixin {}
 
   /**
    * 'canonicalized' field is ignored due to recursive call and {@link StackOverflowError} 'child'
    * and 'containsChild' fields ignored cause we don't need them for the root node in {@link
    * LogicalPlan} and leaf nodes don't have child nodes in {@link LogicalPlan}
    */
-  @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "id")
   @JsonIgnoreProperties({
     "child",
     "containsChild",
@@ -114,15 +155,12 @@ class LogicalPlanSerializer {
   @JsonIgnoreProperties({"sqlConfigs", "sqlConfExecutorSide"})
   public static class SqlConfigMixin {}
 
-  @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "id")
   public static class PythonRDDMixin {
     @SuppressWarnings("PMD")
     @JsonIgnore
     private PythonRDDMixin asJavaRDD;
   }
 
-  @JsonTypeInfo(use = Id.CLASS)
-  @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "id")
   public static class RDDMixin {
     @SuppressWarnings("PMD")
     @JsonIgnore
@@ -139,27 +177,7 @@ class LogicalPlanSerializer {
     }
   }
 
-  static class PolymorficMixIn extends AbstractPartialFunction<Class, Class> {
-    private Class target;
-    private Class mixin;
-
-    public PolymorficMixIn(Class target, Class mixin) {
-      this.target = target;
-      this.mixin = mixin;
-    }
-
-    @Override
-    public boolean isDefinedAt(Class x) {
-      return target.isAssignableFrom(x);
-    }
-
-    @Override
-    public Class apply(Class clazz) {
-      return mixin;
-    }
-  }
-
-  static class LogicalPlanMixinResolver implements ClassIntrospector.MixInResolver {
+  static class LogicalPlanMixinResolver implements MixInResolver {
     private static Map<Class, Class> concreteMixin;
 
     static {
@@ -170,30 +188,20 @@ class LogicalPlanSerializer {
               .put(RDD.class, RDDMixin.class)
               .put(SQLExecutionRDD.class, SqlConfigMixin.class)
               .put(FunctionRegistry.class, IgnoredType.class);
+
       try {
-        Class<?> c = PolymorficMixIn.class.getClassLoader().loadClass("java.lang.Module");
+        Class<?> c = ChildMixIn.class.getClassLoader().loadClass("java.lang.Module");
         builder.put(c, IgnoredType.class);
       } catch (Exception e) {
         // ignore
       }
+
       concreteMixin = builder.build();
     }
 
-    private static List<PartialFunction<Class, Class>> polymorficMixIn =
-        ImmutableList.of(
-            new PolymorficMixIn(LogicalPlan.class, TypeInfoMixin.class),
-            new PolymorficMixIn(BaseRelation.class, TypeInfoMixin.class));
-
     @Override
     public Class<?> findMixInClassFor(Class<?> cls) {
-      Supplier<Class> defaultMixin =
-          () ->
-              polymorficMixIn.stream()
-                  .filter(fun -> fun.isDefinedAt(cls))
-                  .findFirst()
-                  .map(f -> f.apply(cls))
-                  .orElse(ChildMixIn.class);
-      return concreteMixin.getOrDefault(cls, defaultMixin.get());
+      return concreteMixin.getOrDefault(cls, ChildMixIn.class);
     }
 
     @Override

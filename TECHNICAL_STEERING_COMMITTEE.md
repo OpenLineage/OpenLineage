@@ -25,6 +25,9 @@ For the schedule, meeting link, and agenda, visit the [wiki](https://wiki.lfaida
 | Howard Yoo | [@howardyoo](https://github.com/howardyoo) | Voting member |
 | Jakub Dardziński | [@JDarDagran](https://github.com/jdardagran) | Voting member |
 | Tomasz Nazarewicz | [@tnazarew](https://github.com/tnazarew) | Voting member |
+| Benjamin Lampel | [@denimalpaca](https://github.com/denimalpaca) | Voting member |
+| Kengo Seki | [@sekikn](https://github.com/sekikn) | Voting member |
+| Minkyu Park | [@fm100](https://github.com/fm100) | Voting member |
 
 ----
 SPDX-License-Identifier: Apache-2.0\

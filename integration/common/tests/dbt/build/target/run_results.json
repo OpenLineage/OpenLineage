@@ -79,7 +79,31 @@
 		"message": null,
 		"failures": 0,
 		"unique_id": "test.dbt_bigquery_test.unique_test_first_dbt_model_id.f2b0bdd46c"
-	}],
+	}, {
+		"status": "success",
+		"timing": [
+		  {
+			"name": "compile",
+			"started_at": "2023-04-16T21:45:03.623053Z",
+			"completed_at": "2023-04-16T21:45:03.626326Z"
+		  },
+		  {
+			"name": "execute",
+			"started_at": "2023-04-16T21:45:03.626957Z",
+			"completed_at": "2023-04-16T21:45:03.836179Z"
+		  }
+		],
+		"thread_id": "Thread-1",
+		"execution_time": 0.2148900032043457,
+		"adapter_response": {
+		  "_message": "INSERT 0 0",
+		  "code": "INSERT",
+		  "rows_affected": 0
+		},
+		"message": "INSERT 0 0",
+		"failures": null,
+		"unique_id": "snapshot.dbt_bigquery_test.orders_snapshot"
+	  }],
 	"elapsed_time": 7.9490602016448975,
 	"args": {
 		"log_format": "default",

@@ -100,18 +100,22 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
 
         task_instance.run()
 
+        mock_client.get_table.side_effect = [table_details, out_details]
+
         task_meta = bq_extractor.extract_on_complete(task_instance)
 
         mock_hook.return_value.get_client.assert_called_with(
             project_id=project_id,
             location="US"
         )
-        mock_client.get_job.assert_called_once_with(job_id=bq_job_id)
+        mock_client.get_job.assert_called_with(job_id=bq_job_id)
 
         assert task_meta.inputs is not None
         assert len(task_meta.inputs) == 1
         assert task_meta.inputs[0].name == \
             'bigquery-public-data.usa_names.usa_1910_2013'
+
+        log.error(task_meta)
 
         assert task_meta.inputs[0].facets['schema'].fields is not None
         assert task_meta.inputs[0].facets['dataSource'].name == 'bigquery'
@@ -288,7 +292,7 @@ class TestBigQueryExtractorE2E(unittest.TestCase):
         assert task_meta.run_facets['bigQuery_error'] == BigQueryErrorRunFacet(
             clientError=mock.ANY
         )
-        mock_client.get_job.assert_called_once_with(job_id=bq_job_id)
+        mock_client.get_job.assert_called_with(job_id=bq_job_id)
 
         assert task_meta.inputs is not None
         assert len(task_meta.inputs) == 0

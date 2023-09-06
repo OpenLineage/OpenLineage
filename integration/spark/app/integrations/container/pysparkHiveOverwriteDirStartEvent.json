@@ -26,7 +26,7 @@
 	},
 	"job": {
 		"namespace": "testPysparkSQLHiveOverwriteDirTest",
-		"name": "open_lineage_integration_overwrite_hive.execute_insert_into_hive_dir_command"
+		"name": "open_lineage_integration_overwrite_hive.execute_insert_into_hive_dir_command.overwrite_table"
 	},
 	"inputs": [],
 	"outputs": [{

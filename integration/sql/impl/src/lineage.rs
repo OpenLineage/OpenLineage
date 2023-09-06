@@ -24,7 +24,7 @@ impl SqlMeta {
         mut in_tables: Vec<DbTableMeta>,
         mut out_tables: Vec<DbTableMeta>,
         mut column_lineage: Vec<ColumnLineage>,
-        mut errors: Vec<ExtractionError>,
+        errors: Vec<ExtractionError>,
     ) -> Self {
         in_tables.sort();
         out_tables.sort();
@@ -79,6 +79,8 @@ pub struct DbTableMeta {
     pub database: Option<String>,
     pub schema: Option<String>,
     pub name: String,
+    pub provided_namespace: bool,
+    pub provided_field_schema: bool,
     // ..columns
 }
 
@@ -88,6 +90,27 @@ impl DbTableMeta {
         dialect: &dyn CanonicalDialect,
         default_schema: Option<String>,
     ) -> Self {
+        DbTableMeta::new_with_namespace_and_schema(name, dialect, default_schema, true, true, true)
+    }
+
+    pub fn new_with_namespace_and_schema(
+        name: String,
+        dialect: &dyn CanonicalDialect,
+        default_schema: Option<String>,
+        provided_namespace: bool,
+        provided_field_schema: bool,
+        with_split_name: bool,
+    ) -> Self {
+        if !with_split_name {
+            // for example: snowflake external location with no namespace nor name split
+            return DbTableMeta {
+                database: None,
+                schema: None,
+                name,
+                provided_namespace,
+                provided_field_schema,
+            };
+        }
         let mut split = name
             .split('.')
             .map(|x| dialect.canonical_name(x).unwrap_or(x))
@@ -96,11 +119,10 @@ impl DbTableMeta {
         let table_name: &str = split.first().unwrap_or(&name.as_str());
         DbTableMeta {
             database: split.get(2).map(ToString::to_string),
-            schema: split
-                .get(1)
-                .map(ToString::to_string)
-                .or_else(|| default_schema),
+            schema: split.get(1).map(ToString::to_string).or(default_schema),
             name: table_name.to_string(),
+            provided_namespace: false,
+            provided_field_schema: false,
         }
     }
 
@@ -121,5 +143,20 @@ impl DbTableMeta {
 
     pub fn new_default_dialect(name: String) -> Self {
         Self::new(name, &SnowflakeDialect, None)
+    }
+
+    pub fn new_default_dialect_with_namespace_and_schema(
+        name: String,
+        provided_namespace: bool,
+        provided_field_schema: bool,
+    ) -> Self {
+        Self::new_with_namespace_and_schema(
+            name,
+            &SnowflakeDialect,
+            None,
+            provided_namespace,
+            provided_field_schema,
+            false,
+        )
     }
 }

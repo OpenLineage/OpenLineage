@@ -17,11 +17,14 @@ import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.api.DatasetFactory;
 import io.openlineage.spark.api.OpenLineageContext;
+import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.spark.Partition;
 import org.apache.spark.SparkContext;
@@ -29,6 +32,7 @@ import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.expressions.AttributeReference;
 import org.apache.spark.sql.catalyst.expressions.ExprId;
+import org.apache.spark.sql.catalyst.plans.logical.Project;
 import org.apache.spark.sql.execution.QueryExecution;
 import org.apache.spark.sql.execution.datasources.FileIndex;
 import org.apache.spark.sql.execution.datasources.HadoopFsRelation;
@@ -42,7 +46,7 @@ import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.MockedStatic;
 import org.postgresql.Driver;
 import scala.Option;
@@ -66,16 +70,14 @@ class LogicalRelationDatasetBuilderTest {
   }
 
   @ParameterizedTest
-  @ValueSource(
-      strings = {
-        "postgresql://postgreshost:5432/sparkdata",
-        "jdbc:oracle:oci8:@sparkdata",
-        "jdbc:oracle:thin@sparkdata:1521:orcl",
-        "mysql://localhost/sparkdata"
-      })
-  void testApply(String connectionUri) {
+  @CsvSource({
+    "jdbc:postgresql://postgreshost:5432/sparkdata,postgres://postgreshost:5432,sparkdata.my_spark_table",
+    "jdbc:oracle:oci8:@sparkdata,oracle:oci8:@sparkdata,my_spark_table",
+    "jdbc:oracle:thin@sparkdata:1521:orcl,oracle:thin@sparkdata:1521:orcl,my_spark_table",
+    "jdbc:mysql://localhost/sparkdata,mysql://localhost,sparkdata.my_spark_table"
+  })
+  void testApply(String connectionUri, String targetUri, String targetTableName) {
     OpenLineage openLineage = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
-    String jdbcUrl = "jdbc:" + connectionUri;
     String sparkTableName = "my_spark_table";
     JDBCRelation relation =
         new JDBCRelation(
@@ -83,7 +85,7 @@ class LogicalRelationDatasetBuilderTest {
                 new StructField[] {new StructField("name", StringType$.MODULE$, false, null)}),
             new Partition[] {},
             new JDBCOptions(
-                jdbcUrl,
+                connectionUri,
                 sparkTableName,
                 Map$.MODULE$
                     .<String, String>newBuilder()
@@ -93,21 +95,23 @@ class LogicalRelationDatasetBuilderTest {
     QueryExecution qe = mock(QueryExecution.class);
     when(qe.optimizedPlan())
         .thenReturn(
-            new LogicalRelation(
-                relation,
-                Seq$.MODULE$
-                    .<AttributeReference>newBuilder()
-                    .$plus$eq(
-                        new AttributeReference(
-                            "name",
-                            StringType$.MODULE$,
-                            false,
-                            null,
-                            ExprId.apply(1L),
-                            Seq$.MODULE$.<String>empty()))
-                    .result(),
-                Option.empty(),
-                false));
+            new Project(
+                Seq$.MODULE$.<String>empty(),
+                new LogicalRelation(
+                    relation,
+                    Seq$.MODULE$
+                        .<AttributeReference>newBuilder()
+                        .$plus$eq(
+                            new AttributeReference(
+                                "name",
+                                StringType$.MODULE$,
+                                false,
+                                null,
+                                ExprId.apply(1L),
+                                Seq$.MODULE$.<String>empty()))
+                        .result(),
+                    Option.empty(),
+                    false)));
     OpenLineageContext context =
         OpenLineageContext.builder()
             .sparkContext(mock(SparkContext.class))
@@ -116,15 +120,15 @@ class LogicalRelationDatasetBuilderTest {
             .build();
     LogicalRelationDatasetBuilder visitor =
         new LogicalRelationDatasetBuilder<>(
-            context, DatasetFactory.output(openLineageContext), false);
+            context, DatasetFactory.output(openLineageContext), true);
     List<OutputDataset> datasets =
         visitor.apply(new SparkListenerJobStart(1, 1, Seq$.MODULE$.empty(), null));
     assertEquals(1, datasets.size());
     OutputDataset ds = datasets.get(0);
-    assertEquals(connectionUri, ds.getNamespace());
-    assertEquals(sparkTableName, ds.getName());
-    assertEquals(URI.create(connectionUri), ds.getFacets().getDataSource().getUri());
-    assertEquals(connectionUri, ds.getFacets().getDataSource().getName());
+    assertEquals(targetUri, ds.getNamespace());
+    assertEquals(targetTableName, ds.getName());
+    assertEquals(URI.create(targetUri), ds.getFacets().getDataSource().getUri());
+    assertEquals(targetUri, ds.getFacets().getDataSource().getName());
   }
 
   @Test
@@ -159,6 +163,40 @@ class LogicalRelationDatasetBuilderTest {
       assertEquals(1, datasets.size());
       OpenLineage.Dataset ds = datasets.get(0);
       assertEquals("/tmp", ds.getName());
+    }
+  }
+
+  @Test
+  void testApplyForSingleFileHadoopFsRelation() throws IOException, URISyntaxException {
+    HadoopFsRelation hadoopFsRelation = mock(HadoopFsRelation.class);
+    LogicalRelation logicalRelation = mock(LogicalRelation.class);
+    Configuration hadoopConfig = mock(Configuration.class);
+    SparkContext sparkContext = mock(SparkContext.class);
+    FileIndex fileIndex = mock(FileIndex.class);
+    SessionState sessionState = mock(SessionState.class);
+    Path p = mock(Path.class);
+    FileSystem fileSystem = mock(FileSystem.class);
+    when(p.getFileSystem(hadoopConfig)).thenReturn(fileSystem);
+    when(p.toUri()).thenReturn(new URI("/tmp/path.csv"));
+    when(fileSystem.isFile(p)).thenReturn(true);
+
+    when(logicalRelation.relation()).thenReturn(hadoopFsRelation);
+    when(openLineageContext.getSparkContext()).thenReturn(sparkContext);
+    when(openLineageContext.getSparkSession()).thenReturn(Optional.of(session));
+    when(session.sessionState()).thenReturn(sessionState);
+    when(sessionState.newHadoopConfWithOptions(any())).thenReturn(hadoopConfig);
+    when(hadoopFsRelation.location()).thenReturn(fileIndex);
+    when(fileIndex.rootPaths())
+        .thenReturn(
+            scala.collection.JavaConverters.collectionAsScalaIterableConverter(Arrays.asList(p))
+                .asScala()
+                .toSeq());
+
+    try (MockedStatic mocked = mockStatic(PlanUtils.class)) {
+      List<OpenLineage.Dataset> datasets = builder.apply(logicalRelation);
+      assertEquals(1, datasets.size());
+      OpenLineage.Dataset ds = datasets.get(0);
+      assertEquals("/tmp/path.csv", ds.getName());
     }
   }
 }

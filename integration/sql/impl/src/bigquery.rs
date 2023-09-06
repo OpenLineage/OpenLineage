@@ -14,14 +14,10 @@ impl Dialect for BigQueryDialect {
     }
 
     fn is_identifier_start(&self, ch: char) -> bool {
-        ('a'..='z').contains(&ch) || ('A'..='Z').contains(&ch) || ch == '_'
+        ch.is_ascii_lowercase() || ch.is_ascii_uppercase() || ch == '_'
     }
 
     fn is_identifier_part(&self, ch: char) -> bool {
-        self.is_identifier_start(ch)
-            || ('0'..='9').contains(&ch)
-            || ch == '$'
-            || ch == '-'
-            || ch == '`'
+        self.is_identifier_start(ch) || ch.is_ascii_digit() || ch == '$' || ch == '-' || ch == '`'
     }
 }

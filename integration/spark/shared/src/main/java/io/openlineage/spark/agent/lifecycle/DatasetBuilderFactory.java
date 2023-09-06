@@ -6,9 +6,11 @@
 package io.openlineage.spark.agent.lifecycle;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import io.openlineage.spark.api.AbstractQueryPlanDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import scala.PartialFunction;
 
@@ -28,4 +30,9 @@ public interface DatasetBuilderFactory {
 
   Collection<PartialFunction<Object, List<OpenLineage.OutputDataset>>> getOutputBuilders(
       OpenLineageContext context);
+
+  default Collection<ColumnLevelLineageVisitor> getColumnLevelLineageVisitors(
+      OpenLineageContext context) {
+    return Collections.emptyList();
+  }
 }

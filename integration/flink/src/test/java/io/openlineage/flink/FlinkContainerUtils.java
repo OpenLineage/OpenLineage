@@ -28,7 +28,7 @@ public class FlinkContainerUtils {
   private static final String SCHEMA_REGISTRY_IMAGE = getRegistryImage();
   private static final String KAFKA_IMAGE = "wurstmeister/kafka:2.13-2.8.1";
   private static final String ZOOKEEPER_IMAGE = "confluentinc/cp-zookeeper:" + CONFLUENT_VERSION;
-  private static final String FLINK_IMAGE =
+  static final String FLINK_IMAGE =
       String.format("flink:%s-java11", System.getProperty("flink.version"));
 
   static MockServerContainer makeMockServerContainer(Network network) {
@@ -70,7 +70,7 @@ public class FlinkContainerUtils {
         .withEnv("KAFKA_BROKER_ID", "1")
         .withEnv(
             "KAFKA_CREATE_TOPICS",
-            "io.openlineage.flink.kafka.input1:1:1,io.openlineage.flink.kafka.input2:1:1,io.openlineage.flink.kafka.output:1:1")
+            "io.openlineage.flink.kafka.input1:1:1,io.openlineage.flink.kafka.input2:1:1,io.openlineage.flink.kafka.output:1:1,io.openlineage.flink.kafka.input_no_schema_registry:1:1")
         .withEnv(
             "KAFKA_LOG4J_LOGGERS",
             "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO")
@@ -87,7 +87,7 @@ public class FlinkContainerUtils {
             MountableFile.forHostPath(Resources.getResource("events.json").getPath()),
             "/tmp/events.json")
         .withCommand(
-            "/bin/sh",
+            "/bin/bash",
             "-c",
             Resources.toString(Resources.getResource("generate_events.sh"), StandardCharsets.UTF_8))
         .dependsOn(initTopics);
@@ -101,10 +101,17 @@ public class FlinkContainerUtils {
   }
 
   static GenericContainer<?> makeFlinkJobManagerContainer(
-      String jobName, Network network, List<Startable> startables, Properties jobProperties) {
+      String entrypointClass,
+      Network network,
+      List<Startable> startables,
+      Properties jobProperties) {
     String inputTopics =
         jobProperties.getProperty(
             "inputTopics", "io.openlineage.flink.kafka.input1,io.openlineage.flink.kafka.input2");
+    String jobNameParam = "";
+    if (jobProperties.getProperty("jobName") != null) {
+      jobNameParam = "--job-name " + jobProperties.get("jobName") + " ";
+    }
     String configPath = jobProperties.getProperty("configPath", "/opt/flink/lib/openlineage.yml");
     GenericContainer<?> container =
         genericContainer(network, FLINK_IMAGE, "jobmanager")
@@ -117,10 +124,11 @@ public class FlinkContainerUtils {
                 configPath)
             .withCommand(
                 "standalone-job "
-                    + String.format("--job-classname %s ", jobName)
+                    + String.format("--job-classname %s ", entrypointClass)
                     + "--input-topics "
                     + inputTopics
-                    + " --output-topic io.openlineage.flink.kafka.output ")
+                    + " --output-topic io.openlineage.flink.kafka.output "
+                    + jobNameParam)
             .withEnv(
                 "FLINK_PROPERTIES", "jobmanager.rpc.address: jobmanager\nexecution.attached: true")
             .withEnv("OPENLINEAGE_CONFIG", configPath)
@@ -164,8 +172,7 @@ public class FlinkContainerUtils {
         || logs.contains("Shutting down remote daemon.");
   }
 
-  private static GenericContainer<?> genericContainer(
-      Network network, String image, String hostname) {
+  static GenericContainer<?> genericContainer(Network network, String image, String hostname) {
     return new GenericContainer<>(DockerImageName.parse(image))
         .withNetwork(network)
         .withLogConsumer(of -> consumeOutput(hostname, of))
@@ -197,7 +204,7 @@ public class FlinkContainerUtils {
     return prefixTag + output.replace(System.lineSeparator(), System.lineSeparator() + prefixTag);
   }
 
-  private static String getOpenLineageJarPath() {
+  static String getOpenLineageJarPath() {
     return Arrays.stream((new File("build/libs")).listFiles())
         .filter(file -> file.getName().startsWith("openlineage-flink"))
         .map(file -> file.getPath())
@@ -205,7 +212,7 @@ public class FlinkContainerUtils {
         .get();
   }
 
-  private static String getExampleAppJarPath() {
+  static String getExampleAppJarPath() {
     return Arrays.stream((new File("examples/stateful/build/libs")).listFiles())
         .filter(file -> file.getName().startsWith("stateful"))
         .map(file -> file.getPath())

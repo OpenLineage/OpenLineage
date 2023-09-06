@@ -1,15 +1,52 @@
 workflows:
   openlineage-integration-python:
     jobs:
-      - unit-test-client-python
+      - run-pre-commit
+      - unit-test-client-python:
+          name: "CPython 3.8"
+          tox_env: py38
+          py_env: "3.8"
+          requires:
+            - run-pre-commit
+      - unit-test-client-python:
+          name: "CPython 3.9"
+          tox_env: py39
+          py_env: "3.9"
+          requires:
+            - run-pre-commit
+      - unit-test-client-python:
+          name: "CPython 3.10"
+          tox_env: py310
+          py_env: "3.10"
+          requires:
+            - run-pre-commit
+      - unit-test-client-python:
+          name: "CPython 3.11"
+          tox_env: py311
+          py_env: "3.11"
+          requires:
+            - run-pre-commit
+      - unit-test-client-python:
+          name: "type checker"
+          tox_env: type
+          py_env: "3.11"
+          requires:
+            - run-pre-commit
+      - unit-tests-client-python:
+          requires:
+            - "CPython 3.8"
+            - "CPython 3.9"
+            - "CPython 3.10"
+            - "CPython 3.11"
+            - "type checker"
       - build-client-python:
           filters:
             branches:
               only: main
           build_tag: ".dev<< pipeline.number >>"
           requires:
-            - unit-test-client-python
+            - unit-tests-client-python
       - workflow_complete:
           requires:
             - build-client-python
-            - unit-test-client-python
+            - unit-tests-client-python

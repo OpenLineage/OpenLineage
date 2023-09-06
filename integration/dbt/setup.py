@@ -10,7 +10,7 @@ from setuptools import setup
 with open("README.md") as readme_file:
      readme = readme_file.read()
 
-__version__ = "0.21.0"
+__version__ = "1.2.0"
 
 requirements = [
     "tqdm>=4.62.0",
@@ -41,7 +41,7 @@ setup(
     include_package_data=True,
     install_requires=requirements,
     extras_require=extras_require,
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     zip_safe=False,
     keywords="openlineage",
 )

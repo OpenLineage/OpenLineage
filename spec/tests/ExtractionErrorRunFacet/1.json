@@ -1,0 +1,15 @@
+{
+  "extractionError": {
+    "totalTasks": 1,
+    "failedTasks": 1,
+    "errors": [
+      {
+        "errorMessage": "Expected an object type after CREATE, found: TYPE",
+        "task": "CREATE TYPE myrowtype AS (f1 int, f2 text, f3 numeric)",
+        "taskNumber": 0
+      }
+    ],
+    "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt",
+    "_schemaURL": "https://openlineage.io/spec/facets/1-0-1/ExtractionErrorRunFacet.json"
+  }
+}

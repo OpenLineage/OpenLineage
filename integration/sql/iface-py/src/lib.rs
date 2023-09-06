@@ -33,6 +33,16 @@ impl DbTableMeta {
         self.0.database.as_deref()
     }
 
+    #[getter(provided_namespace)]
+    pub fn provided_namespace(&self) -> bool {
+        self.0.provided_namespace
+    }
+
+    #[getter(provided_field_schema)]
+    pub fn provided_field_schema(&self) -> bool {
+        self.0.provided_field_schema
+    }
+
     #[getter(schema)]
     pub fn schema(&self) -> Option<&str> {
         self.0.schema.as_deref()
@@ -222,6 +232,7 @@ impl ExtractionError {
     }
 
     fn __repr__(&self) -> String {
+        #[allow(dead_code)]
         fn column_meta(cm: ColumnMeta) -> String {
             format!(
                 "index: ({}), message ({}), origin_statement",
@@ -345,21 +356,24 @@ fn openlineage_sql(_py: Python, m: &PyModule) -> PyResult<()> {
     Ok(())
 }
 
+#[allow(dead_code)]
 fn pytable(x: &str) -> DbTableMeta {
-    return DbTableMeta(rust_impl::DbTableMeta::new_default_dialect(String::from(x)));
+    DbTableMeta(rust_impl::DbTableMeta::new_default_dialect(String::from(x)))
 }
 
+#[allow(dead_code)]
 fn pycolumn(column: &str) -> ColumnMeta {
-    return ColumnMeta(rust_impl::ColumnMeta::new(String::from(column), None));
+    ColumnMeta(rust_impl::ColumnMeta::new(String::from(column), None))
 }
 
+#[allow(dead_code)]
 fn pycolumn_with_origin(column: &str, table: &str) -> ColumnMeta {
-    return ColumnMeta(rust_impl::ColumnMeta::new(
+    ColumnMeta(rust_impl::ColumnMeta::new(
         String::from(column),
         Some(rust_impl::DbTableMeta::new_default_dialect(String::from(
             table,
         ))),
-    ));
+    ))
 }
 
 #[test]

@@ -45,13 +45,12 @@ fn parse_bugged_cte() {
         FROM sum_trans
         WHERE count > 1000 OR balance > 100000;";
     let meta = parse_sql(sql, &PostgreSqlDialect {}, None).unwrap();
-
     assert_eq!(meta.errors.len(), 1);
     assert_eq!(
         meta.errors.get(0).unwrap(),
         &ExtractionError {
             index: 0,
-            message: "Expected AS, found: (".to_string(),
+            message: "Expected ), found: user_id".to_string(),
             origin_statement: sql.to_string(),
         }
     );

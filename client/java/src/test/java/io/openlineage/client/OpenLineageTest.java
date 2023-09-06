@@ -6,6 +6,7 @@
 package io.openlineage.client;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -15,8 +16,10 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.openlineage.client.OpenLineage.DataQualityMetricsInputDatasetFacet;
 import io.openlineage.client.OpenLineage.DataQualityMetricsInputDatasetFacetColumnMetricsAdditional;
+import io.openlineage.client.OpenLineage.DatasetEvent;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.Job;
+import io.openlineage.client.OpenLineage.JobEvent;
 import io.openlineage.client.OpenLineage.JobFacets;
 import io.openlineage.client.OpenLineage.NominalTimeRunFacet;
 import io.openlineage.client.OpenLineage.OutputDataset;
@@ -27,6 +30,7 @@ import java.net.URI;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,7 +50,7 @@ class OpenLineageTest {
   }
 
   @Test
-  void jsonSerialization() throws JsonProcessingException {
+  void jsonRunEventSerialization() throws JsonProcessingException {
     ZonedDateTime now = ZonedDateTime.now(ZoneId.of("UTC"));
 
     URI producer = URI.create("producer");
@@ -62,7 +66,7 @@ class OpenLineageTest {
     List<InputDataset> inputs = Arrays.asList(ol.newInputDataset("ins", "input", null, null));
     List<OutputDataset> outputs = Arrays.asList(ol.newOutputDataset("ons", "output", null, null));
     RunEvent runStateUpdate =
-        ol.newRunEvent(OpenLineage.RunEvent.EventType.START, now, run, job, inputs, outputs);
+        ol.newRunEvent(now, OpenLineage.RunEvent.EventType.START, run, job, inputs, outputs);
 
     String json = mapper.writeValueAsString(runStateUpdate);
     RunEvent read = mapper.readValue(json, RunEvent.class);
@@ -86,6 +90,107 @@ class OpenLineageTest {
     assertEquals("output", outputDataset.getName());
 
     assertEquals(roundTrip(json), roundTrip(mapper.writeValueAsString(read)));
+  }
+
+  @Test
+  void jsonDatasetEventSerialization() throws JsonProcessingException {
+    ZonedDateTime now = ZonedDateTime.now(ZoneId.of("UTC"));
+    URI producer = URI.create("producer");
+    OpenLineage ol = new OpenLineage(producer);
+
+    DatasetEvent datasetEvent =
+        ol.newDatasetEventBuilder()
+            .eventTime(now)
+            .dataset(
+                ol.newStaticDataset(
+                    "ns",
+                    "ds",
+                    ol.newDatasetFacetsBuilder()
+                        .documentation(ol.newDocumentationDatasetFacet("foo"))
+                        .build()))
+            .build();
+
+    String json = mapper.writeValueAsString(datasetEvent);
+    DatasetEvent read = mapper.readValue(json, DatasetEvent.class);
+
+    assertEquals("ns", read.getDataset().getNamespace());
+    assertEquals("ds", read.getDataset().getName());
+    assertEquals(now, read.getEventTime());
+    assertEquals("foo", read.getDataset().getFacets().getDocumentation().getDescription());
+  }
+
+  @Test
+  void jsonDatasetEventDeleteFacet() throws JsonProcessingException {
+    ZonedDateTime now = ZonedDateTime.now(ZoneId.of("UTC"));
+    URI producer = URI.create("producer");
+    OpenLineage ol = new OpenLineage(producer);
+    final String documentation = "documentation";
+
+    DatasetEvent datasetEvent =
+        ol.newDatasetEventBuilder()
+            .eventTime(now)
+            .dataset(
+                ol.newStaticDataset(
+                    "ns",
+                    "ds",
+                    ol.newDatasetFacetsBuilder()
+                        .put(documentation, ol.newDocumentationDatasetFacet("foo"))
+                        .build()))
+            .build();
+
+    assertNull(
+        datasetEvent
+            .getDataset()
+            .getFacets()
+            .getAdditionalProperties()
+            .get(documentation)
+            .get_deleted());
+
+    String json1 = mapper.writeValueAsString(datasetEvent);
+    DatasetEvent read1 = mapper.readValue(json1, DatasetEvent.class);
+    assertNull(read1.getDataset().getFacets().getDocumentation().get_deleted());
+
+    datasetEvent
+        .getDataset()
+        .getFacets()
+        .getAdditionalProperties()
+        .put(documentation, ol.newDeletedDatasetFacet());
+
+    String json = mapper.writeValueAsString(datasetEvent);
+    DatasetEvent read = mapper.readValue(json, DatasetEvent.class);
+
+    assertEquals("ns", read.getDataset().getNamespace());
+    assertEquals("ds", read.getDataset().getName());
+    assertEquals(now, read.getEventTime());
+    assertEquals(Boolean.TRUE, read.getDataset().getFacets().getDocumentation().get_deleted());
+    assertEquals(Boolean.TRUE, read.getDataset().getFacets().getDocumentation().isDeleted());
+  }
+
+  @Test
+  void jsonJobEventSerialization() throws JsonProcessingException {
+    ZonedDateTime now = ZonedDateTime.now(ZoneId.of("UTC"));
+    URI producer = URI.create("producer");
+    OpenLineage ol = new OpenLineage(producer);
+    JobEvent jobEvent =
+        ol.newJobEventBuilder()
+            .eventTime(now)
+            .inputs(Collections.singletonList(ol.newInputDataset("ins", "input", null, null)))
+            .outputs(Collections.singletonList(ol.newOutputDataset("ous", "output", null, null)))
+            .job(ol.newJob("jns", "jname", null))
+            .build();
+
+    String json = mapper.writeValueAsString(jobEvent);
+    JobEvent read = mapper.readValue(json, JobEvent.class);
+
+    assertEquals("ins", read.getInputs().get(0).getNamespace());
+    assertEquals("input", read.getInputs().get(0).getName());
+
+    assertEquals("ous", read.getOutputs().get(0).getNamespace());
+    assertEquals("output", read.getOutputs().get(0).getName());
+
+    assertEquals("jns", read.getJob().getNamespace());
+    assertEquals("jname", read.getJob().getName());
+    assertEquals(now, read.getEventTime());
   }
 
   String roundTrip(String value) throws JsonMappingException, JsonProcessingException {

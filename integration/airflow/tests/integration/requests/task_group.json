@@ -30,8 +30,7 @@
                 },
                 "task": {
                     "task_group": {
-                        "group_id": "transform_values",
-                        "tooltip": "Transform tooltip"
+                        "group_id": "transform_values"
                     }
                 }
             }
@@ -53,8 +52,7 @@
                 },
                 "task": {
                     "task_group": {
-                        "group_id": "transform_values",
-                        "tooltip": "Transform tooltip"
+                        "group_id": "transform_values"
                     }
                 }
             }

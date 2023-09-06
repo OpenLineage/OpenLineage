@@ -23,7 +23,7 @@ A library that integrates [Airflow `DAGs`]() with [OpenLineage](https://openline
 
 ## Requirements
 
-- [Python 3.7](https://www.python.org/downloads)
+- [Python 3.8](https://www.python.org/downloads)
 - [Airflow 2.1+](https://pypi.org/project/apache-airflow)
 
 ## Installation
@@ -114,6 +114,7 @@ suited to extract metadata from a particular operator (or operators).
 * `TrinoOperator`
 * `GreatExpectationsOperator`
 * `SFTPOperator`
+* `FTPFileTransmitOperator`
 * `PythonOperator`
 * `RedshiftDataOperator`, `RedshiftSQLOperator`
 * `SageMakerProcessingOperator`, `SageMakerProcessingOperatorAsync`
@@ -121,6 +122,7 @@ suited to extract metadata from a particular operator (or operators).
 * `SageMakerTransformOperator`, `SageMakerTransformOperatorAsync`
 * `S3CopyObjectExtractor`, `S3FileTransformExtractor`
 * `GCSToGCSOperator`
+* `DbtCloudRunJobOperator`
 
 SQL Operators utilize the SQL parser. There is an experimental SQL parser activated if you install [openlineage-sql](https://pypi.org/project/openlineage-sql) on your Airflow worker.
 
@@ -141,7 +143,7 @@ To ensure OpenLineage logging propagation to custom extractors you should use `s
 
 #### Default Extractor
 
-When you own operators' code this is not neccessary to provide custom extractors. You can also use Default Extractor's capability.
+When you own operators' code this is not necessary to provide custom extractors. You can also use Default Extractor's capability.
 
 In order to do that you should define at least one of two methods in operator:
 
@@ -197,6 +199,9 @@ Setting it in `great_expectations.yml` files isn't enough - the operator overrid
 
 To see an example of a working configuration, see [DAG](https://github.com/OpenLineage/OpenLineage/blob/main/integration/airflow/tests/integration/airflow/dags/greatexpectations_dag.py) and [Great Expectations configuration](https://github.com/OpenLineage/OpenLineage/tree/main/integration/airflow/tests/integration/data/great_expectations) in the integration tests.
 
+### Logging
+In addition to conventional logging approaches, the `openlineage-airflow` package provides an alternative way of configuring its logging behavior. By setting the `OPENLINEAGE_AIRFLOW_LOGGING` environment variable, you can establish the logging level for the `openlineage.airflow` and its child modules.
+
 ## Triggering Child Jobs
 Commonly, Airflow DAGs will trigger processes on remote systems, such as an Apache Spark or Apache
 Beam job. Those systems may have their own OpenLineage integrations and report their own
@@ -216,7 +221,7 @@ t1 = DataProcPySparkOperator(
     job_name=job_name,
     dataproc_pyspark_properties={
         'spark.driver.extraJavaOptions':
-            f"-javaagent:{jar}={os.environ.get('OPENLINEAGE_URL')}/api/v1/namespaces/{os.getenv('OPENLINEAGE_NAMESPACE', 'default')}/jobs/{job_name}/runs/{{{{macros.OpenLineagePlugin.lineage_run_id(run_id, task)}}}}?api_key={os.environ.get('OPENLINEAGE_API_KEY')}"
+            f"-javaagent:{jar}={os.environ.get('OPENLINEAGE_URL')}/api/v1/namespaces/{os.getenv('OPENLINEAGE_NAMESPACE', 'default')}/jobs/{job_name}/runs/{{{{macros.OpenLineagePlugin.lineage_run_id(task, task_instance)}}}}?api_key={os.environ.get('OPENLINEAGE_API_KEY')}"
         dag=dag)
 ```
 
@@ -260,7 +265,7 @@ $ AIRFLOW_IMAGE=<name-of-airflow-image> ./tests/integration/docker/up.sh
 ```
 
 ```bash
-$ AIRFLOW_IMAGE=apache/airflow:2.3.1-python3.7 ./tests/integration/docker/up.sh
+$ AIRFLOW_IMAGE=apache/airflow:2.3.1-python3.8 ./tests/integration/docker/up.sh
 ```
 
 When using `run-dev-airflow.sh`, you can add the `-i` flag or `--attach-integration` flag to run integration tests in a dev environment.

@@ -10,6 +10,7 @@ import io.openlineage.flink.tracker.OpenLineageContinousJobTrackerFactory;
 import io.openlineage.flink.visitor.lifecycle.FlinkExecutionContext;
 import io.openlineage.flink.visitor.lifecycle.FlinkExecutionContextFactory;
 import java.lang.reflect.Field;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -17,16 +18,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nullable;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.dag.Transformation;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.execution.DetachedJobExecutionResult;
 import org.apache.flink.core.execution.JobClient;
 import org.apache.flink.core.execution.JobListener;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.graph.StreamGraphGenerator;
 
 /**
  * Flink Listener registered within Flink Application which gets notified when application is
@@ -34,28 +39,81 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
  * status and collect information (like checkpoints) from the running application.
  */
 @Slf4j
+@Builder
 public class OpenLineageFlinkJobListener implements JobListener {
 
+  public static final String DEFAULT_JOB_NAMESPACE = "flink_jobs";
+
+  /** Default duration between REST API calls for checkpoint stats. */
+  static final Duration DEFAULT_TRACKING_INTERVAL = Duration.ofSeconds(10);
+
   private final StreamExecutionEnvironment executionEnvironment;
-  private final OpenLineageContinousJobTracker openLineageContinousJobTracker;
+  private final OpenLineageContinousJobTracker jobTracker;
+  private final String jobNamespace;
+  private final String jobName;
+  private final Duration jobTrackingInterval;
   private final Map<JobID, FlinkExecutionContext> jobContexts = new HashMap<>();
 
-  public OpenLineageFlinkJobListener(StreamExecutionEnvironment executionEnvironment) {
-    this(
-        executionEnvironment,
-        OpenLineageContinousJobTrackerFactory.getTracker(executionEnvironment.getConfiguration()));
+  public static OpenLineageFlinkJobListenerBuilder builder() {
+    return new OpenLineageFlinkJobListenerInternalBuilder();
   }
 
-  public OpenLineageFlinkJobListener(
-      StreamExecutionEnvironment executionEnvironment,
-      OpenLineageContinousJobTracker continousJobTracker) {
-    this.executionEnvironment = executionEnvironment;
-    this.openLineageContinousJobTracker = continousJobTracker;
-    makeTransformationsArchivedList(executionEnvironment);
+  static class OpenLineageFlinkJobListenerInternalBuilder
+      extends OpenLineageFlinkJobListenerBuilder {
+    @Override
+    public OpenLineageFlinkJobListener build() {
+      Validate.notNull(super.executionEnvironment, "StreamExecutionEnvironment has to be provided");
+
+      if (super.jobNamespace == null) {
+        super.jobNamespace(DEFAULT_JOB_NAMESPACE);
+      }
+
+      if (super.jobName == null) {
+        super.jobName(StreamGraphGenerator.DEFAULT_STREAMING_JOB_NAME);
+      }
+
+      if (super.jobTrackingInterval == null) {
+        super.jobTrackingInterval(DEFAULT_TRACKING_INTERVAL);
+      }
+
+      if (super.jobTracker == null) {
+        super.jobTracker(
+            OpenLineageContinousJobTrackerFactory.getTracker(
+                super.executionEnvironment.getConfiguration(), super.jobTrackingInterval));
+      }
+
+      return super.build();
+    }
+
+    @Override
+    public OpenLineageFlinkJobListenerBuilder executionEnvironment(
+        StreamExecutionEnvironment executionEnvironment) {
+      super.executionEnvironment(executionEnvironment);
+      makeTransformationsArchivedList(executionEnvironment);
+      return this;
+    }
+
+    private void makeTransformationsArchivedList(StreamExecutionEnvironment executionEnvironment) {
+      try {
+        Field transformations =
+            FieldUtils.getField(StreamExecutionEnvironment.class, "transformations", true);
+        ArrayList<Transformation<?>> previousTransformationList =
+            (ArrayList<Transformation<?>>)
+                FieldUtils.readField(transformations, executionEnvironment, true);
+        List<Transformation<?>> transformationList =
+            new ArchivedList<>(
+                Optional.ofNullable(previousTransformationList).orElse(new ArrayList<>()));
+        FieldUtils.writeField(transformations, executionEnvironment, transformationList, true);
+      } catch (IllegalAccessException e) {
+        log.error("Failed to rewrite transformations");
+      }
+    }
   }
 
   @Override
   public void onJobSubmitted(@Nullable JobClient jobClient, @Nullable Throwable throwable) {
+    log.info("onJobSubmitted event triggered for {}.{}", jobNamespace, jobName);
+
     if (jobClient == null) {
       return;
     }
@@ -76,14 +134,17 @@ public class OpenLineageFlinkJobListener implements JobListener {
               .getValue();
 
       FlinkExecutionContext context =
-          FlinkExecutionContextFactory.getContext(jobClient.getJobID(), transformations);
+          FlinkExecutionContextFactory.getContext(
+              (Configuration) executionEnvironment.getConfiguration(),
+              jobNamespace,
+              jobName,
+              jobClient.getJobID(),
+              transformations);
 
       jobContexts.put(jobClient.getJobID(), context);
       context.onJobSubmitted();
-      log.info("Job submitted");
 
-      log.info("OpenLineageContinousJobTracker is starting");
-      openLineageContinousJobTracker.startTracking(context);
+      jobTracker.startTracking(context);
     } catch (IllegalAccessException e) {
       log.error("Can't access the field. ", e);
     }
@@ -92,7 +153,9 @@ public class OpenLineageFlinkJobListener implements JobListener {
   @Override
   public void onJobExecuted(
       @Nullable JobExecutionResult jobExecutionResult, @Nullable Throwable throwable) {
+    log.info("onJobExecuted event triggered for {}.{}", jobNamespace, jobName);
     try {
+      jobTracker.stopTracking();
       finish(jobExecutionResult, throwable);
     } catch (Exception | NoClassDefFoundError | NoSuchFieldError e) {
       log.error("Failed to notify OpenLineage about complete", e);
@@ -117,22 +180,6 @@ public class OpenLineageFlinkJobListener implements JobListener {
             jobContexts.entrySet().stream().findFirst().get();
         jobContexts.remove(entry.getKey()).onJobFailed(throwable);
       }
-    }
-  }
-
-  private void makeTransformationsArchivedList(StreamExecutionEnvironment executionEnvironment) {
-    try {
-      Field transformations =
-          FieldUtils.getField(StreamExecutionEnvironment.class, "transformations", true);
-      ArrayList<Transformation<?>> previousTransformationList =
-          (ArrayList<Transformation<?>>)
-              FieldUtils.readField(transformations, executionEnvironment, true);
-      List<Transformation<?>> transformationList =
-          new ArchivedList<>(
-              Optional.ofNullable(previousTransformationList).orElse(new ArrayList<>()));
-      FieldUtils.writeField(transformations, executionEnvironment, transformationList, true);
-    } catch (IllegalAccessException e) {
-      log.error("Failed to rewrite transformations");
     }
   }
 

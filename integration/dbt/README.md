@@ -11,7 +11,7 @@ Wrapper script for automatic metadata collection from dbt
 
 ## Requirements
 
-- [Python >= 3.7](https://www.python.org/downloads)
+- [Python >= 3.8](https://www.python.org/downloads)
 - [dbt >= 0.20](https://www.getdbt.com/)
 
 Right now, `openlineage-dbt` only supports `bigquery`, `snowflake`, `spark` and `redshift` dbt adapters.
@@ -41,6 +41,12 @@ The OpenLineage client depends on environment variables:
 * `OPENLINEAGE_API_KEY` - set if consumer of OpenLineage events requires `Bearer` authentication key
 * `OPENLINEAGE_NAMESPACE` - set if you are using something other than the `default` namespace for job namespace.
 
+
+### Logging
+
+In addition to conventional logging approaches, the OpenLineage dbt wrapper script provides an alternative way of configuring its logging behavior. By setting the `OPENLINEAGE_DBT_LOGGING` environment variable, you can establish the logging level for the `openlineage.dbt` and its child modules.
+
+You can also set log level of `dbtol` which is deprecated.
 
 ## Usage
 

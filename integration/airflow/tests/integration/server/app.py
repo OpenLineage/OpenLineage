@@ -26,12 +26,12 @@ logger = logging.getLogger(__name__)
 
 """
 Simple service that does receive POST requests with OpenLineage events
-and, upon /check call, compares them with expected events stored in 
+and, upon /check call, compares them with expected events stored in
 file that was provided during build process.
 
 Events are matched by job name and event type.
 
-The comparison omits fields that are not in event stored in provided file. 
+The comparison omits fields that are not in event stored in provided file.
 """
 
 

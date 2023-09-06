@@ -5,14 +5,9 @@
 
 package io.openlineage.client.transports;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 
-@JsonSubTypes({
-  @JsonSubTypes.Type(value = ConsoleConfig.class, name = "console"),
-  @JsonSubTypes.Type(value = HttpConfig.class, name = "http"),
-  @JsonSubTypes.Type(value = KafkaConfig.class, name = "kafka"),
-  @JsonSubTypes.Type(value = KinesisConfig.class, name = "kinesis"),
-})
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
+@JsonTypeInfo(use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "type")
+@JsonTypeIdResolver(TransportConfigTypeIdResolver.class)
 public interface TransportConfig {}

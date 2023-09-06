@@ -37,8 +37,32 @@ export DBT_DATASET_PREFIX=$(echo "$AIRFLOW_VERSION" | tr "-" "_" | tr "." "_")_d
 # just a hack to have same docker-compose for dev and CI env
 export PWD='.'
 
+# Add commit ID to the BIGQUERY_PREFIX variable
+# to avoid concurrent table update issue
+COMMIT_ID=$(git rev-parse HEAD 2>/dev/null)
+if [[ -n "${COMMIT_ID}" ]]; then
+  BIGQUERY_PREFIX="${BIGQUERY_PREFIX}_${COMMIT_ID}"
+fi
+
+# Bring down any existing containers and volumes
 docker-compose -f tests/docker-compose.yml down -v
+
+# Build the images
 docker-compose -f tests/docker-compose.yml build
+
+# Run the integration tests
+set +e
 docker-compose -f tests/docker-compose.yml run integration
-docker-compose -f tests/docker-compose.yml logs > tests/airflow/logs/docker.log
-docker-compose -f tests/docker-compose.yml down
+exit_code=$?
+set -e
+
+# Save the container logs to a file, if the integration test failed
+if [ $exit_code -ne 0 ]; then
+  docker-compose -f tests/docker-compose.yml logs > tests/airflow/logs/docker.log
+fi
+
+# Bring down the containers and volumes
+docker-compose -f tests/docker-compose.yml down -v
+
+# Exit with the exit code of the integration test
+exit $exit_code

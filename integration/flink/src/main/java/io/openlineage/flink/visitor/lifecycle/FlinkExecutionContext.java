@@ -8,6 +8,7 @@ package io.openlineage.flink.visitor.lifecycle;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
+import io.openlineage.client.OpenLineage.RunEventBuilder;
 import io.openlineage.flink.SinkLineage;
 import io.openlineage.flink.TransformationUtils;
 import io.openlineage.flink.api.OpenLineageContext;
@@ -18,9 +19,13 @@ import io.openlineage.flink.visitor.VisitorFactory;
 import io.openlineage.flink.visitor.VisitorFactoryImpl;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -29,32 +34,25 @@ import org.apache.flink.api.common.JobID;
 import org.apache.flink.api.dag.Transformation;
 
 @Slf4j
+@Builder
 public class FlinkExecutionContext implements ExecutionContext {
 
   @Getter private final JobID jobId;
-
-  private final UUID runId;
-
-  private final EventEmitter eventEmitter;
-  private final OpenLineageContext openLineageContext;
+  protected final UUID runId;
+  protected final EventEmitter eventEmitter;
+  protected final OpenLineageContext openLineageContext;
+  private final String jobName;
+  private final String jobNamespace;
 
   @Getter private final List<Transformation<?>> transformations;
-
-  public FlinkExecutionContext(JobID jobId, List<Transformation<?>> transformations) {
-    this.jobId = jobId;
-    this.runId = UUID.randomUUID();
-    this.transformations = transformations;
-    this.eventEmitter = new EventEmitter();
-    this.openLineageContext =
-        OpenLineageContext.builder()
-            .openLineage(new OpenLineage(EventEmitter.OPEN_LINEAGE_CLIENT_URI))
-            .build();
-  }
 
   @Override
   public void onJobSubmitted() {
     log.debug("JobClient - jobId: {}", jobId);
-    RunEvent runEvent = buildEventForEventType(EventType.START).build();
+    RunEvent runEvent =
+        buildEventForEventType(EventType.START)
+            .run(new OpenLineage.RunBuilder().runId(runId).build())
+            .build();
     log.debug("Posting event for onJobSubmitted {}: {}", jobId, runEvent);
     eventEmitter.emit(runEvent);
   }
@@ -76,33 +74,29 @@ public class FlinkExecutionContext implements ExecutionContext {
 
   public OpenLineage.RunEventBuilder buildEventForEventType(EventType eventType) {
     TransformationUtils converter = new TransformationUtils();
+
     List<SinkLineage> sinkLineages = converter.convertToVisitable(transformations);
 
     VisitorFactory visitorFactory = new VisitorFactoryImpl();
     List<OpenLineage.InputDataset> inputDatasets = new ArrayList<>();
     List<OpenLineage.OutputDataset> outputDatasets = new ArrayList<>();
 
+    Set<Object> sources = new HashSet<>();
     for (var lineage : sinkLineages) {
-      inputDatasets.addAll(getInputDatasets(visitorFactory, lineage.getSources()));
+      sources.addAll(lineage.getSources());
       outputDatasets.addAll(getOutputDatasets(visitorFactory, lineage.getSink()));
     }
+    inputDatasets.addAll(getInputDatasets(visitorFactory, Arrays.asList(sources.toArray())));
 
-    return openLineageContext
-        .getOpenLineage()
-        .newRunEventBuilder()
-        .inputs(inputDatasets)
-        .outputs(outputDatasets)
-        .eventType(eventType);
+    return commonEventBuilder().inputs(inputDatasets).outputs(outputDatasets).eventType(eventType);
   }
 
   @Override
   public void onJobCompleted(JobExecutionResult jobExecutionResult) {
     OpenLineage openLineage = openLineageContext.getOpenLineage();
     eventEmitter.emit(
-        openLineage
-            .newRunEventBuilder()
+        commonEventBuilder()
             .run(openLineage.newRun(runId, null))
-            .eventTime(ZonedDateTime.now())
             .eventType(EventType.COMPLETE)
             .build());
   }
@@ -111,8 +105,7 @@ public class FlinkExecutionContext implements ExecutionContext {
   public void onJobFailed(Throwable failed) {
     OpenLineage openLineage = openLineageContext.getOpenLineage();
     eventEmitter.emit(
-        openLineage
-            .newRunEventBuilder()
+        commonEventBuilder()
             .run(
                 openLineage.newRun(
                     runId,
@@ -122,9 +115,22 @@ public class FlinkExecutionContext implements ExecutionContext {
                             openLineage.newErrorMessageRunFacet(
                                 failed.getMessage(), "JAVA", ExceptionUtils.getStackTrace(failed)))
                         .build()))
-            .eventTime(ZonedDateTime.now())
             .eventType(EventType.FAIL)
+            .eventTime(ZonedDateTime.now())
             .build());
+  }
+
+  /**
+   * Builds common elements of Openlineage events constructed.
+   *
+   * @return
+   */
+  private RunEventBuilder commonEventBuilder() {
+    OpenLineage openLineage = openLineageContext.getOpenLineage();
+    return openLineage
+        .newRunEventBuilder()
+        .job(openLineage.newJob(jobNamespace, jobName, null))
+        .eventTime(ZonedDateTime.now());
   }
 
   private List<OpenLineage.InputDataset> getInputDatasets(

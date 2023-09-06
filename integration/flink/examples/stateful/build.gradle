@@ -5,10 +5,10 @@ plugins {
     id 'signing'
     id 'jacoco'
     id "com.adarshr.test-logger" version "3.2.0"
-    id 'com.diffplug.spotless' version '6.14.0'
+    id 'com.diffplug.spotless' version '6.21.0'
     id "com.github.johnrengelman.shadow" version "7.1.2"
     id "pmd"
-    id "com.github.davidmc24.gradle.plugin.avro" version "1.5.0"
+    id "com.github.davidmc24.gradle.plugin.avro" version "1.8.0"
 }
 
 pmd {
@@ -52,9 +52,8 @@ shadowJar {
 ext {
     flinkVersion = project.getProperty('flink.version')
     flinkVersionShort = flinkVersion.substring(0,4)
-    flinkVersionWithScala212 = flinkVersion.contains('1.14') ? "_2.12:$flinkVersion" : ":$flinkVersion"
     hadoopVersion = '3.3.1'
-    icebergVersion = "1.1.0"
+    icebergVersion = "1.3.0"
 }
 
 dependencies {
@@ -64,32 +63,32 @@ dependencies {
         exclude module: 'log4j'
     }
 
-    testRuntimeOnly "org.junit.jupiter:junit-jupiter:5.9.2"
-    testCompileOnly 'org.codehaus.groovy:groovy-all:3.0.14'
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter:5.10.0"
+    testCompileOnly 'org.codehaus.groovy:groovy-all:3.0.19'
     testImplementation 'org.spockframework:spock-core:2.3-groovy-4.0'
-    testImplementation 'org.awaitility:awaitility:4.2.0'
+    implementation 'org.awaitility:awaitility:4.2.0'
 
     implementation("io.openlineage:openlineage-java:$project.version")
-    implementation "org.apache.flink:flink-java:$flinkVersion"
-    implementation "org.apache.flink:flink-streaming-java$flinkVersionWithScala212"
-    implementation "org.apache.flink:flink-runtime-web$flinkVersionWithScala212"
-    implementation "org.apache.flink:flink-core:$flinkVersion"
+    compileOnly "org.apache.flink:flink-java:$flinkVersion"
+    compileOnly "org.apache.flink:flink-streaming-java:$flinkVersion"
+    compileOnly "org.apache.flink:flink-runtime-web:$flinkVersion"
+    compileOnly "org.apache.flink:flink-core:$flinkVersion"
     implementation "org.apache.flink:flink-runtime:$flinkVersion"
-    implementation "org.apache.flink:flink-connector-kafka$flinkVersionWithScala212"
+    implementation "org.apache.flink:flink-connector-kafka:$flinkVersion"
     implementation "org.apache.flink:flink-avro-confluent-registry:$flinkVersion"
     implementation "org.apache.flink:flink-avro:$flinkVersion"
-    implementation "org.apache.flink:flink-table:$flinkVersion"
-    implementation "org.apache.flink:flink-table-api-java:$flinkVersion"
-    implementation "org.apache.flink:flink-table-api-java-bridge$flinkVersionWithScala212"
-    implementation "org.apache.flink:flink-table-common:$flinkVersion"
-    implementation "org.apache.flink:flink-table-runtime$flinkVersionWithScala212"
-    implementation "org.apache.flink:flink-table-planner_2.12:$flinkVersion"
+    compileOnly "org.apache.flink:flink-table:$flinkVersion"
+    compileOnly "org.apache.flink:flink-table-api-java:$flinkVersion"
+    compileOnly "org.apache.flink:flink-table-api-java-bridge:$flinkVersion"
+    compileOnly "org.apache.flink:flink-table-common:$flinkVersion"
+    compileOnly "org.apache.flink:flink-table-runtime:$flinkVersion"
+    compileOnly "org.apache.flink:flink-table-planner_2.12:$flinkVersion"
 
     implementation "com.typesafe:config:1.4.2"
-    implementation "org.apache.avro:avro:1.11.1"
-    implementation 'io.confluent:kafka-schema-registry-client:7.3.1'
-    implementation 'io.confluent:kafka-avro-serializer:7.3.1'
-    implementation 'com.github.davidmc24.gradle.plugin:gradle-avro-plugin:1.5.0'
+    implementation "org.apache.avro:avro:1.11.2"
+    implementation 'io.confluent:kafka-avro-serializer:7.5.0'
+    implementation 'io.confluent:kafka-schema-registry-client:7.5.0'
+    implementation 'com.github.davidmc24.gradle.plugin:gradle-avro-plugin:1.8.0'
     implementation "org.apache.hadoop:hadoop-hdfs:$hadoopVersion"
     implementation "org.apache.hadoop:hadoop-common:$hadoopVersion"
     implementation("org.apache.hadoop:hadoop-minicluster:$hadoopVersion") {
@@ -97,7 +96,6 @@ dependencies {
     }
     implementation "org.apache.avro:avro"
 
-    compileOnly "org.apache.iceberg:iceberg-flink:$icebergVersion"
     implementation "org.apache.iceberg:iceberg-flink-runtime-$flinkVersionShort:$icebergVersion"
 }
 

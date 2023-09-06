@@ -10,7 +10,7 @@ from setuptools import find_namespace_packages, setup
 with open("README.md") as readme_file:
     readme = readme_file.read()
 
-__version__ = "0.21.0"
+__version__ = "1.2.0"
 
 requirements = [
     "attrs>=19.3.0",
@@ -40,6 +40,7 @@ extras_require = {
     "tests": [
         "pytest",
         "pytest-cov",
+        "pytest-mock",
         "mock",
         "ruff",
         "pandas",
@@ -68,7 +69,7 @@ setup(
     include_package_data=True,
     install_requires=requirements,
     extras_require=extras_require,
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     zip_safe=False,
     keywords="openlineage",
 )

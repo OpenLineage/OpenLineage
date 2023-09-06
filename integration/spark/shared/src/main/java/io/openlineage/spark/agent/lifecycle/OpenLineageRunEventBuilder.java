@@ -28,6 +28,7 @@ import io.openlineage.client.OpenLineage.RunFacets;
 import io.openlineage.client.OpenLineage.RunFacetsBuilder;
 import io.openlineage.spark.agent.hooks.HookUtils;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageUtils;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import io.openlineage.spark.agent.util.FacetUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -149,6 +150,7 @@ class OpenLineageRunEventBuilder {
 
   @NonNull private final Collection<CustomFacetBuilder<?, ? extends RunFacet>> runFacetBuilders;
   @NonNull private final Collection<CustomFacetBuilder<?, ? extends JobFacet>> jobFacetBuilders;
+  @NonNull private final Collection<ColumnLevelLineageVisitor> columnLineageVisitors;
 
   private final UnknownEntryFacetListener unknownEntryFacetListener =
       UnknownEntryFacetListener.getInstance();
@@ -166,7 +168,8 @@ class OpenLineageRunEventBuilder {
         factory.createInputDatasetFacetBuilders(context),
         factory.createOutputDatasetFacetBuilders(context),
         factory.createRunFacetBuilders(context),
-        factory.createJobFacetBuilders(context));
+        factory.createJobFacetBuilders(context),
+        factory.createColumnLevelLineageVisitors(context));
   }
 
   /**
@@ -178,7 +181,14 @@ class OpenLineageRunEventBuilder {
   void registerJob(ActiveJob job) {
     jobMap.put(job.jobId(), job);
     stageMap.put(job.finalStage().id(), job.finalStage());
-    job.finalStage().parents().forall(toScalaFn(stage -> stageMap.put(stage.id(), stage)));
+    job.finalStage()
+        .parents()
+        .forall(
+            toScalaFn(
+                stage -> {
+                  stageMap.put(stage.id(), stage);
+                  return true;
+                }));
   }
 
   RunEvent buildRun(

@@ -14,11 +14,14 @@ import io.openlineage.client.OpenLineage.JobFacet;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.OutputDatasetFacet;
 import io.openlineage.client.OpenLineage.RunFacet;
+import io.openlineage.spark.agent.facets.builder.CustomEnvironmentFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.DatabricksEnvironmentFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.ErrorFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.LogicalPlanRunFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.OutputStatisticsOutputDatasetFacetBuilder;
+import io.openlineage.spark.agent.facets.builder.SparkPropertyFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.SparkVersionFacetBuilder;
+import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
 import io.openlineage.spark.api.CustomFacetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.spark.api.OpenLineageEventHandlerFactory;
@@ -184,9 +187,12 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
             .add(
                 new ErrorFacetBuilder(),
                 new LogicalPlanRunFacetBuilder(context),
-                new SparkVersionFacetBuilder(context));
+                new SparkVersionFacetBuilder(context),
+                new SparkPropertyFacetBuilder(context));
     if (DatabricksEnvironmentFacetBuilder.isDatabricksRuntime()) {
-      listBuilder.add(new DatabricksEnvironmentFacetBuilder());
+      listBuilder.add(new DatabricksEnvironmentFacetBuilder(context));
+    } else if (context.getCustomEnvironmentVariables() != null) {
+      listBuilder.add(new CustomEnvironmentFacetBuilder(context));
     }
     return listBuilder.build();
   }
@@ -195,5 +201,21 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
   public List<CustomFacetBuilder<?, ? extends JobFacet>> createJobFacetBuilders(
       OpenLineageContext context) {
     return generate(eventHandlerFactories, factory -> factory.createJobFacetBuilders(context));
+  }
+
+  @Override
+  public List<ColumnLevelLineageVisitor> createColumnLevelLineageVisitors(
+      OpenLineageContext context) {
+    ImmutableList visitors =
+        ImmutableList.builder()
+            .addAll(
+                generate(
+                    eventHandlerFactories,
+                    factory -> factory.createColumnLevelLineageVisitors(context)))
+            .addAll(
+                DatasetBuilderFactoryProvider.getInstance().getColumnLevelLineageVisitors(context))
+            .build();
+    context.getColumnLevelLineageVisitors().addAll(visitors);
+    return visitors;
   }
 }

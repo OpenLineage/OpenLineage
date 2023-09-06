@@ -8,9 +8,9 @@
 set -e
 
 # Manylinux image has multiple "pythons" - in /opt/python directory.
-# We use Python 3.7, since it's the lowest we want to use
+# We use Python 3.8, since it's the lowest we want to use
 # and create local virtualenv - it's easier to proceed in venv than use python behind long absolute path
-/opt/python/cp37-cp37m/bin/python -m venv .env
+/opt/python/cp38-cp38/bin/python -m venv .env
 source .env/bin/activate
 
 # Maturin is build tool that we're using. It can build python wheels based on standard Rust Cargo.toml.
@@ -26,11 +26,13 @@ export CARGO_INCREMENTAL=0
 # Run test if indicated to do so.
 if [[ $RUN_TESTS = true ]]; then
   cargo test --no-default-features
+  cargo clippy --all-targets --all-features -- -D warnings
+  cargo fmt -- --check
 fi
 
 # Build release wheels
 cd iface-py
-maturin build --sdist --out target/wheels
+maturin build --sdist --out target/wheels --release --strip
 
 # Verify that it imports properly
 python -m pip install openlineage-sql --no-index --find-links target/wheels --force-reinstall
