@@ -118,6 +118,64 @@ class NestingObject:
     optional: int | None = attr.ib(default=None)
 
 
+@attr.s
+class ListOfStrings:
+    values: list[str] = attr.ib()
+
+
+@attr.s
+class NestedListOfStrings:
+    nested: list[ListOfStrings] = attr.ib()
+
+
+def test_serde_list_of_strings() -> None:
+    assert (
+        Serde.to_json(
+            ListOfStrings(
+                values=["str_1", "str_2", "str_3"],
+            ),
+        )
+        == '{"values": ["str_1", "str_2", "str_3"]}'
+    )
+
+    assert (
+        Serde.to_json(
+            NestingObject(
+                nested=[
+                    NestedObject(),
+                ],
+            ),
+        )
+        == '{"nested": []}'
+    )
+
+
+def test_serde_nested_list_of_strings() -> None:
+    assert (
+        Serde.to_json(
+            NestedListOfStrings(
+                nested=[
+                    ListOfStrings(values=["str_1", "str_2", "str_3"]),
+                    ListOfStrings(values=["str_a", "str_b", "str_c"]),
+                ],
+            ),
+        )
+        == '{"nested": [{"values": ["str_1", "str_2", "str_3"]}, '
+        '{"values": ["str_a", "str_b", "str_c"]}]}'
+    )
+
+    assert (
+        Serde.to_json(
+            NestingObject(
+                nested=[
+                    NestedObject(),
+                ],
+            ),
+        )
+        == '{"nested": []}'
+    )
+
+
 def test_serde_nested_nulls() -> None:
     assert (
         Serde.to_json(
