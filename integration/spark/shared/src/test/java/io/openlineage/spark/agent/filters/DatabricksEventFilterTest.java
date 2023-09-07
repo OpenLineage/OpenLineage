@@ -7,6 +7,7 @@ package io.openlineage.spark.agent.filters;
 
 import static io.openlineage.spark.agent.util.DatabricksUtils.SPARK_DATABRICKS_WORKSPACE_URL;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -14,10 +15,12 @@ import static org.mockito.Mockito.when;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Optional;
 import org.apache.spark.scheduler.SparkListenerEvent;
+import org.apache.spark.sql.catalyst.plans.logical.SerializeFromObject;
 import org.apache.spark.sql.execution.QueryExecution;
 import org.apache.spark.sql.execution.WholeStageCodegenExec;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import scala.collection.Seq$;
 
 public class DatabricksEventFilterTest {
 
@@ -26,6 +29,7 @@ public class DatabricksEventFilterTest {
   DatabricksEventFilter filter = new DatabricksEventFilter(context);
   QueryExecution queryExecution = mock(QueryExecution.class, RETURNS_DEEP_STUBS);
   WholeStageCodegenExec node = mock(WholeStageCodegenExec.class);
+  SparkListenerEvent sparkListenerEvent = mock(SparkListenerEvent.class);
 
   @BeforeEach
   public void setup() {
@@ -49,8 +53,17 @@ public class DatabricksEventFilterTest {
   }
 
   @Test
+  public void testSerializeFromObjectIsDisabled() {
+    SerializeFromObject serializeFromObject = mock(SerializeFromObject.class);
+    when(serializeFromObject.collectLeaves()).thenReturn(Seq$.MODULE$.empty());
+    when(queryExecution.optimizedPlan()).thenReturn(serializeFromObject);
+
+    assertTrue(filter.isDisabled(sparkListenerEvent));
+  }
+
+  @Test
   public void testDatabricksEventIsFilteredWithoutUnderscore() {
-    when(node.nodeName()).thenReturn("shownamespaces");
+    when(node.nodeName()).thenReturn("collectlimit");
     assertThat(filter.isDisabled(event)).isTrue();
   }
 
