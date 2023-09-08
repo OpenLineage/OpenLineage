@@ -6,6 +6,7 @@
 package io.openlineage.spark.agent.util;
 
 import com.google.common.base.CharMatcher;
+import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.sql.DbTableMeta;
 import io.openlineage.sql.ExtractionError;
 import io.openlineage.sql.OpenLineageSql;

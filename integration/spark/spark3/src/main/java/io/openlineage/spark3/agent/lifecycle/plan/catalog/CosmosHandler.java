@@ -5,7 +5,7 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan.catalog;
 
-import io.openlineage.spark.agent.util.DatasetIdentifier;
+import io.openlineage.client.utils.DatasetIdentifier;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 

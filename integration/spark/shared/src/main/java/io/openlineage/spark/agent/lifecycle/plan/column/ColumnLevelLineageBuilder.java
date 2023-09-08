@@ -10,7 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.ColumnLineageDatasetFacetFields;
 import io.openlineage.client.OpenLineageClientUtils;
-import io.openlineage.spark.agent.util.DatasetIdentifier;
+import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.api.OpenLineageContext;
 import io.openlineage.sql.ColumnMeta;
 import java.util.Arrays;

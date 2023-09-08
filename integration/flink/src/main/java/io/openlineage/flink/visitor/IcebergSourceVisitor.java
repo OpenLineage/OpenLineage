@@ -6,7 +6,8 @@
 package io.openlineage.flink.visitor;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.flink.api.DatasetIdentifier;
+import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.DatasetIdentifierUtils;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.utils.IcebergUtils;
 import io.openlineage.flink.visitor.wrapper.IcebergSourceWrapper;
@@ -37,7 +38,8 @@ public class IcebergSourceVisitor extends Visitor<OpenLineage.InputDataset> {
 
   private OpenLineage.InputDataset getDataset(OpenLineageContext context, Table table) {
     OpenLineage openLineage = context.getOpenLineage();
-    DatasetIdentifier datasetIdentifier = DatasetIdentifier.fromUri(URI.create(table.location()));
+    DatasetIdentifier datasetIdentifier =
+        DatasetIdentifierUtils.fromURI(URI.create(table.location()));
     return openLineage
         .newInputDatasetBuilder()
         .name(datasetIdentifier.getName())

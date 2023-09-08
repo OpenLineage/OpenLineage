@@ -8,7 +8,6 @@ package io.openlineage.client.utils;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import io.openlineage.utils.DatasetIdentifierUtils;
 import java.net.URI;
 import java.net.URISyntaxException;
 import lombok.SneakyThrows;
@@ -23,56 +22,65 @@ public class DatasetIdentifierUtilsTest {
   @Test
   void testFromURI() throws URISyntaxException {
     URI uri1 = new URI("file:///home/test");
-    assertThat(DatasetIdentifierUtils.nameFromURI(uri1)).isEqualTo(HOME_TEST);
-    assertThat(DatasetIdentifierUtils.namespaceFromURI(uri1)).isEqualTo(FILE);
+    assertThat(DatasetIdentifierUtils.fromURI(uri1))
+        .hasFieldOrPropertyWithValue("name", HOME_TEST)
+        .hasFieldOrPropertyWithValue("namespace", FILE);
 
     URI uri2 = new URI(null, null, HOME_TEST, null);
-    assertThat(DatasetIdentifierUtils.nameFromURI(uri2, FILE)).isEqualTo(HOME_TEST);
-    assertThat(DatasetIdentifierUtils.namespaceFromURI(uri2, FILE)).isEqualTo(FILE);
+    assertThat(DatasetIdentifierUtils.fromURI(uri2))
+        .hasFieldOrPropertyWithValue("name", HOME_TEST)
+        .hasFieldOrPropertyWithValue("namespace", FILE);
 
     URI uri3 = new URI("hdfs", null, "localhost", 8020, HOME_TEST, null, null);
-    assertThat(DatasetIdentifierUtils.nameFromURI(uri3, FILE)).isEqualTo(HOME_TEST);
-    assertThat(DatasetIdentifierUtils.namespaceFromURI(uri3, FILE))
-        .isEqualTo("hdfs://localhost:8020");
+    assertThat(DatasetIdentifierUtils.fromURI(uri3))
+        .hasFieldOrPropertyWithValue("name", HOME_TEST)
+        .hasFieldOrPropertyWithValue("namespace", "hdfs://localhost:8020");
 
     URI uri4 = new URI("s3://data-bucket/path");
-    assertThat(DatasetIdentifierUtils.nameFromURI(uri4, FILE)).isEqualTo("path");
-    assertThat(DatasetIdentifierUtils.namespaceFromURI(uri4, FILE)).isEqualTo("s3://data-bucket");
+    assertThat(DatasetIdentifierUtils.fromURI(uri4))
+        .hasFieldOrPropertyWithValue("name", "path")
+        .hasFieldOrPropertyWithValue("namespace", "s3://data-bucket");
 
     URI uri5 = new URI("file:/home/test");
-    assertThat(DatasetIdentifierUtils.nameFromURI(uri5)).isEqualTo(HOME_TEST);
-    assertThat(DatasetIdentifierUtils.namespaceFromURI(uri5)).isEqualTo(FILE);
+    assertThat(DatasetIdentifierUtils.fromURI(uri5))
+        .hasFieldOrPropertyWithValue("name", HOME_TEST)
+        .hasFieldOrPropertyWithValue("namespace", FILE);
 
     URI uri6 = new URI("hdfs://namenode:8020/home/test");
-    assertThat(DatasetIdentifierUtils.nameFromURI(uri6)).isEqualTo(HOME_TEST);
-    assertThat(DatasetIdentifierUtils.namespaceFromURI(uri6)).isEqualTo("hdfs://namenode:8020");
+    assertThat(DatasetIdentifierUtils.fromURI(uri6))
+        .hasFieldOrPropertyWithValue("name", HOME_TEST)
+        .hasFieldOrPropertyWithValue("namespace", "hdfs://namenode:8020");
 
     URI uri7 = new URI("home/test");
-    assertThat(DatasetIdentifierUtils.nameFromURI(uri7)).isEqualTo("home/test");
-    assertThat(DatasetIdentifierUtils.namespaceFromURI(uri7)).isEqualTo(FILE);
+    assertThat(DatasetIdentifierUtils.fromURI(uri7))
+        .hasFieldOrPropertyWithValue("name", "home/test")
+        .hasFieldOrPropertyWithValue("namespace", FILE);
   }
 
   @Test
   @SneakyThrows
-  void testFromURIWithoutSchema() {
+  void testFromURIWithSchema() {
     URI uri = new URI(HOME_TEST);
-    assertThat(DatasetIdentifierUtils.nameFromURI(uri)).isEqualTo(HOME_TEST);
-    assertThat(DatasetIdentifierUtils.namespaceFromURI(uri)).isEqualTo(FILE);
+    assertThat(DatasetIdentifierUtils.fromURI(uri))
+        .hasFieldOrPropertyWithValue("name", HOME_TEST)
+        .hasFieldOrPropertyWithValue("namespace", FILE);
 
-    assertThat(DatasetIdentifierUtils.nameFromURI(uri, "hive")).isEqualTo(HOME_TEST);
-    assertThat(DatasetIdentifierUtils.namespaceFromURI(uri, "hive")).isEqualTo("hive");
+    assertThat(DatasetIdentifierUtils.fromURI(uri, "hive"))
+        .hasFieldOrPropertyWithValue("name", HOME_TEST)
+        .hasFieldOrPropertyWithValue("namespace", "hive");
   }
 
   @Test
   @SneakyThrows
   void testUriForAbsolutePathAndNoSchemaNorAuthority() {
-    URI uri2 = Mockito.mock(URI.class);
-    when(uri2.getScheme()).thenReturn(null);
-    when(uri2.getAuthority()).thenReturn(null);
-    when(uri2.getPath()).thenReturn("C:/home/test");
+    URI uri = Mockito.mock(URI.class);
+    when(uri.getScheme()).thenReturn(null);
+    when(uri.getAuthority()).thenReturn(null);
+    when(uri.getPath()).thenReturn("C:/home/test");
 
-    assertThat(DatasetIdentifierUtils.nameFromURI(uri2)).isEqualTo("C:/home/test");
-    assertThat(DatasetIdentifierUtils.namespaceFromURI(uri2)).isEqualTo(FILE);
+    assertThat(DatasetIdentifierUtils.fromURI(uri))
+        .hasFieldOrPropertyWithValue("name", "C:/home/test")
+        .hasFieldOrPropertyWithValue("namespace", FILE);
   }
 
   @Test
@@ -80,7 +88,8 @@ public class DatasetIdentifierUtilsTest {
   void testUriWithSlashAtTheEnd() {
     URI uri = new URI("s3://bucket/table/");
 
-    assertThat(DatasetIdentifierUtils.nameFromURI(uri)).isEqualTo("table");
-    assertThat(DatasetIdentifierUtils.namespaceFromURI(uri)).isEqualTo("s3://bucket");
+    assertThat(DatasetIdentifierUtils.fromURI(uri))
+        .hasFieldOrPropertyWithValue("name", "table")
+        .hasFieldOrPropertyWithValue("namespace", "s3://bucket");
   }
 }

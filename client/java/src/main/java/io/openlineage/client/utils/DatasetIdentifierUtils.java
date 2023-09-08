@@ -3,7 +3,7 @@
 /* SPDX-License-Identifier: Apache-2.0
 */
 
-package io.openlineage.utils;
+package io.openlineage.client.utils;
 
 import java.net.URI;
 import java.util.Optional;
@@ -23,33 +23,27 @@ public class DatasetIdentifierUtils {
   /** Pre-org.apache.hadoop.shaded.com.iled regular expressions to detect path formats. */
   private static final Pattern HAS_DRIVE_LETTER_SPECIFIER = Pattern.compile("^/?[a-zA-Z]:");
 
-  public static String nameFromURI(URI uri) {
-    return nameFromURI(uri, DEFAULT_SCHEME);
+  public static DatasetIdentifier fromURI(URI uri) {
+    return fromURI(uri, DEFAULT_SCHEME);
   }
 
-  public static String namespaceFromURI(URI uri) {
-    return namespaceFromURI(uri, DEFAULT_SCHEME);
-  }
-
-  public static String nameFromURI(URI uri, String defaultScheme) {
+  public static DatasetIdentifier fromURI(URI uri, String defaultScheme) {
     if (isAbsoluteAndSchemeAuthorityNull(uri)) {
-      return uri.getPath();
+      return new DatasetIdentifier(uri.getPath(), defaultScheme);
     }
 
-    return Optional.of(uri.getPath())
-        .map(DatasetIdentifierUtils::removeLastSlash)
-        .map(DatasetIdentifierUtils::removeFirstSlashIfSingleSlashInString)
-        .get();
-  }
+    String name =
+        Optional.of(uri.getPath())
+            .map(DatasetIdentifierUtils::removeLastSlash)
+            .map(DatasetIdentifierUtils::removeFirstSlashIfSingleSlashInString)
+            .get();
 
-  public static String namespaceFromURI(URI uri, String defaultScheme) {
-    if (isAbsoluteAndSchemeAuthorityNull(uri)) {
-      return defaultScheme;
-    }
+    String namespace =
+        Optional.ofNullable(uri.getAuthority())
+            .map(a -> String.format("%s://%s", uri.getScheme(), a))
+            .orElseGet(() -> (uri.getScheme() != null) ? uri.getScheme() : defaultScheme);
 
-    return Optional.ofNullable(uri.getAuthority())
-        .map(a -> String.format("%s://%s", uri.getScheme(), a))
-        .orElseGet(() -> (uri.getScheme() != null) ? uri.getScheme() : defaultScheme);
+    return new DatasetIdentifier(name, namespace);
   }
 
   private static String removeFirstSlashIfSingleSlashInString(String name) {

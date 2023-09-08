@@ -5,7 +5,8 @@
 
 package io.openlineage.spark.agent.util;
 
-import io.openlineage.utils.DatasetIdentifierUtils;
+import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.DatasetIdentifierUtils;
 import java.io.File;
 import java.net.URI;
 import java.util.Optional;
@@ -43,9 +44,8 @@ public class PathUtils {
   }
 
   public static DatasetIdentifier fromURI(URI location, String defaultScheme) {
-    return new DatasetIdentifier(
-        removePathPattern(DatasetIdentifierUtils.nameFromURI(location, defaultScheme)),
-        DatasetIdentifierUtils.namespaceFromURI(location, defaultScheme));
+    DatasetIdentifier di = DatasetIdentifierUtils.fromURI(location, defaultScheme);
+    return new DatasetIdentifier(removePathPattern(di.getName()), di.getNamespace());
   }
 
   public static DatasetIdentifier fromCatalogTable(CatalogTable catalogTable) {
