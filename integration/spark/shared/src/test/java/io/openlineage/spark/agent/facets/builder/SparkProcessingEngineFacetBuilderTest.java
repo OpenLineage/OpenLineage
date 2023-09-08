@@ -13,7 +13,6 @@ import io.openlineage.spark.api.OpenLineageContext;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.scheduler.JobSucceeded$;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
@@ -22,9 +21,9 @@ import org.apache.spark.scheduler.SparkListenerStageCompleted;
 import org.apache.spark.scheduler.SparkListenerStageSubmitted;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionStart;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import scala.collection.Seq$;
 
 class SparkProcessingEngineFacetBuilderTest {
@@ -32,14 +31,9 @@ class SparkProcessingEngineFacetBuilderTest {
 
   @BeforeAll
   public static void setupSparkContext() {
-    sparkContext =
-        SparkContext.getOrCreate(
-            new SparkConf().setAppName("SparkProcessingEngineFacetBuilderTest").setMaster("local"));
-  }
-
-  @AfterAll
-  public static void tearDownSparkContext() {
-    sparkContext.stop();
+    sparkContext = Mockito.mock(SparkContext.class);
+    Mockito.when(sparkContext.appName()).thenReturn("SparkProcessingEngineFacetBuilderTest");
+    Mockito.when(sparkContext.version()).thenReturn("3.3.0");
   }
 
   @Test
