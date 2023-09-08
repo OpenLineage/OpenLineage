@@ -138,6 +138,7 @@ class SparkReadWriteIntegTest {
   }
 
   @Test
+  @Tag("bigquery")
   void testBigQueryReadWriteToFile(@TempDir Path writeDir, SparkSession spark)
       throws InterruptedException, TimeoutException {
     TableId tableId = TableId.of("testproject", "dataset", "MyTable");
@@ -496,6 +497,7 @@ class SparkReadWriteIntegTest {
   }
 
   @Test
+  @Tag("kafka")
   void testWriteWithKafkaSourceProvider(SparkSession spark)
       throws InterruptedException, TimeoutException {
     kafkaContainer.start();
@@ -542,6 +544,7 @@ class SparkReadWriteIntegTest {
   }
 
   @Test
+  @Tag("kafka")
   void testReadWithKafkaSourceProviderUsingAssignConfig(SparkSession spark)
       throws InterruptedException, TimeoutException, ExecutionException {
     kafkaContainer.start();

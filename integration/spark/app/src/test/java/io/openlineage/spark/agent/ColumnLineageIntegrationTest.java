@@ -37,6 +37,7 @@ import org.testcontainers.utility.DockerImageName;
 @Testcontainers
 @EnabledIfSystemProperty(named = "spark.version", matches = "(3.*)")
 @Tag("integration-test")
+@Tag("column-lineage")
 public class ColumnLineageIntegrationTest {
   private static final String LOCAL_IP = "127.0.0.1";
   private static final String database = "test";

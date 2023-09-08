@@ -199,7 +199,7 @@ jobs:
       - run: |
           sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
           sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
-      - run: ./gradlew --no-daemon --stacktrace build -Pspark.version=<< parameters.spark-version >>
+      - run: ./gradlew --no-daemon build -Pspark.version=<< parameters.spark-version >>
       - run:
           when: on_fail
           command: cat build/test-results/test/TEST-*.xml
@@ -459,6 +459,8 @@ jobs:
     parameters:
       spark-version:
         type: string
+      integration-test-tags:
+        type: string
     working_directory: ~/openlineage/integration/spark
     machine:
       image: ubuntu-2004:current
@@ -483,7 +485,7 @@ jobs:
       - run: |
           sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
           sudo update-alternatives --set javac /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
-      - run: ./gradlew --no-daemon integrationTest -x test   -Pspark.version=<< parameters.spark-version >>
+      - run: ./gradlew --no-daemon integrationTest -x test -Pspark.version=<< parameters.spark-version >> -PintegrationTest.tags=<< parameters.integration-test-tags >>
       - run: ./gradlew --no-daemon jacocoTestReport
       - store_test_results:
           path: app/build/test-results/integrationTest

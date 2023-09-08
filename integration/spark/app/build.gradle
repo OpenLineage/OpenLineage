@@ -232,7 +232,18 @@ task integrationTest(type: Test) {
     }
     configure commonTestConfiguration
     useJUnitPlatform {
-        includeTags "integration-test"
+        if (project.hasProperty('integrationTest.tags')) {
+            String integrationTestTags = project.getProperty('integrationTest.tags')
+            if (integrationTestTags == "other") {
+                // run all the test except for specified tags
+                includeTags "integration-test"
+                excludeTags("iceberg", "delta", "hive-metastore", "kafka", "bigquery", "column-lineage")
+            } else {
+                // run specified tag tests only
+                includeTags integrationTestTags.split(",")
+            }
+        }
+
         excludeTags "databricks"
         if(!sparkVersion.startsWith('3')) {excludeTags 'spark3'}
         if(versions.delta == "NA") {excludeTags 'delta'}
