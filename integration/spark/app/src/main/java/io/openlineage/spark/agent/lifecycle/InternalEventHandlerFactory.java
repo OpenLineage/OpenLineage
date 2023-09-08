@@ -19,6 +19,7 @@ import io.openlineage.spark.agent.facets.builder.DatabricksEnvironmentFacetBuild
 import io.openlineage.spark.agent.facets.builder.ErrorFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.LogicalPlanRunFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.OutputStatisticsOutputDatasetFacetBuilder;
+import io.openlineage.spark.agent.facets.builder.SparkProcessingEngineRunFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.SparkPropertyFacetBuilder;
 import io.openlineage.spark.agent.facets.builder.SparkVersionFacetBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageVisitor;
@@ -188,7 +189,8 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
                 new ErrorFacetBuilder(),
                 new LogicalPlanRunFacetBuilder(context),
                 new SparkVersionFacetBuilder(context),
-                new SparkPropertyFacetBuilder(context));
+                new SparkPropertyFacetBuilder(context),
+                new SparkProcessingEngineRunFacetBuilder(context));
     if (DatabricksEnvironmentFacetBuilder.isDatabricksRuntime()) {
       listBuilder.add(new DatabricksEnvironmentFacetBuilder(context));
     } else if (context.getCustomEnvironmentVariables() != null) {
