@@ -60,3 +60,10 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Return the proxy image name
+*/}}
+{{- define "proxy.image" -}}
+{{- include "common.images.image" (dict "imageRoot" .Values.proxy.image "global" .Values.global) -}}
+{{- end -}}
