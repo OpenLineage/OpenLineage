@@ -10,7 +10,7 @@ import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.openlineage.spark.agent.util.DatasetIdentifier;
+import io.openlineage.client.utils.DatasetIdentifier;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import org.junit.jupiter.api.Test;
 

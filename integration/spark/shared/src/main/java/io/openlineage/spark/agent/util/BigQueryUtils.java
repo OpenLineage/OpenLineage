@@ -8,6 +8,7 @@ package io.openlineage.spark.agent.util;
 import static io.openlineage.spark.agent.util.ReflectionUtils.tryExecuteMethod;
 
 import com.google.cloud.spark.bigquery.BigQueryRelation;
+import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeOutputVisitor;
 import java.util.Collections;
 import java.util.List;

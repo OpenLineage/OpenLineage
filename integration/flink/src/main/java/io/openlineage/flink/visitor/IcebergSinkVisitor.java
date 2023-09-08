@@ -6,10 +6,10 @@
 package io.openlineage.flink.visitor;
 
 import io.openlineage.client.OpenLineage;
-import io.openlineage.flink.api.DatasetIdentifier;
+import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.DatasetIdentifierUtils;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.utils.IcebergUtils;
-import io.openlineage.flink.utils.PathUtils;
 import io.openlineage.flink.visitor.wrapper.IcebergSinkWrapper;
 import java.net.URI;
 import java.util.Collections;
@@ -49,7 +49,8 @@ public class IcebergSinkVisitor extends Visitor<OpenLineage.OutputDataset> {
 
   private OpenLineage.OutputDataset getDataset(OpenLineageContext context, Table table) {
     OpenLineage openLineage = context.getOpenLineage();
-    DatasetIdentifier datasetIdentifier = PathUtils.fromURI(URI.create(table.location()));
+    DatasetIdentifier datasetIdentifier =
+        DatasetIdentifierUtils.fromURI(URI.create(table.location()));
     return openLineage
         .newOutputDatasetBuilder()
         .name(datasetIdentifier.getName())

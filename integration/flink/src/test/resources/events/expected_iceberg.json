@@ -6,7 +6,7 @@
   },
   "inputs": [{
     "namespace": "file",
-    "name": "tmp/warehouse/db/source",
+    "name": "/tmp/warehouse/db/source",
     "facets": {
       "schema": {
         "fields": [{
@@ -21,7 +21,7 @@
   }],
   "outputs" : [{
   "namespace" : "file",
-  "name" : "tmp/warehouse/db/sink",
+  "name" : "/tmp/warehouse/db/sink",
   "facets" : {
     "schema" : {
       "fields" : [ {
