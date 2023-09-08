@@ -3,7 +3,8 @@
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.1.0...HEAD)
 ### Feature
 * **Spark: Publish the `ProcessingEngineRunFacet` as part of the normal operation of the `OpenLineageSparkEventListener`.** [`#2089`](https://github.com/OpenLineage/OpenLineage/pull/2089) [@d-m-h](https://github.com/d-m-h)
-  *Publishes the spec-defined `ProcessEngineRunFacet` alongside the custom `SparkVersionFacet`.* 
+  * **ADDITION:** Publishes the spec-defined `ProcessEngineRunFacet` alongside the custom `SparkVersionFacet` (for now).
+  * **DEPRECATES**: `SparkVersionFacet`. Will be removed in `1.4.0`.
 
 ### Fixed
 * **Spark: Improve RDDs on S3 integration. (TODO PR number)** [`#2039`](https://github.com/OpenLineage/OpenLineage/pull/2039) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
