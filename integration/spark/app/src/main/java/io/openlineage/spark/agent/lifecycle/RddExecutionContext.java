@@ -13,6 +13,7 @@ import io.openlineage.spark.agent.OpenLineageSparkListener;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.facets.ErrorFacet;
 import io.openlineage.spark.agent.facets.SparkVersionFacet;
+import io.openlineage.spark.agent.facets.builder.SparkProcessingEngineRunFacetBuilderDelegate;
 import io.openlineage.spark.agent.lifecycle.DatasetParser.DatasetParseResult;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
@@ -216,7 +217,7 @@ class RddExecutionContext implements ExecutionContext {
             .eventType(OpenLineage.RunEvent.EventType.START)
             .inputs(buildInputs(inputs))
             .outputs(buildOutputs(outputs))
-            .run(ol.newRunBuilder().runId(runId).facets(buildRunFacets(null)).build())
+            .run(ol.newRunBuilder().runId(runId).facets(buildRunFacets(null, ol)).build())
             .job(buildJob(jobStart.jobId()))
             .build();
 
@@ -231,6 +232,7 @@ class RddExecutionContext implements ExecutionContext {
       return;
     }
     OpenLineage ol = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
+
     OpenLineage.RunEvent event =
         ol.newRunEventBuilder()
             .eventTime(toZonedTime(jobEnd.time()))
@@ -240,7 +242,7 @@ class RddExecutionContext implements ExecutionContext {
             .run(
                 ol.newRunBuilder()
                     .runId(runId)
-                    .facets(buildRunFacets(buildJobErrorFacet(jobEnd.jobResult())))
+                    .facets(buildRunFacets(buildJobErrorFacet(jobEnd.jobResult()), ol))
                     .build())
             .job(buildJob(jobEnd.jobId()))
             .build();
@@ -254,15 +256,31 @@ class RddExecutionContext implements ExecutionContext {
     return ZonedDateTime.ofInstant(i, ZoneOffset.UTC);
   }
 
-  protected OpenLineage.RunFacets buildRunFacets(ErrorFacet jobError) {
-    OpenLineage.RunFacetsBuilder builder = new OpenLineage.RunFacetsBuilder();
-    buildParentFacet().ifPresent(builder::parent);
+  protected OpenLineage.RunFacets buildRunFacets(ErrorFacet jobError, OpenLineage ol) {
+    OpenLineage.RunFacetsBuilder runFacetsBuilder = ol.newRunFacetsBuilder();
+    buildParentFacet().ifPresent(runFacetsBuilder::parent);
     if (jobError != null) {
-      builder.put("spark.exception", jobError);
+      runFacetsBuilder.put("spark.exception", jobError);
     }
+
+    addSparkVersionFacet(runFacetsBuilder);
+    addProcessingEventFacet(runFacetsBuilder, ol);
+
+    return runFacetsBuilder.build();
+  }
+
+  private void addSparkVersionFacet(OpenLineage.RunFacetsBuilder b0) {
     sparkContextOption.ifPresent(
-        context -> builder.put("spark_version", new SparkVersionFacet(context)));
-    return builder.build();
+        context -> b0.put("spark_version", new SparkVersionFacet(context)));
+  }
+
+  private void addProcessingEventFacet(OpenLineage.RunFacetsBuilder b0, OpenLineage ol) {
+    sparkContextOption.ifPresent(
+        context -> {
+          OpenLineage.ProcessingEngineRunFacet facet =
+              new SparkProcessingEngineRunFacetBuilderDelegate(ol, context).buildFacet();
+          b0.processing_engine(facet);
+        });
   }
 
   private Optional<OpenLineage.ParentRunFacet> buildParentFacet() {
