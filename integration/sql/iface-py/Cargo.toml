@@ -15,7 +15,6 @@ crate-type = ["cdylib"]
 openlineage_sql = {path = "../impl"}
 anyhow = {workspace = true}
 pyo3 = {version = "0.19.0", features = ["extension-module", "abi3", "abi3-py37", "anyhow"]}
-sqlparser = {git = "https://github.com/OpenLineage/sqlparser-rs", branch = "release"}
 
 [build-dependencies]
 pyo3-build-config = {version = "0.19.0"}
