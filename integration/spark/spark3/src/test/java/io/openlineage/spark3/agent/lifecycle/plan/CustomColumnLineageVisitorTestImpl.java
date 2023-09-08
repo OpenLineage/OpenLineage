@@ -10,9 +10,9 @@ import static io.openlineage.spark3.agent.lifecycle.plan.column.CustomCollectors
 import static io.openlineage.spark3.agent.lifecycle.plan.column.CustomCollectorsUtilsTest.child;
 import static org.mockito.Mockito.mock;
 
+import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.lifecycle.plan.column.ColumnLevelLineageBuilder;
 import io.openlineage.spark.agent.lifecycle.plan.column.CustomColumnLineageVisitor;
-import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark3.agent.lifecycle.plan.column.CustomCollectorsUtilsTest;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 

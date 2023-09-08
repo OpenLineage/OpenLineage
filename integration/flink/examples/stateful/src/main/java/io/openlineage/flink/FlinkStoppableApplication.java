@@ -85,7 +85,7 @@ public class FlinkStoppableApplication {
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
                 .readValue(json, Checkpoints.class);
 
-            return checkpoints != null && checkpoints.getCounts().getCompleted() > 0;
+            return checkpoints != null && checkpoints.getCounts() != null && checkpoints.getCounts().getCompleted() > 0;
         });
 
     // save the job gracefully

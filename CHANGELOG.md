@@ -7,12 +7,12 @@
   * **DEPRECATES**: `SparkVersionFacet`. Will be removed in `1.4.0`.
 
 ### Fixed
-* **Spark: Improve RDDs on S3 integration. (TODO PR number)** [`#2039`](https://github.com/OpenLineage/OpenLineage/pull/2039) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+* **Spark: Improve RDDs on S3 integration.** [`#2039`](https://github.com/OpenLineage/OpenLineage/pull/2039) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Prepare integration test to access S3, fix input dataset duplicates and other minor fixes.*
-
-### Fixed
 * **Flink: prevent sending `running` events after job completes.** [`#2075`](https://github.com/OpenLineage/OpenLineage/pull/2075) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Flink checkpoint tracking thread did not get stopped properly on job complete.*
+* **Spark & Flink: Unify dataset naming from URI objects.** [`#2083`](https://github.com/OpenLineage/OpenLineage/pull/2083) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Make sure Spark and Flink generate same dataset identifiers for the same datasets by having a single implementation to generate dataset namespace and name.*
 
 ## [1.1.0](https://github.com/OpenLineage/OpenLineage/compare/1.0.0...1.1.0) - 2023-08-23
 ### Added

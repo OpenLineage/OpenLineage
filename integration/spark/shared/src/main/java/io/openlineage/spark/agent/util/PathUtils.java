@@ -5,6 +5,8 @@
 
 package io.openlineage.spark.agent.util;
 
+import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.client.utils.DatasetIdentifierUtils;
 import java.io.File;
 import java.net.URI;
 import java.util.Optional;
@@ -30,34 +32,20 @@ public class PathUtils {
   private static Optional<SparkConf> sparkConf = Optional.empty();
 
   public static DatasetIdentifier fromPath(Path path) {
-    return PathUtils.fromPath(path, DEFAULT_SCHEME);
+    return fromPath(path, DEFAULT_SCHEME);
   }
 
   public static DatasetIdentifier fromPath(Path path, String defaultScheme) {
-    if (path.isAbsoluteAndSchemeAuthorityNull()) {
-      return new DatasetIdentifier(path.toString(), defaultScheme);
-    }
-    URI uri = path.toUri();
-    String namespace =
-        Optional.ofNullable(uri.getAuthority())
-            .map(a -> String.format("%s://%s", uri.getScheme(), a))
-            .orElseGet(() -> (uri.getScheme() != null) ? uri.getScheme() : defaultScheme);
-
-    String name =
-        Optional.of(uri.getPath())
-            .map(PathUtils::removeFirstSlashIfSingleSlashInString)
-            .map(PathUtils::removePathPattern)
-            .get();
-
-    return new DatasetIdentifier(name, namespace);
+    return fromURI(path.toUri(), defaultScheme);
   }
 
   public static DatasetIdentifier fromURI(URI location) {
-    return fromPath(new Path(location), DEFAULT_SCHEME);
+    return fromURI(location, DEFAULT_SCHEME);
   }
 
   public static DatasetIdentifier fromURI(URI location, String defaultScheme) {
-    return fromPath(new Path(location), defaultScheme);
+    DatasetIdentifier di = DatasetIdentifierUtils.fromURI(location, defaultScheme);
+    return new DatasetIdentifier(removePathPattern(di.getName()), di.getNamespace());
   }
 
   public static DatasetIdentifier fromCatalogTable(CatalogTable catalogTable) {

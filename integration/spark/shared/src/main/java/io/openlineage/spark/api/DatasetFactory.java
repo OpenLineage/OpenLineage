@@ -7,9 +7,9 @@ package io.openlineage.spark.api;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.LifecycleStateChangeDatasetFacet.LifecycleStateChange;
+import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.lifecycle.plan.BigQueryNodeOutputVisitor;
 import io.openlineage.spark.agent.lifecycle.plan.LogicalRelationDatasetBuilder;
-import io.openlineage.spark.agent.util.DatasetIdentifier;
 import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import java.net.URI;

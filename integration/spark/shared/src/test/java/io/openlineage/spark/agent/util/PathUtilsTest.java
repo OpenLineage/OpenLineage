@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
+import io.openlineage.client.utils.DatasetIdentifier;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Optional;
