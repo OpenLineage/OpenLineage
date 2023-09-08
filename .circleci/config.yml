@@ -82,6 +82,7 @@ jobs:
             # Changes to the spec require all workflows to run
             check_change spec "*"
             check_change .circleci "*"
+            check_change integration/sql/ "*"
 
             check_change client/java/ openlineage-java.yml openlineage-flink.yml openlineage-spark.yml
             check_change integration/spark/ openlineage-java.yml openlineage-spark.yml
@@ -91,7 +92,6 @@ jobs:
             check_change integration/airflow/ openlineage-integration-python.yml openlineage-integration-airflow.yml
             check_change integration/dagster/ openlineage-integration-python.yml openlineage-integration-dagster.yml
             check_change integration/dbt/ openlineage-integration-python.yml openlineage-integration-dbt.yml
-            check_change integration/sql/ openlineage-integration-python.yml openlineage-integration-airflow.yml
             check_change proxy/backend/ openlineage-proxy-backend.yml
           fi
           touch workflow_files.txt
