@@ -55,7 +55,7 @@ def create_token_provider(auth: dict[str, str]) -> TokenProvider:
         of_type: str = auth["type"]
         subclass = try_import_from_string(of_type)
         if inspect.isclass(subclass) and issubclass(subclass, TokenProvider):
-            return TokenProvider(auth)
+            return subclass(auth)
 
     return TokenProvider({})
 
@@ -115,7 +115,11 @@ class HttpTransport(Transport):
         url = config.url.strip()
         self.config = config
 
-        log.debug("Constructing openlineage client to send events to %s - config %s", url, config)
+        log.debug(
+            "Constructing openlineage client to send events to %s - config %s",
+            url,
+            config,
+        )
         try:
             from urllib3.util import parse_url
 
@@ -145,7 +149,9 @@ class HttpTransport(Transport):
         if self.session:
             self.session.mount(self.url, adapter)
 
-    def emit(self, event: Union[RunEvent, DatasetEvent, JobEvent]) -> Response:  # noqa: UP007
+    def emit(
+        self, event: Union[RunEvent, DatasetEvent, JobEvent]
+    ) -> Response:  # noqa: UP007
         event_str = Serde.to_json(event)
         if self.session:
             resp = self.session.post(
