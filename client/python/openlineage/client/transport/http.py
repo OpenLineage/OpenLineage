@@ -115,11 +115,7 @@ class HttpTransport(Transport):
         url = config.url.strip()
         self.config = config
 
-        log.debug(
-            "Constructing openlineage client to send events to %s - config %s",
-            url,
-            config,
-        )
+        log.debug("Constructing openlineage client to send events to %s - config %s", url, config)
         try:
             from urllib3.util import parse_url
 
@@ -149,9 +145,7 @@ class HttpTransport(Transport):
         if self.session:
             self.session.mount(self.url, adapter)
 
-    def emit(
-        self, event: Union[RunEvent, DatasetEvent, JobEvent]
-    ) -> Response:  # noqa: UP007
+    def emit(self, event: Union[RunEvent, DatasetEvent, JobEvent]) -> Response:  # noqa: UP007
         event_str = Serde.to_json(event)
         if self.session:
             resp = self.session.post(
