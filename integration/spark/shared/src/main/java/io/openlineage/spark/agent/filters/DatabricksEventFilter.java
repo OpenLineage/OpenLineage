@@ -5,12 +5,15 @@
 
 package io.openlineage.spark.agent.filters;
 
+import static io.openlineage.spark.agent.filters.EventFilterUtils.getLogicalPlan;
+
 import io.openlineage.spark.agent.util.DatabricksUtils;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.util.Arrays;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.scheduler.SparkListenerEvent;
+import org.apache.spark.sql.catalyst.plans.logical.SerializeFromObject;
 import org.apache.spark.sql.execution.SparkPlan;
 import org.apache.spark.sql.execution.WholeStageCodegenExec;
 
@@ -22,8 +25,6 @@ public class DatabricksEventFilter implements EventFilter {
 
   private static final List<String> excludedNodes =
       Arrays.asList(
-          "show_namespaces",
-          "show_tables",
           "collect_limit",
           "describe_table",
           "local_table_scan",
@@ -35,6 +36,10 @@ public class DatabricksEventFilter implements EventFilter {
   }
 
   public boolean isDisabled(SparkListenerEvent event) {
+    return isSerializeFromObject() || isWriteIntoDeltaCommand() || isDisabledDatabricksPlan(event);
+  }
+
+  public boolean isDisabledDatabricksPlan(SparkListenerEvent event) {
     if (!DatabricksUtils.isRunOnDatabricksPlatform(context)
         || !context.getQueryExecution().isPresent()) {
       return false;
@@ -46,6 +51,7 @@ public class DatabricksEventFilter implements EventFilter {
     if (node instanceof WholeStageCodegenExec) {
       node = ((WholeStageCodegenExec) node).child();
     }
+
     String nodeName = node.nodeName().replace("_", "");
 
     return excludedNodes.stream()
@@ -53,5 +59,19 @@ public class DatabricksEventFilter implements EventFilter {
         .filter(n -> n.equalsIgnoreCase(nodeName))
         .findAny()
         .isPresent();
+  }
+
+  private boolean isSerializeFromObject() {
+    return getLogicalPlan(context).map(plan -> plan instanceof SerializeFromObject).orElse(false);
+  }
+
+  private boolean isWriteIntoDeltaCommand() {
+    return getLogicalPlan(context)
+        .map(
+            plan ->
+                plan.getClass()
+                    .getCanonicalName()
+                    .contains("sql.transaction.tahoe.commands.WriteIntoDeltaCommand"))
+        .orElse(false);
   }
 }

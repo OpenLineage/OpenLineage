@@ -445,6 +445,28 @@ public class SparkDeltaIntegrationTest {
         "pysparkV2MergeIntoDeltaTableCompleteEvent.json");
   }
 
+  @Test
+  @SneakyThrows
+  void testGroupByQuery() {
+    clearTables("t1", "t2");
+
+    Dataset<Row> dataset =
+        spark
+            .createDataFrame(
+                ImmutableList.of(RowFactory.create(1L, "bat"), RowFactory.create(3L, "horse")),
+                new StructType(
+                    new StructField[] {
+                      new StructField("a", LongType$.MODULE$, false, Metadata.empty()),
+                      new StructField("b", StringType$.MODULE$, false, Metadata.empty())
+                    }))
+            .repartition(1);
+
+    dataset.write().mode("overwrite").format("delta").saveAsTable("t1");
+    spark.sql("CREATE TABLE t2 USING delta AS SELECT sum(a) AS c, b AS d FROM t1 group by b");
+
+    verifyEvents(mockServer, "pysparkDeltaGroupByCompleteEvent.json");
+  }
+
   /**
    * Environment variables differ on local environment and CI. This method returns any environment
    * variable being set for testing.
