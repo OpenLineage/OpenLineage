@@ -15,7 +15,9 @@ import com.databricks.sdk.core.DatabricksConfig;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.client.OpenLineage.RunEvent;
+import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -90,9 +92,30 @@ public class DatabricksIntegrationTest {
 
     assertThat(runEvents).isNotEmpty();
 
-    assertThat(runEventJobNames)
-        .anyMatch(s -> s.contains("execute_insert_into_hadoop_fs_relation_command"));
-    assertThat(runEventJobNames).noneMatch(s -> s.contains("adaptive_spark_plan"));
+    // assert start event exists
+    assertThat(
+            runEvents.stream()
+                .filter(
+                    s ->
+                        s.getJob()
+                            .getName()
+                            .contains("execute_insert_into_hadoop_fs_relation_command"))
+                .filter(s -> s.getEventType().equals(EventType.START))
+                .findFirst())
+        .isPresent();
+
+    // assert complete event contains output dataset
+    Optional<RunEvent> completeEvent =
+        runEvents.stream()
+            .filter(
+                s ->
+                    s.getJob().getName().contains("execute_insert_into_hadoop_fs_relation_command"))
+            .filter(s -> s.getEventType().equals(EventType.COMPLETE))
+            .findFirst();
+
+    assertThat(completeEvent).isPresent();
+    assertThat(completeEvent.get().getOutputs().get(0).getName())
+        .isEqualTo("/data/path/to/output/narrow_transformation");
   }
 
   @Test
@@ -106,8 +129,51 @@ public class DatabricksIntegrationTest {
 
     assertThat(runEvents).isNotEmpty();
 
-    assertThat(runEventJobNames)
-        .noneMatch(s -> s.contains("execute_insert_into_hadoop_fs_relation_command"));
-    assertThat(runEventJobNames).anyMatch(s -> s.contains("adaptive_spark_plan"));
+    // assert start event exists
+    assertThat(
+            runEvents.stream()
+                .filter(s -> s.getJob().getName().contains("adaptive_spark_plan"))
+                .filter(s -> s.getEventType().equals(EventType.START))
+                .findFirst())
+        .isPresent();
+
+    // assert complete event contains output dataset
+    Optional<RunEvent> completeEvent =
+        runEvents.stream()
+            .filter(s -> s.getJob().getName().contains("adaptive_spark_plan"))
+            .filter(s -> s.getEventType().equals(EventType.COMPLETE))
+            .findFirst();
+
+    assertThat(completeEvent).isPresent();
+    assertThat(completeEvent.get().getOutputs().get(0).getName())
+        .isEqualTo("/data/output/wide_transformation/result");
+  }
+
+  @Test
+  public void testWriteReadFromTableWithLocation() {
+    List<RunEvent> runEvents = runScript(workspace, clusterId, "dataset_names.py");
+
+    // find complete event with output dataset containing name
+    OutputDataset outputDataset =
+        runEvents.stream()
+            .filter(runEvent -> runEvent.getOutputs().size() > 0)
+            .filter(runEvent -> runEvent.getOutputs().get(0).getName().contains("t1"))
+            .map(runEvent -> runEvent.getOutputs().get(0))
+            .findFirst()
+            .get();
+
+    // find start event with input dataset containing name
+    InputDataset inputDataset =
+        runEvents.stream()
+            .filter(runEvent -> runEvent.getInputs().size() > 0)
+            .filter(runEvent -> runEvent.getInputs().get(0).getName().contains("t1"))
+            .map(runEvent -> runEvent.getInputs().get(0))
+            .findFirst()
+            .get();
+
+    // assert input and output are the same
+    assertThat(outputDataset.getNamespace()).isEqualTo(outputDataset.getNamespace());
+    assertThat(inputDataset.getName()).isEqualTo(inputDataset.getName());
+    assertThat(runEvents.size()).isLessThan(20);
   }
 }

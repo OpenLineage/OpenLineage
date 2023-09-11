@@ -12,7 +12,7 @@ workflows:
           context: integration-tests
           matrix:
             parameters:
-              spark-version: [ '3.4.0' ]
+              spark-version: [ '3.4.1' ]
           requires:
             - build-integration-spark
       - integration-test-integration-spark:

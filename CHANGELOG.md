@@ -12,7 +12,9 @@
 * **Flink: prevent sending `running` events after job completes.** [`#2075`](https://github.com/OpenLineage/OpenLineage/pull/2075) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Flink checkpoint tracking thread did not get stopped properly on job complete.*
 * **Spark & Flink: Unify dataset naming from URI objects.** [`#2083`](https://github.com/OpenLineage/OpenLineage/pull/2083) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-    *Make sure Spark and Flink generate same dataset identifiers for the same datasets by having a single implementation to generate dataset namespace and name.*
+  *Make sure Spark and Flink generate same dataset identifiers for the same datasets by having a single implementation to generate dataset namespace and name.*
+* **Spark: Databricks improvements.** [`#2076`](https://github.com/OpenLineage/OpenLineage/pull/2076) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Filter unwanted events on databricks and add an integration test to verify this. Add integration tests to verify dataset naming on databricks runtime is correct when table location is specified. Add integration test for wide transformation on delta tables.*
 
 ## [1.1.0](https://github.com/OpenLineage/OpenLineage/compare/1.0.0...1.1.0) - 2023-08-23
 ### Added

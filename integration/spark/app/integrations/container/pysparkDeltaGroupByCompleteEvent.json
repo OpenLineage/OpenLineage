@@ -1,0 +1,55 @@
+{
+  "eventType": "COMPLETE",
+  "job": {
+    "namespace": "delta-namespace"
+  },
+  "inputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/delta/t1",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "a",
+              "type": "long"
+            },
+            {
+              "name": "b",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "outputs": [
+    {
+      "namespace": "file",
+      "name": "/tmp/delta/t2",
+      "facets": {
+        "dataSource": {
+          "name": "file",
+          "uri": "file"
+        },
+        "schema": {
+          "fields": [
+            {
+              "name": "c",
+              "type": "long"
+            },
+            {
+              "name": "d",
+              "type": "string"
+            }
+          ]
+        },
+        "columnLineage": { }
+      }
+    }
+  ]
+}
