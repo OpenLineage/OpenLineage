@@ -6,6 +6,11 @@
   * **ADDITION:** Publishes the spec-defined `ProcessEngineRunFacet` alongside the custom `SparkVersionFacet` (for now).
   * **DEPRECATES**: `SparkVersionFacet`. Will be removed in `1.4.0`.
 
+### Added
+* **Spark: Capture and emit spark.databricks.clusterUsageTags.clusterAllTags variable from databricks environment .**
+[`#2098`](https://github.com/OpenLineage/OpenLineage/pull/2098)
+    *Added spark.databricks.clusterUsageTags.clusterAllTags to the list of environment variables captured from databricks
+     
 ### Fixed
 * **Spark: Improve RDDs on S3 integration.** [`#2039`](https://github.com/OpenLineage/OpenLineage/pull/2039) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Prepare integration test to access S3, fix input dataset duplicates and other minor fixes.*
