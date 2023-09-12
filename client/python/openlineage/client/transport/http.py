@@ -55,7 +55,7 @@ def create_token_provider(auth: dict[str, str]) -> TokenProvider:
         of_type: str = auth["type"]
         subclass = try_import_from_string(of_type)
         if inspect.isclass(subclass) and issubclass(subclass, TokenProvider):
-            return TokenProvider(auth)
+            return subclass(auth)
 
     return TokenProvider({})
 
