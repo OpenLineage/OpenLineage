@@ -86,9 +86,12 @@ jobs:
       - image: cimg/openjdk:11.0
     steps:
       - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
       - restore_cache:
           keys:
-            - v1-client-java-{{ .Branch }}-{{ .Revision }}
+            - v1-client-java-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
             - v1-client-java-{{ .Branch }}
       - run: ./gradlew --no-daemon --stacktrace build
       - run: ./gradlew --no-daemon jacocoTestReport
@@ -109,7 +112,7 @@ jobs:
           path: build/reports/tests/pmd
           destination: pmd-report
       - save_cache:
-          key: v1-client-java-{{ .Branch }}-{{ .Revision }}
+          key: v1-client-java-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
           paths:
             - ~/.gradle
   
@@ -119,6 +122,9 @@ jobs:
       - image: cimg/openjdk:8.0
     steps:
       - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
       - run: |
           # Get, then decode the GPG private key used to sign *.jar
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
@@ -134,7 +140,7 @@ jobs:
           path: ./build/libs
           destination: java-client-artifacts
       - save_cache:
-          key: v1-release-client-java-{{ .Branch }}-{{ .Revision }}
+          key: v1-release-client-java-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
           paths:
             - ~/.m2
   
@@ -144,9 +150,12 @@ jobs:
       - image: cimg/openjdk:8.0
     steps:
       - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
       - restore_cache:
           keys:
-            - v1-release-client-java-{{ .Branch }}-{{ .Revision }}
+            - v1-release-client-java-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
             - v1-release-client-java-{{ .Branch }}
       - attach_workspace:
           at: ~/.m2/repository/io/openlineage/
@@ -178,9 +187,12 @@ jobs:
       JDK8_HOME: /usr/lib/jvm/java-8-openjdk-amd64
     steps:
       - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
       - restore_cache:
           keys:
-            - v1-integration-spark-{{ .Branch }}-{{ .Revision }}
+            - v1-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
             - v1-integration-spark-{{ .Branch }}
       - attach_workspace:
           at: ~/.m2/repository/io/openlineage/
@@ -203,7 +215,7 @@ jobs:
           path: build/reports/tests/pmd
           destination: pmd-report
       - save_cache:
-          key: v1-integration-spark-{{ .Branch }}-{{ .Revision }}
+          key: v1-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
           paths:
             - ~/.gradle
   
@@ -213,9 +225,12 @@ jobs:
       - image: cimg/openjdk:11.0
     steps:
       - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
       - restore_cache:
           keys:
-            - v1-release-client-java-{{ .Branch }}-{{ .Revision }}
+            - v1-release-client-java-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
             - v1-release-client-java-{{ .Branch }}
       - run: |
           # Get, then decode the GPG private key used to sign *.jar
@@ -241,9 +256,12 @@ jobs:
       TESTCONTAINERS_RYUK_DISABLED: "true"
     steps:
       - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
       - restore_cache:
           keys:
-            - v1-integration-flink-{{ .Branch }}-{{ .Revision }}
+            - v1-integration-flink-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
             - v1-integration-flink-{{ .Branch }}
       - attach_workspace:
           at: .
@@ -260,7 +278,7 @@ jobs:
           path: build/reports/tests/test
           destination: test-report
       - save_cache:
-          key: v1-integration-flink-{{ .Branch }}-{{ .Revision }}
+          key: v1-integration-flink-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
           paths:
             - ~/.gradle
   
@@ -382,9 +400,12 @@ jobs:
       - image: cimg/openjdk:8.0
     steps:
       - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
       - restore_cache:
           keys:
-            - v1-release-client-java-{{ .Branch }}-{{ .Revision }}
+            - v1-release-client-java-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
             - v1-release-client-java-{{ .Branch }}
       - attach_workspace:
           at: ../
@@ -449,10 +470,13 @@ jobs:
       - *checkout_project_root
       - gcp-cli/install
       - gcp-cli/initialize
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
       - run: mkdir -p app/build/gcloud && echo $GCLOUD_SERVICE_KEY > app/build/gcloud/gcloud-service-key.json && chmod 644 app/build/gcloud/gcloud-service-key.json
       - restore_cache:
           keys:
-            - v1-integration-spark-{{ .Branch }}-{{ .Revision }}
+            - v1-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
             - v1-integration-spark-{{ .Branch }}
       - attach_workspace:
           at: ~/.m2/repository/io/openlineage/
@@ -467,7 +491,7 @@ jobs:
           path: app/build/reports/tests/integrationTest
           destination: test-report
       - save_cache:
-          key: v1-integration-spark-{{ .Branch }}-{{ .Revision }}
+          key: v1-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
           paths:
             - ~/.gradle
 
@@ -488,9 +512,12 @@ jobs:
           condition:
             equal: [ enabled, << pipeline.parameters.databricks-test >> ]
           steps:
+            - run:
+                name: Generate cache key
+                command: ./../../.circleci/checksum.sh /tmp/checksum.txt
             - restore_cache:
                 keys:
-                  - v1-integration-spark-{{ .Branch }}-{{ .Revision }}
+                  - v1-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
                   - v1-integration-spark-{{ .Branch }}
             - attach_workspace:
                 at: ~/.m2/repository/io/openlineage/
@@ -508,7 +535,7 @@ jobs:
                 path: app/build/cluster-log4j.log
                 destination: cluster-log4j.log
             - save_cache:
-                key: v1-databricks-integration-spark-{{ .Branch }}-{{ .Revision }}
+                key: v1-databricks-integration-spark-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
                 paths:
                   - ~/.gradle
 
@@ -524,9 +551,12 @@ jobs:
       TESTCONTAINERS_RYUK_DISABLED: "true"
     steps:
       - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
       - restore_cache:
           keys:
-            - v1-integration-flink-{{ .Branch }}-{{ .Revision }}
+            - v1-integration-flink-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
             - v1-integration-flink-{{ .Branch }}
       - run: (cd ./../../client/java/ && ./gradlew --no-daemon --stacktrace publishToMavenLocal)
       - run: chmod -R 777 data/iceberg/db
@@ -542,7 +572,7 @@ jobs:
           path: build/reports/tests/integrationTest
           destination: test-report
       - save_cache:
-          key: v1-integration-flink-{{ .Branch }}-{{ .Revision }}
+          key: v1-integration-flink-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
           paths:
             - ~/.gradle
 
@@ -697,9 +727,12 @@ jobs:
       - image: cimg/openjdk:11.0
     steps:
       - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
       - restore_cache:
           keys:
-            - v1-proxy-{{ .Branch }}-{{ .Revision }}
+            - v1-proxy-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
             - v1-proxy-{{ .Branch }}
       - run: ./gradlew --no-daemon --stacktrace build
       - run: ./gradlew --no-daemon jacocoTestReport
@@ -710,7 +743,7 @@ jobs:
           path: build/reports/tests/test
           destination: test-report
       - save_cache:
-          key: v1-proxy-{{ .Branch }}-{{ .Revision }}
+          key: v1-proxy-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
           paths:
             - ~/.gradle
 
