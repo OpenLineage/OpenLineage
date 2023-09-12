@@ -693,6 +693,10 @@ class SparkReadWriteIntegTest {
     spark.conf().set("fs.s3a.secret.key", System.getenv("S3_SECRET_KEY"));
     spark.conf().set("fs.s3a.access.key", System.getenv("S3_ACCESS_KEY"));
 
+    String aDatasetName = "rdd_a_" + System.getProperty(SPARK_VERSION);
+    String bDatasetName = "rdd_b_" + System.getProperty(SPARK_VERSION);
+    String cDatasetName = "rdd_c_" + System.getProperty(SPARK_VERSION);
+
     String bucketUrl = System.getenv("S3_BUCKET");
 
     Dataset<Row> dataset =
@@ -704,11 +708,11 @@ class SparkReadWriteIntegTest {
                   new StructField("b", LongType$.MODULE$, false, Metadata.empty())
                 }));
 
-    dataset.write().mode("overwrite").parquet(bucketUrl + "/rdd_a");
-    dataset.write().mode("overwrite").parquet(bucketUrl + "/rdd_b");
+    dataset.write().mode("overwrite").parquet(bucketUrl + "/" + aDatasetName);
+    dataset.write().mode("overwrite").parquet(bucketUrl + "/" + bDatasetName);
 
-    JavaRDD<Row> rddA = spark.read().parquet(bucketUrl + "/rdd_a").toJavaRDD();
-    JavaRDD<Row> rddB = spark.read().parquet(bucketUrl + "/rdd_b").toJavaRDD();
+    JavaRDD<Row> rddA = spark.read().parquet(bucketUrl + "/" + aDatasetName).toJavaRDD();
+    JavaRDD<Row> rddB = spark.read().parquet(bucketUrl + "/" + bDatasetName).toJavaRDD();
 
     JavaRDD<Row> javaRDD =
         rddA.union(rddB).map(f -> f.getLong(0) + f.getLong(1)).map(l -> RowFactory.create(l));
@@ -723,7 +727,7 @@ class SparkReadWriteIntegTest {
         .toDF()
         .write()
         .mode("overwrite")
-        .parquet(bucketUrl + "/rdd_c");
+        .parquet(bucketUrl + "/" + cDatasetName);
 
     // wait for event processing to complete
     StaticExecutionContextFactory.waitForExecutionEnd();
@@ -739,13 +743,13 @@ class SparkReadWriteIntegTest {
         .hasSize(1)
         .first()
         .hasFieldOrPropertyWithValue(NAMESPACE, bucketUrl)
-        .hasFieldOrPropertyWithValue(NAME, "rdd_c");
+        .hasFieldOrPropertyWithValue(NAME, cDatasetName);
 
     assertThat(lastEvent.getInputs())
         .hasSize(2)
         .first()
         .hasFieldOrPropertyWithValue(NAMESPACE, bucketUrl)
-        .hasFieldOrPropertyWithValue(NAME, "rdd_b");
+        .hasFieldOrPropertyWithValue(NAME, bDatasetName);
   }
 
   private CompletableFuture sendMessage(
