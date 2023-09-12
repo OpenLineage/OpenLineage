@@ -28,10 +28,13 @@ import org.apache.spark.sql.execution.QueryExecution;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 @Slf4j
+@Tag("integration-test")
+@Tag("column-lineage")
 @EnabledIfSystemProperty(named = "spark.version", matches = "(3.*)")
 class ColumnLevelLineageHiveTest {
 
