@@ -51,12 +51,6 @@
         "lifecycleStateChange": {
           "lifecycleStateChange": "OVERWRITE"
         }
-      },
-      "outputFacets": {
-        "outputStatistics": {
-          "rowCount": "${json-unit.any-number}",
-          "size": "${json-unit.any-number}"
-        }
       }
     }
   ]
