@@ -12,6 +12,13 @@ with open("README.md") as readme_file:
 
 __version__ = "1.2.0"
 
+
+project_urls = {
+    "Homepage": "https://openlineage.io/",
+    "Source": "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common",
+}
+
+
 requirements = [
     "attrs>=19.3.0",
     f"openlineage-python=={__version__}",
