@@ -11,6 +11,8 @@
     *Adds `spark.databricks.clusterUsageTags.clusterAllTags` to the list of environment variables captured from databricks.*
      
 ### Fixed
+* **Common: support parsing dbt_project.yml without target-path** [`#2106`](https://github.com/OpenLineage/OpenLineage/pull/2106) [@tatiana](https://github.com/tatiana)  
+    *As of dbt v1.5, usage of target-path in the dbt_project.yml file has been deprecated, now preferring a CLI flag or env var. It will be removed in a future version. This allows users to run `DbtLocalArtifactProcessor` in dbt projects that do not declare target-path.*
 * **Proxy: fix Proxy chart** [`#2091`](https://github.com/OpenLineage/OpenLineage/pull/2091) [@harels](https://github.com/harels)  
     *Includes the proper image to deploy in the helm chart.*
 * **Python: fix serde filtering** [`#2044`](https://github.com/OpenLineage/OpenLineage/pull/2044) [@xli-1026](https://github.com/xli-1026)  
