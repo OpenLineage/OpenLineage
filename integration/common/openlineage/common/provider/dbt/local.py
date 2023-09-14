@@ -11,6 +11,9 @@ from jinja2 import Environment, Undefined
 from openlineage.common.provider.dbt.processor import DbtArtifactProcessor
 from openlineage.common.utils import get_from_nullable_chain
 
+DBT_TARGET_PATH_ENVVAR = "DBT_TARGET_PATH"
+DEFAULT_TARGET_PATH = "target"
+
 
 class SkipUndefined(Undefined):
     def __getattr__(self, name):
@@ -43,6 +46,7 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
         project_dir: str,
         profile_name: Optional[str] = None,
         target: Optional[str] = None,
+        target_path: Optional[str] = None,
         *args,
         **kwargs,
     ):
@@ -53,23 +57,43 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
         dbt_project = self.load_yaml_with_jinja(
             os.path.join(project_dir, "dbt_project.yml")
         )
+        self.target_path = target_path
+        target_path = self.build_target_path(dbt_project)
 
         self.manifest_path = os.path.join(
-            absolute_dir, dbt_project["target-path"], "manifest.json"
+            absolute_dir, target_path, "manifest.json"
         )
         self.run_result_path = os.path.join(
-            absolute_dir, dbt_project["target-path"], "run_results.json"
+            absolute_dir, target_path, "run_results.json"
         )
         self.catalog_path = os.path.join(
-            absolute_dir, dbt_project["target-path"], "catalog.json"
+            absolute_dir, target_path, "catalog.json"
         )
 
         self.target = target
-
         self.project_name = dbt_project["name"]
         self.profile_name = profile_name or dbt_project.get("profile")
         if not self.profile_name:
             raise KeyError(f"profile not found in {dbt_project}")
+
+    def build_target_path(self, dbt_project: dict, target_path: Optional[str] = None) -> str:
+        """
+        Build dbt target path. Uses the following:
+        1. target_path (user-defined value, normally given in --target-path CLI flag)
+        2. DBT_TARGET_PATH environment variable
+        3. target-path in dbt_project.yml
+        4. default ("target")
+
+        Precedence order: user-defined target_path > env var > dbt_project.yml > default
+
+        Reference:
+        https://docs.getdbt.com/reference/project-configs/target-path
+        """
+        return self.target_path or \
+            os.getenv(DBT_TARGET_PATH_ENVVAR) or \
+            dbt_project.get("target-path") or \
+            DEFAULT_TARGET_PATH
+
 
     @classmethod
     def load_metadata(
