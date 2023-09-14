@@ -238,3 +238,41 @@ def test_logging_handler_does_not_warn():
     DbtLocalArtifactProcessor.load_metadata(path, [2], logger)
 
     logger.warning.assert_not_called()
+
+
+@mock.patch.dict(os.environ, {"DBT_TARGET_PATH": "target-from-envvar"}, clear=True)
+def test_build_target_path_with_user_defined():
+    processor = DbtLocalArtifactProcessor(
+        producer='https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt',
+        project_dir='tests/dbt/env_vars',
+        target='prod',
+        target_path="arg-target-name",
+        job_namespace="ol-namespace"
+    )
+    assert processor.build_target_path({}) == "arg-target-name"
+
+@mock.patch.dict(os.environ, {"DBT_TARGET_PATH": "target-from-envvar"}, clear=True)
+def test_build_target_path_with_envvar():
+    processor = DbtLocalArtifactProcessor(
+        producer='https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt',
+        project_dir='tests/dbt/env_vars',
+        target='prod',
+        job_namespace="ol-namespace"
+    )
+    assert processor.build_target_path({}) == "target-from-envvar"
+
+@pytest.mark.parametrize(
+    "test_name,dbt_project,expected",
+    [
+        ("with_dbt_project", {"target-path": "from-dbt-project"}, "from-dbt-project"),
+        ("with_default", {}, "target")
+    ]
+)
+def test_build_target_path(test_name, dbt_project, expected):
+    processor = DbtLocalArtifactProcessor(
+        producer='https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/dbt',
+        project_dir='tests/dbt/env_vars',
+        target='prod',
+        job_namespace="ol-namespace"
+    )
+    assert processor.build_target_path(dbt_project) == expected
