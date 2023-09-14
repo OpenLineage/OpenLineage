@@ -1,7 +1,7 @@
 [package]
 name = "openlineage_sql_java"
 description = "Java interface for the Rust OpenLineage lineage extraction library"
-version = "1.2.0"
+version = "1.3.0"
 edition = "2021"
 authors = ["Piotr Wojtczak <piotr.m.wojtczak@gmail.com>", "Maciej Obuchowski <obuchowski.maciej@gmail.com>"]
 keywords = ["sql", "lineage", "openlineage", "java", "jni"]
