@@ -1,25 +1,34 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.1.0...HEAD)
-### Feature
-* **Spark: Publish the `ProcessingEngineRunFacet` as part of the normal operation of the `OpenLineageSparkEventListener`.** [`#2089`](https://github.com/OpenLineage/OpenLineage/pull/2089) [@d-m-h](https://github.com/d-m-h)
-  * **ADDITION:** Publishes the spec-defined `ProcessEngineRunFacet` alongside the custom `SparkVersionFacet` (for now).
-  * **DEPRECATES**: `SparkVersionFacet`. Will be removed in `1.4.0`.
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.2.0...HEAD)
 
+## [1.2.0](https://github.com/OpenLineage/OpenLineage/compare/1.1.0...1.2.0) - 2023-09-14
 ### Added
-* **Spark: Capture and emit spark.databricks.clusterUsageTags.clusterAllTags variable from databricks environment .**
-[`#2098`](https://github.com/OpenLineage/OpenLineage/pull/2098)
-    *Added spark.databricks.clusterUsageTags.clusterAllTags to the list of environment variables captured from databricks
+* **Spark: publish the `ProcessingEngineRunFacet` as part of the normal operation of the `OpenLineageSparkEventListener`** [`#2089`](https://github.com/OpenLineage/OpenLineage/pull/2089) [@d-m-h](https://github.com/d-m-h)  
+    *Publishes the spec-defined `ProcessEngineRunFacet` alongside the custom `SparkVersionFacet` (for now).*
+    *The `SparkVersionFacet` is deprecated and will be removed in a future release.*
+* **Spark: capture and emit `spark.databricks.clusterUsageTags.clusterAllTags` variable from databricks environment** [`#2098`](https://github.com/OpenLineage/OpenLineage/pull/2098) [@Anirudh181001](https://github.com/Anirudh181001)  
+    *Adds `spark.databricks.clusterUsageTags.clusterAllTags` to the list of environment variables captured from databricks.*
      
 ### Fixed
+* **Proxy: fix Proxy chart** [`#2091`](https://github.com/OpenLineage/OpenLineage/pull/2091) [@harels](https://github.com/harels)  
+    *Includes the proper image to deploy in the helm chart.*
+* **Python: fix serde filtering** [`#2044`](https://github.com/OpenLineage/OpenLineage/pull/2044) [@xli-1026](https://github.com/xli-1026)  
+    *Fixes the bug causing values in list objects to be filtered accidentally.*
+* **Python: use non-deprecated `apiKey` if loading it from env variables** [`@2029`](https://github.com/OpenLineage/OpenLineage/pull/2029) [@mobuchowski](https://github.com/mobuchowski)  
+    *Changes `api_key` to `apiKey` in `create_token_provider`.*
 * **Spark: Improve RDDs on S3 integration.** [`#2039`](https://github.com/OpenLineage/OpenLineage/pull/2039) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Prepare integration test to access S3, fix input dataset duplicates and other minor fixes.*
-* **Flink: prevent sending `running` events after job completes.** [`#2075`](https://github.com/OpenLineage/OpenLineage/pull/2075) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Flink checkpoint tracking thread did not get stopped properly on job complete.*
-* **Spark & Flink: Unify dataset naming from URI objects.** [`#2083`](https://github.com/OpenLineage/OpenLineage/pull/2083) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Make sure Spark and Flink generate same dataset identifiers for the same datasets by having a single implementation to generate dataset namespace and name.*
-* **Spark: Databricks improvements.** [`#2076`](https://github.com/OpenLineage/OpenLineage/pull/2076) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Filter unwanted events on databricks and add an integration test to verify this. Add integration tests to verify dataset naming on databricks runtime is correct when table location is specified. Add integration test for wide transformation on delta tables.*
+    *Prepares integration test to access S3, fixes input dataset duplicates and includes other minor fixes.*
+* **Flink: prevent sending `running` events after job completes** [`#2075`](https://github.com/OpenLineage/OpenLineage/pull/2075) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Flink checkpoint tracking thread was not getting stopped properly on job complete.*
+* **Spark & Flink: Unify dataset naming from URI objects** [`#2083`](https://github.com/OpenLineage/OpenLineage/pull/2083) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Makes sure Spark and Flink generate same dataset identifiers for the same datasets by having a single implementation to generate dataset namespace and name.*
+* **Spark: Databricks improvements** [`#2076`](https://github.com/OpenLineage/OpenLineage/pull/2076) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Filters unwanted events on databricks and adds an integration test to verify this. Adds integration tests to verify dataset naming on databricks runtime is correct when table location is specified. Adds integration test for wide transformation on delta tables.*
+
+### Removed
+* **SQL: remove sqlparser dependency from iface-java and iface-py** [`#2090`](https://github.com/OpenLineage/OpenLineage/pull/2090) [@JDarDagran](https://github.com/JDarDagran)  
+   *Removes the dependency due to a breaking change in the latest release of the parser.*
 
 ## [1.1.0](https://github.com/OpenLineage/OpenLineage/compare/1.0.0...1.1.0) - 2023-08-23
 ### Added
