@@ -25,10 +25,10 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
-  "attrs>=23.1",
+  "attrs>=20.0",
   "python-dateutil>=2.8.2",
   "pyyaml>=5.4",
-  "requests>=2.31",
+  "requests>=2.20.0",
 ]
 optional-dependencies.kafka = [
   "confluent-kafka>=2.1.1",
