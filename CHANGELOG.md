@@ -18,13 +18,13 @@
 * **Python: use non-deprecated `apiKey` if loading it from env variables** [`@2029`](https://github.com/OpenLineage/OpenLineage/pull/2029) [@mobuchowski](https://github.com/mobuchowski)  
     *Changes `api_key` to `apiKey` in `create_token_provider`.*
 * **Spark: Improve RDDs on S3 integration.** [`#2039`](https://github.com/OpenLineage/OpenLineage/pull/2039) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-    *Prepare integration test to access S3, fix input dataset duplicates and other minor fixes.*
+    *Prepares integration test to access S3, fixes input dataset duplicates and includes other minor fixes.*
 * **Flink: prevent sending `running` events after job completes** [`#2075`](https://github.com/OpenLineage/OpenLineage/pull/2075) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-    *Flink checkpoint tracking thread did not get stopped properly on job complete.*
+    *Flink checkpoint tracking thread was not getting stopped properly on job complete.*
 * **Spark & Flink: Unify dataset naming from URI objects** [`#2083`](https://github.com/OpenLineage/OpenLineage/pull/2083) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-    *Make sure Spark and Flink generate same dataset identifiers for the same datasets by having a single implementation to generate dataset namespace and name.*
+    *Makes sure Spark and Flink generate same dataset identifiers for the same datasets by having a single implementation to generate dataset namespace and name.*
 * **Spark: Databricks improvements** [`#2076`](https://github.com/OpenLineage/OpenLineage/pull/2076) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-    *Filter unwanted events on databricks and add an integration test to verify this. Add integration tests to verify dataset naming on databricks runtime is correct when table location is specified. Add integration test for wide transformation on delta tables.*
+    *Filters unwanted events on databricks and adds an integration test to verify this. Adds integration tests to verify dataset naming on databricks runtime is correct when table location is specified. Adds integration test for wide transformation on delta tables.*
 
 ### Removed
 * **SQL: remove sqlparser dependency from iface-java and iface-py** [`#2090`](https://github.com/OpenLineage/OpenLineage/pull/2090) [@JDarDagran](https://github.com/JDarDagran)  
