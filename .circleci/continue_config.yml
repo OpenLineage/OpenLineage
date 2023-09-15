@@ -402,7 +402,7 @@ jobs:
       - *checkout_project_root
       - run:
           name: Generate cache key
-          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+          command: ./../../../.circleci/checksum.sh /tmp/checksum.txt
       - restore_cache:
           keys:
             - v1-release-client-java-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
