@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 from __future__ import annotations
 
-__version__ = "1.2.1"
+__version__ = "1.3.0"
 
 DEFAULT_TIMEOUT_MS = 5000
 DEFAULT_NAMESPACE_NAME = "default"
