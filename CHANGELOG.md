@@ -1,8 +1,8 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.2.1...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.2.2...HEAD)
 
-## [1.2.1](https://github.com/OpenLineage/OpenLineage/compare/1.1.0...1.2.1) - 2023-09-19
+## [1.2.2](https://github.com/OpenLineage/OpenLineage/compare/1.1.0...1.2.2) - 2023-09-19
 ### Added
 * **Spark: publish the `ProcessingEngineRunFacet` as part of the normal operation of the `OpenLineageSparkEventListener`** [`#2089`](https://github.com/OpenLineage/OpenLineage/pull/2089) [@d-m-h](https://github.com/d-m-h)  
     *Publishes the spec-defined `ProcessEngineRunFacet` alongside the custom `SparkVersionFacet` (for now).*
