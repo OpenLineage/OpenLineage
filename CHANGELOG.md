@@ -1,14 +1,12 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.2.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.2.1...HEAD)
 
-## [1.2.0](https://github.com/OpenLineage/OpenLineage/compare/1.1.0...1.2.0) - 2023-09-14
+## [1.2.1](https://github.com/OpenLineage/OpenLineage/compare/1.1.0...1.2.1) - 2023-09-19
 ### Added
 * **Spark: publish the `ProcessingEngineRunFacet` as part of the normal operation of the `OpenLineageSparkEventListener`** [`#2089`](https://github.com/OpenLineage/OpenLineage/pull/2089) [@d-m-h](https://github.com/d-m-h)  
     *Publishes the spec-defined `ProcessEngineRunFacet` alongside the custom `SparkVersionFacet` (for now).*
     *The `SparkVersionFacet` is deprecated and will be removed in a future release.*
-* **Spark: capture and emit `spark.databricks.clusterUsageTags.clusterAllTags` variable from databricks environment** [`#2098`](https://github.com/OpenLineage/OpenLineage/pull/2098) [@Anirudh181001](https://github.com/Anirudh181001)  
-    *Adds `spark.databricks.clusterUsageTags.clusterAllTags` to the list of environment variables captured from databricks.*
      
 ### Fixed
 * **Common: support parsing dbt_project.yml without target-path** [`#2106`](https://github.com/OpenLineage/OpenLineage/pull/2106) [@tatiana](https://github.com/tatiana)  
