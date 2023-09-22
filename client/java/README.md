@@ -35,16 +35,16 @@ client.emit(startOrCompleteRun);
 
 ## Configuration
 
-Use the following options to configure the client:
+To configure the client, you have several options:
 
-* An `openlineage.yml` in the user's current working directory
-* An `openlineage.yml` under `.openlineage/` in the user's home directory (ex: `~/.openlineage/openlineage.yml`)
-* Environment variables
+- Use an `openlineage.yml` located in the user's current working directory.
+- Place an `openlineage.yml` inside `.openlineage/` directory in the user's home.
+    - Example: `~/.openlineage/openlineage.yml`
+- Set configuration using environment variables.
 
-> **Note:** By default, the client will give you sane defaults, but you can easily override them.
->
+> **Note:** If you don't specify configurations, the client uses default settings. However, you can easily modify these defaults.
 
-`YAML`
+### Example YAML Configuration
 
 ```yaml
 transport:
@@ -52,26 +52,54 @@ transport:
   # ... transport specific configuration
 ```
 
-> **Note:** For a full list of supported transports, see [`transports`](https://github.com/OpenLineage/OpenLineage/tree/main/client/java/src/main/java/io/openlineage/client/transports).
+> **Tip:** For details on supported transport types, refer to the [`transports`](https://github.com/OpenLineage/OpenLineage/tree/main/client/java/src/main/java/io/openlineage/client/transports) directory.
 
 ## Transports
 
-The `Transport` abstraction defines an `emit()` method for   `OpenLineage.RunEvent`. There are three built-in transports: `ConsoleTransport`, `HttpTransport`, and `KafkaTransport`.
+The `Transport` abstraction comes with an `emit()` method tailored for the `OpenLineage.RunEvent`. Below are the available built-in transports:
+
+### [`ConsoleTransport`](https://github.com/OpenLineage/OpenLineage/tree/main/client/java/src/main/java/io/openlineage/client/transports/ConsoleTransport.java)
+
+This straightforward transport emits OpenLineage events directly to the console through a logger. Be cautious when using the DEBUG log level, as it might result in double-logging due to the `OpenLineageClient` also logging.
+
+**Configuration**:
+```yaml
+transport:
+  type: console
+```
+*No specific configuration required.*
+
+### [`FileTransport`](https://github.com/OpenLineage/OpenLineage/tree/main/client/java/src/main/java/io/openlineage/client/transports/FileTransport.java)
+
+Designed mainly for integration testing, the `FileTransport` appends OpenLineage events to a given file. Events are newline-separated, with all pre-existing newline characters within the event JSON removed.
+
+**Configuration**:
+```yaml
+transport:
+  type: file
+  location: /path/to/your/file.txt
+```
+
+*Notes*:
+- If the target file is absent, it's created.
+- Events are added to the file, separated by newlines.
+- Intrinsic newline characters within the event JSON are eliminated to ensure one-line events.
 
 ### [`HttpTransport`](https://github.com/OpenLineage/OpenLineage/tree/main/client/java/src/main/java/io/openlineage/client/transports/HttpTransport.java)
 
+Allows configuration via environment variables to customize the URL and API key:
+
+**YAML Configuration**:
 ```yaml
 transport:
-  type: HTTP
+  type: http
   url: http://localhost:5000
   auth:
     type: api_key
     api_key: f38d2189-c603-4b46-bdea-e573a3b5a7d5
 ```
 
-You can override the default configuration of the `HttpTransport` via environment variables by specifying the URL and API key when
-creating a new client:
-
+**Java Configuration**:
 ```java
 OpenLineageClient client = OpenLineageClient.builder()
   .transport(
@@ -82,8 +110,7 @@ OpenLineageClient client = OpenLineageClient.builder()
   .build();
 ```
 
-To configure the client with query params appended on each HTTP request, use:
-
+For query parameters on each HTTP request:
 ```java
 Map<String, String> queryParamsToAppend = Map.of(
   "param0","value0",
@@ -106,18 +133,20 @@ OpenLineage.RunEvent startOrCompleteRun = ...
 client.emit(startOrCompleteRun);
 ```
 
-Alternatively, use the following environment variables to configure the `HttpTransport`:
+Environment variables:
+- `OPENLINEAGE_URL`: HTTP transport URL (default: `http://localhost:8080`).
+- `OPENLINEAGE_API_KEY`: API key for each HTTP request.
 
-* `OPENLINEAGE_URL`: the URL for the HTTP transport (default: `http://localhost:8080`)
-* `OPENLINEAGE_API_KEY`: the API key to be set on each HTTP request
-
-Not everything will be supported while using this method.
+*Note*: Not all features might be accessible via this method.
 
 ### [`KafkaTransport`](https://github.com/OpenLineage/OpenLineage/tree/main/client/java/src/main/java/io/openlineage/client/transports/KafkaTransport.java)
 
+This transport requires the artifact `org.apache.kafka:kafka-clients:3.1.0` (or compatible) on your classpath.
+
+**Configuration**:
 ```yaml
 transport:
-  type: Kafka
+  type: kafka
   topicName: openlineage.events
   # Kafka properties (see: http://kafka.apache.org/0100/documentation.html#producerconfigs)
   properties:
@@ -128,7 +157,26 @@ transport:
     value.serializer: org.apache.kafka.common.serialization.StringSerializer
 ```
 
-KafkaTransport depends on you to provide artifact `org.apache.kafka:kafka-clients:3.1.0` or compatible on your classpath.
+### 5. [`KinesisTransport`](https://github.com/OpenLineage/OpenLineage/tree/main/client/java/src/main/java/io/openlineage/client/transports/KinesisTransport.java)
+
+The `KinesisTransport` facilitates sending OpenLineage events to an Amazon Kinesis stream.
+
+**Configuration**:
+```yaml
+transport:
+  type: kinesis
+  streamName: your_kinesis_stream_name
+  region: your_aws_region
+  roleArn: arn:aws:iam::account-id:role/role-name   # optional
+  properties:  # Refer to amazon-kinesis-producer's default configuration for the available properties
+    property_name_1: value_1
+    property_name_2: value_2
+```
+
+**Behavior**:
+- Events are serialized to JSON upon the `emit()` call and dispatched to the Kinesis stream.
+- The partition key is generated by combining the job's namespace and name.
+- Two constructors are available: one accepting both `KinesisProducer` and `KinesisConfig` and another solely accepting `KinesisConfig`.
 
 ## Facets Configuration
 
