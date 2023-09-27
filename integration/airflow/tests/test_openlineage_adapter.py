@@ -3,24 +3,24 @@
 
 import logging
 import os
-from unittest.mock import patch
+from unittest import mock
+from unittest.mock import MagicMock, patch
 
 from openlineage.airflow.adapter import OpenLineageAdapter
 
 
-@patch.dict(os.environ, {
-    "MARQUEZ_URL": "http://marquez:5000",
-    "MARQUEZ_API_KEY": "api-key"
-})
+@patch.dict(
+    os.environ, {"MARQUEZ_URL": "http://marquez:5000", "MARQUEZ_API_KEY": "api-key"}
+)
 def test_create_client_from_marquez_url():
     client = OpenLineageAdapter().get_or_create_openlineage_client()
     assert client.transport.url == "http://marquez:5000"
 
 
-@patch.dict(os.environ, {
-    "OPENLINEAGE_URL": "http://ol-api:5000",
-    "OPENLINEAGE_API_KEY": "api-key"
-})
+@patch.dict(
+    os.environ,
+    {"OPENLINEAGE_URL": "http://ol-api:5000", "OPENLINEAGE_API_KEY": "api-key"},
+)
 def test_create_client_from_ol_env():
     client = OpenLineageAdapter().get_or_create_openlineage_client()
     assert client.transport.url == "http://ol-api:5000"
@@ -41,3 +41,38 @@ def test_setting_ol_adapter_log_level() -> None:
         OpenLineageAdapter()
         assert parent_logger.getEffectiveLevel() == logging.CRITICAL
         assert logger.getEffectiveLevel() == logging.CRITICAL
+
+
+@patch(
+    "openlineage.airflow.adapter.OpenLineageAdapter.get_or_create_openlineage_client"
+)
+@patch("openlineage.airflow.adapter.redact_with_exclusions")
+@patch("openlineage.airflow.adapter.Stats.incr")
+@patch("openlineage.airflow.adapter.Stats.timer")
+def test_openlineage_adapter_stats_emit_success(
+    mock_stats_timer, mock_stats_incr, mock_redact, mock_get_client
+):
+    adapter = OpenLineageAdapter()
+
+    adapter.emit(MagicMock())
+
+    mock_stats_incr.assert_not_called()
+    mock_stats_timer.assert_called_with("ol.emit.attempts")
+
+
+@patch(
+    "openlineage.airflow.adapter.OpenLineageAdapter.get_or_create_openlineage_client"
+)
+@patch("openlineage.airflow.adapter.redact_with_exclusions")
+@patch("openlineage.airflow.adapter.Stats.incr")
+@patch("openlineage.airflow.adapter.Stats.timer")
+def test_openlineage_adapter_stats_emit_failed(
+    mock_stats_timer, mock_stats_incr, mock_redact, mock_get_client
+):
+    adapter = OpenLineageAdapter()
+    mock_get_client.return_value.emit.side_effect = Exception()
+
+    adapter.emit(MagicMock())
+
+    mock_stats_timer.assert_called_with("ol.emit.attempts")
+    mock_stats_incr.assert_has_calls([mock.call("ol.emit.failed")])
