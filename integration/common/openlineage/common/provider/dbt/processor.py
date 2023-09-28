@@ -591,7 +591,7 @@ class DbtArtifactProcessor:
         elif self.adapter_type == Adapter.DATABRICKS:
             return f"databricks://{profile['host']}"
         elif self.adapter_type == Adapter.SQLSERVER:
-            return f"mssql://{profile['server']}"
+            return f"mssql://{profile['server']}:{profile['port']}"
         elif self.adapter_type == Adapter.SPARK:
             port = ""
 
