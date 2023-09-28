@@ -4,9 +4,10 @@
 from typing import Optional, Tuple, cast
 from urllib.parse import urlparse
 
-from airflow.lineage.entities import File, Table
 from openlineage.client.facet import SchemaDatasetFacet, SchemaField
 from openlineage.client.run import Dataset
+
+from airflow.lineage.entities import File, Table
 
 
 def convert_from_object_storage_uri(uri: str) -> Optional[Dataset]:
