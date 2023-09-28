@@ -4,6 +4,7 @@
 from typing import Optional, Tuple, cast
 from urllib.parse import urlparse
 
+from openlineage.client.facet import SchemaDatasetFacet, SchemaField
 from openlineage.client.run import Dataset
 
 from airflow.lineage.entities import File, Table
@@ -42,7 +43,22 @@ def convert_to_dataset(obj):
         return Dataset(
             namespace=obj.cluster,
             name=f"{obj.database}.{obj.name}",
+            facets={
+                "schema": SchemaDatasetFacet(
+                    fields=[
+                        SchemaField(
+                            name=column.name,
+                            type=column.data_type,
+                            description=column.description,
+                        )
+                        for column in obj.columns
+                    ]
+                )
+            }
+            if obj.columns
+            else {},
         )
+
     elif isinstance(obj, File):
         return convert_from_object_storage_uri(obj.url)
     else:
