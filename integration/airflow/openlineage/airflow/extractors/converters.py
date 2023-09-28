@@ -8,31 +8,23 @@ from openlineage.client.run import Dataset
 
 from airflow.lineage.entities import File, Table
 
+from openlineage.client.facet import SchemaDatasetFacet, SchemaField
+
 
 def convert_from_object_storage_uri(uri: str) -> Optional[Dataset]:
     try:
         scheme, netloc, path, params, _, _ = cast(
-            Tuple[str, str, str, str, str, str],
-            urlparse(uri)
+            Tuple[str, str, str, str, str, str], urlparse(uri)
         )
     except Exception:
         return None
     if scheme.startswith("s3"):
-        return Dataset(
-            namespace=f"s3://{netloc}",
-            name=path
-        )
+        return Dataset(namespace=f"s3://{netloc}", name=path)
     elif scheme.startswith(("gcs", "gs")):
-        return Dataset(
-            namespace=f"gs://{netloc}",
-            name=path
-        )
+        return Dataset(namespace=f"gs://{netloc}", name=path)
     elif "/" not in uri:
         return None
-    return Dataset(
-        namespace=scheme,
-        name=f"/{netloc}{path}"
-    )
+    return Dataset(namespace=scheme, name=f"/{netloc}{path}")
 
 
 def convert_to_dataset(obj):
@@ -42,7 +34,22 @@ def convert_to_dataset(obj):
         return Dataset(
             namespace=obj.cluster,
             name=f"{obj.database}.{obj.name}",
+            facets={
+                "schema": SchemaDatasetFacet(
+                    fields=[
+                        SchemaField(
+                            name=column.name,
+                            type=column.data_type,
+                            description=column.description,
+                        )
+                        for column in obj.columns
+                    ]
+                )
+            }
+            if obj.columns
+            else {},
         )
+
     elif isinstance(obj, File):
         return convert_from_object_storage_uri(obj.url)
     else:
