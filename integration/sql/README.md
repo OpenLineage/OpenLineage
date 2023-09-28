@@ -9,6 +9,24 @@ If you're using OpenLineage integration, there's good chance that you're already
 This library is implemented in Rust and provides a Python and Java interface. The Rust implementation has not yet been published to Cargo.
 The interface is explained in INTERFACE.md.
 
+## Supported Dialects
+
+The parser supports several dialects. For an up-to-date list of supported dialects, please refer to [dialect.rs](impl/src/dialect.rs), specifically the function `get_dialect`.
+
+The supported dialects are:
+
+* `ansi`
+* `bigquery`
+* `hive`
+* `mysql`
+* `mssql`
+* `postgres`
+* `redshift`
+* `snowflake`
+* `sqlite`
+
+Support for a `generic` dialect is also provided.
+
 ## Installation
 
 ### Python
