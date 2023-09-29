@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 import io.openlineage.client.utils.DatasetIdentifier;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Arrays;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.fs.Path;
@@ -24,9 +25,15 @@ import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.catalyst.catalog.CatalogStorageFormat;
 import org.apache.spark.sql.catalyst.catalog.CatalogTable;
+import org.apache.spark.sql.catalyst.catalog.SessionCatalog;
+import org.apache.spark.sql.internal.SessionState;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import scala.Option;
+import scala.Some;
+import scala.Tuple2;
 
 @Slf4j
 class PathUtilsTest {
@@ -42,11 +49,17 @@ class PathUtilsTest {
   CatalogTable catalogTable = mock(CatalogTable.class);
   CatalogStorageFormat catalogStorageFormat = mock(CatalogStorageFormat.class);
 
+  @AfterEach
+  void clearSparkConf() {
+    Tuple2<String, String>[] configuration = sparkConf.getAll();
+    Arrays.stream(configuration).forEach(tuple -> sparkConf.remove(tuple._1()));
+  }
+
   @Test
   void testPathSeparation() {
     Path path = new Path("scheme:/asdf/fdsa");
     assertThat(path.toUri().getScheme()).isEqualTo(SCHEME);
-    assertThat(path.toUri().getAuthority()).isEqualTo(null);
+    assertThat(path.toUri().getAuthority()).isNull();
     assertThat(path.toUri().getPath()).isEqualTo("/asdf/fdsa");
 
     path = new Path("scheme://asdf/fdsa");
@@ -59,12 +72,12 @@ class PathUtilsTest {
   void testPathSeparationWithNullAuthority() {
     Path path = new Path("scheme:///asdf/fdsa");
     assertThat(path.toUri().getScheme()).isEqualTo(SCHEME);
-    assertThat(path.toUri().getAuthority()).isEqualTo(null);
+    assertThat(path.toUri().getAuthority()).isNull();
     assertThat(path.toUri().getPath()).isEqualTo("/asdf/fdsa");
 
     path = new Path("scheme:////asdf/fdsa");
     assertThat(path.toUri().getScheme()).isEqualTo(SCHEME);
-    assertThat(path.toUri().getAuthority()).isEqualTo(null);
+    assertThat(path.toUri().getAuthority()).isNull();
     assertThat(path.toUri().getPath()).isEqualTo("/asdf/fdsa");
   }
 
@@ -127,7 +140,7 @@ class PathUtilsTest {
     DatasetIdentifier di = PathUtils.fromCatalogTable(catalogTable, Optional.of(sparkConf));
     assertThat(di.getName()).isEqualTo("/tmp/warehouse");
     assertThat(di.getNamespace()).isEqualTo("file");
-    assertThat(di.getSymlinks().size()).isEqualTo(1);
+    assertThat(di.getSymlinks()).hasSize(1);
     assertThat(di.getSymlinks().get(0).getName()).isEqualTo(TABLE);
     assertThat(di.getSymlinks().get(0).getNamespace()).isEqualTo("hive://10.1.0.1:9083");
 
@@ -158,14 +171,14 @@ class PathUtilsTest {
     DatasetIdentifier di = PathUtils.fromCatalogTable(catalogTable, Optional.of(sparkConf));
     assertThat(di.getName()).isEqualTo("/warehouse/table");
     assertThat(di.getNamespace()).isEqualTo("hdfs://namenode:8020");
-    assertThat(di.getSymlinks().size()).isEqualTo(1);
+    assertThat(di.getSymlinks()).hasSize(1);
     assertThat(di.getSymlinks().get(0).getName()).isEqualTo("db.table");
     assertThat(di.getSymlinks().get(0).getNamespace()).isEqualTo("/warehouse");
   }
 
   @Test
   void testFromCatalogExceptionIsThrownWhenUnableToExtractDatasetIdentifier() {
-    try (MockedStatic mocked = mockStatic(SparkSession.class)) {
+    try (MockedStatic<SparkSession> mocked = mockStatic(SparkSession.class)) {
       mocked.when(SparkSession::active).thenThrow(new IllegalStateException("some message"));
       mocked.when(SparkSession::getDefaultSession).thenReturn(Option.empty());
       assertThrows(IllegalArgumentException.class, () -> PathUtils.fromCatalogTable(catalogTable));
@@ -181,7 +194,7 @@ class PathUtilsTest {
   @Test
   void testDatasetNameReplaceNamePattern() throws URISyntaxException {
     DatasetIdentifier di;
-    try (MockedStatic mocked = mockStatic(SparkSession.class)) {
+    try (MockedStatic<SparkSession> mocked = mockStatic(SparkSession.class)) {
       mocked.when(SparkSession::getDefaultSession).thenReturn(Option.apply(sparkSession));
       when(sparkSession.sparkContext()).thenReturn(sparkContext);
       when(sparkContext.getConf()).thenReturn(sparkConf);
@@ -200,6 +213,117 @@ class PathUtilsTest {
           "spark.openlineage.dataset.removePath.pattern", "(.*)(?<remove>\\/.*\\/.*\\/.*)");
       di = PathUtils.fromURI(new URI("s3:///path-without-group/file"), null);
       assertThat(di.getName()).isEqualTo("/path-without-group/file");
+    }
+  }
+
+  static class FromCatalogTableShouldReturnTheCorrectScheme {
+    private final SparkConf sparkConf;
+    private final URI tableUri;
+    private final String tableName;
+    private final String databaseName;
+    private final String expectedNamespace;
+    private final String expectedName;
+    private final String expectedSymlinkNamespace;
+    private final String expectedSymlinkName;
+
+    public FromCatalogTableShouldReturnTheCorrectScheme(
+        SparkConf sparkConf,
+        URI tableUri,
+        String tableName,
+        String databaseName,
+        String expectedNamespace,
+        String expectedName,
+        String expectedSymlinkNamespace,
+        String expectedSymlinkName) {
+      this.sparkConf = sparkConf;
+      this.tableUri = tableUri;
+      this.tableName = tableName;
+      this.databaseName = databaseName;
+      this.expectedNamespace = expectedNamespace;
+      this.expectedName = expectedName;
+      this.expectedSymlinkNamespace = expectedSymlinkNamespace;
+      this.expectedSymlinkName = expectedSymlinkName;
+    }
+
+    public void performTest() {
+      try (MockedStatic<SparkSession> mockedStatic = mockStatic(SparkSession.class)) {
+        // Mock the dependencies
+        SparkSession sparkSession = mock(SparkSession.class);
+        SparkContext sparkContext = mock(SparkContext.class);
+        SessionState sessionState = mock(SessionState.class);
+        SessionCatalog sessionCatalog = mock(SessionCatalog.class);
+        CatalogTable catalogTable = mock(CatalogTable.class);
+        TableIdentifier tableIdentifier =
+            TableIdentifier.apply(tableName, Some.apply(databaseName));
+
+        // **intensive sweating commences**
+        // TODO - We need to have PathUtils decide which accessor we should use
+        mockedStatic.when(SparkSession::active).thenReturn(sparkSession);
+        mockedStatic.when(SparkSession::getDefaultSession).thenReturn(Option.empty());
+        mockedStatic.when(SparkSession::getActiveSession).thenReturn(Some.apply(sparkSession));
+
+        // Mock the chain of method calls
+        when(sparkSession.sparkContext()).thenReturn(sparkContext);
+        when(sparkSession.sessionState()).thenReturn(sessionState);
+        when(sessionState.catalog()).thenReturn(sessionCatalog);
+
+        when(sessionCatalog.defaultTablePath(tableIdentifier)).thenReturn(tableUri);
+        when(catalogTable.identifier()).thenReturn(tableIdentifier);
+
+        DatasetIdentifier datasetIdentifier =
+            PathUtils.fromCatalogTable(catalogTable, Optional.of(sparkConf));
+
+        assertThat(datasetIdentifier).isNotNull();
+        assertThat(datasetIdentifier.getNamespace()).isEqualTo(expectedNamespace);
+        assertThat(datasetIdentifier.getName()).isEqualTo(expectedName);
+        assertThat(datasetIdentifier.getSymlinks()).hasSize(1);
+        assertThat(datasetIdentifier.getSymlinks().get(0)).isNotNull();
+        // The namespace in the symlink should be equal to the database name
+        assertThat(datasetIdentifier.getSymlinks().get(0).getNamespace())
+            .isEqualTo(expectedSymlinkNamespace);
+        // The name in the symlink should be equal to the table name
+        assertThat(datasetIdentifier.getSymlinks().get(0).getName()).isEqualTo(expectedSymlinkName);
+      }
+    }
+  }
+
+  @Nested
+  class WithHiveSupport {
+    @Test
+    void testFromCatalogTableShouldReturnADatasetIdentifierWithTheActualScheme() {
+      SparkConf sparkConf = new SparkConf();
+      sparkConf.set("spark.sql.hive.metastore.uris", "thrift://127.0.0.1:9876");
+      sparkConf.set("spark.sql.catalogImplementation", "hive");
+      URI tableUri = URI.create("hdfs://namenode/user/hive/warehouse/foo.db/bar");
+      new FromCatalogTableShouldReturnTheCorrectScheme(
+              sparkConf,
+              tableUri,
+              "bar",
+              "foo",
+              "hdfs://namenode",
+              tableUri.getPath(),
+              "hive://127.0.0.1:9876",
+              "foo.bar")
+          .performTest();
+    }
+  }
+
+  @Nested
+  class WithoutHiveSupport {
+    @Test
+    void testFromCatalogTableShouldReturnADatasetIdentifierWithTheActualScheme() {
+      SparkConf sparkConf = new SparkConf();
+      URI tableUri = URI.create("hdfs://namenode/user/hive/warehouse/foo.db/bar");
+      new FromCatalogTableShouldReturnTheCorrectScheme(
+              sparkConf,
+              tableUri,
+              "bar",
+              "foo",
+              "hdfs://namenode",
+              tableUri.getPath(),
+              "/user/hive/warehouse/foo.db",
+              "foo.bar")
+          .performTest();
     }
   }
 }
