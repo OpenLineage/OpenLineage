@@ -6,11 +6,18 @@
 package io.openlineage.spark.agent;
 
 import static io.openlineage.spark.agent.MockServerUtils.verifyEvents;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockserver.model.HttpRequest.request;
 
 import com.google.common.collect.ImmutableList;
+import io.openlineage.client.OpenLineage.RunEvent;
+import io.openlineage.client.OpenLineage.RunFacet;
+import io.openlineage.client.OpenLineageClientUtils;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -30,6 +37,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockserver.configuration.Configuration;
 import org.mockserver.integration.ClientAndServer;
+import org.mockserver.model.HttpRequest;
 import org.slf4j.event.Level;
 
 @Tag("integration-test")
@@ -83,6 +91,7 @@ public class SparkIcebergIntegrationTest {
                 "spark.openlineage.transport.url",
                 "http://localhost:" + mockServer.getPort() + "/api/v1/namespaces/iceberg-namespace")
             .config("spark.openlineage.facets.disabled", "spark_unknown;spark.logicalPlan")
+            .config("spark.openlineage.debugFacet", "enabled")
             .config("spark.extraListeners", OpenLineageSparkListener.class.getName())
             .config("spark.sql.catalog.spark_catalog", "org.apache.iceberg.spark.SparkCatalog")
             .config("spark.sql.catalog.spark_catalog.type", "hadoop")
@@ -274,6 +283,69 @@ public class SparkIcebergIntegrationTest {
 
     verifyEvents(
         mockServer, "pysparkV2AppendDataStartEvent.json", "pysparkV2AppendDataCompleteEvent.json");
+  }
+
+  @Test
+  void testDebugFacet() {
+    clearTables("iceberg_temp", "temp");
+    createTempDataset().createOrReplaceTempView("temp");
+    spark.sql("CREATE TABLE iceberg_temp USING iceberg AS SELECT * FROM temp");
+
+    HttpRequest[] httpRequests =
+        mockServer.retrieveRecordedRequests(request().withPath("/api/v1/lineage"));
+    RunEvent event =
+        OpenLineageClientUtils.runEventFromJson(
+            httpRequests[httpRequests.length - 1].getBodyAsString());
+
+    assertThat(event.getRun().getFacets().getAdditionalProperties()).containsKey("debug");
+
+    RunFacet debug = event.getRun().getFacets().getAdditionalProperties().get("debug");
+
+    // verify classpath
+    Map<String, Object> classpathFacet =
+        (Map<String, Object>) debug.getAdditionalProperties().get("classpath");
+    assertThat(classpathFacet)
+        .containsKeys("openLineageVersion", "sparkVersion", "scalaVersion", "classDetails");
+    assertThat((ArrayList) classpathFacet.get("classDetails")).hasSize(3);
+    assertThat((Map) ((ArrayList) classpathFacet.get("classDetails")).get(1))
+        .containsEntry("onClasspath", true)
+        .containsEntry("className", "org.apache.iceberg.catalog.Catalog");
+
+    // verify system
+    Map<String, Object> systemFacet =
+        (Map<String, Object>) debug.getAdditionalProperties().get("system");
+
+    assertThat((String) systemFacet.get("sparkDeployMode")).isEqualTo("client");
+    assertThat((String) systemFacet.get("javaVersion")).isNotEmpty();
+    assertThat((String) systemFacet.get("javaVendor")).isNotEmpty();
+    assertThat((String) systemFacet.get("osArch")).isNotEmpty();
+    assertThat((String) systemFacet.get("osName")).isNotEmpty();
+    assertThat((String) systemFacet.get("osVersion")).isNotEmpty();
+    assertThat((String) systemFacet.get("userLanguage")).isNotEmpty();
+    assertThat((String) systemFacet.get("userTimezone")).isNotEmpty();
+
+    // verify logical plan
+    Map<String, Object> logicalPlan =
+        (Map<String, Object>) debug.getAdditionalProperties().get("logicalPlan");
+    ArrayList<HashMap<String, Object>> nodes =
+        (ArrayList<HashMap<String, Object>>) logicalPlan.get("nodes");
+
+    assertThat(nodes.size()).isGreaterThan(0); // LogicalPlan differs per Spark Version
+    assertThat((String) nodes.get(0).get("id")).startsWith("Create");
+    assertThat((String) nodes.get(0).get("desc")).startsWith("Create");
+
+    // verify spark config
+    Map<String, Object> configFacet =
+        (Map<String, Object>) debug.getAdditionalProperties().get("config");
+
+    assertThat(configFacet)
+        .containsEntry("extraListeners", "io.openlineage.spark.agent.OpenLineageSparkListener")
+        .containsEntry("catalogClass", "org.apache.spark.sql.internal.CatalogImpl")
+        .containsEntry(
+            "extensions", "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions");
+
+    assertThat((Map<String, String>) configFacet.get("openLineageConfig"))
+        .containsKeys("namespace", "transport.type", "transport.url", "transport.endpoint");
   }
 
   private Dataset<Row> createTempDataset() {
