@@ -36,6 +36,7 @@ import org.apache.spark.sql.sources.RelationProvider;
 import org.apache.spark.sql.sources.SchemaRelationProvider;
 import org.apache.spark.sql.types.StructType;
 import scala.Option;
+import scala.collection.Seq$;
 
 /**
  * {@link LogicalPlan} visitor that matches an {@link SaveIntoDataSourceCommand} and extracts the
@@ -154,7 +155,7 @@ public class SaveIntoDataSourceCommandVisitor
       throw ex;
     }
     LogicalRelation logicalRelation =
-        new LogicalRelation(relation, schema.toAttributes(), Option.empty(), command.isStreaming());
+        new LogicalRelation(relation, Seq$.MODULE$.empty(), Option.empty(), command.isStreaming());
     return delegate(
             context.getOutputDatasetQueryPlanVisitors(), context.getOutputDatasetBuilders(), event)
         .applyOrElse(

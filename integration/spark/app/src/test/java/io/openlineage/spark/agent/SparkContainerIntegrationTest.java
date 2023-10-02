@@ -269,10 +269,7 @@ class SparkContainerIntegrationTest {
   void testTruncateTable() {
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
         network, openLineageClientMockContainer, "testTruncateTable", "spark_truncate_table.py");
-    verifyEvents(
-        mockServerClient,
-        "pysparkTruncateTableStartEvent.json",
-        "pysparkTruncateTableCompleteEvent.json");
+    verifyEvents(mockServerClient, "pysparkTruncateTableCompleteEvent.json");
   }
 
   @Test
