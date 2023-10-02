@@ -70,6 +70,7 @@ public class MetastoreHive3Test {
   }
 
   @Test
+  @Tag("iceberg")
   void IcebergTablesTest() {
     executeSql("create database if not exists %s", database);
     executeSql("drop table if exists %s.%s", database, table);

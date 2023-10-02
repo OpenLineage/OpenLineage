@@ -19,6 +19,8 @@ public class DatasetBuilderFactoryProvider {
       "io.openlineage.spark.agent.lifecycle.Spark33DatasetBuilderFactory";
   private static final String SPARK34_FACTORY_NAME =
       "io.openlineage.spark.agent.lifecycle.Spark34DatasetBuilderFactory";
+  private static final String SPARK35_FACTORY_NAME =
+      "io.openlineage.spark.agent.lifecycle.Spark35DatasetBuilderFactory";
 
   public static DatasetBuilderFactory getInstance() {
     String version = package$.MODULE$.SPARK_VERSION();
@@ -42,6 +44,8 @@ public class DatasetBuilderFactoryProvider {
       return SPARK33_FACTORY_NAME;
     } else if (version.startsWith("3.4")) {
       return SPARK34_FACTORY_NAME;
+    } else if (version.startsWith("3.5")) {
+      return SPARK35_FACTORY_NAME;
     } else {
       return SPARK3_FACTORY_NAME;
     }
