@@ -8,27 +8,29 @@ package io.openlineage.spark.agent;
 import static io.openlineage.spark.agent.MockServerUtils.verifyEvents;
 import static org.mockserver.model.HttpRequest.request;
 
-import lombok.SneakyThrows;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.mockserver.client.MockServerClient;
-import org.mockserver.model.RegexBody;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.MockServerContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Tag("integration-test")
+@Tag("bigquery")
 @Testcontainers
-class SparkContainerIntegrationTest {
+class SparkBigQueryIntegrationTest {
 
   private static final Network network = Network.newNetwork();
 
@@ -38,10 +40,8 @@ class SparkContainerIntegrationTest {
 
   private static final String SPARK_3 = "(3.*)";
   private static final String SPARK_VERSION = "spark.version";
-
-  private static GenericContainer<?> pyspark;
   private static MockServerClient mockServerClient;
-  private static final Logger logger = LoggerFactory.getLogger(SparkContainerIntegrationTest.class);
+  private static final Logger logger = LoggerFactory.getLogger(SparkBigQueryIntegrationTest.class);
 
   @BeforeAll
   public static void setup() {
@@ -59,11 +59,6 @@ class SparkContainerIntegrationTest {
   @AfterEach
   public void cleanupSpark() {
     mockServerClient.reset();
-    try {
-      if (pyspark != null) pyspark.stop();
-    } catch (Exception e2) {
-      logger.error("Unable to shut down pyspark container", e2);
-    }
   }
 
   @AfterAll
@@ -77,22 +72,32 @@ class SparkContainerIntegrationTest {
   }
 
   @Test
+  @EnabledIfEnvironmentVariable(named = "CI", matches = "true")
   @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3) // Spark version >= 3.*
-  void testSymlinksFacetForHiveCatalog() {
+  void testReadAndWriteFromBigquery() {
+    List<String> sparkConfigParams = new ArrayList<>();
+    sparkConfigParams.add(
+        "spark.hadoop.google.cloud.auth.service.account.json.keyfile=/opt/gcloud/gcloud-service-key.json");
+    sparkConfigParams.add("spark.hadoop.google.cloud.auth.service.account.enable=true");
+    sparkConfigParams.add(
+        "spark.hadoop.fs.AbstractFileSystem.gs.impl=com.google.cloud.hadoop.fs.gcs.GoogleHadoopFS");
+    sparkConfigParams.add(
+        "spark.hadoop.fs.gs.impl=com.google.cloud.hadoop.fs.gcs.GoogleHadoopFileSystem");
+
     SparkContainerUtils.runPysparkContainerWithDefaultConf(
-        network, openLineageClientMockContainer, "symlinks", "spark_hive_catalog.py");
-    verifyEvents(mockServerClient, "pysparkSymlinksComplete.json");
-  }
-
-  @Test
-  @SneakyThrows
-  void testFacetsDisable() {
-    SparkContainerUtils.runPysparkContainerWithDefaultConf(
-        network, openLineageClientMockContainer, "testFacetsDisable", "spark_facets_disable.py");
-
-    // response should not contain any of the below
-    String regex = "^((?!(spark_unknown|spark.logicalPlan|dataSource)).)*$";
-
-    mockServerClient.verify(request().withPath("/api/v1/lineage").withBody(new RegexBody(regex)));
+        network,
+        openLineageClientMockContainer,
+        "testReadAndWriteFromBigquery",
+        Collections.emptyList(),
+        sparkConfigParams,
+        "spark_bigquery.py");
+    verifyEvents(
+        mockServerClient,
+        Collections.singletonMap(
+            "{spark_version}", System.getProperty(SPARK_VERSION).replace(".", "_")),
+        "pysparkBigquerySaveStart.json",
+        "pysparkBigqueryInsertStart.json",
+        "pysparkBigqueryInsertEnd.json",
+        "pysparkBigquerySaveEnd.json");
   }
 }

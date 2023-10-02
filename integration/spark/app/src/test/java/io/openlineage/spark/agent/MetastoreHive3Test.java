@@ -26,6 +26,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Slf4j
 @Tag("integration-test")
+@Tag("hive-metastore")
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "CI", matches = "true")
 @EnabledIfSystemProperty(named = "spark.version", matches = "(3.*)")

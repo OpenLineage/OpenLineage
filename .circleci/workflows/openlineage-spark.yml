@@ -20,6 +20,7 @@ workflows:
           matrix:
             parameters:
               spark-version: [ '2.4.6', '3.2.4', '3.3.2', '3.4.1' ]
+              integration-test-tags: [ 'iceberg,delta','hive-metastore,kafka','bigquery,column-lineage','other' ]
           requires:
             - build-integration-spark
       - workflow_complete:

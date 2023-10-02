@@ -70,7 +70,7 @@ public class SparkContainerUtils {
         .withCommand(command);
   }
 
-  static GenericContainer<?> makeKafkaContainer(Network network) {
+  static KafkaContainer makeKafkaContainer(Network network) {
     return new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.0.0"))
         .withNetworkAliases("kafka")
         .withNetwork(network);

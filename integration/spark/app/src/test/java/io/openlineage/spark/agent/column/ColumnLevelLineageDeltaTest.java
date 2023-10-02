@@ -41,6 +41,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+@Tag("integration-test")
 @Tag("delta")
 public class ColumnLevelLineageDeltaTest {
   @SuppressWarnings("PMD")

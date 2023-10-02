@@ -50,6 +50,7 @@ import org.junit.jupiter.api.Test;
 import scala.collection.immutable.HashMap;
 
 @Slf4j
+@Tag("integration-test")
 @Tag("iceberg")
 class ColumnLevelLineageIcebergTest {
 
