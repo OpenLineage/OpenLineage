@@ -59,7 +59,6 @@ public class PathUtils {
   @SneakyThrows
   public static DatasetIdentifier fromCatalogTable(
       CatalogTable catalogTable, Optional<SparkConf> sparkConf) {
-    Optional<URI> metastoreUri = extractMetastoreUri(sparkConf);
 
     DatasetIdentifier di;
     if (catalogTable.storage() != null && catalogTable.storage().locationUri().isDefined()) {
@@ -75,6 +74,9 @@ public class PathUtils {
       }
     }
 
+    Optional<URI> metastoreUri = extractMetastoreUri(sparkConf);
+    // TODO: Is the call to "metastoreUri.get()" really needed?
+    //   Java's Optional should prevent the null in the first place.
     if (metastoreUri.isPresent() && metastoreUri.get() != null) {
       // dealing with Hive tables
       DatasetIdentifier symlink = prepareHiveDatasetIdentifier(catalogTable, metastoreUri.get());
@@ -91,14 +93,10 @@ public class PathUtils {
   @SneakyThrows
   private static DatasetIdentifier prepareDatasetIdentifierFromDefaultTablePath(
       CatalogTable catalogTable) {
-    String path =
-        SparkSession.active()
-            .sessionState()
-            .catalog()
-            .defaultTablePath(catalogTable.identifier())
-            .getPath();
+    URI uri =
+        SparkSession.active().sessionState().catalog().defaultTablePath(catalogTable.identifier());
 
-    return PathUtils.fromURI(new URI(DEFAULT_SCHEME, null, path, null, null), DEFAULT_SCHEME);
+    return PathUtils.fromURI(uri);
   }
 
   @SneakyThrows
@@ -154,6 +152,8 @@ public class PathUtils {
   }
 
   private static String removePathPattern(String datasetName) {
+    // TODO: The reliance on global-mutable state here should be changed
+    //  this led to problems in the PathUtilsTest class, where some tests interfered with others
     return loadSparkConf()
         .filter(conf -> conf.contains(SPARK_OPENLINEAGE_DATASET_REMOVE_PATH_PATTERN))
         .map(conf -> conf.get(SPARK_OPENLINEAGE_DATASET_REMOVE_PATH_PATTERN))

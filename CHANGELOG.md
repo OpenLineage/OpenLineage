@@ -2,6 +2,11 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.2.2...HEAD)
 
+### Fixed:
+* **Spark: Fixed bug in PathUtils' prepareDatasetIdentifierFromDefaultTablePath(CatalogTable) to correctly preserve scheme from CatalogTable's location.** [`#2142`](https://github.com/OpenLineage/OpenLineage/pull/2142) [@d-m-h](https://github.com/d-m-h)  
+    *Previously, the prepareDatasetIdentifierFromDefaultTablePath method would override the scheme with the value of "file" when constructing a dataset identifier. It now uses the scheme of the CatalogTable's URI for this. Thank you [@pawel-big-lebowski](https://github.com/pawel-big-lebowski) for the quick triage and suggested fix.* 
+
+
 ## [1.2.2](https://github.com/OpenLineage/OpenLineage/compare/1.1.0...1.2.2) - 2023-09-19
 ### Added
 * **Spark: publish the `ProcessingEngineRunFacet` as part of the normal operation of the `OpenLineageSparkEventListener`** [`#2089`](https://github.com/OpenLineage/OpenLineage/pull/2089) [@d-m-h](https://github.com/d-m-h)  
