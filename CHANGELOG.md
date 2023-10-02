@@ -11,7 +11,7 @@
 * **DBT: add SQLSERVER to supported dbt profile types** [`#2136`](https://github.com/OpenLineage/OpenLineage/pull/2136) [@erikalfthan](https://github.com/erikalfthan)  
     *Adds support for dbt-sqlserver, solving [#2129](https://github.com/OpenLineage/OpenLineage/issues/2129).*
 * **Spark: support for latest 3.5** [`2118`](https://github.com/OpenLineage/OpenLineage/pull/2118) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-    *Run integration tests on Spark 3.5. Upgrade 3.3 branch to 3.3.3. Please note that `delta` and `iceberg` is not supported for Spark `3.5` at this time.*
+    *Integration tests are now run on Spark 3.5. Also upgrades 3.3 branch to 3.3.3. Please note that `delta` and `iceberg` are not supported for Spark `3.5` at this time.*
 
 ### Fixed
 * **Airflow: fix find-links path in tox** [`#2139`](https://github.com/OpenLineage/OpenLineage/pull/2139) [@JDarDagran](https://github.com/JDarDagran)  
