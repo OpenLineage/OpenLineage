@@ -18,7 +18,7 @@
     *Fixes a broken link.*
 * **Airflow: add more graceful logging when no OpenLineage provider installed** [`#2141`](https://github.com/OpenLineage/OpenLineage/pull/2141) [@JDarDagran](https://github.com/JDarDagran)  
     *Recognizes a failed import of `airflow.providers.openlineage` and adds more graceful logging to fix a corner case.*
-* **Spark: Fixed bug in PathUtils' prepareDatasetIdentifierFromDefaultTablePath(CatalogTable) to correctly preserve scheme from CatalogTable's location.** [`#2142`](https://github.com/OpenLineage/OpenLineage/pull/2142) [@d-m-h](https://github.com/d-m-h)  
+* **Spark: fix bug in PathUtils' prepareDatasetIdentifierFromDefaultTablePath(CatalogTable) to correctly preserve scheme from CatalogTable's location** [`#2142`](https://github.com/OpenLineage/OpenLineage/pull/2142) [@d-m-h](https://github.com/d-m-h)  
     *Previously, the prepareDatasetIdentifierFromDefaultTablePath method would override the scheme with the value of "file" when constructing a dataset identifier. It now uses the scheme of the CatalogTable's URI for this. Thank you [@pawel-big-lebowski](https://github.com/pawel-big-lebowski) for the quick triage and suggested fix.* 
 
 ## [1.2.2](https://github.com/OpenLineage/OpenLineage/compare/1.1.0...1.2.2) - 2023-09-19
