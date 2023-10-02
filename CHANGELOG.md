@@ -1,14 +1,25 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.2.2...HEAD)
-### Added
-* **Spark: support for latest 3.5** [`2118`](https://github.com/OpenLineage/OpenLineage/pull/2118) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Run integration tests on Spark 3.5. Upgrade 3.3 branch to 3.3.3. Please note that `delta` and `iceberg` is not supported for Spark `3.5` at this time.*
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.3.0...HEAD)
 
-### Fixed:
+## [1.3.0](https://github.com/OpenLineage/OpenLineage/compare/1.2.2...1.3.0) - 2023-10-02
+### Added
+* **Airflow: add some basic stats to the Airflow integration** [`#1845`](https://github.com/OpenLineage/OpenLineage/pull/1845) [@harels](https://github.com/harels)  
+    *Uses the statsd component that already exists in the Airflow codebase and wraps the section that emits to event with a timer, as well as emitting a counter for exceptions in sending the event.*
+* **Airflow: add columns as schema facet for `airflow.lineage.Table` (if defined)** [`#2138`](https://github.com/OpenLineage/OpenLineage/pull/2138) [@erikalfthan](https://github.com/erikalfthan)  
+    *Adds columns (if set) from `airflow.lineage.Table` inlets/outlets to the OpenLineage Dataset.*
+* **DBT: add SQLSERVER to supported dbt profile types** [`#2136`](https://github.com/OpenLineage/OpenLineage/pull/2136) [@erikalfthan](https://github.com/erikalfthan)  
+    *Adds support for dbt-sqlserver, solving [#2129](https://github.com/OpenLineage/OpenLineage/issues/2129).*
+* **Spark: support for latest 3.5** [`2118`](https://github.com/OpenLineage/OpenLineage/pull/2118) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Run integration tests on Spark 3.5. Upgrade 3.3 branch to 3.3.3. Please note that `delta` and `iceberg` is not supported for Spark `3.5` at this time.*
+
+### Fixed
+* **Airflow: fix find-links path in tox** [`#2139`](https://github.com/OpenLineage/OpenLineage/pull/2139) [@JDarDagran](https://github.com/JDarDagran)  
+    *Fixes a broken link.*
+* **Airflow: add more graceful logging when no OpenLineage provider installed** [`#2141`](https://github.com/OpenLineage/OpenLineage/pull/2141) [@JDarDagran](https://github.com/JDarDagran)  
+    *Recognizes a failed import of `airflow.providers.openlineage` and adds more graceful logging to fix a corner case.*
 * **Spark: Fixed bug in PathUtils' prepareDatasetIdentifierFromDefaultTablePath(CatalogTable) to correctly preserve scheme from CatalogTable's location.** [`#2142`](https://github.com/OpenLineage/OpenLineage/pull/2142) [@d-m-h](https://github.com/d-m-h)  
     *Previously, the prepareDatasetIdentifierFromDefaultTablePath method would override the scheme with the value of "file" when constructing a dataset identifier. It now uses the scheme of the CatalogTable's URI for this. Thank you [@pawel-big-lebowski](https://github.com/pawel-big-lebowski) for the quick triage and suggested fix.* 
-
 
 ## [1.2.2](https://github.com/OpenLineage/OpenLineage/compare/1.1.0...1.2.2) - 2023-09-19
 ### Added
