@@ -79,7 +79,6 @@ class DefaultTransportFactory(TransportFactory):
             return None
         config = HttpConfig(
             url=os.environ["OPENLINEAGE_URL"],
-            endpoint=os.environ.get("OPENLINEAGE_ENDPOINT"),
             auth=create_token_provider(
                 {
                     "type": "api_key",
@@ -87,4 +86,8 @@ class DefaultTransportFactory(TransportFactory):
                 },
             ),
         )
+        endpoint = os.environ.get("OPENLINEAGE_ENDPOINT", None)
+        if endpoint is not None:
+            config.endpoint = endpoint
+
         return HttpTransport(config)

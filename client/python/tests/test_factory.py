@@ -24,7 +24,8 @@ if TYPE_CHECKING:
 
 
 @patch.dict(
-    os.environ, {"OPENLINEAGE_URL": "http://mock-url:5000", "OPENLINEAGE_ENDPOINT": "endpoint"}
+    os.environ,
+    {"OPENLINEAGE_URL": "http://mock-url:5000", "OPENLINEAGE_ENDPOINT": "endpoint"},
 )
 def test_client_uses_default_http_factory() -> None:
     client = OpenLineageClient()
