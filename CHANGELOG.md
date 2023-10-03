@@ -1,8 +1,8 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.3.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.3.1...HEAD)
 
-## [1.3.0](https://github.com/OpenLineage/OpenLineage/compare/1.2.2...1.3.0) - 2023-10-02
+## [1.3.1](https://github.com/OpenLineage/OpenLineage/compare/1.2.2...1.3.1) - 2023-10-03
 ### Added
 * **Airflow: add some basic stats to the Airflow integration** [`#1845`](https://github.com/OpenLineage/OpenLineage/pull/1845) [@harels](https://github.com/harels)  
     *Uses the statsd component that already exists in the Airflow codebase and wraps the section that emits to event with a timer, as well as emitting a counter for exceptions in sending the event.*
