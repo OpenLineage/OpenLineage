@@ -7,23 +7,23 @@ package io.openlineage.flink.visitor.wrapper;
 
 import org.apache.iceberg.Table;
 import org.apache.iceberg.flink.TableLoader;
-import org.apache.iceberg.flink.source.StreamingMonitorFunction;
 
-public class IcebergSourceWrapper {
+public class IcebergSourceWrapper<T> {
 
-  private final StreamingMonitorFunction source;
+  private final T source;
+  private Class sourceClass;
 
-  public IcebergSourceWrapper(StreamingMonitorFunction streamingMonitorFunction) {
-    this.source = streamingMonitorFunction;
+  public IcebergSourceWrapper(T source, Class sourceClass) {
+    this.source = source;
+    this.sourceClass = sourceClass;
   }
 
-  public static IcebergSourceWrapper of(StreamingMonitorFunction streamingMonitorFunction) {
-    return new IcebergSourceWrapper(streamingMonitorFunction);
+  public static <T> IcebergSourceWrapper of(T source, Class sourceClass) {
+    return new IcebergSourceWrapper(source, sourceClass);
   }
 
   public Table getTable() {
-    return WrapperUtils.<TableLoader>getFieldValue(
-            StreamingMonitorFunction.class, source, "tableLoader")
+    return WrapperUtils.<TableLoader>getFieldValue(sourceClass, source, "tableLoader")
         .map(TableLoader::loadTable)
         .get();
   }
