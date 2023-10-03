@@ -71,9 +71,10 @@ If there is no config file found, the OpenLineage client looks at environment va
 This way of configuring the client supports only `http` transport, and only a subset of its config.
 
 * `OPENLINEAGE_URL` - point to the service that will consume OpenLineage events.
+* `OPENLINEAGE_ENDPOINT` - specify the endpoint to send the OpenLineage events.
 * `OPENLINEAGE_API_KEY` - set if the consumer of OpenLineage events requires a `Bearer` authentication key.
 
-`OPENLINEAGE_URL` and `OPENLINEAGE_API_KEY` can also be set up manually when creating a client instance.
+`OPENLINEAGE_URL`, `OPENLINEAGE_ENDPOINT`, and `OPENLINEAGE_API_KEY` can also be set up manually when creating a client instance.
 
 #### Logging level
 In addition to conventional logging approaches, the OpenLineage client library provides an alternative way of configuring its logging behavior. By setting the `OPENLINEAGE_CLIENT_LOGGING` environment variable, you can establish the logging level for the `openlineage.client` and its child modules.
