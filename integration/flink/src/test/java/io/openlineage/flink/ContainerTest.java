@@ -224,6 +224,21 @@ class ContainerTest {
 
   @Test
   @SneakyThrows
+  void testOpenLineageEventSentForIcebergSourceJob() {
+    runUntilCheckpoint("io.openlineage.flink.FlinkIcebergSourceApplication", new Properties());
+    verify("events/expected_iceberg_source.json");
+
+    // verify input dataset is available only once
+    HttpRequest request =
+        mockServerClient
+            .retrieveRecordedRequests(this.getEvent("events/expected_iceberg_source.json"))[0];
+
+    assertThat(StringUtils.countMatches(request.getBodyAsString(), "tmp/warehouse/db/source"))
+        .isEqualTo(1);
+  }
+
+  @Test
+  @SneakyThrows
   void testOpenLineageFailedEventSentForFailedJob() {
     runUntilNotRunning("io.openlineage.flink.FlinkFailedApplication");
     verify("events/expected_failed.json");

@@ -17,6 +17,8 @@ import java.util.List;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.iceberg.Table;
+import org.apache.iceberg.flink.source.IcebergSource;
+import org.apache.iceberg.flink.source.IcebergTableSource;
 import org.apache.iceberg.flink.source.StreamingMonitorFunction;
 
 @Slf4j
@@ -27,12 +29,26 @@ public class IcebergSourceVisitor extends Visitor<OpenLineage.InputDataset> {
 
   @Override
   public boolean isDefinedAt(Object source) {
-    return source instanceof StreamingMonitorFunction;
+    return source instanceof StreamingMonitorFunction
+        || source instanceof IcebergSource
+        || source instanceof IcebergTableSource;
   }
 
   @Override
   public List<OpenLineage.InputDataset> apply(Object source) {
-    IcebergSourceWrapper sourceWrapper = IcebergSourceWrapper.of((StreamingMonitorFunction) source);
+    IcebergSourceWrapper sourceWrapper;
+    if (source instanceof StreamingMonitorFunction) {
+      sourceWrapper = IcebergSourceWrapper.of(source, StreamingMonitorFunction.class);
+    } else if (source instanceof IcebergSource) {
+      sourceWrapper = IcebergSourceWrapper.of(source, IcebergSource.class);
+    } else if (source instanceof IcebergTableSource) {
+      sourceWrapper = IcebergSourceWrapper.of(source, IcebergTableSource.class);
+    } else {
+      throw new UnsupportedOperationException(
+          String.format(
+              "Unsupported Iceberg Source type %s", source.getClass().getCanonicalName()));
+    }
+
     return Collections.singletonList(getDataset(context, sourceWrapper.getTable()));
   }
 
