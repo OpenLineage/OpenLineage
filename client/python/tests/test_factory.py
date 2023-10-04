@@ -23,11 +23,15 @@ if TYPE_CHECKING:
     from pytest_mock import MockerFixture
 
 
-@patch.dict(os.environ, {"OPENLINEAGE_URL": "http://mock-url:5000"})
+@patch.dict(
+    os.environ,
+    {"OPENLINEAGE_URL": "http://mock-url:5000", "OPENLINEAGE_ENDPOINT": "endpoint"},
+)
 def test_client_uses_default_http_factory() -> None:
     client = OpenLineageClient()
     assert isinstance(client.transport, HttpTransport)
     assert client.transport.url == "http://mock-url:5000"
+    assert client.transport.endpoint == "endpoint"
 
 
 def test_factory_registers_new_transports(mocker: MockerFixture) -> None:
