@@ -12,6 +12,8 @@
     *Adds support for dbt-sqlserver, solving [#2129](https://github.com/OpenLineage/OpenLineage/issues/2129).*
 * **Spark: support for latest 3.5** [`2118`](https://github.com/OpenLineage/OpenLineage/pull/2118) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Integration tests are now run on Spark 3.5. Also upgrades 3.3 branch to 3.3.3. Please note that `delta` and `iceberg` are not supported for Spark `3.5` at this time.*
+* **Flink: expand iceberge source types** [`#2149`](https://github.com/OpenLineage/OpenLineage/pull/2149) [@HuangZhenQiu](https://github.com/HuangZhenQiu)
+    *Add Iceberg Source and Iceberg Table Source for Flink Lineage. 
 
 ### Fixed
 * **Airflow: fix find-links path in tox** [`#2139`](https://github.com/OpenLineage/OpenLineage/pull/2139) [@JDarDagran](https://github.com/JDarDagran)  
