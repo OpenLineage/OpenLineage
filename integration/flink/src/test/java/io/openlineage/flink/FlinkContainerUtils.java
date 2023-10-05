@@ -28,6 +28,8 @@ public class FlinkContainerUtils {
   private static final String SCHEMA_REGISTRY_IMAGE = getRegistryImage();
   private static final String KAFKA_IMAGE = "wurstmeister/kafka:2.13-2.8.1";
   private static final String ZOOKEEPER_IMAGE = "confluentinc/cp-zookeeper:" + CONFLUENT_VERSION;
+  private static final String CASSANDRA_IMAGE = "cassandra:3.11.16";
+
   static final String FLINK_IMAGE =
       String.format("flink:%s-java11", System.getProperty("flink.version"));
 
@@ -100,11 +102,41 @@ public class FlinkContainerUtils {
         .withEnv("ZOOKEEPER_SERVER_ID", "1");
   }
 
+  static GenericContainer<?> makeCassandraContainer(Network network) {
+    try {
+      GenericContainer container =
+          genericContainer(network, CASSANDRA_IMAGE, "cassandra")
+              .withExposedPorts(9042)
+              .withEnv("CASSANDRA_SNITCH", "GossipingPropertyFileSnitch")
+              .withEnv(
+                  "JVM_OPTS",
+                  "-Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.initial_token=0")
+              .withEnv("HEAP_NEWSIZE", "128M")
+              .withEnv("MAX_HEAP_SIZE", "1024M")
+              .withEnv("CASSANDRA_ENDPOINT_SNITCH", "GossipingPropertyFileSnitch")
+              .withEnv("CASSANDRA_DC", "datacenter1");
+
+      return container;
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  static GenericContainer<?> makeCassandraGenerateRecordContainer(
+      Network network, Startable cassandra) {
+    return genericContainer(network, CASSANDRA_IMAGE, "cassandra_prepare")
+        .withCopyFileToContainer(
+            MountableFile.forClasspathResource("create_cassandra_data.sh"), "/opt/cassandra/")
+        .withCommand("sh", "/opt/cassandra/create_cassandra_data.sh")
+        .dependsOn(cassandra);
+  }
+
   static GenericContainer<?> makeFlinkJobManagerContainer(
       String entrypointClass,
       Network network,
       List<Startable> startables,
       Properties jobProperties) {
+
     String inputTopics =
         jobProperties.getProperty(
             "inputTopics", "io.openlineage.flink.kafka.input1,io.openlineage.flink.kafka.input2");

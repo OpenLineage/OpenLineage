@@ -70,6 +70,14 @@ class ContainerTest {
   private static final GenericContainer generateEvents =
       FlinkContainerUtils.makeGenerateEventsContainer(network, schemaRegistry);
 
+  @Container
+  private static final GenericContainer cassandra =
+      FlinkContainerUtils.makeCassandraContainer(network);
+
+  @Container
+  private static final GenericContainer generateRecord =
+      FlinkContainerUtils.makeCassandraGenerateRecordContainer(network, cassandra);
+
   private static GenericContainer jobManager;
 
   private static GenericContainer taskManager;
@@ -111,18 +119,21 @@ class ContainerTest {
             schemaRegistry,
             kafka,
             generateEvents,
+            cassandra,
+            generateRecord,
             jobManager,
             taskManager));
 
     network.close();
   }
 
-  void runUntilCheckpoint(String entrypointClass, Properties jobProperties) {
+  void runUntilCheckpoint(
+      String entrypointClass, Properties jobProperties, GenericContainer prepareContainer) {
     jobManager =
         FlinkContainerUtils.makeFlinkJobManagerContainer(
             entrypointClass,
             network,
-            Arrays.asList(generateEvents, openLineageClientMockContainer),
+            Arrays.asList(prepareContainer, openLineageClientMockContainer),
             jobProperties);
     taskManager =
         FlinkContainerUtils.makeFlinkTaskManagerContainer(network, Arrays.asList(jobManager));
@@ -167,7 +178,8 @@ class ContainerTest {
   @Test
   @SneakyThrows
   void testOpenLineageEventSentForKafkaJob() {
-    runUntilCheckpoint("io.openlineage.flink.FlinkStatefulApplication", new Properties());
+    runUntilCheckpoint(
+        "io.openlineage.flink.FlinkStatefulApplication", new Properties(), generateEvents);
     verify("events/expected_kafka.json", "events/expected_kafka_checkpoints.json");
   }
 
@@ -175,7 +187,9 @@ class ContainerTest {
   @SneakyThrows
   void testOpenLineageEventSentForKafkaSourceWithGenericRecord() {
     runUntilCheckpoint(
-        "io.openlineage.flink.FlinkSourceWithGenericRecordApplication", new Properties());
+        "io.openlineage.flink.FlinkSourceWithGenericRecordApplication",
+        new Properties(),
+        generateEvents);
     verify("events/expected_kafka_generic_record.json");
   }
 
@@ -185,7 +199,8 @@ class ContainerTest {
     Properties jobProperties = new Properties();
     jobProperties.put("inputTopics", "io.openlineage.flink.kafka.input.*");
     jobProperties.put("jobName", "flink_topic_pattern");
-    runUntilCheckpoint("io.openlineage.flink.FlinkStatefulApplication", jobProperties);
+    runUntilCheckpoint(
+        "io.openlineage.flink.FlinkStatefulApplication", jobProperties, generateEvents);
     verify(
         "events/expected_kafka_topic_pattern.json",
         "events/expected_kafka_topic_pattern_checkpoints.json");
@@ -194,7 +209,8 @@ class ContainerTest {
   @Test
   @SneakyThrows
   void testOpenLineageEventSentForLegacyKafkaJob() {
-    runUntilCheckpoint("io.openlineage.flink.FlinkLegacyKafkaApplication", new Properties());
+    runUntilCheckpoint(
+        "io.openlineage.flink.FlinkLegacyKafkaApplication", new Properties(), generateEvents);
     verify("events/expected_legacy_kafka.json");
   }
 
@@ -204,14 +220,16 @@ class ContainerTest {
     Properties jobProperties = new Properties();
     jobProperties.put("inputTopics", "io.openlineage.flink.kafka.input.*");
     jobProperties.put("jobName", "flink_legacy_kafka_topic_pattern");
-    runUntilCheckpoint("io.openlineage.flink.FlinkLegacyKafkaApplication", jobProperties);
+    runUntilCheckpoint(
+        "io.openlineage.flink.FlinkLegacyKafkaApplication", jobProperties, generateEvents);
     verify("events/expected_legacy_kafka_topic_pattern.json");
   }
 
   @Test
   @SneakyThrows
   void testOpenLineageEventSentForIcebergJob() {
-    runUntilCheckpoint("io.openlineage.flink.FlinkIcebergApplication", new Properties());
+    runUntilCheckpoint(
+        "io.openlineage.flink.FlinkIcebergApplication", new Properties(), generateEvents);
     verify("events/expected_iceberg.json");
 
     // verify input dataset is available only once
@@ -225,7 +243,8 @@ class ContainerTest {
   @Test
   @SneakyThrows
   void testOpenLineageEventSentForIcebergSourceJob() {
-    runUntilCheckpoint("io.openlineage.flink.FlinkIcebergSourceApplication", new Properties());
+    runUntilCheckpoint(
+        "io.openlineage.flink.FlinkIcebergSourceApplication", new Properties(), generateEvents);
     verify("events/expected_iceberg_source.json");
 
     // verify input dataset is available only once
@@ -235,6 +254,22 @@ class ContainerTest {
 
     assertThat(StringUtils.countMatches(request.getBodyAsString(), "tmp/warehouse/db/source"))
         .isEqualTo(1);
+  }
+
+  @Test
+  @SneakyThrows
+  void testOpenLineageEventSentForCassandraJob() {
+    runUntilCheckpoint(
+        "io.openlineage.flink.FlinkCassandraApplication", new Properties(), generateRecord);
+    verify("events/expected_cassandra.json");
+
+    // verify input dataset is available only once
+    HttpRequest request =
+        mockServerClient
+            .retrieveRecordedRequests(this.getEvent("events/expected_cassandra.json"))[0];
+
+    assertThat(StringUtils.countMatches(request.getBodyAsString(), "source_event")).isEqualTo(1);
+    assertThat(StringUtils.countMatches(request.getBodyAsString(), "sink_event")).isEqualTo(1);
   }
 
   @Test

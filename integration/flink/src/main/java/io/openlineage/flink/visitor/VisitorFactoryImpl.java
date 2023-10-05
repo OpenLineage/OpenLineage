@@ -12,9 +12,12 @@ import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
 import io.openlineage.flink.api.DatasetFactory;
 import io.openlineage.flink.api.OpenLineageContext;
+import io.openlineage.flink.utils.CassandraUtils;
 import io.openlineage.flink.utils.IcebergUtils;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class VisitorFactoryImpl implements VisitorFactory {
 
   @Override
@@ -28,6 +31,10 @@ public class VisitorFactoryImpl implements VisitorFactory {
 
     if (IcebergUtils.hasClasses()) {
       builder.add(new IcebergSourceVisitor(context));
+    }
+
+    if (CassandraUtils.hasClasses()) {
+      builder.add(new CassandraSourceVisitor(context));
     }
 
     return builder.build();
@@ -44,6 +51,10 @@ public class VisitorFactoryImpl implements VisitorFactory {
 
     if (IcebergUtils.hasClasses()) {
       builder.add(new IcebergSinkVisitor(context));
+    }
+
+    if (CassandraUtils.hasClasses()) {
+      builder.add(new CassandraSinkVisitor(context));
     }
 
     return builder.build();

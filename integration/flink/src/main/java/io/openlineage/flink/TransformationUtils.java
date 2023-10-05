@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.dag.Transformation;
+import org.apache.flink.streaming.api.functions.source.InputFormatSourceFunction;
 import org.apache.flink.streaming.api.transformations.LegacySinkTransformation;
 import org.apache.flink.streaming.api.transformations.LegacySourceTransformation;
 import org.apache.flink.streaming.api.transformations.OneInputTransformation;
@@ -44,7 +45,6 @@ public class TransformationUtils {
     } else {
       return Optional.empty();
     }
-
     // Java streams do not like the unchecked generic casts we're doing here.
     // So, with regular for we go.
     List<Transformation<?>> predecessors = transformation.getTransitivePredecessors();
@@ -59,7 +59,13 @@ public class TransformationUtils {
     if (transformation instanceof SourceTransformation) {
       return Optional.of(processSourceTransformation(transformation));
     } else if (transformation instanceof LegacySourceTransformation) {
-      return Optional.of(processLegacySourceTransformation(transformation));
+      Object operator = processLegacySourceTransformation(transformation);
+      if (operator instanceof InputFormatSourceFunction) {
+        InputFormatSourceFunction formatSourceFunction = (InputFormatSourceFunction) operator;
+        return Optional.of(formatSourceFunction.getFormat());
+      } else {
+        return Optional.of(operator);
+      }
     }
     return Optional.empty();
   }
@@ -81,6 +87,7 @@ public class TransformationUtils {
 
   public Object processLegacySinkTransformation(Transformation<?> genericTransformation) {
     LegacySinkTransformation transformation = (LegacySinkTransformation) genericTransformation;
+    log.info("Processing legacy sink operator {}", transformation.getOperator().getUserFunction());
     return transformation.getOperator().getUserFunction();
   }
 }

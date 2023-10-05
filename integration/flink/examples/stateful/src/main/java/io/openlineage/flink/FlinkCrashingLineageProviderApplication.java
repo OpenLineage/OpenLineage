@@ -5,8 +5,6 @@
 
 package io.openlineage.flink;
 
-import io.openlineage.flink.FlinkFakeApplication.FakeSink;
-import io.openlineage.flink.FlinkFakeApplication.FakeSource;
 import io.openlineage.flink.api.DatasetFactory;
 import io.openlineage.flink.api.LineageProvider;
 import io.openlineage.util.OpenLineageFlinkJobListenerBuilder;
