@@ -9,6 +9,8 @@ from openlineage.client.facet import (
     DocumentationDatasetFacet,
     SchemaDatasetFacet,
     SchemaField,
+    SymlinksDatasetFacet,
+    SymlinksDatasetFacetIdentifiers,
 )
 from openlineage.client.run import Dataset as OpenLineageDataset
 from openlineage.client.run import InputDataset, OutputDataset
@@ -129,21 +131,38 @@ class Dataset(RedactMixin):
     def from_table_schema(
             source: Source,
             table_schema: DbTableSchema,
-            database_name: Optional[str] = None
+            database_name: Optional[str] = None,
+            dataset_name: Optional[str] = None
     ):
+        table_full_name = Dataset._to_name(
+            schema_name=table_schema.schema_name,
+            table_name=table_schema.table_name.name,
+            database_name=database_name
+        )
+
+        ol_dataset_name = dataset_name or table_full_name
+        custom_facets = {
+            "symlinks": SymlinksDatasetFacet(
+                identifiers=[
+                    SymlinksDatasetFacetIdentifiers(
+                        namespace=database_name,
+                        name=table_full_name,
+                        type="TABLE",
+                    )
+                ]
+            )
+        } if dataset_name is not None and database_name is not None else None
+
         return Dataset(
-            name=Dataset._to_name(
-                schema_name=table_schema.schema_name,
-                table_name=table_schema.table_name.name,
-                database_name=database_name
-            ),
+            name=ol_dataset_name,
             source=source,
             fields=[
                 # We want to maintain column order using ordinal position.
                 Field.from_column(column) for column in sorted(
                     table_schema.columns, key=lambda x: x.ordinal_position
                 )
-            ]
+            ],
+            custom_facets=custom_facets  # type: ignore
         )
 
     @staticmethod
