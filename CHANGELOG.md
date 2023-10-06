@@ -1,6 +1,10 @@
 # Changelog
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.3.1...HEAD)
+### Added
+* **Spark: add debug facet** [`2147`](https://github.com/OpenLineage/OpenLineage/pull/2147) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Extra run facet containing some system details (like OS, Java, Scala version), classpath (like package versions, jars included in Spark job), SparkConf (like openlineage entries (except auth), extensions specified, etc.) and LogicalPlan details (execution tree nodes' names) will be added to events emitted. SparkConf setting `spark.openlineage.debugFacet=enabled` needs to be set to include the facet. By default, debug facet is disabled.*
+
 
 ## [1.3.1](https://github.com/OpenLineage/OpenLineage/compare/1.2.2...1.3.1) - 2023-10-03
 ### Added
