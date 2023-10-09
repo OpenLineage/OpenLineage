@@ -5,7 +5,7 @@
 ## [1.4.0](https://github.com/OpenLineage/OpenLineage/compare/1.3.1...1.4.0) - 2023-10-09
 ### Added
 * **Client: allow setting client's endpoint via environment variable** [`#2151`](https://github.com/OpenLineage/OpenLineage/pull/2151) [mars-lan](https://github.com/mars-lan)  
-    *Enalbes setting this endpoint via environment variable because creating the client manually in Airflow is not possible.*
+    *Enables setting this endpoint via environment variable because creating the client manually in Airflow is not possible.*
 * **Flink: expand Iceberg source types** [`#2149`](https://github.com/OpenLineage/OpenLineage/pull/2149) [HuangZhenQiu](https://github.com/HuangZhenQiu)  
     *Adds support for `FlinkIcebergSource` and `FlinkIcebergTableSource` for Flink Iceberg lineage.*
 * **Spark: add debug facet** [`#2147`](https://github.com/OpenLineage/OpenLineage/pull/2147) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
