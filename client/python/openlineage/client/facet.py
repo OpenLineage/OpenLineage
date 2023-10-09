@@ -345,10 +345,12 @@ class OwnershipDatasetFacet(BaseFacet):
 
 
 @attr.s
-class ColumnLineageDatasetFacetFieldsAdditionalInputFields:
+class ColumnLineageDatasetFacetFieldsAdditionalInputFields(RedactMixin):
     namespace: str = attr.ib()
     name: str = attr.ib()
     field: str = attr.ib()
+
+    _skip_redact: List[str] = ["namespace", "name", "field"]
 
 
 @attr.s
