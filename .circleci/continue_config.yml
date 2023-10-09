@@ -817,6 +817,12 @@ jobs:
             . venv/bin/activate
             pre-commit run --show-diff-on-failure --all-files
 
+  always_run:
+    machine:
+      image: ubuntu-2004:current
+    steps:
+      - run: echo "This steps always run."
+
   workflow_complete:
     working_directory: ~/openlineage
     machine:
