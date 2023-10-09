@@ -132,11 +132,11 @@ impl DbTableMeta {
             self.database
                 .as_ref()
                 .map(|x| format!("{}.", x))
-                .unwrap_or_else(|| "".to_string()),
+                .unwrap_or_default(),
             self.schema
                 .as_ref()
                 .map(|x| format!("{}.", x))
-                .unwrap_or_else(|| "".to_string()),
+                .unwrap_or_default(),
             self.name
         )
     }
