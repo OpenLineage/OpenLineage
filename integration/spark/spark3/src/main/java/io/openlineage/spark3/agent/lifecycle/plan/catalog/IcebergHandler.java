@@ -101,9 +101,21 @@ public class IcebergHandler implements CatalogHandler {
       di.withSymlink(
           getRestIdentifier(
               session, catalogConf.get(CatalogProperties.URI), identifier.toString()));
+    } else if (catalogConf.get(TYPE).equals("nessie")) {
+      di.withSymlink(
+          getNessieIdentifier(
+              session, catalogConf.get(CatalogProperties.URI), identifier.toString()));
     }
 
     return di;
+  }
+
+  @SneakyThrows
+  private DatasetIdentifier.Symlink getNessieIdentifier(
+      SparkSession session, @Nullable String confUri, String table) {
+
+    String uri = new URI(confUri).toString();
+    return new DatasetIdentifier.Symlink(table, uri, DatasetIdentifier.SymlinkType.TABLE);
   }
 
   @SneakyThrows
