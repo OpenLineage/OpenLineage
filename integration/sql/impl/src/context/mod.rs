@@ -4,7 +4,6 @@
 mod alias_table;
 
 use std::collections::{HashMap, HashSet};
-use std::ops::Deref;
 
 use crate::dialect::CanonicalDialect;
 use crate::lineage::*;
@@ -95,7 +94,7 @@ impl<'a> Context<'a> {
     // --- Table Lineage ---
 
     pub fn add_input(&mut self, table: String) {
-        let name = DbTableMeta::new(table, self.dialect.deref(), self.default_schema.clone());
+        let name = DbTableMeta::new(table, self.dialect, self.default_schema.clone());
         if !self.is_table_alias(&name) {
             self.inputs.insert(name);
         }
@@ -109,7 +108,7 @@ impl<'a> Context<'a> {
     ) {
         let name = DbTableMeta::new_with_namespace_and_schema(
             table,
-            self.dialect.deref(),
+            self.dialect,
             self.default_schema.clone(),
             provided_namespace,
             provided_field_schema,
@@ -121,7 +120,7 @@ impl<'a> Context<'a> {
     }
 
     pub fn add_output(&mut self, output: String) {
-        let name = DbTableMeta::new(output, self.dialect.deref(), self.default_schema.clone());
+        let name = DbTableMeta::new(output, self.dialect, self.default_schema.clone());
         if !self.is_table_alias(&name) {
             self.outputs.insert(name);
         }
@@ -135,7 +134,7 @@ impl<'a> Context<'a> {
     ) {
         let name = DbTableMeta::new_with_namespace_and_schema(
             output,
-            self.dialect.deref(),
+            self.dialect,
             self.default_schema.clone(),
             provided_namespace,
             provided_field_schema,
@@ -184,7 +183,7 @@ impl<'a> Context<'a> {
 
     pub fn add_table_alias(&mut self, table: DbTableMeta, alias: String) {
         if let Some(frame) = self.frames.last_mut() {
-            let alias = DbTableMeta::new(alias, self.dialect.deref(), self.default_schema.clone());
+            let alias = DbTableMeta::new(alias, self.dialect, self.default_schema.clone());
             frame.aliases.add_table_alias(table, alias);
         }
     }
