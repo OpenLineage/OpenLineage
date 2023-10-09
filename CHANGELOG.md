@@ -1,8 +1,8 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.4.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.4.1...HEAD)
 
-## [1.4.0](https://github.com/OpenLineage/OpenLineage/compare/1.3.1...1.4.0) - 2023-10-09
+## [1.4.1](https://github.com/OpenLineage/OpenLineage/compare/1.3.1...1.4.1) - 2023-10-09
 ### Added
 * **Client: allow setting client's endpoint via environment variable** [`#2151`](https://github.com/OpenLineage/OpenLineage/pull/2151) [mars-lan](https://github.com/mars-lan)  
     *Enables setting this endpoint via environment variable because creating the client manually in Airflow is not possible.*
