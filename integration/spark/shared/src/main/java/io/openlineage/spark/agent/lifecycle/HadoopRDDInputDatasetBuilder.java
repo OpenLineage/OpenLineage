@@ -7,6 +7,8 @@ package io.openlineage.spark.agent.lifecycle;
 
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
+import io.openlineage.client.utils.DatasetIdentifier;
+import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.api.AbstractInputDatasetBuilder;
 import io.openlineage.spark.api.OpenLineageContext;
 import java.io.IOException;
@@ -42,10 +44,10 @@ public class HadoopRDDInputDatasetBuilder extends AbstractInputDatasetBuilder<RD
   }
 
   protected InputDataset buildInputDataset(URI uri) {
-    DatasetParser.DatasetParseResult result = DatasetParser.parse(uri);
+    DatasetIdentifier di = PathUtils.fromURI(uri);
     return new OpenLineage.InputDatasetBuilder()
-        .name(result.getName())
-        .namespace(result.getNamespace())
+        .name(di.getName())
+        .namespace(di.getNamespace())
         .build();
   }
 

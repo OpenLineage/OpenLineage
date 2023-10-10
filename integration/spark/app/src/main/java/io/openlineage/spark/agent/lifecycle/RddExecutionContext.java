@@ -8,13 +8,14 @@ package io.openlineage.spark.agent.lifecycle;
 import static scala.collection.JavaConversions.asJavaCollection;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.utils.DatasetIdentifier;
 import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.OpenLineageSparkListener;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.agent.facets.ErrorFacet;
 import io.openlineage.spark.agent.facets.SparkVersionFacet;
 import io.openlineage.spark.agent.facets.builder.SparkProcessingEngineRunFacetBuilderDelegate;
-import io.openlineage.spark.agent.lifecycle.DatasetParser.DatasetParseResult;
+import io.openlineage.spark.agent.util.PathUtils;
 import io.openlineage.spark.agent.util.PlanUtils;
 import io.openlineage.spark.agent.util.ScalaConversionUtils;
 import java.io.IOException;
@@ -48,7 +49,6 @@ import org.apache.spark.internal.io.HadoopMapRedWriteConfigUtil;
 import org.apache.spark.internal.io.HadoopMapReduceWriteConfigUtil;
 import org.apache.spark.rdd.HadoopRDD;
 import org.apache.spark.rdd.MapPartitionsRDD;
-import org.apache.spark.rdd.NewHadoopRDD;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.scheduler.ActiveJob;
 import org.apache.spark.scheduler.JobFailed;
@@ -321,18 +321,18 @@ class RddExecutionContext implements ExecutionContext {
   }
 
   protected OpenLineage.InputDataset buildInputDataset(URI uri) {
-    DatasetParseResult result = DatasetParser.parse(uri);
+    DatasetIdentifier di = PathUtils.fromURI(uri);
     return new OpenLineage.InputDatasetBuilder()
-        .name(result.getName())
-        .namespace(result.getNamespace())
+        .name(di.getName())
+        .namespace(di.getNamespace())
         .build();
   }
 
   protected OpenLineage.OutputDataset buildOutputDataset(URI uri) {
-    DatasetParseResult result = DatasetParser.parse(uri);
+    DatasetIdentifier di = PathUtils.fromURI(uri);
     return new OpenLineage.OutputDatasetBuilder()
-        .name(result.getName())
-        .namespace(result.getNamespace())
+        .name(di.getName())
+        .namespace(di.getNamespace())
         .build();
   }
 
@@ -344,45 +344,16 @@ class RddExecutionContext implements ExecutionContext {
     Path outputPath = getOutputPath(rdd, config);
     log.info("Found output path {} from RDD {}", outputPath, rdd);
     if (outputPath != null) {
-      return Collections.singletonList(getDatasetUri(outputPath.toUri()));
+      return Collections.singletonList(outputPath.toUri());
     }
     return Collections.emptyList();
   }
 
   protected List<URI> findInputs(Set<RDD<?>> rdds) {
-    List<URI> result = new ArrayList<>();
-    for (RDD<?> rdd : rdds) {
-      Path[] inputPaths = getInputPaths(rdd);
-      if (inputPaths != null) {
-        for (Path path : inputPaths) {
-          result.add(getDatasetUri(path.toUri()));
-        }
-      }
-    }
-    return result;
-  }
-
-  protected Path[] getInputPaths(RDD<?> rdd) {
-    Path[] inputPaths = null;
-    if (rdd instanceof HadoopRDD) {
-      inputPaths =
-          org.apache.hadoop.mapred.FileInputFormat.getInputPaths(
-              ((HadoopRDD<?, ?>) rdd).getJobConf());
-    } else if (rdd instanceof NewHadoopRDD) {
-      try {
-        inputPaths =
-            org.apache.hadoop.mapreduce.lib.input.FileInputFormat.getInputPaths(
-                new Job(((NewHadoopRDD<?, ?>) rdd).getConf()));
-      } catch (IOException e) {
-        log.error("Openlineage spark agent could not get input paths", e);
-      }
-    }
-    return inputPaths;
-  }
-
-  // exposed for testing
-  protected URI getDatasetUri(URI pathUri) {
-    return pathUri;
+    log.debug("findInputs within RddExecutionContext");
+    return PlanUtils.findRDDPaths(rdds.stream().collect(Collectors.toList())).stream()
+        .map(path -> path.toUri())
+        .collect(Collectors.toList());
   }
 
   protected void printRDDs(String prefix, RDD<?> rdd) {
@@ -393,25 +364,32 @@ class RddExecutionContext implements ExecutionContext {
   }
 
   protected static Path getOutputPath(RDD<?> rdd, Configuration config) {
-    if (config == null) {
-      return null;
-    }
-    // "new" mapred api
-    JobConf jc;
-    if (config instanceof JobConf) {
-      jc = (JobConf) config;
-    } else {
-      jc = new JobConf(config);
-    }
-    Path path = org.apache.hadoop.mapred.FileOutputFormat.getOutputPath(jc);
-    if (path == null) {
-      try {
-        // old fashioned mapreduce api
-        path = org.apache.hadoop.mapreduce.lib.output.FileOutputFormat.getOutputPath(new Job(jc));
-      } catch (IOException exception) {
-        exception.printStackTrace(System.out);
+    Path path = null;
+    if (config != null) {
+      // "new" mapred api
+      JobConf jc;
+      if (config instanceof JobConf) {
+        jc = (JobConf) config;
+      } else {
+        jc = new JobConf(config);
+      }
+      path = org.apache.hadoop.mapred.FileOutputFormat.getOutputPath(jc);
+      if (path == null) {
+        try {
+          // old fashioned mapreduce api
+          path = org.apache.hadoop.mapreduce.lib.output.FileOutputFormat.getOutputPath(new Job(jc));
+        } catch (IOException exception) {
+          exception.printStackTrace(System.out);
+        }
       }
     }
+
+    if (path == null) {
+      // use PlanUtils approach instead
+      path =
+          PlanUtils.findRDDPaths(Collections.singletonList(rdd)).stream().findFirst().orElse(null);
+    }
+
     return path;
   }
 
