@@ -1,10 +1,17 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.3.1...HEAD)
-### Added
-* **Spark: add debug facet** [`2147`](https://github.com/OpenLineage/OpenLineage/pull/2147) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Extra run facet containing some system details (like OS, Java, Scala version), classpath (like package versions, jars included in Spark job), SparkConf (like openlineage entries (except auth), extensions specified, etc.) and LogicalPlan details (execution tree nodes' names) will be added to events emitted. SparkConf setting `spark.openlineage.debugFacet=enabled` needs to be set to include the facet. By default, debug facet is disabled.*
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.4.1...HEAD)
 
+## [1.4.1](https://github.com/OpenLineage/OpenLineage/compare/1.3.1...1.4.1) - 2023-10-09
+### Added
+* **Client: allow setting client's endpoint via environment variable** [`#2151`](https://github.com/OpenLineage/OpenLineage/pull/2151) [mars-lan](https://github.com/mars-lan)  
+    *Enables setting this endpoint via environment variable because creating the client manually in Airflow is not possible.*
+* **Flink: expand Iceberg source types** [`#2149`](https://github.com/OpenLineage/OpenLineage/pull/2149) [HuangZhenQiu](https://github.com/HuangZhenQiu)  
+    *Adds support for `FlinkIcebergSource` and `FlinkIcebergTableSource` for Flink Iceberg lineage.*
+* **Spark: add debug facet** [`#2147`](https://github.com/OpenLineage/OpenLineage/pull/2147) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *An extra run facet containing some system details (e.g., OS, Java, Scala version), classpath (e.g., package versions, jars included in the Spark job), SparkConf (like openlineage entries except auth, specified extensions, etc.) and LogicalPlan details (execution tree nodes' names) are added to events emitted. SparkConf setting `spark.openlineage.debugFacet=enabled` needs to be set to include the facet. By default, the debug facet is disabled.*
+* **Spark: enable Nessie REST catalog** [`#2165`](https://github.com/OpenLineage/OpenLineage/pull/2165) [julwin](https://github.com/julwin)  
+    *Adds support for Nessie catalog in Spark.*
 
 ## [1.3.1](https://github.com/OpenLineage/OpenLineage/compare/1.2.2...1.3.1) - 2023-10-03
 ### Added
