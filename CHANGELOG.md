@@ -2,6 +2,10 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.4.1...HEAD)
 
+### Added
+* **Spark: support `ParallelCollectionRDD` and `MapPartitionsRDD` when extracting paths from RDD.** [`2184`](https://github.com/OpenLineage/OpenLineage/pull/2184) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Extend ability to extract RDD location from additional Spark RDD nodes.*
+* 
 ### Fixed
 * **Spark: unify dataset naming for RDD jobs and Spark SQL.** [`2181`](https://github.com/OpenLineage/OpenLineage/pull/2181) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Use the same mechanism for RDD jobs to extract dataset identifier as used for Spark SQL.*

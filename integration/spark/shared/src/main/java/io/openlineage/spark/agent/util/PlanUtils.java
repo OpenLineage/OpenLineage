@@ -10,7 +10,6 @@ import io.openlineage.spark.agent.Versions;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -18,16 +17,11 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.mapred.FileInputFormat;
-import org.apache.spark.package$;
-import org.apache.spark.rdd.HadoopRDD;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.sql.catalyst.expressions.Attribute;
-import org.apache.spark.sql.execution.datasources.FileScanRDD;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import scala.PartialFunction;
@@ -227,36 +221,7 @@ public class PlanUtils {
    */
   public static List<Path> findRDDPaths(List<RDD<?>> fileRdds) {
     return fileRdds.stream()
-        .flatMap(
-            rdd -> {
-              if (rdd instanceof HadoopRDD) {
-                HadoopRDD hadoopRDD = (HadoopRDD) rdd;
-                Path[] inputPaths = FileInputFormat.getInputPaths(hadoopRDD.getJobConf());
-                Configuration hadoopConf = hadoopRDD.getConf();
-                return Arrays.stream(inputPaths)
-                    .map(p -> PlanUtils.getDirectoryPath(p, hadoopConf));
-              } else if (rdd instanceof FileScanRDD) {
-                FileScanRDD fileScanRDD = (FileScanRDD) rdd;
-                return ScalaConversionUtils.fromSeq(fileScanRDD.filePartitions()).stream()
-                    .flatMap(fp -> Arrays.stream(fp.files()))
-                    .map(
-                        f -> {
-                          if (package$.MODULE$.SPARK_VERSION().compareTo("3.4") > 0) {
-                            // filePath returns SparkPath for Spark 3.4
-                            return ReflectionUtils.tryExecuteMethod(f, "filePath")
-                                .map(o -> ReflectionUtils.tryExecuteMethod(o, "toPath"))
-                                .map(o -> (Path) o.get())
-                                .get()
-                                .getParent();
-                          } else {
-                            return new Path(f.filePath()).getParent();
-                          }
-                        });
-              } else {
-                log.warn("Unknown RDD class {}", rdd.getClass().getCanonicalName());
-                return Stream.empty();
-              }
-            })
+        .flatMap(RddPathsUtils::findRDDPaths)
         .distinct()
         .collect(Collectors.toList());
   }
