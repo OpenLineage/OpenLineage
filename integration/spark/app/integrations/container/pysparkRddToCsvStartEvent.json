@@ -10,6 +10,6 @@
   "inputs" : [ ],
   "outputs" : [ {
     "namespace" : "file",
-    "name" : "file:/tmp/test_data/rdd_to_csv_output"
+    "name" : "/tmp/test_data/rdd_to_csv_output"
   } ]
 }
