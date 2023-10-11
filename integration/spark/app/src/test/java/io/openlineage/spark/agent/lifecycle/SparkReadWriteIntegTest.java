@@ -44,6 +44,8 @@ import io.openlineage.spark.agent.util.SparkVersionUtils;
 import io.openlineage.spark.agent.util.TestOpenLineageEventHandlerFactory;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -60,6 +62,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.FileInputFormat;
@@ -358,7 +361,7 @@ class SparkReadWriteIntegTest {
     List<InputDataset> inputs = event.getInputs();
     assertEquals(1, inputs.size());
     assertEquals(FILE, inputs.get(0).getNamespace());
-    assertEquals(testFile.toAbsolutePath().toString(), inputs.get(0).getName());
+    assertEquals(testFile.toAbsolutePath().getParent().toString(), inputs.get(0).getName());
   }
 
   @Test
@@ -688,8 +691,7 @@ class SparkReadWriteIntegTest {
   @EnabledIfEnvironmentVariable(named = "CI", matches = "true")
   @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3) // Spark version >= 3.*
   void testExternalRDDWithS3Bucket(SparkSession spark)
-      throws InterruptedException, TimeoutException {
-
+      throws InterruptedException, TimeoutException, IOException, URISyntaxException {
     spark.conf().set("fs.s3a.secret.key", System.getenv("S3_SECRET_KEY"));
     spark.conf().set("fs.s3a.access.key", System.getenv("S3_ACCESS_KEY"));
 
@@ -714,20 +716,12 @@ class SparkReadWriteIntegTest {
     JavaRDD<Row> rddA = spark.read().parquet(bucketUrl + "/" + aDatasetName).toJavaRDD();
     JavaRDD<Row> rddB = spark.read().parquet(bucketUrl + "/" + bDatasetName).toJavaRDD();
 
-    JavaRDD<Row> javaRDD =
-        rddA.union(rddB).map(f -> f.getLong(0) + f.getLong(1)).map(l -> RowFactory.create(l));
+    FileSystem.get(new URI(bucketUrl), spark.sparkContext().hadoopConfiguration())
+        .delete(new org.apache.hadoop.fs.Path(bucketUrl + "/" + cDatasetName), true);
 
-    spark
-        .createDataFrame(
-            javaRDD,
-            new StructType(
-                new StructField[] {
-                  new StructField("a", LongType$.MODULE$, false, Metadata.empty()),
-                }))
-        .toDF()
-        .write()
-        .mode("overwrite")
-        .parquet(bucketUrl + "/" + cDatasetName);
+    rddA.union(rddB)
+        .map(f -> f.getLong(0) + f.getLong(1))
+        .saveAsTextFile(bucketUrl + "/" + cDatasetName);
 
     // wait for event processing to complete
     StaticExecutionContextFactory.waitForExecutionEnd();
@@ -745,9 +739,9 @@ class SparkReadWriteIntegTest {
         .hasFieldOrPropertyWithValue(NAMESPACE, bucketUrl)
         .hasFieldOrPropertyWithValue(NAME, cDatasetName);
 
-    assertThat(lastEvent.getInputs())
-        .hasSize(2)
-        .first()
+    assertThat(lastEvent.getInputs().stream().filter(d -> d.getName().contains("rdd_b")).findAny())
+        .isPresent()
+        .get()
         .hasFieldOrPropertyWithValue(NAMESPACE, bucketUrl)
         .hasFieldOrPropertyWithValue(NAME, bDatasetName);
   }

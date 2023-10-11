@@ -2,6 +2,10 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.4.1...HEAD)
 
+### Fixed
+* **Spark: unify dataset naming for RDD jobs and Spark SQL.** [`2181`](https://github.com/OpenLineage/OpenLineage/pull/2181) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Use the same mechanism for RDD jobs to extract dataset identifier as used for Spark SQL.*
+
 ## [1.4.1](https://github.com/OpenLineage/OpenLineage/compare/1.3.1...1.4.1) - 2023-10-09
 ### Added
 * **Client: allow setting client's endpoint via environment variable** [`#2151`](https://github.com/OpenLineage/OpenLineage/pull/2151) [mars-lan](https://github.com/mars-lan)  

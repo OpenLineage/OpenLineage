@@ -12,7 +12,6 @@ import io.openlineage.spark.agent.EventEmitter;
 import io.openlineage.spark.agent.OpenLineageSparkListener;
 import io.openlineage.spark.agent.Versions;
 import io.openlineage.spark.api.OpenLineageContext;
-import java.net.URI;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
@@ -100,11 +99,6 @@ public class StaticExecutionContextFactory extends ContextFactory {
           @Override
           protected ZonedDateTime toZonedTime(long time) {
             return getZonedTime();
-          }
-
-          @Override
-          protected URI getDatasetUri(URI pathUri) {
-            return URI.create("gs://bucket/data.txt");
           }
         };
     return rdd;
