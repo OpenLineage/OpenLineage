@@ -51,7 +51,7 @@ public class DatabricksUtils {
 
   public static final String CLUSTER_NAME = "openlineage-test-cluster";
   public static final Map<String, String> PLATFORM_VERSIONS =
-      Stream.of(new AbstractMap.SimpleEntry<>("3.4.1", "13.0.x-scala2.12"))
+      Stream.of(new AbstractMap.SimpleEntry<>("3.4.1", "13.3.x-scala2.12"))
           .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   public static final String NODE_TYPE = "Standard_DS3_v2";
   public static final String DBFS_EVENTS_FILE = "dbfs:/databricks/openlineage/events.log";
@@ -174,6 +174,7 @@ public class DatabricksUtils {
             .spark_conf(
                 new HashMap<String, String>() {
                   {
+                    put("spark.openlineage.debugFacet", "enabled");
                     put("spark.openlineage.transport.type", "file");
                     put("spark.openlineage.transport.location", "/tmp/events.log");
                     put(
