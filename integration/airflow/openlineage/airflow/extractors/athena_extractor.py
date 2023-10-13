@@ -92,8 +92,7 @@ class AthenaExtractor(BaseExtractor):
                 DatabaseName=database,
                 TableName=table
             )
-            location = table_metadata["TableMetadata"]["Parameters"]["location"]
-            parsed = urlparse(location)
+            s3_location = table_metadata["TableMetadata"]["Parameters"]["location"]
             table_schema = DbTableSchema(
                 schema_name=database,
                 table_name=DbTableMeta(f"{CATALOG_NAME}.{database}.{table}"),
@@ -111,11 +110,10 @@ class AthenaExtractor(BaseExtractor):
                     scheme=scheme,
                     authority=authority,
                     connection_url=f"{scheme}://{authority}",
-                    name=f"{parsed.scheme}://{parsed.netloc}"
                 ),
                 table_schema=table_schema,
                 database_name=CATALOG_NAME,
-                dataset_name = parsed.path
+                data_location=s3_location
             )
 
         except Exception as e:

@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from typing import Dict, List, Optional
+from urllib.parse import urlparse
 
 from openlineage.client.facet import (
     BaseFacet,
@@ -132,29 +133,27 @@ class Dataset(RedactMixin):
             source: Source,
             table_schema: DbTableSchema,
             database_name: Optional[str] = None,
-            dataset_name: Optional[str] = None
+            data_location: Optional[str] = None
     ):
-        table_full_name = Dataset._to_name(
-            schema_name=table_schema.schema_name,
-            table_name=table_schema.table_name.name,
-            database_name=database_name
-        )
-
-        ol_dataset_name = dataset_name or table_full_name
+        parsed_path = urlparse(data_location)
         custom_facets = {
             "symlinks": SymlinksDatasetFacet(
                 identifiers=[
                     SymlinksDatasetFacetIdentifiers(
-                        namespace=database_name,
-                        name=table_full_name,
+                        namespace=f"{parsed_path.scheme}://{parsed_path.netloc}", # type: ignore
+                        name=str(parsed_path.path),
                         type="TABLE",
                     )
                 ]
             )
-        } if dataset_name is not None and database_name is not None else None
+        } if data_location is not None else None
 
         return Dataset(
-            name=ol_dataset_name,
+                name=Dataset._to_name(
+                schema_name=table_schema.schema_name,
+                table_name=table_schema.table_name.name,
+                database_name=database_name
+            ),
             source=source,
             fields=[
                 # We want to maintain column order using ordinal position.
