@@ -99,9 +99,11 @@ class RddExecutionContext implements ExecutionContext {
   @Override
   @SuppressWarnings("PMD") //  f.setAccessible(true);
   public void setActiveJob(ActiveJob activeJob) {
+    log.debug("setActiveJob within RddExecutionContext {}", activeJob);
     RDD<?> finalRDD = activeJob.finalStage().rdd();
     this.jobSuffix = nameRDD(finalRDD);
     Set<RDD<?>> rdds = Rdds.flattenRDDs(finalRDD);
+    log.debug("flattenRDDs {}", rdds);
     this.inputs = findInputs(rdds);
     Configuration jc = new JobConf();
     if (activeJob.finalStage() instanceof ResultStage) {
@@ -197,17 +199,23 @@ class RddExecutionContext implements ExecutionContext {
   @Override
   public void start(SparkListenerSQLExecutionStart sqlStart) {
     // do nothing
+    log.debug("start SparkListenerSQLExecutionStart {}", sqlStart);
   }
 
   @Override
   public void end(SparkListenerSQLExecutionEnd sqlEnd) {
     // do nothing
+    log.debug("start SparkListenerSQLExecutionEnd {}", sqlEnd);
   }
 
   @Override
   public void start(SparkListenerJobStart jobStart) {
-    if (inputs.isEmpty() && outputs.isEmpty()) {
-      log.info("RDDs are empty: skipping sending OpenLineage event");
+    log.debug("start SparkListenerJobStart {}", jobStart);
+    if (outputs.isEmpty()) {
+      // Oftentimes SparkListener is triggered for actions which do not contain any meaningful
+      // lineage data and are useless in the context of lineage graph. We assume this occurs
+      // for RDD operations which have no output dataset
+      log.info("Output RDDs are empty: skipping sending OpenLineage event");
       return;
     }
     OpenLineage ol = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
@@ -227,8 +235,12 @@ class RddExecutionContext implements ExecutionContext {
 
   @Override
   public void end(SparkListenerJobEnd jobEnd) {
-    if (inputs.isEmpty() && outputs.isEmpty() && !(jobEnd.jobResult() instanceof JobFailed)) {
-      log.info("RDDs are empty: skipping sending OpenLineage event");
+    log.debug("end SparkListenerJobEnd {}", jobEnd);
+    if (outputs.isEmpty() && !(jobEnd.jobResult() instanceof JobFailed)) {
+      // Oftentimes SparkListener is triggered for actions which do not contain any meaningful
+      // lineage data and are useless in the context of lineage graph. We assume this occurs
+      // for RDD operations which have no output dataset
+      log.info("Output RDDs are empty: skipping sending OpenLineage event");
       return;
     }
     OpenLineage ol = new OpenLineage(Versions.OPEN_LINEAGE_PRODUCER_URI);
@@ -346,11 +358,12 @@ class RddExecutionContext implements ExecutionContext {
     if (outputPath != null) {
       return Collections.singletonList(outputPath.toUri());
     }
+    log.debug("Output path is null");
     return Collections.emptyList();
   }
 
   protected List<URI> findInputs(Set<RDD<?>> rdds) {
-    log.debug("findInputs within RddExecutionContext");
+    log.debug("find Inputs within RddExecutionContext {}", rdds);
     return PlanUtils.findRDDPaths(rdds.stream().collect(Collectors.toList())).stream()
         .map(path -> path.toUri())
         .collect(Collectors.toList());
@@ -373,10 +386,12 @@ class RddExecutionContext implements ExecutionContext {
       } else {
         jc = new JobConf(config);
       }
+      log.debug("JobConf {}", jc);
       path = org.apache.hadoop.mapred.FileOutputFormat.getOutputPath(jc);
       if (path == null) {
         try {
           // old fashioned mapreduce api
+          log.debug("Path is null, trying to use old fashioned mapreduce api");
           path = org.apache.hadoop.mapreduce.lib.output.FileOutputFormat.getOutputPath(new Job(jc));
         } catch (IOException exception) {
           exception.printStackTrace(System.out);

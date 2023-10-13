@@ -164,7 +164,7 @@ public class SparkContainerUtils {
         network, waitMessage, mockServerContainer, sparkSubmit.toArray(new String[0]));
   }
 
-  static void addSparkConfig(List command, String value) {
+  public static void addSparkConfig(List command, String value) {
     command.add("--conf");
     command.add(value);
   }
@@ -201,7 +201,7 @@ public class SparkContainerUtils {
   }
 
   @SuppressWarnings("PMD")
-  private static void consumeOutput(org.testcontainers.containers.output.OutputFrame of) {
+  static void consumeOutput(org.testcontainers.containers.output.OutputFrame of) {
     try {
       switch (of.getType()) {
         case STDOUT:
