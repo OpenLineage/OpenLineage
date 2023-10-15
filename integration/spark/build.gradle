@@ -6,7 +6,7 @@ plugins {
     id 'maven-publish'
     id 'signing'
     id 'jacoco'
-    id "com.adarshr.test-logger" version "3.2.0"
+    id "com.adarshr.test-logger" version "4.0.0"
     id "org.gradle.test-retry" version "1.5.6"
     id 'com.diffplug.spotless' version '6.12.0'
     id "com.github.johnrengelman.shadow" version "7.1.2"
