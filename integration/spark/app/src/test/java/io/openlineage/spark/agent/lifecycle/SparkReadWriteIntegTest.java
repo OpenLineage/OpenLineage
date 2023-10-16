@@ -35,6 +35,7 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.DatasetFacets;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
+import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineage.SchemaDatasetFacet;
 import io.openlineage.client.OpenLineage.SchemaDatasetFacetFields;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
@@ -234,6 +235,7 @@ class SparkReadWriteIntegTest {
   }
 
   @Test
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3) // Spark version >= 3.*
   void testReadFromFileWriteToJdbc(@TempDir Path writeDir, SparkSession spark)
       throws InterruptedException, TimeoutException, IOException {
     Path testFile = writeTestDataToFile(writeDir);
@@ -259,13 +261,14 @@ class SparkReadWriteIntegTest {
     List<RunEvent> events = lineageEvent.getAllValues();
     ObjectAssert<RunEvent> completionEvent =
         assertThat(events)
-            .filteredOn(e -> e.getEventType().equals(RunEvent.EventType.COMPLETE))
-            .isNotEmpty()
             .filteredOn(e -> !e.getInputs().isEmpty())
             .isNotEmpty()
             .filteredOn(e -> !e.getOutputs().isEmpty())
             .isNotEmpty()
-            .filteredOn(e -> e.getOutputs().stream().anyMatch(o -> o.getOutputFacets() != null))
+            .filteredOn(
+                e ->
+                    e.getOutputs().stream()
+                        .anyMatch(o -> o.getOutputFacets().getOutputStatistics() != null))
             .isNotEmpty()
             .first();
     completionEvent
@@ -448,7 +451,6 @@ class SparkReadWriteIntegTest {
     Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(4))
         .emit(lineageEvent.capture());
     OpenLineage.RunEvent completeEvent = lineageEvent.getAllValues().get(2);
-    assertThat(completeEvent).hasFieldOrPropertyWithValue(EVENT_TYPE, RunEvent.EventType.COMPLETE);
     assertThat(completeEvent.getInputs())
         .singleElement()
         .hasFieldOrPropertyWithValue(NAME, csvPath)
@@ -458,9 +460,14 @@ class SparkReadWriteIntegTest {
         .singleElement()
         .hasFieldOrPropertyWithValue(NAME, outputPath)
         .hasFieldOrPropertyWithValue(NAMESPACE, FILE);
+
+    // last event shall be complete
+    assertThat(lineageEvent.getAllValues().get(3))
+        .hasFieldOrPropertyWithValue(EVENT_TYPE, RunEvent.EventType.COMPLETE);
   }
 
   @Test
+  @EnabledIfSystemProperty(named = SPARK_VERSION, matches = SPARK_3) // Spark version >= 3.*
   void testCreateDataSourceTableAsSelect(@TempDir Path tmpDir, SparkSession spark)
       throws InterruptedException, TimeoutException, IOException {
     Path testFile = writeTestDataToFile(tmpDir);
@@ -476,14 +483,17 @@ class SparkReadWriteIntegTest {
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
     Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, atLeast(6))
         .emit(lineageEvent.capture());
-    OpenLineage.RunEvent completeEvent = lineageEvent.getAllValues().get(5);
-    assertThat(completeEvent).hasFieldOrPropertyWithValue(EVENT_TYPE, RunEvent.EventType.COMPLETE);
-    assertThat(completeEvent.getInputs())
+    OpenLineage.RunEvent event = lineageEvent.getAllValues().get(5);
+
+    assertThat(lineageEvent.getAllValues().get(lineageEvent.getAllValues().size() - 1))
+        .hasFieldOrPropertyWithValue(EVENT_TYPE, RunEvent.EventType.COMPLETE);
+
+    assertThat(event.getInputs())
         .first()
         .hasFieldOrPropertyWithValue(NAME, testFile.getParent().toString())
         .hasFieldOrPropertyWithValue(NAMESPACE, FILE);
     String warehouseDir = spark.sqlContext().conf().getConfString("spark.sql.warehouse.dir");
-    assertThat(completeEvent.getOutputs())
+    assertThat(event.getOutputs())
         .first()
         .hasFieldOrPropertyWithValue(
             NAME,
@@ -530,14 +540,15 @@ class SparkReadWriteIntegTest {
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
     Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(4))
         .emit(lineageEvent.capture());
-    OpenLineage.RunEvent completeEvent = lineageEvent.getAllValues().get(2);
-    assertThat(completeEvent).hasFieldOrPropertyWithValue(EVENT_TYPE, RunEvent.EventType.COMPLETE);
+    OpenLineage.RunEvent event = lineageEvent.getAllValues().get(2);
+    assertThat(lineageEvent.getAllValues().get(3))
+        .hasFieldOrPropertyWithValue(EVENT_TYPE, RunEvent.EventType.COMPLETE);
     String kafkaNamespace =
         "kafka://"
             + kafkaContainer.getHost()
             + ":"
             + kafkaContainer.getMappedPort(KafkaContainer.KAFKA_PORT);
-    assertThat(completeEvent.getOutputs())
+    assertThat(event.getOutputs())
         .hasSize(1)
         .first()
         .hasFieldOrPropertyWithValue(NAME, "topicA")
@@ -576,14 +587,15 @@ class SparkReadWriteIntegTest {
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
     Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(4))
         .emit(lineageEvent.capture());
-    OpenLineage.RunEvent completeEvent = lineageEvent.getAllValues().get(2);
-    assertThat(completeEvent).hasFieldOrPropertyWithValue(EVENT_TYPE, RunEvent.EventType.COMPLETE);
+    OpenLineage.RunEvent event = lineageEvent.getAllValues().get(2);
+    assertThat(lineageEvent.getAllValues().get(3))
+        .hasFieldOrPropertyWithValue(EVENT_TYPE, RunEvent.EventType.COMPLETE);
     String kafkaNamespace =
         "kafka://"
             + kafkaContainer.getHost()
             + ":"
             + kafkaContainer.getMappedPort(KafkaContainer.KAFKA_PORT);
-    assertThat(completeEvent.getInputs())
+    assertThat(event.getInputs())
         .hasSize(2)
         .satisfiesExactlyInAnyOrder(
             dataset ->
@@ -607,6 +619,7 @@ class SparkReadWriteIntegTest {
     spark.sql("CACHE TABLE cached_json AS SELECT * FROM raw_json WHERE age > 100");
     Dataset<Row> df = spark.sql("SELECT * FROM cached_json");
     df.collect();
+    StaticExecutionContextFactory.waitForExecutionEnd();
 
     Path sqliteFile = writeDir.resolve("output/database");
     sqliteFile.getParent().toFile().mkdir();
@@ -622,25 +635,28 @@ class SparkReadWriteIntegTest {
         .emit(lineageEvent.capture());
     List<OpenLineage.RunEvent> events = lineageEvent.getAllValues();
 
-    ObjectAssert<RunEvent> completionEvent =
+    ObjectAssert<RunEvent> event =
         assertThat(events)
-            .filteredOn(e -> e.getEventType().equals(RunEvent.EventType.COMPLETE))
+            .filteredOn(e -> !e.getEventType().equals(EventType.START))
             .isNotEmpty()
             .filteredOn(e -> !e.getInputs().isEmpty())
             .isNotEmpty()
             .filteredOn(e -> !e.getOutputs().isEmpty())
             .isNotEmpty()
-            .filteredOn(e -> e.getOutputs().stream().anyMatch(o -> o.getOutputFacets() != null))
+            .filteredOn(
+                e ->
+                    e.getOutputs().stream()
+                        .anyMatch(o -> o.getOutputFacets().getOutputStatistics() != null))
             .isNotEmpty()
             .first();
-    completionEvent
+    event
         .extracting(RunEvent::getInputs, InstanceOfAssertFactories.list(InputDataset.class))
         .hasSize(1)
         .first()
         .hasFieldOrPropertyWithValue(NAMESPACE, FILE)
         .hasFieldOrPropertyWithValue(NAME, testFile.toAbsolutePath().toString());
 
-    completionEvent
+    event
         .extracting(RunEvent::getOutputs, InstanceOfAssertFactories.list(OutputDataset.class))
         .hasSize(1)
         .first()

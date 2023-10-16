@@ -34,12 +34,6 @@
                     ]
                 }
             },
-            "outputFacets": {
-                "outputStatistics": {
-                    "rowCount": "${json-unit.any-number}",
-                    "size": "${json-unit.any-number}"
-                }
-            },    
             "name": "/tmp/warehouse/test",
             "namespace": "file"
         }

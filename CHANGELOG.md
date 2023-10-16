@@ -5,6 +5,8 @@
 ### Fixed
 * **Spark: unify dataset naming for RDD jobs and Spark SQL.** [`2181`](https://github.com/OpenLineage/OpenLineage/pull/2181) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Use the same mechanism for RDD jobs to extract dataset identifier as used for Spark SQL.*
+* **Spark: ensure a single `START` and a single `COMPLETE` event are sent.** [`#2103`](https://github.com/OpenLineage/OpenLineage/pull/2103) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)   
+  *For Spark SQL at least four events are sent triggered by different SparkListener methods. Each of them is required and used to collect facets unavailable elsewhere. However, there should be only one `START` and `COMPLETE` events emitted. Other events should be sent as `RUNNING`. Please keep in mind that Spark integration remains stateless to limit the memory footprint, and it is the backend responsibility to merge several Openlineage events into a meaningful snapshot of metadata changes.*
 
 ## [1.4.1](https://github.com/OpenLineage/OpenLineage/compare/1.3.1...1.4.1) - 2023-10-09
 ### Added

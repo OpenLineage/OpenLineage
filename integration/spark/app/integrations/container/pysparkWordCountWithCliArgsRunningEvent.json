@@ -1,27 +1,22 @@
 {
-  "eventType": "COMPLETE",
+  "eventType": "RUNNING",
   "run": {
     "facets": {
     }
   },
   "job": {
-    "namespace": "testPysparkRddToTable",
-    "name": "spark_rdd_to_table.execute_insert_into_hadoop_fs_relation_command.test_data_rdd_to_table"
+    "namespace": "testPysparkWordCountWithCliArgs"
   },
   "inputs": [
     {
       "namespace": "file",
-      "name": "/tmp/test_data/rdd_to_csv_output",
+      "name": "/test_data/data.txt",
       "facets": {
         "schema": {
           "fields": [
             {
-              "name": "name",
+              "name": "value",
               "type": "string"
-            },
-            {
-              "name": "age",
-              "type": "integer"
             }
           ]
         },
@@ -35,17 +30,17 @@
   "outputs": [
     {
       "namespace": "file",
-      "name": "/tmp/test_data/rdd_to_table",
+      "name": "/tmp/test_data/test_output",
       "facets": {
         "schema": {
           "fields": [
             {
-              "name": "name",
+              "name": "value",
               "type": "string"
             },
             {
-              "name": "age",
-              "type": "integer"
+              "name": "count",
+              "type": "long"
             }
           ]
         },
@@ -55,6 +50,12 @@
         },
         "lifecycleStateChange": {
           "lifecycleStateChange": "OVERWRITE"
+        }
+      },
+      "outputFacets": {
+        "outputStatistics": {
+          "rowCount": "${json-unit.any-number}",
+          "size": "${json-unit.any-number}"
         }
       }
     }

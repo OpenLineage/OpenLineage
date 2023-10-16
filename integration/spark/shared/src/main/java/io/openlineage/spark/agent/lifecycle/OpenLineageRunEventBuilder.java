@@ -50,7 +50,6 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.scheduler.ActiveJob;
-import org.apache.spark.scheduler.JobFailed;
 import org.apache.spark.scheduler.SparkListenerJobEnd;
 import org.apache.spark.scheduler.SparkListenerJobStart;
 import org.apache.spark.scheduler.SparkListenerStageCompleted;
@@ -228,7 +227,6 @@ class OpenLineageRunEventBuilder {
       RunEventBuilder runEventBuilder,
       JobBuilder jobBuilder,
       SparkListenerSQLExecutionStart event) {
-    runEventBuilder.eventType(RunEvent.EventType.START);
     return buildRun(parentRunFacet, runEventBuilder, jobBuilder, event, Optional.empty());
   }
 
@@ -237,7 +235,6 @@ class OpenLineageRunEventBuilder {
       RunEventBuilder runEventBuilder,
       JobBuilder jobBuilder,
       SparkListenerSQLExecutionEnd event) {
-    runEventBuilder.eventType(RunEvent.EventType.COMPLETE);
     return buildRun(parentRunFacet, runEventBuilder, jobBuilder, event, Optional.empty());
   }
 
@@ -246,7 +243,6 @@ class OpenLineageRunEventBuilder {
       RunEventBuilder runEventBuilder,
       JobBuilder jobBuilder,
       SparkListenerJobStart event) {
-    runEventBuilder.eventType(RunEvent.EventType.START);
     return buildRun(
         parentRunFacet,
         runEventBuilder,
@@ -260,10 +256,6 @@ class OpenLineageRunEventBuilder {
       RunEventBuilder runEventBuilder,
       JobBuilder jobBuilder,
       SparkListenerJobEnd event) {
-    runEventBuilder.eventType(
-        event.jobResult() instanceof JobFailed
-            ? RunEvent.EventType.FAIL
-            : RunEvent.EventType.COMPLETE);
     return buildRun(
         parentRunFacet,
         runEventBuilder,
