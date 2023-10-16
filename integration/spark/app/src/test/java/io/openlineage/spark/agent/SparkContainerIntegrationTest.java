@@ -104,6 +104,7 @@ class SparkContainerIntegrationTest {
     verifyEvents(
         mockServerClient,
         "pysparkWordCountWithCliArgsStartEvent.json",
+        "pysparkWordCountWithCliArgsRunningEvent.json",
         "pysparkWordCountWithCliArgsCompleteEvent.json");
   }
 
@@ -117,6 +118,7 @@ class SparkContainerIntegrationTest {
         "pysparkRddToCsvStartEvent.json",
         "pysparkRddToCsvCompleteEvent.json",
         "pysparkRddToTableStartEvent.json",
+        "pysparkRddToTableRunningEvent.json",
         "pysparkRddToTableCompleteEvent.json");
   }
 
@@ -180,6 +182,7 @@ class SparkContainerIntegrationTest {
     verifyEvents(
         mockServerClient,
         "pysparkHiveStartEvent.json",
+        "pysparkHiveRunningEvent.json",
         "pysparkHiveCompleteEvent.json",
         "pysparkHiveSelectStartEvent.json",
         "pysparkHiveSelectEndEvent.json");
@@ -198,6 +201,7 @@ class SparkContainerIntegrationTest {
     verifyEvents(
         mockServerClient,
         "pysparkOverwriteNameStartEvent.json",
+        "pysparkOverwriteNameRunningEvent.json",
         "pysparkOverwriteNameCompleteEvent.json");
   }
 

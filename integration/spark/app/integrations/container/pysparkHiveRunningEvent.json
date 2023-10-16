@@ -1,8 +1,8 @@
 {
-    "eventType": "COMPLETE",
+    "eventType": "RUNNING",
     "inputs": [],
     "job": {
-        "name": "app_name.execute_insert_into_hive_table.warehouse_target",
+        "name": "open_lineage_integration_hive.execute_insert_into_hive_table.warehouse_test",
         "namespace": "testPysparkSQLHiveTest"
     },
     "outputs": [
@@ -28,18 +28,45 @@
                     "identifiers": [
                         {
                             "namespace": "/tmp/warehouse",
-                            "name": "default.target",
+                            "name": "default.test",
                             "type": "TABLE"
                         }
                     ]
                 }
             },
-            "name": "/tmp/warehouse/target",
+            "outputFacets": {
+                "outputStatistics": {
+                    "rowCount": "${json-unit.any-number}",
+                    "size": "${json-unit.any-number}"
+                }
+            },    
+            "name": "/tmp/warehouse/test",
             "namespace": "file"
         }
     ],
     "run": {
         "facets": {
+            "spark.logicalPlan": {},
+            "spark_unknown": {
+                "inputs": [
+                    {
+                        "description": {},
+                        "inputAttributes": [],
+                        "outputAttributes": [
+                            {
+                                "metadata": {},
+                                "name": "key",
+                                "type": "integer"
+                            },
+                            {
+                                "metadata": {},
+                                "name": "value",
+                                "type": "string"
+                            }
+                        ]
+                    }
+                ]
+            },
             "spark_version": {
                 "spark-version": "${json-unit.any-string}",
                 "openlineage-spark-version": "${json-unit.any-string}"
