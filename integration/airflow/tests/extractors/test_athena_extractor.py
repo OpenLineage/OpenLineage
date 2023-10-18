@@ -17,7 +17,7 @@ from openlineage.common.sql import DbTableMeta
 
 from airflow import DAG
 
-if not is_airflow_version_enough("2.2.4"):
+if is_airflow_version_enough("2.2.4"):
     from airflow.providers.amazon.aws.operators.athena import AthenaOperator
 from airflow.utils.dates import days_ago
 
@@ -72,7 +72,7 @@ def mock_hook_connection():
 
 
 @pytest.mark.skipif(
-    not is_airflow_version_enough("2.2.1"),
+    is_airflow_version_enough("2.2.1"),
     reason="Airflow > 2.2.1",
 )
 def test_extract_select():
@@ -138,7 +138,7 @@ def test_extract_select():
 
 
 @pytest.mark.skipif(
-    not is_airflow_version_enough("2.2.1"),
+    is_airflow_version_enough("2.2.1"),
     reason="Airflow > 2.2.1",
 )
 def test_extract_create():
@@ -195,7 +195,7 @@ def test_extract_create():
 
 
 @pytest.mark.skipif(
-    not is_airflow_version_enough("2.2.1"),
+    is_airflow_version_enough("2.2.1"),
     reason="Airflow > 2.2.1",
 )
 def test_extract_insert_select():
@@ -273,7 +273,7 @@ def test_extract_insert_select():
 
 
 @pytest.mark.skipif(
-    not is_airflow_version_enough("2.2.1"),
+    is_airflow_version_enough("2.2.1"),
     reason="Airflow > 2.2.1",
 )
 def test_extract_drop():
