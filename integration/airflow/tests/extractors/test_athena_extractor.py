@@ -16,6 +16,7 @@ from openlineage.common.models import DbColumn, DbTableSchema
 from openlineage.common.sql import DbTableMeta
 
 from airflow import DAG
+
 if not is_airflow_version_enough("2.2.4"):
     from airflow.providers.amazon.aws.operators.athena import AthenaOperator
 from airflow.utils.dates import days_ago
