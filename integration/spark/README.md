@@ -55,7 +55,7 @@ spark = (SparkSession.builder.master('local')
          .config('spark.openlineage.transport.url', 'http://{openlineage.client.host}/api/v1/namespaces/spark_integration/')
          .getOrCreate())
 ```
-To use the local jar, you can build it with
+To use the local jar, you can build it with ( before running the below command, please complete the following sections listed below in this README file #build #preparation #Build jar)
 ```bash
 gradle shadowJar
 ```
@@ -154,7 +154,7 @@ If `spark.openlineage.transport.type` is set to `kafka`, then the below paramete
 
 Testing requires a Java 8 JVM to test the Scala Spark components.
 
-`export JAVA_HOME=`/usr/libexec/java_home -v 1.8`
+`export JAVA_HOME=` '/usr/libexec/java_home -v 1.8'
 
 ## Preparation
 
