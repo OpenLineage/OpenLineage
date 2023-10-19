@@ -16,7 +16,6 @@ import org.apache.iceberg.flink.source.FlinkSource;
 
 import static io.openlineage.flink.StreamEnvironment.setupEnv;
 
-
 public class FlinkFailedApplication {
 
   public static void main(String[] args) throws Exception {

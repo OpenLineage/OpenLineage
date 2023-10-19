@@ -1,6 +1,9 @@
 # Changelog
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.4.1...HEAD)
+### Added
+* **Flink: add Flink lineage for Cassandra Connectors** [`2175`](https://github.com/OpenLineage/OpenLineage/pull/2175) [@HuangZhenQiu](https://github.com/HuangZhenQiu)
+  *Add Flink Cassandra source and sink visitors and Flink Cassandra Integration test.*
 
 ### Fixed
 * **Spark: unify dataset naming for RDD jobs and Spark SQL.** [`2181`](https://github.com/OpenLineage/OpenLineage/pull/2181) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
@@ -30,7 +33,7 @@
 * **Spark: support for latest 3.5** [`2118`](https://github.com/OpenLineage/OpenLineage/pull/2118) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Integration tests are now run on Spark 3.5. Also upgrades 3.3 branch to 3.3.3. Please note that `delta` and `iceberg` are not supported for Spark `3.5` at this time.*
 * **Flink: expand iceberge source types** [`#2149`](https://github.com/OpenLineage/OpenLineage/pull/2149) [@HuangZhenQiu](https://github.com/HuangZhenQiu)
-    *Add Iceberg Source and Iceberg Table Source for Flink Lineage. 
+    *Add Iceberg Source and Iceberg Table Source for Flink Lineage.*
 
 ### Fixed
 * **Airflow: fix find-links path in tox** [`#2139`](https://github.com/OpenLineage/OpenLineage/pull/2139) [@JDarDagran](https://github.com/JDarDagran)  
