@@ -63,6 +63,14 @@ ext {
     testcontainersVersion = '1.16.3'
     isReleaseVersion = !version.endsWith('SNAPSHOT')
     icebergVersion = "1.3.0"
+
+    versionsMap = [
+            "1.15": ["cassandra": "1.15.4"],
+            "1.16": ["cassandra": "3.0.0-1.16"],
+            "1.17": ["cassandra": "3.1.0-1.17"]
+    ]
+
+    versions = versionsMap[flinkVersionShort]
 }
 
 dependencies {
@@ -75,6 +83,7 @@ dependencies {
     compileOnly "org.apache.flink:flink-avro:$flinkVersion"
     compileOnly "org.apache.flink:flink-avro-confluent-registry:$flinkVersion"
     compileOnly "org.apache.iceberg:iceberg-flink-runtime-$flinkVersionShort:$icebergVersion"
+    compileOnly "org.apache.flink:flink-connector-cassandra_2.12:${versions.cassandra}"
 
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
@@ -86,6 +95,7 @@ dependencies {
     testImplementation "org.apache.flink:flink-streaming-java:$flinkVersion"
     testImplementation "org.apache.flink:flink-runtime-web:$flinkVersion"
     testImplementation "org.apache.flink:flink-connector-kafka:$flinkVersion"
+    testImplementation "org.apache.flink:flink-connector-cassandra_2.12:${versions.cassandra}"
     testImplementation "org.apache.flink:flink-table-common:$flinkVersion"
     testImplementation "org.apache.flink:flink-avro:$flinkVersion"
     testImplementation "org.apache.flink:flink-avro-confluent-registry:$flinkVersion"

@@ -140,6 +140,7 @@ public class FlinkExecutionContext implements ExecutionContext {
         visitorFactory.getInputVisitors(openLineageContext);
 
     for (var transformation : sources) {
+      log.debug("Getting input dataset from source {}", transformation.toString());
       inputDatasets.addAll(
           inputVisitors.stream()
               .filter(inputVisitor -> inputVisitor.isDefinedAt(transformation))
@@ -155,9 +156,10 @@ public class FlinkExecutionContext implements ExecutionContext {
     List<Visitor<OpenLineage.OutputDataset>> outputVisitors =
         visitorFactory.getOutputVisitors(openLineageContext);
 
+    log.debug("Getting output dataset from sink {}", sink.toString());
     return outputVisitors.stream()
-        .filter(inputVisitor -> inputVisitor.isDefinedAt(sink))
-        .map(inputVisitor -> inputVisitor.apply(sink))
+        .filter(outputVisitor -> outputVisitor.isDefinedAt(sink))
+        .map(outputVisitor -> outputVisitor.apply(sink))
         .flatMap(List::stream)
         .collect(Collectors.toList());
   }
