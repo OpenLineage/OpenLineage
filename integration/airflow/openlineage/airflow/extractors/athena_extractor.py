@@ -92,7 +92,7 @@ class AthenaExtractor(BaseExtractor):
                 DatabaseName=database,
                 TableName=table
             )
-
+            s3_location = table_metadata["TableMetadata"]["Parameters"]["location"]
             table_schema = DbTableSchema(
                 schema_name=database,
                 table_name=DbTableMeta(f"{CATALOG_NAME}.{database}.{table}"),
@@ -112,8 +112,10 @@ class AthenaExtractor(BaseExtractor):
                     connection_url=f"{scheme}://{authority}",
                 ),
                 table_schema=table_schema,
-                database_name=CATALOG_NAME
+                database_name=CATALOG_NAME,
+                data_location=s3_location
             )
+
         except Exception as e:
             self.log.error(
                 f"Cannot retrieve table metadata from Athena.Client. {e}", exc_info=True

@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from typing import Dict, List, Optional
+from urllib.parse import urlparse
 
 from openlineage.client.facet import (
     BaseFacet,
@@ -9,6 +10,8 @@ from openlineage.client.facet import (
     DocumentationDatasetFacet,
     SchemaDatasetFacet,
     SchemaField,
+    SymlinksDatasetFacet,
+    SymlinksDatasetFacetIdentifiers,
 )
 from openlineage.client.run import Dataset as OpenLineageDataset
 from openlineage.client.run import InputDataset, OutputDataset
@@ -129,10 +132,24 @@ class Dataset(RedactMixin):
     def from_table_schema(
             source: Source,
             table_schema: DbTableSchema,
-            database_name: Optional[str] = None
+            database_name: Optional[str] = None,
+            data_location: Optional[str] = None
     ):
+        parsed_path = urlparse(data_location)
+        custom_facets = {
+            "symlinks": SymlinksDatasetFacet(
+                identifiers=[
+                    SymlinksDatasetFacetIdentifiers(
+                        namespace=f"{parsed_path.scheme}://{parsed_path.netloc}", # type: ignore
+                        name=str(parsed_path.path),
+                        type="TABLE",
+                    )
+                ]
+            )
+        } if data_location is not None else None
+
         return Dataset(
-            name=Dataset._to_name(
+                name=Dataset._to_name(
                 schema_name=table_schema.schema_name,
                 table_name=table_schema.table_name.name,
                 database_name=database_name
@@ -143,7 +160,8 @@ class Dataset(RedactMixin):
                 Field.from_column(column) for column in sorted(
                     table_schema.columns, key=lambda x: x.ordinal_position
                 )
-            ]
+            ],
+            custom_facets=custom_facets  # type: ignore
         )
 
     @staticmethod
