@@ -72,8 +72,8 @@ def mock_hook_connection():
 
 
 @pytest.mark.skipif(
-    not is_airflow_version_enough("2.2.1"),
-    reason="Airflow < 2.2.1",
+    not is_airflow_version_enough("2.2.4"),
+    reason="Airflow < 2.2.4",
 )
 def test_extract_select():
     with mock.patch(
@@ -138,8 +138,8 @@ def test_extract_select():
 
 
 @pytest.mark.skipif(
-    not is_airflow_version_enough("2.2.1"),
-    reason="Airflow < 2.2.1",
+    not is_airflow_version_enough("2.2.4"),
+    reason="Airflow < 2.2.4",
 )
 def test_extract_create():
     with mock.patch(
@@ -195,8 +195,8 @@ def test_extract_create():
 
 
 @pytest.mark.skipif(
-    not is_airflow_version_enough("2.2.1"),
-    reason="Airflow < 2.2.1",
+    not is_airflow_version_enough("2.2.4"),
+    reason="Airflow < 2.2.4",
 )
 def test_extract_insert_select():
     with mock.patch(
@@ -273,8 +273,8 @@ def test_extract_insert_select():
 
 
 @pytest.mark.skipif(
-    not is_airflow_version_enough("2.2.1"),
-    reason="Airflow < 2.2.1",
+    not is_airflow_version_enough("2.2.4"),
+    reason="Airflow < 2.2.4",
 )
 def test_extract_drop():
     with mock.patch(
