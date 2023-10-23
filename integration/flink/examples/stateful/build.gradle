@@ -94,7 +94,7 @@ dependencies {
     compileOnly "org.apache.flink:flink-table-runtime:$flinkVersion"
     compileOnly "org.apache.flink:flink-table-planner_2.12:$flinkVersion"
 
-    implementation "com.typesafe:config:1.4.2"
+    implementation "com.typesafe:config:1.4.3"
     implementation "org.apache.avro:avro:1.11.3"
     implementation 'io.confluent:kafka-avro-serializer:7.5.1'
     implementation 'io.confluent:kafka-schema-registry-client:7.5.1'
