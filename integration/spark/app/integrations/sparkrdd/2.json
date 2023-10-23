@@ -18,11 +18,13 @@
   },
   "job" : {
     "namespace" : "ns_name",
-    "name" : "test_rdd.shuffled_map_partitions_hadoop"
+    "name" : "test_rdd.map_partitions_shuffled_map_partitions_hadoop"
   },
   "inputs" : [ {
     "namespace" : "gs.bucket",
     "name" : "gs://bucket/data.txt"
   } ],
-  "outputs" : [ ]
+  "outputs" : [ {
+    "namespace" : "file"
+  }]
 }

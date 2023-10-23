@@ -5,6 +5,10 @@
 * **Flink: add Flink lineage for Cassandra Connectors** [`2175`](https://github.com/OpenLineage/OpenLineage/pull/2175) [@HuangZhenQiu](https://github.com/HuangZhenQiu)
   *Add Flink Cassandra source and sink visitors and Flink Cassandra Integration test.*
 
+### Added
+* **Spark: support `rdd` and `toDF` operations available in Spark Scala API.** [`#2188`](https://github.com/OpenLineage/OpenLineage/pull/2188) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)   
+  *This PR includes the first Scala integration test, fixes `ExternalRddVisitor` and adds support for extracting inputs from `MapPartitionsRDD` and `ParallelCollectionRDD` plan nodes.*
+
 ### Fixed
 * **Spark: unify dataset naming for RDD jobs and Spark SQL.** [`2181`](https://github.com/OpenLineage/OpenLineage/pull/2181) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Use the same mechanism for RDD jobs to extract dataset identifier as used for Spark SQL.*

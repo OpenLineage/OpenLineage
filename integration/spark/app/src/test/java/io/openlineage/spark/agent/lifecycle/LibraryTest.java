@@ -20,6 +20,7 @@ import io.openlineage.client.OpenLineageClientUtils;
 import io.openlineage.spark.agent.SparkAgentTestExtension;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,6 +37,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SparkSession;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import scala.Tuple2;
@@ -95,7 +97,7 @@ class LibraryTest {
   //  }
 
   @Test
-  void testRdd(SparkSession spark) throws IOException {
+  void testRdd(@TempDir Path tmpDir, SparkSession spark) throws IOException {
     when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getJobNamespace())
         .thenReturn("ns_name");
     when(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT.getParentJobName())
@@ -111,7 +113,7 @@ class LibraryTest {
         .flatMap(s -> Arrays.asList(s.split(" ")).iterator())
         .mapToPair(word -> new Tuple2<>(word, 1))
         .reduceByKey(Integer::sum)
-        .count();
+        .saveAsTextFile(tmpDir.toString() + "/output");
 
     sc.stop();
 
