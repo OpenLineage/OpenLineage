@@ -364,7 +364,7 @@ class SparkReadWriteIntegTest {
     List<InputDataset> inputs = event.getInputs();
     assertEquals(1, inputs.size());
     assertEquals(FILE, inputs.get(0).getNamespace());
-    assertEquals(testFile.toAbsolutePath().getParent().toString(), inputs.get(0).getName());
+    assertEquals(testFile.toAbsolutePath().toString(), inputs.get(0).getName());
   }
 
   @Test
@@ -383,9 +383,9 @@ class SparkReadWriteIntegTest {
 
     ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
-    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(6))
+    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, times(4))
         .emit(lineageEvent.capture());
-    OpenLineage.RunEvent completeEvent = lineageEvent.getAllValues().get(5);
+    OpenLineage.RunEvent completeEvent = lineageEvent.getAllValues().get(3);
     assertThat(completeEvent).hasFieldOrPropertyWithValue(EVENT_TYPE, RunEvent.EventType.COMPLETE);
     assertThat(completeEvent.getInputs())
         .first()
@@ -481,9 +481,13 @@ class SparkReadWriteIntegTest {
 
     ArgumentCaptor<OpenLineage.RunEvent> lineageEvent =
         ArgumentCaptor.forClass(OpenLineage.RunEvent.class);
-    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, atLeast(6))
+    Mockito.verify(SparkAgentTestExtension.OPEN_LINEAGE_SPARK_CONTEXT, atLeast(4))
         .emit(lineageEvent.capture());
-    OpenLineage.RunEvent event = lineageEvent.getAllValues().get(5);
+    OpenLineage.RunEvent event =
+        lineageEvent.getAllValues().stream()
+            .filter(ev -> ev.getInputs() != null && !ev.getInputs().isEmpty())
+            .findFirst()
+            .get();
 
     assertThat(lineageEvent.getAllValues().get(lineageEvent.getAllValues().size() - 1))
         .hasFieldOrPropertyWithValue(EVENT_TYPE, RunEvent.EventType.COMPLETE);

@@ -34,6 +34,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LocalRelation;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.catalyst.plans.logical.OneRowRelation;
 import org.apache.spark.sql.catalyst.plans.logical.UnaryNode;
+import org.apache.spark.sql.execution.ExternalRDD;
 import org.apache.spark.sql.execution.LogicalRDD;
 import org.apache.spark.sql.execution.columnar.InMemoryRelation;
 import org.apache.spark.sql.execution.datasources.HadoopFsRelation;
@@ -124,7 +125,9 @@ public class InputFieldsCollector {
       // implemented in
       // io.openlineage.spark3.agent.lifecycle.plan.column.ColumnLevelLineageUtils.collectInputsAndExpressionDependencies
       // requires merging multiple LogicalPlans
-    } else if (node instanceof OneRowRelation || node instanceof LocalRelation) {
+    } else if (node instanceof OneRowRelation
+        || node instanceof LocalRelation
+        || node instanceof ExternalRDD) {
       // skip without warning
     } else if (node instanceof LeafNode) {
       log.warn("Could not extract dataset identifier from {}", node.getClass().getCanonicalName());

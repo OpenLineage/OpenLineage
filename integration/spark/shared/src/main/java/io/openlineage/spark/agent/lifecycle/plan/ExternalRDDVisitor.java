@@ -22,6 +22,11 @@ public class ExternalRDDVisitor extends AbstractRDDNodeVisitor<ExternalRDD<?>, I
   }
 
   @Override
+  public boolean isDefinedAt(LogicalPlan x) {
+    return x instanceof ExternalRDD;
+  }
+
+  @Override
   public List<InputDataset> apply(LogicalPlan x) {
     ExternalRDD externalRDD = (ExternalRDD) x;
     List<RDD<?>> fileRdds = Rdds.findFileLikeRdds(externalRDD.rdd());
