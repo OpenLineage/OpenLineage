@@ -4,6 +4,8 @@
 
 **Fluentd support is experimental and could be changed or removed in a future release.**
 
+**The current implementation is supposed to be used with OpenLineage spec v1.0.x. Using this plugin with other versions may require some modification.**
+
 Modern data collectors (Fluentd, Logstash, Vector, etc.) can be extremely useful when designing
 production-grade architectures for processing Openlineage events.
 

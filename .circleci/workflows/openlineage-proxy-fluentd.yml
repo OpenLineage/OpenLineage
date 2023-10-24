@@ -1,0 +1,7 @@
+workflows:
+  openlineage-proxy-fluentd:
+    jobs:
+      - build-proxy-fluentd
+      - workflow_complete:
+          requires:
+            - build-proxy-fluentd
