@@ -9,6 +9,10 @@
 * **Spark: support `rdd` and `toDF` operations available in Spark Scala API.** [`#2188`](https://github.com/OpenLineage/OpenLineage/pull/2188) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)   
   *This PR includes the first Scala integration test, fixes `ExternalRddVisitor` and adds support for extracting inputs from `MapPartitionsRDD` and `ParallelCollectionRDD` plan nodes.*
 
+### Added
+* **Spark: support Databricks Runtime 13.3.** [`2185`](https://github.com/OpenLineage/OpenLineage/pull/2185) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Modify Spark integration to support latest Databricks Runtime version.*
+
 ### Fixed
 * **Spark: unify dataset naming for RDD jobs and Spark SQL.** [`2181`](https://github.com/OpenLineage/OpenLineage/pull/2181) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Use the same mechanism for RDD jobs to extract dataset identifier as used for Spark SQL.*
