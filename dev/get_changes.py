@@ -20,8 +20,10 @@ class GetChanges:
         self.pulls: list[PullRequest] = []
         self.rel_title_str: str = ''
         self.text: list[str] = []
+        self.new_contributors: dict[str:str] = {}
 
     def get_pulls(self):
+        print('Working on it...')
         g = Github(self.github_token)
         repo = g.get_repo("OpenLineage/openlineage")
         prev_date = repo.get_release(self.previous).created_at
@@ -30,20 +32,16 @@ class GetChanges:
     
     def write_title(self):
         self.rel_title_str = f'## [{self.current}](https://github.com/OpenLineage/OpenLineage/compare/{self.previous}...{self.current}) - {date.today()}'
-        print(self.rel_title_str)
             
     def describe_changes(self):
         for pull in self.pulls:
             entry = []
             if pull.user.login != 'dependabot[bot]':
-                print('----------')
                 labels = []
                 for label in pull.labels:
                     if label.name != 'documentation':
                         labels.append(label.name)
-                print(labels)
                 change_str = f'* **{labels[0]}: {pull.title}** [`#{pull.number}`]({pull.html_url}) [@{pull.user.login}]({pull.user.html_url})  '
-                print(change_str)
                 beginning = pull.body.find('One-line summary:') + 18
                 end = beginning + 69
                 descrip = pull.body[beginning:end]
@@ -51,10 +49,22 @@ class GetChanges:
                     change_descrip_str = ''
                 else:
                     change_descrip_str = f'    *{descrip.strip()}*'
-                print(change_descrip_str)
                 entry.append(change_str + '\n')
                 entry.append(change_descrip_str + '\n')
                 self.text.append(entry)
+
+    def get_new_contributors(self):
+        for pull in self.pulls:
+            comments = pull.get_issue_comments()
+            for comment in comments:
+                if 'Thanks for opening your' in comment.body:
+                    self.new_contributors[pull.user.login] = pull.user.url
+        if self.new_contributors:
+            print('New contributors:')
+            for k, v in self.new_contributors.items():
+                print(f'@{k}: {v}')
+        else:
+            print('Note: no new contributors were identified.')
 
     def update_changelog(self):
         f = open('changes.txt', 'w+')
@@ -107,6 +117,8 @@ def main(
     c.describe_changes()
     c.write_title()
     c.update_changelog()
+    c.get_new_contributors()
+    print('...done!')
 
 if __name__ == "__main__":
     main()
