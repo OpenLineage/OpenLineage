@@ -107,7 +107,7 @@ class GetChanges:
 @click.option(
     "--path", 
     type=str, 
-    default='/Users/michael/Documents/astronomer_projects/openlineage_upstream/OpenLineage/CHANGELOG.md',
+    default='',
     help='absolute path to changelog',
 )
 

@@ -16,7 +16,7 @@ see: https://docs.github.com/en/authentication/keeping-your-account-and-data-sec
 Run the script from the root directory: 
 
 ```sh
-python3 dev/get_changes.py --github_token token --previous 1.4.1 --current 1.5.1 --path /local/path/to/repo
+python3 dev/get_changes.py --github_token token --previous 1.4.1 --current 1.5.1 --path /local/path/to/CHANGELOG.md
 ```
 
 If you get a `command not found` or similar error, make sure you have made the 
