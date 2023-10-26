@@ -16,7 +16,7 @@ class OpenlineageParserTest < Test::Unit::TestCase
    err = assert_raise Fluent::ParserError do
      @parser.instance.parse(ol_event)
    end
-   assert_match "\"runId\" is a required property", err.message
+   assert_match(/Openlineage validation failed: (.+) path "\/run": "runId" is a required property/, err.message)
  end
 
   test "test invalid json" do
@@ -63,7 +63,7 @@ class OpenlineageParserTest < Test::Unit::TestCase
     err = assert_raise Fluent::ParserError do
       @parser.instance.parse(ol_event)
     end
-    assert_match "Openlineage validation failed: path \"/run/facets", err.message
+    assert_match(/Openlineage validation failed: (.+) path "\/run\/facets/, err.message)
   end
 
   test "run facet validation turned off" do
@@ -82,7 +82,7 @@ class OpenlineageParserTest < Test::Unit::TestCase
     err = assert_raise Fluent::ParserError do
       @parser.instance.parse(ol_event)
     end
-    assert_match "Openlineage validation failed: path \"/job/facets/ownership", err.message
+    assert_match(/Openlineage validation failed: (.+) path "\/job\/facets\/ownership/, err.message)
   end
 
   test "job facet validation turned off" do
@@ -105,7 +105,7 @@ class OpenlineageParserTest < Test::Unit::TestCase
     err = assert_raise Fluent::ParserError do
       @parser.instance.parse(ol_event)
     end
-    assert_match "Openlineage validation failed: path \"/outputs/0/facets/ownership/owners", err.message
+    assert_match(/Openlineage validation failed: (.+) path "\/outputs\/0\/facets\/ownership\/owners/, err.message)
   end
 
   test "input dataset facet validation" do
@@ -118,7 +118,7 @@ class OpenlineageParserTest < Test::Unit::TestCase
     err = assert_raise Fluent::ParserError do
       @parser.instance.parse(ol_event)
     end
-    assert_match "columnMetrics", err.message
+    assert_match(/Openlineage validation failed: (.+) "columnMetrics" is a required property/, err.message)
   end
 
   test "output dataset facet validation" do
@@ -130,7 +130,7 @@ class OpenlineageParserTest < Test::Unit::TestCase
     err = assert_raise Fluent::ParserError do
       @parser.instance.parse(ol_event)
     end
-    assert_match "rowCount", err.message
+    assert_match(/Openlineage validation failed: (.+) "rowCount" is a required property/, err.message)
   end
 
   private

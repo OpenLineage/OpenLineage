@@ -721,6 +721,15 @@ jobs:
             - "7d:bc:78:35:09:c9:25:04:63:f9:eb:4b:f1:f4:d1:91"
       - run: spec/release.sh
 
+  build-proxy-fluentd:
+    working_directory: ~/openlineage/proxy/fluentd
+    docker:
+      - image: cimg/ruby:3.2
+    steps:
+      - *checkout_project_root
+      - run: bundle install
+      - run: bundle exec rake test
+
   build-proxy-backend:
     working_directory: ~/openlineage/proxy/backend
     docker:
