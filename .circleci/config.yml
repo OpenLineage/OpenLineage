@@ -66,6 +66,7 @@ jobs:
                 for ln in $@; do
                   echo "$PWD/.circleci/workflows/$ln" >> workflow_files.txt
                 done
+                echo "$PWD/.circleci/workflows/openlineage-always.yml" >> workflow_files.txt
               fi
             fi
           }
@@ -114,7 +115,8 @@ jobs:
             # This configuration is piped into yq along with the continue_config.yml file and the
             # union of the two files is output to complete_config.yml
 
-            yq eval-all '.workflows | . as $wf ireduce({}; . * $wf) |
+            yq eval-all '.workflows[].jobs |= map(select(.[].requires == null) |= .[].requires = ["always_run"])
+                | .workflows | . as $wf ireduce({}; . * $wf) |
                 (map(.jobs[] | select(has("workflow_complete") | not)) | . as $item ireduce ([]; (. *+ $item) ))
                 + [(map(.jobs[] | select(has("workflow_complete"))) | .[] as $item ireduce ({}; . *+ $item))] | {"workflows": {"build": {"jobs": .}}}' $FILES | \
             yq eval-all '. as $wf ireduce({}; . * $wf)' .circleci/continue_config.yml - > complete_config.yml
