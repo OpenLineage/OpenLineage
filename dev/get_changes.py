@@ -35,6 +35,8 @@ class GetChanges:
             
     def describe_changes(self):
         for pull in self.pulls:
+
+            """ Assembles change description with PR and user URLs """
             entry = []
             if pull.user.login != 'dependabot[bot]':
                 labels = []
@@ -42,13 +44,21 @@ class GetChanges:
                     if label.name != 'documentation':
                         labels.append(label.name)
                 change_str = f'* **{labels[0]}: {pull.title}** [`#{pull.number}`]({pull.html_url}) [@{pull.user.login}]({pull.user.html_url})  '
-                beginning = pull.body.find('One-line summary:') + 18
-                end = beginning + 69
-                descrip = pull.body[beginning:end]
-                if ("You've" in descrip) or ('SPDX' in descrip):
-                    change_descrip_str = ''
+                
+                """ Extracts one-line description if present """
+                beg = pull.body.find('One-line summary:') + 18
+                if beg == 17:
+                    change_descrip_str = '    **'
                 else:
-                    change_descrip_str = f'    *{descrip.strip()}*'
+                    test = pull.body.find('### Checklist')
+                    if test == -1:
+                        end = beg + 75
+                    else:
+                        end = test - 1
+                    descrip = pull.body[beg:end].split()
+                    descrip_str = ' '.join(descrip)
+                    change_descrip_str = f'    *{descrip_str}*'
+                
                 entry.append(change_str + '\n')
                 entry.append(change_descrip_str + '\n')
                 self.text.append(entry)
