@@ -104,7 +104,35 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
 
     def on_running():
         nonlocal task_instance
-        ti = copy.deepcopy(task_instance)
+        try:
+            ti = copy.deepcopy(task_instance)
+        except TypeError as e:
+            # dirty hack for those who put unpickable objects into DAG code
+            import copyreg
+            import re
+            import types
+            from importlib import import_module
+            failing_class = re.match(r"cannot pickle '(.*?)' object", str(e)).group(1)
+            copyreg.pickle(types.ModuleType, lambda x: x.__name__)
+            # try to import and register with copyreg
+            obj = None
+            try:
+                module_path, class_name = failing_class.rsplit(".", 1)
+                module = import_module(module_path)
+                obj = getattr(module, class_name)
+                copyreg.pickle(obj, '')
+            except (ValueError, AttributeError, ImportError):
+                pass
+
+            try:
+                ti = copy.deepcopy(task_instance)
+            except Exception as e:
+                raise e
+            finally:
+                copyreg.dispatch_table.pop(types.ModuleType)
+                if obj is not None:
+                    copyreg.dispatch_table.pop(obj)
+
         ti.render_templates()
 
         task = ti.task

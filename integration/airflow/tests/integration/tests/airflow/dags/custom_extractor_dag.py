@@ -31,6 +31,8 @@ dag = DAG(
     description='Test dag.'
 )
 
+dag.attribute = os
+
 
 class CustomOperator(BaseOperator):
     def execute(self, context: Any):
