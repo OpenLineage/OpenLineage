@@ -154,7 +154,9 @@ If `spark.openlineage.transport.type` is set to `kafka`, then the below paramete
 
 Testing requires a Java 8 JVM to test the Scala Spark components.
 
-`export JAVA_HOME=` '/usr/libexec/java_home -v 1.8'
+```sh
+export JAVA_HOME=`/usr/libexec/java_home -v 1.8`
+```
 
 ## Preparation
 
