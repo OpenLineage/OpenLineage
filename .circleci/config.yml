@@ -93,6 +93,7 @@ jobs:
             check_change integration/dagster/ openlineage-integration-python.yml openlineage-integration-dagster.yml
             check_change integration/dbt/ openlineage-integration-python.yml openlineage-integration-dbt.yml
             check_change proxy/backend/ openlineage-proxy-backend.yml
+            check_change proxy/fluentd/ openlineage-proxy-fluentd.yml
           fi
           touch workflow_files.txt
           FILES=$(sort workflow_files.txt | uniq | tr "\n" " ")

@@ -11,7 +11,9 @@
         "job": {
           "namespace": "parent_namespace",
           "name": "parent_name"
-        }
+        },
+        "_producer": "https://github.com/OpenLineage/OpenLineage/blob/v1-0-0/client",
+        "_schemaURL": "https://openlineage.io/spec/1-0-1/OpenLineage.json#/definitions/RunFacet"
       }
     }
   },
