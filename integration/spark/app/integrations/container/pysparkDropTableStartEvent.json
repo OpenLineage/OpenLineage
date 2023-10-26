@@ -3,7 +3,8 @@
   "job": {
     "namespace": "testDropTable"
   },
-  "inputs": [
+  "inputs": [],
+  "outputs": [
     {
       "namespace": "file",
       "name": "/tmp/drop_test/drop_table_test",
@@ -38,6 +39,5 @@
         }
       }
     }
-  ],
-  "outputs": [ ]
+  ]
 }
