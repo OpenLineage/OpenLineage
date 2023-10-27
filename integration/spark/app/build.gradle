@@ -185,7 +185,11 @@ def commonTestConfiguration = {
             'spark.version'                       :  sparkVersion,
             'openlineage.spark.jar'               : "${archivesBaseName}-${project.version}.jar",
             'kafka.package.version'               : "org.apache.spark:spark-sql-kafka-0-10_${versions.scala}:${sparkVersion}",
-            'mockserver.logLevel'                 : 'ERROR'
+            'mockserver.logLevel'                 : 'ERROR',
+            'bitnami.image.3.2.4.arm.hash'        : 'f17e504c82fd19a4fc7dca8a573a83f8f58d31976dc87cc71a09ae86dc6e58cf',
+            'bitnami.image.3.2.4.amd.hash'        : '2d1fcfdf3da3e3888c09c4944874b95822b1b913aa27fbadebb94e2b084f5939',
+            'bitnami.image.3.3.3.arm.hash'        : 'a88399d0628a03a83ddada04e92742b3064d5726da23719c31c36baf4658211a',
+            'bitnami.image.3.3.3.amd.hash'        : '2aaa84e050463512b6829145ef7928518394332f55e9a48dbda65a3dda5159b9'
     ]
 
     classpath = project.sourceSets.test.runtimeClasspath
