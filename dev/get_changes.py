@@ -58,17 +58,21 @@ class GetChanges:
                     descrip = pull.body[beg:end].split()
                     descrip_str = ' '.join(descrip)
                     change_descrip_str = f'    *{descrip_str}*'
+
+                """ Checks for new contributor """
+                self.check_new_contributor(pull)
                 
                 entry.append(change_str + '\n')
                 entry.append(change_descrip_str + '\n')
                 self.text.append(entry)
 
-    def get_new_contributors(self):
-        for pull in self.pulls:
-            comments = pull.get_issue_comments()
-            for comment in comments:
-                if 'Thanks for opening your' in comment.body:
-                    self.new_contributors[pull.user.login] = pull.user.url
+    def check_new_contributor(self, pull):
+        comments = pull.get_issue_comments()
+        for comment in comments:
+            if 'Thanks for opening your' in comment.body:
+                self.new_contributors[pull.user.login] = pull.user.url
+        
+    def print_new_contributors(self):    
         if self.new_contributors:
             print('New contributors:')
             for k, v in self.new_contributors.items():
@@ -127,7 +131,7 @@ def main(
     c.describe_changes()
     c.write_title()
     c.update_changelog()
-    c.get_new_contributors()
+    c.print_new_contributors()
     print('...done!')
 
 if __name__ == "__main__":
