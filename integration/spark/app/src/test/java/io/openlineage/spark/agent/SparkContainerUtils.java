@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import org.mockserver.client.MockServerClient;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.KafkaContainer;
@@ -53,8 +54,24 @@ public class SparkContainerUtils {
       String waitMessage,
       MockServerContainer mockServerContainer,
       String... command) {
+    // https://github.com/bitnami/containers/issues/52170 -> bitnami/spark issue
+    // property can be removed when image is fixed
+    String osArch =
+        Optional.of(System.getProperty("os.arch"))
+            .filter(e -> e.contains("arm") || e.contains("aarch"))
+            .map(e -> "arm")
+            .orElse("amd");
+
+    String bitnamiHash = "";
+    String property =
+        String.format("bitnami.image.%s.%s.hash", System.getProperty("spark.version"), osArch);
+    if (System.getProperty(property) != null) {
+      bitnamiHash = "@sha256:" + System.getProperty(property);
+    }
+
     return new GenericContainer<>(
-            DockerImageName.parse("bitnami/spark:" + System.getProperty("spark.version")))
+            DockerImageName.parse(
+                "bitnami/spark:" + System.getProperty("spark.version") + bitnamiHash))
         .withNetwork(network)
         .withNetworkAliases("spark")
         .withFileSystemBind("build/gcloud", "/opt/gcloud")
