@@ -3,9 +3,14 @@
 
 import uuid
 from datetime import datetime
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Set, Union
 
-from dagster import DagsterInstance, EventLogRecord, EventRecordsFilter  # type: ignore
+from dagster import (  # type: ignore
+    DagsterEventType,
+    DagsterInstance,
+    EventLogRecord,
+    EventRecordsFilter,
+)
 
 NOMINAL_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
@@ -24,23 +29,26 @@ def make_step_job_name(pipeline_name: str, step_key: str) -> str:
 
 def get_event_log_records(
         instance: DagsterInstance,
+        event_type: Union[DagsterEventType, Set[DagsterEventType]],
         last_storage_id: int,
         record_filter_limit: int
 ) -> Iterable[EventLogRecord]:
     """Returns a list of Dagster event log records in ascending order
     from the instance's event log storage.
     :param instance: active instance to get records from
+    :param event_type: event type to filter by
     :param last_storage_id: storage id to use as after cursor filter
     :param record_filter_limit: maximum number of event logs to retrieve
     :return: list of Dagster event log records
     """
-    return instance.get_event_records(
-        EventRecordsFilter(
-            after_cursor=last_storage_id
-        ),
-        limit=record_filter_limit,
-        ascending=True,
-    )
+    event_type_set = event_type if isinstance(event_type, set) else set([event_type])
+    event_records = []
+    for item in event_type_set:
+        event_records += instance.get_event_records(
+            EventRecordsFilter(event_type=item, after_cursor=last_storage_id),
+            limit=record_filter_limit,
+        )
+    return sorted(event_records, key=lambda record: record.timestamp)
 
 
 def get_repository_name(
@@ -55,7 +63,7 @@ def get_repository_name(
     pipeline_run = instance.get_run_by_id(pipeline_run_id)
     repository_name = None
     if pipeline_run:
-        ext_pipeline_origin = pipeline_run.external_pipeline_origin
+        ext_pipeline_origin = pipeline_run.external_job_origin
         if ext_pipeline_origin:
             ext_repository_origin = ext_pipeline_origin.external_repository_origin
             if ext_repository_origin:
