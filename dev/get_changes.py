@@ -81,7 +81,6 @@ class GetChanges:
             print('Note: no new contributors were identified.')
 
     def update_changelog(self):
-        f = open('changes.txt', 'w+')
         f = open('changes.txt', 'a')
         f.write(self.rel_title_str + '\n')
         for entry in self.text:
