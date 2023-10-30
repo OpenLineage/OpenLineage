@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from typing import Dict, Optional
+from typing import Dict, Optional, Set, Union
 
 from openlineage.dagster.adapter import OpenLineageAdapter
 from openlineage.dagster.cursor import OpenLineageCursor, RunningPipeline, RunningStep
@@ -28,6 +28,7 @@ def openlineage_sensor(
         description: Optional[str] = "OpenLineage sensor tails Dagster event logs, "
                                      "converts Dagster events into OpenLineage events, "
                                      "and emits them to an OpenLineage backend.",
+        concerned_event_types: Optional[Union[DagsterEventType, Set[DagsterEventType]]] = PIPELINE_EVENTS | STEP_EVENTS, # noqa: E501
         minimum_interval_seconds: Optional[int] = DEFAULT_SENSOR_DAEMON_INTERVAL,
         record_filter_limit: Optional[int] = 30,
         after_storage_id: Optional[int] = 0
@@ -35,6 +36,7 @@ def openlineage_sensor(
     """Wrapper to parameterize sensor configurations and return sensor definition.
     :param name: sensor name
     :param description: sensor description
+    :param concerned_event_types: event types to filter out event records
     :param minimum_interval_seconds: minimum number of seconds that will elapse between evaluations
     :param record_filter_limit: maximum number of event logs to process on each evaluation
     :param after_storage_id: storage id to use as the initial after cursor when getting event logs
@@ -55,7 +57,7 @@ def openlineage_sensor(
         running_pipelines = ol_cursor.running_pipelines
 
         event_log_records = get_event_log_records(
-            context.instance, last_storage_id, record_filter_limit
+            context.instance, concerned_event_types, last_storage_id, record_filter_limit
         )
 
         raised_exception = None
@@ -63,7 +65,7 @@ def openlineage_sensor(
             entry = record.event_log_entry
             if entry.is_dagster_event:
                 try:
-                    pipeline_name = entry.pipeline_name
+                    pipeline_name = entry.job_name
                     pipeline_run_id = entry.run_id
                     timestamp = entry.timestamp
                     dagster_event = entry.get_dagster_event()
