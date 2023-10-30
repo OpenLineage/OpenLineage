@@ -8,15 +8,14 @@ from typing import Optional
 from openlineage.dagster import __version__ as OPENLINEAGE_DAGSTER_VERSION
 from pkg_resources import parse_version
 
-from dagster import DagsterEvent, DagsterEventType, EventLogEntry, EventLogRecord, PipelineRun
-from dagster.core.code_pointer import FileCodePointer
-from dagster.core.definitions.reconstructable import ReconstructableRepository
+from dagster import DagsterEvent, DagsterEventType, DagsterRun, EventLogEntry, EventLogRecord
 from dagster.core.execution.plan.objects import StepFailureData, StepSuccessData
 from dagster.core.host_representation import (
-    ExternalPipelineOrigin,
+    ExternalJobOrigin,
     ExternalRepositoryOrigin,
-    InProcessRepositoryLocationOrigin,
+    InProcessCodeLocationOrigin,
 )
+from dagster.core.types.loadable_target_origin import LoadableTargetOrigin
 from dagster.version import __version__ as DAGSTER_VERSION
 
 PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/" \
@@ -32,7 +31,7 @@ def make_test_event_log_record(
         storage_id: int = 1,
 ):
     # handle removed message field from EventLogEntry since 0.14.3 by https://github.com/dagster-io/dagster/pull/6769 # noqa: E501
-    if parse_version(DAGSTER_VERSION) >= parse_version("0.14.3"):
+    if parse_version(DAGSTER_VERSION) >= parse_version("0.15.0"):
         event_log_entry = EventLogEntry(
             None, "debug", "user_msg", pipeline_run_id, timestamp, step_key, pipeline_name,
             _make_dagster_event(event_type, pipeline_name, step_key) if event_type else None)
@@ -68,21 +67,18 @@ def _make_dagster_event(
 def make_pipeline_run_with_external_pipeline_origin(
         repository_name: str,
 ):
-    return PipelineRun(
-        pipeline_name="test",
+    return DagsterRun(
+        job_name="test",
         execution_plan_snapshot_id="123",
-        external_pipeline_origin=ExternalPipelineOrigin(
+        external_job_origin=ExternalJobOrigin(
             external_repository_origin=ExternalRepositoryOrigin(
-                repository_location_origin=InProcessRepositoryLocationOrigin(
-                    recon_repo=ReconstructableRepository(
-                        pointer=FileCodePointer(
-                            python_file="/openlineage/dagster/tests/test_pipelines/repo.py",
-                            fn_name="define_demo_execution_repo",
-                        ),
+                code_location_origin=InProcessCodeLocationOrigin(
+                    loadable_target_origin=LoadableTargetOrigin(
+                        python_file="/openlineage/dagster/tests/test_pipelines/repo.py",
                     )
                 ),
                 repository_name=repository_name,
             ),
-            pipeline_name="test"
+            job_name="test",
         )
     )
