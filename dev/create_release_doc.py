@@ -7,7 +7,7 @@ from github import Github
 import rich_click as click
 
 class DocRelease:
-
+    """A script for generating a release doc for the OpenLineage Docs site."""
     def __init__(self, repo, tag: str):
         self.repo = repo
         self.tag: str = tag
