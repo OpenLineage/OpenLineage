@@ -110,8 +110,8 @@ class GetChanges:
 @click.option(
     "--path", 
     type=str, 
-    default='',
-    help='absolute path to changelog',
+    default='../OpenLineage/CHANGELOG.md',
+    help='path to changelog',
 )
 
 def main(
