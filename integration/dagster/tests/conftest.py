@@ -13,8 +13,6 @@ from dagster import DagsterEvent, DagsterEventType, DagsterRun, EventLogEntry, E
 from dagster.core.execution.plan.objects import StepFailureData, StepSuccessData
 from dagster.core.host_representation import ExternalRepositoryOrigin
 from dagster.core.types.loadable_target_origin import LoadableTargetOrigin
-
-
 from dagster.version import __version__ as DAGSTER_VERSION
 
 PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/" \
