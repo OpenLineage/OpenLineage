@@ -132,15 +132,9 @@ def make_test_event_log_record(
         step_key: Optional[str] = None,
         storage_id: int = 1,
 ):
-    # handle removed message field from EventLogEntry since 0.14.3 by https://github.com/dagster-io/dagster/pull/6769 # noqa: E501
-    if parse_version(DAGSTER_VERSION) >= parse_version("0.15.0"):
-        event_log_entry = EventLogEntry(
-            None, "debug", "user_msg", pipeline_run_id, timestamp, step_key, pipeline_name,
-            _make_dagster_event(event_type, pipeline_name, step_key) if event_type else None)
-    else:
-        event_log_entry = EventLogEntry(
-            None, "msg", "debug", "user_msg", pipeline_run_id, timestamp, step_key, pipeline_name,
-            _make_dagster_event(event_type, pipeline_name, step_key) if event_type else None)
+    event_log_entry = EventLogEntry(
+        None, "debug", "user_msg", pipeline_run_id, timestamp, step_key, pipeline_name,
+        _make_dagster_event(event_type, pipeline_name, step_key) if event_type else None)
 
     return EventLogRecord(
         storage_id=storage_id,
