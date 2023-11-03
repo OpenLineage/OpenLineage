@@ -17,7 +17,7 @@ and emits them to an OpenLineage backend.
 ## Requirements
 
 - [Python 3.8](https://www.python.org/downloads)
-- [Dagster 0.15.0+](https://dagster.io/)
+- [Dagster 1.0.0+](https://dagster.io/)
 
 ## Installation
 
