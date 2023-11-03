@@ -5,15 +5,12 @@ import uuid
 from datetime import datetime
 from typing import Iterable, Optional, Set, Union
 
-from pkg_resources import parse_version
-
 from dagster import (  # type: ignore
     DagsterEventType,
     DagsterInstance,
     EventLogRecord,
     EventRecordsFilter,
 )
-from dagster.version import __version__ as DAGSTER_VERSION
 
 NOMINAL_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
