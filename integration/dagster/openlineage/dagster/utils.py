@@ -3,8 +3,9 @@
 
 import uuid
 from datetime import datetime
-from pkg_resources import parse_version
 from typing import Iterable, Optional, Set, Union
+
+from pkg_resources import parse_version
 
 from dagster import (  # type: ignore
     DagsterEventType,
