@@ -55,7 +55,7 @@ Corresponding values to be used:
 - Generated doc from the json schemas of the facets. Publish them on openlineage.io
 
 #### Additional documentation
-We can create a documentation page per use case to document what facet can be used in what case:
+We can create a documentation page per use case to document what facet can be use in what case:
 
 - Compliance with privacy laws (GDPR, CCPA, …)
 - Compliance with Banking regulation (BCBS-239)
@@ -137,6 +137,7 @@ core/
 			]
 		}
 	}
+```
 ```
 egeria/
 	CODEOWNERS
@@ -272,4 +273,3 @@ Cons:
 - Producers need to host and maintain their own subset of the registry
 - The core repo ci cannot guarantee consistency of the registry as it relies on external references
 - The core repo cannot guarantee accuracy of registry entries (e.g. does an entity actually consume/produce the facets they say they do?)
-
