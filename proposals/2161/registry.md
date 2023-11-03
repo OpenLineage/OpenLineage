@@ -1,9 +1,9 @@
-#OpenLineage registry proposal
-##Goal
+# OpenLineage registry proposal
+## Goal
 Allow third parties to register their implementations or custom extensions to make them easy to discover.
 Shorten “Producer” and “schema url” values
 
-##Concept needing a registry:
+## Concept needing a registry:
 Producers:
 
 - Custom facet prefix to registry of facet schemas
@@ -21,9 +21,9 @@ Requirements:
 - URIs should be short (producer, faceturl)
 - A registered name can be both a producer and a consumer.
 
-##Proposal
+## Proposal
 
-###Name registration and shorter URIs
+### Name registration and shorter URIs
 Each consumer or producer entity can claim a name, defined in the registry: “{name}”
 Each registered entity will provide a documentation URL for its documentation.
 The registered name is used to shorten “producer” and “schemaUrl” fields in facets.
@@ -34,22 +34,22 @@ Corresponding values to be used:
 - Producer URI prefix = `“ol:${name}”`  can use sub URIs if more than one component needed `“ol:${name}:${sub component}”` or `“ol:${name}:${version}”`
 - Schema URI prefix: `“ol:${name}:${path}”` => `“${schema url prefix}/${path}”`
 
-###CI and Documentation
+### CI and Documentation
 
-####CI validation
+#### CI validation
 - The registry is consistent:
   - Validate custom facet prefixes match the registered name
 - The registry has the required fields
 - Linting.
 - Custom facet schemas are valid and validated against examples.
 
-####The registry will be used to publish documentation in CI
+#### The registry will be used to publish documentation in CI
 - A page similar to our ecosystem page that lists producers, consumers, links to their documentation and what facets they support.
 - Custom facets on their schema URL like the current core facets:
  Ex: https://openlineage.io/spec/facets/1-0-1/ColumnLineageDatasetFacet.json
 - Generated doc from the json schemas of the facets. Publish them on openlineage.io
 
-####Additional documentation
+#### Additional documentation
 We can create a documentation page per use case to document what facet can be use in what case:
 
 - Compliance with privacy laws (GDPR, CCPA, …)
@@ -61,7 +61,7 @@ We can create a documentation page per use case to document what facet can be us
 
 We should have a page explaining how a custom facet can be promoted to a core facet through the OpenLineage Proposal process.
 
-###The Registry
+### The Registry
 
 Self contained repository
 
@@ -140,7 +140,7 @@ Cons:
 - Registered entities must maintain their list of codeowners to guarantee that they can keep updating their own definition.
 
 
-###Alternative considered
+### Alternative considered
 Referring to externally hosted artifacts:
 
 **TL;DR: A central registry that defines only names for producers and consumers but externalizes custom facets and what is consumed/produced**
