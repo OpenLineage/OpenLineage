@@ -3,6 +3,7 @@
 
 import uuid
 from datetime import datetime
+from pkg_resources import parse_version
 from typing import Iterable, Optional, Set, Union
 
 from dagster import (  # type: ignore
@@ -11,6 +12,7 @@ from dagster import (  # type: ignore
     EventLogRecord,
     EventRecordsFilter,
 )
+from dagster.version import __version__ as DAGSTER_VERSION
 
 NOMINAL_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
