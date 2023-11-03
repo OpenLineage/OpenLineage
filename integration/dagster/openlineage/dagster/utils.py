@@ -5,15 +5,12 @@ import uuid
 from datetime import datetime
 from typing import Iterable, Optional, Set, Union
 
-from pkg_resources import parse_version
-
 from dagster import (  # type: ignore
     DagsterEventType,
     DagsterInstance,
     EventLogRecord,
     EventRecordsFilter,
 )
-from dagster.version import __version__ as DAGSTER_VERSION
 
 NOMINAL_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
@@ -66,9 +63,11 @@ def get_repository_name(
     pipeline_run = instance.get_run_by_id(pipeline_run_id)
     repository_name = None
     if pipeline_run:
+        # DagsterRun changed attribute name from `external_pipeline_origin` to `external_job_origin`
+        # since 1.3.3
         ext_pipeline_origin = (
             pipeline_run.external_pipeline_origin
-            if parse_version(DAGSTER_VERSION) <= parse_version("1.3.2")
+            if hasattr(pipeline_run, "external_pipeline_origin")
             else pipeline_run.external_job_origin
         )
         if ext_pipeline_origin:
