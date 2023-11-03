@@ -3,6 +3,7 @@
 
 import uuid
 from datetime import datetime
+from pkg_resources import parse_version
 from typing import Iterable, Optional, Set, Union
 
 from dagster import (  # type: ignore
@@ -11,6 +12,7 @@ from dagster import (  # type: ignore
     EventLogRecord,
     EventRecordsFilter,
 )
+from dagster.version import __version__ as DAGSTER_VERSION
 
 NOMINAL_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
@@ -48,7 +50,7 @@ def get_event_log_records(
             EventRecordsFilter(event_type=item, after_cursor=last_storage_id),
             limit=record_filter_limit,
         )
-    return sorted(event_records, key=lambda record: record.timestamp)
+    return sorted(event_records, key=lambda record: record.event_log_entry.timestamp)
 
 
 def get_repository_name(
@@ -63,7 +65,11 @@ def get_repository_name(
     pipeline_run = instance.get_run_by_id(pipeline_run_id)
     repository_name = None
     if pipeline_run:
-        ext_pipeline_origin = pipeline_run.external_job_origin
+        ext_pipeline_origin = (
+            pipeline_run.external_pipeline_origin
+            if parse_version(DAGSTER_VERSION) <= parse_version("1.3.2")
+            else pipeline_run.external_job_origin
+        )
         if ext_pipeline_origin:
             ext_repository_origin = ext_pipeline_origin.external_repository_origin
             if ext_repository_origin:
