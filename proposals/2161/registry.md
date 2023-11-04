@@ -1,7 +1,7 @@
 # OpenLineage registry proposal
 ## Goal
-Allow third parties to register their implementations or custom extensions to make them easy to discover.
-Shorten “Producer” and “schema url” values
+- Allow third parties to register their implementations or custom extensions to make them easy to discover.
+- Shorten “Producer” and “schema url” values
 
 ## Concept needing a registry:
 Producers:
@@ -63,17 +63,21 @@ We should have a page explaining how a custom facet can be promoted to a core fa
 
 ### The Registry
 
-Self contained repository
+We propose a self contained registry hosted in the OpenLineage repository.
 
 **TL;DR: The registry defines consumers and producers names and contains all their custom facets.**
 
+Access control is delegated using `CODEOWNERS` files
+Each participant in the ecosystem owns their own folder.
+
+Structure:
 
 ```
 OpenLineage/spec/registry/
-	/{Name}/ 
-	custom facet schemas are stored in this folder and respect the same rules as spec/facets
-		CODEOWNERS  Delegate approval to the owners of the name
-		registry.json:
+	/{Name}/           <- custom facet schemas are stored in this folder
+	                   <- and respect the same rules as spec/facets
+		CODEOWNERS     <- Delegate approval to the owners of the name
+		registry.json: <- one file per participant
 			Producer: 
 				Producer root doc URL: https://…
 				Produced facets:
@@ -82,6 +86,7 @@ OpenLineage/spec/registry/
 				Consumer root doc URL: https://…
 				Consumed facets:
 					{ facets: [ “{URI}”, “{URI}”, … ]}
+		/facets/       <- where custom facet schemas are stored
 ```
 
 Examples:
@@ -118,8 +123,8 @@ manta/
 
 These files get published on openlineage.io just like the official spec:
 
-- https://openlineage.io/spec/2-0-1/OpenLineage.json
-- https://openlineage.io/spec/facets/1-0-1/ColumnLineageDatasetFacet.json
+- `https://openlineage.io/spec/2-0-1/OpenLineage.json`
+- `https://openlineage.io/spec/facets/1-0-1/ColumnLineageDatasetFacet.json`
 
 The Airflow producer should now use:
 
@@ -141,11 +146,11 @@ Cons:
 
 
 ### Alternative considered
-Referring to externally hosted artifacts:
+Minimizing what is in the central registry and referring to externally hosted artifacts:
 
 **TL;DR: A central registry that defines only names for producers and consumers but externalizes custom facets and what is consumed/produced**
 
-The OpenLineage repository contains a `registry.json` file in spec/registry structured as follows:
+The OpenLineage repository contains a single `registry.json` file in spec/registry structured as follows:
 
 ```
 OpenLineage/spec/registry/registry.json:
