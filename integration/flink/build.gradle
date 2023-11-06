@@ -14,7 +14,7 @@ plugins {
     id 'jacoco'
     id "com.adarshr.test-logger" version "3.2.0"
     id 'com.diffplug.spotless' version '6.22.0'
-    id "com.github.johnrengelman.shadow" version "7.1.2"
+    id "com.github.johnrengelman.shadow" version "8.1.1"
     id "pmd"
     id 'io.franzbecker.gradle-lombok' version '5.0.0'
 }
@@ -29,6 +29,7 @@ pmd {
 }
 
 pmdMain {
+    dependsOn shadowJar
     reports {
         html.required = true
     }
@@ -126,12 +127,12 @@ sourceSets {
 }
 
 task sourceJar(type: Jar) {
-    classifier 'sources'
+    archiveClassifier = 'sources'
     from sourceSets.main.allJava
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier 'javadoc'
+    archiveClassifier = 'javadoc'
     from javadoc.destinationDir
 }
 
@@ -227,9 +228,13 @@ jacoco {
 
 jacocoTestReport {
     reports {
-        xml.enabled = true
-        html.enabled = true
-        html.destination = file(coverageDir)
+        xml {
+            enabled true
+        }
+        html {
+            enabled true
+            destination = file(coverageDir)
+        }
     }
 }
 
@@ -295,8 +300,10 @@ signing {
 }
 
 shadowJar {
+    dependsOn(':examples:stateful:shadowJar')
+    dependsOn(':examples:stateful:pmdMain')
     minimize()
-    classifier = ''
+    archiveClassifier = ''
     // avoid conflict with any client version of that lib
     relocate 'com.fasterxml.jackson', 'io.openlineage.flink.shaded.com.fasterxml.jackson'
     relocate 'com.github.ok2c.hc5', 'io.openlineage.flink.shaded.com.github.ok2c.hc5'
@@ -310,7 +317,7 @@ shadowJar {
         exclude(dependency('org.slf4j::'))
     }
 
-    classifier = ''
+    archiveClassifier = ''
     exclude 'org/apache/commons/logging/**'
 
     manifest {

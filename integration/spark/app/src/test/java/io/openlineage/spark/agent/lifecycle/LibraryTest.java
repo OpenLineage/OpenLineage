@@ -35,6 +35,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SparkSession;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
@@ -43,6 +44,7 @@ import org.mockito.Mockito;
 import scala.Tuple2;
 
 @Slf4j
+@Tag("beforeShadowJarTest")
 @ExtendWith(SparkAgentTestExtension.class)
 class LibraryTest {
   private final TypeReference<Map<String, Object>> mapTypeReference =

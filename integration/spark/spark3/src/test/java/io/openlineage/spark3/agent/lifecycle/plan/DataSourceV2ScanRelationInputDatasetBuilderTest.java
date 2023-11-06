@@ -5,9 +5,6 @@
 
 package io.openlineage.spark3.agent.lifecycle.plan;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
@@ -22,6 +19,7 @@ import java.util.List;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2ScanRelation;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
@@ -35,8 +33,8 @@ class DataSourceV2ScanRelationInputDatasetBuilderTest {
 
   @Test
   void testIsDefinedAt() {
-    assertFalse(builder.isDefinedAtLogicalPlan(mock(LogicalPlan.class)));
-    assertTrue(builder.isDefinedAtLogicalPlan(mock(DataSourceV2ScanRelation.class)));
+    Assertions.assertFalse(builder.isDefinedAtLogicalPlan(mock(LogicalPlan.class)));
+    Assertions.assertTrue(builder.isDefinedAtLogicalPlan(mock(DataSourceV2ScanRelation.class)));
   }
 
   @Test
@@ -57,7 +55,7 @@ class DataSourceV2ScanRelationInputDatasetBuilderTest {
         when(PlanUtils3.fromDataSourceV2Relation(factory, context, relation, datasetFacetsBuilder))
             .thenReturn(datasets);
 
-        assertEquals(datasets, builder.apply(scanRelation));
+        Assertions.assertEquals(datasets, builder.apply(scanRelation));
 
         facetUtilsMockedStatic.verify(
             () ->
