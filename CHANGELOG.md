@@ -1,6 +1,9 @@
 # Changelog
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.5.0...HEAD)
+### Added
+* **Flink: add option for flink job listener to read from flink conf** [`#2229`](https://github.com/OpenLineage/OpenLineage/pull/2229) [@ensctom](https://github.com/ensctom)  
+  *Add option for flink job listener to read jobname and namespace from flink conf*
 
 ## [1.5.0](https://github.com/OpenLineage/OpenLineage/compare/1.4.1...1.5.0) - 2023-11-01
 ### Added
