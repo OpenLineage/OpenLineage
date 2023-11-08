@@ -2,6 +2,10 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.5.0...HEAD)
 
+### Fixed
+* **Spark: update Jackson dependency to resolve `CVE-2022-1471`** [`#2185`](https://github.com/OpenLineage/OpenLineage/pull/2185) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Update Gradle for Spark and Flink to 8.1.1. Upgrade Jackson `2.15.3`.*
+
 ## [1.5.0](https://github.com/OpenLineage/OpenLineage/compare/1.4.1...1.5.0) - 2023-11-01
 ### Added
 * **Flink: add Flink lineage for Cassandra Connectors** [`#2175`](https://github.com/OpenLineage/OpenLineage/pull/2175) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  

@@ -27,7 +27,7 @@ import io.openlineage.client.OpenLineage.Run;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunFacets;
 import java.net.URI;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collections;
@@ -39,6 +39,7 @@ import org.junit.jupiter.api.Test;
 class OpenLineageTest {
 
   ObjectMapper mapper = new ObjectMapper();
+  ZonedDateTime now = ZonedDateTime.now(ZoneOffset.UTC);
 
   @BeforeEach
   void setup() {
@@ -51,8 +52,6 @@ class OpenLineageTest {
 
   @Test
   void jsonRunEventSerialization() throws JsonProcessingException {
-    ZonedDateTime now = ZonedDateTime.now(ZoneId.of("UTC"));
-
     URI producer = URI.create("producer");
     OpenLineage ol = new OpenLineage(producer);
     UUID runId = UUID.randomUUID();
@@ -94,7 +93,6 @@ class OpenLineageTest {
 
   @Test
   void jsonDatasetEventSerialization() throws JsonProcessingException {
-    ZonedDateTime now = ZonedDateTime.now(ZoneId.of("UTC"));
     URI producer = URI.create("producer");
     OpenLineage ol = new OpenLineage(producer);
 
@@ -121,7 +119,6 @@ class OpenLineageTest {
 
   @Test
   void jsonDatasetEventDeleteFacet() throws JsonProcessingException {
-    ZonedDateTime now = ZonedDateTime.now(ZoneId.of("UTC"));
     URI producer = URI.create("producer");
     OpenLineage ol = new OpenLineage(producer);
     final String documentation = "documentation";
@@ -168,7 +165,6 @@ class OpenLineageTest {
 
   @Test
   void jsonJobEventSerialization() throws JsonProcessingException {
-    ZonedDateTime now = ZonedDateTime.now(ZoneId.of("UTC"));
     URI producer = URI.create("producer");
     OpenLineage ol = new OpenLineage(producer);
     JobEvent jobEvent =
@@ -199,8 +195,6 @@ class OpenLineageTest {
 
   @Test
   void factory() throws JsonProcessingException {
-    ZonedDateTime now = ZonedDateTime.now(ZoneId.of("UTC"));
-
     URI producer = URI.create("producer");
     OpenLineage ol = new OpenLineage(producer);
     UUID runId = UUID.randomUUID();
