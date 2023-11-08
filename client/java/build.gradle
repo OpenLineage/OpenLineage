@@ -41,8 +41,7 @@ repositories {
 
 ext {
     assertjVersion = '3.24.2'
-    jacksonVersion = "2.13.4"
-    jacksonDatabindVersion = "2.13.4.2"
+    jacksonVersion = "2.15.3"
     junit5Version = '5.10.0'
     lombokVersion = '1.18.30'
     mockitoVersion = '5.2.0'
@@ -56,7 +55,7 @@ configurations {
 dependencies {
     implementation "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
     implementation "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
-    implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonDatabindVersion}"
+    implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${jacksonVersion}"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:${jacksonVersion}"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
