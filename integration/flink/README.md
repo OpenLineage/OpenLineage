@@ -41,6 +41,14 @@ JobListener jobListener = OpenLineageFlinkJobListener.builder()
 env.registerJobListener(jobListener);
 ```
 
+Alternatively, you can pass in job name and namespace via Flink configuration instead of specifying it in the builder
+
+```
+execution.job-listener.openlineage.job-name : "custom job name"
+execution.job-listener.openlineage.namespace : "custom job namespace"
+```
+
+
 ----
 SPDX-License-Identifier: Apache-2.0\
 Copyright 2018-2023 contributors to the OpenLineage project

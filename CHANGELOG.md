@@ -1,6 +1,9 @@
 # Changelog
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.5.0...HEAD)
+### Added
+* **Flink: add option for flink job listener to read from flink conf** [`#2229`](https://github.com/OpenLineage/OpenLineage/pull/2229) [@ensctom](https://github.com/ensctom)  
+  *Add option for flink job listener to read jobname and namespace from flink conf*
 
 ### Fixed
 * **Spark: update Jackson dependency to resolve `CVE-2022-1471`** [`#2185`](https://github.com/OpenLineage/OpenLineage/pull/2185) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
