@@ -11,7 +11,7 @@ plugins {
     id 'com.diffplug.spotless' version '6.12.0'
     id "com.adarshr.test-logger" version "3.2.0"
     id "org.gradle.test-retry" version "1.5.6"
-    id "com.github.johnrengelman.shadow" version "7.1.2"
+    id "com.github.johnrengelman.shadow" version "8.1.1"
     id "pmd"
 }
 
@@ -25,9 +25,14 @@ pmd {
 }
 
 pmdMain {
+    dependsOn shadowJar
     reports {
         html.required = true
     }
+}
+
+pmdTest {
+    dependsOn shadowJar
 }
 
 repositories {
@@ -41,8 +46,11 @@ repositories {
 archivesBaseName='openlineage-spark-spark3'
 
 ext {
+    assertjVersion = '3.24.2'
+    junit5Version = '5.10.0'
+    mockitoVersion = '4.11.0'
     sparkVersion = '3.5.0'
-    jacksonVersion = '2.10.0'
+    jacksonVersion = '2.15.3'
     lombokVersion = '1.18.30'
     bigqueryVersion = '0.26.0'
 }
@@ -53,7 +61,7 @@ dependencies {
     testCompileOnly "org.projectlombok:lombok:${lombokVersion}"
     testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
-    implementation(project(":shared"))
+    implementation(project(path: ":shared", configuration: "shadow"))
     implementation(project(":spark3"))
 
     compileOnly "org.apache.spark:spark-core_2.12:${sparkVersion}"
@@ -77,8 +85,14 @@ dependencies {
     testFixturesApi "org.apache.spark:spark-sql-kafka-0-10_2.12:${sparkVersion}"
     testFixturesApi "org.apache.iceberg:iceberg-spark-runtime-3.4_2.12:1.3.1"
     testFixturesApi "org.scala-lang.modules:scala-collection-compat_2.12:2.11.0"
-    testImplementation(testFixtures(project(":shared")))
-    testImplementation(testFixtures(project(":spark3")))
+
+
+    testFixturesApi "org.junit.jupiter:junit-jupiter:${junit5Version}"
+    testFixturesApi "org.assertj:assertj-core:${assertjVersion}"
+    testFixturesApi "org.mockito:mockito-core:${mockitoVersion}"
+    testFixturesApi "org.mockito:mockito-inline:${mockitoVersion}"
+    testFixturesApi "org.junit.jupiter:junit-jupiter-api:${junit5Version}"
+    testFixturesApi(project(path: ":shared", configuration: 'shadow'))
 }
 
 def commonTestConfiguration = {
@@ -102,34 +116,28 @@ def commonTestConfiguration = {
 
 
 test {
+    dependsOn shadowJar
     configure commonTestConfiguration
-    useJUnitPlatform {
-        excludeTags 'integration-test'
-    }
-}
-
-task integrationTest(type: Test) {
-    retry {
-        boolean isCiServer = System.getenv().containsKey("CI")
-        if (isCiServer) {
-            maxRetries = 3
-            maxFailures = 3
-        }
-    }
-    configure commonTestConfiguration
-    useJUnitPlatform {
-        includeTags "integration-test"
-    }
 }
 
 assemble {
     dependsOn shadowJar
 }
 
+compileTestJava {
+    dependsOn(':shared:jar')
+    dependsOn(':spark3:jar')
+}
+
+compileJava {
+    dependsOn(':shared:jar')
+    dependsOn(':spark3:jar')
+}
 
 shadowJar {
+    dependsOn(':spark3:shadowJar')
     minimize()
-    classifier = ''
+    archiveClassifier = ''
     dependencies {
         exclude(dependency('org.slf4j::'))
     }
