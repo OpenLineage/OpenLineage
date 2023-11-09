@@ -341,6 +341,21 @@ Identifier :
 - Unique name: {path}
   - URI = wasbs://{container name}@{service name}{path}
 
+### Kafka
+
+Naming hierarchy:
+
+- Kafka bootstrap server host + port
+- topic name
+
+Identifier :
+
+- Namespace: kafka://{bootstrap server host}:{port}
+  - Scheme = kafka
+  - Authority = bootstrap server
+- Unique name: {topic name}
+  - URI = kafka://{bootstrap server host}:{port}/{topic name}
+
 ### Local file system
 
 Datasource hierarchy:
