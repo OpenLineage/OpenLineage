@@ -19,6 +19,7 @@ Requirements:
 - Producers can create and evolve their custom facets without requiring approval from the OpenLineage project.
 - Producers and Consumers can update the list of the facets they produce or consume without requiring approval from the OpenLineage project.
 - Consumers can independently discover and support custom facets.
+- OpenLineage users can easily explore which producers and/or consumers best meet their compatibility needs
 - URIs should be short (producer, faceturl)
 - A registered name can be both a producer and a consumer.
 
