@@ -51,7 +51,7 @@ Corresponding values to be used:
 - Generated doc from the json schemas of the facets. Publish them on openlineage.io
 
 #### Additional documentation
-We can create a documentation page per use case to document what facet can be use in what case:
+We can create a documentation page per use case to document what facet can be used in what case:
 
 - Compliance with privacy laws (GDPR, CCPA, …)
 - Compliance with Banking regulation (BCBS-239)
@@ -110,6 +110,41 @@ airflow/
 	}
 	facets/AirflowRunFacet.json
 ```
+```
+core/
+	CODEOWNERS
+	registry.json
+	{
+		producer: {
+			root_doc_URL: "https://openlineage.io/spec/facets/"
+			produced_facets: [
+				"ol:core:1-0-0/ColumnLineageDatasetFacet.json",
+				"ol:core:1-0-1/ColumnLineageDatasetFacet.json",
+				"ol:core:1-0-0/DataQualityAssertionsDatasetFacet.json"
+			]
+		}
+	}
+```
+manta/
+	CODEOWNERS
+	registry.json
+	{
+		consumer: {
+			root_doc_URL: “https://manta.com/doc”
+			consumed_facets: [ … ]
+		}
+	}
+```
+```
+manta/
+	CODEOWNERS
+	registry.json
+	{
+		consumer: {
+			root_doc_URL: “https://manta.com/doc”
+			consumed_facets: [ … ]
+		}
+	}
 ```
 manta/
 	CODEOWNERS
