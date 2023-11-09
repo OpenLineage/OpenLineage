@@ -268,3 +268,5 @@ Cons:
 
 - Producers need to host and maintain their own subset of the registry
 - The core repo ci cannot guarantee consistency of the registry as it relies on external references
+- The core repo cannot guarantee accuracy of registry entries (e.g. does an entity actually consume/produce the facets they say they do?)
+
