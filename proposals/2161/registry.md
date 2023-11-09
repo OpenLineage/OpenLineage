@@ -58,6 +58,7 @@ We can create a documentation page per use case to document what facet can be us
 - Data reliability, data quality
 - Data discovery, data catalog
 - Data Governance
+- Data Lineage
 - …
 
 We should have a page explaining how a custom facet can be promoted to a core facet through the OpenLineage Proposal process.
@@ -116,35 +117,55 @@ core/
 	registry.json
 	{
 		producer: {
-			root_doc_URL: "https://openlineage.io/spec/facets/"
-			produced_facets: [
-				"ol:core:1-0-0/ColumnLineageDatasetFacet.json",
-				"ol:core:1-0-1/ColumnLineageDatasetFacet.json",
-				"ol:core:1-0-0/DataQualityAssertionsDatasetFacet.json"
+			root_doc_URL: "https://openlineage.io/spec/facets/",
+			sample_URL: "https://github.com/OpenLineage/OpenLineage/tree/main/spec/tests/",
+			facets: [
+				"ColumnLineageDatasetFacet.json": {
+					"owner": "core",
+					"spec_versions": [ "1-0-1", "1-0-0" ],
+					"use_cases": [ "lineage", "catalog" ]
+				},
+				"DataQualityAssertionsDatasetFacet.json": {
+					"owner": "core",
+					"spec_versions": [ "1-0-0" ],
+					"use_cases": [ "data quality" ]
+				}
 			]
 		}
 	}
 ```
-manta/
+egeria/
 	CODEOWNERS
 	registry.json
 	{
+		producer: {    
+			root_doc_URL: … ,
+			sample_URL: … , 
+			facets: [
+				"ColumnLineageDatasetFacet.json": {
+					"owner": "core",
+					"spec_versions": [ "1-0-1" ],
+					"use_cases": [ "lineage", "catalog" ]
+				},
+				"NewCustomFacet.json": {
+					"owner": "egeria",
+					"spec_versions": [ "1-0-0" ],
+					"use_cases": [ "lineage" ]
+				}
+			]
+		},
 		consumer: {
-			root_doc_URL: “https://manta.com/doc”
-			consumed_facets: [ … ]
+			root_doc_URL: …
+			facets: [ 
+				"NewCustomFacet.json": {
+					"owner": "egeria",
+					"spec_versions": [ "1-0-0" ],
+					"use_cases": [ "lineage" ]
+				}
+			]
 		}
 	}
 ```
-```
-manta/
-	CODEOWNERS
-	registry.json
-	{
-		consumer: {
-			root_doc_URL: “https://manta.com/doc”
-			consumed_facets: [ … ]
-		}
-	}
 ```
 manta/
 	CODEOWNERS
