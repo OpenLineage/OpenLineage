@@ -1,33 +1,48 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.4.1...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.5.0...HEAD)
 ### Added
-* **Flink: add Flink lineage for Cassandra Connectors** [`2175`](https://github.com/OpenLineage/OpenLineage/pull/2175) [@HuangZhenQiu](https://github.com/HuangZhenQiu)
-  *Add Flink Cassandra source and sink visitors and Flink Cassandra Integration test.*
-
-### Added
-* **Spark: support `rdd` and `toDF` operations available in Spark Scala API.** [`#2188`](https://github.com/OpenLineage/OpenLineage/pull/2188) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)   
-  *This PR includes the first Scala integration test, fixes `ExternalRddVisitor` and adds support for extracting inputs from `MapPartitionsRDD` and `ParallelCollectionRDD` plan nodes.*
-
-### Added
-* **Spark: support Databricks Runtime 13.3.** [`2185`](https://github.com/OpenLineage/OpenLineage/pull/2185) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Modify Spark integration to support latest Databricks Runtime version.*
+* **Flink: add option for flink job listener to read from flink conf** [`#2229`](https://github.com/OpenLineage/OpenLineage/pull/2229) [@ensctom](https://github.com/ensctom)  
+  *Add option for flink job listener to read jobname and namespace from flink conf*
 
 ### Fixed
-* **Spark: unify dataset naming for RDD jobs and Spark SQL.** [`2181`](https://github.com/OpenLineage/OpenLineage/pull/2181) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Use the same mechanism for RDD jobs to extract dataset identifier as used for Spark SQL.*
-* **Spark: ensure a single `START` and a single `COMPLETE` event are sent.** [`#2103`](https://github.com/OpenLineage/OpenLineage/pull/2103) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)   
-  *For Spark SQL at least four events are sent triggered by different SparkListener methods. Each of them is required and used to collect facets unavailable elsewhere. However, there should be only one `START` and `COMPLETE` events emitted. Other events should be sent as `RUNNING`. Please keep in mind that Spark integration remains stateless to limit the memory footprint, and it is the backend responsibility to merge several Openlineage events into a meaningful snapshot of metadata changes.*
+* **Spark: update Jackson dependency to resolve `CVE-2022-1471`** [`#2185`](https://github.com/OpenLineage/OpenLineage/pull/2185) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Update Gradle for Spark and Flink to 8.1.1. Upgrade Jackson `2.15.3`.*
+
+## [1.5.0](https://github.com/OpenLineage/OpenLineage/compare/1.4.1...1.5.0) - 2023-11-01
+### Added
+* **Flink: add Flink lineage for Cassandra Connectors** [`#2175`](https://github.com/OpenLineage/OpenLineage/pull/2175) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
+    *Adds Flink Cassandra source and sink visitors and Flink Cassandra Integration test.*
+* **Spark: support `rdd` and `toDF` operations available in Spark Scala API** [`#2188`](https://github.com/OpenLineage/OpenLineage/pull/2188) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)   
+    *Includes the first Scala integration test, fixes `ExternalRddVisitor` and adds support for extracting inputs from `MapPartitionsRDD` and `ParallelCollectionRDD` plan nodes.*
+* **Spark: support Databricks Runtime 13.3** [`#2185`](https://github.com/OpenLineage/OpenLineage/pull/2185) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Modifies the Spark integration to support the latest Databricks Runtime version.*
+
+### Changed
+* **Airflow: loosen attrs and requests versions** [`#2107`](https://github.com/OpenLineage/OpenLineage/pull/2107) [@JDarDagran](https://github.com/JDarDagran)  
+    *Lowers the version requirements for attrs and requests and removes an unnecessary dependency.*
+* **dbt: render yaml configs lazily** [`#2221`](https://github.com/OpenLineage/OpenLineage/pull/2221) [@JDarDagran](https://github.com/JDarDagran)  
+    *Don't render each entry in yaml files at start.* 
+
+### Fixed
+* **Airflow/Athena: change dataset name to its location** [`#2167`](https://github.com/OpenLineage/OpenLineage/pull/2167) [@sophiely](https://github.com/sophiely)  
+    *Replaces the dataset and namespace with the data's physical location for more complete lineage across integrations.*
+* **Python client: skip redaction in column lineage facet** [`#2177`](https://github.com/OpenLineage/OpenLineage/pull/2177) [@JDarDagran](https://github.com/JDarDagran)  
+    *Redacted fields in `ColumnLineageDatasetFacetFieldsAdditionalInputFields` are now skipped.*
+* **Spark: unify dataset naming for RDD jobs and Spark SQL** [`#2181`](https://github.com/OpenLineage/OpenLineage/pull/2181) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Use the same mechanism for RDD jobs to extract dataset identifier as used for Spark SQL.*
+* **Spark: ensure a single `START` and a single `COMPLETE` event are sent** [`#2103`](https://github.com/OpenLineage/OpenLineage/pull/2103) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)   
+    *For Spark SQL at least four events are sent triggered by different SparkListener methods. Each of them is required and used to collect facets unavailable elsewhere. However, there should be only one `START` and `COMPLETE` events emitted. Other events should be sent as `RUNNING`. Please keep in mind that Spark integration remains stateless to limit the memory footprint, and it is the backend responsibility to merge several Openlineage events into a meaningful snapshot of metadata changes.*
 
 ## [1.4.1](https://github.com/OpenLineage/OpenLineage/compare/1.3.1...1.4.1) - 2023-10-09
 ### Added
-* **Client: allow setting client's endpoint via environment variable** [`#2151`](https://github.com/OpenLineage/OpenLineage/pull/2151) [mars-lan](https://github.com/mars-lan)  
+* **Client: allow setting client's endpoint via environment variable** [`#2151`](https://github.com/OpenLineage/OpenLineage/pull/2151) [@mars-lan](https://github.com/mars-lan)  
     *Enables setting this endpoint via environment variable because creating the client manually in Airflow is not possible.*
-* **Flink: expand Iceberg source types** [`#2149`](https://github.com/OpenLineage/OpenLineage/pull/2149) [HuangZhenQiu](https://github.com/HuangZhenQiu)  
+* **Flink: expand Iceberg source types** [`#2149`](https://github.com/OpenLineage/OpenLineage/pull/2149) [@HuangZhenQiu](https://github.com/HuangZhenQiu)  
     *Adds support for `FlinkIcebergSource` and `FlinkIcebergTableSource` for Flink Iceberg lineage.*
 * **Spark: add debug facet** [`#2147`](https://github.com/OpenLineage/OpenLineage/pull/2147) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *An extra run facet containing some system details (e.g., OS, Java, Scala version), classpath (e.g., package versions, jars included in the Spark job), SparkConf (like openlineage entries except auth, specified extensions, etc.) and LogicalPlan details (execution tree nodes' names) are added to events emitted. SparkConf setting `spark.openlineage.debugFacet=enabled` needs to be set to include the facet. By default, the debug facet is disabled.*
-* **Spark: enable Nessie REST catalog** [`#2165`](https://github.com/OpenLineage/OpenLineage/pull/2165) [julwin](https://github.com/julwin)  
+* **Spark: enable Nessie REST catalog** [`#2165`](https://github.com/OpenLineage/OpenLineage/pull/2165) [@julwin](https://github.com/julwin)  
     *Adds support for Nessie catalog in Spark.*
 
 ## [1.3.1](https://github.com/OpenLineage/OpenLineage/compare/1.2.2...1.3.1) - 2023-10-03
@@ -66,7 +81,7 @@
     *Includes the proper image to deploy in the helm chart.*
 * **Python: fix serde filtering** [`#2044`](https://github.com/OpenLineage/OpenLineage/pull/2044) [@xli-1026](https://github.com/xli-1026)  
     *Fixes the bug causing values in list objects to be filtered accidentally.*
-* **Python: use non-deprecated `apiKey` if loading it from env variables** [`@2029`](https://github.com/OpenLineage/OpenLineage/pull/2029) [@mobuchowski](https://github.com/mobuchowski)  
+* **Python: use non-deprecated `apiKey` if loading it from env variables** [`#2029`](https://github.com/OpenLineage/OpenLineage/pull/2029) [@mobuchowski](https://github.com/mobuchowski)  
     *Changes `api_key` to `apiKey` in `create_token_provider`.*
 * **Spark: Improve RDDs on S3 integration.** [`#2039`](https://github.com/OpenLineage/OpenLineage/pull/2039) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *Prepares integration test to access S3, fixes input dataset duplicates and includes other minor fixes.*
