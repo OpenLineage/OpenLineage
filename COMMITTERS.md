@@ -29,6 +29,7 @@ The current OpenLineage committers are:
 | Minkyu Park        | |
 | Benji Lampel       | |
 | Kengo Seki         | |
+| Harel Shein        | |
 
 To understand how to become an OpenLineage committer,
 read the [OpenLineage Governance Guide](GOVERNANCE.md).
