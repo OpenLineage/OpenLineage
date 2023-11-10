@@ -28,7 +28,7 @@ def openlineage_sensor(
         description: Optional[str] = "OpenLineage sensor tails Dagster event logs, "
                                      "converts Dagster events into OpenLineage events, "
                                      "and emits them to an OpenLineage backend.",
-        concerned_event_types: Optional[Union[DagsterEventType, Set[DagsterEventType]]] = PIPELINE_EVENTS | STEP_EVENTS, # noqa: E501
+        concerned_event_types: Union[DagsterEventType, Set[DagsterEventType]] = PIPELINE_EVENTS | STEP_EVENTS, # noqa: E501
         minimum_interval_seconds: Optional[int] = DEFAULT_SENSOR_DAEMON_INTERVAL,
         record_filter_limit: Optional[int] = 30,
         after_storage_id: Optional[int] = 0
