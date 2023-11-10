@@ -12,7 +12,7 @@ from openlineage.dagster.sensor import openlineage_sensor
 from dagster import (  # noqa: E501
     DagsterEventType,
     build_sensor_context,
-    execute_pipeline,
+    execute_job,
     job,
     op,
     reconstructable,
@@ -56,8 +56,8 @@ def test_sensor_with_complete_job_run_and_repository(mock_adapter, mock_step_run
             mock_step_run_id.return_value = step_run_id
             mock_get_repository_name.return_value = repository_name
 
-            result = execute_pipeline(
-                pipeline=reconstructable(a_job),
+            result = execute_job(
+                job=reconstructable(a_job),
                 instance=instance,
                 raise_on_error=False
             )
