@@ -355,7 +355,7 @@ def test_bigquery_escaping():
         dialect="bigquery",
         default_schema="public"
     )
-    assert sql_meta.in_tables == [DbTableMeta('random-project.dbt_test1.source_table')]
+    assert sql_meta.in_tables == [DbTableMeta('`random-project`.`dbt_test1`.`source_table`')]
 
 
 @pytest.mark.skipif(provider() == "python", reason="python does not understand DDL")

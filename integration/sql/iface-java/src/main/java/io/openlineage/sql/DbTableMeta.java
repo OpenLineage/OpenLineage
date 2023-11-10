@@ -11,11 +11,20 @@ public class DbTableMeta {
   private final String database;
   private final String schema;
   private final String name;
+  private final QuoteStyle quoteStyle;
+
+  public DbTableMeta(String database, String schema, String name, QuoteStyle quoteStyle) {
+    this.database = database;
+    this.schema = schema;
+    this.name = name;
+    this.quoteStyle = quoteStyle;
+  }
 
   public DbTableMeta(String database, String schema, String name) {
     this.database = database;
     this.schema = schema;
     this.name = name;
+    this.quoteStyle = new QuoteStyle(null, null, null);
   }
 
   public String database() {
@@ -28,6 +37,10 @@ public class DbTableMeta {
 
   public String name() {
     return name;
+  }
+
+  public QuoteStyle quote_style() {
+    return quoteStyle;
   }
 
   public String qualifiedName() {

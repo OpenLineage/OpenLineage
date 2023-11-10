@@ -3,7 +3,12 @@
 
 use crate::CanonicalDialect;
 
+use sqlparser::ast::Ident;
 use sqlparser::dialect::SnowflakeDialect;
+
+pub mod ident_wrapper {
+    pub use sqlparser::ast::Ident as IdentWrapper;
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ExtractionError {
@@ -79,22 +84,37 @@ pub struct DbTableMeta {
     pub database: Option<String>,
     pub schema: Option<String>,
     pub name: String,
+    pub quote_style: Option<QuoteStyle>,
     pub provided_namespace: bool,
     pub provided_field_schema: bool,
     // ..columns
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
+pub struct QuoteStyle {
+    pub database: Option<char>,
+    pub schema: Option<char>,
+    pub name: Option<char>,
+}
+
 impl DbTableMeta {
     pub fn new(
-        name: String,
+        identifiers: Vec<Ident>,
         dialect: &dyn CanonicalDialect,
         default_schema: Option<String>,
     ) -> Self {
-        DbTableMeta::new_with_namespace_and_schema(name, dialect, default_schema, true, true, true)
+        DbTableMeta::new_with_namespace_and_schema(
+            identifiers,
+            dialect,
+            default_schema,
+            true,
+            true,
+            true,
+        )
     }
 
     pub fn new_with_namespace_and_schema(
-        name: String,
+        identifiers: Vec<Ident>,
         dialect: &dyn CanonicalDialect,
         default_schema: Option<String>,
         provided_namespace: bool,
@@ -102,6 +122,11 @@ impl DbTableMeta {
         with_split_name: bool,
     ) -> Self {
         if !with_split_name {
+            let name = identifiers
+                .iter()
+                .map(|i| i.value.clone())
+                .collect::<Vec<String>>()
+                .join(".");
             // for example: snowflake external location with no namespace nor name split
             return DbTableMeta {
                 database: None,
@@ -109,20 +134,43 @@ impl DbTableMeta {
                 name,
                 provided_namespace,
                 provided_field_schema,
+                quote_style: Some(QuoteStyle {
+                    database: None,
+                    schema: None,
+                    name: identifiers.first().unwrap().quote_style,
+                }),
             };
         }
-        let mut split = name
-            .split('.')
-            .map(|x| dialect.canonical_name(x).unwrap_or(x))
-            .collect::<Vec<&str>>();
-        split.reverse();
-        let table_name: &str = split.first().unwrap_or(&name.as_str());
+        let reversed: Vec<Ident> = identifiers
+            .iter()
+            .rev()
+            .map(|ident| {
+                let name = ident.value.as_str();
+                let canonical_name = dialect.canonical_name(name).unwrap_or(name);
+                if let Some(quote_style) = ident.quote_style {
+                    Ident::with_quote(quote_style, canonical_name)
+                } else {
+                    Ident::new(canonical_name)
+                }
+            })
+            .collect();
+        let table_name: &str = reversed.first().unwrap().value.as_str();
         DbTableMeta {
-            database: split.get(2).map(ToString::to_string),
-            schema: split.get(1).map(ToString::to_string).or(default_schema),
+            database: reversed
+                .get(2)
+                .map(|ident| ident.value.as_str().to_string()),
+            schema: reversed
+                .get(1)
+                .map(|ident| ident.value.as_str().to_string())
+                .or(default_schema),
             name: table_name.to_string(),
             provided_namespace: false,
             provided_field_schema: false,
+            quote_style: Some(QuoteStyle {
+                database: reversed.get(2).and_then(|ident| ident.quote_style),
+                schema: reversed.get(1).and_then(|ident| ident.quote_style),
+                name: reversed.first().and_then(|ident| ident.quote_style),
+            }),
         }
     }
 
@@ -142,7 +190,30 @@ impl DbTableMeta {
     }
 
     pub fn new_default_dialect(name: String) -> Self {
-        Self::new(name, &SnowflakeDialect, None)
+        let mut quote = None;
+        println!("{:?}", name);
+        let split = name
+            .split('.')
+            .map(|x| {
+                let length = x.len();
+                let first = x.chars().next().unwrap_or_default();
+                let middle_part: String = if length <= 1 {
+                    x.to_string()
+                } else {
+                    x[1..length - 1].to_string()
+                };
+
+                if first == '\'' || first == '"' || first == '`' || first == '[' {
+                    quote = Some(first);
+                }
+
+                match quote {
+                    Some(quote) => Ident::with_quote(quote, middle_part),
+                    None => Ident::new(x.to_string()),
+                }
+            })
+            .collect::<Vec<_>>();
+        Self::new(split, &SnowflakeDialect, None)
     }
 
     pub fn new_default_dialect_with_namespace_and_schema(
@@ -151,7 +222,7 @@ impl DbTableMeta {
         provided_field_schema: bool,
     ) -> Self {
         Self::new_with_namespace_and_schema(
-            name,
+            vec![Ident::new(name)],
             &SnowflakeDialect,
             None,
             provided_namespace,

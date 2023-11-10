@@ -8,6 +8,7 @@ use std::collections::{HashMap, HashSet};
 use crate::dialect::CanonicalDialect;
 use crate::lineage::*;
 use alias_table::AliasTable;
+use sqlparser::ast::Ident;
 use sqlparser::dialect::SnowflakeDialect;
 
 type ColumnAncestors = HashSet<ColumnMeta>;
@@ -93,7 +94,7 @@ impl<'a> Context<'a> {
 
     // --- Table Lineage ---
 
-    pub fn add_input(&mut self, table: String) {
+    pub fn add_input(&mut self, table: Vec<Ident>) {
         let name = DbTableMeta::new(table, self.dialect, self.default_schema.clone());
         if !self.is_table_alias(&name) {
             self.inputs.insert(name);
@@ -102,7 +103,7 @@ impl<'a> Context<'a> {
 
     pub fn add_non_table_input(
         &mut self,
-        table: String,
+        table: Vec<Ident>,
         provided_namespace: bool,
         provided_field_schema: bool,
     ) {
@@ -119,7 +120,7 @@ impl<'a> Context<'a> {
         }
     }
 
-    pub fn add_output(&mut self, output: String) {
+    pub fn add_output(&mut self, output: Vec<Ident>) {
         let name = DbTableMeta::new(output, self.dialect, self.default_schema.clone());
         if !self.is_table_alias(&name) {
             self.outputs.insert(name);
@@ -128,7 +129,7 @@ impl<'a> Context<'a> {
 
     pub fn add_non_table_output(
         &mut self,
-        output: String,
+        output: Vec<Ident>,
         provided_namespace: bool,
         provided_field_schema: bool,
     ) {
@@ -181,7 +182,7 @@ impl<'a> Context<'a> {
         self.frames.pop()
     }
 
-    pub fn add_table_alias(&mut self, table: DbTableMeta, alias: String) {
+    pub fn add_table_alias(&mut self, table: DbTableMeta, alias: Vec<Ident>) {
         if let Some(frame) = self.frames.last_mut() {
             let alias = DbTableMeta::new(alias, self.dialect, self.default_schema.clone());
             frame.aliases.add_table_alias(table, alias);

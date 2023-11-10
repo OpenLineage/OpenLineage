@@ -62,8 +62,8 @@ fn insert_select_table_2() {
         .unwrap()
         .table_lineage,
         TableLineage {
-            in_tables: tables(vec!["b1.b2", "m.dim"]),
-            out_tables: tables(vec!["a1.a2"])
+            in_tables: tables(vec!["\"b1\".\"b2\"", "\"m\".\"dim\""]),
+            out_tables: tables(vec!["\"a1\".\"a2\""])
         }
     )
 }
@@ -291,8 +291,8 @@ fn insert_group_by() {
         .unwrap()
         .table_lineage,
         TableLineage {
-            in_tables: tables(vec!["b1.b2"]),
-            out_tables: tables(vec!["a1.a2"])
+            in_tables: tables(vec!["\"b1\".\"b2\""]),
+            out_tables: tables(vec!["\"a1\".\"a2\""])
         }
     )
 }
@@ -407,8 +407,14 @@ fn insert_nested_with_select() {
         .unwrap()
         .table_lineage,
         TableLineage {
-            in_tables: tables(vec!["b1.b2", "c1.c2", "d1.d2", "e1.e2", "f1.f2"]),
-            out_tables: tables(vec!["a1.a2"])
+            in_tables: tables(vec![
+                "\"b1\".\"b2\"",
+                "\"c1\".\"c2\"",
+                "\"d1\".\"d2\"",
+                "\"e1\".\"e2\"",
+                "\"f1\".\"f2\""
+            ]),
+            out_tables: tables(vec!["\"a1\".\"a2\""])
         }
     )
 }

@@ -1,11 +1,15 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-from enum import Enum
-
 """
 Definition of the public interface for openlineage_sql
 """
+
+class QuoteStyle:
+    database: str | None
+    schema: str | None
+    name: str | None
+    def __init__(self, database, schema, name) -> None: ...
 
 class DbTableMeta:
     """
@@ -21,6 +25,8 @@ class DbTableMeta:
     provided_namespace: bool
     # determines if fields schema is provided by parser
     provided_field_schema: bool
+    # quotes information
+    quote_style: QuoteStyle | None
     def __init__(self, name: str) -> None: ...
 
 class ColumnMeta:
