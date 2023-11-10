@@ -154,9 +154,15 @@ Identifier:
 - Name: {database}.{schema}.{table}
   - URI = snowflake://{organization name}-{account name}/{database}.{schema}.{table}
 
-Snowflake resolves and stores names for databases, schemas, tables and columns differently depending on how they are [expressed in statements](https://docs.snowflake.com/en/sql-reference/identifiers-syntax) (e.g. unquoted vs quoted). The representation of names in OpenLineage events should be based on the canonical name that Snowflake stores. Specifically:
+Snowflake resolves and stores names for databases, schemas, tables and columns differently depending on how they are
+[expressed in statements](https://docs.snowflake.com/en/sql-reference/identifiers-syntax) (e.g. unquoted vs quoted). The
+representation of names in OpenLineage events should be based on the canonical name that Snowflake stores. Specifically:
 
-- For dataset names, each period-delimited part (database/schema/table) should be in the simplest form it would take in a statement i.e. quoted only if necessary. For example, a table `My Table` in schema `MY_SCHEMA` and in database `MY_DATABASE` would be represented as `MY_DATABASE.MY_SCHEMA."My Table"`. If in doubt, check [Snowflake's `ACCESS_HISTORY` view](https://docs.snowflake.com/en/sql-reference/account-usage/access_history) to see how `objectName` is formed for a given table.
+- For dataset names, each period-delimited part (database/schema/table) should be in the simplest form it would take in
+  a statement i.e. quoted only if necessary. For example, a table `My Table` in schema `MY_SCHEMA` and in database
+  `MY_DATABASE` would be represented as `MY_DATABASE.MY_SCHEMA."My Table"`. If in doubt, check
+  [Snowflake's `ACCESS_HISTORY` view](https://docs.snowflake.com/en/sql-reference/account-usage/access_history) to see
+  how `objectName` is formed for a given table.
 - For column names, the canonical name should always be used verbatim.
 
 #### BigQuery
