@@ -4,6 +4,8 @@
 ### Added
 * **Flink: add option for flink job listener to read from flink conf** [`#2229`](https://github.com/OpenLineage/OpenLineage/pull/2229) [@ensctom](https://github.com/ensctom)  
   *Add option for flink job listener to read jobname and namespace from flink conf*
+* **Introduce `JobTypeJobFacet` to contain additional job related information**[`#2241`](https://github.com/OpenLineage/OpenLineage/pull/2241) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *`JobTypeJobFacet` contains processing type like `BATCH|STREAMING`, integration like `SPARK|FLINK|...` and job type `QUERY|COMMAND|DAG|...`.*
 
 ### Fixed
 * **Spark: update Jackson dependency to resolve `CVE-2022-1471`** [`#2185`](https://github.com/OpenLineage/OpenLineage/pull/2185) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  

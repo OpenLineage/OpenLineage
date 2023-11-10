@@ -286,6 +286,20 @@ class OwnershipJobFacet(BaseFacet):
 
 
 @attr.s
+class JobTypeJobFacet(BaseFacet):
+
+    """This facet represents job type properties."""
+
+    processingType: str = attr.ib()  # noqa: N815
+    integration: str = attr.ib()
+    jobType: str = attr.ib()  # noqa: N815
+
+    @staticmethod
+    def _get_schema() -> str:
+        return SCHEMA_URI + "#/definitions/JobTypeJobFacet"
+
+
+@attr.s
 class DatasetVersionDatasetFacet(BaseFacet):
 
     """This facet represents version of a dataset."""

@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 
 import io.openlineage.flink.tracker.OpenLineageContinousJobTracker;
 import io.openlineage.flink.tracker.OpenLineageContinousJobTrackerFactory;
+import io.openlineage.flink.utils.JobTypeUtils;
 import io.openlineage.flink.visitor.lifecycle.FlinkExecutionContext;
 import io.openlineage.flink.visitor.lifecycle.FlinkExecutionContextFactory;
 import java.util.ArrayList;
@@ -79,7 +80,12 @@ class JobListenerTest {
     try (MockedStatic<FlinkExecutionContextFactory> contextFactory =
         mockStatic(FlinkExecutionContextFactory.class)) {
       when(FlinkExecutionContextFactory.getContext(
-              eq(readableConfig), eq(jobNamespace), eq(jobName), eq(jobId), eq(transformations)))
+              eq(readableConfig),
+              eq(jobNamespace),
+              eq(jobName),
+              eq(jobId),
+              eq(JobTypeUtils.STREAMING),
+              eq(transformations)))
           .thenReturn(context);
       doNothing().when(context).onJobSubmitted();
 
@@ -120,6 +126,7 @@ class JobListenerTest {
               eq(customNamespace),
               eq(customJobName),
               eq(jobId),
+              eq(JobTypeUtils.STREAMING),
               eq(transformations)))
           .thenReturn(context);
       when(OpenLineageContinousJobTrackerFactory.getTracker(
@@ -158,7 +165,12 @@ class JobListenerTest {
     try (MockedStatic<FlinkExecutionContextFactory> contextFactory =
         mockStatic(FlinkExecutionContextFactory.class)) {
       when(FlinkExecutionContextFactory.getContext(
-              eq(readableConfig), eq(jobNamespace), eq(jobName), eq(jobId), eq(transformations)))
+              eq(readableConfig),
+              eq(jobNamespace),
+              eq(jobName),
+              eq(jobId),
+              eq(JobTypeUtils.STREAMING),
+              eq(transformations)))
           .thenReturn(context);
       doNothing().when(context).onJobSubmitted();
 
@@ -197,6 +209,7 @@ class JobListenerTest {
               eq(DEFAULT_JOB_NAMESPACE),
               eq(StreamGraphGenerator.DEFAULT_STREAMING_JOB_NAME),
               eq(jobId),
+              eq(JobTypeUtils.STREAMING),
               eq(transformations)))
           .thenReturn(context);
       doNothing().when(context).onJobSubmitted();
