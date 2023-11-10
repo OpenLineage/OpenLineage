@@ -5,4 +5,6 @@ workflows:
       - always_run:
           requires:
             - run-pre-commit
-
+      - workflow_complete:
+          requires:
+            - always_run
