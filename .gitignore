@@ -166,3 +166,6 @@ gcloud-service-key.json
 __pycache__
 /.tox
 /dist
+
+# Dev
+changes.txt
