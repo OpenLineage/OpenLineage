@@ -41,10 +41,8 @@ from great_expectations.data_context.types.resource_identifiers import (
     ValidationResultIdentifier,
 )
 from great_expectations.dataset import Dataset as GEDataset
-from great_expectations.dataset import (
-    PandasDataset,
-    SqlAlchemyDataset,
-)
+from great_expectations.dataset.pandas_dataset import PandasDataset
+from great_expectations.dataset.sqlalchemy_dataset import SqlAlchemyDataset
 from great_expectations.execution_engine import (
     PandasExecutionEngine,
     SqlAlchemyExecutionEngine,
@@ -387,10 +385,15 @@ class OpenLineageValidationAction(ValidationAction):
         datasource_url = engine.url
 
         if engine.dialect.name.lower() == "snowflake":
-            if engine.connection_string:
+            if getattr(engine, "connection_string", None):
                 datasource_url = engine.connection_string
             else:
-                datasource_url = engine.url
+                datasource_url = engine.url.render_as_string(hide_password=False)
+                db = engine.url.database.split("/")
+                if len(db) == 2:
+                    schema = "{}.{}".format(*db)
+                elif len(db) == 1 and db[0] != schema:
+                    schema = "{}.{}".format(db[0], schema)
             datasource_url = fix_snowflake_sqlalchemy_uri(datasource_url)
 
         # bug in sql parser doesn't strip ` character from bigquery tables
@@ -481,7 +484,6 @@ class OpenLineageValidationAction(ValidationAction):
             expectations_results = validation_result["results"]
             for expectation in expectations_results:
                 for parser in EXPECTATIONS_PARSERS:
-
                     # accept possible duplication, should have no difference in results
                     if parser.can_accept(expectation):
                         result = parser.parse_expectation_result(expectation)
