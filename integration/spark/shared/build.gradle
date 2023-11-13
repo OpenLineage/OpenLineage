@@ -82,7 +82,7 @@ dependencies {
     compileOnly "com.databricks:dbutils-api_2.11:0.0.5"
 
     // TODO: those fixtures should be cleaned in future PRs -> integration tests got moved to app
-    testFixturesApi platform('org.junit:junit-bom:5.10.0')
+    testFixturesApi platform('org.junit:junit-bom:5.10.1')
     testFixturesApi "org.junit.jupiter:junit-jupiter:${junit5Version}"
     testFixturesApi "org.junit.jupiter:junit-jupiter-params:${junit5Version}"
 
