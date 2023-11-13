@@ -48,7 +48,7 @@ archivesBaseName='openlineage-spark-spark2'
 ext {
     assertjVersion = '3.24.2'
     sparkVersion = '2.4.8'
-    junit5Version = '5.10.0'
+    junit5Version = '5.10.1'
     mockitoVersion = '4.11.0'
     lombokVersion = '1.18.20'
     postgresqlVersion = '42.6.0'
