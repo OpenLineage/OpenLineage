@@ -12,21 +12,21 @@ _PRODUCER = "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/a
 set_producer(_PRODUCER)
 
 default_args = {
-    'owner': 'datascience',
-    'depends_on_past': False,
-    'start_date': days_ago(7),
-    'email_on_failure': False,
-    'email_on_retry': False,
-    'email': ['datascience@example.com']
+    "owner": "datascience",
+    "depends_on_past": False,
+    "start_date": days_ago(7),
+    "email_on_failure": False,
+    "email_on_retry": False,
+    "email": ["datascience@example.com"],
 }
 
 
 # test_dag has schedule_interval none, to be triggered by API request
 dag = DAG(
-    'test_dag',
+    "test_dag",
     schedule_interval=None,
     default_args=default_args,
-    description='Test dag.'
+    description="Test dag.",
 )
 
 

@@ -6,15 +6,13 @@ import logging
 from typing import TYPE_CHECKING, TypeVar, Union
 
 import attr
-from pkg_resources import parse_version
-
 from openlineage.client.serde import Serde
 from openlineage.client.transport.transport import Config, Transport
 from openlineage.client.utils import get_only_specified_fields
+from pkg_resources import parse_version
 
 if TYPE_CHECKING:
     from confluent_kafka import KafkaError, Message
-
     from openlineage.client.run import DatasetEvent, JobEvent, RunEvent
 log = logging.getLogger(__name__)
 

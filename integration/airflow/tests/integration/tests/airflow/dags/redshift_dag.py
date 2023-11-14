@@ -38,19 +38,19 @@ with DAG(
     start_date=datetime(2021, 1, 1),
     schedule_interval=None,
     catchup=False,
-    tags=['example'],
+    tags=["example"],
 ) as dag:
     # [START howto_operator_redshift_data]
     task_query = RedshiftDataOperator(
         # aws_conn_id="redshit",
-        task_id='redshift_query',
+        task_id="redshift_query",
         database=REDSHIFT_DATABASE,
         db_user=REDSHIFT_DATABASE_USER,
         cluster_identifier="redshift-cluster-1",
         sql=REDSHIFT_QUERY,
         poll_interval=POLL_INTERVAL,
         await_result=True,
-        region='eu-west-2',
+        region="eu-west-2",
     )
     # [END howto_operator_redshift_data]
 

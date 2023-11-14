@@ -28,14 +28,14 @@ class TestGCSToGCSExtractor(TestCase):
                 Dataset(
                     namespace="gs://source-bucket",
                     name="gs://source-bucket/path/to/source_file.csv",
-                    facets={}
+                    facets={},
                 )
             ],
             outputs=[
                 Dataset(
                     namespace="gs://destination-bucket",
                     name="gs://destination-bucket/path/to/destination_file.csv",
-                    facets={}
+                    facets={},
                 )
             ],
         )

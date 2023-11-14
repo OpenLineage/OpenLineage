@@ -8,7 +8,7 @@
 from setuptools import setup
 
 with open("README.md") as readme_file:
-     readme = readme_file.read()
+    readme = readme_file.read()
 
 __version__ = "1.6.0"
 
@@ -19,14 +19,7 @@ requirements = [
 
 
 extras_require = {
-    "tests": [
-        "pytest",
-        "pytest-cov",
-        "mock",
-        "ruff"
-        "mypy>=0.9.6",
-        "python-dateutil"
-    ],
+    "tests": ["pytest", "pytest-cov", "mock", "ruff" "mypy>=0.9.6", "python-dateutil"],
 }
 extras_require["dev"] = set(sum(extras_require.values(), []))
 
@@ -37,7 +30,7 @@ setup(
     long_description=readme,
     long_description_content_type="text/markdown",
     author="OpenLineage",
-    scripts=['scripts/dbt-ol'],
+    scripts=["scripts/dbt-ol"],
     include_package_data=True,
     install_requires=requirements,
     extras_require=extras_require,

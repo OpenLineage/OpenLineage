@@ -11,7 +11,6 @@ if TYPE_CHECKING:
 
 
 class RedshiftSQLExtractor(PostgresExtractor):
-
     _whitelist_query_params: List[str] = ["cluster_identifier", "region"]
 
     @classmethod
@@ -41,15 +40,13 @@ class RedshiftSQLExtractor(PostgresExtractor):
             host = extras.get("cluster_identifier")
             region = extras.get("region")
             if not region:
-                profile = extras.get('profile', None)
+                profile = extras.get("profile", None)
                 session = boto3.Session(profile_name=profile)
                 region = session.region_name
             port = extras.get("port", 5439)
             identifier = f"{host}.{region}"
         elif not self.conn.host:
-            raise ValueError(
-                "Missing host in connection since there" "s no IAM setting"
-            )
+            raise ValueError("Missing host in connection since there" "s no IAM setting")
         else:
             identifier = self._get_cluster_identifier_from_hostname(self.conn.host)
             port = self.conn.port or 5439

@@ -21,9 +21,7 @@ from airflow.operators.python import PythonOperator
 INPUTS = [Dataset(namespace="database://host:port", name="inputtable")]
 OUTPUTS = [Dataset(namespace="database://host:port", name="inputtable")]
 RUN_FACETS = {
-    "parent": ParentRunFacet.create(
-        "3bb703d1-09c1-4a42-8da5-35a0b3216072", "namespace", "parentjob"
-    )
+    "parent": ParentRunFacet.create("3bb703d1-09c1-4a42-8da5-35a0b3216072", "namespace", "parentjob")
 }
 JOB_FACETS = {"sql": SqlJobFacet(query="SELECT * FROM inputtable")}
 
@@ -98,9 +96,9 @@ def test_default_extraction():
 
     task_instance = mock.MagicMock()
 
-    metadata_on_complete = extractor(
-        ExampleOperator(task_id="test")
-    ).extract_on_complete(task_instance=task_instance)
+    metadata_on_complete = extractor(ExampleOperator(task_id="test")).extract_on_complete(
+        task_instance=task_instance
+    )
 
     assert metadata == TaskMetadata(
         name="adhoc_airflow.test",
@@ -127,9 +125,9 @@ def test_extraction_without_on_complete():
 
     task_instance = mock.MagicMock()
 
-    metadata_on_complete = extractor(
-        OperatorWihoutComplete(task_id="test")
-    ).extract_on_complete(task_instance=task_instance)
+    metadata_on_complete = extractor(OperatorWihoutComplete(task_id="test")).extract_on_complete(
+        task_instance=task_instance
+    )
 
     expected_task_metadata = TaskMetadata(
         name="adhoc_airflow.test",
@@ -152,9 +150,9 @@ def test_extraction_without_on_start():
 
     task_instance = mock.MagicMock()
 
-    metadata_on_complete = extractor(
-        OperatorWihoutStart(task_id="test")
-    ).extract_on_complete(task_instance=task_instance)
+    metadata_on_complete = extractor(OperatorWihoutStart(task_id="test")).extract_on_complete(
+        task_instance=task_instance
+    )
 
     assert metadata is None
 

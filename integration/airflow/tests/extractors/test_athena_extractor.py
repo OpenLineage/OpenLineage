@@ -63,7 +63,7 @@ def mock_hook_connection():
 
         @staticmethod
         def get_table_metadata(CatalogName, DatabaseName, TableName):
-            f = open(file="tests/extractors/athena_metadata.json", mode="r")
+            f = open(file="tests/extractors/athena_metadata.json")
             athena_metadata = json.loads(f.read())
             f.close()
             return athena_metadata[TableName]
@@ -178,11 +178,7 @@ def test_extract_create():
         first_expected_output = Dataset(
             name=f"{DB_NAME}.{DB_SCHEMA_NAME}.TEST_TABLE",
             source=input_source,
-            fields=[
-                Field.from_column(
-                    DbColumn(name="column", type="string", ordinal_position=1)
-                )
-            ],
+            fields=[Field.from_column(DbColumn(name="column", type="string", ordinal_position=1))],
             custom_facets=symlink_facets,
         ).to_openlineage_dataset()
 
@@ -256,11 +252,7 @@ def test_extract_insert_select():
         first_expected_output = Dataset(
             name=f"{DB_NAME}.{DB_SCHEMA_NAME}.TEST_TABLE",
             source=source,
-            fields=[
-                Field.from_column(
-                    DbColumn(name="column", type="string", ordinal_position=1)
-                )
-            ],
+            fields=[Field.from_column(DbColumn(name="column", type="string", ordinal_position=1))],
             custom_facets=output_facets,
         ).to_openlineage_dataset()
 
@@ -313,11 +305,7 @@ def test_extract_drop():
         first_expected_output = Dataset(
             name=f"{DB_NAME}.{DB_SCHEMA_NAME}.TEST_TABLE",
             source=input_source,
-            fields=[
-                Field.from_column(
-                    DbColumn(name="column", type="string", ordinal_position=1)
-                )
-            ],
+            fields=[Field.from_column(DbColumn(name="column", type="string", ordinal_position=1))],
             custom_facets=symlink_facets,
         ).to_openlineage_dataset()
 

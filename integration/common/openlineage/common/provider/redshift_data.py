@@ -72,9 +72,7 @@ class RedshiftDataDatasetsProvider:
         ds_outputs = self._get_dataset_from_tables(outputs, source)
 
         for ds_output in ds_outputs:
-            ds_output.custom_facets.update({
-                        "stats": dataset_stat_facet
-                    })
+            ds_output.custom_facets.update({"stats": dataset_stat_facet})
 
         return RedshiftFacets(run_facets, ds_inputs, ds_outputs)
 
@@ -84,9 +82,7 @@ class RedshiftDataDatasetsProvider:
             size=properties.get("ResultSize"),
         )
 
-    def _get_dataset_from_tables(
-        self, tables: List[DbTableMeta], source: Source
-    ) -> Dataset:
+    def _get_dataset_from_tables(self, tables: List[DbTableMeta], source: Source) -> Dataset:
         try:
             return [
                 Dataset.from_table_schema(

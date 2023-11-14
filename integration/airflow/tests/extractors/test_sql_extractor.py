@@ -17,7 +17,7 @@ def test_get_tables_hierarchy():
     # base check with db, no cross db
     assert SqlExtractor._get_tables_hierarchy(
         [DbTableMeta("Db.Schema1.Table1"), DbTableMeta("Db.Schema2.Table2")],
-        normalize_name_lower
+        normalize_name_lower,
     ) == {None: {"schema1": ["Table1"], "schema2": ["Table2"]}}
 
     # same, with cross db
@@ -62,9 +62,12 @@ def test_get_tables_hierarchy():
 def test_get_sql_iterator():
     assert SqlExtractor._normalize_sql("select * from asdf") == "select * from asdf"
 
-    assert SqlExtractor._normalize_sql(
-        ["select * from asdf", "insert into asdf values (1,2,3)"]
-    ) == "select * from asdf;\ninsert into asdf values (1,2,3)"
-
-    assert SqlExtractor._normalize_sql("select * from asdf;insert into asdf values (1,2,3)") \
+    assert (
+        SqlExtractor._normalize_sql(["select * from asdf", "insert into asdf values (1,2,3)"])
         == "select * from asdf;\ninsert into asdf values (1,2,3)"
+    )
+
+    assert (
+        SqlExtractor._normalize_sql("select * from asdf;insert into asdf values (1,2,3)")
+        == "select * from asdf;\ninsert into asdf values (1,2,3)"
+    )

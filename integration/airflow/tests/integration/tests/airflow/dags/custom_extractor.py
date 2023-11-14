@@ -11,16 +11,7 @@ from openlineage.client.run import Dataset
 class CustomExtractor(BaseExtractor):
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
-        return ['CustomOperator']
+        return ["CustomOperator"]
 
     def extract(self) -> Union[Optional[TaskMetadata], List[TaskMetadata]]:
-        return TaskMetadata(
-            "test",
-            inputs=[
-                Dataset(
-                    namespace="test",
-                    name="dataset",
-                    facets={}
-                )
-            ]
-        )
+        return TaskMetadata("test", inputs=[Dataset(namespace="test", name="dataset", facets={})])

@@ -7,9 +7,12 @@ from typing import List, Optional
 from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
 from openlineage.airflow.utils import get_job_name, try_import_from_string
 from openlineage.client.facet import SqlJobFacet
-from openlineage.common.provider.bigquery import BigQueryDatasetsProvider, BigQueryErrorRunFacet
+from openlineage.common.provider.bigquery import (
+    BigQueryDatasetsProvider,
+    BigQueryErrorRunFacet,
+)
 
-_BIGQUERY_CONN_URL = 'bigquery'
+_BIGQUERY_CONN_URL = "bigquery"
 
 
 class BigQueryExtractor(BaseExtractor):
@@ -18,7 +21,7 @@ class BigQueryExtractor(BaseExtractor):
 
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
-        return ['BigQueryOperator', 'BigQueryExecuteQueryOperator']
+        return ["BigQueryOperator", "BigQueryExecuteQueryOperator"]
 
     def extract(self) -> Optional[TaskMetadata]:
         return None
@@ -29,20 +32,16 @@ class BigQueryExtractor(BaseExtractor):
         try:
             bigquery_job_id = self._get_xcom_bigquery_job_id(task_instance)
             if bigquery_job_id is None:
-                raise Exception(
-                    "Xcom could not resolve BigQuery job id. Job may have failed."
-                )
+                raise Exception("Xcom could not resolve BigQuery job id. Job may have failed.")
         except Exception as e:
-            self.log.error(
-                f"Cannot retrieve job details from BigQuery.Client. {e}", exc_info=True
-            )
+            self.log.error(f"Cannot retrieve job details from BigQuery.Client. {e}", exc_info=True)
             return TaskMetadata(
                 name=get_job_name(task=self.operator),
                 run_facets={
                     "bigQuery_error": BigQueryErrorRunFacet(
                         clientError=f"{e}: {traceback.format_exc()}",
                     )
-                }
+                },
             )
 
         client = self._get_client()
@@ -55,30 +54,26 @@ class BigQueryExtractor(BaseExtractor):
             ds.input_facets = self._get_input_facets()
 
         run_facets = stats.run_facets
-        job_facets = {
-            "sql": SqlJobFacet(self.operator.sql)
-        }
+        job_facets = {"sql": SqlJobFacet(self.operator.sql)}
 
         return TaskMetadata(
             name=get_job_name(task=self.operator),
             inputs=[ds.to_openlineage_dataset() for ds in inputs],
             outputs=[output.to_openlineage_dataset()] if output else [],
             run_facets=run_facets,
-            job_facets=job_facets
+            job_facets=job_facets,
         )
 
     def _get_client(self):
         # lazy-load the bigquery Client due to its slow import
         from google.cloud.bigquery import Client
+
         # Get client using Airflow hook - this way we use the same credentials as Airflow
-        if hasattr(self.operator, 'hook') and self.operator.hook:
+        if hasattr(self.operator, "hook") and self.operator.hook:
             hook = self.operator.hook
-            return hook.get_client(
-                project_id=hook.project_id,
-                location=hook.location
-            )
+            return hook.get_client(project_id=hook.project_id, location=hook.location)
         BigQueryHook = try_import_from_string(
-            'airflow.providers.google.cloud.operators.bigquery.BigQueryHook'
+            "airflow.providers.google.cloud.operators.bigquery.BigQueryHook"
         )
         if BigQueryHook is not None:
             params = {
@@ -91,15 +86,11 @@ class BigQueryExtractor(BaseExtractor):
                 params["delegate_to"] = self.operator.delegate_to
 
             hook = BigQueryHook(**params)
-            return hook.get_client(
-                project_id=hook.project_id,
-                location=hook.location
-            )
+            return hook.get_client(project_id=hook.project_id, location=hook.location)
         return Client()
 
     def _get_xcom_bigquery_job_id(self, task_instance):
-        bigquery_job_id = task_instance.xcom_pull(
-            task_ids=task_instance.task_id, key='job_id')
+        bigquery_job_id = task_instance.xcom_pull(task_ids=task_instance.task_id, key="job_id")
 
         self.log.debug(f"bigquery_job_id: {bigquery_job_id}")
         return bigquery_job_id

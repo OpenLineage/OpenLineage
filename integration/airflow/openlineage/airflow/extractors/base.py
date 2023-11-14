@@ -30,7 +30,6 @@ class TaskMetadata:
 
 
 class BaseExtractor(ABC, LoggingMixin):
-
     _whitelist_query_params: List[str] = []
 
     def __init__(self, operator):
@@ -56,7 +55,7 @@ class BaseExtractor(ABC, LoggingMixin):
         The BigQueryExtractor needs to work with both of them.
         :return:
         """
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def validate(self):
         assert self.operator.__class__.__name__ in self.get_operator_classnames()
@@ -86,9 +85,7 @@ class BaseExtractor(ABC, LoggingMixin):
             query_dict = dict(parse_qsl(parsed.query))
             if conn.EXTRA_KEY in query_dict:
                 query_dict = json.loads(query_dict[conn.EXTRA_KEY])
-            filtered_qs = {
-                k: v for k, v in query_dict.items() if k in cls._whitelist_query_params
-            }
+            filtered_qs = {k: v for k, v in query_dict.items() if k in cls._whitelist_query_params}
             parsed = parsed._replace(query=urlencode(filtered_qs))
         return urlunparse(parsed)
 
@@ -104,23 +101,17 @@ class DefaultExtractor(BaseExtractor):
 
     def extract(self) -> Optional[TaskMetadata]:
         try:
-            return self._get_openlineage_facets(
-                self.operator.get_openlineage_facets_on_start
-            )
+            return self._get_openlineage_facets(self.operator.get_openlineage_facets_on_start)
         except AttributeError:
             return None
 
     def extract_on_complete(self, task_instance) -> Optional[TaskMetadata]:
-        on_complete = getattr(self.operator, 'get_openlineage_facets_on_complete', None)
+        on_complete = getattr(self.operator, "get_openlineage_facets_on_complete", None)
         if on_complete and callable(on_complete):
-            return self._get_openlineage_facets(
-                on_complete, task_instance
-            )
+            return self._get_openlineage_facets(on_complete, task_instance)
         return self.extract()
 
-    def _get_openlineage_facets(
-        self, get_facets_method, *args
-    ) -> Optional[TaskMetadata]:
+    def _get_openlineage_facets(self, get_facets_method, *args) -> Optional[TaskMetadata]:
         facets: OperatorLineage = get_facets_method(*args)
         return TaskMetadata(
             name=get_job_name(task=self.operator),

@@ -13,7 +13,6 @@ FTPOperation = try_import_from_string("airflow.providers.ftp.operators.ftp.FTPOp
 
 
 class FTPExtractor(BaseExtractor):
-
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
         return ["FTPFileTransmitOperator"]
@@ -27,7 +26,7 @@ class FTPExtractor(BaseExtractor):
         except Exception as e:
             self.log.warning(
                 f"Failed to resolve local hostname. Using the hostname got by socket.gethostbyname() without resolution. {e}",  # noqa: E501
-                exc_info=True
+                exc_info=True,
             )
 
         conn = self.operator.hook.get_conn()
@@ -48,7 +47,10 @@ class FTPExtractor(BaseExtractor):
             for path in local_filepath
         ]
         remote_datasets = [
-            Dataset(source=self._get_source(scheme, remote_host, remote_port, path), name=path)
+            Dataset(
+                source=self._get_source(scheme, remote_host, remote_port, path),
+                name=path,
+            )
             for path in remote_filepath
         ]
 
@@ -73,5 +75,5 @@ class FTPExtractor(BaseExtractor):
         return Source(
             scheme=scheme,
             authority=authority,
-            connection_url=f"{scheme}://{authority}{path}"
+            connection_url=f"{scheme}://{authority}{path}",
         )

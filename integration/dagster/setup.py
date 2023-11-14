@@ -26,12 +26,11 @@ extras_require = {
     "tests": [
         "pytest",
         "pytest-cov",
-        "ruff",
         "mypy>=0.9.6",
         # The relevant compat layer of pydantic v2 is shipped with Dagster `1.5.5`.
         # https://github.com/dagster-io/dagster/issues/15162
         "pydantic<2.0.0",
-        "sqlalchemy<2.0.0"
+        "sqlalchemy<2.0.0",
     ],
 }
 
@@ -44,7 +43,7 @@ setup(
     long_description=readme,
     long_description_content_type="text/markdown",
     author="OpenLineage",
-    packages=find_namespace_packages(include=['openlineage.*']),
+    packages=find_namespace_packages(include=["openlineage.*"]),
     include_package_data=True,
     install_requires=requirements,
     extras_require=extras_require,

@@ -10,21 +10,26 @@ from openlineage.client.run import Dataset
 class GCSToGCSExtractor(BaseExtractor):
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
-        return ['GCSToGCSOperator']
+        return ["GCSToGCSOperator"]
 
     def extract(self) -> Optional[TaskMetadata]:
         if self.operator.source_object:
-            input_objects = [Dataset(
-                namespace=f"gs://{self.operator.source_bucket}",
-                name=f"gs://{self.operator.source_bucket}/{self.operator.source_object}",
-                facets={},
-            )]
+            input_objects = [
+                Dataset(
+                    namespace=f"gs://{self.operator.source_bucket}",
+                    name=f"gs://{self.operator.source_bucket}/{self.operator.source_object}",
+                    facets={},
+                )
+            ]
         else:
-            input_objects = [Dataset(
-                namespace=f"gs://{self.operator.source_bucket}",
-                name=f"gs://{self.operator.source_bucket}/{source_object}",
-                facets={},
-            ) for source_object in self.operator.source_objects]
+            input_objects = [
+                Dataset(
+                    namespace=f"gs://{self.operator.source_bucket}",
+                    name=f"gs://{self.operator.source_bucket}/{source_object}",
+                    facets={},
+                )
+                for source_object in self.operator.source_objects
+            ]
 
         output_object = Dataset(
             namespace=f"gs://{self.operator.destination_bucket}",

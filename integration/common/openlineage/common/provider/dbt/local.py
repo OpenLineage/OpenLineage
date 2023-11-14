@@ -49,9 +49,7 @@ class LazyJinjaLoadDict(dict):
         Returns lazy load dictionary when value is dictionary instance.
         """
         if isinstance(value, list):
-            return [
-                LazyJinjaLoadDict.render_values_jinja(jinja_env, elem) for elem in value
-            ]
+            return [LazyJinjaLoadDict.render_values_jinja(jinja_env, elem) for elem in value]
         elif isinstance(value, str):
             return jinja_env.from_string(value).render()
         elif isinstance(value, dict):
@@ -72,10 +70,7 @@ class SkipUndefined(Undefined):
 
     def __call__(self, *args, **kwargs):
         arguments = ", ".join(
-            [
-                arg._undefined_name if isinstance(arg, SkipUndefined) else str(arg)
-                for arg in args
-            ]
+            [arg._undefined_name if isinstance(arg, SkipUndefined) else str(arg) for arg in args]
         )
         return f"{{{{ {self._undefined_name}({arguments}) }}}}"
 
@@ -96,16 +91,12 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
         self.jinja_environment: Optional[Environment] = None
 
         absolute_dir = os.path.abspath(project_dir)
-        dbt_project = self.load_yaml_with_jinja(
-            os.path.join(project_dir, "dbt_project.yml")
-        )
+        dbt_project = self.load_yaml_with_jinja(os.path.join(project_dir, "dbt_project.yml"))
         self.target_path = target_path
         target_path = self.build_target_path(dbt_project)
 
         self.manifest_path = os.path.join(absolute_dir, target_path, "manifest.json")
-        self.run_result_path = os.path.join(
-            absolute_dir, target_path, "run_results.json"
-        )
+        self.run_result_path = os.path.join(absolute_dir, target_path, "run_results.json")
         self.catalog_path = os.path.join(absolute_dir, target_path, "catalog.json")
 
         self.target = target
@@ -114,9 +105,7 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
         if not self.profile_name:
             raise KeyError(f"profile not found in {dbt_project}")
 
-    def build_target_path(
-        self, dbt_project: dict, target_path: Optional[str] = None
-    ) -> str:
+    def build_target_path(self, dbt_project: dict, target_path: Optional[str] = None) -> str:
         """
         Build dbt target path. Uses the following:
         1. target_path (user-defined value, normally given in --target-path CLI flag)
@@ -140,11 +129,9 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
     def load_metadata(
         cls, path: str, desired_schema_versions: List[int], logger: logging.Logger
     ) -> Dict[Any, Any]:
-        with open(path, "r") as f:
+        with open(path) as f:
             metadata = json.load(f)
-            str_schema_version = get_from_nullable_chain(
-                metadata, ["metadata", "dbt_schema_version"]
-            )
+            str_schema_version = get_from_nullable_chain(metadata, ["metadata", "dbt_schema_version"])
             schema_version = cls.get_schema_version(metadata)
             if schema_version not in desired_schema_versions:
                 if schema_version > max(desired_schema_versions):
@@ -177,7 +164,7 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
 
     @staticmethod
     def load_yaml(path: str) -> Dict:
-        with open(path, "r") as f:
+        with open(path) as f:
             return yaml.safe_load(f)
 
     @staticmethod
@@ -197,27 +184,19 @@ class DbtLocalArtifactProcessor(DbtArtifactProcessor):
 
     def get_dbt_metadata(
         self,
-    ) -> Tuple[
-        Dict[Any, Any], Dict[Any, Any], Dict[Any, Any], Optional[Dict[Any, Any]]
-    ]:
-        manifest = self.load_metadata(
-            self.manifest_path, [2, 3, 4, 5, 6, 7], self.logger
-        )
+    ) -> Tuple[Dict[Any, Any], Dict[Any, Any], Dict[Any, Any], Optional[Dict[Any, Any]]]:
+        manifest = self.load_metadata(self.manifest_path, [2, 3, 4, 5, 6, 7], self.logger)
 
         run_result = self.load_metadata(self.run_result_path, [2, 3, 4, 5], self.logger)
 
         try:
-            catalog: Optional[Dict[Any, Any]] = self.load_metadata(
-                self.catalog_path, [1], self.logger
-            )
+            catalog: Optional[Dict[Any, Any]] = self.load_metadata(self.catalog_path, [1], self.logger)
         except FileNotFoundError:
             catalog = None
 
         profile_dir = run_result["args"]["profiles_dir"]
 
-        profile = self.load_yaml_with_jinja(os.path.join(profile_dir, "profiles.yml"))[
-            self.profile_name
-        ]
+        profile = self.load_yaml_with_jinja(os.path.join(profile_dir, "profiles.yml"))[self.profile_name]
 
         if not self.target:
             self.target = profile["target"]

@@ -43,37 +43,37 @@ current_env = os.environ
 
 project_config = DataContextConfig(
     datasources={
-      "food_delivery_db": {
-        "data_asset_type": {
-          "module_name": "great_expectations.dataset",
-          "class_name": "SqlAlchemyDataset",
+        "food_delivery_db": {
+            "data_asset_type": {
+                "module_name": "great_expectations.dataset",
+                "class_name": "SqlAlchemyDataset",
+            },
+            "class_name": "SqlAlchemyDatasource",
+            "module_name": "great_expectations.datasource",
+            "credentials": {"url": "bigquery://openlineage/food_delivery"},
         },
-        "class_name": "SqlAlchemyDatasource",
-        "module_name": "great_expectations.datasource",
-        "credentials": {"url": "bigquery://openlineage/food_delivery"},
-      },
-      "gcs": {
-        "data_asset_type": {
-          "class_name": "PandasDataset",
-          "module_name": "great_expectations.dataset",
+        "gcs": {
+            "data_asset_type": {
+                "class_name": "PandasDataset",
+                "module_name": "great_expectations.dataset",
+            },
+            "class_name": "PandasDatasource",
+            "module_name": "great_expectations.datasource",
         },
-        "class_name": "PandasDatasource",
-        "module_name": "great_expectations.datasource",
-      },
     },
     validation_operators={
-      "action_list_operator": {
-        "class_name": "ActionListValidationOperator",
-        "action_list": [
-          {
-            "name": "openlineage",
-            "action": {
-              "class_name": "OpenLineageValidationAction",
-              "module_name": "openlineage.common.provider.great_expectations.action",
-            },
-          }
-        ],
-      }
+        "action_list_operator": {
+            "class_name": "ActionListValidationOperator",
+            "action_list": [
+                {
+                    "name": "openlineage",
+                    "action": {
+                        "class_name": "OpenLineageValidationAction",
+                        "module_name": "openlineage.common.provider.great_expectations.action",
+                    },
+                }
+            ],
+        }
     },
     anonymous_usage_statistics={"enabled": False},
 )
@@ -98,18 +98,21 @@ column_result = ExpectationValidationResult(
 )
 result_suite = ExpectationSuiteValidationResult(
     success=True,
-    meta={'great_expectations_version': '1.2.3',
-          'expectation_suite_name': 'test_suite',
-          'run_id': RunIdentifier(run_name="test_run"),
-          'validation_time': datetime.datetime.now().isoformat(),
-          "batch_kwargs": {}},
+    meta={
+        "great_expectations_version": "1.2.3",
+        "expectation_suite_name": "test_suite",
+        "run_id": RunIdentifier(run_name="test_run"),
+        "validation_time": datetime.datetime.now().isoformat(),
+        "batch_kwargs": {},
+    },
     results=[table_result, column_result],
 )
 
 validation_identifier = ValidationResultIdentifier(
     ExpectationSuiteIdentifier(expectation_suite_name="unit_test"),
     RunIdentifier(run_name="test_run"),
-    "batch_id")
+    "batch_id",
+)
 
 
 @pytest.fixture(scope="session")
@@ -117,15 +120,12 @@ def test_db_file():
     fd, file = tempfile.mkstemp()
     conn = sqlite3.connect(file)
     cursor = conn.cursor()
-    cursor.execute(
-        f"CREATE TABLE {TABLE_NAME} (name text, birthdate text, address text, size integer)"
-    )
+    cursor.execute(f"CREATE TABLE {TABLE_NAME} (name text, birthdate text, address text, size integer)")
     yield file
     os.remove(file)
 
 
-@patch.dict(os.environ,
-            {"OPENLINEAGE_URL": "http://localhost:5000", **current_env})
+@patch.dict(os.environ, {"OPENLINEAGE_URL": "http://localhost:5000", **current_env})
 def test_dataset_from_sql_source(test_db_file, tmpdir):
     connection_url = f"sqlite:///{test_db_file}"
     engine = create_engine(connection_url)
@@ -144,75 +144,68 @@ def test_dataset_from_sql_source(test_db_file, tmpdir):
         openlineage_host="http://localhost:5000",
         openlineage_namespace="test_ns",
         job_name="test_job",
-        do_publish=False
+        do_publish=False,
     )
-    run_event = action.run(validation_result_suite=result_suite,
-                           validation_result_suite_identifier=validation_identifier,
-                           data_asset=ds)
+    run_event = action.run(
+        validation_result_suite=result_suite,
+        validation_result_suite_identifier=validation_identifier,
+        data_asset=ds,
+    )
     datasets = run_event["inputs"]
     assert datasets is not None
     assert len(datasets) == 1
     input_ds = datasets[0]
-    assert input_ds['name'] == TABLE_NAME
-    assert input_ds['namespace'] == "sqlite"
+    assert input_ds["name"] == TABLE_NAME
+    assert input_ds["namespace"] == "sqlite"
 
-    assert "dataSource" in input_ds['facets']
-    assert input_ds['facets']["dataSource"]['name'] == "sqlite"
-    assert input_ds['facets']["dataSource"]['uri'] == "sqlite:/" + test_db_file
+    assert "dataSource" in input_ds["facets"]
+    assert input_ds["facets"]["dataSource"]["name"] == "sqlite"
+    assert input_ds["facets"]["dataSource"]["uri"] == "sqlite:/" + test_db_file
 
-    assert "schema" in input_ds['facets']
-    assert len(input_ds['facets']['schema']['fields']) == 4
+    assert "schema" in input_ds["facets"]
+    assert len(input_ds["facets"]["schema"]["fields"]) == 4
     assert all(
-        f in input_ds['facets']['schema']['fields']
+        f in input_ds["facets"]["schema"]["fields"]
         for f in [
-          {"name": "name", "type": "TEXT"},
-          {"name": "birthdate", "type": "TEXT"},
-          {"name": "address", "type": "TEXT"},
-          {"name": "size", "type": "INTEGER"},
+            {"name": "name", "type": "TEXT"},
+            {"name": "birthdate", "type": "TEXT"},
+            {"name": "address", "type": "TEXT"},
+            {"name": "size", "type": "INTEGER"},
         ]
     )
 
-    assert len(input_ds['inputFacets']) == 3
+    assert len(input_ds["inputFacets"]) == 3
     assert all(
-        k in input_ds['inputFacets']
-        for k in
-        ["dataQuality", "greatExpectations_assertions", "dataQualityMetrics"]
+        k in input_ds["inputFacets"]
+        for k in ["dataQuality", "greatExpectations_assertions", "dataQualityMetrics"]
     )
-    assert input_ds['inputFacets']["dataQuality"]['rowCount'] == 10
-    assert "size" in input_ds['inputFacets']["dataQuality"]['columnMetrics']
-    assert input_ds['inputFacets']["dataQuality"]['columnMetrics']["size"][
-             'sum'] == 60
+    assert input_ds["inputFacets"]["dataQuality"]["rowCount"] == 10
+    assert "size" in input_ds["inputFacets"]["dataQuality"]["columnMetrics"]
+    assert input_ds["inputFacets"]["dataQuality"]["columnMetrics"]["size"]["sum"] == 60
 
-    assert len(
-        input_ds['inputFacets']["greatExpectations_assertions"][
-          'assertions']) == 2
+    assert len(input_ds["inputFacets"]["greatExpectations_assertions"]["assertions"]) == 2
     assert all(
-        a in input_ds['inputFacets']["greatExpectations_assertions"]['assertions']
+        a in input_ds["inputFacets"]["greatExpectations_assertions"]["assertions"]
         for a in [
-          {"expectationType": "expect_table_row_count_to_equal",
-           "success": True},
-          {"expectationType": "expect_column_sum_to_be_between", "success": True,
-           "column": "size"},
+            {"expectationType": "expect_table_row_count_to_equal", "success": True},
+            {
+                "expectationType": "expect_column_sum_to_be_between",
+                "success": True,
+                "column": "size",
+            },
         ]
     )
 
 
-@patch.dict(os.environ,
-            {"OPENLINEAGE_URL": "http://localhost:5000", **current_env})
+@patch.dict(os.environ, {"OPENLINEAGE_URL": "http://localhost:5000", **current_env})
 def test_dataset_from_custom_sql(test_db_file, tmpdir):
     connection_url = f"sqlite:///{test_db_file}"
     engine = create_engine(connection_url)
-    engine.execute(
-        """CREATE TABLE join_table (name text, workplace text, position text)"""
-    )
-    custom_sql = (
-      f"""SELECT * FROM {TABLE_NAME} t INNER JOIN join_table j ON t.name=j.name"""
-    )
+    engine.execute("""CREATE TABLE join_table (name text, workplace text, position text)""")
+    custom_sql = f"""SELECT * FROM {TABLE_NAME} t INNER JOIN join_table j ON t.name=j.name"""
 
     # note the batch_kwarg key is 'query', but the constructor arg is 'custom_sql'
-    ds = SqlAlchemyDataset(
-        engine=engine, custom_sql=custom_sql, batch_kwargs={"query": custom_sql}
-    )
+    ds = SqlAlchemyDataset(engine=engine, custom_sql=custom_sql, batch_kwargs={"query": custom_sql})
 
     store_defaults = FilesystemStoreBackendDefaults(root_directory=tmpdir)
     project_config.stores = store_defaults.stores
@@ -230,10 +223,7 @@ def test_dataset_from_custom_sql(test_db_file, tmpdir):
     datasets = action._fetch_datasets_from_sql_source(ds, result_suite)
     assert datasets is not None
     assert len(datasets) == 2
-    assert all(
-        name in [TABLE_NAME, "join_table"] for name in
-        [ds.name for ds in datasets]
-    )
+    assert all(name in [TABLE_NAME, "join_table"] for name in [ds.name for ds in datasets])
 
     input_ds = next(ds for ds in datasets if ds.name == TABLE_NAME)
 
@@ -246,30 +236,27 @@ def test_dataset_from_custom_sql(test_db_file, tmpdir):
     assert all(
         f in input_ds.facets["schema"].fields
         for f in [
-          SchemaField("name", "TEXT"),
-          SchemaField("birthdate", "TEXT"),
-          SchemaField("address", "TEXT"),
-          SchemaField("size", "INTEGER"),
+            SchemaField("name", "TEXT"),
+            SchemaField("birthdate", "TEXT"),
+            SchemaField("address", "TEXT"),
+            SchemaField("size", "INTEGER"),
         ]
     )
     assert len(input_ds.inputFacets) == 3
     assert all(
         k in input_ds.inputFacets
-        for k in
-        ["dataQuality", "greatExpectations_assertions", "dataQualityMetrics"]
+        for k in ["dataQuality", "greatExpectations_assertions", "dataQualityMetrics"]
     )
     assert input_ds.inputFacets["dataQuality"].rowCount == 10
     assert "size" in input_ds.inputFacets["dataQuality"].columnMetrics
     assert input_ds.inputFacets["dataQuality"].columnMetrics["size"].sum == 60
 
-    assert len(
-        input_ds.inputFacets["greatExpectations_assertions"].assertions) == 2
+    assert len(input_ds.inputFacets["greatExpectations_assertions"].assertions) == 2
     assert all(
         a in input_ds.inputFacets["greatExpectations_assertions"].assertions
         for a in [
-          GreatExpectationsAssertion("expect_table_row_count_to_equal", True),
-          GreatExpectationsAssertion("expect_column_sum_to_be_between", True,
-                                     "size"),
+            GreatExpectationsAssertion("expect_table_row_count_to_equal", True),
+            GreatExpectationsAssertion("expect_column_sum_to_be_between", True, "size"),
         ]
     )
 
@@ -279,36 +266,34 @@ def test_dataset_from_custom_sql(test_db_file, tmpdir):
     assert all(
         f in input_ds.facets["schema"].fields
         for f in [
-          SchemaField("name", "TEXT"),
-          SchemaField("workplace", "TEXT"),
-          SchemaField("position", "TEXT"),
+            SchemaField("name", "TEXT"),
+            SchemaField("workplace", "TEXT"),
+            SchemaField("position", "TEXT"),
         ]
     )
     assert len(input_ds.inputFacets) == 3
     assert all(
         k in input_ds.inputFacets
-        for k in
-        ["dataQuality", "greatExpectations_assertions", "dataQualityMetrics"]
+        for k in ["dataQuality", "greatExpectations_assertions", "dataQualityMetrics"]
     )
 
 
-@patch.dict(os.environ,
-            {"OPENLINEAGE_URL": "http://localhost:5000", **current_env})
+@patch.dict(os.environ, {"OPENLINEAGE_URL": "http://localhost:5000", **current_env})
 def test_dataset_from_pandas_source(tmpdir):
     data_file = tmpdir + "/data.json"
     json_data = [
-      {
-        "name": "my name",
-        "birthdate": "2020-10-01",
-        "address": "1234 Main st",
-        "size": 12,
-      },
-      {
-        "name": "your name",
-        "birthdate": "2020-06-01",
-        "address": "1313 Mockingbird Ln",
-        "size": 12,
-      },
+        {
+            "name": "my name",
+            "birthdate": "2020-10-01",
+            "address": "1234 Main st",
+            "size": 12,
+        },
+        {
+            "name": "your name",
+            "birthdate": "2020-06-01",
+            "address": "1313 Mockingbird Ln",
+            "size": 12,
+        },
     ]
     with open(data_file, mode="w") as out:
         json.dump(json_data, out)
@@ -322,10 +307,8 @@ def test_dataset_from_pandas_source(tmpdir):
     ctx = BaseDataContext(project_config=project_config)
     pd_dataset = PandasDataset(
         pandas.read_json(data_file),
-        **{
-          "batch_kwargs": {"path": "gcs://my_bucket/path/to/my/data"},
-          "data_context": ctx,
-        },
+        batch_kwargs={"path": "gcs://my_bucket/path/to/my/data"},
+        data_context=ctx,
     )
     action = OpenLineageValidationAction(
         ctx,
@@ -334,9 +317,7 @@ def test_dataset_from_pandas_source(tmpdir):
         job_name="test_job",
     )
 
-    datasets = action._fetch_datasets_from_pandas_source(
-        pd_dataset, validation_result_suite=result_suite
-    )
+    datasets = action._fetch_datasets_from_pandas_source(pd_dataset, validation_result_suite=result_suite)
     assert len(datasets) == 1
     input_ds = datasets[0]
     assert input_ds.name == "/path/to/my/data"
@@ -351,31 +332,28 @@ def test_dataset_from_pandas_source(tmpdir):
     assert all(
         f in input_ds.facets["schema"].fields
         for f in [
-          SchemaField("name", "object"),
-          SchemaField("birthdate", "object"),
-          SchemaField("address", "object"),
-          SchemaField("size", "int64"),
+            SchemaField("name", "object"),
+            SchemaField("birthdate", "object"),
+            SchemaField("address", "object"),
+            SchemaField("size", "int64"),
         ]
     )
 
     assert len(input_ds.inputFacets) == 3
     assert all(
         k in input_ds.inputFacets
-        for k in
-        ["dataQuality", "greatExpectations_assertions", "dataQualityMetrics"]
+        for k in ["dataQuality", "greatExpectations_assertions", "dataQualityMetrics"]
     )
     assert input_ds.inputFacets["dataQuality"].rowCount == 10
     assert "size" in input_ds.inputFacets["dataQuality"].columnMetrics
     assert input_ds.inputFacets["dataQuality"].columnMetrics["size"].sum == 60
 
-    assert len(
-        input_ds.inputFacets["greatExpectations_assertions"].assertions) == 2
+    assert len(input_ds.inputFacets["greatExpectations_assertions"].assertions) == 2
     assert all(
         a in input_ds.inputFacets["greatExpectations_assertions"].assertions
         for a in [
-          GreatExpectationsAssertion("expect_table_row_count_to_equal", True),
-          GreatExpectationsAssertion("expect_column_sum_to_be_between", True,
-                                     "size"),
+            GreatExpectationsAssertion("expect_table_row_count_to_equal", True),
+            GreatExpectationsAssertion("expect_column_sum_to_be_between", True, "size"),
         ]
     )
 
@@ -384,17 +362,14 @@ def test_dataset_from_sql_source_v3_api(test_db_file, tmpdir):
     connection_url = f"sqlite:///{test_db_file}"
 
     store_defaults = FilesystemStoreBackendDefaults(root_directory=tmpdir)
-    store_defaults.stores[store_defaults.expectations_store_name][
-      "store_backend"] = {
-      "class_name": "InMemoryStoreBackend"
+    store_defaults.stores[store_defaults.expectations_store_name]["store_backend"] = {
+        "class_name": "InMemoryStoreBackend"
     }
     project_config.stores = store_defaults.stores
     project_config.expectations_store_name = store_defaults.expectations_store_name
     project_config.validations_store_name = store_defaults.validations_store_name
     project_config.checkpoint_store_name = store_defaults.checkpoint_store_name
-    project_config.evaluation_parameter_store_name = (
-      store_defaults.evaluation_parameter_store_name
-    )
+    project_config.evaluation_parameter_store_name = store_defaults.evaluation_parameter_store_name
 
     ctx = BaseDataContext(project_config=project_config)
     ctx.stores[store_defaults.expectations_store_name].set(
@@ -406,11 +381,7 @@ def test_dataset_from_sql_source_v3_api(test_db_file, tmpdir):
         True,
         class_name="SimpleSqlalchemyDatasource",
         connection_string=connection_url,
-        tables={
-          TABLE_NAME: {
-            "partitioners": {"sql_table": {"include_schema_name": "false"}}
-          }
-        },
+        tables={TABLE_NAME: {"partitioners": {"sql_table": {"include_schema_name": "false"}}}},
         dry_run=True,
     )
     checkpoint: Checkpoint = Checkpoint(
@@ -424,32 +395,31 @@ def test_dataset_from_sql_source_v3_api(test_db_file, tmpdir):
         run_name_template="the_run",
         expectation_suite_name="test_suite",
         validations=[
-          {
-            "batch_request": {
-              "datasource_name": "food_delivery_db",
-              "data_connector_name": "sql_table",
-              "data_asset_name": TABLE_NAME,
-            },
-            "expectations_suite_name": "test_suite",
-            "action_list": [
-              {
-                "name": "openlineage",
-                "action": {
-                  "class_name": OpenLineageValidationAction.__name__,
-                  "module_name": OpenLineageValidationAction.__module__,
-                  "do_publish": False,
-                  "job_name": "test_expectations_job",
+            {
+                "batch_request": {
+                    "datasource_name": "food_delivery_db",
+                    "data_connector_name": "sql_table",
+                    "data_asset_name": TABLE_NAME,
                 },
-              }
-            ],
-          }
+                "expectations_suite_name": "test_suite",
+                "action_list": [
+                    {
+                        "name": "openlineage",
+                        "action": {
+                            "class_name": OpenLineageValidationAction.__name__,
+                            "module_name": OpenLineageValidationAction.__module__,
+                            "do_publish": False,
+                            "job_name": "test_expectations_job",
+                        },
+                    }
+                ],
+            }
         ],
     )
 
     assert len(result.run_results) == 1
     validation_id = next(iter(result.run_results))
-    ol_result = result.run_results[validation_id]["actions_results"][
-      "openlineage"]
+    ol_result = result.run_results[validation_id]["actions_results"]["openlineage"]
     assert len(ol_result["outputs"]) == 0
     assert len(ol_result["inputs"]) == 1
     input_ds = ol_result["inputs"][0]
@@ -464,43 +434,35 @@ def test_dataset_from_sql_source_v3_api(test_db_file, tmpdir):
     assert all(
         f in input_ds["facets"]["schema"]["fields"]
         for f in [
-          {"name": "name", "type": "TEXT"},
-          {"name": "birthdate", "type": "TEXT"},
-          {"name": "address", "type": "TEXT"},
-          {"name": "size", "type": "INTEGER"},
+            {"name": "name", "type": "TEXT"},
+            {"name": "birthdate", "type": "TEXT"},
+            {"name": "address", "type": "TEXT"},
+            {"name": "size", "type": "INTEGER"},
         ]
     )
 
     assert len(input_ds["inputFacets"]) == 3
     assert all(
         k in input_ds["inputFacets"]
-        for k in
-        ["dataQuality", "greatExpectations_assertions", "dataQualityMetrics"]
+        for k in ["dataQuality", "greatExpectations_assertions", "dataQualityMetrics"]
     )
 
 
 def test_dataset_from_sql_custom_query_v3_api(test_db_file, tmpdir):
     connection_url = f"sqlite:///{test_db_file}"
     engine = create_engine(connection_url)
-    engine.execute(
-        """CREATE TABLE IF NOT EXISTS join_table (name text, workplace text, position text)"""
-    )
-    custom_sql = (
-      f"""SELECT * FROM {TABLE_NAME} t INNER JOIN join_table j ON t.name=j.name"""
-    )
+    engine.execute("""CREATE TABLE IF NOT EXISTS join_table (name text, workplace text, position text)""")
+    custom_sql = f"""SELECT * FROM {TABLE_NAME} t INNER JOIN join_table j ON t.name=j.name"""
 
     store_defaults = FilesystemStoreBackendDefaults(root_directory=tmpdir)
-    store_defaults.stores[store_defaults.expectations_store_name][
-      "store_backend"] = {
-      "class_name": "InMemoryStoreBackend"
+    store_defaults.stores[store_defaults.expectations_store_name]["store_backend"] = {
+        "class_name": "InMemoryStoreBackend"
     }
     project_config.stores = store_defaults.stores
     project_config.expectations_store_name = store_defaults.expectations_store_name
     project_config.validations_store_name = store_defaults.validations_store_name
     project_config.checkpoint_store_name = store_defaults.checkpoint_store_name
-    project_config.evaluation_parameter_store_name = (
-      store_defaults.evaluation_parameter_store_name
-    )
+    project_config.evaluation_parameter_store_name = store_defaults.evaluation_parameter_store_name
 
     ctx = BaseDataContext(project_config=project_config)
     ctx.stores[store_defaults.expectations_store_name].set(
@@ -535,38 +497,35 @@ def test_dataset_from_sql_custom_query_v3_api(test_db_file, tmpdir):
         run_name_template="the_run",
         expectation_suite_name="test_suite",
         validations=[
-          {
-            "batch_request": {
+            {
+                "batch_request": {
                     "datasource_name": "food_delivery_db",
                     "data_connector_name": "default_runtime_data_connector_name",
                     "data_asset_name": "sql_query",
-                    "batch_identifiers": {
-                        "default_identifier_name": "default_identifier"
-                    },
+                    "batch_identifiers": {"default_identifier_name": "default_identifier"},
                     "runtime_parameters": {
                         "query": custom_sql,
+                    },
+                },
+                "expectations_suite_name": "test_suite",
+                "action_list": [
+                    {
+                        "name": "openlineage",
+                        "action": {
+                            "class_name": OpenLineageValidationAction.__name__,
+                            "module_name": OpenLineageValidationAction.__module__,
+                            "do_publish": False,
+                            "job_name": "test_expectations_job",
+                        },
                     }
-                },
-            "expectations_suite_name": "test_suite",
-            "action_list": [
-              {
-                "name": "openlineage",
-                "action": {
-                  "class_name": OpenLineageValidationAction.__name__,
-                  "module_name": OpenLineageValidationAction.__module__,
-                  "do_publish": False,
-                  "job_name": "test_expectations_job",
-                },
-              }
-            ],
-          }
+                ],
+            }
         ],
     )
 
     assert len(result.run_results) == 1
     validation_id = next(iter(result.run_results))
-    ol_result = result.run_results[validation_id]["actions_results"][
-      "openlineage"]
+    ol_result = result.run_results[validation_id]["actions_results"]["openlineage"]
     assert len(ol_result["outputs"]) == 0
     assert len(ol_result["inputs"]) == 2
 
@@ -583,34 +542,32 @@ def test_dataset_from_sql_custom_query_v3_api(test_db_file, tmpdir):
     assert all(
         f in input_ds["facets"]["schema"]["fields"]
         for f in [
-          {"name": "name", "type": "TEXT"},
-          {"name": "birthdate", "type": "TEXT"},
-          {"name": "address", "type": "TEXT"},
-          {"name": "size", "type": "INTEGER"},
+            {"name": "name", "type": "TEXT"},
+            {"name": "birthdate", "type": "TEXT"},
+            {"name": "address", "type": "TEXT"},
+            {"name": "size", "type": "INTEGER"},
         ]
     )
 
     assert len(input_ds["inputFacets"]) == 3
     assert all(
         k in input_ds["inputFacets"]
-        for k in
-        ["dataQuality", "greatExpectations_assertions", "dataQualityMetrics"]
+        for k in ["dataQuality", "greatExpectations_assertions", "dataQualityMetrics"]
     )
 
-    input_ds = next(ds for ds in ol_result['inputs'] if ds["name"] == "join_table")
+    input_ds = next(ds for ds in ol_result["inputs"] if ds["name"] == "join_table")
     assert "schema" in input_ds["facets"]
     assert len(input_ds["facets"]["schema"]["fields"]) == 3
     assert all(
         f in input_ds["facets"]["schema"]["fields"]
         for f in [
-          {"name": "name", "type": "TEXT"},
-          {"name": "workplace", "type": "TEXT"},
-          {"name": "position", "type": "TEXT"},
+            {"name": "name", "type": "TEXT"},
+            {"name": "workplace", "type": "TEXT"},
+            {"name": "position", "type": "TEXT"},
         ]
     )
     assert len(input_ds["inputFacets"]) == 3
     assert all(
         k in input_ds["inputFacets"]
-        for k in
-        ["dataQuality", "greatExpectations_assertions", "dataQualityMetrics"]
+        for k in ["dataQuality", "greatExpectations_assertions", "dataQualityMetrics"]
     )

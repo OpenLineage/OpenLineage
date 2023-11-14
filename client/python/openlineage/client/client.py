@@ -7,7 +7,6 @@ import os
 from typing import TYPE_CHECKING, Any, TypeVar, Union
 
 import attr
-
 from openlineage.client.filter import Filter, create_filter
 from openlineage.client.serde import Serde
 from openlineage.client.utils import load_config

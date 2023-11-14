@@ -30,18 +30,11 @@ def test_start_pipeline_run(mock_client_emit, mock_to_utc_iso_8601):
         RunEvent(
             eventType=RunState.START,
             eventTime=event_time,
-            run=Run(
-                runId=pipeline_run_id,
-                facets={}
-            ),
-            job=Job(
-                namespace=DEFAULT_NAMESPACE_NAME,
-                name=pipeline_name,
-                facets={}
-            ),
+            run=Run(runId=pipeline_run_id, facets={}),
+            job=Job(namespace=DEFAULT_NAMESPACE_NAME, name=pipeline_name, facets={}),
             producer=PRODUCER,
             inputs=[],
-            outputs=[]
+            outputs=[],
         )
     )
 
@@ -64,18 +57,11 @@ def test_complete_pipeline_run(mock_client_emit, mock_to_utc_iso_8601):
         RunEvent(
             eventType=RunState.COMPLETE,
             eventTime=event_time,
-            run=Run(
-                runId=pipeline_run_id,
-                facets={}
-            ),
-            job=Job(
-                namespace=DEFAULT_NAMESPACE_NAME,
-                name=pipeline_name,
-                facets={}
-            ),
+            run=Run(runId=pipeline_run_id, facets={}),
+            job=Job(namespace=DEFAULT_NAMESPACE_NAME, name=pipeline_name, facets={}),
             producer=PRODUCER,
             inputs=[],
-            outputs=[]
+            outputs=[],
         )
     )
 
@@ -98,18 +84,11 @@ def test_fail_pipeline_run(mock_client_emit, mock_to_utc_iso_8601):
         RunEvent(
             eventType=RunState.FAIL,
             eventTime=event_time,
-            run=Run(
-                runId=pipeline_run_id,
-                facets={}
-            ),
-            job=Job(
-                namespace=DEFAULT_NAMESPACE_NAME,
-                name=pipeline_name,
-                facets={}
-            ),
+            run=Run(runId=pipeline_run_id, facets={}),
+            job=Job(namespace=DEFAULT_NAMESPACE_NAME, name=pipeline_name, facets={}),
             producer=PRODUCER,
             inputs=[],
-            outputs=[]
+            outputs=[],
         )
     )
 
@@ -132,17 +111,10 @@ def test_cancel_pipeline_run(mock_client_emit, mock_to_utc_iso_8601):
         RunEvent(
             eventType=RunState.ABORT,
             eventTime=event_time,
-            run=Run(
-                runId=pipeline_run_id,
-                facets={}
-            ),
-            job=Job(
-                namespace=DEFAULT_NAMESPACE_NAME,
-                name=pipeline_name,
-                facets={}
-            ),
+            run=Run(runId=pipeline_run_id, facets={}),
+            job=Job(namespace=DEFAULT_NAMESPACE_NAME, name=pipeline_name, facets={}),
             producer=PRODUCER,
             inputs=[],
-            outputs=[]
+            outputs=[],
         )
     )

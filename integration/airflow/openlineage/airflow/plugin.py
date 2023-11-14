@@ -15,16 +15,17 @@ def _is_disabled():
     try:
         # If the Airflow provider is installed, skip running the openlineage-airflow plugin.
         from airflow.providers.openlineage.plugins.openlineage import (
-            OpenLineageProviderPlugin,  # noqa: F401, I001
+            OpenLineageProviderPlugin,  # noqa: F401
         )
+
         return True
     except ImportError:
         pass
     return os.getenv("OPENLINEAGE_DISABLED", "").lower() == "true"
 
 
-if parse_version(AIRFLOW_VERSION) \
-        < parse_version("2.3.0.dev0") or _is_disabled():      # type: ignore
+if parse_version(AIRFLOW_VERSION) < parse_version("2.3.0.dev0") or _is_disabled():  # type: ignore
+
     class OpenLineagePlugin(AirflowPlugin):
         name = "OpenLineagePlugin"
         macros = [lineage_run_id, lineage_parent_id]
@@ -32,7 +33,7 @@ else:
     from openlineage.airflow import listener
 
     # Provide entrypoint airflow plugin that registers listener module
-    class OpenLineagePlugin(AirflowPlugin):     # type: ignore
+    class OpenLineagePlugin(AirflowPlugin):  # type: ignore
         name = "OpenLineagePlugin"
         listeners = [listener]
         macros = [lineage_run_id, lineage_parent_id]

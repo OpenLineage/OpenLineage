@@ -20,7 +20,7 @@ except ImportError:
 
 class Serde:
     @classmethod
-    def remove_nulls_and_enums(cls, obj: Any) -> Any:  # noqa: ANN401
+    def remove_nulls_and_enums(cls, obj: Any) -> Any:
         if isinstance(obj, Enum):
             return obj.value
         if isinstance(obj, Dict):
@@ -44,13 +44,13 @@ class Serde:
         return obj
 
     @classmethod
-    def to_dict(cls, obj: Any) -> dict[Any, Any]:  # noqa: ANN401
+    def to_dict(cls, obj: Any) -> dict[Any, Any]:
         if not isinstance(obj, dict):
             obj = attr.asdict(obj)
         return cast(Dict[Any, Any], cls.remove_nulls_and_enums(obj))
 
     @classmethod
-    def to_json(cls, obj: Any) -> str:  # noqa: ANN401
+    def to_json(cls, obj: Any) -> str:
         return json.dumps(
             cls.to_dict(obj),
             sort_keys=True,

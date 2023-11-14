@@ -6,7 +6,7 @@ import importlib
 import logging
 import os
 from collections import defaultdict
-from typing import Any, Type, cast
+from typing import Any, ClassVar, Type, cast
 
 import attr
 import yaml
@@ -40,7 +40,7 @@ def get_only_specified_fields(clazz: type[Any], params: dict[str, Any]) -> dict[
 
 
 class RedactMixin:
-    _skip_redact: list[str] = []
+    _skip_redact: ClassVar[list[str]] = []
 
     @property
     def skip_redact(self) -> list[str]:

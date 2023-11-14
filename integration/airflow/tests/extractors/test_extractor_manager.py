@@ -20,15 +20,12 @@ class FakeOperator(BaseOperator):
 
 
 class FakeExtractor(BaseExtractor):
-
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
         return ["FakeOperator"]
 
     def extract(self) -> Optional[TaskMetadata]:
-        return TaskMetadata(name="fake-name", job_facets={
-            "fake": {"executed": self.operator.executed}
-        })
+        return TaskMetadata(name="fake-name", job_facets={"fake": {"executed": self.operator.executed}})
 
     def extract_on_complete(self, task_instance) -> Optional[TaskMetadata]:
         from openlineage.client.run import Dataset
@@ -37,7 +34,7 @@ class FakeExtractor(BaseExtractor):
             name="fake-name",
             job_facets={"fake": {"executed": self.operator.executed}},
             inputs=[Dataset(namespace="example", name="ip_table")],
-            outputs=[Dataset(namespace="example", name="op_table")]
+            outputs=[Dataset(namespace="example", name="op_table")],
         )
 
 
@@ -78,8 +75,10 @@ def test_extracting_inlets_and_outlets():
     from airflow.lineage.entities import Table
 
     metadata = TaskMetadata(name="fake-name", job_facets={})
-    inlets = [Dataset(namespace="c1", name="d1.t0", facets={}),
-              Table(database="d1", cluster="c1", name="t1")]
+    inlets = [
+        Dataset(namespace="c1", name="d1.t0", facets={}),
+        Table(database="d1", cluster="c1", name="t1"),
+    ]
     outlets = [Table(database="d1", cluster="c1", name="t2")]
 
     manager = ExtractorManager()
@@ -100,8 +99,10 @@ def test_extraction_from_inlets_and_outlets_without_extractor():
 
     task = FakeOperator(
         task_id="task",
-        inlets=[Dataset(namespace="c1", name="d1.t0", facets={}),
-                Table(database="d1", cluster="c1", name="t1")],
+        inlets=[
+            Dataset(namespace="c1", name="d1.t0", facets={}),
+            Table(database="d1", cluster="c1", name="t1"),
+        ],
         outlets=[Table(database="d1", cluster="c1", name="t2")],
     )
 
@@ -127,12 +128,12 @@ def test_extraction_from_inlets_and_outlets_ignores_unhandled_types():
             Dataset(namespace="c1", name="d1.t0", facets={}),
             File(url="http://test"),
             Table(database="d1", cluster="c1", name="t1"),
-            User(email="asdf@asdf.com")
+            User(email="asdf@asdf.com"),
         ],
         outlets=[
             Table(database="d1", cluster="c1", name="t2"),
             File(url="http://test"),
-            User(email="asdf@asdf.com")
+            User(email="asdf@asdf.com"),
         ],
     )
 
@@ -152,10 +153,14 @@ def test_fake_extractor_extracts_from_inlets_and_outlets():
 
     task = FakeOperator(
         task_id="task",
-        inlets=[Dataset(namespace="c1", name="d1.t0", facets={}),
-                Table(database="d1", cluster="c1", name="t1")],
-        outlets=[Table(database="d1", cluster="c1", name="t2"),
-                 Dataset(namespace="c1", name="d1.t3", facets={})],
+        inlets=[
+            Dataset(namespace="c1", name="d1.t0", facets={}),
+            Table(database="d1", cluster="c1", name="t1"),
+        ],
+        outlets=[
+            Table(database="d1", cluster="c1", name="t2"),
+            Dataset(namespace="c1", name="d1.t3", facets={}),
+        ],
     )
 
     manager = ExtractorManager()
@@ -182,8 +187,10 @@ def test_fake_extractor_extracts_and_discards_inlets_and_outlets():
 
     task = FakeOperator(
         task_id="task",
-        inlets=[Dataset(namespace="c1", name="d1.t0", facets={}),
-                Table(database="d1", cluster="c1", name="t1")],
+        inlets=[
+            Dataset(namespace="c1", name="d1.t0", facets={}),
+            Table(database="d1", cluster="c1", name="t1"),
+        ],
         outlets=[Table(database="d1", cluster="c1", name="t2")],
     )
 

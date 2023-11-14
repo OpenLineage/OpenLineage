@@ -16,20 +16,16 @@ class Backend:
     def __init__(self):
         from openlineage.airflow.adapter import OpenLineageAdapter
         from openlineage.airflow.extractors.manager import ExtractorManager
+
         self.extractor_manager = ExtractorManager()
         self.adapter = OpenLineageAdapter()
+
     """
     Send OpenLineage events to lineage backend via airflow's LineageBackend mechanism.
     The start and complete events are send when task instance completes.
     """
 
-    def send_lineage(
-            self,
-            operator=None,
-            inlets=None,
-            outlets=None,
-            context=None
-    ):
+    def send_lineage(self, operator=None, inlets=None, outlets=None, context=None):
         """
         Send_lineage ignores manually provided inlets and outlets. The data collection mechanism
         is automatic, and bases on the passed context.
@@ -43,19 +39,17 @@ class Backend:
             get_job_name,
             get_task_location,
         )
-        dag = context['dag']
-        dagrun = context['dag_run']
-        task_instance = context['task_instance']
+
+        dag = context["dag"]
+        dagrun = context["dag_run"]
+        task_instance = context["task_instance"]
         dag_run_id = self.adapter.build_dag_run_id(dag.dag_id, dagrun.run_id)
 
         run_id = str(uuid.uuid4())
         job_name = get_job_name(operator)
 
         task_metadata = self.extractor_manager.extract_metadata(
-            dagrun=dagrun,
-            task=operator,
-            complete=True,
-            task_instance=task_instance
+            dagrun=dagrun, task=operator, complete=True, task_instance=task_instance
         )
 
         task_uuid = OpenLineageAdapter.build_task_instance_run_id(
@@ -73,13 +67,13 @@ class Backend:
             code_location=get_task_location(operator),
             nominal_start_time=DagUtils.get_start_time(start),
             nominal_end_time=DagUtils.to_iso_8601(end),
-            owners=dag.owner.split(', '),
+            owners=dag.owner.split(", "),
             task=task_metadata,
             run_facets={
                 **task_metadata.run_facets,
                 **get_custom_facets(dagrun, operator, dagrun.external_trigger),
-                **get_airflow_run_facet(dagrun, dag, task_instance, operator, task_uuid)
-            }
+                **get_airflow_run_facet(dagrun, dag, task_instance, operator, task_uuid),
+            },
         )
 
         self.adapter.complete_task(
@@ -102,10 +96,10 @@ class OpenLineageBackend(LineageBackend):
     def send_lineage(cls, *args, **kwargs):
         # Do not use LineageBackend approach when we can use plugins
         if parse_version(AIRFLOW_VERSION) >= parse_version("2.3.0.dev0"):
-            return
+            return None
         # Make this method a noop if OPENLINEAGE_DISABLED is set to true
         if os.getenv("OPENLINEAGE_DISABLED", "").lower() == "true":
-            return
+            return None
         if not cls.backend:
             cls.backend = Backend()
         return cls.backend.send_lineage(*args, **kwargs)

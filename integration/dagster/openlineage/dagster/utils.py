@@ -28,10 +28,10 @@ def make_step_job_name(pipeline_name: str, step_key: str) -> str:
 
 
 def get_event_log_records(
-        instance: DagsterInstance,
-        event_type: Union[DagsterEventType, Set[DagsterEventType]],
-        last_storage_id: int,
-        record_filter_limit: int
+    instance: DagsterInstance,
+    event_type: Union[DagsterEventType, Set[DagsterEventType]],
+    last_storage_id: int,
+    record_filter_limit: int,
 ) -> Iterable[EventLogRecord]:
     """Returns a list of Dagster event log records in ascending order
     from the instance's event log storage.
@@ -51,10 +51,7 @@ def get_event_log_records(
     return sorted(event_records, key=lambda record: record.event_log_entry.timestamp)
 
 
-def get_repository_name(
-        instance: DagsterInstance,
-        pipeline_run_id: str
-) -> Optional[str]:
+def get_repository_name(instance: DagsterInstance, pipeline_run_id: str) -> Optional[str]:
     """Returns an optional repository name
     :param instance: active instance to get the pipeline run
     :param pipeline_run_id: run id to look up its run

@@ -14,14 +14,15 @@ class TimeDeltaCustomAsync(TimeDeltaSensorAsync):
         # fail on purpose
         raise Exception
 
+
 @dag(
     schedule_interval="@once",
     start_date=days_ago(7),
     catchup=False,
 )
 def async_dag():
-    working_operator = TimeDeltaSensorAsync(task_id='timedelta_sensor', delta=timedelta(seconds=10))
-    failing_operator = TimeDeltaCustomAsync(task_id='failing_sensor', delta=timedelta(seconds=10))
+    working_operator = TimeDeltaSensorAsync(task_id="timedelta_sensor", delta=timedelta(seconds=10))
+    failing_operator = TimeDeltaCustomAsync(task_id="failing_sensor", delta=timedelta(seconds=10))
     working_operator >> failing_operator
 
 

@@ -13,7 +13,10 @@ from openlineage.airflow.extractors.s3_extractor import (
 from openlineage.client.run import Dataset
 
 from airflow.models import DAG
-from airflow.providers.amazon.aws.operators.s3 import S3CopyObjectOperator, S3FileTransformOperator
+from airflow.providers.amazon.aws.operators.s3 import (
+    S3CopyObjectOperator,
+    S3FileTransformOperator,
+)
 from airflow.utils import timezone
 
 log = logging.getLogger(__name__)
@@ -32,14 +35,14 @@ class TestS3CopyObjectExtractor(TestCase):
                 Dataset(
                     namespace="s3://source-bucket",
                     name="s3://source-bucket/path/to/source_file.csv",
-                    facets={}
+                    facets={},
                 )
             ],
             outputs=[
                 Dataset(
                     namespace="s3://destination-bucket",
                     name="s3://destination-bucket/path/to/destination_file.csv",
-                    facets={}
+                    facets={},
                 )
             ],
         )
@@ -74,14 +77,14 @@ class TestS3FileTransformExtractor(TestCase):
                 Dataset(
                     namespace="s3://source-bucket",
                     name="s3://source-bucket/path/to/source_file.csv",
-                    facets={}
+                    facets={},
                 )
             ],
             outputs=[
                 Dataset(
                     namespace="s3://destination-bucket",
                     name="s3://destination-bucket/path/to/destination_file.csv",
-                    facets={}
+                    facets={},
                 )
             ],
         )
@@ -105,5 +108,5 @@ class TestS3FileTransformExtractor(TestCase):
         return task
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

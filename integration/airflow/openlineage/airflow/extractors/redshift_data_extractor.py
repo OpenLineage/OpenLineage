@@ -24,17 +24,13 @@ class RedshiftDataExtractor(BaseExtractor):
 
         self.log.debug(f"Sending SQL to parser: {self.operator.sql}")
         sql_meta: Optional[SqlMeta] = parse(
-            self.operator.sql,
-            dialect=self.dialect,
-            default_schema=self.default_schema
+            self.operator.sql, dialect=self.dialect, default_schema=self.default_schema
         )
         self.log.debug(f"Got meta {sql_meta}")
         try:
             redshift_job_id = self._get_xcom_redshift_job_id(task_instance)
             if redshift_job_id is None:
-                raise Exception(
-                    "Xcom could not resolve Redshift job id. Job may have failed."
-                )
+                raise Exception("Xcom could not resolve Redshift job id. Job may have failed.")
         except Exception as e:
             self.log.error(f"Cannot retrieve job details from {e}", exc_info=True)
             return TaskMetadata(
@@ -53,13 +49,9 @@ class RedshiftDataExtractor(BaseExtractor):
             "region",
         ]
 
-        connection_details = {
-            detail: getattr(self.operator, detail) for detail in redshift_details
-        }
+        connection_details = {detail: getattr(self.operator, detail) for detail in redshift_details}
 
-        stats = RedshiftDataDatasetsProvider(
-            client=client, connection_details=connection_details
-        ).get_facets(
+        stats = RedshiftDataDatasetsProvider(client=client, connection_details=connection_details).get_facets(
             job_id=redshift_job_id,
             inputs=sql_meta.in_tables if sql_meta else [],
             outputs=sql_meta.out_tables if sql_meta else [],

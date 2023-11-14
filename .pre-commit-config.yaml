@@ -38,17 +38,16 @@ repos:
       - id: trailing-whitespace
         files: ^client/python/
         exclude: ^.*\.cfg$
-  - repo: https://github.com/psf/black
-    rev: 23.3.0
-    hooks:
-      - id: black
-        files: ^client/python/
-  - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: "v0.0.269"
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.5
     hooks:
       - id: ruff
-        files: ^client/python/
-        args: [--fix, --exit-non-zero-on-fix]
+        name: ruff-lint
+        args: [--fix]
+        files: ^client/python/|^dev/|^integration/airflow/|^integration/common/|^integration/dagster/|^integration/dbt/|^integration/spark/|^integration/sql/
+      - id: ruff-format
+        name: ruff-format
+        files: ^client/python/|^dev/|^integration/airflow/|^integration/common/|^integration/dagster/|^integration/dbt/|^integration/spark/|^integration/sql/
   - repo: https://github.com/Lucas-C/pre-commit-hooks
     rev: v1.5.1
     hooks:

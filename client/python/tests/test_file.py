@@ -81,9 +81,7 @@ def test_client_with_file_transport_write_emits() -> None:
 
     test_event_set = emit_test_events(client, 0.01)
 
-    log_files = [
-        join(log_dir.name, f) for f in listdir(log_dir.name) if isfile(join(log_dir.name, f))
-    ]
+    log_files = [join(log_dir.name, f) for f in listdir(log_dir.name) if isfile(join(log_dir.name, f))]
     log_files.sort()
 
     for i, log_file in enumerate(log_files):

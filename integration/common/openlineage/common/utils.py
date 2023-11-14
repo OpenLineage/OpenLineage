@@ -51,7 +51,7 @@ def parse_single_arg(args, keys: List[str], default=None) -> Optional[str]:
     for key in keys:
         for i, arg in enumerate(args):
             if arg == key and len(args) > i:
-                return args[i+1]
+                return args[i + 1]
             if arg.startswith(f"{key}="):
                 return arg.split("=", 1)[1]
     return default

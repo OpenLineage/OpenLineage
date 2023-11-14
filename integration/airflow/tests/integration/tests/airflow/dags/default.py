@@ -15,9 +15,7 @@ from airflow.utils.dates import days_ago
 INPUTS = [Dataset(namespace="database://host:port", name="inputtable")]
 OUTPUTS = [Dataset(namespace="database://host:port", name="inputtable")]
 RUN_FACETS = {
-    "parent": ParentRunFacet.create(
-        "3bb703d1-09c1-4a42-8da5-35a0b3216072", "namespace", "parentjob"
-    )
+    "parent": ParentRunFacet.create("3bb703d1-09c1-4a42-8da5-35a0b3216072", "namespace", "parentjob")
 }
 JOB_FACETS = {"sql": SqlJobFacet(query="SELECT * FROM inputtable")}
 

@@ -13,22 +13,22 @@ set_producer(_PRODUCER)
 
 
 default_args = {
-    'owner': 'datascience',
-    'depends_on_past': False,
-    'start_date': days_ago(7),
-    'email_on_failure': False,
-    'email_on_retry': False,
-    'email': ['datascience@example.com']
+    "owner": "datascience",
+    "depends_on_past": False,
+    "start_date": days_ago(7),
+    "email_on_failure": False,
+    "email_on_retry": False,
+    "email": ["datascience@example.com"],
 }
 
 
 # wait_dag has schedule request @once, to serve as marker whether Airflow is up and running
 # and we can schedule additional dags
 dag = DAG(
-    'wait_dag',
-    schedule_interval='@once',
+    "wait_dag",
+    schedule_interval="@once",
     default_args=default_args,
-    description='Test dag.'
+    description="Test dag.",
 )
 
 

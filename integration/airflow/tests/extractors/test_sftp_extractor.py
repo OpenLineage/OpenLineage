@@ -18,9 +18,7 @@ from airflow.providers.ssh.hooks.ssh import SSHHook
 from airflow.providers_manager import ProvidersManager
 from airflow.utils import timezone
 
-SFTP_PROVIDER_VERSION = parse_version(
-    ProvidersManager().providers["apache-airflow-providers-sftp"].version
-)
+SFTP_PROVIDER_VERSION = parse_version(ProvidersManager().providers["apache-airflow-providers-sftp"].version)
 
 SFTPOperator = try_import_from_string("airflow.providers.sftp.operators.sftp.SFTPOperator")
 
@@ -30,8 +28,9 @@ LOCAL_FILEPATH = "/path/to/local"
 LOCAL_HOST = socket.gethostbyname(socket.gethostname())
 LOCAL_AUTHORITY = f"{LOCAL_HOST}:{paramiko.config.SSH_PORT}"
 LOCAL_SOURCE = Source(
-    scheme=SCHEME, authority=LOCAL_AUTHORITY,
-    connection_url=f"{SCHEME}://{LOCAL_AUTHORITY}{LOCAL_FILEPATH}"
+    scheme=SCHEME,
+    authority=LOCAL_AUTHORITY,
+    connection_url=f"{SCHEME}://{LOCAL_AUTHORITY}{LOCAL_FILEPATH}",
 )
 LOCAL_DATASET = [Dataset(source=LOCAL_SOURCE, name=LOCAL_FILEPATH).to_openlineage_dataset()]
 
@@ -40,26 +39,30 @@ REMOTE_HOST = "remotehost"
 REMOTE_PORT = 22
 REMOTE_AUTHORITY = f"{REMOTE_HOST}:{REMOTE_PORT}"
 REMOTE_SOURCE = Source(
-    scheme=SCHEME, authority=REMOTE_AUTHORITY,
-    connection_url=f"{SCHEME}://{REMOTE_AUTHORITY}{REMOTE_FILEPATH}"
+    scheme=SCHEME,
+    authority=REMOTE_AUTHORITY,
+    connection_url=f"{SCHEME}://{REMOTE_AUTHORITY}{REMOTE_FILEPATH}",
 )
 REMOTE_DATASET = [Dataset(source=REMOTE_SOURCE, name=REMOTE_FILEPATH).to_openlineage_dataset()]
 
 CONN_ID = "sftp_default"
 CONN = Connection(
     conn_id=CONN_ID,
-    conn_type='sftp',
+    conn_type="sftp",
     host=REMOTE_HOST,
     port=REMOTE_PORT,
 )
 
 
-@pytest.mark.parametrize("operation, expected", [
-    (SFTPOperation.GET, (REMOTE_DATASET, LOCAL_DATASET)),
-    (SFTPOperation.PUT, (LOCAL_DATASET, REMOTE_DATASET)),
-])
-@mock.patch('airflow.providers.ssh.hooks.ssh.SSHHook.get_conn', spec=paramiko.SSHClient)
-@mock.patch('airflow.providers.ssh.hooks.ssh.SSHHook.get_connection', spec=Connection)
+@pytest.mark.parametrize(
+    "operation, expected",
+    [
+        (SFTPOperation.GET, (REMOTE_DATASET, LOCAL_DATASET)),
+        (SFTPOperation.PUT, (LOCAL_DATASET, REMOTE_DATASET)),
+    ],
+)
+@mock.patch("airflow.providers.ssh.hooks.ssh.SSHHook.get_conn", spec=paramiko.SSHClient)
+@mock.patch("airflow.providers.ssh.hooks.ssh.SSHHook.get_connection", spec=Connection)
 def test_extract_ssh_conn_id(get_connection, get_conn, operation, expected):
     get_connection.return_value = CONN
 
@@ -83,15 +86,18 @@ def test_extract_ssh_conn_id(get_connection, get_conn, operation, expected):
 
 
 @pytest.mark.skipif(
-    SFTP_PROVIDER_VERSION < parse_version("4.0.0"),
-    reason="SFTPOperator doesn't support sftp_hook as a constructor parameter in this version."
+    parse_version("4.0.0") > SFTP_PROVIDER_VERSION,
+    reason="SFTPOperator doesn't support sftp_hook as a constructor parameter in this version.",
 )
-@pytest.mark.parametrize("operation, expected", [
-    (SFTPOperation.GET, (REMOTE_DATASET, LOCAL_DATASET)),
-    (SFTPOperation.PUT, (LOCAL_DATASET, REMOTE_DATASET)),
-])
-@mock.patch('airflow.providers.ssh.hooks.ssh.SSHHook.get_conn', spec=paramiko.SSHClient)
-@mock.patch('airflow.providers.ssh.hooks.ssh.SSHHook.get_connection', spec=Connection)
+@pytest.mark.parametrize(
+    "operation, expected",
+    [
+        (SFTPOperation.GET, (REMOTE_DATASET, LOCAL_DATASET)),
+        (SFTPOperation.PUT, (LOCAL_DATASET, REMOTE_DATASET)),
+    ],
+)
+@mock.patch("airflow.providers.ssh.hooks.ssh.SSHHook.get_conn", spec=paramiko.SSHClient)
+@mock.patch("airflow.providers.ssh.hooks.ssh.SSHHook.get_connection", spec=Connection)
 def test_extract_sftp_hook(get_connection, get_conn, operation, expected):
     get_connection.return_value = CONN
 
@@ -114,12 +120,15 @@ def test_extract_sftp_hook(get_connection, get_conn, operation, expected):
     assert task_metadata.outputs == expected[1]
 
 
-@pytest.mark.parametrize("operation, expected", [
-    (SFTPOperation.GET, (REMOTE_DATASET, LOCAL_DATASET)),
-    (SFTPOperation.PUT, (LOCAL_DATASET, REMOTE_DATASET)),
-])
-@mock.patch('airflow.providers.ssh.hooks.ssh.SSHHook.get_conn', spec=paramiko.SSHClient)
-@mock.patch('airflow.providers.ssh.hooks.ssh.SSHHook.get_connection', spec=Connection)
+@pytest.mark.parametrize(
+    "operation, expected",
+    [
+        (SFTPOperation.GET, (REMOTE_DATASET, LOCAL_DATASET)),
+        (SFTPOperation.PUT, (LOCAL_DATASET, REMOTE_DATASET)),
+    ],
+)
+@mock.patch("airflow.providers.ssh.hooks.ssh.SSHHook.get_conn", spec=paramiko.SSHClient)
+@mock.patch("airflow.providers.ssh.hooks.ssh.SSHHook.get_connection", spec=Connection)
 def test_extract_ssh_hook(get_connection, get_conn, operation, expected):
     get_connection.return_value = CONN
 

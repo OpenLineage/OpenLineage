@@ -70,6 +70,8 @@ class SqlMeta:
     errors: list[ExtractionError]
 
 def parse(
-    sql: list[str], dialect: str | None = None, default_schema: str | None = None
+    sql: list[str],
+    dialect: str | None = None,
+    default_schema: str | None = None,
 ) -> SqlMeta: ...
 def provider() -> str: ...
