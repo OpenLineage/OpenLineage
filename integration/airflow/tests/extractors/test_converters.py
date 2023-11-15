@@ -1,5 +1,6 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
+
 import pytest
 from openlineage.airflow.extractors.converters import convert_to_dataset
 from openlineage.client.facet import SchemaDatasetFacet, SchemaField

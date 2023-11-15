@@ -1,7 +1,6 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-
 import pytest
 from openlineage.client import set_producer
 from openlineage.common.provider.dbt.processor import (
