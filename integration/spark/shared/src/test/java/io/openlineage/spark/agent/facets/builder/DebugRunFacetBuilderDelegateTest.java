@@ -2,6 +2,7 @@
 /* Copyright 2018-2023 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
+
 package io.openlineage.spark.agent.facets.builder;
 
 import static org.assertj.core.api.Assertions.assertThat;
