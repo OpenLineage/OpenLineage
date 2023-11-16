@@ -6,8 +6,8 @@ use crate::lineage::*;
 
 use anyhow::{anyhow, Result};
 use sqlparser::ast::{
-    AlterTableOperation, Expr, Function, FunctionArg, FunctionArgExpr, ListAggOnOverflow, Query,
-    Select, SelectItem, SetExpr, Statement, Table, TableFactor, WindowSpec, With,
+    AlterTableOperation, Expr, Function, FunctionArg, FunctionArgExpr, Ident, ListAggOnOverflow,
+    Query, Select, SelectItem, SetExpr, Statement, Table, TableFactor, WindowSpec, With,
 };
 
 pub trait Visit {
@@ -19,14 +19,14 @@ impl Visit for With {
         for cte in &self.cte_tables {
             context.add_table_alias(
                 DbTableMeta::new_default_dialect("".to_string()),
-                cte.alias.name.value.clone(),
+                vec![cte.alias.name.clone()],
             );
             context.push_frame();
             cte.query.visit(context)?;
             let frame = context.pop_frame();
             if let Some(f) = frame {
                 let table = DbTableMeta::new(
-                    cte.alias.name.value.clone(),
+                    vec![cte.alias.name.clone()],
                     context.dialect(),
                     context.default_schema().clone(),
                 );
@@ -42,28 +42,28 @@ impl Visit for TableFactor {
         match self {
             TableFactor::Table { name, alias, .. } => {
                 let table = DbTableMeta::new(
-                    name.to_string(),
+                    name.clone().0,
                     context.dialect(),
                     context.default_schema().clone(),
                 );
                 if let Some(alias) = alias {
-                    context.add_table_alias(table, alias.name.value.clone());
+                    context.add_table_alias(table, vec![alias.name.clone()]);
                 }
-                context.add_input(name.to_string());
+                context.add_input(name.clone().0);
                 Ok(())
             }
             TableFactor::Pivot {
                 name, pivot_alias, ..
             } => {
                 let table = DbTableMeta::new(
-                    name.to_string(),
+                    name.clone().0,
                     context.dialect(),
                     context.default_schema().clone(),
                 );
                 if let Some(pivot_alias) = pivot_alias {
-                    context.add_table_alias(table, pivot_alias.name.value.clone());
+                    context.add_table_alias(table, vec![pivot_alias.clone().name]);
                 }
-                context.add_input(name.to_string());
+                context.add_input(name.clone().0);
                 Ok(())
             }
             TableFactor::Derived {
@@ -77,7 +77,7 @@ impl Visit for TableFactor {
 
                 if let Some(alias) = alias {
                     let table = DbTableMeta::new(
-                        alias.name.value.clone(),
+                        vec![alias.clone().name],
                         context.dialect(),
                         context.default_schema().clone(),
                     );
@@ -162,14 +162,8 @@ impl Visit for Expr {
                 if context_set {
                     let descendant = context.column_context().as_ref().unwrap().name.clone();
                     let ancestor = ids.last().unwrap().value.clone();
-                    let prefix = ids
-                        .iter()
-                        .take(ids.len() - 1)
-                        .map(|i| i.value.clone())
-                        .collect::<Vec<String>>()
-                        .join(".");
                     let table = DbTableMeta::new(
-                        prefix,
+                        ids.iter().take(ids.len() - 1).cloned().collect(),
                         context.dialect(),
                         context.default_schema().clone(),
                     );
@@ -411,12 +405,12 @@ impl Visit for Select {
             let t = self.from.first().unwrap();
             if let TableFactor::Table { name, alias, .. } = &t.relation {
                 let table = DbTableMeta::new(
-                    name.to_string(),
+                    name.clone().0,
                     context.dialect(),
                     context.default_schema().clone(),
                 );
                 if let Some(alias) = alias {
-                    context.add_table_alias(table.clone(), alias.name.value.clone());
+                    context.add_table_alias(table.clone(), vec![alias.clone().name]);
                 }
                 context.set_table_context(Some(table));
             }
@@ -467,7 +461,7 @@ impl Visit for Select {
         context.set_column_context(None);
 
         if let Some(into) = &self.into {
-            context.add_output(into.name.to_string())
+            context.add_output(into.name.clone().0)
         }
 
         context.set_table_context(None);
@@ -531,7 +525,7 @@ impl Visit for Statement {
                 table_name, source, ..
             } => {
                 source.visit(context)?;
-                context.add_output(table_name.to_string());
+                context.add_output(table_name.clone().0);
             }
             Statement::Merge { table, source, .. } => {
                 let table_name = get_table_name_from_table_factor(table)?;
@@ -549,29 +543,29 @@ impl Visit for Statement {
                     query.visit(context)?;
                 }
                 if let Some(like_table) = like {
-                    context.add_input(like_table.to_string());
+                    context.add_input(like_table.clone().0);
                 }
                 if let Some(clone) = clone {
-                    context.add_input(clone.to_string());
+                    context.add_input(clone.clone().0);
                 }
 
-                context.add_output(name.to_string());
+                context.add_output(name.clone().0);
             }
             Statement::CreateView { name, query, .. } => {
                 query.visit(context)?;
-                context.add_output(name.to_string());
+                context.add_output(name.clone().0);
             }
             Statement::CreateStage {
                 name, stage_params, ..
             } => {
                 if stage_params.url.as_ref().is_some() {
                     context.add_non_table_input(
-                        stage_params.url.as_ref().unwrap().to_string(),
+                        vec![Ident::new(stage_params.url.as_ref().unwrap().to_string())],
                         true,
                         true,
                     );
                 }
-                context.add_non_table_output(name.to_string(), false, true);
+                context.add_non_table_output(name.clone().0, false, true);
             }
             Statement::Update {
                 table,
@@ -597,17 +591,17 @@ impl Visit for Statement {
                 match operation {
                     AlterTableOperation::SwapWith { table_name } => {
                         // both table names are inputs and outputs of the swap operation
-                        context.add_input(table_name.to_string());
-                        context.add_input(name.to_string());
+                        context.add_input(table_name.clone().0);
+                        context.add_input(name.clone().0);
 
-                        context.add_output(table_name.to_string());
-                        context.add_output(name.to_string());
+                        context.add_output(table_name.clone().0);
+                        context.add_output(name.clone().0);
                     }
                     AlterTableOperation::RenameTable { table_name } => {
-                        context.add_input(name.to_string());
-                        context.add_output(table_name.to_string());
+                        context.add_input(name.clone().0);
+                        context.add_output(table_name.clone().0);
                     }
-                    _ => context.add_output(name.to_string()),
+                    _ => context.add_output(name.clone().0),
                 }
             }
             Statement::Delete {
@@ -627,28 +621,28 @@ impl Visit for Statement {
                     expr.visit(context)?;
                 }
             }
-            Statement::Truncate { table_name, .. } => context.add_output(table_name.to_string()),
+            Statement::Truncate { table_name, .. } => context.add_output(table_name.clone().0),
             Statement::Drop { names, .. } => {
                 for name in names {
-                    context.add_output(name.to_string())
+                    context.add_output(name.clone().0)
                 }
             }
             Statement::CopyIntoSnowflake {
                 into, from_stage, ..
             } => {
-                context.add_output(into.to_string());
+                context.add_output(into.clone().0);
                 if from_stage.to_string().contains("gcs://")
                     || from_stage.to_string().contains("s3://")
                     || from_stage.to_string().contains("azure://")
                 {
                     context.add_non_table_input(
-                        from_stage.to_string().replace(['\"', '\''], ""), // just unquoted location URL with,
+                        vec![Ident::new(from_stage.to_string().replace(['\"', '\''], ""))], // just unquoted location URL with,
                         true,
                         true,
                     );
                 } else {
                     // Stage
-                    context.add_non_table_input(from_stage.to_string(), true, true);
+                    context.add_non_table_input(from_stage.clone().0, true, true);
                 };
             }
             _ => {}
@@ -664,7 +658,7 @@ impl Visit for Statement {
 impl Visit for Table {
     fn visit(&self, context: &mut Context) -> Result<()> {
         if let Some(name) = &self.table_name {
-            context.add_input(name.clone())
+            context.add_input(vec![Ident::new(name.to_string())])
         }
         Ok(())
     }
@@ -672,9 +666,9 @@ impl Visit for Table {
 
 // --- Utils ---
 
-fn get_table_name_from_table_factor(table: &TableFactor) -> Result<String> {
+fn get_table_name_from_table_factor(table: &TableFactor) -> Result<Vec<Ident>> {
     if let TableFactor::Table { name, .. } = table {
-        Ok(name.to_string())
+        Ok(name.clone().0)
     } else {
         Err(anyhow!(
             "Name can be got only from simple table, got {table}"

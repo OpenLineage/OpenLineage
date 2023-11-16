@@ -21,9 +21,19 @@ impl AliasTable {
         self.table_aliases.insert(alias, table);
     }
 
+    pub fn get_table_from_alias(&self, alias: String) -> Option<&DbTableMeta> {
+        self.table_aliases.iter().find_map(|entry| {
+            if entry.0.qualified_name() == alias {
+                Some(entry.1)
+            } else {
+                None
+            }
+        })
+    }
+
     pub fn resolve_table<'a>(&'a self, name: &'a DbTableMeta) -> &'a DbTableMeta {
         let mut current = name;
-        while let Some(next) = self.table_aliases.get(current) {
+        while let Some(next) = self.get_table_from_alias(current.qualified_name()) {
             current = next;
         }
         current

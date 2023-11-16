@@ -1,7 +1,5 @@
 use crate::test_utils::*;
-use openlineage_sql::{
-    ColumnLineage, ColumnMeta, DbTableMeta, ExtractionError, SqlMeta, TableLineage,
-};
+use openlineage_sql::{ColumnLineage, ColumnMeta, ExtractionError, SqlMeta, TableLineage};
 
 #[test]
 fn test_failing_statement_with_insert() {
@@ -23,7 +21,7 @@ fn test_failing_statement_with_insert() {
                     name: "key".to_string()
                 },
                 lineage: vec![ColumnMeta {
-                    origin: Some(DbTableMeta::new_default_dialect("temp.table".to_string())),
+                    origin: Some(table("temp.table")),
                     name: "key".to_string(),
                 }],
             }],

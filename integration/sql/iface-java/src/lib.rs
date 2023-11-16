@@ -82,13 +82,44 @@ impl AsJavaObject for rust_impl::SqlMeta {
     }
 }
 
+impl AsJavaObject for rust_impl::QuoteStyle {
+    fn java_class_name() -> &'static str {
+        "io/openlineage/sql/QuoteStyle"
+    }
+
+    fn ctor_signature() -> &'static str {
+        "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V"
+    }
+
+    fn ctor_arguments<'a>(&self, env: &'a JNIEnv) -> Result<Box<[JValue<'a>]>> {
+        let arg1 = match &self.database {
+            Some(n) => env.new_string(n.to_string())?.into(),
+            None => JObject::null(),
+        };
+        let arg2 = match &self.schema {
+            Some(n) => env.new_string(n.to_string())?.into(),
+            None => JObject::null(),
+        };
+        let arg3 = match &self.name {
+            Some(n) => env.new_string(n.to_string())?.into(),
+            None => JObject::null(),
+        };
+
+        Ok(Box::new([
+            JValue::Object(arg1),
+            JValue::Object(arg2),
+            JValue::Object(arg3),
+        ]))
+    }
+}
+
 impl AsJavaObject for rust_impl::DbTableMeta {
     fn java_class_name() -> &'static str {
         "io/openlineage/sql/DbTableMeta"
     }
 
     fn ctor_signature() -> &'static str {
-        "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V"
+        "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lio/openlineage/sql/QuoteStyle;)V"
     }
 
     fn ctor_arguments<'a>(&self, env: &'a JNIEnv) -> Result<Box<[JValue<'a>]>> {
@@ -102,10 +133,16 @@ impl AsJavaObject for rust_impl::DbTableMeta {
         };
         let arg3 = env.new_string(&self.name)?.into();
 
+        let arg4 = match &self.quote_style {
+            Some(q) => q.as_java_object(env).unwrap(),
+            None => JObject::null(),
+        };
+
         Ok(Box::new([
             JValue::Object(arg1),
             JValue::Object(arg2),
             JValue::Object(arg3),
+            JValue::Object(arg4),
         ]))
     }
 }

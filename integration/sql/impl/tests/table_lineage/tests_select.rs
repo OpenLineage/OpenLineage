@@ -98,7 +98,7 @@ fn select_bigquery_excaping() {
         .unwrap()
         .table_lineage,
         TableLineage {
-            in_tables: tables(vec!["random-project.dbt_test1.source_table"]),
+            in_tables: tables(vec!["`random-project`.`dbt_test1`.`source_table`"]),
             out_tables: vec![]
         }
     )
@@ -124,7 +124,7 @@ fn select_redshift() {
             .unwrap()
             .table_lineage,
         TableLineage {
-            in_tables: tables(vec!["test_schema.test_table"]),
+            in_tables: tables(vec!["[test_schema].[test_table]"]),
             out_tables: vec![]
         }
     )

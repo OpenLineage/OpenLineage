@@ -77,7 +77,7 @@ pub fn parse_sql(
 
 #[cfg(test)]
 mod tests {
-    use crate::DbTableMeta;
+    use crate::{DbTableMeta, QuoteStyle};
 
     #[test]
     fn compare_db_meta() {
@@ -88,6 +88,11 @@ mod tests {
                 name: "discount".to_string(),
                 provided_namespace: false,
                 provided_field_schema: false,
+                quote_style: Some(QuoteStyle {
+                    database: None,
+                    schema: None,
+                    name: Some('"')
+                })
             },
             DbTableMeta {
                 database: None,
@@ -95,6 +100,11 @@ mod tests {
                 name: "discount".to_string(),
                 provided_namespace: false,
                 provided_field_schema: false,
+                quote_style: Some(QuoteStyle {
+                    database: None,
+                    schema: None,
+                    name: Some('"')
+                })
             }
         );
     }

@@ -14,7 +14,61 @@ use rust_impl::{get_generic_dialect, parse_multiple_statements};
 
 #[pyclass]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
+pub struct QuoteStyle(rust_impl::QuoteStyle);
+
+#[pymethods]
+impl QuoteStyle {
+    #[new]
+    pub fn py_new(database: Option<char>, schema: Option<char>, name: Option<char>) -> Self {
+        QuoteStyle(rust_impl::QuoteStyle {
+            database,
+            schema,
+            name,
+        })
+    }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "{{\"database\": {:?}, \"schema\": {:?}, \"name\": {:?}}}",
+            self.0.database, self.0.schema, self.0.name
+        )
+    }
+
+    fn __str__(&self) -> String {
+        self.__repr__()
+    }
+
+    #[getter(database)]
+    pub fn database(&self) -> Option<char> {
+        self.0.database
+    }
+
+    #[getter(schema)]
+    pub fn schema(&self) -> Option<char> {
+        self.0.schema
+    }
+
+    #[getter(name)]
+    pub fn name(&self) -> Option<char> {
+        self.0.name
+    }
+}
+
+#[pyclass]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct DbTableMeta(rust_impl::DbTableMeta);
+
+#[pyclass]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
+pub struct Ident(rust_impl::ident_wrapper::IdentWrapper);
+
+impl Ident {
+    fn __hash__(&self) -> isize {
+        let mut hasher = DefaultHasher::new();
+        self.hash(&mut hasher);
+        hasher.finish() as isize
+    }
+}
 
 #[pymethods]
 impl DbTableMeta {
@@ -51,6 +105,17 @@ impl DbTableMeta {
     #[getter(name)]
     pub fn name(&self) -> &str {
         &self.0.name
+    }
+
+    #[getter(quote_style)]
+    pub fn quote_style(&self) -> Option<QuoteStyle> {
+        self.0.quote_style.as_ref().map(|inner_quotes| {
+            QuoteStyle::py_new(
+                inner_quotes.database,
+                inner_quotes.schema,
+                inner_quotes.name,
+            )
+        })
     }
 
     fn __richcmp__(&self, other: &Self, op: CompareOp) -> PyResult<bool> {
@@ -350,6 +415,7 @@ fn openlineage_sql(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(provider, m)?)?;
     m.add_class::<SqlMeta>()?;
     m.add_class::<DbTableMeta>()?;
+    m.add_class::<QuoteStyle>()?;
     m.add_class::<ColumnLineage>()?;
     m.add_class::<ColumnMeta>()?;
     m.add_class::<ExtractionError>()?;
@@ -358,7 +424,13 @@ fn openlineage_sql(_py: Python, m: &PyModule) -> PyResult<()> {
 
 #[allow(dead_code)]
 fn pytable(x: &str) -> DbTableMeta {
-    DbTableMeta(rust_impl::DbTableMeta::new_default_dialect(String::from(x)))
+    DbTableMeta(
+        rust_impl::DbTableMeta::new_default_dialect_with_namespace_and_schema(
+            String::from(x),
+            false,
+            false,
+        ),
+    )
 }
 
 #[allow(dead_code)]
@@ -370,9 +442,13 @@ fn pycolumn(column: &str) -> ColumnMeta {
 fn pycolumn_with_origin(column: &str, table: &str) -> ColumnMeta {
     ColumnMeta(rust_impl::ColumnMeta::new(
         String::from(column),
-        Some(rust_impl::DbTableMeta::new_default_dialect(String::from(
-            table,
-        ))),
+        Some(
+            rust_impl::DbTableMeta::new_default_dialect_with_namespace_and_schema(
+                String::from(table),
+                false,
+                false,
+            ),
+        ),
     ))
 }
 
