@@ -3,15 +3,12 @@
 
 import os
 
-os.makedirs("/tmp/warehouse", exist_ok=True)
-
 from pyspark.sql import SparkSession
 
-spark = SparkSession.builder \
-    .master("local") \
-    .enableHiveSupport() \
-    .getOrCreate()
-spark.sparkContext.setLogLevel('info')
+os.makedirs("/tmp/warehouse", exist_ok=True)
+
+spark = SparkSession.builder.master("local").enableHiveSupport().getOrCreate()
+spark.sparkContext.setLogLevel("info")
 
 spark.sql("CREATE TABLE IF NOT EXISTS test (key INT, value STRING) USING hive")
 spark.sql("CREATE TABLE IF NOT EXISTS target (key INT, value STRING) USING hive")

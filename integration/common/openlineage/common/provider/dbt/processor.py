@@ -106,7 +106,7 @@ class DbtEvents:
             self.completes += other.completes
             self.fails += other.fails
             return self
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 @attr.s
@@ -123,9 +123,7 @@ class ParentRunMetadata:
     job_namespace: str = attr.ib()
 
     def to_openlineage(self) -> ParentRunFacet:
-        return ParentRunFacet.create(
-            runId=self.run_id, name=self.job_name, namespace=self.job_namespace
-        )
+        return ParentRunFacet.create(runId=self.run_id, name=self.job_name, namespace=self.job_namespace)
 
 
 @attr.s
@@ -135,7 +133,6 @@ class DbtVersionRunFacet(BaseFacet):
     @staticmethod
     def _get_schema() -> str:
         return GITHUB_LOCATION + "dbt-version-run-facet.json"
-
 
 
 class DbtArtifactProcessor:
@@ -150,9 +147,7 @@ class DbtArtifactProcessor:
     ):
         self.producer = producer
         self._dbt_run_metadata: Optional[ParentRunMetadata] = None
-        self.logger = logger or logging.getLogger(
-            f"{self.__class__.__module__}.{self.__class__.__name__}"
-        )
+        self.logger = logger or logging.getLogger(f"{self.__class__.__module__}.{self.__class__.__name__}")
 
         self.job_namespace = job_namespace
         self.dataset_namespace = ""
@@ -188,9 +183,7 @@ class DbtArtifactProcessor:
         nodes = {}
         # Filter nodes
         for name, node in manifest["nodes"].items():
-            if any(
-                name.startswith(prefix) for prefix in ("model.", "test.", "snapshot.")
-            ):
+            if any(name.startswith(prefix) for prefix in ("model.", "test.", "snapshot.")):
                 nodes[name] = node
 
         context = DbtRunContext(manifest, run_result, catalog)
@@ -200,8 +193,7 @@ class DbtArtifactProcessor:
         if self.command not in ["run", "build", "test", "seed", "snapshot"]:
             if self.should_raise_on_unsupported_command:
                 raise UnsupportedDbtCommand(
-                    f"Not recognized run command "
-                    f"{self.command} - should be run, test, seed or build"
+                    f"Not recognized run command " f"{self.command} - should be run, test, seed or build"
                 )
             else:
                 return events
@@ -214,9 +206,7 @@ class DbtArtifactProcessor:
 
     @classmethod
     def get_schema_version(cls, metadata):
-        str_schema_version = get_from_nullable_chain(
-            metadata, ["metadata", "dbt_schema_version"]
-        )
+        str_schema_version = get_from_nullable_chain(metadata, ["metadata", "dbt_schema_version"])
         return cls.get_version_number(str_schema_version)
 
     @staticmethod
@@ -230,9 +220,7 @@ class DbtArtifactProcessor:
         events = DbtEvents()
         for run in context.run_results["results"]:
             name = run["unique_id"]
-            if not any(
-                name.startswith(prefix) for prefix in ("model.", "source.", "snapshot.")
-            ):
+            if not any(name.startswith(prefix) for prefix in ("model.", "source.", "snapshot.")):
                 continue
             if run["status"] == "skipped":
                 continue
@@ -291,9 +279,7 @@ class DbtArtifactProcessor:
                     self.node_to_output_dataset(
                         ModelNode(
                             output_node,
-                            get_from_nullable_chain(
-                                context.catalog, ["nodes", run["unique_id"]]
-                            ),
+                            get_from_nullable_chain(context.catalog, ["nodes", run["unique_id"]]),
                         ),
                         has_facets=True,
                     ),
@@ -315,13 +301,9 @@ class DbtArtifactProcessor:
             if len(assertions[name]) == 0:
                 continue
 
-            assertion_facet = DataQualityAssertionsDatasetFacet(
-                assertions=assertions[name]
-            )
+            assertion_facet = DataQualityAssertionsDatasetFacet(assertions=assertions[name])
 
-            namespace, name, _ = self.extract_dataset_data(
-                ModelNode(node), assertion_facet, has_facets=False
-            )
+            namespace, name, _ = self.extract_dataset_data(ModelNode(node), assertion_facet, has_facets=False)
 
             job_name = (
                 f"{node['database']}.{node['schema']}."
@@ -349,9 +331,7 @@ class DbtArtifactProcessor:
             )
         return events
 
-    def parse_assertions(
-        self, context: DbtRunContext, nodes: Dict
-    ) -> Dict[str, List[Assertion]]:
+    def parse_assertions(self, context: DbtRunContext, nodes: Dict) -> Dict[str, List[Assertion]]:
         assertions = collections.defaultdict(list)
         for run in context.run_results["results"]:
             if not run["unique_id"].startswith("test."):
@@ -367,16 +347,12 @@ class DbtArtifactProcessor:
                 Assertion(
                     assertion=test_node["test_metadata"]["name"],
                     success=True if run["status"] == "pass" else False,
-                    column=get_from_nullable_chain(
-                        test_node["test_metadata"], ["kwargs", "column_name"]
-                    ),
+                    column=get_from_nullable_chain(test_node["test_metadata"], ["kwargs", "column_name"]),
                 )
             )
 
             if not model_node:
-                raise ValueError(
-                    f"Model node connected to test {nodes[run['unique_id']]} not found"
-                )
+                raise ValueError(f"Model node connected to test {nodes[run['unique_id']]} not found")
         return assertions  # type: ignore
 
     def to_openlineage_events(self, *args, **kwargs) -> Optional[DbtRunResult]:
@@ -385,7 +361,7 @@ class DbtArtifactProcessor:
         except Exception as e:
             if self.skip_errors:
                 return None
-            raise ValueError() from e
+            raise ValueError from e
 
     def _to_openlineage_events(
         self,
@@ -434,10 +410,7 @@ class DbtArtifactProcessor:
             )
         else:
             # Should not happen?
-            raise ValueError(
-                f"Run status was {status}, "
-                f"should be in ['success', 'skipped', 'error']"
-            )
+            raise ValueError(f"Run status was {status}, " f"should be in ['success', 'skipped', 'error']")
 
     def node_to_dataset(
         self,
@@ -445,14 +418,10 @@ class DbtArtifactProcessor:
         assertions: Optional[DataQualityAssertionsDatasetFacet] = None,
         has_facets: bool = False,
     ) -> Dataset:
-        name, namespace, facets = self.extract_dataset_data(
-            node, assertions, has_facets
-        )
+        name, namespace, facets = self.extract_dataset_data(node, assertions, has_facets)
         return Dataset(name, namespace, facets)
 
-    def node_to_output_dataset(
-        self, node: ModelNode, has_facets: bool = False
-    ) -> OutputDataset:
+    def node_to_output_dataset(self, node: ModelNode, has_facets: bool = False) -> OutputDataset:
         name, namespace, facets = self.extract_dataset_data(node, None, has_facets)
         output_facets = {}
         if has_facets and node.catalog_node:
@@ -478,11 +447,7 @@ class DbtArtifactProcessor:
             )
 
             if bytes:
-                bytes = (
-                    int(bytes)
-                    if self.adapter_type != Adapter.REDSHIFT
-                    else int(rows) * (2**20)
-                )
+                bytes = int(bytes) if self.adapter_type != Adapter.REDSHIFT else int(rows) * (2**20)
             if rows:
                 rows = int(rows)
 
@@ -499,13 +464,9 @@ class DbtArtifactProcessor:
     ) -> Tuple[str, str, Dict]:
         if has_facets:
             facets = {
-                "dataSource": DataSourceDatasetFacet(
-                    name=self.dataset_namespace, uri=self.dataset_namespace
-                ),
+                "dataSource": DataSourceDatasetFacet(name=self.dataset_namespace, uri=self.dataset_namespace),
                 "schema": SchemaDatasetFacet(
-                    fields=self.extract_metadata_fields(
-                        node.metadata_node["columns"].values()
-                    )
+                    fields=self.extract_metadata_fields(node.metadata_node["columns"].values())
                 ),
             }
             if assertions:
@@ -541,17 +502,11 @@ class DbtArtifactProcessor:
                 of_type = field["data_type"]
             if "description" in field and field["description"] is not None:
                 description = field["description"]
-            fields.append(
-                SchemaField(
-                    name=field["name"], type=of_type or "", description=description
-                )
-            )
+            fields.append(SchemaField(name=field["name"], type=of_type or "", description=description))
         return fields
 
     @staticmethod
-    def extract_catalog_fields(
-        columns: List[Dict], metadata_columns: Dict
-    ) -> List[SchemaField]:
+    def extract_catalog_fields(columns: List[Dict], metadata_columns: Dict) -> List[SchemaField]:
         """Extract table field info from catalog's node column info"""
         fields = []
         for field in columns:
@@ -559,9 +514,7 @@ class DbtArtifactProcessor:
             type = None
             if "type" in field and field["type"] is not None:
                 type = field["type"]
-            description = get_from_nullable_chain(
-                metadata_columns, [name, "description"]
-            )
+            description = get_from_nullable_chain(metadata_columns, [name, "description"])
             assert isinstance(type, str)
             fields.append(SchemaField(name=name, type=type, description=description))
         return fields
@@ -571,8 +524,7 @@ class DbtArtifactProcessor:
             self.adapter_type = Adapter[profile["type"].upper()]
         except KeyError:
             raise NotImplementedError(
-                f"Only {Adapter.adapters()} adapters are supported right now. "
-                f"Passed {profile['type']}"
+                f"Only {Adapter.adapters()} adapters are supported right now. " f"Passed {profile['type']}"
             )
 
     def extract_dataset_namespace(self, profile: Dict):
@@ -609,22 +561,18 @@ class DbtArtifactProcessor:
                 return f"spark://{profile['host']}{port}"
             else:
                 raise NotImplementedError(
-                    f"Connection method `{profile['method']}` is not "
-                    f"supported for spark adapter."
+                    f"Connection method `{profile['method']}` is not " f"supported for spark adapter."
                 )
         else:
             raise NotImplementedError(
-                f"Only {Adapter.adapters()} adapters are supported right now. "
-                f"Passed {profile['type']}"
+                f"Only {Adapter.adapters()} adapters are supported right now. " f"Passed {profile['type']}"
             )
 
     def get_run(self, run_id: str) -> Run:
         return Run(
             runId=run_id,
             facets={
-                "parent": self._dbt_run_metadata.to_openlineage()
-                if self._dbt_run_metadata
-                else None,
+                "parent": self._dbt_run_metadata.to_openlineage() if self._dbt_run_metadata else None,
                 "dbt_version": self.dbt_version_facet(),
             },
         )

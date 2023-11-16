@@ -41,10 +41,7 @@ def test_get_event_log_records(mock_instance):
     get_event_log_records(mock_instance, event_types, last_storage_id, record_filter_limit)
     for event_type in event_types:
         mock_instance.get_event_records.assert_any_call(
-            EventRecordsFilter(
-                event_type=event_type,
-                after_cursor=last_storage_id
-            ),
+            EventRecordsFilter(event_type=event_type, after_cursor=last_storage_id),
             limit=record_filter_limit,
         )
 

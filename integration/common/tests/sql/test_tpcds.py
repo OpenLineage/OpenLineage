@@ -85,6 +85,6 @@ LIMIT 100;
     assert set(sql_meta.in_tables) == {
         DbTableMeta("src.customer"),
         DbTableMeta("store_sales"),
-        DbTableMeta("date_dim")
+        DbTableMeta("date_dim"),
     }
     assert len(sql_meta.out_tables) == 0

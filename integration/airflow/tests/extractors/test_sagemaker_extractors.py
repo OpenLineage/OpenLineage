@@ -70,12 +70,13 @@ class TestSageMakerProcessingExtractor(TestCase):
     def _get_ti(task):
         kwargs = {}
         if parse_version(AIRFLOW_VERSION) > parse_version("2.2.0"):
-            kwargs['run_id'] = 'test_run_id'  # change in 2.2.0
+            kwargs["run_id"] = "test_run_id"  # change in 2.2.0
         task_instance = TaskInstance(
             task=task,
             execution_date=datetime.utcnow().replace(tzinfo=pytz.utc),
             state=State.SUCCESS,
-            **kwargs)
+            **kwargs,
+        )
         task_instance.job_id = random.randrange(10000)
 
         return task_instance
@@ -123,12 +124,13 @@ class TestSageMakerTransformExtractor(TestCase):
     def _get_ti(task):
         kwargs = {}
         if parse_version(AIRFLOW_VERSION) > parse_version("2.2.0"):
-            kwargs['run_id'] = 'test_run_id'  # change in 2.2.0
+            kwargs["run_id"] = "test_run_id"  # change in 2.2.0
         task_instance = TaskInstance(
             task=task,
             execution_date=datetime.utcnow().replace(tzinfo=pytz.utc),
             state=State.SUCCESS,
-            **kwargs)
+            **kwargs,
+        )
         task_instance.job_id = random.randrange(10000)
 
         return task_instance
@@ -151,10 +153,7 @@ class TestSageMakerTrainingExtractor(TestCase):
 
     @mock.patch("airflow.models.TaskInstance.xcom_pull", return_value={})
     @mock.patch("openlineage.airflow.extractors.sagemaker_extractors.generate_s3_dataset")
-    def test_generate_s3_dataset_missing_inputs_output(
-            self, mock_generate_s3_dataset,
-            mock_xcom_pull
-    ):
+    def test_generate_s3_dataset_missing_inputs_output(self, mock_generate_s3_dataset, mock_xcom_pull):
         self.extractor.extract_on_complete(self.ti)
 
         mock_generate_s3_dataset.assert_not_called()
@@ -175,16 +174,17 @@ class TestSageMakerTrainingExtractor(TestCase):
     def _get_ti(task):
         kwargs = {}
         if parse_version(AIRFLOW_VERSION) > parse_version("2.2.0"):
-            kwargs['run_id'] = 'test_run_id'  # change in 2.2.0
+            kwargs["run_id"] = "test_run_id"  # change in 2.2.0
         task_instance = TaskInstance(
             task=task,
             execution_date=datetime.utcnow().replace(tzinfo=pytz.utc),
             state=State.SUCCESS,
-            **kwargs)
+            **kwargs,
+        )
         task_instance.job_id = random.randrange(10000)
 
         return task_instance
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

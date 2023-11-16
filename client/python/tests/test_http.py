@@ -6,12 +6,11 @@ import datetime
 import uuid
 from typing import TYPE_CHECKING
 
-from requests import Session
-
 from openlineage.client import OpenLineageClient
 from openlineage.client.run import Job, Run, RunEvent, RunState
 from openlineage.client.serde import Serde
 from openlineage.client.transport.http import HttpConfig, HttpTransport
+from requests import Session
 
 if TYPE_CHECKING:
     from pytest_mock import MockerFixture

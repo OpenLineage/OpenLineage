@@ -32,14 +32,10 @@ if TYPE_CHECKING:
 _DAG_DEFAULT_OWNER = "anonymous"
 _DAG_DEFAULT_NAMESPACE = "default"
 
-_DAG_NAMESPACE = os.getenv(
-    "OPENLINEAGE_NAMESPACE",
-    os.getenv("MARQUEZ_NAMESPACE", _DAG_DEFAULT_NAMESPACE)
-)
+_DAG_NAMESPACE = os.getenv("OPENLINEAGE_NAMESPACE", os.getenv("MARQUEZ_NAMESPACE", _DAG_DEFAULT_NAMESPACE))
 
 _PRODUCER = (
-    f"https://github.com/OpenLineage/OpenLineage/tree/"
-    f"{OPENLINEAGE_AIRFLOW_VERSION}/integration/airflow"
+    f"https://github.com/OpenLineage/OpenLineage/tree/" f"{OPENLINEAGE_AIRFLOW_VERSION}/integration/airflow"
 )
 
 set_producer(_PRODUCER)
@@ -58,7 +54,7 @@ class OpenLineageAdapter:
 
     def __init__(self):
         if "OPENLINEAGE_AIRFLOW_LOGGING" in os.environ:
-            logging.getLogger(__name__.rpartition('.')[0]).setLevel(os.getenv("OPENLINEAGE_AIRFLOW_LOGGING"))
+            logging.getLogger(__name__.rpartition(".")[0]).setLevel(os.getenv("OPENLINEAGE_AIRFLOW_LOGGING"))
 
     @staticmethod
     def get_or_create_openlineage_client() -> OpenLineageClient:
@@ -67,7 +63,8 @@ class OpenLineageAdapter:
         if marquez_url:
             log.info(f"Sending lineage events to {marquez_url}")
             client = OpenLineageClient(
-                marquez_url, OpenLineageClientOptions(api_key=os.environ["MARQUEZ_API_KEY"])
+                marquez_url,
+                OpenLineageClientOptions(api_key=os.environ["MARQUEZ_API_KEY"]),
             )
         else:
             client = OpenLineageClient()
@@ -80,9 +77,7 @@ class OpenLineageAdapter:
         return self._client
 
     def build_dag_run_id(self, dag_id, dag_run_id):
-        return str(
-            uuid.uuid3(uuid.NAMESPACE_URL, f"{_DAG_NAMESPACE}.{dag_id}.{dag_run_id}")
-        )
+        return str(uuid.uuid3(uuid.NAMESPACE_URL, f"{_DAG_NAMESPACE}.{dag_id}.{dag_run_id}"))
 
     @staticmethod
     def build_task_instance_run_id(task_id, execution_date, try_number):
@@ -171,9 +166,7 @@ class OpenLineageAdapter:
         self.emit(event)
         return event.run.runId
 
-    def complete_task(
-        self, run_id: str, job_name: str, end_time: str, task: TaskMetadata
-    ):
+    def complete_task(self, run_id: str, job_name: str, end_time: str, task: TaskMetadata):
         """
         Emits openlineage event of type COMPLETE
         :param run_id: globally unique identifier of task in dag run
@@ -253,11 +246,7 @@ class OpenLineageAdapter:
             job=Job(name=dag_run.dag_id, namespace=_DAG_NAMESPACE),
             run=Run(
                 runId=self.build_dag_run_id(dag_run.dag_id, dag_run.run_id),
-                facets={
-                    "errorMessage": ErrorMessageRunFacet(
-                        message=msg, programmingLanguage="python"
-                    )
-                },
+                facets={"errorMessage": ErrorMessageRunFacet(message=msg, programmingLanguage="python")},
             ),
             inputs=[],
             outputs=[],
@@ -277,11 +266,7 @@ class OpenLineageAdapter:
     ) -> Run:
         facets: Dict[str, BaseFacet] = {}
         if nominal_start_time:
-            facets.update({
-                "nominalTime": NominalTimeRunFacet(
-                    nominal_start_time, nominal_end_time
-                )
-            })
+            facets.update({"nominalTime": NominalTimeRunFacet(nominal_start_time, nominal_end_time)})
         parent_name = parent_job_name or job_name
         if parent_run_id is not None and parent_name is not None:
             parent_run_facet = ParentRunFacet.create(
@@ -289,10 +274,13 @@ class OpenLineageAdapter:
                 namespace=_DAG_NAMESPACE,
                 name=parent_name,
             )
-            facets.update({
-                "parent": parent_run_facet,
-                "parentRun": parent_run_facet,  # Keep sending this for the backward compatibility
-            })
+            facets.update(
+                {
+                    "parent": parent_run_facet,
+                    # Keep sending this for the backward compatibility
+                    "parentRun": parent_run_facet,
+                }
+            )
 
         if run_facets:
             facets.update(run_facets)
@@ -312,9 +300,7 @@ class OpenLineageAdapter:
         if job_description:
             facets.update({"documentation": DocumentationJobFacet(job_description)})
         if code_location:
-            facets.update(
-                {"sourceCodeLocation": SourceCodeLocationJobFacet("", code_location)}
-            )
+            facets.update({"sourceCodeLocation": SourceCodeLocationJobFacet("", code_location)})
         if owners:
             facets.update(
                 {

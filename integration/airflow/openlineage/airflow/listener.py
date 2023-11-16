@@ -77,8 +77,9 @@ adapter = OpenLineageAdapter()
 
 
 def direct_execution():
-    return is_airflow_version_enough("2.6.0") \
-        or getboolean("OPENLINEAGE_AIRFLOW_ENABLE_DIRECT_EXECUTION", False)
+    return is_airflow_version_enough("2.6.0") or getboolean(
+        "OPENLINEAGE_AIRFLOW_ENABLE_DIRECT_EXECUTION", False
+    )
 
 
 def execute(_callable):
@@ -94,9 +95,13 @@ def execute(_callable):
 
 @hookimpl
 def on_task_instance_running(previous_state, task_instance: "TaskInstance", session: "Session"):
-    if not hasattr(task_instance, 'task'):
+    if not hasattr(task_instance, "task"):
         log.warning(
-            f"No task set for TI object task_id: {task_instance.task_id} - dag_id: {task_instance.dag_id} - run_id {task_instance.run_id}")  # noqa
+            "No task set for TI object task_id: %s - dag_id: %s - run_id %s",
+            task_instance.task_id,
+            task_instance.dag_id,
+            task_instance.run_id,
+        )
         return
 
     log.debug("OpenLineage listener got notification about task instance start")
@@ -120,9 +125,7 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
             task.task_id, ti.execution_date, ti.try_number
         )
 
-        task_metadata = extractor_manager.extract_metadata(
-            dagrun, task, task_uuid=task_uuid
-        )
+        task_metadata = extractor_manager.extract_metadata(dagrun, task, task_uuid=task_uuid)
 
         ti_start_time = ti.start_date if ti.start_date else datetime.datetime.now()
         start, end = get_dagrun_start_end(dagrun=dagrun, dag=dag)
@@ -141,11 +144,9 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
             task=task_metadata,
             run_facets={
                 **task_metadata.run_facets,
-                **get_custom_facets(
-                    dagrun, task, dagrun.external_trigger, ti
-                ),
-                **get_airflow_run_facet(dagrun, dag, ti, task, task_uuid)
-            }
+                **get_custom_facets(dagrun, task, dagrun.external_trigger, ti),
+                **get_airflow_run_facet(dagrun, dag, ti, task, task_uuid),
+            },
         )
 
     execute(on_running)

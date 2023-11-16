@@ -5,7 +5,9 @@ from typing import Dict, List, Optional, Union
 
 import attr
 from openlineage.client.facet import BaseFacet
-from openlineage.common.provider.great_expectations.results import GreatExpectationsAssertion
+from openlineage.common.provider.great_expectations.results import (
+    GreatExpectationsAssertion,
+)
 
 from great_expectations.core import IDDict
 from great_expectations.core.batch import BatchDefinition, BatchMarkers
@@ -17,9 +19,10 @@ class GreatExpectationsRunFacet(BaseFacet):
     """
     Custom facet which describes the instance of GreatExpectations and the suite configuration
     """
+
     great_expectations_version = attr.ib()
     expectation_suite_name: str = attr.ib()
-    run_id: Dict = attr.ib()    # type: ignore
+    run_id: Dict = attr.ib()  # type: ignore
     expectation_suite_meta: Dict = attr.ib()
     validation_time: str = attr.ib()
     batch_spec: Optional[BatchSpec] = attr.ib(default=None)
@@ -33,7 +36,7 @@ class GreatExpectationsRunFacet(BaseFacet):
 
     @staticmethod
     def _get_schema() -> str:
-        return "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/common/provider/ge-run-facet.json"  # noqa
+        return "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/common/provider/ge-run-facet.json"
 
 
 @attr.s
@@ -41,8 +44,9 @@ class GreatExpectationsAssertionsDatasetFacet(BaseFacet):
     """
     This facet represents passed/failed status of asserted expectations on dataset
     """
+
     assertions: List[GreatExpectationsAssertion] = attr.ib()
 
     @staticmethod
     def _get_schema() -> str:
-        return "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/common/provider/ge-assertions-dataset-facet.json"  # noqa
+        return "https://github.com/OpenLineage/OpenLineage/tree/main/integration/common/openlineage/common/provider/ge-assertions-dataset-facet.json"

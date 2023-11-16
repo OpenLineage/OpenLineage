@@ -15,7 +15,8 @@ set_producer("https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/
 
 class SecretsOperator(BaseOperator):
     """This shouldn't have extractor - testing if we'll see password in UnknownSourceAttribute"""
-    template_fields = ['password']
+
+    template_fields = ["password"]
 
     def __init__(self, password, **kwargs):
         super().__init__(**kwargs)
@@ -27,25 +28,25 @@ class SecretsOperator(BaseOperator):
 
 
 default_args = {
-    'owner': 'datascience',
-    'depends_on_past': False,
-    'start_date': days_ago(7),
-    'email_on_failure': False,
-    'email_on_retry': False,
-    'email': ['datascience@example.com']
+    "owner": "datascience",
+    "depends_on_past": False,
+    "start_date": days_ago(7),
+    "email_on_failure": False,
+    "email_on_retry": False,
+    "email": ["datascience@example.com"],
 }
 
 
 dag = DAG(
-    'secrets',
-    schedule_interval='@once',
+    "secrets",
+    schedule_interval="@once",
     default_args=default_args,
-    description='Secrets test'
+    description="Secrets test",
 )
 
 
 t1 = SecretsOperator(
-    task_id='secrets',
+    task_id="secrets",
     password="{{ var.value.secrets_password }}",
     dag=dag,
 )

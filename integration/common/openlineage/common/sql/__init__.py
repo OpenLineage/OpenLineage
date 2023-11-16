@@ -9,10 +9,10 @@ from openlineage_sql import (
     ColumnMeta,  # noqa: F401
     DbTableMeta,  # noqa: F401
     ExtractionError,  # noqa: F401
-    SqlMeta,  # noqa: F401
+    SqlMeta,
     provider,  # noqa: F401
 )
-from openlineage_sql import parse as parse_sql  # noqa: F401  # noqa: F401
+from openlineage_sql import parse as parse_sql
 
 log = logging.getLogger(__name__)
 

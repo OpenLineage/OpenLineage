@@ -8,7 +8,6 @@ from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
-
 from openlineage.client.client import OpenLineageClient
 from openlineage.client.facet import (
     ColumnLineageDatasetFacet,

@@ -140,27 +140,17 @@ class OpenLineageValidationAction(ValidationAction):
         payload=None,
     ):
         # Initialize logger here so that the action is serializable until it actually runs
-        self.log = logging.getLogger(
-            self.__class__.__module__ + "." + self.__class__.__name__
-        )
+        self.log = logging.getLogger(self.__class__.__module__ + "." + self.__class__.__name__)
 
         datasets = []
         if isinstance(data_asset, SqlAlchemyDataset):
-            datasets = self._fetch_datasets_from_sql_source(
-                data_asset, validation_result_suite
-            )
+            datasets = self._fetch_datasets_from_sql_source(data_asset, validation_result_suite)
         elif isinstance(data_asset, PandasDataset):
-            datasets = self._fetch_datasets_from_pandas_source(
-                data_asset, validation_result_suite
-            )
+            datasets = self._fetch_datasets_from_pandas_source(data_asset, validation_result_suite)
         elif isinstance(data_asset.execution_engine, SqlAlchemyExecutionEngine):
-            datasets = self._fetch_datasets_from_sql_source(
-                data_asset, validation_result_suite
-            )
+            datasets = self._fetch_datasets_from_sql_source(data_asset, validation_result_suite)
         elif isinstance(data_asset.execution_engine, PandasExecutionEngine):
-            datasets = self._fetch_datasets_from_pandas_source(
-                data_asset, validation_result_suite
-            )
+            datasets = self._fetch_datasets_from_pandas_source(data_asset, validation_result_suite)
         run_facets = {}
         if self.parent_run_id is not None:
             run_facets.update(
@@ -175,19 +165,11 @@ class OpenLineageValidationAction(ValidationAction):
 
         # workaround for GE v2 and v3 API difference
         suite_meta = dict(
-            {
-                key: self._ser(value)
-                for key, value in copy.deepcopy(validation_result_suite.meta).items()
-            }
+            {key: self._ser(value) for key, value in copy.deepcopy(validation_result_suite.meta).items()}
         )
         if "expectation_suite_meta" not in suite_meta:
             suite_meta["expectation_suite_meta"] = dict(
-                {
-                    key: self._ser(value)
-                    for key, value in copy.deepcopy(
-                        validation_result_suite.meta
-                    ).items()
-                }
+                {key: self._ser(value) for key, value in copy.deepcopy(validation_result_suite.meta).items()}
             )
         run_facets.update(
             {
@@ -200,9 +182,7 @@ class OpenLineageValidationAction(ValidationAction):
         if self.job_description:
             job_facets["documentation"] = DocumentationJobFacet(self.job_description)
         if self.code_location:
-            job_facets["sourceCodeLocation"] = SourceCodeLocationJobFacet(
-                type="", url=self.code_location
-            )
+            job_facets["sourceCodeLocation"] = SourceCodeLocationJobFacet(type="", url=self.code_location)
 
         job_name = self.job_name
         if self.job_name is None:
@@ -218,7 +198,7 @@ class OpenLineageValidationAction(ValidationAction):
             job=Job(self.namespace, job_name, facets=job_facets),
             inputs=datasets,
             outputs=[],
-            producer="https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/common/openlineage/provider/great_expectations",  # noqa
+            producer="https://github.com/OpenLineage/OpenLineage/tree/$VERSION/integration/common/openlineage/provider/great_expectations",
         )
         if self.do_publish:
             self.openlineage_client.emit(run_event)
@@ -235,7 +215,7 @@ class OpenLineageValidationAction(ValidationAction):
         self,
         data_asset: Union[PandasDataset, Validator],
         validation_result_suite: ExpectationSuiteValidationResult,
-    ) -> List[OLDataset]:  # noqa
+    ) -> List[OLDataset]:
         """
         Generate a list of OpenLineage Datasets from a PandasDataset
         :param data_asset:
@@ -246,14 +226,12 @@ class OpenLineageValidationAction(ValidationAction):
             if data_asset.batch_kwargs.__contains__("path"):
                 path = data_asset.batch_kwargs.get("path")
                 if path.startswith("/"):
-                    path = "file://{}".format(path)
+                    path = f"file://{path}"
                 parsed_url = urlparse(path)
                 columns = [
                     Field(
                         name=col,
-                        type=str(data_asset[col].dtype)
-                        if data_asset[col].dtype is not None
-                        else "UNKNOWN",
+                        type=str(data_asset[col].dtype) if data_asset[col].dtype is not None else "UNKNOWN",
                     )
                     for col in data_asset.columns
                 ]
@@ -277,14 +255,12 @@ class OpenLineageValidationAction(ValidationAction):
             if path is None:
                 return []
             if path.startswith("/"):
-                path = "file://{}".format(path)
+                path = f"file://{path}"
             parsed_url = urlparse(path)
             columns = [
                 Field(
                     name=col,
-                    type=str(data_asset[col].dtype)
-                    if data_asset[col].dtype is not None
-                    else "UNKNOWN",
+                    type=str(data_asset[col].dtype) if data_asset[col].dtype is not None else "UNKNOWN",
                 )
                 for col in batch_data.columns
             ]
@@ -301,7 +277,7 @@ class OpenLineageValidationAction(ValidationAction):
         self,
         data_asset: Union[SqlAlchemyDataset, Validator],
         validation_result_suite: ExpectationSuiteValidationResult,
-    ) -> List[OLDataset]:  # noqa
+    ) -> List[OLDataset]:
         """
         Generate a list of OpenLineage Datasets from a SqlAlchemyDataset.
         :param data_asset:
@@ -312,13 +288,9 @@ class OpenLineageValidationAction(ValidationAction):
         if isinstance(data_asset, SqlAlchemyDataset):
             if data_asset.generated_table_name is not None:
                 custom_sql = data_asset.batch_kwargs.get("query")
-                parsed_sql = parse(
-                    custom_sql, dialect=data_asset.engine.dialect.name.lower()
-                )
+                parsed_sql = parse(custom_sql, dialect=data_asset.engine.dialect.name.lower())
                 return [
-                    self._get_sql_table(
-                        data_asset, metadata, t.schema, t.name, validation_result_suite
-                    )
+                    self._get_sql_table(data_asset, metadata, t.schema, t.name, validation_result_suite)
                     for t in parsed_sql.in_tables
                 ]
             return [
@@ -339,13 +311,9 @@ class OpenLineageValidationAction(ValidationAction):
                 else None
             )
             if custom_sql:
-                parsed_sql = parse(
-                    custom_sql, dialect=data_asset.execution_engine.dialect_name
-                )
+                parsed_sql = parse(custom_sql, dialect=data_asset.execution_engine.dialect_name)
                 return [
-                    self._get_sql_table(
-                        batch_data, metadata, t.schema, t.name, validation_result_suite
-                    )
+                    self._get_sql_table(batch_data, metadata, t.schema, t.name, validation_result_suite)
                     for t in parsed_sql.in_tables
                 ]
             table_name = batch["batch_spec"]["table_name"]
@@ -377,11 +345,7 @@ class OpenLineageValidationAction(ValidationAction):
         :param data_asset:
         :return:
         """
-        engine = (
-            data_asset.engine
-            if isinstance(data_asset, SqlAlchemyDataset)
-            else data_asset._engine
-        )
+        engine = data_asset.engine if isinstance(data_asset, SqlAlchemyDataset) else data_asset._engine
         if isinstance(engine, Connection):
             engine = engine.engine
         datasource_url = engine.url
@@ -397,7 +361,7 @@ class OpenLineageValidationAction(ValidationAction):
         if table_name.endswith("`") or table_name.startswith("`"):
             table_name = table_name.replace("`", "")
         if engine.dialect.name.lower() == "bigquery":
-            schema = "{}.{}".format(datasource_url.host, datasource_url.database)
+            schema = f"{datasource_url.host}.{datasource_url.database}"
 
         table = Table(table_name, meta, autoload_with=engine)
 
@@ -410,7 +374,7 @@ class OpenLineageValidationAction(ValidationAction):
             for key, col in table.columns.items()
         ]
 
-        name = table_name if schema is None else "{}.{}".format(schema, table_name)
+        name = table_name if schema is None else f"{schema}.{table_name}"
 
         results_facet = self.results_facet(validation_result_suite)
         return Dataset(
@@ -435,9 +399,7 @@ class OpenLineageValidationAction(ValidationAction):
             scheme=url.scheme,
             authority=url.hostname,
             # Remove credentials from the URL if present
-            connection_url=url._replace(
-                netloc=url.hostname, query=None, fragment=None
-            ).geturl(),
+            connection_url=url._replace(netloc=url.hostname, query=None, fragment=None).geturl(),
         )
 
     def results_facet(self, validation_result: ExpectationSuiteValidationResult):
@@ -481,7 +443,6 @@ class OpenLineageValidationAction(ValidationAction):
             expectations_results = validation_result["results"]
             for expectation in expectations_results:
                 for parser in EXPECTATIONS_PARSERS:
-
                     # accept possible duplication, should have no difference in results
                     if parser.can_accept(expectation):
                         result = parser.parse_expectation_result(expectation)
@@ -489,19 +450,13 @@ class OpenLineageValidationAction(ValidationAction):
                 for parser in COLUMN_EXPECTATIONS_PARSER:
                     if parser.can_accept(expectation):
                         result = parser.parse_expectation_result(expectation)
-                        facet_data["columnMetrics"][result.column_id][
-                            result.facet_key
-                        ] = result.value
+                        facet_data["columnMetrics"][result.column_id][result.facet_key] = result.value
 
             for key in facet_data["columnMetrics"].keys():
-                facet_data["columnMetrics"][key] = ColumnMetric(
-                    **facet_data["columnMetrics"][key]
-                )
+                facet_data["columnMetrics"][key] = ColumnMetric(**facet_data["columnMetrics"][key])
             return DataQualityMetricsInputDatasetFacet(**facet_data)  # type: ignore[arg-type]
         except ValueError:
-            self.log.exception(
-                "Great Expectations's CheckpointResult object does not have expected key"
-            )
+            self.log.exception("Great Expectations's CheckpointResult object does not have expected key")
         return None
 
     def parse_assertions(
@@ -513,19 +468,13 @@ class OpenLineageValidationAction(ValidationAction):
             for expectation in validation_result.results:
                 assertions.append(
                     GreatExpectationsAssertion(
-                        expectationType=expectation["expectation_config"][
-                            "expectation_type"
-                        ],
+                        expectationType=expectation["expectation_config"]["expectation_type"],
                         success=expectation["success"],
-                        column=expectation["expectation_config"]["kwargs"].get(
-                            "column", None
-                        ),
+                        column=expectation["expectation_config"]["kwargs"].get("column", None),
                     )
                 )
 
             return GreatExpectationsAssertionsDatasetFacet(assertions)
         except ValueError:
-            self.log.exception(
-                "Great Expectations's CheckpointResult object does not have expected key"
-            )
+            self.log.exception("Great Expectations's CheckpointResult object does not have expected key")
         return None

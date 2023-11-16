@@ -32,18 +32,18 @@ from airflow.utils.dates import days_ago
 from airflow.utils.state import State
 from airflow.version import version as AIRFLOW_VERSION
 
-AIRFLOW_CONN_ID = 'test_db'
-AIRFLOW_CONN_URI = 'postgres://localhost:5432/testdb'
-SNOWFLAKE_CONN_URI = 'snowflake://12345.us-east-1.snowflakecomputing.com/MyTestRole?extra__snowflake__account=12345&extra__snowflake__database=TEST_DB&extra__snowflake__insecure_mode=false&extra__snowflake__region=us-east-1&extra__snowflake__role=MyTestRole&extra__snowflake__warehouse=TEST_WH&extra__snowflake__aws_access_key_id=123456&extra__snowflake__aws_secret_access_key=abcdefg'  # NOQA
+AIRFLOW_CONN_ID = "test_db"
+AIRFLOW_CONN_URI = "postgres://localhost:5432/testdb"
+SNOWFLAKE_CONN_URI = "snowflake://12345.us-east-1.snowflakecomputing.com/MyTestRole?extra__snowflake__account=12345&extra__snowflake__database=TEST_DB&extra__snowflake__insecure_mode=false&extra__snowflake__region=us-east-1&extra__snowflake__role=MyTestRole&extra__snowflake__warehouse=TEST_WH&extra__snowflake__aws_access_key_id=123456&extra__snowflake__aws_secret_access_key=abcdefg"
 
 
 def test_get_connection():
-    os.environ['AIRFLOW_CONN_DEFAULT'] = AIRFLOW_CONN_URI
+    os.environ["AIRFLOW_CONN_DEFAULT"] = AIRFLOW_CONN_URI
 
-    conn = get_connection('default')
-    assert conn.host == 'localhost'
+    conn = get_connection("default")
+    assert conn.host == "localhost"
     assert conn.port == 5432
-    assert conn.conn_type == 'postgres'
+    assert conn.conn_type == "postgres"
     assert conn
 
 
@@ -59,40 +59,34 @@ def test_url_to_https_no_url():
 
 def test_datetime_to_iso_8601():
     dt = datetime.datetime.utcfromtimestamp(1500100900)
-    assert "2017-07-15T06:41:40.000000Z" == DagUtils.to_iso_8601(dt)
+    assert DagUtils.to_iso_8601(dt) == "2017-07-15T06:41:40.000000Z"
 
     dt = datetime.datetime(2021, 8, 6, 2, 5, 1)
-    assert "2021-08-06T02:05:01.000000Z" == DagUtils.to_iso_8601(dt)
+    assert DagUtils.to_iso_8601(dt) == "2021-08-06T02:05:01.000000Z"
 
 
 def test_pendulum_to_iso_8601():
     dt = pendulum.from_timestamp(1500100900)
-    assert "2017-07-15T06:41:40.000000Z" == DagUtils.to_iso_8601(dt)
+    assert DagUtils.to_iso_8601(dt) == "2017-07-15T06:41:40.000000Z"
 
     dt = pendulum.datetime(2021, 8, 6, 2, 5, 1)
-    assert "2021-08-06T02:05:01.000000Z" == DagUtils.to_iso_8601(dt)
+    assert DagUtils.to_iso_8601(dt) == "2021-08-06T02:05:01.000000Z"
 
     tz = pendulum.timezone("America/Los_Angeles")
-    assert "2021-08-05T19:05:01.000000Z" == DagUtils.to_iso_8601(tz.convert(dt))
+    assert DagUtils.to_iso_8601(tz.convert(dt)) == "2021-08-05T19:05:01.000000Z"
 
 
-@pytest.mark.skipif(
-    parse_version(AIRFLOW_VERSION) < parse_version("2.4.0"),
-    reason="Airflow < 2.4.0"
-)
+@pytest.mark.skipif(parse_version(AIRFLOW_VERSION) < parse_version("2.4.0"), reason="Airflow < 2.4.0")
 def test_get_dagrun_start_end():
-    dag = AIRFLOW_DAG(
-        "test",
-        start_date=days_ago(1),
-        schedule_interval="@once"
-    )
+    dag = AIRFLOW_DAG("test", start_date=days_ago(1), schedule_interval="@once")
     AIRFLOW_DAG.bulk_write_to_db([dag])
     dag_model = DagModel.get_dagmodel(dag.dag_id)
     run_id = str(uuid.uuid1())
     dagrun = dag.create_dagrun(
         state=State.NONE,
         run_id=run_id,
-        data_interval=dag.get_next_data_interval(dag_model))
+        data_interval=dag.get_next_data_interval(dag_model),
+    )
     assert dagrun.data_interval_start is not None
     assert get_dagrun_start_end(dagrun, dag) == (days_ago(1), days_ago(1))
 
@@ -112,11 +106,13 @@ def test_parse_version():
 
 
 def test_to_json_encodable():
-    dag = AIRFLOW_DAG(dag_id='test_dag',
-                      schedule_interval='*/2 * * * *',
-                      start_date=datetime.datetime.now(),
-                      catchup=False)
-    task = DummyOperator(task_id='test_task', dag=dag)
+    dag = AIRFLOW_DAG(
+        dag_id="test_dag",
+        schedule_interval="*/2 * * * *",
+        start_date=datetime.datetime.now(),
+        catchup=False,
+    )
+    task = DummyOperator(task_id="test_task", dag=dag)
 
     encodable = to_json_encodable(task)
     encoded = json.dumps(encodable)
@@ -125,12 +121,13 @@ def test_to_json_encodable():
 
 
 def test_safe_dict():
-    assert str(SafeStrDict({'a': 1})) == str({'a': 1})
+    assert str(SafeStrDict({"a": 1})) == str({"a": 1})
 
-    class NotImplemented():
+    class NotImplemented:
         def __str__(self):
             raise NotImplementedError
-    assert str(SafeStrDict({'a': NotImplemented()})) == str({})
+
+    assert str(SafeStrDict({"a": NotImplemented()})) == str({})
 
 
 def test_info_json_encodable():
@@ -146,7 +143,7 @@ def test_info_json_encodable():
         _faulty_name: str = attr.ib()
         donotcare: str = attr.ib()
 
-    obj = Test('val', '123', 'not_funny', 'abc')
+    obj = Test("val", "123", "not_funny", "abc")
 
     assert json.loads(json.dumps(TestInfo(obj))) == {
         "iwanttobeint": 123,
@@ -202,7 +199,5 @@ def test_redact_with_exclusions(monkeypatch):
     assert redact_with_exclusions(Mixined()).password == "passwd"
     assert redact_with_exclusions(Mixined()).transparent == "123"
     assert redact_with_exclusions({"password": "passwd"}) == {"password": "***"}
-    redacted_nested = redact_with_exclusions(
-        NestedMixined("passwd", NestedMixined("passwd", None))
-    )
+    redacted_nested = redact_with_exclusions(NestedMixined("passwd", NestedMixined("passwd", None)))
     assert redacted_nested == NestedMixined("***", NestedMixined("passwd", None))

@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 from unittest.mock import ANY, call
 
 import pytest
-
 from openlineage.client import OpenLineageClient
 from openlineage.client.run import Job, Run, RunEvent, RunState
 from openlineage.client.serde import Serde

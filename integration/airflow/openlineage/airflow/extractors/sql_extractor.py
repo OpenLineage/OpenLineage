@@ -2,7 +2,17 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Callable, Dict, Iterable, List, Mapping, Optional, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Tuple,
+    Union,
+)
 from urllib.parse import urlparse
 
 from openlineage.airflow.extractors.base import BaseExtractor, TaskMetadata
@@ -57,9 +67,7 @@ class SqlExtractor(BaseExtractor):
         # (1) Parse sql statement to obtain input / output tables.
         self.log.debug(f"Sending SQL to parser: {self.operator.sql}")
         sql_meta: Optional[SqlMeta] = parse(
-            self.operator.sql,
-            dialect=self.dialect,
-            default_schema=self.default_schema
+            self.operator.sql, dialect=self.dialect, default_schema=self.default_schema
         )
         self.log.debug(f"Got meta {sql_meta}")
 
@@ -73,7 +81,7 @@ class SqlExtractor(BaseExtractor):
             )
 
         if sql_meta.errors:
-            run_facets['extractionError'] = ExtractionErrorRunFacet(
+            run_facets["extractionError"] = ExtractionErrorRunFacet(
                 totalTasks=len(self.operator.sql) if isinstance(self.operator.sql, list) else 1,
                 failedTasks=len(sql_meta.errors),
                 errors=[
@@ -81,11 +89,10 @@ class SqlExtractor(BaseExtractor):
                         errorMessage=error.message,
                         stackTrace=None,
                         task=error.origin_statement,
-                        taskNumber=error.index
+                        taskNumber=error.index,
                     )
-                    for error
-                    in sql_meta.errors
-                ]
+                    for error in sql_meta.errors
+                ],
             )
 
         # (2) Construct source object
@@ -103,12 +110,8 @@ class SqlExtractor(BaseExtractor):
         # as the current connection. We need to also fetch the schema for the
         # input tables to format the dataset name as:
         # {schema_name}.{table_name}
-        in_tables = [
-            t for t in sql_meta.in_tables if not t.provided_field_schema
-        ]
-        out_tables = [
-            t for t in sql_meta.out_tables if not t.provided_field_schema
-        ]
+        in_tables = [t for t in sql_meta.in_tables if not t.provided_field_schema]
+        out_tables = [t for t in sql_meta.out_tables if not t.provided_field_schema]
         inputs, outputs = get_table_schemas(
             self.hook,
             source,
@@ -122,31 +125,29 @@ class SqlExtractor(BaseExtractor):
         for in_table in sql_meta.in_tables:
             if in_table.provided_field_schema:
                 if in_table.provided_namespace:
-                    inputs.append(Dataset.from_table(
-                        source=source,
-                        table_name=in_table.name
-                    ))
+                    inputs.append(Dataset.from_table(source=source, table_name=in_table.name))
                 else:
-                    inputs.append(Dataset.from_table(
-                        source=source,
-                        table_name=in_table.name,
-                        schema_name=in_table.schema,
-                        database_name=in_table.database or database,
-                    ))
+                    inputs.append(
+                        Dataset.from_table(
+                            source=source,
+                            table_name=in_table.name,
+                            schema_name=in_table.schema,
+                            database_name=in_table.database or database,
+                        )
+                    )
         for out_table in sql_meta.out_tables:
             if out_table.provided_field_schema:
                 if out_table.provided_namespace:
-                    outputs.append(Dataset.from_table(
-                        source=source,
-                        table_name=out_table.name
-                    ))
+                    outputs.append(Dataset.from_table(source=source, table_name=out_table.name))
                 else:
-                    outputs.append(Dataset.from_table(
-                        source=source,
-                        table_name=out_table.name,
-                        schema_name=out_table.schema,
-                        database_name=out_table.database or database,
-                    ))
+                    outputs.append(
+                        Dataset.from_table(
+                            source=source,
+                            table_name=out_table.name,
+                            schema_name=out_table.schema,
+                            database_name=out_table.database or database,
+                        )
+                    )
 
         for ds in inputs:
             ds.input_facets = self._get_input_facets()
@@ -156,9 +157,7 @@ class SqlExtractor(BaseExtractor):
             if len(outputs) == 1:  # Should be always true
                 self.attach_column_facet(ds, sql_meta)
 
-        db_specific_run_facets = self._get_db_specific_run_facets(
-            source, inputs, outputs
-        )
+        db_specific_run_facets = self._get_db_specific_run_facets(source, inputs, outputs)
 
         run_facets = {**run_facets, **db_specific_run_facets}
 
@@ -246,20 +245,21 @@ class SqlExtractor(BaseExtractor):
     def attach_column_facet(self, dataset, sql_meta: SqlMeta):
         if not len(sql_meta.column_lineage):
             return
-        dataset.custom_facets['columnLineage'] = ColumnLineageDatasetFacet(
+        dataset.custom_facets["columnLineage"] = ColumnLineageDatasetFacet(
             fields={
                 column_lineage.descendant.name: ColumnLineageDatasetFacetFieldsAdditional(
                     inputFields=[
                         ColumnLineageDatasetFacetFieldsAdditionalInputFields(
                             namespace=dataset.source.name,
                             name=column_meta.origin.qualified_name if column_meta.origin else "",
-                            field=column_meta.name
-                        ) for column_meta in column_lineage.lineage
+                            field=column_meta.name,
+                        )
+                        for column_meta in column_lineage.lineage
                     ],
                     transformationType="",
-                    transformationDescription=""
-                ) for column_lineage in sql_meta.column_lineage
-
+                    transformationDescription="",
+                )
+                for column_lineage in sql_meta.column_lineage
             }
         )
 
@@ -298,9 +298,7 @@ class SqlExtractor(BaseExtractor):
                 db = table.database or database
             else:
                 db = None
-            hierarchy.setdefault(
-                normalize_name(db) if db else db, {}
-            ).setdefault(
+            hierarchy.setdefault(normalize_name(db) if db else db, {}).setdefault(
                 normalize_name(table.schema) if table.schema else None, []
             ).append(table.name)
         return hierarchy

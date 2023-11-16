@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 import pytest
-
 from openlineage.client.client import OpenLineageClient
 from openlineage.client.run import (
     SCHEMA_URL,

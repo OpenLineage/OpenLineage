@@ -11,16 +11,14 @@ from urllib.parse import urljoin
 import attr
 
 if TYPE_CHECKING:
-    from requests.adapters import HTTPAdapter, Response
-
     from openlineage.client.client import OpenLineageClientOptions
     from openlineage.client.run import DatasetEvent, JobEvent, RunEvent
-
-from requests import Session
+    from requests.adapters import HTTPAdapter, Response
 
 from openlineage.client.serde import Serde
 from openlineage.client.transport.transport import Config, Transport
 from openlineage.client.utils import get_only_specified_fields, try_import_from_string
+from requests import Session
 
 log = logging.getLogger(__name__)
 
@@ -99,9 +97,7 @@ class HttpConfig(Config):
             url=url,
             timeout=options.timeout,
             verify=options.verify,
-            auth=ApiKeyTokenProvider({"api_key": options.api_key})
-            if options.api_key
-            else TokenProvider({}),
+            auth=ApiKeyTokenProvider({"api_key": options.api_key}) if options.api_key else TokenProvider({}),
             session=session,
             adapter=options.adapter,
         )

@@ -43,6 +43,4 @@ def fix_snowflake_sqlalchemy_uri(uri: str) -> str:
     if "." in hostname or not any(word in hostname for word in ["-", "_"]):
         hostname = fix_account_name(hostname)
     # else - its new hostname, just return it
-    return urlunparse(
-        (parts.scheme, hostname, parts.path, parts.params, parts.query, parts.fragment)
-    )
+    return urlunparse((parts.scheme, hostname, parts.path, parts.params, parts.query, parts.fragment))

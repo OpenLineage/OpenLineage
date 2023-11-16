@@ -9,15 +9,14 @@ from airflow.operators.dummy import DummyOperator
 
 log = logging.getLogger(__name__)
 
-dag = DAG(dag_id='test_dummy_dag',
-          description='Test dummy DAG',
-          schedule_interval='*/2 * * * *',
-          start_date=datetime(2020, 1, 8),
-          catchup=False,
-          max_active_runs=1)
+dag = DAG(
+    dag_id="test_dummy_dag",
+    description="Test dummy DAG",
+    schedule_interval="*/2 * * * *",
+    start_date=datetime(2020, 1, 8),
+    catchup=False,
+    max_active_runs=1,
+)
 log.debug("dag created.")
 
-dummy_task = DummyOperator(
-    task_id='test_dummy',
-    dag=dag
-)
+dummy_task = DummyOperator(task_id="test_dummy", dag=dag)

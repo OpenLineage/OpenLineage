@@ -14,28 +14,24 @@ from airflow.utils.dates import days_ago
 
 set_producer("https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/airflow")
 
-AthenaOperator = try_import_from_string(
-    "airflow.providers.amazon.aws.operators.athena.AthenaOperator"
-)
+AthenaOperator = try_import_from_string("airflow.providers.amazon.aws.operators.athena.AthenaOperator")
 if AthenaOperator is None:
-    AthenaOperator = try_import_from_string(
-        "airflow.providers.amazon.aws.operators.athena.AWSAthenaOperator"
-    )
+    AthenaOperator = try_import_from_string("airflow.providers.amazon.aws.operators.athena.AWSAthenaOperator")
 
 default_args = {
-    'owner': 'datascience',
-    'depends_on_past': False,
-    'start_date': days_ago(7),
-    'email_on_failure': False,
-    'email_on_retry': False,
-    'email': ['datascience@example.com']
+    "owner": "datascience",
+    "depends_on_past": False,
+    "start_date": days_ago(7),
+    "email_on_failure": False,
+    "email_on_retry": False,
+    "email": ["datascience@example.com"],
 }
 
 dag = DAG(
-    'athena_dag',
-    schedule_interval='@once',
+    "athena_dag",
+    schedule_interval="@once",
     default_args=default_args,
-    description='Determines the popular day of week orders are placed.'
+    description="Determines the popular day of week orders are placed.",
 )
 
 CONNECTION = "aws_conn"
@@ -47,65 +43,65 @@ S3_BUCKET = parsed.netloc
 S3_PREFIX = parsed.path
 
 t0 = AthenaOperator(
-    task_id='athena_create_database',
+    task_id="athena_create_database",
     aws_conn_id=CONNECTION,
-    query=f'CREATE DATABASE IF NOT EXISTS {DATABASE};',
+    query=f"CREATE DATABASE IF NOT EXISTS {DATABASE};",
     database=DATABASE,
     output_location=OUTPUT_LOCATION,
     max_tries=4,
-    dag=dag
+    dag=dag,
 )
 
 t1 = AthenaOperator(
-    task_id='athena_create_table',
+    task_id="athena_create_table",
     aws_conn_id=CONNECTION,
-    query=f'''
+    query=f"""
     CREATE EXTERNAL TABLE IF NOT EXISTS test_orders (
       ord   INT,
       str   STRING,
       num   INT
     )
     LOCATION '{OUTPUT_LOCATION}';
-    ''',
+    """,
     database=DATABASE,
     output_location=OUTPUT_LOCATION,
     max_tries=4,
-    dag=dag
+    dag=dag,
 )
 
 t2 = AthenaOperator(
-    task_id='athena_insert',
+    task_id="athena_insert",
     aws_conn_id=CONNECTION,
-    query='''
+    query="""
     INSERT INTO test_orders (ord, str, num) VALUES
     (1, 'b', 15),
     (2, 'a', 21),
     (3, 'b', 7);
-    ''',
+    """,
     database=DATABASE,
     output_location=OUTPUT_LOCATION,
     max_tries=4,
-    dag=dag
+    dag=dag,
 )
 
 t3 = AthenaOperator(
-    task_id='athena_select_from_other_db',
+    task_id="athena_select_from_other_db",
     aws_conn_id=CONNECTION,
     query=f"SELECT * FROM {DATABASE}.test_orders;",
     database="default",
     output_location=OUTPUT_LOCATION,
     max_tries=4,
-    dag=dag
+    dag=dag,
 )
 
 t4 = AthenaOperator(
-    task_id='athena_drop_table',
+    task_id="athena_drop_table",
     aws_conn_id=CONNECTION,
     query="DROP TABLE test_orders;",
     database=DATABASE,
     output_location=OUTPUT_LOCATION,
     max_tries=4,
-    dag=dag
+    dag=dag,
 )
 
 
@@ -115,10 +111,6 @@ def delete_objects():
     hook.delete_objects(bucket=S3_BUCKET, keys=keys)
 
 
-t5 = PythonOperator(
-    task_id="delete_s3_objects",
-    python_callable=delete_objects,
-    dag=dag
-)
+t5 = PythonOperator(task_id="delete_s3_objects", python_callable=delete_objects, dag=dag)
 
 t0 >> t1 >> t2 >> t3 >> t4 >> t5

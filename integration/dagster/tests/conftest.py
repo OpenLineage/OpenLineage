@@ -9,14 +9,21 @@ from typing import Optional
 from openlineage.dagster import __version__ as OPENLINEAGE_DAGSTER_VERSION
 from pkg_resources import parse_version
 
-from dagster import DagsterEvent, DagsterEventType, DagsterRun, EventLogEntry, EventLogRecord
+from dagster import (
+    DagsterEvent,
+    DagsterEventType,
+    DagsterRun,
+    EventLogEntry,
+    EventLogRecord,
+)
 from dagster.core.execution.plan.objects import StepFailureData, StepSuccessData
 from dagster.core.host_representation import ExternalRepositoryOrigin
 from dagster.core.types.loadable_target_origin import LoadableTargetOrigin
 from dagster.version import __version__ as DAGSTER_VERSION
 
-PRODUCER = f"https://github.com/OpenLineage/OpenLineage/tree/" \
-           f"{OPENLINEAGE_DAGSTER_VERSION}/integration/dagster"
+PRODUCER = (
+    f"https://github.com/OpenLineage/OpenLineage/tree/" f"{OPENLINEAGE_DAGSTER_VERSION}/integration/dagster"
+)
 
 
 class DagsterRunProvider(ABC):
@@ -26,7 +33,7 @@ class DagsterRunProvider(ABC):
 
     @abstractmethod
     def get_instance(self, repository_name: str) -> DagsterRun:
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 class DagsterRunLE1_2_2Provider(DagsterRunProvider):
@@ -53,7 +60,7 @@ class DagsterRunLE1_2_2Provider(DagsterRunProvider):
                     repository_name=repository_name,
                 ),
                 pipeline_name="test",
-            )
+            ),
         )
 
         return dagster_run
@@ -83,7 +90,7 @@ class DagsterRunLE1_3_2Provider(DagsterRunProvider):
                     repository_name=repository_name,
                 ),
                 pipeline_name="test",
-            )
+            ),
         )
         return dagster_run
 
@@ -117,34 +124,34 @@ class DagsterRunLatestProvider(DagsterRunProvider):
                     repository_name=repository_name,
                 ),
                 job_name="test",
-            )
+            ),
         )
         return dagster_run
 
 
 def make_test_event_log_record(
-        event_type: Optional[DagsterEventType] = None,
-        pipeline_name: str = "a_job",
-        pipeline_run_id: str = str(uuid.uuid4()),
-        timestamp: float = time.time(),
-        step_key: Optional[str] = None,
-        storage_id: int = 1,
+    event_type: Optional[DagsterEventType] = None,
+    pipeline_name: str = "a_job",
+    pipeline_run_id: str = str(uuid.uuid4()),
+    timestamp: float = time.time(),
+    step_key: Optional[str] = None,
+    storage_id: int = 1,
 ):
     event_log_entry = EventLogEntry(
-        None, "debug", "user_msg", pipeline_run_id, timestamp, step_key, pipeline_name,
-        _make_dagster_event(event_type, pipeline_name, step_key) if event_type else None)
-
-    return EventLogRecord(
-        storage_id=storage_id,
-        event_log_entry=event_log_entry
+        None,
+        "debug",
+        "user_msg",
+        pipeline_run_id,
+        timestamp,
+        step_key,
+        pipeline_name,
+        _make_dagster_event(event_type, pipeline_name, step_key) if event_type else None,
     )
 
+    return EventLogRecord(storage_id=storage_id, event_log_entry=event_log_entry)
 
-def _make_dagster_event(
-        event_type: DagsterEventType,
-        pipeline_name: str,
-        step_key: str
-):
+
+def _make_dagster_event(event_type: DagsterEventType, pipeline_name: str, step_key: str):
     event_specific_data = None
     if event_type == DagsterEventType.STEP_SUCCESS:
         event_specific_data = StepSuccessData(duration_ms=1.0)
@@ -154,12 +161,12 @@ def _make_dagster_event(
         event_type.value,
         pipeline_name,
         step_key=step_key,
-        event_specific_data=event_specific_data
+        event_specific_data=event_specific_data,
     )
 
 
 def make_pipeline_run_with_external_pipeline_origin(
-        repository_name: str,
+    repository_name: str,
 ):
     parsed_dagster_version = parse_version(DAGSTER_VERSION)
     dagster_run_provider: DagsterRunProvider = None

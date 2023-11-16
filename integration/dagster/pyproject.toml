@@ -1,5 +1,5 @@
 [tool.ruff]
-line-length = 100
+line-length = 110
 select = [
     "F",
     "E",

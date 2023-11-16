@@ -37,24 +37,22 @@ def test_start_pipeline(mock_client, mock_to_utc_iso_8601):
                 runId=step_run_id,
                 facets={
                     "parent": ParentRunFacet(
-                        run={
-                            "runId": pipeline_run_id
-                        },
+                        run={"runId": pipeline_run_id},
                         job={
                             "namespace": DEFAULT_NAMESPACE_NAME,
-                            "name": pipeline_name
-                        }
+                            "name": pipeline_name,
+                        },
                     )
-                }
+                },
             ),
             job=Job(
                 namespace=DEFAULT_NAMESPACE_NAME,
                 name=f"{pipeline_name}.{step_key}",
-                facets={}
+                facets={},
             ),
             producer=PRODUCER,
             inputs=[],
-            outputs=[]
+            outputs=[],
         )
     )
 
@@ -83,24 +81,22 @@ def test_complete_step(mock_client, mock_to_utc_iso_8601):
                 runId=step_run_id,
                 facets={
                     "parent": ParentRunFacet(
-                        run={
-                            "runId": pipeline_run_id
-                        },
+                        run={"runId": pipeline_run_id},
                         job={
                             "namespace": DEFAULT_NAMESPACE_NAME,
-                            "name": pipeline_name
-                        }
+                            "name": pipeline_name,
+                        },
                     )
-                }
+                },
             ),
             job=Job(
                 namespace=DEFAULT_NAMESPACE_NAME,
                 name=f"{pipeline_name}.{step_key}",
-                facets={}
+                facets={},
             ),
             producer=PRODUCER,
             inputs=[],
-            outputs=[]
+            outputs=[],
         )
     )
 
@@ -129,23 +125,21 @@ def test_fail_step(mock_client, mock_to_utc_iso_8601):
                 runId=step_run_id,
                 facets={
                     "parent": ParentRunFacet(
-                        run={
-                            "runId": pipeline_run_id
-                        },
+                        run={"runId": pipeline_run_id},
                         job={
                             "namespace": DEFAULT_NAMESPACE_NAME,
-                            "name": pipeline_name
-                        }
+                            "name": pipeline_name,
+                        },
                     )
-                }
+                },
             ),
             job=Job(
                 namespace=DEFAULT_NAMESPACE_NAME,
                 name=f"{pipeline_name}.{step_key}",
-                facets={}
+                facets={},
             ),
             producer=PRODUCER,
             inputs=[],
-            outputs=[]
+            outputs=[],
         )
     )

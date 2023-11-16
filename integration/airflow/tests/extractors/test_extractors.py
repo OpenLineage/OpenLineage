@@ -19,7 +19,7 @@ class FakeExtractor(BaseExtractor):
 
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
-        return ['TestOperator']
+        return ["TestOperator"]
 
 
 class AnotherFakeExtractor(BaseExtractor):
@@ -28,7 +28,7 @@ class AnotherFakeExtractor(BaseExtractor):
 
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
-        return ['AnotherTestOperator']
+        return ["AnotherTestOperator"]
 
 
 def test_basic_extractor():
@@ -40,24 +40,34 @@ def test_basic_extractor():
 
 def test_env_add_extractor():
     extractor_list_len = len(Extractors().extractors)
-    with patch.dict(os.environ, {"OPENLINEAGE_EXTRACTORS": "tests.extractors.test_extractors.FakeExtractor"}):  # noqa
+    with patch.dict(
+        os.environ,
+        {"OPENLINEAGE_EXTRACTORS": "tests.extractors.test_extractors.FakeExtractor"},
+    ):
         assert len(Extractors().extractors) == extractor_list_len + 1
 
 
 def test_env_multiple_extractors():
     extractor_list_len = len(Extractors().extractors)
-    with patch.dict(os.environ, {"OPENLINEAGE_EXTRACTORS": "tests.extractors.test_extractors.FakeExtractor;\ntests.extractors.test_extractors.AnotherFakeExtractor"}):  # noqa
+    with patch.dict(
+        os.environ,
+        {
+            "OPENLINEAGE_EXTRACTORS": (
+                "tests.extractors.test_extractors.FakeExtractor;\n"
+                "tests.extractors.test_extractors.AnotherFakeExtractor"
+            )
+        },
+    ):
         assert len(Extractors().extractors) == extractor_list_len + 2
 
 
 def test_env_old_method_extractors():
     extractor_list_len = len(Extractors().extractors)
 
-    os.environ['OPENLINEAGE_EXTRACTOR_TestOperator'] = \
-        'tests.extractors.test_extractors.FakeExtractor'
+    os.environ["OPENLINEAGE_EXTRACTOR_TestOperator"] = "tests.extractors.test_extractors.FakeExtractor"
 
     assert len(Extractors().extractors) == extractor_list_len + 1
-    del os.environ['OPENLINEAGE_EXTRACTOR_TestOperator']
+    del os.environ["OPENLINEAGE_EXTRACTOR_TestOperator"]
 
 
 def test_adding_extractors():
@@ -67,34 +77,46 @@ def test_adding_extractors():
     assert len(extractors.extractors) == count + 1
 
 
-@patch.object(BaseHook, "get_connection", return_value=Connection(conn_id="postgres_default", conn_type="postgres"))  # noqa
+@patch.object(
+    BaseHook,
+    "get_connection",
+    return_value=Connection(conn_id="postgres_default", conn_type="postgres"),
+)
 def test_instantiate_abstract_extractors(mock_hook):
     class SQLCheckOperator:
         conn_id = "postgres_default"
+
     extractors = Extractors()
     extractors.instantiate_abstract_extractors(task=SQLCheckOperator())
     sql_check_extractor = extractors.extractors["SQLCheckOperator"]("SQLCheckOperator")
     assert sql_check_extractor._get_scheme() == "postgres"
 
 
-@patch.object(BaseHook, "get_connection", return_value=Connection(conn_id="postgres_default", conn_type="postgres"))  # noqa
+@patch.object(
+    BaseHook,
+    "get_connection",
+    return_value=Connection(conn_id="postgres_default", conn_type="postgres"),
+)
 def test_instantiate_abstract_extractors_sql_execute(mock_hook):
     class SQLExecuteQueryOperator:
         conn_id = "postgres_default"
 
     extractors = Extractors()
     extractors.instantiate_abstract_extractors(task=SQLExecuteQueryOperator())
-    sql_check_extractor = extractors.extractors["SQLExecuteQueryOperator"](
-        "SQLExecuteQueryOperator"
-    )
+    sql_check_extractor = extractors.extractors["SQLExecuteQueryOperator"]("SQLExecuteQueryOperator")
     assert sql_check_extractor._get_scheme() == "postgres"
 
 
-@patch('airflow.models.connection.Connection')
-@patch.object(BaseHook, "get_connection", return_value=Connection(conn_id="notimplemented", conn_type="notimplementeddb"))  # noqa
+@patch("airflow.models.connection.Connection")
+@patch.object(
+    BaseHook,
+    "get_connection",
+    return_value=Connection(conn_id="notimplemented", conn_type="notimplementeddb"),
+)
 def test_instantiate_abstract_extractors_value_error(mock_hook, mock_conn):
     class SQLCheckOperator:
         conn_id = "notimplementeddb"
+
     with pytest.raises(ValueError):
         extractors = Extractors()
         extractors.instantiate_abstract_extractors(task=SQLCheckOperator())

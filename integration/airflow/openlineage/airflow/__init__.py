@@ -12,13 +12,13 @@ from airflow.version import version as AIRFLOW_VERSION
 
 __author__ = """OpenLineage"""
 
-if parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"):     # type: ignore
+if parse_version(AIRFLOW_VERSION) < parse_version("2.0.0"):  # type: ignore
     logging.warning(
-        f'''
+        f"""
         OpenLineage support for Airflow version {AIRFLOW_VERSION} is REMOVED.
         Please make sure to upgrade your Airflow version to minimum of 2.0.0
         in order to continue using OpenLineage.
-        '''
+        """
     )
 
 from airflow.models import DAG

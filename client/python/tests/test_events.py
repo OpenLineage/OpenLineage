@@ -7,7 +7,6 @@ import os
 
 import attr
 import pytest
-
 from openlineage.client import facet, run
 from openlineage.client.run import RunState
 from openlineage.client.serde import Serde
@@ -94,10 +93,7 @@ def test_nominal_time_facet_does_not_require_end_time() -> None:
 
 
 def test_schema_field_default() -> None:
-    assert (
-        Serde.to_json(facet.SchemaField(name="asdf", type="int4"))
-        == '{"name": "asdf", "type": "int4"}'
-    )
+    assert Serde.to_json(facet.SchemaField(name="asdf", type="int4")) == '{"name": "asdf", "type": "int4"}'
 
     assert (
         Serde.to_json(

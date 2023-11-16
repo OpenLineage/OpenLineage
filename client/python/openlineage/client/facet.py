@@ -1,10 +1,9 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 import attr
-
 from openlineage.client.constants import DEFAULT_PRODUCER
 from openlineage.client.utils import RedactMixin
 
@@ -23,8 +22,8 @@ class BaseFacet(RedactMixin):
     _producer: str = attr.ib(init=False)
     _schemaURL: str = attr.ib(init=False)  # noqa: N815
 
-    _base_skip_redact: List[str] = ["_producer", "_schemaURL"]
-    _additional_skip_redact: List[str] = []
+    _base_skip_redact: ClassVar[List[str]] = ["_producer", "_schemaURL"]
+    _additional_skip_redact: ClassVar[List[str]] = []
 
     def __attrs_post_init__(self) -> None:
         self._producer = PRODUCER
@@ -44,7 +43,7 @@ class NominalTimeRunFacet(BaseFacet):
     nominalStartTime: str = attr.ib()  # noqa: N815
     nominalEndTime: Optional[str] = attr.ib(default=None)  # noqa: N815
 
-    _additional_skip_redact: List[str] = ["nominalStartTime", "nominalEndTime"]
+    _additional_skip_redact: ClassVar[List[str]] = ["nominalStartTime", "nominalEndTime"]
 
     @staticmethod
     def _get_schema() -> str:
@@ -56,7 +55,7 @@ class ParentRunFacet(BaseFacet):
     run: Dict[Any, Any] = attr.ib()
     job: Dict[Any, Any] = attr.ib()
 
-    _additional_skip_redact: List[str] = ["job", "run"]
+    _additional_skip_redact: ClassVar[List[str]] = ["job", "run"]
 
     @classmethod
     def create(cls, runId: str, namespace: str, name: str) -> "ParentRunFacet":  # noqa: N803
@@ -89,7 +88,7 @@ class SourceCodeLocationJobFacet(BaseFacet):
     type: str = attr.ib()  # noqa: A003
     url: str = attr.ib()
 
-    _additional_skip_redact: List[str] = ["type", "url"]
+    _additional_skip_redact: ClassVar[List[str]] = ["type", "url"]
 
     @staticmethod
     def _get_schema() -> str:
@@ -120,7 +119,7 @@ class SchemaField(RedactMixin):
     type: str = attr.ib()  # noqa: A003
     description: Optional[str] = attr.ib(default=None)
 
-    _do_not_redact = ["name", "type"]
+    _do_not_redact: ClassVar[List[str]] = ["name", "type"]
 
 
 @attr.s
@@ -137,7 +136,7 @@ class DataSourceDatasetFacet(BaseFacet):
     name: str = attr.ib()
     uri: str = attr.ib()
 
-    _additional_skip_redact: List[str] = ["name", "uri"]
+    _additional_skip_redact: ClassVar[List[str]] = ["name", "uri"]
 
     @staticmethod
     def _get_schema() -> str:
@@ -149,7 +148,7 @@ class OutputStatisticsOutputDatasetFacet(BaseFacet):
     rowCount: int = attr.ib()  # noqa: N815
     size: Optional[int] = attr.ib(default=None)
 
-    _additional_skip_redact: List[str] = ["rowCount", "size"]
+    _additional_skip_redact: ClassVar[List[str]] = ["rowCount", "size"]
 
     @staticmethod
     def _get_schema() -> str:
@@ -184,7 +183,7 @@ class Assertion(RedactMixin):
     success: bool = attr.ib()
     column: Optional[str] = attr.ib(default=None)
 
-    _skip_redact: List[str] = ["column"]
+    _skip_redact: ClassVar[List[str]] = ["column"]
 
 
 @attr.s
@@ -207,7 +206,7 @@ class SourceCodeJobFacet(BaseFacet):
     language: str = attr.ib()  # language that the code was written in
     source: str = attr.ib()  # source code text
 
-    _additional_skip_redact: List[str] = ["language"]
+    _additional_skip_redact: ClassVar[List[str]] = ["language"]
 
     @staticmethod
     def _get_schema() -> str:
@@ -229,7 +228,7 @@ class ErrorMessageRunFacet(BaseFacet):
     programmingLanguage: str = attr.ib()  # noqa: N815
     stackTrace: Optional[str] = attr.ib(default=None)  # noqa: N815
 
-    _additional_skip_redact: List[str] = ["programmingLanguage"]
+    _additional_skip_redact: ClassVar[List[str]] = ["programmingLanguage"]
 
     @staticmethod
     def _get_schema() -> str:
@@ -350,14 +349,12 @@ class ColumnLineageDatasetFacetFieldsAdditionalInputFields(RedactMixin):
     name: str = attr.ib()
     field: str = attr.ib()
 
-    _skip_redact: List[str] = ["namespace", "name", "field"]
+    _skip_redact: ClassVar[List[str]] = ["namespace", "name", "field"]
 
 
 @attr.s
 class ColumnLineageDatasetFacetFieldsAdditional:
-    inputFields: List[  # noqa:  N815
-        ColumnLineageDatasetFacetFieldsAdditionalInputFields
-    ] = attr.ib()
+    inputFields: ClassVar[List[ColumnLineageDatasetFacetFieldsAdditionalInputFields]] = attr.ib()  # noqa: N815
     transformationDescription: str = attr.ib()  # noqa:  N815
     transformationType: str = attr.ib()  # noqa:  N815
 

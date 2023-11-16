@@ -6,27 +6,16 @@ from openlineage.airflow.extractors.sql_check_extractors import get_check_extrac
 
 COLUMN_CHECK_MAPPING = {
     "X": {
-        "null_check": {
-            "pass_value": 0,
-            "tolerance": 0.0,
-            "result": 0,
-            "success": True
-        },
+        "null_check": {"pass_value": 0, "tolerance": 0.0, "result": 0, "success": True},
         "distinct_check": {
             "pass_value": 5,
             "tolerance": 0.0,
             "result": 6,
-            "success": False
-        }
+            "success": False,
+        },
     }
 }
-TABLE_CHECK_MAPPING = {
-    "row_count_check": {
-        "pass_value": 9,
-        "result": 9,
-        "success": True
-    }
-}
+TABLE_CHECK_MAPPING = {"row_count_check": {"pass_value": 9, "result": 9, "success": True}}
 
 (
     SqlCheckExtractor,
@@ -34,7 +23,7 @@ TABLE_CHECK_MAPPING = {
     SqlThresholdCheckExtractor,
     SqlIntervalCheckExtractor,
     SqlColumnCheckExtractor,
-    SqlTableCheckExtractor
+    SqlTableCheckExtractor,
 ) = get_check_extractors(PostgresExtractor)
 
 

@@ -18,9 +18,7 @@ class ExtractorManager:
     def __init__(self):
         self.extractors = {}
         self.task_to_extractor = Extractors()
-        self.log = logging.getLogger(
-            f"{self.__class__.__module__}.{self.__class__.__name__}"
-        )
+        self.log = logging.getLogger(f"{self.__class__.__module__}.{self.__class__.__name__}")
 
     def add_extractor(self, operator, extractor: Type[BaseExtractor]):
         self.task_to_extractor.add_extractor(operator, extractor)
@@ -42,17 +40,13 @@ class ExtractorManager:
             if task_uuid:
                 extractor.set_context("task_uuid", task_uuid)
             try:
-                self.log.debug(
-                    f"Using extractor {extractor.__class__.__name__} {task_info}"
-                )
+                self.log.debug(f"Using extractor {extractor.__class__.__name__} {task_info}")
                 if complete:
                     task_metadata = extractor.extract_on_complete(task_instance)
                 else:
                     task_metadata = extractor.extract()
 
-                self.log.debug(
-                    f"Found task metadata for operation {task.task_id}: {task_metadata}"
-                )
+                self.log.debug(f"Found task metadata for operation {task.task_id}: {task_metadata}")
                 if task_metadata:
                     if (not task_metadata.inputs) and (not task_metadata.outputs):
                         inlets = task.get_inlet_defs()
@@ -86,9 +80,7 @@ class ExtractorManager:
                         unknownItems=[
                             UnknownOperatorInstance(
                                 name=get_operator_class(task).__name__,
-                                properties={
-                                    attr: value for attr, value in task.__dict__.items()
-                                },
+                                properties={attr: value for attr, value in task.__dict__.items()},
                             )
                         ]
                     )

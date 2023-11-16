@@ -8,12 +8,15 @@ import unittest
 import uuid
 from datetime import datetime
 from unittest import mock
+from unittest.mock import PropertyMock
 
 import pytest
 import pytz
-from mock import PropertyMock
 from openlineage.airflow.extractors.redshift_data_extractor import RedshiftDataExtractor
-from openlineage.client.facet import ErrorMessageRunFacet, OutputStatisticsOutputDatasetFacet
+from openlineage.client.facet import (
+    ErrorMessageRunFacet,
+    OutputStatisticsOutputDatasetFacet,
+)
 from openlineage.common.models import DbColumn, DbTableSchema
 from openlineage.common.sql import DbTableMeta
 from pkg_resources import parse_version
@@ -25,12 +28,10 @@ from airflow.utils.state import State
 from airflow.version import version as AIRFLOW_VERSION
 
 CONN_ID = "food_delivery_db"
-CONN_URI = (
-    "redshift://user:pass@redshift-cluster-name.id.region.redshift.amazonaws.com:5439"
-    "/food_delivery"
-)
-CONN_URI_WITHOUT_USERPASS = \
+CONN_URI = "redshift://user:pass@redshift-cluster-name.id.region.redshift.amazonaws.com:5439" "/food_delivery"
+CONN_URI_WITHOUT_USERPASS = (
     "redshift://redshift-cluster-name.id.region.redshift.amazonaws.com:5439/food_delivery"
+)
 
 DB_NAME = "food_delivery"
 DB_SCHEMA_NAME = "public"
@@ -169,7 +170,8 @@ class TestRedshiftDataExtractor(unittest.TestCase):
             OutputStatisticsOutputDatasetFacet(
                 rowCount=1,
                 size=11,
-            ) == task_meta.outputs[0].facets['stats']
+            )
+            == task_meta.outputs[0].facets["stats"]
         )
 
     @pytest.mark.skipif(
@@ -177,8 +179,7 @@ class TestRedshiftDataExtractor(unittest.TestCase):
         reason="Airflow >= 2.5.0",
     )
     @mock.patch(
-        "airflow.providers.amazon.aws.operators.redshift_data."
-        "RedshiftDataOperator.wait_for_results"
+        "airflow.providers.amazon.aws.operators.redshift_data." "RedshiftDataOperator.wait_for_results"
     )
     @mock.patch(
         "airflow.providers.amazon.aws.operators.redshift_data.RedshiftDataOperator.hook",
@@ -187,9 +188,7 @@ class TestRedshiftDataExtractor(unittest.TestCase):
     @mock.patch("botocore.client")
     def test_extract_error(self, mock_client, mock_hook, mock_wait_for_results):
         mock_client.describe_statement.side_effect = Exception("redshift error")
-        mock_client.describe_table.side_effect = Exception(
-            "redshift error on describe table"
-        )
+        mock_client.describe_table.side_effect = Exception("redshift error on describe table")
         mock_wait_for_results.return_value = True
         job_id = "test_id"
         mock_client.execute_statement.return_value = {"Id": job_id}
@@ -225,7 +224,7 @@ class TestRedshiftDataExtractor(unittest.TestCase):
         assert task_meta.outputs[0].facets["dataSource"].uri == ""
 
     def read_file_json(self, file):
-        f = open(file=file, mode="r")
+        f = open(file=file)
         details = json.loads(f.read())
         f.close()
         return details

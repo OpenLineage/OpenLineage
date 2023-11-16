@@ -25,10 +25,12 @@ class SnowflakeExtractor(SqlExtractor):
     _is_uppercase_names = True
 
     # extra prefix should be deprecated soon in Airflow
-    _whitelist_query_params: List[str] = ["warehouse", "account", "database", "region"] + [
-        "extra__snowflake__" + el
-        for el in ["warehouse", "account", "database", "region"]
-    ]
+    _whitelist_query_params: List[str] = [
+        "warehouse",
+        "account",
+        "database",
+        "region",
+    ] + ["extra__snowflake__" + el for el in ["warehouse", "account", "database", "region"]]
 
     @property
     def dialect(self):
@@ -45,9 +47,9 @@ class SnowflakeExtractor(SqlExtractor):
     def _get_database(self) -> str:
         if hasattr(self.operator, "database") and self.operator.database is not None:
             return self.operator.database
-        return self.conn.extra_dejson.get(
-            "extra__snowflake__database", ""
-        ) or self.conn.extra_dejson.get("database", "")
+        return self.conn.extra_dejson.get("extra__snowflake__database", "") or self.conn.extra_dejson.get(
+            "database", ""
+        )
 
     def _get_authority(self) -> str:
         uri = fix_snowflake_sqlalchemy_uri(self.hook.get_uri())

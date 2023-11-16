@@ -13,29 +13,44 @@ from openlineage.common.sql import DbTableMeta, SqlMeta, parse
 
 
 class AthenaExtractor(BaseExtractor):
-
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
         return ["AthenaOperator", "AWSAthenaOperator"]
 
     def extract(self) -> TaskMetadata:
         task_name = f"{self.operator.dag_id}.{self.operator.task_id}"
-        job_facets = {
-            "sql": SqlJobFacet(query=SqlExtractor._normalize_sql(self.operator.query))
-        }
+        job_facets = {"sql": SqlJobFacet(query=SqlExtractor._normalize_sql(self.operator.query))}
 
         sql_meta: Optional[SqlMeta] = parse(self.operator.query, "generic", None)
-        inputs: List[Dataset] = list(filter(None, [
-            self._get_inout_dataset(table.schema or self.operator.database, table.name)
-            for table in sql_meta.in_tables
-        ])) if sql_meta and sql_meta.in_tables else []
+        inputs: List[Dataset] = (
+            list(
+                filter(
+                    None,
+                    [
+                        self._get_inout_dataset(table.schema or self.operator.database, table.name)
+                        for table in sql_meta.in_tables
+                    ],
+                )
+            )
+            if sql_meta and sql_meta.in_tables
+            else []
+        )
 
         # Athena can output query result to a new table with CTAS query.
         # cf. https://docs.aws.amazon.com/athena/latest/ug/ctas.html
-        outputs: List[Dataset] = list(filter(None, [
-            self._get_inout_dataset(table.schema or self.operator.database, table.name)
-            for table in sql_meta.out_tables
-        ])) if sql_meta and sql_meta.out_tables else []
+        outputs: List[Dataset] = (
+            list(
+                filter(
+                    None,
+                    [
+                        self._get_inout_dataset(table.schema or self.operator.database, table.name)
+                        for table in sql_meta.out_tables
+                    ],
+                )
+            )
+            if sql_meta and sql_meta.out_tables
+            else []
+        )
 
         # In addition to CTAS query, it's also possible to specify output location on S3
         # with a mandatory parameter, OutputLocation in ResultConfiguration.
@@ -60,14 +75,16 @@ class AthenaExtractor(BaseExtractor):
         # but we keep it as of now since it may be useful for some purpose.
         output_location = self.operator.output_location
         parsed = urlparse(output_location)
-        outputs.append(Dataset(
-            name=parsed.path,
-            source=Source(
-                scheme=parsed.scheme,
-                authority=parsed.netloc,
-                connection_url=output_location
+        outputs.append(
+            Dataset(
+                name=parsed.path,
+                source=Source(
+                    scheme=parsed.scheme,
+                    authority=parsed.netloc,
+                    connection_url=output_location,
+                ),
             )
-        ))
+        )
 
         return TaskMetadata(
             name=task_name,
@@ -88,9 +105,7 @@ class AthenaExtractor(BaseExtractor):
         client = self.operator.hook.get_conn()
         try:
             table_metadata = client.get_table_metadata(
-                CatalogName=CATALOG_NAME,
-                DatabaseName=database,
-                TableName=table
+                CatalogName=CATALOG_NAME, DatabaseName=database, TableName=table
             )
             s3_location = table_metadata["TableMetadata"]["Parameters"]["location"]
             table_schema = DbTableSchema(
@@ -99,7 +114,7 @@ class AthenaExtractor(BaseExtractor):
                 columns=[
                     DbColumn(name=column["Name"], type=column["Type"], ordinal_position=i)
                     for i, column in enumerate(table_metadata["TableMetadata"]["Columns"])
-                ]
+                ],
             )
 
             scheme = "awsathena"
@@ -113,11 +128,9 @@ class AthenaExtractor(BaseExtractor):
                 ),
                 table_schema=table_schema,
                 database_name=CATALOG_NAME,
-                data_location=s3_location
+                data_location=s3_location,
             )
 
         except Exception as e:
-            self.log.error(
-                f"Cannot retrieve table metadata from Athena.Client. {e}", exc_info=True
-            )
+            self.log.error(f"Cannot retrieve table metadata from Athena.Client. {e}", exc_info=True)
             return None

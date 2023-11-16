@@ -9,9 +9,7 @@ from unittest.mock import MagicMock, patch
 from openlineage.airflow.adapter import OpenLineageAdapter
 
 
-@patch.dict(
-    os.environ, {"MARQUEZ_URL": "http://marquez:5000", "MARQUEZ_API_KEY": "api-key"}
-)
+@patch.dict(os.environ, {"MARQUEZ_URL": "http://marquez:5000", "MARQUEZ_API_KEY": "api-key"})
 def test_create_client_from_marquez_url():
     client = OpenLineageAdapter().get_or_create_openlineage_client()
     assert client.transport.url == "http://marquez:5000"
@@ -43,9 +41,7 @@ def test_setting_ol_adapter_log_level() -> None:
         assert logger.getEffectiveLevel() == logging.CRITICAL
 
 
-@patch(
-    "openlineage.airflow.adapter.OpenLineageAdapter.get_or_create_openlineage_client"
-)
+@patch("openlineage.airflow.adapter.OpenLineageAdapter.get_or_create_openlineage_client")
 @patch("openlineage.airflow.adapter.redact_with_exclusions")
 @patch("openlineage.airflow.adapter.Stats.incr")
 @patch("openlineage.airflow.adapter.Stats.timer")
@@ -60,9 +56,7 @@ def test_openlineage_adapter_stats_emit_success(
     mock_stats_timer.assert_called_with("ol.emit.attempts")
 
 
-@patch(
-    "openlineage.airflow.adapter.OpenLineageAdapter.get_or_create_openlineage_client"
-)
+@patch("openlineage.airflow.adapter.OpenLineageAdapter.get_or_create_openlineage_client")
 @patch("openlineage.airflow.adapter.redact_with_exclusions")
 @patch("openlineage.airflow.adapter.Stats.incr")
 @patch("openlineage.airflow.adapter.Stats.timer")

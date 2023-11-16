@@ -9,12 +9,12 @@ from airflow.operators.bash_operator import BashOperator
 from airflow.operators.python_operator import PythonOperator
 
 dag = DAG(
-    dag_id='test_dummy_dag',
-    description='Test dummy DAG',
-    schedule_interval='*/2 * * * *',
+    dag_id="test_dummy_dag",
+    description="Test dummy DAG",
+    schedule_interval="*/2 * * * *",
     start_date=datetime(2020, 1, 8),
     catchup=False,
-    max_active_runs=1
+    max_active_runs=1,
 )
 
 
