@@ -21,3 +21,17 @@ python3 dev/get_changes.py --github_token token --previous 1.4.1 --current 1.5.0
 
 If you get a `command not found` or similar error, make sure you have made the 
 script an executable (e.g., `chmod u+x ./dev/get_changes.py`).
+
+### Viewing the Slack Archive
+
+Install the viewer with `pipx install slack-export-viewer` or install the required 
+dependencies in requirements.txt.
+
+In dev, launch the viewer with the following command:
+
+```sh
+slack-export-viewer -z slack_archive_latest.zip
+```
+
+The archive should be available at localhost:5000. For more details and options, 
+see https://github.com/hfaran/slack-export-viewer.
