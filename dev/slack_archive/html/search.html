@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Message Search</title>
+    <link rel="stylesheet" href="html/style.css" />
+
+    <!-- react -->
+    <!-- react-dom -->
+    <!-- babel -->
+    <!-- minisearch -->
+  </head>
+
+  <body>
+    <script type="text/babel" data-type="module">
+      class App extends React.PureComponent {
+        constructor(props) {
+          super(props);
+
+          this.handleSearchChange = this.handleSearchChange.bind(this);
+          this.handleSearchClear = this.handleSearchClear.bind(this);
+          this.searchMessages = this.searchMessages.bind(this);
+          this.loadSearchData = this.loadSearchData.bind(this);
+          this.loadSearchDataWhenReady =
+            this.loadSearchDataWhenReady.bind(this);
+
+          this.searchInputRef = React.createRef();
+          this.state = {
+            matchingMessages: [],
+            searchValue: "",
+            ready: false,
+            miniSearch: null,
+          };
+        }
+
+        componentDidMount() {
+          this.loadSearchDataWhenReady();
+        }
+
+        loadSearchDataWhenReady() {
+          if (window.search_data) {
+            this.loadSearchData();
+          } else {
+            setTimeout(() => {
+              this.loadSearchDataWhenReady();
+            }, 100);
+          }
+        }
+
+        loadSearchData() {
+          const { channels, users, messages } = window.search_data;
+
+          console.time(`Loading minisearch`);
+          const allMessages = [];
+          const miniSearch = new MiniSearch({
+            idField: "t",
+            fields: ["m"], // fields to index for full-text search
+            storeFields: ["t", "u", "m", "c"], // fields to return with search results
+          });
+
+          for (const channel in messages) {
+            for (const message of messages[channel]) {
+              allMessages.push({ ...message, c: channel });
+            }
+          }
+
+          miniSearch.addAll(allMessages);
+          console.timeEnd(`Loading minisearch`);
+
+          this.setState({ ready: true, miniSearch });
+        }
+
+        handleSearchChange({ target: { value } }) {
+          this.setState({ searchValue: value });
+          const matchingMessages =
+            value.length > 1 ? this.searchMessages(value) : [];
+          this.setState({ matchingMessages });
+        }
+
+        handleSearchClear() {
+          this.setState({ searchValue: "", matchingMessages: [] });
+        }
+
+        searchMessages(query) {
+          const { miniSearch } = this.state;
+          return miniSearch.search(query).slice(0, 50);
+        }
+
+        render() {
+          const { matchingMessages, searchValue, ready } = this.state;
+          return (
+            <div className="App">
+              <article className="main">
+                {ready ? (
+                  <Header
+                    onChange={this.handleSearchChange}
+                    onKeyDown={this.handleSearchKeyDown}
+                    onSearchClear={this.handleSearchClear}
+                    value={searchValue}
+                    searchInputRef={this.searchInputRef}
+                  />
+                ) : (
+                  "Loading"
+                )}
+                {matchingMessages && matchingMessages.length > 0 ? (
+                  <MessagesList messages={matchingMessages} />
+                ) : (
+                  <p>This search is incredibly basic, but it works.</p>
+                )}
+              </article>
+            </div>
+          );
+        }
+      }
+
+      const MessagesList = ({ messages }) => (
+        <ul className="MessagesList">
+          {messages.map(({ t, ...props }) => (
+            <Message {...props} t={t} key={t} />
+          ))}
+        </ul>
+      );
+
+      const Message = ({ m, u, t, c }) => {
+        // Let's find the page
+        const { pages } = window.search_data;
+        // Returns the index of the first timestamp that's
+        // smaller than the timestamp we passed in.
+        const channelPages = pages[c] ? pages[c] : null;
+        let href;
+
+        if (channelPages) {
+          const index = channelPages.findIndex((pageTs) => pageTs < t);
+          const page = `${c}-${index}`;
+          href = `index.html?c=${encodeURIComponent(page)}&ts=${t}`;
+        }
+
+        const message = (
+          <li className="Message">
+            <p>
+              <Channel id={c} /> - <Timestamp timestamp={t} />
+            </p>
+            <p>
+              <User id={u} /> {m}
+            </p>
+          </li>
+        );
+
+        if (href) {
+          return (
+            <a href={href} target="_blank">
+              {message}
+            </a>
+          );
+        } else {
+          return message;
+        }
+      };
+
+      const User = ({ id }) => (
+        <strong>@{window.search_data.users[id]}: </strong>
+      );
+
+      const Channel = ({ id }) => (
+        <span className="Channel">#{window.search_data.channels[id]}</span>
+      );
+
+      const Timestamp = ({ timestamp }) => {
+        const splitTs = timestamp.split(".") || [];
+        const jsTs = parseInt(`${splitTs[0]}${splitTs[1].slice(0, 3)}`, 10);
+        const date = new Date(jsTs);
+
+        return (
+          <span class="timestamp">
+            <span className="c-timestamp__label">{date.toLocaleString()}</span>
+          </span>
+        );
+      };
+
+      const Header = (props) => (
+        <header className="Header">
+          <h1>Message Search</h1>
+          <SearchBox {...props} />
+        </header>
+      );
+
+      const SearchBox = ({
+        onChange,
+        onSearchClear,
+        value,
+        searchInputRef,
+      }) => (
+        <div className="SearchBox">
+          <div className="Search">
+            <input
+              type="text"
+              value={value}
+              onChange={onChange}
+              ref={searchInputRef}
+              autoComplete="none"
+              autoCorrect="none"
+              autoCapitalize="none"
+              spellCheck="false"
+            />
+            <button
+              className="clear"
+              onClick={onSearchClear}
+              style={{ margin: 10 }}
+            >
+              &times;
+            </button>
+          </div>
+        </div>
+      );
+
+      ReactDOM.render(
+        React.createElement(App),
+        document.getElementById("search")
+      );
+    </script>
+    <div id="search">
+      Loading and indexing messages, please wait. If you have a large number of
+      messages, this might take a minute.
+      <p>
+        <!-- Size -->
+      </p>
+    </div>
+    <script defer src="data/search.js" type="text/javascript"></script>
+  </body>
+</html>

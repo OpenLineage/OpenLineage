@@ -1,0 +1,197 @@
+root@ip-172-30-4-153:~/marquez# ./docker/up.sh --tag 0.37.0 -a 5000 -m 5001 -w 3000 --build
+...creating volumes: marquez_data, marquez_db-conf, marquez_db-init, marquez_db-backup
+Successfully copied 7.17kB to volumes-provisioner:/data/wait-for-it.sh
+Added files to volume marquez_data: wait-for-it.sh
+Successfully copied 2.05kB to volumes-provisioner:/db-conf/postgresql.conf
+Added files to volume marquez_db-conf: postgresql.conf
+Successfully copied 2.05kB to volumes-provisioner:/db-init/init-db.sh
+Added files to volume marquez_db-init: init-db.sh
+DONE!
+[+] Building 0.7s (40/53)                                                                                                                                   docker:default
+ => [seed_marquez internal] load build definition from Dockerfile                                                                                                     0.0s
+ => => transferring dockerfile: 730B                                                                                                                                  0.0s
+ => [seed_marquez internal] load .dockerignore                                                                                                                        0.0s
+ => => transferring context: 91B                                                                                                                                      0.0s
+ => [api internal] load .dockerignore                                                                                                                                 0.0s
+ => => transferring context: 91B                                                                                                                                      0.0s
+ => [api internal] load build definition from Dockerfile                                                                                                              0.0s
+ => => transferring dockerfile: 730B                                                                                                                                  0.0s
+ => [api internal] load metadata for docker.io/library/eclipse-temurin:17                                                                                             0.1s
+ => [api internal] load build context                                                                                                                                 0.1s
+ => => transferring context: 42.84kB                                                                                                                                  0.0s
+ => [seed_marquez base 1/7] FROM docker.io/library/eclipse-temurin:17@sha256:b11bfab9cf5699455664b66873a9857ba22ce8da5e2d2e4e4698c9f6a4930c36                         0.0s
+ => [seed_marquez internal] load build context                                                                                                                        0.1s
+ => => transferring context: 42.84kB                                                                                                                                  0.0s
+ => CACHED [api stage-2 2/6] RUN apt-get update && apt-get install -y postgresql-client bash coreutils                                                                0.0s
+ => CACHED [api stage-2 3/6] WORKDIR /usr/src/app                                                                                                                     0.0s
+ => CACHED [api base 2/7] WORKDIR /usr/src/app                                                                                                                        0.0s
+ => CACHED [api base 3/7] COPY gradle gradle                                                                                                                          0.0s
+ => CACHED [api base 4/7] COPY gradle.properties gradle.properties                                                                                                    0.0s
+ => CACHED [api base 5/7] COPY gradlew gradlew                                                                                                                        0.0s
+ => CACHED [api base 6/7] COPY settings.gradle settings.gradle                                                                                                        0.0s
+ => CACHED [api base 7/7] RUN ./gradlew --version                                                                                                                     0.0s
+ => CACHED [api build 1/5] WORKDIR /usr/src/app                                                                                                                       0.0s
+ => CACHED [api build 2/5] COPY build.gradle build.gradle                                                                                                             0.0s
+ => CACHED [api build 3/5] COPY api ./api                                                                                                                             0.0s
+ => CACHED [api build 4/5] COPY clients/java ./clients/java                                                                                                           0.0s
+ => CACHED [api build 5/5] RUN ./gradlew --no-daemon clean :api:shadowJar                                                                                             0.0s
+ => CACHED [api stage-2 4/6] COPY --from=build /usr/src/app/api/build/libs/marquez-*.jar /usr/src/app                                                                 0.0s
+ => CACHED [api stage-2 5/6] COPY marquez.dev.yml marquez.dev.yml                                                                                                     0.0s
+ => CACHED [api stage-2 6/6] COPY docker/entrypoint.sh entrypoint.sh                                                                                                  0.0s
+ => [seed_marquez] exporting to image                                                                                                                                 0.0s
+ => => exporting layers                                                                                                                                               0.0s
+ => => writing image sha256:2b5190cc7c89dacadc5a6c0c8466994dc10aef24ef7fae4046498c80bc5823c3                                                                          0.0s
+ => => naming to docker.io/library/marquez-seed_marquez                                                                                                               0.0s
+ => [api] exporting to image                                                                                                                                          0.0s
+ => => exporting layers                                                                                                                                               0.0s
+ => => writing image sha256:e4241ae334d3c967583e3af6691f21eb387005e1e8663048803ef590ae8d0127                                                                          0.0s
+ => => naming to docker.io/marquezproject/marquez:0.42.0                                                                                                              0.0s
+ => [web internal] load build definition from Dockerfile                                                                                                              0.0s
+ => => transferring dockerfile: 317B                                                                                                                                  0.0s
+ => [web internal] load .dockerignore                                                                                                                                 0.0s
+ => => transferring context: 2B                                                                                                                                       0.0s
+ => [web internal] load metadata for docker.io/library/node:18-alpine                                                                                                 0.1s
+ => [web 1/9] FROM docker.io/library/node:18-alpine@sha256:435dcad253bb5b7f347ebc69c8cc52de7c912eb7241098b920f2fc2d7843183d                                           0.0s
+ => [web internal] load build context                                                                                                                                 0.0s
+ => => transferring context: 9.54kB                                                                                                                                   0.0s
+ => CACHED [web 2/9] WORKDIR /usr/src/app                                                                                                                             0.0s
+ => CACHED [web 3/9] RUN apk update && apk add --virtual bash coreutils                                                                                               0.0s
+ => CACHED [web 4/9] RUN apk add --no-cache git                                                                                                                       0.0s
+ => CACHED [web 5/9] COPY package*.json ./                                                                                                                            0.0s
+ => CACHED [web 6/9] RUN npm install                                                                                                                                  0.0s
+ => CACHED [web 7/9] COPY . .                                                                                                                                         0.0s
+ => CACHED [web 8/9] RUN npm run build                                                                                                                                0.0s
+ => CACHED [web 9/9] COPY docker/entrypoint.sh entrypoint.sh                                                                                                          0.0s
+ => [web] exporting to image                                                                                                                                          0.0s
+ => => exporting layers                                                                                                                                               0.0s
+ => => writing image sha256:e5d43892ccac4e77b0193fe6fb59418000a71f0046eb77abeac9d239079bfb8f                                                                          0.0s
+ => => naming to docker.io/marquezproject/marquez-web:0.42.0                                                                                                          0.0s
+[+] Running 5/5
+ ✔ Container marquez-seed_marquez-1  Recreated                                                                                                                        0.2s
+ ✔ Container marquez-db              Recreated                                                                                                                        0.2s
+ ✔ Container pghero                  Recreated                                                                                                                        0.2s
+ ✔ Container marquez-api             Recreated                                                                                                                        0.1s
+ ✔ Container marquez-web             Recreated                                                                                                                        0.1s
+Attaching to marquez-api, marquez-db, marquez-seed_marquez-1, marquez-web, pghero
+marquez-seed_marquez-1  | WARNING 'MARQUEZ_CONFIG' not set, using development configuration.
+marquez-db              |
+marquez-db              | PostgreSQL Database directory appears to contain a database; Skipping initialization
+marquez-db              |
+marquez-db              | 2023-10-27 20:43:22.700 GMT [1] LOG:  starting PostgreSQL 14.9 (Debian 14.9-1.pgdg120+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 12.2.0-14) 12.2.0, 64-bit
+marquez-db              | 2023-10-27 20:43:22.711 GMT [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+marquez-db              | 2023-10-27 20:43:22.717 GMT [1] LOG:  could not create IPv6 socket for address "::": Address family not supported by protocol
+marquez-db              | 2023-10-27 20:43:22.726 GMT [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+marquez-db              | 2023-10-27 20:43:22.747 GMT [27] LOG:  database system was shut down at 2023-10-27 20:41:26 GMT
+marquez-db              | 2023-10-27 20:43:22.758 GMT [1] LOG:  database system is ready to accept connections
+marquez-api             | wait-for-it.sh: waiting 15 seconds for db:5432
+marquez-db              | 2023-10-27 20:43:23.229 GMT [34] LOG:  incomplete startup packet
+marquez-api             | wait-for-it.sh: db:5432 is available after 0 seconds
+marquez-api             | WARNING 'MARQUEZ_CONFIG' not set, using development configuration.
+pghero                  | [1] Puma starting in cluster mode...
+pghero                  | [1] * Puma version: 6.3.1 (ruby 3.1.4-p223) ("Mugi No Toki Itaru")
+pghero                  | [1] *  Min threads: 1
+pghero                  | [1] *  Max threads: 16
+pghero                  | [1] *  Environment: production
+pghero                  | [1] *   Master PID: 1
+pghero                  | [1] *      Workers: 3
+pghero                  | [1] *     Restarts: (✔) hot (✖) phased
+pghero                  | [1] * Preloading application
+marquez-web             | [HPM] Proxy created: /api/v1  -> http://api:5000/
+marquez-web             | App listening on port 3000!
+marquez-seed_marquez-1  | INFO  [2023-10-27 20:43:31,124] org.eclipse.jetty.util.log: Logging initialized @8890ms to org.eclipse.jetty.util.log.Slf4jLog
+marquez-seed_marquez-1  | INFO  [2023-10-27 20:43:31,497] io.dropwizard.server.DefaultServerFactory: Registering jersey handler with root path prefix: /
+marquez-seed_marquez-1  | INFO  [2023-10-27 20:43:31,529] io.dropwizard.server.DefaultServerFactory: Registering admin handler with root path prefix: /
+marquez-seed_marquez-1  | INFO  [2023-10-27 20:43:31,536] io.dropwizard.assets.AssetsBundle: Registering AssetBundle with name: graphql-playground for path /graphql-playground/*
+marquez-seed_marquez-1  | INFO  [2023-10-27 20:43:31,589] marquez.MarquezApp: Running startup actions...
+pghero                  | [1] * Listening on http://0.0.0.0:8080
+pghero                  | [1] Use Ctrl-C to stop
+marquez-seed_marquez-1  | INFO  [2023-10-27 20:43:31,777] org.flywaydb.core.internal.license.VersionPrinter: Flyway Community Edition 8.5.13 by Redgate
+marquez-seed_marquez-1  | INFO  [2023-10-27 20:43:31,780] org.flywaydb.core.internal.license.VersionPrinter: See what's new here: https://flywaydb.org/documentation/learnmore/releaseNotes#8.5.13
+marquez-seed_marquez-1  | INFO  [2023-10-27 20:43:31,781] org.flywaydb.core.internal.license.VersionPrinter:
+pghero                  | [1] - Worker 1 (PID: 10) booted in 0.1s, phase: 0
+pghero                  | [1] - Worker 2 (PID: 13) booted in 0.01s, phase: 0
+pghero                  | [1] - Worker 0 (PID: 9) booted in 0.14s, phase: 0
+marquez-seed_marquez-1  | ERROR [2023-10-27 20:43:32,205] org.apache.tomcat.jdbc.pool.ConnectionPool: Unable to create initial connections of pool.
+marquez-seed_marquez-1  | ! java.net.UnknownHostException: postgres
+marquez-seed_marquez-1  | ! at java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:572)
+marquez-seed_marquez-1  | ! at java.base/java.net.SocksSocketImpl.connect(SocksSocketImpl.java:327)
+marquez-seed_marquez-1  | ! at java.base/java.net.Socket.connect(Socket.java:633)
+marquez-seed_marquez-1  | ! at org.postgresql.core.PGStream.createSocket(PGStream.java:243)
+marquez-seed_marquez-1  | ! at org.postgresql.core.PGStream.<init>(PGStream.java:98)
+marquez-seed_marquez-1  | ! at org.postgresql.core.v3.ConnectionFactoryImpl.tryConnect(ConnectionFactoryImpl.java:132)
+marquez-seed_marquez-1  | ! at org.postgresql.core.v3.ConnectionFactoryImpl.openConnectionImpl(ConnectionFactoryImpl.java:258)
+marquez-seed_marquez-1  | ! ... 26 common frames omitted
+marquez-seed_marquez-1  | ! Causing: org.postgresql.util.PSQLException: The connection attempt failed.
+marquez-seed_marquez-1  | ! at org.postgresql.core.v3.ConnectionFactoryImpl.openConnectionImpl(ConnectionFactoryImpl.java:354)
+marquez-seed_marquez-1  | ! at org.postgresql.core.ConnectionFactory.openConnection(ConnectionFactory.java:54)
+marquez-seed_marquez-1  | ! at org.postgresql.jdbc.PgConnection.<init>(PgConnection.java:263)
+marquez-seed_marquez-1  | ! at org.postgresql.Driver.makeConnection(Driver.java:443)
+marquez-seed_marquez-1  | ! at org.postgresql.Driver.connect(Driver.java:297)
+marquez-seed_marquez-1  | ! at org.apache.tomcat.jdbc.pool.PooledConnection.connectUsingDriver(PooledConnection.java:346)
+marquez-seed_marquez-1  | ! at org.apache.tomcat.jdbc.pool.PooledConnection.connect(PooledConnection.java:227)
+marquez-seed_marquez-1  | ! at org.apache.tomcat.jdbc.pool.ConnectionPool.createConnection(ConnectionPool.java:768)
+marquez-seed_marquez-1  | ! at org.apache.tomcat.jdbc.pool.ConnectionPool.borrowConnection(ConnectionPool.java:696)
+marquez-seed_marquez-1  | ! at org.apache.tomcat.jdbc.pool.ConnectionPool.init(ConnectionPool.java:495)
+marquez-seed_marquez-1  | ! at org.apache.tomcat.jdbc.pool.ConnectionPool.<init>(ConnectionPool.java:153)
+marquez-seed_marquez-1  | ! at org.apache.tomcat.jdbc.pool.DataSourceProxy.pCreatePool(DataSourceProxy.java:118)
+marquez-seed_marquez-1  | ! at org.apache.tomcat.jdbc.pool.DataSourceProxy.createPool(DataSourceProxy.java:107)
+marquez-seed_marquez-1  | ! at org.apache.tomcat.jdbc.pool.DataSourceProxy.getConnection(DataSourceProxy.java:131)
+marquez-seed_marquez-1  | ! at org.flywaydb.core.internal.jdbc.JdbcUtils.openConnection(JdbcUtils.java:48)
+marquez-seed_marquez-1  | ! at org.flywaydb.core.internal.jdbc.JdbcConnectionFactory.<init>(JdbcConnectionFactory.java:75)
+marquez-seed_marquez-1  | ! at org.flywaydb.core.FlywayExecutor.execute(FlywayExecutor.java:147)
+marquez-seed_marquez-1  | ! at org.flywaydb.core.Flyway.info(Flyway.java:190)
+marquez-seed_marquez-1  | ! at marquez.db.DbMigration.hasPendingDbMigrations(DbMigration.java:78)
+marquez-seed_marquez-1  | ! at marquez.db.DbMigration.migrateDbOrError(DbMigration.java:33)
+marquez-seed_marquez-1  | ! at marquez.MarquezApp.run(MarquezApp.java:107)
+marquez-seed_marquez-1  | ! at marquez.MarquezApp.run(MarquezApp.java:49)
+marquez-seed_marquez-1  | ! at io.dropwizard.cli.EnvironmentCommand.run(EnvironmentCommand.java:67)
+marquez-seed_marquez-1  | ! at io.dropwizard.cli.ConfiguredCommand.run(ConfiguredCommand.java:98)
+marquez-seed_marquez-1  | ! at io.dropwizard.cli.Cli.run(Cli.java:78)
+marquez-seed_marquez-1  | ! at io.dropwizard.Application.run(Application.java:94)
+marquez-seed_marquez-1  | ! at marquez.MarquezApp.main(MarquezApp.java:61)
+marquez-seed_marquez-1  | INFO  [2023-10-27 20:43:32,218] marquez.MarquezApp: Stopping app...
+marquez-api             | INFO  [2023-10-27 20:43:32,286] org.eclipse.jetty.util.log: Logging initialized @9023ms to org.eclipse.jetty.util.log.Slf4jLog
+marquez-seed_marquez-1 exited with code 1
+marquez-api             | INFO  [2023-10-27 20:43:32,518] io.dropwizard.server.DefaultServerFactory: Registering jersey handler with root path prefix: /
+marquez-api             | INFO  [2023-10-27 20:43:32,521] io.dropwizard.server.DefaultServerFactory: Registering admin handler with root path prefix: /
+marquez-api             | INFO  [2023-10-27 20:43:32,522] io.dropwizard.assets.AssetsBundle: Registering AssetBundle with name: graphql-playground for path /graphql-playground/*
+marquez-api             | INFO  [2023-10-27 20:43:32,533] marquez.MarquezApp: Running startup actions...
+marquez-api             | INFO  [2023-10-27 20:43:32,586] org.flywaydb.core.internal.license.VersionPrinter: Flyway Community Edition 8.5.13 by Redgate
+marquez-api             | INFO  [2023-10-27 20:43:32,586] org.flywaydb.core.internal.license.VersionPrinter: See what's new here: https://flywaydb.org/documentation/learnmore/releaseNotes#8.5.13
+marquez-api             | INFO  [2023-10-27 20:43:32,586] org.flywaydb.core.internal.license.VersionPrinter:
+marquez-db              | 2023-10-27 20:43:32.972 GMT [35] FATAL:  password authentication failed for user "marquez"
+marquez-db              | 2023-10-27 20:43:32.972 GMT [35] DETAIL:  Role "marquez" does not exist.
+marquez-db              |       Connection matched pg_hba.conf line 100: "host marquez marquez 172.18.0.5/32 md5"
+marquez-api             | ERROR [2023-10-27 20:43:32,983] org.apache.tomcat.jdbc.pool.ConnectionPool: Unable to create initial connections of pool.
+marquez-api             | ! org.postgresql.util.PSQLException: FATAL: password authentication failed for user "marquez"
+marquez-api             | ! at org.postgresql.core.v3.ConnectionFactoryImpl.doAuthentication(ConnectionFactoryImpl.java:693)
+marquez-api             | ! at org.postgresql.core.v3.ConnectionFactoryImpl.tryConnect(ConnectionFactoryImpl.java:203)
+marquez-api             | ! at org.postgresql.core.v3.ConnectionFactoryImpl.openConnectionImpl(ConnectionFactoryImpl.java:258)
+marquez-api             | ! at org.postgresql.core.ConnectionFactory.openConnection(ConnectionFactory.java:54)
+marquez-api             | ! at org.postgresql.jdbc.PgConnection.<init>(PgConnection.java:263)
+marquez-api             | ! at org.postgresql.Driver.makeConnection(Driver.java:443)
+marquez-api             | ! at org.postgresql.Driver.connect(Driver.java:297)
+marquez-api             | ! at org.apache.tomcat.jdbc.pool.PooledConnection.connectUsingDriver(PooledConnection.java:346)
+marquez-api             | ! at org.apache.tomcat.jdbc.pool.PooledConnection.connect(PooledConnection.java:227)
+marquez-api             | ! at org.apache.tomcat.jdbc.pool.ConnectionPool.createConnection(ConnectionPool.java:768)
+marquez-api             | ! at org.apache.tomcat.jdbc.pool.ConnectionPool.borrowConnection(ConnectionPool.java:696)
+marquez-api             | ! at org.apache.tomcat.jdbc.pool.ConnectionPool.init(ConnectionPool.java:495)
+marquez-api             | ! at org.apache.tomcat.jdbc.pool.ConnectionPool.<init>(ConnectionPool.java:153)
+marquez-api             | ! at org.apache.tomcat.jdbc.pool.DataSourceProxy.pCreatePool(DataSourceProxy.java:118)
+marquez-api             | ! at org.apache.tomcat.jdbc.pool.DataSourceProxy.createPool(DataSourceProxy.java:107)
+marquez-api             | ! at org.apache.tomcat.jdbc.pool.DataSourceProxy.getConnection(DataSourceProxy.java:131)
+marquez-api             | ! at org.flywaydb.core.internal.jdbc.JdbcUtils.openConnection(JdbcUtils.java:48)
+marquez-api             | ! at org.flywaydb.core.internal.jdbc.JdbcConnectionFactory.<init>(JdbcConnectionFactory.java:75)
+marquez-api             | ! at org.flywaydb.core.FlywayExecutor.execute(FlywayExecutor.java:147)
+marquez-api             | ! at org.flywaydb.core.Flyway.info(Flyway.java:190)
+marquez-api             | ! at marquez.db.DbMigration.hasPendingDbMigrations(DbMigration.java:78)
+marquez-api             | ! at marquez.db.DbMigration.migrateDbOrError(DbMigration.java:33)
+marquez-api             | ! at marquez.MarquezApp.run(MarquezApp.java:107)
+marquez-api             | ! at marquez.MarquezApp.run(MarquezApp.java:49)
+marquez-api             | ! at io.dropwizard.cli.EnvironmentCommand.run(EnvironmentCommand.java:67)
+marquez-api             | ! at io.dropwizard.cli.ConfiguredCommand.run(ConfiguredCommand.java:98)
+marquez-api             | ! at io.dropwizard.cli.Cli.run(Cli.java:78)
+marquez-api             | ! at io.dropwizard.Application.run(Application.java:94)
+marquez-api             | ! at marquez.MarquezApp.main(MarquezApp.java:61)
+marquez-api             | INFO  [2023-10-27 20:43:32,989] marquez.MarquezApp: Stopping app...
+marquez-api exited with code 1

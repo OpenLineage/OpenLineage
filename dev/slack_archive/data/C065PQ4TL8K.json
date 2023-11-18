@@ -1,0 +1,2359 @@
+[
+  {
+    "client_msg_id": "c67600bf-5ef9-411c-a0d4-bd4dabef0b3c",
+    "type": "message",
+    "text": "I’m off on vacation. See you in a week",
+    "user": "U01DCLP0GU9",
+    "ts": "1700272614.735719",
+    "blocks": [
+      {
+        "type": "rich_text",
+        "block_id": "fzif9",
+        "elements": [
+          {
+            "type": "rich_text_section",
+            "elements": [
+              {
+                "type": "text",
+                "text": "I’m off on vacation. See you in a week"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "team": "T01CWUYP5AR"
+  },
+  {
+    "client_msg_id": "090c8b69-40d1-44f5-aaf6-89200841114e",
+    "type": "message",
+    "text": "just searching for OpenLineage in the Datahub code base. They have an “interesting” approach? <https://github.com/datahub-project/datahub/blob/2b0811b9875d7d7ea11fb01d0157a21fdd67f020/metadata-ingestion-modules/airflow-plugin/src/datahub_airflow_plugin/_extractors.py#L14|https://github.com/datahub-project/datahub/blob/2b0811b9875d7d7ea11fb01d0157a21fdd[…]odules/airflow-plugin/src/datahub_airflow_plugin/_extractors.py>",
+    "user": "U01DCLP0GU9",
+    "ts": "1700246539.228259",
+    "blocks": [
+      {
+        "type": "rich_text",
+        "block_id": "c5Ci8",
+        "elements": [
+          {
+            "type": "rich_text_section",
+            "elements": [
+              {
+                "type": "text",
+                "text": "just searching for OpenLineage in the Datahub code base. They have an “interesting” approach? "
+              },
+              {
+                "type": "link",
+                "url": "https://github.com/datahub-project/datahub/blob/2b0811b9875d7d7ea11fb01d0157a21fdd67f020/metadata-ingestion-modules/airflow-plugin/src/datahub_airflow_plugin/_extractors.py#L14",
+                "text": "https://github.com/datahub-project/datahub/blob/2b0811b9875d7d7ea11fb01d0157a21fdd[…]odules/airflow-plugin/src/datahub_airflow_plugin/_extractors.py"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "team": "T01CWUYP5AR",
+    "attachments": [
+      {
+        "id": 1,
+        "footer_icon": "https://slack.github.com/static/img/favicon-neutral.png",
+        "color": "24292f",
+        "bot_id": "B01VA0FB340",
+        "app_unfurl_url": "https://github.com/datahub-project/datahub/blob/2b0811b9875d7d7ea11fb01d0157a21fdd67f020/metadata-ingestion-modules/airflow-plugin/src/datahub_airflow_plugin/_extractors.py#L14",
+        "is_app_unfurl": true,
+        "app_id": "A01BP7R4KNY",
+        "fallback": "<https://github.com/datahub-project/datahub/blob/2b0811b9875d7d7ea11fb01d0157a21fdd67f020/metadata-ingestion-modules/airflow-plugin/src/datahub_airflow_plugin/_extractors.py | _extractors.py>",
+        "text": "```\nfrom openlineage.airflow.extractors import BaseExtractor\n```",
+        "title": "<https://github.com/datahub-project/datahub/blob/2b0811b9875d7d7ea11fb01d0157a21fdd67f020/metadata-ingestion-modules/airflow-plugin/src/datahub_airflow_plugin/_extractors.py | _extractors.py>",
+        "footer": "<https://github.com/datahub-project/datahub|datahub-project/datahub>",
+        "mrkdwn_in": [
+          "text"
+        ]
+      }
+    ],
+    "thread_ts": "1700246539.228259",
+    "reply_count": 6,
+    "reply_users_count": 2,
+    "latest_reply": "1700272488.934199",
+    "reply_users": [
+      "U01DCLP0GU9",
+      "U02S6F54MAB"
+    ],
+    "is_locked": false,
+    "subscribed": false,
+    "replies": [
+      {
+        "client_msg_id": "26a6b41b-422e-42ba-9f3e-322422a370a7",
+        "type": "message",
+        "text": "It looks like the datahub airflow plugin uses OL. but turns it off\n<https://github.com/datahub-project/datahub/blob/2b0811b9875d7d7ea11fb01d0157a21fdd67f020/docs/lineage/airflow.md>\n```disable_openlineage_plugin\ttrue\tDisable the OpenLineage plugin to avoid duplicative processing.```\nThey reuse the extractors but then “patch” the behavior.",
+        "user": "U01DCLP0GU9",
+        "ts": "1700246841.718379",
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "DREhv",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "It looks like the datahub airflow plugin uses OL. but turns it off\n"
+                  },
+                  {
+                    "type": "link",
+                    "url": "https://github.com/datahub-project/datahub/blob/2b0811b9875d7d7ea11fb01d0157a21fdd67f020/docs/lineage/airflow.md"
+                  },
+                  {
+                    "type": "text",
+                    "text": "\n"
+                  }
+                ]
+              },
+              {
+                "type": "rich_text_preformatted",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "disable_openlineage_plugin\ttrue\tDisable the OpenLineage plugin to avoid duplicative processing."
+                  }
+                ],
+                "border": 0
+              },
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "They reuse the extractors but then “patch” the behavior."
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "team": "T01CWUYP5AR",
+        "attachments": [
+          {
+            "image_url": "https://raw.githubusercontent.com/datahub-project/static-assets/main/imgs/airflow/plugin_connection_setup.png",
+            "image_width": 842,
+            "image_height": 643,
+            "image_bytes": 50334,
+            "id": 1,
+            "footer_icon": "https://slack.github.com/static/img/favicon-neutral.png",
+            "color": "24292f",
+            "bot_id": "B01VA0FB340",
+            "app_unfurl_url": "https://github.com/datahub-project/datahub/blob/2b0811b9875d7d7ea11fb01d0157a21fdd67f020/docs/lineage/airflow.md",
+            "is_app_unfurl": true,
+            "app_id": "A01BP7R4KNY",
+            "fallback": "842x643px image",
+            "text": "*Airflow Integration*\n\n:::note\n\nIf you're looking to schedule DataHub ingestion using Airflow, see the guide on <../../metadata-ingestion/schedule_docs/airflow.md|scheduling ingestion with Airflow>.\n\n:::\n\nThe DataHub Airflow plugin supports:\n\n• Automatic column-level lineage extraction from various operators e.g. `SqlOperator`s (including `MySqlOperator`, `PostgresOperator`, `SnowflakeOperator`, and more), `S3FileTransformOperator`, and a few others.\n• Airflow DAG and tasks, including properties, ownership, and tags.\n• Task run information, including task successes and failures.\n• Manual lineage annotations using `inlets` and `outlets` on Airflow operators.\n\nThere's two actively supported implementations of the plugin, with different Airflow version support.\n\nIf you're using Airflow older than 2.1, it's possible to use the v1 plugin with older versions of `acryl-datahub-airflow-plugin`. See the <https://github.com/datahub-project/datahub/blob/2b0811b9875d7d7ea11fb01d0157a21fdd67f020/docs/lineage/airflow.md#compatibility|compatibility section> for more details.\n\n*DataHub Plugin v2*\n*Installation*\n\nThe v2 plugin requires Airflow 2.3+ and Python 3.8+. If you don't meet these requirements, use the v1 plugin instead.\n\n```\npip install 'acryl-datahub-airflow-plugin[plugin-v2]'\n```\n\n*Configuration*\n\nSet up a DataHub connection in Airflow, either via command line or the Airflow UI.\n\n*Command Line*\n\n```\nairflow connections add  --conn-type 'datahub-rest' 'datahub_rest_default' --conn-host '<http://datahub-gms:8080>' --conn-password '<optional datahub auth token>'\n```\n\n*Airflow UI*\n\nOn the Airflow UI, go to Admin -> Connections and click the \"+\" symbol to create a new connection. Select \"DataHub REST Server\" from the dropdown for \"Connection Type\" and enter the appropriate values.\n\n<https://raw.githubusercontent.com/datahub-project/static-assets/main/imgs/airflow/plugin_connection_setup.png|https://raw.githubusercontent.com/datahub-project/static-assets/main/imgs/airflow/plugin_connection_setup.png>\n\n*Optional Configurations*\n\nNo additional configuration is required to use the plugin. However, there are some optional configuration parameters that can be set in the `airflow.cfg` file.\n\n```\n[datahub]\n# Optional - additional config here.\nenabled = True  # default\n```\n\n*Automatic lineage extraction*\n\nTo automatically extract lineage information, the v2 plugin builds on top of Airflow's built-in <https://openlineage.io/docs/integrations/airflow/default-extractors|OpenLineage extractors>.\n\nThe SQL-related extractors have been updated to use DataHub's SQL parser, which is more robust than the built-in one and uses DataHub's metadata information to generate column-level lineage. We discussed the DataHub SQL parser, including why schema-aware parsing works better and how it performs on benchmarks, during the <https://youtu.be/1QVcUmRQK5E?si=U27zygR7Gi_KdkzE&t=2309|June 2023 community town hall>.\n\n*DataHub Plugin v1*\n*Installation*\n\nThe v1 plugin requires Airflow 2.1+ and Python 3.8+. If you're on older versions, it's still possible to use an older version of the plugin. See the <https://github.com/datahub-project/datahub/blob/2b0811b9875d7d7ea11fb01d0157a21fdd67f020/docs/lineage/airflow.md#compatibility|compatibility section> for more details.\n\nIf you're using Airflow 2.3+, we recommend using the v2 plugin instead. If you need to use the v1 plugin with Airflow 2.3+, you must also set the environment variable `DATAHUB_AIRFLOW_PLUGIN_USE_V1_PLUGIN=true`.\n\n```\npip install 'acryl-datahub-airflow-plugin[plugin-v1]'\n\n# The DataHub rest connection type is included by default.\n# To use the DataHub Kafka connection type, install the plugin with the kafka extras.\npip install 'acryl-datahub-airflow-plugin[plugin-v1,datahub-kafka]'\n```\n\n*Configuration*\n*Disable lazy plugin loading*\n\n```\n[core]\nlazy_load_plugins = False\n```\n\nOn MWAA you should add this config to your <https://docs.aws.amazon.com/mwaa/latest/userguide/configuring-env-variables.html#configuring-2.0-airflow-override|Apache Airflow configuration options>.\n\n*Setup a DataHub connection*\n\nYou must configure an Airflow connection for Datahub. We support both a Datahub REST and a Kafka-based connections, but you only need one.\n\n```\n# For REST-based:\nairflow connections add  --conn-type 'datahub_rest' 'datahub_rest_default' --conn-host '<http://datahub-gms:8080>' --conn-password '<optional datahub auth token>'\n# For Kafka-based (standard Kafka sink config can be passed via extras):\nairflow connections add  --conn-type 'datahub_kafka' 'datahub_kafka_default' --conn-host 'broker:9092' --conn-extra '{}'\n```\n\n*Configure the plugin*\n\nIf your config doesn't align with the default values, you can configure the plugin in your `airflow.cfg` file.\n\n```\n[datahub]\nenabled = true\nconn_id = datahub_rest_default  # or datahub_kafka_default\n# etc.\n```\n\n*Validate that the plugin is working*\n\n1. Go and check in Airflow at Admin -> Plugins menu if you can see the DataHub plugin\n2. Run an Airflow DAG. In the task logs, you should see Datahub related log messages like:\n\n```\nEmitting DataHub ...\n```\n\n*Manual Lineage Annotation*\n*Using `inlets` and `outlets`*\n\nYou can manually annotate lineage by setting `inlets` and `outlets` on your Airflow operators. This is useful if you're using an operator that doesn't support automatic lineage extraction, or if you want to override the automatic lineage extraction.\n\nWe have a few code samples that demonstrate how to use `inlets` and `outlets`:\n\n• <../../metadata-ingestion-modules/airflow-plugin/src/datahub_airflow_plugin/example_dags/lineage_backend_demo.py|`lineage_backend_demo.py`>\n• <../../metadata-ingestion-modules/airflow-plugin/src/datahub_airflow_plugin/example_dags/lineage_backend_taskflow_demo.py|`lineage_backend_taskflow_demo.py`> - uses the <https://airflow.apache.org/docs/apache-airflow/stable/concepts/taskflow.html|TaskFlow API>\n\nFor more information, take a look at the <https://airflow.apache.org/docs/apache-airflow/stable/lineage.html|Airflow lineage docs>.\n\n*Custom Operators*\n\nIf you have created a <https://airflow.apache.org/docs/apache-airflow/stable/howto/custom-operator.html|custom Airflow operator> that inherits from the BaseOperator class,  \nwhen overriding the `execute` function, set inlets and outlets via `context['ti'].task.inlets` and `context['ti'].task.outlets`.  \nThe DataHub Airflow plugin will then pick up those inlets and outlets after the task runs.\n\n```\nclass DbtOperator(BaseOperator):\n    ...\n\n    def execute(self, context):\n        # do something\n        inlets, outlets = self._get_lineage()\n        # inlets/outlets are lists of either datahub_airflow_plugin.entities.Dataset or datahub_airflow_plugin.entities.Urn\n        context['ti'].task.inlets = self.inlets\n        context['ti'].task.outlets = self.outlets\n\n    def _get_lineage(self):\n        # Do some processing to get inlets/outlets\n\n        return inlets, outlets\n```\n\nIf you override the `pre_execute` and `post_execute` function, ensure they include the `@prepare_lineage` and `@apply_lineage` decorators respectively. Reference the <https://airflow.apache.org/docs/apache-airflow/stable/administration-and-deployment/lineage.html#lineage|Airflow docs> for more details.\n\n*Emit Lineage Directly*\n\nIf you can't use the plugin or annotate inlets/outlets, you can also emit lineage using the `DatahubEmitterOperator`.\n\nReference <../../metadata-ingestion-modules/airflow-plugin/src/datahub_airflow_plugin/example_dags/lineage_emission_dag.py|`lineage_emission_dag.py`> for a full example.\n\nIn order to use this example, you must first configure the Datahub hook. Like in ingestion, we support a Datahub REST hook and a Kafka-based hook. See the plugin configuration for examples.\n\n*Debugging*\n*Missing lineage*\n\nIf you're not seeing lineage in DataHub, check the following:\n\n• Validate that the plugin is loaded in Airflow. Go to Admin -> Plugins and check that the DataHub plugin is listed.\n• With the v2 plugin, it should also print a l…",
+            "title": "<https://github.com/datahub-project/datahub/blob/2b0811b9875d7d7ea11fb01d0157a21fdd67f020/docs/lineage/airflow.md | airflow.md>",
+            "footer": "<https://github.com/datahub-project/datahub|datahub-project/datahub>",
+            "mrkdwn_in": [
+              "text"
+            ]
+          }
+        ],
+        "thread_ts": "1700246539.228259",
+        "parent_user_id": "U01DCLP0GU9"
+      },
+      {
+        "client_msg_id": "59a1e940-c1fc-490c-b9c5-147d5e834b71",
+        "type": "message",
+        "text": "Of course this approach will need changing again with AF 2.7",
+        "user": "U01DCLP0GU9",
+        "ts": "1700246932.436609",
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "/POFd",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "Of course this approach will need changing again with AF 2.7"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "team": "T01CWUYP5AR",
+        "thread_ts": "1700246539.228259",
+        "parent_user_id": "U01DCLP0GU9"
+      },
+      {
+        "client_msg_id": "8da9603b-c057-4ef0-8124-86412209192e",
+        "type": "message",
+        "text": "It’s their choice :shrug:",
+        "user": "U01DCLP0GU9",
+        "ts": "1700246942.225929",
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "XBzX4",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "It’s their choice "
+                  },
+                  {
+                    "type": "emoji",
+                    "name": "shrug",
+                    "unicode": "1f937"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "team": "T01CWUYP5AR",
+        "thread_ts": "1700246539.228259",
+        "parent_user_id": "U01DCLP0GU9"
+      },
+      {
+        "client_msg_id": "1447c2c4-00fc-4539-95c3-53e11be40529",
+        "type": "message",
+        "text": "It looks like we can possibly learn from their approach in SQL parsing: <https://datahubproject.io/docs/lineage/airflow/#automatic-lineage-extraction>",
+        "user": "U01DCLP0GU9",
+        "ts": "1700247083.921989",
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "GZG6c",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "It looks like we can possibly learn from their approach in SQL parsing: "
+                  },
+                  {
+                    "type": "link",
+                    "url": "https://datahubproject.io/docs/lineage/airflow/#automatic-lineage-extraction"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "team": "T01CWUYP5AR",
+        "attachments": [
+          {
+            "from_url": "https://datahubproject.io/docs/lineage/airflow/#automatic-lineage-extraction",
+            "service_icon": "https://datahubproject.io/img/favicon.ico",
+            "id": 1,
+            "original_url": "https://datahubproject.io/docs/lineage/airflow/#automatic-lineage-extraction",
+            "fallback": "Airflow Integration | DataHub",
+            "text": "If you're looking to schedule DataHub ingestion using Airflow, see the guide on scheduling ingestion with Airflow.",
+            "title": "Airflow Integration | DataHub",
+            "title_link": "https://datahubproject.io/docs/lineage/airflow/#automatic-lineage-extraction",
+            "service_name": "datahubproject.io"
+          }
+        ],
+        "thread_ts": "1700246539.228259",
+        "parent_user_id": "U01DCLP0GU9"
+      },
+      {
+        "client_msg_id": "17522ae0-7886-4487-a7a9-d8263e1700cf",
+        "type": "message",
+        "text": "what's that approach? I only know they have been claiming best SQL parsing capabilities",
+        "user": "U02S6F54MAB",
+        "ts": "1700257371.478449",
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "aj4Ne",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "what's that approach? I only know they have been claiming best SQL parsing capabilities"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "team": "T01CWUYP5AR",
+        "thread_ts": "1700246539.228259",
+        "parent_user_id": "U01DCLP0GU9"
+      },
+      {
+        "client_msg_id": "51a9f111-c022-4bbb-8948-d6a775d0ad9c",
+        "type": "message",
+        "text": "I haven’t looked in the details but I’m assuming it is in this repo. (my comment is entirely based on the claim here)",
+        "user": "U01DCLP0GU9",
+        "ts": "1700272488.934199",
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "rARhz",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "I haven’t looked in the details but I’m assuming it is in this repo. (my comment is entirely based on the claim here)"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "team": "T01CWUYP5AR",
+        "edited": {
+          "user": "U01DCLP0GU9",
+          "ts": "1700272494.000000"
+        },
+        "thread_ts": "1700246539.228259",
+        "parent_user_id": "U01DCLP0GU9"
+      }
+    ]
+  },
+  {
+    "client_msg_id": "290d0b95-e6bc-4529-b446-aa462954f331",
+    "type": "message",
+    "text": "CFP for Berlin Buzzwords went up: <https://2024.berlinbuzzwords.de/call-for-papers/>\nStill over 3 months to submit :slightly_smiling_face:",
+    "user": "U01RA9B5GG2",
+    "ts": "1700155042.082759",
+    "blocks": [
+      {
+        "type": "rich_text",
+        "block_id": "IY1qh",
+        "elements": [
+          {
+            "type": "rich_text_section",
+            "elements": [
+              {
+                "type": "text",
+                "text": "CFP for Berlin Buzzwords went up: "
+              },
+              {
+                "type": "link",
+                "url": "https://2024.berlinbuzzwords.de/call-for-papers/"
+              },
+              {
+                "type": "text",
+                "text": "\nStill over 3 months to submit "
+              },
+              {
+                "type": "emoji",
+                "name": "slightly_smiling_face",
+                "unicode": "1f642"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "team": "T01CWUYP5AR",
+    "thread_ts": "1700155042.082759",
+    "reply_count": 3,
+    "reply_users_count": 2,
+    "latest_reply": "1700165993.306159",
+    "reply_users": [
+      "U02LXF3HUN7",
+      "U02S6F54MAB"
+    ],
+    "is_locked": false,
+    "subscribed": true,
+    "last_read": "1700156590.752459",
+    "replies": [
+      {
+        "client_msg_id": "59c2bed5-ed72-4bc1-aed1-c86f76e6baf6",
+        "type": "message",
+        "text": "thanks, updated the talks board",
+        "user": "U02LXF3HUN7",
+        "ts": "1700156576.787649",
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "uZOkT",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "thanks, updated the talks board"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "team": "T01CWUYP5AR",
+        "thread_ts": "1700155042.082759",
+        "parent_user_id": "U01RA9B5GG2"
+      },
+      {
+        "client_msg_id": "98d5c5e2-8039-4a6e-9833-9de669c9ab47",
+        "type": "message",
+        "text": "<https://github.com/orgs/OpenLineage/projects/4/views/1>",
+        "user": "U02LXF3HUN7",
+        "ts": "1700156590.752459",
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "WwA6M",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "link",
+                    "url": "https://github.com/orgs/OpenLineage/projects/4/views/1"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "team": "T01CWUYP5AR",
+        "thread_ts": "1700155042.082759",
+        "parent_user_id": "U01RA9B5GG2"
+      },
+      {
+        "client_msg_id": "b5cd14ed-3246-4722-9385-24594e0b2d77",
+        "type": "message",
+        "text": "I'm in, will think what to talk about and appreciate any advice :slightly_smiling_face:",
+        "user": "U02S6F54MAB",
+        "ts": "1700165993.306159",
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "vK7e9",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "I'm in, will think what to talk about and appreciate any advice "
+                  },
+                  {
+                    "type": "emoji",
+                    "name": "slightly_smiling_face",
+                    "unicode": "1f642"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "team": "T01CWUYP5AR",
+        "thread_ts": "1700155042.082759",
+        "parent_user_id": "U01RA9B5GG2"
+      }
+    ]
+  },
+  {
+    "client_msg_id": "565052e6-10db-43e3-bf54-f56143b67702",
+    "type": "message",
+    "text": "worlds are colliding: 6point6 has been acquired by Accenture",
+    "user": "U02LXF3HUN7",
+    "ts": "1700145084.414099",
+    "blocks": [
+      {
+        "type": "rich_text",
+        "block_id": "Phnmg",
+        "elements": [
+          {
+            "type": "rich_text_section",
+            "elements": [
+              {
+                "type": "text",
+                "text": "worlds are colliding: 6point6 has been acquired by Accenture"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "team": "T01CWUYP5AR",
+    "thread_ts": "1700145084.414099",
+    "reply_count": 5,
+    "reply_users_count": 3,
+    "latest_reply": "1700151197.023279",
+    "reply_users": [
+      "U02LXF3HUN7",
+      "U01RA9B5GG2",
+      "U01HNKK4XAM"
+    ],
+    "is_locked": false,
+    "subscribed": true,
+    "last_read": "1700151197.023279",
+    "replies": [
+      {
+        "client_msg_id": "4e2e079f-ed27-46fc-8b0c-a160525f3d6a",
+        "type": "message",
+        "text": "<https://newsroom.accenture.com/news/2023/accenture-to-expand-government-transformation-capabilities-in-the-uk-with-acquisition-of-6point6>",
+        "user": "U02LXF3HUN7",
+        "ts": "1700145119.237459",
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "p2OqU",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "link",
+                    "url": "https://newsroom.accenture.com/news/2023/accenture-to-expand-government-transformation-capabilities-in-the-uk-with-acquisition-of-6point6"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "team": "T01CWUYP5AR",
+        "attachments": [
+          {
+            "from_url": "https://newsroom.accenture.com/news/2023/accenture-to-expand-government-transformation-capabilities-in-the-uk-with-acquisition-of-6point6",
+            "image_url": "https://newsroom.accenture.com/news/2023/media_1a9921811b72c2ade3a6d22550b92f42d782dcd12.jpeg?width=1200&format=pjpg&optimize=medium",
+            "image_width": 1200,
+            "image_height": 628,
+            "image_bytes": 60944,
+            "service_icon": "https://newsroom.accenture.com/favicon.ico",
+            "id": 1,
+            "original_url": "https://newsroom.accenture.com/news/2023/accenture-to-expand-government-transformation-capabilities-in-the-uk-with-acquisition-of-6point6",
+            "fallback": "Accenture to Expand Government Transformation Capabilities in the U.K. with Acquisition of 6point6",
+            "text": "Accenture has signed an agreement to acquire 6point6, a U.K. technology consultancy, specializing in cloud, data, and cybersecurity.",
+            "title": "Accenture to Expand Government Transformation Capabilities in the U.K. with Acquisition of 6point6",
+            "title_link": "https://newsroom.accenture.com/news/2023/accenture-to-expand-government-transformation-capabilities-in-the-uk-with-acquisition-of-6point6",
+            "service_name": "newsroom.accenture.com"
+          }
+        ],
+        "thread_ts": "1700145084.414099",
+        "parent_user_id": "U02LXF3HUN7"
+      },
+      {
+        "client_msg_id": "5c7159ef-848b-44ef-b725-c7ffdb68e7a6",
+        "type": "message",
+        "text": "We should sell OL to governments",
+        "user": "U01RA9B5GG2",
+        "ts": "1700147007.152929",
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "SxApD",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "We should sell OL to governments"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "team": "T01CWUYP5AR",
+        "thread_ts": "1700145084.414099",
+        "parent_user_id": "U02LXF3HUN7",
+        "reactions": [
+          {
+            "name": "upside_down_face",
+            "users": [
+              "U01HNKK4XAM"
+            ],
+            "count": 1
+          }
+        ]
+      },
+      {
+        "client_msg_id": "3b80d5c4-c44c-42b5-a8be-e29cb54d6524",
+        "type": "message",
+        "text": "we may have to rebrand to ClosedLineage",
+        "user": "U01HNKK4XAM",
+        "ts": "1700148036.394269",
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "Jxqqu",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "we may have to rebrand to ClosedLineage"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "team": "T01CWUYP5AR",
+        "thread_ts": "1700145084.414099",
+        "parent_user_id": "U02LXF3HUN7"
+      },
+      {
+        "client_msg_id": "ccf1d225-5ba1-4385-bde0-9e8170f77e0d",
+        "type": "message",
+        "text": "not in this way; just emit any event second time to secret NSA endpoint",
+        "user": "U01RA9B5GG2",
+        "ts": "1700148217.698289",
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "lCJt9",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "not in this way; just emit any event second time to secret NSA endpoint"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "team": "T01CWUYP5AR",
+        "thread_ts": "1700145084.414099",
+        "parent_user_id": "U02LXF3HUN7"
+      },
+      {
+        "client_msg_id": "d64e9f16-21eb-4907-a8b2-cce44cdcb728",
+        "type": "message",
+        "text": "we would need to improve our stock photo game",
+        "user": "U02LXF3HUN7",
+        "ts": "1700151197.023279",
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "HxE/r",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "we would need to improve our stock photo game"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "team": "T01CWUYP5AR",
+        "thread_ts": "1700145084.414099",
+        "parent_user_id": "U02LXF3HUN7"
+      }
+    ]
+  },
+  {
+    "client_msg_id": "79a4d1c5-4281-413d-910f-3da8d91cb07f",
+    "type": "message",
+    "text": "Any opinions about a free task management alternative to the free version of Notion (10-person limit)? Looking at Trello for keeping track of talks.",
+    "user": "U02LXF3HUN7",
+    "ts": "1700088623.669029",
+    "blocks": [
+      {
+        "type": "rich_text",
+        "block_id": "9mtSc",
+        "elements": [
+          {
+            "type": "rich_text_section",
+            "elements": [
+              {
+                "type": "text",
+                "text": "Any opinions about a free task management alternative to the free version of Notion (10-person limit)? Looking at Trello for keeping track of talks."
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "team": "T01CWUYP5AR",
+    "thread_ts": "1700088623.669029",
+    "reply_count": 3,
+    "reply_users_count": 2,
+    "latest_reply": "1700148214.523069",
+    "reply_users": [
+      "U01HNKK4XAM",
+      "U02LXF3HUN7"
+    ],
+    "is_locked": false,
+    "subscribed": true,
+    "last_read": "1700148214.523069",
+    "replies": [
+      {
+        "client_msg_id": "9815972B-96D0-41B8-B384-BA12F3973205",
+        "type": "message",
+        "text": "What about GitHub projects?",
+        "user": "U01HNKK4XAM",
+        "ts": "1700094737.005179",
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "QcAzj",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "What about GitHub projects?"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "team": "T01CWUYP5AR",
+        "thread_ts": "1700088623.669029",
+        "parent_user_id": "U02LXF3HUN7",
+        "reactions": [
+          {
+            "name": "+1",
+            "users": [
+              "U02LXF3HUN7"
+            ],
+            "count": 1
+          }
+        ]
+      },
+      {
+        "client_msg_id": "a49931fb-de30-4a1d-868f-c73cfe634843",
+        "type": "message",
+        "text": "Projects is the way to go, thanks",
+        "user": "U02LXF3HUN7",
+        "ts": "1700144866.061859",
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "w9wSZ",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "Projects is the way to go, thanks"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "team": "T01CWUYP5AR",
+        "thread_ts": "1700088623.669029",
+        "parent_user_id": "U02LXF3HUN7"
+      },
+      {
+        "client_msg_id": "a1ce4508-002c-4ff3-91e8-27b9b2c898d0",
+        "type": "message",
+        "text": "Set up a Projects board. New projects are private by default. We could make it public. The one thing that’s missing that we could use is a built-in date field for alerting about upcoming deadlines…",
+        "user": "U02LXF3HUN7",
+        "ts": "1700148214.523069",
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "eEnTu",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "Set up a Projects board. New projects are private by default. We could make it public. The one thing that’s missing that we could use is a built-in date field for alerting about upcoming deadlines…"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "team": "T01CWUYP5AR",
+        "thread_ts": "1700088623.669029",
+        "parent_user_id": "U02LXF3HUN7",
+        "reactions": [
+          {
+            "name": "raised_hands",
+            "users": [
+              "U01HNKK4XAM",
+              "U01RA9B5GG2"
+            ],
+            "count": 2
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "client_msg_id": "56357d69-1804-4184-8e84-c307a173b4d7",
+    "type": "message",
+    "text": "have we discussed adding column level lineage support to Airflow? <https://marquezproject.slack.com/archives/C01E8MQGJP7/p1700087438599279?thread_ts=1700084629.245949&amp;cid=C01E8MQGJP7>",
+    "user": "U01DCMDFHBK",
+    "ts": "1700087546.032789",
+    "blocks": [
+      {
+        "type": "rich_text",
+        "block_id": "/WCoQ",
+        "elements": [
+          {
+            "type": "rich_text_section",
+            "elements": [
+              {
+                "type": "text",
+                "text": "have we discussed adding column level lineage support to Airflow? "
+              },
+              {
+                "type": "link",
+                "url": "https://marquezproject.slack.com/archives/C01E8MQGJP7/p1700087438599279?thread_ts=1700084629.245949&cid=C01E8MQGJP7"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "team": "T01CWUYP5AR",
+    "thread_ts": "1700087546.032789",
+    "reply_count": 3,
+    "reply_users_count": 2,
+    "latest_reply": "1700087719.745889",
+    "reply_users": [
+      "U02S6F54MAB",
+      "U01DCMDFHBK"
+    ],
+    "is_locked": false,
+    "subscribed": false,
+    "replies": [
+      {
+        "client_msg_id": "b6c39a4c-39b1-4580-be60-d8a545e0e4c0",
+        "type": "message",
+        "text": "we have it in SQL operators",
+        "user": "U02S6F54MAB",
+        "ts": "1700087599.744449",
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "UED2i",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "we have it in SQL operators"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "team": "T01CWUYP5AR",
+        "thread_ts": "1700087546.032789",
+        "parent_user_id": "U01DCMDFHBK"
+      },
+      {
+        "client_msg_id": "e94cf9ac-c1f8-4174-afc4-c9e721d069ae",
+        "type": "message",
+        "text": "OOh any docs / code? or if you’d like to respond in the MQZ slack :pray:",
+        "user": "U01DCMDFHBK",
+        "ts": "1700087665.101029",
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "xEi1G",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "OOh any docs / code? or if you’d like to respond in the MQZ slack "
+                  },
+                  {
+                    "type": "emoji",
+                    "name": "pray",
+                    "unicode": "1f64f"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "team": "T01CWUYP5AR",
+        "thread_ts": "1700087546.032789",
+        "parent_user_id": "U01DCMDFHBK"
+      },
+      {
+        "client_msg_id": "d8406883-16b7-4722-a5a5-c4865a9d2cea",
+        "type": "message",
+        "text": "I’ll reply there",
+        "user": "U02S6F54MAB",
+        "ts": "1700087719.745889",
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "lm1RD",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "I’ll reply there"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "team": "T01CWUYP5AR",
+        "thread_ts": "1700087546.032789",
+        "parent_user_id": "U01DCMDFHBK",
+        "reactions": [
+          {
+            "name": "heart",
+            "users": [
+              "U01DCMDFHBK",
+              "U01HNKK4XAM"
+            ],
+            "count": 2
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "client_msg_id": "1c768cec-a0dc-49c7-b912-53c6f5b2674b",
+    "type": "message",
+    "text": "Apparently an admin can view a Slack archive at any time at this URL: <https://openlineage.slack.com/services/export|https://openlineage.slack.com/services/export>. Only public channels are available, though.",
+    "user": "U02LXF3HUN7",
+    "ts": "1700078359.877599",
+    "blocks": [
+      {
+        "type": "rich_text",
+        "block_id": "kIAVN",
+        "elements": [
+          {
+            "type": "rich_text_section",
+            "elements": [
+              {
+                "type": "text",
+                "text": "Apparently an admin can view a Slack archive at any time at this URL: "
+              },
+              {
+                "type": "link",
+                "url": "https://openlineage.slack.com/services/export",
+                "text": "https://openlineage.slack.com/services/export"
+              },
+              {
+                "type": "text",
+                "text": ". Only public channels are available, though."
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "team": "T01CWUYP5AR",
+    "thread_ts": "1700078359.877599",
+    "reply_count": 1,
+    "reply_users_count": 1,
+    "latest_reply": "1700085189.085139",
+    "reply_users": [
+      "U01DCLP0GU9"
+    ],
+    "is_locked": false,
+    "subscribed": true,
+    "last_read": "1700085189.085139",
+    "replies": [
+      {
+        "client_msg_id": "345bfb5e-683e-461a-88ee-49e319b9bab1",
+        "type": "message",
+        "text": "you are now admin",
+        "user": "U01DCLP0GU9",
+        "ts": "1700085189.085139",
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "UEiAC",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "you are now admin"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "team": "T01CWUYP5AR",
+        "thread_ts": "1700078359.877599",
+        "parent_user_id": "U02LXF3HUN7",
+        "reactions": [
+          {
+            "name": "+1",
+            "users": [
+              "U02LXF3HUN7"
+            ],
+            "count": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "client_msg_id": "cd28f84f-6bdd-4095-9149-2979383a7e9c",
+    "type": "message",
+    "text": "Anyone have thoughts about how to address the question about “pain points” here? <https://openlineage.slack.com/archives/C01CK9T7HKR/p1700064564825909|https://openlineage.slack.com/archives/C01CK9T7HKR/p1700064564825909>. (Listing pros is easy — it’s the cons we don’t have boilerplate for)",
+    "user": "U02LXF3HUN7",
+    "ts": "1700078230.775579",
+    "blocks": [
+      {
+        "type": "rich_text",
+        "block_id": "MocUx",
+        "elements": [
+          {
+            "type": "rich_text_section",
+            "elements": [
+              {
+                "type": "text",
+                "text": "Anyone have thoughts about how to address the question about “pain points” here? "
+              },
+              {
+                "type": "link",
+                "url": "https://openlineage.slack.com/archives/C01CK9T7HKR/p1700064564825909",
+                "text": "https://openlineage.slack.com/archives/C01CK9T7HKR/p1700064564825909"
+              },
+              {
+                "type": "text",
+                "text": ". (Listing pros is easy — it’s the cons we don’t have boilerplate for)"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "team": "T01CWUYP5AR",
+    "attachments": [
+      {
+        "from_url": "https://openlineage.slack.com/archives/C01CK9T7HKR/p1700064564825909",
+        "ts": "1700064564.825909",
+        "author_id": "U066HKFCHUG",
+        "channel_id": "C01CK9T7HKR",
+        "channel_team": "T01CWUYP5AR",
+        "is_msg_unfurl": true,
+        "message_blocks": [
+          {
+            "team": "T01CWUYP5AR",
+            "channel": "C01CK9T7HKR",
+            "ts": "1700064564.825909",
+            "message": {
+              "blocks": [
+                {
+                  "type": "rich_text",
+                  "block_id": "V52kz",
+                  "elements": [
+                    {
+                      "type": "rich_text_section",
+                      "elements": [
+                        {
+                          "type": "text",
+                          "text": "Can anyone tell me why OL is better than other competitors if you can provide an analysis that would be great"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "id": 1,
+        "original_url": "https://openlineage.slack.com/archives/C01CK9T7HKR/p1700064564825909",
+        "fallback": "[November 15th, 2023 8:09 AM] naresh.naresh36: Can anyone tell me why OL is better than other competitors if you can provide an analysis that would be great",
+        "text": "Can anyone tell me why OL is better than other competitors if you can provide an analysis that would be great",
+        "author_name": "Naresh reddy",
+        "author_link": "https://openlineage.slack.com/team/U066HKFCHUG",
+        "author_icon": "https://avatars.slack-edge.com/2023-11-15/6192035069510_91e664fce7c3faeee1e7_48.jpg",
+        "author_subname": "Naresh reddy",
+        "mrkdwn_in": [
+          "text"
+        ],
+        "footer": "Slack Conversation"
+      }
+    ],
+    "thread_ts": "1700078230.775579",
+    "reply_count": 2,
+    "reply_users_count": 2,
+    "latest_reply": "1700082291.373659",
+    "reply_users": [
+      "U02LXF3HUN7",
+      "U01RA9B5GG2"
+    ],
+    "is_locked": false,
+    "subscribed": true,
+    "last_read": "1700082291.373659",
+    "replies": [
+      {
+        "client_msg_id": "31c986c9-ecb0-4f3d-b0ef-11bc56dc0ea5",
+        "type": "message",
+        "text": "Maybe something like “OL has many desirable integrations, including a best-in-class Spark integration, but it’s like any other open standard in that it requires contributions in order to approach total coverage. Thankfully, we have many active contributors, and integrations are being added or improved upon all the time.”",
+        "user": "U02LXF3HUN7",
+        "ts": "1700078288.125819",
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "0bx39",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "Maybe something like “OL has many desirable integrations, including a best-in-class Spark integration, but it’s like any other open standard in that it requires contributions in order to approach total coverage. Thankfully, we have many active contributors, and integrations are being added or improved upon all the time.”"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "team": "T01CWUYP5AR",
+        "thread_ts": "1700078230.775579",
+        "parent_user_id": "U02LXF3HUN7"
+      },
+      {
+        "client_msg_id": "16f88fa1-980e-4cac-bba8-fd2592cc3cf2",
+        "type": "message",
+        "text": "Maybe rephrase pain points to \"something we're not actively focusing on\"",
+        "user": "U01RA9B5GG2",
+        "ts": "1700082291.373659",
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "EqOgW",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "Maybe rephrase pain points to \"something we're not actively focusing on\""
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "team": "T01CWUYP5AR",
+        "thread_ts": "1700078230.775579",
+        "parent_user_id": "U02LXF3HUN7"
+      }
+    ]
+  },
+  {
+    "type": "message",
+    "text": "is it time to *support hudi*?",
+    "files": [
+      {
+        "id": "F065PUT9SRL",
+        "created": 1700068641,
+        "timestamp": 1700068641,
+        "name": "image.png",
+        "title": "image.png",
+        "mimetype": "image/png",
+        "filetype": "png",
+        "pretty_type": "PNG",
+        "user": "U02S6F54MAB",
+        "user_team": "T01CWUYP5AR",
+        "editable": false,
+        "size": 644916,
+        "mode": "hosted",
+        "is_external": false,
+        "external_type": "",
+        "is_public": true,
+        "public_url_shared": false,
+        "display_as_bot": false,
+        "username": "",
+        "url_private": "https://files.slack.com/files-pri/T01CWUYP5AR-F065PUT9SRL/image.png",
+        "url_private_download": "https://files.slack.com/files-pri/T01CWUYP5AR-F065PUT9SRL/download/image.png",
+        "media_display_type": "unknown",
+        "thumb_64": "https://files.slack.com/files-tmb/T01CWUYP5AR-F065PUT9SRL-cf00de4cfd/image_64.png",
+        "thumb_80": "https://files.slack.com/files-tmb/T01CWUYP5AR-F065PUT9SRL-cf00de4cfd/image_80.png",
+        "thumb_360": "https://files.slack.com/files-tmb/T01CWUYP5AR-F065PUT9SRL-cf00de4cfd/image_360.png",
+        "thumb_360_w": 360,
+        "thumb_360_h": 300,
+        "thumb_480": "https://files.slack.com/files-tmb/T01CWUYP5AR-F065PUT9SRL-cf00de4cfd/image_480.png",
+        "thumb_480_w": 480,
+        "thumb_480_h": 400,
+        "thumb_160": "https://files.slack.com/files-tmb/T01CWUYP5AR-F065PUT9SRL-cf00de4cfd/image_160.png",
+        "thumb_720": "https://files.slack.com/files-tmb/T01CWUYP5AR-F065PUT9SRL-cf00de4cfd/image_720.png",
+        "thumb_720_w": 720,
+        "thumb_720_h": 600,
+        "thumb_800": "https://files.slack.com/files-tmb/T01CWUYP5AR-F065PUT9SRL-cf00de4cfd/image_800.png",
+        "thumb_800_w": 800,
+        "thumb_800_h": 666,
+        "thumb_960": "https://files.slack.com/files-tmb/T01CWUYP5AR-F065PUT9SRL-cf00de4cfd/image_960.png",
+        "thumb_960_w": 960,
+        "thumb_960_h": 800,
+        "thumb_1024": "https://files.slack.com/files-tmb/T01CWUYP5AR-F065PUT9SRL-cf00de4cfd/image_1024.png",
+        "thumb_1024_w": 1024,
+        "thumb_1024_h": 853,
+        "original_w": 1174,
+        "original_h": 978,
+        "thumb_tiny": "AwAnADCmZy4QEKNi4FNZhjn9KbEQC2e444p+Pb9KAI8j1P5Uny+p/KpDnsufwpvz+h/KgBvy+p/Kg47E/lTvn9D+VNKt1IP5UAXNKOLlieyH+laYbOcSk/h0rM0r/j6P+4f6VrjdQAb19aaZkBwTj8Kd81KM0xCB1IyDxTLkg2suOfkP8qJSQRzio5CTbT5OfkP8qLBfWxm6Y225PqVOK1xJxzjP41jaf/x9D6GtWkMlMnPGMUCQd8VFRQA5XLKC6qG/Om3DqLaXoMqegoqG6/49pP8AdoA//9k=",
+        "permalink": "https://openlineage.slack.com/files/U02S6F54MAB/F065PUT9SRL/image.png",
+        "permalink_public": "https://slack-files.com/T01CWUYP5AR-F065PUT9SRL-56a680662b",
+        "is_starred": false,
+        "has_rich_preview": false,
+        "file_access": "visible"
+      }
+    ],
+    "upload": false,
+    "user": "U02S6F54MAB",
+    "display_as_bot": false,
+    "ts": "1700068651.517579",
+    "blocks": [
+      {
+        "type": "rich_text",
+        "block_id": "bDAOH",
+        "elements": [
+          {
+            "type": "rich_text_section",
+            "elements": [
+              {
+                "type": "text",
+                "text": "is it time to "
+              },
+              {
+                "type": "text",
+                "text": "support hudi",
+                "style": {
+                  "bold": true
+                }
+              },
+              {
+                "type": "text",
+                "text": "?"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "client_msg_id": "d5da62dd-e797-486b-9aae-a5acdbe4a1c8",
+    "reactions": [
+      {
+        "name": "joy",
+        "users": [
+          "U01HNKK4XAM"
+        ],
+        "count": 1
+      }
+    ]
+  },
+  {
+    "client_msg_id": "fdc57b50-c9cf-4b13-be38-681a0a2cbfeb",
+    "type": "message",
+    "text": "Got the doc + poc for hook-level coverage: <https://docs.google.com/document/d/1q0shiUxopASO8glgMqjDn89xigJnGrQuBMbcRdolUdk/edit?usp=sharing>",
+    "user": "U01RA9B5GG2",
+    "ts": "1700066684.350639",
+    "blocks": [
+      {
+        "type": "rich_text",
+        "block_id": "gkEfy",
+        "elements": [
+          {
+            "type": "rich_text_section",
+            "elements": [
+              {
+                "type": "text",
+                "text": "Got the doc + poc for hook-level coverage: "
+              },
+              {
+                "type": "link",
+                "url": "https://docs.google.com/document/d/1q0shiUxopASO8glgMqjDn89xigJnGrQuBMbcRdolUdk/edit?usp=sharing"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "team": "T01CWUYP5AR",
+    "thread_ts": "1700066684.350639",
+    "reply_count": 2,
+    "reply_users_count": 2,
+    "latest_reply": "1700069197.574369",
+    "reply_users": [
+      "U02S6F54MAB",
+      "U01RA9B5GG2"
+    ],
+    "is_locked": false,
+    "subscribed": false,
+    "reactions": [
+      {
+        "name": "eyes",
+        "users": [
+          "U02S6F54MAB"
+        ],
+        "count": 1
+      }
+    ],
+    "replies": [
+      {
+        "client_msg_id": "d1c376d9-efa7-4a7e-9d43-4b7864c43c99",
+        "type": "message",
+        "text": "did you check if `LineageCollector` is instantiated once per process?",
+        "user": "U02S6F54MAB",
+        "ts": "1700069067.090359",
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "AbONi",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "did you check if "
+                  },
+                  {
+                    "type": "text",
+                    "text": "LineageCollector",
+                    "style": {
+                      "code": true
+                    }
+                  },
+                  {
+                    "type": "text",
+                    "text": " is instantiated once per process?"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "team": "T01CWUYP5AR",
+        "edited": {
+          "user": "U02S6F54MAB",
+          "ts": "1700069074.000000"
+        },
+        "thread_ts": "1700066684.350639",
+        "parent_user_id": "U01RA9B5GG2"
+      },
+      {
+        "client_msg_id": "b0881b41-f5e0-43de-83ce-0c6b28480e59",
+        "type": "message",
+        "text": "Using it only via `get_hook_lineage_collector`",
+        "user": "U01RA9B5GG2",
+        "ts": "1700069197.574369",
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "2tsBk",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "Using it only via "
+                  },
+                  {
+                    "type": "text",
+                    "text": "get_hook_lineage_collector",
+                    "style": {
+                      "code": true
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "team": "T01CWUYP5AR",
+        "thread_ts": "1700066684.350639",
+        "parent_user_id": "U01RA9B5GG2"
+      }
+    ]
+  },
+  {
+    "type": "message",
+    "subtype": "thread_broadcast",
+    "text": "hey look, more fun\n<https://github.com/OpenLineage/OpenLineage/pull/2263>",
+    "user": "U02S6F54MAB",
+    "ts": "1700040937.040239",
+    "thread_ts": "1700004648.584649",
+    "root": {
+      "client_msg_id": "e27ec408-535d-4a9b-a41b-c848a8cb286a",
+      "type": "message",
+      "text": "<https://github.com/OpenLineage/OpenLineage/pull/2260>\nfun PR incoming",
+      "user": "U02S6F54MAB",
+      "ts": "1700004648.584649",
+      "blocks": [
+        {
+          "type": "rich_text",
+          "block_id": "xxBfv",
+          "elements": [
+            {
+              "type": "rich_text_section",
+              "elements": [
+                {
+                  "type": "link",
+                  "url": "https://github.com/OpenLineage/OpenLineage/pull/2260"
+                },
+                {
+                  "type": "text",
+                  "text": "\nfun PR incoming"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "team": "T01CWUYP5AR",
+      "thread_ts": "1700004648.584649",
+      "reply_count": 5,
+      "reply_users_count": 4,
+      "latest_reply": "1700066753.852469",
+      "reply_users": [
+        "U02S6F54MAB",
+        "U01RA9B5GG2",
+        "U02MK6YNAQ5",
+        "U01HNKK4XAM"
+      ],
+      "is_locked": false,
+      "subscribed": false
+    },
+    "blocks": [
+      {
+        "type": "rich_text",
+        "block_id": "yGPSQ",
+        "elements": [
+          {
+            "type": "rich_text_section",
+            "elements": [
+              {
+                "type": "text",
+                "text": "hey look, more fun\n"
+              },
+              {
+                "type": "link",
+                "url": "https://github.com/OpenLineage/OpenLineage/pull/2263"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "client_msg_id": "9fbbabe3-ab1f-4f16-8e55-28f574dd7eb5"
+  },
+  {
+    "client_msg_id": "12cbe1a1-4a86-4be0-9725-2e7a0b053ea0",
+    "type": "message",
+    "text": "also, what about this PR? <https://github.com/MarquezProject/marquez/pull/2654>",
+    "user": "U01DCMDFHBK",
+    "ts": "1700037370.235629",
+    "blocks": [
+      {
+        "type": "rich_text",
+        "block_id": "8bSTa",
+        "elements": [
+          {
+            "type": "rich_text_section",
+            "elements": [
+              {
+                "type": "text",
+                "text": "also, what about this PR? "
+              },
+              {
+                "type": "link",
+                "url": "https://github.com/MarquezProject/marquez/pull/2654"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "team": "T01CWUYP5AR",
+    "attachments": [
+      {
+        "id": 1,
+        "footer_icon": "https://slack.github.com/static/img/favicon-neutral.png",
+        "ts": 1697557750,
+        "color": "36a64f",
+        "bot_id": "B01VA0FB340",
+        "app_unfurl_url": "https://github.com/MarquezProject/marquez/pull/2654",
+        "is_app_unfurl": true,
+        "app_id": "A01BP7R4KNY",
+        "fallback": "#2654 Runless events - refactor job_versions_io_mapping",
+        "text": "*Problem*\n\nThis is currently a draft PR which is far from being merged. It is missing few tests related to schema changes which are marked with `todo` within the code. I've created a PR to have a better discussion on adding `job_id` to `job_versions_io_mapping`. This PR should be a follow-up of <https://github.com/MarquezProject/marquez/pull/2641|#2641>.\n\nThe assumption was that it should be helpful in optimising get-lineage query. I would like first to clarify how are we going to make benefit of this extra column.\n\n*Solution*\n\nPlease describe your change as it relates to the problem, or bug fix, as well as any dependencies. If your change requires a database schema migration, please describe the schema modification(s) and whether it's a _backwards-incompatible_ or _backwards-compatible_ change.\n\n> *Note:* All database schema changes require discussion. Please <https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue|link the issue> for context.\n\nOne-line summary:\n\n*Checklist*\n\n☐ You've <https://github.com/MarquezProject/marquez/blob/main/CONTRIBUTING.md#sign-your-work|signed-off> your work\n☐ Your changes are accompanied by tests (_if relevant_)\n☐ Your change contains a <https://kurtisnusbaum.medium.com/stacked-diffs-keeping-phabricator-diffs-small-d9964f4dcfa6|small diff> and is self-contained\n☐ You've updated any relevant documentation (_if relevant_)\n☐ You've included a one-line summary of your change for the <https://github.com/MarquezProject/marquez/blob/main/CHANGELOG.md#unreleased|`CHANGELOG.md`> (_Depending on the change, this may not be necessary_).\n☐ You've versioned your `.sql` database schema migration according to <https://flywaydb.org/documentation/concepts/migrations#naming|Flyway's naming convention> (_if relevant_)\n☐ You've included a <https://github.com/MarquezProject/marquez/blob/main/CONTRIBUTING.md#copyright--license|header> in any source code files (_if relevant_)",
+        "title": "#2654 Runless events - refactor job_versions_io_mapping",
+        "title_link": "https://github.com/MarquezProject/marquez/pull/2654",
+        "footer": "<https://github.com/MarquezProject/marquez|MarquezProject/marquez>",
+        "fields": [
+          {
+            "value": "docs, api",
+            "title": "Labels",
+            "short": true
+          },
+          {
+            "value": "4",
+            "title": "Comments",
+            "short": true
+          }
+        ],
+        "mrkdwn_in": [
+          "text"
+        ]
+      }
+    ],
+    "thread_ts": "1700037370.235629",
+    "reply_count": 4,
+    "reply_users_count": 1,
+    "latest_reply": "1700037512.239479",
+    "reply_users": [
+      "U02MK6YNAQ5"
+    ],
+    "is_locked": false,
+    "subscribed": false,
+    "replies": [
+      {
+        "client_msg_id": "693813d2-d928-4d99-bd74-95c0261714d4",
+        "type": "message",
+        "text": "this is the next to go",
+        "user": "U02MK6YNAQ5",
+        "ts": "1700037393.838709",
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "8GVNn",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "this is the next to go"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "team": "T01CWUYP5AR",
+        "thread_ts": "1700037370.235629",
+        "parent_user_id": "U01DCMDFHBK"
+      },
+      {
+        "client_msg_id": "cc02b08a-7cec-487a-a5d1-2cbad675b35e",
+        "type": "message",
+        "text": "and i consider it ready",
+        "user": "U02MK6YNAQ5",
+        "ts": "1700037398.104819",
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "lxJ9f",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "and i consider it ready"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "team": "T01CWUYP5AR",
+        "thread_ts": "1700037370.235629",
+        "parent_user_id": "U01DCMDFHBK"
+      },
+      {
+        "client_msg_id": "ce36fb29-57bb-475a-b7da-4f979ab4c96f",
+        "type": "message",
+        "text": "Then we have a draft one with streaming support <https://github.com/MarquezProject/marquez/pull/2682/files> -&gt; which has an integration test of lineage endpoint working for streaming jobs",
+        "user": "U02MK6YNAQ5",
+        "ts": "1700037451.758639",
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "sO/AE",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "Then we have a draft one with streaming support "
+                  },
+                  {
+                    "type": "link",
+                    "url": "https://github.com/MarquezProject/marquez/pull/2682/files"
+                  },
+                  {
+                    "type": "text",
+                    "text": " -> which has an integration test of lineage endpoint working for streaming jobs"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "team": "T01CWUYP5AR",
+        "thread_ts": "1700037370.235629",
+        "parent_user_id": "U01DCMDFHBK"
+      },
+      {
+        "client_msg_id": "192e703d-06e9-4072-a252-9fd7d8cbdace",
+        "type": "message",
+        "text": "I still need to work on #2682 but you can review #2654. once you get some sleep, of course :wink:",
+        "user": "U02MK6YNAQ5",
+        "ts": "1700037512.239479",
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "jWaV5",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "I still need to work on #2682 but you can review #2654. once you get some sleep, of course "
+                  },
+                  {
+                    "type": "emoji",
+                    "name": "wink",
+                    "unicode": "1f609"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "team": "T01CWUYP5AR",
+        "thread_ts": "1700037370.235629",
+        "parent_user_id": "U01DCMDFHBK",
+        "reactions": [
+          {
+            "name": "heart",
+            "users": [
+              "U01DCMDFHBK"
+            ],
+            "count": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "client_msg_id": "00f5d485-d95e-4616-9c02-57c0fceaf671",
+    "type": "message",
+    "text": "`_Minor_: We can consider defining a _run_state column and eventually dropping the event_type. That is, we can consider columns prefixed with _ to be \"remappings\" of OL properties to Marquez.` -&gt; didn't get this one. Is it for now or some future plans?",
+    "user": "U02MK6YNAQ5",
+    "ts": "1700037282.474539",
+    "blocks": [
+      {
+        "type": "rich_text",
+        "block_id": "iPdJ9",
+        "elements": [
+          {
+            "type": "rich_text_section",
+            "elements": [
+              {
+                "type": "text",
+                "text": "Minor",
+                "style": {
+                  "italic": true,
+                  "code": true
+                }
+              },
+              {
+                "type": "text",
+                "text": ": We can consider defining a _run_state column and eventually dropping the event_type. That is, we can consider columns prefixed with _ to be \"remappings\" of OL properties to Marquez.",
+                "style": {
+                  "code": true
+                }
+              },
+              {
+                "type": "text",
+                "text": " -> didn't get this one. Is it for now or some future plans?"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "team": "T01CWUYP5AR",
+    "thread_ts": "1700037282.474539",
+    "reply_count": 3,
+    "reply_users_count": 2,
+    "latest_reply": "1700037383.673919",
+    "reply_users": [
+      "U01DCMDFHBK",
+      "U02MK6YNAQ5"
+    ],
+    "is_locked": false,
+    "subscribed": false,
+    "replies": [
+      {
+        "client_msg_id": "8a385af8-864b-44d0-b0d7-92b750f37d59",
+        "type": "message",
+        "text": "future :wink:",
+        "user": "U01DCMDFHBK",
+        "ts": "1700037362.060349",
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "te6E7",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "future "
+                  },
+                  {
+                    "type": "emoji",
+                    "name": "wink",
+                    "unicode": "1f609"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "team": "T01CWUYP5AR",
+        "thread_ts": "1700037282.474539",
+        "parent_user_id": "U02MK6YNAQ5"
+      },
+      {
+        "client_msg_id": "53f83f97-23da-45cf-81ae-2282be94ce49",
+        "type": "message",
+        "text": "ok",
+        "user": "U02MK6YNAQ5",
+        "ts": "1700037370.551639",
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "luWBi",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "ok"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "team": "T01CWUYP5AR",
+        "thread_ts": "1700037282.474539",
+        "parent_user_id": "U02MK6YNAQ5"
+      },
+      {
+        "client_msg_id": "602b1385-218e-4076-be7b-f2b03a428b17",
+        "type": "message",
+        "text": "I will then replace enum with string",
+        "user": "U02MK6YNAQ5",
+        "ts": "1700037383.673919",
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "xUGoP",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "I will then replace enum with string"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "team": "T01CWUYP5AR",
+        "thread_ts": "1700037282.474539",
+        "parent_user_id": "U02MK6YNAQ5"
+      }
+    ]
+  },
+  {
+    "client_msg_id": "5d39e88b-3350-4baa-9474-38a624950aa7",
+    "type": "message",
+    "text": "<@U02MK6YNAQ5> approved PR <https://github.com/MarquezProject/marquez/pull/2661|#2661> with minor comments, I think the <https://github.com/MarquezProject/marquez/pull/2661/files#r1393820409|enum defined in the db layer> is one comment we’ll need to address before merging; otherwise solid work dude :ok_hand:",
+    "user": "U01DCMDFHBK",
+    "ts": "1700037147.106879",
+    "blocks": [
+      {
+        "type": "rich_text",
+        "block_id": "ktmE8",
+        "elements": [
+          {
+            "type": "rich_text_section",
+            "elements": [
+              {
+                "type": "user",
+                "user_id": "U02MK6YNAQ5"
+              },
+              {
+                "type": "text",
+                "text": " approved PR "
+              },
+              {
+                "type": "link",
+                "url": "https://github.com/MarquezProject/marquez/pull/2661",
+                "text": "#2661",
+                "unsafe": true
+              },
+              {
+                "type": "text",
+                "text": " with minor comments, I think the "
+              },
+              {
+                "type": "link",
+                "url": "https://github.com/MarquezProject/marquez/pull/2661/files#r1393820409",
+                "text": "enum defined in the db layer"
+              },
+              {
+                "type": "text",
+                "text": " is one comment we’ll need to address before merging; otherwise solid work dude "
+              },
+              {
+                "type": "emoji",
+                "name": "ok_hand",
+                "unicode": "1f44c"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "team": "T01CWUYP5AR",
+    "edited": {
+      "user": "U01DCMDFHBK",
+      "ts": "1700037165.000000"
+    },
+    "attachments": [
+      {
+        "id": 1,
+        "footer_icon": "https://slack.github.com/static/img/favicon-neutral.png",
+        "ts": 1698327731,
+        "color": "36a64f",
+        "bot_id": "B01VA0FB340",
+        "app_unfurl_url": "https://github.com/MarquezProject/marquez/pull/2661",
+        "is_app_unfurl": true,
+        "app_id": "A01BP7R4KNY",
+        "fallback": "#2661 Runless events - consume job event",
+        "title": "#2661 Runless events - consume job event",
+        "title_link": "https://github.com/MarquezProject/marquez/pull/2661",
+        "footer": "<https://github.com/MarquezProject/marquez|MarquezProject/marquez>",
+        "mrkdwn_in": [
+          "text"
+        ]
+      }
+    ],
+    "reactions": [
+      {
+        "name": "raised_hands",
+        "users": [
+          "U02MK6YNAQ5",
+          "U01HNKK4XAM"
+        ],
+        "count": 2
+      }
+    ]
+  },
+  {
+    "client_msg_id": "e27ec408-535d-4a9b-a41b-c848a8cb286a",
+    "type": "message",
+    "text": "<https://github.com/OpenLineage/OpenLineage/pull/2260>\nfun PR incoming",
+    "user": "U02S6F54MAB",
+    "ts": "1700004648.584649",
+    "blocks": [
+      {
+        "type": "rich_text",
+        "block_id": "xxBfv",
+        "elements": [
+          {
+            "type": "rich_text_section",
+            "elements": [
+              {
+                "type": "link",
+                "url": "https://github.com/OpenLineage/OpenLineage/pull/2260"
+              },
+              {
+                "type": "text",
+                "text": "\nfun PR incoming"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "team": "T01CWUYP5AR",
+    "thread_ts": "1700004648.584649",
+    "reply_count": 5,
+    "reply_users_count": 4,
+    "latest_reply": "1700066753.852469",
+    "reply_users": [
+      "U02S6F54MAB",
+      "U01RA9B5GG2",
+      "U02MK6YNAQ5",
+      "U01HNKK4XAM"
+    ],
+    "is_locked": false,
+    "subscribed": false,
+    "replies": [
+      {
+        "type": "message",
+        "subtype": "thread_broadcast",
+        "text": "hey look, more fun\n<https://github.com/OpenLineage/OpenLineage/pull/2263>",
+        "user": "U02S6F54MAB",
+        "ts": "1700040937.040239",
+        "thread_ts": "1700004648.584649",
+        "root": {
+          "client_msg_id": "e27ec408-535d-4a9b-a41b-c848a8cb286a",
+          "type": "message",
+          "text": "<https://github.com/OpenLineage/OpenLineage/pull/2260>\nfun PR incoming",
+          "user": "U02S6F54MAB",
+          "ts": "1700004648.584649",
+          "blocks": [
+            {
+              "type": "rich_text",
+              "block_id": "xxBfv",
+              "elements": [
+                {
+                  "type": "rich_text_section",
+                  "elements": [
+                    {
+                      "type": "link",
+                      "url": "https://github.com/OpenLineage/OpenLineage/pull/2260"
+                    },
+                    {
+                      "type": "text",
+                      "text": "\nfun PR incoming"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "team": "T01CWUYP5AR",
+          "thread_ts": "1700004648.584649",
+          "reply_count": 5,
+          "reply_users_count": 4,
+          "latest_reply": "1700066753.852469",
+          "reply_users": [
+            "U02S6F54MAB",
+            "U01RA9B5GG2",
+            "U02MK6YNAQ5",
+            "U01HNKK4XAM"
+          ],
+          "is_locked": false,
+          "subscribed": false
+        },
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "yGPSQ",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "hey look, more fun\n"
+                  },
+                  {
+                    "type": "link",
+                    "url": "https://github.com/OpenLineage/OpenLineage/pull/2263"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "client_msg_id": "9fbbabe3-ab1f-4f16-8e55-28f574dd7eb5"
+      },
+      {
+        "client_msg_id": "789d839b-2827-4542-b060-d72e2c135e3d",
+        "type": "message",
+        "text": "nice to have fun with you Jakub",
+        "user": "U01RA9B5GG2",
+        "ts": "1700042638.003809",
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "L8iP2",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "nice to have fun with you Jakub"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "team": "T01CWUYP5AR",
+        "thread_ts": "1700004648.584649",
+        "parent_user_id": "U02S6F54MAB",
+        "reactions": [
+          {
+            "name": "slightly_smiling_face",
+            "users": [
+              "U02S6F54MAB",
+              "U01HNKK4XAM",
+              "U01DCMDFHBK"
+            ],
+            "count": 3
+          }
+        ]
+      },
+      {
+        "client_msg_id": "c388a688-15b4-4720-98c2-da976acec0a5",
+        "type": "message",
+        "text": "Can't wait to see it on the 1st January.",
+        "user": "U02MK6YNAQ5",
+        "ts": "1700044954.083129",
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "zN7Xj",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "Can't wait to see it on the 1st January."
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "team": "T01CWUYP5AR",
+        "thread_ts": "1700004648.584649",
+        "parent_user_id": "U02S6F54MAB"
+      },
+      {
+        "client_msg_id": "1340B438-D041-4EAF-ADB3-604A3F1D302F",
+        "type": "message",
+        "text": "Ain’t no party like a dev ex improvement party",
+        "user": "U01HNKK4XAM",
+        "ts": "1700049363.338799",
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "6Yj06",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "Ain’t"
+                  },
+                  {
+                    "type": "text",
+                    "text": " no party like a dev ex improvement party"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "team": "T01CWUYP5AR",
+        "thread_ts": "1700004648.584649",
+        "parent_user_id": "U02S6F54MAB"
+      },
+      {
+        "client_msg_id": "35ba5050-45f2-49f6-9126-aaa37a682593",
+        "type": "message",
+        "text": "Gentoo installation party is in similar category of fun",
+        "user": "U01RA9B5GG2",
+        "ts": "1700066753.852469",
+        "blocks": [
+          {
+            "type": "rich_text",
+            "block_id": "vIT3H",
+            "elements": [
+              {
+                "type": "rich_text_section",
+                "elements": [
+                  {
+                    "type": "text",
+                    "text": "Gentoo installation party is in similar category of fun"
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "team": "T01CWUYP5AR",
+        "thread_ts": "1700004648.584649",
+        "parent_user_id": "U02S6F54MAB"
+      }
+    ]
+  },
+  {
+    "client_msg_id": "60159e06-de81-4b43-9edf-f404c32ddd38",
+    "type": "message",
+    "text": ":wave:",
+    "user": "U01RA9B5GG2",
+    "ts": "1699987988.642529",
+    "blocks": [
+      {
+        "type": "rich_text",
+        "block_id": "YMxTi",
+        "elements": [
+          {
+            "type": "rich_text_section",
+            "elements": [
+              {
+                "type": "emoji",
+                "name": "wave",
+                "unicode": "1f44b"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "team": "T01CWUYP5AR"
+  },
+  {
+    "client_msg_id": "c329e984-0446-4e18-8fcf-74d020e30699",
+    "type": "message",
+    "text": ":ocean:",
+    "user": "U053LLVTHRN",
+    "ts": "1699982987.125549",
+    "blocks": [
+      {
+        "type": "rich_text",
+        "block_id": "2BlqX",
+        "elements": [
+          {
+            "type": "rich_text_section",
+            "elements": [
+              {
+                "type": "emoji",
+                "name": "ocean",
+                "unicode": "1f30a"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "team": "T01CWUYP5AR"
+  },
+  {
+    "client_msg_id": "2aa5fdfa-5543-407e-a314-7623ef0c0763",
+    "type": "message",
+    "text": ":wave:",
+    "user": "U01DCMDFHBK",
+    "ts": "1699982333.485469",
+    "blocks": [
+      {
+        "type": "rich_text",
+        "block_id": "YMxTi",
+        "elements": [
+          {
+            "type": "rich_text_section",
+            "elements": [
+              {
+                "type": "emoji",
+                "name": "wave",
+                "unicode": "1f44b"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "team": "T01CWUYP5AR"
+  },
+  {
+    "client_msg_id": "818CA217-10D2-492F-B387-499128576860",
+    "type": "message",
+    "text": ":wave:  ",
+    "user": "U01DCLP0GU9",
+    "ts": "1699982322.990799",
+    "blocks": [
+      {
+        "type": "rich_text",
+        "block_id": "msKVM",
+        "elements": [
+          {
+            "type": "rich_text_section",
+            "elements": [
+              {
+                "type": "emoji",
+                "name": "wave",
+                "unicode": "1f44b"
+              },
+              {
+                "type": "text",
+                "text": "  "
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "team": "T01CWUYP5AR"
+  },
+  {
+    "client_msg_id": "4225176b-1766-4f0f-9d34-e2c808164b02",
+    "type": "message",
+    "text": ":wave:",
+    "user": "U02LXF3HUN7",
+    "ts": "1699982179.651129",
+    "blocks": [
+      {
+        "type": "rich_text",
+        "block_id": "YMxTi",
+        "elements": [
+          {
+            "type": "rich_text_section",
+            "elements": [
+              {
+                "type": "emoji",
+                "name": "wave",
+                "unicode": "1f44b"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "team": "T01CWUYP5AR"
+  },
+  {
+    "type": "message",
+    "subtype": "channel_join",
+    "ts": "1699982042.414079",
+    "user": "U053LLVTHRN",
+    "text": "<@U053LLVTHRN> has joined the channel",
+    "inviter": "U01HNKK4XAM"
+  },
+  {
+    "client_msg_id": "0bea58f3-10b1-4972-ad6a-0a002ae61854",
+    "type": "message",
+    "text": ":wave:",
+    "user": "U02S6F54MAB",
+    "ts": "1699982037.267109",
+    "blocks": [
+      {
+        "type": "rich_text",
+        "block_id": "YMxTi",
+        "elements": [
+          {
+            "type": "rich_text_section",
+            "elements": [
+              {
+                "type": "emoji",
+                "name": "wave",
+                "unicode": "1f44b"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "team": "T01CWUYP5AR"
+  },
+  {
+    "type": "message",
+    "subtype": "channel_join",
+    "ts": "1699982026.646699",
+    "user": "U05KKM07PJP",
+    "text": "<@U05KKM07PJP> has joined the channel",
+    "inviter": "U01HNKK4XAM"
+  },
+  {
+    "type": "message",
+    "subtype": "channel_join",
+    "ts": "1699982026.554329",
+    "user": "U01DCMDFHBK",
+    "text": "<@U01DCMDFHBK> has joined the channel",
+    "inviter": "U01HNKK4XAM"
+  },
+  {
+    "type": "message",
+    "subtype": "channel_join",
+    "ts": "1699982026.462039",
+    "user": "U02LXF3HUN7",
+    "text": "<@U02LXF3HUN7> has joined the channel",
+    "inviter": "U01HNKK4XAM"
+  },
+  {
+    "type": "message",
+    "subtype": "channel_join",
+    "ts": "1699982026.350149",
+    "user": "U02S6F54MAB",
+    "text": "<@U02S6F54MAB> has joined the channel",
+    "inviter": "U01HNKK4XAM"
+  },
+  {
+    "type": "message",
+    "subtype": "channel_join",
+    "ts": "1699982026.266479",
+    "user": "U02MK6YNAQ5",
+    "text": "<@U02MK6YNAQ5> has joined the channel",
+    "inviter": "U01HNKK4XAM"
+  },
+  {
+    "type": "message",
+    "subtype": "channel_join",
+    "ts": "1699982026.191829",
+    "user": "U01DCLP0GU9",
+    "text": "<@U01DCLP0GU9> has joined the channel",
+    "inviter": "U01HNKK4XAM"
+  },
+  {
+    "type": "message",
+    "subtype": "channel_join",
+    "ts": "1699981990.850589",
+    "user": "U01RA9B5GG2",
+    "text": "<@U01RA9B5GG2> has joined the channel",
+    "inviter": "U01HNKK4XAM"
+  },
+  {
+    "type": "message",
+    "subtype": "channel_join",
+    "ts": "1699981986.459199",
+    "user": "U01HNKK4XAM",
+    "text": "<@U01HNKK4XAM> has joined the channel"
+  }
+]

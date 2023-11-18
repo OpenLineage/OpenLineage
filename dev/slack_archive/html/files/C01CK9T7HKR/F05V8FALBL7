@@ -1,0 +1,197 @@
+23/10/09 03:53:29 INFO InMemoryFileIndex: Start listing leaf files and directories. Size of Paths: 1; threshold: 32
+23/10/09 03:53:29 INFO InMemoryFileIndex: Start listing leaf files and directories. Size of Paths: 0; threshold: 32
+23/10/09 03:53:29 INFO InMemoryFileIndex: It took 18 ms to list leaf files for 1 paths.
+23/10/09 03:53:29 INFO InMemoryFileIndex: Start listing leaf files and directories. Size of Paths: 1; threshold: 32
+23/10/09 03:53:29 INFO InMemoryFileIndex: Start listing leaf files and directories. Size of Paths: 0; threshold: 32
+23/10/09 03:53:29 INFO InMemoryFileIndex: It took 18 ms to list leaf files for 1 paths.
+23/10/09 03:53:29 INFO ClusterLoadMonitor: Added query with execution ID:15. Current active queries:1
+23/10/09 03:53:29 INFO FileSourceStrategy: Pushed Filters: 
+23/10/09 03:53:29 INFO FileSourceStrategy: Post-Scan Filters: (length(trim(value#135, None)) > 0)
+23/10/09 03:53:29 INFO MemoryStore: Block broadcast_19 stored as values in memory (estimated size 411.3 KiB, free 3.3 GiB)
+23/10/09 03:53:29 INFO MemoryStore: Block broadcast_19_piece0 stored as bytes in memory (estimated size 14.4 KiB, free 3.3 GiB)
+23/10/09 03:53:29 INFO BlockManagerInfo: Added broadcast_19_piece0 in memory on 10.139.64.10:41051 (size: 14.4 KiB, free: 3.3 GiB)
+23/10/09 03:53:29 INFO SparkContext: Created broadcast 19 from load at NativeMethodAccessorImpl.java:0
+23/10/09 03:53:29 INFO FileSourceScanExec: Planning scan with bin packing, max split size: 4194304 bytes, max partition size: 4194304, open cost is considered as scanning 4194304 bytes.
+23/10/09 03:53:29 INFO SparkContext: Starting job: load at NativeMethodAccessorImpl.java:0
+23/10/09 03:53:29 INFO DAGScheduler: Got job 10 (load at NativeMethodAccessorImpl.java:0) with 1 output partitions
+23/10/09 03:53:29 INFO DAGScheduler: Final stage: ResultStage 12 (load at NativeMethodAccessorImpl.java:0)
+23/10/09 03:53:29 INFO DAGScheduler: Parents of final stage: List()
+23/10/09 03:53:29 INFO DAGScheduler: Missing parents: List()
+23/10/09 03:53:29 INFO DAGScheduler: Submitting ResultStage 12 (MapPartitionsRDD[46] at load at NativeMethodAccessorImpl.java:0), which has no missing parents
+23/10/09 03:53:29 INFO SparkSQLExecutionContext: OpenLineage received Spark event that is configured to be skipped: SparkListenerSQLExecutionStart
+23/10/09 03:53:29 INFO SparkSQLExecutionContext: OpenLineage received Spark event that is configured to be skipped: SparkListenerJobStart
+23/10/09 03:53:29 INFO DAGScheduler: Submitting 1 missing tasks from ResultStage 12 (MapPartitionsRDD[46] at load at NativeMethodAccessorImpl.java:0) (first 15 tasks are for partitions Vector(0))
+23/10/09 03:53:29 INFO TaskSchedulerImpl: Adding task set 12.0 with 1 tasks resource profile 0
+23/10/09 03:53:29 INFO TaskSetManager: TaskSet 12.0 using PreferredLocationsV1
+23/10/09 03:53:29 WARN FairSchedulableBuilder: A job was submitted with scheduler pool 1239554428518675957, which has not been configured. This can happen when the file that pools are read from isn't set, or when that file doesn't contain 1239554428518675957. Created 1239554428518675957 with default configuration (schedulingMode: FIFO, minShare: 0, weight: 1)
+23/10/09 03:53:29 INFO FairSchedulableBuilder: Added task set TaskSet_12.0 tasks to pool 1239554428518675957
+23/10/09 03:53:29 INFO TaskSetManager: Starting task 0.0 in stage 12.0 (TID 10) (10.139.64.10, executor driver, partition 0, PROCESS_LOCAL, 
+23/10/09 03:53:29 INFO MemoryStore: Block broadcast_20 stored as values in memory (estimated size 131.7 KiB, free 3.3 GiB)
+23/10/09 03:53:29 INFO MemoryStore: Block broadcast_20_piece0 stored as bytes in memory (estimated size 38.7 KiB, free 3.3 GiB)
+23/10/09 03:53:29 INFO BlockManagerInfo: Added broadcast_20_piece0 in memory on 10.139.64.10:41051 (size: 38.7 KiB, free: 3.3 GiB)
+23/10/09 03:53:29 INFO SparkContext: Created broadcast 20 from broadcast at TaskSetManager.scala:711
+23/10/09 03:53:29 INFO Executor: Running task 0.0 in stage 12.0 (TID 10)
+23/10/09 03:53:29 INFO FileScanRDD: Reading File path: dbfs:/FileStore/babynames.csv, range: 0-278154, partition values: [empty row], modificationTime: 1696823414000.
+23/10/09 03:53:29 INFO Executor: Finished task 0.0 in stage 12.0 (TID 10). 3413 bytes result sent to driver
+23/10/09 03:53:29 INFO TaskSetManager: Finished task 0.0 in stage 12.0 (TID 10) in 55 ms on 10.139.64.10 (executor driver) (1/1)
+23/10/09 03:53:29 INFO TaskSchedulerImpl: Removed TaskSet 12.0, whose tasks have all completed, from pool 1239554428518675957
+23/10/09 03:53:29 INFO DAGScheduler: ResultStage 12 (load at NativeMethodAccessorImpl.java:0) finished in 0.060 s
+23/10/09 03:53:29 INFO DAGScheduler: Job 10 is finished. Cancelling potential speculative or zombie tasks for this job
+23/10/09 03:53:29 INFO TaskSchedulerImpl: Killing all running tasks in stage 12: Stage finished
+23/10/09 03:53:29 INFO DAGScheduler: Job 10 finished: load at NativeMethodAccessorImpl.java:0, took 0.065550 s
+23/10/09 03:53:29 INFO SparkSQLExecutionContext: OpenLineage received Spark event that is configured to be skipped: SparkListenerJobEnd
+23/10/09 03:53:30 INFO ClusterLoadMonitor: Removed query with execution ID:15. Current active queries:0
+23/10/09 03:53:30 INFO SparkSQLExecutionContext: OpenLineage received Spark event that is configured to be skipped: SparkListenerSQLExecutionEnd
+23/10/09 03:53:30 INFO QueryProfileListener: Query profile sent to logger, seq number: 15, app id: local-1696821525950
+23/10/09 03:53:30 INFO FileSourceStrategy: Pushed Filters: 
+23/10/09 03:53:30 INFO FileSourceStrategy: Post-Scan Filters: 
+23/10/09 03:53:30 INFO MemoryStore: Block broadcast_21 stored as values in memory (estimated size 411.3 KiB, free 3.3 GiB)
+23/10/09 03:53:30 INFO MemoryStore: Block broadcast_21_piece0 stored as bytes in memory (estimated size 14.4 KiB, free 3.3 GiB)
+23/10/09 03:53:30 INFO BlockManagerInfo: Added broadcast_21_piece0 in memory on 10.139.64.10:41051 (size: 14.4 KiB, free: 3.3 GiB)
+23/10/09 03:53:30 INFO SparkContext: Created broadcast 21 from load at NativeMethodAccessorImpl.java:0
+23/10/09 03:53:30 INFO FileSourceScanExec: Planning scan with bin packing, max split size: 4194304 bytes, max partition size: 4194304, open cost is considered as scanning 4194304 bytes.
+23/10/09 03:53:30 INFO SparkContext: Starting job: load at NativeMethodAccessorImpl.java:0
+23/10/09 03:53:30 INFO DAGScheduler: Got job 11 (load at NativeMethodAccessorImpl.java:0) with 1 output partitions
+23/10/09 03:53:30 INFO DAGScheduler: Final stage: ResultStage 13 (load at NativeMethodAccessorImpl.java:0)
+23/10/09 03:53:30 INFO DAGScheduler: Parents of final stage: List()
+23/10/09 03:53:30 INFO DAGScheduler: Missing parents: List()
+23/10/09 03:53:30 INFO DAGScheduler: Submitting ResultStage 13 (MapPartitionsRDD[52] at load at NativeMethodAccessorImpl.java:0), which has no missing parents
+23/10/09 03:53:30 INFO DAGScheduler: Submitting 1 missing tasks from ResultStage 13 (MapPartitionsRDD[52] at load at NativeMethodAccessorImpl.java:0) (first 15 tasks are for partitions Vector(0))
+23/10/09 03:53:30 INFO TaskSchedulerImpl: Adding task set 13.0 with 1 tasks resource profile 0
+23/10/09 03:53:30 INFO TaskSetManager: TaskSet 13.0 using PreferredLocationsV1
+23/10/09 03:53:30 INFO FairSchedulableBuilder: Added task set TaskSet_13.0 tasks to pool 1239554428518675957
+23/10/09 03:53:30 INFO TaskSetManager: Starting task 0.0 in stage 13.0 (TID 11) (10.139.64.10, executor driver, partition 0, PROCESS_LOCAL, 
+23/10/09 03:53:30 INFO MemoryStore: Block broadcast_22 stored as values in memory (estimated size 158.0 KiB, free 3.3 GiB)
+23/10/09 03:53:30 INFO MemoryStore: Block broadcast_22_piece0 stored as bytes in memory (estimated size 52.1 KiB, free 3.3 GiB)
+23/10/09 03:53:30 INFO RddExecutionContext: Config field is not HadoopMapRedWriteConfigUtil or HadoopMapReduceWriteConfigUtil, it's org.apache.spark.rdd.RDD$$Lambda$7387/139829442
+23/10/09 03:53:30 INFO RddExecutionContext: Found job conf from RDD Configuration: core-default.xml, core-site.xml, mapred-default.xml, mapred-site.xml, yarn-default.xml, yarn-site.xml, hdfs-default.xml, hdfs-rbf-default.xml, hdfs-site.xml, hdfs-rbf-site.xml
+23/10/09 03:53:30 INFO BlockManagerInfo: Added broadcast_22_piece0 in memory on 10.139.64.10:41051 (size: 52.1 KiB, free: 3.3 GiB)
+23/10/09 03:53:30 INFO RddExecutionContext: Found output path null from RDD MapPartitionsRDD[52] at load at NativeMethodAccessorImpl.java:0
+23/10/09 03:53:30 INFO RddExecutionContext: RDDs are empty: skipping sending OpenLineage event
+23/10/09 03:53:30 INFO SparkContext: Created broadcast 22 from broadcast at TaskSetManager.scala:711
+23/10/09 03:53:30 INFO Executor: Running task 0.0 in stage 13.0 (TID 11)
+23/10/09 03:53:30 WARN SQLConf: The SQL config 'spark.sql.hive.convertCTAS' has been deprecated in Spark v3.1 and may be removed in the future. Set 'spark.sql.legacy.createHiveTableByDefault' to false instead.
+23/10/09 03:53:30 INFO FileScanRDD: Reading File path: dbfs:/FileStore/babynames.csv, range: 0-278154, partition values: [empty row], modificationTime: 1696823414000.
+23/10/09 03:53:30 INFO Executor: Finished task 0.0 in stage 13.0 (TID 11). 3237 bytes result sent to driver
+23/10/09 03:53:30 INFO TaskSetManager: Finished task 0.0 in stage 13.0 (TID 11) in 68 ms on 10.139.64.10 (executor driver) (1/1)
+23/10/09 03:53:30 INFO TaskSchedulerImpl: Removed TaskSet 13.0, whose tasks have all completed, from pool 1239554428518675957
+23/10/09 03:53:30 INFO DAGScheduler: ResultStage 13 (load at NativeMethodAccessorImpl.java:0) finished in 0.086 s
+23/10/09 03:53:30 INFO DAGScheduler: Job 11 is finished. Cancelling potential speculative or zombie tasks for this job
+23/10/09 03:53:30 INFO TaskSchedulerImpl: Killing all running tasks in stage 13: Stage finished
+23/10/09 03:53:30 INFO DAGScheduler: Job 11 finished: load at NativeMethodAccessorImpl.java:0, took 0.091253 s
+23/10/09 03:53:30 INFO RddExecutionContext: RDDs are empty: skipping sending OpenLineage event
+23/10/09 03:53:30 INFO ClusterLoadMonitor: Added query with execution ID:16. Current active queries:1
+23/10/09 03:53:30 INFO ClusterLoadMonitor: Removed query with execution ID:16. Current active queries:0
+23/10/09 03:53:30 INFO SparkSQLExecutionContext: OpenLineage received Spark event that is configured to be skipped: SparkListenerSQLExecutionStart
+23/10/09 03:53:30 INFO QueryProfileListener: Query profile sent to logger, seq number: 16, app id: local-1696821525950
+23/10/09 03:53:30 INFO SparkSQLExecutionContext: OpenLineage received Spark event that is configured to be skipped: SparkListenerSQLExecutionEnd
+23/10/09 03:53:30 INFO FileSourceStrategy: Pushed Filters: 
+23/10/09 03:53:30 INFO FileSourceStrategy: Post-Scan Filters: 
+23/10/09 03:53:30 INFO HashAggregateExec: spark.sql.codegen.aggregate.map.twolevel.enabled is set to true, but current version of codegened fast hashmap does not support this aggregate.
+23/10/09 03:53:30 INFO MemoryStore: Block broadcast_23 stored as values in memory (estimated size 410.7 KiB, free 3.3 GiB)
+23/10/09 03:53:30 INFO MemoryStore: Block broadcast_23_piece0 stored as bytes in memory (estimated size 14.4 KiB, free 3.3 GiB)
+23/10/09 03:53:30 INFO BlockManagerInfo: Added broadcast_23_piece0 in memory on 10.139.64.10:41051 (size: 14.4 KiB, free: 3.3 GiB)
+23/10/09 03:53:30 INFO SparkContext: Created broadcast 23 from $anonfun$withThreadLocalCaptured$5 at LexicalThreadLocal.scala:63
+23/10/09 03:53:30 INFO FileSourceScanExec: Planning scan with bin packing, max split size: 4194304 bytes, max partition size: 4194304, open cost is considered as scanning 4194304 bytes.
+23/10/09 03:53:30 INFO DAGScheduler: Registering RDD 56 ($anonfun$withThreadLocalCaptured$5 at LexicalThreadLocal.scala:63) as input to shuffle 2
+23/10/09 03:53:30 INFO DAGScheduler: Got map stage job 12 ($anonfun$withThreadLocalCaptured$5 at LexicalThreadLocal.scala:63) with 1 output partitions
+23/10/09 03:53:30 INFO DAGScheduler: Final stage: ShuffleMapStage 14 ($anonfun$withThreadLocalCaptured$5 at LexicalThreadLocal.scala:63)
+23/10/09 03:53:30 INFO DAGScheduler: Parents of final stage: List()
+23/10/09 03:53:30 INFO DAGScheduler: Missing parents: List()
+23/10/09 03:53:30 INFO DAGScheduler: Submitting ShuffleMapStage 14 (MapPartitionsRDD[56] at $anonfun$withThreadLocalCaptured$5 at LexicalThreadLocal.scala:63), which has no missing parents
+23/10/09 03:53:30 INFO DAGScheduler: Submitting 1 missing tasks from ShuffleMapStage 14 (MapPartitionsRDD[56] at $anonfun$withThreadLocalCaptured$5 at LexicalThreadLocal.scala:63) (first 15 tasks are for partitions Vector(0))
+23/10/09 03:53:30 INFO TaskSchedulerImpl: Adding task set 14.0 with 1 tasks resource profile 0
+23/10/09 03:53:30 INFO TaskSetManager: TaskSet 14.0 using PreferredLocationsV1
+23/10/09 03:53:30 INFO FairSchedulableBuilder: Added task set TaskSet_14.0 tasks to pool 1239554428518675957
+23/10/09 03:53:30 INFO TaskSetManager: Starting task 0.0 in stage 14.0 (TID 12) (10.139.64.10, executor driver, partition 0, PROCESS_LOCAL, 
+23/10/09 03:53:30 INFO MemoryStore: Block broadcast_24 stored as values in memory (estimated size 91.5 KiB, free 3.3 GiB)
+23/10/09 03:53:30 INFO MemoryStore: Block broadcast_24_piece0 stored as bytes in memory (estimated size 37.1 KiB, free 3.3 GiB)
+23/10/09 03:53:30 INFO BlockManagerInfo: Added broadcast_24_piece0 in memory on 10.139.64.10:41051 (size: 37.1 KiB, free: 3.3 GiB)
+23/10/09 03:53:30 INFO SparkContext: Created broadcast 24 from broadcast at TaskSetManager.scala:711
+23/10/09 03:53:30 INFO Executor: Running task 0.0 in stage 14.0 (TID 12)
+23/10/09 03:53:30 INFO RddExecutionContext: Found output path null from RDD MapPartitionsRDD[56] at $anonfun$withThreadLocalCaptured$5 at LexicalThreadLocal.scala:63
+23/10/09 03:53:30 INFO RddExecutionContext: RDDs are empty: skipping sending OpenLineage event
+23/10/09 03:53:30 INFO FileScanRDD: Reading File path: dbfs:/FileStore/babynames.csv, range: 0-278154, partition values: [empty row], modificationTime: 1696823414000.
+23/10/09 03:53:30 INFO Executor: Finished task 0.0 in stage 14.0 (TID 12). 3926 bytes result sent to driver
+23/10/09 03:53:30 INFO TaskSetManager: Finished task 0.0 in stage 14.0 (TID 12) in 82 ms on 10.139.64.10 (executor driver) (1/1)
+23/10/09 03:53:30 INFO TaskSchedulerImpl: Removed TaskSet 14.0, whose tasks have all completed, from pool 1239554428518675957
+23/10/09 03:53:30 INFO DAGScheduler: ShuffleMapStage 14 ($anonfun$withThreadLocalCaptured$5 at LexicalThreadLocal.scala:63) finished in 0.086 s
+23/10/09 03:53:30 INFO DAGScheduler: looking for newly runnable stages
+23/10/09 03:53:30 INFO DAGScheduler: running: Set()
+23/10/09 03:53:30 INFO DAGScheduler: waiting: Set()
+23/10/09 03:53:30 INFO DAGScheduler: failed: Set()
+23/10/09 03:53:30 INFO RddExecutionContext: RDDs are empty: skipping sending OpenLineage event
+23/10/09 03:53:30 INFO ShufflePartitionsUtil: For shuffle(2), advisory target size: 67108864, actual target size 1048576, minimum partition size: 1048576
+23/10/09 03:53:30 INFO HashAggregateExec: spark.sql.codegen.aggregate.map.twolevel.enabled is set to true, but current version of codegened fast hashmap does not support this aggregate.
+23/10/09 03:53:30 INFO SparkContext: Starting job: wrapper at /root/.ipykernel/2070/command-2627471680180925-2004223455:3
+23/10/09 03:53:30 INFO DAGScheduler: Got job 13 (wrapper at /root/.ipykernel/2070/command-2627471680180925-2004223455:3) with 1 output partitions
+23/10/09 03:53:30 INFO DAGScheduler: Final stage: ResultStage 16 (wrapper at /root/.ipykernel/2070/command-2627471680180925-2004223455:3)
+23/10/09 03:53:30 INFO DAGScheduler: Parents of final stage: List(ShuffleMapStage 15)
+23/10/09 03:53:30 INFO DAGScheduler: Missing parents: List()
+23/10/09 03:53:30 INFO DAGScheduler: Submitting ResultStage 16 (PythonRDD[62] at wrapper at /root/.ipykernel/2070/command-2627471680180925-2004223455:3), which has no missing parents
+23/10/09 03:53:30 INFO DAGScheduler: Submitting 1 missing tasks from ResultStage 16 (PythonRDD[62] at wrapper at /root/.ipykernel/2070/command-2627471680180925-2004223455:3) (first 15 tasks are for partitions Vector(0))
+23/10/09 03:53:30 INFO TaskSchedulerImpl: Adding task set 16.0 with 1 tasks resource profile 0
+23/10/09 03:53:30 INFO TaskSetManager: TaskSet 16.0 using PreferredLocationsV1
+23/10/09 03:53:30 INFO FairSchedulableBuilder: Added task set TaskSet_16.0 tasks to pool 1239554428518675957
+23/10/09 03:53:30 INFO TaskSetManager: Starting task 0.0 in stage 16.0 (TID 13) (10.139.64.10, executor driver, partition 0, PROCESS_LOCAL, 
+23/10/09 03:53:30 INFO MemoryStore: Block broadcast_25 stored as values in memory (estimated size 111.8 KiB, free 3.3 GiB)
+23/10/09 03:53:30 INFO MemoryStore: Block broadcast_25_piece0 stored as bytes in memory (estimated size 49.0 KiB, free 3.3 GiB)
+23/10/09 03:53:30 INFO BlockManagerInfo: Added broadcast_25_piece0 in memory on 10.139.64.10:41051 (size: 49.0 KiB, free: 3.3 GiB)
+23/10/09 03:53:30 INFO SparkContext: Created broadcast 25 from broadcast at TaskSetManager.scala:711
+23/10/09 03:53:30 INFO Executor: Running task 0.0 in stage 16.0 (TID 13)
+23/10/09 03:53:30 INFO RddExecutionContext: Config field is not HadoopMapRedWriteConfigUtil or HadoopMapReduceWriteConfigUtil, it's org.apache.spark.api.python.PythonRDD
+23/10/09 03:53:30 INFO RddExecutionContext: Found job conf from RDD Configuration: core-default.xml, core-site.xml, mapred-default.xml, mapred-site.xml, yarn-default.xml, yarn-site.xml, hdfs-default.xml, hdfs-rbf-default.xml, hdfs-site.xml, hdfs-rbf-site.xml
+23/10/09 03:53:30 INFO RddExecutionContext: Found output path null from RDD PythonRDD[62] at wrapper at /root/.ipykernel/2070/command-2627471680180925-2004223455:3
+23/10/09 03:53:30 INFO RddExecutionContext: RDDs are empty: skipping sending OpenLineage event
+23/10/09 03:53:30 WARN SQLConf: The SQL config 'spark.sql.hive.convertCTAS' has been deprecated in Spark v3.1 and may be removed in the future. Set 'spark.sql.legacy.createHiveTableByDefault' to false instead.
+23/10/09 03:53:30 INFO ShuffleBlockFetcherIterator: Getting 14 (840.0 B) non-empty blocks including 14 (840.0 B) local and 0 (0.0 B) host-local and 0 (0.0 B) push-merged-local and 0 (0.0 B) remote blocks
+23/10/09 03:53:30 INFO ShuffleBlockFetcherIterator: Started 0 remote fetches in 0 ms
+23/10/09 03:53:30 INFO PythonRunner: Times: total = 99, boot = 51, init = 10, finish = 38
+23/10/09 03:53:30 INFO Executor: Finished task 0.0 in stage 16.0 (TID 13). 3412 bytes result sent to driver
+23/10/09 03:53:30 INFO TaskSetManager: Finished task 0.0 in stage 16.0 (TID 13) in 137 ms on 10.139.64.10 (executor driver) (1/1)
+23/10/09 03:53:30 INFO TaskSchedulerImpl: Removed TaskSet 16.0, whose tasks have all completed, from pool 1239554428518675957
+23/10/09 03:53:30 INFO DAGScheduler: ResultStage 16 (wrapper at /root/.ipykernel/2070/command-2627471680180925-2004223455:3) finished in 0.142 s
+23/10/09 03:53:30 INFO DAGScheduler: Job 13 is finished. Cancelling potential speculative or zombie tasks for this job
+23/10/09 03:53:30 INFO TaskSchedulerImpl: Killing all running tasks in stage 16: Stage finished
+23/10/09 03:53:30 INFO DAGScheduler: Job 13 finished: wrapper at /root/.ipykernel/2070/command-2627471680180925-2004223455:3, took 0.148639 s
+23/10/09 03:53:30 INFO RddExecutionContext: RDDs are empty: skipping sending OpenLineage event
+23/10/09 03:53:30 INFO ClusterLoadMonitor: Added query with execution ID:17. Current active queries:1
+23/10/09 03:53:30 INFO FileSourceStrategy: Pushed Filters: IsNotNull(Year),EqualTo(Year,2014)
+23/10/09 03:53:30 INFO FileSourceStrategy: Post-Scan Filters: isnotnull(Year#152),(Year#152 = 2014)
+23/10/09 03:53:30 INFO MemoryStore: Block broadcast_26 stored as values in memory (estimated size 410.7 KiB, free 3.3 GiB)
+23/10/09 03:53:30 INFO MemoryStore: Block broadcast_26_piece0 stored as bytes in memory (estimated size 14.4 KiB, free 3.3 GiB)
+23/10/09 03:53:30 INFO BlockManagerInfo: Added broadcast_26_piece0 in memory on 10.139.64.10:41051 (size: 14.4 KiB, free: 3.3 GiB)
+23/10/09 03:53:30 INFO SparkContext: Created broadcast 26 from collectResult at OutputAggregator.scala:267
+23/10/09 03:53:30 INFO FileSourceScanExec: Planning scan with bin packing, max split size: 4194304 bytes, max partition size: 4194304, open cost is considered as scanning 4194304 bytes.
+23/10/09 03:53:30 INFO SparkContext: Starting job: collectResult at OutputAggregator.scala:267
+23/10/09 03:53:30 INFO DAGScheduler: Got job 14 (collectResult at OutputAggregator.scala:267) with 1 output partitions
+23/10/09 03:53:30 INFO DAGScheduler: Final stage: ResultStage 17 (collectResult at OutputAggregator.scala:267)
+23/10/09 03:53:30 INFO DAGScheduler: Parents of final stage: List()
+23/10/09 03:53:30 INFO DAGScheduler: Missing parents: List()
+23/10/09 03:53:30 INFO DAGScheduler: Submitting ResultStage 17 (MapPartitionsRDD[65] at collectResult at OutputAggregator.scala:267), which has no missing parents
+23/10/09 03:53:30 INFO DAGScheduler: Submitting 1 missing tasks from ResultStage 17 (MapPartitionsRDD[65] at collectResult at OutputAggregator.scala:267) (first 15 tasks are for partitions Vector(0))
+23/10/09 03:53:30 INFO TaskSchedulerImpl: Adding task set 17.0 with 1 tasks resource profile 0
+23/10/09 03:53:30 INFO TaskSetManager: TaskSet 17.0 using PreferredLocationsV1
+23/10/09 03:53:30 INFO FairSchedulableBuilder: Added task set TaskSet_17.0 tasks to pool 1239554428518675957
+23/10/09 03:53:30 INFO TaskSetManager: Starting task 0.0 in stage 17.0 (TID 14) (10.139.64.10, executor driver, partition 0, PROCESS_LOCAL, 
+23/10/09 03:53:30 INFO MemoryStore: Block broadcast_27 stored as values in memory (estimated size 135.4 KiB, free 3.3 GiB)
+23/10/09 03:53:30 INFO SparkSQLExecutionContext: OpenLineage received Spark event that is configured to be skipped: SparkListenerSQLExecutionStart
+23/10/09 03:53:30 INFO SparkSQLExecutionContext: OpenLineage received Spark event that is configured to be skipped: SparkListenerJobStart
+23/10/09 03:53:30 INFO MemoryStore: Block broadcast_27_piece0 stored as bytes in memory (estimated size 40.3 KiB, free 3.3 GiB)
+23/10/09 03:53:30 INFO BlockManagerInfo: Added broadcast_27_piece0 in memory on 10.139.64.10:41051 (size: 40.3 KiB, free: 3.3 GiB)
+23/10/09 03:53:30 INFO SparkContext: Created broadcast 27 from broadcast at TaskSetManager.scala:711
+23/10/09 03:53:30 INFO Executor: Running task 0.0 in stage 17.0 (TID 14)
+23/10/09 03:53:30 INFO FileScanRDD: Reading File path: dbfs:/FileStore/babynames.csv, range: 0-278154, partition values: [empty row], modificationTime: 1696823414000.
+23/10/09 03:53:30 INFO Executor: Finished task 0.0 in stage 17.0 (TID 14). 36219 bytes result sent to driver
+23/10/09 03:53:30 INFO TaskSetManager: Finished task 0.0 in stage 17.0 (TID 14) in 58 ms on 10.139.64.10 (executor driver) (1/1)
+23/10/09 03:53:30 INFO TaskSchedulerImpl: Removed TaskSet 17.0, whose tasks have all completed, from pool 1239554428518675957
+23/10/09 03:53:30 INFO DAGScheduler: ResultStage 17 (collectResult at OutputAggregator.scala:267) finished in 0.063 s
+23/10/09 03:53:30 INFO DAGScheduler: Job 14 is finished. Cancelling potential speculative or zombie tasks for this job
+23/10/09 03:53:30 INFO TaskSchedulerImpl: Killing all running tasks in stage 17: Stage finished
+23/10/09 03:53:30 INFO SparkSQLExecutionContext: OpenLineage received Spark event that is configured to be skipped: SparkListenerJobEnd
+23/10/09 03:53:30 INFO DAGScheduler: Job 14 finished: collectResult at OutputAggregator.scala:267, took 0.071653 s
+23/10/09 03:53:30 INFO ClusterLoadMonitor: Removed query with execution ID:17. Current active queries:0
+23/10/09 03:53:30 INFO QueryProfileListener: Query profile sent to logger, seq number: 17, app id: local-1696821525950
+23/10/09 03:53:30 INFO SparkSQLExecutionContext: OpenLineage received Spark event that is configured to be skipped: SparkListenerSQLExecutionEnd
+23/10/09 03:53:30 INFO ProgressReporter$: Removed result fetcher for 1239554428518675957_5649797394450581660_69e5ef0f22794594ab0d05a411e35e19
+23/10/09 03:53:30 INFO PresignedUrlClientUtils$: Successfully upload file to ADLGen2 using create, append and flush to url: https://dbstoragekvew6l5xkyj2c.dfs.core.windows.net/jobs/3942203504488904/command-results/2627471680180925/8b067875-71c2-4aa6-bdad-8ad2226eb487
