@@ -6,6 +6,8 @@
 package io.openlineage.flink.visitor.lifecycle;
 
 import io.openlineage.client.OpenLineage;
+import io.openlineage.client.OpenLineage.JobFacets;
+import io.openlineage.client.OpenLineage.JobFacetsBuilder;
 import io.openlineage.client.OpenLineage.RunEvent;
 import io.openlineage.client.OpenLineage.RunEvent.EventType;
 import io.openlineage.client.OpenLineage.RunEventBuilder;
@@ -37,12 +39,14 @@ import org.apache.flink.api.dag.Transformation;
 @Builder
 public class FlinkExecutionContext implements ExecutionContext {
 
+  public static final String FLINK_PROCESSING_TYPE = "FLINK";
   @Getter private final JobID jobId;
   protected final UUID runId;
   protected final EventEmitter eventEmitter;
   protected final OpenLineageContext openLineageContext;
   private final String jobName;
   private final String jobNamespace;
+  private final String jobType;
 
   @Getter private final List<Transformation<?>> transformations;
 
@@ -127,9 +131,19 @@ public class FlinkExecutionContext implements ExecutionContext {
    */
   private RunEventBuilder commonEventBuilder() {
     OpenLineage openLineage = openLineageContext.getOpenLineage();
+    JobFacets jobFacets =
+        new JobFacetsBuilder()
+            .jobType(
+                openLineage
+                    .newJobTypeJobFacetBuilder()
+                    .jobType(jobType)
+                    .processingType(FLINK_PROCESSING_TYPE)
+                    .build())
+            .build();
+
     return openLineage
         .newRunEventBuilder()
-        .job(openLineage.newJob(jobNamespace, jobName, null))
+        .job(openLineage.newJob(jobNamespace, jobName, jobFacets))
         .eventTime(ZonedDateTime.now());
   }
 

@@ -7,6 +7,7 @@ package io.openlineage.flink;
 
 import io.openlineage.flink.tracker.OpenLineageContinousJobTracker;
 import io.openlineage.flink.tracker.OpenLineageContinousJobTrackerFactory;
+import io.openlineage.flink.utils.JobTypeUtils;
 import io.openlineage.flink.visitor.lifecycle.FlinkExecutionContext;
 import io.openlineage.flink.visitor.lifecycle.FlinkExecutionContextFactory;
 import java.lang.reflect.Field;
@@ -25,10 +26,12 @@ import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.JobID;
+import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.configuration.ConfigOption;
 import org.apache.flink.configuration.ConfigOptions;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.configuration.ExecutionOptions;
 import org.apache.flink.core.execution.DetachedJobExecutionResult;
 import org.apache.flink.core.execution.JobClient;
 import org.apache.flink.core.execution.JobListener;
@@ -73,6 +76,7 @@ public class OpenLineageFlinkJobListener implements JobListener {
   private final String jobName;
   private final Duration jobTrackingInterval;
   private final Map<JobID, FlinkExecutionContext> jobContexts = new HashMap<>();
+  private final RuntimeExecutionMode runtimeMode;
 
   public static OpenLineageFlinkJobListenerBuilder builder() {
     return new OpenLineageFlinkJobListenerInternalBuilder();
@@ -110,6 +114,9 @@ public class OpenLineageFlinkJobListener implements JobListener {
             OpenLineageContinousJobTrackerFactory.getTracker(
                 super.executionEnvironment.getConfiguration(), super.jobTrackingInterval));
       }
+
+      super.runtimeMode(
+          super.executionEnvironment.getConfiguration().get(ExecutionOptions.RUNTIME_MODE));
 
       return super.build();
     }
@@ -168,6 +175,7 @@ public class OpenLineageFlinkJobListener implements JobListener {
               jobNamespace,
               jobName,
               jobClient.getJobID(),
+              JobTypeUtils.extract(runtimeMode, transformations),
               transformations);
 
       jobContexts.put(jobClient.getJobID(), context);

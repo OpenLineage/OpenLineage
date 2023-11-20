@@ -21,9 +21,11 @@ public class FlinkExecutionContextFactory {
       String jobNamespace,
       String jobName,
       JobID jobId,
+      String jobType,
       List<Transformation<?>> transformations) {
     return new FlinkExecutionContext.FlinkExecutionContextBuilder()
         .jobId(jobId)
+        .jobType(jobType)
         .jobName(jobName)
         .jobNamespace(jobNamespace)
         .transformations(transformations)

@@ -3,7 +3,13 @@
   "eventTime": "${json-unit.any-string}",
   "job" : {
     "namespace" : "flink_job_namespace",
-    "name": "flink_examples_stateful"
+    "name": "flink_examples_stateful",
+    "facets": {
+      "jobType": {
+        "processingType" : "FLINK",
+        "jobType" : "STREAMING"
+      }
+    }
   },
   "run": {
     "runId": "${json-unit.any-string}"
