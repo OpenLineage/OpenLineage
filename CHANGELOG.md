@@ -1,7 +1,9 @@
 # Changelog
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.10.2...HEAD)
-
+### Added
+* **Spark: support for built-in lineage extraction** [`#2272`](https://github.com/OpenLineage/OpenLineage/pull/2272) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Adding the ability to support OpenLineage within Spark extensions' code. Refer to [README](https://github.com/OpenLineage/OpenLineage/tree/spark/built-in-lineage/integration/spark-interfaces-scala#readme) for more details.*
 
 ### Fixed
 * **Flink: disable module metadata generation** [`#2507`](https://github.com/OpenLineage/OpenLineage/pull/2531) [@HuangZhenQiu](https://github.com/HuangZhenQiu)

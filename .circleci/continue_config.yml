@@ -480,6 +480,60 @@ jobs:
           # Publish *.jar
           ./gradlew --no-daemon --console=plain publish
 
+  build-integration-spark-interfaces-scala:
+    working_directory: ~/openlineage/integration/spark-interfaces-scala
+    docker:
+      - image: cimg/openjdk:8.0
+    resource_class: "medium"
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+      - restore_cache:
+          keys:
+            - v1-spark-interfaces-scala-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+            - v1-spark-interfaces-scala-{{ .Branch }}
+      - attach_workspace:
+          at: ~/.m2/repository/io/openlineage/
+      - run: ./gradlew publishToMavenLocal --info
+      - persist_to_workspace:
+          root: ~/.m2/repository/io/openlineage/
+          paths:
+            - spark-interfaces-scala
+      - save_cache:
+          key: v1-spark-interfaces-scala-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+          paths:
+            - ~/.gradle
+
+  release-integration-spark-interfaces-scala:
+    working_directory: ~/openlineage/integration/spark-interfaces-scala
+    docker:
+      - image: cimg/openjdk:8.0
+    steps:
+      - *checkout_project_root
+      - run:
+          name: Generate cache key
+          command: ./../../.circleci/checksum.sh /tmp/checksum.txt
+      - run: |
+          # Get, then decode the GPG private key used to sign *.jar
+          export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
+          export RELEASE_PASSWORD=$(echo $SONATYPE_PASSWORD)
+          export RELEASE_USERNAME=$(echo $SONATYPE_USER)
+
+          # publish jar to maven local so it can be found by dependents
+          ./gradlew publishToMavenLocal --info
+
+          # Publish *.jar
+          ./gradlew --no-daemon publish --info
+      - store_artifacts:
+          path: ./build/libs
+          destination: spark-interfaces-scala-artifacts
+      - save_cache:
+          key: v1-release-spark-interfaces-scala-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
+          paths:
+            - ~/.m2
+
   build-integration-sql-macos:
     working_directory: ~/openlineage/integration/sql
     macos:
@@ -1006,6 +1060,15 @@ workflows:
             - compile-integration-sql-java-linux-x86
             - compile-integration-sql-java-linux-arm
             - compile-integration-sql-java-macos-x86
+      - release-integration-spark-interfaces-scala:
+          filters:
+            tags:
+              only: /^[0-9]+(\.[0-9]+){2}(-rc\.[0-9]+)?$/
+            branches:
+              ignore: /.*/
+          context: release
+          requires:
+            - release-client-java
       - release-integration-flink:
           filters:
             tags:

@@ -216,7 +216,14 @@ class InternalEventHandlerFactory implements OpenLineageEventHandlerFactory {
   @Override
   public List<CustomFacetBuilder<?, ? extends JobFacet>> createJobFacetBuilders(
       OpenLineageContext context) {
-    return generate(eventHandlerFactories, factory -> factory.createJobFacetBuilders(context));
+    Builder<CustomFacetBuilder<?, ? extends JobFacet>> listBuilder;
+    listBuilder =
+        ImmutableList.<CustomFacetBuilder<?, ? extends JobFacet>>builder()
+            .addAll(
+                generate(
+                    eventHandlerFactories, factory -> factory.createJobFacetBuilders(context)));
+
+    return listBuilder.build();
   }
 
   @Override
