@@ -20,6 +20,7 @@ import java.util.Properties;
 import java.util.regex.Pattern;
 import lombok.SneakyThrows;
 import org.apache.avro.Schema;
+import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.flink.api.common.serialization.DeserializationSchema;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.connector.kafka.source.KafkaSource;
@@ -30,7 +31,6 @@ import org.apache.flink.streaming.connectors.kafka.internals.KafkaPartitionDisco
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
-import org.testcontainers.shaded.org.apache.commons.lang.reflect.FieldUtils;
 
 class KafkaSourceWrapperTest {
 
