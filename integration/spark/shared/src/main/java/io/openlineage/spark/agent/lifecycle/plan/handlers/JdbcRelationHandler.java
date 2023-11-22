@@ -16,11 +16,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.sql.execution.datasources.LogicalRelation;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 
+@Slf4j
 public class JdbcRelationHandler<D extends OpenLineage.Dataset> {
 
   private final DatasetFactory<D> datasetFactory;

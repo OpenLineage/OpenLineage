@@ -358,6 +358,10 @@ jobs:
           root: ./
           paths:
             - target/debug/*.so
+      - store_artifacts:
+          path: ./target/debug/
+          destination: sql-linux-artifacts
+
   
   compile-integration-sql-java-macos:
     parameters:
@@ -375,6 +379,9 @@ jobs:
           root: ../
           paths:
             - target/debug/*.dylib
+      - store_artifacts:
+          path: ../target/debug/*.dylib
+          destination: sql-macos-artifacts
 
   build-integration-sql-java:
     working_directory: ~/openlineage/integration/sql/iface-java

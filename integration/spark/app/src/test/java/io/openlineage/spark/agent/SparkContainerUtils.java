@@ -30,7 +30,8 @@ public class SparkContainerUtils {
   static MockServerContainer makeMockServerContainer(Network network) {
     return new MockServerContainer(MOCKSERVER_IMAGE)
         .withNetwork(network)
-        .withNetworkAliases("openlineageclient");
+        .withNetworkAliases("openlineageclient")
+        .withStartupTimeout(Duration.of(2, ChronoUnit.MINUTES));
   }
 
   static PostgreSQLContainer<?> makeMetastoreContainer(Network network) {
