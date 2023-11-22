@@ -32,8 +32,6 @@ The registered name is used to shorten “producer” and “schemaUrl” fields
 
 ## Acceptance Guidelines
 To claim a name, an entity must have either documentation or a test/sample. "Reserving" a name prior to public functionality is discouraged.
-(When should one register a new facet, vs. an extension to an existing facet? Example: do I make WarningMessageRunFacet, or do I extend ErrorMessageRunFacet to have a "level" field where I can set it to "ERROR", "WARNING", "DEBUG", etc?)
-(how does one register an extension to an existing facet?)
 
 Corresponding values to be used:
 
