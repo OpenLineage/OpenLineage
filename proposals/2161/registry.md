@@ -18,6 +18,8 @@ Requirements:
 
 - Producers can create and evolve their custom facets without requiring approval from the OpenLineage project.
 - Producers and Consumers can update the list of the facets they produce or consume without requiring approval from the OpenLineage project.
+- Consumers can independently discover and support custom facets.
+- OpenLineage users can easily explore which producers and/or consumers best meet their compatibility needs
 - URIs should be short (producer, faceturl)
 - A registered name can be both a producer and a consumer.
 
@@ -27,6 +29,9 @@ Requirements:
 Each consumer or producer entity can claim a name, defined in the registry: “{name}”
 Each registered entity will provide a documentation URL for its documentation.
 The registered name is used to shorten “producer” and “schemaUrl” fields in facets.
+
+## Acceptance Guidelines
+To claim a name, an entity must have either documentation or a test/sample. "Reserving" a name prior to public functionality is discouraged.
 
 Corresponding values to be used:
 
@@ -57,6 +62,7 @@ We can create a documentation page per use case to document what facet can be us
 - Data reliability, data quality
 - Data discovery, data catalog
 - Data Governance
+- Data Lineage
 - …
 
 We should have a page explaining how a custom facet can be promoted to a core facet through the OpenLineage Proposal process.
@@ -108,6 +114,62 @@ airflow/
 		}
 	}
 	facets/AirflowRunFacet.json
+```
+```
+core/
+	CODEOWNERS
+	registry.json
+	{
+		producer: {
+			root_doc_URL: "https://openlineage.io/spec/facets/",
+			sample_URL: "https://github.com/OpenLineage/OpenLineage/tree/main/spec/tests/",
+			facets: [
+				"ColumnLineageDatasetFacet.json": {
+					"owner": "core",
+					"spec_versions": [ "1-0-1", "1-0-0" ],
+					"use_cases": [ "lineage", "catalog" ]
+				},
+				"DataQualityAssertionsDatasetFacet.json": {
+					"owner": "core",
+					"spec_versions": [ "1-0-0" ],
+					"use_cases": [ "data quality" ]
+				}
+			]
+		}
+	}
+```
+```
+egeria/
+	CODEOWNERS
+	registry.json
+	{
+		producer: {    
+			root_doc_URL: … ,
+			sample_URL: … , 
+			facets: [
+				"ColumnLineageDatasetFacet.json": {
+					"owner": "core",
+					"spec_versions": [ "1-0-1" ],
+					"use_cases": [ "lineage", "catalog" ]
+				},
+				"NewCustomFacet.json": {
+					"owner": "egeria",
+					"spec_versions": [ "1-0-0" ],
+					"use_cases": [ "lineage" ]
+				}
+			]
+		},
+		consumer: {
+			root_doc_URL: …
+			facets: [ 
+				"NewCustomFacet.json": {
+					"owner": "egeria",
+					"spec_versions": [ "1-0-0" ],
+					"use_cases": [ "lineage" ]
+				}
+			]
+		}
+	}
 ```
 ```
 manta/
@@ -210,3 +272,4 @@ Cons:
 
 - Producers need to host and maintain their own subset of the registry
 - The core repo ci cannot guarantee consistency of the registry as it relies on external references
+- The core repo cannot guarantee accuracy of registry entries (e.g. does an entity actually consume/produce the facets they say they do?)
