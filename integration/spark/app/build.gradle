@@ -63,7 +63,7 @@ ext {
     sparkVersion = project.getProperty('spark.version')
     postgresqlVersion = '42.6.0'
     mockitoVersion = '4.11.0'
-    testcontainersVersion = '1.19.2'
+    testcontainersVersion = '1.19.3'
     junit5Version = '5.10.1'
     shortVersion = sparkVersion.substring(0,3)
 
