@@ -51,7 +51,7 @@ ext {
     junit5Version = '5.10.1'
     mockitoVersion = '4.11.0'
     lombokVersion = '1.18.20'
-    postgresqlVersion = '42.6.0'
+    postgresqlVersion = '42.7.0'
 }
 
 dependencies {
