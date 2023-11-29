@@ -110,8 +110,7 @@ public class IcebergHandler implements CatalogHandler {
     } else if (catalogType.equals("glue")) {
       di.withSymlink(
           identifier.toString(),
-          StringUtils.substringBeforeLast(
-              di.getName(), File.separator),
+          StringUtils.substringBeforeLast(di.getName(), File.separator),
           DatasetIdentifier.SymlinkType.TABLE);
     }
 
@@ -190,7 +189,8 @@ public class IcebergHandler implements CatalogHandler {
   private String getCatalogType(Map<String, String> catalogConf) {
     if (catalogConf.containsKey(TYPE)) {
       return catalogConf.get(TYPE);
-    } else if (catalogConf.containsKey(CATALOG_IMPL) && catalogConf.get(CATALOG_IMPL).endsWith("GlueCatalog")) {
+    } else if (catalogConf.containsKey(CATALOG_IMPL)
+        && catalogConf.get(CATALOG_IMPL).endsWith("GlueCatalog")) {
       return "glue";
     } else {
       return null;
