@@ -155,14 +155,10 @@ def main():
 
     force_send_events = "send-events" in sys.argv[1:]
     if not force_send_events:
-        process = subprocess.Popen(
-            ["dbt"] + sys.argv[1:],
-            stdout=sys.stdout,
-            stderr=sys.stderr
-        )
+        process = subprocess.Popen(["dbt"] + sys.argv[1:], stdout=sys.stdout, stderr=sys.stderr)
         return_code = process.wait()
     else:
-        logger.warning(f"Sending events for the last run without running the job")
+        logger.warning("Sending events for the last run without running the job")
         return_code = 0
 
     # If run_result has modification time before dbt command
