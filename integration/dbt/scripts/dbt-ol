@@ -153,7 +153,7 @@ def main():
     pre_run_time = time.time()
     # Execute dbt in external process
 
-    force_send_events = "send-events" in sys.argv[1:]
+    force_send_events = len(sys.argv) > 1 and sys.argv[1] == "send-events"
     if not force_send_events:
         process = subprocess.Popen(["dbt"] + sys.argv[1:], stdout=sys.stdout, stderr=sys.stderr)
         return_code = process.wait()
