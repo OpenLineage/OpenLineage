@@ -6,6 +6,7 @@
   *Add option for flink job listener to read jobname and namespace from flink conf*
 * **Introduce `JobTypeJobFacet` to contain additional job related information**[`#2241`](https://github.com/OpenLineage/OpenLineage/pull/2241) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
     *`JobTypeJobFacet` contains processing type like `BATCH|STREAMING`, integration like `SPARK|FLINK|...` and job type `QUERY|COMMAND|DAG|...`.*
+* **Dbt: Add a new command `dbt-ol send-events` to send metadata of the last run without running the job** [`#2885`](https://github.com/OpenLineage/OpenLineage/pull/2285) [@sophiely](https://github.com/sophiely)
 
 ### Fixed
 * **Spark: update Jackson dependency to resolve `CVE-2022-1471`** [`#2185`](https://github.com/OpenLineage/OpenLineage/pull/2185) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
