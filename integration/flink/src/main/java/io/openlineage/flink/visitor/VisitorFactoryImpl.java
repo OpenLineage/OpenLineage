@@ -5,8 +5,6 @@
 
 package io.openlineage.flink.visitor;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableList.Builder;
 import io.openlineage.client.OpenLineage;
 import io.openlineage.client.OpenLineage.InputDataset;
 import io.openlineage.client.OpenLineage.OutputDataset;
@@ -14,6 +12,9 @@ import io.openlineage.flink.api.DatasetFactory;
 import io.openlineage.flink.api.OpenLineageContext;
 import io.openlineage.flink.utils.CassandraUtils;
 import io.openlineage.flink.utils.IcebergUtils;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 
@@ -22,41 +23,43 @@ public class VisitorFactoryImpl implements VisitorFactory {
 
   @Override
   public List<Visitor<OpenLineage.InputDataset>> getInputVisitors(OpenLineageContext context) {
-    Builder<Visitor<InputDataset>> builder = ImmutableList.<Visitor<InputDataset>>builder();
-
-    builder.add(new KafkaSourceVisitor(context));
-    builder.add(new FlinkKafkaConsumerVisitor(context));
-    builder.add(
-        new LineageProviderVisitor<>(context, DatasetFactory.input(context.getOpenLineage())));
+    ArrayList<Visitor<InputDataset>> visitors =
+        new ArrayList(
+            Arrays.asList(
+                new KafkaSourceVisitor(context),
+                new FlinkKafkaConsumerVisitor(context),
+                new LineageProviderVisitor<>(
+                    context, DatasetFactory.input(context.getOpenLineage()))));
 
     if (IcebergUtils.hasClasses()) {
-      builder.add(new IcebergSourceVisitor(context));
+      visitors.add(new IcebergSourceVisitor(context));
     }
 
     if (CassandraUtils.hasClasses()) {
-      builder.add(new CassandraSourceVisitor(context));
+      visitors.add(new CassandraSourceVisitor(context));
     }
 
-    return builder.build();
+    return Collections.unmodifiableList(visitors);
   }
 
   @Override
   public List<Visitor<OpenLineage.OutputDataset>> getOutputVisitors(OpenLineageContext context) {
-    Builder<Visitor<OutputDataset>> builder = ImmutableList.<Visitor<OutputDataset>>builder();
-
-    builder.add(new KafkaSinkVisitor(context));
-    builder.add(new FlinkKafkaProducerVisitor(context));
-    builder.add(
-        new LineageProviderVisitor<>(context, DatasetFactory.output(context.getOpenLineage())));
+    ArrayList<Visitor<OutputDataset>> visitors =
+        new ArrayList(
+            Arrays.asList(
+                new KafkaSinkVisitor(context),
+                new FlinkKafkaProducerVisitor(context),
+                new LineageProviderVisitor<>(
+                    context, DatasetFactory.output(context.getOpenLineage()))));
 
     if (IcebergUtils.hasClasses()) {
-      builder.add(new IcebergSinkVisitor(context));
+      visitors.add(new IcebergSinkVisitor(context));
     }
 
     if (CassandraUtils.hasClasses()) {
-      builder.add(new CassandraSinkVisitor(context));
+      visitors.add(new CassandraSinkVisitor(context));
     }
 
-    return builder.build();
+    return Collections.unmodifiableList(visitors);
   }
 }
