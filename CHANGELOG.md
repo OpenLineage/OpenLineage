@@ -11,6 +11,8 @@
 ### Fixed
 * **Spark: update Jackson dependency to resolve `CVE-2022-1471`** [`#2185`](https://github.com/OpenLineage/OpenLineage/pull/2185) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Update Gradle for Spark and Flink to 8.1.1. Upgrade Jackson `2.15.3`.*
+* **Flink: Avoid relying on Guava which can be missing during production runtime.** [`#2296`](https://github.com/OpenLineage/OpenLineage/pull/2296) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Remove usage of Guava ImmutableList.*
 
 ## [1.5.0](https://github.com/OpenLineage/OpenLineage/compare/1.4.1...1.5.0) - 2023-11-01
 ### Added
