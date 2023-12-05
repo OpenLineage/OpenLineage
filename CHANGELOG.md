@@ -7,7 +7,7 @@
 * **Dagster: support Dagster 1.5.x** [`#2220`](https://github.com/OpenLineage/OpenLineage/pull/2220) [@tsungchih](https://github.com/tsungchih)  
     *Gets event records for each target Dagster event type to support Dagster version 0.15.0+.*
 * **Dbt: add a new command `dbt-ol send-events` to send metadata of the last run without running the job** [`#2285`](https://github.com/OpenLineage/OpenLineage/pull/2285) [@sophiely](https://github.com/sophiely)  
-    *Adds a new command to send events to OpenLineage acccording to the latest metadata generated without running any dbt command.*
+    *Adds a new command to send events to OpenLineage according to the latest metadata generated without running any dbt command.*
 * **Flink: add option for Flink job listener to read from Flink conf** [`#2229`](https://github.com/OpenLineage/OpenLineage/pull/2229) [@ensctom](https://github.com/ensctom)  
     *Adds option for the Flink job listener to read jobnames and namespaces from Flink conf.*
 * **Spark: get column-level lineage from JDBC dbtable option** [`#2284`](https://github.com/OpenLineage/OpenLineage/pull/2284) [@mobuchowski](https://github.com/mobuchowski)  
