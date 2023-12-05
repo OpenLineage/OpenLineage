@@ -231,6 +231,7 @@ shadowJar {
     }
     dependencies {
         exclude(dependency('org.slf4j::'))
+        exclude('org/apache/commons/logging/**')
     }
     archiveClassifier = ''
     // avoid conflict with any client version of that lib
@@ -239,6 +240,7 @@ shadowJar {
     relocate 'javassist', 'io.openlineage.spark.shaded.javassist'
     relocate 'org.apache.hc', 'io.openlineage.spark.shaded.org.apache.hc'
     relocate 'org.apache.commons.codec', 'io.openlineage.spark.shaded.org.apache.commons.codec'
+    relocate 'org.apache.commons.lang3', 'io.openlineage.spark.shaded.org.apache.commons.lang3'
     relocate 'org.apache.commons.logging', 'io.openlineage.spark.shaded.org.apache.commons.logging'
     relocate 'org.apache.commons.beanutils', 'io.openlineage.spark.shaded.org.apache.commons.beanutils'
     relocate 'org.apache.http', 'io.openlineage.spark.shaded.org.apache.http'
