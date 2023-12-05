@@ -152,9 +152,7 @@ def get_connection_uri(conn):
         query_dict = dict(parse_qsl(parsed.query))
         if conn.EXTRA_KEY in query_dict:
             query_dict = json.loads(query_dict[conn.EXTRA_KEY])
-        filtered_qs = {
-            k: v for k, v in query_dict.items() if not _filtered_query_params(k)
-        }
+        filtered_qs = {k: v for k, v in query_dict.items() if not _filtered_query_params(k)}
         parsed = parsed._replace(query=urlencode(filtered_qs))
     return urlunparse(parsed)
 
@@ -170,9 +168,7 @@ def _filtered_query_params(k: str):
         "aws_secret_access_key",
         "extra__snowflake__",
     ]
-    return k not in unfiltered_snowflake_keys and any(
-        substr in k for substr in filtered_key_substrings
-    )
+    return k not in unfiltered_snowflake_keys and any(substr in k for substr in filtered_key_substrings)
 
 
 def get_normalized_postgres_connection_uri(conn):
@@ -209,13 +205,8 @@ def get_custom_facets(
     }
     # check for -1 comes from SmartSensor compatibility with dynamic task mapping
     # this comes from Airflow code
-    if (
-        hasattr(task_instance, "map_index")
-        and getattr(task_instance, "map_index") != -1
-    ):
-        custom_facets[
-            "airflow_mappedTask"
-        ] = AirflowMappedTaskRunFacet.from_task_instance(task_instance)
+    if task_instance is not None and hasattr(task_instance, "map_index") and task_instance.map_index != -1:
+        custom_facets["airflow_mappedTask"] = AirflowMappedTaskRunFacet.from_task_instance(task_instance)
     return custom_facets
 
 
@@ -234,10 +225,7 @@ class InfoJsonEncodable(dict):
         self._include_fields()
         dict.__init__(
             self,
-            **{
-                field: InfoJsonEncodable._cast_basic_types(getattr(self, field))
-                for field in self._fields
-            },
+            **{field: InfoJsonEncodable._cast_basic_types(getattr(self, field)) for field in self._fields},
         )
 
     @staticmethod
@@ -270,11 +258,7 @@ class InfoJsonEncodable(dict):
                 self._fields.append(field)
         else:
             for field, val in self.obj.__dict__.items():
-                if (
-                    field in self._fields
-                    or field in self.excludes
-                    or field in self.renames
-                ):
+                if field in self._fields or field in self.excludes or field in self.renames:
                     continue
                 setattr(self, field, val)
                 self._fields.append(field)
@@ -282,11 +266,7 @@ class InfoJsonEncodable(dict):
 
 class DagInfo(InfoJsonEncodable):
     includes = ["dag_id", "schedule_interval", "tags", "start_date"]
-    casts = {
-        "timetable": lambda dag: dag.timetable.serialize()
-        if getattr(dag, "timetable", None)
-        else None
-    }
+    casts = {"timetable": lambda dag: dag.timetable.serialize() if getattr(dag, "timetable", None) else None}
     renames = {"_dag_id": "dag_id"}
 
 
@@ -306,9 +286,7 @@ class DagRunInfo(InfoJsonEncodable):
 class TaskInstanceInfo(InfoJsonEncodable):
     includes = ["duration", "try_number", "pool"]
     casts = {
-        "map_index": lambda ti: ti.map_index
-        if hasattr(ti, "map_index") and getattr(ti, "map_index") != -1
-        else None
+        "map_index": lambda ti: ti.map_index if hasattr(ti, "map_index") and ti.map_index != -1 else None
     }
 
 
@@ -333,7 +311,7 @@ class TaskInfo(InfoJsonEncodable):
         "retry_delay",
     ]
     casts = {
-        "operator_class": lambda task: f"{get_operator_class(task).__module__}.{get_operator_class(task).__name__}",  # noqa
+        "operator_class": lambda task: f"{get_operator_class(task).__module__}.{get_operator_class(task).__name__}",  # noqa: E501
         "task_group": lambda task: TaskGroupInfo(task.task_group)
         if hasattr(task, "task_group") and getattr(task.task_group, "_group_id", None)
         else None,
@@ -362,15 +340,20 @@ def get_airflow_run_facet(
     task_uuid: str,
 ):
     return {
-        "airflow": json.loads(json.dumps(attr.asdict(
-            AirflowRunFacet(
-                dag=DagInfo(dag),
-                dagRun=DagRunInfo(dag_run),
-                taskInstance=TaskInstanceInfo(task_instance),
-                task=TaskInfo(task),
-                taskUuid=task_uuid,
+        "airflow": json.loads(
+            json.dumps(
+                attr.asdict(
+                    AirflowRunFacet(
+                        dag=DagInfo(dag),
+                        dagRun=DagRunInfo(dag_run),
+                        taskInstance=TaskInstanceInfo(task_instance),
+                        task=TaskInfo(task),
+                        taskUuid=task_uuid,
+                    )
+                ),
+                default=str,
             )
-        ), default=str))
+        )
     }
 
 
@@ -462,9 +445,7 @@ def redact_with_exclusions(source: Any):
                     dict_key: _redact(subval, name=dict_key, depth=(depth + 1))
                     for dict_key, subval in item.items()
                 }
-            elif is_dataclass(item) or (
-                is_json_serializable(item) and hasattr(item, "__dict__")
-            ):
+            elif is_dataclass(item) or (is_json_serializable(item) and hasattr(item, "__dict__")):
                 for dict_key, subval in item.__dict__.items():
                     if _is_name_redactable(dict_key, item):
                         setattr(
@@ -478,13 +459,9 @@ def redact_with_exclusions(source: Any):
                     return sm.replacer.sub("***", item)
                 return item
             elif isinstance(item, (tuple, set)):
-                return tuple(
-                    _redact(subval, name=None, depth=(depth + 1)) for subval in item
-                )
+                return tuple(_redact(subval, name=None, depth=(depth + 1)) for subval in item)
             elif isinstance(item, list):
-                return [
-                    _redact(subval, name=None, depth=(depth + 1)) for subval in item
-                ]
+                return [_redact(subval, name=None, depth=(depth + 1)) for subval in item]
             else:
                 return item
         except Exception as e:
@@ -518,7 +495,6 @@ def _is_name_redactable(name, redacted):
 
 
 class LoggingMixin:
-
     _log: Optional["logging.Logger"] = None
 
     @property
@@ -532,10 +508,7 @@ class LoggingMixin:
         if self.__class__.__module__.startswith("openlineage.airflow.extractors"):
             return self.__class__.__module__ + "." + self.__class__.__name__
         else:
-            return (
-                "openlineage.airflow.extractors."
-                f"{self.__class__.__module__}.{self.__class__.__name__}"
-            )
+            return "openlineage.airflow.extractors." f"{self.__class__.__module__}.{self.__class__.__name__}"
 
 
 def is_airflow_version_enough(x):

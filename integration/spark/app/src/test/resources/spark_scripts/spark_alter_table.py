@@ -4,18 +4,19 @@
 import os
 import time
 
-os.makedirs("/tmp/ctas_load", exist_ok=True)
-
 from pyspark.sql import SparkSession
 
-spark = SparkSession.builder \
-    .master("local") \
-    .appName("Open Lineage Integration Alter Table") \
-    .config("spark.sql.warehouse.dir", "file:/tmp/alter_test/") \
-    .enableHiveSupport() \
-    .getOrCreate()
+os.makedirs("/tmp/ctas_load", exist_ok=True)
 
-spark.sparkContext.setLogLevel('info')
+spark = (
+    SparkSession.builder.master("local")
+    .appName("Open Lineage Integration Alter Table")
+    .config("spark.sql.warehouse.dir", "file:/tmp/alter_test/")
+    .enableHiveSupport()
+    .getOrCreate()
+)
+
+spark.sparkContext.setLogLevel("info")
 
 spark.sql("CREATE TABLE alter_table_test (a string, b string)")
 time.sleep(1)

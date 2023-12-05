@@ -10,26 +10,24 @@ from setuptools import find_namespace_packages, setup
 with open("README.md") as readme_file:
     readme = readme_file.read()
 
-__version__ = "1.5.0"
+__version__ = "1.6.0"
 
 requirements = [
-    "attrs>=20.3",
-    "requests>=2.20.0",
+    "attrs>=20.0",
     f"openlineage-integration-common[sql]=={__version__}",
     f"openlineage-python=={__version__}",
 ]
 
 extras_require = {
     "tests": [
-        "aiohttp",          # tox Airflow 2.3.4 does not install it by default
+        "aiohttp",  # tox Airflow 2.3.4 does not install it by default
         "pytest",
         "pytest-cov",
         "pytest-mock",
         "mock",
-        "ruff",
-        "SQLAlchemy",       # must be set to 1.3.* for airflow tests compatibility
+        "SQLAlchemy",  # must be set to 1.3.* for airflow tests compatibility
         "Flask-SQLAlchemy",  # must be set to 2.4.* for airflow tests compatibility
-        "pandas-gbq==0.14.1",       # must be set to 0.14.* for airflow tests compatibility
+        "pandas-gbq==0.14.1",  # must be set to 0.14.* for airflow tests compatibility
         "snowflake-connector-python",
     ],
     "airflow": [
@@ -58,14 +56,12 @@ setup(
     long_description=readme,
     long_description_content_type="text/markdown",
     author="OpenLineage",
-    packages=find_namespace_packages(include=['openlineage.*']),
+    packages=find_namespace_packages(include=["openlineage.*"]),
     include_package_data=True,
     install_requires=requirements,
     extras_require=extras_require,
     python_requires=">=3.8",
     zip_safe=False,
     keywords="openlineage",
-    entry_points={
-        "airflow.plugins": ["OpenLineagePlugin = openlineage.airflow.plugin:OpenLineagePlugin"]
-    }
+    entry_points={"airflow.plugins": ["OpenLineagePlugin = openlineage.airflow.plugin:OpenLineagePlugin"]},
 )

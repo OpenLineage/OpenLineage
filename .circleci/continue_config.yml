@@ -290,7 +290,7 @@ jobs:
       - *checkout_project_root
       - attach_workspace:
           at: .
-      - run: pip install tox==3.27.1 ruff
+      - run: pip install tox==3.27.1
       - run: tox
       - run: bash <(curl -s https://codecov.io/bash)
       - store_test_results:
@@ -446,8 +446,6 @@ jobs:
     <<: *param_build_tag
     steps:
       - *checkout_project_root
-      - run: pip install ruff
-      - run: ruff .
       - run: python setup.py egg_info -b "<< parameters.build_tag >>" sdist bdist_wheel
       - persist_to_workspace:
           root: .
@@ -666,7 +664,6 @@ jobs:
       - *checkout_project_root
       - *install_python_client
       - run: pip install -e .[dev]
-      - run: ruff .
       - run: python -m mypy --ignore-missing-imports --no-namespace-packages openlineage
       - run: pytest --cov=openlineage tests/
       - run: bash <(curl -s https://codecov.io/bash)
@@ -720,6 +717,15 @@ jobs:
           fingerprints:
             - "7d:bc:78:35:09:c9:25:04:63:f9:eb:4b:f1:f4:d1:91"
       - run: spec/release.sh
+
+  build-proxy-fluentd:
+    working_directory: ~/openlineage/proxy/fluentd
+    docker:
+      - image: cimg/ruby:3.2
+    steps:
+      - *checkout_project_root
+      - run: bundle install
+      - run: bundle exec rake test
 
   build-proxy-backend:
     working_directory: ~/openlineage/proxy/backend
@@ -816,6 +822,12 @@ jobs:
           command: |
             . venv/bin/activate
             pre-commit run --show-diff-on-failure --all-files
+
+  always_run:
+    machine:
+      image: ubuntu-2004:current
+    steps:
+      - run: echo "This steps always run."
 
   workflow_complete:
     working_directory: ~/openlineage

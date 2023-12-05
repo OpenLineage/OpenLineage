@@ -23,7 +23,10 @@ def get_check_extractors(super_):
             pass
 
         def extract_on_complete(self, task_instance) -> Optional[TaskMetadata]:
-            from openlineage.airflow.extractors.bigquery_extractor import BigQueryExtractor
+            from openlineage.airflow.extractors.bigquery_extractor import (
+                BigQueryExtractor,
+            )
+
             if issubclass(BigQueryExtractor, BaseSqlCheckExtractor):
                 return super().extract_on_complete(task_instance)
             return super().extract()
@@ -34,7 +37,7 @@ def get_check_extractors(super_):
 
         @classmethod
         def get_operator_classnames(cls) -> List[str]:
-            return ['SQLCheckOperator']
+            return ["SQLCheckOperator"]
 
         def _get_input_facets(self) -> Dict[str, BaseFacet]:
             return {}
@@ -45,7 +48,7 @@ def get_check_extractors(super_):
 
         @classmethod
         def get_operator_classnames(cls) -> List[str]:
-            return ['SQLValueCheckOperator']
+            return ["SQLValueCheckOperator"]
 
         def _get_input_facets(self) -> Dict[str, BaseFacet]:
             return {}
@@ -56,7 +59,7 @@ def get_check_extractors(super_):
 
         @classmethod
         def get_operator_classnames(cls) -> List[str]:
-            return ['SQLThresholdCheckOperator']
+            return ["SQLThresholdCheckOperator"]
 
         def _get_input_facets(self) -> Dict[str, BaseFacet]:
             return {}
@@ -67,7 +70,7 @@ def get_check_extractors(super_):
 
         @classmethod
         def get_operator_classnames(cls) -> List[str]:
-            return ['SQLIntervalCheckOperator']
+            return ["SQLIntervalCheckOperator"]
 
         def _get_input_facets(self) -> Dict[str, BaseFacet]:
             return {}
@@ -78,7 +81,7 @@ def get_check_extractors(super_):
 
         @classmethod
         def get_operator_classnames(cls) -> List[str]:
-            return ['SQLColumnCheckOperator', 'BigQueryColumnCheckOperator']
+            return ["SQLColumnCheckOperator", "BigQueryColumnCheckOperator"]
 
         def _get_input_facets(self) -> Dict[str, BaseFacet]:
             """
@@ -99,6 +102,7 @@ def get_check_extractors(super_):
                 }
             }
             """
+
             def map_facet_name(check_name) -> str:
                 if "null" in check_name:
                     return "nullCount"
@@ -128,12 +132,10 @@ def get_check_extractors(super_):
                         Assertion(
                             assertion=check,
                             success=check_values.get("success"),
-                            column=col_name
+                            column=col_name,
                         )
                     )
-                facet_data["columnMetrics"][col_name] = ColumnMetric(
-                    **facet_data["columnMetrics"][col_name]
-                )
+                facet_data["columnMetrics"][col_name] = ColumnMetric(**facet_data["columnMetrics"][col_name])
 
             data_quality_facet = DataQualityMetricsInputDatasetFacet(**facet_data)
             data_quality_assertions_facet = DataQualityAssertionsDatasetFacet(**assertion_data)
@@ -141,7 +143,7 @@ def get_check_extractors(super_):
             return {
                 "dataQuality": data_quality_facet,
                 "dataQualityMetrics": data_quality_facet,
-                "dataQualityAssertions": data_quality_assertions_facet
+                "dataQualityAssertions": data_quality_assertions_facet,
             }
 
     class SqlTableCheckExtractor(BaseSqlCheckExtractor):
@@ -150,7 +152,7 @@ def get_check_extractors(super_):
 
         @classmethod
         def get_operator_classnames(cls) -> List[str]:
-            return ['SQLTableCheckOperator', 'BigQueryTableCheckOperator']
+            return ["SQLTableCheckOperator", "BigQueryTableCheckOperator"]
 
         def _get_input_facets(self) -> Dict[str, BaseFacet]:
             """
@@ -173,8 +175,7 @@ def get_check_extractors(super_):
                         success=check_values.get("success"),
                     )
                 )
-            facet_data["rowCount"] = self.operator.checks.get(
-                "row_count_check", {}).get("result", None)
+            facet_data["rowCount"] = self.operator.checks.get("row_count_check", {}).get("result", None)
             facet_data["bytes"] = self.operator.checks.get("bytes", {}).get("result", None)
 
             data_quality_facet = DataQualityMetricsInputDatasetFacet(**facet_data)
@@ -183,7 +184,7 @@ def get_check_extractors(super_):
             return {
                 "dataQuality": data_quality_facet,
                 "dataQualityMetrics": data_quality_facet,
-                "dataQualityAssertions": data_quality_assertions_facet
+                "dataQualityAssertions": data_quality_assertions_facet,
             }
 
     return [
@@ -192,5 +193,5 @@ def get_check_extractors(super_):
         SqlThresholdCheckExtractor,
         SqlIntervalCheckExtractor,
         SqlColumnCheckExtractor,
-        SqlTableCheckExtractor
+        SqlTableCheckExtractor,
     ]

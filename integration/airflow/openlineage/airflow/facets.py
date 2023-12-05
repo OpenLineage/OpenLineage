@@ -1,7 +1,7 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Dict, List
+from typing import ClassVar, Dict, List
 
 import attr
 from openlineage.airflow.version import __version__ as OPENLINEAGE_AIRFLOW_VERSION
@@ -18,7 +18,7 @@ class AirflowVersionRunFacet(BaseFacet):
     airflowVersion: str = attr.ib()
     openlineageAirflowVersion: str = attr.ib()
 
-    _additional_skip_redact: List[str] = [
+    _additional_skip_redact: ClassVar[List[str]] = [
         "operator",
         "airflowVersion",
         "openlineageAirflowVersion",
@@ -44,7 +44,7 @@ class AirflowVersionRunFacet(BaseFacet):
 class AirflowRunArgsRunFacet(BaseFacet):
     externalTrigger: bool = attr.ib(default=False)
 
-    _additional_skip_redact: List[str] = ["externalTrigger"]
+    _additional_skip_redact: ClassVar[List[str]] = ["externalTrigger"]
 
 
 @attr.s
@@ -52,7 +52,7 @@ class AirflowMappedTaskRunFacet(BaseFacet):
     mapIndex: int = attr.ib()
     operatorClass: str = attr.ib()
 
-    _additional_skip_redact: List[str] = ["operatorClass"]
+    _additional_skip_redact: ClassVar[List[str]] = ["operatorClass"]
 
     @classmethod
     def from_task_instance(cls, task_instance):
@@ -70,6 +70,7 @@ class AirflowRunFacet(BaseFacet):
     """
     Composite Airflow run facet.
     """
+
     dag: Dict = attr.ib()
     dagRun: Dict = attr.ib()
     task: Dict = attr.ib()
@@ -88,7 +89,7 @@ class UnknownOperatorInstance(RedactMixin):
     properties: Dict[str, object] = attr.ib()
     type: str = attr.ib(default="operator")
 
-    _skip_redact: List[str] = ["name", "type"]
+    _skip_redact: ClassVar[List[str]] = ["name", "type"]
 
 
 @attr.s

@@ -1,4 +1,4 @@
-# Copyright 2018-2022 contributors to the OpenLineage project
+# Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 from openlineage.client import set_producer
 from pkg_resources import parse_version
@@ -12,20 +12,20 @@ set_producer("https://github.com/OpenLineage/OpenLineage/tree/0.0.1/integration/
 
 
 default_args = {
-    'owner': 'datascience',
-    'depends_on_past': False,
-    'start_date': days_ago(7),
-    'email_on_failure': False,
-    'email_on_retry': False,
-    'email': ['datascience@example.com']
+    "owner": "datascience",
+    "depends_on_past": False,
+    "start_date": days_ago(7),
+    "email_on_failure": False,
+    "email_on_retry": False,
+    "email": ["datascience@example.com"],
 }
 
 
 dag = DAG(
-    'failed_sql_extraction',
-    schedule_interval='@once',
+    "failed_sql_extraction",
+    schedule_interval="@once",
     default_args=default_args,
-    description='Determines the popular day of week orders are placed.'
+    description="Determines the popular day of week orders are placed.",
 )
 
 
@@ -33,18 +33,9 @@ dag = DAG(
 sql = "CREATE TYPE myrowtype AS (f1 int, f2 text, f3 numeric)"
 
 
-if parse_version(AIRFLOW_VERSION) < parse_version('2.5.0'):
-    t1 = PostgresOperator(
-        task_id='fail',
-        postgres_conn_id='food_delivery_db',
-        sql=sql,
-        dag=dag
-    )
+if parse_version(AIRFLOW_VERSION) < parse_version("2.5.0"):
+    t1 = PostgresOperator(task_id="fail", postgres_conn_id="food_delivery_db", sql=sql, dag=dag)
 else:
     from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
-    t1 = SQLExecuteQueryOperator(
-        task_id='fail',
-        conn_id='food_delivery_db',
-        sql=sql,
-        dag=dag
-    )
+
+    t1 = SQLExecuteQueryOperator(task_id="fail", conn_id="food_delivery_db", sql=sql, dag=dag)

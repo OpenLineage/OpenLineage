@@ -14,7 +14,7 @@ Maven:
 <dependency>
     <groupId>io.openlineage</groupId>
     <artifactId>openlineage-flink</artifactId>
-    <version>1.4.1</version>
+    <version>1.5.0</version>
 </dependency>
 ```
 
@@ -40,6 +40,14 @@ JobListener jobListener = OpenLineageFlinkJobListener.builder()
 
 env.registerJobListener(jobListener);
 ```
+
+Alternatively, you can pass in job name and namespace via Flink configuration instead of specifying it in the builder
+
+```
+execution.job-listener.openlineage.job-name : "custom job name"
+execution.job-listener.openlineage.namespace : "custom job namespace"
+```
+
 
 ----
 SPDX-License-Identifier: Apache-2.0\

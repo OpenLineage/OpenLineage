@@ -23,12 +23,9 @@ pub fn test_sql_dialect(sql: &str, dialect: &str) -> Result<SqlMeta> {
 }
 
 pub fn table(name: &str) -> DbTableMeta {
-    DbTableMeta::new_default_dialect(String::from(name))
+    DbTableMeta::new_default_dialect(name.to_string())
 }
 
 pub fn tables(names: Vec<&str>) -> Vec<DbTableMeta> {
-    names
-        .into_iter()
-        .map(|name| DbTableMeta::new_default_dialect(String::from(name)))
-        .collect()
+    names.into_iter().map(table).collect()
 }

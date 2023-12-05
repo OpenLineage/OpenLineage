@@ -1,4 +1,4 @@
-# Copyright 2018-2022 contributors to the OpenLineage project
+# Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
@@ -28,14 +28,14 @@ class TestGCSToGCSExtractor(TestCase):
                 Dataset(
                     namespace="gs://source-bucket",
                     name="gs://source-bucket/path/to/source_file.csv",
-                    facets={}
+                    facets={},
                 )
             ],
             outputs=[
                 Dataset(
                     namespace="gs://destination-bucket",
                     name="gs://destination-bucket/path/to/destination_file.csv",
-                    facets={}
+                    facets={},
                 )
             ],
         )

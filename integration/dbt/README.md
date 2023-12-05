@@ -54,6 +54,8 @@ To begin collecting dbt metadata with OpenLineage, replace `dbt run` with `dbt-o
 
 Additional table and column level metadata will be available if `catalog.json`, a result of running `dbt docs generate`, will be found in the target directory.
 
+If you need to send events without running the job you can use the command `dbt-ol send-events`, it will send the metadata of your last run without running the job.
+
 ----
 SPDX-License-Identifier: Apache-2.0\
 Copyright 2018-2023 contributors to the OpenLineage project

@@ -20,23 +20,19 @@ class SkipUndefined(Undefined):
         pass
 
     def __call__(self, *args, **kwargs):
-        arguments = ', '.join([
-            arg._undefined_name if isinstance(arg, SkipUndefined) else str(arg) for arg in args
-        ])
+        arguments = ", ".join(
+            [arg._undefined_name if isinstance(arg, SkipUndefined) else str(arg) for arg in args]
+        )
         return f"{{{{ {self._undefined_name}({arguments}) }}}}"
 
 
-T = TypeVar('T')
+T = TypeVar("T")
+
 
 class DbtCloudArtifactProcessor(DbtArtifactProcessor):
     should_raise_on_unsupported_command = False
 
-    def __init__(
-        self,
-        manifest, run_result, profile, catalog,
-        *args,
-        **kwargs
-    ):
+    def __init__(self, manifest, run_result, profile, catalog, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.manifest = manifest
@@ -46,15 +42,9 @@ class DbtCloudArtifactProcessor(DbtArtifactProcessor):
 
     @classmethod
     def check_metadata_version(
-        cls,
-        metadata,
-        desired_schema_versions: List[int],
-        logger: logging.Logger
+        cls, metadata, desired_schema_versions: List[int], logger: logging.Logger
     ) -> None:
-        str_schema_version = get_from_nullable_chain(
-            metadata,
-            ['metadata', 'dbt_schema_version']
-        )
+        str_schema_version = get_from_nullable_chain(metadata, ["metadata", "dbt_schema_version"])
         schema_version = cls.get_schema_version(metadata)
         if schema_version not in desired_schema_versions:
             if schema_version > max(desired_schema_versions):
@@ -64,8 +54,10 @@ class DbtCloudArtifactProcessor(DbtArtifactProcessor):
                     f"This might cause errors."
                 )
             else:
-                raise ValueError(f"Wrong version of dbt metadata: {schema_version}, "
-                                    f"should be in {desired_schema_versions}")
+                raise ValueError(
+                    f"Wrong version of dbt metadata: {schema_version}, "
+                    f"should be in {desired_schema_versions}"
+                )
 
     def get_dbt_metadata(self):
         self.check_metadata_version(self.manifest, [2, 3, 4, 5, 6, 7], self.logger)
@@ -74,4 +66,4 @@ class DbtCloudArtifactProcessor(DbtArtifactProcessor):
         return self.manifest, self.run_result, self.profile, self.catalog
 
     def extract_namespace(self, profile: Dict) -> str:
-        return super().extract_namespace(profile['details'])
+        return super().extract_namespace(profile["details"])

@@ -16,21 +16,16 @@ logging.basicConfig(
     format="[%(asctime)s] {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
     stream=sys.stdout,
-    level='DEBUG'
+    level="DEBUG",
 )
 log = logging.getLogger(__name__)
 
 airflow_db_conn = None
 
 
-@retry(
-    wait_exponential_multiplier=1000,
-    wait_exponential_max=10000
-)
+@retry(wait_exponential_multiplier=1000, wait_exponential_max=10000)
 def wait_for_dag(dag_id):
-    log.info(
-        f"Waiting for DAG '{dag_id}'..."
-    )
+    log.info(f"Waiting for DAG '{dag_id}'...")
 
     cur = airflow_db_conn.cursor()
     cur.execute(
@@ -48,26 +43,23 @@ def wait_for_dag(dag_id):
     cur.close()
 
     log.info(f"DAG '{dag_id}' state set to '{state}'.")
-    if state == 'failed':
+    if state == "failed":
         return False
     elif state != "success":
-        raise Exception('Retry!')
+        raise Exception("Retry!")
     return True
 
 
 @pytest.fixture(scope="module", autouse=True)
 def airflow_db_conn():
-    yield setup_db()
+    return setup_db()
 
 
 def setup_db():
     time.sleep(10)
     global airflow_db_conn
     airflow_db_conn = psycopg2.connect(
-        host="postgres",
-        database="airflow",
-        user="airflow",
-        password="airflow"
+        host="postgres", database="airflow", user="airflow", password="airflow"
     )
     airflow_db_conn.autocommit = True
 
@@ -81,7 +73,7 @@ def test_failure(dag_id):
 def trigger_dag(dag_id):
     r = requests.post(
         f"http://airflow:8080/api/v1/dags/{dag_id}/dagRuns",
-        auth=HTTPBasicAuth('airflow', 'airflow'),
+        auth=HTTPBasicAuth("airflow", "airflow"),
         json={},
         timeout=5,
     )

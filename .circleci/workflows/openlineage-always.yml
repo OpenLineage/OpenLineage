@@ -1,0 +1,10 @@
+workflows:
+  openlineage-always:
+    jobs:
+      - run-pre-commit
+      - always_run:
+          requires:
+            - run-pre-commit
+      - workflow_complete:
+          requires:
+            - always_run

@@ -20,12 +20,10 @@ from airflow.utils.dates import days_ago
 from airflow.utils.session import create_session
 
 CONN_ID = "food_delivery_db"
-CONN_URI = (
-    "redshift://user:pass@redshift-cluster-name.id.region.redshift.amazonaws.com:5439"
-    "/food_delivery"
-)
-CONN_URI_WITHOUT_USERPASS = \
+CONN_URI = "redshift://user:pass@redshift-cluster-name.id.region.redshift.amazonaws.com:5439" "/food_delivery"
+CONN_URI_WITHOUT_USERPASS = (
     "redshift://redshift-cluster-name.id.region.redshift.amazonaws.com:5439/food_delivery"
+)
 
 DB_NAME = "food_delivery"
 DB_SCHEMA_NAME = "public"
@@ -54,9 +52,7 @@ DAG_DEFAULT_ARGS = {
     "email_on_retry": False,
     "email": ["datascience@example.com"],
 }
-DAG_DESCRIPTION = (
-    "Email discounts to customers that have experienced order delays daily"
-)
+DAG_DESCRIPTION = "Email discounts to customers that have experienced order delays daily"
 
 DAG = dag = DAG(
     DAG_ID,
@@ -81,7 +77,7 @@ class TestRedshiftSql:
             dag=DAG,
         )
 
-    @mock.patch("openlineage.airflow.extractors.sql_extractor.get_table_schemas")  # noqa
+    @mock.patch("openlineage.airflow.extractors.sql_extractor.get_table_schemas")
     @mock.patch("airflow.hooks.base.BaseHook.get_connection")
     def test_extract(self, get_connection, mock_get_table_schemas):
         source = Source(
@@ -129,17 +125,14 @@ class TestRedshiftSql:
             == "redshift-cluster-name.region"
         )
 
-    @mock.patch("airflow.hooks.base.BaseHook.get_connection")  # noqa
+    @mock.patch("airflow.hooks.base.BaseHook.get_connection")
     def test_authority_with_clustername_in_host(self, get_connection):
         conn = Connection()
         conn.parse_from_uri(uri=CONN_URI)
         get_connection.return_value = conn
-        assert (
-            RedshiftSQLExtractor(self.TASK)._get_authority()
-            == "redshift-cluster-name.region:5439"
-        )
+        assert RedshiftSQLExtractor(self.TASK)._get_authority() == "redshift-cluster-name.region:5439"
 
-    @mock.patch("airflow.hooks.base.BaseHook.get_connection")  # noqa
+    @mock.patch("airflow.hooks.base.BaseHook.get_connection")
     def test_authority_with_iam(self, get_connection):
         conn = Connection(
             extra={
@@ -150,15 +143,13 @@ class TestRedshiftSql:
         )
         get_connection.return_value = conn
 
-        assert (
-            RedshiftSQLExtractor(self.TASK)._get_authority()
-            == "redshift-cluster-name.region:5439"
-        )
+        assert RedshiftSQLExtractor(self.TASK)._get_authority() == "redshift-cluster-name.region:5439"
 
-    @mock.patch("airflow.hooks.base.BaseHook.get_connection")  # noqa
+    @mock.patch("airflow.hooks.base.BaseHook.get_connection")
     def test_authority_with_iam_and_implicit_region(self, get_connection):
         import os
-        os.environ['AWS_DEFAULT_REGION'] = 'region_2'
+
+        os.environ["AWS_DEFAULT_REGION"] = "region_2"
         conn = Connection(
             extra={
                 "iam": True,
@@ -167,12 +158,9 @@ class TestRedshiftSql:
         )
         get_connection.return_value = conn
 
-        assert (
-            RedshiftSQLExtractor(self.TASK)._get_authority()
-            == "redshift-cluster-name.region_2:5439"
-        )
+        assert RedshiftSQLExtractor(self.TASK)._get_authority() == "redshift-cluster-name.region_2:5439"
 
-    @mock.patch("airflow.hooks.base.BaseHook.get_connection")  # noqa
+    @mock.patch("airflow.hooks.base.BaseHook.get_connection")
     def test_authority_without_iam_wrong_connection(self, get_connection):
         conn = Connection(
             extra={
@@ -185,10 +173,9 @@ class TestRedshiftSql:
         with pytest.raises(ValueError):
             RedshiftSQLExtractor(self.TASK)._get_authority()
 
-    @mock.patch("openlineage.airflow.extractors.sql_extractor.get_table_schemas")  # noqa
+    @mock.patch("openlineage.airflow.extractors.sql_extractor.get_table_schemas")
     @mock.patch("airflow.hooks.base.BaseHook.get_connection")
     def test_extract_authority_uri(self, get_connection, mock_get_table_schemas):
-
         source = Source(
             scheme="redshift",
             authority="redshift-cluster-name.id.region.redshift.amazonaws.com:5439",
@@ -226,24 +213,20 @@ class TestRedshiftSql:
                 "cluster_identifier": "redshift-cluster-name",
                 "region": "region",
                 "aws_secret_access_key": "AKIAIOSFODNN7EXAMPLE",
-                "aws_access_key_id": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
-            }
+                "aws_access_key_id": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+            },
         )
         uri = RedshiftSQLExtractor.get_connection_uri(conn)
         parsed = urlparse(uri)
         qs_dict = parse_qs(parsed.query)
-        assert not any([k in qs_dict.keys()
-                       for k in ['aws_secret_access_key',
-                                 'aws_access_key_id']])
-        assert all(k in qs_dict.keys()
-                   for k in ['cluster_identifier',
-                             'region'])
+        assert not any([k in qs_dict.keys() for k in ["aws_secret_access_key", "aws_access_key_id"]])
+        assert all(k in qs_dict.keys() for k in ["cluster_identifier", "region"])
 
     def test_get_connection_import_returns_none_if_not_exists(self):
         assert get_connection("does_not_exist") is None
         assert get_connection("does_exist") is None
 
-    @pytest.fixture
+    @pytest.fixture()
     def create_connection(self):
         conn = Connection("does_exist", conn_type="redshift")
         with create_session() as session:

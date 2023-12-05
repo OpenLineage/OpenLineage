@@ -3,24 +3,25 @@
 
 from pyspark.sql import SparkSession
 
-spark = SparkSession.builder \
-    .master("local") \
-    .config("parentProject", "openlineage-ci") \
-    .config("credentialsFile", "/opt/gcloud/gcloud-service-key.json") \
-    .config("temporaryGcsBucket", "openlineage-spark-bigquery-integration") \
-    .appName("OpenLineage Spark Bigquery") \
+spark = (
+    SparkSession.builder.master("local")
+    .config("parentProject", "openlineage-ci")
+    .config("credentialsFile", "/opt/gcloud/gcloud-service-key.json")
+    .config("temporaryGcsBucket", "openlineage-spark-bigquery-integration")
+    .appName("OpenLineage Spark Bigquery")
     .getOrCreate()
+)
 
 
-PROJECT_ID = 'openlineage-ci'
-DATASET_ID = 'airflow_integration'
+PROJECT_ID = "openlineage-ci"
+DATASET_ID = "airflow_integration"
 
 version_name = str(spark.version).replace(".", "_")
 
 source_table = f"{PROJECT_ID}.{DATASET_ID}.{version_name}_source"
 target_table = f"{PROJECT_ID}.{DATASET_ID}.{version_name}_target"
 
-spark.sparkContext.setLogLevel('info')
+spark.sparkContext.setLogLevel("info")
 
 
 # # ran this once to create source table
@@ -33,11 +34,6 @@ spark.sparkContext.setLogLevel('info')
 #     .mode('overwrite') \
 #     .save()
 
-first = spark.read.format('bigquery') \
-    .option('table', source_table) \
-    .load()
+first = spark.read.format("bigquery").option("table", source_table).load()
 
-first.write.format('bigquery') \
-    .option('table', target_table) \
-    .mode('overwrite') \
-    .save()
+first.write.format("bigquery").option("table", target_table).mode("overwrite").save()

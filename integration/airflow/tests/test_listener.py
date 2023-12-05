@@ -1,5 +1,6 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
+
 import uuid
 from unittest.mock import patch
 
@@ -44,9 +45,7 @@ def test_listener_does_not_change_task_instance(render_mock, xcom_push_mock):
         user_defined_macros={"render_df": render_df},
         params={"df": render_df()},
     )
-    t = TemplateOperator(
-        task_id="template_op", dag=dag, do_xcom_push=True, df=dag.param("df")
-    )
+    t = TemplateOperator(task_id="template_op", dag=dag, do_xcom_push=True, df=dag.param("df"))
     run_id = str(uuid.uuid1())
     dag.create_dagrun(state=State.NONE, run_id=run_id)
     ti = TaskInstance(t, run_id=run_id)
@@ -87,9 +86,7 @@ def test_listener_chooses_direct_execution_when_env_variable(
 @patch("openlineage.airflow.utils.getboolean")
 @patch("openlineage.airflow.listener.is_airflow_version_enough")
 @patch("openlineage.airflow.listener.execute_in_thread")
-def test_listener_chooses_thread_execution(
-        execute_in_thread, is_airflow_version_enough, getboolean
-):
+def test_listener_chooses_thread_execution(execute_in_thread, is_airflow_version_enough, getboolean):
     getboolean.return_value = False
     is_airflow_version_enough.return_value = False
     is_called = False

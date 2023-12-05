@@ -1,12 +1,13 @@
-# Copyright 2018-2022 contributors to the OpenLineage project
+# Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
+
 import json
 import uuid
 from datetime import datetime
+from unittest.mock import MagicMock
 
 import pytest
 import pytz
-from mock import MagicMock
 from openlineage.airflow.utils import try_import_from_string
 from pkg_resources import parse_version
 from pytest_mock import MockerFixture
@@ -48,33 +49,21 @@ def emit_event(event):
     assert event.job.name.startswith("SANDBOX.TEST_SCHEMA.my_new_project")
 
     if len(event.inputs) > 0:
-        assert (
-            event.inputs[0].facets["dataSource"].name
-            == "snowflake://gp21411.us-east-1.aws"
-        )
-        assert (
-            event.inputs[0].facets["dataSource"].uri
-            == "snowflake://gp21411.us-east-1.aws"
-        )
+        assert event.inputs[0].facets["dataSource"].name == "snowflake://gp21411.us-east-1.aws"
+        assert event.inputs[0].facets["dataSource"].uri == "snowflake://gp21411.us-east-1.aws"
         assert event.inputs[0].facets["schema"].fields[0].name.upper() == "ID"
         if event.inputs[0].name == "SANDBOX.TEST_SCHEMA.my_first_dbt_model":
             assert event.inputs[0].facets["schema"].fields[0].type.upper() == "NUMBER"
     if len(event.outputs) > 0:
-        assert (
-            event.outputs[0].facets["dataSource"].name
-            == "snowflake://gp21411.us-east-1.aws"
-        )
-        assert (
-            event.outputs[0].facets["dataSource"].uri
-            == "snowflake://gp21411.us-east-1.aws"
-        )
+        assert event.outputs[0].facets["dataSource"].name == "snowflake://gp21411.us-east-1.aws"
+        assert event.outputs[0].facets["dataSource"].uri == "snowflake://gp21411.us-east-1.aws"
         assert event.outputs[0].facets["schema"].fields[0].name.upper() == "ID"
         if event.outputs[0].name == "SANDBOX.TEST_SCHEMA.my_first_dbt_model":
             assert event.outputs[0].facets["schema"].fields[0].type.upper() == "NUMBER"
 
 
 def read_file_json(file):
-    f = open(file=file, mode="r")
+    f = open(file=file)
     json_data = json.loads(f.read())
     f.close()
     return json_data
@@ -98,12 +87,8 @@ class TestDbtCloudExtractorE2E:
 
         xcom_mock = mocker.patch("airflow.models.TaskInstance.xcom_pull")
         ol_adapter = mocker.patch("openlineage.airflow.adapter.OpenLineageAdapter")
-        base_hook = mocker.patch(
-            "openlineage.airflow.extractors.dbt_cloud_extractor.BaseHook"
-        )
-        dbt_cloud_hook = mocker.patch(
-            "openlineage.airflow.extractors.dbt_cloud_extractor.DbtCloudHook"
-        )
+        base_hook = mocker.patch("openlineage.airflow.extractors.dbt_cloud_extractor.BaseHook")
+        dbt_cloud_hook = mocker.patch("openlineage.airflow.extractors.dbt_cloud_extractor.DbtCloudHook")
         get_job_run_artifact = mocker.patch(
             "openlineage.airflow.extractors.dbt_cloud_extractor.DbtCloudExtractor.get_job_run_artifact"
         )
@@ -153,9 +138,7 @@ class TestDbtCloudExtractorE2E:
         execution_date = datetime.utcnow().replace(tzinfo=pytz.utc)
         default_args = {"dbt_cloud_conn_id": "dbt_cloud"}
         dag = DAG(dag_id="TestDBTCloudExtractor", default_args=default_args)
-        dag.create_dagrun(
-            run_id=str(uuid.uuid4()), state=State.QUEUED, execution_date=execution_date
-        )
+        dag.create_dagrun(run_id=str(uuid.uuid4()), state=State.QUEUED, execution_date=execution_date)
 
         task = DbtCloudRunJobOperator(
             dag=dag,
@@ -177,12 +160,7 @@ class TestDbtCloudExtractorE2E:
         assert dbt_cloud_extractor.context["connection"]["type"] == "snowflake"
         assert dbt_cloud_extractor.context["job"]["project_id"] == 177370
         assert dbt_cloud_extractor.context["job"]["account_id"] == 117664
-        assert (
-            dbt_cloud_extractor.context["job"]["execute_steps"][0]
-            == "dbt run --select my_first_dbt_model"
-        )
+        assert dbt_cloud_extractor.context["job"]["execute_steps"][0] == "dbt run --select my_first_dbt_model"
 
-        task_meta_extract_complete = dbt_cloud_extractor.extract_on_complete(
-            task_instance
-        )
+        task_meta_extract_complete = dbt_cloud_extractor.extract_on_complete(task_instance)
         assert task_meta_extract_complete is not None

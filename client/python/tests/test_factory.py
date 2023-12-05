@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 import pytest
-
 from openlineage.client import OpenLineageClient
 from openlineage.client.transport import (
     DefaultTransportFactory,
@@ -17,6 +16,7 @@ from openlineage.client.transport import (
 )
 from openlineage.client.transport.http import HttpTransport
 from openlineage.client.transport.noop import NoopTransport
+
 from tests.transport import AccumulatingTransport, FakeTransport
 
 if TYPE_CHECKING:

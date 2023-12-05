@@ -37,18 +37,14 @@ DB_TABLE_SCHEMA = DbTableSchema(
 
 
 def read_file_json(file):
-    with open(file=file, mode="r") as f:
+    with open(file=file) as f:
         return json.loads(f.read())
 
 
 def test_redshift_get_facets():
     client = MagicMock()
-    client.describe_statement.return_value = read_file_json(
-        "tests/redshift_data/statement_details.json"
-    )
-    client.describe_table.return_value = read_file_json(
-        "tests/redshift_data/table_details.json"
-    )
+    client.describe_statement.return_value = read_file_json("tests/redshift_data/statement_details.json")
+    client.describe_table.return_value = read_file_json("tests/redshift_data/table_details.json")
     inputs = [DbTableMeta(f"{DB_NAME}.{DB_SCHEMA_NAME}.{DB_TABLE_NAME.name}")]
     connection_details = dict(
         database=REDSHIFT_DATABASE,
@@ -56,9 +52,7 @@ def test_redshift_get_facets():
         cluster_identifier=CLUSTER_IDENTIFIER,
         region=REGION_NAME,
     )
-    provider = RedshiftDataDatasetsProvider(
-        client=client, connection_details=connection_details
-    )
+    provider = RedshiftDataDatasetsProvider(client=client, connection_details=connection_details)
 
     facets = provider.get_facets("job_id", inputs=inputs, outputs=[])
 

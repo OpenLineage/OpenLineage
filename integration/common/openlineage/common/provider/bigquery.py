@@ -18,7 +18,7 @@ from openlineage.common.schema import GITHUB_LOCATION
 from openlineage.common.sql import DbTableMeta
 from openlineage.common.utils import get_from_nullable_chain
 
-_BIGQUERY_CONN_URL = 'bigquery'
+_BIGQUERY_CONN_URL = "bigquery"
 
 # we lazy-load bigquery Client in BigQueryDatasetsProvider if not type-checking
 if TYPE_CHECKING:
@@ -27,6 +27,7 @@ if TYPE_CHECKING:
 
 def get_bq_client():
     from google.cloud.bigquery import Client
+
     return Client
 
 
@@ -37,6 +38,7 @@ class BigQueryErrorRunFacet(BaseFacet):
     :param clientError: represents errors originating in bigquery client
     :param parserError: represents errors that happened during parsing SQL provided to bigquery
     """
+
     clientError: str = attr.ib(default=None)
     parserError: str = attr.ib(default=None)
 
@@ -54,6 +56,7 @@ class BigQueryJobRunFacet(BaseFacet):
     :param billedBytes: how many bytes bigquery bills for.
     :param properties: full property tree of bigquery run.
     """
+
     cached: bool = attr.ib()
     billedBytes: Optional[int] = attr.ib(default=None)
     properties: Optional[str] = attr.ib(default=None)
@@ -70,14 +73,12 @@ class BigQueryStatisticsDatasetFacet(BaseFacet):
     :param outputRows: how many rows query produced.
     :param size: size of output dataset in bytes.
     """
+
     rowCount: int = attr.ib()
     size: int = attr.ib()
 
     def to_openlineage(self) -> OutputStatisticsOutputDatasetFacet:
-        return OutputStatisticsOutputDatasetFacet(
-            rowCount=self.rowCount,
-            size=self.size
-        )
+        return OutputStatisticsOutputDatasetFacet(rowCount=self.rowCount, size=self.size)
 
     @staticmethod
     def _get_schema() -> str:
@@ -92,11 +93,7 @@ class BigQueryFacets:
 
 
 class BigQueryDatasetsProvider:
-    def __init__(
-        self,
-        client: Optional["Client"] = None,
-        logger: Optional[logging.Logger] = None
-    ):
+    def __init__(self, client: Optional["Client"] = None, logger: Optional[logging.Logger] = None):
         if client is None:
             # lazy-load bigquery client since its slow to import (primarily due to pandas)
             self.client = get_bq_client()
@@ -113,26 +110,22 @@ class BigQueryDatasetsProvider:
         run_facets = {}
         try:
             try:
-                job = self.client.get_job(job_id=job_id)        # type: ignore
+                job = self.client.get_job(job_id=job_id)  # type: ignore
                 props = job._properties
 
                 run_stat_facet, dataset_stat_facet = self._get_output_statistics(props)
 
-                run_facets.update({
-                    "bigQuery_job": run_stat_facet,
-                    "externalQuery": ExternalQueryRunFacet(
-                        externalQueryId=job_id, source="bigquery"
-                    )
-                })
+                run_facets.update(
+                    {
+                        "bigQuery_job": run_stat_facet,
+                        "externalQuery": ExternalQueryRunFacet(externalQueryId=job_id, source="bigquery"),
+                    }
+                )
                 inputs = self._get_input_from_bq(props)
                 output = self._get_output_from_bq(props)
                 if output and dataset_stat_facet:
-                    output.custom_facets.update({
-                        "stats": dataset_stat_facet
-                    })
-                    output.output_facets.update({
-                        'outputStatistics': dataset_stat_facet.to_openlineage()
-                    })
+                    output.custom_facets.update({"stats": dataset_stat_facet})
+                    output.output_facets.update({"outputStatistics": dataset_stat_facet.to_openlineage()})
 
             finally:
                 # Ensure client has close() defined, otherwise ignore.
@@ -140,85 +133,67 @@ class BigQueryDatasetsProvider:
                 if hasattr(self.client, "close"):
                     self.client.close()
         except Exception as e:
-            self.logger.error(
-                f"Cannot retrieve job details from BigQuery.Client. {e}",
-                exc_info=True
+            self.logger.error(f"Cannot retrieve job details from BigQuery.Client. {e}", exc_info=True)
+            run_facets.update(
+                {
+                    "bigQuery_error": BigQueryErrorRunFacet(
+                        clientError=f"{e}: {traceback.format_exc()}",
+                    )
+                }
             )
-            run_facets.update({
-                "bigQuery_error": BigQueryErrorRunFacet(
-                    clientError=f"{e}: {traceback.format_exc()}",
-                )
-            })
         return BigQueryFacets(run_facets, inputs, output)
 
-    def _get_output_statistics(self, properties) \
-            -> Tuple[BigQueryJobRunFacet, Optional[BigQueryStatisticsDatasetFacet]]:
-        stages = get_from_nullable_chain(properties, ['statistics', 'query', 'queryPlan'])
+    def _get_output_statistics(
+        self, properties
+    ) -> Tuple[BigQueryJobRunFacet, Optional[BigQueryStatisticsDatasetFacet]]:
+        stages = get_from_nullable_chain(properties, ["statistics", "query", "queryPlan"])
         json_props = json.dumps(properties)
 
         if not stages:
-            if get_from_nullable_chain(properties, ['statistics', 'query', 'statementType']) \
-                    in ['CREATE_VIEW', 'CREATE_TABLE', 'ALTER_TABLE']:
+            if get_from_nullable_chain(properties, ["statistics", "query", "statementType"]) in [
+                "CREATE_VIEW",
+                "CREATE_TABLE",
+                "ALTER_TABLE",
+            ]:
                 return BigQueryJobRunFacet(cached=False), None
 
             # we're probably getting cached results
-            if get_from_nullable_chain(properties, ['statistics', 'query', 'cacheHit']):
+            if get_from_nullable_chain(properties, ["statistics", "query", "cacheHit"]):
                 return BigQueryJobRunFacet(cached=True), None
-            if get_from_nullable_chain(properties, ['status', 'state']) != "DONE":
+            if get_from_nullable_chain(properties, ["status", "state"]) != "DONE":
                 raise ValueError("Trying to extract data from running bigquery job")
-            raise ValueError(
-                f"BigQuery properties did not have required data: queryPlan - {json_props}"
-            )
+            raise ValueError(f"BigQuery properties did not have required data: queryPlan - {json_props}")
 
         out_stage = stages[-1]
         out_rows = out_stage.get("recordsWritten", None)
         out_bytes = out_stage.get("shuffleOutputBytes", None)
-        billed_bytes = get_from_nullable_chain(properties, [
-            'statistics', 'query', 'totalBytesBilled'
-        ])
+        billed_bytes = get_from_nullable_chain(properties, ["statistics", "query", "totalBytesBilled"])
         return BigQueryJobRunFacet(
             cached=False,
             billedBytes=int(billed_bytes) if billed_bytes else None,
-            properties=json_props
+            properties=json_props,
         ), BigQueryStatisticsDatasetFacet(
-            rowCount=int(out_rows),
-            size=int(out_bytes)
+            rowCount=int(out_rows), size=int(out_bytes)
         ) if out_bytes and out_rows else None
 
     def _get_input_from_bq(self, properties):
-        bq_input_tables = get_from_nullable_chain(properties, [
-            'statistics', 'query', 'referencedTables'
-        ])
+        bq_input_tables = get_from_nullable_chain(properties, ["statistics", "query", "referencedTables"])
         if not bq_input_tables:
             return []
 
-        input_table_names = [
-            self._bq_table_name(bq_t) for bq_t in bq_input_tables
-        ]
-        sources = [
-            self._source() for bq_t in bq_input_tables
-        ]
+        input_table_names = [self._bq_table_name(bq_t) for bq_t in bq_input_tables]
+        sources = [self._source() for bq_t in bq_input_tables]
         try:
             return [
-                Dataset.from_table_schema(
-                    source=source,
-                    table_schema=table_schema
-                )
-                for table_schema, source in zip(self._get_table_schemas(
-                    input_table_names
-                ), sources)
+                Dataset.from_table_schema(source=source, table_schema=table_schema)
+                for table_schema, source in zip(self._get_table_schemas(input_table_names), sources)
             ]
         except Exception as e:
-            self.logger.warning(f'Could not extract schema from bigquery. {e}')
-            return [
-                Dataset.from_table(source, table)
-                for table, source in zip(input_table_names, sources)
-            ]
+            self.logger.warning(f"Could not extract schema from bigquery. {e}")
+            return [Dataset.from_table(source, table) for table, source in zip(input_table_names, sources)]
 
     def _get_output_from_bq(self, properties) -> Optional[Dataset]:
-        bq_output_table = get_from_nullable_chain(properties, [
-            'configuration', 'query', 'destinationTable'
-        ])
+        bq_output_table = get_from_nullable_chain(properties, ["configuration", "query", "destinationTable"])
         if not bq_output_table:
             return None
 
@@ -239,11 +214,10 @@ class BigQueryDatasetsProvider:
         try:
             return self._get_table(output_table_name)
         except Exception as e:
-            self.logger.warning(f'Could not extract output schema from bigquery. {e}')
+            self.logger.warning(f"Could not extract output schema from bigquery. {e}")
         return None
 
-    def _get_table_schemas(self, tables: List[str]) \
-            -> List[DbTableSchema]:
+    def _get_table_schemas(self, tables: List[str]) -> List[DbTableSchema]:
         # Avoid querying BigQuery by returning an empty array
         # if no tables have been provided.
         if not tables:
@@ -257,32 +231,33 @@ class BigQueryDatasetsProvider:
             return None
         table_prop = bq_table._properties
 
-        fields = get_from_nullable_chain(table_prop, ['schema', 'fields'])
+        fields = get_from_nullable_chain(table_prop, ["schema", "fields"])
         if not fields:
             return None
 
-        columns = [DbColumn(
-            name=fields[i].get('name'),
-            type=fields[i].get('type'),
-            description=fields[i].get('description'),
-            ordinal_position=i
-        ) for i in range(len(fields))]
+        columns = [
+            DbColumn(
+                name=fields[i].get("name"),
+                type=fields[i].get("type"),
+                description=fields[i].get("description"),
+                ordinal_position=i,
+            )
+            for i in range(len(fields))
+        ]
 
         return DbTableSchema(
-            schema_name=table_prop.get('tableReference').get('projectId') + '.' +
-            table_prop.get('tableReference').get('datasetId'),
-            table_name=DbTableMeta(table_prop.get('tableReference').get('tableId')),
-            columns=columns
+            schema_name=table_prop.get("tableReference").get("projectId")
+            + "."
+            + table_prop.get("tableReference").get("datasetId"),
+            table_name=DbTableMeta(table_prop.get("tableReference").get("tableId")),
+            columns=columns,
         )
 
     def _source(self) -> Source:
-        return Source(
-            scheme='bigquery',
-            connection_url='bigquery'
-        )
+        return Source(scheme="bigquery", connection_url="bigquery")
 
     def _bq_table_name(self, bq_table):
-        project = bq_table.get('projectId')
-        dataset = bq_table.get('datasetId')
-        table = bq_table.get('tableId')
+        project = bq_table.get("projectId")
+        dataset = bq_table.get("datasetId")
+        table = bq_table.get("tableId")
         return f"{project}.{dataset}.{table}"

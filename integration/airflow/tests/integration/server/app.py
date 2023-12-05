@@ -19,7 +19,7 @@ logging.basicConfig(
     format="[%(asctime)s] {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
     stream=sys.stdout,
-    level='DEBUG'
+    level="DEBUG",
 )
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ The comparison omits fields that are not in event stored in provided file.
 """
 
 
-DIR = os.getenv('SERVER_EVENTS', 'events')
+DIR = os.getenv("SERVER_EVENTS", "events")
 os.makedirs(DIR, exist_ok=True)
 
 
@@ -46,52 +46,54 @@ def dump(content):
         js = json.loads(content)
         content = json.dumps(js, sort_keys=True, indent=4)
 
-        date = parse(js['eventTime']).date()
-        job_name = js['job']['name']
+        date = parse(js["eventTime"]).date()
+        job_name = js["job"]["name"]
         event_name = f"{date}-{job_name}"
     except Exception:
-        content = str(request.data, 'UTF-8')
+        content = str(request.data, "UTF-8")
     file_path = f"{DIR}/{event_name}.json"
 
     print(f"Written event {event_name} to file {file_path}")
-    with open(file_path, 'a') as f:
+    with open(file_path, "a") as f:
         f.write(content)
 
 
 def get_conn():
-    db = getattr(g, '_database', None)
+    db = getattr(g, "_database", None)
     if db is None:
         db = g._database = sqlite3.connect(DATABASE)
-        db.execute('''
+        db.execute(
+            """
             CREATE TABLE IF NOT EXISTS requests (body text, job_name text, created_at text)
-        ''')
+        """
+        )
     return db
 
 
 @app.teardown_appcontext
 def close_connection(exception):
-    db = getattr(g, '_database', None)
+    db = getattr(g, "_database", None)
     if db is not None:
         db.close()
 
 
-@app.route("/api/v1/lineage", methods=['GET', 'POST'])
+@app.route("/api/v1/lineage", methods=["GET", "POST"])
 def lineage():
     conn = get_conn()
-    if request.method == 'POST':
-        job_name = request.json['job']['name']
-        conn.execute("""
+    if request.method == "POST":
+        job_name = request.json["job"]["name"]
+        conn.execute(
+            """
             INSERT INTO requests values (:body, :job_name, CURRENT_TIMESTAMP)
-        """, {
-            "body": json.dumps(request.json),
-            "job_name": job_name
-        })
+        """,
+            {"body": json.dumps(request.json), "job_name": job_name},
+        )
         logger.info(f"job_name: {job_name}")
         logger.info(json.dumps(request.json, sort_keys=True))
         conn.commit()
         dump(request.data)
-        return '', 200
-    elif request.method == 'GET':
+        return "", 200
+    elif request.method == "GET":
         received_requests = []
         job_name = request.args.get("job_name")
         desc = request.args.get("desc", "false")
@@ -107,9 +109,11 @@ def lineage():
                 },
             ).fetchall()
         else:
-            received_requests = conn.execute("""
+            received_requests = conn.execute(
+                """
                 SELECT body FROM requests
-            """).fetchall()
+            """
+            ).fetchall()
         received_requests = [json.loads(req[0]) for req in received_requests]
 
         logger.info(f"GOT {len(received_requests)} requests for job [{job_name}]")
@@ -117,19 +121,19 @@ def lineage():
         return jsonify(received_requests), 200
 
 
-@app.route("/error/api/v1/lineage", methods=['GET', 'POST'])
+@app.route("/error/api/v1/lineage", methods=["GET", "POST"])
 def error_lineage():
     logger.warning("Called error endpoint")
     return "", 500
 
 
-@app.route("/timeout/api/v1/lineage", methods=['GET', 'POST'])
+@app.route("/timeout/api/v1/lineage", methods=["GET", "POST"])
 def timeout_lineage():
     logger.warning("Called timeout endpoint")
     time.sleep(15)
     return jsonify({}), 200
 
 
-@app.route("/healthcheck", methods=['GET'])
+@app.route("/healthcheck", methods=["GET"])
 def healthcheck():
     return "", 200

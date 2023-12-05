@@ -28,10 +28,7 @@ _TABLE_DATABASE = 5
 TablesHierarchy = Dict[str, Dict[str, List[str]]]
 
 
-def execute_query_on_hook(
-    hook: "BaseHook",
-    query: str
-) -> Iterator[tuple]:
+def execute_query_on_hook(hook: "BaseHook", query: str) -> Iterator[tuple]:
     with closing(hook.get_conn()) as conn:
         with closing(conn.cursor()) as cursor:
             return cursor.execute(query).fetchall()
@@ -66,9 +63,7 @@ def get_table_schemas(
     return tuple(
         [
             [
-                Dataset.from_table_schema(
-                    source=source, table_schema=schema, database_name=db or database
-                )
+                Dataset.from_table_schema(source=source, table_schema=schema, database_name=db or database)
                 for schema, db in schemas
             ]
             for schemas in query_schemas
@@ -92,9 +87,7 @@ def parse_query_result(cursor) -> List[Tuple[DbTableSchema, str]]:
             table_database = None
 
         # Attempt to get table schema
-        table_key = ".".join(
-            filter(None, [table_database, table_schema_name, table_name.name])
-        )
+        table_key = ".".join(filter(None, [table_database, table_schema_name, table_name.name]))
         # table_key: str = f"{table_schema_name}.{table_name}"
         table_schema: Optional[DbTableSchema]
         table_schema, _ = schemas.get(table_key) or (None, None)
@@ -131,13 +124,7 @@ def create_information_schema_query(
         source = information_schema_table_name
         if db:
             source = f"{db.upper() if uppercase_names else db}." f"{source}"
-        sqls.append(
-            (
-                f"SELECT {', '.join(columns)} "
-                f"FROM {source} "
-                f"WHERE {' OR '.join(filter_clauses)}"
-            )
-        )
+        sqls.append(f"SELECT {', '.join(columns)} " f"FROM {source} " f"WHERE {' OR '.join(filter_clauses)}")
     sql = " UNION ALL ".join(sqls)
 
     # For some databases such as Trino, trailing semicolon can cause a syntax error.

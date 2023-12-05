@@ -13,6 +13,7 @@ from openlineage.dagster.utils import (
 )
 
 from dagster import EventRecordsFilter
+from dagster.core.events import PIPELINE_EVENTS, STEP_EVENTS
 
 from .conftest import make_pipeline_run_with_external_pipeline_origin
 
@@ -36,14 +37,13 @@ def test_make_step_job_name():
 def test_get_event_log_records(mock_instance):
     last_storage_id = 100
     record_filter_limit = 100
-    get_event_log_records(mock_instance, last_storage_id, record_filter_limit)
-    mock_instance.get_event_records.assert_called_once_with(
-        EventRecordsFilter(
-            after_cursor=last_storage_id
-        ),
-        limit=record_filter_limit,
-        ascending=True,
-    )
+    event_types = PIPELINE_EVENTS | STEP_EVENTS
+    get_event_log_records(mock_instance, event_types, last_storage_id, record_filter_limit)
+    for event_type in event_types:
+        mock_instance.get_event_records.assert_any_call(
+            EventRecordsFilter(event_type=event_type, after_cursor=last_storage_id),
+            limit=record_filter_limit,
+        )
 
 
 @patch("openlineage.dagster.utils.DagsterInstance")

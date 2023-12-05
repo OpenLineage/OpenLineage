@@ -9,22 +9,21 @@ from openlineage.client.run import Dataset
 
 def generate_s3_dataset(path) -> Dataset:
     return Dataset(
-        namespace="s3://{}".format(path.replace("s3://", "").split('/')[0]),
+        namespace="s3://{}".format(path.replace("s3://", "").split("/")[0]),
         name=path,
-        facets={}
+        facets={},
     )
 
 
 class SageMakerProcessingExtractor(BaseExtractor):
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
-        return ['SageMakerProcessingOperator', 'SageMakerProcessingOperatorAsync']
+        return ["SageMakerProcessingOperator", "SageMakerProcessingOperatorAsync"]
 
     def extract(self) -> Optional[TaskMetadata]:
         pass
 
     def extract_on_complete(self, task_instance) -> Optional[TaskMetadata]:
-
         xcom_values = task_instance.xcom_pull(task_ids=task_instance.task_id)
 
         inputs = []
@@ -32,8 +31,8 @@ class SageMakerProcessingExtractor(BaseExtractor):
 
         try:
             inputs, outputs = self._get_s3_datasets(
-                processing_inputs=xcom_values['Processing']['ProcessingInputs'],
-                processing_outputs=xcom_values['Processing']['ProcessingOutputConfig']['Outputs']
+                processing_inputs=xcom_values["Processing"]["ProcessingInputs"],
+                processing_outputs=xcom_values["Processing"]["ProcessingOutputConfig"]["Outputs"],
             )
         except KeyError as e:
             self.log.error(f"Could not find input/output information in Xcom. {e}")
@@ -45,19 +44,18 @@ class SageMakerProcessingExtractor(BaseExtractor):
         )
 
     def _get_s3_datasets(self, processing_inputs, processing_outputs):
-
         inputs = []
         outputs = []
 
         try:
             for processing_input in processing_inputs:
-                inputs.append(generate_s3_dataset(processing_input['S3Input']['S3Uri']))
+                inputs.append(generate_s3_dataset(processing_input["S3Input"]["S3Uri"]))
         except Exception as e:
             self.log.error(f"Cannot find S3 input details. {e}", exc_info=True)
 
         try:
             for processing_output in processing_outputs:
-                outputs.append(generate_s3_dataset(processing_output['S3Output']['S3Uri']))
+                outputs.append(generate_s3_dataset(processing_output["S3Output"]["S3Uri"]))
         except Exception as e:
             self.log.error(f"Cannot find S3 output details. {e}", exc_info=True)
 
@@ -67,7 +65,7 @@ class SageMakerProcessingExtractor(BaseExtractor):
 class SageMakerTransformExtractor(BaseExtractor):
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
-        return ['SageMakerTransformOperator', 'SageMakerTransformOperatorAsync']
+        return ["SageMakerTransformOperator", "SageMakerTransformOperatorAsync"]
 
     def extract(self) -> Optional[TaskMetadata]:
         pass
@@ -82,17 +80,18 @@ class SageMakerTransformExtractor(BaseExtractor):
         transform_output = None
 
         try:
-            model_package_arn = xcom_values['Model']['PrimaryContainer']['ModelPackageName']
+            model_package_arn = xcom_values["Model"]["PrimaryContainer"]["ModelPackageName"]
         except KeyError as e:
             self.log.error(f"Cannot find Model Package Name in Xcom values. {e}", exc_info=True)
 
         try:
-            transform = xcom_values['Transform']
-            transform_input = transform['TransformInput']['DataSource']['S3DataSource']['S3Uri']
-            transform_output = transform['TransformOutput']['S3OutputPath']
+            transform = xcom_values["Transform"]
+            transform_input = transform["TransformInput"]["DataSource"]["S3DataSource"]["S3Uri"]
+            transform_output = transform["TransformOutput"]["S3OutputPath"]
         except KeyError as e:
             self.log.error(
-                f"Cannot find some required input/output details in XCom. {e}", exc_info=True
+                f"Cannot find some required input/output details in XCom. {e}",
+                exc_info=True,
             )
 
         inputs = []
@@ -112,7 +111,7 @@ class SageMakerTransformExtractor(BaseExtractor):
         return TaskMetadata(
             name=f"{self.operator.dag_id}.{self.operator.task_id}",
             inputs=inputs,
-            outputs=output
+            outputs=output,
         )
 
     def _get_model_data_urls(self, model_package_arn):
@@ -120,10 +119,10 @@ class SageMakerTransformExtractor(BaseExtractor):
         try:
             model_containers = self.operator.hook.get_conn().describe_model_package(
                 ModelPackageName=model_package_arn
-            )['InferenceSpecification']['Containers']
+            )["InferenceSpecification"]["Containers"]
 
             for container in model_containers:
-                model_data_urls.append(container['ModelDataUrl'])
+                model_data_urls.append(container["ModelDataUrl"])
         except Exception as e:
             self.log.error(f"Cannot retrieve model details. {e}", exc_info=True)
 
@@ -133,7 +132,7 @@ class SageMakerTransformExtractor(BaseExtractor):
 class SageMakerTrainingExtractor(BaseExtractor):
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
-        return ['SageMakerTrainingOperator', 'SageMakerTrainingOperatorAsync']
+        return ["SageMakerTrainingOperator", "SageMakerTrainingOperatorAsync"]
 
     def extract(self) -> Optional[TaskMetadata]:
         pass
@@ -147,22 +146,18 @@ class SageMakerTrainingExtractor(BaseExtractor):
         output = []
 
         try:
-            for input_data in xcom_values['Training']['InputDataConfig']:
-                inputs.append(
-                    generate_s3_dataset(input_data['DataSource']['S3DataSource']['S3Uri'])
-                )
+            for input_data in xcom_values["Training"]["InputDataConfig"]:
+                inputs.append(generate_s3_dataset(input_data["DataSource"]["S3DataSource"]["S3Uri"]))
         except KeyError as e:
             self.log.error(f"Issues extracting inputs. {e}")
 
         try:
-            output.append(
-                generate_s3_dataset(xcom_values['Training']['ModelArtifacts']['S3ModelArtifacts'])
-            )
+            output.append(generate_s3_dataset(xcom_values["Training"]["ModelArtifacts"]["S3ModelArtifacts"]))
         except KeyError as e:
             self.log.error(f"Issues extracting inputs. {e}")
 
         return TaskMetadata(
             name=f"{self.operator.dag_id}.{self.operator.task_id}",
             inputs=inputs,
-            outputs=output
+            outputs=output,
         )

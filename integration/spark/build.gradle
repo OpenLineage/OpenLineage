@@ -7,9 +7,9 @@ plugins {
     id 'signing'
     id 'jacoco'
     id "com.adarshr.test-logger" version "3.2.0"
-    id "org.gradle.test-retry" version "1.5.6"
+    id "org.gradle.test-retry" version "1.5.7"
     id 'com.diffplug.spotless' version '6.12.0'
-    id "com.github.johnrengelman.shadow" version "7.1.2"
+    id "com.github.johnrengelman.shadow" version "8.1.1"
 }
 
 subprojects {
@@ -52,12 +52,13 @@ ext {
 
 dependencies {
     implementation(project(path:    ":app"))
-    implementation(project(path: ":shared"))
+    implementation(project(path: ":shared", configuration: "shadow"))
     implementation(project(path: ":spark2"))
     implementation(project(path: ":spark3"))
     implementation(project(path: ":spark32"))
     implementation(project(path: ":spark33"))
     implementation(project(path: ":spark34"))
+    implementation(project(path: ":spark35"))
 
     compileOnly "com.fasterxml.jackson.core:jackson-core:${jacksonVersion}"
     compileOnly "com.fasterxml.jackson.core:jackson-annotations:${jacksonVersion}"
@@ -69,12 +70,12 @@ dependencies {
 
 
 task sourceJar(type: Jar) {
-    classifier 'sources'
+    archiveClassifier='sources'
     from sourceSets.main.allJava
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier 'javadoc'
+    archiveClassifier='javadoc'
     from javadoc.destinationDir
 }
 
@@ -130,9 +131,13 @@ jacoco {
 
 jacocoTestReport {
     reports {
-        xml.enabled = true
-        html.enabled = true
-        html.destination = file(coverageDir)
+        xml {
+            enabled true
+        }
+        html {
+            enabled true
+            destination = file(coverageDir)
+        }
     }
 }
 
@@ -212,6 +217,8 @@ signing {
 }
 
 shadowJar {
+    dependsOn test
+
     minimize(){
         exclude (project(":shared"))
         exclude (project(":spark2"))
@@ -219,12 +226,13 @@ shadowJar {
         exclude (project(":spark32"))
         exclude (project(":spark33"))
         exclude (project(":spark34"))
+        exclude (project(":spark35"))
         exclude (project(":app"))
     }
     dependencies {
         exclude(dependency('org.slf4j::'))
     }
-    classifier = ''
+    archiveClassifier = ''
     // avoid conflict with any client version of that lib
     relocate 'com.github.ok2c.hc5', 'io.openlineage.spark.shaded.com.github.ok2c.hc5'
     relocate 'org.apache.httpcomponents.client5', 'io.openlineage.spark.shaded.org.apache.httpcomponents.client5'
@@ -234,7 +242,6 @@ shadowJar {
     relocate 'org.apache.commons.logging', 'io.openlineage.spark.shaded.org.apache.commons.logging'
     relocate 'org.apache.commons.beanutils', 'io.openlineage.spark.shaded.org.apache.commons.beanutils'
     relocate 'org.apache.http', 'io.openlineage.spark.shaded.org.apache.http'
-    relocate 'org.yaml.snakeyaml', 'io.openlineage.spark.shaded.org.yaml.snakeyaml'
     relocate 'com.fasterxml.jackson', 'io.openlineage.spark.shaded.com.fasterxml.jackson'
     manifest {
         attributes(

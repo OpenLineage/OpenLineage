@@ -45,9 +45,7 @@ class MySqlExtractor(SqlExtractor):
 
     def _get_hook(self):
         MySqlHook = try_import_from_string("airflow.providers.mysql.hooks.mysql.MySqlHook")
-        return MySqlHook(
-            mysql_conn_id=self.operator.mysql_conn_id, schema=self.operator.database
-        )
+        return MySqlHook(mysql_conn_id=self.operator.mysql_conn_id, schema=self.operator.database)
 
     @staticmethod
     def _normalize_name(name: str) -> str:

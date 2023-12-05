@@ -2,11 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 import uuid
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 import attr
 from dateutil import parser
-
 from openlineage.client.facet import NominalTimeRunFacet, ParentRunFacet
 from openlineage.client.utils import RedactMixin
 
@@ -34,7 +33,7 @@ class Dataset(RedactMixin):
     name: str = attr.ib()
     facets: Dict[Any, Any] = attr.ib(factory=dict)
 
-    _skip_redact: List[str] = ["namespace", "name"]
+    _skip_redact: ClassVar[List[str]] = ["namespace", "name"]
 
 
 @attr.s
@@ -54,7 +53,7 @@ class DatasetEvent(RedactMixin):
     schemaURL: str = attr.ib()  # noqa: N815
     dataset: Dataset = attr.ib()
 
-    _skip_redact: List[str] = ["producer"]
+    _skip_redact: ClassVar[List[str]] = ["producer"]
 
 
 @attr.s
@@ -63,7 +62,7 @@ class Job(RedactMixin):
     name: str = attr.ib()
     facets: Dict[Any, Any] = attr.ib(factory=dict)
 
-    _skip_redact: List[str] = ["namespace", "name"]
+    _skip_redact: ClassVar[List[str]] = ["namespace", "name"]
 
 
 @attr.s
@@ -75,7 +74,7 @@ class JobEvent(RedactMixin):
     inputs: Optional[List[Dataset]] = attr.ib(factory=list)  # type: ignore[assignment]
     outputs: Optional[List[Dataset]] = attr.ib(factory=list)  # type: ignore[assignment]
 
-    _skip_redact: List[str] = ["producer"]
+    _skip_redact: ClassVar[List[str]] = ["producer"]
 
 
 @attr.s
@@ -83,7 +82,7 @@ class Run(RedactMixin):
     runId: str = attr.ib()  # noqa:  N815
     facets: Dict[Any, Any] = attr.ib(factory=dict)
 
-    _skip_redact: List[str] = ["runId"]
+    _skip_redact: ClassVar[List[str]] = ["runId"]
 
     @runId.validator
     def check(self, attribute: str, value: str) -> None:  # noqa: ARG002
@@ -101,7 +100,7 @@ class RunEvent(RedactMixin):
     outputs: Optional[List[Dataset]] = attr.ib(factory=list)  # type: ignore[assignment]
     schemaURL: str = attr.ib(default=SCHEMA_URL)  # noqa: N815
 
-    _skip_redact: List[str] = ["eventType", "eventTime", "producer", "schemaURL"]
+    _skip_redact: ClassVar[List[str]] = ["eventType", "eventTime", "producer", "schemaURL"]
 
     @eventTime.validator
     def check(self, attribute: str, value: str) -> None:  # noqa: ARG002

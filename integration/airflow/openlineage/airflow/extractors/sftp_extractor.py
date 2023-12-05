@@ -13,7 +13,6 @@ from airflow.providers.sftp.operators.sftp import SFTPOperation
 
 
 class SFTPExtractor(BaseExtractor):
-
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
         return ["SFTPOperator"]
@@ -27,7 +26,7 @@ class SFTPExtractor(BaseExtractor):
         except Exception as e:
             self.log.warning(
                 f"Failed to resolve local hostname. Using the hostname got by socket.gethostbyname() without resolution. {e}",  # noqa: E501
-                exc_info=True
+                exc_info=True,
             )
 
         # As of version 4.1.0, SFTPOperator accepts either of SFTPHook, SSHHook, or ssh_conn_id
@@ -49,8 +48,8 @@ class SFTPExtractor(BaseExtractor):
             remote_host = socket.gethostbyname(remote_host)
         except Exception as e:
             self.log.warning(
-                f"Failed to resolve remote hostname. Using the provided hostname without resolution. {e}",  # noqa: E501
-                exc_info=True
+                f"Failed to resolve remote hostname. Using the provided hostname without resolution. {e}",
+                exc_info=True,
             )
 
         if hasattr(hook, "port"):
@@ -76,7 +75,10 @@ class SFTPExtractor(BaseExtractor):
             for path in local_filepath
         ]
         remote_datasets = [
-            Dataset(source=self._get_source(scheme, remote_host, remote_port, path), name=path)
+            Dataset(
+                source=self._get_source(scheme, remote_host, remote_port, path),
+                name=path,
+            )
             for path in remote_filepath
         ]
 
@@ -101,5 +103,5 @@ class SFTPExtractor(BaseExtractor):
         return Source(
             scheme=scheme,
             authority=authority,
-            connection_url=f"{scheme}://{authority}{path}"
+            connection_url=f"{scheme}://{authority}{path}",
         )

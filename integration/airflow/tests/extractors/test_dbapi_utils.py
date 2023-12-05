@@ -11,9 +11,9 @@ from openlineage.common.dataset import Dataset, Source
 from openlineage.common.models import DbColumn, DbTableSchema
 from openlineage.common.sql import DbTableMeta
 
-DB_NAME = 'FOOD_DELIVERY'
-DB_SCHEMA_NAME = 'PUBLIC'
-DB_TABLE_NAME = DbTableMeta('DISCOUNTS')
+DB_NAME = "FOOD_DELIVERY"
+DB_SCHEMA_NAME = "PUBLIC"
+DB_TABLE_NAME = DbTableMeta("DISCOUNTS")
 DB_TABLE_COLUMNS = [
     DbColumn(name="ID", type="int4", ordinal_position=1),
     DbColumn(name="AMOUNT_OFF", type="int4", ordinal_position=2),
@@ -208,15 +208,11 @@ def test_get_table_schemas_with_other_database():
 
 
 def test_create_filter_clauses():
-    assert create_filter_clauses({None: ["C1", "C2"]}) == [
-        "( table_name IN ('C1','C2') )"
-    ]
-    assert create_filter_clauses(
-        {"Schema1": ["Table1"], "Schema2": ["Table2"]}
-    ) == [
+    assert create_filter_clauses({None: ["C1", "C2"]}) == ["( table_name IN ('C1','C2') )"]
+    assert create_filter_clauses({"Schema1": ["Table1"], "Schema2": ["Table2"]}) == [
         "( table_schema = 'Schema1' AND table_name IN ('Table1') )",
         "( table_schema = 'Schema2' AND table_name IN ('Table2') )",
     ]
-    assert create_filter_clauses(
-        {"Schema1": ["Table1", "Table2"]}
-    ) == ["( table_schema = 'Schema1' AND table_name IN ('Table1','Table2') )"]
+    assert create_filter_clauses({"Schema1": ["Table1", "Table2"]}) == [
+        "( table_schema = 'Schema1' AND table_name IN ('Table1','Table2') )"
+    ]

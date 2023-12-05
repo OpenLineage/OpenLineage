@@ -8,13 +8,13 @@ from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
-
 from openlineage.client.client import OpenLineageClient
 from openlineage.client.facet import (
     ColumnLineageDatasetFacet,
     ColumnLineageDatasetFacetFieldsAdditional,
     ColumnLineageDatasetFacetFieldsAdditionalInputFields,
     DatasetVersionDatasetFacet,
+    JobTypeJobFacet,
     LifecycleStateChange,
     LifecycleStateChangeDatasetFacet,
     LifecycleStateChangeDatasetFacetPreviousIdentifier,
@@ -425,5 +425,43 @@ def test_column_lineage_dataset_facet(event: dict[str, Any]) -> None:
     expected_event = copy.deepcopy(event)
     expected_event["outputs"][0]["facets"] = {}
     expected_event["outputs"][0]["facets"]["columnLineage"] = column_lineage_dataset_facet
+
+    assert expected_event == event_sent
+
+
+def test_job_type_job_facet(event: dict[str, Any]) -> None:
+    session = MagicMock()
+    client = OpenLineageClient(url="http://example.com", session=session)
+
+    job_type_facet = {
+        "processingType": "BATCH",
+        "integration": "SPARK",
+        "jobType": "QUERY",
+        "_producer": "https://github.com/OpenLineage/OpenLineage/tree/0.0.1/client/python",
+        "_schemaURL": "https://raw.githubusercontent.com/OpenLineage/OpenLineage/main/spec/OpenLineage.json#/definitions/JobTypeJobFacet",
+    }
+
+    client.emit(
+        RunEvent(
+            RunState.START,
+            "2021-11-03T10:53:52.427343",
+            Run("69f4acab-b87d-4fc0-b27b-8ea950370ff3"),
+            Job(
+                namespace="openlineage",
+                name="job",
+                facets={"jobType": JobTypeJobFacet("BATCH", "SPARK", "QUERY")},
+            ),
+            "some-producer",
+            [],
+            [],
+        ),
+    )
+
+    event_sent = json.loads(session.post.call_args[0][1])
+
+    expected_event = copy.deepcopy(event)
+    expected_event["outputs"] = []
+    expected_event["job"]["facets"] = {}
+    expected_event["job"]["facets"]["jobType"] = job_type_facet
 
     assert expected_event == event_sent

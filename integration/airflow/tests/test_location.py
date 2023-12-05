@@ -14,16 +14,16 @@ from tests.mocks.git_mock import execute_git_mock
 log = logging.getLogger(__name__)
 
 
-@patch('openlineage.airflow.utils.execute_git',
-       side_effect=execute_git_mock)
+@patch("openlineage.airflow.utils.execute_git", side_effect=execute_git_mock)
 def test_dag_location(git_mock):
-    assert re.match(r'https://github.com/[^/]+/OpenLineage/blob/'
-                    'abcd1234/integration/airflow/tests/test_dags/test_dag.py',
-                    get_location("tests/test_dags/test_dag.py"))
+    assert re.match(
+        r"https://github.com/[^/]+/OpenLineage/blob/"
+        "abcd1234/integration/airflow/tests/test_dags/test_dag.py",
+        get_location("tests/test_dags/test_dag.py"),
+    )
 
 
-@patch('openlineage.airflow.utils.execute_git',
-       side_effect=execute_git_mock)
+@patch("openlineage.airflow.utils.execute_git", side_effect=execute_git_mock)
 def test_bad_file_path(git_mock):
     log.debug("test_bad_file_path()")
     with pytest.raises(FileNotFoundError):

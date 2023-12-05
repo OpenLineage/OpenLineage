@@ -1,5 +1,6 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
+
 import pytest
 from openlineage.airflow.extractors.converters import convert_to_dataset
 from openlineage.client.facet import SchemaDatasetFacet, SchemaField
@@ -60,14 +61,23 @@ def test_dataset_to_dataset_conversion():
     assert d.name == "db.table1"
 
 
-@pytest.mark.parametrize("uri, dataset", [
-    ("s3://my-bucket/my-file", Dataset("s3://my-bucket", "/my-file")),
-    ("gcs://my-bucket/some/path/to/file", Dataset("gs://my-bucket", "/some/path/to/file")),
-    ("gs://my-bucket/some/path/to/file", Dataset("gs://my-bucket", "/some/path/to/file")),
-    ("something://asdf", Dataset("something", "/asdf")),
-    ("file://path/to/something", Dataset("file", "/path/to/something")),
-    ("not|a|uri", None)
-])
+@pytest.mark.parametrize(
+    "uri, dataset",
+    [
+        ("s3://my-bucket/my-file", Dataset("s3://my-bucket", "/my-file")),
+        (
+            "gcs://my-bucket/some/path/to/file",
+            Dataset("gs://my-bucket", "/some/path/to/file"),
+        ),
+        (
+            "gs://my-bucket/some/path/to/file",
+            Dataset("gs://my-bucket", "/some/path/to/file"),
+        ),
+        ("something://asdf", Dataset("something", "/asdf")),
+        ("file://path/to/something", Dataset("file", "/path/to/something")),
+        ("not|a|uri", None),
+    ],
+)
 def test_gcs_file_to_dataset_conversion(uri, dataset):
     from airflow.lineage.entities import File
 

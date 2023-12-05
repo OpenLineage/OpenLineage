@@ -7,6 +7,7 @@ package io.openlineage.flink;
 
 import io.openlineage.flink.tracker.OpenLineageContinousJobTracker;
 import io.openlineage.flink.tracker.OpenLineageContinousJobTrackerFactory;
+import io.openlineage.flink.utils.JobTypeUtils;
 import io.openlineage.flink.visitor.lifecycle.FlinkExecutionContext;
 import io.openlineage.flink.visitor.lifecycle.FlinkExecutionContextFactory;
 import java.lang.reflect.Field;
@@ -25,8 +26,12 @@ import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.JobID;
+import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.api.dag.Transformation;
+import org.apache.flink.configuration.ConfigOption;
+import org.apache.flink.configuration.ConfigOptions;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.configuration.ExecutionOptions;
 import org.apache.flink.core.execution.DetachedJobExecutionResult;
 import org.apache.flink.core.execution.JobClient;
 import org.apache.flink.core.execution.JobListener;
@@ -44,15 +49,34 @@ public class OpenLineageFlinkJobListener implements JobListener {
 
   public static final String DEFAULT_JOB_NAMESPACE = "flink_jobs";
 
-  /** Default duration between REST API calls for checkpoint stats. */
   static final Duration DEFAULT_TRACKING_INTERVAL = Duration.ofSeconds(10);
 
+  public static final ConfigOption<String> OPEN_LINEAGE_LISTENER_CONFIG_JOB_NAMESPACE =
+      ConfigOptions.key("execution.job-listener.openlineage.namespace")
+          .stringType()
+          .defaultValue(DEFAULT_JOB_NAMESPACE)
+          .withDescription("Openlineage job namespace.");
+
+  public static final ConfigOption<String> OPEN_LINEAGE_LISTENER_CONFIG_JOB_NAME =
+      ConfigOptions.key("execution.job-listener.openlineage.job-name")
+          .stringType()
+          .defaultValue(StreamGraphGenerator.DEFAULT_STREAMING_JOB_NAME)
+          .withDescription("Openlienage job name.");
+
+  public static final ConfigOption<Duration> OPENLINEAGE_LISTENER_CONFIG_DURATION =
+      ConfigOptions.key("execution.job-listener.openlineage.tracking-interval")
+          .durationType()
+          .defaultValue(DEFAULT_TRACKING_INTERVAL)
+          .withDescription("Duration between REST API calls for checkpoint stats");
+
   private final StreamExecutionEnvironment executionEnvironment;
+
   private final OpenLineageContinousJobTracker jobTracker;
   private final String jobNamespace;
   private final String jobName;
   private final Duration jobTrackingInterval;
   private final Map<JobID, FlinkExecutionContext> jobContexts = new HashMap<>();
+  private final RuntimeExecutionMode runtimeMode;
 
   public static OpenLineageFlinkJobListenerBuilder builder() {
     return new OpenLineageFlinkJobListenerInternalBuilder();
@@ -65,15 +89,24 @@ public class OpenLineageFlinkJobListener implements JobListener {
       Validate.notNull(super.executionEnvironment, "StreamExecutionEnvironment has to be provided");
 
       if (super.jobNamespace == null) {
-        super.jobNamespace(DEFAULT_JOB_NAMESPACE);
+        super.jobNamespace(
+            super.executionEnvironment
+                .getConfiguration()
+                .get(OPEN_LINEAGE_LISTENER_CONFIG_JOB_NAMESPACE));
       }
 
       if (super.jobName == null) {
-        super.jobName(StreamGraphGenerator.DEFAULT_STREAMING_JOB_NAME);
+        super.jobName(
+            super.executionEnvironment
+                .getConfiguration()
+                .get(OPEN_LINEAGE_LISTENER_CONFIG_JOB_NAME));
       }
 
       if (super.jobTrackingInterval == null) {
-        super.jobTrackingInterval(DEFAULT_TRACKING_INTERVAL);
+        super.jobTrackingInterval(
+            super.executionEnvironment
+                .getConfiguration()
+                .get(OPENLINEAGE_LISTENER_CONFIG_DURATION));
       }
 
       if (super.jobTracker == null) {
@@ -81,6 +114,9 @@ public class OpenLineageFlinkJobListener implements JobListener {
             OpenLineageContinousJobTrackerFactory.getTracker(
                 super.executionEnvironment.getConfiguration(), super.jobTrackingInterval));
       }
+
+      super.runtimeMode(
+          super.executionEnvironment.getConfiguration().get(ExecutionOptions.RUNTIME_MODE));
 
       return super.build();
     }
@@ -139,6 +175,7 @@ public class OpenLineageFlinkJobListener implements JobListener {
               jobNamespace,
               jobName,
               jobClient.getJobID(),
+              JobTypeUtils.extract(runtimeMode, transformations),
               transformations);
 
       jobContexts.put(jobClient.getJobID(), context);

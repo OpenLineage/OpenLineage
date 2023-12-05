@@ -6,6 +6,7 @@
 package io.openlineage.flink;
 
 import static io.openlineage.flink.OpenLineageFlinkJobListener.DEFAULT_JOB_NAMESPACE;
+import static io.openlineage.flink.OpenLineageFlinkJobListener.OPENLINEAGE_LISTENER_CONFIG_DURATION;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
@@ -15,6 +16,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.openlineage.flink.tracker.OpenLineageContinousJobTracker;
+import io.openlineage.flink.tracker.OpenLineageContinousJobTrackerFactory;
+import io.openlineage.flink.utils.JobTypeUtils;
 import io.openlineage.flink.visitor.lifecycle.FlinkExecutionContext;
 import io.openlineage.flink.visitor.lifecycle.FlinkExecutionContextFactory;
 import java.util.ArrayList;
@@ -41,6 +44,7 @@ class JobListenerTest {
   List<Transformation<?>> transformations = new ArrayList<>();
   OpenLineageFlinkJobListener listener;
   FlinkExecutionContext context = mock(FlinkExecutionContext.class);
+  OpenLineageContinousJobTracker tracker = mock(OpenLineageContinousJobTracker.class);
   Configuration readableConfig = new Configuration();
   String jobName = "some-job-name";
   String jobNamespace = "some-job-namespace";
@@ -63,7 +67,6 @@ class JobListenerTest {
         transformations,
         true);
 
-    OpenLineageContinousJobTracker tracker = mock(OpenLineageContinousJobTracker.class);
     doNothing().when(tracker).startTracking(context);
 
     listener =
@@ -77,10 +80,64 @@ class JobListenerTest {
     try (MockedStatic<FlinkExecutionContextFactory> contextFactory =
         mockStatic(FlinkExecutionContextFactory.class)) {
       when(FlinkExecutionContextFactory.getContext(
-              eq(readableConfig), eq(jobNamespace), eq(jobName), eq(jobId), eq(transformations)))
+              eq(readableConfig),
+              eq(jobNamespace),
+              eq(jobName),
+              eq(jobId),
+              eq(JobTypeUtils.STREAMING),
+              eq(transformations)))
           .thenReturn(context);
       doNothing().when(context).onJobSubmitted();
 
+      listener.onJobSubmitted(jobClient, null);
+      verify(context, times(1)).onJobSubmitted();
+      verify(tracker, times(1)).startTracking(context);
+    }
+  }
+
+  @Test
+  @SneakyThrows
+  void testOnJobSubmittedViaConfiguration() {
+
+    Configuration configuration = new Configuration();
+    String customJobName = "testjob";
+    configuration.setString("execution.job-listener.openlineage.job-name", customJobName);
+
+    String customNamespace = "customized_namespace";
+    configuration.setString("execution.job-listener.openlineage.namespace", customNamespace);
+
+    StreamExecutionEnvironment streamExecutionEnvironment =
+        new StreamExecutionEnvironment(configuration);
+
+    FieldUtils.writeField(
+        FieldUtils.getField(StreamExecutionEnvironment.class, "transformations", true),
+        streamExecutionEnvironment,
+        transformations,
+        true);
+
+    doNothing().when(tracker).startTracking(context);
+
+    try (MockedStatic<FlinkExecutionContextFactory> contextFactory =
+            mockStatic(FlinkExecutionContextFactory.class);
+        MockedStatic<OpenLineageContinousJobTrackerFactory> jobtrackerFactory =
+            mockStatic(OpenLineageContinousJobTrackerFactory.class)) {
+      when(FlinkExecutionContextFactory.getContext(
+              eq((Configuration) streamExecutionEnvironment.getConfiguration()),
+              eq(customNamespace),
+              eq(customJobName),
+              eq(jobId),
+              eq(JobTypeUtils.STREAMING),
+              eq(transformations)))
+          .thenReturn(context);
+      when(OpenLineageContinousJobTrackerFactory.getTracker(
+              configuration, OPENLINEAGE_LISTENER_CONFIG_DURATION.defaultValue()))
+          .thenReturn(tracker);
+      doNothing().when(context).onJobSubmitted();
+
+      listener =
+          OpenLineageFlinkJobListener.builder()
+              .executionEnvironment(streamExecutionEnvironment)
+              .build();
       listener.onJobSubmitted(jobClient, null);
       verify(context, times(1)).onJobSubmitted();
       verify(tracker, times(1)).startTracking(context);
@@ -100,7 +157,6 @@ class JobListenerTest {
     when(executionConfig.getGlobalJobParameters()).thenReturn(globalJobParameters);
     when(globalJobParameters.toMap()).thenReturn(new HashMap<>());
 
-    OpenLineageContinousJobTracker tracker = mock(OpenLineageContinousJobTracker.class);
     JobExecutionResult jobExecutionResult = mock(JobExecutionResult.class);
     when(jobExecutionResult.getJobID()).thenReturn(jobId);
     doNothing().when(context).onJobSubmitted();
@@ -109,7 +165,12 @@ class JobListenerTest {
     try (MockedStatic<FlinkExecutionContextFactory> contextFactory =
         mockStatic(FlinkExecutionContextFactory.class)) {
       when(FlinkExecutionContextFactory.getContext(
-              eq(readableConfig), eq(jobNamespace), eq(jobName), eq(jobId), eq(transformations)))
+              eq(readableConfig),
+              eq(jobNamespace),
+              eq(jobName),
+              eq(jobId),
+              eq(JobTypeUtils.STREAMING),
+              eq(transformations)))
           .thenReturn(context);
       doNothing().when(context).onJobSubmitted();
 
@@ -133,7 +194,6 @@ class JobListenerTest {
         transformations,
         true);
 
-    OpenLineageContinousJobTracker tracker = mock(OpenLineageContinousJobTracker.class);
     doNothing().when(tracker).startTracking(context);
 
     listener =
@@ -149,6 +209,7 @@ class JobListenerTest {
               eq(DEFAULT_JOB_NAMESPACE),
               eq(StreamGraphGenerator.DEFAULT_STREAMING_JOB_NAME),
               eq(jobId),
+              eq(JobTypeUtils.STREAMING),
               eq(transformations)))
           .thenReturn(context);
       doNothing().when(context).onJobSubmitted();

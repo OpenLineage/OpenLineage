@@ -11,25 +11,19 @@ from openlineage.client.run import Dataset
 class S3CopyObjectExtractor(BaseExtractor):
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
-        return ['S3CopyObjectOperator']
+        return ["S3CopyObjectOperator"]
 
     def extract(self) -> Optional[TaskMetadata]:
         input_object = Dataset(
-            namespace="s3://{}".format(self.operator.source_bucket_name),
-            name="s3://{0}/{1}".format(
-                self.operator.source_bucket_name,
-                self.operator.source_bucket_key
-            ),
-            facets={}
+            namespace=f"s3://{self.operator.source_bucket_name}",
+            name=f"s3://{self.operator.source_bucket_name}/{self.operator.source_bucket_key}",
+            facets={},
         )
 
         output_object = Dataset(
-            namespace="s3://{}".format(self.operator.dest_bucket_name),
-            name="s3://{0}/{1}".format(
-                self.operator.dest_bucket_name,
-                self.operator.dest_bucket_key
-            ),
-            facets={}
+            namespace=f"s3://{self.operator.dest_bucket_name}",
+            name=f"s3://{self.operator.dest_bucket_name}/{self.operator.dest_bucket_key}",
+            facets={},
         )
 
         return TaskMetadata(
@@ -42,19 +36,19 @@ class S3CopyObjectExtractor(BaseExtractor):
 class S3FileTransformExtractor(BaseExtractor):
     @classmethod
     def get_operator_classnames(cls) -> List[str]:
-        return ['S3FileTransformOperator']
+        return ["S3FileTransformOperator"]
 
     def extract(self) -> Optional[TaskMetadata]:
         input_object = Dataset(
             namespace=f"s3://{urlparse(self.operator.source_s3_key).netloc}",
             name=self.operator.source_s3_key,
-            facets={}
+            facets={},
         )
 
         output_object = Dataset(
             namespace=f"s3://{urlparse(self.operator.dest_s3_key).netloc}",
             name=self.operator.dest_s3_key,
-            facets={}
+            facets={},
         )
 
         return TaskMetadata(

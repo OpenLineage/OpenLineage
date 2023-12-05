@@ -37,15 +37,11 @@ class TrinoExtractor(SqlExtractor):
 
     def _get_authority(self) -> str:
         if self.conn.host and self.conn.port:
-            return f'{self.conn.host}:{self.conn.port}'
+            return f"{self.conn.host}:{self.conn.port}"
         else:
             parsed = urlparse(self.conn.get_uri())
-            return f'{parsed.hostname}:{parsed.port}'
+            return f"{parsed.hostname}:{parsed.port}"
 
     def _get_hook(self):
-        TrinoHook = try_import_from_string(
-            "airflow.providers.trino.hooks.trino.TrinoHook"
-        )
-        return TrinoHook(
-            trino_conn_id=self.operator.trino_conn_id
-        )
+        TrinoHook = try_import_from_string("airflow.providers.trino.hooks.trino.TrinoHook")
+        return TrinoHook(trino_conn_id=self.operator.trino_conn_id)

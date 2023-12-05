@@ -1,13 +1,12 @@
 /*
-/* Copyright 2018-2022 contributors to the OpenLineage project
+/* Copyright 2018-2023 contributors to the OpenLineage project
 /* SPDX-License-Identifier: Apache-2.0
 */
 
 package io.openlineage.spark3.agent.lifecycle.plan;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
@@ -24,6 +23,7 @@ import java.util.stream.Stream;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation;
 import org.apache.spark.sql.execution.ui.SparkListenerSQLExecutionEnd;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -73,12 +73,12 @@ class DataSourceV2RelationDatasetBuilderTest {
             .thenReturn(datasets);
 
         if (builder instanceof DataSourceV2RelationOutputDatasetBuilder) {
-          assertEquals(
+          Assertions.assertEquals(
               datasets,
               ((DataSourceV2RelationOutputDatasetBuilder) builder)
                   .apply(new SparkListenerSQLExecutionEnd(1L, 1L), relation));
         } else {
-          assertEquals(datasets, builder.apply(relation));
+          Assertions.assertEquals(datasets, builder.apply(relation));
         }
 
         facetUtilsMockedStatic.verify(

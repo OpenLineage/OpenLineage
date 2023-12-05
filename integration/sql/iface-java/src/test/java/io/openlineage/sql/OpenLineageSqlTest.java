@@ -39,7 +39,9 @@ class OpenLineageSqlTest {
     assertEquals(
         output,
         new SqlMeta(
-            Arrays.asList(new DbTableMeta("random-project", "dbt_test1", "source_table")),
+            Arrays.asList(
+                new DbTableMeta(
+                    "random-project", "dbt_test1", "source_table", new QuoteStyle("`", "`", "`"))),
             new ArrayList<DbTableMeta>(),
             Collections.emptyList(),
             Collections.emptyList()));
