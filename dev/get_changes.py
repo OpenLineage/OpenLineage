@@ -45,7 +45,6 @@ class GetChanges:
                     if label.name != "documentation":
                         labels.append(label.name)
                 change_str = f"* **{labels[0]}: {pull.title}** [`#{pull.number}`]({pull.html_url}) [@{pull.user.login}]({pull.user.html_url})  "  # noqa: E501
-
                 """ Extracts one-line description if present """
                 beg = pull.body.find("One-line summary:") + 18
                 if beg == 17:  # noqa: PLR2004
