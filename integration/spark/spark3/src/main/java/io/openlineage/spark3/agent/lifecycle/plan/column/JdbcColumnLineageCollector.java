@@ -40,6 +40,7 @@ public class JdbcColumnLineageCollector {
       ColumnLevelLineageBuilder builder,
       List<DatasetIdentifier> datasetIdentifiers) {
     Optional<SqlMeta> sqlMeta = JdbcUtils.extractQueryFromSpark(relation);
+    String jdbcUrl = relation.jdbcOptions().url();
     sqlMeta.ifPresent(
         meta -> {
           List<ColumnLineage> columnLineages = meta.columnLineage();
@@ -54,7 +55,10 @@ public class JdbcColumnLineageCollector {
                       .filter(
                           cm ->
                               cm.origin().isPresent()
-                                  && cm.origin().get().name().equals(di.getName()))
+                                  && JdbcUtils.getDatasetIdentifierFromJdbcUrl(
+                                          jdbcUrl, cm.origin().get().name())
+                                      .getName()
+                                      .equals(di.getName()))
                       .forEach(cm -> builder.addInput(builder.getMapping(cm), di, cm.name())));
         });
   }
@@ -75,20 +79,20 @@ public class JdbcColumnLineageCollector {
             meta.columnLineage()
                 .forEach(
                     p -> {
-                      ExprId decendantId = getDecendantId(output, p.descendant());
-                      builder.addExternalMapping(p.descendant(), decendantId);
+                      ExprId descendantId = getDescendantId(output, p.descendant());
+                      builder.addExternalMapping(p.descendant(), descendantId);
 
                       p.lineage()
                           .forEach(e -> builder.addExternalMapping(e, NamedExpression.newExprId()));
-                      if (p.lineage().size() > 1) {
+                      if (!p.lineage().isEmpty()) {
                         p.lineage().stream()
                             .map(builder::getMapping)
-                            .forEach(eid -> builder.addDependency(decendantId, eid));
+                            .forEach(eid -> builder.addDependency(descendantId, eid));
                       }
                     }));
   }
 
-  private static ExprId getDecendantId(List<Attribute> output, ColumnMeta column) {
+  private static ExprId getDescendantId(List<Attribute> output, ColumnMeta column) {
     return output.stream()
         .filter(e -> e.name().equals(column.name()))
         .map(NamedExpression::exprId)

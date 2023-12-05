@@ -21,6 +21,7 @@ import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
@@ -43,14 +44,7 @@ public class ColumnLineageIntegrationTest {
   private static final String database = "test";
   private static final String username = "test";
   private static final String password = "test";
-  private static final String jdbcQuery =
-      "select js1.k, CONCAT(js1.j1, js2.j2) as j from jdbc_source1 js1 join jdbc_source2 js2 on js1.k = js2.k";
-  private static final String query =
-      "select v.k, concat(j, v) as value from "
-          + "jdbc_result j "
-          + "join "
-          + "(select vs1.k, concat(v1, v2) as v from v2_source_1 vs1 join v2_source_2 vs2 on vs1.k = vs2.k) v "
-          + "on j.k = v.k";
+  private static String databaseUrl;
   private static Network network = Network.newNetwork();
   private static SparkSession spark;
   public static final int POSTGRES_PORT = 5432;
@@ -89,6 +83,17 @@ public class ColumnLineageIntegrationTest {
         .forEach(e -> spark.sql("drop table if exists " + e));
     getIcebergTable(spark, 1);
     getIcebergTable(spark, 2);
+    databaseUrl = String.format("jdbc:postgresql://localhost:%s/%s", mappedPort, database);
+  }
+
+  @SneakyThrows
+  @BeforeEach
+  public void reset() {
+    mockServer.reset();
+    mockServer
+        .when(request("/api/v1/lineage"))
+        .respond(org.mockserver.model.HttpResponse.response().withStatusCode(201));
+    Thread.sleep(1000);
   }
 
   @Test
@@ -96,11 +101,18 @@ public class ColumnLineageIntegrationTest {
     Dataset<Row> df1 = getTable(spark);
     df1.registerTempTable("jdbc_result");
 
+    final String query =
+        "select v.k, concat(j, v) as value from "
+            + "jdbc_result j "
+            + "join "
+            + "(select vs1.k, concat(v1, v2) as v from v2_source_1 vs1 join v2_source_2 vs2 on vs1.k = vs2.k) v "
+            + "on j.k = v.k";
+
     spark
         .sql(query)
         .write()
         .format("jdbc")
-        .option("url", String.format("jdbc:postgresql://localhost:%s/%s", mappedPort, database))
+        .option("url", databaseUrl)
         .option("dbtable", "test")
         .option("user", username)
         .option("password", password)
@@ -110,6 +122,34 @@ public class ColumnLineageIntegrationTest {
 
     MockServerUtils.verifyEvents(
         mockServer, "columnLineageJDBCStart.json", "columnLineageJDBCComplete.json");
+  }
+
+  @Test
+  void columnLevelLineageSingleDestinationTest() {
+    Dataset<Row> readDf =
+        spark
+            .read()
+            .format("jdbc")
+            .option("url", databaseUrl)
+            .option("dbtable", "ol_clients")
+            .option("user", username)
+            .option("password", password)
+            .option("driver", "org.postgresql.Driver")
+            .load()
+            .select("client_name", "client_category", "client_rating");
+
+    readDf
+        .write()
+        .format("jdbc")
+        .option("url", databaseUrl)
+        .option("driver", "org.postgresql.Driver")
+        .option("user", username)
+        .option("password", password)
+        .option("dbtable", "second_ol_clients")
+        .mode("overwrite")
+        .save();
+
+    MockServerUtils.verifyEvents(mockServer, "columnLineageSingleInputComplete.json");
   }
 
   @AfterAll
@@ -170,6 +210,8 @@ public class ColumnLineageIntegrationTest {
   }
 
   private static Dataset<Row> getTable(SparkSession spark) {
+    final String jdbcQuery =
+        "select js1.k, CONCAT(js1.j1, js2.j2) as j from jdbc_source1 js1 join jdbc_source2 js2 on js1.k = js2.k";
     return spark
         .read()
         .format("jdbc")

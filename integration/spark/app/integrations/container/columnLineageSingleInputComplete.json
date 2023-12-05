@@ -1,0 +1,84 @@
+{
+  "eventType": "COMPLETE",
+  "job": {
+    "namespace": "default",
+    "name": "iceberg_integration_test.execute_save_into_data_source_command.test_second_ol_clients"
+  },
+  "inputs": [
+    {
+      "name": "test.ol_clients",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "client_name",
+              "type": "string"
+            },
+            {
+              "name": "client_category",
+              "type": "string"
+            },
+            {
+              "name": "client_rating",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "outputs": [
+    {
+      "name": "test.second_ol_clients",
+      "facets": {
+        "schema": {
+          "fields": [
+            {
+              "name": "client_name",
+              "type": "string"
+            },
+            {
+              "name": "client_category",
+              "type": "string"
+            },
+            {
+              "name": "client_rating",
+              "type": "string"
+            }
+          ]
+        },
+        "columnLineage": {
+          "fields": {
+            "client_name": {
+              "inputFields": [
+                {
+                  "name": "test.ol_clients",
+                  "field": "client_name"
+                }
+              ]
+            },
+            "client_category": {
+              "inputFields": [
+                {
+                  "name": "test.ol_clients",
+                  "field": "client_category"
+                }
+              ]
+            },
+            "client_rating": {
+              "inputFields": [
+                {
+                  "name": "test.ol_clients",
+                  "field": "client_rating"
+                }
+              ]
+            }
+          }
+        },
+        "lifecycleStateChange": {
+          "lifecycleStateChange": "OVERWRITE"
+        }
+      }
+    }
+  ]
+}

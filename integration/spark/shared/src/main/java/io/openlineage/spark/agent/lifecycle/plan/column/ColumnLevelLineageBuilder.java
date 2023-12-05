@@ -65,6 +65,7 @@ public class ColumnLevelLineageBuilder {
     inputs.computeIfAbsent(exprId, k -> new LinkedList<>());
 
     Pair<DatasetIdentifier, String> input = Pair.of(datasetIdentifier, attributeName);
+
     if (!inputs.get(exprId).contains(input)) {
       inputs.get(exprId).add(input);
     }
@@ -185,7 +186,6 @@ public class ColumnLevelLineageBuilder {
         schema.getFields().stream()
             .filter(field -> field.getName().equalsIgnoreCase(outputName))
             .findAny();
-
     if (!outputField.isPresent() || !outputs.containsKey(outputField.get())) {
       return Collections.emptyList();
     }

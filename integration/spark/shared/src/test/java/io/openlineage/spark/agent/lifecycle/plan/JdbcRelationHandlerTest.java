@@ -17,12 +17,17 @@ import io.openlineage.client.OpenLineage;
 import io.openlineage.spark.agent.lifecycle.plan.handlers.JdbcRelationHandler;
 import io.openlineage.spark.api.DatasetFactory;
 import java.util.List;
+import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap;
+import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap$;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions;
+import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions$;
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRelation;
 import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import scala.Tuple2;
+import scala.collection.immutable.Map$;
 
 public class JdbcRelationHandlerTest {
   JdbcRelationHandler jdbcRelationHandler;
@@ -45,6 +50,8 @@ public class JdbcRelationHandlerTest {
   @BeforeEach
   void setup() {
     when(relation.jdbcOptions()).thenReturn(jdbcOptions);
+    when(jdbcOptions.parameters())
+        .thenReturn(CaseInsensitiveMap$.MODULE$.apply(Map$.MODULE$.empty()));
     when(jdbcOptions.url()).thenReturn("jdbc:" + url);
     when(relation.schema()).thenReturn(schema);
     jdbcRelationHandler = new JdbcRelationHandler(datasetFactory);
@@ -67,6 +74,13 @@ public class JdbcRelationHandlerTest {
 
   @Test
   void testHandlingJdbcTable() {
+    CaseInsensitiveMap params =
+        CaseInsensitiveMap$.MODULE$.apply(
+            Map$.MODULE$
+                .<String, String>newBuilder()
+                .$plus$eq(Tuple2.apply(JDBCOptions$.MODULE$.JDBC_TABLE_NAME(), jdbcTable))
+                .result());
+    when(jdbcOptions.parameters()).thenReturn(params);
     when(jdbcOptions.tableOrQuery()).thenReturn(jdbcTable);
     when(relation.schema()).thenReturn(schema);
 

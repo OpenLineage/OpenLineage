@@ -70,7 +70,7 @@ public class InputFieldsCollector {
     if (isJDBCNode(node)) {
       JdbcColumnLineageCollector.extractExternalInputs(node, builder, datasetIdentifiers);
     } else {
-      extreactInternalInputs(node, builder, datasetIdentifiers);
+      extractInternalInputs(node, builder, datasetIdentifiers);
     }
   }
 
@@ -79,7 +79,7 @@ public class InputFieldsCollector {
         && ((LogicalRelation) node).relation() instanceof JDBCRelation;
   }
 
-  private static void extreactInternalInputs(
+  private static void extractInternalInputs(
       LogicalPlan node,
       ColumnLevelLineageBuilder builder,
       List<DatasetIdentifier> datasetIdentifiers) {
@@ -141,7 +141,10 @@ public class InputFieldsCollector {
         .map(
             meta ->
                 meta.inTables().stream()
-                    .map(e -> new DatasetIdentifier(e.name(), relation.jdbcOptions().url()))
+                    .map(
+                        e ->
+                            JdbcUtils.getDatasetIdentifierFromJdbcUrl(
+                                relation.jdbcOptions().url(), e.qualifiedName()))
                     .collect(Collectors.toList()))
         .orElse(Collections.emptyList());
   }
