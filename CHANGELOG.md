@@ -13,6 +13,8 @@
   *Update Gradle for Spark and Flink to 8.1.1. Upgrade Jackson `2.15.3`.*
 * **Flink: Avoid relying on Guava which can be missing during production runtime.** [`#2296`](https://github.com/OpenLineage/OpenLineage/pull/2296) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Remove usage of Guava ImmutableList.*
+* **Spark: exclude `commons-logging` transitive dependency from published jar.** [`#2297`](https://github.com/OpenLineage/OpenLineage/pull/2297) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Assure `commons-logging` is not shipped as this can lead to version mismatch on the user's side.*
 
 ## [1.5.0](https://github.com/OpenLineage/OpenLineage/compare/1.4.1...1.5.0) - 2023-11-01
 ### Added
