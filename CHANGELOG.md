@@ -1,20 +1,29 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.5.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.6.0...HEAD)
+
+## [1.6.0](https://github.com/OpenLineage/OpenLineage/compare/1.5.0...1.6.0) - 2023-12-05
 ### Added
-* **Flink: add option for flink job listener to read from flink conf** [`#2229`](https://github.com/OpenLineage/OpenLineage/pull/2229) [@ensctom](https://github.com/ensctom)  
-  *Add option for flink job listener to read jobname and namespace from flink conf*
-* **Introduce `JobTypeJobFacet` to contain additional job related information**[`#2241`](https://github.com/OpenLineage/OpenLineage/pull/2241) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-    *`JobTypeJobFacet` contains processing type like `BATCH|STREAMING`, integration like `SPARK|FLINK|...` and job type `QUERY|COMMAND|DAG|...`.*
-* **Dbt: Add a new command `dbt-ol send-events` to send metadata of the last run without running the job** [`#2885`](https://github.com/OpenLineage/OpenLineage/pull/2285) [@sophiely](https://github.com/sophiely)
+* **Dagster: support Dagster 1.5.x** [`#2220`](https://github.com/OpenLineage/OpenLineage/pull/2220) [@tsungchih](https://github.com/tsungchih)  
+    *Gets event records for each target Dagster event type to support Dagster version 0.15.0+.*
+* **Dbt: add a new command `dbt-ol send-events` to send metadata of the last run without running the job** [`#2285`](https://github.com/OpenLineage/OpenLineage/pull/2285) [@sophiely](https://github.com/sophiely)  
+    *Adds a new command to send events to OpenLineage acccording to the latest metadata generated without running any dbt command.*
+* **Flink: add option for Flink job listener to read from Flink conf** [`#2229`](https://github.com/OpenLineage/OpenLineage/pull/2229) [@ensctom](https://github.com/ensctom)  
+    *Adds option for the Flink job listener to read jobnames and namespaces from Flink conf.*
+* **Spark: get column-level lineage from JDBC dbtable option** [`#2284`](https://github.com/OpenLineage/OpenLineage/pull/2284) [@mobuchowski](https://github.com/mobuchowski)  
+    *Adds support for dbtable, enables lineage in the case of single input columns, and improves dataset naming.*
+* **Spec: introduce `JobTypeJobFacet` to contain additional job related information**[`#2241`](https://github.com/OpenLineage/OpenLineage/pull/2241) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *New `JobTypeJobFacet` contains the processing type such as `BATCH|STREAMING`, integration via `SPARK|FLINK|...` and job type in `QUERY|COMMAND|DAG|...`.*
+* **SQL: add quote information from sqlparser-rs** [`#2259`](https://github.com/OpenLineage/OpenLineage/pull/2259) [@JDarDagran](https://github.com/JDarDagran)  
+    *Adds quote information from sqlparser-rs.*
 
 ### Fixed
 * **Spark: update Jackson dependency to resolve `CVE-2022-1471`** [`#2185`](https://github.com/OpenLineage/OpenLineage/pull/2185) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Update Gradle for Spark and Flink to 8.1.1. Upgrade Jackson `2.15.3`.*
-* **Flink: Avoid relying on Guava which can be missing during production runtime.** [`#2296`](https://github.com/OpenLineage/OpenLineage/pull/2296) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Remove usage of Guava ImmutableList.*
-* **Spark: exclude `commons-logging` transitive dependency from published jar.** [`#2297`](https://github.com/OpenLineage/OpenLineage/pull/2297) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
-  *Assure `commons-logging` is not shipped as this can lead to version mismatch on the user's side.*
+    *Updates Gradle for Spark and Flink to 8.1.1. Upgrade Jackson `2.15.3`.*
+* **Flink: avoid relying on Guava which can be missing during production runtime** [`#2296`](https://github.com/OpenLineage/OpenLineage/pull/2296) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Removes usage of Guava ImmutableList.*
+* **Spark: exclude `commons-logging` transitive dependency from published jar** [`#2297`](https://github.com/OpenLineage/OpenLineage/pull/2297) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Ensures `commons-logging` is not shipped as this can lead to a version mismatch on the user's side.*
 
 ## [1.5.0](https://github.com/OpenLineage/OpenLineage/compare/1.4.1...1.5.0) - 2023-11-01
 ### Added
