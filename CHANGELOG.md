@@ -1,8 +1,8 @@
 # Changelog
 
-## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.6.0...HEAD)
+## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.6.1...HEAD)
 
-## [1.6.0](https://github.com/OpenLineage/OpenLineage/compare/1.5.0...1.6.0) - 2023-12-05
+## [1.6.1](https://github.com/OpenLineage/OpenLineage/compare/1.5.0...1.6.1) - 2023-12-07
 ### Added
 * **Dagster: support Dagster 1.5.x** [`#2220`](https://github.com/OpenLineage/OpenLineage/pull/2220) [@tsungchih](https://github.com/tsungchih)  
     *Gets event records for each target Dagster event type to support Dagster version 0.15.0+.*
