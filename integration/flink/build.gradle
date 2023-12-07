@@ -75,6 +75,8 @@ ext {
 }
 
 dependencies {
+    api "io.openlineage:openlineage-java:${project.version}"
+
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     compileOnly "org.apache.flink:flink-java:$flinkVersion"
     compileOnly "org.apache.flink:flink-streaming-java:$flinkVersion"
@@ -88,7 +90,6 @@ dependencies {
 
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
 
-    implementation("io.openlineage:openlineage-java:${project.version}")
     implementation 'org.javassist:javassist:3.29.2-GA'
     implementation 'org.apache.httpcomponents.client5:httpclient5:5.2.3'
 

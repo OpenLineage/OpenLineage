@@ -232,6 +232,8 @@ jobs:
           keys:
             - v1-release-client-java-{{ .Branch }}-{{ checksum "/tmp/checksum.txt" }}
             - v1-release-client-java-{{ .Branch }}
+      - attach_workspace:
+          at: ~/.m2/repository/io/openlineage/
       - run: |
           # Get, then decode the GPG private key used to sign *.jar
           export ORG_GRADLE_PROJECT_signingKey=$(echo $GPG_SIGNING_KEY | base64 -d)
@@ -243,6 +245,9 @@ jobs:
           cd -
           # Publish *.jar
           ./gradlew --no-daemon publish
+      - store_artifacts:
+          path: ./build/libs
+          destination: flink-client-artifacts
 
   build-integration-flink:
     parameters:

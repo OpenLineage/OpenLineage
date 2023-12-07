@@ -116,12 +116,12 @@ openApiGenerate {
 }
 
 task sourceJar(type: Jar) {
-    classifier 'sources'
+    archiveClassifier='sources'
     from sourceSets.main.allJava
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier 'javadoc'
+    archiveClassifier='javadoc'
     from javadoc.destinationDir
 }
 
@@ -228,9 +228,13 @@ jacoco {
 
 jacocoTestReport {
     reports {
-        xml.enabled = true
-        html.enabled = true
-        html.destination = file(coverageDir)
+        xml {
+            enabled true
+        }
+        html {
+            enabled true
+            destination = file(coverageDir)
+        }
     }
 
     afterEvaluate {
