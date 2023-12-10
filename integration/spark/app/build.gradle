@@ -98,7 +98,7 @@ dependencies {
     implementation(project(path: ":spark33"))
     implementation(project(path: ":spark34"))
     implementation(project(path: ":spark35"))
-    implementation 'org.apache.httpcomponents.client5:httpclient5:5.2.3'
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.3'
 
 
     compileOnly "org.apache.spark:spark-core_${versions.scala}:${sparkVersion}"
