@@ -105,7 +105,7 @@ Identifier:
 
 - Namespace: redshift://{cluster_identifier}.{region_name}:{port} of the cluster instance.
   - Scheme = redshift
-  - Authority = {cluster_identifier}:{port}
+  - Authority = {cluster_identifier}.{region_name}:{port}
 - Unique name: {database}.{schema}.{table}
   - URI = redshift://{cluster_identifier}.{region_name}:{port}/{database}.{schema}.{table}
 
