@@ -1,0 +1,72 @@
+[{
+    "eventType": "START",
+    "inputs": [],
+    "job": {
+        "name": "bash_dag.failing_task",
+        "namespace": "food_delivery"
+    },
+    "outputs": [],
+    "run": {
+        "facets": {
+            "airflow": {
+                "dag": {
+                    "dag_id": "bash_dag",
+                    "timetable": {}
+                },
+                "dagRun": {
+                    "dag_id": "bash_dag"
+                },
+                "task": {
+                },
+                "taskInstance": {
+                    "try_number": 1
+                }
+            }
+        }
+    }
+},
+{
+    "eventType": "FAIL",
+    "inputs": [],
+    "job": {
+        "name": "bash_dag.failing_task",
+        "namespace": "food_delivery"
+    },
+    "outputs": []
+},
+{
+    "eventType": "START",
+    "inputs": [],
+    "job": {
+        "name": "bash_dag.success_task",
+        "namespace": "food_delivery"
+    },
+    "outputs": [],
+    "run": {
+        "facets": {
+            "airflow": {
+                "dag": {
+                    "dag_id": "bash_dag",
+                    "timetable": {}
+                },
+                "dagRun": {
+                    "dag_id": "bash_dag"
+                },
+                "task": {
+                },
+                "taskInstance": {
+                    "try_number": 1
+                }
+            }
+        }
+    }
+},
+{
+    "eventType": "COMPLETE",
+    "inputs": [],
+    "job": {
+        "name": "bash_dag.success_task",
+        "namespace": "food_delivery"
+    },
+    "outputs": []
+}]
