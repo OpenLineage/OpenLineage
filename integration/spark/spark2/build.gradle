@@ -78,7 +78,7 @@ dependencies {
     testFixturesApi "org.mockito:mockito-core:${mockitoVersion}"
     testFixturesApi "org.mockito:mockito-inline:${mockitoVersion}"
     testFixturesApi "org.junit.jupiter:junit-jupiter-api:${junit5Version}"
-    testFixturesApi "org.apache.kafka:kafka-clients:3.6.0"
+    testFixturesApi "org.apache.kafka:kafka-clients:3.6.1"
     testFixturesApi(project(path: ":shared", configuration: 'shadow'))
 }
 
