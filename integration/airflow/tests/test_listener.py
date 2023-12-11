@@ -1,20 +1,30 @@
 # Copyright 2018-2023 contributors to the OpenLineage project
 # SPDX-License-Identifier: Apache-2.0
 
+import datetime as dt
 import uuid
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pandas as pd
+import pytest
+from openlineage.airflow.extractors.base import OperatorLineage
+from openlineage.airflow.listener import (
+    on_task_instance_failed,
+    on_task_instance_running,
+    on_task_instance_success,
+)
 from openlineage.airflow.utils import is_airflow_version_enough
+
+from airflow.models import DAG, BaseOperator, DagRun
+from airflow.models.taskinstance import TaskInstance, TaskInstanceState
+from airflow.utils.dates import days_ago
+from airflow.utils.state import State
 
 if not is_airflow_version_enough("2.6.0"):
     from airflow.listeners.events import (
         register_task_instance_state_events,
         unregister_task_instance_state_events,
     )
-from airflow.models import DAG, BaseOperator, TaskInstance
-from airflow.utils.dates import days_ago
-from airflow.utils.state import State
 
 
 class TemplateOperator(BaseOperator):
@@ -99,3 +109,95 @@ def test_listener_chooses_thread_execution(execute_in_thread, is_airflow_version
 
     execute(call)
     assert not is_called
+
+
+@pytest.fixture
+def task_instance():
+    task_instance = TaskInstance(task=Mock())
+    task_instance.dag_run = DagRun()
+    task_instance.dag_run.run_id = "dag_run_run_id"
+    task_instance.dag_run.data_interval_start = None
+    task_instance.dag_run.data_interval_end = None
+    task_instance.task = Mock()
+    task_instance.task.task_id = "task_id"
+    task_instance.task.dag = Mock()
+    task_instance.task.dag.dag_id = "dag_id"
+    task_instance.task.dag.description = "Test DAG Description"
+    task_instance.task.dag.owner = "Test Owner"
+    task_instance.dag_id = "dag_id"
+    task_instance.run_id = "dag_run_run_id"
+    task_instance.start_date = dt.datetime(2023, 1, 1, 13, 1, 1)
+    task_instance.end_date = dt.datetime(2023, 1, 3, 13, 1, 1)
+    task_instance.execution_date = "execution_date"
+    task_instance.next_method = None  # Ensure this is None to reach start_task
+    task_instance.render_templates = Mock()
+    return task_instance
+
+
+@pytest.mark.parametrize(
+    "state", (TaskInstanceState.RUNNING, TaskInstanceState.SUCCESS, TaskInstanceState.FAILED)
+)
+def test_task_instance_try_number_property(state):
+    start_try_number = 1
+    ti = TaskInstance(task=Mock())
+    ti._try_number = start_try_number
+    ti.state = state
+
+    expected_try_number = start_try_number if ti.state == TaskInstanceState.RUNNING else start_try_number + 1
+    assert ti.try_number == expected_try_number
+    assert ti._try_number == start_try_number
+
+
+@pytest.mark.parametrize("state", TaskInstanceState)
+@patch("copy.deepcopy")
+@patch("openlineage.airflow.listener.extractor_manager")
+@patch("openlineage.airflow.listener.task_holder")
+@patch("openlineage.airflow.listener.OpenLineageAdapter")
+def test_running_task_correctly_calls_adapter_run_id_method(
+    mock_adapter, mock_task_holder, mock_extractor, mock_copy, task_instance, state
+):
+    """Tests the OpenLineageListener's response when a task instance is in the running state.
+
+    This test ensures that when an Airflow task instance transitions to the running state,
+    the OpenLineageAdapter's `build_task_instance_run_id` method is called exactly once with the correct
+    parameters derived from the task instance.
+    """
+    mock_task_holder.set_task.return_value = None
+    mock_extractor.extract_metadata.return_value = OperatorLineage()
+    mock_copy.return_value = task_instance
+
+    task_instance._try_number = 1
+    task_instance.state = state
+
+    on_task_instance_running(None, task_instance, None)
+    mock_adapter.build_task_instance_run_id.assert_called_once_with("task_id", "execution_date", 1)
+
+
+@pytest.mark.parametrize("state", TaskInstanceState)
+@patch("openlineage.airflow.listener.task_holder")
+@patch("openlineage.airflow.listener.OpenLineageAdapter")
+def test_failed_task_correctly_calls_adapter_run_id_method(
+    mock_adapter, mock_task_holder, task_instance, state
+):
+    mock_task_holder.get_task.return_value = None
+
+    task_instance._try_number = 1
+    task_instance.state = state
+
+    on_task_instance_failed(None, task_instance, None)
+    mock_adapter.build_task_instance_run_id.assert_called_with("task_id", "execution_date", 1)
+
+
+@pytest.mark.parametrize("state", TaskInstanceState)
+@patch("openlineage.airflow.listener.task_holder")
+@patch("openlineage.airflow.listener.OpenLineageAdapter")
+def test_successful_task_correctly_calls_adapter_run_id_method(
+    mock_adapter, mock_task_holder, task_instance, state
+):
+    mock_task_holder.get_task.return_value = None
+
+    task_instance._try_number = 1
+    task_instance.state = state
+
+    on_task_instance_success(None, task_instance, None)
+    mock_adapter.build_task_instance_run_id.assert_called_with("task_id", "execution_date", 1)
