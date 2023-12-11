@@ -61,7 +61,7 @@ ext {
     assertjVersion = '3.24.2'
     bigqueryVersion = '0.26.0'
     sparkVersion = project.getProperty('spark.version')
-    postgresqlVersion = '42.7.0'
+    postgresqlVersion = '42.7.1'
     mockitoVersion = '4.11.0'
     testcontainersVersion = '1.19.3'
     junit5Version = '5.10.1'
