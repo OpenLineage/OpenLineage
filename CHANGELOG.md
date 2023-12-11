@@ -2,6 +2,10 @@
 
 ## [Unreleased](https://github.com/OpenLineage/OpenLineage/compare/1.6.2...HEAD)
 
+### Fixed
+* **Flink: Open Iceberg `TableLoader` before loading a table.** [`#2314`](https://github.com/OpenLineage/OpenLineage/pull/2314) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+  *Fix potential NullPointerException in 1.17 when dealing with Iceberg sinks.*
+
 ## [1.6.2](https://github.com/OpenLineage/OpenLineage/compare/1.5.0...1.6.2) - 2023-12-07
 ### Added
 * **Dagster: support Dagster 1.5.x** [`#2220`](https://github.com/OpenLineage/OpenLineage/pull/2220) [@tsungchih](https://github.com/tsungchih)  

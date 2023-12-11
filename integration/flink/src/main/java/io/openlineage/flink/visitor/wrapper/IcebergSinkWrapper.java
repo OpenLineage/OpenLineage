@@ -31,8 +31,12 @@ public class IcebergSinkWrapper {
           Class.forName("org.apache.iceberg.flink.sink.IcebergFilesCommitter");
       return WrapperUtils.<TableLoader>getFieldValue(
               icebergFilesCommiterClass, icebergFilesCommitter, "tableLoader")
-          .map(TableLoader::loadTable);
-    } catch (ClassNotFoundException e) {
+          .map(
+              loader -> {
+                loader.open();
+                return loader.loadTable();
+              });
+    } catch (ClassNotFoundException | NullPointerException e) {
       log.warn("Failed extracting table from IcebergFilesCommitter", e);
     }
 
