@@ -21,7 +21,10 @@ fi
 
 # this makes it easier to keep proper permissions on logs
 mkdir -p tests/airflow/logs
-chmod a+rwx -R tests/airflow/logs
+chmod -R a+rwx tests/airflow/logs
+
+# This is required to properly build mysql container
+chmod +x docker/init-db-mysql.sh
 
 # string operator: from variable AIRFLOW_IMAGE
 #  ##   <-- greedy front trim
