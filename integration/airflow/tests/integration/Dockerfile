@@ -3,7 +3,7 @@ FROM $AIRFLOW_IMAGE AS airflow
 COPY integration/dbt /app/openlineage/integration/dbt
 COPY integration/common /app/openlineage/integration/common
 COPY integration/airflow /app/openlineage/integration/airflow
-COPY integration/sql/target /app/openlineage/integration/sql/target
+COPY integration/target /app/openlineage/integration/sql/target
 COPY client/python /app/openlineage/client/python
 USER root
 RUN mkdir -p /opt/data
@@ -34,7 +34,7 @@ RUN mkdir -p /app/openlineage
 RUN apt-get update && \
     apt-get install -y python3-dev default-libmysqlclient-dev build-essential pkg-config
 COPY integration/common /app/openlineage/integration/common
-COPY integration/sql/target /app/openlineage/integration/sql/target
+COPY integration/target /app/openlineage/integration/sql/target
 COPY integration/airflow /app/openlineage/integration/airflow
 COPY integration/airflow/integration-requirements.txt /app/openlineage/integration/integration-requirements.txt
 COPY client/python /app/openlineage/client/python
