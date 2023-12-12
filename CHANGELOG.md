@@ -5,6 +5,8 @@
 ### Fixed
 * **Flink: Open Iceberg `TableLoader` before loading a table.** [`#2314`](https://github.com/OpenLineage/OpenLineage/pull/2314) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
   *Fix potential NullPointerException in 1.17 when dealing with Iceberg sinks.*
+* **Spark: Fix `commons-logging` relocate in target jar.** [`#2319`](https://github.com/OpenLineage/OpenLineage/pull/2319) [@pawel-big-lebowski](https://github.com/pawel-big-lebowski)  
+    *Avoid relocating dependency which gets excluded from the jar.*
 
 ## [1.6.2](https://github.com/OpenLineage/OpenLineage/compare/1.5.0...1.6.2) - 2023-12-07
 ### Added
