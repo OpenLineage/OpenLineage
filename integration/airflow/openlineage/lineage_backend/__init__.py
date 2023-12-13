@@ -79,6 +79,8 @@ class Backend:
         self.adapter.complete_task(
             run_id=run_id,
             job_name=job_name,
+            parent_job_name=dag.dag_id,
+            parent_run_id=dag_run_id,
             end_time=DagUtils.to_iso_8601(self._now_ms()),
             task=task_metadata,
         )

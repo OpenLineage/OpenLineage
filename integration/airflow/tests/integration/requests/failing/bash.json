@@ -21,6 +21,20 @@
                 "taskInstance": {
                     "try_number": 1
                 }
+            },
+            "parent": {
+                "job": {
+                    "name": "bash_dag",
+                    "namespace": "food_delivery"
+                },
+                "run": {}
+            },
+            "parentRun": {
+                "job": {
+                    "name": "bash_dag",
+                    "namespace": "food_delivery"
+                },
+                "run": {}
             }
         }
     }
@@ -31,6 +45,24 @@
     "job": {
         "name": "bash_dag.failing_task",
         "namespace": "food_delivery"
+    },
+    "run": {
+        "facets": {
+            "parent": {
+                "job": {
+                    "name": "bash_dag",
+                    "namespace": "food_delivery"
+                },
+                "run": {}
+            },
+            "parentRun": {
+                "job": {
+                    "name": "bash_dag",
+                    "namespace": "food_delivery"
+                },
+                "run": {}
+            }
+        }
     },
     "outputs": []
 },
@@ -57,6 +89,20 @@
                 "taskInstance": {
                     "try_number": 1
                 }
+            },
+            "parent": {
+                "job": {
+                    "name": "bash_dag",
+                    "namespace": "food_delivery"
+                },
+                "run": {}
+            },
+            "parentRun": {
+                "job": {
+                    "name": "bash_dag",
+                    "namespace": "food_delivery"
+                },
+                "run": {}
             }
         }
     }
@@ -67,6 +113,24 @@
     "job": {
         "name": "bash_dag.success_task",
         "namespace": "food_delivery"
+    },
+        "run": {
+        "facets": {
+            "parent": {
+                "job": {
+                    "name": "bash_dag",
+                    "namespace": "food_delivery"
+                },
+                "run": {}
+            },
+            "parentRun": {
+                "job": {
+                    "name": "bash_dag",
+                    "namespace": "food_delivery"
+                },
+                "run": {}
+            }
+        }
     },
     "outputs": []
 }]

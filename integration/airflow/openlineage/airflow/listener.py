@@ -119,7 +119,7 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
         # we return here because Airflow 2.3 needs task from deferred state
         if ti.next_method is not None:
             return
-        parent_run_id = adapter.build_dag_run_id(task.dag.dag_id, dagrun.run_id)
+        parent_run_id = OpenLineageAdapter.build_dag_run_id(dag.dag_id, dagrun.run_id)
 
         task_uuid = OpenLineageAdapter.build_task_instance_run_id(
             task.task_id, ti.execution_date, ti._try_number
@@ -143,7 +143,6 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
             owners=dag.owner.split(", "),
             task=task_metadata,
             run_facets={
-                **task_metadata.run_facets,
                 **get_custom_facets(dagrun, task, dagrun.external_trigger, ti),
                 **get_airflow_run_facet(dagrun, dag, ti, task, task_uuid),
             },
@@ -156,8 +155,10 @@ def on_task_instance_running(previous_state, task_instance: "TaskInstance", sess
 def on_task_instance_success(previous_state, task_instance: "TaskInstance", session):
     log.debug("OpenLineage listener got notification about task instance success")
     task = task_holder.get_task(task_instance) or task_instance.task
-
+    dag = task.dag
     dagrun = task_instance.dag_run
+
+    parent_run_id = OpenLineageAdapter.build_dag_run_id(dag.dag_id, dagrun.run_id)
 
     task_uuid = OpenLineageAdapter.build_task_instance_run_id(
         task.task_id, task_instance.execution_date, task_instance._try_number
@@ -170,6 +171,8 @@ def on_task_instance_success(previous_state, task_instance: "TaskInstance", sess
         adapter.complete_task(
             run_id=task_uuid,
             job_name=get_job_name(task),
+            parent_job_name=dag.dag_id,
+            parent_run_id=parent_run_id,
             end_time=DagUtils.to_iso_8601(task_instance.end_date),
             task=task_metadata,
         )
@@ -181,8 +184,10 @@ def on_task_instance_success(previous_state, task_instance: "TaskInstance", sess
 def on_task_instance_failed(previous_state, task_instance: "TaskInstance", session):
     log.debug("OpenLineage listener got notification about task instance failure")
     task = task_holder.get_task(task_instance) or task_instance.task
-
+    dag = task.dag
     dagrun = task_instance.dag_run
+
+    parent_run_id = OpenLineageAdapter.build_dag_run_id(dag.dag_id, dagrun.run_id)
 
     task_uuid = OpenLineageAdapter.build_task_instance_run_id(
         task.task_id, task_instance.execution_date, task_instance._try_number
@@ -198,6 +203,8 @@ def on_task_instance_failed(previous_state, task_instance: "TaskInstance", sessi
         adapter.fail_task(
             run_id=task_uuid,
             job_name=get_job_name(task),
+            parent_job_name=dag.dag_id,
+            parent_run_id=parent_run_id,
             end_time=DagUtils.to_iso_8601(end_date),
             task=task_metadata,
         )
