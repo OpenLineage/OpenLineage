@@ -6,7 +6,7 @@
   },
   "inputs": [
     {
-      "namespace": "kafka:9092",
+      "namespace": "kafka://kafka:9092",
       "name": "io.openlineage.flink.kafka.input1",
       "facets": {
         "schema": {
@@ -24,7 +24,7 @@
       }
     },
     {
-      "namespace": "kafka:9092",
+      "namespace": "kafka://kafka:9092",
       "name": "io.openlineage.flink.kafka.input2",
       "facets": {
         "schema": {
@@ -44,7 +44,7 @@
   ],
   "outputs": [
     {
-      "namespace": "kafka:9092",
+      "namespace": "kafka://kafka:9092",
       "name": "io.openlineage.flink.kafka.output",
       "facets": {
         "schema": {
